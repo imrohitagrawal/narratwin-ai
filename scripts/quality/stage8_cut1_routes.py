@@ -14,6 +14,7 @@ ISSUE396_BRANCH = "cut1-process-396-js-yaml-4-3-1-security"
 ISSUE385_BRANCH = "stage8-385-issue280-language-oracle"
 ISSUE384_BRANCH = "stage8-384-presenter-asset-route"
 ISSUE383_BRANCH = "stage8-383-presenter-assets"
+ISSUE367_BRANCH = "stage8-367-presenter-registry"
 ISSUE397_BRANCH = "stage8-397-presenter-asset-adr-classifier"
 ISSUE393_BRANCH = "stage8-393-historical-digest-test-isolation"
 ISSUE386_BASE = "48fc32a2689c9bbc03742d774f3eadb8a500dafc"
@@ -112,6 +113,22 @@ ROUTES = {
         "docs/STATUS.md",
         "docs/TRACEABILITY.md",
     },
+    ISSUE367_BRANCH: {
+        "docs/governance/preflights/issue-367.json",
+        "backend/app/presenter_registry.py",
+        "backend/app/presenter_registry.json",
+        "tests/unit/test_cut1_presenter_registry.py",
+        "scripts/quality/stage8_cut1_routes.py",
+        "tests/unit/test_stage8_cut1_routes.py",
+        "docs/ADR/0054-cut1-presenter-registry.md",
+        "docs/ARCHITECTURE.md",
+        "docs/DATA_MODEL.md",
+        "docs/SECURITY_AND_PRIVACY.md",
+        "docs/QUALITY_GATES.md",
+        "docs/STAGE_ISSUE_PLAN.md",
+        "docs/STATUS.md",
+        "docs/TRACEABILITY.md",
+    },
     ISSUE397_BRANCH: {
         "docs/governance/preflights/issue-397.json",
         "scripts/guardrails_check.py",
@@ -146,11 +163,11 @@ ROUTES = {
 ROUTE_ISSUES = {ISSUE405_BRANCH: 405, ISSUE403_BRANCH: 403, ISSUE401_BRANCH: 401, ISSUE396_BRANCH: 396,
                 ISSUE386_BRANCH: 386, ISSUE385_BRANCH: 385,
                 ISSUE384_BRANCH: 384, ISSUE383_BRANCH: 383, ISSUE397_BRANCH: 397,
-                ISSUE393_BRANCH: 393}
+                ISSUE393_BRANCH: 393, ISSUE367_BRANCH: 367}
 TOTAL_LIMITS = {ISSUE405_BRANCH: 800, ISSUE403_BRANCH: 650, ISSUE401_BRANCH: 600, ISSUE396_BRANCH: 500,
                 ISSUE386_BRANCH: 700, ISSUE385_BRANCH: 350,
                 ISSUE384_BRANCH: 500, ISSUE383_BRANCH: 700, ISSUE397_BRANCH: 500,
-                ISSUE393_BRANCH: 700}
+                ISSUE393_BRANCH: 700, ISSUE367_BRANCH: 2000}
 ISSUE383_BINARY_FILES = {
     "frontend/public/demo/myra-synthetic-presenter.webp",
     "frontend/public/demo/raj-synthetic-presenter.webp",
@@ -199,6 +216,16 @@ TEXT_LIMITS = {
     ISSUE383_BRANCH: {
         path: 260 if path == "tests/unit/test_cut1_presenter_assets.py" else 160
         for path in ROUTES[ISSUE383_BRANCH] - ISSUE383_BINARY_FILES
+    },
+    ISSUE367_BRANCH: {
+        path: 500 if path in {"backend/app/presenter_registry.py",
+                              "tests/unit/test_cut1_presenter_registry.py"}
+        else 260 if path == "backend/app/presenter_registry.json"
+        else 220 if path in {"docs/governance/preflights/issue-367.json",
+                             "docs/ADR/0054-cut1-presenter-registry.md"}
+        else 180 if path in {"scripts/quality/stage8_cut1_routes.py",
+                             "tests/unit/test_stage8_cut1_routes.py"}
+        else 120 for path in ROUTES[ISSUE367_BRANCH]
     },
     ISSUE397_BRANCH: {
         path: 160 if path in {"docs/governance/preflights/issue-397.json",

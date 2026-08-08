@@ -61,13 +61,16 @@ Use it to answer:
   `31145231335` passed. The historical Issue #366 fixture is isolated without
   changing its production digest checker, transitive `js-yaml` is patched to
   4.3.1, and native arm64/amd64 inventories remain exact and
-  architecture-bound. The exact seven-path Issue `#383` route is active again.
-  Issue `#383` adds only the reviewed, fictional synthetic Myra and Raj
+  architecture-bound. Issue `#383` is closed completed through PR `#399`,
+  squash-merged as `9cf6e01f9d0c32f25c229b5adf38c6eb716ca9a0`; merged-main workflow
+  `31198544810` passed. It adds only the reviewed, fictional synthetic Myra and Raj
   1536×1024 WebP assets, provenance/notices, binary validation, and trace/status
   evidence. Meera remains byte-identical at SHA-256
   `d8c4ecb2acadcc3440b7be345b5620717ea0644a5643e41986b9d3f2ea1c30d1`;
-  Owner-selected Myra A is `30290deeea9abc85dde851006e3886dd0d9d6d299e4b54aa86ae3300a5e05d97`
-  and Raj C is `663007e0c7603e80c179cfd2b92bb463d80765890c06ec4886eddabafafa26dd`.
+  The former Issue `#383` candidate-selection labels were Myra A for
+  `30290deeea9abc85dde851006e3886dd0d9d6d299e4b54aa86ae3300a5e05d97`
+  and Raj C for `663007e0c7603e80c179cfd2b92bb463d80765890c06ec4886eddabafafa26dd`;
+  the production names are Myra and Raj.
   Issue `#397` is closed completed through PR `#398`, squash-merged as
   `fe9eff7af88ba9aceaebed435a4d93c2ec01529b`; merged-main workflow
   `31163462594` passed. Its exact-path classifier repair exempts only the two
@@ -81,21 +84,25 @@ Use it to answer:
   `#402`, squash-merged as `246042d82483e0d84c74a5d5c9736a72c710e369`;
   merged-main workflow `31240842628` passed. Accepted main installs verified
   pypdf 6.15.0 while PDF uploads remain rejected and Markdown/text ingestion is
-  unchanged. During PR `#400` refresh, npm audit newly reproduced
+  unchanged. During the earlier PR `#400` refresh, npm audit reproduced
   GHSA-2v37-7h3g-55p8 / CVE-2026-67213 against transitive nanoid 3.3.16.
   PR `#404` completed the exact lock-only nanoid 3.3.17 change at merge commit
-  `03b82c6471b66f9ca8a2781e93a90397a9cf8921`. Required main quality run
-  `31250064879`, accepted-main security run `31250089349`, and eval run
-  `31250090365` passed. Accepted-main CI run `31250088259` failed twice only at
-  fail-closed Heartbeat 2 browser evidence, and bounded independent run
-  `31250370346` reproduced it. Issue `#405` is the separate nine-path recovery
-  route. Its minimized diagnostic proves the browser completed and the
-  verifier rejected the otherwise valid manual-main run as `CI_PROVENANCE`.
-  The recovery permits `workflow_dispatch` only for exact `refs/heads/main`
-  with workflow SHA equal to the expected accepted head; all feature, tag,
-  lookalike, stale, and foreign dispatch contexts still fail closed. Issue
-  `#403` remains open pending merged-main acceptance. PR `#400` remains
-  serialized until that acceptance completes. No clone,
+  `03b82c6471b66f9ca8a2781e93a90397a9cf8921`. Issue `#405` / PR `#407`
+  repaired accepted-main Heartbeat 2 provenance and merged as
+  `15716441d23edbf1c1863112bb721c4bf9bbde4e`; exact-head main quality run
+  `31262941423`, CI run `31262959535`, security run `31262961083`, and eval run
+  `31262962297` passed. Issues `#403` and `#405` are closed after merged-main
+  acceptance. Issue `#367` / PR `#400` is now the active exact fourteen-path
+  child for a strict provider-neutral registry of Meera, Myra, and Raj, with
+  its presenter ADR renumbered to ADR `0054`. It binds the accepted
+  assets/personas/provenance, synthetic disclosure, controlled-local
+  permission, distinct non-cloned qualitative voice-direction metadata,
+  canonical production-field integrity, renderer-neutral settings, monotonic
+  lifecycle, and trace integrity. It produces no listenable audio and proves no
+  voice implementation or inference. Its fourth future-personal shape is
+  disabled and test-only with no likeness or asset. This PR satisfies Issue
+  `#367` only after fresh review, merge, and merged-main acceptance; Issue
+  `#382` is next and playable media remains blocked. No clone,
   personal likeness, runtime provider, audio, animation, video,
   public-distribution, deployment, release,
   trademark-registration, or production-readiness claim is established.

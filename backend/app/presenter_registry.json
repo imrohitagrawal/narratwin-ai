@@ -1,0 +1,171 @@
+{
+  "schema_version": "cut1-presenter-registry-v1",
+  "registry_version": "1.0.0",
+  "presenters": [
+    {
+      "id": "meera",
+      "display_name": "Meera",
+      "version": "1.0.0",
+      "identity_kind": "SYNTHETIC",
+      "lifecycle": "ACTIVE",
+      "test_only": false,
+      "persona": {
+        "apparent_age": "adult",
+        "summary": "Warm, composed fictional Indian technology presenter and controlled-local identity anchor.",
+        "visual_anchors": [
+          "Indian identity",
+          "royal-blue saree",
+          "gold jewelry",
+          "unobstructed mouth and jaw"
+        ]
+      },
+      "asset": {
+        "path": "frontend/public/demo/narratwin-synthetic-presenter.webp",
+        "sha256": "d8c4ecb2acadcc3440b7be345b5620717ea0644a5643e41986b9d3f2ea1c30d1",
+        "width": 1536,
+        "height": 1024,
+        "media_type": "image/webp",
+        "provenance_ref": "docs/THIRD_PARTY_NOTICES.md#third-party-notices"
+      },
+      "voice": {
+        "reference_id": "cut1-meera-synthetic-voice",
+        "version": "1.0.0",
+        "kind": "SYNTHETIC_NON_CLONED",
+        "cloned": false,
+        "provider": null,
+        "description": "Warm, clear, composed Indian English direction; no voice artifact is established in Issue #367."
+      },
+      "disclosure": {
+        "ai_generated": true,
+        "fictional": true,
+        "cloned_identity": false,
+        "text": "Meera is a fictional synthetic AI presenter."
+      },
+      "permission": {
+        "consent_basis": "PROJECT_OWNED_SYNTHETIC_IDENTITY",
+        "permitted_use": "CONTROLLED_LOCAL_CUT1",
+        "publication_allowed": false,
+        "provenance_review": "ISSUE_358_AND_383_REVIEWED_LOCAL_ONLY"
+      },
+      "renderer": {
+        "schema_version": "renderer-neutral-v1",
+        "provider": null,
+        "framing": "HEAD_SHOULDERS_UPPER_TORSO",
+        "eye_level": true,
+        "mouth_and_jaw_unobstructed": true
+      }
+    },
+    {
+      "id": "myra",
+      "display_name": "Myra",
+      "version": "1.0.0",
+      "identity_kind": "SYNTHETIC",
+      "lifecycle": "ACTIVE",
+      "test_only": false,
+      "persona": {
+        "apparent_age": "24-28",
+        "summary": "Beautiful, intelligent, elegant, warm, confident, technically credible fictional Indian presenter.",
+        "visual_anchors": [
+          "Indian identity",
+          "long open naturally black hair below shoulders",
+          "deep-red or deep-maroon Indian saree",
+          "refined gold-zari border",
+          "coordinated premium necklace and earrings",
+          "warm direct eye contact",
+          "unobstructed mouth and jaw"
+        ]
+      },
+      "asset": {
+        "path": "frontend/public/demo/myra-synthetic-presenter.webp",
+        "sha256": "30290deeea9abc85dde851006e3886dd0d9d6d299e4b54aa86ae3300a5e05d97",
+        "width": 1536,
+        "height": 1024,
+        "media_type": "image/webp",
+        "provenance_ref": "docs/THIRD_PARTY_NOTICES.md#issue-383-source-and-conversion-record"
+      },
+      "voice": {
+        "reference_id": "cut1-myra-synthetic-voice",
+        "version": "1.0.0",
+        "kind": "SYNTHETIC_NON_CLONED",
+        "cloned": false,
+        "provider": null,
+        "description": "Warm, melodious, sweet, composed, articulate Indian English direction; no voice artifact is established in Issue #367."
+      },
+      "disclosure": {
+        "ai_generated": true,
+        "fictional": true,
+        "cloned_identity": false,
+        "text": "Myra is a fictional synthetic AI presenter."
+      },
+      "permission": {
+        "consent_basis": "PROJECT_OWNED_SYNTHETIC_IDENTITY",
+        "permitted_use": "CONTROLLED_LOCAL_CUT1",
+        "publication_allowed": false,
+        "provenance_review": "ISSUE_383_OWNER_SELECTED_LOCAL_ONLY"
+      },
+      "renderer": {
+        "schema_version": "renderer-neutral-v1",
+        "provider": null,
+        "framing": "HEAD_SHOULDERS_UPPER_TORSO",
+        "eye_level": true,
+        "mouth_and_jaw_unobstructed": true
+      }
+    },
+    {
+      "id": "raj",
+      "display_name": "Raj",
+      "version": "1.0.0",
+      "identity_kind": "SYNTHETIC",
+      "lifecycle": "ACTIVE",
+      "test_only": false,
+      "persona": {
+        "apparent_age": "24-28",
+        "summary": "Tall, slim, exceptionally handsome, smart, polished, charismatic, technically credible fictional Indian presenter.",
+        "visual_anchors": [
+          "Indian identity",
+          "tall slim fit build",
+          "exceptionally handsome smart charismatic presence",
+          "dark non-gray well-groomed hair",
+          "tailored dark Indian formal jacket",
+          "warm direct eye contact",
+          "unobstructed mouth and jaw"
+        ]
+      },
+      "asset": {
+        "path": "frontend/public/demo/raj-synthetic-presenter.webp",
+        "sha256": "663007e0c7603e80c179cfd2b92bb463d80765890c06ec4886eddabafafa26dd",
+        "width": 1536,
+        "height": 1024,
+        "media_type": "image/webp",
+        "provenance_ref": "docs/THIRD_PARTY_NOTICES.md#issue-383-source-and-conversion-record"
+      },
+      "voice": {
+        "reference_id": "cut1-raj-synthetic-voice",
+        "version": "1.0.0",
+        "kind": "SYNTHETIC_NON_CLONED",
+        "cloned": false,
+        "provider": null,
+        "description": "Warm, resonant, composed, articulate Indian English direction; no voice artifact is established in Issue #367."
+      },
+      "disclosure": {
+        "ai_generated": true,
+        "fictional": true,
+        "cloned_identity": false,
+        "text": "Raj is a fictional synthetic AI presenter."
+      },
+      "permission": {
+        "consent_basis": "PROJECT_OWNED_SYNTHETIC_IDENTITY",
+        "permitted_use": "CONTROLLED_LOCAL_CUT1",
+        "publication_allowed": false,
+        "provenance_review": "ISSUE_383_OWNER_SELECTED_LOCAL_ONLY"
+      },
+      "renderer": {
+        "schema_version": "renderer-neutral-v1",
+        "provider": null,
+        "framing": "HEAD_SHOULDERS_UPPER_TORSO",
+        "eye_level": true,
+        "mouth_and_jaw_unobstructed": true
+      }
+    }
+  ]
+}
