@@ -491,7 +491,7 @@ def test_f382_29_concurrent_consumption_issues_exactly_one_receipt(narration: Mo
                 request_id=f"consume_{index}", trace_id=f"trace_tts_{index}")
             return "receipt"
         except narration.NarrationError as exc:
-            return exc.code
+            return str(exc.code)
     with ThreadPoolExecutor(max_workers=2) as pool:
         outcomes = list(pool.map(consume, (1, 2)))
     assert sorted(outcomes) == ["CONSUMPTION_REPLAY", "receipt"]
@@ -499,6 +499,7 @@ def test_f382_29_concurrent_consumption_issues_exactly_one_receipt(narration: Mo
 
 
 def test_f382_28_module_has_no_external_capability(narration: ModuleType) -> None:
+    assert narration.__file__ is not None
     source = Path(narration.__file__).read_text(encoding="utf-8")
     for forbidden in ("import fastapi", "import requests", "import httpx", "import openai",
                       "import elevenlabs", "import subprocess", "audio_bytes", "render_video"):
