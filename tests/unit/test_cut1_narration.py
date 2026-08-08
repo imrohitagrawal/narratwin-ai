@@ -328,10 +328,13 @@ def test_f382_09_10_18_cross_boundary_and_stale_inputs_fail(narration: ModuleTyp
     _assert_code(narration, "AUTHORITY_MISMATCH", lambda: service.consume_for_tts(**kwargs))
 
 
-@pytest.mark.parametrize("lifecycle", [PresenterLifecycle.REVOKED, PresenterLifecycle.DELETED])
+@pytest.mark.parametrize("lifecycle", [PresenterLifecycle.REVOKED, PresenterLifecycle.DELETED, PresenterLifecycle.DISABLED])
 def test_f382_11_inactive_presenter_cannot_authorize_speech(narration: ModuleType, tmp_path: Path, lifecycle: PresenterLifecycle) -> None:
     service, principal, approved, project_id = _approve(narration, tmp_path)
-    service.registry.transition("meera", lifecycle)
+    if lifecycle is PresenterLifecycle.DISABLED:
+        service.registry._identities["meera"] = replace(service.registry._identities["meera"], lifecycle=lifecycle)
+    else:
+        service.registry.transition("meera", lifecycle)
     _assert_code(narration, "PRESENTER_INACTIVE", lambda: service.consume_for_tts(
         principal=principal, project_id=project_id, narration_version=approved.version,
         narration_checksum=approved.narration_checksum, request_id="consume_1", trace_id="trace_tts_1",
@@ -384,6 +387,22 @@ def test_f382_06_19_evaluation_approval_and_receipt_chains_reject_tampering(
     ))
 
 
+def test_f382_08_claim_checksum_binds_complete_claim_support_evidence(narration: ModuleType, tmp_path: Path) -> None:
+    service, principal, draft, project_id = _draft(narration, tmp_path)
+    evidence = json.loads(draft.claim_evidence_json)
+    assert set(evidence) == {"claims", "supports"} and evidence["claims"] and evidence["supports"]
+    run = service.stage4.walkthrough_runs["run_narration"]
+    changed = replace(run.evaluation.claim_supports[0], support_reason="forged support")
+    service.stage4.walkthrough_runs[run.run_id] = replace(
+        run, evaluation=replace(run.evaluation, claim_supports=[changed, *run.evaluation.claim_supports[1:]])
+    )
+    service.request_evaluation(principal=principal, project_id=project_id,
+        narration_version=draft.version, narration_checksum=draft.narration_checksum)
+    evaluated = service.evaluate(principal=principal, project_id=project_id,
+        narration_version=draft.version, narration_checksum=draft.narration_checksum)
+    assert evaluated.evaluation.result == "FAILED"
+
+
 def test_f382_22_unknown_command_field_is_rejected(narration: ModuleType, tmp_path: Path) -> None:
     service, principal, draft, project_id = _draft(narration, tmp_path)
     with pytest.raises(TypeError):
@@ -416,7 +435,8 @@ def test_f382_21_25_persistence_fails_closed(narration: ModuleType, tmp_path: Pa
         raw = b"\xff"
     elif mutation == "checksum":
         raw = raw.replace(
-            service.latest_record.narration_checksum.encode(), b"sha256:" + b"0" * 64, 1
+            service.latest(principal=LocalPrincipal(), project_id="proj_narration").narration_checksum.encode(),
+            b"sha256:" + b"0" * 64, 1,
         )
     elif mutation == "timestamp":
         raw = raw.replace(NOW.encode(), b"2026-08-08 18:10:00", 1)
@@ -425,6 +445,49 @@ def test_f382_21_25_persistence_fails_closed(narration: ModuleType, tmp_path: Pa
     state_path.write_bytes(raw)
     restored = narration.NarrationService(stage4=service.stage4, registry=load_cut1_presenter_registry(asset_root=ROOT), state_path=state_path)
     assert restored.authority_count == 0
+
+
+@pytest.mark.parametrize("mutation", ["invalidation", "evaluation", "approval"])
+def test_f382_15_24_restore_rejects_self_consistent_authority_forgery(
+    narration: ModuleType, tmp_path: Path, mutation: str
+) -> None:
+    service = (_draft(narration, tmp_path) if mutation == "invalidation" else _approve(narration, tmp_path))[0]
+    payload = json.loads(service.state_path.read_bytes())
+    row = payload["versions"][0]
+    if mutation == "invalidation":
+        row["content"]["narration"].update(invalidatedAuthorities=list(narration.INVALIDATED_AUTHORITIES),
+            invalidatedVersion=0, invalidatedChecksum="sha256:" + "0" * 64)
+        row["invalidatedAuthorities"] = list(narration.INVALIDATED_AUTHORITIES)
+    elif mutation == "evaluation":
+        row["evaluation"]["source_evaluation_id"] = "eval_forged"
+        row["evaluation"]["checksum"] = narration._sha({
+            "evaluationId": row["evaluation"]["evaluation_id"], "narrationChecksum": row["evaluation"]["narration_checksum"],
+            "policyVersion": row["evaluation"]["policy_version"], "reasonCodes": row["evaluation"]["reason_codes"],
+            "result": row["evaluation"]["result"], "schemaVersion": row["evaluation"]["schema_version"],
+            "sourceEvaluationChecksum": row["evaluation"]["source_evaluation_checksum"],
+            "sourceEvaluationId": "eval_forged",
+        })
+    else:
+        row["approval"]["approver_id"] = "actor_foreign"
+        row["approval"]["checksum"] = narration._sha({
+            "approvedAt": row["approval"]["approved_at"], "approverId": "actor_foreign",
+            "evaluationChecksum": row["approval"]["evaluation_checksum"],
+            "narrationChecksum": row["approval"]["narration_checksum"], "schema": narration.APPROVAL_SCHEMA,
+        })
+    row["narrationChecksum"] = narration.checksum_payload(row["content"])
+    service.state_path.write_text(json.dumps(payload), encoding="utf-8")
+    restored = narration.NarrationService(stage4=service.stage4,
+        registry=load_cut1_presenter_registry(asset_root=ROOT), state_path=service.state_path)
+    assert restored.authority_count == 0
+
+
+def test_f382_21_malformed_presenter_binding_fails_closed(narration: ModuleType, tmp_path: Path) -> None:
+    service, principal, binding, project_id = _service(narration, tmp_path)
+    malformed = replace(binding, presenter_id=[])
+    _assert_code(narration, "PRESENTER_INACTIVE", lambda: service.create_draft(
+        principal=principal, project_id=project_id, source_run_id="run_narration",
+        presenter_binding=malformed, review_text=service.stage4.walkthrough_runs["run_narration"].accepted_script_text,
+    ))
 
 
 def test_f382_24_restore_recomputes_external_state_and_replay(narration: ModuleType, tmp_path: Path) -> None:

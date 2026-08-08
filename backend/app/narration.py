@@ -101,6 +101,7 @@ class NarrationVersion:
     source_request_checksum: str
     source_trace_id: str
     source_lineage_json: str
+    claim_evidence_json: str
     source_evaluation_id: str
     source_evaluation_checksum: str
     context_ref_ids: tuple[str, ...]
@@ -132,6 +133,7 @@ class NarrationVersion:
             "source": {
                 "citationIndexes": list(self.citation_indexes),
                 "claimSupportIds": list(self.claim_support_ids),
+                "claimEvidenceJson": self.claim_evidence_json,
                 "contextRefIds": list(self.context_ref_ids),
                 "evaluationId": self.source_evaluation_id,
                 "evaluationChecksum": self.source_evaluation_checksum,
@@ -254,12 +256,6 @@ class NarrationService:
     @property
     def receipt_count(self) -> int:
         return len(self._receipts)
-    @property
-    def latest_record(self) -> NarrationVersion:
-        rows = [row for versions in self._versions.values() for row in versions]
-        if not rows:
-            _fail("AUTHORITY_STALE", "No current narration authority exists.")
-        return max(rows, key=lambda row: (row.project_id, row.version))
     def latest(self, *, principal: LocalPrincipal, project_id: str) -> NarrationVersion:
         with self._lock:
             rows = self._versions.get(project_id, [])
@@ -297,16 +293,17 @@ class NarrationService:
         lineage_json = json.dumps(lineage, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
         source_checksum = build_source_evaluation_checksum(lineage)
         evaluation = cast(Any, run.evaluation)
+        claim_evidence_json = json.dumps({"claims": [asdict(item) for item in cast(Any, run.generated_script).claims], "supports": [asdict(item) for item in evaluation.claim_supports]}, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
         indexes = tuple(support.citation_index for support in evaluation.claim_supports)
         context_ids = tuple(context.context_ref_id for context in run.retrieved_context)
         support_ids = tuple(support.claim_support_id for support in evaluation.claim_supports)
-        if max(len(indexes), len(context_ids), len(support_ids)) > MAX_EVIDENCE_ITEMS:
+        if max(len(indexes), len(context_ids), len(support_ids), len(cast(Any, run.generated_script).claims)) > MAX_EVIDENCE_ITEMS:
             _fail("EVIDENCE_LIMIT", "Narration evidence exceeds its bounded limit.")
         row = NarrationVersion(
             principal.tenant_id, principal.actor_id, project_id, version,
             binding.presenter_id, binding.presenter_version, binding, binding.registry_sha256,
             review, spoken_projection(review, indexes), run.run_id, _checksum(run.request_checksum),
-            _identifier(run.trace_id), lineage_json, _identifier(evaluation.evaluation_id), source_checksum,
+            _identifier(run.trace_id), lineage_json, claim_evidence_json, _identifier(evaluation.evaluation_id), source_checksum,
             context_ids, indexes, support_ids, "", NarrationState.DRAFT,
             invalidated_authorities=invalidations, invalidated_version=invalidated_version,
             invalidated_checksum=invalidated_checksum,
@@ -443,7 +440,7 @@ class NarrationService:
     def _presenter(self, binding: PresenterTraceBinding) -> PresenterTraceBinding:
         try:
             identity = self.registry.get(binding.presenter_id, binding.presenter_version)
-        except (AttributeError, PresenterRegistryError):
+        except (AttributeError, PresenterRegistryError, TypeError):
             _fail("PRESENTER_INACTIVE", "Narration presenter is not currently active.")
         asset = identity.asset
         values = {
@@ -470,6 +467,7 @@ class NarrationService:
             lineage = derive_evaluation_lineage(run)
             lineage_json = json.dumps(lineage, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
             evaluation = cast(Any, run.evaluation)
+            claim_evidence_json = json.dumps({"claims": [asdict(item) for item in cast(Any, run.generated_script).claims], "supports": [asdict(item) for item in evaluation.claim_supports]}, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
             indexes = tuple(support.citation_index for support in evaluation.claim_supports)
             markers = tuple(int(value) for value in CITATION_PATTERN.findall(row.review_text))
             valid = (
@@ -477,6 +475,7 @@ class NarrationService:
                 and run.request_checksum == row.source_request_checksum and run.trace_id == row.source_trace_id
                 and lineage_json == row.source_lineage_json
                 and build_source_evaluation_checksum(lineage) == row.source_evaluation_checksum
+                and claim_evidence_json == row.claim_evidence_json
                 and evaluation.evaluation_id == row.source_evaluation_id
                 and tuple(context.context_ref_id for context in run.retrieved_context) == row.context_ref_ids
                 and tuple(support.claim_support_id for support in evaluation.claim_supports) == row.claim_support_ids
@@ -543,7 +542,7 @@ class NarrationService:
             restored: dict[str, list[NarrationVersion]] = {}
             for row in versions:
                 rows = restored.setdefault(row.project_id, [])
-                if row.version != len(rows) + 1 or checksum_payload(row.checksum_payload()) != row.narration_checksum:
+                if row.version != len(rows) + 1 or checksum_payload(row.checksum_payload()) != row.narration_checksum or bool(rows) != bool(row.invalidated_authorities):
                     raise ValueError("Narration version chain is invalid.")
                 if rows and (row.invalidated_version, row.invalidated_checksum) != (
                     rows[-1].version, rows[-1].narration_checksum
@@ -588,7 +587,7 @@ def _version_from_row(value: Any) -> NarrationVersion:
     narration = _object(content["narration"], {"presenterId", "presenterVersion", "registrySha256",
         "reviewText", "reviewTextSha256", "spokenText", "spokenTextSha256", "version",
         "invalidatedAuthorities", "invalidatedVersion", "invalidatedChecksum"})
-    source = _object(content["source"], {"citationIndexes", "claimSupportIds", "contextRefIds",
+    source = _object(content["source"], {"citationIndexes", "claimEvidenceJson", "claimSupportIds", "contextRefIds",
         "evaluationId", "evaluationChecksum", "lineageJson", "requestChecksum", "runId", "traceId"})
     binding_row = _object(content["presenter"], set(PresenterTraceBinding.__dataclass_fields__))
     binding = PresenterTraceBinding(**{key: _identifier(value) if "sha256" not in key else _checksum(value, bare=True)
@@ -631,12 +630,13 @@ def _version_from_row(value: Any) -> NarrationVersion:
         version, _identifier(narration["presenterId"]), _identifier(narration["presenterVersion"]),
         binding, _checksum(narration["registrySha256"], bare=True), review, spoken,
         _identifier(source["runId"]), _checksum(source["requestChecksum"]), _identifier(source["traceId"]),
-        lineage_json, _identifier(source["evaluationId"]), _checksum(source["evaluationChecksum"]),
+        lineage_json, cast(str, source["claimEvidenceJson"]), _identifier(source["evaluationId"]), _checksum(source["evaluationChecksum"]),
         contexts, tuple(indexes), supports, _checksum(row["narrationChecksum"]), state,
         evaluation, approval, tuple(invalidations), invalidated_version,
         _checksum(invalidated_checksum) if invalidated_checksum is not None else None,
     )
-    if not _legal_state_shape(result):
+    if not _legal_state_shape(result) or (evaluation is not None and not _evaluation_current(result)) \
+            or (approval is not None and not _approval_current(result)):
         raise ValueError("Narration lifecycle shape is invalid.")
     return result
 def _id_list(value: Any) -> tuple[str, ...]:
