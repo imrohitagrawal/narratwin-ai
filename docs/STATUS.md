@@ -89,8 +89,13 @@ Use it to answer:
   `31250090365` passed. Accepted-main CI run `31250088259` failed twice only at
   fail-closed Heartbeat 2 browser evidence, and bounded independent run
   `31250370346` reproduced it. Issue `#405` is the separate nine-path recovery
-  route; Issue `#403` remains open pending its merged-main acceptance. PR `#400`
-  remains serialized until that acceptance completes. No clone,
+  route. Its minimized diagnostic proves the browser completed and the
+  verifier rejected the otherwise valid manual-main run as `CI_PROVENANCE`.
+  The recovery permits `workflow_dispatch` only for exact `refs/heads/main`
+  with workflow SHA equal to the expected accepted head; all feature, tag,
+  lookalike, stale, and foreign dispatch contexts still fail closed. Issue
+  `#403` remains open pending merged-main acceptance. PR `#400` remains
+  serialized until that acceptance completes. No clone,
   personal likeness, runtime provider, audio, animation, video,
   public-distribution, deployment, release,
   trademark-registration, or production-readiness claim is established.

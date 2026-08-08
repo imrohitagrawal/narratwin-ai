@@ -423,9 +423,16 @@ def _sources(manifest: dict[str, Any], head: str, *, committed: bool, source_roo
         except PrivacyError as exc:
             raise EvidenceError("BROWSER_SOURCE") from exc
     return spec_text[:test_call.start()].count("\n") + 1, len(spec_text.splitlines())
+def _trusted_ci_context(context: dict[str, str], head: str) -> bool:
+    keys = {"repository", "eventName", "workflow", "workflowRef", "workflowSha", "job", "runId", "runAttempt", "headSha"}
+    workflow_prefix = "imrohitagrawal/narratwin-ai/.github/workflows/ci.yml@"
+    basic = set(context) == keys and context.get("repository") == "imrohitagrawal/narratwin-ai" and context.get("eventName") in {"pull_request", "push", "workflow_dispatch"} and context.get("workflow") == "ci" and context.get("job") == "frontend" and context.get("headSha") == head and SHA.fullmatch(context.get("workflowSha", "")) is not None and context.get("runId", "").isdigit() and context.get("runAttempt", "").isdigit() and int(context["runAttempt"]) >= 1 and context.get("workflowRef", "").startswith(workflow_prefix)
+    if not basic:
+        return False
+    return context["eventName"] != "workflow_dispatch" or (context["workflowRef"] == workflow_prefix + "refs/heads/main" and context["workflowSha"] == head)
 def _ci_execution(root: Path, manifest: dict[str, Any], head: str, run_id: str, context: dict[str, str]) -> None:
     keys = {"repository", "eventName", "workflow", "workflowRef", "workflowSha", "job", "runId", "runAttempt", "headSha"}
-    if set(context) != keys or context.get("repository") != "imrohitagrawal/narratwin-ai" or context.get("eventName") not in {"pull_request", "push"} or context.get("workflow") != "ci" or context.get("job") != "frontend" or context.get("headSha") != head or not SHA.match(context.get("workflowSha", "")) or not context.get("runId", "").isdigit() or not context.get("runAttempt", "").isdigit() or int(context["runAttempt"]) < 1 or ".github/workflows/ci.yml@" not in context.get("workflowRef", ""):
+    if not _trusted_ci_context(context, head):
         raise EvidenceError("CI_PROVENANCE")
     record = _json(root, manifest.get("execution"))
     record_keys = {"schema", "provider", *keys, "evidenceRunId", "producer", "playwrightExitCode", "startedAt", "completedAt", "workflowSourceSha256", "runnerSourceSha256", "reportSha256", "traceSha256"}

@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from scripts.ci.heartbeat2_evidence import EvidenceError, prepare_failure_diagnostic
+from scripts.ci.heartbeat2_evidence import EvidenceError, _trusted_ci_context, prepare_failure_diagnostic
 
 
 HEAD = "03b82c6471b66f9ca8a2781e93a90397a9cf8921"
@@ -100,3 +100,41 @@ def test_runner_and_workflow_publish_only_minimized_failure_diagnostic() -> None
     assert "if: failure() && hashFiles('reports/heartbeat2/withheld/diagnostic.json') != ''" in workflow
     assert "path: reports/heartbeat2/withheld/diagnostic.json" in workflow
     assert "heartbeat2-withheld-diagnostic-${{ github.run_id }}-${{ github.run_attempt }}" in workflow
+
+
+def ci_context(event: str = "workflow_dispatch", ref: str = "refs/heads/main") -> dict[str, str]:
+    return {
+        "repository": "imrohitagrawal/narratwin-ai",
+        "eventName": event,
+        "workflow": "ci",
+        "workflowRef": f"imrohitagrawal/narratwin-ai/.github/workflows/ci.yml@{ref}",
+        "workflowSha": HEAD,
+        "job": "frontend",
+        "runId": "31250896555",
+        "runAttempt": "1",
+        "headSha": HEAD,
+    }
+
+
+def test_ci_context_accepts_exact_main_dispatch_and_existing_events() -> None:
+    assert _trusted_ci_context(ci_context(), HEAD)
+    assert _trusted_ci_context(ci_context("push", "refs/heads/feature"), HEAD)
+    assert _trusted_ci_context(ci_context("pull_request", "refs/pull/406/merge"), HEAD)
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("workflowRef", "imrohitagrawal/narratwin-ai/.github/workflows/ci.yml@refs/heads/feature"),
+        ("workflowRef", "imrohitagrawal/narratwin-ai/.github/workflows/ci.yml@refs/heads/main-lookalike"),
+        ("workflowSha", "f" * 40),
+        ("headSha", "f" * 40),
+        ("repository", "foreign/repository"),
+        ("eventName", "schedule"),
+        ("runAttempt", "0"),
+    ],
+)
+def test_ci_context_rejects_foreign_or_inexact_dispatch(field: str, value: str) -> None:
+    context = ci_context()
+    context[field] = value
+    assert not _trusted_ci_context(context, HEAD)

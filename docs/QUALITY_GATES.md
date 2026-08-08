@@ -1204,3 +1204,10 @@ collisions, privacy-scan failures, and any weakening of trusted success
 evidence. Focused hostile tests, full quality/CI/security/eval/browser/
 performance/container evidence, independent exact-head review, eligible
 approval, and merged-main acceptance remain mandatory.
+
+The recovered diagnostic identifies `CI_PROVENANCE`: the browser completed,
+but the verifier historically allowed only `push` and `pull_request` events.
+`workflow_dispatch` is eligible solely when GitHub binds the workflow ref
+exactly to `refs/heads/main` and the workflow SHA equals the expected accepted
+head. Manual feature-branch, tag, lookalike-main, stale-SHA, or foreign-context
+dispatch remains ineligible.
