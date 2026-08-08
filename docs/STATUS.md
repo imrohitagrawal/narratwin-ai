@@ -75,14 +75,20 @@ Use it to answer:
   nearby, lookalike, mixed, and actual architecture enforcement. Rejected
   concepts remain audit-only as future-scoped Aashna/Character 1 and
   Veer/Character 2, with no active path or registration. The selected assets
-  remain controlled-local and pending latest-head non-author visual,
-  provenance, and permitted-use review. This PR satisfies Issue `#383` once it
-  merges and passes merged-main acceptance; presenter registration and all
-  playable media remain blocked until then. Issue `#367` is next. No clone,
+  remain controlled-local. Issue `#383` is closed completed through PR `#399`,
+  squash-merged as `9cf6e01f9d0c32f25c229b5adf38c6eb716ca9a0`; merged-main
+  workflow `31198544810` passed. Issue `#367` / PR `#400` is open for the exact
+  presenter registry, but accepted main installs vulnerable direct `pypdf`
+  6.14.2 and its mandatory audit reports CVE-2026-71852 and CVE-2026-71870.
+  Issue `#401` is the separate security prerequisite that raises only pypdf to
+  verified official 6.15.0 while keeping PDF uploads rejected and Markdown/text
+  ingestion unchanged. This PR satisfies Issue `#401` once merged and accepted
+  on main; PR `#400` then refreshes normally from accepted main before it may
+  merge. No clone,
   personal likeness, runtime provider, audio, animation, video,
   public-distribution, deployment, release,
   trademark-registration, or production-readiness claim is established.
-- Last reviewed date: 2026-08-07
+- Last reviewed date: 2026-08-08
 - Current R0C Cut 1 recovery authority: Issue `#328` OWNER comment
   `5152829686` supersedes older recovery sequencing where it conflicts. Issue
   `#332` / PR `#333` completed the narrow containment correction at merged main
