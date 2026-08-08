@@ -35,6 +35,8 @@ EXPECTED = {
         "tests/unit/test_frontend_dependency_security_contract.py",
         "tests/unit/test_dependency_security_contract.py",
         "tests/unit/test_stage8_quality_gate.py",
+        "scripts/ci/check_container_scan_consensus.py",
+        "tests/unit/test_container_scan_consensus.py",
         "docs/ADR/0053-nanoid-3-3-17-security-refresh.md",
         "docs/QUALITY_GATES.md",
         "docs/STAGE_ISSUE_PLAN.md",
@@ -188,7 +190,9 @@ def test_routes_are_exact_pre_registered_and_issue386_preflight_matches() -> Non
     assert issue403["branch"] == routes.ISSUE403_BRANCH
     assert set(issue403["scope"]["required"]) == EXPECTED[routes.ISSUE403_BRANCH]
     assert set(issue403["scope"]["allowed_prefixes"]) == EXPECTED[routes.ISSUE403_BRANCH]
-    assert routes.TOTAL_LIMITS[routes.ISSUE403_BRANCH] == 550
+    assert routes.TOTAL_LIMITS[routes.ISSUE403_BRANCH] == 650
+    assert routes.TEXT_LIMITS[routes.ISSUE403_BRANCH]["scripts/ci/check_container_scan_consensus.py"] == 80
+    assert routes.TEXT_LIMITS[routes.ISSUE403_BRANCH]["tests/unit/test_container_scan_consensus.py"] == 80
     module_source = MODULE_PATH.read_text(encoding="utf-8")
     assert "from scripts.quality.check_stage8_docs" not in module_source
     assert "import scripts.quality.check_stage8_docs" not in module_source

@@ -26,6 +26,8 @@ ROUTES = {
         "tests/unit/test_frontend_dependency_security_contract.py",
         "tests/unit/test_dependency_security_contract.py",
         "tests/unit/test_stage8_quality_gate.py",
+        "scripts/ci/check_container_scan_consensus.py",
+        "tests/unit/test_container_scan_consensus.py",
         "docs/ADR/0053-nanoid-3-3-17-security-refresh.md",
         "docs/QUALITY_GATES.md",
         "docs/STAGE_ISSUE_PLAN.md",
@@ -133,7 +135,7 @@ ROUTE_ISSUES = {ISSUE403_BRANCH: 403, ISSUE401_BRANCH: 401, ISSUE396_BRANCH: 396
                 ISSUE386_BRANCH: 386, ISSUE385_BRANCH: 385,
                 ISSUE384_BRANCH: 384, ISSUE383_BRANCH: 383, ISSUE397_BRANCH: 397,
                 ISSUE393_BRANCH: 393}
-TOTAL_LIMITS = {ISSUE403_BRANCH: 550, ISSUE401_BRANCH: 600, ISSUE396_BRANCH: 500,
+TOTAL_LIMITS = {ISSUE403_BRANCH: 650, ISSUE401_BRANCH: 600, ISSUE396_BRANCH: 500,
                 ISSUE386_BRANCH: 700, ISSUE385_BRANCH: 350,
                 ISSUE384_BRANCH: 500, ISSUE383_BRANCH: 700, ISSUE397_BRANCH: 500,
                 ISSUE393_BRANCH: 700}
@@ -145,6 +147,8 @@ TEXT_LIMITS = {
     ISSUE403_BRANCH: {
         path: 180 if path.endswith("issue-403.json")
         else 110 if path == "tests/unit/test_frontend_dependency_security_contract.py"
+        else 80 if path in {"scripts/ci/check_container_scan_consensus.py",
+                            "tests/unit/test_container_scan_consensus.py"}
         else 70 if path == "scripts/quality/stage8_cut1_routes.py"
         else 60 if path.startswith("docs/ADR/") else 40
         for path in ROUTES[ISSUE403_BRANCH]
