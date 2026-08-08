@@ -35,6 +35,7 @@ ISSUE396_BASE = "9ee3f4a4d3b8cf1e78b5a878904748b60d557a76"
 ISSUE401_BASE = "9cf6e01f9d0c32f25c229b5adf38c6eb716ca9a0"
 BRACE_PATH = "node_modules/brace-expansion"
 JS_YAML_PATH = "node_modules/js-yaml"
+NANOID_PATH = "node_modules/nanoid"
 JS_YAML_431_INTEGRITY = (
     "sha512-CY6crGq313MX8GkwvB7tzgp99vjQxY1++5y10/BKN/GUfHqWaOGQMNZkBvqSzsZKWk/ijwHlWzzkLulsGHhjWQ=="
 )
@@ -131,8 +132,9 @@ def _assert_js_yaml_431_contract(package_text: str, lock: dict[str, Any]) -> Non
         key: value for key, value in base_js_yaml.items() if key not in {"version", "resolved", "integrity"}
     }
     normalized = copy.deepcopy(lock)
-    for field in ("version", "resolved", "integrity"):
-        normalized["packages"][JS_YAML_PATH][field] = base_js_yaml[field]
+    for path in (JS_YAML_PATH, NANOID_PATH):
+        for field in ("version", "resolved", "integrity"):
+            normalized["packages"][path][field] = base_lock["packages"][path][field]
     assert normalized == base_lock
 
 
@@ -182,7 +184,7 @@ def test_frontend_brace_expansion_override_and_lock_are_isolated_and_patched() -
         BRACE_509_INTEGRITY,
     )
     normalized_lock = copy.deepcopy(lock)
-    for path in (BRACE_PATH, JS_YAML_PATH):
+    for path in (BRACE_PATH, JS_YAML_PATH, NANOID_PATH):
         for field in ("version", "resolved", "integrity"):
             normalized_lock["packages"][path][field] = base_lock["packages"][path][field]
     assert normalized_lock == base_lock

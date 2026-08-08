@@ -82,18 +82,27 @@ Use it to answer:
   squash-merged as `9cf6e01f9d0c32f25c229b5adf38c6eb716ca9a0`; merged-main
   workflow `31198544810` passed. Issue `#401` is closed completed through PR
   `#402`, squash-merged as `246042d82483e0d84c74a5d5c9736a72c710e369`;
-  merged-main workflow `31240842628` passed. Accepted main now installs verified
-  official pypdf 6.15.0 while PDF uploads remain rejected and Markdown/text
-  ingestion remains unchanged. Issue `#367` / PR `#400` is the active exact
-  fourteen-path child for a strict provider-neutral registry of Meera, Myra,
-  and Raj. It binds the accepted assets/personas/provenance, synthetic
-  disclosure, controlled-local permission, distinct non-cloned voice direction
-  metadata, canonical production-field integrity, renderer-neutral settings,
-  monotonic lifecycle, and trace integrity. It produces no listenable audio and
-  proves no voice implementation or inference. Its fourth future-personal shape
-  is disabled and test-only with no likeness or asset. This PR satisfies Issue
-  `#367` only after review, merge, and merged-main acceptance; Issue `#382` is
-  next and playable media remains blocked. No clone,
+  merged-main workflow `31240842628` passed. Accepted main installs verified
+  pypdf 6.15.0 while PDF uploads remain rejected and Markdown/text ingestion is
+  unchanged. During the earlier PR `#400` refresh, npm audit reproduced
+  GHSA-2v37-7h3g-55p8 / CVE-2026-67213 against transitive nanoid 3.3.16.
+  PR `#404` completed the exact lock-only nanoid 3.3.17 change at merge commit
+  `03b82c6471b66f9ca8a2781e93a90397a9cf8921`. Issue `#405` / PR `#407`
+  repaired accepted-main Heartbeat 2 provenance and merged as
+  `15716441d23edbf1c1863112bb721c4bf9bbde4e`; exact-head main quality run
+  `31262941423`, CI run `31262959535`, security run `31262961083`, and eval run
+  `31262962297` passed. Issues `#403` and `#405` are closed after merged-main
+  acceptance. Issue `#367` / PR `#400` is now the active exact fourteen-path
+  child for a strict provider-neutral registry of Meera, Myra, and Raj, with
+  its presenter ADR renumbered to ADR `0054`. It binds the accepted
+  assets/personas/provenance, synthetic disclosure, controlled-local
+  permission, distinct non-cloned qualitative voice-direction metadata,
+  canonical production-field integrity, renderer-neutral settings, monotonic
+  lifecycle, and trace integrity. It produces no listenable audio and proves no
+  voice implementation or inference. Its fourth future-personal shape is
+  disabled and test-only with no likeness or asset. This PR satisfies Issue
+  `#367` only after fresh review, merge, and merged-main acceptance; Issue
+  `#382` is next and playable media remains blocked. No clone,
   personal likeness, runtime provider, audio, animation, video,
   public-distribution, deployment, release,
   trademark-registration, or production-readiness claim is established.

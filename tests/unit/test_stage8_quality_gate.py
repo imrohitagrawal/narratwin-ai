@@ -55,10 +55,10 @@ def test_cut1_routes_are_exact_stage8_and_not_preflight_owned(monkeypatch: Any, 
                                          "issue-358.json", "issue-372.json"}
                         else ORIGINAL_READ(path, *a, **kw))
     policy = load("scripts/quality/check_stage8_docs.py", "reloaded").PROCESS_BRANCH_ALLOWED_FILES
-    assert {branch: policy[branch] for branch in SCOPES} == SCOPES
-    assert {b for b in policy if b[:5]=="cut1-"}-set(SCOPES)=={cut1_routes.ISSUE396_BRANCH,cut1_routes.ISSUE401_BRANCH}
-    dispatcher:Any=load("scripts/quality/check_quality_stage.py","dispatcher");stage_file,status_file=(
-        tmp_path/"stage",tmp_path/"status")
+    assert {branch: policy[branch] for branch in SCOPES} == SCOPES;r=cut1_routes
+    assert {b for b in policy if b[:5]=="cut1-"}-set(SCOPES)=={getattr(r,f"ISSUE{i}_BRANCH") for i in (396,401,403)}
+    dispatcher:Any=load("scripts/quality/check_quality_stage.py","dispatcher");stage_file=tmp_path/"stage"
+    status_file=tmp_path/"status"
     mode = "| SSV1-MODE | repo-mode | Phase 1 Closure | phase1-closure | phase1-closure |\n"
     stage_file.write_text("8\n"); status_file.write_text(mode)
     calls: list[list[str]] = []; m.setattr(dispatcher, "run_recommended_review_item_check", lambda _stage: 0)

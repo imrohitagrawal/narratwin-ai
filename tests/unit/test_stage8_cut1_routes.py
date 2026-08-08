@@ -27,6 +27,34 @@ stage8: Any = load(REPO / "scripts/quality/check_stage8_docs.py", "stage8_with_c
 
 
 EXPECTED = {
+    "process-405-heartbeat2-main-reliability": {
+        "docs/governance/preflights/issue-405.json",
+        ".github/workflows/ci.yml",
+        "scripts/ci/heartbeat2-browser.sh",
+        "scripts/ci/heartbeat2_evidence.py",
+        "tests/unit/test_heartbeat2_evidence.py",
+        "scripts/quality/stage8_cut1_routes.py",
+        "tests/unit/test_stage8_cut1_routes.py",
+        "docs/QUALITY_GATES.md",
+        "docs/STATUS.md",
+    },
+    "cut1-process-403-nanoid-3-3-17-security": {
+        "docs/governance/preflights/issue-403.json",
+        "frontend/package-lock.json",
+        "scripts/quality/stage8_cut1_routes.py",
+        "tests/unit/test_stage8_cut1_routes.py",
+        "tests/unit/test_frontend_dependency_security_contract.py",
+        "tests/unit/test_dependency_security_contract.py",
+        "tests/unit/test_stage8_quality_gate.py",
+        "scripts/ci/check_container_scan_consensus.py",
+        "tests/unit/test_container_scan_consensus.py",
+        "docs/ADR/0053-nanoid-3-3-17-security-refresh.md",
+        "docs/QUALITY_GATES.md",
+        "docs/STAGE_ISSUE_PLAN.md",
+        "docs/STATUS.md",
+        "docs/TRACEABILITY.md",
+        "docs/THIRD_PARTY_NOTICES.md",
+    },
     "cut1-process-401-pypdf-6-15-0-security": {
         "docs/governance/preflights/issue-401.json",
         "pyproject.toml",
@@ -99,7 +127,7 @@ EXPECTED = {
         "tests/unit/test_cut1_presenter_registry.py",
         "scripts/quality/stage8_cut1_routes.py",
         "tests/unit/test_stage8_cut1_routes.py",
-        "docs/ADR/0052-cut1-presenter-registry.md",
+        "docs/ADR/0054-cut1-presenter-registry.md",
         "docs/ARCHITECTURE.md",
         "docs/DATA_MODEL.md",
         "docs/SECURITY_AND_PRIVACY.md",
@@ -148,6 +176,12 @@ def completed(args: list[str], code: int = 0, out: str = "", err: str = "") -> s
 def test_routes_are_exact_pre_registered_and_issue386_preflight_matches() -> None:
     assert routes.ROUTES == EXPECTED
     assert {branch: stage8.EFFECTIVE_STAGE8_ROUTES[branch] for branch in EXPECTED} == EXPECTED
+    issue405 = json.loads((REPO / "docs/governance/preflights/issue-405.json").read_text(encoding="utf-8"))
+    assert issue405["branch"] == routes.ISSUE405_BRANCH
+    assert set(issue405["scope"]["required"]) == EXPECTED[routes.ISSUE405_BRANCH]
+    assert set(issue405["scope"]["allowed_prefixes"]) == EXPECTED[routes.ISSUE405_BRANCH]
+    assert routes.TOTAL_LIMITS[routes.ISSUE405_BRANCH] == 800
+    assert routes.TEXT_LIMITS[routes.ISSUE405_BRANCH]["docs/governance/preflights/issue-405.json"] == 220
     artifact = json.loads((REPO / "docs/governance/preflights/issue-386.json").read_text(encoding="utf-8"))
     assert artifact["branch"] == routes.ISSUE386_BRANCH
     assert set(artifact["scope"]["required"]) == EXPECTED[routes.ISSUE386_BRANCH]
@@ -193,6 +227,17 @@ def test_routes_are_exact_pre_registered_and_issue386_preflight_matches() -> Non
     assert routes.TEXT_LIMITS[routes.ISSUE367_BRANCH]["backend/app/presenter_registry.py"] == 500
     assert routes.TEXT_LIMITS[routes.ISSUE367_BRANCH]["tests/unit/test_cut1_presenter_registry.py"] == 500
     assert routes.TEXT_LIMITS[routes.ISSUE367_BRANCH]["backend/app/presenter_registry.json"] == 260
+    issue403 = json.loads((REPO / "docs/governance/preflights/issue-403.json").read_text(encoding="utf-8"))
+    assert issue403["branch"] == routes.ISSUE403_BRANCH
+    assert set(issue403["scope"]["required"]) == EXPECTED[routes.ISSUE403_BRANCH]
+    assert set(issue403["scope"]["allowed_prefixes"]) == EXPECTED[routes.ISSUE403_BRANCH]
+    assert routes.TOTAL_LIMITS[routes.ISSUE403_BRANCH] == 650
+    assert routes.TEXT_LIMITS[routes.ISSUE403_BRANCH]["scripts/ci/check_container_scan_consensus.py"] == 80
+    assert routes.TEXT_LIMITS[routes.ISSUE403_BRANCH]["tests/unit/test_container_scan_consensus.py"] == 80
+    for path in ("docs/QUALITY_GATES.md", "docs/STAGE_ISSUE_PLAN.md"):
+        issue403_contract = (REPO / path).read_text(encoding="utf-8")
+        assert "requires exactly fifteen paths" in issue403_contract
+        assert "permits at most 650 additions plus deletions" in issue403_contract
     module_source = MODULE_PATH.read_text(encoding="utf-8")
     assert "from scripts.quality.check_stage8_docs" not in module_source
     assert "import scripts.quality.check_stage8_docs" not in module_source

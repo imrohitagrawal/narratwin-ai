@@ -1188,3 +1188,41 @@ review, eligible non-author approval, and merged-main acceptance are mandatory.
 No waiver, PDF support, product/provider/media, deployment, release, public, or
 production claim is authorized. PR #400 must refresh from accepted main only
 after this prerequisite passes merged-main acceptance.
+
+## Issue #403 nanoid 3.3.17 security gate
+
+The exact `cut1-process-403-nanoid-3-3-17-security` route starts from
+`246042d82483e0d84c74a5d5c9736a72c710e369`, requires exactly fifteen paths, and
+permits at most 650 additions plus deletions. Only the transitive
+`node_modules/nanoid` lock record may move from 3.3.16 to official 3.3.17.
+
+The gate proves exact registry URL and SHA-512 integrity, unchanged
+`frontend/package.json`, no direct nanoid dependency, and no unrelated lock
+drift. `npm audit --audit-level=high`, repository dependency/security gates,
+complete hosted CI/container evidence, exact-head review, eligible approval,
+and merged-main acceptance are mandatory. No waiver, product/UI/provider/media,
+Docker/workflow, deployment, release, public, or production claim is authorized.
+
+## Issue #405 Heartbeat 2 accepted-main reliability gate
+
+The exact `process-405-heartbeat2-main-reliability` route starts from accepted
+main `03b82c6471b66f9ca8a2781e93a90397a9cf8921`, requires exactly nine paths,
+and permits at most 800 additions plus deletions. A hosted Heartbeat 2 failure
+must remain a failing check. It may publish only a bounded diagnostic tail
+after the complete candidate and minimized output both pass the existing
+controlled-input and canary privacy scan. The diagnostic binds exact run, head,
+failure stage, and source log; raw candidate evidence remains unpublished.
+
+The gate rejects retries as acceptance, failure swallowing, stale or foreign
+diagnostics, symlinks, malformed identifiers, oversized logs, output
+collisions, privacy-scan failures, and any weakening of trusted success
+evidence. Focused hostile tests, full quality/CI/security/eval/browser/
+performance/container evidence, independent exact-head review, eligible
+approval, and merged-main acceptance remain mandatory.
+
+The recovered diagnostic identifies `CI_PROVENANCE`: the browser completed,
+but the verifier historically allowed only `push` and `pull_request` events.
+`workflow_dispatch` is eligible solely when GitHub binds the workflow ref
+exactly to `refs/heads/main` and the workflow SHA equals the expected accepted
+head. Manual feature-branch, tag, lookalike-main, stale-SHA, or foreign-context
+dispatch remains ineligible.
