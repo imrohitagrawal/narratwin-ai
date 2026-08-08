@@ -30,10 +30,12 @@ Because the lock is an input to the final frontend build, also replace the
 reviewed inventories with independently reproduced architecture-bound values.
 The native arm64 value is
 `1803:ad570be227d414b9e0100f21fa1f03aa42e85acad9128f6c01524d780b7ea064`;
-the provisional Docker Desktop amd64 measurement is
-`1805:9a18413ff9fefd9c665595ab2564c72bb706dcf81b490fffd59b23653ad73858`
-and must be replaced by a repeatable native hosted value before acceptance.
-Stale and cross-architecture values remain rejected rather than accumulated.
+the native hosted amd64 value is
+`1803:10b12a2024f42b6302964df52b071befbe498a0b9c77ecdd1b11e4afdfb9623b`.
+Independent push and pull-request security runs `31242126352` and
+`31242181591` measured the same amd64 value. The Docker Desktop emulation
+measurement is explicitly rejected along with stale and cross-architecture
+values rather than accumulated.
 
 ## Rejected alternatives
 

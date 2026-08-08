@@ -51,7 +51,7 @@ FRONTEND_ENGINE_CONFIG_DEFAULTS = {
 FRONTEND_INVENTORIES = {
     "amd64": frozenset(
         (
-            "1805:9a18413ff9fefd9c665595ab2564c72bb706dcf81b490fffd59b23653ad73858",
+            "1803:10b12a2024f42b6302964df52b071befbe498a0b9c77ecdd1b11e4afdfb9623b",
         )
     ),
     "arm64": frozenset(
