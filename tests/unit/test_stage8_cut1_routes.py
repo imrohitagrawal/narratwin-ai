@@ -193,6 +193,10 @@ def test_routes_are_exact_pre_registered_and_issue386_preflight_matches() -> Non
     assert routes.TOTAL_LIMITS[routes.ISSUE403_BRANCH] == 650
     assert routes.TEXT_LIMITS[routes.ISSUE403_BRANCH]["scripts/ci/check_container_scan_consensus.py"] == 80
     assert routes.TEXT_LIMITS[routes.ISSUE403_BRANCH]["tests/unit/test_container_scan_consensus.py"] == 80
+    for path in ("docs/QUALITY_GATES.md", "docs/STAGE_ISSUE_PLAN.md"):
+        issue403_contract = (REPO / path).read_text(encoding="utf-8")
+        assert "requires exactly fifteen paths" in issue403_contract
+        assert "permits at most 650 additions plus deletions" in issue403_contract
     module_source = MODULE_PATH.read_text(encoding="utf-8")
     assert "from scripts.quality.check_stage8_docs" not in module_source
     assert "import scripts.quality.check_stage8_docs" not in module_source
