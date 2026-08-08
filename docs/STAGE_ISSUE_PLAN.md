@@ -2526,3 +2526,17 @@ isolated work but must not merge until #401 passes exact-head review, approval,
 merge, and merged-main acceptance, after which it refreshes normally from main.
 No PDF support, product/provider/media, deployment, release, public/LinkedIn,
 trademark, Issue `#391`, or production work is authorized.
+
+## Issue #403 exact frontend dependency-security route
+
+Issue `#403` is the newly reproduced security prerequisite after Issue `#401`
+accepted pypdf 6.15.0. Branch `cut1-process-403-nanoid-3-3-17-security` starts
+from accepted main `246042d82483e0d84c74a5d5c9736a72c710e369`, requires exactly fifteen paths
+in its GovernancePreflightV1 artifact, and permits at most 650 additions plus deletions.
+
+It changes only transitive nanoid 3.3.16 to integrity-bound official 3.3.17
+under PostCSS's existing compatible range. PR #400 may continue isolated work
+but must refresh again and obtain fresh exact-head approval only after #403
+passes merge and merged-main acceptance. No direct dependency, product/UI,
+provider/media, Docker/workflow, deployment, release, public, or production
+work is authorized.

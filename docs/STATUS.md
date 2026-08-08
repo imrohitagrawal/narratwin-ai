@@ -77,14 +77,15 @@ Use it to answer:
   Veer/Character 2, with no active path or registration. The selected assets
   remain controlled-local. Issue `#383` is closed completed through PR `#399`,
   squash-merged as `9cf6e01f9d0c32f25c229b5adf38c6eb716ca9a0`; merged-main
-  workflow `31198544810` passed. Issue `#367` / PR `#400` is open for the exact
-  presenter registry, but accepted main installs vulnerable direct `pypdf`
-  6.14.2 and its mandatory audit reports CVE-2026-71852 and CVE-2026-71870.
-  Issue `#401` is the separate security prerequisite that raises only pypdf to
-  verified official 6.15.0 while keeping PDF uploads rejected and Markdown/text
-  ingestion unchanged. This PR satisfies Issue `#401` once merged and accepted
-  on main; PR `#400` then refreshes normally from accepted main before it may
-  merge. No clone,
+  workflow `31198544810` passed. Issue `#401` is closed completed through PR
+  `#402`, squash-merged as `246042d82483e0d84c74a5d5c9736a72c710e369`;
+  merged-main workflow `31240842628` passed. Accepted main installs verified
+  pypdf 6.15.0 while PDF uploads remain rejected and Markdown/text ingestion is
+  unchanged. During PR `#400` refresh, npm audit newly reproduced
+  GHSA-2v37-7h3g-55p8 / CVE-2026-67213 against transitive nanoid 3.3.16.
+  Issue `#403` is the separate exact lock-only 3.3.17 security prerequisite.
+  PR `#400` remains open for the presenter registry but must refresh again only
+  after #403 passes review, merge, and merged-main acceptance. No clone,
   personal likeness, runtime provider, audio, animation, video,
   public-distribution, deployment, release,
   trademark-registration, or production-readiness claim is established.
