@@ -499,6 +499,26 @@ A PR or release is blocked if:
 - the Semgrep compatibility exception expires or changes without security-owner
   review
 
+## Cut 1 narration speech-lock controls
+
+Issue #382 treats review text, persisted JSON, Stage 4 output, and all binding
+arguments as untrusted. Exact scope checks prevent tenant/actor/project and
+presenter crossings. Current source lineage and active registry state are
+recomputed at evaluation, approval, restore, and consumption; stored or caller
+checksums never establish success alone. Approval requires the authenticated
+actor and server-generated canonical UTC time.
+
+The state boundary rejects symlinks/non-files, oversized bytes/counts/text,
+invalid UTF-8, duplicate keys, unknown fields, coercible booleans, malformed
+IDs/checksums/timestamps, stale invalidations, and receipts detached from a
+consumed version. A lock makes single-use consumption and lifecycle checks
+atomic in this local process.
+
+Logs expose only bounded event, project ID, version, state, reason code, and
+digest. Narration, source/claim/evidence/document content, secrets, paths,
+provider payloads, and raw persisted bytes are prohibited. This adds no network,
+provider, personal data category, cloning/likeness, publication, or deployment.
+
 ## Issue #360 dependency-security convergence
 
 GHSA-rgw5-rvv9-x895 / CVE-2026-69152 affects the explicit frontend `brace-expansion` 5.0.8 override; 5.0.9 is

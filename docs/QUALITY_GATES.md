@@ -1226,3 +1226,20 @@ but the verifier historically allowed only `push` and `pull_request` events.
 exactly to `refs/heads/main` and the workflow SHA equals the expected accepted
 head. Manual feature-branch, tag, lookalike-main, stale-SHA, or foreign-context
 dispatch remains ineligible.
+
+## Issue #382 Cut 1 narration speech-lock gate
+
+Branch `stage8-382-cut1-narration-lock` starts from accepted main
+`b5c102dd3be7278aac8bb009211feed4d365d5d2`, requires exactly fourteen paths,
+and permits at most 3,200 additions plus deletions with the OWNER-approved
+per-path ceilings. Deletions grant no credit.
+
+The gate requires exact canonical presenter bytes/substitutions, citation
+review/spoken separation, ordered lifecycle and illegal-edge refusal, current
+passing evaluation and explicit approval, edit invalidation, latest-only
+single-use consumption, complete checksum/receipt binding, strict bounded
+restore/replay, scope/presenter/source tamper rejection, concurrency proof,
+redacted logs, and exact route/budget mutations. Focused CPython 3.13/3.14,
+Ruff, mypy, relevant regressions, and every applicable aggregate repository
+gate must pass. No API/UI/TTS/audio/provider/media/deployment/release or
+production evidence is claimed.

@@ -2560,3 +2560,19 @@ but must refresh again and obtain fresh exact-head approval only after #403
 passes merge and merged-main acceptance. No direct dependency, product/UI,
 provider/media, Docker/workflow, deployment, release, public, or production
 work is authorized.
+
+## Controlled-local Cut 1 serialized product work
+
+The current order is #367 accepted/closed → #382 narration speech lock → #368
+local English TTS/audio → #369 synchronized renderer/captions/video → #370
+accessible selection/review/playback/download UI → #371 all-presenter
+integration/evidence → #366 final acceptance.
+
+Issue #382 owns exactly fourteen paths from base
+`b5c102dd3be7278aac8bb009211feed4d365d5d2`. It adds only the narration-domain
+lifecycle, grounding/evaluation, explicit speech approval, edit invalidation,
+strict local restore/replay, latest-approved single-use text receipt, focused
+tests, route enforcement, ADR 0055, and affected contracts. Issue #368 remains
+blocked until #382 merges, passes accepted-main validation, and closes. This
+does not authorize API/UI, TTS/audio, providers, rendering/media, deployment,
+publication, release, public availability, or production readiness.
