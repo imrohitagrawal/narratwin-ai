@@ -19,6 +19,7 @@ SPEC, TEST_TITLE, MAX_ARCHIVE_MEMBERS = "heartbeat2-browser.spec.ts", "Heartbeat
 TEST_GUARD = 'test.skip(!process.env.H2_CANDIDATE_DIR, "runs only through the canonical Heartbeat 2 evidence runner");'
 PUBLIC_FIXTURE_SHA256 = "9cefe4184b2a67d4cdc56d66d005b90409e06ad449c4c426b7d6e012125bfcb6"
 FORBIDDEN_SHA256S = {"controlledSha256": "d6bba9d5a1916d515ea982b3517c6528bfff5f7ee9d7a7ab03267fd6fefd6eb2", "canarySha256": "9fbe84f0ec72ee1d8de0cae899d15b98c1ec3e979514b861ed584ac8d62fa84c"}
+FAILURE_LOGS = {"materialize": "materialize.log", "regressions": "regressions.log", "backend": "backend.log", "frontend-build": "frontend-build.log", "frontend": "frontend.log", "browser": "browser.log", "verification": "verification-error.json"}
 SOURCES = (".github/workflows/ci.yml", "scripts/ci/heartbeat1_evidence.py", "scripts/ci/heartbeat2_evidence.py", "scripts/ci/heartbeat2-browser.sh", "frontend/playwright.heartbeat2.config.ts", "frontend/tests/heartbeat2-browser.spec.ts")
 WRITES = (("project", "POST", 201), ("submit", "POST", 201), ("approve", "PATCH", 200), ("ingest", "POST", 201), ("walkthrough", "POST", 201), ("multilingual", "POST", 201), ("consent", "POST", 201), ("render", "POST", 201))
 READS = (("languages", "GET", 200, "curator_demo"), ("summary", "GET", 200, "curator_demo"), ("other-summary", "GET", 403, "other_demo"))
@@ -30,6 +31,32 @@ class RedactedBytes(bytes):
         return "<redacted bytes>"
 def sha256(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
+def prepare_failure_diagnostic(candidate: Path, output: Path, *, stage: str, run_id: str, head: str, controlled: bytes, canary: bytes) -> dict[str, Any]:
+    """Publish only a bounded, privacy-scanned tail for a withheld hosted run."""
+    try:
+        if stage not in FAILURE_LOGS or not RUN_ID.fullmatch(run_id) or not SHA.fullmatch(head):
+            raise EvidenceError("FAILURE_DIAGNOSTIC")
+        if not candidate.is_dir() or candidate.is_symlink() or output.exists() or output.is_symlink():
+            raise EvidenceError("FAILURE_DIAGNOSTIC")
+        stats = scan_evidence([candidate], controlled=controlled, canary=canary)
+        source = candidate / FAILURE_LOGS[stage]
+        if not source.is_file() or source.is_symlink() or source.stat().st_size > 65_536:
+            raise EvidenceError("FAILURE_DIAGNOSTIC")
+        text = source.read_text(encoding="utf-8")
+        if "\x00" in text:
+            raise EvidenceError("FAILURE_DIAGNOSTIC")
+        tail = text[-16_384:].strip()
+        result = {"schema": "heartbeat2-withheld-diagnostic-v1", "outcome": "WITHHELD", "failureStage": stage, "runId": run_id, "headSha": head, "sourceLog": source.name, "diagnosticTail": tail, "candidateFileCount": stats["fileCount"], "candidateMemberCount": stats["memberCount"]}
+        output.parent.mkdir(parents=True, exist_ok=False)
+        output.write_text(json.dumps(result, sort_keys=True), encoding="utf-8")
+        if output.stat().st_size > 20_000:
+            raise EvidenceError("FAILURE_DIAGNOSTIC")
+        scan_evidence([output], controlled=controlled, canary=canary)
+        return result
+    except (EvidenceError, OSError, UnicodeError, PrivacyError, KeyError) as exc:
+        if output.exists() and output.is_file() and not output.is_symlink():
+            output.unlink()
+        raise EvidenceError("FAILURE_DIAGNOSTIC") from exc
 def _strict_json(data: str | bytes, error: str) -> Any:
     def unique(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
         if len({key for key, _ in pairs}) != len(pairs):

@@ -7,6 +7,7 @@ cd "$ROOT"
 RUN_ID="h2-${GITHUB_RUN_ID:-local}-$(date -u +%Y%m%dT%H%M%SZ)"
 CANDIDATE="$ROOT/reports/heartbeat2/candidate"
 PUBLISHED="$ROOT/reports/heartbeat2/published"
+WITHHELD="$ROOT/reports/heartbeat2/withheld"
 RUNTIME="$(mktemp -d "${TMPDIR:-/tmp}/narratwin-h2.XXXXXX")"
 FIXTURE_SOURCE="$ROOT/tests/api/test_heartbeat1_a2_exclusion_api.py"
 HEAD_SHA="${NARRATWIN_H2_EXPECTED_HEAD:-$(git rev-parse HEAD)}"
@@ -42,15 +43,14 @@ ready() {
   return 1
 }
 withhold() {
-  local retained="${TMPDIR:-/tmp}/narratwin-heartbeat2-failure-${RUN_ID}"
   stop_owned "$BACKEND_PID"; BACKEND_PID=""; stop_owned "$FRONTEND_PID"; FRONTEND_PID=""
-  if uv run python -c 'from pathlib import Path; from scripts.ci.heartbeat1_evidence import scan_evidence; import sys; scan_evidence([Path(sys.argv[1])], controlled=Path(sys.argv[2]).read_bytes(), canary=Path(sys.argv[3]).read_bytes())' "$CANDIDATE" "$RUNTIME/internal.md" "$RUNTIME/canary.bin" >/dev/null 2>&1; then
-    mv "$CANDIDATE" "$retained"
-    printf 'stage=%s\nrunId=%s\nhead=%s\n' "$FAILURE_STAGE" "$RUN_ID" "$HEAD_SHA" >"$retained/failure-summary.txt"
-    echo "Heartbeat 2 evidence withheld; zero-match diagnostics retained at $retained."
+  if uv run python -c 'from pathlib import Path; from scripts.ci.heartbeat2_evidence import prepare_failure_diagnostic; import sys; prepare_failure_diagnostic(Path(sys.argv[1]), Path(sys.argv[2]), stage=sys.argv[3], run_id=sys.argv[4], head=sys.argv[5], controlled=Path(sys.argv[6]).read_bytes(), canary=Path(sys.argv[7]).read_bytes())' "$CANDIDATE" "$WITHHELD/diagnostic.json" "$FAILURE_STAGE" "$RUN_ID" "$HEAD_SHA" "$RUNTIME/internal.md" "$RUNTIME/canary.bin" >/dev/null 2>&1; then
+    case "$CANDIDATE" in "$ROOT"/reports/heartbeat2/candidate) rm -rf -- "$CANDIDATE";; esac
+    echo "Heartbeat 2 evidence withheld; minimized zero-match diagnostic published."
   else
     case "$CANDIDATE" in "$ROOT"/reports/heartbeat2/candidate) rm -rf -- "$CANDIDATE";; esac
-    echo "Heartbeat 2 evidence withheld after privacy-scan failure; candidate deleted."
+    case "$WITHHELD" in "$ROOT"/reports/heartbeat2/withheld) rm -rf -- "$WITHHELD";; esac
+    echo "Heartbeat 2 evidence withheld after diagnostic privacy validation failed; candidate deleted."
   fi
   exit 1
 }
@@ -58,6 +58,7 @@ withhold() {
 [ "$(git rev-parse HEAD)" = "$HEAD_SHA" ] || { echo "Heartbeat 2 exact head mismatch."; exit 1; }
 [ -z "$(git status --porcelain=v1 --untracked-files=all)" ] || { echo "Heartbeat 2 requires a clean exact-head worktree."; exit 1; }
 [ ! -e "$CANDIDATE" ] || { echo "Heartbeat 2 candidate path is not empty."; exit 1; }
+[ ! -e "$WITHHELD" ] || { echo "Heartbeat 2 withheld path is not empty."; exit 1; }
 mkdir -p "$PUBLISHED"
 [ -z "$(find "$PUBLISHED" -mindepth 1 -print -quit)" ] || { echo "Heartbeat 2 published path is not empty."; exit 1; }
 mkdir -p "$CANDIDATE"

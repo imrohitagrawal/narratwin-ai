@@ -81,6 +81,14 @@ jobs:
         env:
           NARRATWIN_H2_EXPECTED_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
         run: bash scripts/ci/heartbeat2-browser.sh
+      - name: Upload Heartbeat 2 minimized withheld diagnostic
+        if: failure() && hashFiles('reports/heartbeat2/withheld/diagnostic.json') != ''
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: heartbeat2-withheld-diagnostic-${{ github.run_id }}-${{ github.run_attempt }}
+          path: reports/heartbeat2/withheld/diagnostic.json
+          if-no-files-found: error
+          retention-days: 7
       - name: Verify Heartbeat 2 CI execution binding
         if: success() && hashFiles('scripts/ci/heartbeat2-browser.sh') != ''
         env:
