@@ -342,7 +342,7 @@ def test_f382_18_19_consumption_is_latest_single_use_bound_text_receipt(narratio
     ))
 
 
-@pytest.mark.parametrize("value", ["", " ", "x" * 16_385])
+@pytest.mark.parametrize("value", ["", " ", "x" * 16_385], ids=["empty", "blank", "oversized"])
 def test_f382_21_empty_and_oversized_text_fails(narration: ModuleType, tmp_path: Path, value: str) -> None:
     service, principal, binding, project_id = _service(narration, tmp_path)
     _assert_code(narration, "TEXT_INVALID", lambda: service.create_draft(
