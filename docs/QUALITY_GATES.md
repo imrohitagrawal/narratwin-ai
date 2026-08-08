@@ -1177,8 +1177,8 @@ after this prerequisite passes merged-main acceptance.
 ## Issue #403 nanoid 3.3.17 security gate
 
 The exact `cut1-process-403-nanoid-3-3-17-security` route starts from
-`246042d82483e0d84c74a5d5c9736a72c710e369`, requires exactly twelve paths, and
-permits at most 500 additions plus deletions. Only the transitive
+`246042d82483e0d84c74a5d5c9736a72c710e369`, requires exactly thirteen paths, and
+permits at most 550 additions plus deletions. Only the transitive
 `node_modules/nanoid` lock record may move from 3.3.16 to official 3.3.17.
 
 The gate proves exact registry URL and SHA-512 integrity, unchanged

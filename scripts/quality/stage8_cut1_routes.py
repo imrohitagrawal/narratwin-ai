@@ -24,6 +24,7 @@ ROUTES = {
         "scripts/quality/stage8_cut1_routes.py",
         "tests/unit/test_stage8_cut1_routes.py",
         "tests/unit/test_frontend_dependency_security_contract.py",
+        "tests/unit/test_dependency_security_contract.py",
         "tests/unit/test_stage8_quality_gate.py",
         "docs/ADR/0053-nanoid-3-3-17-security-refresh.md",
         "docs/QUALITY_GATES.md",
@@ -132,7 +133,7 @@ ROUTE_ISSUES = {ISSUE403_BRANCH: 403, ISSUE401_BRANCH: 401, ISSUE396_BRANCH: 396
                 ISSUE386_BRANCH: 386, ISSUE385_BRANCH: 385,
                 ISSUE384_BRANCH: 384, ISSUE383_BRANCH: 383, ISSUE397_BRANCH: 397,
                 ISSUE393_BRANCH: 393}
-TOTAL_LIMITS = {ISSUE403_BRANCH: 500, ISSUE401_BRANCH: 600, ISSUE396_BRANCH: 500,
+TOTAL_LIMITS = {ISSUE403_BRANCH: 550, ISSUE401_BRANCH: 600, ISSUE396_BRANCH: 500,
                 ISSUE386_BRANCH: 700, ISSUE385_BRANCH: 350,
                 ISSUE384_BRANCH: 500, ISSUE383_BRANCH: 700, ISSUE397_BRANCH: 500,
                 ISSUE393_BRANCH: 700}

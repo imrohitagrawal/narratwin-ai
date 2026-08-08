@@ -2532,7 +2532,7 @@ trademark, Issue `#391`, or production work is authorized.
 Issue `#403` is the newly reproduced security prerequisite after Issue `#401`
 accepted pypdf 6.15.0. Branch `cut1-process-403-nanoid-3-3-17-security` starts
 from accepted main `246042d82483e0d84c74a5d5c9736a72c710e369` and owns exactly
-the twelve paths in its GovernancePreflightV1 artifact.
+the thirteen paths in its GovernancePreflightV1 artifact.
 
 It changes only transitive nanoid 3.3.16 to integrity-bound official 3.3.17
 under PostCSS's existing compatible range. PR #400 may continue isolated work
