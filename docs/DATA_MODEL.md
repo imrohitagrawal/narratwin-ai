@@ -929,6 +929,27 @@ Generated outputs:
 - preserve original output for audit
 - allow regeneration as a new run rather than mutating prior run history
 
+## Cut 1 narration records
+
+`NarrationVersion` is an append-only project sequence. Its content checksum
+binds tenant/actor/project; narration version; presenter ID/version and complete
+registry trace binding; exact review and deterministic spoken text; Stage 4
+run/request/trace and canonical evaluation lineage; context, citation, and
+claim-support identities; StackClimb metadata; and the downstream 90–120-second
+measured-audio requirement.
+
+`NarrationEvaluation` binds that checksum to the current passing source
+evaluation. `SpeechApproval` adds approver identity and canonical UTC time.
+`TTSConsumptionReceipt` binds the latest approved version, presenter, source,
+evaluation, approval, request, trace, and spoken text and is single-use.
+
+An edit appends a draft and binds the invalidated prior version/checksum plus
+evaluation, approval, audio, caption, render, video/export, and replay kinds.
+Optional local JSON is bounded to 4 MiB, 64 projects, 64 versions per project,
+128 evidence items, and 16,384 UTF-8 bytes per review/spoken text. Restore
+recomputes live Stage 4 and presenter authority; invalid state yields no active
+narration authority.
+
 ## Data Model Validation Before Implementation
 
 Stage 2 locks these Stage 4 defaults:

@@ -257,6 +257,19 @@ payloads, filesystem paths, environment values, or secrets.
 - provider error rate
 - language success rate
 
+## Cut 1 narration observability
+
+The Issue #382 domain emits bounded local events for draft creation, evaluation
+required, evaluation result, speech approval, text-authority consumption, and
+restore refusal. Allowed fields are event/reason code, bounded project ID,
+narration version/state, counts, and checksums. Raw narration, retrieved/source
+text, claims/support reasons, filenames, persisted bytes, paths, secrets, and
+provider-shaped payloads are excluded.
+
+No provider is called and no cost or real audio-duration observation is
+created. The 90–120-second value is requirement metadata only; Issue #368 must
+measure generated audio before it can record duration evidence.
+
 ## Release blocker list
 
 Do not merge a slice if:

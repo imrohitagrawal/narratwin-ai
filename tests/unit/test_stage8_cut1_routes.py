@@ -27,6 +27,22 @@ stage8: Any = load(REPO / "scripts/quality/check_stage8_docs.py", "stage8_with_c
 
 
 EXPECTED = {
+    "stage8-382-cut1-narration-lock": {
+        "docs/governance/preflights/issue-382.json",
+        "backend/app/narration.py",
+        "tests/unit/test_cut1_narration.py",
+        "scripts/quality/stage8_cut1_routes.py",
+        "tests/unit/test_stage8_cut1_routes.py",
+        "docs/ADR/0055-cut1-narration-speech-lock.md",
+        "docs/ARCHITECTURE.md",
+        "docs/DATA_MODEL.md",
+        "docs/SECURITY_AND_PRIVACY.md",
+        "docs/OBSERVABILITY_AND_COST.md",
+        "docs/QUALITY_GATES.md",
+        "docs/STAGE_ISSUE_PLAN.md",
+        "docs/STATUS.md",
+        "docs/TRACEABILITY.md",
+    },
     "process-405-heartbeat2-main-reliability": {
         "docs/governance/preflights/issue-405.json",
         ".github/workflows/ci.yml",
@@ -234,6 +250,17 @@ def test_routes_are_exact_pre_registered_and_issue386_preflight_matches() -> Non
     assert routes.TOTAL_LIMITS[routes.ISSUE403_BRANCH] == 650
     assert routes.TEXT_LIMITS[routes.ISSUE403_BRANCH]["scripts/ci/check_container_scan_consensus.py"] == 80
     assert routes.TEXT_LIMITS[routes.ISSUE403_BRANCH]["tests/unit/test_container_scan_consensus.py"] == 80
+    issue382 = json.loads((REPO / "docs/governance/preflights/issue-382.json").read_text(encoding="utf-8"))
+    assert issue382["branch"] == routes.ISSUE382_BRANCH
+    assert set(issue382["scope"]["required"]) == EXPECTED[routes.ISSUE382_BRANCH]
+    assert set(issue382["scope"]["allowed_prefixes"]) == EXPECTED[routes.ISSUE382_BRANCH]
+    assert routes.TOTAL_LIMITS[routes.ISSUE382_BRANCH] == 3200
+    assert routes.TEXT_LIMITS[routes.ISSUE382_BRANCH] == {
+        path: 220 if path.endswith("issue-382.json") or path.startswith("docs/ADR/0055-")
+        else 750 if path == "backend/app/narration.py"
+        else 900 if path == "tests/unit/test_cut1_narration.py"
+        else 120 for path in EXPECTED[routes.ISSUE382_BRANCH]
+    }
     for path in ("docs/QUALITY_GATES.md", "docs/STAGE_ISSUE_PLAN.md"):
         issue403_contract = (REPO / path).read_text(encoding="utf-8")
         assert "requires exactly fifteen paths" in issue403_contract

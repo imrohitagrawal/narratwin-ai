@@ -461,6 +461,15 @@ durability, deployment, and release decisions remain outside this trace.
 | Focused dependency-contract mutations, `npm ci`, strict npm/repository audits, quality, CI, and hosted security | Reject vulnerable, missing, wrong-identity/integrity, unrelated-drift, suppressed, or stale evidence | No audit waiver, threshold downgrade, product/runtime behavior, provider, presenter, media, or workflow change |
 | GovernancePreflightV1, exact Stage 8 routes, and container-consensus mutations | Preserve #396's eleven-path proof and bind the combined #393 branch to fifteen paths, 700 aggregate charge, 180/160/80/40 per-path ceilings, exact measured inventories, stale-value rejection, and architecture separation | PR `#395` atomically carries both prerequisites; no deployment, release, public/LinkedIn, trademark, Issue #391, or production claim |
 
+## Issue #382 Cut 1 narration traceability
+
+| Evidence | Requirement | Preserved boundary |
+|---|---|---|
+| OWNER comments `5197711390` and `5227401987`; exact Meera/Myra/Raj SHA-256 oracles | Freeze StackClimb attribution and exact authorized presenter text/substitution | No silent wording, `®`, spoken URL/citations, active Q&A, release, or public claim |
+| `NarrationVersion` checksum plus Stage 4 lineage and ADR-0054 presenter binding | Bind exact review/spoken bytes, scope, project, presenter/registry, source/run/context/citation/support/evaluation, trace, and measured-audio requirement | No caller assertion, cross-boundary record, provider, audio, or media success |
+| Narration evaluation, explicit UTC approval, invalidation chain, and single-use receipt | Allow only current latest passing approved text to cross the future Issue #368 boundary | Edit, stale approval/evaluation, replay, revoked presenter, and detached receipt fail closed |
+| Strict bounded restore, redacted events, F382-01..29 tests, and exact route/budgets | Reject malformed/duplicate/unknown/oversized/tampered state and false-pass governance | No API/UI, Stage 4/6 mutation, dependency/provider/network, cloning/likeness, deployment/publication/release/production work |
+
 <!-- ISSUE158-SECURITY-HISTORY-V2:BEGIN -->
 
 ## Issue #158 Security History Chronology
