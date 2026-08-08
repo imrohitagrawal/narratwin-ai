@@ -19,6 +19,7 @@ SPEC, TEST_TITLE, MAX_ARCHIVE_MEMBERS = "heartbeat2-browser.spec.ts", "Heartbeat
 TEST_GUARD = 'test.skip(!process.env.H2_CANDIDATE_DIR, "runs only through the canonical Heartbeat 2 evidence runner");'
 PUBLIC_FIXTURE_SHA256 = "9cefe4184b2a67d4cdc56d66d005b90409e06ad449c4c426b7d6e012125bfcb6"
 FORBIDDEN_SHA256S = {"controlledSha256": "d6bba9d5a1916d515ea982b3517c6528bfff5f7ee9d7a7ab03267fd6fefd6eb2", "canarySha256": "9fbe84f0ec72ee1d8de0cae899d15b98c1ec3e979514b861ed584ac8d62fa84c"}
+FAILURE_LOGS = {"materialize": "materialize.log", "regressions": "regressions.log", "backend": "backend.log", "frontend-build": "frontend-build.log", "frontend": "frontend.log", "browser": "browser.log", "verification": "verification-error.json"}
 SOURCES = (".github/workflows/ci.yml", "scripts/ci/heartbeat1_evidence.py", "scripts/ci/heartbeat2_evidence.py", "scripts/ci/heartbeat2-browser.sh", "frontend/playwright.heartbeat2.config.ts", "frontend/tests/heartbeat2-browser.spec.ts")
 WRITES = (("project", "POST", 201), ("submit", "POST", 201), ("approve", "PATCH", 200), ("ingest", "POST", 201), ("walkthrough", "POST", 201), ("multilingual", "POST", 201), ("consent", "POST", 201), ("render", "POST", 201))
 READS = (("languages", "GET", 200, "curator_demo"), ("summary", "GET", 200, "curator_demo"), ("other-summary", "GET", 403, "other_demo"))
@@ -30,6 +31,32 @@ class RedactedBytes(bytes):
         return "<redacted bytes>"
 def sha256(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
+def prepare_failure_diagnostic(candidate: Path, output: Path, *, stage: str, run_id: str, head: str, controlled: bytes, canary: bytes) -> dict[str, Any]:
+    """Publish only a bounded, privacy-scanned tail for a withheld hosted run."""
+    try:
+        if stage not in FAILURE_LOGS or not RUN_ID.fullmatch(run_id) or not SHA.fullmatch(head):
+            raise EvidenceError("FAILURE_DIAGNOSTIC")
+        if not candidate.is_dir() or candidate.is_symlink() or output.exists() or output.is_symlink():
+            raise EvidenceError("FAILURE_DIAGNOSTIC")
+        stats = scan_evidence([candidate], controlled=controlled, canary=canary)
+        source = candidate / FAILURE_LOGS[stage]
+        if not source.is_file() or source.is_symlink() or source.stat().st_size > 65_536:
+            raise EvidenceError("FAILURE_DIAGNOSTIC")
+        text = source.read_text(encoding="utf-8")
+        if "\x00" in text:
+            raise EvidenceError("FAILURE_DIAGNOSTIC")
+        tail = text[-16_384:].strip()
+        result = {"schema": "heartbeat2-withheld-diagnostic-v1", "outcome": "WITHHELD", "failureStage": stage, "runId": run_id, "headSha": head, "sourceLog": source.name, "diagnosticTail": tail, "candidateFileCount": stats["fileCount"], "candidateMemberCount": stats["memberCount"]}
+        output.parent.mkdir(parents=True, exist_ok=False)
+        output.write_text(json.dumps(result, sort_keys=True), encoding="utf-8")
+        if output.stat().st_size > 20_000:
+            raise EvidenceError("FAILURE_DIAGNOSTIC")
+        scan_evidence([output], controlled=controlled, canary=canary)
+        return result
+    except (EvidenceError, OSError, UnicodeError, PrivacyError, KeyError) as exc:
+        if output.exists() and output.is_file() and not output.is_symlink():
+            output.unlink()
+        raise EvidenceError("FAILURE_DIAGNOSTIC") from exc
 def _strict_json(data: str | bytes, error: str) -> Any:
     def unique(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
         if len({key for key, _ in pairs}) != len(pairs):
@@ -396,9 +423,18 @@ def _sources(manifest: dict[str, Any], head: str, *, committed: bool, source_roo
         except PrivacyError as exc:
             raise EvidenceError("BROWSER_SOURCE") from exc
     return spec_text[:test_call.start()].count("\n") + 1, len(spec_text.splitlines())
+def _trusted_ci_context(context: dict[str, str], head: str) -> bool:
+    keys = {"repository", "eventName", "workflow", "workflowRef", "workflowSha", "job", "runId", "runAttempt", "headSha"}
+    workflow_prefix = "imrohitagrawal/narratwin-ai/.github/workflows/ci.yml@"
+    run_id = context.get("runId", "")
+    run_attempt = context.get("runAttempt", "")
+    basic = set(context) == keys and context.get("repository") == "imrohitagrawal/narratwin-ai" and context.get("eventName") in {"pull_request", "push", "workflow_dispatch"} and context.get("workflow") == "ci" and context.get("job") == "frontend" and context.get("headSha") == head and SHA.fullmatch(context.get("workflowSha", "")) is not None and re.fullmatch(r"[1-9][0-9]{0,19}", run_id) is not None and re.fullmatch(r"[1-9][0-9]{0,19}", run_attempt) is not None and context.get("workflowRef", "").startswith(workflow_prefix)
+    if not basic:
+        return False
+    return context["eventName"] != "workflow_dispatch" or (context["workflowRef"] == workflow_prefix + "refs/heads/main" and context["workflowSha"] == head)
 def _ci_execution(root: Path, manifest: dict[str, Any], head: str, run_id: str, context: dict[str, str]) -> None:
     keys = {"repository", "eventName", "workflow", "workflowRef", "workflowSha", "job", "runId", "runAttempt", "headSha"}
-    if set(context) != keys or context.get("repository") != "imrohitagrawal/narratwin-ai" or context.get("eventName") not in {"pull_request", "push"} or context.get("workflow") != "ci" or context.get("job") != "frontend" or context.get("headSha") != head or not SHA.match(context.get("workflowSha", "")) or not context.get("runId", "").isdigit() or not context.get("runAttempt", "").isdigit() or int(context["runAttempt"]) < 1 or ".github/workflows/ci.yml@" not in context.get("workflowRef", ""):
+    if not _trusted_ci_context(context, head):
         raise EvidenceError("CI_PROVENANCE")
     record = _json(root, manifest.get("execution"))
     record_keys = {"schema", "provider", *keys, "evidenceRunId", "producer", "playwrightExitCode", "startedAt", "completedAt", "workflowSourceSha256", "runnerSourceSha256", "reportSha256", "traceSha256"}

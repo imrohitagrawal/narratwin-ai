@@ -1,0 +1,58 @@
+{
+  "schema_version": "GovernancePreflightV1",
+  "issue_number": 405,
+  "branch": "process-405-heartbeat2-main-reliability",
+  "objective": "From accepted main 03b82c6471b66f9ca8a2781e93a90397a9cf8921, diagnose and restore fail-closed Heartbeat 2 trusted browser evidence after accepted-main CI run 31250088259 failed twice and independent run 31250370346 reproduced the same browser-stage withholding. Required main quality run 31250064879, accepted-main security run 31250089349, and eval run 31250090365 pass; the same evidence gate passed before merge. First make privacy-scanned, bounded, exact-run/head failure diagnostics available to authorized reviewers, then correct only the proved reliability defect. Preserve evidence privacy, source graph, execution provenance, exact-head binding, mutation and replay rejection, and every product/runtime boundary. Use TDD with RED/GREEN hostile cases, full quality/CI/security/eval/browser/performance/container gates, independent exact-head review, eligible approval, and merged-main acceptance. Reject retries as acceptance, failure swallowing, threshold reduction, audit waiver, raw diagnostic publication, provider activation, and product or presenter work. Charge additions plus deletions across exactly nine paths: 800 aggregate, 220 for this preflight and 160 for every existing or new source/test/document path. Stop for a tenth path, cap/base drift, privacy contradiction, unavailable minimized diagnostics, weakened failure behavior, product/runtime change, unresolved gate failure, or missing fresh approval.",
+  "status_decision": "update-minimally",
+  "scope": {
+    "required": [
+      "docs/governance/preflights/issue-405.json",
+      ".github/workflows/ci.yml",
+      "scripts/ci/heartbeat2-browser.sh",
+      "scripts/ci/heartbeat2_evidence.py",
+      "tests/unit/test_heartbeat2_evidence.py",
+      "scripts/quality/stage8_cut1_routes.py",
+      "tests/unit/test_stage8_cut1_routes.py",
+      "docs/QUALITY_GATES.md",
+      "docs/STATUS.md"
+    ],
+    "allowed_prefixes": [
+      "docs/governance/preflights/issue-405.json",
+      ".github/workflows/ci.yml",
+      "scripts/ci/heartbeat2-browser.sh",
+      "scripts/ci/heartbeat2_evidence.py",
+      "tests/unit/test_heartbeat2_evidence.py",
+      "scripts/quality/stage8_cut1_routes.py",
+      "tests/unit/test_stage8_cut1_routes.py",
+      "docs/QUALITY_GATES.md",
+      "docs/STATUS.md"
+    ],
+    "forbidden": [
+      ".stage/",
+      "AGENTS.md",
+      "Makefile",
+      "README.md",
+      "backend/",
+      "demo/",
+      "docs/ADR/",
+      "docs/API_CONTRACT.md",
+      "docs/ARCHITECTURE.md",
+      "docs/SECURITY_AND_PRIVACY.md",
+      "docs/TRACEABILITY.md",
+      "evals/",
+      "frontend/app/",
+      "frontend/package.json",
+      "frontend/package-lock.json",
+      "frontend/public/",
+      "frontend/src/",
+      "infra/",
+      "perf/",
+      "portfolio/",
+      "scripts/guardrails_check.py",
+      "scripts/quality/check_stage8_docs.py",
+      "tests/acceptance/",
+      "tests/api/",
+      "tools/"
+    ]
+  }
+}

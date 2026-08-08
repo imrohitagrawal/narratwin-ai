@@ -83,9 +83,19 @@ Use it to answer:
   pypdf 6.15.0 while PDF uploads remain rejected and Markdown/text ingestion is
   unchanged. During PR `#400` refresh, npm audit newly reproduced
   GHSA-2v37-7h3g-55p8 / CVE-2026-67213 against transitive nanoid 3.3.16.
-  Issue `#403` is the separate exact lock-only 3.3.17 security prerequisite.
-  PR `#400` remains open for the presenter registry but must refresh again only
-  after #403 passes review, merge, and merged-main acceptance. No clone,
+  PR `#404` completed the exact lock-only nanoid 3.3.17 change at merge commit
+  `03b82c6471b66f9ca8a2781e93a90397a9cf8921`. Required main quality run
+  `31250064879`, accepted-main security run `31250089349`, and eval run
+  `31250090365` passed. Accepted-main CI run `31250088259` failed twice only at
+  fail-closed Heartbeat 2 browser evidence, and bounded independent run
+  `31250370346` reproduced it. Issue `#405` is the separate nine-path recovery
+  route. Its minimized diagnostic proves the browser completed and the
+  verifier rejected the otherwise valid manual-main run as `CI_PROVENANCE`.
+  The recovery permits `workflow_dispatch` only for exact `refs/heads/main`
+  with workflow SHA equal to the expected accepted head; all feature, tag,
+  lookalike, stale, and foreign dispatch contexts still fail closed. Issue
+  `#403` remains open pending merged-main acceptance. PR `#400` remains
+  serialized until that acceptance completes. No clone,
   personal likeness, runtime provider, audio, animation, video,
   public-distribution, deployment, release,
   trademark-registration, or production-readiness claim is established.
