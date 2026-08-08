@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any, Callable
 
 ISSUE386_BRANCH = "cut1-process-386-modular-route-enforcement"
-ISSUE405_BRANCH = "stage8-405-heartbeat2-main-reliability"
+ISSUE405_BRANCH = "cut1-process-405-heartbeat2-main-reliability"
 ISSUE403_BRANCH = "cut1-process-403-nanoid-3-3-17-security"
 ISSUE401_BRANCH = "cut1-process-401-pypdf-6-15-0-security"
 ISSUE396_BRANCH = "cut1-process-396-js-yaml-4-3-1-security"

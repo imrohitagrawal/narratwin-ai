@@ -1190,7 +1190,7 @@ Docker/workflow, deployment, release, public, or production claim is authorized.
 
 ## Issue #405 Heartbeat 2 accepted-main reliability gate
 
-The exact `stage8-405-heartbeat2-main-reliability` route starts from accepted
+The exact `cut1-process-405-heartbeat2-main-reliability` route starts from accepted
 main `03b82c6471b66f9ca8a2781e93a90397a9cf8921`, requires exactly nine paths,
 and permits at most 800 additions plus deletions. A hosted Heartbeat 2 failure
 must remain a failing check. It may publish only a bounded diagnostic tail

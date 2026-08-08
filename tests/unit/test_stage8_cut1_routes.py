@@ -27,7 +27,7 @@ stage8: Any = load(REPO / "scripts/quality/check_stage8_docs.py", "stage8_with_c
 
 
 EXPECTED = {
-    "stage8-405-heartbeat2-main-reliability": {
+    "cut1-process-405-heartbeat2-main-reliability": {
         "docs/governance/preflights/issue-405.json",
         ".github/workflows/ci.yml",
         "scripts/ci/heartbeat2-browser.sh",
