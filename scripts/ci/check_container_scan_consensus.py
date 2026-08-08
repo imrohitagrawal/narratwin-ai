@@ -51,11 +51,11 @@ FRONTEND_ENGINE_CONFIG_DEFAULTS = {
 FRONTEND_INVENTORIES = {
     "amd64": frozenset(
         (
-            "1803:65a8c963c2a19b486dc491454523a4466a5795fa8b9773ccceac9dae1ddb283c",
+            "1805:9a18413ff9fefd9c665595ab2564c72bb706dcf81b490fffd59b23653ad73858",
         )
     ),
     "arm64": frozenset(
-        ("1803:1b00f69f5326e4466b69a49078231110e1ca5027ec25f8a215cf8e7aebb39587",)
+        ("1803:ad570be227d414b9e0100f21fa1f03aa42e85acad9128f6c01524d780b7ea064",)
     ),
 }
 FRONTEND_SBOM_COMPONENTS = {

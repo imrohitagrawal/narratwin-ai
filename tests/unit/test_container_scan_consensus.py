@@ -182,7 +182,7 @@ def test_frontend_reproduction_requires_stable_build_id_and_fresh_secrets() -> N
     primary = {
         "buildId": "source-bound",
         "architecture": "amd64",
-        "inventory": "1803:65a8c963c2a19b486dc491454523a4466a5795fa8b9773ccceac9dae1ddb283c",
+        "inventory": "1805:9a18413ff9fefd9c665595ab2564c72bb706dcf81b490fffd59b23653ad73858",
         "previewModeId": "1" * 32,
         "previewModeSigningKey": "2" * 64,
         "previewModeEncryptionKey": "3" * 64,
@@ -205,7 +205,7 @@ def test_frontend_reproduction_requires_stable_build_id_and_fresh_secrets() -> N
         malformed_primary = {**primary, "inventory": bad_inventory}
         malformed_reproduction = {**reproduction, "inventory": bad_inventory}
         assert validator(malformed_primary, malformed_reproduction) == ["FRONTEND_RUNTIME_INVENTORY_INVALID"]
-    wrong_arch_primary = {**primary, "inventory": "1803:1b00f69f5326e4466b69a49078231110e1ca5027ec25f8a215cf8e7aebb39587"}
+    wrong_arch_primary = {**primary, "inventory": "1803:ad570be227d414b9e0100f21fa1f03aa42e85acad9128f6c01524d780b7ea064"}
     wrong_arch_reproduction = {**reproduction, "inventory": wrong_arch_primary["inventory"]}
     assert validator(wrong_arch_primary, wrong_arch_reproduction) == ["FRONTEND_RUNTIME_INVENTORY_INVALID"]
     reproduction["previewModeSigningKey"] = primary["previewModeEncryptionKey"]
