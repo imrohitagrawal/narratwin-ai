@@ -1171,3 +1171,20 @@ claim is authorized.
 Issue #396 is absorbed into PR #395 because its mandatory STATUS update needs
 Issue #393 isolation while #395 needs its audit repair; both close only after the
 combined exact head passes review, approval, merge, and merged-main acceptance.
+
+## Issue #401 pypdf 6.15.0 security gate
+
+The exact `cut1-process-401-pypdf-6-15-0-security` route starts from
+`9cf6e01f9d0c32f25c229b5adf38c6eb716ca9a0`, requires exactly thirteen paths, and
+permits at most 600 additions plus deletions. The preflight cap is 190, each
+focused test cap is 100, the route sidecar cap is 80, the ADR cap is 60, and
+every other path cap is 40.
+
+Only the direct pypdf requirement, root lock metadata, and sole pypdf package
+record may change from 6.14.2 to official 6.15.0. Exact PyPI artifact URLs,
+sizes, SHA-256 values, unrelated-dependency isolation, existing PDF rejection,
+strict `pip-audit`, repository security gates, full quality/CI, exact-head
+review, eligible non-author approval, and merged-main acceptance are mandatory.
+No waiver, PDF support, product/provider/media, deployment, release, public, or
+production claim is authorized. PR #400 must refresh from accepted main only
+after this prerequisite passes merged-main acceptance.

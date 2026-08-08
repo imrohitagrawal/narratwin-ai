@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any, Callable
 
 ISSUE386_BRANCH = "cut1-process-386-modular-route-enforcement"
+ISSUE401_BRANCH = "cut1-process-401-pypdf-6-15-0-security"
 ISSUE396_BRANCH = "cut1-process-396-js-yaml-4-3-1-security"
 ISSUE385_BRANCH = "stage8-385-issue280-language-oracle"
 ISSUE384_BRANCH = "stage8-384-presenter-asset-route"
@@ -17,6 +18,21 @@ ISSUE393_BRANCH = "stage8-393-historical-digest-test-isolation"
 ISSUE386_BASE = "48fc32a2689c9bbc03742d774f3eadb8a500dafc"
 
 ROUTES = {
+    ISSUE401_BRANCH: {
+        "docs/governance/preflights/issue-401.json",
+        "pyproject.toml",
+        "uv.lock",
+        "scripts/quality/stage8_cut1_routes.py",
+        "tests/unit/test_stage8_cut1_routes.py",
+        "tests/unit/test_dependency_security_contract.py",
+        "tests/unit/test_stage8_quality_gate.py",
+        "docs/ADR/0052-pypdf-6-15-0-security-refresh.md",
+        "docs/QUALITY_GATES.md",
+        "docs/STAGE_ISSUE_PLAN.md",
+        "docs/STATUS.md",
+        "docs/TRACEABILITY.md",
+        "docs/THIRD_PARTY_NOTICES.md",
+    },
     ISSUE396_BRANCH: {
         "docs/ADR/0051-js-yaml-4-3-1-security-refresh.md",
         "docs/governance/preflights/issue-396.json",
@@ -114,10 +130,10 @@ ROUTES = {
         "docs/THIRD_PARTY_NOTICES.md",
     },
 }
-ROUTE_ISSUES = {ISSUE396_BRANCH: 396, ISSUE386_BRANCH: 386, ISSUE385_BRANCH: 385,
+ROUTE_ISSUES = {ISSUE401_BRANCH: 401, ISSUE396_BRANCH: 396, ISSUE386_BRANCH: 386, ISSUE385_BRANCH: 385,
                 ISSUE384_BRANCH: 384, ISSUE383_BRANCH: 383, ISSUE397_BRANCH: 397,
                 ISSUE393_BRANCH: 393, ISSUE367_BRANCH: 367}
-TOTAL_LIMITS = {ISSUE396_BRANCH: 500, ISSUE386_BRANCH: 700, ISSUE385_BRANCH: 350,
+TOTAL_LIMITS = {ISSUE401_BRANCH: 600, ISSUE396_BRANCH: 500, ISSUE386_BRANCH: 700, ISSUE385_BRANCH: 350,
                 ISSUE384_BRANCH: 500, ISSUE383_BRANCH: 700, ISSUE397_BRANCH: 500,
                 ISSUE393_BRANCH: 700, ISSUE367_BRANCH: 2000}
 ISSUE383_BINARY_FILES = {
@@ -125,6 +141,13 @@ ISSUE383_BINARY_FILES = {
     "frontend/public/demo/raj-synthetic-presenter.webp",
 }
 TEXT_LIMITS = {
+    ISSUE401_BRANCH: {
+        path: 190 if path.endswith("issue-401.json")
+        else 100 if path.startswith("tests/unit/")
+        else 80 if path == "scripts/quality/stage8_cut1_routes.py"
+        else 60 if path.startswith("docs/ADR/") else 40
+        for path in ROUTES[ISSUE401_BRANCH]
+    },
     ISSUE396_BRANCH: {
         path: 180 if path.endswith("issue-396.json") else 80 if path.startswith("tests/unit/") else 40
         for path in ROUTES[ISSUE396_BRANCH]

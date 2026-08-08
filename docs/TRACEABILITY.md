@@ -8,7 +8,7 @@ personas, core user journeys, acceptance criteria, or product behavior.
 
 ## Version
 
-- Last updated: 2026-08-06
+- Last updated: 2026-08-08
 - Current PRD source: `docs/PRD.md` v1.0
 - Canonical source: `docs/REQUIREMENTS_TRACEABILITY_MATRIX.md`
 
@@ -26,6 +26,7 @@ personas, core user journeys, acceptance criteria, or product behavior.
 
 | Artifact | Requirement coverage | Stage / issue | Status |
 |---|---|---|---|
+| `pyproject.toml`, `uv.lock`, Issue `#401` dependency/route tests, ADR `0052`, and official provenance evidence | Replaces installed pypdf 6.14.2 affected by CVE-2026-71852 and CVE-2026-71870 with verified official 6.15.0, while proving exact hashes, unrelated-lock isolation, audit cleanliness, and unchanged rejection of unsupported PDF uploads. | Cut 1 security prerequisite / Issue `#401` | Intended complete after this PR merges and passes merged-main acceptance; PR `#400` then refreshes from accepted main; no PDF or product capability added |
 | `docs/governance/preflights/issue-366.json` and Stage 8 scope route | Establishes the non-implementation transition after accepted #372: presenter registry #367, narration and speech-approval child `#382`, TTS #368, render #369, UI #370, and integration #371. It binds StackClimb/Rohit authority, exact presenter substitution, latest evaluated-version approval/edit invalidation, measured 90–120-second speech, visible-not-spoken citations, future-only Q&A, and genuine audible/synchronized/captioned binary media acceptance while rejecting placeholder success and every release/provider/cloning/public/production overclaim. | Cut 1 governing transition / Issue `#366`, PR `#373` | Intended complete after this governance PR merges and passes merged-main acceptance; no product capability |
 | Issue `#384` preflight plus the modular Stage 8 sidecar route | Reconciles #384 to its owner-reset exact eight paths with a 500 aggregate cap, five governance/preflight paths at 160, checker digest authority at 10, and sidecar/test route authority at 20 each; preserves #383's exact seven-path text/binary contract and rejects missing/extra/lookalike scope, deletion credit, index/worktree cancellation, malformed or binary numstat, untracked required text, non-regular portrait files, and files over 500000 bytes. | Cut 1 presenter-asset governance prerequisite / Issue `#384`, PR `#392` | Completed at `9ee3f4a4d3b8cf1e78b5a878904748b60d557a76`; merged-main workflow `31114775860` passed and Issue `#384` closed completed |
 | Issues `#393`/`#396` preflights, combined exact route, historical Stage 8 test isolation, integrity-bound js-yaml lock record, and architecture-bound container inventories | Isolates the historical Issue #366 fixture, changes only transitive js-yaml 4.3.0 to 4.3.1, and renews only independently reproduced arm64/amd64 frontend inventory bindings so ledger, audit, and container gates pass without weakening the fixed digest, checker behavior, or #383 route. | Cut 1 governance/security convergence / PR `#395` | Completed at `3c9ede33df021779a3b58129693d7574d01066df`; merged-main workflow `31145231335` passed and Issues `#393`/`#396` closed completed before Issue `#383` resumed |

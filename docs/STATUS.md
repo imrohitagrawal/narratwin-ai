@@ -77,20 +77,27 @@ Use it to answer:
   governed Myra/Raj WebP data paths from the generic ADR rule while preserving
   nearby, lookalike, mixed, and actual architecture enforcement. Rejected
   concepts remain audit-only as future-scoped Aashna/Character 1 and
-  Veer/Character 2, with no active path or registration. Issue `#367` is the
-  active exact fourteen-path child for a strict provider-neutral registry of
-  Meera, Myra, and Raj. It binds the accepted assets/personas/provenance,
-  synthetic disclosure, controlled-local permission, distinct non-cloned voice
-  direction metadata, canonical production-field integrity, renderer-neutral
-  settings, monotonic lifecycle, and trace integrity. It produces no listenable
-  audio and proves no voice implementation or inference.
-  Its fourth future-personal shape is disabled and test-only with no likeness or
-  asset. This PR satisfies Issue `#367` only after review, merge, and merged-main
-  acceptance; Issue `#382` is next and playable media remains blocked. No clone,
+  Veer/Character 2, with no active path or registration. The selected assets
+  remain controlled-local. Issue `#383` is closed completed through PR `#399`,
+  squash-merged as `9cf6e01f9d0c32f25c229b5adf38c6eb716ca9a0`; merged-main
+  workflow `31198544810` passed. Issue `#401` is closed completed through PR
+  `#402`, squash-merged as `246042d82483e0d84c74a5d5c9736a72c710e369`;
+  merged-main workflow `31240842628` passed. Accepted main now installs verified
+  official pypdf 6.15.0 while PDF uploads remain rejected and Markdown/text
+  ingestion remains unchanged. Issue `#367` / PR `#400` is the active exact
+  fourteen-path child for a strict provider-neutral registry of Meera, Myra,
+  and Raj. It binds the accepted assets/personas/provenance, synthetic
+  disclosure, controlled-local permission, distinct non-cloned voice direction
+  metadata, canonical production-field integrity, renderer-neutral settings,
+  monotonic lifecycle, and trace integrity. It produces no listenable audio and
+  proves no voice implementation or inference. Its fourth future-personal shape
+  is disabled and test-only with no likeness or asset. This PR satisfies Issue
+  `#367` only after review, merge, and merged-main acceptance; Issue `#382` is
+  next and playable media remains blocked. No clone,
   personal likeness, runtime provider, audio, animation, video,
   public-distribution, deployment, release,
   trademark-registration, or production-readiness claim is established.
-- Last reviewed date: 2026-08-07
+- Last reviewed date: 2026-08-08
 - Current R0C Cut 1 recovery authority: Issue `#328` OWNER comment
   `5152829686` supersedes older recovery sequencing where it conflicts. Issue
   `#332` / PR `#333` completed the narrow containment correction at merged main
