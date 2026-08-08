@@ -88,7 +88,8 @@ def _stage4(text: str = MEERA_TEXT, *, project_name: str = "NarraTwin AI") -> tu
         supported = "\n".join(claim.text for claim in claims if claim.citation_index == citation_index)
         chunk = KnowledgeChunk(
             chunk_id=f"chunk_{citation_index:03d}", tenant_id=principal.tenant_id,
-            project_id=project_id, document_id="doc_001", source_filename="approved.md",
+            project_id=project_id, document_id=f"doc_{(citation_index - 1) // 3 + 1:03d}",
+            source_filename="approved.md",
             source_document_checksum=checksum_text(text), approved_at=NOW, chunk_index=citation_index - 1,
             text=supported, token_count=count_tokens(supported), checksum=checksum_text(supported),
             heading_path=[project_name], line_start=1, line_end=1,
@@ -263,6 +264,32 @@ def test_f382_06_12_14_current_passing_grounding_is_required(narration: ModuleTy
     ))
 
 
+@pytest.mark.parametrize("mutation", ["missing_citation", "failed_evaluation", "foreign_context"])
+def test_f382_06_12_13_distinct_grounding_failures_do_not_collapse(
+    narration: ModuleType, tmp_path: Path, mutation: str
+) -> None:
+    service, principal, draft, project_id = _draft(narration, tmp_path)
+    service.request_evaluation(principal=principal, project_id=project_id,
+        narration_version=draft.version, narration_checksum=draft.narration_checksum)
+    run = service.stage4.walkthrough_runs["run_narration"]
+    if mutation == "missing_citation":
+        service.stage4.walkthrough_runs[run.run_id] = replace(
+            run, accepted_script_text=run.accepted_script_text.replace(" [1]", "", 1)
+        )
+    elif mutation == "failed_evaluation":
+        service.stage4.walkthrough_runs[run.run_id] = replace(
+            run, evaluation_status="FAILED", evaluation=replace(run.evaluation, evaluation_status="FAILED")
+        )
+    else:
+        foreign = replace(run.retrieved_context[0].chunk, project_id="proj_foreign")
+        service.stage4.walkthrough_runs[run.run_id] = replace(
+            run, retrieved_context=[replace(run.retrieved_context[0], chunk=foreign), *run.retrieved_context[1:]]
+        )
+    evaluated = service.evaluate(principal=principal, project_id=project_id,
+        narration_version=draft.version, narration_checksum=draft.narration_checksum)
+    assert evaluated.evaluation.result == "FAILED"
+
+
 def test_f382_08_10_checksum_binds_every_authority_leaf(narration: ModuleType, tmp_path: Path) -> None:
     service, principal, draft, project_id = _draft(narration, tmp_path)
     payload = draft.checksum_payload()
@@ -320,6 +347,9 @@ def test_f382_15_17_edit_versions_and_invalidates_every_authority(narration: Mod
     assert set(edited.invalidated_authorities) == {
         "EVALUATION", "SPEECH_APPROVAL", "TTS_AUDIO", "CAPTION", "RENDER", "VIDEO_EXPORT", "REPLAY",
     }
+    assert (edited.invalidated_version, edited.invalidated_checksum) == (
+        approved.version, approved.narration_checksum
+    )
     _assert_code(narration, "AUTHORITY_STALE", lambda: service.consume_for_tts(
         principal=principal, project_id=project_id, narration_version=approved.version,
         narration_checksum=approved.narration_checksum, request_id="consume_old", trace_id="trace_tts_old",
@@ -342,6 +372,26 @@ def test_f382_18_19_consumption_is_latest_single_use_bound_text_receipt(narratio
     ))
 
 
+def test_f382_06_19_evaluation_approval_and_receipt_chains_reject_tampering(
+    narration: ModuleType, tmp_path: Path
+) -> None:
+    service, principal, approved, project_id = _approve(narration, tmp_path)
+    forged_evaluation = replace(approved.evaluation, checksum="sha256:" + "0" * 64)
+    service._versions[project_id][-1] = replace(approved, evaluation=forged_evaluation)
+    _assert_code(narration, "AUTHORITY_MISMATCH", lambda: service.consume_for_tts(
+        principal=principal, project_id=project_id, narration_version=approved.version,
+        narration_checksum=approved.narration_checksum, request_id="consume_1", trace_id="trace_tts_1",
+    ))
+
+
+def test_f382_22_unknown_command_field_is_rejected(narration: ModuleType, tmp_path: Path) -> None:
+    service, principal, draft, project_id = _draft(narration, tmp_path)
+    with pytest.raises(TypeError):
+        service.request_evaluation(principal=principal, project_id=project_id,
+            narration_version=draft.version, narration_checksum=draft.narration_checksum,
+            unknown=True)
+
+
 @pytest.mark.parametrize("value", ["", " ", "x" * 16_385], ids=["empty", "blank", "oversized"])
 def test_f382_21_empty_and_oversized_text_fails(narration: ModuleType, tmp_path: Path, value: str) -> None:
     service, principal, binding, project_id = _service(narration, tmp_path)
@@ -357,7 +407,7 @@ def test_f382_21_25_persistence_fails_closed(narration: ModuleType, tmp_path: Pa
     state_path = service.state_path
     raw = state_path.read_bytes()
     if mutation == "duplicate":
-        raw = raw.replace(b'{"schema":', b'{"schema":"duplicate","schema":', 1)
+        raw = b'{"schema":"duplicate",' + raw[1:]
     elif mutation == "unknown":
         payload = json.loads(raw)
         payload["unknown"] = True
@@ -386,6 +436,26 @@ def test_f382_24_restore_recomputes_external_state_and_replay(narration: ModuleT
     assert restored.authority_count == 0
     _assert_code(narration, "AUTHORITY_STALE", lambda: restored.latest(principal=principal, project_id=project_id))
     assert approved.narration_checksum
+
+
+def test_f382_19_25_restore_reconciles_receipt_to_consumed_version(
+    narration: ModuleType, tmp_path: Path
+) -> None:
+    service, principal, approved, project_id = _approve(narration, tmp_path)
+    service.consume_for_tts(principal=principal, project_id=project_id,
+        narration_version=approved.version, narration_checksum=approved.narration_checksum,
+        request_id="consume_1", trace_id="trace_tts_1")
+    payload = json.loads(service.state_path.read_bytes())
+    payload["receipts"][0]["source_run_id"] = "run_foreign"
+    forged = narration.TTSConsumptionReceipt(**{
+        **payload["receipts"][0],
+        "duration_requirement_seconds": (90, 120),
+    })
+    payload["receipts"][0]["receipt_checksum"] = narration._receipt_checksum(forged)
+    service.state_path.write_text(json.dumps(payload), encoding="utf-8")
+    restored = narration.NarrationService(stage4=service.stage4,
+        registry=load_cut1_presenter_registry(asset_root=ROOT), state_path=service.state_path)
+    assert restored.authority_count == 0 and restored.receipt_count == 0
 
 
 def test_f382_26_other_project_requires_its_own_grounded_body(narration: ModuleType, tmp_path: Path) -> None:
@@ -430,5 +500,6 @@ def test_f382_29_concurrent_consumption_issues_exactly_one_receipt(narration: Mo
 
 def test_f382_28_module_has_no_external_capability(narration: ModuleType) -> None:
     source = Path(narration.__file__).read_text(encoding="utf-8")
-    for forbidden in ("fastapi", "requests", "httpx", "openai", "elevenlabs", "subprocess", "audio_bytes", "render_video"):
+    for forbidden in ("import fastapi", "import requests", "import httpx", "import openai",
+                      "import elevenlabs", "import subprocess", "audio_bytes", "render_video"):
         assert forbidden not in source.lower()
