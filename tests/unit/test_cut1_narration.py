@@ -482,6 +482,31 @@ def test_f382_15_24_restore_rejects_self_consistent_authority_forgery(
     assert restored.authority_count == 0
 
 
+def test_f382_06_restored_failed_evaluation_cannot_approve(narration: ModuleType, tmp_path: Path) -> None:
+    service, principal, draft, project_id = _draft(narration, tmp_path)
+    service.request_evaluation(principal=principal, project_id=project_id,
+        narration_version=draft.version, narration_checksum=draft.narration_checksum)
+    service.evaluate(principal=principal, project_id=project_id,
+        narration_version=draft.version, narration_checksum=draft.narration_checksum)
+    payload = json.loads(service.state_path.read_bytes())
+    evaluation = payload["versions"][0]["evaluation"]
+    evaluation["result"], evaluation["reason_codes"] = "FAILED", ["FORGED_FAILURE"]
+    evaluation["checksum"] = narration._sha({
+        "evaluationId": evaluation["evaluation_id"], "narrationChecksum": evaluation["narration_checksum"],
+        "policyVersion": evaluation["policy_version"], "reasonCodes": evaluation["reason_codes"],
+        "result": evaluation["result"], "schemaVersion": evaluation["schema_version"],
+        "sourceEvaluationChecksum": evaluation["source_evaluation_checksum"],
+        "sourceEvaluationId": evaluation["source_evaluation_id"],
+    })
+    service.state_path.write_text(json.dumps(payload), encoding="utf-8")
+    restored = narration.NarrationService(stage4=service.stage4,
+        registry=load_cut1_presenter_registry(asset_root=ROOT), state_path=service.state_path)
+    current = restored.latest(principal=principal, project_id=project_id)
+    _assert_code(narration, "EVALUATION_FAILED", lambda: restored.approve_for_speech(
+        principal=principal, project_id=project_id, narration_version=current.version,
+        narration_checksum=current.narration_checksum, approver_id=principal.actor_id))
+
+
 def test_f382_21_malformed_presenter_binding_fails_closed(narration: ModuleType, tmp_path: Path) -> None:
     service, principal, binding, project_id = _service(narration, tmp_path)
     malformed = replace(binding, presenter_id=[])
@@ -524,7 +549,7 @@ def test_f382_19_25_restore_reconciles_receipt_to_consumed_version(
 
 def test_f382_26_other_project_requires_its_own_grounded_body(narration: ModuleType, tmp_path: Path) -> None:
     service, principal, binding, project_id = _service(narration, tmp_path)
-    service.stage4.projects[project_id] = replace(service.stage4.projects[project_id], name="Foreign Project")
+    service.stage4.projects[project_id] = replace(service.stage4.projects[project_id], name="AI")
     draft = service.create_draft(principal=principal, project_id=project_id, source_run_id="run_narration",
         presenter_binding=binding, review_text=service.stage4.walkthrough_runs["run_narration"].accepted_script_text)
     service.request_evaluation(principal=principal, project_id=project_id,

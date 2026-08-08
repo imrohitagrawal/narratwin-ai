@@ -347,9 +347,9 @@ class NarrationService:
                                  NarrationState.EVALUATED)
             if approver_id != row.actor_id or _identifier(approver_id) != approver_id:
                 _fail("AUTHORITY_MISMATCH", "Approver identity does not match the narration actor.")
-            if not _evaluation_current(row) or self._binding_failures(row):
+            if row.evaluation is None or row.evaluation.result != "PASSED" or not _evaluation_current(row) or self._binding_failures(row):
                 _fail("EVALUATION_FAILED", "Current narration evaluation is not passing.")
-            evaluation = cast(NarrationEvaluation, row.evaluation)
+            evaluation = row.evaluation
             approved_at = _current_timestamp(self.clock)
             payload = {"approvedAt": approved_at, "approverId": approver_id,
                        "evaluationChecksum": evaluation.checksum,
@@ -484,8 +484,8 @@ class NarrationService:
                 and BRAND_NAME in row.spoken_text and BRAND_DOMAIN not in row.spoken_text
                 and project.name in row.spoken_text
             )
-            if project.name == "NarraTwin AI":
-                valid = valid and validate_canonical_text(row.presenter_id, row.spoken_text) == row.spoken_text
+            canonical = canonical_presenter_text(row.presenter_id)
+            valid = valid and ((project.name == "NarraTwin AI") == (row.spoken_text == canonical))
             return () if valid else ("GROUNDING_OR_BINDING_STALE",)
         except (NarrationError, PresenterRegistryError, TypeError, ValueError):
             return ("GROUNDING_OR_BINDING_STALE",)
