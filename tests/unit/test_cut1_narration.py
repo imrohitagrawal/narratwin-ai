@@ -459,6 +459,7 @@ def test_f382_15_24_restore_rejects_self_consistent_authority_forgery(
             invalidatedVersion=0, invalidatedChecksum="sha256:" + "0" * 64)
         row["invalidatedAuthorities"] = list(narration.INVALIDATED_AUTHORITIES)
     elif mutation == "evaluation":
+        row["state"], row["approval"] = "EVALUATED", None
         row["evaluation"]["source_evaluation_id"] = "eval_forged"
         row["evaluation"]["checksum"] = narration._sha({
             "evaluationId": row["evaluation"]["evaluation_id"], "narrationChecksum": row["evaluation"]["narration_checksum"],
