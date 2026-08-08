@@ -426,7 +426,9 @@ def _sources(manifest: dict[str, Any], head: str, *, committed: bool, source_roo
 def _trusted_ci_context(context: dict[str, str], head: str) -> bool:
     keys = {"repository", "eventName", "workflow", "workflowRef", "workflowSha", "job", "runId", "runAttempt", "headSha"}
     workflow_prefix = "imrohitagrawal/narratwin-ai/.github/workflows/ci.yml@"
-    basic = set(context) == keys and context.get("repository") == "imrohitagrawal/narratwin-ai" and context.get("eventName") in {"pull_request", "push", "workflow_dispatch"} and context.get("workflow") == "ci" and context.get("job") == "frontend" and context.get("headSha") == head and SHA.fullmatch(context.get("workflowSha", "")) is not None and context.get("runId", "").isdigit() and context.get("runAttempt", "").isdigit() and int(context["runAttempt"]) >= 1 and context.get("workflowRef", "").startswith(workflow_prefix)
+    run_id = context.get("runId", "")
+    run_attempt = context.get("runAttempt", "")
+    basic = set(context) == keys and context.get("repository") == "imrohitagrawal/narratwin-ai" and context.get("eventName") in {"pull_request", "push", "workflow_dispatch"} and context.get("workflow") == "ci" and context.get("job") == "frontend" and context.get("headSha") == head and SHA.fullmatch(context.get("workflowSha", "")) is not None and re.fullmatch(r"[1-9][0-9]{0,19}", run_id) is not None and re.fullmatch(r"[1-9][0-9]{0,19}", run_attempt) is not None and context.get("workflowRef", "").startswith(workflow_prefix)
     if not basic:
         return False
     return context["eventName"] != "workflow_dispatch" or (context["workflowRef"] == workflow_prefix + "refs/heads/main" and context["workflowSha"] == head)

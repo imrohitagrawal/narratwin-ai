@@ -132,6 +132,11 @@ def test_ci_context_accepts_exact_main_dispatch_and_existing_events() -> None:
         ("repository", "foreign/repository"),
         ("eventName", "schedule"),
         ("runAttempt", "0"),
+        ("runAttempt", "01"),
+        ("runAttempt", "9" * 10_000),
+        ("runAttempt", "١"),
+        ("runId", "9" * 10_000),
+        ("runId", "٣١٢٥٠٨٩٦٥٥٥"),
     ],
 )
 def test_ci_context_rejects_foreign_or_inexact_dispatch(field: str, value: str) -> None:
