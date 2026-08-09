@@ -510,9 +510,10 @@ actor and server-generated canonical UTC time.
 
 The state boundary rejects symlinks/non-files, oversized bytes/counts/text,
 invalid UTF-8, duplicate keys, unknown fields, coercible booleans, malformed
-IDs/checksums/timestamps, stale invalidations, and receipts detached from a
-consumed version. A lock makes single-use consumption and lifecycle checks
-atomic in this local process.
+IDs/checksums/timestamps, stale invalidations, receipts detached from a consumed
+version, and consumed versions missing their sole validated receipt. Restore
+requires exact equality of those key sets. A lock makes single-use consumption
+and lifecycle checks atomic in this local process.
 
 Logs expose only bounded event, project ID, version, state, reason code, and
 digest. Narration, source/claim/evidence/document content, secrets, paths,

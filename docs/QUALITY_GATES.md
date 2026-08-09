@@ -1234,10 +1234,12 @@ Branch `stage8-382-cut1-narration-lock` starts from accepted main
 and permits at most 3,200 additions plus deletions with the OWNER-approved
 per-path ceilings. Deletions grant no credit.
 
-The gate requires exact canonical presenter bytes/substitutions, citation
+The gate requires the OWNER-amended NarraTwin-host opening, exact canonical
+presenter bytes/two-token substitutions, citation
 review/spoken separation, ordered lifecycle and illegal-edge refusal, current
 passing evaluation and explicit approval, edit invalidation, latest-only
-single-use consumption, complete checksum/receipt binding, strict bounded
+single-use consumption, complete checksum/receipt binding, exact consumed-key
+to validated-receipt-key equality on restore, strict bounded
 restore/replay, scope/presenter/source tamper rejection, concurrency proof,
 redacted logs, and exact route/budget mutations. Focused CPython 3.13/3.14,
 Ruff, mypy, relevant regressions, and every applicable aggregate repository

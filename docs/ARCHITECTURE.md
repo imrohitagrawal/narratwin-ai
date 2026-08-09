@@ -753,6 +753,10 @@ checksum binds scope, presenter/registry, exact review and spoken projections,
 source/evaluation lineage, trace, and the measured-audio requirement. Separate
 evaluation and approval checksums extend that chain.
 
+OWNER comment `5229508771` supersedes only the canonical opening: each presenter
+is spoken as the NarraTwin host. Restore requires a one-to-one set match between
+consumed narration versions and fully validated persisted receipts.
+
 Transitions and atomic local persistence are lock-serialized. Edits create a
 new draft and invalidate every prior downstream authority. The only downstream
 output is a single-use, latest-approved text receipt. No API, TTS/audio,

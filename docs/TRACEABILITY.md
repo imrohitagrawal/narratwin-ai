@@ -465,9 +465,9 @@ durability, deployment, and release decisions remain outside this trace.
 
 | Evidence | Requirement | Preserved boundary |
 |---|---|---|
-| OWNER comments `5197711390` and `5227401987`; exact Meera/Myra/Raj SHA-256 oracles | Freeze StackClimb attribution and exact authorized presenter text/substitution | No silent wording, `®`, spoken URL/citations, active Q&A, release, or public claim |
+| OWNER comments `5197711390`, `5227401987`, and opening amendment `5229508771`; exact amended Meera/Myra/Raj SHA-256 oracles | Freeze StackClimb attribution, NarraTwin-host opening, and exact two-token presenter substitution | No silent wording, spoken synthetic-presenter/staff claim, `®`, spoken URL/citations, active Q&A, release, or public claim |
 | `NarrationVersion` checksum plus Stage 4 lineage and ADR-0054 presenter binding | Bind exact review/spoken bytes, scope, project, presenter/registry, source/run/context/citation/support/evaluation, trace, and measured-audio requirement | No caller assertion, cross-boundary record, provider, audio, or media success |
-| Narration evaluation, explicit UTC approval, invalidation chain, and single-use receipt | Allow only current latest passing approved text to cross the future Issue #368 boundary | Edit, stale approval/evaluation, replay, revoked presenter, and detached receipt fail closed |
+| Narration evaluation, explicit UTC approval, invalidation chain, and exact consumed-version/validated-receipt key equality | Allow only current latest passing approved text to cross the future Issue #368 boundary | Edit, stale approval/evaluation, replay, revoked presenter, missing receipt, and detached receipt fail closed |
 | Strict bounded restore, redacted events, F382-01..29 tests, and exact route/budgets | Reject malformed/duplicate/unknown/oversized/tampered state and false-pass governance | No API/UI, Stage 4/6 mutation, dependency/provider/network, cloning/likeness, deployment/publication/release/production work |
 
 <!-- ISSUE158-SECURITY-HISTORY-V2:BEGIN -->

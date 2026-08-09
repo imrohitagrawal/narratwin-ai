@@ -2,6 +2,7 @@
 
 - Status: Proposed in Issue #382; effective only after merged-main acceptance
 - Date: 2026-08-08
+- Amended: 2026-08-09 by OWNER comment `5229508771`
 - Decision owners: Rohit Agrawal / StackClimb
 - Depends on: ADR 0054 and accepted Stage 4 evaluation lineage
 
@@ -25,8 +26,10 @@ claim supports, and the downstream 90–120-second measured-audio requirement.
 Narration evaluation and explicit speech approval extend that checksum chain.
 Consumption is a single-use text-authority receipt; it is not audio.
 
-Meera uses the exact OWNER bytes from comment `5197711390`. Myra and Raj replace
-exactly the two `Meera` tokens. Visible validated citation markers remain in
+Meera uses comment `5197711390` with only the opening superseded by OWNER comment
+`5229508771`: she welcomes everyone as the NarraTwin host, without a spoken
+synthetic-presenter introduction. Myra and Raj replace exactly the two `Meera`
+tokens. Visible validated citation markers remain in
 review data and only those markers are removed from spoken text. The canonical
 NarraTwin project requires the exact presenter text. Another project must retain
 the StackClimb envelope, name its current project, and match its own passing
@@ -38,8 +41,9 @@ video/export, and replay. One lock serializes edit/evaluate/approve/consume.
 
 Optional JSON persistence uses the existing atomic writer but performs its own
 4 MiB bounded binary read, strict UTF-8 and duplicate-key parsing, exact fields,
-count/type/checksum/time validation, and live Stage 4/registry/receipt
-reconciliation. Any malformed or stale snapshot restores no authority.
+count/type/checksum/time validation, live Stage 4/registry reconciliation, and
+exact equality between consumed-version and validated-receipt keys. Any missing
+receipt, detached receipt, malformed, or stale snapshot restores no authority.
 
 ## Consequences and limits
 

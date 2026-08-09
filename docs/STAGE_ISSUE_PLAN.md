@@ -2576,3 +2576,7 @@ tests, route enforcement, ADR 0055, and affected contracts. Issue #368 remains
 blocked until #382 merges, passes accepted-main validation, and closes. This
 does not authorize API/UI, TTS/audio, providers, rendering/media, deployment,
 publication, release, public availability, or production readiness.
+
+OWNER amendment `5229508771` replaces only the historical opening: Meera, Myra,
+and Raj are spoken as NarraTwin hosts. Restore also rejects any mismatch between
+consumed narration-version keys and fully validated receipt keys.

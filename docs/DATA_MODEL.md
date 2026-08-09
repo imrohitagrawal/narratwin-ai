@@ -942,6 +942,9 @@ measured-audio requirement.
 evaluation. `SpeechApproval` adds approver identity and canonical UTC time.
 `TTSConsumptionReceipt` binds the latest approved version, presenter, source,
 evaluation, approval, request, trace, and spoken text and is single-use.
+The set of persisted receipt `(project_id, version)` keys must exactly equal the
+set of versions in `CONSUMED_BY_TTS`; a missing or detached receipt rejects the
+entire restored narration state.
 
 An edit appends a draft and binds the invalidated prior version/checksum plus
 evaluation, approval, audio, caption, render, video/export, and replay kinds.

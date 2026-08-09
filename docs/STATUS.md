@@ -1289,6 +1289,9 @@ Required update rules:
 - OWNER comment `5227401987` authorizes exactly fourteen paths and a 3,200-line
   aggregate ceiling. Adversarial review added F382-29 concurrent-transition
   protection by forward commit before code; committed RED precedes GREEN.
+- OWNER amendment `5229508771` supersedes only the spoken opening so Meera/Myra/
+  Raj are NarraTwin hosts. Forward RED/GREEN also closes the Required
+  F382-19/F382-25 missing-consumption-receipt restore finding.
 - The branch establishes only review/evaluation/approval/invalidation and a
   text-only latest-approved consumption receipt. It is not accepted until PR
   review, eligible exact-head approval, merge, and merged-main validation pass.

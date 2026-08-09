@@ -265,6 +265,8 @@ restore refusal. Allowed fields are event/reason code, bounded project ID,
 narration version/state, counts, and checksums. Raw narration, retrieved/source
 text, claims/support reasons, filenames, persisted bytes, paths, secrets, and
 provider-shaped payloads are excluded.
+Missing-receipt and detached-receipt snapshots use the same bounded
+`restore_refused` event and expose no narration or raw persistence content.
 
 No provider is called and no cost or real audio-duration observation is
 created. The 90–120-second value is requirement metadata only; Issue #368 must
