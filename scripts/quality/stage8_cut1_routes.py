@@ -14,12 +14,29 @@ ISSUE396_BRANCH = "cut1-process-396-js-yaml-4-3-1-security"
 ISSUE385_BRANCH = "stage8-385-issue280-language-oracle"
 ISSUE384_BRANCH = "stage8-384-presenter-asset-route"
 ISSUE383_BRANCH = "stage8-383-presenter-assets"
+ISSUE382_BRANCH = "stage8-382-cut1-narration-lock"
 ISSUE367_BRANCH = "stage8-367-presenter-registry"
 ISSUE397_BRANCH = "stage8-397-presenter-asset-adr-classifier"
 ISSUE393_BRANCH = "stage8-393-historical-digest-test-isolation"
 ISSUE386_BASE = "48fc32a2689c9bbc03742d774f3eadb8a500dafc"
 
 ROUTES = {
+    ISSUE382_BRANCH: {
+        "docs/governance/preflights/issue-382.json",
+        "backend/app/narration.py",
+        "tests/unit/test_cut1_narration.py",
+        "scripts/quality/stage8_cut1_routes.py",
+        "tests/unit/test_stage8_cut1_routes.py",
+        "docs/ADR/0055-cut1-narration-speech-lock.md",
+        "docs/ARCHITECTURE.md",
+        "docs/DATA_MODEL.md",
+        "docs/SECURITY_AND_PRIVACY.md",
+        "docs/OBSERVABILITY_AND_COST.md",
+        "docs/QUALITY_GATES.md",
+        "docs/STAGE_ISSUE_PLAN.md",
+        "docs/STATUS.md",
+        "docs/TRACEABILITY.md",
+    },
     ISSUE405_BRANCH: {
         "docs/governance/preflights/issue-405.json",
         ".github/workflows/ci.yml",
@@ -163,16 +180,22 @@ ROUTES = {
 ROUTE_ISSUES = {ISSUE405_BRANCH: 405, ISSUE403_BRANCH: 403, ISSUE401_BRANCH: 401, ISSUE396_BRANCH: 396,
                 ISSUE386_BRANCH: 386, ISSUE385_BRANCH: 385,
                 ISSUE384_BRANCH: 384, ISSUE383_BRANCH: 383, ISSUE397_BRANCH: 397,
-                ISSUE393_BRANCH: 393, ISSUE367_BRANCH: 367}
+                ISSUE393_BRANCH: 393, ISSUE382_BRANCH: 382, ISSUE367_BRANCH: 367}
 TOTAL_LIMITS = {ISSUE405_BRANCH: 800, ISSUE403_BRANCH: 650, ISSUE401_BRANCH: 600, ISSUE396_BRANCH: 500,
                 ISSUE386_BRANCH: 700, ISSUE385_BRANCH: 350,
                 ISSUE384_BRANCH: 500, ISSUE383_BRANCH: 700, ISSUE397_BRANCH: 500,
-                ISSUE393_BRANCH: 700, ISSUE367_BRANCH: 2000}
+                ISSUE393_BRANCH: 700, ISSUE382_BRANCH: 3200, ISSUE367_BRANCH: 2000}
 ISSUE383_BINARY_FILES = {
     "frontend/public/demo/myra-synthetic-presenter.webp",
     "frontend/public/demo/raj-synthetic-presenter.webp",
 }
 TEXT_LIMITS = {
+    ISSUE382_BRANCH: {
+        path: 220 if path.endswith("issue-382.json") or path.startswith("docs/ADR/0055-")
+        else 750 if path == "backend/app/narration.py"
+        else 900 if path == "tests/unit/test_cut1_narration.py"
+        else 120 for path in ROUTES[ISSUE382_BRANCH]
+    },
     ISSUE405_BRANCH: {
         path: 220 if path.endswith("issue-405.json") else 160
         for path in ROUTES[ISSUE405_BRANCH]

@@ -743,6 +743,26 @@ Stage 2 does not introduce deployment code. The target posture is:
 - explicit provider egress configuration
 - future cloud deployment only after Stage 3 foundation and Stage 4 slice readiness
 
+## Cut 1 narration authority
+
+Issue #382 inserts a narration-domain boundary after the accepted Stage 4 run
+and ADR-0054 presenter registry, before Issue #368 speech. The module resolves
+current Stage 4 project/run evidence and current presenter registry state; it
+does not accept a caller-supplied success assertion. Its immutable content
+checksum binds scope, presenter/registry, exact review and spoken projections,
+source/evaluation lineage, trace, and the measured-audio requirement. Separate
+evaluation and approval checksums extend that chain.
+
+OWNER comment `5229508771` supersedes only the canonical opening: each presenter
+is spoken as the NarraTwin host. Restore requires a one-to-one set match between
+consumed narration versions and fully validated persisted receipts.
+
+Transitions and atomic local persistence are lock-serialized. Edits create a
+new draft and invalidate every prior downstream authority. The only downstream
+output is a single-use, latest-approved text receipt. No API, TTS/audio,
+provider, renderer, UI, or media orchestration is part of this boundary. See
+ADR 0055.
+
 ## Architecture Guardrails
 
 - No product implementation before the approved Stage 4 vertical slice.

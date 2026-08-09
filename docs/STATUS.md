@@ -1280,3 +1280,21 @@ Required update rules:
   the superseded QEMU value, prior values, wrong architecture, and unreviewed values fail closed.
 - No product, presenter, provider, media, deployment, release, public/LinkedIn,
   trademark, Issue `#391`, or production status changes.
+
+## Issue 382 Cut 1 narration speech-lock status
+
+- Issue `#367` and ADR 0054 are accepted; Issue `#382` is the active next
+  serialized Cut 1 child on branch `stage8-382-cut1-narration-lock` from
+  `b5c102dd3be7278aac8bb009211feed4d365d5d2`.
+- OWNER comment `5227401987` authorizes exactly fourteen paths and a 3,200-line
+  aggregate ceiling. Adversarial review added F382-29 concurrent-transition
+  protection by forward commit before code; committed RED precedes GREEN.
+- OWNER amendment `5229508771` supersedes only the spoken opening so Meera/Myra/
+  Raj are NarraTwin hosts. Forward RED/GREEN also closes the Required
+  F382-19/F382-25 missing-consumption-receipt restore finding.
+- The branch establishes only review/evaluation/approval/invalidation and a
+  text-only latest-approved consumption receipt. It is not accepted until PR
+  review, eligible exact-head approval, merge, and merged-main validation pass.
+- Release posture remains No-Go. Issue `#368` and all TTS/audio, renderer/video,
+  UI, provider, deployment, publication, release, public, and production work
+  remain blocked or out of scope.
