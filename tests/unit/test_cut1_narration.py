@@ -174,11 +174,6 @@ def _assert_code(narration: ModuleType, code: str, operation: Callable[[], objec
     assert len(str(caught.value)) <= 160
 
 
-def _use_amended_oracle(narration: ModuleType, monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(narration, "CANONICAL_MEERA_TEXT", MEERA_TEXT)
-    monkeypatch.setattr(narration, "CANONICAL_HASHES", HASHES)
-
-
 @pytest.mark.parametrize("presenter_id", ["meera", "myra", "raj"])
 def test_f382_01_03_exact_owner_text_substitutions_and_brand(narration: ModuleType, presenter_id: str) -> None:
     expected = MEERA_TEXT if presenter_id == "meera" else MEERA_TEXT.replace("Meera", presenter_id.title())
@@ -206,7 +201,7 @@ def test_f382_01_03_owner_amendment_changes_only_original_opening() -> None:
 def test_f382_01_03_canonical_drift_fails(narration: ModuleType, mutation: str) -> None:
     values = {
         "extra": MEERA_TEXT + " Meera", "missing": MEERA_TEXT.replace("Meera", "", 1),
-        "punctuation": MEERA_TEXT.replace("Hey, hi!", "Hey, hi."),
+        "punctuation": MEERA_TEXT.replace("Hello, everyone,", "Hello everyone,", 1),
         "whitespace": MEERA_TEXT.replace("\n\nStackClimb", "\nStackClimb"),
         "paragraph": MEERA_TEXT.replace("\n\nComplex", "\n\n\nComplex"),
         "brand": MEERA_TEXT.replace("StackClimb", "Stack Climb", 1),
@@ -587,9 +582,8 @@ def test_f382_19_25_restore_reconciles_receipt_to_consumed_version(
 
 
 def test_f382_19_25_restore_rejects_consumed_version_without_receipt(
-    narration: ModuleType, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    narration: ModuleType, tmp_path: Path
 ) -> None:
-    _use_amended_oracle(narration, monkeypatch)
     service, principal, approved, project_id = _approve(narration, tmp_path)
     service.consume_for_tts(principal=principal, project_id=project_id,
         narration_version=approved.version, narration_checksum=approved.narration_checksum,
@@ -603,9 +597,8 @@ def test_f382_19_25_restore_rejects_consumed_version_without_receipt(
 
 
 def test_f382_19_25_restore_accepts_consumed_version_with_exact_receipt(
-    narration: ModuleType, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    narration: ModuleType, tmp_path: Path
 ) -> None:
-    _use_amended_oracle(narration, monkeypatch)
     service, principal, approved, project_id = _approve(narration, tmp_path)
     service.consume_for_tts(principal=principal, project_id=project_id,
         narration_version=approved.version, narration_checksum=approved.narration_checksum,

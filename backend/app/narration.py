@@ -38,7 +38,7 @@ SHA_PATTERN = re.compile(r"sha256:[0-9a-f]{64}\Z")
 BARE_SHA_PATTERN = re.compile(r"[0-9a-f]{64}\Z")
 CITATION_PATTERN = re.compile(r"\[(\d+)\]")
 
-CANONICAL_MEERA_TEXT = """Hey, hi! I’m Meera, a synthetic AI presenter for NarraTwin AI.
+CANONICAL_MEERA_TEXT = """Hello, everyone, and a very warm welcome to NarraTwin AI. I’m Meera, and I’ll be your host for this walkthrough.
 
 StackClimb is the technology and product innovation brand founded, owned, and led by Rohit Agrawal. NarraTwin AI is a product he conceived, owns, and produces under StackClimb.
 
@@ -53,9 +53,9 @@ This approach can also be applied to other projects. Once their approved documen
 For this first experience, I’m presenting a prepared walkthrough. Interactive questions and answers are planned as a future capability and are not part of this demonstration.
 
 That is NarraTwin AI: a StackClimb product designed to transform approved project knowledge into clear, grounded, presenter-led experiences. I’m Meera. Thank you for joining me, and I look forward to guiding you through more projects."""
-CANONICAL_HASHES = {"meera": "2ce08a2e573ad0af0d77d818d8b2ffac018f587a711e10164c724c817a7ad4fc",
-    "myra": "b37dd93eeb2a6643e76c3f6f039cbafed6aff91a76e667de66c54413f3b4cf8f",
-    "raj": "e72b658f8e0597b26c39326f21b1dce305611d8b5a90f8bca56362440cce94b3"}
+CANONICAL_HASHES = {"meera": "fe9e874748d365a9ebb333426b0e69877cbdbca725ea7082c02334eb724031f0",
+    "myra": "dd05b795b142e5d18ef0c10a8c6b7dc6873235179efc9d661ad7902cf16463d6",
+    "raj": "6972ba4d9d9e5da57fadcddf5f9519d9d18a3e3beec4147eb9ad95ff9e178546"}
 INVALIDATED_AUTHORITIES = ("EVALUATION", "SPEECH_APPROVAL", "TTS_AUDIO", "CAPTION", "RENDER", "VIDEO_EXPORT", "REPLAY")
 class NarrationState(StrEnum):
     DRAFT = "DRAFT"
@@ -515,11 +515,9 @@ class NarrationService:
                 self._versions.pop(project_id)
             raise
     def _persist(self) -> None:
-        write_state(self.state_path, {
-            "schema": SCHEMA,
-            "versions": [_version_to_row(row) for rows in self._versions.values() for row in rows],
-            "receipts": [_receipt_to_row(row) for row in self._receipts],
-        })
+        payload = {"schema": SCHEMA, "receipts": [_receipt_to_row(row) for row in self._receipts],
+            "versions": [_version_to_row(row) for rows in self._versions.values() for row in rows]}
+        write_state(self.state_path, payload)
     def _restore(self) -> None:
         if self.state_path is None or not self.state_path.exists():
             return
@@ -536,9 +534,8 @@ class NarrationService:
                 raise ValueError("Narration state schema mismatch.")
             versions = [_version_from_row(row) for row in root["versions"]]
             receipts = [_receipt_from_row(row) for row in root["receipts"]]
-            projects = {row.project_id for row in versions}
-            if len(projects) > MAX_PROJECTS or len(versions) > MAX_PROJECTS * MAX_VERSIONS_PER_PROJECT \
-                    or len(receipts) > MAX_PROJECTS * MAX_VERSIONS_PER_PROJECT:
+            if len({row.project_id for row in versions}) > MAX_PROJECTS \
+                    or max(len(versions), len(receipts)) > MAX_PROJECTS * MAX_VERSIONS_PER_PROJECT:
                 raise ValueError("Narration state count exceeded.")
             restored: dict[str, list[NarrationVersion]] = {}
             for row in versions:
@@ -554,6 +551,7 @@ class NarrationService:
             if any(self._binding_failures(row) for rows in restored.values() for row in rows):
                 raise ValueError("Narration external authority is stale.")
             by_key = {(row.project_id, row.version): row for rows in restored.values() for row in rows}
+            consumed_keys = {key for key, row in by_key.items() if row.state is NarrationState.CONSUMED_BY_TTS}
             receipt_keys: set[tuple[str, int]] = set()
             for receipt in receipts:
                 key = (receipt.project_id, receipt.version)
@@ -563,6 +561,8 @@ class NarrationService:
                         or not _receipt_matches_version(receipt, version):
                     raise ValueError("Narration receipt is invalid.")
                 receipt_keys.add(key)
+            if receipt_keys != consumed_keys:
+                raise ValueError("Narration consumed authority and receipts are incomplete.")
         except (OSError, UnicodeDecodeError, json.JSONDecodeError, _DuplicateKey,
                 KeyError, TypeError, ValueError, NarrationError):
             self._versions, self._receipts = {}, []
