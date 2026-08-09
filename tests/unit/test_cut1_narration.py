@@ -23,7 +23,9 @@ from backend.app.stage4 import LocalPrincipal, ProjectRecord, Stage4Service, Wal
 
 ROOT = Path(__file__).resolve().parents[2]
 NOW = "2026-08-08T18:10:00+00:00"
-MEERA_TEXT = """Hey, hi! I’m Meera, a synthetic AI presenter for NarraTwin AI.
+ORIGINAL_OPENING = "Hey, hi! I’m Meera, a synthetic AI presenter for NarraTwin AI."
+AMENDED_OPENING = "Hello, everyone, and a very warm welcome to NarraTwin AI. I’m Meera, and I’ll be your host for this walkthrough."
+MEERA_TEXT = """Hello, everyone, and a very warm welcome to NarraTwin AI. I’m Meera, and I’ll be your host for this walkthrough.
 
 StackClimb is the technology and product innovation brand founded, owned, and led by Rohit Agrawal. NarraTwin AI is a product he conceived, owns, and produces under StackClimb.
 
@@ -39,10 +41,11 @@ For this first experience, I’m presenting a prepared walkthrough. Interactive 
 
 That is NarraTwin AI: a StackClimb product designed to transform approved project knowledge into clear, grounded, presenter-led experiences. I’m Meera. Thank you for joining me, and I look forward to guiding you through more projects."""
 HASHES = {
-    "meera": "2ce08a2e573ad0af0d77d818d8b2ffac018f587a711e10164c724c817a7ad4fc",
-    "myra": "b37dd93eeb2a6643e76c3f6f039cbafed6aff91a76e667de66c54413f3b4cf8f",
-    "raj": "e72b658f8e0597b26c39326f21b1dce305611d8b5a90f8bca56362440cce94b3",
+    "meera": "fe9e874748d365a9ebb333426b0e69877cbdbca725ea7082c02334eb724031f0",
+    "myra": "dd05b795b142e5d18ef0c10a8c6b7dc6873235179efc9d661ad7902cf16463d6",
+    "raj": "6972ba4d9d9e5da57fadcddf5f9519d9d18a3e3beec4147eb9ad95ff9e178546",
 }
+BYTE_LENGTHS = {"meera": 1_868, "myra": 1_866, "raj": 1_864}
 
 
 @pytest.fixture
@@ -171,15 +174,32 @@ def _assert_code(narration: ModuleType, code: str, operation: Callable[[], objec
     assert len(str(caught.value)) <= 160
 
 
+def _use_amended_oracle(narration: ModuleType, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(narration, "CANONICAL_MEERA_TEXT", MEERA_TEXT)
+    monkeypatch.setattr(narration, "CANONICAL_HASHES", HASHES)
+
+
 @pytest.mark.parametrize("presenter_id", ["meera", "myra", "raj"])
 def test_f382_01_03_exact_owner_text_substitutions_and_brand(narration: ModuleType, presenter_id: str) -> None:
     expected = MEERA_TEXT if presenter_id == "meera" else MEERA_TEXT.replace("Meera", presenter_id.title())
     actual = narration.canonical_presenter_text(presenter_id)
     assert actual == expected
+    assert actual.split("\n\n", 1)[0] == AMENDED_OPENING.replace("Meera", presenter_id.title())
+    assert len(actual.split("\n\n")) == 8
+    assert len(actual.encode()) == BYTE_LENGTHS[presenter_id]
     assert hashlib.sha256(actual.encode()).hexdigest() == HASHES[presenter_id]
     assert actual.count(presenter_id.title()) == 2
+    assert actual.replace(presenter_id.title(), "Meera") == MEERA_TEXT
     assert "StackClimb" in actual and "stackclimb.com" not in actual and "®" not in actual
     assert "planned as a future capability" in actual
+
+
+def test_f382_01_03_owner_amendment_changes_only_original_opening() -> None:
+    historical = MEERA_TEXT.replace(AMENDED_OPENING, ORIGINAL_OPENING, 1)
+    assert hashlib.sha256(historical.encode()).hexdigest() == (
+        "2ce08a2e573ad0af0d77d818d8b2ffac018f587a711e10164c724c817a7ad4fc"
+    )
+    assert historical.split("\n\n")[1:] == MEERA_TEXT.split("\n\n")[1:]
 
 
 @pytest.mark.parametrize("mutation", ["extra", "missing", "punctuation", "whitespace", "paragraph", "brand", "domain", "attribution"])
@@ -564,6 +584,37 @@ def test_f382_19_25_restore_reconciles_receipt_to_consumed_version(
     restored = narration.NarrationService(stage4=service.stage4,
         registry=load_cut1_presenter_registry(asset_root=ROOT), state_path=service.state_path)
     assert restored.authority_count == 0 and restored.receipt_count == 0
+
+
+def test_f382_19_25_restore_rejects_consumed_version_without_receipt(
+    narration: ModuleType, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _use_amended_oracle(narration, monkeypatch)
+    service, principal, approved, project_id = _approve(narration, tmp_path)
+    service.consume_for_tts(principal=principal, project_id=project_id,
+        narration_version=approved.version, narration_checksum=approved.narration_checksum,
+        request_id="consume_1", trace_id="trace_tts_1")
+    payload = json.loads(service.state_path.read_bytes())
+    payload["receipts"] = []
+    service.state_path.write_text(json.dumps(payload), encoding="utf-8")
+    restored = narration.NarrationService(stage4=service.stage4,
+        registry=load_cut1_presenter_registry(asset_root=ROOT), state_path=service.state_path)
+    assert restored.authority_count == 0 and restored.receipt_count == 0
+
+
+def test_f382_19_25_restore_accepts_consumed_version_with_exact_receipt(
+    narration: ModuleType, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _use_amended_oracle(narration, monkeypatch)
+    service, principal, approved, project_id = _approve(narration, tmp_path)
+    service.consume_for_tts(principal=principal, project_id=project_id,
+        narration_version=approved.version, narration_checksum=approved.narration_checksum,
+        request_id="consume_1", trace_id="trace_tts_1")
+    restored = narration.NarrationService(stage4=service.stage4,
+        registry=load_cut1_presenter_registry(asset_root=ROOT), state_path=service.state_path)
+    current = restored.latest(principal=principal, project_id=project_id)
+    assert current.state is narration.NarrationState.CONSUMED_BY_TTS
+    assert restored.authority_count == 1 and restored.receipt_count == 1
 
 
 def test_f382_26_other_project_requires_its_own_grounded_body(narration: ModuleType, tmp_path: Path) -> None:
