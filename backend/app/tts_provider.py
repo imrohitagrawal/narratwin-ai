@@ -9,15 +9,28 @@ boundary; this module does not generate scripts, answers, or citations.
 
 from __future__ import annotations
 
+import base64
+import binascii
+import hashlib
 import json
+import logging
+import math
+import ipaddress
 import re
+import struct
+import sys
 import threading
 import time
+from array import array
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
-from typing import Literal, Protocol
+from datetime import UTC, datetime
+from pathlib import Path
+from typing import Any, Literal, Protocol, cast
 
+from backend.app.narration import TTSConsumptionReceipt
 from backend.app.rag.chunking import checksum_text
+from backend.app.storage import load_state, write_state
 
 SUPPORTED_AUDIO_MIME_TYPES = {"audio/mpeg": ".mp3", "audio/wav": ".wav"}
 ELEVENLABS_API_BASE_URL = "https://api.elevenlabs.io/v1"
@@ -368,3 +381,782 @@ def _contains_url(value: object) -> bool:
 
 def checksum_bytes(content: bytes) -> str:
     return checksum_text(content.hex())
+
+
+GOOGLE_TTS_ENDPOINT = "https://eu-texttospeech.googleapis.com"
+GOOGLE_TTS_URL = f"{GOOGLE_TTS_ENDPOINT}/v1/text:synthesize"
+GOOGLE_TTS_MODEL = "gemini-2.5-pro-tts"
+GOOGLE_TTS_LOCALE = "en-IN"
+GOOGLE_TTS_SCOPE = "https://www.googleapis.com/auth/cloud-platform"
+GOOGLE_PROMPT_CONTRACT_VERSION = "cut1-google-gemini-tts-style-prompts-v1"
+GOOGLE_PROMPT_FILE_SHA256 = "d8e38274fd986fed16aa64cbc3c8f720f4a4e01dfe4ffcc5f922d05cd5c9e017"
+GOOGLE_VOICE_MAP = {"meera": "Despina", "myra": "Leda", "raj": "Achird"}
+GOOGLE_SAMPLE_RATE = 24_000
+GOOGLE_MIN_DURATION_SECONDS = 90
+GOOGLE_MAX_DURATION_SECONDS = 120
+GOOGLE_MAX_AUDIO_BYTES = 44 + GOOGLE_MAX_DURATION_SECONDS * GOOGLE_SAMPLE_RATE * 2
+GOOGLE_MAX_RESPONSE_BYTES = ((GOOGLE_MAX_AUDIO_BYTES + 2) // 3) * 4 + 64
+GOOGLE_STATE_SCHEMA = "cut1-google-gemini-tts-state-v1"
+GOOGLE_CHECKSUM_PATTERN = re.compile(r"sha256:[0-9a-f]{64}\Z")
+GOOGLE_LOGGER = logging.getLogger(__name__ + ".google")
+
+
+GoogleSpendState = Literal[
+    "PENDING", "COMPLETED", "FAILED_BILLABLE", "BILLABLE_UNKNOWN", "TOMBSTONED"
+]
+
+
+@dataclass(frozen=True)
+class GoogleTTSConfig:
+    """Server-owned activation evidence; contains no provider choice or credential."""
+
+    enabled: bool = False
+    activation_record_sha256: str = ""
+    activation_expires_at: str = ""
+    privacy_approved: bool = False
+    policy_approved: bool = False
+    budget_audio_tokens: int = 0
+    quota_requests: int = 0
+    max_concurrent_requests: int = 1
+    timeout_seconds: float = 3.0
+
+
+@dataclass(frozen=True)
+class GoogleIdentity:
+    access_token: str
+    identity_evidence_sha256: str
+
+
+class GoogleIdentityProvider(Protocol):
+    def resolve(self, *, scope: str) -> GoogleIdentity:
+        ...
+
+
+class GoogleTransportError(Exception):
+    def __init__(self, *, egress_possible: bool) -> None:
+        super().__init__("Google TTS transport failed.")
+        self.egress_possible = egress_possible
+
+
+@dataclass(frozen=True)
+class GoogleTTSHTTPResponse:
+    status_code: int
+    headers: dict[str, str]
+    body: bytes
+    final_url: str
+    redirect_count: int
+    peer_ip: str
+    resolved_addresses: tuple[str, ...]
+    proxy_used: bool = False
+    tls_verified: bool = False
+    tls_server_name: str = ""
+    peer_port: int = 0
+
+
+class GoogleTTSTransport(Protocol):
+    def post(
+        self,
+        *,
+        url: str,
+        headers: dict[str, str],
+        json_body: dict[str, object],
+        timeout_seconds: float,
+    ) -> GoogleTTSHTTPResponse:
+        ...
+
+
+class TTSProvider(Protocol):
+    """Provider-neutral product boundary for approved narration synthesis."""
+
+    def synthesize(self, *, receipt: TTSConsumptionReceipt) -> object:
+        ...
+
+
+@dataclass(frozen=True)
+class GoogleAudioMeasurements:
+    duration_seconds: float
+    sample_rate_hertz: int
+    channels: int
+    bits_per_sample: int
+    frame_count: int
+    rms: float
+    peak: int
+    active_ratio: float
+    clipping_ratio: float
+    zero_crossing_interval_kinds: int
+
+
+@dataclass(frozen=True)
+class GoogleTTSResult:
+    provider: str
+    provider_mode: str
+    presenter_id: str
+    requested_voice: str
+    requested_locale: str
+    model_id: str
+    endpoint_region: str
+    effective_voice_verified: bool
+    prompt_contract_version: str
+    prompt_sha256: str
+    request_fingerprint: str
+    request_checksum: str
+    config_checksum: str
+    identity_evidence_sha256: str
+    receipt_checksum: str
+    artifact_checksum: str
+    audio_bytes: bytes
+    measurements: GoogleAudioMeasurements
+    spend_state: GoogleSpendState
+    retention_state: str
+    deletion_state: str
+    attempt_count: int
+
+
+@dataclass
+class _GoogleLedgerEntry:
+    fingerprint: str
+    receipt_checksum: str
+    state: GoogleSpendState
+    result: GoogleTTSResult | None = None
+    deletion_checksum: str | None = None
+
+
+class _DuplicateGoogleKey(ValueError):
+    pass
+
+
+def _google_json_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    result: dict[str, Any] = {}
+    for key, value in pairs:
+        if key in result:
+            raise _DuplicateGoogleKey(key)
+        result[key] = value
+    return result
+
+
+def _google_sha(value: object) -> str:
+    encoded = json.dumps(
+        value, ensure_ascii=False, separators=(",", ":"), sort_keys=True
+    ).encode("utf-8")
+    return "sha256:" + hashlib.sha256(encoded).hexdigest()
+
+
+def _google_error(code: str, message: str, *, status: int = 422,
+                  billable: bool = False) -> TTSProviderError:
+    return TTSProviderError(status, code, message, retryable=False, billable=billable)
+
+
+class GoogleGeminiTTSProvider:
+    """Disabled-default Gemini-TTS adapter with no SDK or ambient network path."""
+
+    provider = "google-cloud-text-to-speech"
+    provider_mode = "OPTIONAL_EXTERNAL_DISABLED_DEFAULT"
+
+    def __init__(
+        self,
+        *,
+        config: GoogleTTSConfig,
+        identity_provider: GoogleIdentityProvider,
+        transport: GoogleTTSTransport,
+        receipt_validator: Callable[[TTSConsumptionReceipt], bool],
+        prompt_contract_path: Path,
+        state_path: Path | None = None,
+        clock: Callable[[], datetime] | None = None,
+    ) -> None:
+        self.config = config
+        self.identity_provider = identity_provider
+        self.transport = transport
+        self.receipt_validator = receipt_validator
+        self.prompt_contract_path = prompt_contract_path
+        self.state_path = state_path
+        self.clock = clock or (lambda: datetime.now(UTC))
+        self._ledger: dict[str, _GoogleLedgerEntry] = {}
+        self._lock = threading.RLock()
+        self._semaphore = threading.BoundedSemaphore(max(1, config.max_concurrent_requests))
+        self._restore()
+
+    def synthesize(self, *, receipt: TTSConsumptionReceipt) -> GoogleTTSResult:
+        profile = self._validate_before_identity(receipt)
+        request_body = self._request_body(receipt, profile)
+        fingerprint = self._fingerprint(receipt, profile, request_body)
+        with self._lock:
+            existing = self._ledger.get(fingerprint)
+            if existing is not None:
+                if existing.receipt_checksum != receipt.receipt_checksum:
+                    raise _google_error("GOOGLE_TTS_IDEMPOTENCY_CONFLICT", "TTS request conflicts with prior authority.", status=409)
+                if existing.state == "COMPLETED" and existing.result is not None:
+                    self._validate_stored_result(existing.result, receipt)
+                    return existing.result
+                if existing.state == "BILLABLE_UNKNOWN":
+                    raise _google_error("GOOGLE_TTS_BILLABLE_UNKNOWN", "TTS billing state requires reconciliation.", status=409, billable=True)
+                if existing.state == "TOMBSTONED":
+                    raise _google_error("GOOGLE_TTS_ARTIFACT_DELETED", "TTS artifact is deleted.", status=410, billable=True)
+                raise _google_error("GOOGLE_TTS_IN_PROGRESS", "TTS request is already in progress.", status=409)
+            reserved_requests = len(self._ledger)
+            if reserved_requests >= self.config.quota_requests:
+                raise _google_error(
+                    "GOOGLE_TTS_QUOTA_BLOCKED", "Google TTS quota is unavailable.", status=429
+                )
+            if (reserved_requests + 1) * GOOGLE_MAX_DURATION_SECONDS * 25 > self.config.budget_audio_tokens:
+                raise _google_error(
+                    "GOOGLE_TTS_BUDGET_BLOCKED", "Google TTS budget is unavailable.", status=402
+                )
+            self._ledger[fingerprint] = _GoogleLedgerEntry(
+                fingerprint, receipt.receipt_checksum, "PENDING"
+            )
+            try:
+                self._persist_locked()
+            except OSError:
+                self._ledger.pop(fingerprint, None)
+                raise _google_error(
+                    "GOOGLE_TTS_RESERVATION_FAILED",
+                    "TTS request reservation could not be persisted.",
+                    status=503,
+                )
+        if not self._semaphore.acquire(blocking=False):
+            self._drop_pre_egress(fingerprint)
+            raise _google_error("GOOGLE_TTS_CONCURRENCY_BLOCKED", "TTS concurrency limit is reached.", status=429)
+        try:
+            try:
+                identity = self.identity_provider.resolve(scope=GOOGLE_TTS_SCOPE)
+                self._validate_identity(identity)
+            except TTSProviderError:
+                self._drop_pre_egress(fingerprint)
+                raise
+            except Exception as exc:
+                self._drop_pre_egress(fingerprint)
+                raise _google_error("GOOGLE_TTS_IDENTITY_UNAVAILABLE", "TTS runtime identity is unavailable.", status=503) from exc
+            headers = {
+                "Authorization": f"Bearer {identity.access_token}",
+                "Content-Type": "application/json; charset=utf-8",
+            }
+            try:
+                response = self.transport.post(
+                    url=GOOGLE_TTS_URL,
+                    headers=headers,
+                    json_body=request_body,
+                    timeout_seconds=self.config.timeout_seconds,
+                )
+            except GoogleTransportError as exc:
+                if exc.egress_possible:
+                    self._set_state(fingerprint, "BILLABLE_UNKNOWN")
+                    raise _google_error("GOOGLE_TTS_BILLABLE_UNKNOWN", "TTS billing state requires reconciliation.", status=504, billable=True) from exc
+                self._drop_pre_egress(fingerprint)
+                raise _google_error("GOOGLE_TTS_PRE_EGRESS_FAILURE", "TTS transport failed before egress.", status=503) from exc
+            except Exception as exc:
+                self._set_state(fingerprint, "BILLABLE_UNKNOWN")
+                raise _google_error("GOOGLE_TTS_BILLABLE_UNKNOWN", "TTS billing state requires reconciliation.", status=504, billable=True) from exc
+            try:
+                audio = self._response_audio(response)
+                measurements = validate_google_wav(audio)
+                result = GoogleTTSResult(
+                    provider=self.provider,
+                    provider_mode=self.provider_mode,
+                    presenter_id=receipt.presenter_id,
+                    requested_voice=cast(str, profile["provider_voice"]),
+                    requested_locale=GOOGLE_TTS_LOCALE,
+                    model_id=GOOGLE_TTS_MODEL,
+                    endpoint_region="EU",
+                    effective_voice_verified=False,
+                    prompt_contract_version=GOOGLE_PROMPT_CONTRACT_VERSION,
+                    prompt_sha256="sha256:" + cast(str, profile["prompt_sha256"]),
+                    request_fingerprint=fingerprint,
+                    request_checksum=self._request_contract_checksum(receipt, profile, request_body),
+                    config_checksum=self._config_checksum(),
+                    identity_evidence_sha256=identity.identity_evidence_sha256,
+                    receipt_checksum=receipt.receipt_checksum,
+                    artifact_checksum="sha256:" + hashlib.sha256(audio).hexdigest(),
+                    audio_bytes=audio,
+                    measurements=measurements,
+                    spend_state="COMPLETED",
+                    retention_state="LOCAL_ACTIVE_PROVIDER_RETENTION_UNKNOWN",
+                    deletion_state="ACTIVE",
+                    attempt_count=1,
+                )
+                with self._lock:
+                    self._ledger[fingerprint] = _GoogleLedgerEntry(
+                        fingerprint, receipt.receipt_checksum, "COMPLETED", result
+                    )
+                    self._persist_locked()
+                self._log("completed", fingerprint, receipt.presenter_id)
+                return result
+            except TTSProviderError:
+                self._set_state(fingerprint, "FAILED_BILLABLE")
+                raise
+        finally:
+            self._semaphore.release()
+
+    def request_state(self, receipt: TTSConsumptionReceipt) -> GoogleSpendState | None:
+        profile = self._load_profile(receipt.presenter_id)
+        body = self._request_body(receipt, profile)
+        entry = self._ledger.get(self._fingerprint(receipt, profile, body))
+        return entry.state if entry is not None else None
+
+    def delete_artifact(self, receipt: TTSConsumptionReceipt) -> None:
+        profile = self._load_profile(receipt.presenter_id)
+        body = self._request_body(receipt, profile)
+        fingerprint = self._fingerprint(receipt, profile, body)
+        with self._lock:
+            entry = self._ledger.get(fingerprint)
+            if entry is None:
+                raise _google_error("GOOGLE_TTS_ARTIFACT_NOT_FOUND", "TTS artifact was not found.", status=404)
+            if entry.state == "TOMBSTONED":
+                return
+            if entry.state != "COMPLETED":
+                raise _google_error("GOOGLE_TTS_DELETE_STATE_INVALID", "TTS artifact cannot be deleted in its current state.", status=409)
+            entry.state = "TOMBSTONED"
+            entry.result = None
+            entry.deletion_checksum = _google_sha({
+                "deletionState": "TOMBSTONED",
+                "fingerprint": fingerprint,
+                "providerRetention": "UNKNOWN_NO_PROVIDER_DELETE_API_CLAIM",
+                "receiptChecksum": receipt.receipt_checksum,
+            })
+            self._persist_locked()
+
+    def _validate_before_identity(self, receipt: TTSConsumptionReceipt) -> dict[str, Any]:
+        self._validate_config()
+        if not isinstance(receipt, TTSConsumptionReceipt) or not self.receipt_validator(receipt):
+            raise _google_error("GOOGLE_TTS_AUTHORITY_INVALID", "TTS receipt authority is invalid.", status=409)
+        receipt_checksums = (
+            receipt.narration_checksum,
+            receipt.presenter_binding_checksum,
+            receipt.source_evaluation_checksum,
+            receipt.evaluation_checksum,
+            receipt.approval_checksum,
+            receipt.receipt_checksum,
+        )
+        if any(GOOGLE_CHECKSUM_PATTERN.fullmatch(value) is None for value in receipt_checksums):
+            raise _google_error("GOOGLE_TTS_AUTHORITY_INVALID", "TTS receipt authority is malformed.", status=409)
+        if receipt.presenter_id not in GOOGLE_VOICE_MAP:
+            raise _google_error("PRESENTER_NOT_ALLOWLISTED", "Presenter is not allowlisted for TTS.")
+        if receipt.duration_requirement_seconds != (90, 120):
+            raise _google_error("GOOGLE_TTS_AUTHORITY_INVALID", "TTS duration authority is invalid.")
+        text_bytes = receipt.spoken_text.encode("utf-8")
+        if not text_bytes or len(text_bytes) > 4_000:
+            raise _google_error("GOOGLE_TTS_TEXT_LIMIT", "TTS text exceeds its UTF-8 byte limit.", status=413)
+        if _contains_sensitive_egress(receipt.spoken_text):
+            raise _google_error("GOOGLE_TTS_EGRESS_BLOCKED", "TTS content failed privacy or secret screening.")
+        profile = self._load_profile(receipt.presenter_id)
+        prompt_bytes = cast(str, profile["prompt"]).encode("utf-8")
+        if len(prompt_bytes) > 4_000 or len(text_bytes) + len(prompt_bytes) > 5_000:
+            raise _google_error("GOOGLE_TTS_TEXT_LIMIT", "TTS request exceeds its UTF-8 byte limit.", status=413)
+        return profile
+
+    def _validate_config(self) -> None:
+        if not self.config.enabled:
+            raise _google_error("GOOGLE_TTS_DISABLED", "Google TTS is disabled.", status=403)
+        if not GOOGLE_CHECKSUM_PATTERN.fullmatch(self.config.activation_record_sha256):
+            raise _google_error("GOOGLE_TTS_ACTIVATION_INVALID", "Google TTS activation evidence is invalid.", status=403)
+        try:
+            expires = datetime.fromisoformat(self.config.activation_expires_at)
+        except ValueError as exc:
+            raise _google_error("GOOGLE_TTS_ACTIVATION_INVALID", "Google TTS activation evidence is invalid.", status=403) from exc
+        if expires.tzinfo is None or expires <= self.clock():
+            raise _google_error("GOOGLE_TTS_ACTIVATION_INVALID", "Google TTS activation evidence is stale.", status=403)
+        if not self.config.privacy_approved:
+            raise _google_error("GOOGLE_TTS_PRIVACY_BLOCKED", "Google TTS privacy approval is absent.", status=403)
+        if not self.config.policy_approved:
+            raise _google_error("GOOGLE_TTS_POLICY_BLOCKED", "Google TTS policy approval is absent.", status=403)
+        if self.config.budget_audio_tokens < GOOGLE_MAX_DURATION_SECONDS * 25:
+            raise _google_error("GOOGLE_TTS_BUDGET_BLOCKED", "Google TTS budget is unavailable.", status=402)
+        if self.config.quota_requests < 1:
+            raise _google_error("GOOGLE_TTS_QUOTA_BLOCKED", "Google TTS quota is unavailable.", status=429)
+        if self.config.max_concurrent_requests != 1 or not 0 < self.config.timeout_seconds <= 30:
+            raise _google_error("GOOGLE_TTS_CONFIG_INVALID", "Google TTS configuration is invalid.")
+
+    def _load_profile(self, presenter_id: str) -> dict[str, Any]:
+        try:
+            raw = self.prompt_contract_path.read_bytes()
+        except OSError as exc:
+            raise _google_error("GOOGLE_TTS_PROMPT_CONTRACT_INVALID", "TTS prompt contract is unavailable.", status=503) from exc
+        if hashlib.sha256(raw).hexdigest() != GOOGLE_PROMPT_FILE_SHA256:
+            raise _google_error("GOOGLE_TTS_PROMPT_CONTRACT_INVALID", "TTS prompt contract checksum is invalid.", status=503)
+        try:
+            payload = json.loads(raw.decode("utf-8"), object_pairs_hook=_google_json_object)
+        except (UnicodeDecodeError, json.JSONDecodeError, _DuplicateGoogleKey) as exc:
+            raise _google_error("GOOGLE_TTS_PROMPT_CONTRACT_INVALID", "TTS prompt contract schema is invalid.", status=503) from exc
+        if not isinstance(payload, dict) or payload.get("prompt_contract_version") != GOOGLE_PROMPT_CONTRACT_VERSION:
+            raise _google_error("GOOGLE_TTS_PROMPT_CONTRACT_INVALID", "TTS prompt contract version is invalid.", status=503)
+        profiles = payload.get("profiles")
+        if not isinstance(profiles, list) or len(profiles) != 3:
+            raise _google_error("GOOGLE_TTS_PROMPT_CONTRACT_INVALID", "TTS prompt profiles are invalid.", status=503)
+        by_id: dict[str, dict[str, Any]] = {}
+        for item in profiles:
+            if not isinstance(item, dict):
+                raise _google_error("GOOGLE_TTS_PROMPT_CONTRACT_INVALID", "TTS prompt profile is invalid.", status=503)
+            semantic_id = item.get("semantic_profile_id")
+            prompt = item.get("prompt")
+            if not isinstance(semantic_id, str) or not isinstance(prompt, str):
+                raise _google_error("GOOGLE_TTS_PROMPT_CONTRACT_INVALID", "TTS prompt profile is invalid.", status=503)
+            encoded = prompt.encode("utf-8")
+            if (
+                item.get("provider_voice") != GOOGLE_VOICE_MAP.get(semantic_id)
+                or item.get("model") != GOOGLE_TTS_MODEL
+                or item.get("locale") != GOOGLE_TTS_LOCALE
+                or item.get("endpoint") != GOOGLE_TTS_ENDPOINT
+                or item.get("prompt_contract_version") != GOOGLE_PROMPT_CONTRACT_VERSION
+                or item.get("prompt_utf8_bytes") != len(encoded)
+                or item.get("prompt_sha256") != hashlib.sha256(encoded).hexdigest()
+            ):
+                raise _google_error("GOOGLE_TTS_PROMPT_CONTRACT_INVALID", "TTS prompt profile binding is invalid.", status=503)
+            by_id[semantic_id] = item
+        if set(by_id) != set(GOOGLE_VOICE_MAP) or presenter_id not in by_id:
+            raise _google_error("PRESENTER_NOT_ALLOWLISTED", "Presenter is not allowlisted for TTS.")
+        return by_id[presenter_id]
+
+    def _request_body(self, receipt: TTSConsumptionReceipt, profile: dict[str, Any]) -> dict[str, object]:
+        return {
+            "input": {"text": receipt.spoken_text, "prompt": cast(str, profile["prompt"])},
+            "voice": {
+                "languageCode": GOOGLE_TTS_LOCALE,
+                "modelName": GOOGLE_TTS_MODEL,
+                "name": cast(str, profile["provider_voice"]),
+            },
+            "audioConfig": {"audioEncoding": "LINEAR16", "sampleRateHertz": GOOGLE_SAMPLE_RATE},
+        }
+
+    def _fingerprint(self, receipt: TTSConsumptionReceipt, profile: dict[str, Any],
+                     body: dict[str, object]) -> str:
+        return _google_sha({
+            "requestChecksum": self._request_contract_checksum(receipt, profile, body),
+            "receiptChecksum": receipt.receipt_checksum,
+            "activationRecordSha256": self.config.activation_record_sha256,
+            "configChecksum": self._config_checksum(),
+        })
+
+    def _request_contract_checksum(
+        self, receipt: TTSConsumptionReceipt, profile: dict[str, Any], body: dict[str, object]
+    ) -> str:
+        return _google_sha({
+            "method": "POST",
+            "url": GOOGLE_TTS_URL,
+            "orderedHeaderNames": ["Authorization", "Content-Type"],
+            "orderedJson": body,
+            "semanticPresenterId": receipt.presenter_id,
+            "promptContractVersion": GOOGLE_PROMPT_CONTRACT_VERSION,
+            "promptSha256": cast(str, profile["prompt_sha256"]),
+            "output": {"container": "WAV", "encoding": "PCM16", "sampleRateHertz": 24_000, "channels": 1},
+            "quotaProjectRequired": False,
+            "approvedQuotaProjectIdSha256": None,
+        })
+
+    def _config_checksum(self) -> str:
+        return _google_sha({
+            "activationRecordSha256": self.config.activation_record_sha256,
+            "activationExpiresAt": self.config.activation_expires_at,
+            "budgetAudioTokens": self.config.budget_audio_tokens,
+            "enabled": self.config.enabled,
+            "maxConcurrentRequests": self.config.max_concurrent_requests,
+            "policyApproved": self.config.policy_approved,
+            "privacyApproved": self.config.privacy_approved,
+            "quotaRequests": self.config.quota_requests,
+            "timeoutSeconds": self.config.timeout_seconds,
+        })
+
+    def _validate_identity(self, identity: GoogleIdentity) -> None:
+        if (
+            not isinstance(identity, GoogleIdentity)
+            or not identity.access_token
+            or "\n" in identity.access_token
+            or "\r" in identity.access_token
+            or not GOOGLE_CHECKSUM_PATTERN.fullmatch(identity.identity_evidence_sha256)
+        ):
+            raise _google_error("GOOGLE_TTS_IDENTITY_INVALID", "TTS runtime identity is invalid.", status=403)
+
+    def _response_audio(self, response: GoogleTTSHTTPResponse) -> bytes:
+        self._validate_transport_evidence(response)
+        if not 200 <= response.status_code < 300:
+            raise _google_error("GOOGLE_TTS_PROVIDER_FAILURE", "Google TTS returned a non-success status.", status=502, billable=True)
+        content_type = response.headers.get("content-type", "").lower().replace(" ", "")
+        if content_type not in {"application/json", "application/json;charset=utf-8"}:
+            raise _google_error("GOOGLE_TTS_RESPONSE_SCHEMA_INVALID", "Google TTS response type is invalid.", status=502, billable=True)
+        if not response.body or len(response.body) > GOOGLE_MAX_RESPONSE_BYTES:
+            raise _google_error("GOOGLE_TTS_RESPONSE_SIZE_INVALID", "Google TTS response size is invalid.", status=502, billable=True)
+        try:
+            payload = json.loads(response.body.decode("utf-8"), object_pairs_hook=_google_json_object)
+        except (UnicodeDecodeError, json.JSONDecodeError, _DuplicateGoogleKey) as exc:
+            raise _google_error("GOOGLE_TTS_RESPONSE_SCHEMA_INVALID", "Google TTS response schema is invalid.", status=502, billable=True) from exc
+        if not isinstance(payload, dict) or set(payload) != {"audioContent"} or not isinstance(payload["audioContent"], str):
+            raise _google_error("GOOGLE_TTS_RESPONSE_SCHEMA_INVALID", "Google TTS response schema is invalid.", status=502, billable=True)
+        encoded = payload["audioContent"]
+        if not encoded:
+            raise _google_error("GOOGLE_TTS_AUDIO_INVALID", "Google TTS audio is empty.", status=502, billable=True)
+        if len(encoded) > ((GOOGLE_MAX_AUDIO_BYTES + 2) // 3) * 4:
+            raise _google_error("GOOGLE_TTS_RESPONSE_BASE64_INVALID", "Google TTS audio encoding is invalid.", status=502, billable=True)
+        try:
+            audio = base64.b64decode(encoded, validate=True)
+        except (ValueError, binascii.Error) as exc:
+            raise _google_error("GOOGLE_TTS_RESPONSE_BASE64_INVALID", "Google TTS audio encoding is invalid.", status=502, billable=True) from exc
+        if not audio or len(audio) > GOOGLE_MAX_AUDIO_BYTES:
+            raise _google_error("GOOGLE_TTS_AUDIO_INVALID", "Google TTS audio is empty or oversized.", status=502, billable=True)
+        return audio
+
+    def _validate_transport_evidence(self, response: GoogleTTSHTTPResponse) -> None:
+        try:
+            peer = ipaddress.ip_address(response.peer_ip)
+            resolved = tuple(ipaddress.ip_address(value) for value in response.resolved_addresses)
+        except ValueError as exc:
+            raise _google_error(
+                "GOOGLE_TTS_TRANSPORT_POLICY_INVALID",
+                "Google TTS transport policy evidence is invalid.",
+                status=502,
+                billable=True,
+            ) from exc
+        if (
+            response.final_url != GOOGLE_TTS_URL
+            or response.redirect_count != 0
+            or response.proxy_used
+            or not response.tls_verified
+            or response.tls_server_name != "eu-texttospeech.googleapis.com"
+            or response.peer_port != 443
+            or not resolved
+            or peer not in resolved
+            or any(
+                value.is_private
+                or value.is_loopback
+                or value.is_link_local
+                or value.is_multicast
+                or value.is_unspecified
+                or value.is_reserved
+                for value in resolved
+            )
+        ):
+            raise _google_error(
+                "GOOGLE_TTS_TRANSPORT_POLICY_INVALID",
+                "Google TTS transport policy evidence is invalid.",
+                status=502,
+                billable=True,
+            )
+
+    def _set_state(self, fingerprint: str, state: GoogleSpendState) -> None:
+        with self._lock:
+            entry = self._ledger[fingerprint]
+            entry.state = state
+            entry.result = None
+            self._persist_locked()
+        self._log(state.lower(), fingerprint, None)
+
+    def _drop_pre_egress(self, fingerprint: str) -> None:
+        with self._lock:
+            self._ledger.pop(fingerprint, None)
+            try:
+                self._persist_locked()
+            except OSError:
+                # The durable PENDING row is intentionally left ambiguous; restore
+                # converts it to BILLABLE_UNKNOWN and therefore never re-egresses.
+                pass
+
+    def _validate_stored_result(self, result: GoogleTTSResult,
+                                receipt: TTSConsumptionReceipt) -> None:
+        if (
+            result.receipt_checksum != receipt.receipt_checksum
+            or result.artifact_checksum != "sha256:" + hashlib.sha256(result.audio_bytes).hexdigest()
+            or result.config_checksum != self._config_checksum()
+            or validate_google_wav(result.audio_bytes) != result.measurements
+            or result.deletion_state != "ACTIVE"
+        ):
+            raise _google_error("GOOGLE_TTS_STORED_RESULT_INVALID", "Stored TTS result is invalid.", status=409, billable=True)
+
+    def _state_payload_locked(self) -> dict[str, object]:
+        rows: list[dict[str, object]] = []
+        for entry in self._ledger.values():
+            row: dict[str, object] = {
+                "fingerprint": entry.fingerprint,
+                "receiptChecksum": entry.receipt_checksum,
+                "state": entry.state,
+            }
+            if entry.deletion_checksum is not None:
+                row["deletionChecksum"] = entry.deletion_checksum
+            if entry.result is not None:
+                result = entry.result
+                row["result"] = {
+                    "provider": result.provider,
+                    "providerMode": result.provider_mode,
+                    "presenterId": result.presenter_id,
+                    "requestedVoice": result.requested_voice,
+                    "requestedLocale": result.requested_locale,
+                    "modelId": result.model_id,
+                    "endpointRegion": result.endpoint_region,
+                    "effectiveVoiceVerified": result.effective_voice_verified,
+                    "promptContractVersion": result.prompt_contract_version,
+                    "promptSha256": result.prompt_sha256,
+                    "requestFingerprint": result.request_fingerprint,
+                    "requestChecksum": result.request_checksum,
+                    "configChecksum": result.config_checksum,
+                    "identityEvidenceSha256": result.identity_evidence_sha256,
+                    "receiptChecksum": result.receipt_checksum,
+                    "artifactChecksum": result.artifact_checksum,
+                    "audioBase64": base64.b64encode(result.audio_bytes).decode("ascii"),
+                    "measurements": result.measurements.__dict__,
+                    "spendState": result.spend_state,
+                    "retentionState": result.retention_state,
+                    "deletionState": result.deletion_state,
+                    "attemptCount": result.attempt_count,
+                }
+            rows.append(row)
+        unsigned = {"schema": GOOGLE_STATE_SCHEMA, "requests": rows}
+        return {**unsigned, "stateChecksum": _google_sha(unsigned)}
+
+    def _persist_locked(self) -> None:
+        if self.state_path is not None:
+            write_state(self.state_path, self._state_payload_locked())
+
+    def _restore(self) -> None:
+        if self.state_path is None:
+            return
+        payload = load_state(self.state_path)
+        if payload is None:
+            return
+        try:
+            if set(payload) != {"schema", "requests", "stateChecksum"}:
+                raise ValueError("fields")
+            unsigned = {"schema": payload.get("schema"), "requests": payload.get("requests")}
+            if payload.get("schema") != GOOGLE_STATE_SCHEMA or not isinstance(payload.get("requests"), list):
+                raise ValueError("schema")
+            if payload.get("stateChecksum") != _google_sha(unsigned):
+                raise ValueError("state checksum")
+            for row in payload["requests"]:
+                if not isinstance(row, dict) or set(row) - {"fingerprint", "receiptChecksum", "state", "result", "deletionChecksum"}:
+                    raise ValueError("row")
+                fingerprint = cast(str, row["fingerprint"])
+                receipt_checksum = cast(str, row["receiptChecksum"])
+                state = cast(GoogleSpendState, row["state"])
+                if not GOOGLE_CHECKSUM_PATTERN.fullmatch(fingerprint) or not GOOGLE_CHECKSUM_PATTERN.fullmatch(receipt_checksum):
+                    raise ValueError("checksum")
+                if state not in {"PENDING", "COMPLETED", "FAILED_BILLABLE", "BILLABLE_UNKNOWN", "TOMBSTONED"}:
+                    raise ValueError("state")
+                if state == "PENDING":
+                    state = "BILLABLE_UNKNOWN"
+                result = self._result_from_state(row.get("result")) if state == "COMPLETED" else None
+                if state == "COMPLETED" and (result is None or result.request_fingerprint != fingerprint or result.receipt_checksum != receipt_checksum):
+                    raise ValueError("binding")
+                if fingerprint in self._ledger:
+                    raise ValueError("duplicate")
+                deletion_checksum = cast(str | None, row.get("deletionChecksum"))
+                if state == "TOMBSTONED":
+                    expected_deletion = _google_sha({
+                        "deletionState": "TOMBSTONED",
+                        "fingerprint": fingerprint,
+                        "providerRetention": "UNKNOWN_NO_PROVIDER_DELETE_API_CLAIM",
+                        "receiptChecksum": receipt_checksum,
+                    })
+                    if deletion_checksum != expected_deletion:
+                        raise ValueError("deletion")
+                elif deletion_checksum is not None:
+                    raise ValueError("deletion state")
+                self._ledger[fingerprint] = _GoogleLedgerEntry(
+                    fingerprint, receipt_checksum, state, result, deletion_checksum
+                )
+        except (KeyError, TypeError, ValueError, TTSProviderError):
+            self._ledger.clear()
+            raise _google_error("GOOGLE_TTS_STATE_INVALID", "Persisted TTS state is invalid.", status=503)
+
+    def _result_from_state(self, value: object) -> GoogleTTSResult | None:
+        if not isinstance(value, dict):
+            return None
+        audio = base64.b64decode(cast(str, value["audioBase64"]), validate=True)
+        measurements = GoogleAudioMeasurements(**cast(dict[str, Any], value["measurements"]))
+        result = GoogleTTSResult(
+            provider=cast(str, value["provider"]), provider_mode=cast(str, value["providerMode"]),
+            presenter_id=cast(str, value["presenterId"]), requested_voice=cast(str, value["requestedVoice"]),
+            requested_locale=cast(str, value["requestedLocale"]), model_id=cast(str, value["modelId"]),
+            endpoint_region=cast(str, value["endpointRegion"]), effective_voice_verified=cast(bool, value["effectiveVoiceVerified"]),
+            prompt_contract_version=cast(str, value["promptContractVersion"]), prompt_sha256=cast(str, value["promptSha256"]),
+            request_fingerprint=cast(str, value["requestFingerprint"]), request_checksum=cast(str, value["requestChecksum"]),
+            config_checksum=cast(str, value["configChecksum"]), identity_evidence_sha256=cast(str, value["identityEvidenceSha256"]),
+            receipt_checksum=cast(str, value["receiptChecksum"]), artifact_checksum=cast(str, value["artifactChecksum"]),
+            audio_bytes=audio, measurements=measurements, spend_state=cast(GoogleSpendState, value["spendState"]),
+            retention_state=cast(str, value["retentionState"]), deletion_state=cast(str, value["deletionState"]),
+            attempt_count=cast(int, value["attemptCount"]),
+        )
+        self._validate_stored_result(result, TTSConsumptionReceipt(
+            "", "", "", 0, "", result.presenter_id, "", "", "", "", "", "", "", "",
+            "placeholder", (90, 120), result.receipt_checksum,
+        ))
+        return result
+
+    def _log(self, event: str, fingerprint: str, presenter_id: str | None) -> None:
+        GOOGLE_LOGGER.info(
+            "google_tts event=%s fingerprint=%s presenter=%s endpoint_region=EU",
+            event,
+            fingerprint,
+            presenter_id or "none",
+        )
+
+
+def _contains_sensitive_egress(text: str) -> bool:
+    lowered = text.lower()
+    secret_fragments = (
+        "begin private key", "authorization: bearer", "service_account", "refresh_token",
+        "api_key=", "apikey=", "password=", "secret=",
+    )
+    if any(fragment in lowered for fragment in secret_fragments):
+        return True
+    return re.search(r"\b[A-Za-z0-9._%+-]+@(?!stackclimb\.com\b)[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b", text) is not None
+
+
+def validate_google_wav(audio: bytes) -> GoogleAudioMeasurements:
+    if len(audio) < 44 or audio[:4] != b"RIFF" or audio[8:12] != b"WAVE":
+        raise _google_error("GOOGLE_TTS_AUDIO_INVALID", "Google TTS audio container is invalid.", status=502, billable=True)
+    if struct.unpack_from("<I", audio, 4)[0] != len(audio) - 8:
+        raise _google_error("GOOGLE_TTS_AUDIO_INVALID", "Google TTS audio length is invalid.", status=502, billable=True)
+    offset = 12
+    fmt: tuple[int, int, int, int, int, int] | None = None
+    pcm: bytes | None = None
+    seen: set[bytes] = set()
+    while offset < len(audio):
+        if offset + 8 > len(audio):
+            raise _google_error("GOOGLE_TTS_AUDIO_INVALID", "Google TTS audio is truncated.", status=502, billable=True)
+        chunk_id = audio[offset : offset + 4]
+        size = struct.unpack_from("<I", audio, offset + 4)[0]
+        start, end = offset + 8, offset + 8 + size
+        if chunk_id in seen or chunk_id not in {b"fmt ", b"data"} or end > len(audio) or size % 2:
+            raise _google_error("GOOGLE_TTS_AUDIO_INVALID", "Google TTS audio chunks are invalid.", status=502, billable=True)
+        seen.add(chunk_id)
+        if chunk_id == b"fmt ":
+            if size != 16:
+                raise _google_error("GOOGLE_TTS_AUDIO_FORMAT_INVALID", "Google TTS audio format is invalid.", status=502, billable=True)
+            fmt = struct.unpack_from("<HHIIHH", audio, start)
+        else:
+            pcm = audio[start:end]
+        offset = end
+    if offset != len(audio) or fmt is None or pcm is None or seen != {b"fmt ", b"data"}:
+        raise _google_error("GOOGLE_TTS_AUDIO_INVALID", "Google TTS audio is incomplete.", status=502, billable=True)
+    audio_format, channels, sample_rate, byte_rate, block_align, bits = fmt
+    if (audio_format, channels, sample_rate, byte_rate, block_align, bits) != (
+        1, 1, GOOGLE_SAMPLE_RATE, GOOGLE_SAMPLE_RATE * 2, 2, 16
+    ) or not pcm or len(pcm) % 2:
+        raise _google_error("GOOGLE_TTS_AUDIO_FORMAT_INVALID", "Google TTS audio format is invalid.", status=502, billable=True)
+    frame_count = len(pcm) // 2
+    duration = frame_count / GOOGLE_SAMPLE_RATE
+    if not GOOGLE_MIN_DURATION_SECONDS <= duration <= GOOGLE_MAX_DURATION_SECONDS:
+        raise _google_error("GOOGLE_TTS_AUDIO_DURATION_INVALID", "Google TTS audio duration is invalid.", status=502, billable=True)
+    samples = array("h")
+    samples.frombytes(pcm)
+    if sys.byteorder != "little":
+        samples.byteswap()
+    peak = max(abs(value) for value in samples)
+    rms = math.sqrt(sum(value * value for value in samples) / len(samples))
+    active_ratio = sum(abs(value) >= 300 for value in samples) / len(samples)
+    clipping_ratio = sum(abs(value) >= 32_000 for value in samples) / len(samples)
+    crossings: list[int] = []
+    previous_sign = samples[0] >= 0
+    last_crossing = 0
+    for index, value in enumerate(samples[1 : min(len(samples), GOOGLE_SAMPLE_RATE * 10)], start=1):
+        sign = value >= 0
+        if sign != previous_sign:
+            crossings.append(index - last_crossing)
+            last_crossing = index
+            previous_sign = sign
+    interval_kinds = len(set(crossings))
+    if peak < 500 or rms < 200 or active_ratio < 0.05:
+        raise _google_error("GOOGLE_TTS_AUDIO_SILENT", "Google TTS audio signal is silent or near-silent.", status=502, billable=True)
+    if len(crossings) < 8 or interval_kinds <= 2:
+        raise _google_error("GOOGLE_TTS_AUDIO_TONE_INVALID", "Google TTS audio signal is tone-only.", status=502, billable=True)
+    if clipping_ratio > 0.02:
+        raise _google_error("GOOGLE_TTS_AUDIO_CLIPPED", "Google TTS audio signal is clipped.", status=502, billable=True)
+    return GoogleAudioMeasurements(
+        duration, sample_rate, channels, bits, frame_count, rms, peak,
+        active_ratio, clipping_ratio, interval_kinds,
+    )

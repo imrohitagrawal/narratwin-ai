@@ -1260,3 +1260,15 @@ tests, untrusted audio decoding/signal checks, current authority binding,
 idempotency/concurrency/crash recovery, billable-unknown timeout handling,
 redaction, retention/deletion and exact replay. Automated tests never call
 Google. A final 90–120-second artifact still requires exact-hash OWNER listening.
+
+### Issue #368 Google TTS adapter implementation gate
+
+Exact branch `stage8-368-cut1-google-tts-adapter-implementation` starts at
+`de0cd683cd05dda91c8f0df53d05c8b55c81d213`, changes exactly the governed 21
+paths, and stays within 5,600 additions plus deletions with no deletion credit.
+The route requires committed RED-before-GREEN proof; exact prompt/hash and unary
+request tests; receipt, privacy, budget, quota, concurrency and activation
+preconditions before fake identity/transport; redirect/DNS/TLS/proxy refusal;
+strict response/base64/WAV/signal validation; durable replay, billable-unknown,
+tombstone and tamper tests; provider-neutral API regressions; and zero real
+network/provider calls. Google remains disabled and release remains No-Go.

@@ -953,6 +953,19 @@ Optional local JSON is bounded to 4 MiB, 64 projects, 64 versions per project,
 recomputes live Stage 4 and presenter authority; invalid state yields no active
 narration authority.
 
+### Cut 1 hosted TTS request ledger
+
+The optional adapter stores a checksum-bound request row keyed by a stable
+fingerprint over the exact request contract, current receipt, activation record
+and server configuration. Legal states are `PENDING`, `COMPLETED`,
+`FAILED_BILLABLE`, `BILLABLE_UNKNOWN`, and `TOMBSTONED`; restore converts an
+interrupted `PENDING` row to `BILLABLE_UNKNOWN` and never re-egresses it.
+Completed rows bind the receipt, semantic presenter, prompt/config/request and
+identity-evidence hashes, decoded WAV measurements, artifact checksum, spend,
+retention and deletion state. Tombstones remove local audio and add a deletion
+checksum while retaining the factual provider-retention-unknown posture.
+Unknown, duplicate, detached, tampered or non-monotonic rows fail closed.
+
 ## Data Model Validation Before Implementation
 
 Stage 2 locks these Stage 4 defaults:

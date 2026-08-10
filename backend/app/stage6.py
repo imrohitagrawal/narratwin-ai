@@ -30,7 +30,9 @@ from backend.app.evaluation_lineage_state import (
 )
 from backend.app.storage import load_state, resolve_state_file, write_state
 from backend.app.stage4 import contains_secret_like_content
+from backend.app.narration import TTSConsumptionReceipt
 from backend.app.tts_provider import (
+    TTSProvider as ApprovedNarrationTTSProvider,
     ElevenLabsTTSProvider,
     ExternalTTSResult,
     SUPPORTED_AUDIO_MIME_TYPES,
@@ -834,7 +836,7 @@ class TranslationProvider(Protocol):
         ...
 
 
-class TTSProvider(Protocol):
+class LocalTTSProvider(Protocol):
     provider: str
     provider_mode: str
 
@@ -969,13 +971,15 @@ class Stage6Service:
         self,
         *,
         translation_provider: TranslationProvider | None = None,
-        tts_provider: TTSProvider | None = None,
+        tts_provider: LocalTTSProvider | None = None,
         external_tts_provider: ElevenLabsTTSProvider | None = None,
+        approved_narration_tts_provider: ApprovedNarrationTTSProvider | None = None,
         state_path: Path | None = None,
     ) -> None:
         self.translation_provider = translation_provider or MockTranslationProvider()
         self.tts_provider = tts_provider or MockTTSProvider()
         self.external_tts_provider = external_tts_provider
+        self.approved_narration_tts_provider = approved_narration_tts_provider
         self.state_path = state_path
         self.multilingual_runs: dict[str, MultilingualWalkthroughResult] = {}
         self.tts_deletions: dict[str, TTSArtifactDeletionRecord] = {}
@@ -991,8 +995,19 @@ class Stage6Service:
             self.translation_provider = MockTranslationProvider()
             self.tts_provider = MockTTSProvider()
             self.external_tts_provider = None
+            self.approved_narration_tts_provider = None
             self._clear_runtime_state()
             self._persist_locked()
+
+    def synthesize_approved_narration(self, *, receipt: TTSConsumptionReceipt) -> object:
+        """Delegate an exact speech receipt without exposing adapter-native controls."""
+        provider = self.approved_narration_tts_provider
+        if provider is None:
+            raise Stage6Error(403, "TTS_PROVIDER_DISABLED", "Approved narration TTS is disabled.")
+        try:
+            return provider.synthesize(receipt=receipt)
+        except TTSProviderError as exc:
+            raise Stage6Error(exc.status_code, exc.code, exc.message) from exc
 
     def _clear_runtime_state(self) -> None:
         self.multilingual_runs.clear()

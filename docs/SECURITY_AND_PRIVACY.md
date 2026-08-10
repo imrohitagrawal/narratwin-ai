@@ -547,7 +547,7 @@ Europe endpoint processing is not India residency. No cloning, reference audio,
 enrollment, biometric input, voice conversion, or identifiable-person imitation
 is allowed.
 
-Before any future egress, the service must replay exact source, evaluation,
+Before any egress, the implemented disabled adapter replays exact source, evaluation,
 narration, approval and semantic-presenter authority; screen text for secrets and
 disallowed personal data; validate byte, duration, budget and immutable adapter
 configuration; and allow only HTTPS to `eu-texttospeech.googleapis.com` without
@@ -560,3 +560,11 @@ traces, fixtures and evidence. Google service-specific retention and potentially
 applicable generative-AI abuse monitoring remain unresolved activation blockers.
 Local deletion/tombstone evidence must not claim provider deletion that the
 service cannot prove. See ADR 0056 and the Issue #368 governance review.
+
+Automated tests inject fake identity and HTTP transports. Transport evidence
+must prove the exact HTTPS URL, port 443, TLS server name, no redirects, no
+proxy, a public resolved-address set and a peer address in that set. Invalid
+provider bodies and audio remain bounded in memory and are never persisted;
+errors and logs contain only bounded codes, semantic IDs and non-content hashes.
+The repository contains no real identity resolver, credential path or network
+client, so activation cannot occur from checked-in configuration.

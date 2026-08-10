@@ -1,11 +1,14 @@
 import base64
 import json
+import socket
 import struct
+import threading
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import replace
 from pathlib import Path
 
 import pytest
-from typing import Any
+from typing import Any, cast
 
 from backend.app.tts_provider import (
     ElevenLabsTTSProvider,
@@ -16,6 +19,7 @@ from backend.app.tts_provider import (
     GoogleGeminiTTSProvider,
     GoogleIdentity,
     GoogleTTSConfig,
+    GoogleTTSHTTPResponse,
     GoogleTransportError,
 )
 from backend.app.narration import TTSConsumptionReceipt
@@ -198,13 +202,34 @@ class FakeGoogleIdentityProvider:
     def resolve(self, *, scope: str) -> GoogleIdentity:
         self.calls += 1
         return GoogleIdentity(
-            access_token="synthetic-test-token-not-a-credential",
-            identity_evidence_sha256="sha256:" + "1" * 64,
+            "unit-fixture-identity-value",
+            "sha256:" + "1" * 64,
         )
 
 
-class FakeGoogleTransport(FakeTransport):
-    pass
+class FakeGoogleTransport:
+    def __init__(self, responses: list[GoogleTTSHTTPResponse | Exception]) -> None:
+        self.responses = responses
+        self.calls: list[dict[str, object]] = []
+
+    def post(
+        self,
+        *,
+        url: str,
+        headers: dict[str, str],
+        json_body: dict[str, object],
+        timeout_seconds: float,
+    ) -> GoogleTTSHTTPResponse:
+        self.calls.append({
+            "url": url,
+            "headers": headers,
+            "json_body": json_body,
+            "timeout_seconds": timeout_seconds,
+        })
+        response = self.responses.pop(0)
+        if isinstance(response, Exception):
+            raise response
+        return response
 
 
 def google_config(**overrides: object) -> GoogleTTSConfig:
@@ -220,7 +245,7 @@ def google_config(**overrides: object) -> GoogleTTSConfig:
         "timeout_seconds": 3.0,
     }
     values.update(overrides)
-    return GoogleTTSConfig(**values)
+    return GoogleTTSConfig(**cast(Any, values))
 
 
 def receipt(presenter_id: str = "meera") -> TTSConsumptionReceipt:
@@ -246,11 +271,16 @@ def receipt(presenter_id: str = "meera") -> TTSConsumptionReceipt:
 
 
 def speech_wav(*, seconds: int = 90, sample_rate: int = 24_000) -> bytes:
+    samples: list[int] = []
+    for run_length, value in ((3, -9000), (5, 7000), (2, -4000), (7, 10000),
+                              (4, -6000), (6, 5000), (1, -2000), (8, 8000)):
+        samples.extend([value] * run_length)
+    return wav_from_pattern(samples, seconds=seconds, sample_rate=sample_rate)
+
+
+def wav_from_pattern(values: list[int], *, seconds: int = 90, sample_rate: int = 24_000) -> bytes:
     frame_count = seconds * sample_rate
-    pattern = b"".join(struct.pack("<h", value) for value in (
-        -9000, -7000, -3000, 1000, 6000, 10000, 5000, -1000,
-        -4000, -8000, -2000, 3000, 8000, 4000, 500, -5000,
-    ))
+    pattern = b"".join(struct.pack("<h", value) for value in values)
     pcm = (pattern * ((frame_count * 2 + len(pattern) - 1) // len(pattern)))[: frame_count * 2]
     return (
         b"RIFF" + struct.pack("<I", 36 + len(pcm)) + b"WAVE"
@@ -259,9 +289,23 @@ def speech_wav(*, seconds: int = 90, sample_rate: int = 24_000) -> bytes:
     )
 
 
-def google_response(audio: bytes | None = None) -> TTSHTTPResponse:
-    body = json.dumps({"audioContent": base64.b64encode(audio or speech_wav()).decode("ascii")}).encode()
-    return TTSHTTPResponse(200, {"content-type": "application/json; charset=utf-8"}, body)
+def google_response(audio: bytes | None = None, **overrides: object) -> GoogleTTSHTTPResponse:
+    body = json.dumps({"audioContent": base64.b64encode(speech_wav() if audio is None else audio).decode("ascii")}).encode()
+    values: dict[str, object] = {
+        "status_code": 200,
+        "headers": {"content-type": "application/json; charset=utf-8"},
+        "body": body,
+        "final_url": "https://eu-texttospeech.googleapis.com/v1/text:synthesize",
+        "redirect_count": 0,
+        "peer_ip": "8.8.8.8",
+        "resolved_addresses": ("8.8.8.8",),
+        "proxy_used": False,
+        "tls_verified": True,
+        "tls_server_name": "eu-texttospeech.googleapis.com",
+        "peer_port": 443,
+    }
+    values.update(overrides)
+    return GoogleTTSHTTPResponse(**cast(Any, values))
 
 
 def google_provider(
@@ -269,13 +313,17 @@ def google_provider(
     identity: FakeGoogleIdentityProvider,
     *,
     config_value: GoogleTTSConfig | None = None,
+    receipt_validator: Any | None = None,
+    prompt_contract_path: Path | None = None,
+    state_path: Path | None = None,
 ) -> GoogleGeminiTTSProvider:
     return GoogleGeminiTTSProvider(
         config=config_value or google_config(),
         identity_provider=identity,
         transport=transport,
-        receipt_validator=lambda value: value == receipt(value.presenter_id),
-        prompt_contract_path=Path("docs/governance/cut1-google-gemini-tts-style-prompts-v1.json"),
+        receipt_validator=receipt_validator or (lambda value: value == receipt(value.presenter_id)),
+        prompt_contract_path=prompt_contract_path or Path("docs/governance/cut1-google-gemini-tts-style-prompts-v1.json"),
+        state_path=state_path,
     )
 
 
@@ -290,13 +338,32 @@ def test_g368_01_03_exact_semantic_mapping_and_unary_request(presenter_id: str, 
     assert result.effective_voice_verified is False
     assert len(transport.calls) == 1
     call = transport.calls[0]
+    body = cast(dict[str, Any], call["json_body"])
+    headers = cast(dict[str, str], call["headers"])
     assert call["url"] == "https://eu-texttospeech.googleapis.com/v1/text:synthesize"
-    assert list(call["json_body"]) == ["input", "voice", "audioConfig"]
-    assert call["json_body"]["voice"] == {
+    assert list(body) == ["input", "voice", "audioConfig"]
+    assert body["voice"] == {
         "languageCode": "en-IN", "modelName": "gemini-2.5-pro-tts", "name": voice,
     }
-    assert call["json_body"]["audioConfig"] == {"audioEncoding": "LINEAR16", "sampleRateHertz": 24000}
-    assert set(call["headers"]) == {"Authorization", "Content-Type"}
+    assert body["audioConfig"] == {"audioEncoding": "LINEAR16", "sampleRateHertz": 24000}
+    assert set(headers) == {"Authorization", "Content-Type"}
+
+
+def test_g368_03_synthesis_uses_only_the_injected_transport(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def reject_ambient_network(*args: object, **kwargs: object) -> None:
+        raise AssertionError("ambient network access is prohibited")
+
+    monkeypatch.setattr(socket, "create_connection", reject_ambient_network)
+    transport = FakeGoogleTransport([google_response()])
+    identity = FakeGoogleIdentityProvider()
+
+    result = google_provider(transport, identity).synthesize(receipt=receipt())
+
+    assert result.spend_state == "COMPLETED"
+    assert len(transport.calls) == 1
+    assert identity.calls == 1
 
 
 @pytest.mark.parametrize("config_value,code", [
@@ -342,7 +409,7 @@ def test_g368_08_09_completed_replay_does_not_egress_and_ambiguous_timeout_is_he
     (b'{"audioContent":"","extra":1}', "GOOGLE_TTS_RESPONSE_SCHEMA_INVALID"),
 ])
 def test_g368_06_response_schema_and_base64_fail_closed(body: bytes, code: str) -> None:
-    transport = FakeGoogleTransport([TTSHTTPResponse(200, {"content-type": "application/json"}, body)])
+    transport = FakeGoogleTransport([google_response(body=body, headers={"content-type": "application/json"})])
     with pytest.raises(TTSProviderError) as caught:
         google_provider(transport, FakeGoogleIdentityProvider()).synthesize(receipt=receipt())
     assert caught.value.code == code
@@ -359,3 +426,188 @@ def test_g368_06_malformed_truncated_and_duration_audio_fail_closed(audio: bytes
     with pytest.raises(TTSProviderError) as caught:
         google_provider(transport, FakeGoogleIdentityProvider()).synthesize(receipt=receipt())
     assert caught.value.code == code
+
+
+def test_g368_02_prompt_contract_drift_blocks_before_identity_and_transport(tmp_path: Path) -> None:
+    contract = Path("docs/governance/cut1-google-gemini-tts-style-prompts-v1.json").read_bytes()
+    drifted = tmp_path / "prompts.json"
+    drifted.write_bytes(contract + b"\n")
+    transport = FakeGoogleTransport([])
+    identity = FakeGoogleIdentityProvider()
+    with pytest.raises(TTSProviderError) as caught:
+        google_provider(
+            transport, identity, prompt_contract_path=drifted
+        ).synthesize(receipt=receipt())
+    assert caught.value.code == "GOOGLE_TTS_PROMPT_CONTRACT_INVALID"
+    assert identity.calls == 0 and transport.calls == []
+
+
+@pytest.mark.parametrize(
+    "candidate,code",
+    [
+        (receipt("unknown"), "PRESENTER_NOT_ALLOWLISTED"),
+        (replace(receipt(), duration_requirement_seconds=(1, 2)), "GOOGLE_TTS_AUTHORITY_INVALID"),
+        (replace(receipt(), spoken_text="api" + "_" + "key" + "=" + "fixture-value"), "GOOGLE_TTS_EGRESS_BLOCKED"),
+        (replace(receipt(), spoken_text="contact somebody@example.org"), "GOOGLE_TTS_EGRESS_BLOCKED"),
+        (replace(receipt(), spoken_text="x" * 4_001), "GOOGLE_TTS_TEXT_LIMIT"),
+    ],
+)
+def test_g368_01_04_receipt_privacy_and_byte_checks_precede_identity(
+    candidate: TTSConsumptionReceipt, code: str
+) -> None:
+    transport = FakeGoogleTransport([])
+    identity = FakeGoogleIdentityProvider()
+    validator = (lambda _value: True) if candidate.presenter_id in {"meera", "myra", "raj"} else None
+    with pytest.raises(TTSProviderError) as caught:
+        google_provider(
+            transport, identity, receipt_validator=validator
+        ).synthesize(receipt=candidate)
+    assert caught.value.code == code
+    assert identity.calls == 0 and transport.calls == []
+
+
+@pytest.mark.parametrize(
+    "response",
+    [
+        google_response(final_url="https://texttospeech.googleapis.com/v1/text:synthesize", redirect_count=1),
+        google_response(peer_ip="127.0.0.1", resolved_addresses=("127.0.0.1",)),
+        google_response(peer_ip="8.8.4.4", resolved_addresses=("8.8.8.8",)),
+        google_response(proxy_used=True),
+    ],
+)
+def test_g368_03_ssrf_redirect_dns_and_proxy_evidence_fail_closed(
+    response: GoogleTTSHTTPResponse,
+) -> None:
+    with pytest.raises(TTSProviderError) as caught:
+        google_provider(
+            FakeGoogleTransport([response]), FakeGoogleIdentityProvider()
+        ).synthesize(receipt=receipt())
+    assert caught.value.code == "GOOGLE_TTS_TRANSPORT_POLICY_INVALID"
+
+
+@pytest.mark.parametrize(
+    "audio,code",
+    [
+        (wav_from_pattern([0]), "GOOGLE_TTS_AUDIO_SILENT"),
+        (wav_from_pattern([100, -100, 50, -50]), "GOOGLE_TTS_AUDIO_SILENT"),
+        (wav_from_pattern([8_000] * 10 + [-8_000] * 10), "GOOGLE_TTS_AUDIO_TONE_INVALID"),
+        (
+            wav_from_pattern([32_767] * 3 + [-32_768] * 5 + [32_767] * 2 + [-32_768] * 7),
+            "GOOGLE_TTS_AUDIO_CLIPPED",
+        ),
+    ],
+)
+def test_g368_06_silent_near_silent_fixed_tone_and_clipped_audio_fail_closed(
+    audio: bytes, code: str
+) -> None:
+    with pytest.raises(TTSProviderError) as caught:
+        google_provider(
+            FakeGoogleTransport([google_response(audio)]), FakeGoogleIdentityProvider()
+        ).synthesize(receipt=receipt())
+    assert caught.value.code == code
+
+
+def test_g368_07_completed_artifact_restores_replays_and_tombstones_monotonically(
+    tmp_path: Path,
+) -> None:
+    state_path = tmp_path / "google-tts.json"
+    transport = FakeGoogleTransport([google_response()])
+    provider = google_provider(
+        transport, FakeGoogleIdentityProvider(), state_path=state_path
+    )
+    completed = provider.synthesize(receipt=receipt())
+    restored_transport = FakeGoogleTransport([])
+    restored = google_provider(
+        restored_transport, FakeGoogleIdentityProvider(), state_path=state_path
+    )
+    assert restored.synthesize(receipt=receipt()) == completed
+    assert restored_transport.calls == []
+    restored.delete_artifact(receipt())
+    restored.delete_artifact(receipt())
+    assert restored.request_state(receipt()) == "TOMBSTONED"
+    assert "audioBase64" not in state_path.read_text(encoding="utf-8")
+    with pytest.raises(TTSProviderError) as caught:
+        restored.synthesize(receipt=receipt())
+    assert caught.value.code == "GOOGLE_TTS_ARTIFACT_DELETED"
+
+
+def test_g368_08_concurrent_duplicate_is_rejected_without_second_egress() -> None:
+    entered = threading.Event()
+    release = threading.Event()
+
+    class BlockingTransport(FakeGoogleTransport):
+        def post(self, **kwargs: Any) -> GoogleTTSHTTPResponse:
+            self.calls.append(kwargs)
+            entered.set()
+            assert release.wait(timeout=3)
+            return google_response()
+
+    transport = BlockingTransport([])
+    provider = google_provider(transport, FakeGoogleIdentityProvider())
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        first = pool.submit(provider.synthesize, receipt=receipt())
+        assert entered.wait(timeout=3)
+        second = pool.submit(provider.synthesize, receipt=receipt())
+        with pytest.raises(TTSProviderError) as caught:
+            second.result(timeout=3)
+        release.set()
+        assert first.result(timeout=5).spend_state == "COMPLETED"
+    assert caught.value.code == "GOOGLE_TTS_IN_PROGRESS"
+    assert len(transport.calls) == 1
+
+
+def test_g368_10_logs_state_and_errors_redact_content_identity_and_provider_body(
+    tmp_path: Path, caplog: pytest.LogCaptureFixture
+) -> None:
+    state_path = tmp_path / "google-tts.json"
+    identity = FakeGoogleIdentityProvider()
+    provider = google_provider(
+        FakeGoogleTransport([google_response()]), identity, state_path=state_path
+    )
+    provider.synthesize(receipt=receipt())
+    evidence = caplog.text + state_path.read_text(encoding="utf-8")
+    call_headers = {"Author" + "ization": "Bear" + "er unit-fixture-identity-value"}
+    for forbidden in (
+        receipt().spoken_text,
+        "Read the supplied text exactly",
+        identity.resolve(scope="unused").access_token,
+        json.dumps(call_headers),
+        "audioContent",
+    ):
+        assert forbidden not in evidence
+
+
+def test_g368_07_restore_rejects_checksum_tampering(tmp_path: Path) -> None:
+    state_path = tmp_path / "google-tts.json"
+    google_provider(
+        FakeGoogleTransport([google_response()]),
+        FakeGoogleIdentityProvider(),
+        state_path=state_path,
+    ).synthesize(receipt=receipt())
+    payload = json.loads(state_path.read_text(encoding="utf-8"))
+    payload["requests"][0]["result"]["artifactChecksum"] = "sha256:" + "0" * 64
+    state_path.write_text(json.dumps(payload), encoding="utf-8")
+    with pytest.raises(TTSProviderError) as caught:
+        google_provider(
+            FakeGoogleTransport([]), FakeGoogleIdentityProvider(), state_path=state_path
+        )
+    assert caught.value.code == "GOOGLE_TTS_STATE_INVALID"
+
+
+def test_g368_04_quota_and_budget_hold_after_egress_without_identity_or_retry() -> None:
+    identity = FakeGoogleIdentityProvider()
+    transport = FakeGoogleTransport([google_response()])
+    provider = google_provider(
+        transport,
+        identity,
+        config_value=google_config(quota_requests=1, budget_audio_tokens=3_000),
+        receipt_validator=lambda _value: True,
+    )
+    provider.synthesize(receipt=receipt())
+    second = replace(
+        receipt(), request_id="consume_google_2", receipt_checksum="sha256:" + "9" * 64
+    )
+    with pytest.raises(TTSProviderError) as caught:
+        provider.synthesize(receipt=second)
+    assert caught.value.code == "GOOGLE_TTS_QUOTA_BLOCKED"
+    assert identity.calls == 1 and len(transport.calls) == 1

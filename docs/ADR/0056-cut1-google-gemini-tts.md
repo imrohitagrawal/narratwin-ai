@@ -1,6 +1,6 @@
 # ADR 0056: Govern optional Google Gemini-TTS behind the existing TTS boundary
 
-- Status: Accepted for governance; implementation and activation not authorized
+- Status: Adapter implemented behind a disabled boundary; activation not authorized
 - Date: 2026-08-10
 - Issue: #368
 - Authority: [OWNER scope amendment](https://github.com/imrohitagrawal/narratwin-ai/issues/368#issuecomment-5241211974)
@@ -21,7 +21,7 @@ full narration or establish legal rights.
 
 ## Decision
 
-Future Cut 1 implementation must extend the existing `TTSProvider` boundary.
+The Cut 1 implementation extends the existing `TTSProvider` boundary.
 Domain and narration code select semantic profiles `meera`, `myra`, and `raj`.
 Only the provider adapter knows the immutable mapping to Despina, Leda, and
 Achird; `gemini-2.5-pro-tts`; `en-IN`; and
@@ -83,13 +83,16 @@ route are in
 - Hosted narration cannot activate until legal, privacy/retention, account,
   budget/IAM/ADC, dependency/transport and exact-listening blockers are cleared.
 - The canonical style-prompt prerequisite is satisfied, but adapter
-  implementation remains separately unauthorized and gated by a fresh OWNER
-  preflight.
+  activation remains separately unauthorized and gated by legal, privacy,
+  identity, billing, quota, endpoint-policy, effective-output and listening
+  evidence.
 - Output remains nondeterministic; selected screening hashes are reference
   evidence only, and final 90–120-second narration requires validation and OWNER
   listening.
-- No provider call, dependency, generated audio, runtime behavior, frontend
-  choice, deployment, distribution or release is introduced by this decision.
+- The implementation adds only an injected identity/HTTP adapter and a
+  provider-neutral receipt delegation seam. It adds no network client,
+  dependency, credential, generated audio, frontend choice, provider
+  activation, deployment, distribution or release.
 
 ## Alternatives rejected
 

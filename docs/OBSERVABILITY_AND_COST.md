@@ -284,7 +284,7 @@ Do not merge a slice if:
 
 ## Issue #368 optional Google TTS evidence
 
-Future Google narration telemetry is allowlisted metadata only: event/error code,
+Implemented Google adapter telemetry is allowlisted metadata only: event/error code,
 trace and request fingerprints, semantic presenter, provider mode, Europe region
 label, attempt count, elapsed/byte/duration buckets, input/output token estimates,
 reserved/committed/released/billable-unknown spend state, decoded validation
@@ -299,4 +299,9 @@ activation. Reserve before egress; commit accepted work; release only proven
 pre-egress failure. A timeout after possible egress is billable-unknown, holds
 the reservation, and is neither automatically retried nor refunded.
 
-This governance phase creates no cost observation and makes no provider call.
+The adapter durably reserves one fingerprint before identity or transport,
+commits valid responses, retains failed-billable and billable-unknown states,
+and releases only failures proven before egress. Restore converts an interrupted
+pending reservation to billable-unknown, preventing automatic duplicate spend.
+The implementation and its tests create no provider cost observation and make
+no real provider call.

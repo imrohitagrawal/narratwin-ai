@@ -1877,6 +1877,17 @@ independent Issue #317 oracle can establish the bounded semantic claim. No
 arbitrary translation, provider, hosted, production, or release contract is
 added.
 
+## Issue #368 approved-narration TTS boundary
+
+No Google-specific HTTP route, request field, provider selection, model, voice,
+locale, endpoint, credential or activation control is added to the product API.
+The internal `TTSProvider.synthesize` boundary accepts only an exact current
+`TTSConsumptionReceipt`; its semantic presenter ID selects adapter-internal
+configuration. Existing multilingual API requests that name an unavailable
+provider continue to return mock/local fallback metadata and cannot activate
+the adapter. Adapter failures use bounded typed codes and never return text,
+prompts, headers, tokens, provider bodies or audio bytes.
+
 ## R0C-A2.3a source-evaluation checksum v2
 
 Schema `stage7-source-evaluation-checksum-v2` is SHA-256 over compact sorted-key UTF-8 JSON
