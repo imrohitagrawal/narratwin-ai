@@ -1245,3 +1245,18 @@ redacted logs, and exact route/budget mutations. Focused CPython 3.13/3.14,
 Ruff, mypy, relevant regressions, and every applicable aggregate repository
 gate must pass. No API/UI/TTS/audio/provider/media/deployment/release or
 production evidence is claimed.
+
+### Issue #368 Google TTS governance reconciliation gate
+
+The governance-only branch must change exactly the 14 preflight paths and stay
+within 3,200 additions plus deletions with no deletion credit. It must pass the
+focused route tests, guardrails and `make quality`; contain no runtime,
+dependency, credential, audio, frontend, workflow or release mutation; and
+resolve every Critical/High/Medium/Required adversarial finding.
+
+A later implementation gate starts with failing tests for semantic profile
+mapping, pre-egress validation, injected ADC/transport behavior, zero network in
+tests, untrusted audio decoding/signal checks, current authority binding,
+idempotency/concurrency/crash recovery, billable-unknown timeout handling,
+redaction, retention/deletion and exact replay. Automated tests never call
+Google. A final 90–120-second artifact still requires exact-hash OWNER listening.

@@ -538,3 +538,25 @@ runtime, deployment, release, public-availability, or production-readiness autho
 - `docs/DATA_MODEL.md`
 - `docs/PORTABILITY_STRATEGY.md`
 - `docs/THIRD_PARTY_NOTICES.md`
+
+## Issue #368 hosted narration boundary
+
+Google Gemini-TTS is selected only as an optional disabled Cut 1 adapter. Sending
+approved narration to it is external egress of untrusted project-derived text.
+Europe endpoint processing is not India residency. No cloning, reference audio,
+enrollment, biometric input, voice conversion, or identifiable-person imitation
+is allowed.
+
+Before any future egress, the service must replay exact source, evaluation,
+narration, approval and semantic-presenter authority; screen text for secrets and
+disallowed personal data; validate byte, duration, budget and immutable adapter
+configuration; and allow only HTTPS to `eu-texttospeech.googleapis.com` without
+caller URLs or redirects. Provider responses and decoded audio are untrusted.
+
+ADC or an equivalently governed workload identity resolves outside product
+configuration. API keys, access/refresh tokens, service-account JSON, credential
+files and credential paths are prohibited from source, APIs, logs, exceptions,
+traces, fixtures and evidence. Google service-specific retention and potentially
+applicable generative-AI abuse monitoring remain unresolved activation blockers.
+Local deletion/tombstone evidence must not claim provider deletion that the
+service cannot prove. See ADR 0056 and the Issue #368 governance review.
