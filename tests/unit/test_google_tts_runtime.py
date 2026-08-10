@@ -52,7 +52,7 @@ def identity_provider(
     default_loader = loader or (lambda **_: (supplied, "project-id"))
     return ADCGoogleIdentityProvider(
         config=GoogleADCConfig(**cast(Any, {"enabled": enabled, "activation_evidence_sha256": CHECKSUM if enabled else "", **kwargs})),
-        default_loader=default_loader,
+        default_loader=cast(Callable[..., tuple[Any, str | None]], default_loader),
         request_factory=lambda: object(),
     )
 
