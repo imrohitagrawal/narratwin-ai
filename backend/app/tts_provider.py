@@ -460,6 +460,8 @@ class GoogleIdentity:
 
 
 class GoogleIdentityProvider(Protocol):
+    # Concrete optional identity and transport implementations live in the
+    # provider-owned google_tts_runtime module, not in this provider boundary.
     def resolve(self, *, scope: str) -> GoogleIdentity: ...
 
 
