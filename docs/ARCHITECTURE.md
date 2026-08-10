@@ -788,3 +788,18 @@ ADR 0055.
 - `docs/SECURITY_AND_PRIVACY.md`
 - `docs/AI_SAFETY_AND_EVALUATION.md`
 - `docs/PORTABILITY_STRATEGY.md`
+
+## Cut 1 optional hosted TTS amendment
+
+Issue #368 and ADR 0056 preserve the Issue #237 TTS interface as the only
+product-facing speech boundary. Narration and Stage 6 use semantic presenter
+profiles; a disabled-by-default adapter alone owns the selected Google model,
+voice, `en-IN`, EU endpoint, identity and wire details. No frontend or domain
+surface accepts vendor-controlled values. Mock/local remains the default, and
+unit/API/CI transports remain fake and network-free.
+
+Future execution must validate current narration authority and every allowlisted
+configuration field before egress, ledger possible spend idempotently, treat
+post-egress ambiguity as billable-unknown, validate decoded untrusted audio, and
+bind source-to-artifact-to-deletion evidence. The exact contract and blocked
+activation state are recorded in the Issue #368 governance review.

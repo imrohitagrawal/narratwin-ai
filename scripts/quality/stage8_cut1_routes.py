@@ -18,9 +18,27 @@ ISSUE382_BRANCH = "stage8-382-cut1-narration-lock"
 ISSUE367_BRANCH = "stage8-367-presenter-registry"
 ISSUE397_BRANCH = "stage8-397-presenter-asset-adr-classifier"
 ISSUE393_BRANCH = "stage8-393-historical-digest-test-isolation"
+ISSUE368_BRANCH = "stage8-368-cut1-local-tts-audio"
 ISSUE386_BASE = "48fc32a2689c9bbc03742d774f3eadb8a500dafc"
+ISSUE368_BASE = "ef9cabc23762560912d99f10831241b8a65b869c"
 
 ROUTES = {
+    ISSUE368_BRANCH: {
+        "docs/governance/preflights/issue-368.json",
+        "docs/reviews/ISSUE_368_GOOGLE_GEMINI_TTS_GOVERNANCE.md",
+        "docs/ADR/0056-cut1-google-gemini-tts.md",
+        "docs/ADR/0002-provider-agnostic-adapters.md",
+        "docs/ARCHITECTURE.md",
+        "docs/SECURITY_AND_PRIVACY.md",
+        "docs/OBSERVABILITY_AND_COST.md",
+        "docs/QUALITY_GATES.md",
+        "docs/STAGE_ISSUE_PLAN.md",
+        "docs/STATUS.md",
+        "docs/TRACEABILITY.md",
+        "docs/THIRD_PARTY_NOTICES.md",
+        "scripts/quality/stage8_cut1_routes.py",
+        "tests/unit/test_stage8_cut1_routes.py",
+    },
     ISSUE382_BRANCH: {
         "docs/governance/preflights/issue-382.json",
         "backend/app/narration.py",
@@ -177,11 +195,11 @@ ROUTES = {
         "docs/THIRD_PARTY_NOTICES.md",
     },
 }
-ROUTE_ISSUES = {ISSUE405_BRANCH: 405, ISSUE403_BRANCH: 403, ISSUE401_BRANCH: 401, ISSUE396_BRANCH: 396,
+ROUTE_ISSUES = {ISSUE368_BRANCH: 368, ISSUE405_BRANCH: 405, ISSUE403_BRANCH: 403, ISSUE401_BRANCH: 401, ISSUE396_BRANCH: 396,
                 ISSUE386_BRANCH: 386, ISSUE385_BRANCH: 385,
                 ISSUE384_BRANCH: 384, ISSUE383_BRANCH: 383, ISSUE397_BRANCH: 397,
                 ISSUE393_BRANCH: 393, ISSUE382_BRANCH: 382, ISSUE367_BRANCH: 367}
-TOTAL_LIMITS = {ISSUE405_BRANCH: 800, ISSUE403_BRANCH: 650, ISSUE401_BRANCH: 600, ISSUE396_BRANCH: 500,
+TOTAL_LIMITS = {ISSUE368_BRANCH: 3200, ISSUE405_BRANCH: 800, ISSUE403_BRANCH: 650, ISSUE401_BRANCH: 600, ISSUE396_BRANCH: 500,
                 ISSUE386_BRANCH: 700, ISSUE385_BRANCH: 350,
                 ISSUE384_BRANCH: 500, ISSUE383_BRANCH: 700, ISSUE397_BRANCH: 500,
                 ISSUE393_BRANCH: 700, ISSUE382_BRANCH: 3200, ISSUE367_BRANCH: 2000}
@@ -190,6 +208,15 @@ ISSUE383_BINARY_FILES = {
     "frontend/public/demo/raj-synthetic-presenter.webp",
 }
 TEXT_LIMITS = {
+    ISSUE368_BRANCH: {
+        path: 1200 if path == "docs/reviews/ISSUE_368_GOOGLE_GEMINI_TTS_GOVERNANCE.md"
+        else 500 if path == "docs/ADR/0056-cut1-google-gemini-tts.md"
+        else 300 if path == "docs/governance/preflights/issue-368.json"
+        else 220 if path in {"docs/SECURITY_AND_PRIVACY.md", "docs/OBSERVABILITY_AND_COST.md",
+                             "tests/unit/test_stage8_cut1_routes.py"}
+        else 180 if path == "scripts/quality/stage8_cut1_routes.py" else 160
+        for path in ROUTES[ISSUE368_BRANCH]
+    },
     ISSUE382_BRANCH: {
         path: 220 if path.endswith("issue-382.json") or path.startswith("docs/ADR/0055-")
         else 750 if path == "backend/app/narration.py"
@@ -302,14 +329,21 @@ def parse_name_status_z(output: str) -> list[str]:
 
 
 def route_base(run: Callable[[list[str]], Any], branch: str) -> str:
-    if branch == ISSUE386_BRANCH:
-        fixed = run(["git", "rev-parse", f"{ISSUE386_BASE}^{{commit}}"])
-        common = run(["git", "merge-base", ISSUE386_BASE, "HEAD"])
+    fixed_routes = {ISSUE368_BRANCH: (368, ISSUE368_BASE), ISSUE386_BRANCH: (386, ISSUE386_BASE)}
+    if branch in fixed_routes:
+        issue, base = fixed_routes[branch]
+        fixed = run(["git", "rev-parse", f"{base}^{{commit}}"])
+        common = run(["git", "merge-base", base, "HEAD"])
         fixed_value = str(fixed.stdout).strip()
         common_value = str(common.stdout).strip()
-        if fixed.returncode or common.returncode or fixed_value != ISSUE386_BASE or common_value != ISSUE386_BASE:
-            raise RuntimeError("Issue #386 fixed base evidence is unavailable or inconsistent.")
-        return ISSUE386_BASE
+        branch_point_invalid = False
+        if branch == ISSUE368_BRANCH:
+            branch_point = run(["git", "merge-base", "origin/main", "HEAD"])
+            branch_point_invalid = branch_point.returncode != 0 or str(branch_point.stdout).strip() != base
+        if (fixed.returncode or common.returncode or fixed_value != base or common_value != base
+                or branch_point_invalid):
+            raise RuntimeError(f"Issue #{issue} fixed base evidence is unavailable or inconsistent.")
+        return base
     current = run(["git", "rev-parse", "origin/main^{commit}"])
     common = run(["git", "merge-base", "origin/main", "HEAD"])
     current_value = str(current.stdout).strip()

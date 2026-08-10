@@ -290,3 +290,18 @@ facts and safeguards.
 This preserves the provider-adapter boundary while allowing Stage 7 to deliver a
 mock/local avatar demo export with public-use license checks, disclosure, consent
 controls, source citations, and evaluation status preservation.
+
+## Issue #368 governance amendment
+
+ADR 0056 selects Google Cloud Text-to-Speech Gemini-TTS as an optional hosted
+Cut 1 adapter without changing this provider-neutral rule. The domain selects
+semantic presenter profiles; only the adapter may map them to the exact Google
+model, voice, locale, endpoint, authentication and request contract. The existing
+Issue #237 `TTSProvider` seam must be extended rather than bypassed by the stale
+eSpeak/local-only proposal or a parallel product-facing Google abstraction.
+
+Mock/local remains the default and Google remains disabled in local/dev/test/CI.
+Tests inject fake transports and identities and make zero real calls. An
+ambiguous timeout after possible egress is held as billable-unknown, never
+automatically retried or refunded. Activation remains blocked by ADR 0056 and
+the Issue #368 governance review; this amendment adds no runtime behavior.

@@ -498,3 +498,16 @@ durability, deployment, and release decisions remain outside this trace.
 ```
 
 <!-- ISSUE158-SECURITY-HISTORY-V2:END -->
+
+## Issue #368 Google Gemini-TTS governance trace
+
+| Requirement/decision | Evidence | Status |
+|---|---|---|
+| Exact OWNER screening selection | Issue comment `5240725519`; private inventory/hash replay recorded in the governance review | Accepted references only |
+| Replace stale eSpeak assumptions | Issue comment `5241211974`; preflight; ADR 0056 | Governed, not implemented |
+| Preserve provider-neutrality and mock/local default | ADR 0002; ADR 0056; architecture amendment; Issue #237 code/history inspection | Required future invariant |
+| Exact Google source facts and contradictions | Issue #368 governance review source ledger | Observed 2026-08-10; refresh before activation |
+| Security/privacy/cost/retention/idempotency/audio validation | Governance invariants, failure matrix, security and observability amendments | Planned; activation blocked |
+| Future implementation scope and tests | Exact 21-path/5,600-line allowlist, prerequisite prompt contract and TDD mapping | Separate authorization required |
+| Full narration acceptance | Structural evidence plus exact-hash OWNER listening | Not started; blocked |
+| Deployment/distribution/release | Repository release posture | No-Go |

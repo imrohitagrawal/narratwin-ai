@@ -2580,3 +2580,17 @@ publication, release, public availability, or production readiness.
 OWNER amendment `5229508771` replaces only the historical opening: Meera, Myra,
 and Raj are spoken as NarraTwin hosts. Restore also rejects any mismatch between
 consumed narration-version keys and fully validated receipt keys.
+
+### Issue #368 governance reconciliation — optional Google Gemini-TTS
+
+OWNER comments `5240725519` and `5241211974` supersede only the stale eSpeak,
+local-only, offline-only and key-free execution assumption. This governance PR
+records a provider-neutral optional Google route using semantic profiles for
+Meera, Myra and Raj while mock/local remains default and Google remains disabled.
+
+This phase is limited to the exact 14-path/3,200-line governance route. It does
+not implement synthesis, add a dependency, handle credentials, call Google,
+generate audio, modify frontend/runtime/workflows, activate a provider, complete
+Issue #368, deploy, distribute, release or merge. The separate future 21-path
+implementation route, prerequisite exact prompt contract, and stop-on-widening
+rule are normative in the Issue #368 governance review. Release remains No-Go.

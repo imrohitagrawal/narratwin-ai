@@ -241,3 +241,18 @@ Blocked for Slice 1:
 - real face cloning
 - Wav2Lip
 - paid-only provider integration
+
+## Google Cloud Text-to-Speech — governance record only
+
+Issue #368 selects Google Cloud Text-to-Speech `gemini-2.5-pro-tts` as a future
+optional hosted adapter using `en-IN` and the Europe endpoint. This repository
+change installs no Google SDK, contains no Google binary/model/voice asset,
+makes no provider call, and grants no redistribution, commercial-use,
+indemnification or output-right conclusion.
+
+Applicable first-party product documentation, pricing, service terms,
+acceptable-use/prohibited-use policies, data-location terms and deprecation
+policy are recorded with exact URLs and unresolved blockers in the Issue #368
+governance review. Any future SDK or dependency requires a separate license,
+supply-chain, credential and lockfile decision before addition. Private screening
+references and generated audio are not third-party assets committed to Git.

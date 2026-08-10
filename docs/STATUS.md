@@ -1298,3 +1298,23 @@ Required update rules:
 - Release posture remains No-Go. Issue `#368` and all TTS/audio, renderer/video,
   UI, provider, deployment, publication, release, public, and production work
   remain blocked or out of scope.
+
+## Issue #368 governance reconciliation state (2026-08-10)
+
+- Accepted base remains `ef9cabc23762560912d99f10831241b8a65b869c`; the
+  preserved preflight head is `b346a9d4fbccffeb9c3ee3950e6f00893d7c9f92` on
+  `stage8-368-cut1-local-tts-audio`.
+- The OWNER exact-hash selection and scope amendment are durable Issue comments
+  `5240725519` and `5241211974`. They select optional Google Gemini-TTS profiles
+  but do not approve a later full narration, legal/commercial/privacy posture,
+  activation, distribution or release.
+- The stale eSpeak/local-only route is not implementable. The current branch is
+  governance-only: exact 14 paths, 3,200 charged lines, no runtime behavior.
+- Google remains disabled; mock/local remains default; no dependency, credential,
+  provider call, audio, frontend, deployment, distribution or release is added.
+- Legal/commercial rights, privacy/retention and abuse-monitoring applicability,
+  Europe-versus-India processing acceptance, account/billing/quota/IAM/ADC,
+  dependency/transport, retry/idempotency and exact final listening remain
+  activation blockers. Exact per-profile style-prompt bytes/version/SHA-256 are
+  also a prerequisite governance blocker because the private request-manifest
+  hashes cannot prove those leaves. Issue #368 stays open and release stays No-Go.

@@ -281,3 +281,22 @@ Do not merge a slice if:
 - provider errors disappear without logs
 - repeated generation has no cache or cost metadata plan
 - premium provider usage is not visible in metadata
+
+## Issue #368 optional Google TTS evidence
+
+Future Google narration telemetry is allowlisted metadata only: event/error code,
+trace and request fingerprints, semantic presenter, provider mode, Europe region
+label, attempt count, elapsed/byte/duration buckets, input/output token estimates,
+reserved/committed/released/billable-unknown spend state, decoded validation
+outcomes, retention/deletion state and non-content checksums. Narration, style
+prompt, request/response payload, audio bytes, auth headers, credentials, tokens
+and raw provider errors are excluded.
+
+Gemini 2.5 Pro TTS pricing observed on 2026-08-10 was $1 per million input text
+tokens and $20 per million output audio tokens, with 25 audio tokens per second
+and no free allowance. Pricing and effective quota must be refreshed before
+activation. Reserve before egress; commit accepted work; release only proven
+pre-egress failure. A timeout after possible egress is billable-unknown, holds
+the reservation, and is neither automatically retried nor refunded.
+
+This governance phase creates no cost observation and makes no provider call.
