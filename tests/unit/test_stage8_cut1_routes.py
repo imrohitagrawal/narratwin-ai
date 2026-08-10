@@ -27,6 +27,16 @@ stage8: Any = load(REPO / "scripts/quality/check_stage8_docs.py", "stage8_with_c
 
 
 EXPECTED = {
+    "stage8-368-cut1-google-tts-prompt-contract": {
+        "docs/governance/preflights/issue-368.json",
+        "docs/governance/cut1-google-gemini-tts-style-prompts-v1.json",
+        "docs/reviews/ISSUE_368_GOOGLE_GEMINI_TTS_GOVERNANCE.md",
+        "docs/ADR/0056-cut1-google-gemini-tts.md",
+        "docs/STATUS.md",
+        "docs/TRACEABILITY.md",
+        "scripts/quality/stage8_cut1_routes.py",
+        "tests/unit/test_stage8_cut1_routes.py",
+    },
     "stage8-368-cut1-local-tts-audio": {
         "docs/governance/preflights/issue-368.json",
         "docs/reviews/ISSUE_368_GOOGLE_GEMINI_TTS_GOVERNANCE.md",
@@ -209,15 +219,15 @@ def test_routes_are_exact_pre_registered_and_issue386_preflight_matches() -> Non
     assert routes.ROUTES == EXPECTED
     assert {branch: stage8.EFFECTIVE_STAGE8_ROUTES[branch] for branch in EXPECTED} == EXPECTED
     issue368 = json.loads((REPO / "docs/governance/preflights/issue-368.json").read_text(encoding="utf-8"))
-    assert issue368["branch"] == routes.ISSUE368_BRANCH
-    assert set(issue368["scope"]["required"]) == EXPECTED[routes.ISSUE368_BRANCH]
-    assert set(issue368["scope"]["allowed_prefixes"]) == EXPECTED[routes.ISSUE368_BRANCH]
+    assert issue368["branch"] == routes.ISSUE368_PROMPT_BRANCH
+    assert set(issue368["scope"]["required"]) == EXPECTED[routes.ISSUE368_PROMPT_BRANCH]
+    assert set(issue368["scope"]["allowed_prefixes"]) == EXPECTED[routes.ISSUE368_PROMPT_BRANCH]
     assert issue368["change_budget"] == {
-        "exact_paths": 14,
-        "maximum_additions_plus_deletions": 3200,
+        "exact_paths": 8,
+        "maximum_additions_plus_deletions": 1000,
         "deletions_grant_credit": False,
     }
-    assert routes.TOTAL_LIMITS[routes.ISSUE368_BRANCH] == 3200
+    assert routes.TOTAL_LIMITS[routes.ISSUE368_PROMPT_BRANCH] == 1000
     issue405 = json.loads((REPO / "docs/governance/preflights/issue-405.json").read_text(encoding="utf-8"))
     assert issue405["branch"] == routes.ISSUE405_BRANCH
     assert set(issue405["scope"]["required"]) == EXPECTED[routes.ISSUE405_BRANCH]
@@ -396,6 +406,21 @@ def test_issue368_route_requires_exact_accepted_base() -> None:
                     completed([], out="a" * 40 + "\n")))
     error = pytest.raises(RuntimeError, routes.route_base, lambda _: next(drifted), routes.ISSUE368_BRANCH)
     assert "Issue #368 fixed base" in str(error.value)
+
+
+def test_issue368_prompt_route_requires_exact_merged_governance_base() -> None:
+    calls: list[list[str]] = []
+
+    def good(args: list[str]) -> subprocess.CompletedProcess[str]:
+        calls.append(args)
+        return completed(args, out=routes.ISSUE368_PROMPT_BASE + "\n")
+
+    assert routes.route_base(good, routes.ISSUE368_PROMPT_BRANCH) == routes.ISSUE368_PROMPT_BASE
+    assert calls == [
+        ["git", "rev-parse", f"{routes.ISSUE368_PROMPT_BASE}^{{commit}}"],
+        ["git", "merge-base", routes.ISSUE368_PROMPT_BASE, "HEAD"],
+        ["git", "merge-base", "origin/main", "HEAD"],
+    ]
 
 
 def test_text_charges_use_additions_deletions_and_larger_complete_snapshot() -> None:
