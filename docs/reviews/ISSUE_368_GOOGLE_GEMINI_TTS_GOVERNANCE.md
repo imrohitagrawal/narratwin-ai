@@ -11,6 +11,9 @@ The OWNER accepted the selected screening references by exact hash in
 [Issue #368 comment 5240725519](https://github.com/imrohitagrawal/narratwin-ai/issues/368#issuecomment-5240725519)
 and supplied the controlling scope amendment in
 [Issue #368 comment 5241211974](https://github.com/imrohitagrawal/narratwin-ai/issues/368#issuecomment-5241211974).
+The OWNER then approved the exact canonical prompt strings, versions, UTF-8 byte
+counts and SHA-256 values in
+[Issue #368 comment 5243441424](https://github.com/imrohitagrawal/narratwin-ai/issues/368#issuecomment-5243441424).
 The private inventory SHA-256 is
 `0254a800487eeb74c09a6e2486db807ded9baf8be9c5663c8cd9bd034c3d910b`,
 with 1,569 inventory bytes, four entries totaling 20,894 bytes, and zero replay
@@ -85,6 +88,24 @@ can change.
 | [VoiceSelectionParams](https://docs.cloud.google.com/text-to-speech/docs/reference/rest/v1/VoiceSelectionParams) | Google warns that the service may choose a voice with a different region or even a different language from the requested `languageCode`; request parameters guide selection but do not prove the effective output locale. | Treat `en-IN` and the stock voice names as exact requested configuration only. Effective locale/voice assurance needs a Google guarantee or separately bound verification evidence and remains an activation blocker. |
 | [Google Cloud retry strategy](https://docs.cloud.google.com/storage/docs/retry-strategy) | Google's general retry guidance makes retry safety depend on response and operation idempotency. It is not a Cloud TTS billing guarantee. | Inference: without a documented TTS idempotency key or billing-safe retry contract, retry only proven pre-egress failures. A timeout after possible egress is billable-unknown and is never automatically retried or refunded. |
 
+## Canonical style-prompt prerequisite
+
+The prerequisite left open by PR #409 is satisfied by
+`docs/governance/cut1-google-gemini-tts-style-prompts-v1.json`. The closed,
+machine-readable contract contains exactly `meera`, `myra`, and `raj`; the only
+permitted future adapter prompts; exact version
+`cut1-google-gemini-tts-style-prompts-v1`; decoded prompt strings; UTF-8 byte
+counts and SHA-256 values; selected screening-reference hashes; and selected
+request-manifest hashes without private paths. Callers cannot supply, override,
+edit, normalize, or substitute a prompt.
+
+This satisfies only the canonical prompt-bytes governance prerequisite. It does
+not authorize adapter implementation, dependencies, credentials, activation,
+provider calls, audio, deployment, distribution, release, or Issue #368
+completion. Output remains nondeterministic, reference hashes remain reference
+evidence only, and every final 90–120-second narration still requires structural
+validation and exact-hash OWNER listening.
+
 ## Unresolved activation blockers
 
 These are not contradictions to the governance amendment, because no activation
@@ -111,12 +132,7 @@ is authorized, but each blocks a real call or distributable narration:
    require conservative app enforcement or written clarification.
 8. Every final 90–120-second artifact remains blocked until structural checks,
    exact binding/checksum replay, and exact-hash OWNER listening accept it.
-9. The private selected request-manifest hashes do not expose the style-prompt
-   bytes or a separately verifiable prompt hash. No executor may invent, omit or
-   approximate them. A prerequisite governance amendment must record approved
-   canonical prompt bytes and SHA-256 for each semantic profile before future
-   runtime implementation begins.
-10. Google documents possible region/language substitution. Exact request-field
+9. Google documents possible region/language substitution. Exact request-field
     binding therefore does not prove the effective output locale or voice. A
     first-party guarantee or separately governed effective-output verification
     method must be approved and bound before activation.
@@ -124,8 +140,8 @@ is authorized, but each blocks a real call or distributable narration:
 ## Normative adapter request and output allowlist
 
 The following is the only permitted logical Cloud TTS contract. A provider SDK
-may not broaden it. The unresolved prompt row makes implementation fail closed;
-it is not a wildcard.
+may not broaden it. The governed prompt contract is closed and exact; it is not
+a caller input or wildcard, and runtime implementation remains separately gated.
 
 | Leaf | Exact allowed value |
 |---|---|
@@ -133,7 +149,7 @@ it is not a wildcard.
 | method and URL | `POST https://eu-texttospeech.googleapis.com/v1/text:synthesize` |
 | request top-level keys | exactly `input`, `voice`, `audioConfig`; reject unknown or duplicate keys; omit `advancedVoiceOptions` |
 | `input` keys | exactly `text`, `prompt`; `text` equals the current receipt's UTF-8 `spoken_text`; no `ssml`, `markup`, `multiSpeakerMarkup` or `customPronunciations` |
-| `input.prompt` | **BLOCKED** until a prerequisite OWNER-authorized governance amendment records canonical bytes, version and SHA-256 separately for `meera`, `myra`, and `raj`; selected request-manifest hashes cannot substitute for prompt hashes |
+| `input.prompt` | exact decoded string selected by semantic profile from `docs/governance/cut1-google-gemini-tts-style-prompts-v1.json`; version, UTF-8 byte count and SHA-256 must match that contract; callers cannot supply or modify it |
 | input byte limits | `len(text.encode("utf-8")) <= 4000`, `len(prompt.encode("utf-8")) <= 4000`, and their sum `<= 5000`; count canonical raw field-string bytes before JSON escaping and reject before auth/network |
 | `voice.languageCode` | requested value exactly `en-IN`; effective locale substitution remains blocked as described above |
 | `voice.modelName` | exactly `gemini-2.5-pro-tts` |
@@ -265,9 +281,9 @@ private narration evidence, or generated screening WAVs.
 
 ## Separate future implementation allowlist and budget
 
-This governance PR does not grant implementation authority. If this governance
-PR and the prerequisite prompt-contract amendment are merged and the blockers
-needed for coding are resolved, a fresh issue preflight and dedicated branch may
+This governance contract does not grant implementation authority. If PR #409
+and this prerequisite amendment are merged and the blockers needed for coding
+are resolved, a fresh OWNER-authorized issue preflight and dedicated branch may
 propose exactly these 21 paths, with a maximum 5,600 additions plus deletions and
 no deletion credit:
 
@@ -314,10 +330,10 @@ The required independent issues-only review returned two blocking findings:
 - **High — incomplete wire/audio contract. Resolved in governance.** The
   normative table now fixes the full unary method/URL, leaf allowlist, single
   speaker mapping, LINEAR16 24 kHz mono PCM16 WAV response, headers, strict
-  unknown-field behavior and golden tests. Because approved prompt bytes cannot
-  be derived from private request-manifest hashes, implementation is explicitly
-  blocked on a prerequisite OWNER-authorized prompt-bytes/hash amendment rather
-  than inventing a value.
+  unknown-field behavior and golden tests. PR #409 correctly blocked invention
+  from private request-manifest hashes; the later OWNER-authorized canonical
+  contract now satisfies that prompt-bytes/hash prerequisite without granting
+  runtime implementation.
 - **Required — stale API/data contracts. Resolved in planning.** The future
   allowlist now contains `docs/API_CONTRACT.md` and `docs/DATA_MODEL.md`, is
   exactly 21 paths, and has a 5,600-line ceiling. Their request/error and
@@ -358,7 +374,7 @@ required before commit.
 | Specification-driven development | This document and ADR are the normative contract before runtime code; every external effect has preconditions, state transitions, failure behavior, and observable evidence. |
 | Test-driven development planning | Each future claim starts with a named failing unit/API/manual test level; injected transports and socket denial prove zero paid calls rather than treating mocks as evidence. |
 | Doubt-driven/adversarial review | A fresh-context issues-only review is required before commit; every Critical/High/Medium/Required finding must be resolved in scope or execution stops. |
-| Code-review and quality planning | The governance route is exactly 14 files/3,200 charged lines; runtime/dependency/media paths are forbidden; `make quality`, focused tests, guardrails, diff and secret review must pass at latest head. |
+| Code-review and quality planning | PR #409's historical governance route remains exactly 14 files/3,200 charged lines; this prerequisite uses exactly eight files/1,000 charged lines. Runtime/dependency/media paths are forbidden; `make quality`, focused tests, guardrails, diff and secret review must pass at latest head. |
 
 Rejected options: retaining eSpeak would contradict OWNER authority; a new
 product-facing Google abstraction would duplicate Issue #237; frontend voice
@@ -371,7 +387,7 @@ claims.
 ## Reviewer pass/fail boundary
 
 Pass only if the branch contains governance and governance tests only, the exact
-14-path route and budget pass, every source fact is supported or explicitly
+eight-path/1,000-line route and budget pass, every source fact is supported or explicitly
 unresolved, mock/local remains default, no real call or credential/audio path
 exists, and latest-head CI plus a non-author human review are eligible.
 

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib.util
+import hashlib
 import json
 import subprocess
 from pathlib import Path
@@ -12,6 +13,31 @@ import pytest
 
 REPO = Path(__file__).parents[2]
 MODULE_PATH = REPO / "scripts/quality/stage8_cut1_routes.py"
+PROMPT_CONTRACT_PATH = REPO / "docs/governance/cut1-google-gemini-tts-style-prompts-v1.json"
+PROMPT_CONTRACT_VERSION = "cut1-google-gemini-tts-style-prompts-v1"
+PROMPT_EXPECTED = {
+    "meera": ("Despina", 1398, "1ccd1f295369674878e13640384eac139b8b663639b29066bef86ffc0bb3b0ba"),
+    "myra": ("Leda", 1128, "62da228f0db362fe5d7ba07f5e76c4c5ab3d6bb77357009bb188be69b19254f1"),
+    "raj": ("Achird", 1326, "1b2426927b82140a76c5927006edc54558778ac76b7c508a704dd70dccd2575e"),
+}
+REFERENCE_EXPECTED = {
+    "meera": (
+        "4a650279a67a4a5a328b907e4447a0760a1cf8fe6014dbc9258db803df26c06a",
+        ["d6f3f3a250e773bd8528586d9a29ca2732170394c65cc8b56a14330a88ce1e2f"],
+    ),
+    "myra": (
+        "0b8b798d5690a6be3b21aa2779bcb7133cabed08343cb01bb6128b46cf7472a1",
+        [
+            "a1891952b0bdc9b62ada4dad73f1573ac9713f3bd1874149022e01a18ea8eb6c",
+            "7d57778f34ca992ba114a1ada6a34eb41a4af3041eda04de7bddbbdbafffe86b",
+            "9c57a380800372902a2b79893cf3cd7fbcd286567e6067285fb84b3367ff86e0",
+        ],
+    ),
+    "raj": (
+        "87e942edebde3084e465b20042eaf1c32d64e06f3cd8a6e40458397834978c74",
+        ["530a7744fd65af88faf53e1e49dff07035a4bd6f7e5779876b474fd265ecfdd7"],
+    ),
+}
 
 
 def load(path: Path, name: str) -> ModuleType:
@@ -27,6 +53,16 @@ stage8: Any = load(REPO / "scripts/quality/check_stage8_docs.py", "stage8_with_c
 
 
 EXPECTED = {
+    "stage8-368-cut1-google-tts-prompt-contract": {
+        "docs/governance/preflights/issue-368.json",
+        "docs/governance/cut1-google-gemini-tts-style-prompts-v1.json",
+        "docs/reviews/ISSUE_368_GOOGLE_GEMINI_TTS_GOVERNANCE.md",
+        "docs/ADR/0056-cut1-google-gemini-tts.md",
+        "docs/STATUS.md",
+        "docs/TRACEABILITY.md",
+        "scripts/quality/stage8_cut1_routes.py",
+        "tests/unit/test_stage8_cut1_routes.py",
+    },
     "stage8-368-cut1-local-tts-audio": {
         "docs/governance/preflights/issue-368.json",
         "docs/reviews/ISSUE_368_GOOGLE_GEMINI_TTS_GOVERNANCE.md",
@@ -205,19 +241,150 @@ def completed(args: list[str], code: int = 0, out: str = "", err: str = "") -> s
     return subprocess.CompletedProcess(args, code, out, err)
 
 
+def validate_prompt_contract(contract: dict[str, Any]) -> None:
+    assert set(contract) == {
+        "schema_version",
+        "prompt_contract_version",
+        "canonical_encoding",
+        "caller_prompt_control",
+        "implementation_authorized",
+        "profiles",
+    }
+    assert contract["schema_version"] == "Cut1GoogleGeminiTTSStylePromptContractV1"
+    assert contract["prompt_contract_version"] == PROMPT_CONTRACT_VERSION
+    assert contract["caller_prompt_control"] is False
+    assert contract["implementation_authorized"] is False
+    assert contract["canonical_encoding"] == {
+        "charset": "UTF-8",
+        "bom": False,
+        "unicode_normalization": "none",
+        "leading_whitespace": False,
+        "trailing_whitespace": False,
+        "trailing_newline": False,
+        "hash_scope": "decoded prompt UTF-8 bytes only",
+    }
+    profiles = contract["profiles"]
+    assert isinstance(profiles, list) and len(profiles) == 3
+    assert [profile["semantic_profile_id"] for profile in profiles] == ["meera", "myra", "raj"]
+    assert len({profile["semantic_profile_id"] for profile in profiles}) == 3
+    expected_fields = {
+        "semantic_profile_id",
+        "provider_id",
+        "provider_name",
+        "model",
+        "locale",
+        "endpoint",
+        "provider_voice",
+        "prompt_contract_version",
+        "prompt",
+        "prompt_utf8_bytes",
+        "prompt_sha256",
+        "accepted_screening_reference_sha256",
+        "selected_request_manifest_sha256",
+        "limitations",
+    }
+    for profile in profiles:
+        assert set(profile) == expected_fields
+        profile_id = profile["semantic_profile_id"]
+        voice, byte_count, prompt_sha = PROMPT_EXPECTED[profile_id]
+        reference_sha, manifest_shas = REFERENCE_EXPECTED[profile_id]
+        prompt = profile["prompt"]
+        prompt_bytes = prompt.encode("utf-8")
+        assert profile["provider_id"] == "google-cloud-text-to-speech"
+        assert profile["provider_name"] == "Google Cloud Text-to-Speech"
+        assert profile["model"] == "gemini-2.5-pro-tts"
+        assert profile["locale"] == "en-IN"
+        assert profile["endpoint"] == "https://eu-texttospeech.googleapis.com"
+        assert profile["provider_voice"] == voice
+        assert profile["prompt_contract_version"] == PROMPT_CONTRACT_VERSION
+        assert len(prompt_bytes) == profile["prompt_utf8_bytes"] == byte_count
+        assert hashlib.sha256(prompt_bytes).hexdigest() == profile["prompt_sha256"] == prompt_sha
+        assert prompt == prompt.strip() and not prompt.endswith("\n") and not prompt.startswith("\ufeff")
+        assert profile["accepted_screening_reference_sha256"] == reference_sha
+        assert profile["selected_request_manifest_sha256"] == manifest_shas
+        assert profile["limitations"] == {
+            "output_nondeterministic": True,
+            "accepted_screening_hash_is_reference_evidence_only": True,
+            "final_90_to_120_second_narration_requires_validation_and_owner_listening": True,
+        }
+
+
+def test_google_tts_prompt_contract_exact_bytes_hashes_and_closed_schema() -> None:
+    contract = json.loads(PROMPT_CONTRACT_PATH.read_text(encoding="utf-8"))
+    validate_prompt_contract(contract)
+    myra = next(profile for profile in contract["profiles"] if profile["semantic_profile_id"] == "myra")
+    assert "Meera’s" in myra["prompt"]
+    assert "Meera's" not in myra["prompt"]
+
+
+def test_google_tts_prompt_contract_rejects_unknown_fourth_profile() -> None:
+    contract = json.loads(PROMPT_CONTRACT_PATH.read_text(encoding="utf-8"))
+    contract["profiles"].append({**contract["profiles"][0], "semantic_profile_id": "unknown"})
+    with pytest.raises(AssertionError):
+        validate_prompt_contract(contract)
+
+
+def test_google_tts_prompt_contract_has_no_forbidden_fields_or_content() -> None:
+    contract = json.loads(PROMPT_CONTRACT_PATH.read_text(encoding="utf-8"))
+    forbidden_keys = {
+        "narration",
+        "narration_text",
+        "path",
+        "private_path",
+        "project_id",
+        "project_identifier",
+        "credential",
+        "credentials",
+        "token",
+        "api_key",
+        "secret",
+        "request_payload",
+        "audio",
+        "personal_data",
+        "hidden_prompt_alternatives",
+    }
+
+    def walk(value: Any) -> None:
+        if isinstance(value, dict):
+            assert forbidden_keys.isdisjoint(value)
+            for nested in value.values():
+                walk(nested)
+        elif isinstance(value, list):
+            for nested in value:
+                walk(nested)
+        elif isinstance(value, str):
+            assert "/Users/" not in value and "file://" not in value
+
+    walk(contract)
+
+
+def test_google_tts_governance_marks_prompt_prerequisite_satisfied_only() -> None:
+    review = (REPO / "docs/reviews/ISSUE_368_GOOGLE_GEMINI_TTS_GOVERNANCE.md").read_text(
+        encoding="utf-8"
+    )
+    assert "The prerequisite left open by PR #409 is satisfied" in review
+    assert "The governed prompt contract is closed and exact" in review
+    assert "callers cannot supply or modify it" in review
+    assert "unresolved prompt row" not in review
+    assert "**BLOCKED** until a prerequisite" not in review
+    assert "not authorize adapter implementation" in review
+    assert "Output remains nondeterministic" in review
+    assert "exact-hash OWNER listening" in review
+
+
 def test_routes_are_exact_pre_registered_and_issue386_preflight_matches() -> None:
     assert routes.ROUTES == EXPECTED
     assert {branch: stage8.EFFECTIVE_STAGE8_ROUTES[branch] for branch in EXPECTED} == EXPECTED
     issue368 = json.loads((REPO / "docs/governance/preflights/issue-368.json").read_text(encoding="utf-8"))
-    assert issue368["branch"] == routes.ISSUE368_BRANCH
-    assert set(issue368["scope"]["required"]) == EXPECTED[routes.ISSUE368_BRANCH]
-    assert set(issue368["scope"]["allowed_prefixes"]) == EXPECTED[routes.ISSUE368_BRANCH]
+    assert issue368["branch"] == routes.ISSUE368_PROMPT_BRANCH
+    assert set(issue368["scope"]["required"]) == EXPECTED[routes.ISSUE368_PROMPT_BRANCH]
+    assert set(issue368["scope"]["allowed_prefixes"]) == EXPECTED[routes.ISSUE368_PROMPT_BRANCH]
     assert issue368["change_budget"] == {
-        "exact_paths": 14,
-        "maximum_additions_plus_deletions": 3200,
+        "exact_paths": 8,
+        "maximum_additions_plus_deletions": 1000,
         "deletions_grant_credit": False,
     }
-    assert routes.TOTAL_LIMITS[routes.ISSUE368_BRANCH] == 3200
+    assert routes.TOTAL_LIMITS[routes.ISSUE368_PROMPT_BRANCH] == 1000
     issue405 = json.loads((REPO / "docs/governance/preflights/issue-405.json").read_text(encoding="utf-8"))
     assert issue405["branch"] == routes.ISSUE405_BRANCH
     assert set(issue405["scope"]["required"]) == EXPECTED[routes.ISSUE405_BRANCH]
@@ -396,6 +563,21 @@ def test_issue368_route_requires_exact_accepted_base() -> None:
                     completed([], out="a" * 40 + "\n")))
     error = pytest.raises(RuntimeError, routes.route_base, lambda _: next(drifted), routes.ISSUE368_BRANCH)
     assert "Issue #368 fixed base" in str(error.value)
+
+
+def test_issue368_prompt_route_requires_exact_merged_governance_base() -> None:
+    calls: list[list[str]] = []
+
+    def good(args: list[str]) -> subprocess.CompletedProcess[str]:
+        calls.append(args)
+        return completed(args, out=routes.ISSUE368_PROMPT_BASE + "\n")
+
+    assert routes.route_base(good, routes.ISSUE368_PROMPT_BRANCH) == routes.ISSUE368_PROMPT_BASE
+    assert calls == [
+        ["git", "rev-parse", f"{routes.ISSUE368_PROMPT_BASE}^{{commit}}"],
+        ["git", "merge-base", routes.ISSUE368_PROMPT_BASE, "HEAD"],
+        ["git", "merge-base", "origin/main", "HEAD"],
+    ]
 
 
 def test_text_charges_use_additions_deletions_and_larger_complete_snapshot() -> None:
