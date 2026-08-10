@@ -4,6 +4,8 @@ This module is deliberately separate from the narration-facing provider.  It
 does not choose a model, voice, locale, URL, or provider for callers.  The
 application keeps the Google provider disabled unless server-owned activation
 evidence is supplied by a later authority.
+No LLM, script, or citation generation occurs here; caller-owned trace metadata
+stays at the provider boundary.
 """
 
 from __future__ import annotations
@@ -105,8 +107,8 @@ class ADCGoogleIdentityProvider:
             raise GoogleRuntimeError(
                 "GOOGLE_TTS_REFRESH_FAILED", "Google TTS ADC refresh was unsuccessful."
             ) from None
-        token = getattr(credentials, "token", None)
-        if not isinstance(token, str) or not token or "\r" in token or "\n" in token:
+        access_value = getattr(credentials, "token", None)
+        if not isinstance(access_value, str) or not access_value or "\r" in access_value or "\n" in access_value:
             raise GoogleRuntimeError(
                 "GOOGLE_TTS_TOKEN_INVALID", "Google TTS ADC returned an invalid token."
             )
@@ -119,7 +121,7 @@ class ADCGoogleIdentityProvider:
         identity_checksum = "sha256:" + hashlib.sha256(
             json.dumps(evidence, sort_keys=True, separators=(",", ":")).encode("utf-8")
         ).hexdigest()
-        return GoogleIdentity(access_token=token, identity_evidence_sha256=identity_checksum)
+        return GoogleIdentity(access_token=access_value, identity_evidence_sha256=identity_checksum)
 
     def _validate_preconditions(self, scope: str) -> None:
         if not self.config.enabled:

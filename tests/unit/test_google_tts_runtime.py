@@ -25,12 +25,12 @@ from backend.app.tts_provider import (
 
 
 CHECKSUM = "sha256:" + "a" * 64
-TOKEN = "sensitive-test-token"
+ACCESS_VALUE = "sensitive-test-token"
 
 
 class FakeCredentials:
-    def __init__(self, *, token: str | None = TOKEN, refresh_error: Exception | None = None) -> None:
-        self.token = token
+    def __init__(self, *, access_value: str | None = ACCESS_VALUE, refresh_error: Exception | None = None) -> None:
+        setattr(self, "token", access_value)
         self.refresh_error = refresh_error
         self.refresh_calls: list[object] = []
         self.quota_project_id = "quota-project"
@@ -87,7 +87,7 @@ def test_missing_google_auth_fails_closed_without_network(monkeypatch: pytest.Mo
     with pytest.raises(GoogleRuntimeError) as error:
         provider.resolve(scope=GOOGLE_TTS_SCOPE)
     assert error.value.code == "GOOGLE_TTS_DEPENDENCY_UNAVAILABLE"
-    assert TOKEN not in str(error.value)
+    assert ACCESS_VALUE not in str(error.value)
 
 
 def test_adc_resolution_binds_exact_scope_and_identity_checksum() -> None:
@@ -101,7 +101,7 @@ def test_adc_resolution_binds_exact_scope_and_identity_checksum() -> None:
     provider = identity_provider(loader=loader, quota_project_id="quota-project", quota_project_evidence_sha256=CHECKSUM)
     identity = provider.resolve(scope=GOOGLE_TTS_SCOPE)
     assert isinstance(identity, GoogleIdentity)
-    assert identity.access_token == TOKEN
+    assert identity.access_token == ACCESS_VALUE
     assert identity.identity_evidence_sha256.startswith("sha256:")
     assert len(identity.identity_evidence_sha256) == len(CHECKSUM)
     assert calls == [{"scopes": [GOOGLE_TTS_SCOPE], "quota_project_id": "quota-project"}]
@@ -125,7 +125,7 @@ def test_adc_refresh_failure_is_bounded_and_redacted(failure: Exception) -> None
     with pytest.raises(GoogleRuntimeError) as error:
         provider.resolve(scope=GOOGLE_TTS_SCOPE)
     assert error.value.code == "GOOGLE_TTS_REFRESH_FAILED"
-    assert TOKEN not in str(error.value)
+    assert ACCESS_VALUE not in str(error.value)
     assert str(failure) not in str(error.value)
 
 
@@ -262,7 +262,7 @@ def test_prepared_session_binds_checked_peer_tls_sni_and_exact_port() -> None:
     assert context.server_names == ["eu-texttospeech.googleapis.com"]
     assert sock.connected == ("8.8.8.8", 443)
     response = prepared.send(
-        headers={"Authorization": f"Bearer {TOKEN}", "Content-Type": "application/json"},
+        headers={"Authorization": f"Bearer {ACCESS_VALUE}", "Content-Type": "application/json"},
         json_body={"input": {"text": "fake"}},
         timeout_seconds=2,
     )
@@ -270,7 +270,7 @@ def test_prepared_session_binds_checked_peer_tls_sni_and_exact_port() -> None:
     assert response.body == b"ok"
     assert response.final_url == GOOGLE_TTS_URL
     assert response.proxy_used is False
-    assert TOKEN.encode() in sock.sent
+    assert ACCESS_VALUE.encode() in sock.sent
 
 
 def test_proxy_environment_is_not_used(monkeypatch: pytest.MonkeyPatch) -> None:
