@@ -41,10 +41,12 @@ The adapter uses only unary `POST` to
 `https://eu-texttospeech.googleapis.com/v1/text:synthesize`, exact single-speaker
 `text`/`prompt` input, the selected model/locale/voice, and LINEAR16 24 kHz mono
 PCM16 WAV output. Unknown request/response leaves and alternate audio controls
-fail closed. The private request-manifest hashes do not reveal canonical prompt
-bytes; implementation is blocked until a prerequisite OWNER-authorized amendment
-records each profile's exact prompt bytes, version and SHA-256. The normative
-leaf and header allowlist is in the Issue #368 governance review.
+fail closed. The prerequisite OWNER-authorized contract at
+`docs/governance/cut1-google-gemini-tts-style-prompts-v1.json` now fixes each
+profile's exact decoded prompt string, version, UTF-8 byte count and SHA-256.
+Those are the only permitted future adapter prompts; callers cannot supply or
+modify them. The normative leaf and header allowlist is in the Issue #368
+governance review.
 
 The exact voice and locale are requested configuration, not proof of effective
 output identity: Google's `VoiceSelectionParams` contract permits region or
@@ -80,6 +82,12 @@ route are in
   adapter.
 - Hosted narration cannot activate until legal, privacy/retention, account,
   budget/IAM/ADC, dependency/transport and exact-listening blockers are cleared.
+- The canonical style-prompt prerequisite is satisfied, but adapter
+  implementation remains separately unauthorized and gated by a fresh OWNER
+  preflight.
+- Output remains nondeterministic; selected screening hashes are reference
+  evidence only, and final 90–120-second narration requires validation and OWNER
+  listening.
 - No provider call, dependency, generated audio, runtime behavior, frontend
   choice, deployment, distribution or release is introduced by this decision.
 

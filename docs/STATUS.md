@@ -1301,20 +1301,26 @@ Required update rules:
 
 ## Issue #368 governance reconciliation state (2026-08-10)
 
-- Accepted base remains `ef9cabc23762560912d99f10831241b8a65b869c`; the
-  preserved preflight head is `b346a9d4fbccffeb9c3ee3950e6f00893d7c9f92` on
-  `stage8-368-cut1-local-tts-audio`.
-- The OWNER exact-hash selection and scope amendment are durable Issue comments
-  `5240725519` and `5241211974`. They select optional Google Gemini-TTS profiles
-  but do not approve a later full narration, legal/commercial/privacy posture,
-  activation, distribution or release.
-- The stale eSpeak/local-only route is not implementable. The current branch is
-  governance-only: exact 14 paths, 3,200 charged lines, no runtime behavior.
+- PR `#409` merged the governance-only Google Gemini-TTS contract at
+  `ba77d59b193da8064d67261e13fb50756c2bd9e8`; merged-main quality run
+  `31408880868` passed. Its historical exact 14-path/3,200-line route and fixed
+  base remain preserved evidence, not the active mutation route.
+- The OWNER exact-hash selection, scope amendment, PR #409 closeout and canonical
+  prompt approval are durable Issue comments `5240725519`, `5241211974`,
+  `5243023393` and `5243441424`.
+- This exact eight-path/1,000-line prerequisite branch from merged PR #409 adds
+  `docs/governance/cut1-google-gemini-tts-style-prompts-v1.json`. Once merged,
+  exact version, decoded strings, UTF-8 byte counts, SHA-256 values, voice maps,
+  accepted screening-reference hashes and selected request-manifest hashes are
+  governed for exactly `meera`, `myra` and `raj`. These are the only permitted
+  future adapter prompts; callers cannot supply or modify them.
+- The stale eSpeak/local-only route remains unimplementable. Runtime Google
+  adapter implementation still requires a separate OWNER-authorized preflight.
 - Google remains disabled; mock/local remains default; no dependency, credential,
   provider call, audio, frontend, deployment, distribution or release is added.
 - Legal/commercial rights, privacy/retention and abuse-monitoring applicability,
   Europe-versus-India processing acceptance, account/billing/quota/IAM/ADC,
   dependency/transport, retry/idempotency and exact final listening remain
-  activation blockers. Exact per-profile style-prompt bytes/version/SHA-256 are
-  also a prerequisite governance blocker because the private request-manifest
-  hashes cannot prove those leaves. Issue #368 stays open and release stays No-Go.
+  activation blockers. Output remains nondeterministic; screening hashes remain
+  reference evidence only; final 90–120-second narration still requires
+  validation and OWNER listening. Issue #368 stays open and release stays No-Go.

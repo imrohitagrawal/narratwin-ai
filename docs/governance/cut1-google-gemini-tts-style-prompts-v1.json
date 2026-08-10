@@ -1,0 +1,85 @@
+{
+  "schema_version": "Cut1GoogleGeminiTTSStylePromptContractV1",
+  "prompt_contract_version": "cut1-google-gemini-tts-style-prompts-v1",
+  "canonical_encoding": {
+    "charset": "UTF-8",
+    "bom": false,
+    "unicode_normalization": "none",
+    "leading_whitespace": false,
+    "trailing_whitespace": false,
+    "trailing_newline": false,
+    "hash_scope": "decoded prompt UTF-8 bytes only"
+  },
+  "caller_prompt_control": false,
+  "implementation_authorized": false,
+  "profiles": [
+    {
+      "semantic_profile_id": "meera",
+      "provider_id": "google-cloud-text-to-speech",
+      "provider_name": "Google Cloud Text-to-Speech",
+      "model": "gemini-2.5-pro-tts",
+      "locale": "en-IN",
+      "endpoint": "https://eu-texttospeech.googleapis.com",
+      "provider_voice": "Despina",
+      "prompt_contract_version": "cut1-google-gemini-tts-style-prompts-v1",
+      "prompt": "Read the supplied text exactly as written. Do not add, omit, substitute, summarize, paraphrase, repeat, or rearrange any word. Speak as Meera, a warm and graceful Indian woman approximately 24 to 28 years old, addressing one interested listener at conversational distance. Use clear, neutral pan-Indian professional English that is not strongly associated with a particular Indian region and is not American or British. Sound emotionally present, softly captivating, intelligent, elegant, and naturally magnetic. Let a genuine subtle smile colour the welcoming phrases. Use gentle melodic variation, purposeful natural pauses, and quiet delight so the listener feels personally included rather than addressed by a conventional narrator. Maintain excellent pronunciation and technical credibility, but avoid an announcer, corporate presenter, documentary, newsreader, or sales cadence. Keep the performance intimate, graceful, subtly alluring, and rewarding to hear without becoming sexualized, whispery, excessively breathy, childish, theatrical, artificial, or exaggerated. Use natural conversational phrasing at approximately four to six percent slower than a typical polished product demonstration, without sounding artificially slowed or drawn out. Pronounce every technical term, name, letter, and word carefully and completely. Preserve the natural pauses created by the supplied punctuation.",
+      "prompt_utf8_bytes": 1398,
+      "prompt_sha256": "1ccd1f295369674878e13640384eac139b8b663639b29066bef86ffc0bb3b0ba",
+      "accepted_screening_reference_sha256": "4a650279a67a4a5a328b907e4447a0760a1cf8fe6014dbc9258db803df26c06a",
+      "selected_request_manifest_sha256": [
+        "d6f3f3a250e773bd8528586d9a29ca2732170394c65cc8b56a14330a88ce1e2f"
+      ],
+      "limitations": {
+        "output_nondeterministic": true,
+        "accepted_screening_hash_is_reference_evidence_only": true,
+        "final_90_to_120_second_narration_requires_validation_and_owner_listening": true
+      }
+    },
+    {
+      "semantic_profile_id": "myra",
+      "provider_id": "google-cloud-text-to-speech",
+      "provider_name": "Google Cloud Text-to-Speech",
+      "model": "gemini-2.5-pro-tts",
+      "locale": "en-IN",
+      "endpoint": "https://eu-texttospeech.googleapis.com",
+      "provider_voice": "Leda",
+      "prompt_contract_version": "cut1-google-gemini-tts-style-prompts-v1",
+      "prompt": "Read the supplied text exactly as written in the text field. Do not add, omit, substitute, summarize, paraphrase, repeat, or rearrange any word. Use a clear, neutral pan-Indian professional English accent that is not strongly associated with a particular Indian region and is not American or British. The speaker should sound like a woman approximately 24 to 28 years old: melodious, graceful, intelligent, warm, approachable, engaging, and naturally magnetic. Her delivery should be slightly softer and sweeter than Meera’s while remaining unmistakably adult, confident, polished, and technically credible. Make the voice pleasant and rewarding to listen to without becoming childish, overly delicate, theatrical, seductive, flirtatious, breathy, robotic, sales-like, or newsreader-like. Use natural conversational phrasing and slightly relaxed pacing, approximately six percent slower than a typical polished product demonstration, without sounding artificially slowed or drawn out. Pronounce every technical term, name, letter, and word carefully and completely. Preserve natural pauses created by the supplied punctuation.",
+      "prompt_utf8_bytes": 1128,
+      "prompt_sha256": "62da228f0db362fe5d7ba07f5e76c4c5ab3d6bb77357009bb188be69b19254f1",
+      "accepted_screening_reference_sha256": "0b8b798d5690a6be3b21aa2779bcb7133cabed08343cb01bb6128b46cf7472a1",
+      "selected_request_manifest_sha256": [
+        "a1891952b0bdc9b62ada4dad73f1573ac9713f3bd1874149022e01a18ea8eb6c",
+        "7d57778f34ca992ba114a1ada6a34eb41a4af3041eda04de7bddbbdbafffe86b",
+        "9c57a380800372902a2b79893cf3cd7fbcd286567e6067285fb84b3367ff86e0"
+      ],
+      "limitations": {
+        "output_nondeterministic": true,
+        "accepted_screening_hash_is_reference_evidence_only": true,
+        "final_90_to_120_second_narration_requires_validation_and_owner_listening": true
+      }
+    },
+    {
+      "semantic_profile_id": "raj",
+      "provider_id": "google-cloud-text-to-speech",
+      "provider_name": "Google Cloud Text-to-Speech",
+      "model": "gemini-2.5-pro-tts",
+      "locale": "en-IN",
+      "endpoint": "https://eu-texttospeech.googleapis.com",
+      "provider_voice": "Achird",
+      "prompt_contract_version": "cut1-google-gemini-tts-style-prompts-v1",
+      "prompt": "Read the supplied text exactly as written. Do not add, omit, substitute, summarize, paraphrase, repeat, or rearrange any word. Speak as Raj, an Indian man approximately 24 to 28 years old, addressing one interested listener in a direct and comfortable conversation. Use clear, neutral pan-Indian professional English that is not strongly associated with a particular Indian region and is not American or British. Sound warm, resonant, friendly, emotionally present, intelligent, charismatic, and quietly confident. Use a subtle genuine smile, smooth conversational rhythm, controlled enthusiasm, and reassuring personal attention. Create trust and magnetic listener engagement while retaining strong technical credibility. Avoid conventional narration, corporate presentation, sales, documentary, or newsreader cadence. Keep the voice youthful and confident without becoming old, excessively deep, dominant, aggressive, sexualized, whispery, excessively breathy, theatrical, artificial, or exaggerated. Use natural conversational phrasing at approximately four to six percent slower than a typical polished product demonstration, without sounding artificially slowed or drawn out. Pronounce every technical term, name, letter, and word carefully and completely. Preserve the natural pauses created by the supplied punctuation.",
+      "prompt_utf8_bytes": 1326,
+      "prompt_sha256": "1b2426927b82140a76c5927006edc54558778ac76b7c508a704dd70dccd2575e",
+      "accepted_screening_reference_sha256": "87e942edebde3084e465b20042eaf1c32d64e06f3cd8a6e40458397834978c74",
+      "selected_request_manifest_sha256": [
+        "530a7744fd65af88faf53e1e49dff07035a4bd6f7e5779876b474fd265ecfdd7"
+      ],
+      "limitations": {
+        "output_nondeterministic": true,
+        "accepted_screening_hash_is_reference_evidence_only": true,
+        "final_90_to_120_second_narration_requires_validation_and_owner_listening": true
+      }
+    }
+  ]
+}
