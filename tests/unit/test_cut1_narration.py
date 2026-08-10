@@ -650,6 +650,28 @@ def test_f382_29_concurrent_consumption_issues_exactly_one_receipt(narration: Mo
     assert service.receipt_count == 1
 
 
+def test_g368_01_consumed_receipt_must_remain_exact_and_current(
+    narration: ModuleType, tmp_path: Path
+) -> None:
+    service, principal, approved, project_id = _approve(narration, tmp_path)
+    receipt = service.consume_for_tts(
+        principal=principal,
+        project_id=project_id,
+        narration_version=approved.version,
+        narration_checksum=approved.narration_checksum,
+        request_id="consume_google_1",
+        trace_id="trace_google_1",
+    )
+
+    assert service.validate_tts_consumption_receipt(principal=principal, receipt=receipt) == receipt
+    forged = replace(receipt, spoken_text=receipt.spoken_text + " changed")
+    _assert_code(
+        narration,
+        "AUTHORITY_MISMATCH",
+        lambda: service.validate_tts_consumption_receipt(principal=principal, receipt=forged),
+    )
+
+
 def test_f382_28_module_has_no_external_capability(narration: ModuleType) -> None:
     assert narration.__file__ is not None
     source = Path(narration.__file__).read_text(encoding="utf-8")

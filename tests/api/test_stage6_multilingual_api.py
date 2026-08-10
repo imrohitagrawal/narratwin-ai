@@ -662,3 +662,17 @@ def test_multilingual_walkthrough_api_rejects_unsupported_language_cleanly() -> 
     body = response.json()
     assert body["error"]["code"] == "UNSUPPORTED_LANGUAGE"
     assert "Unsupported target language" in body["error"]["message"]
+
+
+def test_g368_api_exposes_no_google_provider_selection_or_provider_route() -> None:
+    reset_app_state_for_tests()
+    client = TestClient(app)
+    project_id, run_id = _create_completed_walkthrough(client, prefix="g368-neutral")
+    response = client.post(
+        f"/api/v1/projects/{project_id}/walkthrough-runs/{run_id}/multilingual-runs",
+        json={"targetLanguage": "en", "requestedVoiceProvider": "google"},
+        headers=idempotency_headers("g368-google-choice"),
+    )
+    assert response.status_code == 422
+    assert response.json()["error"]["code"] == "TTS_PROVIDER_UNSUPPORTED"
+    assert client.post("/api/v1/google/tts", json={}).status_code == 404

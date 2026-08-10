@@ -2019,3 +2019,15 @@ def test_local_demo_translation_accepts_exact_browser_source_chunk_citation_fixt
     assert result.status == "COMPLETED"
     assert result.transcript_correctness.validation_status == "PASSED"
     assert result.translated_script_text == GOLDEN_RECRUITER_NARRATWIN_TRANSLATIONS["fr"]
+
+
+def test_g368_google_is_not_a_product_facing_stage6_provider_choice() -> None:
+    service = create_stage6_service()
+    with pytest.raises(Stage6Error) as caught:
+        service.generate_multilingual_walkthrough(
+            source_script="NarraTwin AI turns approved knowledge into a grounded walkthrough. [1]",
+            target_language="en",
+            requested_voice_provider="google",
+            **passed_eval_kwargs(),
+        )
+    assert caught.value.code == "TTS_PROVIDER_UNSUPPORTED"
