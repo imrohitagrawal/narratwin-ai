@@ -2593,5 +2593,4 @@ not implement synthesis, add a dependency, handle credentials, call Google,
 generate audio, modify frontend/runtime/workflows, activate a provider, complete
 Issue #368, deploy, distribute, release or merge. The separate future 21-path
 implementation route, prerequisite exact prompt contract, and stop-on-widening
-rule are normative in the Issue
-#368 governance review. Release remains No-Go.
+rule are normative in the Issue #368 governance review. Release remains No-Go.
