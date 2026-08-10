@@ -962,8 +962,15 @@ and server configuration. Legal states are `PENDING`, `COMPLETED`,
 interrupted `PENDING` row to `BILLABLE_UNKNOWN` and never re-egresses it.
 Completed rows bind the receipt, semantic presenter, prompt/config/request and
 identity-evidence hashes, decoded WAV measurements, artifact checksum, spend,
-retention and deletion state. Tombstones remove local audio and add a deletion
+versioned egress-screen evidence, conservative input/output/cost reservation,
+and duration-reconciled output/cost metadata. State is limited to 80,000,000
+bytes and 10 rows; restore rejects symlinks, excess bytes/rows, oversized
+encoded audio, unknown fields and non-canonical result bindings. Tombstones
+remove local audio transactionally and add a deletion
 checksum while retaining the factual provider-retention-unknown posture.
+Enabled synthesis, replay, state reads and deletion serialize through an atomic
+adjacent lock and reload the durable ledger before acting. A crash-retained lock
+is a fail-closed reconciliation marker, not an automatically expiring lease.
 Unknown, duplicate, detached, tampered or non-monotonic rows fail closed.
 
 ## Data Model Validation Before Implementation

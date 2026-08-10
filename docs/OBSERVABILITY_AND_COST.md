@@ -303,5 +303,14 @@ The adapter durably reserves one fingerprint before identity or transport,
 commits valid responses, retains failed-billable and billable-unknown states,
 and releases only failures proven before egress. Restore converts an interrupted
 pending reservation to billable-unknown, preventing automatic duplicate spend.
+Each reservation counts raw prompt-plus-text UTF-8 bytes conservatively as input
+tokens, reserves the 120-second/3,000-token maximum output and its micro-USD
+ceiling, then reconciles a valid response to measured duration at 25 output
+tokens per second. A receipt already present under any prior config fingerprint
+cannot reserve or egress again.
+Enabled operation cannot run without durable state. An atomic adjacent lock is
+held from disk refresh through egress and finalization, so separate adapter
+instances cannot reserve or dispatch the same receipt concurrently. A crash may
+retain that lock and intentionally requires reconciliation instead of replay.
 The implementation and its tests create no provider cost observation and make
 no real provider call.

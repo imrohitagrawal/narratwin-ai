@@ -93,6 +93,19 @@ route are in
   provider-neutral receipt delegation seam. It adds no network client,
   dependency, credential, generated audio, frontend choice, provider
   activation, deployment, distribution or release.
+- The injected transport is two phase: it must return an opaque send capability
+  bound to an already-established session that attests pinned
+  public DNS, TLS/SNI, port 443, disabled redirects and no proxy before the
+  adapter supplies either authorization or narration bytes. Receipt authority
+  is checked again after egress and before any artifact commit.
+- Enabled operation requires a durable state path and holds an atomic adjacent
+  lock across refresh, reservation, egress and finalization. A retained crash
+  lock blocks replay pending explicit reconciliation; every replay, state query
+  and deletion refreshes disk state under the same cross-instance lock.
+- Reservations conservatively include raw UTF-8 input bytes as an upper-bound
+  text-token estimate plus 3,000 output tokens, bind the reviewed 2026-08-10
+  prices, and reconcile accepted output to validated duration. These are safety
+  ceilings, not observed billing or activation evidence.
 
 ## Alternatives rejected
 

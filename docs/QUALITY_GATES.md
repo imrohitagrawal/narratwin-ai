@@ -1270,5 +1270,9 @@ The route requires committed RED-before-GREEN proof; exact prompt/hash and unary
 request tests; receipt, privacy, budget, quota, concurrency and activation
 preconditions before fake identity/transport; redirect/DNS/TLS/proxy refusal;
 strict response/base64/WAV/signal validation; durable replay, billable-unknown,
-tombstone and tamper tests; provider-neutral API regressions; and zero real
+tombstone and tamper tests; pre-write transport proof, post-egress authority
+revalidation, privacy-screen evidence, cost reconciliation, transactional
+deletion, cross-instance locking/stale-instance tombstones, required durable
+state, opaque prepared-session send capability and bounded-restore fault tests;
+provider-neutral API regressions; and zero real
 network/provider calls. Google remains disabled and release remains No-Go.

@@ -561,9 +561,14 @@ applicable generative-AI abuse monitoring remain unresolved activation blockers.
 Local deletion/tombstone evidence must not claim provider deletion that the
 service cannot prove. See ADR 0056 and the Issue #368 governance review.
 
-Automated tests inject fake identity and HTTP transports. Transport evidence
-must prove the exact HTTPS URL, port 443, TLS server name, no redirects, no
-proxy, a public resolved-address set and a peer address in that set. Invalid
+Automated tests inject fake identity and HTTP transports. A pre-write transport
+phase returns the only send capability, bound to the established session, after
+proving the exact HTTPS URL, port 443, TLS server name, disabled
+redirect following, no proxy, a pinned public resolved-address set and its peer
+before the adapter releases authorization or content; the response must confirm
+the same peer and resolution. The versioned egress screen rejects secret-like
+text, non-brand email, phone, government-ID and payment-card patterns and binds
+only policy/result/checksum metadata. Invalid
 provider bodies and audio remain bounded in memory and are never persisted;
 errors and logs contain only bounded codes, semantic IDs and non-content hashes.
 The repository contains no real identity resolver, credential path or network
