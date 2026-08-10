@@ -1,9 +1,9 @@
 # ADR 0056: Govern optional Google Gemini-TTS behind the existing TTS boundary
 
-- Status: Adapter implemented behind a disabled boundary; activation not authorized
-- Date: 2026-08-10
+- Status: Runtime identity/transport implemented behind a disabled boundary; activation not authorized
+- Date: 2026-08-11
 - Issue: #368
-- Authority: [OWNER scope amendment](https://github.com/imrohitagrawal/narratwin-ai/issues/368#issuecomment-5241211974)
+- Authority: [OWNER runtime authorization](https://github.com/imrohitagrawal/narratwin-ai/issues/368#issuecomment-5245861950)
 
 ## Context
 
@@ -65,6 +65,15 @@ ADC or an equivalently governed workload identity may resolve outside source
 control. Product configuration, APIs, logs and evidence cannot contain API keys,
 OAuth or refresh tokens, service-account JSON, credential files or paths.
 
+The optional runtime uses `google-auth==2.56.3` only in the providers extra. Its
+locked closure is `cryptography==50.0.0`, `pyasn1-modules==0.4.2`,
+`pyasn1==0.6.4`, and the already-present `cffi==2.0.0`/`pycparser==3.0`.
+The transport uses direct standard-library sockets and TLS: all DNS answers are
+screened, the checked peer is connected directly on port 443, exact EU SNI is
+used, proxies and redirects are forbidden, and the prepared session is single
+use. ADC is lazy and unreachable while disabled; refresh and quota-project
+failures are bounded and redacted.
+
 Every final 90–120-second artifact requires structural validation, exact
 trace/checksum binding and exact-hash OWNER listening. No cloning, reference
 audio, enrollment, biometric input, voice conversion or identifiable-person
@@ -89,10 +98,9 @@ route are in
 - Output remains nondeterministic; selected screening hashes are reference
   evidence only, and final 90–120-second narration requires validation and OWNER
   listening.
-- The implementation adds only an injected identity/HTTP adapter and a
-  provider-neutral receipt delegation seam. It adds no network client,
-  dependency, credential, generated audio, frontend choice, provider
-  activation, deployment, distribution or release.
+- The implementation adds a provider-owned optional runtime and a pinned
+  optional dependency, but no credential, generated audio, frontend choice,
+  provider activation, deployment, distribution or release.
 - The injected transport is two phase: it must return an opaque send capability
   bound to an already-established session that attests pinned
   public DNS, TLS/SNI, port 443, disabled redirects and no proxy before the

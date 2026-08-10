@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-import builtins
 import json
+import importlib
 import socket
 import ssl
 from collections.abc import Callable
-from typing import Any
+from typing import Any, cast
 
 import pytest
 
@@ -51,11 +51,7 @@ def identity_provider(
     supplied = credentials or FakeCredentials()
     default_loader = loader or (lambda **_: (supplied, "project-id"))
     return ADCGoogleIdentityProvider(
-        config=GoogleADCConfig(
-            enabled=enabled,
-            activation_evidence_sha256=CHECKSUM if enabled else "",
-            **kwargs,
-        ),
+        config=GoogleADCConfig(**cast(Any, {"enabled": enabled, "activation_evidence_sha256": CHECKSUM if enabled else "", **kwargs})),
         default_loader=default_loader,
         request_factory=lambda: object(),
     )
@@ -76,14 +72,14 @@ def test_disabled_identity_never_imports_or_touches_adc(monkeypatch: pytest.Monk
 
 
 def test_missing_google_auth_fails_closed_without_network(monkeypatch: pytest.MonkeyPatch) -> None:
-    import backend.app.google_tts_runtime as runtime
+    original = importlib.import_module
 
     def missing(name: str) -> Any:
         if name == "google.auth":
             raise ModuleNotFoundError(name)
-        return runtime.importlib.import_module(name)
+        return original(name)
 
-    monkeypatch.setattr(runtime.importlib, "import_module", missing)
+    monkeypatch.setattr(importlib, "import_module", missing)
     provider = ADCGoogleIdentityProvider(
         config=GoogleADCConfig(enabled=True, activation_evidence_sha256=CHECKSUM),
         request_factory=lambda: object(),
@@ -130,7 +126,7 @@ def test_adc_refresh_failure_is_bounded_and_redacted(failure: Exception) -> None
         provider.resolve(scope=GOOGLE_TTS_SCOPE)
     assert error.value.code == "GOOGLE_TTS_REFRESH_FAILED"
     assert TOKEN not in str(error.value)
-    assert "refresh failed" not in str(error.value)
+    assert str(failure) not in str(error.value)
 
 
 class FakeSocket:
@@ -141,6 +137,7 @@ class FakeSocket:
         self.closed = False
         self.timeout: float | None = None
         self.send_error: Exception | None = None
+        self.connect_error: Exception | None = None
         self.peer = "8.8.8.8"
         self.fail_after = 0
 
@@ -148,6 +145,8 @@ class FakeSocket:
         self.timeout = value
 
     def connect(self, address: object) -> None:
+        if self.connect_error:
+            raise self.connect_error
         self.connected = address
 
     def send(self, data: bytes) -> int:
@@ -218,7 +217,11 @@ def transport(
 
 def test_disabled_transport_never_resolves_or_opens_socket() -> None:
     calls: list[object] = []
-    instance = RegionalGoogleTTSTransport(enabled=False, resolver=lambda *_: calls.append(object()))
+    def resolver(*_: object, **__: object) -> list[tuple[Any, ...]]:
+        calls.append(object())
+        return []
+
+    instance = RegionalGoogleTTSTransport(enabled=False, resolver=resolver)
     with pytest.raises(GoogleRuntimeError) as error:
         instance.prepare(url=GOOGLE_TTS_URL, timeout_seconds=1)
     assert error.value.code == "GOOGLE_TTS_DISABLED"
@@ -313,11 +316,11 @@ def test_partial_write_is_egress_possible_and_not_retryable() -> None:
 
 def test_timeout_before_write_is_not_egress_possible() -> None:
     sock = FakeSocket()
-    sock.send_error = TimeoutError("connect timeout")
+    sock.connect_error = TimeoutError("connect timeout")
     instance, _, _, _ = transport(socket_value=sock)
-    prepared = instance.prepare(url=GOOGLE_TTS_URL, timeout_seconds=1)
-    with pytest.raises(GoogleTransportError) as error:
-        prepared.send(headers={}, json_body={}, timeout_seconds=1)
+    with pytest.raises(GoogleRuntimeError) as error:
+        instance.prepare(url=GOOGLE_TTS_URL, timeout_seconds=1)
+    assert error.value.code == "GOOGLE_TTS_CONNECT_FAILED"
     assert error.value.egress_possible is False
 
 

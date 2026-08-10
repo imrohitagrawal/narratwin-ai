@@ -2595,12 +2595,13 @@ Issue #368, deploy, distribute, release or merge. The separate future 21-path
 implementation route, prerequisite exact prompt contract, and stop-on-widening
 rule are normative in the Issue #368 governance review. Release remains No-Go.
 
-### Issue #368 adapter implementation boundary
+### Issue #368 runtime-transport prerequisite boundary
 
-Direct OWNER comment `5244098136` authorizes the exact 21-path/5,600-line
-implementation branch from merged PR #410 only. It adds the disabled adapter,
-receipt delegation, fake-transport TDD, strict request/response/audio validation,
-idempotent spend state and tombstones without a dependency, network client,
-credential, API/frontend provider choice, real call or audio. The PR must stop
-at eligible non-author latest-head approval. Activation, final listening,
-deployment, distribution, release and Issue #369 remain separate.
+Direct OWNER comment `5245861950` authorizes branch
+`stage8-368-cut1-google-tts-runtime-transport` from accepted main
+`0fea35a7028b22f6d91096b1f46b5418884b9992`, exactly 16 paths and 3,600 charged
+lines. It adds only optional `google-auth==2.56.3`, direct connection-bound EU
+HTTPS transport, ADC seam, injected-fake TDD, route controls and impacted docs.
+The runtime is disabled by default; authentication, credentials, egress, spend,
+audio, activation, frontend, deployment, distribution, release and Issue #369
+remain separate. The PR stops at eligible non-author latest-head approval.

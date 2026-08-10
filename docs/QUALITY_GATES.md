@@ -1261,18 +1261,16 @@ idempotency/concurrency/crash recovery, billable-unknown timeout handling,
 redaction, retention/deletion and exact replay. Automated tests never call
 Google. A final 90–120-second artifact still requires exact-hash OWNER listening.
 
-### Issue #368 Google TTS adapter implementation gate
+### Issue #368 Google TTS runtime-transport prerequisite gate
 
-Exact branch `stage8-368-cut1-google-tts-adapter-implementation` starts at
-`de0cd683cd05dda91c8f0df53d05c8b55c81d213`, changes exactly the governed 21
-paths, and stays within 5,600 additions plus deletions with no deletion credit.
-The route requires committed RED-before-GREEN proof; exact prompt/hash and unary
-request tests; receipt, privacy, budget, quota, concurrency and activation
-preconditions before fake identity/transport; redirect/DNS/TLS/proxy refusal;
-strict response/base64/WAV/signal validation; durable replay, billable-unknown,
-tombstone and tamper tests; pre-write transport proof, post-egress authority
-revalidation, privacy-screen evidence, cost reconciliation, transactional
-deletion, cross-instance locking/stale-instance tombstones, required durable
-state, opaque prepared-session send capability and bounded-restore fault tests;
-provider-neutral API regressions; and zero real
-network/provider calls. Google remains disabled and release remains No-Go.
+Exact branch `stage8-368-cut1-google-tts-runtime-transport` starts at
+`0fea35a7028b22f6d91096b1f46b5418884b9992`, changes exactly 16 governed paths,
+and stays within 3,600 additions plus deletions with no deletion credit. The
+route requires committed RED-before-GREEN proof; optional lazy ADC with the
+fixed cloud-platform scope; exact quota-project/checksum binding; all-answer
+DNS screening; direct checked-peer port-443 TLS/SNI; no proxy/redirect;
+single-use prepared sessions; bounded response reads; redacted errors; truthful
+pre-egress versus egress-possible failures; no retry; and provider-neutral,
+disabled-default startup regressions. `google-auth==2.56.3` is optional and
+locked with its complete closure. Tests use fakes only; Google remains disabled,
+no credentials or real call/audio exists, and release remains No-Go.

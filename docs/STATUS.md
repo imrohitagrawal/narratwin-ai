@@ -1325,19 +1325,20 @@ Required update rules:
   reference evidence only; final 90–120-second narration still requires
   validation and OWNER listening. Issue #368 stays open and release stays No-Go.
 
-## Issue #368 adapter implementation target state (2026-08-10)
+## Issue #368 runtime-transport prerequisite target state (2026-08-11)
 
-- Direct OWNER authority is recorded in Issue comment `5244098136`. Branch
-  `stage8-368-cut1-google-tts-adapter-implementation` starts exactly at accepted
-  main `de0cd683cd05dda91c8f0df53d05c8b55c81d213` and is limited to the governed
-  21 paths and 5,600 charged lines.
-- After this PR merges, the repository contains a provider-neutral,
-  disabled-by-default adapter with canonical prompt verification, exact receipt
-  authority, injected fake identity/HTTP seams, strict response/WAV validation,
-  durable idempotency/spend/tombstone state and redacted evidence. It contains no
-  real transport, credential, provider call, generated audio or frontend/API
-  activation surface.
-- Issue #368 remains open for human latest-head review and later separately
-  authorized activation/final-audio evidence. Legal, privacy, account, billing,
-  IAM/identity, quota, endpoint policy, effective-output identity and exact-hash
-  listening remain unresolved. Release remains No-Go; Issue #369 is not started.
+- Direct OWNER authority is recorded in Issue comment `5245861950`. Branch
+  `stage8-368-cut1-google-tts-runtime-transport` starts exactly at accepted main
+  `0fea35a7028b22f6d91096b1f46b5418884b9992` and is limited to 16 paths and
+  3,600 charged lines.
+- The optional provider-owned runtime uses lazy ADC with the fixed scope and a
+  direct checked-peer EU HTTPS transport. It rejects ambient/default operation,
+  proxies, redirects, unsafe DNS answers, peer/TLS/SNI drift, oversized
+  responses and unsafe retries. `google-auth==2.56.3` is optional and locked.
+- Google remains disabled; no credential lookup, authentication, egress,
+  narration, spend, generated audio or frontend/API selection exists in this
+  change. Issue #368 remains open for eligible non-author latest-head review.
+- Account/IAM/ADC approval, billing/quota, legal/commercial use, content
+  logging/abuse monitoring, retention/regional processing, effective output and
+  exact-hash listening remain unresolved activation blockers. Release is No-Go;
+  Issue #369 is not started.
