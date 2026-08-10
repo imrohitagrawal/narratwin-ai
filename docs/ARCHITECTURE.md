@@ -798,8 +798,15 @@ voice, `en-IN`, EU endpoint, identity and wire details. No frontend or domain
 surface accepts vendor-controlled values. Mock/local remains the default, and
 unit/API/CI transports remain fake and network-free.
 
-Future execution must validate current narration authority and every allowlisted
+The disabled adapter validates current narration authority and every allowlisted
 configuration field before egress, ledger possible spend idempotently, treat
 post-egress ambiguity as billable-unknown, validate decoded untrusted audio, and
 bind source-to-artifact-to-deletion evidence. The exact contract and blocked
 activation state are recorded in the Issue #368 governance review.
+
+`Stage6Service.synthesize_approved_narration` accepts only the provider-neutral
+`TTSConsumptionReceipt` and delegates to `TTSProvider`; it is not exposed by an
+API route. The adapter owns the immutable hosted request vocabulary, canonical
+prompt loader, injected identity and HTTP protocols, durable request ledger,
+bounded response/WAV validator and monotonic tombstone. No concrete network
+transport or ambient credential resolver exists in the repository.

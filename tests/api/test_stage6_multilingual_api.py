@@ -1,6 +1,7 @@
 from pathlib import Path
 import base64
 import json
+import socket
 from typing import Any, cast
 
 from fastapi.testclient import TestClient
@@ -10,7 +11,12 @@ from backend.app.main import app, reset_app_state_for_tests
 from backend.app.stage6 import PRIORITY1_LANGUAGE_TAGS, PRIORITY2_LANGUAGE_TAGS
 from backend.app.stage4 import stage4_service
 from backend.app.stage6 import TranslationProviderResult, stage6_service, translate_demo_source_text
-from backend.app.tts_provider import ElevenLabsTTSProvider, InMemoryTTSQuotaLedger, TTSHTTPResponse, TTSProviderConfig
+from backend.app.tts_provider import (
+    ElevenLabsTTSProvider,
+    InMemoryTTSQuotaLedger,
+    TTSHTTPResponse,
+    TTSProviderConfig,
+)
 
 IDEMPOTENCY_HEADER = "Idempotency-" + "Key"
 
@@ -219,7 +225,9 @@ def test_language_catalog_api_exposes_support_status_without_fake_priority2_succ
     assert catalog["bn"]["providerSupportStatus"] == "UNSUPPORTED_LOCAL_DEMO"
 
 
-def test_multilingual_walkthrough_api_returns_structured_transcript_and_matching_metadata_artifact() -> None:
+def test_multilingual_walkthrough_api_returns_structured_transcript_and_matching_metadata_artifact() -> (
+    None
+):
     reset_app_state_for_tests()
     client = TestClient(app)
     project_id, run_id = _create_completed_walkthrough(client)
@@ -247,7 +255,10 @@ def test_multilingual_walkthrough_api_returns_structured_transcript_and_matching
     assert source_text
     assert target_text
     assert target_text != source_text
-    assert "For recruiters, NarraTwin AI turns approved project knowledge into grounded walkthrough scripts. [1]" in source_text
+    assert (
+        "For recruiters, NarraTwin AI turns approved project knowledge into grounded walkthrough scripts. [1]"
+        in source_text
+    )
     assert "NarraTwin AI NarraTwin AI" not in source_text
     assert len(body["transcriptSegments"]) >= 2
     assert len(body["transcriptSegments"]) == body["transcriptCorrectness"]["segmentCount"]
@@ -275,7 +286,9 @@ def test_multilingual_walkthrough_api_returns_structured_transcript_and_matching
         assert segment["sourceRunId"] == run_id
         assert segment["evaluationId"] == body["trace"]["sourceEvaluationId"]
 
-    metadata = json.loads(base64.b64decode(body["artifacts"]["metadata"]["contentBase64"]).decode("utf-8"))
+    metadata = json.loads(
+        base64.b64decode(body["artifacts"]["metadata"]["contentBase64"]).decode("utf-8")
+    )
     assert metadata["transcriptSegments"] == body["transcriptSegments"]
     assert metadata["transcriptCorrectness"] == body["transcriptCorrectness"]
     assert_translated_script_artifact_contains_transcript(body)
@@ -326,7 +339,9 @@ Every generated walkthrough claim must cite retrieved source chunks from approve
     assert "डेमो" not in body["translatedScriptText"]
     assert "अडैप्टर" not in body["translatedScriptText"]
     assert body["translatedScriptText"] != body["sourceScriptText"]
-    metadata = json.loads(base64.b64decode(body["artifacts"]["metadata"]["contentBase64"]).decode("utf-8"))
+    metadata = json.loads(
+        base64.b64decode(body["artifacts"]["metadata"]["contentBase64"]).decode("utf-8")
+    )
     assert metadata["transcriptSegments"] == body["transcriptSegments"]
     assert_translated_script_artifact_contains_transcript(body)
 
@@ -393,7 +408,9 @@ def test_multilingual_walkthrough_api_named_real_tts_fails_closed_by_default() -
     assert response.json()["error"]["code"] == "TTS_PROVIDER_DISABLED"
 
 
-def test_multilingual_walkthrough_api_returns_real_tts_manifest_and_audio_for_injected_fake() -> None:
+def test_multilingual_walkthrough_api_returns_real_tts_manifest_and_audio_for_injected_fake() -> (
+    None
+):
     reset_app_state_for_tests()
     transport = FakeTTSTransport()
     configure_api_external_tts(transport)
@@ -433,17 +450,17 @@ def test_multilingual_walkthrough_api_accepts_non_mock_local_translation_adapter
             target_language: str,
             glossary_terms: list[str],
         ) -> TranslationProviderResult:
-                return TranslationProviderResult(
-                    provider=self.provider,
-                    provider_mode=self.provider_mode,
-                    source_language=source_language,
+            return TranslationProviderResult(
+                provider=self.provider,
+                provider_mode=self.provider_mode,
+                source_language=source_language,
+                target_language=target_language,
+                translated_text=translate_demo_source_text(
+                    source_text=source_text,
                     target_language=target_language,
-                    translated_text=translate_demo_source_text(
-                        source_text=source_text,
-                        target_language=target_language,
-                    ),
-                    preserved_terms=[term for term in glossary_terms if term in source_text],
-                )
+                ),
+                preserved_terms=[term for term in glossary_terms if term in source_text],
+            )
 
     reset_app_state_for_tests()
     stage6_service.translation_provider = LocalTranslationProvider()
@@ -589,7 +606,9 @@ def test_multilingual_walkthrough_api_rejects_secret_like_glossary_terms() -> No
         "requestedVoiceProvider": "mock",
     }
 
-    response = client.post(path, json=request, headers=idempotency_headers("stage6-secret-glossary"))
+    response = client.post(
+        path, json=request, headers=idempotency_headers("stage6-secret-glossary")
+    )
     replay = client.post(path, json=request, headers=idempotency_headers("stage6-secret-glossary"))
     conflict = client.post(
         path,
@@ -662,3 +681,29 @@ def test_multilingual_walkthrough_api_rejects_unsupported_language_cleanly() -> 
     body = response.json()
     assert body["error"]["code"] == "UNSUPPORTED_LANGUAGE"
     assert "Unsupported target language" in body["error"]["message"]
+
+
+def test_g368_api_cannot_activate_adapter_or_expose_provider_route(
+    monkeypatch: Any,
+) -> None:
+    def reject_network(*args: object, **kwargs: object) -> None:
+        raise AssertionError("ambient network access is prohibited")
+
+    monkeypatch.setattr(socket, "create_connection", reject_network)
+    reset_app_state_for_tests()
+    client = TestClient(app)
+    project_id, run_id = _create_completed_walkthrough(client, prefix="g368-neutral")
+    response = client.post(
+        f"/api/v1/projects/{project_id}/walkthrough-runs/{run_id}/multilingual-runs",
+        json={"targetLanguage": "en", "requestedVoiceProvider": "google"},
+        headers=idempotency_headers("g368-google-choice"),
+    )
+    assert response.status_code == 201
+    voice = response.json()["voice"]
+    assert voice["provider"] == "mock"
+    assert voice["providerMode"] == "LOCAL"
+    assert voice["requestedProvider"] == "google"
+    assert voice["fallbackReason"] == "REQUESTED_PROVIDER_UNAVAILABLE"
+    assert "gemini-2.5-pro-tts" not in response.text
+    assert "eu-texttospeech.googleapis.com" not in response.text
+    assert client.post("/api/v1/google/tts", json={}).status_code == 404

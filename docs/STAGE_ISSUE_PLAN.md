@@ -2594,3 +2594,13 @@ generate audio, modify frontend/runtime/workflows, activate a provider, complete
 Issue #368, deploy, distribute, release or merge. The separate future 21-path
 implementation route, prerequisite exact prompt contract, and stop-on-widening
 rule are normative in the Issue #368 governance review. Release remains No-Go.
+
+### Issue #368 adapter implementation boundary
+
+Direct OWNER comment `5244098136` authorizes the exact 21-path/5,600-line
+implementation branch from merged PR #410 only. It adds the disabled adapter,
+receipt delegation, fake-transport TDD, strict request/response/audio validation,
+idempotent spend state and tombstones without a dependency, network client,
+credential, API/frontend provider choice, real call or audio. The PR must stop
+at eligible non-author latest-head approval. Activation, final listening,
+deployment, distribution, release and Issue #369 remain separate.

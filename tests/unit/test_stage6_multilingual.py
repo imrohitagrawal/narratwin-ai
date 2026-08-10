@@ -2019,3 +2019,18 @@ def test_local_demo_translation_accepts_exact_browser_source_chunk_citation_fixt
     assert result.status == "COMPLETED"
     assert result.transcript_correctness.validation_status == "PASSED"
     assert result.translated_script_text == GOLDEN_RECRUITER_NARRATWIN_TRANSLATIONS["fr"]
+
+
+def test_g368_named_adapter_is_not_activated_by_product_facing_stage6_choice() -> None:
+    service = create_stage6_service()
+    result = service.generate_multilingual_walkthrough(
+        source_script="NarraTwin AI turns approved knowledge into a grounded walkthrough. [1]",
+        target_language="en",
+        requested_voice_provider="google",
+        **passed_eval_kwargs(),
+    )
+    assert result.voice.provider == "mock"
+    assert result.voice.provider_mode == "LOCAL"
+    assert result.voice.requested_provider == "google"
+    assert result.voice.fallback_reason == "REQUESTED_PROVIDER_UNAVAILABLE"
+    assert service.approved_narration_tts_provider is None

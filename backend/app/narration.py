@@ -400,6 +400,25 @@ class NarrationService:
                 raise
             self._log("consumed", consumed)
             return receipt
+    def validate_tts_consumption_receipt(self, *, principal: LocalPrincipal,
+                                         receipt: TTSConsumptionReceipt) -> TTSConsumptionReceipt:
+        """Revalidate persisted speech authority without creating a second receipt."""
+        with self._lock:
+            if not isinstance(receipt, TTSConsumptionReceipt):
+                _fail("AUTHORITY_MISMATCH", "TTS receipt is malformed.")
+            row = self._current(
+                principal,
+                receipt.project_id,
+                receipt.version,
+                receipt.narration_checksum,
+            )
+            if row.state is not NarrationState.CONSUMED_BY_TTS:
+                _fail("AUTHORITY_MISMATCH", "TTS receipt is not current.")
+            if receipt not in self._receipts or not _receipt_matches_version(receipt, row):
+                _fail("AUTHORITY_MISMATCH", "TTS receipt is stale or mismatched.")
+            if _receipt_checksum(receipt) != receipt.receipt_checksum:
+                _fail("AUTHORITY_MISMATCH", "TTS receipt checksum is invalid.")
+            return receipt
     def _required(self, principal: LocalPrincipal, project_id: str, narration_version: int,
                   narration_checksum: str, state: NarrationState) -> NarrationVersion:
         row = self._current(principal, project_id, narration_version, narration_checksum)

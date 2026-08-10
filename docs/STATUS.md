@@ -1324,3 +1324,20 @@ Required update rules:
   activation blockers. Output remains nondeterministic; screening hashes remain
   reference evidence only; final 90–120-second narration still requires
   validation and OWNER listening. Issue #368 stays open and release stays No-Go.
+
+## Issue #368 adapter implementation target state (2026-08-10)
+
+- Direct OWNER authority is recorded in Issue comment `5244098136`. Branch
+  `stage8-368-cut1-google-tts-adapter-implementation` starts exactly at accepted
+  main `de0cd683cd05dda91c8f0df53d05c8b55c81d213` and is limited to the governed
+  21 paths and 5,600 charged lines.
+- After this PR merges, the repository contains a provider-neutral,
+  disabled-by-default adapter with canonical prompt verification, exact receipt
+  authority, injected fake identity/HTTP seams, strict response/WAV validation,
+  durable idempotency/spend/tombstone state and redacted evidence. It contains no
+  real transport, credential, provider call, generated audio or frontend/API
+  activation surface.
+- Issue #368 remains open for human latest-head review and later separately
+  authorized activation/final-audio evidence. Legal, privacy, account, billing,
+  IAM/identity, quota, endpoint policy, effective-output identity and exact-hash
+  listening remain unresolved. Release remains No-Go; Issue #369 is not started.

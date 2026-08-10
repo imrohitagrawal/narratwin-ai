@@ -20,11 +20,36 @@ ISSUE397_BRANCH = "stage8-397-presenter-asset-adr-classifier"
 ISSUE393_BRANCH = "stage8-393-historical-digest-test-isolation"
 ISSUE368_BRANCH = "stage8-368-cut1-local-tts-audio"
 ISSUE368_PROMPT_BRANCH = "stage8-368-cut1-google-tts-prompt-contract"
+ISSUE368_IMPLEMENTATION_BRANCH = "stage8-368-cut1-google-tts-adapter-implementation"
 ISSUE386_BASE = "48fc32a2689c9bbc03742d774f3eadb8a500dafc"
 ISSUE368_BASE = "ef9cabc23762560912d99f10831241b8a65b869c"
 ISSUE368_PROMPT_BASE = "ba77d59b193da8064d67261e13fb50756c2bd9e8"
+ISSUE368_IMPLEMENTATION_BASE = "de0cd683cd05dda91c8f0df53d05c8b55c81d213"
 
 ROUTES = {
+    ISSUE368_IMPLEMENTATION_BRANCH: {
+        "docs/governance/preflights/issue-368.json",
+        "backend/app/narration.py",
+        "backend/app/tts_provider.py",
+        "backend/app/stage6.py",
+        "tests/unit/test_cut1_narration.py",
+        "tests/unit/test_stage6_tts_provider.py",
+        "tests/unit/test_stage6_multilingual.py",
+        "tests/api/test_stage6_multilingual_api.py",
+        "scripts/quality/stage8_cut1_routes.py",
+        "tests/unit/test_stage8_cut1_routes.py",
+        "docs/ADR/0056-cut1-google-gemini-tts.md",
+        "docs/ARCHITECTURE.md",
+        "docs/SECURITY_AND_PRIVACY.md",
+        "docs/OBSERVABILITY_AND_COST.md",
+        "docs/QUALITY_GATES.md",
+        "docs/STAGE_ISSUE_PLAN.md",
+        "docs/STATUS.md",
+        "docs/TRACEABILITY.md",
+        "docs/THIRD_PARTY_NOTICES.md",
+        "docs/API_CONTRACT.md",
+        "docs/DATA_MODEL.md",
+    },
     ISSUE368_PROMPT_BRANCH: {
         "docs/governance/preflights/issue-368.json",
         "docs/governance/cut1-google-gemini-tts-style-prompts-v1.json",
@@ -207,11 +232,11 @@ ROUTES = {
         "docs/THIRD_PARTY_NOTICES.md",
     },
 }
-ROUTE_ISSUES = {ISSUE368_PROMPT_BRANCH: 368, ISSUE368_BRANCH: 368, ISSUE405_BRANCH: 405, ISSUE403_BRANCH: 403, ISSUE401_BRANCH: 401, ISSUE396_BRANCH: 396,
+ROUTE_ISSUES = {ISSUE368_IMPLEMENTATION_BRANCH: 368, ISSUE368_PROMPT_BRANCH: 368, ISSUE368_BRANCH: 368, ISSUE405_BRANCH: 405, ISSUE403_BRANCH: 403, ISSUE401_BRANCH: 401, ISSUE396_BRANCH: 396,
                 ISSUE386_BRANCH: 386, ISSUE385_BRANCH: 385,
                 ISSUE384_BRANCH: 384, ISSUE383_BRANCH: 383, ISSUE397_BRANCH: 397,
                 ISSUE393_BRANCH: 393, ISSUE382_BRANCH: 382, ISSUE367_BRANCH: 367}
-TOTAL_LIMITS = {ISSUE368_PROMPT_BRANCH: 1000, ISSUE368_BRANCH: 3200, ISSUE405_BRANCH: 800, ISSUE403_BRANCH: 650, ISSUE401_BRANCH: 600, ISSUE396_BRANCH: 500,
+TOTAL_LIMITS = {ISSUE368_IMPLEMENTATION_BRANCH: 5600, ISSUE368_PROMPT_BRANCH: 1000, ISSUE368_BRANCH: 3200, ISSUE405_BRANCH: 800, ISSUE403_BRANCH: 650, ISSUE401_BRANCH: 600, ISSUE396_BRANCH: 500,
                 ISSUE386_BRANCH: 700, ISSUE385_BRANCH: 350,
                 ISSUE384_BRANCH: 500, ISSUE383_BRANCH: 700, ISSUE397_BRANCH: 500,
                 ISSUE393_BRANCH: 700, ISSUE382_BRANCH: 3200, ISSUE367_BRANCH: 2000}
@@ -220,6 +245,17 @@ ISSUE383_BINARY_FILES = {
     "frontend/public/demo/raj-synthetic-presenter.webp",
 }
 TEXT_LIMITS = {
+    ISSUE368_IMPLEMENTATION_BRANCH: {
+        path: 1700 if path == "backend/app/tts_provider.py"
+        else 1200 if path == "tests/unit/test_stage6_tts_provider.py"
+        else 600 if path in {"backend/app/narration.py", "backend/app/stage6.py",
+                             "tests/unit/test_cut1_narration.py", "tests/unit/test_stage6_multilingual.py"}
+        else 400 if path in {"tests/api/test_stage6_multilingual_api.py",
+                             "scripts/quality/stage8_cut1_routes.py",
+                             "tests/unit/test_stage8_cut1_routes.py"}
+        else 300 if path == "docs/governance/preflights/issue-368.json" else 240
+        for path in ROUTES[ISSUE368_IMPLEMENTATION_BRANCH]
+    },
     ISSUE368_PROMPT_BRANCH: {
         path: 260 if path == "tests/unit/test_stage8_cut1_routes.py"
         else 180 if path == "docs/governance/preflights/issue-368.json"
@@ -352,6 +388,7 @@ def parse_name_status_z(output: str) -> list[str]:
 
 def route_base(run: Callable[[list[str]], Any], branch: str) -> str:
     fixed_routes = {
+        ISSUE368_IMPLEMENTATION_BRANCH: (368, ISSUE368_IMPLEMENTATION_BASE),
         ISSUE368_PROMPT_BRANCH: (368, ISSUE368_PROMPT_BASE),
         ISSUE368_BRANCH: (368, ISSUE368_BASE),
         ISSUE386_BRANCH: (386, ISSUE386_BASE),
@@ -363,7 +400,7 @@ def route_base(run: Callable[[list[str]], Any], branch: str) -> str:
         fixed_value = str(fixed.stdout).strip()
         common_value = str(common.stdout).strip()
         branch_point_invalid = False
-        if branch in {ISSUE368_BRANCH, ISSUE368_PROMPT_BRANCH}:
+        if branch in {ISSUE368_IMPLEMENTATION_BRANCH, ISSUE368_BRANCH, ISSUE368_PROMPT_BRANCH}:
             branch_point = run(["git", "merge-base", "origin/main", "HEAD"])
             branch_point_invalid = branch_point.returncode != 0 or str(branch_point.stdout).strip() != base
         if (fixed.returncode or common.returncode or fixed_value != base or common_value != base

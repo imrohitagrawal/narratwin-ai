@@ -1,78 +1,132 @@
 {
   "schema_version": "GovernancePreflightV1",
   "issue_number": 368,
-  "branch": "stage8-368-cut1-google-tts-prompt-contract",
-  "objective": "OWNER-authorized governance-only prerequisite from exact merged base ba77d59b193da8064d67261e13fb50756c2bd9e8. Record and deterministically verify the exact canonical Google Gemini-TTS style-prompt Unicode values, UTF-8 byte counts, SHA-256 values, semantic-profile-to-voice mappings, accepted screening hashes, and selected private request-manifest hashes for Meera/Despina, Myra/Leda, and Raj/Achird. Reconcile only the minimum governing Issue #368 surfaces. Do not implement or activate synthesis, select or install dependencies, handle credentials, call Google, generate or commit audio, change runtime or frontend behavior, deploy, distribute, release, close Issue #368, or begin the separately gated adapter implementation phase.",
+  "branch": "stage8-368-cut1-google-tts-adapter-implementation",
+  "objective": "Implement the OWNER-authorized optional Google Cloud Text-to-Speech Gemini-TTS adapter behind the existing provider-neutral TTSProvider boundary from accepted main de0cd683cd05dda91c8f0df53d05c8b55c81d213. Consume only exact current TTSConsumptionReceipt authority and semantic presenter IDs meera, myra, and raj; keep Google disabled by default; use only injected fake identity and HTTP transports; make zero real provider calls; validate the canonical prompt contract, request, response, WAV signal, spend/idempotency, persistence, deletion, redaction, and receipt bindings; reconcile the existing governing docs and exact Stage 8 route. Do not add dependencies, credentials, frontend or product-facing Google vocabulary, real audio, provider activation, narration egress, deployment, distribution, release, Issue #369 or later work, or merge without eligible non-author approval on the exact latest head.",
   "status_decision": "update-minimally",
   "authority": {
-    "owner_voice_selection": "https://github.com/imrohitagrawal/narratwin-ai/issues/368#issuecomment-5240725519",
-    "owner_scope_amendment": "https://github.com/imrohitagrawal/narratwin-ai/issues/368#issuecomment-5241211974",
-    "governance_closeout": "https://github.com/imrohitagrawal/narratwin-ai/issues/368#issuecomment-5243023393",
-    "owner_prompt_contract": "https://github.com/imrohitagrawal/narratwin-ai/issues/368#issuecomment-5243441424"
+    "direct_owner_authority": "https://github.com/imrohitagrawal/narratwin-ai/issues/368#issuecomment-5244098136",
+    "accepted_main": "de0cd683cd05dda91c8f0df53d05c8b55c81d213",
+    "governance_pr": "https://github.com/imrohitagrawal/narratwin-ai/pull/409",
+    "prompt_contract_pr": "https://github.com/imrohitagrawal/narratwin-ai/pull/410",
+    "prompt_contract_reviewed_head": "111810bf5cc4dae0e1a927ed1565b3e2bd14ad11"
   },
-  "accepted_base": "ba77d59b193da8064d67261e13fb50756c2bd9e8",
-  "historical_predecessor": {
-    "branch": "stage8-368-cut1-local-tts-audio",
-    "accepted_base": "ef9cabc23762560912d99f10831241b8a65b869c",
-    "approved_head": "4077db9fcc402d08837abc14ec436ec60f178c8c",
-    "merge_commit": "ba77d59b193da8064d67261e13fb50756c2bd9e8",
-    "disposition": "Preserved merged PR #409 governance evidence; not an active mutation route."
+  "source_facts": {
+    "verified_on": "2026-08-10",
+    "gemini_tts": "https://docs.cloud.google.com/text-to-speech/docs/gemini-tts",
+    "regional_endpoints": "https://docs.cloud.google.com/text-to-speech/docs/endpoints",
+    "synthesize_method": "https://docs.cloud.google.com/text-to-speech/docs/reference/rest/v1/text/synthesize",
+    "voice_selection": "https://docs.cloud.google.com/text-to-speech/docs/reference/rest/v1/VoiceSelectionParams",
+    "audio_config": "https://docs.cloud.google.com/text-to-speech/docs/reference/rest/v1/AudioConfig",
+    "drift_decision": "no-material-implementation-contract-drift"
   },
   "change_budget": {
-    "exact_paths": 8,
-    "maximum_additions_plus_deletions": 1000,
+    "exact_paths": 21,
+    "maximum_additions_plus_deletions": 5600,
     "deletions_grant_credit": false
   },
   "scope": {
     "required": [
       "docs/governance/preflights/issue-368.json",
-      "docs/governance/cut1-google-gemini-tts-style-prompts-v1.json",
-      "docs/reviews/ISSUE_368_GOOGLE_GEMINI_TTS_GOVERNANCE.md",
+      "backend/app/narration.py",
+      "backend/app/tts_provider.py",
+      "backend/app/stage6.py",
+      "tests/unit/test_cut1_narration.py",
+      "tests/unit/test_stage6_tts_provider.py",
+      "tests/unit/test_stage6_multilingual.py",
+      "tests/api/test_stage6_multilingual_api.py",
+      "scripts/quality/stage8_cut1_routes.py",
+      "tests/unit/test_stage8_cut1_routes.py",
       "docs/ADR/0056-cut1-google-gemini-tts.md",
+      "docs/ARCHITECTURE.md",
+      "docs/SECURITY_AND_PRIVACY.md",
+      "docs/OBSERVABILITY_AND_COST.md",
+      "docs/QUALITY_GATES.md",
+      "docs/STAGE_ISSUE_PLAN.md",
       "docs/STATUS.md",
       "docs/TRACEABILITY.md",
-      "scripts/quality/stage8_cut1_routes.py",
-      "tests/unit/test_stage8_cut1_routes.py"
+      "docs/THIRD_PARTY_NOTICES.md",
+      "docs/API_CONTRACT.md",
+      "docs/DATA_MODEL.md"
     ],
     "allowed_prefixes": [
       "docs/governance/preflights/issue-368.json",
-      "docs/governance/cut1-google-gemini-tts-style-prompts-v1.json",
-      "docs/reviews/ISSUE_368_GOOGLE_GEMINI_TTS_GOVERNANCE.md",
+      "backend/app/narration.py",
+      "backend/app/tts_provider.py",
+      "backend/app/stage6.py",
+      "tests/unit/test_cut1_narration.py",
+      "tests/unit/test_stage6_tts_provider.py",
+      "tests/unit/test_stage6_multilingual.py",
+      "tests/api/test_stage6_multilingual_api.py",
+      "scripts/quality/stage8_cut1_routes.py",
+      "tests/unit/test_stage8_cut1_routes.py",
       "docs/ADR/0056-cut1-google-gemini-tts.md",
+      "docs/ARCHITECTURE.md",
+      "docs/SECURITY_AND_PRIVACY.md",
+      "docs/OBSERVABILITY_AND_COST.md",
+      "docs/QUALITY_GATES.md",
+      "docs/STAGE_ISSUE_PLAN.md",
       "docs/STATUS.md",
       "docs/TRACEABILITY.md",
-      "scripts/quality/stage8_cut1_routes.py",
-      "tests/unit/test_stage8_cut1_routes.py"
+      "docs/THIRD_PARTY_NOTICES.md",
+      "docs/API_CONTRACT.md",
+      "docs/DATA_MODEL.md"
     ],
     "forbidden": [
       ".github/",
       "AGENTS.md",
       "Makefile",
       "README.md",
-      "backend/",
       "frontend/",
       "pyproject.toml",
       "uv.lock",
+      "backend/app/main.py",
+      "backend/app/local_tts.py",
       "scripts/ci/",
-      "tests/api/",
       "tests/acceptance/",
       "tests/integration/"
     ]
   },
-  "evidence_boundary": {
-    "source": "Direct OWNER authority plus byte-for-byte replay of the five selected private manifests; private paths and payloads remain outside Git and GitHub comments.",
-    "invariants": "Exactly three semantic profiles and exact provider/model/locale/endpoint/voice/version/prompt/hash/reference mappings; no caller prompt control; no runtime authorization.",
-    "tests": "RED baseline rejects the unregistered branch; deterministic unit tests then validate route/base/budget and public contract bytes without network, credentials, provider calls, or private evidence reads.",
-    "human_only": "Latest-head non-author approval, final merge wording, nondeterministic output quality, effective locale/voice, and final 90-120-second OWNER listening remain human/source governed."
+  "implementation_invariants": [
+    "G368-01 provider-neutral semantic receipt boundary and exact presenter mapping",
+    "G368-02 canonical prompt version byte-count and sha256 verification before identity or transport",
+    "G368-03 disabled-default activation and immutable endpoint model locale output request allowlist",
+    "G368-04 current receipt approval source privacy policy quota budget deadline and concurrency checks before egress",
+    "G368-05 injected fake identity and HTTP transports with zero-network automated evidence",
+    "G368-06 strict response schema base64 bounded WAV PCM16 24-kHz mono and signal validation before persistence",
+    "G368-07 receipt request artifact checksum retention and monotonic deletion binding",
+    "G368-08 stable idempotency concurrent rejection and billing-safe state transitions",
+    "G368-09 post-egress ambiguity becomes BILLABLE_UNKNOWN with no retry or refund",
+    "G368-10 bounded redacted logs errors and evidence contain no content credentials headers or provider body",
+    "G368-11 no cloning reference audio enrollment biometrics conversion imitation or effective-identity claim",
+    "G368-12 exact 21-path 5600-line route and No-Go overclaim prevention"
+  ],
+  "test_levels": {
+    "unit": "RED then GREEN adapter narration Stage 6 persistence audio signal spend concurrency redaction and mutation tests with in-memory fixtures",
+    "api": "disabled-default provider-neutral and zero-network regressions with injected fakes and socket denial",
+    "gate": "exact branch path budget route backend lint type tests security performance stage8-quality and quality",
+    "human_only": "eligible non-author latest-head review plus activation legal privacy account identity billing quota endpoint policy effective-output and exact-final-audio listening remain blocked"
+  },
+  "skill_selection": {
+    "invoked": [
+      "test-driven-development",
+      "code-review-and-quality"
+    ],
+    "rejected": {
+      "frontend-ui-engineering": "frontend is expressly out of scope",
+      "dependency-installation": "no dependency or lockfile change is authorized",
+      "shipping-and-launch": "deployment distribution release and production claims remain prohibited",
+      "performance-optimization": "existing repository performance gates prove regression posture; no performance redesign is authorized"
+    }
   },
   "stop_conditions": [
-    "authority, exact merged base, branch, issue, or competing-PR drift",
-    "any canonical prompt string, byte count, prompt hash, selected reference hash, or selected request-manifest hash mismatch",
-    "a ninth changed path or any 1000-line route budget breach",
-    "runtime, dependency, credential, provider-call, audio, frontend, workflow, deployment, distribution, release, merge, issue-close, or adapter-implementation change",
-    "private path, narration, payload, credential, project identifier, audio, personal data, or hidden prompt leakage",
-    "an unresolved Critical, High, Medium, or Required finding",
-    "a mandatory quality failure that cannot be isolated safely",
-    "missing eligible latest-head non-author human approval"
+    "authority accepted-base issue prerequisite branch or competing-PR drift",
+    "a twenty-second changed path or 5600-line route budget breach",
+    "a dependency lockfile separate adapter module main runtime wiring or frontend path proves necessary",
+    "credential authentication real-provider-call narration-egress generated-audio paid-spend activation deployment distribution release merge or issue-close requirement",
+    "material Google API endpoint model permission format policy or effective-output fact drift",
+    "provider neutrality disabled-default zero-network privacy billing-safe idempotency or deletion monotonicity cannot be preserved",
+    "an unresolved Critical High Medium or Required finding not safely remediable in scope",
+    "an applicable mandatory quality or security failure that cannot be isolated and remediated in scope"
   ]
 }
