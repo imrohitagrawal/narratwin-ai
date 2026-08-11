@@ -13,6 +13,7 @@ from pathlib import Path
 import pytest
 from typing import Any, cast
 
+import backend.app.tts_provider as tts_provider_module
 from backend.app.tts_provider import (
     ElevenLabsTTSProvider,
     InMemoryTTSQuotaLedger,
@@ -32,6 +33,10 @@ from backend.app.narration import TTSConsumptionReceipt
 
 _GOOGLE_TEST_STATE_DIR = tempfile.TemporaryDirectory(prefix="narratwin-g368-")
 _GOOGLE_TEST_STATE_COUNTER = itertools.count()
+_GOOGLE_TEST_QUOTA_PROJECT = "quota-project"
+_GOOGLE_TEST_QUOTA_HASH = "sha256:" + hashlib.sha256(
+    _GOOGLE_TEST_QUOTA_PROJECT.encode()
+).hexdigest()
 
 
 class FakeTransport:
@@ -217,6 +222,8 @@ def test_malformed_unsafe_url_and_oversized_responses_refund() -> None:
 class FakeGoogleIdentityProvider:
     def __init__(self) -> None:
         self.calls = 0
+        self.revalidation_calls = 0
+        self.fail_revalidation = False
 
     def resolve(self, *, scope: str) -> GoogleIdentity:
         self.calls += 1
@@ -224,6 +231,11 @@ class FakeGoogleIdentityProvider:
             "unit-fixture-identity-value",
             "sha256:" + "1" * 64,
         )
+
+    def revalidate_quota_project(self, identity: GoogleIdentity) -> None:
+        self.revalidation_calls += 1
+        if self.fail_revalidation:
+            raise RuntimeError("private-project-value-must-not-leak")
 
 
 @dataclass
@@ -303,6 +315,8 @@ def google_config(**overrides: object) -> GoogleTTSConfig:
         "max_concurrent_requests": 1,
         "timeout_seconds": 3.0,
     }
+    if "approved_quota_project_sha256" in GoogleTTSConfig.__dataclass_fields__:
+        values["approved_quota_project_sha256"] = _GOOGLE_TEST_QUOTA_HASH
     values.update(overrides)
     return GoogleTTSConfig(**cast(Any, values))
 
@@ -434,7 +448,89 @@ def test_g368_01_03_exact_semantic_mapping_and_unary_request(presenter_id: str, 
         "name": voice,
     }
     assert body["audioConfig"] == {"audioEncoding": "LINEAR16", "sampleRateHertz": 24000}
-    assert set(headers) == {"Authorization", "Content-Type"}
+    assert set(headers) == {"Authorization", "Content-Type", "x-goog-user-project"}
+    assert headers["x-goog-user-project"] == _GOOGLE_TEST_QUOTA_PROJECT
+
+
+def test_g368_quota_project_is_hash_bound_and_not_caller_controlled() -> None:
+    fields = GoogleTTSConfig.__dataclass_fields__
+    assert "approved_quota_project_sha256" in fields
+    assert "quota_project_id" not in fields
+    assert set(GoogleGeminiTTSProvider.synthesize.__annotations__) == {"receipt", "return"}
+
+
+def test_g368_request_fingerprint_binds_required_quota_header_and_approved_hash(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: list[object] = []
+    original_sha = tts_provider_module._google_sha
+
+    def capture_sha(value: object) -> str:
+        captured.append(value)
+        return original_sha(value)
+
+    provider = google_provider(FakeGoogleTransport([]), FakeGoogleIdentityProvider())
+    profile, _screening = provider._validate_before_identity(receipt())
+    body = provider._request_body(receipt(), profile)
+    monkeypatch.setattr(tts_provider_module, "_google_sha", capture_sha)
+    provider._request_contract_checksum(receipt(), profile, body)
+
+    contract = cast(dict[str, object], captured[-1])
+    assert contract["orderedHeaderNames"] == [
+        "Authorization",
+        "Content-Type",
+        "x-goog-user-project",
+    ]
+    assert contract["quotaProjectRequired"] is True
+    assert contract["approvedQuotaProjectIdSha256"] == _GOOGLE_TEST_QUOTA_HASH
+
+
+def test_g368_quota_project_change_is_revalidated_before_egress() -> None:
+    transport = FakeGoogleTransport([google_response()])
+    identity = FakeGoogleIdentityProvider()
+    identity.fail_revalidation = True
+
+    with pytest.raises(TTSProviderError) as caught:
+        google_provider(transport, identity).synthesize(receipt=receipt())
+
+    assert caught.value.code == "GOOGLE_TTS_IDENTITY_UNAVAILABLE"
+    assert "private-project-value-must-not-leak" not in str(caught.value)
+    assert identity.revalidation_calls == 1
+    assert transport.calls == []
+
+
+@pytest.mark.parametrize(
+    "headers",
+    [
+        {
+            "Authorization": "Bearer unit-fixture-identity-value",
+            "Content-Type": "application/json; charset=utf-8",
+        },
+        {
+            "Authorization": "Bearer unit-fixture-identity-value",
+            "Content-Type": "application/json; charset=utf-8",
+            "x-goog-user-project": "mutated-project",
+        },
+        {
+            "Authorization": "Bearer unit-fixture-identity-value",
+            "Content-Type": "application/json; charset=utf-8",
+            "x-goog-user-project": _GOOGLE_TEST_QUOTA_PROJECT,
+            "X-Caller-Injected": "forbidden",
+        },
+    ],
+)
+def test_g368_header_removal_mutation_and_injection_fail_before_egress(
+    headers: dict[str, str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    transport = FakeGoogleTransport([google_response()])
+    provider = google_provider(transport, FakeGoogleIdentityProvider())
+    monkeypatch.setattr(provider, "_request_headers", lambda _identity: headers, raising=False)
+
+    with pytest.raises(TTSProviderError) as caught:
+        provider.synthesize(receipt=receipt())
+
+    assert caught.value.code == "GOOGLE_TTS_REQUEST_HEADERS_INVALID"
+    assert transport.calls == []
 
 
 def test_g368_03_synthesis_uses_only_the_injected_transport(
