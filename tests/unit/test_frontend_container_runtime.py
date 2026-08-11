@@ -13,7 +13,12 @@ PLATFORM_DIGESTS = {
     "amd64": "sha256:beb1f82448d01c14c85266ee5ea8cca055e1e2dbf3880bbfcc6de85838f38c4f",
     "arm64": "sha256:0b88f68083e0d252401044f3a1b0b244f7d863134eb523e2c8012535f47b2d1c",
 }
-OPENSSL_PACKAGES = {"libcrypto3": "3.5.7-r0", "libssl3": "3.5.7-r0"}
+RUNTIME_PACKAGES = {
+    "ca-certificates-bundle": "20260611-r0",
+    "libgcc": "15.2.0-r2",
+    "libstdc++": "15.2.0-r2",
+    "musl": "1.2.5-r23",
+}
 
 
 def load_consensus() -> ModuleType:
@@ -24,43 +29,40 @@ def load_consensus() -> ModuleType:
     return module
 
 
-def test_runtime_pins_the_reviewed_official_node_multiarch_index() -> None:
+def test_runtime_pins_the_reviewed_source_and_uses_a_scratch_final_stage() -> None:
     source = DOCKERFILE.read_text(encoding="utf-8")
-    expected = f"FROM node:26.7.0-alpine3.23@{INDEX_DIGEST} AS runner"
+    expected = f"FROM node:26.7.0-alpine3.23@{INDEX_DIGEST} AS runtime-source"
     assert expected in source
-    runner = source.split(" AS runner", 1)[0].rsplit("FROM ", 1)[1]
-    assert ":latest" not in runner and "chainguard" not in runner
+    assert "FROM scratch AS runner" in source
+    assert ":latest" not in source.split(" AS runtime-source", 1)[0].rsplit("FROM ", 1)[1]
 
 
 def test_runtime_contract_binds_platform_manifests_and_unaffected_openssl() -> None:
     module = load_consensus()
     assert module.FRONTEND_RUNTIME_INDEX == INDEX_DIGEST
     assert module.FRONTEND_RUNTIME_PLATFORM_DIGESTS == PLATFORM_DIGESTS
-    assert module.FRONTEND_RUNTIME_OPENSSL_PACKAGES == OPENSSL_PACKAGES
+    assert module.FRONTEND_RUNTIME_PACKAGES == RUNTIME_PACKAGES
     assert module.FRONTEND_RUNTIME_OPENSSL_VERSION == "3.5.7"
-    assert module.frontend_openssl_is_acceptable(OPENSSL_PACKAGES)
-    for vulnerable in ("3.6.0-r0", "3.6.3-r3"):
-        assert not module.frontend_openssl_is_acceptable(
-            {"libcrypto3": vulnerable, "libssl3": vulnerable}
-        )
+    assert module.frontend_openssl_is_acceptable("3.5.7")
+    for vulnerable in ("3.6.0", "3.6.3"):
+        assert not module.frontend_openssl_is_acceptable(vulnerable)
 
 
 def test_runtime_preserves_package_identity_while_removing_tools() -> None:
     source = DOCKERFILE.read_text(encoding="utf-8")
-    runner = source.split(" AS runner", 1)[1]
-    assert 'fs.existsSync("/lib/apk/db/installed")' in runner
-    assert 'fs.renameSync("/usr/local/bin/node","/usr/bin/node")' in runner
-    assert 'p!=="/usr/bin/node"' in runner
-    assert "/usr/local/lib/node_modules" in runner
+    assembly, runner = source.split("FROM scratch AS runner", 1)
+    assert 'selected=new Set(["ca-certificates-bundle","libgcc","libstdc++","musl"])' in assembly
+    assert 'fs.writeFileSync("/runtime/lib/apk/db/installed"' in assembly
+    assert "COPY --from=runtime-source --chown=0:0 /runtime/ /" in runner
     assert "ENTRYPOINT [\"/usr/bin/node\"]" in runner
     assert "USER 65532:65532" in runner
-    assert "/lib/apk/db/installed" not in runner.split("fs.rmSync", 1)[-1]
+    assert "/lib/apk/db/installed" not in runner.split("COPY --from=runtime-source", 1)[-1]
 
 
 def test_scan_contract_requires_runtime_package_metadata_and_openssl_identity() -> None:
     script = (ROOT / "scripts/ci/docker-image-scan.sh").read_text(encoding="utf-8")
     assert "FRONTEND_RUNTIME_INDEX" in script
     assert "FRONTEND_RUNTIME_PLATFORM_DIGESTS" in script
-    assert "FRONTEND_RUNTIME_OPENSSL_PACKAGES" in script
+    assert "FRONTEND_RUNTIME_PACKAGES" in script
     assert "/lib/apk/db/installed" in script
     assert "frontend_openssl_is_acceptable" in script
