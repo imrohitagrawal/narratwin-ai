@@ -124,6 +124,15 @@ def test_workflow_contract_is_trusted_base_and_least_privilege() -> None:
     assert "persist-credentials: false" in text
     assert "ref: ${{ github.event.pull_request.head.sha }}" not in text
     assert "pr-body-consistency" in text
+    assert "needs: reconcile" in text
+    assert "uv run python" in Path("Makefile").read_text(encoding="utf-8")
+
+
+def test_workflow_records_bootstrap_boundary_and_fork_safe_skip() -> None:
+    text = Path(".github/workflows/pr-body-consistency.yml").read_text(encoding="utf-8")
+    assert "bootstrap PR" in text
+    assert "head.repo.full_name == github.repository" in text
+    assert "always()" in text
 
 
 def test_fixture_has_no_duplicate_json_keys() -> None:
