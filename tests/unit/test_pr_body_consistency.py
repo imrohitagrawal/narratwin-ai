@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 
 from scripts.quality import pr_body_consistency as subject
+from scripts.quality import pr_body_consistency_cli as cli
 
 
 REPOSITORY = "owner/repository"
@@ -140,3 +141,34 @@ def test_fixture_has_no_duplicate_json_keys() -> None:
     with pytest.raises(subject.DuplicateJsonKey):
         subject.decode_json('{"x": 1, "x": 2}')
     assert subject.decode_json(raw)["number"] == 415
+
+
+def test_github_transport_retries_boundedly_without_leaking_auth(monkeypatch: pytest.MonkeyPatch) -> None:
+    calls: list[object] = []
+
+    class Response:
+        def __enter__(self) -> "Response":
+            return self
+        def __exit__(self, *_: object) -> None:
+            return None
+        def read(self, _: int) -> bytes:
+            return b'{"number":415}'
+
+    def transport(*_: object, **__: object) -> Response:
+        calls.append(None)
+        if len(calls) == 1:
+            raise TimeoutError("network timed out")
+        return Response()
+
+    monkeypatch.setattr(cli, "urlopen", transport)
+    client = cli.GitHubApi(REPOSITORY, "private-auth-value", retries=2, sleeper=lambda _: None)
+    assert client.pull(415)["number"] == 415
+    assert len(calls) == 2
+
+
+def test_github_transport_failure_is_redacted(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(cli, "urlopen", lambda *_a, **_kw: (_ for _ in ()).throw(TimeoutError("private-auth-value")))
+    client = cli.GitHubApi(REPOSITORY, "private-auth-value", retries=1, sleeper=lambda _: None)
+    with pytest.raises(RuntimeError, match="TimeoutError") as raised:
+        client.pull(415)
+    assert "private-auth-value" not in str(raised.value)
