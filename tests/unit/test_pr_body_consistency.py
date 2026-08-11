@@ -104,6 +104,16 @@ def test_apply_refuses_head_race_and_makes_zero_writes() -> None:
     assert api.writes == []
 
 
+def test_apply_refuses_same_head_body_race_and_preserves_human_edit() -> None:
+    initial = live(body=human("<!-- narratwin-live-state:start -->\nstale\n<!-- narratwin-live-state:end -->"))
+    concurrent = live(body=str(initial["body"]).replace("Stable human bytes.", "Concurrent human edit."))
+    api = FakeApi(initial, concurrent)
+    with pytest.raises(subject.HeadChanged, match="body changed"):
+        subject.apply(api, REPOSITORY, 415)
+    assert api.writes == []
+    assert concurrent["body"] == api.second["body"]
+
+
 def test_apply_noop_makes_zero_writes() -> None:
     api = FakeApi(live())
     assert subject.apply(api, REPOSITORY, 415).changed is False
@@ -121,6 +131,8 @@ def test_workflow_contract_is_trusted_base_and_least_privilege() -> None:
     text = Path(".github/workflows/pr-body-consistency.yml").read_text(encoding="utf-8")
     assert "pull_request_target" in text
     assert "contents: read" in text and "pull-requests: write" in text
+    check_permissions = text.split("  check:\n", maxsplit=1)[1].split("    runs-on:", maxsplit=1)[0]
+    assert "pull-requests: read" in check_permissions
     assert "ref: ${{ github.sha }}" in text
     assert "persist-credentials: false" in text
     assert "ref: ${{ github.event.pull_request.base.sha }}" not in text
