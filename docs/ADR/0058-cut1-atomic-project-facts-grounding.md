@@ -3,7 +3,10 @@
 - Status: proposed in Issue #421; effective only after reviewed merge
 - Date: 2026-08-12
 - Decision owner: Rohit Agrawal / StackClimb
-- Depends on: ADR 0055, accepted commit `a868137fab607ae75d4b272301e9fc52b898e15c`
+- Contract-identity dependency only: ADR 0055 supplies canonical claim bytes but
+  is never facts/source evidence; all factual support is pinned to accepted
+  commit `a868137fab607ae75d4b272301e9fc52b898e15c` and the independent OWNER span
+  below.
 
 ## Context
 
@@ -23,16 +26,18 @@ their immutable source spans.
 
 `docs/governance/cut1-project-facts-v1.json` is the owner-reviewed policy asset.
 Its complete byte-level SHA-256 is
-`ace9b936d4eeb8540cf6b617ce371da94262393202201d08c2ce30761761f8ca`;
+`7fe8f85c9d803f7c95f6c0122fda784310134778e28c892d43eefc8d4c27917c`;
 the verifier pins that digest before parsing any contract field.
 It contains:
 
 - independent, concise proposition statements;
-- exact accepted repository source paths and revision;
+- exact accepted repository source paths/revision plus the immutable OWNER
+  comment URL/revision and only its independent 350-byte brand/ownership span;
 - full-source byte counts and SHA-256 values;
 - exact byte ranges, span bytes, byte counts, and SHA-256 values;
 - eighteen ordered claim IDs with exact presenter-specific claim hashes; and
-- the complete proposition set required for each claim.
+- a code-owned predicate checklist and the complete proposition set required
+  for each claim.
 
 The asset is not ordinary generated knowledge and does not copy canonical
 narration sentences. Its safe Stage 4 upload projection contains only
@@ -45,22 +50,28 @@ does not need to be weakened.
 1. verifies the pinned complete asset digest, then strict-parses bounded JSON
    with duplicate and unknown fields rejected;
 2. requires the frozen schema, policy, source allowlist, and accepted revision;
-3. loads each source from current bytes only when its SHA-256 matches, otherwise
-   from the pinned local Git object at the accepted revision;
-4. independently verifies every full source and exact span byte range;
-5. requires all propositions to be used and every claim mapping to be complete;
-6. first runs the unchanged ordinary evaluator and permits the special route
+3. loads each repository source from current bytes only when its SHA-256
+   matches, otherwise from the pinned local Git object at the accepted revision;
+4. binds the pre-existing OWNER record by exact URL, comment revision, complete
+   body byte count/SHA-256, and the one permitted non-narration span; later
+   narration bytes in that comment are not stored or used;
+5. independently verifies every repository source and exact span byte range;
+6. requires all propositions to be used and every code-owned required predicate
+   to be covered by a verified proposition;
+7. first runs the unchanged ordinary evaluator and permits the special route
    only when its sole failure is direct-substring absence for all eighteen
    structurally valid claims;
-7. identifies the exact presenter by the complete ordered claim-hash set;
-8. requires every claim to cite a project-owned retrieved chunk from the exact
+8. identifies the exact presenter by recomputing the complete ordered canonical
+   claim-hash set rather than trusting the facts asset;
+9. requires every claim to cite a project-owned retrieved chunk from the exact
    canonical project-facts projection; and
-9. emits recomputed proposition IDs and an evidence checksum into each persisted
+10. emits recomputed predicate/proposition IDs and an evidence checksum into each persisted
    claim support.
 
 The Stage 4 service selects this verifier only for the exact
 `CUT1_ATOMIC_FACTS_V1` style. That selection is not proof: any caller-provided
-proposition metadata is rejected, and all source, claim, mapping, scope, and
+proposition metadata is rejected for every style at the Stage 4 generation
+boundary, and all source, claim, mapping, scope, and
 retrieval evidence is recomputed. All other styles continue to use the existing
 direct-support evaluator.
 

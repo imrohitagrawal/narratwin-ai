@@ -25,22 +25,49 @@ CUT1_SCHEMA_VERSION = "cut1-project-facts-v1"
 FACTS_RELATIVE_PATH = Path("docs/governance/cut1-project-facts-v1.json")
 FACTS_SOURCE_FILENAME = "cut1-project-facts-v1.md"
 ACCEPTED_REVISION = "a868137fab607ae75d4b272301e9fc52b898e15c"
-EXPECTED_ASSET_SHA256 = "ace9b936d4eeb8540cf6b617ce371da94262393202201d08c2ce30761761f8ca"
+EXPECTED_ASSET_SHA256 = "7fe8f85c9d803f7c95f6c0122fda784310134778e28c892d43eefc8d4c27917c"
 MAX_CONTRACT_BYTES = 131_072
 MAX_SOURCES = 16
 MAX_SPANS = 64
 MAX_PROPOSITIONS = 64
-EXACT_SOURCE_PATHS = {
+EXACT_REPOSITORY_SOURCES = {
     "README.md",
     "docs/AI_BUILD_BRIEF.md",
-    "docs/PRD.md",
     "docs/PROJECT_AVATAR_PACK.md",
-    "docs/ADR/0055-cut1-narration-speech-lock.md",
-    "docs/QUALITY_GATES.md",
+    "docs/STATUS.md",
+    "docs/ADR/0054-cut1-presenter-registry.md",
+    "docs/STAGE_ISSUE_PLAN.md",
+}
+OWNER_RECORD = {
+    "locator": "https://github.com/imrohitagrawal/narratwin-ai/issues/366#issuecomment-5197711390",
+    "revision": "comment:5197711390@2026-08-05T21:41:25Z",
+    "byteCount": 4322,
+    "sha256": "30d6afe6758598f172c48a65d4d507662a9ab6eefebbcf492af07052c8e13528",
 }
 PRESENTERS = ("meera", "myra", "raj")
 SHA_PATTERN = re.compile(r"[0-9a-f]{64}\Z")
 ID_PATTERN = re.compile(r"(?:src|fact|claim)_[a-z0-9_]{1,64}\Z")
+PREDICATE_PATTERN = re.compile(r"[a-z][a-z0-9_.]{2,80}\Z")
+EXPECTED_REQUIRED_PREDICATES = (
+    ("narratwin.platform",),
+    ("presenter.identity", "presenter.downstream_role"),
+    ("stackclimb.technology_product_brand", "stackclimb.founder.rohit", "stackclimb.owner.rohit", "stackclimb.lead.rohit"),
+    ("narratwin.conceived.rohit", "narratwin.owner.rohit", "narratwin.producer.rohit", "narratwin.under_stackclimb"),
+    ("knowledge.documents", "knowledge.architecture", "knowledge.technical_implementation", "knowledge.decisions"),
+    ("product.approved_input", "product.clear_guided_walkthrough"),
+    ("product.approved_input",),
+    ("flow.organize", "flow.retrieve", "product.audience_aware"),
+    ("grounding.source_support", "grounding.context_refs", "grounding.evaluation", "grounding.no_unsupported_fact"),
+    ("application.python_fastapi_backend", "application.nextjs_ui", "application.rag", "application.evaluation_safety", "application.multilingual", "application.captions", "application.speech", "application.synthetic_presenter_media"),
+    ("architecture.provider_neutral", "architecture.technology_substitution", "architecture.workflow_preserved"),
+    ("reuse.other_projects",),
+    ("reuse.approved_documentation", "reuse.tailored_explanation", "explanation.purpose", "explanation.architecture", "explanation.technologies", "explanation.capabilities", "explanation.decisions", "explanation.integrations"),
+    ("experience.prepared_walkthrough", "experience.first_mode", "presenter.identity"),
+    ("interactive.future", "interactive.not_current_demo"),
+    ("experience.stackclimb_product", "experience.approved_knowledge", "experience.grounded", "experience.presenter_led"),
+    ("presenter.identity",),
+    ("presenter.identity", "reuse.other_projects"),
+)
 
 
 class Cut1GroundingError(ValueError):
@@ -110,6 +137,7 @@ class SourceSpan:
 class Proposition:
     proposition_id: str
     statement: str
+    predicate_ids: tuple[str, ...]
     source_span_ids: tuple[str, ...]
 
 
@@ -117,6 +145,7 @@ class Proposition:
 class ClaimMapping:
     claim_id: str
     claim_sha256_by_presenter: Mapping[str, str]
+    required_predicate_ids: tuple[str, ...]
     proposition_ids: tuple[str, ...]
 
 
@@ -147,9 +176,11 @@ class Cut1GroundingContract:
             "claimSha256ByPresenter": dict(mapping.claim_sha256_by_presenter),
             "contractSha256": self.contract_sha256,
             "policyVersion": self.policy_version,
+            "requiredPredicateIds": list(mapping.required_predicate_ids),
             "propositions": [
                 {
                     "propositionId": proposition_id,
+                    "predicateIds": list(self.propositions[proposition_id].predicate_ids),
                     "sourceSpans": [
                         {
                             "byteCount": self.spans[span_id].byte_count,
@@ -190,7 +221,7 @@ def _read_contract(root: Path) -> tuple[bytes, dict[str, Any]]:
 def _immutable_source_bytes(root: Path, path: str, expected_sha256: str) -> bytes:
     target = root.resolve() / path
     try:
-        current = target.read_bytes()
+        current = b"" if target.is_symlink() or not target.is_file() else target.read_bytes()
     except OSError:
         current = b""
     if _sha(current) == expected_sha256:
@@ -210,12 +241,8 @@ def _immutable_source_bytes(root: Path, path: str, expected_sha256: str) -> byte
     return result.stdout
 
 
-def load_cut1_grounding_contract(
-    *, root: Path, payload: Mapping[str, object] | None = None
-) -> Cut1GroundingContract:
+def load_cut1_grounding_contract(*, root: Path) -> Cut1GroundingContract:
     raw, authoritative = _read_contract(root)
-    if payload is not None and _canonical(payload) != _canonical(authoritative):
-        _fail()
     value = _object(
         authoritative,
         {"schemaVersion", "policyVersion", "acceptedRevision", "sources", "propositions", "claimMappings"},
@@ -241,41 +268,60 @@ def load_cut1_grounding_contract(
 
     spans: dict[str, SourceSpan] = {}
     source_ids: set[str] = set()
-    observed_paths: set[str] = set()
+    observed_repository_sources: set[str] = set()
+    owner_record_seen = False
     for source_value in source_rows:
-        source = _object(source_value, {"sourceId", "path", "revision", "byteCount", "sha256", "spans"})
+        source = _object(
+            source_value,
+            {"sourceId", "locatorType", "locator", "revision", "byteCount", "sha256", "spans"},
+        )
         source_id = _identifier(source["sourceId"], prefix="src_")
-        path = source["path"]
+        locator_type, locator = source["locatorType"], source["locator"]
         if (
             source_id in source_ids
-            or not isinstance(path, str)
-            or path not in EXACT_SOURCE_PATHS
-            or str(PurePosixPath(path)) != path
-            or source["revision"] != ACCEPTED_REVISION
+            or locator_type not in {"repository", "owner-record"}
+            or not isinstance(locator, str)
         ):
             _fail()
         source_ids.add(source_id)
-        observed_paths.add(path)
         source_sha256 = _checksum(source["sha256"])
-        source_bytes = _immutable_source_bytes(root, path, source_sha256)
-        if (
-            source["byteCount"] != len(source_bytes)
-            or source_sha256 != _sha(source_bytes)
-            or not isinstance(source["spans"], list)
-            or not 0 < len(source["spans"]) <= MAX_SPANS
-        ):
+        source_bytes: bytes | None
+        if locator_type == "repository":
+            if (
+                locator not in EXACT_REPOSITORY_SOURCES
+                or str(PurePosixPath(locator)) != locator
+                or source["revision"] != ACCEPTED_REVISION
+            ):
+                _fail()
+            observed_repository_sources.add(locator)
+            source_bytes = _immutable_source_bytes(root, locator, source_sha256)
+            if source["byteCount"] != len(source_bytes) or source_sha256 != _sha(source_bytes):
+                _fail()
+        else:
+            if owner_record_seen or {
+                "locator": locator,
+                "revision": source["revision"],
+                "byteCount": source["byteCount"],
+                "sha256": source_sha256,
+            } != OWNER_RECORD:
+                _fail()
+            owner_record_seen = True
+            source_bytes = None
+        if not isinstance(source["spans"], list) or not 0 < len(source["spans"]) <= MAX_SPANS:
             _fail()
         for span_value in source["spans"]:
             span = _object(span_value, {"spanId", "byteStart", "byteEnd", "byteCount", "sha256", "text"})
             span_id = _identifier(span["spanId"], prefix="src_")
-            start = _bounded_int(span["byteStart"], maximum=len(source_bytes))
-            end = _bounded_int(span["byteEnd"], maximum=len(source_bytes))
+            source_size = cast(int, source["byteCount"])
+            start = _bounded_int(span["byteStart"], maximum=source_size)
+            end = _bounded_int(span["byteEnd"], maximum=source_size)
             text_value = span["text"]
             if span_id in spans or end <= start or not isinstance(text_value, str):
                 _fail()
-            selected = source_bytes[start:end]
+            selected = source_bytes[start:end] if source_bytes is not None else text_value.encode()
             if (
-                span["byteCount"] != len(selected)
+                len(selected) != end - start
+                or span["byteCount"] != len(selected)
                 or _checksum(span["sha256"]) != _sha(selected)
                 or text_value.encode() != selected
             ):
@@ -283,45 +329,113 @@ def load_cut1_grounding_contract(
             spans[span_id] = SourceSpan(
                 span_id, source_id, start, end, len(selected), cast(str, span["sha256"])
             )
-    if observed_paths != EXACT_SOURCE_PATHS:
+    if observed_repository_sources != EXACT_REPOSITORY_SOURCES or not owner_record_seen:
         _fail()
 
     propositions: dict[str, Proposition] = {}
     for proposition_value in proposition_rows:
-        row = _object(proposition_value, {"propositionId", "statement", "sourceSpanIds"})
+        row = _object(
+            proposition_value,
+            {"propositionId", "statement", "predicateIds", "sourceSpanIds"},
+        )
         proposition_id = _identifier(row["propositionId"], prefix="fact_")
-        statement, span_ids = row["statement"], row["sourceSpanIds"]
+        statement, predicate_ids, span_ids = (
+            row["statement"],
+            row["predicateIds"],
+            row["sourceSpanIds"],
+        )
         if (
             proposition_id in propositions
             or not isinstance(statement, str)
             or not 20 <= len(statement.encode()) <= 400
             or statement != statement.strip()
+            or not isinstance(predicate_ids, list)
+            or not 0 < len(predicate_ids) <= 16
             or not isinstance(span_ids, list)
             or not 0 < len(span_ids) <= 8
+        ):
+            _fail()
+        checked_predicates = tuple(predicate_ids)
+        if (
+            len(set(checked_predicates)) != len(checked_predicates)
+            or any(not isinstance(item, str) or PREDICATE_PATTERN.fullmatch(item) is None for item in checked_predicates)
         ):
             _fail()
         checked_spans = tuple(_identifier(item, prefix="src_") for item in span_ids)
         if len(set(checked_spans)) != len(checked_spans) or any(item not in spans for item in checked_spans):
             _fail()
-        propositions[proposition_id] = Proposition(proposition_id, statement, checked_spans)
+        propositions[proposition_id] = Proposition(
+            proposition_id, statement, checked_predicates, checked_spans
+        )
 
     mappings: list[ClaimMapping] = []
     used_propositions: set[str] = set()
     for index, mapping_value in enumerate(mapping_rows, start=1):
-        row = _object(mapping_value, {"claimId", "claimSha256ByPresenter", "propositionIds"})
+        row = _object(
+            mapping_value,
+            {"claimId", "claimSha256ByPresenter", "requiredPredicateIds", "propositionIds"},
+        )
         claim_id = _identifier(row["claimId"], prefix="claim_")
-        hashes, proposition_ids = row["claimSha256ByPresenter"], row["propositionIds"]
+        hashes = row["claimSha256ByPresenter"]
+        required_predicates = row["requiredPredicateIds"]
+        proposition_ids = row["propositionIds"]
         if claim_id != f"claim_{index:03d}" or not isinstance(hashes, dict) or set(hashes) != set(PRESENTERS):
             _fail()
         checked_hashes = {presenter: _checksum(hashes[presenter]) for presenter in PRESENTERS}
-        if not isinstance(proposition_ids, list) or not 0 < len(proposition_ids) <= 8:
+        if (
+            not isinstance(required_predicates, list)
+            or not 0 < len(required_predicates) <= 32
+            or not isinstance(proposition_ids, list)
+            or not 0 < len(proposition_ids) <= 8
+        ):
+            _fail()
+        checked_required = tuple(required_predicates)
+        if (
+            checked_required != EXPECTED_REQUIRED_PREDICATES[index - 1]
+            or
+            len(set(checked_required)) != len(checked_required)
+            or any(not isinstance(item, str) or PREDICATE_PATTERN.fullmatch(item) is None for item in checked_required)
+        ):
             _fail()
         checked_ids = tuple(_identifier(item, prefix="fact_") for item in proposition_ids)
-        if len(set(checked_ids)) != len(checked_ids) or any(item not in propositions for item in checked_ids):
+        supplied_predicates = {
+            predicate
+            for proposition_id in checked_ids
+            for predicate in propositions[proposition_id].predicate_ids
+        } if all(item in propositions for item in checked_ids) else set()
+        if (
+            len(set(checked_ids)) != len(checked_ids)
+            or any(item not in propositions for item in checked_ids)
+            or not set(checked_required).issubset(supplied_predicates)
+            or any(
+                not set(propositions[item].predicate_ids).intersection(checked_required)
+                for item in checked_ids
+            )
+        ):
             _fail()
         used_propositions.update(checked_ids)
-        mappings.append(ClaimMapping(claim_id, checked_hashes, checked_ids))
+        mappings.append(ClaimMapping(claim_id, checked_hashes, checked_required, checked_ids))
     if used_propositions != set(propositions):
+        _fail()
+    from backend.app.narration import canonical_presenter_text
+
+    canonical_hashes = {
+        presenter: tuple(
+            _sha(item.group(0).encode())
+            for item in re.finditer(
+                r"\S.*?[.!?](?=\s|$)", canonical_presenter_text(presenter), re.DOTALL
+            )
+        )
+        for presenter in PRESENTERS
+    }
+    if any(
+        len(canonical_hashes[presenter]) != len(mappings)
+        or any(
+            mapping.claim_sha256_by_presenter[presenter] != canonical_hashes[presenter][index]
+            for index, mapping in enumerate(mappings)
+        )
+        for presenter in PRESENTERS
+    ):
         _fail()
     return Cut1GroundingContract(
         CUT1_POLICY_VERSION,

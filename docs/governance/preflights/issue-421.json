@@ -17,11 +17,13 @@
     "repository_contracts": [
       "README.md",
       "docs/AI_BUILD_BRIEF.md",
-      "docs/PRD.md",
-      "docs/ARCHITECTURE.md",
       "docs/PROJECT_AVATAR_PACK.md",
-      "docs/QUALITY_GATES.md",
-      "docs/STATUS.md"
+      "docs/STATUS.md",
+      "docs/ADR/0054-cut1-presenter-registry.md",
+      "docs/STAGE_ISSUE_PLAN.md"
+    ],
+    "owner_records": [
+      "https://github.com/imrohitagrawal/narratwin-ai/issues/366#issuecomment-5197711390 (only the independent 350-byte brand/ownership span at bytes 170..520; the later narration body is neither copied nor used)"
     ],
     "implementation_contract": "backend/app/rag/grounding.py requires normalized claim text to occur directly in the cited retrieved chunk; backend/app/stage4.py reproduces the canonical evaluator during restore; backend/app/narration.py accepts only a current completed Stage 4 run and checksum-binds claim/support evidence.",
     "failure_evidence": "The genuine accepted-source probe returned exactly eighteen unsupported claims and zero supports for each presenter; narration-derived fixtures and self-minted Stage 4 authority are prohibited."
@@ -109,7 +111,7 @@
   "invariants": {
     "G421-01": "Facts are independent atomic propositions derived only from accepted immutable repository and OWNER sources; narration is never source evidence.",
     "G421-02": "Every proposition binds exact source identity, immutable revision, byte range, byte count, source checksum, span checksum, and span bytes, and runtime recomputes repository bindings.",
-    "G421-03": "Every exact canonical claim hash maps to a non-empty complete set of proposition IDs and every proposition verifies.",
+    "G421-03": "Every exact canonical claim hash maps to a code-owned non-empty required-predicate set and proposition IDs whose verified predicates cover every requirement.",
     "G421-04": "Generic Stage 4 direct-substring support remains unchanged outside the exact governed Cut 1 policy.",
     "G421-05": "Cut 1 accepts only the exact canonical claim set, facts artifact, retrieved project-owned facts chunk, and policy digest.",
     "G421-06": "Caller assertions cannot establish support; runtime independently resolves and recomputes all evidence.",
@@ -127,7 +129,7 @@
   "invariant_to_test_mapping": {
     "G421-01": ["facts schema/source inventory tests", "human exact-span review"],
     "G421-02": ["valid bundle test", "source byte/range/revision/checksum mutations"],
-    "G421-03": ["mapping completeness test", "missing/partial/duplicate/unexpected proposition tests"],
+    "G421-03": ["code-owned required-predicate matrix", "mapping completeness test", "missing/partial/duplicate/unexpected proposition tests"],
     "G421-04": ["existing grounding suites", "explicit non-Cut-1 parity test"],
     "G421-05": ["candidate/facts/chunk/policy/presenter/order mutations"],
     "G421-06": ["caller injection tests with runtime recomputation"],
@@ -155,7 +157,7 @@
     "regression": "Run focused Stage 4/evaluation/narration/route tests, full backend/frontend/browser quality, lint/type, audit/security/container/eval gates, stage8-quality, and make quality."
   },
   "human_only_surfaces": {
-    "source_truth": "OWNER and non-author reviewer confirm that the atomic propositions faithfully state the cited immutable spans without copying narration.",
+    "source_truth": "OWNER authority is the pre-existing immutable record; an eligible non-author reviewer confirms proposition-by-proposition that the atomic facts and predicate coverage faithfully state the cited spans without copying narration.",
     "exact_head_approval": "Eligible non-author approval by rohitagrawal4u on the final exact PR head.",
     "merge_wording": "Reference-only merge wording is inspected before merge.",
     "listening": "Exact-hash OWNER listening occurs only after a later merged-main synthesis operation."

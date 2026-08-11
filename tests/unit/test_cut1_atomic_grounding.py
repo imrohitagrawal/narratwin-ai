@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 from contextlib import contextmanager
@@ -13,7 +14,7 @@ from backend.app.narration import NarrationService, canonical_presenter_text
 from backend.app.presenter_registry import load_cut1_presenter_registry
 from backend.app.rag.grounding import GROUNDING_POLICY_VERSION, evaluate_grounding
 from backend.app.rag.models import GeneratedScript, ScriptClaim
-from backend.app.stage4 import LocalPrincipal, Stage4Service
+from backend.app.stage4 import LocalPrincipal, Stage4Service, generated_script_is_bounded
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -93,7 +94,7 @@ def _seed_public_stage4(
 ) -> tuple[Stage4Service, LocalPrincipal, str]:
     monkeypatch.setattr("backend.app.stage4.langfuse_observation", _no_observation)
     service = Stage4Service(state_path=tmp_path / f"stage4-{presenter_id}.json")
-    service.llm = CanonicalCut1Generator(presenter_id)
+    service.llm = CanonicalCut1Generator(presenter_id)  # type: ignore[assignment]
     principal = LocalPrincipal()
     project = service.create_project(
         principal=principal,
@@ -216,6 +217,10 @@ def test_governed_atomic_facts_complete_the_public_persisted_stage4_path(
         "missing_proposition",
         "duplicate_proposition",
         "foreign_proposition",
+        "missing_claim",
+        "reordered_claims",
+        "missing_required_predicate",
+        "unsupported_required_predicate",
         "claim_hash",
         "source_path",
         "source_revision",
@@ -226,7 +231,11 @@ def test_governed_atomic_facts_complete_the_public_persisted_stage4_path(
         "unknown_field",
     ],
 )
-def test_atomic_fact_contract_mutations_fail_closed(mutation: str) -> None:
+def test_atomic_fact_contract_mutations_fail_closed(
+    monkeypatch: pytest.MonkeyPatch, mutation: str
+) -> None:
+    import backend.app.cut1_grounding as cut1
+
     from backend.app.cut1_grounding import Cut1GroundingError, load_cut1_grounding_contract
 
     payload = json.loads(FACTS_PATH.read_text(encoding="utf-8"))
@@ -236,10 +245,21 @@ def test_atomic_fact_contract_mutations_fail_closed(mutation: str) -> None:
         payload["propositions"].append(payload["propositions"][0])
     elif mutation == "foreign_proposition":
         payload["claimMappings"][0]["propositionIds"].append("fact_foreign")
+    elif mutation == "missing_claim":
+        payload["claimMappings"].pop()
+    elif mutation == "reordered_claims":
+        payload["claimMappings"][0], payload["claimMappings"][1] = (
+            payload["claimMappings"][1],
+            payload["claimMappings"][0],
+        )
+    elif mutation == "missing_required_predicate":
+        payload["claimMappings"][2]["requiredPredicateIds"].pop()
+    elif mutation == "unsupported_required_predicate":
+        payload["claimMappings"][2]["requiredPredicateIds"].append("unsupported.predicate")
     elif mutation == "claim_hash":
         payload["claimMappings"][0]["claimSha256ByPresenter"]["meera"] = "0" * 64
     elif mutation == "source_path":
-        payload["sources"][0]["path"] = "tests/unit/test_cut1_narration.py"
+        payload["sources"][0]["locator"] = "tests/unit/test_cut1_narration.py"
     elif mutation == "source_revision":
         payload["sources"][0]["revision"] = "0" * 40
     elif mutation == "source_byte_range":
@@ -253,8 +273,11 @@ def test_atomic_fact_contract_mutations_fail_closed(mutation: str) -> None:
     elif mutation == "unknown_field":
         payload["callerApproved"] = True
 
+    raw = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()
+    monkeypatch.setattr(cut1, "EXPECTED_ASSET_SHA256", hashlib.sha256(raw).hexdigest())
+    monkeypatch.setattr(cut1, "_read_contract", lambda _: (raw, payload))
     with pytest.raises(Cut1GroundingError):
-        load_cut1_grounding_contract(root=ROOT, payload=payload)
+        load_cut1_grounding_contract(root=ROOT)
 
 
 def test_atomic_fact_asset_bytes_are_immutable(tmp_path: Path) -> None:
@@ -266,6 +289,23 @@ def test_atomic_fact_asset_bytes_are_immutable(tmp_path: Path) -> None:
 
     with pytest.raises(Cut1GroundingError):
         load_cut1_grounding_contract(root=tmp_path)
+
+
+def test_atomic_fact_duplicate_json_key_fails_strict_parse(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import backend.app.cut1_grounding as cut1
+
+    target = tmp_path / "docs/governance/cut1-project-facts-v1.json"
+    target.parent.mkdir(parents=True)
+    raw = FACTS_PATH.read_bytes().replace(
+        b'{\n  "schemaVersion":', b'{\n  "schemaVersion": "duplicate",\n  "schemaVersion":', 1
+    )
+    target.write_bytes(raw)
+    monkeypatch.setattr(cut1, "EXPECTED_ASSET_SHA256", hashlib.sha256(raw).hexdigest())
+
+    with pytest.raises(cut1.Cut1GroundingError):
+        cut1.load_cut1_grounding_contract(root=tmp_path)
 
 
 def test_caller_supplied_proposition_metadata_cannot_turn_generic_grounding_green() -> None:
@@ -294,16 +334,84 @@ def test_caller_supplied_proposition_metadata_cannot_turn_generic_grounding_gree
     assert evaluation.evaluation_status == "FAILED"
     assert evaluation.unsupported_claim_count == 1
     assert not evaluation.claim_supports
+    assert generated_script_is_bounded(candidate) is False
 
 
 def test_cut1_evidence_checksum_changes_when_any_proposition_binding_changes() -> None:
     from backend.app.cut1_grounding import load_cut1_grounding_contract
 
     contract = load_cut1_grounding_contract(root=ROOT)
-    first = contract.claim_mappings[2]
+    first = contract.claim_mappings[-1]
     changed = replace(first, proposition_ids=tuple(reversed(first.proposition_ids)))
 
     assert contract.evidence_checksum(first) != contract.evidence_checksum(changed)
+
+
+@pytest.mark.parametrize("mutation", ["cross_project", "wrong_facts_checksum"])
+def test_runtime_rejects_foreign_or_changed_project_facts(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    mutation: str,
+) -> None:
+    from backend.app.cut1_grounding import evaluate_cut1_grounding
+
+    service, principal, project_id = _seed_public_stage4(
+        tmp_path, monkeypatch, include_facts=True
+    )
+    run = _generate(service, principal, project_id, key=f"runtime-{mutation}")
+    assert run.generated_script is not None
+    contexts = list(run.retrieved_context)
+    facts_index = next(
+        index
+        for index, context in enumerate(contexts)
+        if context.chunk.source_filename == "cut1-project-facts-v1.md"
+    )
+    facts_context = contexts[facts_index]
+    changed_chunk = replace(
+        facts_context.chunk,
+        **(
+            {"project_id": "proj_foreign"}
+            if mutation == "cross_project"
+            else {"source_document_checksum": "sha256:" + "0" * 64}
+        ),
+    )
+    contexts[facts_index] = replace(facts_context, chunk=changed_chunk)
+
+    evaluation = evaluate_cut1_grounding(
+        root=ROOT,
+        tenant_id=principal.tenant_id,
+        project_id=project_id,
+        run_id=run.run_id,
+        candidate=run.generated_script,
+        retrieved_context=contexts,
+        prompt=REQUEST["prompt"],
+        all_chunks=service.rag_store.chunks_for_project(
+            tenant_id=principal.tenant_id, project_id=project_id
+        ),
+    )
+
+    assert evaluation.evaluation_status == "FAILED"
+    assert evaluation.unsupported_claim_count == 18
+    assert not evaluation.claim_supports
+
+
+def test_restore_rejects_tampered_persisted_proposition_evidence(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    service, principal, project_id = _seed_public_stage4(
+        tmp_path, monkeypatch, include_facts=True
+    )
+    run = _generate(service, principal, project_id, key="tampered-restore")
+    assert service.state_path is not None
+    payload = json.loads(service.state_path.read_text(encoding="utf-8"))
+    payload["walkthroughRuns"][0]["evaluation"]["claim_supports"][0][
+        "proposition_evidence_checksum"
+    ] = "sha256:" + "0" * 64
+    service.state_path.write_text(json.dumps(payload), encoding="utf-8")
+
+    restored = Stage4Service(state_path=service.state_path)
+
+    assert run.run_id not in restored.walkthrough_runs
 
 
 @pytest.mark.parametrize("presenter_id", ["meera", "myra", "raj"])

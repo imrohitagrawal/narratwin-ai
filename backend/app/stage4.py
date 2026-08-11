@@ -1868,10 +1868,8 @@ def generated_script_is_bounded(candidate: object) -> bool:
     if any(not isinstance(claim, ScriptClaim) or type(claim.text) is not str
            or any(type(value) is not str or len(value) > MAX_RESTORED_SCRIPT_CHARS
                   for value in (claim.claim_id, claim.text, claim.chunk_id or ""))
-           or len(claim.proposition_ids) > MAX_RESTORED_LINEAGE_ITEMS
-           or any(type(value) is not str or len(value) > 128 for value in claim.proposition_ids)
-           or (claim.proposition_evidence_checksum is not None
-               and re.fullmatch(r"sha256:[0-9a-f]{64}", claim.proposition_evidence_checksum) is None)
+           or bool(claim.proposition_ids)
+           or claim.proposition_evidence_checksum is not None
            for claim in candidate.claims):
         return False
     return sum(len(claim.text) for claim in candidate.claims) <= len(candidate.text) and all(
@@ -1904,12 +1902,10 @@ def raw_walkthrough_lineage_is_bounded_and_typed(row: dict[str, Any]) -> bool:
         if claim.get("chunk_id") is not None and type(claim.get("chunk_id")) is not str:
             return False
         proposition_ids = claim.get("proposition_ids", [])
-        if not isinstance(proposition_ids, (list, tuple)) or len(proposition_ids) > MAX_RESTORED_LINEAGE_ITEMS \
-                or any(type(item) is not str or len(item) > 128 for item in proposition_ids):
+        if not isinstance(proposition_ids, (list, tuple)) or bool(proposition_ids):
             return False
         evidence_checksum = claim.get("proposition_evidence_checksum")
-        if evidence_checksum is not None and (type(evidence_checksum) is not str
-                or re.fullmatch(r"sha256:[0-9a-f]{64}", evidence_checksum) is None):
+        if evidence_checksum is not None:
             return False
     if sum(len(claim["text"]) for claim in claims) > len(text):
         return False

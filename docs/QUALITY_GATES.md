@@ -1327,8 +1327,9 @@ deletions without deletion credit. The committed RED reproduces exactly
 eighteen unsupported claims from genuine accepted sources before the special
 policy exists.
 
-GREEN requires exact facts/source/span validation, complete proposition mapping,
-caller-injection refusal, generic-evaluator parity, project/tenant isolation,
+GREEN requires exact facts/source/span validation, code-owned required-predicate
+coverage and complete proposition mapping, all-style caller-injection refusal,
+generic-evaluator parity, project/tenant isolation,
 persist/restore replay, conditional evaluation-lineage binding, and all three
 Issue #382 narration/approval/receipt lifecycles through public service methods.
 No real provider call, telemetry egress, audio, deployment, distribution,

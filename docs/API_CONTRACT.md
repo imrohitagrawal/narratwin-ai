@@ -1939,9 +1939,10 @@ claim hashes, the project-owned retrieved facts projection, and every immutable
 source span independently verify. Callers cannot submit a policy checksum or a
 support decision.
 
-Successful claim-support rows add `proposition_ids` and
-`proposition_evidence_checksum`. They are empty/`null` for ordinary direct
-support. The Cut 1 values are application-generated evidence and are included
-in persisted evaluation and narration lineage; changing or removing either
-field invalidates restore. Existing generic direct-substring behavior and HTTP
-routes are unchanged.
+Internal persisted claim-support rows add `proposition_ids` and
+`proposition_evidence_checksum`; the existing public response projection does
+not expose them. They are empty/`null` for ordinary direct support. The Cut 1
+values are application-generated evidence included in persisted evaluation and
+narration lineage; changing or removing either field invalidates restore.
+Existing generic direct-substring behavior and all HTTP request/response shapes
+are unchanged.

@@ -507,6 +507,36 @@ def test_routes_are_exact_pre_registered_and_issue386_preflight_matches() -> Non
     assert issue421["change_budget"]["deletions_grant_credit"] is False
     assert routes.TOTAL_LIMITS[routes.ISSUE421_BRANCH] == 4000
     assert routes.TEXT_LIMITS[routes.ISSUE421_BRANCH] == issue421["change_budget"]["per_file_charged_lines"]
+
+
+def test_issue421_route_requires_exact_accepted_base_and_branch_point() -> None:
+    calls: list[list[str]] = []
+
+    def good(args: list[str]) -> subprocess.CompletedProcess[str]:
+        calls.append(args)
+        return completed(args, out=routes.ISSUE421_BASE + "\n")
+
+    assert routes.route_base(good, routes.ISSUE421_BRANCH) == routes.ISSUE421_BASE
+    assert calls == [
+        ["git", "rev-parse", f"{routes.ISSUE421_BASE}^{{commit}}"],
+        ["git", "merge-base", routes.ISSUE421_BASE, "HEAD"],
+        ["git", "merge-base", "origin/main", "HEAD"],
+    ]
+
+    drifted = iter(
+        (
+            completed([], out=routes.ISSUE421_BASE + "\n"),
+            completed([], out=routes.ISSUE421_BASE + "\n"),
+            completed([], out="a" * 40 + "\n"),
+        )
+    )
+    error = pytest.raises(
+        RuntimeError,
+        routes.route_base,
+        lambda _: next(drifted),
+        routes.ISSUE421_BRANCH,
+    )
+    assert "Issue #421 fixed base" in str(error.value)
     issue413 = json.loads((REPO / "docs/governance/preflights/issue-413.json").read_text(encoding="utf-8"))
     issue413_route = EXPECTED["cut1-process-413-frontend-runtime-openssl"]
     assert issue413["branch"] == "cut1-process-413-frontend-runtime-openssl"

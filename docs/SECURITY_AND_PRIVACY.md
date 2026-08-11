@@ -616,15 +616,19 @@ production-readiness claim.
 
 The Cut 1 facts JSON, its source spans, uploaded safe projection, generated
 claims, retrieved contexts, persisted evaluations, and restored state are all
-untrusted until recomputed. The verifier accepts only six allowlisted repository
-paths at the pinned accepted revision, strict bounded JSON, exact byte ranges,
-and exact SHA-256 values. Current file drift falls back only to a fixed local Git
-object lookup executed without a shell and with a timeout; missing or mismatched
-objects fail closed.
+untrusted until recomputed. The verifier accepts only six allowlisted
+repository paths at the pinned accepted revision plus one exact pre-existing
+OWNER comment identity; only that comment's independent brand/ownership span is
+stored, never its later narration body. Strict bounded JSON, exact byte ranges,
+and exact SHA-256 values are required. Current repository-file drift falls back
+only to a fixed local Git object lookup executed without a shell and with a
+timeout; missing or mismatched objects fail closed.
 
 Caller-supplied proposition IDs/checksums never establish support. Cross-tenant,
-cross-project, foreign-document, stale-policy, partial-proposition, or changed
-source evidence cannot produce or restore a passing run. Logs and public errors
+cross-project, foreign-document, stale-policy, partial-predicate/proposition, or
+changed source evidence cannot produce or restore a passing run. Canonical claim
+hashes and required-predicate lists are recomputed or code-owned rather than
+trusted from the facts asset. Logs and public errors
 must not include narration, source spans, facts payloads, raw paths, credentials,
 or subprocess output. This repair adds no provider, telemetry, authentication,
 network, billing, release, or distribution authority.

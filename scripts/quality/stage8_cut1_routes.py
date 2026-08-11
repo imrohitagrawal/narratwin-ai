@@ -32,6 +32,7 @@ ISSUE368_BASE = "ef9cabc23762560912d99f10831241b8a65b869c"
 ISSUE368_PROMPT_BASE = "ba77d59b193da8064d67261e13fb50756c2bd9e8"
 ISSUE368_IMPLEMENTATION_BASE = "6766da34d73e301358f84f8eefb0985927292a26"
 ISSUE368_QUOTA_FIX_BASE = "9c165f739788fb0f09b315673f9125d700d6a96b"
+ISSUE421_BASE = "a868137fab607ae75d4b272301e9fc52b898e15c"
 
 ROUTES = {
     ISSUE421_BRANCH: {
@@ -580,6 +581,7 @@ def parse_name_status_z(output: str) -> list[str]:
 
 def route_base(run: Callable[[list[str]], Any], branch: str) -> str:
     fixed_routes = {
+        ISSUE421_BRANCH: (421, ISSUE421_BASE),
         ISSUE368_IMPLEMENTATION_BRANCH: (368, ISSUE368_IMPLEMENTATION_BASE),
         ISSUE368_QUOTA_FIX_BRANCH: (368, ISSUE368_QUOTA_FIX_BASE),
         ISSUE368_PROMPT_BRANCH: (368, ISSUE368_PROMPT_BASE),
@@ -594,8 +596,9 @@ def route_base(run: Callable[[list[str]], Any], branch: str) -> str:
         fixed_value = str(fixed.stdout).strip()
         common_value = str(common.stdout).strip()
         branch_point_invalid = False
-        if branch in {ISSUE368_IMPLEMENTATION_BRANCH, ISSUE368_QUOTA_FIX_BRANCH,
-                      ISSUE368_BRANCH, ISSUE368_PROMPT_BRANCH}:
+        if branch in {ISSUE421_BRANCH, ISSUE368_IMPLEMENTATION_BRANCH,
+                      ISSUE368_QUOTA_FIX_BRANCH, ISSUE368_BRANCH,
+                      ISSUE368_PROMPT_BRANCH}:
             branch_point = run(["git", "merge-base", "origin/main", "HEAD"])
             branch_point_invalid = branch_point.returncode != 0 or str(branch_point.stdout).strip() != base
         if (fixed.returncode or common.returncode or fixed_value != base or common_value != base
