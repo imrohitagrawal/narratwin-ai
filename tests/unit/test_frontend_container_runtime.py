@@ -80,3 +80,5 @@ def test_scan_contract_requires_runtime_package_metadata_and_openssl_identity() 
     assert "FRONTEND_RUNTIME_PACKAGES" in script
     assert "/lib/apk/db/installed" in script
     assert "frontend_openssl_is_acceptable" in script
+    assert "actual_architecture" in script
+    assert 'actual_architecture}" != "${FRONTEND_ARCH}' in script

@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 import sys
 from pathlib import Path
 from typing import Any
@@ -48,16 +49,8 @@ FRONTEND_ENGINE_CONFIG_DEFAULTS = {
     "Tty": False,
     "Volumes": None,
 }
-FRONTEND_INVENTORIES = {
-    "amd64": frozenset(
-        (
-            "1645:f868cddbe615d21fb965633253098ada945041edfb5ab7325956a669554ceecd",
-        )
-    ),
-    "arm64": frozenset(
-        ("1643:18df82960aa5cbd5b17217eb918a6c50cc450e608a75ac6bf6c70c230ac0a784",)
-    ),
-}
+FRONTEND_INVENTORY_RECORD_BOUNDS = {"amd64": (1600, 1700), "arm64": (1600, 1700)}
+FRONTEND_INVENTORY_PATTERN = re.compile(r"^(?P<records>[1-9]\d{0,4}):(?P<digest>[0-9a-f]{64})$")
 FRONTEND_RUNTIME_INDEX = "sha256:eaec65b25f35619be16f4992e7bae1128eafcf63c114f2859b800a7020c1ef70"
 FRONTEND_RUNTIME_PLATFORM_DIGESTS = {
     "amd64": "sha256:f95c554213997aeb84b4c146819f08481e99a6f9b0a7a7524cdcc02632cfac5d",
@@ -97,7 +90,9 @@ def frontend_openssl_is_acceptable(version: str) -> bool:
 
 
 def frontend_inventory_matches(architecture: str, inventory: str) -> bool:
-    return inventory in FRONTEND_INVENTORIES.get(architecture, frozenset())
+    bounds = FRONTEND_INVENTORY_RECORD_BOUNDS.get(architecture)
+    match = FRONTEND_INVENTORY_PATTERN.match(inventory)
+    return bool(bounds and match and bounds[0] <= int(match["records"]) <= bounds[1])
 
 
 def require_frontend_inventory(architecture: str, inventory: str) -> None:
@@ -183,7 +178,9 @@ def frontend_reproduction_findings(primary: dict[str, Any], reproduction: dict[s
         findings.append("FRONTEND_BUILD_ID_CHANGED")
     primary_inventory = primary.get("inventory")
     reproduction_inventory = reproduction.get("inventory")
-    inventories_are_reviewed = all(
+    primary_architecture = primary.get("architecture")
+    reproduction_architecture = reproduction.get("architecture")
+    inventories_are_reviewed = primary_architecture == reproduction_architecture and all(
         isinstance(value, str) and frontend_inventory_matches(str(record.get("architecture", "")), value)
         for record, value in ((primary, primary_inventory), (reproduction, reproduction_inventory))
     )

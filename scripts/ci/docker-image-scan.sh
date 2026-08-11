@@ -67,7 +67,7 @@ image_config() {
 }
 
 verify_frontend_runtime() {
-  local image="$1" output_variable="$2" config container port http_code actual_inventory runtime_identity
+  local image="$1" output_variable="$2" config container port http_code actual_architecture actual_inventory runtime_identity
   config="$(docker image inspect "${image}" --format '{{json .Config}}')"
   python3 - 3<<<"${config}" <<'PY'
 import json, sys
@@ -101,6 +101,11 @@ expected = {
 if config != expected or len(FRONTEND_RUNTIME_INDEX) != 71 or len(FRONTEND_NODE_SOURCE_INDEX) != 71 or len(FRONTEND_ATOMIC_SOURCE_INDEX) != 71 or set(FRONTEND_RUNTIME_PLATFORM_DIGESTS) != {"amd64", "arm64"} or set(FRONTEND_NODE_SOURCE_PLATFORM_DIGESTS) != {"amd64", "arm64"} or set(FRONTEND_ATOMIC_SOURCE_PLATFORM_DIGESTS) != {"amd64", "arm64"}:
   raise SystemExit("Frontend runtime config does not match the reviewed contract.")
 PY
+  actual_architecture="$(docker image inspect "${image}" --format '{{.Architecture}}')"
+  if [ "${actual_architecture}" != "${FRONTEND_ARCH}" ]; then
+    echo "Frontend runtime architecture does not match the requested platform." >&2
+    return 1
+  fi
   runtime_identity="$(docker run --rm --env NODE_OPTIONS= --env NODE_PATH= --env LD_PRELOAD= --entrypoint /usr/bin/node "${image}" -e '
 const fs=require("fs"), extras=[];
 for (const d of ["/bin","/sbin","/usr/bin","/usr/sbin"]) if (fs.existsSync(d)) {

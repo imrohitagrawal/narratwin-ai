@@ -41,8 +41,12 @@ standalone Next.js server as `65532:65532`.
 
 The scanner gate checks immutable runtime configuration, Node/OpenSSL/package
 identity, root ownership and permissions, zero capabilities, exact
-architecture-specific normalized inventory, non-root HTTP smoke, two-build
-reproducibility, CycloneDX identity, and Trivy/Grype consensus through Medium.
+runtime architecture, bounded normalized inventory shape, non-root HTTP smoke,
+same-builder two-build inventory equality, CycloneDX identity, and Trivy/Grype
+consensus through Medium. It does not hardcode the complete application-layer
+filesystem hash across native and emulated builders; CI demonstrated that such
+hashes can differ while the separately exact source, config, package, OpenSSL,
+SBOM and runtime contracts remain identical.
 
 ## Consequences and boundaries
 

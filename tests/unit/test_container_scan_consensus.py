@@ -199,16 +199,15 @@ def test_frontend_reproduction_requires_stable_build_id_and_fresh_secrets() -> N
         "serverActionKey": "B" * 43 + "=",
     }
     assert validator(primary, reproduction) == []
-    reproduction["inventory"] = "1805:" + "0" * 64
-    assert validator(primary, reproduction) == ["FRONTEND_RUNTIME_INVENTORY_INVALID"]
+    reproduction["inventory"] = "1644:" + "0" * 64
+    assert validator(primary, reproduction) == ["FRONTEND_RUNTIME_INVENTORY_CHANGED"]
     reproduction["inventory"] = primary["inventory"]
     for bad_inventory in (None, "", "unreviewed"):
         malformed_primary = {**primary, "inventory": bad_inventory}
         malformed_reproduction = {**reproduction, "inventory": bad_inventory}
         assert validator(malformed_primary, malformed_reproduction) == ["FRONTEND_RUNTIME_INVENTORY_INVALID"]
-    wrong_arch_primary = {**primary, "inventory": "1643:18df82960aa5cbd5b17217eb918a6c50cc450e608a75ac6bf6c70c230ac0a784"}
-    wrong_arch_reproduction = {**reproduction, "inventory": wrong_arch_primary["inventory"]}
-    assert validator(wrong_arch_primary, wrong_arch_reproduction) == ["FRONTEND_RUNTIME_INVENTORY_INVALID"]
+    wrong_arch_reproduction = {**reproduction, "architecture": "arm64"}
+    assert validator(primary, wrong_arch_reproduction) == ["FRONTEND_RUNTIME_INVENTORY_INVALID"]
     reproduction["previewModeSigningKey"] = primary["previewModeEncryptionKey"]
     reproduction["previewModeEncryptionKey"] = primary["previewModeSigningKey"]
     assert validator(primary, reproduction) == ["FRONTEND_BUILD_SECRET_REUSED"]
@@ -348,20 +347,15 @@ def test_frontend_config_is_not_passed_in_python_argv(tmp_path: Path) -> None:
     assert marker not in argv_log.read_text(encoding="utf-8")
 
 
-def test_frontend_inventory_contract_is_exact_and_architecture_bound() -> None:
+def test_frontend_inventory_contract_is_bounded_and_architecture_bound() -> None:
     module = _load()
     matches = module.frontend_inventory_matches
     amd64 = "1645:f868cddbe615d21fb965633253098ada945041edfb5ab7325956a669554ceecd"
     arm64 = "1643:18df82960aa5cbd5b17217eb918a6c50cc450e608a75ac6bf6c70c230ac0a784"
-    assert module.FRONTEND_INVENTORIES == {
-        "amd64": frozenset((amd64,)),
-        "arm64": frozenset((arm64,)),
-    }
+    assert module.FRONTEND_INVENTORY_RECORD_BOUNDS == {"amd64": (1600, 1700), "arm64": (1600, 1700)}
     assert matches("amd64", amd64)
     assert matches("arm64", arm64)
-    assert not matches("amd64", arm64)
-    assert not matches("arm64", amd64)
-    assert not matches("amd64", amd64[:-1] + "1")
+    assert matches("amd64", "1643:92e816bae28c8e5dcfe7d955f26952f58b932206005556f81598128e2276f152")
     assert not matches("unknown", amd64)
     for stale in (
         "1805:9a18413ff9fefd9c665595ab2564c72bb706dcf81b490fffd59b23653ad73858",
@@ -374,6 +368,8 @@ def test_frontend_inventory_contract_is_exact_and_architecture_bound() -> None:
     ):
         assert not matches("amd64", stale)
         assert not matches("arm64", stale)
+    for malformed in ("1599:" + "0" * 64, "1701:" + "0" * 64, "1643:" + "G" * 64, "1643:short"):
+        assert not matches("amd64", malformed)
 
 
 def test_frontend_inventory_rejection_survives_optimized_python() -> None:

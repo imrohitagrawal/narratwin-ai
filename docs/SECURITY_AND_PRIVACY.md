@@ -581,7 +581,10 @@ sources: minimal Chainguard glibc runtime, Docker Official Node 26.7.0 binary,
 and one Chainguard `libatomic` runtime component. The effective embedded OpenSSL
 is 3.5.7, outside CVE-2026-54876's affected 3.6.0-before-3.6.4 range. Exactly
 eight Wolfi package records and their SBOM metadata remain scanner-visible.
-Exact runtime probes,
-two-build inventories, non-root smoke, and Trivy/Grype Medium-or-higher
-consensus fail closed. This is an isolated container remediation, not a product,
-provider, deployment, release, or production-readiness claim.
+Exact runtime probes, architecture verification, bounded inventory shape,
+same-builder two-build inventory equality, non-root smoke, and Trivy/Grype
+Medium-or-higher consensus fail closed. Exact source/config/package/OpenSSL/SBOM
+identity is portable; a complete application-layer filesystem hash is not
+asserted across native and emulated builders. This is an isolated container
+remediation, not a product, provider, deployment, release, or
+production-readiness claim.
