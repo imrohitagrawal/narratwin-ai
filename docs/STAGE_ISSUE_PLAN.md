@@ -2599,7 +2599,7 @@ rule are normative in the Issue #368 governance review. Release remains No-Go.
 
 Direct OWNER comment `5245861950` authorizes branch
 `stage8-368-cut1-google-tts-runtime-transport` from accepted main
-`0fea35a7028b22f6d91096b1f46b5418884b9992`, exactly 16 paths and 3,600 charged
+`0fea35a7028b22f6d91096b1f46b5418884b9992`, exactly 18 paths and 3,600 charged
 lines. It adds only optional `google-auth==2.56.3`, direct connection-bound EU
 HTTPS transport, ADC seam, injected-fake TDD, route controls and impacted docs.
 The runtime is disabled by default; authentication, credentials, egress, spend,

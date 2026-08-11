@@ -45,6 +45,7 @@ ROUTES = {
         "docs/STAGE_ISSUE_PLAN.md",
         "docs/STATUS.md",
         "docs/THIRD_PARTY_NOTICES.md",
+        "docs/TRACEABILITY.md",
     },
     ISSUE368_PROMPT_BRANCH: {
         "docs/governance/preflights/issue-368.json",
@@ -260,6 +261,7 @@ TEXT_LIMITS = {
             "docs/STAGE_ISSUE_PLAN.md": 100,
             "docs/STATUS.md": 120,
             "docs/THIRD_PARTY_NOTICES.md": 150,
+            "docs/TRACEABILITY.md": 220,
         }[path]
         for path in ROUTES[ISSUE368_IMPLEMENTATION_BRANCH]
     },

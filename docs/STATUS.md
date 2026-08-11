@@ -1329,7 +1329,7 @@ Required update rules:
 
 - Direct OWNER authority is recorded in Issue comment `5245861950`. Branch
   `stage8-368-cut1-google-tts-runtime-transport` starts exactly at accepted main
-  `0fea35a7028b22f6d91096b1f46b5418884b9992` and is limited to 16 paths and
+  `0fea35a7028b22f6d91096b1f46b5418884b9992` and is limited to 18 paths and
   3,600 charged lines.
 - The optional provider-owned runtime uses lazy ADC with the fixed scope and a
   direct checked-peer EU HTTPS transport. It rejects ambient/default operation,

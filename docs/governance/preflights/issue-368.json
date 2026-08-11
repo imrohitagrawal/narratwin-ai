@@ -34,7 +34,7 @@
     "posture": "lazy optional import; absent dependency or stale/contradictory activation evidence fails closed"
   },
   "change_budget": {
-    "exact_paths": 17,
+    "exact_paths": 18,
     "maximum_additions_plus_deletions": 3600,
     "deletions_grant_credit": false,
     "per_file_charged_lines": {
@@ -54,13 +54,14 @@
       "docs/SECURITY_AND_PRIVACY.md": 100,
       "docs/STAGE_ISSUE_PLAN.md": 100,
       "docs/STATUS.md": 120,
-      "docs/THIRD_PARTY_NOTICES.md": 150
+      "docs/THIRD_PARTY_NOTICES.md": 150,
+      "docs/TRACEABILITY.md": 220
     }
   },
   "scope": {
-    "required": ["docs/governance/preflights/issue-368.json", "backend/app/google_tts_runtime.py", "backend/app/tts_provider.py", "pyproject.toml", "uv.lock", "tests/unit/test_google_tts_runtime.py", "tests/unit/test_dependency_security_contract.py", "scripts/quality/stage8_cut1_routes.py", "tests/unit/test_stage8_cut1_routes.py", "docs/ADR/0056-cut1-google-gemini-tts.md", "docs/ARCHITECTURE.md", "docs/OBSERVABILITY_AND_COST.md", "docs/QUALITY_GATES.md", "docs/SECURITY_AND_PRIVACY.md", "docs/STAGE_ISSUE_PLAN.md", "docs/STATUS.md", "docs/THIRD_PARTY_NOTICES.md"],
-    "allowed_prefixes": ["docs/governance/preflights/issue-368.json", "backend/app/google_tts_runtime.py", "backend/app/tts_provider.py", "pyproject.toml", "uv.lock", "tests/unit/test_google_tts_runtime.py", "tests/unit/test_dependency_security_contract.py", "scripts/quality/stage8_cut1_routes.py", "tests/unit/test_stage8_cut1_routes.py", "docs/ADR/0056-cut1-google-gemini-tts.md", "docs/ARCHITECTURE.md", "docs/OBSERVABILITY_AND_COST.md", "docs/QUALITY_GATES.md", "docs/SECURITY_AND_PRIVACY.md", "docs/STAGE_ISSUE_PLAN.md", "docs/STATUS.md", "docs/THIRD_PARTY_NOTICES.md"],
-    "forbidden": ["frontend/", ".github/", "backend/app/main.py", "backend/app/stage6.py", "backend/app/narration.py", "tests/api/", "tests/integration/", "tests/acceptance/", "docs/API_CONTRACT.md", "docs/DATA_MODEL.md", "docs/TRACEABILITY.md", "credentials", "authentication", "provider activation", "real audio"]
+    "required": ["docs/governance/preflights/issue-368.json", "backend/app/google_tts_runtime.py", "backend/app/tts_provider.py", "pyproject.toml", "uv.lock", "tests/unit/test_google_tts_runtime.py", "tests/unit/test_dependency_security_contract.py", "scripts/quality/stage8_cut1_routes.py", "tests/unit/test_stage8_cut1_routes.py", "docs/ADR/0056-cut1-google-gemini-tts.md", "docs/ARCHITECTURE.md", "docs/OBSERVABILITY_AND_COST.md", "docs/QUALITY_GATES.md", "docs/SECURITY_AND_PRIVACY.md", "docs/STAGE_ISSUE_PLAN.md", "docs/STATUS.md", "docs/THIRD_PARTY_NOTICES.md", "docs/TRACEABILITY.md"],
+    "allowed_prefixes": ["docs/governance/preflights/issue-368.json", "backend/app/google_tts_runtime.py", "backend/app/tts_provider.py", "pyproject.toml", "uv.lock", "tests/unit/test_google_tts_runtime.py", "tests/unit/test_dependency_security_contract.py", "scripts/quality/stage8_cut1_routes.py", "tests/unit/test_stage8_cut1_routes.py", "docs/ADR/0056-cut1-google-gemini-tts.md", "docs/ARCHITECTURE.md", "docs/OBSERVABILITY_AND_COST.md", "docs/QUALITY_GATES.md", "docs/SECURITY_AND_PRIVACY.md", "docs/STAGE_ISSUE_PLAN.md", "docs/STATUS.md", "docs/THIRD_PARTY_NOTICES.md", "docs/TRACEABILITY.md"],
+    "forbidden": ["frontend/", ".github/", "backend/app/main.py", "backend/app/stage6.py", "backend/app/narration.py", "tests/api/", "tests/integration/", "tests/acceptance/", "docs/API_CONTRACT.md", "docs/DATA_MODEL.md", "credentials", "authentication", "provider activation", "real audio"]
   },
   "invariants": ["R368-01 ADC is unreachable until every pre-egress gate passes and scope/quota evidence binds", "R368-02 only approved EU hostname, HTTPS 443, exact SNI, checked peer and no proxy/redirect are accepted", "R368-03 all DNS answers are checked and the connection is bound to the checked address", "R368-04 TLS, response URL/peer/evidence and bounded response bytes are revalidated", "R368-05 ambiguous write/response failures are egress_possible and never retried", "R368-06 tokens, credentials, paths, headers, prompts and provider bodies are redacted", "R368-07 Google remains disabled/default-local and caller cannot select model/voice/locale/endpoint", "R368-08 TTSProvider and semantic presenter IDs remain the only narration-facing boundary", "R368-09 dependency contract preserves immutable Issue #401 pypdf exactness and admits only reviewed google-auth closure delta"],
   "test_levels": {
@@ -80,5 +81,5 @@
     "invoked": ["source-driven-development", "api-and-interface-design", "security-and-hardening", "spec-driven-development", "test-driven-development", "planning-and-task-breakdown", "code-review-and-quality", "doubt-driven-development"],
     "rejected": {"frontend-ui-engineering": "frontend is out of scope", "shipping-and-launch": "deployment/release is prohibited", "google-cloud-tts-sdk": "direct governed REST is smaller and avoids duplicate SDK/gRPC closure", "cross-model-review": "not available in this execution context; fresh-context adversarial review is required instead"}
   },
-  "stop_conditions": ["accepted main, issue, prerequisite, branch or competing-PR drift", "any twenty-first path or aggregate/per-file budget breach", "need for an unauthorized dependency or path", "real ADC/authentication/provider call/egress/spend/audio or credential exposure", "material API, permission, endpoint, model, format, license, policy, legal or privacy contradiction", "unresolved Critical/High/Medium/Required defect or mandatory gate failure", "latest-head eligible non-author human review"]
+  "stop_conditions": ["accepted main, issue, prerequisite, branch or competing-PR drift", "any nineteenth path or aggregate/per-file budget breach", "need for an unauthorized dependency or path", "real ADC/authentication/provider call/egress/spend/audio or credential exposure", "material API, permission, endpoint, model, format, license, policy, legal or privacy contradiction", "unresolved Critical/High/Medium/Required defect or mandatory gate failure", "latest-head eligible non-author human review"]
 }
