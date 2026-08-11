@@ -127,6 +127,8 @@ ROUTES = {
         "docs/OBSERVABILITY_AND_COST.md",
         "docs/STATUS.md",
         "docs/TRACEABILITY.md",
+        "scripts/ci/verify_branch_protection.py",
+        "tests/unit/test_branch_protection_verifier.py",
     },
     ISSUE368_PROMPT_BRANCH: {
         "docs/governance/preflights/issue-368.json",
@@ -387,6 +389,8 @@ TEXT_LIMITS = {
             "docs/OBSERVABILITY_AND_COST.md": 180,
             "docs/STATUS.md": 220,
             "docs/TRACEABILITY.md": 220,
+            "scripts/ci/verify_branch_protection.py": 80,
+            "tests/unit/test_branch_protection_verifier.py": 220,
         }[path]
         for path in ROUTES[ISSUE368_QUOTA_FIX_BRANCH]
     },

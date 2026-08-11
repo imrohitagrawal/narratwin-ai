@@ -147,6 +147,8 @@ EXPECTED = {
         "docs/OBSERVABILITY_AND_COST.md",
         "docs/STATUS.md",
         "docs/TRACEABILITY.md",
+        "scripts/ci/verify_branch_protection.py",
+        "tests/unit/test_branch_protection_verifier.py",
     },
     "stage8-368-cut1-google-tts-prompt-contract": {
         "docs/governance/preflights/issue-368.json",
@@ -482,13 +484,15 @@ def test_routes_are_exact_pre_registered_and_issue386_preflight_matches() -> Non
     assert issue368["branch"] == routes.ISSUE368_QUOTA_FIX_BRANCH
     assert set(issue368["scope"]["required"]) == EXPECTED[routes.ISSUE368_QUOTA_FIX_BRANCH]
     assert set(issue368["scope"]["allowed_prefixes"]) == EXPECTED[routes.ISSUE368_QUOTA_FIX_BRANCH]
-    assert issue368["change_budget"]["exact_paths"] == 14
+    assert issue368["change_budget"]["exact_paths"] == 16
     assert issue368["change_budget"]["maximum_additions_plus_deletions"] == 2800
     assert issue368["change_budget"]["deletions_grant_credit"] is False
     assert issue368["change_budget"]["per_file_charged_lines"]["backend/app/google_tts_runtime.py"] == 500
     assert issue368["change_budget"]["per_file_charged_lines"]["tests/unit/test_google_tts_runtime.py"] == 600
     assert issue368["change_budget"]["per_file_charged_lines"]["tests/unit/test_stage6_tts_provider.py"] == 800
     assert issue368["change_budget"]["per_file_charged_lines"]["docs/TRACEABILITY.md"] == 220
+    assert issue368["change_budget"]["per_file_charged_lines"]["scripts/ci/verify_branch_protection.py"] == 80
+    assert issue368["change_budget"]["per_file_charged_lines"]["tests/unit/test_branch_protection_verifier.py"] == 220
     assert routes.TOTAL_LIMITS[routes.ISSUE368_IMPLEMENTATION_BRANCH] == 3600
     assert routes.TOTAL_LIMITS[routes.ISSUE368_QUOTA_FIX_BRANCH] == 2800
     assert routes.TOTAL_LIMITS[routes.ISSUE368_PROMPT_BRANCH] == 1000

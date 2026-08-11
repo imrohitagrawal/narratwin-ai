@@ -2,10 +2,11 @@
   "schema_version": "GovernancePreflightV1",
   "issue_number": 368,
   "branch": "stage8-368-google-tts-quota-project-binding-fix",
-  "objective": "Fail closed on Google authorized-user ADC quota-project drift, bind the approved project hash into activation and request evidence, emit exactly one application-owned x-goog-user-project header after immediate pre-egress revalidation, and preserve every existing provider-neutral, disabled-default, direct-EU-transport, receipt, cost, and audio safeguard.",
+  "objective": "Fail closed on Google authorized-user ADC quota-project drift, bind the approved project hash into activation and request evidence, emit exactly one application-owned x-goog-user-project header after immediate pre-egress revalidation, reconcile the strict branch-protection verifier with the already-live pr-body-consistency context bound to GitHub Actions app ID 15368, and preserve every existing provider-neutral, disabled-default, direct-EU-transport, receipt, cost, and audio safeguard.",
   "status_decision": "quota-project-binding-repair-before-final-audio",
   "authority": {
     "direct_owner_authority": "https://github.com/imrohitagrawal/narratwin-ai/issues/368#issuecomment-5256748344",
+    "route_amendment_authority": "https://github.com/imrohitagrawal/narratwin-ai/issues/368#issuecomment-5257797936",
     "diagnostic_evidence": "https://github.com/imrohitagrawal/narratwin-ai/issues/368#issuecomment-5256656667",
     "accepted_main": "9c165f739788fb0f09b315673f9125d700d6a96b",
     "rejection_inventory_sha256": "e919ce44bddc0e167f3636df3886643847410d1d9615e2fe7fd7f6a60a0698c7",
@@ -27,7 +28,7 @@
     "evidence": "https://github.com/imrohitagrawal/narratwin-ai/issues/368#issuecomment-5256656667"
   },
   "change_budget": {
-    "exact_paths": 14,
+    "exact_paths": 16,
     "maximum_additions_plus_deletions": 2800,
     "deletions_grant_credit": false,
     "per_file_charged_lines": {
@@ -44,7 +45,9 @@
       "docs/SECURITY_AND_PRIVACY.md": 220,
       "docs/OBSERVABILITY_AND_COST.md": 180,
       "docs/STATUS.md": 220,
-      "docs/TRACEABILITY.md": 220
+      "docs/TRACEABILITY.md": 220,
+      "scripts/ci/verify_branch_protection.py": 80,
+      "tests/unit/test_branch_protection_verifier.py": 220
     }
   },
   "scope": {
@@ -62,7 +65,9 @@
       "docs/SECURITY_AND_PRIVACY.md",
       "docs/OBSERVABILITY_AND_COST.md",
       "docs/STATUS.md",
-      "docs/TRACEABILITY.md"
+      "docs/TRACEABILITY.md",
+      "scripts/ci/verify_branch_protection.py",
+      "tests/unit/test_branch_protection_verifier.py"
     ],
     "allowed_prefixes": [
       "backend/app/google_tts_runtime.py",
@@ -78,7 +83,9 @@
       "docs/SECURITY_AND_PRIVACY.md",
       "docs/OBSERVABILITY_AND_COST.md",
       "docs/STATUS.md",
-      "docs/TRACEABILITY.md"
+      "docs/TRACEABILITY.md",
+      "scripts/ci/verify_branch_protection.py",
+      "tests/unit/test_branch_protection_verifier.py"
     ],
     "forbidden": [
       "dependency manifests and lockfiles",
@@ -100,7 +107,8 @@
     "Q368-06": "Raw project IDs, credentials, tokens, and authorization values never enter logs, exceptions, state, evidence, or provider-neutral/API surfaces.",
     "Q368-07": "Existing direct EU TLS/DNS/SNI/proxy/redirect/single-use transport, cost, receipt, prompt, response, audio, duplicate-spend, and ambiguous-timeout controls remain unchanged.",
     "Q368-08": "No real credential refresh or provider call occurs on the repair branch; synthesis resumes only from verified merged main.",
-    "Q368-09": "Exactly one existing OWNER-created project must satisfy billing, both API-enablement, IAM, quota, and bounded-operation criteria before local reconciliation."
+    "Q368-09": "Exactly one existing OWNER-created project must satisfy billing, both API-enablement, IAM, quota, and bounded-operation criteria before local reconciliation.",
+    "Q368-10": "Branch protection requires exactly the ten historical contexts plus pr-body-consistency, every binding uses GitHub Actions app ID 15368, strict mode remains enabled, and missing, malformed, removed, wrong-app, or additional contexts fail closed."
   },
   "invariant_to_test_mapping": {
     "Q368-01": ["runtime empty/malformed/configured-hash-mismatch tests", "provider activation validation tests"],
@@ -111,10 +119,11 @@
     "Q368-06": ["log/error/state/evidence leakage mutation tests"],
     "Q368-07": ["existing provider/runtime/Stage 6/API suites plus duplicate-spend and ambiguous-timeout tests"],
     "Q368-08": ["fake-only branch test boundary and exact merged-main human checklist"],
-    "Q368-09": ["redacted read-only gcloud/API/IAM/quota observations; OWNER decision if uniqueness is not deterministic"]
+    "Q368-09": ["redacted read-only gcloud/API/IAM/quota observations; OWNER decision if uniqueness is not deterministic"],
+    "Q368-10": ["branch-protection exact-cardinality, missing-context, wrong-app, unexpected-context, historical-removal, strict-mode, and malformed-binding tests"]
   },
   "tdd_sequence": {
-    "red_commit": "Commit fake-only failing tests after this preflight-first commit and before implementation.",
+    "red_commit": "Commit fake-only failing tests after the original preflight-first commit and commit the route-amendment RED verifier tests before changing the verifier implementation.",
     "green_commit": "Implement only enough application-owned validation/header construction/fingerprinting to satisfy the frozen invariants.",
     "regression": "Run focused, complete provider/runtime/Stage 6/API, backend, frontend/browser, lint/type, audit/security/container, route/budget, stage8-quality, and quality gates."
   },
