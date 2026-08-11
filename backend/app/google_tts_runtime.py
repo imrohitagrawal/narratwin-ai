@@ -40,6 +40,7 @@ _PATH = "/v1/text:synthesize"
 _MAX_HEADER_BYTES = 32_768
 _DEFAULT_MAX_RESPONSE_BYTES = 6_000_000
 _READ_CHUNK_BYTES = 64 * 1024
+_HEADER_NAME = re.compile(r"[!#$%&'*+.^_`|~0-9A-Za-z-]+\Z")
 
 
 class GoogleRuntimeError(RuntimeError):
@@ -334,6 +335,14 @@ class _PreparedGoogleSession:
         self._max_response_bytes = max_response_bytes
         self._used = False
 
+    def close(self) -> None:
+        """Consume and close this capability without writing provider data."""
+        self._used = True
+        try:
+            self._sock.close()
+        except OSError:
+            pass
+
     def send(
         self,
         *,
@@ -348,25 +357,41 @@ class _PreparedGoogleSession:
         if timeout_seconds <= 0 or timeout_seconds > 30:
             raise GoogleRuntimeError("GOOGLE_TTS_TIMEOUT_INVALID", "Google TTS timeout is invalid.")
         self._used = True
-        payload = json.dumps(json_body, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
-        request_headers = {"Host": _HOSTNAME, "Content-Length": str(len(payload)), "Connection": "close"}
-        for name, value in headers.items():
-            if name.lower() in {"host", "content-length", "connection"}:
-                raise GoogleRuntimeError(
-                    "GOOGLE_TTS_HEADER_INVALID", "Google TTS request headers are invalid.", egress_possible=False
-                )
-            if not isinstance(name, str) or not isinstance(value, str) or "\r" in value or "\n" in value:
-                raise GoogleRuntimeError(
-                    "GOOGLE_TTS_HEADER_INVALID", "Google TTS request headers are invalid."
-                )
-            request_headers[name] = value
-        wire = (
-            f"POST {_PATH} HTTP/1.1\r\n"
-            + "".join(f"{name}: {value}\r\n" for name, value in request_headers.items())
-            + "\r\n"
-        ).encode("ascii") + payload
-        sent = 0
         try:
+            try:
+                payload = json.dumps(
+                    json_body, ensure_ascii=False, separators=(",", ":")
+                ).encode("utf-8")
+                request_headers = {
+                    "Host": _HOSTNAME,
+                    "Content-Length": str(len(payload)),
+                    "Connection": "close",
+                }
+                for name, value in headers.items():
+                    if (
+                        not isinstance(name, str)
+                        or not isinstance(value, str)
+                        or not _HEADER_NAME.fullmatch(name)
+                        or name.lower() in {"host", "content-length", "connection"}
+                        or "\r" in value
+                        or "\n" in value
+                    ):
+                        raise ValueError("invalid header")
+                    request_headers[name] = value
+                wire = (
+                    f"POST {_PATH} HTTP/1.1\r\n"
+                    + "".join(
+                        f"{name}: {value}\r\n" for name, value in request_headers.items()
+                    )
+                    + "\r\n"
+                ).encode("ascii") + payload
+            except (TypeError, ValueError, UnicodeEncodeError):
+                raise GoogleRuntimeError(
+                    "GOOGLE_TTS_REQUEST_INVALID",
+                    "Google TTS request is invalid.",
+                    egress_possible=False,
+                ) from None
+            sent = 0
             while sent < len(wire):
                 count = self._sock.send(wire[sent:])
                 if count <= 0:
@@ -381,10 +406,7 @@ class _PreparedGoogleSession:
             # possible egress and let the provider suppress retries.
             raise GoogleTransportError(egress_possible=True) from None
         finally:
-            try:
-                self._sock.close()
-            except OSError:
-                pass
+            self.close()
 
     def _read_response(self) -> GoogleTTSHTTPResponse:
         header_bytes = bytearray()

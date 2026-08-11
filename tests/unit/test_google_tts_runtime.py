@@ -354,6 +354,38 @@ def test_prepared_session_cannot_be_reused_after_response() -> None:
     assert error.value.code == "GOOGLE_TTS_SESSION_INVALID"
 
 
+def test_prepared_session_explicit_close_is_idempotent_and_prevents_send() -> None:
+    instance, sock, _, _ = transport()
+    prepared = instance.prepare(url=GOOGLE_TTS_URL, timeout_seconds=1)
+    prepared.close()
+    prepared.close()
+    assert sock.closed is True
+    with pytest.raises(GoogleRuntimeError) as error:
+        prepared.send(headers={}, json_body={}, timeout_seconds=1)
+    assert error.value.code == "GOOGLE_TTS_SESSION_INVALID"
+
+
+@pytest.mark.parametrize(
+    "headers,json_body",
+    [
+        ({"X-Unsafe\r\nInjected": "value"}, {}),
+        ({"X-Non-Ascii": "snowman-\N{SNOWMAN}"}, {}),
+        ({}, {"not-json": object()}),
+    ],
+)
+def test_pre_send_validation_failure_closes_session(
+    headers: dict[str, str], json_body: dict[str, object]
+) -> None:
+    instance, sock, _, _ = transport()
+    prepared = instance.prepare(url=GOOGLE_TTS_URL, timeout_seconds=1)
+    with pytest.raises(GoogleRuntimeError) as error:
+        prepared.send(headers=headers, json_body=json_body, timeout_seconds=1)
+    assert error.value.code == "GOOGLE_TTS_REQUEST_INVALID"
+    assert error.value.egress_possible is False
+    assert sock.closed is True
+    assert sock.sent == b""
+
+
 def test_runtime_constants_keep_model_locale_voice_and_endpoint_out_of_caller_control() -> None:
     assert GOOGLE_TTS_URL == "https://eu-texttospeech.googleapis.com/v1/text:synthesize"
     assert GOOGLE_TTS_SCOPE == "https://www.googleapis.com/auth/cloud-platform"
