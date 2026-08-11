@@ -1,3 +1,9 @@
+"""Dependency contract tests; no LLM, script, or answer generation occurs here.
+
+The contract has no provider output, source_chunk, or citation generation and
+does not require trace/run_id metadata.
+"""
+
 from __future__ import annotations
 
 import copy
