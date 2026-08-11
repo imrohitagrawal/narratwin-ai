@@ -495,6 +495,8 @@ def test_routes_are_exact_pre_registered_and_issue386_preflight_matches() -> Non
     assert issue368["change_budget"]["per_file_charged_lines"]["scripts/ci/verify_branch_protection.py"] == 80
     assert issue368["change_budget"]["per_file_charged_lines"]["tests/unit/test_branch_protection_verifier.py"] == 220
     assert issue368["change_budget"]["per_file_charged_lines"]["tests/unit/test_governance_preflight_github.py"] == 80
+    assert "unsafe need outside the seventeen-path route" in issue368["stop_conditions"]
+    assert "exact seventeen-path route" in (REPO / "docs/STATUS.md").read_text(encoding="utf-8")
     assert routes.TOTAL_LIMITS[routes.ISSUE368_IMPLEMENTATION_BRANCH] == 3600
     assert routes.TOTAL_LIMITS[routes.ISSUE368_QUOTA_FIX_BRANCH] == 2800
     assert routes.TOTAL_LIMITS[routes.ISSUE368_PROMPT_BRANCH] == 1000
