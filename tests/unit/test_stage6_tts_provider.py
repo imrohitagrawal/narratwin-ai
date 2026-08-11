@@ -451,6 +451,7 @@ def test_g368_01_03_exact_semantic_mapping_and_unary_request(presenter_id: str, 
     }
     assert body["audioConfig"] == {"audioEncoding": "LINEAR16", "sampleRateHertz": 24000}
     assert set(headers) == {"Authorization", "Content-Type", "x-goog-user-project"}
+    assert list(headers) == ["Authorization", "Content-Type", "x-goog-user-project"]
     assert headers["Authorization"] == "Bear" + "er unit-fixture-identity-value"
     assert headers["Content-Type"] == "application/json; charset=utf-8"
     assert headers["x-goog-user-project"] == _GOOGLE_TEST_QUOTA_PROJECT
@@ -520,6 +521,11 @@ def test_g368_quota_project_change_is_revalidated_before_egress() -> None:
             "Content-Type": "application/json; charset=utf-8",
             "x-goog-user-project": _GOOGLE_TEST_QUOTA_PROJECT,
             "X-Caller-Injected": "forbidden",
+        },
+        {
+            "x-goog-user-project": _GOOGLE_TEST_QUOTA_PROJECT,
+            "Content-Type": "application/json; charset=utf-8",
+            "Authorization": "Bear" + "er unit-fixture-identity-value",
         },
     ],
 )

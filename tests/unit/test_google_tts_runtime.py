@@ -128,11 +128,43 @@ def test_adc_resolution_binds_exact_scope_and_identity_checksum() -> None:
     assert identity.access_token == ACCESS_VALUE
     assert identity.identity_evidence_sha256.startswith("sha256:")
     assert len(identity.identity_evidence_sha256) == len(CHECKSUM)
-    assert calls == [{"scopes": [GOOGLE_TTS_SCOPE], "quota_project_id": QUOTA_PROJECT}]
+    assert calls == [{"scopes": [GOOGLE_TTS_SCOPE]}]
     assert len(credentials.refresh_calls) == 1
     assert getattr(identity, "quota_project_id", None) == QUOTA_PROJECT
     assert getattr(identity, "quota_project_sha256", None) == QUOTA_PROJECT_HASH
     assert QUOTA_PROJECT not in repr(identity)
+    assert ACCESS_VALUE not in repr(identity)
+
+
+def test_adc_loader_cannot_mask_absent_native_quota_with_configured_override() -> None:
+    native_quota: str | None = None
+    calls: list[dict[str, object]] = []
+
+    def loader(**kwargs: object) -> tuple[FakeCredentials, str]:
+        calls.append(kwargs)
+        effective = cast(str | None, kwargs.get("quota_project_id", native_quota))
+        return FakeCredentials(quota_project_id=effective), "project-id"
+
+    provider = identity_provider(loader=loader)
+    with pytest.raises(GoogleRuntimeError) as error:
+        provider.resolve(scope=GOOGLE_TTS_SCOPE)
+    assert error.value.code == "GOOGLE_TTS_QUOTA_PROJECT_MISMATCH"
+    assert calls == [{"scopes": [GOOGLE_TTS_SCOPE]}]
+
+
+def test_adc_loader_cannot_mask_native_project_drift_during_revalidation() -> None:
+    current = {"quota": QUOTA_PROJECT}
+
+    def loader(**kwargs: object) -> tuple[FakeCredentials, str]:
+        effective = cast(str | None, kwargs.get("quota_project_id", current["quota"]))
+        return FakeCredentials(quota_project_id=effective), "project-id"
+
+    provider = identity_provider(loader=loader)
+    identity = provider.resolve(scope=GOOGLE_TTS_SCOPE)
+    current["quota"] = "changed-project"
+    with pytest.raises(GoogleRuntimeError) as error:
+        provider.revalidate_quota_project(identity)
+    assert error.value.code == "GOOGLE_TTS_QUOTA_PROJECT_MISMATCH"
 
 
 def test_adc_rejects_wrong_scope_and_unbound_quota_project() -> None:
@@ -146,7 +178,9 @@ def test_adc_rejects_wrong_scope_and_unbound_quota_project() -> None:
     assert quota_error.value.code == "GOOGLE_TTS_QUOTA_PROJECT_INVALID"
 
 
-@pytest.mark.parametrize("configured", [None, "", "bad", "UPPER-project"])
+@pytest.mark.parametrize(
+    "configured", [None, "", "bad", "UPPER-project", "a" + "1" * 29 + "z"]
+)
 def test_enabled_adc_requires_nonempty_well_formed_configured_quota_project(
     configured: str | None,
 ) -> None:
@@ -154,6 +188,29 @@ def test_enabled_adc_requires_nonempty_well_formed_configured_quota_project(
     with pytest.raises(GoogleRuntimeError) as error:
         provider.resolve(scope=GOOGLE_TTS_SCOPE)
     assert error.value.code == "GOOGLE_TTS_QUOTA_PROJECT_INVALID"
+
+
+@pytest.mark.parametrize("configured", ["a1234z", "a" + "1" * 28 + "z"])
+def test_adc_accepts_six_and_thirty_character_project_id_boundaries(
+    configured: str,
+) -> None:
+    approved_hash = "sha256:" + hashlib.sha256(configured.encode()).hexdigest()
+    provider = identity_provider(
+        quota_project_id=configured,
+        quota_project_evidence_sha256=approved_hash,
+        credentials=FakeCredentials(quota_project_id=configured),
+    )
+    assert provider.resolve(scope=GOOGLE_TTS_SCOPE).quota_project_sha256 == approved_hash
+
+
+def test_adc_config_repr_redacts_raw_project() -> None:
+    config = GoogleADCConfig(
+        enabled=True,
+        activation_evidence_sha256=CHECKSUM,
+        quota_project_id=QUOTA_PROJECT,
+        quota_project_evidence_sha256=QUOTA_PROJECT_HASH,
+    )
+    assert QUOTA_PROJECT not in repr(config)
 
 
 def test_adc_rejects_absent_or_mismatched_credential_quota_project() -> None:
