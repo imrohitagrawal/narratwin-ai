@@ -1325,29 +1325,44 @@ Required update rules:
   reference evidence only; final 90–120-second narration still requires
   validation and OWNER listening. Issue #368 stays open and release stays No-Go.
 
-## Issue #368 adapter implementation target state (2026-08-10)
+## Issue #368 runtime-transport prerequisite target state (2026-08-11)
 
-- Direct OWNER authority is recorded in Issue comment `5244098136`. Branch
+- Direct OWNER authority is recorded in Issue comments `5245861950` and
+  `5252513832`. Branch `stage8-368-cut1-google-tts-runtime-transport` is
+  forward-merged from accepted main
+  `6766da34d73e301358f84f8eefb0985927292a26` and remains limited to 18 paths and
+  3,600 charged lines.
+- The optional provider-owned runtime uses lazy ADC with the fixed scope and a
+  direct checked-peer EU HTTPS transport. It rejects ambient/default operation,
+  proxies, redirects, unsafe DNS answers, peer/TLS/SNI drift, oversized
+  responses and unsafe retries. `google-auth==2.56.3` is optional and locked.
+- Google remains disabled; no credential lookup, authentication, egress,
+  narration, spend, generated audio or frontend/API selection exists in this
+  change. Issue #368 remains open for eligible non-author latest-head review.
+- Account/IAM/ADC approval, billing/quota, legal/commercial use, content
+  logging/abuse monitoring, retention/regional processing, effective output and
+  exact-hash listening remain unresolved activation blockers. Release is No-Go;
+  Issue #369 is not started.
+
+- Historical adapter authority is recorded in Issue comment `5244098136`.
+  Branch
   `stage8-368-cut1-google-tts-adapter-implementation` starts exactly at accepted
   main `de0cd683cd05dda91c8f0df53d05c8b55c81d213` and is limited to the governed
   21 paths and 5,600 charged lines.
-- After this PR merges, the repository contains a provider-neutral,
+- PR #411 merged at `0fea35a7028b22f6d91096b1f46b5418884b9992`; the repository contains a provider-neutral,
   disabled-by-default adapter with canonical prompt verification, exact receipt
   authority, injected fake identity/HTTP seams, strict response/WAV validation,
   durable idempotency/spend/tombstone state and redacted evidence. It contains no
   real transport, credential, provider call, generated audio or frontend/API
   activation surface.
-- Issue #368 remains open for human latest-head review and later separately
-  authorized activation/final-audio evidence. Legal, privacy, account, billing,
-  IAM/identity, quota, endpoint policy, effective-output identity and exact-hash
-  listening remain unresolved. Release remains No-Go; Issue #369 is not started.
+- That historical merge did not close Issue #368 or authorize activation,
+  final-audio evidence, deployment, distribution or release.
 
 ## Issue #413 independent frontend runtime security state (2026-08-11)
 
-- PR #412 remains open and unchanged at
-  `2b089088a00dc804ff2b4d848a354608a672501a`; Issue #368's branch and worktree
-  are outside this operation.
-- Issue #413 owns branch `cut1-process-413-frontend-runtime-openssl` from accepted
+- PR #414 merged at `6766da34d73e301358f84f8eefb0985927292a26`; Issue #413 is closed.
+  PR #412 inherits this accepted-main prerequisite through a forward merge.
+- Issue #413 used branch `cut1-process-413-frontend-runtime-openssl` from accepted
   main `0fea35a7028b22f6d91096b1f46b5418884b9992` with committed preflight and
   RED-before-GREEN evidence.
 - Chainguard Node, official Node Alpine/Bookworm, Distroless and musl scratch
@@ -1355,7 +1370,7 @@ Required update rules:
   selected exact three-source minimal glibc composition reports embedded
   OpenSSL 3.5.7 and zero Medium-or-higher Trivy or Grype findings on amd64 and
   arm64 while retaining eight truthful package records.
-- Dedicated security PR #414 is open and remains pending latest-head CI and
-  eligible non-author approval. It does not complete Issue #368, Cut 1,
+- Dedicated security PR #414 passed latest-head CI and eligible non-author
+  approval before merge. It does not complete Issue #368, Cut 1,
   deployment or release; release posture remains No-Go and Issue #369 is not
   started.

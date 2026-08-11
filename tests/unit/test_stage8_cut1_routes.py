@@ -97,6 +97,26 @@ EXPECTED = {
         "docs/API_CONTRACT.md",
         "docs/DATA_MODEL.md",
     },
+    "stage8-368-cut1-google-tts-runtime-transport": {
+        "docs/governance/preflights/issue-368.json",
+        "backend/app/google_tts_runtime.py",
+        "backend/app/tts_provider.py",
+        "pyproject.toml",
+        "uv.lock",
+        "tests/unit/test_google_tts_runtime.py",
+        "tests/unit/test_dependency_security_contract.py",
+        "scripts/quality/stage8_cut1_routes.py",
+        "tests/unit/test_stage8_cut1_routes.py",
+        "docs/ADR/0056-cut1-google-gemini-tts.md",
+        "docs/ARCHITECTURE.md",
+        "docs/OBSERVABILITY_AND_COST.md",
+        "docs/QUALITY_GATES.md",
+        "docs/SECURITY_AND_PRIVACY.md",
+        "docs/STAGE_ISSUE_PLAN.md",
+        "docs/STATUS.md",
+        "docs/THIRD_PARTY_NOTICES.md",
+        "docs/TRACEABILITY.md",
+    },
     "stage8-368-cut1-google-tts-prompt-contract": {
         "docs/governance/preflights/issue-368.json",
         "docs/governance/cut1-google-gemini-tts-style-prompts-v1.json",
@@ -431,12 +451,14 @@ def test_routes_are_exact_pre_registered_and_issue386_preflight_matches() -> Non
     assert issue368["branch"] == routes.ISSUE368_IMPLEMENTATION_BRANCH
     assert set(issue368["scope"]["required"]) == EXPECTED[routes.ISSUE368_IMPLEMENTATION_BRANCH]
     assert set(issue368["scope"]["allowed_prefixes"]) == EXPECTED[routes.ISSUE368_IMPLEMENTATION_BRANCH]
-    assert issue368["change_budget"] == {
-        "exact_paths": 21,
-        "maximum_additions_plus_deletions": 5600,
-        "deletions_grant_credit": False,
-    }
-    assert routes.TOTAL_LIMITS[routes.ISSUE368_IMPLEMENTATION_BRANCH] == 5600
+    assert issue368["change_budget"]["exact_paths"] == 18
+    assert issue368["change_budget"]["maximum_additions_plus_deletions"] == 3600
+    assert issue368["change_budget"]["deletions_grant_credit"] is False
+    assert issue368["change_budget"]["per_file_charged_lines"]["backend/app/google_tts_runtime.py"] == 700
+    assert issue368["change_budget"]["per_file_charged_lines"]["tests/unit/test_google_tts_runtime.py"] == 800
+    assert issue368["change_budget"]["per_file_charged_lines"]["tests/unit/test_dependency_security_contract.py"] == 220
+    assert issue368["change_budget"]["per_file_charged_lines"]["docs/TRACEABILITY.md"] == 220
+    assert routes.TOTAL_LIMITS[routes.ISSUE368_IMPLEMENTATION_BRANCH] == 3600
     assert routes.TOTAL_LIMITS[routes.ISSUE368_PROMPT_BRANCH] == 1000
     issue405 = json.loads((REPO / "docs/governance/preflights/issue-405.json").read_text(encoding="utf-8"))
     assert issue405["branch"] == routes.ISSUE405_BRANCH

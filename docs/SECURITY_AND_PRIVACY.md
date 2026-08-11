@@ -59,6 +59,20 @@ human-risk records must not be committed here.
 
 ## Required Controls
 
+### Issue #368 optional Google runtime
+
+The runtime is disabled by default and does not resolve ADC during ordinary
+imports, startup, local/mock operation, tests or CI. If later server-owned
+activation evidence permits it, ADC receives only the fixed
+`https://www.googleapis.com/auth/cloud-platform` scope; tokens and credential
+paths are never logged or serialized. The transport rejects proxies, redirects,
+non-global/private/loopback/link-local/multicast/unspecified/reserved DNS
+answers, peer changes, TLS/SNI mismatch, and oversized responses. It binds the
+checked address before authorization or narration is supplied. Ambiguous writes
+are billable-unknown and suppress retries. Google content logging, abuse
+monitoring, retention, regional processing, commercial use and account/IAM
+approval remain unresolved human/legal/privacy gates.
+
 ### Secret Scanning
 
 Controls:

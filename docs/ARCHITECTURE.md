@@ -31,6 +31,12 @@ project creation
 Product implementation remains blocked in Stage 2. This document defines the target
 system boundaries, not runnable product code.
 
+Issue #368 adds a later optional runtime boundary only: `TTSProvider` remains the
+narration-facing interface, while ADC identity and connection-bound HTTPS live in
+`backend/app/google_tts_runtime.py`. The runtime is server-owned, lazy and
+disabled by default; it has no caller-controlled model, voice, locale, endpoint,
+credential path or proxy surface.
+
 ## Guiding Decisions
 
 - Build vertical slices through issue-linked PRs.

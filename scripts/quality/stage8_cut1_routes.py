@@ -21,11 +21,12 @@ ISSUE397_BRANCH = "stage8-397-presenter-asset-adr-classifier"
 ISSUE393_BRANCH = "stage8-393-historical-digest-test-isolation"
 ISSUE368_BRANCH = "stage8-368-cut1-local-tts-audio"
 ISSUE368_PROMPT_BRANCH = "stage8-368-cut1-google-tts-prompt-contract"
-ISSUE368_IMPLEMENTATION_BRANCH = "stage8-368-cut1-google-tts-adapter-implementation"
+ISSUE368_ADAPTER_BRANCH = "stage8-368-cut1-google-tts-adapter-implementation"
+ISSUE368_IMPLEMENTATION_BRANCH = "stage8-368-cut1-google-tts-runtime-transport"
 ISSUE386_BASE = "48fc32a2689c9bbc03742d774f3eadb8a500dafc"
 ISSUE368_BASE = "ef9cabc23762560912d99f10831241b8a65b869c"
 ISSUE368_PROMPT_BASE = "ba77d59b193da8064d67261e13fb50756c2bd9e8"
-ISSUE368_IMPLEMENTATION_BASE = "de0cd683cd05dda91c8f0df53d05c8b55c81d213"
+ISSUE368_IMPLEMENTATION_BASE = "6766da34d73e301358f84f8eefb0985927292a26"
 
 ROUTES = {
     ISSUE413_BRANCH: {
@@ -49,7 +50,7 @@ ROUTES = {
         "docs/TRACEABILITY.md",
         "docs/STAGE_ISSUE_PLAN.md",
     },
-    ISSUE368_IMPLEMENTATION_BRANCH: {
+    ISSUE368_ADAPTER_BRANCH: {
         "docs/governance/preflights/issue-368.json",
         "backend/app/narration.py",
         "backend/app/tts_provider.py",
@@ -71,6 +72,26 @@ ROUTES = {
         "docs/THIRD_PARTY_NOTICES.md",
         "docs/API_CONTRACT.md",
         "docs/DATA_MODEL.md",
+    },
+    ISSUE368_IMPLEMENTATION_BRANCH: {
+        "docs/governance/preflights/issue-368.json",
+        "backend/app/google_tts_runtime.py",
+        "backend/app/tts_provider.py",
+        "pyproject.toml",
+        "uv.lock",
+        "tests/unit/test_google_tts_runtime.py",
+        "tests/unit/test_dependency_security_contract.py",
+        "scripts/quality/stage8_cut1_routes.py",
+        "tests/unit/test_stage8_cut1_routes.py",
+        "docs/ADR/0056-cut1-google-gemini-tts.md",
+        "docs/ARCHITECTURE.md",
+        "docs/OBSERVABILITY_AND_COST.md",
+        "docs/QUALITY_GATES.md",
+        "docs/SECURITY_AND_PRIVACY.md",
+        "docs/STAGE_ISSUE_PLAN.md",
+        "docs/STATUS.md",
+        "docs/THIRD_PARTY_NOTICES.md",
+        "docs/TRACEABILITY.md",
     },
     ISSUE368_PROMPT_BRANCH: {
         "docs/governance/preflights/issue-368.json",
@@ -254,11 +275,11 @@ ROUTES = {
         "docs/THIRD_PARTY_NOTICES.md",
     },
 }
-ROUTE_ISSUES = {ISSUE413_BRANCH: 413, ISSUE368_IMPLEMENTATION_BRANCH: 368, ISSUE368_PROMPT_BRANCH: 368, ISSUE368_BRANCH: 368, ISSUE405_BRANCH: 405, ISSUE403_BRANCH: 403, ISSUE401_BRANCH: 401, ISSUE396_BRANCH: 396,
+ROUTE_ISSUES = {ISSUE413_BRANCH: 413, ISSUE368_ADAPTER_BRANCH: 368, ISSUE368_IMPLEMENTATION_BRANCH: 368, ISSUE368_PROMPT_BRANCH: 368, ISSUE368_BRANCH: 368, ISSUE405_BRANCH: 405, ISSUE403_BRANCH: 403, ISSUE401_BRANCH: 401, ISSUE396_BRANCH: 396,
                 ISSUE386_BRANCH: 386, ISSUE385_BRANCH: 385,
                 ISSUE384_BRANCH: 384, ISSUE383_BRANCH: 383, ISSUE397_BRANCH: 397,
                 ISSUE393_BRANCH: 393, ISSUE382_BRANCH: 382, ISSUE367_BRANCH: 367}
-TOTAL_LIMITS = {ISSUE413_BRANCH: 5000, ISSUE368_IMPLEMENTATION_BRANCH: 5600, ISSUE368_PROMPT_BRANCH: 1000, ISSUE368_BRANCH: 3200, ISSUE405_BRANCH: 800, ISSUE403_BRANCH: 650, ISSUE401_BRANCH: 600, ISSUE396_BRANCH: 500,
+TOTAL_LIMITS = {ISSUE413_BRANCH: 5000, ISSUE368_ADAPTER_BRANCH: 5600, ISSUE368_IMPLEMENTATION_BRANCH: 3600, ISSUE368_PROMPT_BRANCH: 1000, ISSUE368_BRANCH: 3200, ISSUE405_BRANCH: 800, ISSUE403_BRANCH: 650, ISSUE401_BRANCH: 600, ISSUE396_BRANCH: 500,
                 ISSUE386_BRANCH: 700, ISSUE385_BRANCH: 350,
                 ISSUE384_BRANCH: 500, ISSUE383_BRANCH: 700, ISSUE397_BRANCH: 500,
                 ISSUE393_BRANCH: 700, ISSUE382_BRANCH: 3200, ISSUE367_BRANCH: 2000}
@@ -279,7 +300,7 @@ TEXT_LIMITS = {
         else 220
         for path in ROUTES[ISSUE413_BRANCH]
     },
-    ISSUE368_IMPLEMENTATION_BRANCH: {
+    ISSUE368_ADAPTER_BRANCH: {
         path: 1700 if path == "backend/app/tts_provider.py"
         else 1200 if path == "tests/unit/test_stage6_tts_provider.py"
         else 600 if path in {"backend/app/narration.py", "backend/app/stage6.py",
@@ -288,6 +309,29 @@ TEXT_LIMITS = {
                              "scripts/quality/stage8_cut1_routes.py",
                              "tests/unit/test_stage8_cut1_routes.py"}
         else 300 if path == "docs/governance/preflights/issue-368.json" else 240
+        for path in ROUTES[ISSUE368_ADAPTER_BRANCH]
+    },
+    ISSUE368_IMPLEMENTATION_BRANCH: {
+        path: {
+            "docs/governance/preflights/issue-368.json": 240,
+            "backend/app/google_tts_runtime.py": 700,
+            "backend/app/tts_provider.py": 220,
+            "pyproject.toml": 20,
+            "uv.lock": 300,
+            "tests/unit/test_google_tts_runtime.py": 800,
+            "tests/unit/test_dependency_security_contract.py": 220,
+            "scripts/quality/stage8_cut1_routes.py": 60,
+            "tests/unit/test_stage8_cut1_routes.py": 160,
+            "docs/ADR/0056-cut1-google-gemini-tts.md": 180,
+            "docs/ARCHITECTURE.md": 70,
+            "docs/OBSERVABILITY_AND_COST.md": 70,
+            "docs/QUALITY_GATES.md": 70,
+            "docs/SECURITY_AND_PRIVACY.md": 100,
+            "docs/STAGE_ISSUE_PLAN.md": 100,
+            "docs/STATUS.md": 120,
+            "docs/THIRD_PARTY_NOTICES.md": 150,
+            "docs/TRACEABILITY.md": 220,
+        }[path]
         for path in ROUTES[ISSUE368_IMPLEMENTATION_BRANCH]
     },
     ISSUE368_PROMPT_BRANCH: {

@@ -314,3 +314,11 @@ instances cannot reserve or dispatch the same receipt concurrently. A crash may
 retain that lock and intentionally requires reconciliation instead of replay.
 The implementation and its tests create no provider cost observation and make
 no real provider call.
+
+The runtime adds only bounded metadata for activation/transport diagnostics:
+error code, phase, egress-possible classification, checked-address count,
+selected peer, TLS/SNI/port booleans, response-size bucket and elapsed bucket.
+Tokens, authorization headers, credential type/path, quota-project value,
+request/response bodies, prompts and audio remain excluded. A write or response
+failure after a write is `egress_possible=true` and is never retried; a DNS,
+connect or TLS failure before the write is pre-egress.

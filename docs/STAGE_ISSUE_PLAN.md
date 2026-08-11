@@ -2595,24 +2595,35 @@ Issue #368, deploy, distribute, release or merge. The separate future 21-path
 implementation route, prerequisite exact prompt contract, and stop-on-widening
 rule are normative in the Issue #368 governance review. Release remains No-Go.
 
-### Issue #368 adapter implementation boundary
+### Issue #368 runtime-transport prerequisite boundary
 
-Direct OWNER comment `5244098136` authorizes the exact 21-path/5,600-line
+Direct OWNER comment `5245861950` authorizes branch
+`stage8-368-cut1-google-tts-runtime-transport` from accepted main
+`6766da34d73e301358f84f8eefb0985927292a26`, exactly 18 paths and 3,600 charged
+lines. It adds only optional `google-auth==2.56.3`, direct connection-bound EU
+HTTPS transport, ADC seam, injected-fake TDD, route controls and impacted docs.
+The runtime is disabled by default; authentication, credentials, egress, spend,
+audio, activation, frontend, deployment, distribution, release and Issue #369
+remain separate. The PR stops at eligible non-author latest-head approval.
+
+The historical adapter route remains preserved. Direct OWNER comment
+`5244098136` authorized the exact 21-path/5,600-line
 implementation branch from merged PR #410 only. It adds the disabled adapter,
 receipt delegation, fake-transport TDD, strict request/response/audio validation,
 idempotent spend state and tombstones without a dependency, network client,
-credential, API/frontend provider choice, real call or audio. The PR must stop
-at eligible non-author latest-head approval. Activation, final listening,
+credential, API/frontend provider choice, real call or audio. PR #411 merged at
+`0fea35a7028b22f6d91096b1f46b5418884b9992`. Activation, final listening,
 deployment, distribution, release and Issue #369 remain separate.
 
 ### Issue #413 independent frontend runtime security prerequisite
 
-Issue #413 is a separate Stage 8 prerequisite and does not alter Issue #368 or
-PR #412. Its exact nineteen-path route replaces only the final frontend runtime,
+Issue #413 is a separate completed Stage 8 prerequisite and does not alter
+Issue #368 or PR #412. Its exact nineteen-path route replaced only the final frontend runtime,
 adds an exact three-source minimal glibc composition plus
 package/SBOM/reproducibility contracts and records the security decision.
-Acceptance requires both platform identities, non-root standalone startup, two
-builds, Trivy and Grype through Medium, full Stage 8 and repository quality,
-fresh-context adversarial review, dedicated PR CI and eligible latest-head
-approval. Merge does not close Issue #368, begin Issue #369, or authorize Cut 1
+PR #414 merged at `6766da34d73e301358f84f8eefb0985927292a26` after both platform
+identities, non-root standalone startup, two builds, Trivy and Grype through
+Medium, full Stage 8 and repository quality, fresh-context adversarial review,
+dedicated PR CI and eligible latest-head approval passed. It did not close
+Issue #368, begin Issue #369, or authorize Cut 1
 completion, deployment, distribution, release or production readiness.

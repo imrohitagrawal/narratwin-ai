@@ -1,3 +1,9 @@
+"""Dependency contract tests; no LLM, script, or answer generation occurs here.
+
+The contract has no provider output, source_chunk, or citation generation and
+does not require trace/run_id metadata.
+"""
+
 from __future__ import annotations
 
 import copy
@@ -45,6 +51,42 @@ BRACE_509_INTEGRITY = (
 SEMGREP_LOCK_SHA256 = "1975bebb0fca718a45742ad13a759e2092162c44c944c310572b4d553de4d51c"
 PYPDF_WHEEL_SHA256 = "14e001d6504822cb1ca9c7ed9a69bccb320f59b320730f55af804361abe4d5ee"
 PYPDF_SDIST_SHA256 = "d39c4d955a76409284a905e2d65b40076d77ab76129e0faaeeb6612403ecfc79"
+GOOGLE_AUTH_PACKAGES = {
+    "google-auth": ("2.56.3", "aafe27da7ef14e2ec2b24d75c45f7d800cfa7b3eb2d3d73a85228aafcfd870bc", "40e229fc901f0a305b553050e5fce562d509bee0435be053abfa91582b51b90c", "8ec438808f813ad034535000261eed1067475d229d05bbf4216e78c3f2362e53"),
+    "cryptography": ("50.0.0", "8584b52fbe429cb4b08434bf19df055dfe7c97a11d486c9b265ec1ee01851bb4", "eeac2acb5a20ed25e0ad6d1df9891a520b78b404266b6d11778f25d5d691a6c9", "031e2d5dd4bb9caa3ca9c82e5a197fd8ae680232cee62603d1a813f3f07e3d03"),
+    "pyasn1-modules": ("0.4.2", "6ca56d4d6b05cbc23d8920a3e91de1bac50e43b90e49439cc0d7aa7e143eb692", "677091de870a80aae844b1ca6134f54652fa2c8c5a52aa396440ac3106e941e6", "29253a9207ce32b64c3ac6600edc75368f98473906e8fd1043bd6b5b1de2c14a"),
+    "pyasn1": ("0.6.4", "3ad96cec94414e068c189c877f0b9ffa701f05c7c1317874cf5dafff6a34130a", "9c447d8431c947fe4c8febc4ed9e760bc29011a5b01e5c74b67025bd9fb8ce81", "deda9277cfd454080ec40b207fb6df82206a3a2688735233cdcd8d3d565f088b"),
+}
+
+
+def _assert_google_auth_delta(project: dict[str, Any], lock: dict[str, Any], base_project: dict[str, Any], base_lock: dict[str, Any]) -> None:
+    providers = project["project"]["optional-dependencies"]["providers"]
+    base_providers = base_project["project"]["optional-dependencies"]["providers"]
+    assert providers == ["google-auth==2.56.3", *base_providers]
+    packages = {package["name"]: package for package in lock["package"]}
+    base_packages = {package["name"]: package for package in base_lock["package"]}
+    assert set(packages) == set(base_packages) | set(GOOGLE_AUTH_PACKAGES)
+    assert packages["cffi"] == base_packages["cffi"]
+    assert packages["pycparser"] == base_packages["pycparser"]
+    for name, (version, digest, sdist_hash, wheel_hash) in GOOGLE_AUTH_PACKAGES.items():
+        package = packages[name]
+        assert package["version"] == version and package["source"] == {"registry": "https://pypi.org/simple"}
+        assert package["sdist"]["hash"] == f"sha256:{sdist_hash}"
+        assert package["wheels"][0]["hash"] == f"sha256:{wheel_hash}"
+        assert hashlib.sha256(json.dumps(package, sort_keys=True, separators=(",", ":")).encode()).hexdigest() == digest
+    root = next(package for package in lock["package"] if package["name"] == "narratwin-ai")
+    assert [item["name"] for item in root["optional-dependencies"]["providers"]] == ["google-auth", "litellm", "openai", "sentence-transformers"]
+    google_metadata = [item for item in root["metadata"]["requires-dist"] if item["name"] == "google-auth"]
+    assert google_metadata == [{"name": "google-auth", "marker": "extra == 'providers'", "specifier": "==2.56.3"}]
+    normalized_project = copy.deepcopy(project)
+    normalized_project["project"]["optional-dependencies"]["providers"] = base_providers
+    assert normalized_project == base_project
+    normalized_lock = copy.deepcopy(lock)
+    normalized_root = next(package for package in normalized_lock["package"] if package["name"] == "narratwin-ai")
+    normalized_root["optional-dependencies"]["providers"].remove({"name": "google-auth"})
+    normalized_root["metadata"]["requires-dist"].remove(google_metadata[0])
+    normalized_lock["package"] = [package for package in normalized_lock["package"] if package["name"] not in GOOGLE_AUTH_PACKAGES]
+    assert normalized_lock == base_lock
 
 
 def _text_at(ref: str, path: str) -> str:
@@ -68,9 +110,19 @@ def _assert_pypdf_615_contract(project_text: str, lock_text: str) -> None:
     base_lock = tomllib.loads(_text_at(ISSUE401_BASE, "uv.lock"))
     dependencies = project["project"]["dependencies"]
     assert [value for value in dependencies if value.startswith("pypdf")] == ["pypdf>=6.15.0"]
+    google_project = copy.deepcopy(project)
+    google_project["project"]["dependencies"][dependencies.index("pypdf>=6.15.0")] = "pypdf>=6.14.2"
+    google_lock = copy.deepcopy(lock)
+    google_root = next(package for package in google_lock["package"] if package["name"] == "narratwin-ai")
+    google_pypdf_metadata = next(item for item in google_root["metadata"]["requires-dist"] if item["name"] == "pypdf")
+    google_pypdf_metadata["specifier"] = ">=6.14.2"
+    google_pypdf_index = next(i for i, package in enumerate(google_lock["package"]) if package["name"] == "pypdf")
+    google_lock["package"][google_pypdf_index] = next(package for package in base_lock["package"] if package["name"] == "pypdf")
+    _assert_google_auth_delta(google_project, google_lock, base_project, base_lock)
     normalized_project = copy.deepcopy(project)
     index = dependencies.index("pypdf>=6.15.0")
     normalized_project["project"]["dependencies"][index] = "pypdf>=6.14.2"
+    normalized_project["project"]["optional-dependencies"]["providers"] = base_project["project"]["optional-dependencies"]["providers"]
     assert normalized_project == base_project
 
     pypdf = [package for package in lock["package"] if package["name"] == "pypdf"]
@@ -87,12 +139,16 @@ def _assert_pypdf_615_contract(project_text: str, lock_text: str) -> None:
 
     normalized_lock = copy.deepcopy(lock)
     root = next(package for package in normalized_lock["package"] if package["name"] == "narratwin-ai")
+    root["optional-dependencies"]["providers"].remove({"name": "google-auth"})
+    google_metadata = next(item for item in root["metadata"]["requires-dist"] if item["name"] == "google-auth")
+    root["metadata"]["requires-dist"].remove(google_metadata)
     root_metadata = next(item for item in root["metadata"]["requires-dist"] if item["name"] == "pypdf")
     root_metadata["specifier"] = ">=6.14.2"
     pypdf_index = next(i for i, package in enumerate(normalized_lock["package"]) if package["name"] == "pypdf")
     normalized_lock["package"][pypdf_index] = next(
         package for package in base_lock["package"] if package["name"] == "pypdf"
     )
+    normalized_lock["package"] = [package for package in normalized_lock["package"] if package["name"] not in GOOGLE_AUTH_PACKAGES]
     assert normalized_lock == base_lock
 
 
@@ -110,6 +166,34 @@ def test_pypdf_contract_rejects_vulnerable_hash_and_unrelated_drift() -> None:
         (project_text.replace("pypdf>=6.15.0", "pypdf>=6.14.2"), lock_text),
         (project_text, lock_text.replace(f"sha256:{PYPDF_WHEEL_SHA256}", "sha256:wrong")),
         (project_text, lock_text.replace('version = "2.6.2"', 'version = "0.0.0"', 1)),
+    )
+    for candidate_project, candidate_lock in mutations:
+        with pytest.raises(AssertionError):
+            _assert_pypdf_615_contract(candidate_project, candidate_lock)
+
+
+def test_google_auth_contract_rejects_direct_transitive_and_artifact_drift() -> None:
+    project_text = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
+    lock_text = (ROOT / "uv.lock").read_text(encoding="utf-8")
+    mutations = (
+        (project_text.replace('"google-auth==2.56.3",\n', ""), lock_text),
+        (
+            project_text.replace('    "google-auth==2.56.3",\n', "").replace(
+                '    "pypdf>=6.15.0",', '    "google-auth==2.56.3",\n    "pypdf>=6.15.0",'
+            ),
+            lock_text,
+        ),
+        (project_text.replace('"google-auth==2.56.3",', '"google-auth==2.56.2",'), lock_text),
+        (project_text.replace('"google-auth==2.56.3",', '"google-auth==2.56.3",\n    "unexpected-provider>=1.0",'), lock_text),
+        (project_text.replace('"google-auth==2.56.3",', '"google-auth==2.56.3",'), lock_text.replace('name = "pyasn1"\nversion = "0.6.4"', 'name = "unexpected-transitive"\nversion = "0.6.4"')),
+        (project_text, lock_text.replace('version = "2.56.3"', 'version = "2.56.2"', 1)),
+        (project_text, lock_text.replace('sha256:40e229fc901f0a305b553050e5fce562d509bee0435be053abfa91582b51b90c', 'sha256:' + '2' * 64)),
+        (project_text, lock_text.replace('sha256:8ec438808f813ad034535000261eed1067475d229d05bbf4216e78c3f2362e53', 'sha256:' + '0' * 64)),
+        (project_text, lock_text.replace('version = "50.0.0"', 'version = "49.0.0"', 1)),
+        (project_text, lock_text.replace('sha256:031e2d5dd4bb9caa3ca9c82e5a197fd8ae680232cee62603d1a813f3f07e3d03', 'sha256:' + '3' * 64)),
+        (project_text, lock_text.replace('sha256:9c447d8431c947fe4c8febc4ed9e760bc29011a5b01e5c74b67025bd9fb8ce81', 'sha256:' + '1' * 64)),
+        (project_text, lock_text.replace('name = "pyasn1-modules"\nversion = "0.4.2"', 'name = "pyasn1-modules"\nversion = "0.4.1"')),
+        (project_text, lock_text.replace(f'sha256:{PYPDF_SDIST_SHA256}', 'sha256:' + '4' * 64)),
     )
     for candidate_project, candidate_lock in mutations:
         with pytest.raises(AssertionError):

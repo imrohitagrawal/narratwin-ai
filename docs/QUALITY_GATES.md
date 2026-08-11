@@ -1261,9 +1261,24 @@ idempotency/concurrency/crash recovery, billable-unknown timeout handling,
 redaction, retention/deletion and exact replay. Automated tests never call
 Google. A final 90–120-second artifact still requires exact-hash OWNER listening.
 
-### Issue #368 Google TTS adapter implementation gate
+### Issue #368 Google TTS runtime-transport prerequisite gate
 
-Exact branch `stage8-368-cut1-google-tts-adapter-implementation` starts at
+Exact branch `stage8-368-cut1-google-tts-runtime-transport` starts at
+accepted main `6766da34d73e301358f84f8eefb0985927292a26`, changes exactly 18 governed paths,
+and stays within 3,600 additions plus deletions with no deletion credit. The
+route requires committed RED-before-GREEN proof; optional lazy ADC with the
+fixed cloud-platform scope; exact quota-project/checksum binding; all-answer
+DNS screening; direct checked-peer port-443 TLS/SNI; no proxy/redirect;
+single-use prepared sessions; bounded response reads; redacted errors; truthful
+pre-egress versus egress-possible failures; no retry; and provider-neutral,
+disabled-default startup regressions. The dependency-contract test preserves the
+immutable Issue #401 pypdf exactness while normalizing only the reviewed
+`google-auth==2.56.3` optional-provider closure and rejects any other drift.
+`google-auth==2.56.3` is optional and locked with its complete closure. Tests use fakes only; Google remains disabled,
+no credentials or real call/audio exists, and release remains No-Go.
+
+The historical adapter route remains independently enforced. Exact branch
+`stage8-368-cut1-google-tts-adapter-implementation` starts at
 `de0cd683cd05dda91c8f0df53d05c8b55c81d213`, changes exactly the governed 21
 paths, and stays within 5,600 additions plus deletions with no deletion credit.
 The route requires committed RED-before-GREEN proof; exact prompt/hash and unary

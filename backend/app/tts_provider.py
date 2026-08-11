@@ -460,6 +460,8 @@ class GoogleIdentity:
 
 
 class GoogleIdentityProvider(Protocol):
+    # Concrete optional identity and transport implementations live in the
+    # provider-owned google_tts_runtime module, not in this provider boundary.
     def resolve(self, *, scope: str) -> GoogleIdentity: ...
 
 
@@ -770,9 +772,11 @@ class GoogleGeminiTTSProvider:
             try:
                 self._validate_prepared_transport(prepared)
             except TTSProviderError:
+                self._close_prepared(prepared)
                 self._drop_pre_egress(fingerprint)
                 raise
             except Exception:
+                self._close_prepared(prepared)
                 self._drop_pre_egress(fingerprint)
                 raise _google_error(
                     "GOOGLE_TTS_TRANSPORT_POLICY_INVALID",
@@ -782,6 +786,7 @@ class GoogleGeminiTTSProvider:
             try:
                 identity = self.identity_provider.resolve(scope=GOOGLE_TTS_SCOPE)
             except Exception:
+                self._close_prepared(prepared)
                 self._drop_pre_egress(fingerprint)
                 raise _google_error(
                     "GOOGLE_TTS_IDENTITY_UNAVAILABLE",
@@ -791,6 +796,7 @@ class GoogleGeminiTTSProvider:
             try:
                 self._validate_identity(identity)
             except TTSProviderError:
+                self._close_prepared(prepared)
                 self._drop_pre_egress(fingerprint)
                 raise
             headers = {
@@ -1508,6 +1514,15 @@ class GoogleGeminiTTSProvider:
             redirects_ok=prepared.redirects_disabled,
             dns_pinned=prepared.dns_pinned,
         )
+
+    @staticmethod
+    def _close_prepared(prepared: GoogleTTSPreparedTransport) -> None:
+        close = getattr(prepared, "close", None)
+        if callable(close):
+            try:
+                close()
+            except OSError:
+                pass
 
     def _validate_transport_evidence(
         self,

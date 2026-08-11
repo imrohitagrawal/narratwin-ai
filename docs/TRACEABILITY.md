@@ -8,7 +8,7 @@ personas, core user journeys, acceptance criteria, or product behavior.
 
 ## Version
 
-- Last updated: 2026-08-08
+- Last updated: 2026-08-11
 - Current PRD source: `docs/PRD.md` v1.0
 - Canonical source: `docs/REQUIREMENTS_TRACEABILITY_MATRIX.md`
 
@@ -509,9 +509,19 @@ durability, deployment, and release decisions remain outside this trace.
 | Exact Google source facts and contradictions | Issue #368 governance review source ledger | Observed 2026-08-10; refresh before activation |
 | Exact canonical style prompts | OWNER comment `5243441424`; `docs/governance/cut1-google-gemini-tts-style-prompts-v1.json`; deterministic byte/hash/closed-schema tests | Prompt governance prerequisite satisfied after merge; exactly Meera/Despina, Myra/Leda and Raj/Achird; no runtime authority |
 | Security/privacy/cost/retention/idempotency/audio validation | Adapter unit tests, narration/Stage 6/API tests, security and observability amendments | Implemented with fake transports; activation blocked |
-| Adapter implementation scope and tests | OWNER comment `5244098136`; exact 21-path/5,600-line route; committed RED then GREEN evidence | In human review after CI |
+| Adapter implementation scope and tests | OWNER comment `5244098136`; exact 21-path/5,600-line route; committed RED then GREEN evidence; PR `#411` merged at merge commit `0fea35a7028b22f6d91096b1f46b5418884b9992` | PR `#411` is merged; provider activation and release remain blocked |
 | Full narration acceptance | Structural evidence plus exact-hash OWNER listening | Not started; blocked |
 | Deployment/distribution/release | Repository release posture | No-Go |
+
+## Issue #368 PR #412 runtime-transport prerequisite traceability
+
+| Evidence | Requirement coverage | Preserved and unresolved boundary |
+|---|---|---|
+| Issue `#368`, PR `#412`, and the exact 18-path / 3,600-charged-line route | Trace the optional Google runtime-transport prerequisite from owner authorization through implementation and review without treating the issue as complete | Reference-only issue wording; Issue `#368` remains open and release remains No-Go |
+| Existing provider-neutral `TTSProvider` contract and provider-owned `backend/app/google_tts_runtime.py` | Keep semantic presenter IDs and narration-facing interfaces provider-neutral while isolating Google model, voice, locale, ADC, and transport vocabulary in the optional adapter/runtime | No caller, UI, request, or arbitrary environment provider/model/voice selection; mock/local remains the default |
+| Optional `google-auth==2.56.3` in the `providers` extra, exact `uv.lock` closure, and dependency-contract tests | Bind ADC identity resolution to the reviewed optional dependency and exact identity/checksum/quota evidence only after every pre-egress gate passes | No credential path, token, ambient ADC lookup, authentication, credential access, or additional dependency is authorized |
+| Prepared HTTPS fake-transport evidence for `eu-texttospeech.googleapis.com:443` | Bind exact EU hostname, method, port, SNI, TLS, checked peer, DNS screening, no proxy/redirect, single-use session, bounded reads, and truthful ambiguous-write classification | No real Google/provider call, narration egress, paid synthesis, generated audio, or listening evidence exists |
+| Zero-real-call runtime, adapter, Stage 6/API, dependency, and route tests | Prove disabled-by-default startup and local/mock behavior with injected identity, DNS, TLS, socket, response, and dependency fakes | Activation, account/IAM, billing/quota, provider-call, audio/listening, legal/privacy/retention/commercial-use, and release gates remain unresolved human-only decisions |
 
 ## Issue #413 frontend runtime OpenSSL traceability
 
