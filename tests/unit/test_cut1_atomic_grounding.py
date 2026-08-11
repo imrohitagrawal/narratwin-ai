@@ -280,6 +280,59 @@ def test_atomic_fact_contract_mutations_fail_closed(
         load_cut1_grounding_contract(root=ROOT)
 
 
+def test_owner_record_span_is_independently_code_bound(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import backend.app.cut1_grounding as cut1
+
+    payload = json.loads(FACTS_PATH.read_text(encoding="utf-8"))
+    owner = next(source for source in payload["sources"] if source["locatorType"] == "owner-record")
+    span = owner["spans"][0]
+    replacement = "x" * span["byteCount"]
+    span["text"] = replacement
+    span["sha256"] = hashlib.sha256(replacement.encode()).hexdigest()
+    raw = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()
+    monkeypatch.setattr(cut1, "EXPECTED_ASSET_SHA256", hashlib.sha256(raw).hexdigest())
+    monkeypatch.setattr(cut1, "_read_contract", lambda _: (raw, payload))
+
+    with pytest.raises(cut1.Cut1GroundingError):
+        cut1.load_cut1_grounding_contract(root=ROOT)
+
+
+def test_reviewed_claim_propositions_bind_complete_independent_sources() -> None:
+    payload = json.loads(FACTS_PATH.read_text(encoding="utf-8"))
+    sources = {source["locator"]: source for source in payload["sources"]}
+    propositions = {row["propositionId"]: row for row in payload["propositions"]}
+
+    assert "docs/PORTABILITY_STRATEGY.md" in sources
+    assert "docs/PRD.md" in sources
+    assert "backend/app/stage4.py" in sources
+    assert propositions["fact_002"]["predicateIds"] == [
+        "stackclimb.brand",
+        "stackclimb.technology_context",
+        "stackclimb.product_innovation_context",
+        "stackclimb.founder.rohit",
+        "stackclimb.owner.rohit",
+        "stackclimb.lead.rohit",
+    ]
+    assert propositions["fact_005"]["predicateIds"] == [
+        "knowledge.documents",
+        "knowledge.code",
+        "knowledge.architecture",
+        "knowledge.technical_decisions",
+    ]
+    assert "visual material" not in propositions["fact_005"]["statement"]
+    assert propositions["fact_010"]["sourceSpanIds"] == [
+        "src_readme_span_04",
+        "src_portability_span_01",
+        "src_portability_span_02",
+    ]
+    assert propositions["fact_013"]["sourceSpanIds"] == [
+        "src_brief_span_01",
+        "src_stage_plan_span_02",
+    ]
+
+
 def test_atomic_fact_asset_bytes_are_immutable(tmp_path: Path) -> None:
     from backend.app.cut1_grounding import Cut1GroundingError, load_cut1_grounding_contract
 
