@@ -20,7 +20,7 @@ import re
 import socket
 import ssl
 from collections.abc import Callable, Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Protocol, cast
 from urllib.parse import SplitResult, urlsplit
 
@@ -41,7 +41,7 @@ _MAX_HEADER_BYTES = 32_768
 _DEFAULT_MAX_RESPONSE_BYTES = 6_000_000
 _READ_CHUNK_BYTES = 64 * 1024
 _HEADER_NAME = re.compile(r"[!#$%&'*+.^_`|~0-9A-Za-z-]+\Z")
-_PROJECT_ID = re.compile(r"[a-z][a-z0-9-]{4,61}[a-z0-9]\Z")
+_PROJECT_ID = re.compile(r"[a-z][a-z0-9-]{4,28}[a-z0-9]\Z")
 
 
 class GoogleRuntimeError(RuntimeError):
@@ -59,7 +59,7 @@ class GoogleADCConfig:
 
     enabled: bool = False
     activation_evidence_sha256: str = ""
-    quota_project_id: str | None = None
+    quota_project_id: str | None = field(default=None, repr=False)
     quota_project_evidence_sha256: str | None = None
 
 
@@ -87,11 +87,8 @@ class ADCGoogleIdentityProvider:
     def resolve(self, *, scope: str) -> GoogleIdentity:
         self._validate_preconditions(scope)
         loader = self._default_loader or self._load_default_loader()
-        kwargs: dict[str, object] = {"scopes": [GOOGLE_TTS_SCOPE]}
-        if self.config.quota_project_id is not None:
-            kwargs["quota_project_id"] = self.config.quota_project_id
         try:
-            credentials, project_id = loader(**kwargs)
+            credentials, project_id = loader(scopes=[GOOGLE_TTS_SCOPE])
         except Exception:
             raise GoogleRuntimeError(
                 "GOOGLE_TTS_ADC_UNAVAILABLE", "Google TTS ADC identity is unavailable."
@@ -141,9 +138,7 @@ class ADCGoogleIdentityProvider:
             )
         loader = self._default_loader or self._load_default_loader()
         try:
-            credentials, _project_id = loader(
-                scopes=[GOOGLE_TTS_SCOPE], quota_project_id=configured_quota
-            )
+            credentials, _project_id = loader(scopes=[GOOGLE_TTS_SCOPE])
         except Exception:
             raise GoogleRuntimeError(
                 "GOOGLE_TTS_ADC_UNAVAILABLE", "Google TTS ADC identity is unavailable."

@@ -1380,6 +1380,9 @@ Required update rules:
 - RED tests reproduce missing, mismatched, changed and injected quota binding;
   the repair makes the exact header and approved hash first-class and fail
   closed while keeping Google disabled by default and product APIs neutral.
+- Fresh-context review found and the branch resolves masked native-ADC drift,
+  unenforced header order, over-broad project-ID length, and sensitive object
+  representations. The follow-up RED commit precedes the correcting code.
 - Issue #368 remains open. Provider egress, generated audio, listening,
   deployment, public/commercial distribution, and release remain unproved;
   release posture remains No-Go.

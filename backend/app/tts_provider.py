@@ -457,7 +457,7 @@ class GoogleTTSConfig:
 
 @dataclass(frozen=True)
 class GoogleIdentity:
-    access_token: str
+    access_token: str = field(repr=False)
     identity_evidence_sha256: str
     quota_project_id: str = field(repr=False)
     quota_project_sha256: str
@@ -1438,7 +1438,7 @@ class GoogleGeminiTTSProvider:
             or not isinstance(identity.identity_evidence_sha256, str)
             or not GOOGLE_CHECKSUM_PATTERN.fullmatch(identity.identity_evidence_sha256)
             or not isinstance(identity.quota_project_id, str)
-            or not re.fullmatch(r"[a-z][a-z0-9-]{4,61}[a-z0-9]", identity.quota_project_id)
+            or not re.fullmatch(r"[a-z][a-z0-9-]{4,28}[a-z0-9]", identity.quota_project_id)
             or not isinstance(identity.quota_project_sha256, str)
             or not GOOGLE_CHECKSUM_PATTERN.fullmatch(identity.quota_project_sha256)
             or not hmac.compare_digest(
@@ -1465,10 +1465,10 @@ class GoogleGeminiTTSProvider:
     def _validate_request_headers(
         self, headers: dict[str, str], identity: GoogleIdentity
     ) -> None:
-        expected_names = {"Authorization", "Content-Type", "x-goog-user-project"}
+        expected_names = ("Authorization", "Content-Type", "x-goog-user-project")
         quota_value = headers.get("x-goog-user-project")
         if (
-            set(headers) != expected_names
+            tuple(headers) != expected_names
             or headers.get("Authorization") != f"Bearer {identity.access_token}"
             or headers.get("Content-Type") != "application/json; charset=utf-8"
             or not isinstance(quota_value, str)
