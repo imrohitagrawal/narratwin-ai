@@ -162,10 +162,14 @@ class PullApi(Protocol):
 def apply(api: PullApi, repository: str, number: int) -> ReconcileResult:
     source = api.pull(number)
     state = LiveState.from_pull(repository, source)
-    result = reconcile(str(source.get("body") or ""), state)
-    latest = LiveState.from_pull(repository, api.pull(number))
-    if latest.head_sha != state.head_sha:
-        raise HeadChanged("head changed before update")
+    source_body = str(source.get("body") or "")
+    result = reconcile(source_body, state)
+    latest_pull = api.pull(number)
+    latest = LiveState.from_pull(repository, latest_pull)
+    if latest != state:
+        raise HeadChanged("PR live state changed before update")
+    if str(latest_pull.get("body") or "") != source_body:
+        raise HeadChanged("PR body changed before update")
     if not result.changed:
         return result
     api.update_body(number, result.body)
