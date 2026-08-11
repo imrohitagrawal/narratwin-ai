@@ -1403,3 +1403,19 @@ Required update rules:
   approval before merge. It does not complete Issue #368, Cut 1,
   deployment or release; release posture remains No-Go and Issue #369 is not
   started.
+## Issue #421 target state after merge
+
+Issue `#421` repairs the deterministic grounding prerequisite discovered during
+Issue `#368` authority preparation. The accepted generic Stage 4 evaluator
+continues to reject the canonical narration with eighteen unsupported claims
+against ordinary sources. The governed Cut 1 route instead verifies an
+owner-reviewed atomic facts asset, immutable source spans at accepted commit
+`a868137fab607ae75d4b272301e9fc52b898e15c`, exact presenter claim hashes,
+complete proposition mappings, retrieved project scope, persistence, restore,
+and Issue #382 receipt lineage.
+
+When this PR merges, Issue #421 is satisfied and Issue #368 resumes authority
+preparation from merged main. Google calls, spend, and WAV count remain zero in
+this repair. Issue #368 and parent #366 remain open; release remains No-Go.
+Routine merge facts belong in Issue #421 and its PR comments, not a standalone
+status-only successor PR.

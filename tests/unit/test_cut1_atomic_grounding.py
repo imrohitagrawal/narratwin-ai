@@ -9,7 +9,8 @@ from typing import Any, Iterator
 
 import pytest
 
-from backend.app.narration import canonical_presenter_text
+from backend.app.narration import NarrationService, canonical_presenter_text
+from backend.app.presenter_registry import load_cut1_presenter_registry
 from backend.app.rag.grounding import GROUNDING_POLICY_VERSION, evaluate_grounding
 from backend.app.rag.models import GeneratedScript, ScriptClaim
 from backend.app.stage4 import LocalPrincipal, Stage4Service
@@ -120,12 +121,15 @@ def _seed_public_stage4(
         )
         document_ids.append(document.document_id)
     if include_facts:
+        from backend.app.cut1_grounding import load_cut1_grounding_contract
+
+        facts_bytes = load_cut1_grounding_contract(root=ROOT).project_source_bytes()
         facts = service.upload_document(
             principal=principal,
             project_id=project.project_id,
             source_filename="cut1-project-facts-v1.md",
             content_type="text/markdown",
-            data=FACTS_PATH.read_bytes(),
+            data=facts_bytes,
             idempotency_key=f"{presenter_id}-upload-facts",
         )
         service.approve_document(
@@ -233,7 +237,7 @@ def test_atomic_fact_contract_mutations_fail_closed(mutation: str) -> None:
     elif mutation == "foreign_proposition":
         payload["claimMappings"][0]["propositionIds"].append("fact_foreign")
     elif mutation == "claim_hash":
-        payload["claimMappings"][0]["claimSha256"] = "0" * 64
+        payload["claimMappings"][0]["claimSha256ByPresenter"]["meera"] = "0" * 64
     elif mutation == "source_path":
         payload["sources"][0]["path"] = "tests/unit/test_cut1_narration.py"
     elif mutation == "source_revision":
@@ -251,6 +255,17 @@ def test_atomic_fact_contract_mutations_fail_closed(mutation: str) -> None:
 
     with pytest.raises(Cut1GroundingError):
         load_cut1_grounding_contract(root=ROOT, payload=payload)
+
+
+def test_atomic_fact_asset_bytes_are_immutable(tmp_path: Path) -> None:
+    from backend.app.cut1_grounding import Cut1GroundingError, load_cut1_grounding_contract
+
+    target = tmp_path / "docs/governance/cut1-project-facts-v1.json"
+    target.parent.mkdir(parents=True)
+    target.write_bytes(FACTS_PATH.read_bytes() + b"\n")
+
+    with pytest.raises(Cut1GroundingError):
+        load_cut1_grounding_contract(root=tmp_path)
 
 
 def test_caller_supplied_proposition_metadata_cannot_turn_generic_grounding_green() -> None:
@@ -285,7 +300,79 @@ def test_cut1_evidence_checksum_changes_when_any_proposition_binding_changes() -
     from backend.app.cut1_grounding import load_cut1_grounding_contract
 
     contract = load_cut1_grounding_contract(root=ROOT)
-    first = contract.claim_mappings[0]
+    first = contract.claim_mappings[2]
     changed = replace(first, proposition_ids=tuple(reversed(first.proposition_ids)))
 
     assert contract.evidence_checksum(first) != contract.evidence_checksum(changed)
+
+
+@pytest.mark.parametrize("presenter_id", ["meera", "myra", "raj"])
+def test_public_stage4_and_issue382_lifecycle_persists_one_bound_receipt(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    presenter_id: str,
+) -> None:
+    stage4, principal, project_id = _seed_public_stage4(
+        tmp_path,
+        monkeypatch,
+        include_facts=True,
+        presenter_id=presenter_id,
+    )
+    run = _generate(stage4, principal, project_id, key=f"{presenter_id}-generate")
+    registry = load_cut1_presenter_registry(asset_root=ROOT)
+    identity = registry.get(presenter_id, "1.0.0")
+    assert identity.asset is not None
+    binding = registry.bind_for_trace(
+        presenter_id=presenter_id,
+        presenter_version="1.0.0",
+        trace_id=f"trace_{presenter_id}_authority",
+        asset_sha256=identity.asset.sha256,
+        voice_reference_id=identity.voice.reference_id,
+        voice_reference_version=identity.voice.version,
+    )
+    state_path = tmp_path / f"narration-{presenter_id}.json"
+    narration = NarrationService(stage4=stage4, registry=registry, state_path=state_path)
+    draft = narration.create_draft(
+        principal=principal,
+        project_id=project_id,
+        source_run_id=run.run_id,
+        presenter_binding=binding,
+        review_text=run.accepted_script_text,
+    )
+    required = narration.request_evaluation(
+        principal=principal,
+        project_id=project_id,
+        narration_version=draft.version,
+        narration_checksum=draft.narration_checksum,
+    )
+    evaluated = narration.evaluate(
+        principal=principal,
+        project_id=project_id,
+        narration_version=required.version,
+        narration_checksum=required.narration_checksum,
+    )
+    approved = narration.approve_for_speech(
+        principal=principal,
+        project_id=project_id,
+        narration_version=evaluated.version,
+        narration_checksum=evaluated.narration_checksum,
+        approver_id=principal.actor_id,
+    )
+    receipt = narration.consume_for_tts(
+        principal=principal,
+        project_id=project_id,
+        narration_version=approved.version,
+        narration_checksum=approved.narration_checksum,
+        request_id=f"request_{presenter_id}_authority",
+        trace_id=f"trace_{presenter_id}_tts",
+    )
+
+    restored_stage4 = Stage4Service(state_path=stage4.state_path)
+    restored = NarrationService(
+        stage4=restored_stage4,
+        registry=load_cut1_presenter_registry(asset_root=ROOT),
+        state_path=state_path,
+    )
+    assert restored.validate_tts_consumption_receipt(principal=principal, receipt=receipt) == receipt
+    assert receipt.spoken_text == canonical_presenter_text(presenter_id)
+    assert receipt.receipt_checksum.startswith("sha256:")

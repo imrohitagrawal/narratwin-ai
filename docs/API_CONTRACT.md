@@ -1930,3 +1930,18 @@ Missing/extra fields, wrong schema, invalid normalization/count/order/scope, dup
 stale, mismatched, or arbitrary valid-looking hash fails before render/replay acceptance. Legacy bytes may be audit-preserved
 but cannot be relabeled; regeneration requires a currently verified Stage 4 run. No deployed/customer migration or
 authenticity against full-state rewrite is claimed.
+## Issue #421 governed Cut 1 grounding policy
+
+The existing Stage 4 walkthrough request and response shapes remain
+provider-neutral. For the exact server-owned `CUT1_ATOMIC_FACTS_V1` style, the
+service may apply `cut1-atomic-grounding-v1` only when all eighteen canonical
+claim hashes, the project-owned retrieved facts projection, and every immutable
+source span independently verify. Callers cannot submit a policy checksum or a
+support decision.
+
+Successful claim-support rows add `proposition_ids` and
+`proposition_evidence_checksum`. They are empty/`null` for ordinary direct
+support. The Cut 1 values are application-generated evidence and are included
+in persisted evaluation and narration lineage; changing or removing either
+field invalidates restore. Existing generic direct-substring behavior and HTTP
+routes are unchanged.

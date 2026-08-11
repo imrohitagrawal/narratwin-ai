@@ -539,3 +539,19 @@ durability, deployment, and release decisions remain outside this trace.
 | Official advisory/CVE record plus inspected Chainguard, Docker Official Node and Distroless manifests/packages | Reject affected OpenSSL 3.6.0–3.6.3 and every candidate with fresh Medium+ scanner findings; bind three selected source indexes and all amd64/arm64 manifests | Never represent 3.6.3 as fixed; no floating final reference or unrelated runtime |
 | Retained APK metadata, exact config/runtime probes, architecture inventories, non-root HTTP smoke and two independent builds | Prove identity, minimization, compatibility and reproducibility without concealment | No UI/application dependency, backend, provider, narration, audio or media behavior change |
 | CycloneDX SBOM, Trivy and Grype raw evidence, fail-closed consensus and Issue #413 route tests | Reject scanner disagreement, malformed/stale identity, Medium-or-higher final findings and route drift | No ignore, VEX overclaim, severity downgrade, deployment, release, public or production claim |
+## Issue #421 Cut 1 atomic grounding traceability
+
+| Requirement | Implementation | Evidence |
+|---|---|---|
+| Independent atomic facts with immutable source spans | `docs/governance/cut1-project-facts-v1.json`; `backend/app/cut1_grounding.py` | `test_atomic_fact_contract_mutations_fail_closed` |
+| Exact complete claim-to-proposition binding | `ClaimMapping`; presenter-specific claim hashes; `ClaimSupport.proposition_ids` | `test_governed_atomic_facts_complete_the_public_persisted_stage4_path` |
+| Caller assertions cannot establish support | empty generated-claim evidence requirement and runtime recomputation | `test_caller_supplied_proposition_metadata_cannot_turn_generic_grounding_green` |
+| Ordinary direct support preserved | style-scoped dispatch in `Stage4Service` | existing retrieval/grounding suites plus the eighteen-unsupported RED control |
+| Restore and checksum binding | canonical Cut 1 redispatch; conditional evaluation `groundingEvidence` | atomic persistence/replay test and evaluation-lineage mutation test |
+| Issue #382 public lifecycle | existing narration service consumes the restored passing Stage 4 graph | three-presenter public lifecycle/receipt test |
+| No branch provider egress | local verifier, deterministic fake generator, telemetry-disabled tests | focused/full gates; provider calls, spend, and WAV count remain zero |
+
+This repair proves deterministic grounding lineage only. Voice quality,
+spoken-word correspondence, provider behavior, legal/privacy clearance,
+deployment, distribution, production readiness, release, and human listening
+remain separate gates.

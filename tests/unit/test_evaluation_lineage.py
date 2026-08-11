@@ -86,3 +86,33 @@ def test_payload_rejects_duplicate_identity_cross_scope_and_invalid_refusal_stat
     for payload in mutations:
         with pytest.raises(ValueError):
             validate_evaluation_lineage_payload(payload)
+
+
+def test_cut1_grounding_evidence_is_checksum_bound_without_changing_v2_payloads() -> None:
+    payload = json.loads(json.dumps(GOLDEN_V2_LINEAGE))
+    claims = [
+        {
+            "claimId": "claim_001",
+            "propositionEvidenceChecksum": "sha256:" + "1" * 64,
+            "propositionIds": ["fact_001", "fact_002"],
+        }
+    ]
+    payload["sourceCitationIndexes"] = [1]
+    payload["groundingEvidence"] = {
+        "checksum": canonical_stage4_checksum(
+            __import__("hashlib").sha256(
+                json.dumps(claims, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()
+            ).hexdigest()
+        ),
+        "claims": claims,
+        "policyVersion": "cut1-atomic-grounding-v1",
+    }
+
+    validated = validate_evaluation_lineage_payload(payload)
+    digest = build_source_evaluation_checksum(validated)
+
+    assert digest != GOLDEN_V2_DIGEST
+    mutated = json.loads(json.dumps(payload))
+    mutated["groundingEvidence"]["claims"][0]["propositionIds"].pop()
+    with pytest.raises(ValueError, match="checksum"):
+        validate_evaluation_lineage_payload(mutated)

@@ -77,6 +77,13 @@ def _visible(text: str) -> tuple[str, list[ScriptClaim]]:
     return "".join(rendered), claims
 
 
+def test_issue421_claim_support_model_exposes_fail_closed_proposition_evidence() -> None:
+    from backend.app.rag.models import ClaimSupport
+
+    fields = set(ClaimSupport.__dataclass_fields__)
+    assert {"proposition_ids", "proposition_evidence_checksum"} <= fields
+
+
 def _stage4(text: str = MEERA_TEXT, *, project_name: str = "NarraTwin AI") -> tuple[Stage4Service, LocalPrincipal, str]:
     principal = LocalPrincipal()
     service = Stage4Service()

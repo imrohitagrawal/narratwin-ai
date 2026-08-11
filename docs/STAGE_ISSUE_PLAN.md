@@ -2627,3 +2627,14 @@ Medium, full Stage 8 and repository quality, fresh-context adversarial review,
 dedicated PR CI and eligible latest-head approval passed. It did not close
 Issue #368, begin Issue #369, or authorize Cut 1
 completion, deployment, distribution, release or production readiness.
+## Issue #421 — deterministic Cut 1 project-facts grounding repair
+
+Issue `#421` is a narrow Stage 8 hardening child linked to narration Issue
+`#382`, blocked audio Issue `#368`, and parent `#366`. It preserves ordinary
+Stage 4 direct support while adding an exact owner-reviewed atomic proposition
+policy for the canonical Cut 1 claims. The route is exactly twenty paths and
+4,000 charged lines. It authorizes no provider call or audio.
+
+After reviewed merge and merged-main checks, Issue #368 may prepare three
+isolated public-lifecycle authority packages, then proceed only under its
+existing egress, attempts, spend, validation, and exact-hash listening gates.

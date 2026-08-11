@@ -51,6 +51,8 @@ class ScriptClaim:
     chunk_id: str | None
     script_span_start: int
     script_span_end: int
+    proposition_ids: tuple[str, ...] = field(default_factory=tuple)
+    proposition_evidence_checksum: str | None = None
 
 
 @dataclass(frozen=True)
@@ -77,6 +79,8 @@ class ClaimSupport:
     support_score: float
     support_reason: str
     citation_index: int
+    proposition_ids: tuple[str, ...] = field(default_factory=tuple)
+    proposition_evidence_checksum: str | None = None
 
 
 @dataclass(frozen=True)

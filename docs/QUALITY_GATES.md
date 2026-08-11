@@ -1319,3 +1319,17 @@ and emulated builders. Floating references, affected 3.6.0–3.6.3, hidden
 metadata, wrong architecture, malformed or unequal inventories, scanner
 disagreement, and weakened thresholds fail closed. Product behavior,
 deployment and release are outside this gate.
+## Issue #421 Cut 1 atomic grounding repair gate
+
+Branch `stage8-421-cut1-atomic-project-facts` is limited to the exact twenty
+paths in `docs/governance/preflights/issue-421.json` and 4,000 additions plus
+deletions without deletion credit. The committed RED reproduces exactly
+eighteen unsupported claims from genuine accepted sources before the special
+policy exists.
+
+GREEN requires exact facts/source/span validation, complete proposition mapping,
+caller-injection refusal, generic-evaluator parity, project/tenant isolation,
+persist/restore replay, conditional evaluation-lineage binding, and all three
+Issue #382 narration/approval/receipt lifecycles through public service methods.
+No real provider call, telemetry egress, audio, deployment, distribution,
+production-readiness, or release claim is part of this gate.

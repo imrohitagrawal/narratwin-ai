@@ -16,6 +16,7 @@ from pathlib import Path, PurePath
 from threading import RLock
 from typing import Any, Literal, TypeVar, cast
 
+from backend.app.cut1_grounding import CUT1_POLICY_VERSION, CUT1_STYLE, evaluate_cut1_grounding
 from backend.app.rag.chunking import checksum_text, chunk_document
 from backend.app.rag.grounding import evaluate_grounding as _canonical_evaluate_grounding
 from backend.app.rag.models import (
@@ -249,11 +250,12 @@ class Stage4Service:
     WALKTHROUGH_REFUSAL_REASON_UNSAFE_CONTEXT = "UNSAFE_RETRIEVED_CONTEXT"
     WALKTHROUGH_REFUSAL_REASON_UNSUPPORTED_FACT = "UNSUPPORTED_PROJECT_FACT"
 
-    def __init__(self, *, state_path: Path | None = None) -> None:
+    def __init__(self, *, state_path: Path | None = None, cut1_contract_root: Path | None = None) -> None:
         self.embedder = MockEmbeddingProvider()
         self.llm = MockLLMProvider()
         self.rag_store = InMemoryRagStore()
         self.state_path = state_path
+        self.cut1_contract_root = cut1_contract_root or Path(__file__).resolve().parents[2]
         self.projects: dict[str, ProjectRecord] = {}
         self.documents: dict[str, DocumentRecord] = {}
         self.sources: dict[str, SourceRecord] = {}
@@ -708,7 +710,19 @@ class Stage4Service:
             cursor = claim.script_span_end
         if not script.claims or script.text[cursor:].strip():
             return False
-        reproduced = _canonical_evaluate_grounding(
+        canonical_evaluator = (
+            evaluate_cut1_grounding
+            if evaluation.policy_version == CUT1_POLICY_VERSION
+            else _canonical_evaluate_grounding
+        )
+        if canonical_evaluator is evaluate_cut1_grounding and run.style != CUT1_STYLE:
+            return False
+        reproduced = canonical_evaluator(
+            **(
+                {"root": self.cut1_contract_root}
+                if canonical_evaluator is evaluate_cut1_grounding
+                else {}
+            ),
             tenant_id=run.tenant_id,
             project_id=run.project_id,
             run_id=run.run_id,
@@ -1413,7 +1427,9 @@ class Stage4Service:
                             raise Stage4Error(422, "INVALID_GENERATED_LINEAGE", "Generated script lineage is invalid.")
                         if not generated_script_is_bounded(generated):
                             raise Stage4Error(422, "GENERATED_SCRIPT_TOO_LARGE", "Generated script exceeds the Stage 4 limit.")
-                        evaluation = evaluate_grounding(
+                        evaluator = evaluate_cut1_grounding if style == CUT1_STYLE else evaluate_grounding
+                        evaluation = evaluator(
+                            **({"root": self.cut1_contract_root} if evaluator is evaluate_cut1_grounding else {}),
                             tenant_id=principal.tenant_id,
                             project_id=project_id,
                             run_id=run_id,
@@ -1423,7 +1439,15 @@ class Stage4Service:
                             all_chunks=all_chunks,
                         )
                         evaluation = replace(evaluation, retrieval_strategy_version=RETRIEVAL_STRATEGY_VERSION, retrieval_top_k=RETRIEVAL_TOP_K, retrieval_score_threshold=RETRIEVAL_MIN_SCORE)
-                        canonical_evaluation = _canonical_evaluate_grounding(
+                        canonical_evaluator = (
+                            evaluate_cut1_grounding if style == CUT1_STYLE else _canonical_evaluate_grounding
+                        )
+                        canonical_evaluation = canonical_evaluator(
+                            **(
+                                {"root": self.cut1_contract_root}
+                                if canonical_evaluator is evaluate_cut1_grounding
+                                else {}
+                            ),
                             tenant_id=principal.tenant_id,
                             project_id=project_id,
                             run_id=run_id,
@@ -1843,7 +1867,12 @@ def generated_script_is_bounded(candidate: object) -> bool:
         return False
     if any(not isinstance(claim, ScriptClaim) or type(claim.text) is not str
            or any(type(value) is not str or len(value) > MAX_RESTORED_SCRIPT_CHARS
-                  for value in (claim.claim_id, claim.text, claim.chunk_id or "")) for claim in candidate.claims):
+                  for value in (claim.claim_id, claim.text, claim.chunk_id or ""))
+           or len(claim.proposition_ids) > MAX_RESTORED_LINEAGE_ITEMS
+           or any(type(value) is not str or len(value) > 128 for value in claim.proposition_ids)
+           or (claim.proposition_evidence_checksum is not None
+               and re.fullmatch(r"sha256:[0-9a-f]{64}", claim.proposition_evidence_checksum) is None)
+           for claim in candidate.claims):
         return False
     return sum(len(claim.text) for claim in candidate.claims) <= len(candidate.text) and all(
         len(marker) <= MAX_RESTORED_CITATION_DIGITS for marker in re.findall(r"\[(\d+)\]", candidate.text))
@@ -1874,6 +1903,14 @@ def raw_walkthrough_lineage_is_bounded_and_typed(row: dict[str, Any]) -> bool:
             return False
         if claim.get("chunk_id") is not None and type(claim.get("chunk_id")) is not str:
             return False
+        proposition_ids = claim.get("proposition_ids", [])
+        if not isinstance(proposition_ids, (list, tuple)) or len(proposition_ids) > MAX_RESTORED_LINEAGE_ITEMS \
+                or any(type(item) is not str or len(item) > 128 for item in proposition_ids):
+            return False
+        evidence_checksum = claim.get("proposition_evidence_checksum")
+        if evidence_checksum is not None and (type(evidence_checksum) is not str
+                or re.fullmatch(r"sha256:[0-9a-f]{64}", evidence_checksum) is None):
+            return False
     if sum(len(claim["text"]) for claim in claims) > len(text):
         return False
     for context in contexts:
@@ -1902,6 +1939,14 @@ def raw_walkthrough_lineage_is_bounded_and_typed(row: dict[str, Any]) -> bool:
             return False
         if support.get("support_status") != "SUPPORTED" or type(support.get("citation_index")) is not int or not _raw_number(support.get("support_score")):
             return False
+        proposition_ids = support.get("proposition_ids", [])
+        if not isinstance(proposition_ids, (list, tuple)) or len(proposition_ids) > MAX_RESTORED_LINEAGE_ITEMS \
+                or any(type(item) is not str or len(item) > 128 for item in proposition_ids):
+            return False
+        evidence_checksum = support.get("proposition_evidence_checksum")
+        if evidence_checksum is not None and (type(evidence_checksum) is not str
+                or re.fullmatch(r"sha256:[0-9a-f]{64}", evidence_checksum) is None):
+            return False
     return all(isinstance(claim, dict) and _raw_strings(claim, ("claim_id", "claim_text", "reason")) for claim in unsupported)
 
 
@@ -1916,6 +1961,12 @@ def generated_script_from_dict(row: dict[str, Any]) -> GeneratedScript:
                 chunk_id=str(claim["chunk_id"]) if claim.get("chunk_id") is not None else None,
                 script_span_start=int(claim["script_span_start"]),
                 script_span_end=int(claim["script_span_end"]),
+                proposition_ids=tuple(str(item) for item in claim.get("proposition_ids", ())),
+                proposition_evidence_checksum=(
+                    str(claim["proposition_evidence_checksum"])
+                    if claim.get("proposition_evidence_checksum") is not None
+                    else None
+                ),
             )
             for claim in row.get("claims", [])
             if isinstance(claim, dict)
@@ -1959,6 +2010,12 @@ def evaluation_from_dict(row: dict[str, Any]) -> EvaluationResult:
                 support_score=float(support["support_score"]),
                 support_reason=str(support["support_reason"]),
                 citation_index=int(support["citation_index"]),
+                proposition_ids=tuple(str(item) for item in support.get("proposition_ids", ())),
+                proposition_evidence_checksum=(
+                    str(support["proposition_evidence_checksum"])
+                    if support.get("proposition_evidence_checksum") is not None
+                    else None
+                ),
             )
             for support in row.get("claim_supports", [])
             if isinstance(support, dict)

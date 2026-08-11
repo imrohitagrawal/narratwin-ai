@@ -328,3 +328,15 @@ approved SHA-256. Request fingerprints bind `quotaProjectRequired=true`, that
 hash, and the exact three outbound header names. They never bind or emit the raw
 project value. A mismatch during initial ADC resolution or the immediate
 pre-egress reload releases the unspent reservation and records no paid attempt.
+## Issue #421 atomic grounding observability
+
+Cut 1 grounding reuses existing bounded Stage 4 run/evaluation metrics. The
+policy version and resulting supported/unsupported counts are sufficient for
+local diagnosis; raw narration, proposition statements, source spans, facts
+JSON, repository paths, and Git output are not log fields. Validation failures
+remain generic and fail closed.
+
+The repair performs local hashing, JSON validation, and a bounded local Git
+object read when current source bytes differ from the pinned revision. It makes
+no provider or telemetry call and has no paid-call cost. Issue #368 call and
+US$2 ceilings remain untouched at zero during this branch.
