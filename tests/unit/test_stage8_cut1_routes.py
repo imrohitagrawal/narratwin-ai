@@ -600,6 +600,32 @@ def test_issue415_correction_route_rejects_wrong_fixed_base() -> None:
     assert "Issue #415 fixed base" in str(error.value)
 
 
+def test_issue415_correction_route_cannot_be_claimed_by_a_wrong_branch() -> None:
+    branch = routes.ISSUE415_CORRECTION_BRANCH
+    lookalike = branch + "-retry"
+    assert branch in stage8.EFFECTIVE_STAGE8_ROUTES
+    assert lookalike not in stage8.EFFECTIVE_STAGE8_ROUTES
+    assert stage8.EFFECTIVE_STAGE8_ROUTES[branch] == EXPECTED[branch]
+
+
+def test_issue415_correction_route_rejects_an_extra_path_at_stage8_scope(monkeypatch: Any) -> None:
+    branch = routes.ISSUE415_CORRECTION_BRANCH
+    monkeypatch.setattr(stage8, "current_branch", lambda: branch)
+    monkeypatch.setattr(stage8, "changed_files_for_stage_scope", lambda: [*EXPECTED[branch], "rogue.txt"])
+    failures: list[str] = []
+    stage8.check_stage_scope(failures)
+    assert failures == ["Stage 8 changed file outside the allowlist: rogue.txt"]
+
+
+def test_issue415_correction_route_rejects_charge_801(monkeypatch: Any) -> None:
+    branch = routes.ISSUE415_CORRECTION_BRANCH
+    monkeypatch.setattr(routes, "route_base", lambda *_: "base")
+    monkeypatch.setattr(routes, "route_text_charges", lambda *_: (801, {}))
+    failures: list[str] = []
+    routes.check_exact_route(REPO, lambda _: completed([]), branch, EXPECTED[branch], failures)
+    assert failures == ["Issue #415 charge 801 exceeds 800."]
+
+
 def test_legacy_checker_caps_are_unchanged_and_executable() -> None:
     checker = REPO / "scripts/quality/check_stage8_docs.py"
     checker_text = checker.read_text(encoding="utf-8")
