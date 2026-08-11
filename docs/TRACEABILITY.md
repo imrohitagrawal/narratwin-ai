@@ -512,3 +512,11 @@ durability, deployment, and release decisions remain outside this trace.
 | Adapter implementation scope and tests | OWNER comment `5244098136`; exact 21-path/5,600-line route; committed RED then GREEN evidence | In human review after CI |
 | Full narration acceptance | Structural evidence plus exact-hash OWNER listening | Not started; blocked |
 | Deployment/distribution/release | Repository release posture | No-Go |
+
+## Issue #413 frontend runtime OpenSSL traceability
+
+| Evidence | Requirement | Preserved boundary |
+|---|---|---|
+| Official advisory/CVE record plus inspected Chainguard, Docker Official Node and Distroless manifests/packages | Reject affected OpenSSL 3.6.0–3.6.3 and every candidate with fresh Medium+ scanner findings; bind three selected source indexes and all amd64/arm64 manifests | Never represent 3.6.3 as fixed; no floating final reference or unrelated runtime |
+| Retained APK metadata, exact config/runtime probes, architecture inventories, non-root HTTP smoke and two independent builds | Prove identity, minimization, compatibility and reproducibility without concealment | No UI/application dependency, backend, provider, narration, audio or media behavior change |
+| CycloneDX SBOM, Trivy and Grype raw evidence, fail-closed consensus and Issue #413 route tests | Reject scanner disagreement, malformed/stale identity, Medium-or-higher final findings and route drift | No ignore, VEX overclaim, severity downgrade, deployment, release, public or production claim |

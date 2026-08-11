@@ -69,7 +69,8 @@ def test_runtime_preserves_package_identity_while_removing_tools() -> None:
     assert "COPY --from=atomic-source --chown=0:0 /runtime/ /" in runner
     assert "ENTRYPOINT [\"/usr/bin/node\"]" in runner
     assert "USER 65532:65532" in runner
-    assert "/usr/lib/apk/db/installed" not in runner.split("COPY --from=atomic-source", 1)[-1]
+    assert "fs.appendFileSync(p" in runner
+    assert "fs.rmSync('/usr/lib/apk/db/installed')" not in runner
 
 
 def test_scan_contract_requires_runtime_package_metadata_and_openssl_identity() -> None:

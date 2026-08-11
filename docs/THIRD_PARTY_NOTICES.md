@@ -260,3 +260,14 @@ references and generated audio are not third-party assets committed to Git.
 The adapter remains disabled and has no concrete identity or network transport;
 activation still requires fresh terms, privacy, account, IAM, billing, quota,
 endpoint-policy and effective-output review.
+
+## Minimal composed frontend runtime
+
+Issue #413 composes the final image from exact Chainguard `glibc-dynamic`,
+Docker Official Node 26.7.0 Bookworm-slim, and Chainguard `gcc-glibc` digests.
+Only the MIT-licensed Node binary and GPL-3.0-or-later WITH
+GCC-exception-3.1 `libatomic` component are copied into the minimal glibc image.
+The final eight Wolfi components retain exact APK/SPDX identities and declared
+MIT, MPL-2.0, LGPL-2.1-or-later, or GCC runtime-exception licensing. No compiler,
+npm, shell, package manager, application package, model, provider, dataset,
+media asset or generated sample is added.

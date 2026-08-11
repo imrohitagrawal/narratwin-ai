@@ -10,6 +10,7 @@ import sys
 from pathlib import Path
 from types import ModuleType
 from typing import Any, Callable, cast
+from urllib.parse import quote
 
 import pytest
 
@@ -49,8 +50,8 @@ def _sarif(tool: str, cves: tuple[str, ...] = TARGET_CVES, severity: str = "8.0"
 
 
 def _sbom(target: str, *, frontend: bool) -> dict[str, Any]:
-    packages = (("nodejs-26", "26.7.0-r0", "MIT"), ("npm-12", "12.0.2-r2", "Artistic-2.0")) if frontend else (("python", "3.13.14", "PSF-2.0"),)
-    components = [{"type": "library", "name": name, "version": version, "purl": f"pkg:apk/wolfi/{name}@{version}?arch=x86_64&distro=20230201", "licenses": [{"license": {"id": license_id}}]} for name, version, license_id in packages]
+    packages = (("ca-certificates-bundle", "20260413-r0", ("MIT", "MPL-2.0"), "wolfi", "20230201"), ("glibc", "2.43-r12", ("LGPL-2.1-or-later",), "wolfi", "20230201"), ("glibc-locale-posix", "2.43-r12", ("LGPL-2.1-or-later",), "wolfi", "20230201"), ("ld-linux", "2.43-r12", ("LGPL-2.1-or-later",), "wolfi", "20230201"), ("libatomic", "16.1.0-r4", ("GPL-3.0-or-later WITH GCC-exception-3.1",), "wolfi", "20230201"), ("libgcc", "16.1.0-r4", ("GPL-3.0-or-later WITH GCC-exception-3.1",), "wolfi", "20230201"), ("libstdc++", "16.1.0-r4", ("GPL-3.0-or-later WITH GCC-exception-3.1",), "wolfi", "20230201"), ("wolfi-baselayout", "20230201-r29", ("MIT",), "wolfi", "20230201")) if frontend else (("python", "3.13.14", ("PSF-2.0",), "wolfi", "20230201"),)
+    components = [{"type": "library", "name": name, "version": version, "purl": f"pkg:apk/{namespace}/{quote(name, safe='')}@{version}?arch=x86_64&distro={distro}", "licenses": [{"expression": license_id} if " WITH " in license_id else {"license": {"id": license_id}} for license_id in licenses]} for name, version, licenses, namespace, distro in packages]
     return {"bomFormat": "CycloneDX", "specVersion": "1.7", "metadata": {"component": {"type": "container", "properties": [{"name": "aquasecurity:trivy:ImageID", "value": target}]}}, "components": components}
 
 
@@ -157,12 +158,12 @@ def test_issue389_npm12_findings_fail_consensus() -> None:
 
 @pytest.mark.parametrize("mutation", [lambda s:s.clear(), lambda s:s.update(components=[]),
     lambda s:s["metadata"]["component"]["properties"][0].update(value="sha256:"+"0"*64),
-    lambda s:s["components"][0].update(version="26.6.0-r0"), lambda s:s["components"][1].update(version="12.0.2-r1"),
+    lambda s:s["components"][0].update(version="stale"), lambda s:s["components"][1].update(version="stale"),
     lambda s:s["components"][1].update(licenses=[{"license":{"id":"MIT"}}]),
-    lambda s:s["components"][0].update(purl="pkg:apk/wolfi/nodejs-26@26.7.0-r0"),
-    lambda s:s["components"][0].update(purl="pkg:apk/wolfi/nodejs-26@26.7.0-r0?arch=evil&distro=ubuntu"),
-    lambda s:s["components"][0].update(purl="pkg:apk/wolfi/nodejs-26@26.7.0-r0?arch=x86_64&arch=aarch64&distro=20230201"),
-    lambda s:s["components"][0].update(purl="pkg:apk/wolfi/nodejs-26@26.7.0-r0?arch=x86_64&distro=20230201&foreign=yes")])
+    lambda s:s["components"][0].update(purl="pkg:apk/wolfi/ca-certificates-bundle@20260413-r0"),
+    lambda s:s["components"][0].update(purl="pkg:apk/wolfi/ca-certificates-bundle@20260413-r0?arch=evil&distro=ubuntu"),
+    lambda s:s["components"][0].update(purl="pkg:apk/wolfi/ca-certificates-bundle@20260413-r0?arch=x86_64&arch=aarch64&distro=20230201"),
+    lambda s:s["components"][0].update(purl="pkg:apk/wolfi/ca-certificates-bundle@20260413-r0?arch=x86_64&distro=20230201&foreign=yes")])
 def test_frontend_sbom_identity_packages_and_licenses_fail_closed(mutation: Callable[[dict[str, Any]], None]) -> None:
     sbom = _sbom(FRONTEND_CONFIG, frontend=True)
     mutation(sbom)
@@ -182,7 +183,7 @@ def test_frontend_reproduction_requires_stable_build_id_and_fresh_secrets() -> N
     primary = {
         "buildId": "source-bound",
         "architecture": "amd64",
-        "inventory": "1803:10b12a2024f42b6302964df52b071befbe498a0b9c77ecdd1b11e4afdfb9623b",
+        "inventory": "1645:f868cddbe615d21fb965633253098ada945041edfb5ab7325956a669554ceecd",
         "previewModeId": "1" * 32,
         "previewModeSigningKey": "2" * 64,
         "previewModeEncryptionKey": "3" * 64,
@@ -205,7 +206,7 @@ def test_frontend_reproduction_requires_stable_build_id_and_fresh_secrets() -> N
         malformed_primary = {**primary, "inventory": bad_inventory}
         malformed_reproduction = {**reproduction, "inventory": bad_inventory}
         assert validator(malformed_primary, malformed_reproduction) == ["FRONTEND_RUNTIME_INVENTORY_INVALID"]
-    wrong_arch_primary = {**primary, "inventory": "1803:ad570be227d414b9e0100f21fa1f03aa42e85acad9128f6c01524d780b7ea064"}
+    wrong_arch_primary = {**primary, "inventory": "1643:18df82960aa5cbd5b17217eb918a6c50cc450e608a75ac6bf6c70c230ac0a784"}
     wrong_arch_reproduction = {**reproduction, "inventory": wrong_arch_primary["inventory"]}
     assert validator(wrong_arch_primary, wrong_arch_reproduction) == ["FRONTEND_RUNTIME_INVENTORY_INVALID"]
     reproduction["previewModeSigningKey"] = primary["previewModeEncryptionKey"]
@@ -350,8 +351,8 @@ def test_frontend_config_is_not_passed_in_python_argv(tmp_path: Path) -> None:
 def test_frontend_inventory_contract_is_exact_and_architecture_bound() -> None:
     module = _load()
     matches = module.frontend_inventory_matches
-    amd64 = "1803:10b12a2024f42b6302964df52b071befbe498a0b9c77ecdd1b11e4afdfb9623b"
-    arm64 = "1803:ad570be227d414b9e0100f21fa1f03aa42e85acad9128f6c01524d780b7ea064"
+    amd64 = "1645:f868cddbe615d21fb965633253098ada945041edfb5ab7325956a669554ceecd"
+    arm64 = "1643:18df82960aa5cbd5b17217eb918a6c50cc450e608a75ac6bf6c70c230ac0a784"
     assert module.FRONTEND_INVENTORIES == {
         "amd64": frozenset((amd64,)),
         "arm64": frozenset((arm64,)),

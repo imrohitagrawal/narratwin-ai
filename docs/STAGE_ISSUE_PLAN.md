@@ -2604,3 +2604,15 @@ idempotent spend state and tombstones without a dependency, network client,
 credential, API/frontend provider choice, real call or audio. The PR must stop
 at eligible non-author latest-head approval. Activation, final listening,
 deployment, distribution, release and Issue #369 remain separate.
+
+### Issue #413 independent frontend runtime security prerequisite
+
+Issue #413 is a separate Stage 8 prerequisite and does not alter Issue #368 or
+PR #412. Its exact sixteen-path route replaces only the final frontend runtime,
+adds an exact three-source minimal glibc composition plus
+package/SBOM/reproducibility contracts and records the security decision.
+Acceptance requires both platform identities, non-root standalone startup, two
+builds, Trivy and Grype through Medium, full Stage 8 and repository quality,
+fresh-context adversarial review, dedicated PR CI and eligible latest-head
+approval. Merge does not close Issue #368, begin Issue #369, or authorize Cut 1
+completion, deployment, distribution, release or production readiness.
