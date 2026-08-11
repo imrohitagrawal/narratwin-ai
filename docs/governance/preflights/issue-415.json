@@ -1,0 +1,77 @@
+{
+  "schema_version": "GovernancePreflightV1",
+  "issue_number": 415,
+  "branch": "stage8-415-pr-body-live-state-reconciliation",
+  "objective": "Install trusted-base deterministic PR-body live-state reconciliation and a fail-closed pr-body-consistency status check without changing product behavior or weakening branch protection.",
+  "status_decision": "update-minimally",
+  "accepted_base": "f62b4f04d9f94cb10692c36f790697e69f5e8fd8",
+  "charged_line_budget": 5000,
+  "allowed_paths": [
+    ".github/pull_request_template.md",
+    ".github/workflows/pr-body-consistency.yml",
+    "AGENTS.md",
+    "Makefile",
+    "docs/ADR/0040-pr-body-live-state-reconciliation.md",
+    "docs/CODEX_OPERATING_MODEL.md",
+    "docs/QUALITY_GATES.md",
+    "docs/STATUS.md",
+    "docs/agent-context/context-policy-manifest-v1.json",
+    "docs/governance/preflights/issue-415.json",
+    "scripts/quality/pr_body_consistency.py",
+    "scripts/quality/pr_body_consistency_cli.py",
+    "scripts/quality/stage8_cut1_routes.py",
+    "tests/fixtures/pr_body_consistency/live_pr.json",
+    "tests/unit/test_pr_body_consistency.py",
+    "tests/unit/test_stage8_cut1_routes.py"
+  ],
+  "forbidden": [
+    "backend/",
+    "frontend/",
+    ".env",
+    "docker-compose.yml",
+    "docs/TRACEABILITY.md"
+  ],
+  "claims_and_evidence": [
+    {
+      "claim": "Automation mutates only the unique managed block and is idempotent.",
+      "test_level": "unit with fake GitHub transport",
+      "skills": ["test-driven-development", "ci-cd-and-automation"],
+      "negative_proofs": ["duplicate and malformed markers", "CAS head race", "zero-write no-op", "human-byte preservation"]
+    },
+    {
+      "claim": "The trusted workflow cannot execute PR-head code or broaden permissions.",
+      "test_level": "workflow static security tests",
+      "skills": ["security-and-hardening", "code-review-and-quality"],
+      "negative_proofs": ["no checkout of PR head", "least privilege", "fork fail-closed", "workflow mutation tests"]
+    },
+    {
+      "claim": "Live evidence in a PR body is deterministic and internally valid.",
+      "test_level": "unit parser and fake API tests",
+      "skills": ["source-driven-development", "doubt-driven-development"],
+      "negative_proofs": ["stale SHA/count/link", "literal escapes", "unsafe input", "bounded API failure"]
+    }
+  ],
+  "skill_decisions": {
+    "invoked": [
+      "planning-and-task-breakdown",
+      "source-driven-development",
+      "test-driven-development",
+      "ci-cd-and-automation",
+      "security-and-hardening",
+      "code-review-and-quality",
+      "doubt-driven-development",
+      "git-workflow-and-versioning"
+    ],
+    "rejected": [
+      {
+        "skill": "shipping-and-launch",
+        "reason": "No deployment or release is authorized; this is a governance hardening change."
+      },
+      {
+        "skill": "frontend-ui-engineering",
+        "reason": "No user interface or product behavior is in scope."
+      }
+    ]
+  },
+  "owner_authorization": "GitHub Issue #415 records the direct OWNER authorization dated 2026-08-11."
+}

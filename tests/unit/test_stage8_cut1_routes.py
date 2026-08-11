@@ -53,6 +53,13 @@ stage8: Any = load(REPO / "scripts/quality/check_stage8_docs.py", "stage8_with_c
 
 
 EXPECTED = {
+    "stage8-415-pr-body-live-state-reconciliation": {
+        ".github/pull_request_template.md", ".github/workflows/pr-body-consistency.yml", "AGENTS.md", "Makefile",
+        "docs/ADR/0040-pr-body-live-state-reconciliation.md", "docs/CODEX_OPERATING_MODEL.md", "docs/QUALITY_GATES.md", "docs/STATUS.md",
+        "docs/agent-context/context-policy-manifest-v1.json", "docs/governance/preflights/issue-415.json",
+        "scripts/quality/pr_body_consistency.py", "scripts/quality/pr_body_consistency_cli.py", "scripts/quality/stage8_cut1_routes.py",
+        "tests/fixtures/pr_body_consistency/live_pr.json", "tests/unit/test_pr_body_consistency.py", "tests/unit/test_stage8_cut1_routes.py",
+    },
     "cut1-process-413-frontend-runtime-openssl": {
         "docs/governance/preflights/issue-413.json",
         "frontend/Dockerfile",
@@ -536,6 +543,23 @@ def test_routes_are_exact_pre_registered_and_issue386_preflight_matches() -> Non
     module_source = MODULE_PATH.read_text(encoding="utf-8")
     assert "from scripts.quality.check_stage8_docs" not in module_source
     assert "import scripts.quality.check_stage8_docs" not in module_source
+
+
+def test_issue415_route_is_frozen_to_the_authorized_recovery_paths() -> None:
+    branch = "stage8-415-pr-body-live-state-reconciliation"
+    expected = {
+        ".github/pull_request_template.md", ".github/workflows/pr-body-consistency.yml", "AGENTS.md", "Makefile",
+        "docs/ADR/0040-pr-body-live-state-reconciliation.md", "docs/CODEX_OPERATING_MODEL.md", "docs/QUALITY_GATES.md", "docs/STATUS.md",
+        "docs/agent-context/context-policy-manifest-v1.json", "docs/governance/preflights/issue-415.json",
+        "scripts/quality/pr_body_consistency.py", "scripts/quality/pr_body_consistency_cli.py", "scripts/quality/stage8_cut1_routes.py",
+        "tests/fixtures/pr_body_consistency/live_pr.json", "tests/unit/test_pr_body_consistency.py", "tests/unit/test_stage8_cut1_routes.py",
+    }
+    artifact = json.loads((REPO / "docs/governance/preflights/issue-415.json").read_text(encoding="utf-8"))
+    assert routes.ROUTES[branch] == expected
+    assert routes.ROUTE_ISSUES[branch] == 415
+    assert routes.TOTAL_LIMITS[branch] == 5000
+    assert artifact["branch"] == branch
+    assert set(artifact["allowed_paths"]) == expected
 
 
 def test_legacy_checker_caps_are_unchanged_and_executable() -> None:

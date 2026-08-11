@@ -14,6 +14,12 @@ Use it to answer:
 
 ## Current Baseline
 
+- The repository capability for deterministic PR-body live-state reconciliation
+  is governed by Issue `#415` and is not product implementation or a release
+  claim. Live required-check activation exists only when repository protection
+  settings plus Issue #415 canary and closeout evidence establish it; the
+  repository ledger does not assume merge-independent GitHub state.
+
 - Current Cut 1 route authority: Issue `#346` / PR `#347` merged at
   `4c5d7cf16fb8cdf7046d561c882f655d06125127` and established exact branch
   `cut1-335-r0c-a2-1-stage4-rag-v1-lineage` for A2.1. Issue `#335` is closed

@@ -1,0 +1,52 @@
+name: pr-body-consistency
+# This trusted-default-branch workflow cannot validate its bootstrap PR. PR #417
+# proves it with local/fake evidence; a merged-workflow canary is required later.
+
+on:
+  pull_request_target:
+    types: [opened, edited, reopened, synchronize, ready_for_review]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-body-consistency-${{ github.repository }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  reconcile:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'github-actions[bot]'
+    permissions:
+      contents: read
+      pull-requests: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Reconcile trusted live state
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPOSITORY: ${{ github.repository }}
+        run: python3 scripts/quality/pr_body_consistency_cli.py --repository "$REPOSITORY" --pr "$PR_NUMBER" --apply
+  check:
+    name: pr-body-consistency
+    needs: reconcile
+    if: always() && (needs.reconcile.result == 'success' || needs.reconcile.result == 'skipped')
+    permissions:
+      contents: read
+      pull-requests: read
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Validate without PR checkout
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPOSITORY: ${{ github.repository }}
+        run: python3 scripts/quality/pr_body_consistency_cli.py --repository "$REPOSITORY" --pr "$PR_NUMBER"
