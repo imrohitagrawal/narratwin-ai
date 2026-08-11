@@ -1341,3 +1341,21 @@ Required update rules:
   authorized activation/final-audio evidence. Legal, privacy, account, billing,
   IAM/identity, quota, endpoint policy, effective-output identity and exact-hash
   listening remain unresolved. Release remains No-Go; Issue #369 is not started.
+
+## Issue #413 independent frontend runtime security state (2026-08-11)
+
+- PR #412 remains open and unchanged at
+  `2b089088a00dc804ff2b4d848a354608a672501a`; Issue #368's branch and worktree
+  are outside this operation.
+- Issue #413 owns branch `cut1-process-413-frontend-runtime-openssl` from accepted
+  main `0fea35a7028b22f6d91096b1f46b5418884b9992` with committed preflight and
+  RED-before-GREEN evidence.
+- Chainguard Node, official Node Alpine/Bookworm, Distroless and musl scratch
+  candidates were rejected on affected OpenSSL or fresh scanner findings. The
+  selected exact three-source minimal glibc composition reports embedded
+  OpenSSL 3.5.7 and zero Medium-or-higher Trivy or Grype findings on amd64 and
+  arm64 while retaining eight truthful package records.
+- Dedicated security PR #414 is open and remains pending latest-head CI and
+  eligible non-author approval. It does not complete Issue #368, Cut 1,
+  deployment or release; release posture remains No-Go and Issue #369 is not
+  started.

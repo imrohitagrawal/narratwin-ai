@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any, Callable
 
 ISSUE386_BRANCH = "cut1-process-386-modular-route-enforcement"
+ISSUE413_BRANCH = "cut1-process-413-frontend-runtime-openssl"
 ISSUE405_BRANCH = "process-405-heartbeat2-main-reliability"
 ISSUE403_BRANCH = "cut1-process-403-nanoid-3-3-17-security"
 ISSUE401_BRANCH = "cut1-process-401-pypdf-6-15-0-security"
@@ -27,6 +28,27 @@ ISSUE368_PROMPT_BASE = "ba77d59b193da8064d67261e13fb50756c2bd9e8"
 ISSUE368_IMPLEMENTATION_BASE = "de0cd683cd05dda91c8f0df53d05c8b55c81d213"
 
 ROUTES = {
+    ISSUE413_BRANCH: {
+        "docs/governance/preflights/issue-413.json",
+        "frontend/Dockerfile",
+        "scripts/ci/docker-image-scan.sh",
+        "scripts/ci/check_container_scan_consensus.py",
+        "tests/unit/test_container_scan_consensus.py",
+        "tests/unit/test_frontend_container_runtime.py",
+        "tests/unit/test_stage8_quality_gate.py",
+        "scripts/quality/stage8_cut1_routes.py",
+        "scripts/quality/stage8_node_security.py",
+        "scripts/quality/check_stage8_docs.py",
+        "tests/unit/test_stage8_cut1_routes.py",
+        "tests/unit/test_stage8_node_security.py",
+        "docs/ADR/0057-frontend-runtime-openssl-3-6-4.md",
+        "docs/SECURITY_AND_PRIVACY.md",
+        "docs/THIRD_PARTY_NOTICES.md",
+        "docs/QUALITY_GATES.md",
+        "docs/STATUS.md",
+        "docs/TRACEABILITY.md",
+        "docs/STAGE_ISSUE_PLAN.md",
+    },
     ISSUE368_IMPLEMENTATION_BRANCH: {
         "docs/governance/preflights/issue-368.json",
         "backend/app/narration.py",
@@ -232,11 +254,11 @@ ROUTES = {
         "docs/THIRD_PARTY_NOTICES.md",
     },
 }
-ROUTE_ISSUES = {ISSUE368_IMPLEMENTATION_BRANCH: 368, ISSUE368_PROMPT_BRANCH: 368, ISSUE368_BRANCH: 368, ISSUE405_BRANCH: 405, ISSUE403_BRANCH: 403, ISSUE401_BRANCH: 401, ISSUE396_BRANCH: 396,
+ROUTE_ISSUES = {ISSUE413_BRANCH: 413, ISSUE368_IMPLEMENTATION_BRANCH: 368, ISSUE368_PROMPT_BRANCH: 368, ISSUE368_BRANCH: 368, ISSUE405_BRANCH: 405, ISSUE403_BRANCH: 403, ISSUE401_BRANCH: 401, ISSUE396_BRANCH: 396,
                 ISSUE386_BRANCH: 386, ISSUE385_BRANCH: 385,
                 ISSUE384_BRANCH: 384, ISSUE383_BRANCH: 383, ISSUE397_BRANCH: 397,
                 ISSUE393_BRANCH: 393, ISSUE382_BRANCH: 382, ISSUE367_BRANCH: 367}
-TOTAL_LIMITS = {ISSUE368_IMPLEMENTATION_BRANCH: 5600, ISSUE368_PROMPT_BRANCH: 1000, ISSUE368_BRANCH: 3200, ISSUE405_BRANCH: 800, ISSUE403_BRANCH: 650, ISSUE401_BRANCH: 600, ISSUE396_BRANCH: 500,
+TOTAL_LIMITS = {ISSUE413_BRANCH: 5000, ISSUE368_IMPLEMENTATION_BRANCH: 5600, ISSUE368_PROMPT_BRANCH: 1000, ISSUE368_BRANCH: 3200, ISSUE405_BRANCH: 800, ISSUE403_BRANCH: 650, ISSUE401_BRANCH: 600, ISSUE396_BRANCH: 500,
                 ISSUE386_BRANCH: 700, ISSUE385_BRANCH: 350,
                 ISSUE384_BRANCH: 500, ISSUE383_BRANCH: 700, ISSUE397_BRANCH: 500,
                 ISSUE393_BRANCH: 700, ISSUE382_BRANCH: 3200, ISSUE367_BRANCH: 2000}
@@ -245,6 +267,18 @@ ISSUE383_BINARY_FILES = {
     "frontend/public/demo/raj-synthetic-presenter.webp",
 }
 TEXT_LIMITS = {
+    ISSUE413_BRANCH: {
+        path: 700 if path in {"scripts/ci/docker-image-scan.sh", "tests/unit/test_container_scan_consensus.py"}
+        else 500 if path in {"scripts/ci/check_container_scan_consensus.py", "tests/unit/test_stage8_quality_gate.py"}
+        else 350 if path in {"scripts/quality/stage8_cut1_routes.py", "tests/unit/test_stage8_cut1_routes.py"}
+        else 400 if path == "tests/unit/test_stage8_node_security.py"
+        else 300 if path == "scripts/quality/stage8_node_security.py"
+        else 80 if path == "scripts/quality/check_stage8_docs.py"
+        else 300 if path in {"frontend/Dockerfile", "tests/unit/test_frontend_container_runtime.py",
+                             "docs/governance/preflights/issue-413.json"}
+        else 220
+        for path in ROUTES[ISSUE413_BRANCH]
+    },
     ISSUE368_IMPLEMENTATION_BRANCH: {
         path: 1700 if path == "backend/app/tts_provider.py"
         else 1200 if path == "tests/unit/test_stage6_tts_provider.py"
