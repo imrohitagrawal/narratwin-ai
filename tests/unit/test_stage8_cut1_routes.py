@@ -53,6 +53,24 @@ stage8: Any = load(REPO / "scripts/quality/check_stage8_docs.py", "stage8_with_c
 
 
 EXPECTED = {
+    "cut1-process-413-frontend-runtime-openssl": {
+        "docs/governance/preflights/issue-413.json",
+        "frontend/Dockerfile",
+        "scripts/ci/docker-image-scan.sh",
+        "scripts/ci/check_container_scan_consensus.py",
+        "tests/unit/test_container_scan_consensus.py",
+        "tests/unit/test_frontend_container_runtime.py",
+        "tests/unit/test_stage8_quality_gate.py",
+        "scripts/quality/stage8_cut1_routes.py",
+        "tests/unit/test_stage8_cut1_routes.py",
+        "docs/ADR/0057-frontend-runtime-openssl-3-6-4.md",
+        "docs/SECURITY_AND_PRIVACY.md",
+        "docs/THIRD_PARTY_NOTICES.md",
+        "docs/QUALITY_GATES.md",
+        "docs/STATUS.md",
+        "docs/TRACEABILITY.md",
+        "docs/STAGE_ISSUE_PLAN.md",
+    },
     "stage8-368-cut1-google-tts-adapter-implementation": {
         "docs/governance/preflights/issue-368.json",
         "backend/app/narration.py",
