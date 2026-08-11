@@ -1264,13 +1264,15 @@ Google. A final 90–120-second artifact still requires exact-hash OWNER listeni
 ### Issue #368 Google TTS runtime-transport prerequisite gate
 
 Exact branch `stage8-368-cut1-google-tts-runtime-transport` starts at
-`0fea35a7028b22f6d91096b1f46b5418884b9992`, changes exactly 16 governed paths,
+`0fea35a7028b22f6d91096b1f46b5418884b9992`, changes exactly 17 governed paths,
 and stays within 3,600 additions plus deletions with no deletion credit. The
 route requires committed RED-before-GREEN proof; optional lazy ADC with the
 fixed cloud-platform scope; exact quota-project/checksum binding; all-answer
 DNS screening; direct checked-peer port-443 TLS/SNI; no proxy/redirect;
 single-use prepared sessions; bounded response reads; redacted errors; truthful
 pre-egress versus egress-possible failures; no retry; and provider-neutral,
-disabled-default startup regressions. `google-auth==2.56.3` is optional and
-locked with its complete closure. Tests use fakes only; Google remains disabled,
+disabled-default startup regressions. The dependency-contract test preserves the
+immutable Issue #401 pypdf exactness while normalizing only the reviewed
+`google-auth==2.56.3` optional-provider closure and rejects any other drift.
+`google-auth==2.56.3` is optional and locked with its complete closure. Tests use fakes only; Google remains disabled,
 no credentials or real call/audio exists, and release remains No-Go.

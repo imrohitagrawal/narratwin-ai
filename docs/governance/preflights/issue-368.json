@@ -34,7 +34,7 @@
     "posture": "lazy optional import; absent dependency or stale/contradictory activation evidence fails closed"
   },
   "change_budget": {
-    "exact_paths": 16,
+    "exact_paths": 17,
     "maximum_additions_plus_deletions": 3600,
     "deletions_grant_credit": false,
     "per_file_charged_lines": {
@@ -44,6 +44,7 @@
       "pyproject.toml": 20,
       "uv.lock": 300,
       "tests/unit/test_google_tts_runtime.py": 800,
+      "tests/unit/test_dependency_security_contract.py": 220,
       "scripts/quality/stage8_cut1_routes.py": 60,
       "tests/unit/test_stage8_cut1_routes.py": 160,
       "docs/ADR/0056-cut1-google-gemini-tts.md": 180,
@@ -57,14 +58,14 @@
     }
   },
   "scope": {
-    "required": ["docs/governance/preflights/issue-368.json", "backend/app/google_tts_runtime.py", "backend/app/tts_provider.py", "pyproject.toml", "uv.lock", "tests/unit/test_google_tts_runtime.py", "scripts/quality/stage8_cut1_routes.py", "tests/unit/test_stage8_cut1_routes.py", "docs/ADR/0056-cut1-google-gemini-tts.md", "docs/ARCHITECTURE.md", "docs/OBSERVABILITY_AND_COST.md", "docs/QUALITY_GATES.md", "docs/SECURITY_AND_PRIVACY.md", "docs/STAGE_ISSUE_PLAN.md", "docs/STATUS.md", "docs/THIRD_PARTY_NOTICES.md"],
-    "allowed_prefixes": ["docs/governance/preflights/issue-368.json", "backend/app/google_tts_runtime.py", "backend/app/tts_provider.py", "pyproject.toml", "uv.lock", "tests/unit/test_google_tts_runtime.py", "scripts/quality/stage8_cut1_routes.py", "tests/unit/test_stage8_cut1_routes.py", "docs/ADR/0056-cut1-google-gemini-tts.md", "docs/ARCHITECTURE.md", "docs/OBSERVABILITY_AND_COST.md", "docs/QUALITY_GATES.md", "docs/SECURITY_AND_PRIVACY.md", "docs/STAGE_ISSUE_PLAN.md", "docs/STATUS.md", "docs/THIRD_PARTY_NOTICES.md"],
+    "required": ["docs/governance/preflights/issue-368.json", "backend/app/google_tts_runtime.py", "backend/app/tts_provider.py", "pyproject.toml", "uv.lock", "tests/unit/test_google_tts_runtime.py", "tests/unit/test_dependency_security_contract.py", "scripts/quality/stage8_cut1_routes.py", "tests/unit/test_stage8_cut1_routes.py", "docs/ADR/0056-cut1-google-gemini-tts.md", "docs/ARCHITECTURE.md", "docs/OBSERVABILITY_AND_COST.md", "docs/QUALITY_GATES.md", "docs/SECURITY_AND_PRIVACY.md", "docs/STAGE_ISSUE_PLAN.md", "docs/STATUS.md", "docs/THIRD_PARTY_NOTICES.md"],
+    "allowed_prefixes": ["docs/governance/preflights/issue-368.json", "backend/app/google_tts_runtime.py", "backend/app/tts_provider.py", "pyproject.toml", "uv.lock", "tests/unit/test_google_tts_runtime.py", "tests/unit/test_dependency_security_contract.py", "scripts/quality/stage8_cut1_routes.py", "tests/unit/test_stage8_cut1_routes.py", "docs/ADR/0056-cut1-google-gemini-tts.md", "docs/ARCHITECTURE.md", "docs/OBSERVABILITY_AND_COST.md", "docs/QUALITY_GATES.md", "docs/SECURITY_AND_PRIVACY.md", "docs/STAGE_ISSUE_PLAN.md", "docs/STATUS.md", "docs/THIRD_PARTY_NOTICES.md"],
     "forbidden": ["frontend/", ".github/", "backend/app/main.py", "backend/app/stage6.py", "backend/app/narration.py", "tests/api/", "tests/integration/", "tests/acceptance/", "docs/API_CONTRACT.md", "docs/DATA_MODEL.md", "docs/TRACEABILITY.md", "credentials", "authentication", "provider activation", "real audio"]
   },
-  "invariants": ["R368-01 ADC is unreachable until every pre-egress gate passes and scope/quota evidence binds", "R368-02 only approved EU hostname, HTTPS 443, exact SNI, checked peer and no proxy/redirect are accepted", "R368-03 all DNS answers are checked and the connection is bound to the checked address", "R368-04 TLS, response URL/peer/evidence and bounded response bytes are revalidated", "R368-05 ambiguous write/response failures are egress_possible and never retried", "R368-06 tokens, credentials, paths, headers, prompts and provider bodies are redacted", "R368-07 Google remains disabled/default-local and caller cannot select model/voice/locale/endpoint", "R368-08 TTSProvider and semantic presenter IDs remain the only narration-facing boundary"],
+  "invariants": ["R368-01 ADC is unreachable until every pre-egress gate passes and scope/quota evidence binds", "R368-02 only approved EU hostname, HTTPS 443, exact SNI, checked peer and no proxy/redirect are accepted", "R368-03 all DNS answers are checked and the connection is bound to the checked address", "R368-04 TLS, response URL/peer/evidence and bounded response bytes are revalidated", "R368-05 ambiguous write/response failures are egress_possible and never retried", "R368-06 tokens, credentials, paths, headers, prompts and provider bodies are redacted", "R368-07 Google remains disabled/default-local and caller cannot select model/voice/locale/endpoint", "R368-08 TTSProvider and semantic presenter IDs remain the only narration-facing boundary", "R368-09 dependency contract preserves immutable Issue #401 pypdf exactness and admits only reviewed google-auth closure delta"],
   "test_levels": {
     "red": "Commit injected-fake RED tests before runtime implementation.",
-    "green": "Cover disabled/missing dependency, ADC gate order/scope/checksum/quota/refresh errors, endpoint/DNS/SSRF/rebinding/proxy/redirect/TLS/SNI/session/partial-write/timeout/response bounds/redaction/no-retry, and provider-neutral startup.",
+    "green": "Cover disabled/missing dependency, ADC gate order/scope/checksum/quota/refresh errors, endpoint/DNS/SSRF/rebinding/proxy/redirect/TLS/SNI/session/partial-write/timeout/response bounds/redaction/no-retry, provider-neutral startup, and exact dependency/pypdf mutation rejection.",
     "gates": "Focused runtime/provider/Stage 6/API tests, lock/dependency/license/security audits, route/budget checks, Ruff, mypy, backend/frontend/browser/performance/container and make stage8-quality plus make quality.",
     "human_only": "Latest-head eligible non-author approval; activation, account/IAM, billing, policy, privacy/retention, commercial use, real-provider validation and exact-output listening remain blocked."
   },
