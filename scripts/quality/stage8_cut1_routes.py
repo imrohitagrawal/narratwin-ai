@@ -23,12 +23,14 @@ ISSUE368_BRANCH = "stage8-368-cut1-local-tts-audio"
 ISSUE368_PROMPT_BRANCH = "stage8-368-cut1-google-tts-prompt-contract"
 ISSUE368_ADAPTER_BRANCH = "stage8-368-cut1-google-tts-adapter-implementation"
 ISSUE368_IMPLEMENTATION_BRANCH = "stage8-368-cut1-google-tts-runtime-transport"
+ISSUE368_QUOTA_FIX_BRANCH = "stage8-368-google-tts-quota-project-binding-fix"
 ISSUE415_BRANCH = "stage8-415-pr-body-live-state-reconciliation"
 ISSUE415_CORRECTION_BRANCH = "stage8-415-pr-body-consistency-canary-fix"
 ISSUE386_BASE = "48fc32a2689c9bbc03742d774f3eadb8a500dafc"
 ISSUE368_BASE = "ef9cabc23762560912d99f10831241b8a65b869c"
 ISSUE368_PROMPT_BASE = "ba77d59b193da8064d67261e13fb50756c2bd9e8"
 ISSUE368_IMPLEMENTATION_BASE = "6766da34d73e301358f84f8eefb0985927292a26"
+ISSUE368_QUOTA_FIX_BASE = "9c165f739788fb0f09b315673f9125d700d6a96b"
 
 ROUTES = {
     ISSUE415_BRANCH: {
@@ -108,6 +110,22 @@ ROUTES = {
         "docs/STAGE_ISSUE_PLAN.md",
         "docs/STATUS.md",
         "docs/THIRD_PARTY_NOTICES.md",
+        "docs/TRACEABILITY.md",
+    },
+    ISSUE368_QUOTA_FIX_BRANCH: {
+        "backend/app/google_tts_runtime.py",
+        "backend/app/tts_provider.py",
+        "tests/unit/test_google_tts_runtime.py",
+        "tests/unit/test_stage6_tts_provider.py",
+        "docs/governance/preflights/issue-368.json",
+        "scripts/quality/stage8_cut1_routes.py",
+        "tests/unit/test_stage8_cut1_routes.py",
+        "docs/ADR/0056-cut1-google-gemini-tts.md",
+        "docs/API_CONTRACT.md",
+        "docs/DATA_MODEL.md",
+        "docs/SECURITY_AND_PRIVACY.md",
+        "docs/OBSERVABILITY_AND_COST.md",
+        "docs/STATUS.md",
         "docs/TRACEABILITY.md",
     },
     ISSUE368_PROMPT_BRANCH: {
@@ -292,11 +310,11 @@ ROUTES = {
         "docs/THIRD_PARTY_NOTICES.md",
     },
 }
-ROUTE_ISSUES = {ISSUE415_BRANCH: 415, ISSUE415_CORRECTION_BRANCH: 415, ISSUE413_BRANCH: 413, ISSUE368_ADAPTER_BRANCH: 368, ISSUE368_IMPLEMENTATION_BRANCH: 368, ISSUE368_PROMPT_BRANCH: 368, ISSUE368_BRANCH: 368, ISSUE405_BRANCH: 405, ISSUE403_BRANCH: 403, ISSUE401_BRANCH: 401, ISSUE396_BRANCH: 396,
+ROUTE_ISSUES = {ISSUE415_BRANCH: 415, ISSUE415_CORRECTION_BRANCH: 415, ISSUE413_BRANCH: 413, ISSUE368_ADAPTER_BRANCH: 368, ISSUE368_IMPLEMENTATION_BRANCH: 368, ISSUE368_QUOTA_FIX_BRANCH: 368, ISSUE368_PROMPT_BRANCH: 368, ISSUE368_BRANCH: 368, ISSUE405_BRANCH: 405, ISSUE403_BRANCH: 403, ISSUE401_BRANCH: 401, ISSUE396_BRANCH: 396,
                 ISSUE386_BRANCH: 386, ISSUE385_BRANCH: 385,
                 ISSUE384_BRANCH: 384, ISSUE383_BRANCH: 383, ISSUE397_BRANCH: 397,
                 ISSUE393_BRANCH: 393, ISSUE382_BRANCH: 382, ISSUE367_BRANCH: 367}
-TOTAL_LIMITS = {ISSUE415_BRANCH: 5000, ISSUE415_CORRECTION_BRANCH: 800, ISSUE413_BRANCH: 5000, ISSUE368_ADAPTER_BRANCH: 5600, ISSUE368_IMPLEMENTATION_BRANCH: 3600, ISSUE368_PROMPT_BRANCH: 1000, ISSUE368_BRANCH: 3200, ISSUE405_BRANCH: 800, ISSUE403_BRANCH: 650, ISSUE401_BRANCH: 600, ISSUE396_BRANCH: 500,
+TOTAL_LIMITS = {ISSUE415_BRANCH: 5000, ISSUE415_CORRECTION_BRANCH: 800, ISSUE413_BRANCH: 5000, ISSUE368_ADAPTER_BRANCH: 5600, ISSUE368_IMPLEMENTATION_BRANCH: 3600, ISSUE368_QUOTA_FIX_BRANCH: 2800, ISSUE368_PROMPT_BRANCH: 1000, ISSUE368_BRANCH: 3200, ISSUE405_BRANCH: 800, ISSUE403_BRANCH: 650, ISSUE401_BRANCH: 600, ISSUE396_BRANCH: 500,
                 ISSUE386_BRANCH: 700, ISSUE385_BRANCH: 350,
                 ISSUE384_BRANCH: 500, ISSUE383_BRANCH: 700, ISSUE397_BRANCH: 500,
                 ISSUE393_BRANCH: 700, ISSUE382_BRANCH: 3200, ISSUE367_BRANCH: 2000}
@@ -352,6 +370,25 @@ TEXT_LIMITS = {
             "docs/TRACEABILITY.md": 220,
         }[path]
         for path in ROUTES[ISSUE368_IMPLEMENTATION_BRANCH]
+    },
+    ISSUE368_QUOTA_FIX_BRANCH: {
+        path: {
+            "backend/app/google_tts_runtime.py": 500,
+            "backend/app/tts_provider.py": 500,
+            "tests/unit/test_google_tts_runtime.py": 600,
+            "tests/unit/test_stage6_tts_provider.py": 800,
+            "docs/governance/preflights/issue-368.json": 500,
+            "scripts/quality/stage8_cut1_routes.py": 160,
+            "tests/unit/test_stage8_cut1_routes.py": 260,
+            "docs/ADR/0056-cut1-google-gemini-tts.md": 240,
+            "docs/API_CONTRACT.md": 160,
+            "docs/DATA_MODEL.md": 160,
+            "docs/SECURITY_AND_PRIVACY.md": 220,
+            "docs/OBSERVABILITY_AND_COST.md": 180,
+            "docs/STATUS.md": 220,
+            "docs/TRACEABILITY.md": 220,
+        }[path]
+        for path in ROUTES[ISSUE368_QUOTA_FIX_BRANCH]
     },
     ISSUE368_PROMPT_BRANCH: {
         path: 260 if path == "tests/unit/test_stage8_cut1_routes.py"
@@ -486,6 +523,7 @@ def parse_name_status_z(output: str) -> list[str]:
 def route_base(run: Callable[[list[str]], Any], branch: str) -> str:
     fixed_routes = {
         ISSUE368_IMPLEMENTATION_BRANCH: (368, ISSUE368_IMPLEMENTATION_BASE),
+        ISSUE368_QUOTA_FIX_BRANCH: (368, ISSUE368_QUOTA_FIX_BASE),
         ISSUE368_PROMPT_BRANCH: (368, ISSUE368_PROMPT_BASE),
         ISSUE368_BRANCH: (368, ISSUE368_BASE),
         ISSUE386_BRANCH: (386, ISSUE386_BASE),
@@ -498,7 +536,8 @@ def route_base(run: Callable[[list[str]], Any], branch: str) -> str:
         fixed_value = str(fixed.stdout).strip()
         common_value = str(common.stdout).strip()
         branch_point_invalid = False
-        if branch in {ISSUE368_IMPLEMENTATION_BRANCH, ISSUE368_BRANCH, ISSUE368_PROMPT_BRANCH}:
+        if branch in {ISSUE368_IMPLEMENTATION_BRANCH, ISSUE368_QUOTA_FIX_BRANCH,
+                      ISSUE368_BRANCH, ISSUE368_PROMPT_BRANCH}:
             branch_point = run(["git", "merge-base", "origin/main", "HEAD"])
             branch_point_invalid = branch_point.returncode != 0 or str(branch_point.stdout).strip() != base
         if (fixed.returncode or common.returncode or fixed_value != base or common_value != base

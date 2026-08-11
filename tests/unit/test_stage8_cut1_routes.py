@@ -132,6 +132,22 @@ EXPECTED = {
         "docs/THIRD_PARTY_NOTICES.md",
         "docs/TRACEABILITY.md",
     },
+    "stage8-368-google-tts-quota-project-binding-fix": {
+        "backend/app/google_tts_runtime.py",
+        "backend/app/tts_provider.py",
+        "tests/unit/test_google_tts_runtime.py",
+        "tests/unit/test_stage6_tts_provider.py",
+        "docs/governance/preflights/issue-368.json",
+        "scripts/quality/stage8_cut1_routes.py",
+        "tests/unit/test_stage8_cut1_routes.py",
+        "docs/ADR/0056-cut1-google-gemini-tts.md",
+        "docs/API_CONTRACT.md",
+        "docs/DATA_MODEL.md",
+        "docs/SECURITY_AND_PRIVACY.md",
+        "docs/OBSERVABILITY_AND_COST.md",
+        "docs/STATUS.md",
+        "docs/TRACEABILITY.md",
+    },
     "stage8-368-cut1-google-tts-prompt-contract": {
         "docs/governance/preflights/issue-368.json",
         "docs/governance/cut1-google-gemini-tts-style-prompts-v1.json",
@@ -463,17 +479,18 @@ def test_routes_are_exact_pre_registered_and_issue386_preflight_matches() -> Non
     assert "exactly nineteen paths" in (REPO / "docs/QUALITY_GATES.md").read_text(encoding="utf-8")
     assert "exact nineteen-path route" in (REPO / "docs/STAGE_ISSUE_PLAN.md").read_text(encoding="utf-8")
     issue368 = json.loads((REPO / "docs/governance/preflights/issue-368.json").read_text(encoding="utf-8"))
-    assert issue368["branch"] == routes.ISSUE368_IMPLEMENTATION_BRANCH
-    assert set(issue368["scope"]["required"]) == EXPECTED[routes.ISSUE368_IMPLEMENTATION_BRANCH]
-    assert set(issue368["scope"]["allowed_prefixes"]) == EXPECTED[routes.ISSUE368_IMPLEMENTATION_BRANCH]
-    assert issue368["change_budget"]["exact_paths"] == 18
-    assert issue368["change_budget"]["maximum_additions_plus_deletions"] == 3600
+    assert issue368["branch"] == routes.ISSUE368_QUOTA_FIX_BRANCH
+    assert set(issue368["scope"]["required"]) == EXPECTED[routes.ISSUE368_QUOTA_FIX_BRANCH]
+    assert set(issue368["scope"]["allowed_prefixes"]) == EXPECTED[routes.ISSUE368_QUOTA_FIX_BRANCH]
+    assert issue368["change_budget"]["exact_paths"] == 14
+    assert issue368["change_budget"]["maximum_additions_plus_deletions"] == 2800
     assert issue368["change_budget"]["deletions_grant_credit"] is False
-    assert issue368["change_budget"]["per_file_charged_lines"]["backend/app/google_tts_runtime.py"] == 700
-    assert issue368["change_budget"]["per_file_charged_lines"]["tests/unit/test_google_tts_runtime.py"] == 800
-    assert issue368["change_budget"]["per_file_charged_lines"]["tests/unit/test_dependency_security_contract.py"] == 220
+    assert issue368["change_budget"]["per_file_charged_lines"]["backend/app/google_tts_runtime.py"] == 500
+    assert issue368["change_budget"]["per_file_charged_lines"]["tests/unit/test_google_tts_runtime.py"] == 600
+    assert issue368["change_budget"]["per_file_charged_lines"]["tests/unit/test_stage6_tts_provider.py"] == 800
     assert issue368["change_budget"]["per_file_charged_lines"]["docs/TRACEABILITY.md"] == 220
     assert routes.TOTAL_LIMITS[routes.ISSUE368_IMPLEMENTATION_BRANCH] == 3600
+    assert routes.TOTAL_LIMITS[routes.ISSUE368_QUOTA_FIX_BRANCH] == 2800
     assert routes.TOTAL_LIMITS[routes.ISSUE368_PROMPT_BRANCH] == 1000
     issue405 = json.loads((REPO / "docs/governance/preflights/issue-405.json").read_text(encoding="utf-8"))
     assert issue405["branch"] == routes.ISSUE405_BRANCH
@@ -739,6 +756,21 @@ def test_issue368_implementation_route_requires_exact_merged_prompt_base() -> No
     assert calls == [
         ["git", "rev-parse", f"{routes.ISSUE368_IMPLEMENTATION_BASE}^{{commit}}"],
         ["git", "merge-base", routes.ISSUE368_IMPLEMENTATION_BASE, "HEAD"],
+        ["git", "merge-base", "origin/main", "HEAD"],
+    ]
+
+
+def test_issue368_quota_fix_route_requires_exact_accepted_base() -> None:
+    calls: list[list[str]] = []
+
+    def good(args: list[str]) -> subprocess.CompletedProcess[str]:
+        calls.append(args)
+        return completed(args, out=routes.ISSUE368_QUOTA_FIX_BASE + "\n")
+
+    assert routes.route_base(good, routes.ISSUE368_QUOTA_FIX_BRANCH) == routes.ISSUE368_QUOTA_FIX_BASE
+    assert calls == [
+        ["git", "rev-parse", f"{routes.ISSUE368_QUOTA_FIX_BASE}^{{commit}}"],
+        ["git", "merge-base", routes.ISSUE368_QUOTA_FIX_BASE, "HEAD"],
         ["git", "merge-base", "origin/main", "HEAD"],
     ]
 
