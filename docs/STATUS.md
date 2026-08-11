@@ -14,11 +14,11 @@ Use it to answer:
 
 ## Current Baseline
 
-- Governance Issue `#415` is implementing deterministic PR-body live-state
-  reconciliation from accepted main `f62b4f04d9f94cb10692c36f790697e69f5e8fd8`.
-  It is not product implementation and does not claim release readiness. The
-  new check may become required only after its merged trusted workflow passes a
-  disposable post-merge canary while preserving existing branch protection.
+- The repository capability for deterministic PR-body live-state reconciliation
+  is governed by Issue `#415` and is not product implementation or a release
+  claim. Live required-check activation exists only when repository protection
+  settings plus Issue #415 canary and closeout evidence establish it; the
+  repository ledger does not assume merge-independent GitHub state.
 
 - Current Cut 1 route authority: Issue `#346` / PR `#347` merged at
   `4c5d7cf16fb8cdf7046d561c882f655d06125127` and established exact branch

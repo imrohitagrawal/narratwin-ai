@@ -63,6 +63,10 @@ keep product and reviewer context human-authored, run the standard reconciliatio
 command after their final push, and cannot present a PR as approval-ready until
 the required `pr-body-consistency` check is successful for its exact head.
 Current CI wording belongs in Checks rather than mutable narrative prose.
+The introducing Issue #415 PR is a one-time bootstrap exception: it proves the
+workflow with committed and live local evidence, while a post-merge disposable
+canary is required before the check is made required. This is not a general
+approval or branch-protection bypass.
 
 Post-merge facts are real evidence, but they do not automatically justify a
 new repository change. The PR that completes issue A must update

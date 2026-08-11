@@ -1301,6 +1301,9 @@ pr-reconcile PR=<number>`. The check fails closed when the unique managed block
 is missing, malformed, stale, unsafe, or inconsistent with the live pull
 request. Its workflow is trusted-base only and must not become a required main
 context until post-merge canary evidence confirms no unexpected mutation.
+Its bootstrap Issue #415 PR receives no self-hosted check because GitHub sources
+`pull_request_target` workflows from default branch; committed and live local
+evidence replaces it only for that introducing PR.
 
 Branch `cut1-process-413-frontend-runtime-openssl` owns exactly nineteen paths
 and at most 5,000 charged lines. The gate binds exact multi-arch runtime,
