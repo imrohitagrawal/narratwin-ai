@@ -1279,7 +1279,7 @@ network/provider calls. Google remains disabled and release remains No-Go.
 
 ### Issue #413 frontend runtime security gate
 
-Branch `cut1-process-413-frontend-runtime-openssl` owns exactly sixteen paths
+Branch `cut1-process-413-frontend-runtime-openssl` owns exactly nineteen paths
 and at most 5,000 charged lines. The gate binds exact multi-arch runtime,
 Node-binary and `libatomic` source indexes plus amd64/arm64 manifests; verifies
 effective OpenSSL 3.5.7 and exactly eight Wolfi package records; preserves

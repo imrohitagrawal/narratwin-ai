@@ -2608,7 +2608,7 @@ deployment, distribution, release and Issue #369 remain separate.
 ### Issue #413 independent frontend runtime security prerequisite
 
 Issue #413 is a separate Stage 8 prerequisite and does not alter Issue #368 or
-PR #412. Its exact sixteen-path route replaces only the final frontend runtime,
+PR #412. Its exact nineteen-path route replaces only the final frontend runtime,
 adds an exact three-source minimal glibc composition plus
 package/SBOM/reproducibility contracts and records the security decision.
 Acceptance requires both platform identities, non-root standalone startup, two

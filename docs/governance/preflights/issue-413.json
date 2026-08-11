@@ -72,7 +72,6 @@
       "perf/",
       "portfolio/",
       "scripts/guardrails_check.py",
-      "scripts/quality/check_stage8_docs.py",
       "scripts/quality/phase1_closure/",
       "tests/acceptance/",
       "tests/api/",
