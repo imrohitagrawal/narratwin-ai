@@ -1,85 +1,176 @@
 {
   "schema_version": "GovernancePreflightV1",
   "issue_number": 368,
-  "branch": "stage8-368-cut1-google-tts-runtime-transport",
-  "objective": "Implement the optional Google ADC identity and connection-bound EU HTTPS transport behind the existing provider-neutral Google TTS adapter, with Google disabled by default and no real credentials, calls, egress, spend, narration, or audio.",
-  "status_decision": "runtime-transport-prerequisite-only",
+  "branch": "stage8-368-google-tts-quota-project-binding-fix",
+  "objective": "Fail closed on Google authorized-user ADC quota-project drift, bind the approved project hash into activation and request evidence, emit exactly one application-owned x-goog-user-project header after immediate pre-egress revalidation, reconcile the strict branch-protection verifier with the already-live pr-body-consistency context bound to GitHub Actions app ID 15368, and preserve every existing provider-neutral, disabled-default, direct-EU-transport, receipt, cost, and audio safeguard.",
+  "status_decision": "quota-project-binding-repair-before-final-audio",
   "authority": {
-    "direct_owner_authority": "https://github.com/imrohitagrawal/narratwin-ai/issues/368#issuecomment-5245861950",
-    "accepted_main": "6766da34d73e301358f84f8eefb0985927292a26",
-    "governance_pr": "https://github.com/imrohitagrawal/narratwin-ai/pull/409",
-    "prompt_contract_pr": "https://github.com/imrohitagrawal/narratwin-ai/pull/410",
-    "adapter_pr": "https://github.com/imrohitagrawal/narratwin-ai/pull/411",
-    "adapter_reviewed_head": "42adbdbadb61a6b5ca04583c4e9a3490da90addb",
-    "prompt_contract_sha256": "d8e38274fd986fed16aa64cbc3c8f720f4a4e01dfe4ffcc5f922d05cd5c9e017"
+    "direct_owner_authority": "https://github.com/imrohitagrawal/narratwin-ai/issues/368#issuecomment-5256748344",
+    "route_amendment_authority": "https://github.com/imrohitagrawal/narratwin-ai/issues/368#issuecomment-5257797936",
+    "final_route_amendment_authority": "https://github.com/imrohitagrawal/narratwin-ai/issues/368#issuecomment-5257900760",
+    "normative_contract_amendment_authority": "https://github.com/imrohitagrawal/narratwin-ai/issues/368#issuecomment-5258127020",
+    "diagnostic_evidence": "https://github.com/imrohitagrawal/narratwin-ai/issues/368#issuecomment-5256656667",
+    "accepted_main": "9c165f739788fb0f09b315673f9125d700d6a96b",
+    "rejection_inventory_sha256": "e919ce44bddc0e167f3636df3886643847410d1d9615e2fe7fd7f6a60a0698c7",
+    "prompt_contract_sha256": "d8e38274fd986fed16aa64cbc3c8f720f4a4e01dfe4ffcc5f922d05cd5c9e017",
+    "prior_adapter_pr": "https://github.com/imrohitagrawal/narratwin-ai/pull/411",
+    "prior_runtime_pr": "https://github.com/imrohitagrawal/narratwin-ai/pull/412"
   },
   "source_facts": {
     "verified_on": "2026-08-11",
     "gemini_tts": "https://docs.cloud.google.com/text-to-speech/docs/gemini-tts",
-    "regional_endpoints": "https://docs.cloud.google.com/text-to-speech/docs/endpoints",
-    "synthesize_method": "https://docs.cloud.google.com/text-to-speech/docs/reference/rest/v1/text/synthesize",
-    "adc": "https://docs.cloud.google.com/docs/authentication/application-default-credentials",
+    "rest_authentication": "https://docs.cloud.google.com/docs/authentication/rest",
     "quota_project": "https://docs.cloud.google.com/docs/quotas/set-quota-project",
-    "quotas": "https://docs.cloud.google.com/text-to-speech/quotas",
-    "pricing": "https://cloud.google.com/text-to-speech/pricing",
-    "zero_data_retention": "https://docs.cloud.google.com/vertex-ai/generative-ai/docs/vertex-ai-zero-data-retention",
-    "google_auth": "https://pypi.org/project/google-auth/2.56.3/",
-    "contract": "gemini-2.5-pro-tts, en-IN, eu-texttospeech.googleapis.com, voice names Despina/Leda/Achird, LINEAR16 WAV PCM16 24 kHz mono, OAuth scope cloud-platform; regional processing, content logging/abuse monitoring, quota, pricing and commercial/legal terms remain human-review blockers."
+    "quota_project_overview": "https://docs.cloud.google.com/docs/quotas/quota-project",
+    "contract": "Google documents x-goog-user-project as the explicit REST quota-project control, requires serviceusage.services.use on that project, and includes the header in the Gemini-TTS REST example. Application code must validate the authorized-user ADC quota project and construct the header explicitly; gcloud fallback is not an accepted control."
   },
-  "dependency_decision": {
-    "direct": "google-auth==2.56.3 in optional providers only; exact uv.lock closure and hashes required",
-    "locked_closure": {"google-auth": ["2.56.3", "Apache-2.0", "sha256:8ec438808f813ad034535000261eed1067475d229d05bbf4216e78c3f2362e53"], "cryptography": ["50.0.0", "Apache-2.0 OR BSD-3-Clause", "sha256:80b63928fa35083b33966ce1efb70e5b9607181e49dcd1c22c8c005e319f667f"], "pyasn1-modules": ["0.4.2", "BSD-2-Clause", "sha256:29253a9207ce32b64c3ac6600edc75368f98473906e8fd1043bd6b5b1de2c14a"], "pyasn1": ["0.6.4", "BSD-2-Clause", "sha256:deda9277cfd454080ec40b207fb6df82206a3a2688735233cdcd8d3d565f088b"], "cffi": ["2.0.0", "MIT", "sha256:45d5e886156860dc35862657e1494b9bae8dfa63bf56796f2fb56e1679fc0bca"], "pycparser": ["3.0", "BSD-3-Clause", "sha256:b727414169a36b7d524c1c3e31839a521725078d7b2ff038656844266160a992"]},
-    "transport": "direct REST with stdlib socket/http.client/ssl, exact HTTPS port 443 and approved EU hostname",
-    "rejected": ["google-cloud-texttospeech SDK", "requests/urllib3 extras", "gcloud subprocess", "API keys", "service-account JSON", "ambient ADC in tests"],
-    "posture": "lazy optional import; absent dependency or stale/contradictory activation evidence fails closed"
+  "failure_reproduction": {
+    "accepted_behavior": "The accepted provider emits only Authorization and Content-Type and fingerprints quotaProjectRequired=false with no approved project hash.",
+    "offline_red_result": "A fake-identity/fake-transport test fails because x-goog-user-project is absent; zero real credential refresh, provider egress, synthesis attempt, spend, or audio occurred.",
+    "evidence": "https://github.com/imrohitagrawal/narratwin-ai/issues/368#issuecomment-5256656667"
   },
   "change_budget": {
-    "exact_paths": 18,
-    "maximum_additions_plus_deletions": 3600,
+    "exact_paths": 19,
+    "maximum_additions_plus_deletions": 2800,
     "deletions_grant_credit": false,
     "per_file_charged_lines": {
-      "docs/governance/preflights/issue-368.json": 240,
-      "backend/app/google_tts_runtime.py": 700,
-      "backend/app/tts_provider.py": 220,
-      "pyproject.toml": 20,
-      "uv.lock": 300,
-      "tests/unit/test_google_tts_runtime.py": 800,
-      "tests/unit/test_dependency_security_contract.py": 220,
-      "scripts/quality/stage8_cut1_routes.py": 60,
-      "tests/unit/test_stage8_cut1_routes.py": 160,
-      "docs/ADR/0056-cut1-google-gemini-tts.md": 180,
-      "docs/ARCHITECTURE.md": 70,
-      "docs/OBSERVABILITY_AND_COST.md": 70,
-      "docs/QUALITY_GATES.md": 70,
-      "docs/SECURITY_AND_PRIVACY.md": 100,
-      "docs/STAGE_ISSUE_PLAN.md": 100,
-      "docs/STATUS.md": 120,
-      "docs/THIRD_PARTY_NOTICES.md": 150,
-      "docs/TRACEABILITY.md": 220
+      "backend/app/google_tts_runtime.py": 500,
+      "backend/app/tts_provider.py": 500,
+      "tests/unit/test_google_tts_runtime.py": 600,
+      "tests/unit/test_stage6_tts_provider.py": 800,
+      "docs/governance/preflights/issue-368.json": 500,
+      "scripts/quality/stage8_cut1_routes.py": 160,
+      "tests/unit/test_stage8_cut1_routes.py": 260,
+      "docs/ADR/0056-cut1-google-gemini-tts.md": 240,
+      "docs/API_CONTRACT.md": 160,
+      "docs/DATA_MODEL.md": 160,
+      "docs/SECURITY_AND_PRIVACY.md": 220,
+      "docs/OBSERVABILITY_AND_COST.md": 180,
+      "docs/STATUS.md": 220,
+      "docs/TRACEABILITY.md": 220,
+      "scripts/ci/verify_branch_protection.py": 80,
+      "tests/unit/test_branch_protection_verifier.py": 220,
+      "tests/unit/test_governance_preflight_github.py": 80,
+      "docs/REPOSITORY_GUARDRAILS.md": 80,
+      "docs/agent-context/context-policy-manifest-v1.json": 10
     }
   },
   "scope": {
-    "required": ["docs/governance/preflights/issue-368.json", "backend/app/google_tts_runtime.py", "backend/app/tts_provider.py", "pyproject.toml", "uv.lock", "tests/unit/test_google_tts_runtime.py", "tests/unit/test_dependency_security_contract.py", "scripts/quality/stage8_cut1_routes.py", "tests/unit/test_stage8_cut1_routes.py", "docs/ADR/0056-cut1-google-gemini-tts.md", "docs/ARCHITECTURE.md", "docs/OBSERVABILITY_AND_COST.md", "docs/QUALITY_GATES.md", "docs/SECURITY_AND_PRIVACY.md", "docs/STAGE_ISSUE_PLAN.md", "docs/STATUS.md", "docs/THIRD_PARTY_NOTICES.md", "docs/TRACEABILITY.md"],
-    "allowed_prefixes": ["docs/governance/preflights/issue-368.json", "backend/app/google_tts_runtime.py", "backend/app/tts_provider.py", "pyproject.toml", "uv.lock", "tests/unit/test_google_tts_runtime.py", "tests/unit/test_dependency_security_contract.py", "scripts/quality/stage8_cut1_routes.py", "tests/unit/test_stage8_cut1_routes.py", "docs/ADR/0056-cut1-google-gemini-tts.md", "docs/ARCHITECTURE.md", "docs/OBSERVABILITY_AND_COST.md", "docs/QUALITY_GATES.md", "docs/SECURITY_AND_PRIVACY.md", "docs/STAGE_ISSUE_PLAN.md", "docs/STATUS.md", "docs/THIRD_PARTY_NOTICES.md", "docs/TRACEABILITY.md"],
-    "forbidden": ["frontend/", ".github/", "backend/app/main.py", "backend/app/stage6.py", "backend/app/narration.py", "tests/api/", "tests/integration/", "tests/acceptance/", "docs/API_CONTRACT.md", "docs/DATA_MODEL.md", "credentials", "authentication", "provider activation", "real audio"]
+    "required": [
+      "backend/app/google_tts_runtime.py",
+      "backend/app/tts_provider.py",
+      "tests/unit/test_google_tts_runtime.py",
+      "tests/unit/test_stage6_tts_provider.py",
+      "docs/governance/preflights/issue-368.json",
+      "scripts/quality/stage8_cut1_routes.py",
+      "tests/unit/test_stage8_cut1_routes.py",
+      "docs/ADR/0056-cut1-google-gemini-tts.md",
+      "docs/API_CONTRACT.md",
+      "docs/DATA_MODEL.md",
+      "docs/SECURITY_AND_PRIVACY.md",
+      "docs/OBSERVABILITY_AND_COST.md",
+      "docs/STATUS.md",
+      "docs/TRACEABILITY.md",
+      "scripts/ci/verify_branch_protection.py",
+      "tests/unit/test_branch_protection_verifier.py",
+      "tests/unit/test_governance_preflight_github.py",
+      "docs/REPOSITORY_GUARDRAILS.md",
+      "docs/agent-context/context-policy-manifest-v1.json"
+    ],
+    "allowed_prefixes": [
+      "backend/app/google_tts_runtime.py",
+      "backend/app/tts_provider.py",
+      "tests/unit/test_google_tts_runtime.py",
+      "tests/unit/test_stage6_tts_provider.py",
+      "docs/governance/preflights/issue-368.json",
+      "scripts/quality/stage8_cut1_routes.py",
+      "tests/unit/test_stage8_cut1_routes.py",
+      "docs/ADR/0056-cut1-google-gemini-tts.md",
+      "docs/API_CONTRACT.md",
+      "docs/DATA_MODEL.md",
+      "docs/SECURITY_AND_PRIVACY.md",
+      "docs/OBSERVABILITY_AND_COST.md",
+      "docs/STATUS.md",
+      "docs/TRACEABILITY.md",
+      "scripts/ci/verify_branch_protection.py",
+      "tests/unit/test_branch_protection_verifier.py",
+      "tests/unit/test_governance_preflight_github.py",
+      "docs/REPOSITORY_GUARDRAILS.md",
+      "docs/agent-context/context-policy-manifest-v1.json"
+    ],
+    "forbidden": [
+      "dependency manifests and lockfiles",
+      "frontend",
+      "Docker",
+      "workflows",
+      "caller-visible Google configuration",
+      "real provider calls before merged-main verification",
+      "credentials, tokens, Authorization headers, raw project IDs, billing IDs, or account IDs in repository/evidence/logs/errors/state",
+      "Issue #369, video, deployment, distribution, release, or production activation"
+    ]
   },
-  "invariants": ["R368-01 ADC is unreachable until every pre-egress gate passes and scope/quota evidence binds", "R368-02 only approved EU hostname, HTTPS 443, exact SNI, checked peer and no proxy/redirect are accepted", "R368-03 all DNS answers are checked and the connection is bound to the checked address", "R368-04 TLS, response URL/peer/evidence and bounded response bytes are revalidated", "R368-05 ambiguous write/response failures are egress_possible and never retried", "R368-06 tokens, credentials, paths, headers, prompts and provider bodies are redacted", "R368-07 Google remains disabled/default-local and caller cannot select model/voice/locale/endpoint", "R368-08 TTSProvider and semantic presenter IDs remain the only narration-facing boundary", "R368-09 dependency contract preserves immutable Issue #401 pypdf exactness and admits only reviewed google-auth closure delta"],
-  "test_levels": {
-    "red": "Commit injected-fake RED tests before runtime implementation.",
-    "green": "Cover disabled/missing dependency, ADC gate order/scope/checksum/quota/refresh errors, endpoint/DNS/SSRF/rebinding/proxy/redirect/TLS/SNI/session/partial-write/timeout/response bounds/redaction/no-retry, provider-neutral startup, and exact dependency/pypdf mutation rejection.",
-    "gates": "Focused runtime/provider/Stage 6/API tests, lock/dependency/license/security audits, route/budget checks, Ruff, mypy, backend/frontend/browser/performance/container and make stage8-quality plus make quality.",
-    "human_only": "Latest-head eligible non-author approval; activation, account/IAM, billing, policy, privacy/retention, commercial use, real-provider validation and exact-output listening remain blocked."
+  "invariants": {
+    "Q368-01": "Enabled authorized-user ADC requires a configured, syntactically valid quota project and exact approved SHA-256.",
+    "Q368-02": "Credential quota project must be present and exactly equal to the configured approved project before and immediately before egress.",
+    "Q368-03": "The provider constructs exactly Authorization, Content-Type, and x-goog-user-project; callers cannot inject or select the project/header.",
+    "Q368-04": "Request fingerprints bind quotaProjectRequired=true, approved quota-project SHA-256, and exact ordered header-name presence; removal or mutation fails.",
+    "Q368-05": "Disabled/default/mock operation never resolves ADC or emits a quota header.",
+    "Q368-06": "Raw project IDs, credentials, tokens, and authorization values never enter logs, exceptions, state, evidence, or provider-neutral/API surfaces.",
+    "Q368-07": "Existing direct EU TLS/DNS/SNI/proxy/redirect/single-use transport, cost, receipt, prompt, response, audio, duplicate-spend, and ambiguous-timeout controls remain unchanged.",
+    "Q368-08": "No real credential refresh or provider call occurs on the repair branch; synthesis resumes only from verified merged main.",
+    "Q368-09": "Exactly one existing OWNER-created project must satisfy billing, both API-enablement, IAM, quota, and bounded-operation criteria before local reconciliation.",
+    "Q368-10": "Branch protection requires exactly the ten historical contexts plus pr-body-consistency, every binding uses GitHub Actions app ID 15368, strict mode remains enabled, and missing, malformed, removed, wrong-app, or additional contexts fail closed."
   },
-  "evidence_plan": {
-    "source_driven": "Official Google REST, regional endpoint, ADC, quota, pricing, policy and PyPI sources above; external text is untrusted source material.",
-    "interface_security_spec": "Existing TTSProvider/Google prepared-transport contracts plus fail-closed SSRF, TLS, credential and provider-neutrality invariants.",
-    "tdd": "RED commit precedes implementation; deterministic injected fakes and socket-deny tests prove zero real calls.",
-    "adversarial": "Fresh-context review covers credentials/ADC, SSRF/DNS/TLS/session substitution, billing ambiguity, bounded reads, optional dependency, retries, logs, supply chain, scope and overclaims.",
-    "pre_implementation": "Owner comment https://github.com/imrohitagrawal/narratwin-ai/issues/368#issuecomment-5245861950; this artifact is the first branch commit before RED tests or implementation."
+  "invariant_to_test_mapping": {
+    "Q368-01": ["runtime empty/malformed/configured-hash-mismatch tests", "provider activation validation tests"],
+    "Q368-02": ["runtime absent/mismatched credential quota tests", "provider immediate pre-egress identity revalidation mutation test"],
+    "Q368-03": ["fake transport exact-three-header test", "caller-injection rejection tests"],
+    "Q368-04": ["request fingerprint header removal/value mutation/project-change tests"],
+    "Q368-05": ["disabled-provider ADC lookup and header absence tests"],
+    "Q368-06": ["log/error/state/evidence leakage mutation tests"],
+    "Q368-07": ["existing provider/runtime/Stage 6/API suites plus duplicate-spend and ambiguous-timeout tests"],
+    "Q368-08": ["fake-only branch test boundary and exact merged-main human checklist"],
+    "Q368-09": ["redacted read-only gcloud/API/IAM/quota observations; OWNER decision if uniqueness is not deterministic"],
+    "Q368-10": ["branch-protection exact-cardinality, missing-context, wrong-app, unexpected-context, historical-removal, strict-mode, and malformed-binding tests"]
   },
+  "tdd_sequence": {
+    "red_commit": "Commit fake-only failing tests after the original preflight-first commit and commit the route-amendment RED verifier tests before changing the verifier implementation.",
+    "green_commit": "Implement only enough application-owned validation/header construction/fingerprinting to satisfy the frozen invariants.",
+    "regression": "Run focused, complete provider/runtime/Stage 6/API, backend, frontend/browser, lint/type, audit/security/container, route/budget, stage8-quality, and quality gates."
+  },
+  "human_only_surfaces": {
+    "exact_head_approval": "Eligible non-author approval by rohitagrawal4u after final reconciliation and checks.",
+    "google_project_uniqueness": "OWNER decision only if zero or multiple existing projects qualify after redacted inspection.",
+    "oauth": "OWNER browser approval only if ADC is absent or expired after merge.",
+    "listening": "Exact-hash OWNER listening after three validated final artifacts.",
+    "legal_release": "Commercial/public distribution, production privacy clearance, deployment, and release remain unauthorized."
+  },
+  "no_real_call_before_merge": "All branch tests use fake credentials and fake transport. No ADC refresh, provider request, narration egress, synthesis attempt, or spend is permitted until the exact repair is merged and origin/main is reverified.",
+  "resumption_plan": "After exact-head approval, required checks, merge, post-merge verification, and unique project reconciliation, create the untouched sibling evidence root google-gemini-tts-final-cut1-02; reverify merged constants, binding and receipts; make exactly three planned EU synthesis calls within five-attempt/US$2 ceilings; validate and inventory artifacts; post hashes/durations/playback commands; stop for exact-hash OWNER listening.",
   "skills": {
-    "invoked": ["source-driven-development", "api-and-interface-design", "security-and-hardening", "spec-driven-development", "test-driven-development", "planning-and-task-breakdown", "code-review-and-quality", "doubt-driven-development"],
-    "rejected": {"frontend-ui-engineering": "frontend is out of scope", "shipping-and-launch": "deployment/release is prohibited", "google-cloud-tts-sdk": "direct governed REST is smaller and avoids duplicate SDK/gRPC closure", "cross-model-review": "not available in this execution context; fresh-context adversarial review is required instead"}
+    "invoked": [
+      "source-driven-development",
+      "debugging-and-error-recovery",
+      "test-driven-development",
+      "security-and-hardening",
+      "api-and-interface-design",
+      "code-review-and-quality",
+      "doubt-driven-development",
+      "git-workflow-and-versioning"
+    ],
+    "rejected": {
+      "frontend-ui-engineering": "No frontend behavior is changed.",
+      "shipping-and-launch": "Release and deployment remain No-Go.",
+      "new provider SDK": "Existing locked google-auth and direct REST transport are sufficient.",
+      "cross-model review": "Skipped in the autonomous non-interactive context; fresh-context adversarial review remains required."
+    }
   },
-  "stop_conditions": ["accepted main, issue, prerequisite, branch or competing-PR drift", "any nineteenth path or aggregate/per-file budget breach", "need for an unauthorized dependency or path", "real ADC/authentication/provider call/egress/spend/audio or credential exposure", "material API, permission, endpoint, model, format, license, policy, legal or privacy contradiction", "unresolved Critical/High/Medium/Required defect or mandatory gate failure", "latest-head eligible non-author human review"]
+  "stop_conditions": [
+    "eligible non-author exact-head approval",
+    "browser OAuth approval if required",
+    "zero or multiple qualifying Google projects without deterministic prior OWNER evidence",
+    "exact-hash OWNER listening",
+    "unsafe need outside the nineteen-path route",
+    "new unremediable legal, credential, or safety contradiction"
+  ]
 }

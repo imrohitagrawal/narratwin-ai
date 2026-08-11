@@ -26,6 +26,7 @@ EXPECTED_CONTEXTS = (
     "security / docker build",
     "eval smoke",
     "stage8 / performance lighthouse",
+    "pr-body-consistency",
 )
 GITHUB_ACTIONS_APP_ID = 15368
 
@@ -252,6 +253,10 @@ def validate(payload: dict[str, Any]) -> list[str]:
 
     expected = set(EXPECTED_CONTEXTS)
     actual = set(actual_contexts)
+    if len(actual_contexts) != len(EXPECTED_CONTEXTS) or len(actual) != len(actual_contexts):
+        failures.append(
+            f"required status checks contexts must contain exactly {len(EXPECTED_CONTEXTS)} unique entries."
+        )
     missing = sorted(expected - actual)
     unexpected = sorted(actual - expected)
     if missing:
@@ -262,12 +267,24 @@ def validate(payload: dict[str, Any]) -> list[str]:
     check_entries = status_checks.get("checks")
     if isinstance(check_entries, list):
         check_contexts: dict[str, object] = {}
+        malformed_binding = False
         for item in check_entries:
             if not isinstance(item, dict):
+                malformed_binding = True
                 continue
             context = item.get("context")
-            if isinstance(context, str):
-                check_contexts[context] = item.get("app_id")
+            app_id = item.get("app_id")
+            if not isinstance(context, str) or not isinstance(app_id, int):
+                malformed_binding = True
+                continue
+            check_contexts[context] = app_id
+        if malformed_binding:
+            failures.append("required status check bindings must be context/app_id objects.")
+        if len(check_entries) != len(EXPECTED_CONTEXTS) or len(check_contexts) != len(check_entries):
+            failures.append(
+                "required status check bindings must contain exactly "
+                f"{len(EXPECTED_CONTEXTS)} unique entries."
+            )
         if set(check_contexts) != expected:
             missing_checks = sorted(expected - set(check_contexts))
             unexpected_checks = sorted(set(check_contexts) - expected)

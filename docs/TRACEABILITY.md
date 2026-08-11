@@ -523,6 +523,15 @@ durability, deployment, and release decisions remain outside this trace.
 | Prepared HTTPS fake-transport evidence for `eu-texttospeech.googleapis.com:443` | Bind exact EU hostname, method, port, SNI, TLS, checked peer, DNS screening, no proxy/redirect, single-use session, bounded reads, and truthful ambiguous-write classification | No real Google/provider call, narration egress, paid synthesis, generated audio, or listening evidence exists |
 | Zero-real-call runtime, adapter, Stage 6/API, dependency, and route tests | Prove disabled-by-default startup and local/mock behavior with injected identity, DNS, TLS, socket, response, and dependency fakes | Activation, account/IAM, billing/quota, provider-call, audio/listening, legal/privacy/retention/commercial-use, and release gates remain unresolved human-only decisions |
 
+## Issue #368 quota-project repair traceability
+
+| Evidence | Requirement coverage | Preserved boundary |
+|---|---|---|
+| Issue comment `5256748344`, frozen fourteen-path preflight, and accepted zero-egress diagnostic | Authorize repair without treating the diagnostic rejection as final or widening provider/release authority | No branch provider call; Issue #368 remains open and release remains No-Go |
+| ADC runtime RED/GREEN tests | Require a valid 6–30-character configured project, exact approved hash, present/equal native credential project loaded without a masking override, and immediate pre-egress revalidation | Raw project, access token, credential material, and identity values are absent from representations, errors, and durable evidence |
+| Provider fingerprint/header mutation tests | Bind `quotaProjectRequired=true`, approved hash, and exact ordered Authorization/Content-Type/`x-goog-user-project` names; reject removal, value/order mutation, caller injection, or stale binding before send | No product/API Google vocabulary and no change to DNS/TLS/SNI/proxy/redirect, receipt, cost, duplicate-spend, timeout, or WAV controls |
+| Redacted official permission/config probes | Prove matching active/billing/ADC hashes and effective `serviceusage.services.use` plus `aiplatform.endpoints.predict` for the one intended project | Hashes and booleans only; no synthesis request, spend, identifier, token, or legal inference |
+
 ## Issue #413 frontend runtime OpenSSL traceability
 
 | Evidence | Requirement | Preserved boundary |

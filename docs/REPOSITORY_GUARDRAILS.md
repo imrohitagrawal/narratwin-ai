@@ -108,6 +108,7 @@ Enable branch protection or repository ruleset for `main` with:
   - `security / docker build`
   - `eval smoke`
   - `stage8 / performance lighthouse`
+  - `pr-body-consistency` from the `pr-body-consistency` workflow, bound to GitHub Actions app ID `15368`
 - Require branches to be up to date before merging.
 - Block force pushes.
 - Block deletions.

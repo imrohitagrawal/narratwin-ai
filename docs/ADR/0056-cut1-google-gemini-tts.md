@@ -74,6 +74,17 @@ used, proxies and redirects are forbidden, and the prepared session is single
 use. ADC is lazy and unreachable while disabled; refresh and quota-project
 failures are bounded and redacted.
 
+Enabled authorized-user ADC also requires one server-owned quota project and
+its exact SHA-256. The configured project must be a valid 6–30-character Google
+Cloud project ID, its hash must match, and native ADC—loaded without a desired
+quota-project override—must expose the same non-empty project both at identity
+resolution and immediately before egress. The adapter constructs
+`x-goog-user-project` itself beside the exact Authorization and Content-Type
+headers in the fingerprinted order. The raw project and access token are hidden
+from runtime representations and are neither caller-selectable, persisted, logged, nor
+returned by product APIs; only its approved hash enters activation, config, and
+request-fingerprint evidence.
+
 Every final 90–120-second artifact requires structural validation, exact
 trace/checksum binding and exact-hash OWNER listening. No cloning, reference
 audio, enrollment, biometric input, voice conversion or identifiable-person

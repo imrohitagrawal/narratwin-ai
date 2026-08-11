@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import importlib
 import socket
@@ -26,14 +27,22 @@ from backend.app.tts_provider import (
 
 CHECKSUM = "sha256:" + "a" * 64
 ACCESS_VALUE = "sensitive-test-token"
+QUOTA_PROJECT = "quota-project"
+QUOTA_PROJECT_HASH = "sha256:" + hashlib.sha256(QUOTA_PROJECT.encode()).hexdigest()
 
 
 class FakeCredentials:
-    def __init__(self, *, access_value: str | None = ACCESS_VALUE, refresh_error: Exception | None = None) -> None:
+    def __init__(
+        self,
+        *,
+        access_value: str | None = ACCESS_VALUE,
+        refresh_error: Exception | None = None,
+        quota_project_id: str | None = QUOTA_PROJECT,
+    ) -> None:
         setattr(self, "token", access_value)
         self.refresh_error = refresh_error
         self.refresh_calls: list[object] = []
-        self.quota_project_id = "quota-project"
+        self.quota_project_id = quota_project_id
 
     def refresh(self, request: object) -> None:
         self.refresh_calls.append(request)
@@ -50,8 +59,18 @@ def identity_provider(
 ) -> ADCGoogleIdentityProvider:
     supplied = credentials or FakeCredentials()
     default_loader = loader or (lambda **_: (supplied, "project-id"))
+    config_values: dict[str, object] = {
+        "enabled": enabled,
+        "activation_evidence_sha256": CHECKSUM if enabled else "",
+    }
+    if enabled:
+        config_values.update(
+            quota_project_id=QUOTA_PROJECT,
+            quota_project_evidence_sha256=QUOTA_PROJECT_HASH,
+        )
+    config_values.update(kwargs)
     return ADCGoogleIdentityProvider(
-        config=GoogleADCConfig(**cast(Any, {"enabled": enabled, "activation_evidence_sha256": CHECKSUM if enabled else "", **kwargs})),
+        config=GoogleADCConfig(**cast(Any, config_values)),
         default_loader=cast(Callable[..., tuple[Any, str | None]], default_loader),
         request_factory=lambda: object(),
     )
@@ -81,7 +100,12 @@ def test_missing_google_auth_fails_closed_without_network(monkeypatch: pytest.Mo
 
     monkeypatch.setattr(importlib, "import_module", missing)
     provider = ADCGoogleIdentityProvider(
-        config=GoogleADCConfig(enabled=True, activation_evidence_sha256=CHECKSUM),
+        config=GoogleADCConfig(
+            enabled=True,
+            activation_evidence_sha256=CHECKSUM,
+            quota_project_id=QUOTA_PROJECT,
+            quota_project_evidence_sha256=QUOTA_PROJECT_HASH,
+        ),
         request_factory=lambda: object(),
     )
     with pytest.raises(GoogleRuntimeError) as error:
@@ -98,25 +122,146 @@ def test_adc_resolution_binds_exact_scope_and_identity_checksum() -> None:
         calls.append(kwargs)
         return credentials, "project-id"
 
-    provider = identity_provider(loader=loader, quota_project_id="quota-project", quota_project_evidence_sha256=CHECKSUM)
+    provider = identity_provider(loader=loader)
     identity = provider.resolve(scope=GOOGLE_TTS_SCOPE)
     assert isinstance(identity, GoogleIdentity)
     assert identity.access_token == ACCESS_VALUE
     assert identity.identity_evidence_sha256.startswith("sha256:")
     assert len(identity.identity_evidence_sha256) == len(CHECKSUM)
-    assert calls == [{"scopes": [GOOGLE_TTS_SCOPE], "quota_project_id": "quota-project"}]
+    assert calls == [{"scopes": [GOOGLE_TTS_SCOPE]}]
     assert len(credentials.refresh_calls) == 1
+    assert getattr(identity, "quota_project_id", None) == QUOTA_PROJECT
+    assert getattr(identity, "quota_project_sha256", None) == QUOTA_PROJECT_HASH
+    assert QUOTA_PROJECT not in repr(identity)
+    assert ACCESS_VALUE not in repr(identity)
+
+
+def test_adc_loader_cannot_mask_absent_native_quota_with_configured_override() -> None:
+    native_quota: str | None = None
+    calls: list[dict[str, object]] = []
+
+    def loader(**kwargs: object) -> tuple[FakeCredentials, str]:
+        calls.append(kwargs)
+        effective = cast(str | None, kwargs.get("quota_project_id", native_quota))
+        return FakeCredentials(quota_project_id=effective), "project-id"
+
+    provider = identity_provider(loader=loader)
+    with pytest.raises(GoogleRuntimeError) as error:
+        provider.resolve(scope=GOOGLE_TTS_SCOPE)
+    assert error.value.code == "GOOGLE_TTS_QUOTA_PROJECT_MISMATCH"
+    assert calls == [{"scopes": [GOOGLE_TTS_SCOPE]}]
+
+
+def test_adc_loader_cannot_mask_native_project_drift_during_revalidation() -> None:
+    current = {"quota": QUOTA_PROJECT}
+
+    def loader(**kwargs: object) -> tuple[FakeCredentials, str]:
+        effective = cast(str | None, kwargs.get("quota_project_id", current["quota"]))
+        return FakeCredentials(quota_project_id=effective), "project-id"
+
+    provider = identity_provider(loader=loader)
+    identity = provider.resolve(scope=GOOGLE_TTS_SCOPE)
+    current["quota"] = "changed-project"
+    with pytest.raises(GoogleRuntimeError) as error:
+        provider.revalidate_quota_project(identity)
+    assert error.value.code == "GOOGLE_TTS_QUOTA_PROJECT_MISMATCH"
 
 
 def test_adc_rejects_wrong_scope_and_unbound_quota_project() -> None:
-    provider = identity_provider(quota_project_id="quota-project")
+    provider = identity_provider()
     with pytest.raises(GoogleRuntimeError) as scope_error:
         provider.resolve(scope="https://example.invalid/scope")
     assert scope_error.value.code == "GOOGLE_TTS_SCOPE_INVALID"
-    provider = identity_provider(quota_project_id="quota-project", quota_project_evidence_sha256="")
+    provider = identity_provider(quota_project_evidence_sha256="")
     with pytest.raises(GoogleRuntimeError) as quota_error:
         provider.resolve(scope=GOOGLE_TTS_SCOPE)
     assert quota_error.value.code == "GOOGLE_TTS_QUOTA_PROJECT_INVALID"
+
+
+@pytest.mark.parametrize(
+    "configured", [None, "", "bad", "UPPER-project"]
+)
+def test_enabled_adc_requires_nonempty_well_formed_configured_quota_project(
+    configured: str | None,
+) -> None:
+    provider = identity_provider(quota_project_id=configured)
+    with pytest.raises(GoogleRuntimeError) as error:
+        provider.resolve(scope=GOOGLE_TTS_SCOPE)
+    assert error.value.code == "GOOGLE_TTS_QUOTA_PROJECT_INVALID"
+
+
+def test_adc_rejects_31_character_project_with_matching_hash_and_credential() -> None:
+    configured = "a" + "1" * 29 + "z"
+    approved_hash = "sha256:" + hashlib.sha256(configured.encode()).hexdigest()
+    provider = identity_provider(
+        quota_project_id=configured,
+        quota_project_evidence_sha256=approved_hash,
+        credentials=FakeCredentials(quota_project_id=configured),
+    )
+    with pytest.raises(GoogleRuntimeError) as error:
+        provider.resolve(scope=GOOGLE_TTS_SCOPE)
+    assert error.value.code == "GOOGLE_TTS_QUOTA_PROJECT_INVALID"
+
+
+@pytest.mark.parametrize("configured", ["a1234z", "a" + "1" * 28 + "z"])
+def test_adc_accepts_six_and_thirty_character_project_id_boundaries(
+    configured: str,
+) -> None:
+    approved_hash = "sha256:" + hashlib.sha256(configured.encode()).hexdigest()
+    provider = identity_provider(
+        quota_project_id=configured,
+        quota_project_evidence_sha256=approved_hash,
+        credentials=FakeCredentials(quota_project_id=configured),
+    )
+    assert provider.resolve(scope=GOOGLE_TTS_SCOPE).quota_project_sha256 == approved_hash
+
+
+def test_adc_config_repr_redacts_raw_project() -> None:
+    config = GoogleADCConfig(
+        enabled=True,
+        activation_evidence_sha256=CHECKSUM,
+        quota_project_id=QUOTA_PROJECT,
+        quota_project_evidence_sha256=QUOTA_PROJECT_HASH,
+    )
+    assert QUOTA_PROJECT not in repr(config)
+
+
+def test_adc_rejects_absent_or_mismatched_credential_quota_project() -> None:
+    for credential_project in (None, "different-project"):
+        provider = identity_provider(
+            credentials=FakeCredentials(quota_project_id=credential_project)
+        )
+        with pytest.raises(GoogleRuntimeError) as error:
+            provider.resolve(scope=GOOGLE_TTS_SCOPE)
+        assert error.value.code == "GOOGLE_TTS_QUOTA_PROJECT_MISMATCH"
+
+
+def test_adc_rejects_approved_quota_project_hash_mismatch_without_leaking_raw_value() -> None:
+    raw_project = "private-quota-project"
+    provider = identity_provider(
+        quota_project_id=raw_project,
+        quota_project_evidence_sha256="sha256:" + "f" * 64,
+        credentials=FakeCredentials(quota_project_id=raw_project),
+    )
+    with pytest.raises(GoogleRuntimeError) as error:
+        provider.resolve(scope=GOOGLE_TTS_SCOPE)
+    assert error.value.code == "GOOGLE_TTS_QUOTA_PROJECT_INVALID"
+    assert raw_project not in str(error.value)
+
+
+def test_adc_revalidates_credential_quota_project_immediately_before_egress() -> None:
+    current = FakeCredentials()
+
+    def loader(**_: object) -> tuple[FakeCredentials, str]:
+        return current, "project-id"
+
+    provider = identity_provider(loader=loader)
+    identity = provider.resolve(scope=GOOGLE_TTS_SCOPE)
+    current.quota_project_id = "changed-project"
+
+    with pytest.raises(GoogleRuntimeError) as error:
+        provider.revalidate_quota_project(identity)
+    assert error.value.code == "GOOGLE_TTS_QUOTA_PROJECT_MISMATCH"
 
 
 @pytest.mark.parametrize("failure", [RuntimeError("refresh failed"), TimeoutError("timeout")])

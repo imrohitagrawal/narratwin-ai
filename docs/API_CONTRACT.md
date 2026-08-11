@@ -1888,6 +1888,12 @@ provider continue to return mock/local fallback metadata and cannot activate
 the adapter. Adapter failures use bounded typed codes and never return text,
 prompts, headers, tokens, provider bodies or audio bytes.
 
+Quota attribution is also internal. Product requests cannot supply a project ID
+or `x-goog-user-project`. When the optional adapter is enabled, server-owned
+configuration binds only the approved project SHA-256 at the provider boundary;
+the runtime verifies the matching ADC project and constructs the exact outbound
+header. No Google project identifier is added to a provider-neutral response.
+
 ## R0C-A2.3a source-evaluation checksum v2
 
 Schema `stage7-source-evaluation-checksum-v2` is SHA-256 over compact sorted-key UTF-8 JSON
