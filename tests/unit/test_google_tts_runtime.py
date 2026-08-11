@@ -179,12 +179,25 @@ def test_adc_rejects_wrong_scope_and_unbound_quota_project() -> None:
 
 
 @pytest.mark.parametrize(
-    "configured", [None, "", "bad", "UPPER-project", "a" + "1" * 29 + "z"]
+    "configured", [None, "", "bad", "UPPER-project"]
 )
 def test_enabled_adc_requires_nonempty_well_formed_configured_quota_project(
     configured: str | None,
 ) -> None:
     provider = identity_provider(quota_project_id=configured)
+    with pytest.raises(GoogleRuntimeError) as error:
+        provider.resolve(scope=GOOGLE_TTS_SCOPE)
+    assert error.value.code == "GOOGLE_TTS_QUOTA_PROJECT_INVALID"
+
+
+def test_adc_rejects_31_character_project_with_matching_hash_and_credential() -> None:
+    configured = "a" + "1" * 29 + "z"
+    approved_hash = "sha256:" + hashlib.sha256(configured.encode()).hexdigest()
+    provider = identity_provider(
+        quota_project_id=configured,
+        quota_project_evidence_sha256=approved_hash,
+        credentials=FakeCredentials(quota_project_id=configured),
+    )
     with pytest.raises(GoogleRuntimeError) as error:
         provider.resolve(scope=GOOGLE_TTS_SCOPE)
     assert error.value.code == "GOOGLE_TTS_QUOTA_PROJECT_INVALID"

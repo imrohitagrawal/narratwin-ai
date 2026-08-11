@@ -464,6 +464,25 @@ def test_g368_quota_project_is_hash_bound_and_not_caller_controlled() -> None:
     assert set(GoogleGeminiTTSProvider.synthesize.__annotations__) == {"receipt", "return"}
 
 
+def test_g368_provider_rejects_31_character_project_with_matching_hash() -> None:
+    project = "a" + "1" * 29 + "z"
+    project_hash = "sha256:" + hashlib.sha256(project.encode()).hexdigest()
+    provider = google_provider(
+        FakeGoogleTransport([]),
+        FakeGoogleIdentityProvider(),
+        config_value=google_config(approved_quota_project_sha256=project_hash),
+    )
+    identity = GoogleIdentity(
+        "unit-fixture-identity-value",
+        "sha256:" + "1" * 64,
+        project,
+        project_hash,
+    )
+    with pytest.raises(TTSProviderError) as caught:
+        provider._validate_identity(identity)
+    assert caught.value.code == "GOOGLE_TTS_IDENTITY_INVALID"
+
+
 def test_g368_request_fingerprint_binds_required_quota_header_and_approved_hash(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
