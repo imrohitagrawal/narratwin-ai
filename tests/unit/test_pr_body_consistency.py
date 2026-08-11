@@ -26,7 +26,8 @@ def live(**changes: object) -> dict[str, object]:
         "deletions": 10,
     }
     value.update(changes)
-    value["body"] = subject.managed_block(subject.LiveState.from_pull(REPOSITORY, value))
+    if "body" not in changes:
+        value["body"] = subject.managed_block(subject.LiveState.from_pull(REPOSITORY, value))
     return value
 
 
@@ -91,6 +92,7 @@ class FakeApi:
         return self.first if self.reads == 1 else self.second
     def update_body(self, number: int, body: str) -> None:
         self.writes.append((number, body))
+        self.second["body"] = body
 
 
 def test_apply_refuses_head_race_and_makes_zero_writes() -> None:
@@ -105,6 +107,13 @@ def test_apply_noop_makes_zero_writes() -> None:
     api = FakeApi(live())
     assert subject.apply(api, REPOSITORY, 415).changed is False
     assert api.writes == []
+
+
+def test_apply_verifies_the_stored_body_after_a_single_write() -> None:
+    stale = live(body=human("<!-- narratwin-live-state:start -->\nstale\n<!-- narratwin-live-state:end -->"))
+    api = FakeApi(stale)
+    assert subject.apply(api, REPOSITORY, 415).changed is True
+    assert len(api.writes) == 1
 
 
 def test_workflow_contract_is_trusted_base_and_least_privilege() -> None:

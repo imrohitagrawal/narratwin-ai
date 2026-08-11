@@ -169,4 +169,8 @@ def apply(api: PullApi, repository: str, number: int) -> ReconcileResult:
     if not result.changed:
         return result
     api.update_body(number, result.body)
+    stored = api.pull(number)
+    stored_state = LiveState.from_pull(repository, stored)
+    if stored_state.head_sha != state.head_sha or stored.get("body") != result.body:
+        raise HeadChanged("stored PR body could not be verified at the expected head")
     return result
