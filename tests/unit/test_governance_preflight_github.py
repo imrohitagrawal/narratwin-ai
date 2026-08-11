@@ -637,5 +637,8 @@ def test_pr_a_pr_b_and_branch_protection_regressions_remain_importable() -> None
     from scripts.ci.verify_branch_protection import EXPECTED_CONTEXTS, GITHUB_ACTIONS_APP_ID
     from scripts.governance_preflight_repository import validate_governance_preflight_repository
     from scripts.governance_preflight_v1 import validate_governance_preflight
-    assert len(EXPECTED_CONTEXTS) == 10 and GITHUB_ACTIONS_APP_ID == APP_ID
+    # Exact membership and cardinality belong to test_branch_protection_verifier.py.
+    assert "pr-body-consistency" in EXPECTED_CONTEXTS
+    assert len(EXPECTED_CONTEXTS) == len(set(EXPECTED_CONTEXTS))
+    assert GITHUB_ACTIONS_APP_ID == APP_ID
     assert callable(validate_governance_preflight) and callable(validate_governance_preflight_repository)
