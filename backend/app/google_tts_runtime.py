@@ -28,7 +28,6 @@ from backend.app.tts_provider import (
     GOOGLE_TTS_URL,
     GoogleIdentity,
     GoogleTTSHTTPResponse,
-    GoogleTTSPreparedTransport,
     GoogleTransportError,
 )
 
@@ -194,7 +193,7 @@ class RegionalGoogleTTSTransport:
         self._tls_context_factory = tls_context_factory
         self._max_response_bytes = max(1, max_response_bytes)
 
-    def prepare(self, *, url: str, timeout_seconds: float) -> GoogleTTSPreparedTransport:
+    def prepare(self, *, url: str, timeout_seconds: float) -> _PreparedGoogleSession:
         self._validate_activation()
         parsed = self._parse_url(url)
         if timeout_seconds <= 0 or timeout_seconds > 30:

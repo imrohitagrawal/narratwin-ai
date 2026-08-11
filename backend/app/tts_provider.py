@@ -506,10 +506,6 @@ class GoogleTTSPreparedTransport(Protocol):
     redirects_disabled: bool
     dns_pinned: bool
 
-    def close(self) -> None:
-        """Close the prepared session without sending auth or content."""
-        ...
-
     def send(
         self,
         *,
