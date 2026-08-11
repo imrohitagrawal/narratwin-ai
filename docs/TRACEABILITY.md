@@ -509,7 +509,7 @@ durability, deployment, and release decisions remain outside this trace.
 | Exact Google source facts and contradictions | Issue #368 governance review source ledger | Observed 2026-08-10; refresh before activation |
 | Exact canonical style prompts | OWNER comment `5243441424`; `docs/governance/cut1-google-gemini-tts-style-prompts-v1.json`; deterministic byte/hash/closed-schema tests | Prompt governance prerequisite satisfied after merge; exactly Meera/Despina, Myra/Leda and Raj/Achird; no runtime authority |
 | Security/privacy/cost/retention/idempotency/audio validation | Adapter unit tests, narration/Stage 6/API tests, security and observability amendments | Implemented with fake transports; activation blocked |
-| Adapter implementation scope and tests | OWNER comment `5244098136`; exact 21-path/5,600-line route; committed RED then GREEN evidence | In human review after CI |
+| Adapter implementation scope and tests | OWNER comment `5244098136`; exact 21-path/5,600-line route; committed RED then GREEN evidence; PR `#411` merged at merge commit `0fea35a7028b22f6d91096b1f46b5418884b9992` | PR `#411` is merged; provider activation and release remain blocked |
 | Full narration acceptance | Structural evidence plus exact-hash OWNER listening | Not started; blocked |
 | Deployment/distribution/release | Repository release posture | No-Go |
 
