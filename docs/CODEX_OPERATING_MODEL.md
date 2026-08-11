@@ -54,8 +54,6 @@ Allowed in Stage 0:
 - Paid providers must never be required for local/dev/test.
 - Future provider integrations must include mock/local adapters.
 
-## Merge Closeout Evidence Policy
-
 ## Pull-request live-state reconciliation
 
 Non-trivial PR bodies contain one automation-owned live-state block. Workers
@@ -67,6 +65,8 @@ The introducing Issue #415 PR is a one-time bootstrap exception: it proves the
 workflow with committed and live local evidence, while a post-merge disposable
 canary is required before the check is made required. This is not a general
 approval or branch-protection bypass.
+
+## Merge Closeout Evidence Policy
 
 Post-merge facts are real evidence, but they do not automatically justify a
 new repository change. The PR that completes issue A must update
