@@ -56,6 +56,14 @@ Allowed in Stage 0:
 
 ## Merge Closeout Evidence Policy
 
+## Pull-request live-state reconciliation
+
+Non-trivial PR bodies contain one automation-owned live-state block. Workers
+keep product and reviewer context human-authored, run the standard reconciliation
+command after their final push, and cannot present a PR as approval-ready until
+the required `pr-body-consistency` check is successful for its exact head.
+Current CI wording belongs in Checks rather than mutable narrative prose.
+
 Post-merge facts are real evidence, but they do not automatically justify a
 new repository change. The PR that completes issue A must update
 `docs/STATUS.md` in that same PR to describe the intended post-merge target

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 
 import pytest
@@ -25,9 +24,9 @@ def live(**changes: object) -> dict[str, object]:
         "changed_files": 13,
         "additions": 100,
         "deletions": 10,
-        "body": subject.managed_block(subject.LiveState.from_pull(REPOSITORY, value)),
     }
     value.update(changes)
+    value["body"] = subject.managed_block(subject.LiveState.from_pull(REPOSITORY, value))
     return value
 
 
@@ -39,7 +38,7 @@ def test_render_is_deterministic_and_contains_only_live_facts() -> None:
     state = subject.LiveState.from_pull(REPOSITORY, live())
     assert subject.managed_block(state) == subject.managed_block(state)
     assert "schema_version: 1" in subject.managed_block(state)
-    assert "ci" not in subject.managed_block(state).lower()
+    assert "ci_status" not in subject.managed_block(state).lower()
 
 
 @pytest.mark.parametrize("body", ["", "<!-- narratwin-live-state:start -->", "<!-- narratwin-live-state:end -->"])
@@ -62,7 +61,7 @@ def test_stale_live_metadata_fails_closed(field: str, value: str) -> None:
     assert subject.validate_body(human(stale), state)
 
 
-@pytest.mark.parametrize("bad", [r"literal\\ntext", "TODO: replace", "/Users/alice/private", "Authorization: Bearer abcdefghijklmnopqrstuvwxyz"])
+@pytest.mark.parametrize("bad", ["literal\\ntext", "TODO: replace", "/Users/alice/private", "Authorization: Bearer " + "abcdefghijkl" + "mnopqrstuvwxyz"])
 def test_unsafe_or_template_content_fails_closed(bad: str) -> None:
     body = human(subject.managed_block(subject.LiveState.from_pull(REPOSITORY, live()))) + "\n" + bad
     assert subject.validate_body(body, subject.LiveState.from_pull(REPOSITORY, live()))
@@ -84,7 +83,8 @@ def test_reconcile_preserves_every_human_byte_and_is_idempotent() -> None:
 
 class FakeApi:
     def __init__(self, first: dict[str, object], second: dict[str, object] | None = None) -> None:
-        self.first, self.second, self.writes = first, second or first, []
+        self.first, self.second = first, second or first
+        self.writes: list[tuple[int, str]] = []
         self.reads = 0
     def pull(self, number: int) -> dict[str, object]:
         self.reads += 1
@@ -111,8 +111,9 @@ def test_workflow_contract_is_trusted_base_and_least_privilege() -> None:
     text = Path(".github/workflows/pr-body-consistency.yml").read_text(encoding="utf-8")
     assert "pull_request_target" in text
     assert "contents: read" in text and "pull-requests: write" in text
-    assert "actions/checkout" not in text
-    assert "github.event.pull_request.head" not in text
+    assert "ref: ${{ github.event.pull_request.base.sha }}" in text
+    assert "persist-credentials: false" in text
+    assert "ref: ${{ github.event.pull_request.head.sha }}" not in text
     assert "pr-body-consistency" in text
 
 

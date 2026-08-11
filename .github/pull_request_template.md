@@ -6,6 +6,12 @@ If this PR is intentionally meant to close an issue, state the exact closing
 keyword and issue here and explain why closure is correct. Otherwise use
 reference-only wording.
 
+<!-- narratwin-live-state:start -->
+<!-- Automation-owned managed block. Do not edit its contents. The trusted
+workflow replaces it after every head change; use `make pr-reconcile PR=<number>`
+after the final push. Do not duplicate current CI status in prose. -->
+<!-- narratwin-live-state:end -->
+
 ## Product and reviewer context
 
 <!-- Required for non-trivial PRs. Complete every point with self-contained,

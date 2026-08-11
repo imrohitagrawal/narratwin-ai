@@ -1,9 +1,15 @@
-.PHONY: quality stage0-quality stage1-quality stage2-quality stage3-quality stage4-quality stage5-quality stage6-quality stage7-quality stage8-quality final-review-quality phase1-closure-quality agent-context-quality checkpoint3-acceptance issue280-output-correctness lint typecheck test api-test ui-test e2e eval security ci secrets-scan security-scan dependency-audit container-scan backend-lint backend-test frontend-build frontend-smoke frontend-lighthouse docker-build docker-image-scan eval-smoke performance-smoke
+.PHONY: quality stage0-quality stage1-quality stage2-quality stage3-quality stage4-quality stage5-quality stage6-quality stage7-quality stage8-quality final-review-quality phase1-closure-quality agent-context-quality checkpoint3-acceptance issue280-output-correctness lint typecheck test api-test ui-test e2e eval security ci secrets-scan security-scan dependency-audit container-scan backend-lint backend-test frontend-build frontend-smoke frontend-lighthouse docker-build docker-image-scan eval-smoke performance-smoke pr-reconcile pr-body-check
 
 export UV_CACHE_DIR ?= .uv-cache
 
 quality:
 	python3 scripts/quality/check_quality_stage.py
+
+pr-reconcile:
+	python3 -m scripts.quality.pr_body_consistency_cli --repository "$${GITHUB_REPOSITORY:?set GITHUB_REPOSITORY}" --pr "$${PR:?set PR}" --apply
+
+pr-body-check:
+	python3 -m scripts.quality.pr_body_consistency_cli --repository "$${GITHUB_REPOSITORY:?set GITHUB_REPOSITORY}" --pr "$${PR:?set PR}"
 
 stage0-quality:
 	python3 scripts/quality/check_recommended_review_items.py 0

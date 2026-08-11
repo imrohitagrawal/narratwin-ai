@@ -1294,6 +1294,14 @@ network/provider calls. Google remains disabled and release remains No-Go.
 
 ### Issue #413 frontend runtime security gate
 
+### PR-body consistency gate
+
+Issue #415 introduces `make pr-body-check PR=<number>` and `make
+pr-reconcile PR=<number>`. The check fails closed when the unique managed block
+is missing, malformed, stale, unsafe, or inconsistent with the live pull
+request. Its workflow is trusted-base only and must not become a required main
+context until post-merge canary evidence confirms no unexpected mutation.
+
 Branch `cut1-process-413-frontend-runtime-openssl` owns exactly nineteen paths
 and at most 5,000 charged lines. The gate binds exact multi-arch runtime,
 Node-binary and `libatomic` source indexes plus amd64/arm64 manifests; verifies

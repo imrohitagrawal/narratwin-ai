@@ -86,6 +86,12 @@ Run the stage gate before committing:
 make quality
 ```
 
+For every non-trivial pull request, run `make pr-reconcile PR=<number>` after
+the final push, then require the repository `pr-body-consistency` check to pass
+before requesting approval. The automation-owned live-state block is the only
+authority for current metadata; a later head change invalidates reconciliation
+and any latest-head approval until the check passes again.
+
 During Stage 0, `make quality` must run only Stage 0 checks. Future stage targets exist but must fail loudly until implemented for that stage.
 
 ## Engineering Bar For Implementation Stages

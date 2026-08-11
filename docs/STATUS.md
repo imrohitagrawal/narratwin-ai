@@ -14,6 +14,12 @@ Use it to answer:
 
 ## Current Baseline
 
+- Governance Issue `#415` is implementing deterministic PR-body live-state
+  reconciliation from accepted main `f62b4f04d9f94cb10692c36f790697e69f5e8fd8`.
+  It is not product implementation and does not claim release readiness. The
+  new check may become required only after its merged trusted workflow passes a
+  disposable post-merge canary while preserving existing branch protection.
+
 - Current Cut 1 route authority: Issue `#346` / PR `#347` merged at
   `4c5d7cf16fb8cdf7046d561c882f655d06125127` and established exact branch
   `cut1-335-r0c-a2-1-stage4-rag-v1-lineage` for A2.1. Issue `#335` is closed

@@ -1,0 +1,11 @@
+{
+  "number": 415,
+  "state": "open",
+  "draft": false,
+  "base": {"ref": "main", "sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
+  "head": {"ref": "governance-415-pr-body-live-state", "sha": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", "repo": {"full_name": "owner/repository"}},
+  "changed_files": 13,
+  "additions": 100,
+  "deletions": 10,
+  "body": "## Product and reviewer context\nStable human bytes.\n\n## Reviewer overview\nStable reviewer bytes.\n\n<!-- narratwin-live-state:start -->\n<!-- automation-owned: do not edit; run make pr-reconcile PR=<number> -->\n```text\nschema_version: 1\nrepository: owner/repository\npr_number: 415\nbase_ref: main\nbase_sha: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\nhead_ref: governance-415-pr-body-live-state\nhead_sha: bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\nchanged_files: 13\nadditions: 100\ndeletions: 10\ncharged_lines: 110\ndraft: false\nstate: open\n```\n<!-- narratwin-live-state:end -->"
+}
