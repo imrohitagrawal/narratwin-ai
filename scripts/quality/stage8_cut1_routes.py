@@ -37,7 +37,10 @@ ROUTES = {
         "tests/unit/test_frontend_container_runtime.py",
         "tests/unit/test_stage8_quality_gate.py",
         "scripts/quality/stage8_cut1_routes.py",
+        "scripts/quality/stage8_node_security.py",
+        "scripts/quality/check_stage8_docs.py",
         "tests/unit/test_stage8_cut1_routes.py",
+        "tests/unit/test_stage8_node_security.py",
         "docs/ADR/0057-frontend-runtime-openssl-3-6-4.md",
         "docs/SECURITY_AND_PRIVACY.md",
         "docs/THIRD_PARTY_NOTICES.md",
@@ -268,6 +271,9 @@ TEXT_LIMITS = {
         path: 700 if path in {"scripts/ci/docker-image-scan.sh", "tests/unit/test_container_scan_consensus.py"}
         else 500 if path in {"scripts/ci/check_container_scan_consensus.py", "tests/unit/test_stage8_quality_gate.py"}
         else 350 if path in {"scripts/quality/stage8_cut1_routes.py", "tests/unit/test_stage8_cut1_routes.py"}
+        else 400 if path == "tests/unit/test_stage8_node_security.py"
+        else 300 if path == "scripts/quality/stage8_node_security.py"
+        else 80 if path == "scripts/quality/check_stage8_docs.py"
         else 300 if path in {"frontend/Dockerfile", "tests/unit/test_frontend_container_runtime.py",
                              "docs/governance/preflights/issue-413.json"}
         else 220
