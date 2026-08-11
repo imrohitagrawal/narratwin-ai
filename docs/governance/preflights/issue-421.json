@@ -1,0 +1,188 @@
+{
+  "schema_version": "GovernancePreflightV1",
+  "issue_number": 421,
+  "branch": "stage8-421-cut1-atomic-project-facts",
+  "objective": "Repair the Cut 1 grounding contract without source stuffing or relaxing ordinary Stage 4 direct support: create an immutable atomic project-facts bundle derived from accepted repository and OWNER records, bind each exact canonical claim hash to every required proposition and immutable source span, independently revalidate that graph during generation and restore, persist proposition evidence into Stage 4 and Issue #382 lineage, and keep provider egress, audio, deployment, distribution, production, and release out of this branch.",
+  "status_decision": "deterministic-cut1-grounding-repair-before-authority-preparation",
+  "authority": {
+    "repair_issue": "https://github.com/imrohitagrawal/narratwin-ai/issues/421",
+    "preimplementation_contract": "https://github.com/imrohitagrawal/narratwin-ai/issues/421#issuecomment-5259236531",
+    "related_narration_issue": "https://github.com/imrohitagrawal/narratwin-ai/issues/382",
+    "blocked_audio_issue": "https://github.com/imrohitagrawal/narratwin-ai/issues/368",
+    "parent_issue": "https://github.com/imrohitagrawal/narratwin-ai/issues/366",
+    "accepted_main": "a868137fab607ae75d4b272301e9fc52b898e15c"
+  },
+  "source_facts": {
+    "verified_on": "2026-08-12",
+    "repository_contracts": [
+      "README.md",
+      "docs/AI_BUILD_BRIEF.md",
+      "docs/PRD.md",
+      "docs/ARCHITECTURE.md",
+      "docs/PROJECT_AVATAR_PACK.md",
+      "docs/QUALITY_GATES.md",
+      "docs/STATUS.md"
+    ],
+    "implementation_contract": "backend/app/rag/grounding.py requires normalized claim text to occur directly in the cited retrieved chunk; backend/app/stage4.py reproduces the canonical evaluator during restore; backend/app/narration.py accepts only a current completed Stage 4 run and checksum-binds claim/support evidence.",
+    "failure_evidence": "The genuine accepted-source probe returned exactly eighteen unsupported claims and zero supports for each presenter; narration-derived fixtures and self-minted Stage 4 authority are prohibited."
+  },
+  "change_budget": {
+    "exact_paths": 20,
+    "maximum_additions_plus_deletions": 4000,
+    "deletions_grant_credit": false,
+    "per_file_charged_lines": {
+      "docs/governance/preflights/issue-421.json": 500,
+      "docs/governance/cut1-project-facts-v1.json": 600,
+      "backend/app/cut1_grounding.py": 900,
+      "backend/app/rag/models.py": 180,
+      "backend/app/stage4.py": 600,
+      "backend/app/evaluation_lineage.py": 300,
+      "tests/unit/test_cut1_atomic_grounding.py": 1200,
+      "tests/unit/test_cut1_narration.py": 500,
+      "tests/unit/test_evaluation_lineage.py": 400,
+      "scripts/quality/stage8_cut1_routes.py": 180,
+      "tests/unit/test_stage8_cut1_routes.py": 300,
+      "docs/ADR/0058-cut1-atomic-project-facts-grounding.md": 320,
+      "docs/API_CONTRACT.md": 180,
+      "docs/DATA_MODEL.md": 180,
+      "docs/SECURITY_AND_PRIVACY.md": 220,
+      "docs/OBSERVABILITY_AND_COST.md": 180,
+      "docs/QUALITY_GATES.md": 180,
+      "docs/STAGE_ISSUE_PLAN.md": 180,
+      "docs/STATUS.md": 220,
+      "docs/TRACEABILITY.md": 220
+    }
+  },
+  "scope": {
+    "required": [
+      "docs/governance/preflights/issue-421.json",
+      "docs/governance/cut1-project-facts-v1.json",
+      "backend/app/cut1_grounding.py",
+      "backend/app/rag/models.py",
+      "backend/app/stage4.py",
+      "backend/app/evaluation_lineage.py",
+      "tests/unit/test_cut1_atomic_grounding.py",
+      "tests/unit/test_cut1_narration.py",
+      "tests/unit/test_evaluation_lineage.py",
+      "scripts/quality/stage8_cut1_routes.py",
+      "tests/unit/test_stage8_cut1_routes.py",
+      "docs/ADR/0058-cut1-atomic-project-facts-grounding.md",
+      "docs/API_CONTRACT.md",
+      "docs/DATA_MODEL.md",
+      "docs/SECURITY_AND_PRIVACY.md",
+      "docs/OBSERVABILITY_AND_COST.md",
+      "docs/QUALITY_GATES.md",
+      "docs/STAGE_ISSUE_PLAN.md",
+      "docs/STATUS.md",
+      "docs/TRACEABILITY.md"
+    ],
+    "allowed_prefixes": [
+      "docs/governance/preflights/issue-421.json",
+      "docs/governance/cut1-project-facts-v1.json",
+      "backend/app/cut1_grounding.py",
+      "backend/app/rag/models.py",
+      "backend/app/stage4.py",
+      "backend/app/evaluation_lineage.py",
+      "tests/unit/test_cut1_atomic_grounding.py",
+      "tests/unit/test_cut1_narration.py",
+      "tests/unit/test_evaluation_lineage.py",
+      "scripts/quality/stage8_cut1_routes.py",
+      "tests/unit/test_stage8_cut1_routes.py",
+      "docs/ADR/0058-cut1-atomic-project-facts-grounding.md",
+      "docs/API_CONTRACT.md",
+      "docs/DATA_MODEL.md",
+      "docs/SECURITY_AND_PRIVACY.md",
+      "docs/OBSERVABILITY_AND_COST.md",
+      "docs/QUALITY_GATES.md",
+      "docs/STAGE_ISSUE_PLAN.md",
+      "docs/STATUS.md",
+      "docs/TRACEABILITY.md"
+    ],
+    "forbidden": [
+      "narration-shaped source text, canonical narration copies, or narration-derived paraphrases",
+      "fuzzy overlap, arbitrary semantic similarity, model-as-judge support, fixture-name branches, or hard-coded success",
+      "direct insertion or patching of Stage 4 runs, narration versions, approvals, receipts, or internal stores",
+      "dependency manifests, frontend, Docker, workflows, provider runtime, credentials, or authentication state",
+      "real provider calls, narration egress, audio, Issue #369, deployment, distribution, release, or production activation"
+    ]
+  },
+  "invariants": {
+    "G421-01": "Facts are independent atomic propositions derived only from accepted immutable repository and OWNER sources; narration is never source evidence.",
+    "G421-02": "Every proposition binds exact source identity, immutable revision, byte range, byte count, source checksum, span checksum, and span bytes, and runtime recomputes repository bindings.",
+    "G421-03": "Every exact canonical claim hash maps to a non-empty complete set of proposition IDs and every proposition verifies.",
+    "G421-04": "Generic Stage 4 direct-substring support remains unchanged outside the exact governed Cut 1 policy.",
+    "G421-05": "Cut 1 accepts only the exact canonical claim set, facts artifact, retrieved project-owned facts chunk, and policy digest.",
+    "G421-06": "Caller assertions cannot establish support; runtime independently resolves and recomputes all evidence.",
+    "G421-07": "Missing, changed, stale, partial, foreign, unsupported, malformed, duplicated, or unexpected evidence fails closed.",
+    "G421-08": "Evidence cannot cross tenant, actor, project, document, chunk, run, retrieval, citation, or presenter scope.",
+    "G421-09": "Completed runs restore or replay only after the same current facts/source/policy graph revalidates.",
+    "G421-10": "Issue #382 consumes only a current restored passing Stage 4 run and transitively binds proposition evidence.",
+    "G421-11": "No provider or ambient telemetry egress occurs during branch tests or authority preparation.",
+    "G421-12": "Logs and errors expose bounded identifiers, status, and digests only, never narration, source spans, credentials, or private paths.",
+    "G421-13": "The genuine-source original behavior remains a committed eighteen-unsupported-claim RED reproduction before GREEN.",
+    "G421-14": "Only public persisted Stage 4 and Issue #382 lifecycle methods create authority; no direct state construction is accepted.",
+    "G421-15": "Canonical run, evaluation, narration, and receipt lineage changes when any proposition binding changes.",
+    "G421-16": "All identifiers, JSON, counts, spans, strings, and evidence sizes are bounded and strict; unknown fields and duplicate keys fail closed."
+  },
+  "invariant_to_test_mapping": {
+    "G421-01": ["facts schema/source inventory tests", "human exact-span review"],
+    "G421-02": ["valid bundle test", "source byte/range/revision/checksum mutations"],
+    "G421-03": ["mapping completeness test", "missing/partial/duplicate/unexpected proposition tests"],
+    "G421-04": ["existing grounding suites", "explicit non-Cut-1 parity test"],
+    "G421-05": ["candidate/facts/chunk/policy/presenter/order mutations"],
+    "G421-06": ["caller injection tests with runtime recomputation"],
+    "G421-07": ["fail-closed negative matrix"],
+    "G421-08": ["cross-scope copied-evidence tests"],
+    "G421-09": ["persist/restore success and graph-tamper tests"],
+    "G421-10": ["three-presenter public narration lifecycle and restore tests"],
+    "G421-11": ["local fake-only tests and private launch-policy evidence"],
+    "G421-12": ["captured log/error redaction tests"],
+    "G421-13": ["committed genuine-source eighteen-unsupported RED test"],
+    "G421-14": ["public service lifecycle integration tests"],
+    "G421-15": ["checksum mutation and evaluation-lineage tests"],
+    "G421-16": ["schema bounds, unknown-field, and duplicate-key tests"]
+  },
+  "architecture_parity": {
+    "generic_stage4": "Existing evaluate_grounding direct visible-claim-to-retrieved-chunk semantics remain the default.",
+    "governed_cut1": "A server-owned exact policy verifies the immutable facts/source graph and emits persisted proposition evidence.",
+    "narration": "Issue #382 continues to require current passing Stage 4 lineage and gains no self-approval path.",
+    "restore": "Fresh generation and restore invoke the same canonical evaluator and policy verifier."
+  },
+  "tdd_sequence": {
+    "preflight_commit": "Commit this artifact and exact route before implementation or behavior tests.",
+    "red_commit": "Commit the original eighteen-unsupported reproduction and complete negative contract tests while implementation remains RED.",
+    "green_commit": "Implement only the frozen deterministic proposition contract, then refactor without weakening tests.",
+    "regression": "Run focused Stage 4/evaluation/narration/route tests, full backend/frontend/browser quality, lint/type, audit/security/container/eval gates, stage8-quality, and make quality."
+  },
+  "human_only_surfaces": {
+    "source_truth": "OWNER and non-author reviewer confirm that the atomic propositions faithfully state the cited immutable spans without copying narration.",
+    "exact_head_approval": "Eligible non-author approval by rohitagrawal4u on the final exact PR head.",
+    "merge_wording": "Reference-only merge wording is inspected before merge.",
+    "listening": "Exact-hash OWNER listening occurs only after a later merged-main synthesis operation."
+  },
+  "skills": {
+    "invoked": [
+      "source-driven-development",
+      "planning-and-task-breakdown",
+      "spec-driven-development",
+      "test-driven-development",
+      "security-and-hardening",
+      "code-review-and-quality",
+      "doubt-driven-development",
+      "git-workflow-and-versioning"
+    ],
+    "rejected": {
+      "frontend-ui-engineering": "No UI behavior changes.",
+      "shipping-and-launch": "Deployment and release remain No-Go.",
+      "external web search": "Narration-fragment search is prohibited after the contained incident; repository and existing OWNER records are sufficient.",
+      "cross-model review": "Skipped in the autonomous non-interactive context; fresh-context adversarial review remains mandatory."
+    }
+  },
+  "stop_conditions": [
+    "eligible non-author exact-head approval",
+    "a newly discovered credential, privacy, legal, destructive-action, or unauthorized-egress risk",
+    "an unremediable Critical or High security finding",
+    "unsafe need outside the exact twenty-path route or 4,000-line ceiling",
+    "provider egress before merged-main authority preparation"
+  ]
+}
