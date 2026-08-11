@@ -1,5 +1,4 @@
 import importlib.util
-import re
 from pathlib import Path
 from types import ModuleType
 from typing import Any
@@ -39,9 +38,11 @@ def documented_required_contexts(markdown: str) -> tuple[str, ...]:
     for line in lines[start + 1 :]:
         if line.startswith("- "):
             break
-        match = re.fullmatch(r"  - `([^`]+)`(?: .*)?", line)
-        if match is not None:
-            entries.append(match.group(1))
+        if line.startswith("  - `"):
+            _, separator, remainder = line.partition("`")
+            context, closing, _ = remainder.partition("`")
+            if separator and closing:
+                entries.append(context)
     return tuple(entries)
 
 
