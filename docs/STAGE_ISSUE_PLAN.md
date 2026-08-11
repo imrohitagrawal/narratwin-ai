@@ -2624,6 +2624,6 @@ package/SBOM/reproducibility contracts and records the security decision.
 PR #414 merged at `6766da34d73e301358f84f8eefb0985927292a26` after both platform
 identities, non-root standalone startup, two builds, Trivy and Grype through
 Medium, full Stage 8 and repository quality, fresh-context adversarial review,
-dedicated PR CI and eligible latest-head approval passed. It did not close Issue
-#368, begin Issue #369, or authorize Cut 1
+dedicated PR CI and eligible latest-head approval passed. It did not close
+Issue #368, begin Issue #369, or authorize Cut 1
 completion, deployment, distribution, release or production readiness.
