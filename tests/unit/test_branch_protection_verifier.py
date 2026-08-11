@@ -132,8 +132,8 @@ def test_branch_protection_verifier_rejects_removal_of_each_historical_context()
 def test_branch_protection_verifier_rejects_duplicate_contexts_and_bindings() -> None:
     duplicate_context = payload_with_contexts((*EXPECTED_CONTEXTS, "pr-body-consistency"))
     failures = verify_branch_protection.validate(duplicate_context)
-    assert "required status checks contexts must contain exactly eleven unique entries." in failures
-    assert "required status check bindings must contain exactly eleven unique entries." in failures
+    assert "required status checks contexts must contain exactly 11 unique entries." in failures
+    assert "required status check bindings must contain exactly 11 unique entries." in failures
 
 
 def test_branch_protection_verifier_rejects_missing_or_malformed_check_bindings() -> None:
