@@ -177,13 +177,23 @@ def test_google_auth_contract_rejects_direct_transitive_and_artifact_drift() -> 
     lock_text = (ROOT / "uv.lock").read_text(encoding="utf-8")
     mutations = (
         (project_text.replace('"google-auth==2.56.3",\n', ""), lock_text),
+        (
+            project_text.replace('    "google-auth==2.56.3",\n', "").replace(
+                '    "pypdf>=6.15.0",', '    "google-auth==2.56.3",\n    "pypdf>=6.15.0",'
+            ),
+            lock_text,
+        ),
         (project_text.replace('"google-auth==2.56.3",', '"google-auth==2.56.2",'), lock_text),
         (project_text.replace('"google-auth==2.56.3",', '"google-auth==2.56.3",\n    "unexpected-provider>=1.0",'), lock_text),
         (project_text.replace('"google-auth==2.56.3",', '"google-auth==2.56.3",'), lock_text.replace('name = "pyasn1"\nversion = "0.6.4"', 'name = "unexpected-transitive"\nversion = "0.6.4"')),
         (project_text, lock_text.replace('version = "2.56.3"', 'version = "2.56.2"', 1)),
+        (project_text, lock_text.replace('sha256:40e229fc901f0a305b553050e5fce562d509bee0435be053abfa91582b51b90c', 'sha256:' + '2' * 64)),
         (project_text, lock_text.replace('sha256:8ec438808f813ad034535000261eed1067475d229d05bbf4216e78c3f2362e53', 'sha256:' + '0' * 64)),
         (project_text, lock_text.replace('version = "50.0.0"', 'version = "49.0.0"', 1)),
+        (project_text, lock_text.replace('sha256:031e2d5dd4bb9caa3ca9c82e5a197fd8ae680232cee62603d1a813f3f07e3d03', 'sha256:' + '3' * 64)),
         (project_text, lock_text.replace('sha256:9c447d8431c947fe4c8febc4ed9e760bc29011a5b01e5c74b67025bd9fb8ce81', 'sha256:' + '1' * 64)),
+        (project_text, lock_text.replace('name = "pyasn1-modules"\nversion = "0.4.2"', 'name = "pyasn1-modules"\nversion = "0.4.1"')),
+        (project_text, lock_text.replace(f'sha256:{PYPDF_SDIST_SHA256}', 'sha256:' + '4' * 64)),
     )
     for candidate_project, candidate_lock in mutations:
         with pytest.raises(AssertionError):
