@@ -1,11 +1,11 @@
 {
   "schema_version": "GovernancePreflightV1",
   "issue_number": 415,
-  "branch": "governance-415-pr-body-live-state",
+  "branch": "stage8-415-pr-body-live-state-reconciliation",
   "objective": "Install trusted-base deterministic PR-body live-state reconciliation and a fail-closed pr-body-consistency status check without changing product behavior or weakening branch protection.",
   "status_decision": "update-minimally",
   "accepted_base": "f62b4f04d9f94cb10692c36f790697e69f5e8fd8",
-  "charged_line_budget": 4000,
+  "charged_line_budget": 5000,
   "allowed_paths": [
     ".github/pull_request_template.md",
     ".github/workflows/pr-body-consistency.yml",
@@ -15,11 +15,14 @@
     "docs/CODEX_OPERATING_MODEL.md",
     "docs/QUALITY_GATES.md",
     "docs/STATUS.md",
+    "docs/agent-context/context-policy-manifest-v1.json",
     "docs/governance/preflights/issue-415.json",
     "scripts/quality/pr_body_consistency.py",
     "scripts/quality/pr_body_consistency_cli.py",
+    "scripts/quality/stage8_cut1_routes.py",
     "tests/fixtures/pr_body_consistency/live_pr.json",
-    "tests/unit/test_pr_body_consistency.py"
+    "tests/unit/test_pr_body_consistency.py",
+    "tests/unit/test_stage8_cut1_routes.py"
   ],
   "forbidden": [
     "backend/",

@@ -1,4 +1,6 @@
 name: pr-body-consistency
+# This trusted-default-branch workflow cannot validate its bootstrap PR. PR #417
+# proves it with local/fake evidence; a merged-workflow canary is required later.
 
 on:
   pull_request_target:
@@ -31,6 +33,8 @@ jobs:
         run: python3 scripts/quality/pr_body_consistency_cli.py --repository "$REPOSITORY" --pr "$PR_NUMBER" --apply
   check:
     name: pr-body-consistency
+    needs: reconcile
+    if: always() && (needs.reconcile.result == 'success' || needs.reconcile.result == 'skipped')
     permissions:
       contents: read
     runs-on: ubuntu-latest

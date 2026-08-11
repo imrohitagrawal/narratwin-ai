@@ -6,10 +6,10 @@ quality:
 	python3 scripts/quality/check_quality_stage.py
 
 pr-reconcile:
-	python3 -m scripts.quality.pr_body_consistency_cli --repository "$${GITHUB_REPOSITORY:?set GITHUB_REPOSITORY}" --pr "$${PR:?set PR}" --apply
+	uv run python -m scripts.quality.pr_body_consistency_cli --repository "$${GITHUB_REPOSITORY:?set GITHUB_REPOSITORY}" --pr "$${PR:?set PR}" --apply
 
 pr-body-check:
-	python3 -m scripts.quality.pr_body_consistency_cli --repository "$${GITHUB_REPOSITORY:?set GITHUB_REPOSITORY}" --pr "$${PR:?set PR}"
+	uv run python -m scripts.quality.pr_body_consistency_cli --repository "$${GITHUB_REPOSITORY:?set GITHUB_REPOSITORY}" --pr "$${PR:?set PR}"
 
 stage0-quality:
 	python3 scripts/quality/check_recommended_review_items.py 0
