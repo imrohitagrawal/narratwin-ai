@@ -16,7 +16,10 @@
     "verified_on": "2026-08-12",
     "repository_contracts": [
       "README.md",
+      "backend/app/stage4.py",
       "docs/AI_BUILD_BRIEF.md",
+      "docs/PORTABILITY_STRATEGY.md",
+      "docs/PRD.md",
       "docs/PROJECT_AVATAR_PACK.md",
       "docs/STATUS.md",
       "docs/ADR/0054-cut1-presenter-registry.md",
@@ -128,8 +131,8 @@
   },
   "invariant_to_test_mapping": {
     "G421-01": ["facts schema/source inventory tests", "human exact-span review"],
-    "G421-02": ["valid bundle test", "source byte/range/revision/checksum mutations"],
-    "G421-03": ["code-owned required-predicate matrix", "mapping completeness test", "missing/partial/duplicate/unexpected proposition tests"],
+    "G421-02": ["valid bundle test", "source byte/range/revision/checksum mutations", "code-owned OWNER span substitution test"],
+    "G421-03": ["code-owned required-predicate matrix", "reviewed complete-source proposition test", "mapping completeness test", "missing/partial/duplicate/unexpected proposition tests"],
     "G421-04": ["existing grounding suites", "explicit non-Cut-1 parity test"],
     "G421-05": ["candidate/facts/chunk/policy/presenter/order mutations"],
     "G421-06": ["caller injection tests with runtime recomputation"],

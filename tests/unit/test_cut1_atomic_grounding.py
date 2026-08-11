@@ -408,9 +408,7 @@ def test_runtime_rejects_foreign_or_changed_project_facts(
 ) -> None:
     from backend.app.cut1_grounding import evaluate_cut1_grounding
 
-    service, principal, project_id = _seed_public_stage4(
-        tmp_path, monkeypatch, include_facts=True
-    )
+    service, principal, project_id = _seed_public_stage4(tmp_path, monkeypatch, include_facts=True)
     run = _generate(service, principal, project_id, key=f"runtime-{mutation}")
     assert run.generated_script is not None
     contexts = list(run.retrieved_context)
@@ -451,9 +449,7 @@ def test_runtime_rejects_foreign_or_changed_project_facts(
 def test_restore_rejects_tampered_persisted_proposition_evidence(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    service, principal, project_id = _seed_public_stage4(
-        tmp_path, monkeypatch, include_facts=True
-    )
+    service, principal, project_id = _seed_public_stage4(tmp_path, monkeypatch, include_facts=True)
     run = _generate(service, principal, project_id, key="tampered-restore")
     assert service.state_path is not None
     payload = json.loads(service.state_path.read_text(encoding="utf-8"))
@@ -534,6 +530,8 @@ def test_public_stage4_and_issue382_lifecycle_persists_one_bound_receipt(
         registry=load_cut1_presenter_registry(asset_root=ROOT),
         state_path=state_path,
     )
-    assert restored.validate_tts_consumption_receipt(principal=principal, receipt=receipt) == receipt
+    assert (
+        restored.validate_tts_consumption_receipt(principal=principal, receipt=receipt) == receipt
+    )
     assert receipt.spoken_text == canonical_presenter_text(presenter_id)
     assert receipt.receipt_checksum.startswith("sha256:")

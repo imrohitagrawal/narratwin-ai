@@ -26,7 +26,7 @@ their immutable source spans.
 
 `docs/governance/cut1-project-facts-v1.json` is the owner-reviewed policy asset.
 Its complete byte-level SHA-256 is
-`38eb6669aad524658e0271d34ac342dc31ecf4f9d08c658422a760e4ebc62b6d`;
+`b081b7311d4c897de1d27469ffda82a64d3c120783100ee4ef3f8d92a112b62f`;
 the verifier pins that digest before parsing any contract field.
 It contains:
 
@@ -52,9 +52,10 @@ does not need to be weakened.
 2. requires the frozen schema, policy, source allowlist, and accepted revision;
 3. loads each repository source from current bytes only when its SHA-256
    matches, otherwise from the pinned local Git object at the accepted revision;
-4. binds the pre-existing OWNER record by exact URL, comment revision, complete
-   body byte count/SHA-256, and the one permitted non-narration span; later
-   narration bytes in that comment are not stored or used;
+4. records the pre-existing OWNER record's exact URL, comment revision, complete
+   body byte count/SHA-256, and independently code-pins the one permitted
+   non-narration span's offset, length, digest, and bytes; runtime does not fetch
+   the complete OWNER comment, and later narration bytes are not stored or used;
 5. independently verifies every repository source and exact span byte range;
 6. requires all propositions to be used and every code-owned required predicate
    to be covered by a verified proposition;

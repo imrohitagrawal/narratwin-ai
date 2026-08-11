@@ -616,13 +616,16 @@ production-readiness claim.
 
 The Cut 1 facts JSON, its source spans, uploaded safe projection, generated
 claims, retrieved contexts, persisted evaluations, and restored state are all
-untrusted until recomputed. The verifier accepts only six allowlisted
+untrusted until recomputed. The verifier accepts only nine allowlisted
 repository paths at the pinned accepted revision plus one exact pre-existing
-OWNER comment identity; only that comment's independent brand/ownership span is
-stored, never its later narration body. Strict bounded JSON, exact byte ranges,
-and exact SHA-256 values are required. Current repository-file drift falls back
-only to a fixed local Git object lookup executed without a shell and with a
-timeout; missing or mismatched objects fail closed.
+OWNER comment identity. Only that comment's independent brand/ownership span is
+stored, never its later narration body; the span's offset, length, hash, and
+exact bytes are independently code-owned, while the full-record hash remains a
+recorded human-reviewed identity because runtime performs no network fetch.
+Strict bounded JSON, exact byte ranges, and exact SHA-256 values are required.
+Current repository-file drift falls back only to a fixed local Git object
+lookup executed without a shell and with a timeout; missing or mismatched
+objects fail closed.
 
 Caller-supplied proposition IDs/checksums never establish support. Cross-tenant,
 cross-project, foreign-document, stale-policy, partial-predicate/proposition, or

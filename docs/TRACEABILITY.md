@@ -543,7 +543,7 @@ durability, deployment, and release decisions remain outside this trace.
 
 | Requirement | Implementation | Evidence |
 |---|---|---|
-| Independent atomic facts with immutable source spans | `docs/governance/cut1-project-facts-v1.json`; `backend/app/cut1_grounding.py` | `test_atomic_fact_contract_mutations_fail_closed` |
+| Independent atomic facts with immutable source spans | `docs/governance/cut1-project-facts-v1.json`; `backend/app/cut1_grounding.py` | `test_atomic_fact_contract_mutations_fail_closed`; `test_owner_record_span_is_independently_code_bound`; `test_reviewed_claim_propositions_bind_complete_independent_sources` |
 | Exact complete claim-to-proposition binding | `ClaimMapping`; presenter-specific claim hashes; `ClaimSupport.proposition_ids` | `test_governed_atomic_facts_complete_the_public_persisted_stage4_path` |
 | Caller assertions cannot establish support | empty generated-claim evidence requirement and runtime recomputation | `test_caller_supplied_proposition_metadata_cannot_turn_generic_grounding_green` |
 | Ordinary direct support preserved | style-scoped dispatch in `Stage4Service` | existing retrieval/grounding suites plus the eighteen-unsupported RED control |

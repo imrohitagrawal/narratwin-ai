@@ -180,6 +180,76 @@
           "byteCount": 162,
           "sha256": "1b526533d2c681665d79670e3b9bc6e7bbe426ef4e2005008d1602767efea6dd",
           "text": "Visible brand spelling is exactly `StackClimb`.\nRohit Agrawal founded, owns, and leads StackClimb and conceived, owns, and\nproduces NarraTwin AI under StackClimb."
+        },
+        {
+          "spanId": "src_stage_plan_span_02",
+          "byteStart": 118291,
+          "byteEnd": 118528,
+          "byteCount": 237,
+          "sha256": "37e0af48035b3297158f9671a1df9f1a900570414e88f2d68a47818525735a98",
+          "text": "The exact canonical narration and presenter substitution rule live in OWNER\ncomment `5197711390`: Myra and Raj replace only both occurrences of `Meera`.\nTTS accepts only the latest evaluated script version after explicit speech\napproval."
+        }
+      ]
+    },
+    {
+      "sourceId": "src_portability",
+      "locatorType": "repository",
+      "locator": "docs/PORTABILITY_STRATEGY.md",
+      "revision": "a868137fab607ae75d4b272301e9fc52b898e15c",
+      "byteCount": 7342,
+      "sha256": "3e0d3b1056394e984d056c04af86a1bdee2c87c11bfbeb0e718017b21a96c7a5",
+      "spans": [
+        {
+          "spanId": "src_portability_span_01",
+          "byteStart": 163,
+          "byteEnd": 429,
+          "byteCount": 266,
+          "sha256": "e5fe23a9384475d565421fc2a959b58143d0d52e123728286d98af6954f8c965",
+          "text": "NarraTwin AI must remain portable across local development, free engineering mode,\nand future premium showcase mode. Users and maintainers must be able to replace\nproviders, export project data, regenerate derived artifacts, and run tests without\npaid provider keys."
+        },
+        {
+          "spanId": "src_portability_span_02",
+          "byteStart": 6040,
+          "byteEnd": 6197,
+          "byteCount": 157,
+          "sha256": "1c27005272b8ce6eb6bbd2462d5c37d7a1d915140d2b983afa9277cb672c064e",
+          "text": "- add adapter behind `LLMProvider`\n- add contract tests\n- update third-party notices\n- keep prompt/output schema unchanged\n- record provider metadata per run"
+        }
+      ]
+    },
+    {
+      "sourceId": "src_prd",
+      "locatorType": "repository",
+      "locator": "docs/PRD.md",
+      "revision": "a868137fab607ae75d4b272301e9fc52b898e15c",
+      "byteCount": 18863,
+      "sha256": "2cde5d9ec7d8e932b25f2fdf66d4dd11f49065b50078f16f59b6a65cbb7d720a",
+      "spans": [
+        {
+          "spanId": "src_prd_span_01",
+          "byteStart": 3680,
+          "byteEnd": 3928,
+          "byteCount": 248,
+          "sha256": "23bcdd091fd59be435342572b6b70dde77dc748a8dd688b4d87d8c8ab650b86c",
+          "text": "| Hiring manager | Needs ownership, trade-offs, maturity, and delivery scope | Concise walkthrough with decisions and outcomes |\n| Engineer | Needs architecture and implementation evidence | Technical walkthrough with citations/context references |"
+        }
+      ]
+    },
+    {
+      "sourceId": "src_stage4_code",
+      "locatorType": "repository",
+      "locator": "backend/app/stage4.py",
+      "revision": "a868137fab607ae75d4b272301e9fc52b898e15c",
+      "byteCount": 134801,
+      "sha256": "ed9699258e2288d81b3ae7d3f262b24afdb1178a18bcb9a287b1dc411ccba6fb",
+      "spans": [
+        {
+          "spanId": "src_stage4_code_span_01",
+          "byteStart": 0,
+          "byteEnd": 112,
+          "byteCount": 112,
+          "sha256": "b4526a0dcd407b6f0a2a474b825f6396c37f090162f66e9ba3e5adba34bfed51",
+          "text": "\"\"\"Stage 4 local product slice orchestration with source_chunk citations.\"\"\"\n\nfrom __future__ import annotations"
         }
       ]
     },
@@ -211,8 +281,8 @@
     },
     {
       "propositionId": "fact_002",
-      "statement": "StackClimb brand authority = Rohit Agrawal as founder, owner, leader, product thinker, product owner, and producer; its governed product context includes the NarraTwin AI technology platform.",
-      "predicateIds": ["stackclimb.technology_product_brand", "stackclimb.founder.rohit", "stackclimb.owner.rohit", "stackclimb.lead.rohit"],
+      "statement": "StackClimb is the visible brand founded, owned, and led by Rohit Agrawal; Rohit is its product thinker, product owner, and producer, and NarraTwin AI is its governed technology-platform product.",
+      "predicateIds": ["stackclimb.brand", "stackclimb.technology_context", "stackclimb.product_innovation_context", "stackclimb.founder.rohit", "stackclimb.owner.rohit", "stackclimb.lead.rohit"],
       "sourceSpanIds": ["src_owner_span_01", "src_stage_plan_span_01", "src_readme_span_01"]
     },
     {
@@ -229,9 +299,9 @@
     },
     {
       "propositionId": "fact_005",
-      "statement": "Approved project packs separate summary, architecture, business impact, demo script, technical detail, FAQs, metrics, and visual material.",
-      "predicateIds": ["knowledge.documents", "knowledge.architecture", "knowledge.technical_implementation", "knowledge.decisions"],
-      "sourceSpanIds": ["src_pack_span_02", "src_pack_span_04"]
+      "statement": "The accepted project evidence includes documents, executable orchestration code, architecture and implementation material, and decision-and-outcome guidance.",
+      "predicateIds": ["knowledge.documents", "knowledge.code", "knowledge.architecture", "knowledge.technical_decisions"],
+      "sourceSpanIds": ["src_pack_span_02", "src_stage4_code_span_01", "src_prd_span_01"]
     },
     {
       "propositionId": "fact_006",
@@ -259,9 +329,9 @@
     },
     {
       "propositionId": "fact_010",
-      "statement": "Core provider logic remains provider-independent; premium providers cannot be hardcoded into core business logic.",
+      "statement": "Provider adapters preserve the core contract: maintainers can replace a provider while keeping the prompt/output schema unchanged, and premium providers cannot be hardcoded into core business logic.",
       "predicateIds": ["architecture.provider_neutral", "architecture.technology_substitution", "architecture.workflow_preserved"],
-      "sourceSpanIds": ["src_readme_span_04", "src_readme_span_01"]
+      "sourceSpanIds": ["src_readme_span_04", "src_portability_span_01", "src_portability_span_02"]
     },
     {
       "propositionId": "fact_011",
@@ -277,9 +347,9 @@
     },
     {
       "propositionId": "fact_013",
-      "statement": "Pre-rendered product mode starts from an existing English demo video or demo script before downstream generation.",
+      "statement": "The governed first experience is prepared from an existing English demo script: its exact canonical narration is owner-locked before approved speech consumption.",
       "predicateIds": ["experience.prepared_walkthrough", "experience.first_mode"],
-      "sourceSpanIds": ["src_brief_span_01"]
+      "sourceSpanIds": ["src_brief_span_01", "src_stage_plan_span_02"]
     },
     {
       "propositionId": "fact_014",
@@ -322,7 +392,7 @@
         "myra": "7f7be3895b2e148233e9ddc608bc3f5b3b13eb52cba49b72a8e2921fba870cbd",
         "raj": "7f7be3895b2e148233e9ddc608bc3f5b3b13eb52cba49b72a8e2921fba870cbd"
       },
-      "requiredPredicateIds": ["stackclimb.technology_product_brand", "stackclimb.founder.rohit", "stackclimb.owner.rohit", "stackclimb.lead.rohit"],
+      "requiredPredicateIds": ["stackclimb.brand", "stackclimb.technology_context", "stackclimb.product_innovation_context", "stackclimb.founder.rohit", "stackclimb.owner.rohit", "stackclimb.lead.rohit"],
       "propositionIds": ["fact_002"]
     },
     {
@@ -342,7 +412,7 @@
         "myra": "0fac1aeaaa5207068f8cfad6f9e72ef96ff1a1c1f9c03fbcdf32d5fe4a0663d1",
         "raj": "0fac1aeaaa5207068f8cfad6f9e72ef96ff1a1c1f9c03fbcdf32d5fe4a0663d1"
       },
-      "requiredPredicateIds": ["knowledge.documents", "knowledge.architecture", "knowledge.technical_implementation", "knowledge.decisions"],
+      "requiredPredicateIds": ["knowledge.documents", "knowledge.code", "knowledge.architecture", "knowledge.technical_decisions"],
       "propositionIds": ["fact_005"]
     },
     {

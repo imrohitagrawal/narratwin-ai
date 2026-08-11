@@ -25,14 +25,17 @@ CUT1_SCHEMA_VERSION = "cut1-project-facts-v1"
 FACTS_RELATIVE_PATH = Path("docs/governance/cut1-project-facts-v1.json")
 FACTS_SOURCE_FILENAME = "cut1-project-facts-v1.md"
 ACCEPTED_REVISION = "a868137fab607ae75d4b272301e9fc52b898e15c"
-EXPECTED_ASSET_SHA256 = "38eb6669aad524658e0271d34ac342dc31ecf4f9d08c658422a760e4ebc62b6d"
+EXPECTED_ASSET_SHA256 = "b081b7311d4c897de1d27469ffda82a64d3c120783100ee4ef3f8d92a112b62f"
 MAX_CONTRACT_BYTES = 131_072
 MAX_SOURCES = 16
 MAX_SPANS = 64
 MAX_PROPOSITIONS = 64
 EXACT_REPOSITORY_SOURCES = {
     "README.md",
+    "backend/app/stage4.py",
     "docs/AI_BUILD_BRIEF.md",
+    "docs/PORTABILITY_STRATEGY.md",
+    "docs/PRD.md",
     "docs/PROJECT_AVATAR_PACK.md",
     "docs/STATUS.md",
     "docs/ADR/0054-cut1-presenter-registry.md",
@@ -44,6 +47,19 @@ OWNER_RECORD = {
     "byteCount": 4322,
     "sha256": "30d6afe6758598f172c48a65d4d507662a9ab6eefebbcf492af07052c8e13528",
 }
+OWNER_RECORD_SPANS = {
+    "src_owner_span_01": {
+        "byteStart": 170,
+        "byteEnd": 520,
+        "byteCount": 350,
+        "sha256": "438d9f8e92240781e62472d39e75d8c28c72e20008ba9a82588c7a7f31ff99b2",
+        "text": "- Visible brand spelling is exactly `StackClimb`; domain `stackclimb.com`. "
+        "Rohit Agrawal is the founder, owner, product thinker, product owner, and producer. "
+        "NarraTwin AI was conceived, is owned, and is produced by Rohit Agrawal under "
+        "StackClimb. Do not use `®`, claim registration, public availability, deployment, "
+        "release, or production readiness.",
+    }
+}
 PRESENTERS = ("meera", "myra", "raj")
 SHA_PATTERN = re.compile(r"[0-9a-f]{64}\Z")
 ID_PATTERN = re.compile(r"(?:src|fact|claim)_[a-z0-9_]{1,64}\Z")
@@ -51,20 +67,69 @@ PREDICATE_PATTERN = re.compile(r"[a-z][a-z0-9_.]{2,80}\Z")
 EXPECTED_REQUIRED_PREDICATES = (
     ("narratwin.platform",),
     ("presenter.identity", "presenter.downstream_role"),
-    ("stackclimb.technology_product_brand", "stackclimb.founder.rohit", "stackclimb.owner.rohit", "stackclimb.lead.rohit"),
-    ("narratwin.conceived.rohit", "narratwin.owner.rohit", "narratwin.producer.rohit", "narratwin.under_stackclimb"),
-    ("knowledge.documents", "knowledge.architecture", "knowledge.technical_implementation", "knowledge.decisions"),
+    (
+        "stackclimb.brand",
+        "stackclimb.technology_context",
+        "stackclimb.product_innovation_context",
+        "stackclimb.founder.rohit",
+        "stackclimb.owner.rohit",
+        "stackclimb.lead.rohit",
+    ),
+    (
+        "narratwin.conceived.rohit",
+        "narratwin.owner.rohit",
+        "narratwin.producer.rohit",
+        "narratwin.under_stackclimb",
+    ),
+    (
+        "knowledge.documents",
+        "knowledge.code",
+        "knowledge.architecture",
+        "knowledge.technical_decisions",
+    ),
     ("product.approved_input", "product.clear_guided_walkthrough"),
     ("product.approved_input",),
     ("flow.organize", "flow.retrieve", "product.audience_aware"),
-    ("grounding.source_support", "grounding.context_refs", "grounding.evaluation", "grounding.no_unsupported_fact"),
-    ("application.python_fastapi_backend", "application.nextjs_ui", "application.rag", "application.evaluation_safety", "application.multilingual", "application.captions", "application.speech", "application.synthetic_presenter_media"),
-    ("architecture.provider_neutral", "architecture.technology_substitution", "architecture.workflow_preserved"),
+    (
+        "grounding.source_support",
+        "grounding.context_refs",
+        "grounding.evaluation",
+        "grounding.no_unsupported_fact",
+    ),
+    (
+        "application.python_fastapi_backend",
+        "application.nextjs_ui",
+        "application.rag",
+        "application.evaluation_safety",
+        "application.multilingual",
+        "application.captions",
+        "application.speech",
+        "application.synthetic_presenter_media",
+    ),
+    (
+        "architecture.provider_neutral",
+        "architecture.technology_substitution",
+        "architecture.workflow_preserved",
+    ),
     ("reuse.other_projects",),
-    ("reuse.approved_documentation", "reuse.tailored_explanation", "explanation.purpose", "explanation.architecture", "explanation.technologies", "explanation.capabilities", "explanation.decisions", "explanation.integrations"),
+    (
+        "reuse.approved_documentation",
+        "reuse.tailored_explanation",
+        "explanation.purpose",
+        "explanation.architecture",
+        "explanation.technologies",
+        "explanation.capabilities",
+        "explanation.decisions",
+        "explanation.integrations",
+    ),
     ("experience.prepared_walkthrough", "experience.first_mode", "presenter.identity"),
     ("interactive.future", "interactive.not_current_demo"),
-    ("experience.stackclimb_product", "experience.approved_knowledge", "experience.grounded", "experience.presenter_led"),
+    (
+        "experience.stackclimb_product",
+        "experience.approved_knowledge",
+        "experience.grounded",
+        "experience.presenter_led",
+    ),
     ("presenter.identity",),
     ("presenter.identity", "reuse.other_projects"),
 )
@@ -106,7 +171,11 @@ def _object(value: object, keys: set[str]) -> dict[str, Any]:
 
 
 def _identifier(value: object, *, prefix: str) -> str:
-    if not isinstance(value, str) or ID_PATTERN.fullmatch(value) is None or not value.startswith(prefix):
+    if (
+        not isinstance(value, str)
+        or ID_PATTERN.fullmatch(value) is None
+        or not value.startswith(prefix)
+    ):
         _fail()
     return value
 
@@ -162,8 +231,7 @@ class Cut1GroundingContract:
     def project_source_bytes(self) -> bytes:
         return (
             "\n".join(
-                f"{item.proposition_id}: {item.statement}"
-                for item in self.propositions.values()
+                f"{item.proposition_id}: {item.statement}" for item in self.propositions.values()
             )
             + "\n"
         ).encode()
@@ -192,9 +260,7 @@ class Cut1GroundingContract:
                         }
                         for span_id in self.propositions[proposition_id].source_span_ids
                     ],
-                    "statementSha256": _sha(
-                        self.propositions[proposition_id].statement.encode()
-                    ),
+                    "statementSha256": _sha(self.propositions[proposition_id].statement.encode()),
                 }
                 for proposition_id in mapping.proposition_ids
             ],
@@ -205,7 +271,11 @@ class Cut1GroundingContract:
 def _read_contract(root: Path) -> tuple[bytes, dict[str, Any]]:
     target = root.resolve() / FACTS_RELATIVE_PATH
     try:
-        if target.is_symlink() or not target.is_file() or target.stat().st_size > MAX_CONTRACT_BYTES:
+        if (
+            target.is_symlink()
+            or not target.is_file()
+            or target.stat().st_size > MAX_CONTRACT_BYTES
+        ):
             _fail()
         raw = target.read_bytes()
         if _sha(raw) != EXPECTED_ASSET_SHA256:
@@ -245,7 +315,14 @@ def load_cut1_grounding_contract(*, root: Path) -> Cut1GroundingContract:
     raw, authoritative = _read_contract(root)
     value = _object(
         authoritative,
-        {"schemaVersion", "policyVersion", "acceptedRevision", "sources", "propositions", "claimMappings"},
+        {
+            "schemaVersion",
+            "policyVersion",
+            "acceptedRevision",
+            "sources",
+            "propositions",
+            "claimMappings",
+        },
     )
     if (
         value["schemaVersion"] != CUT1_SCHEMA_VERSION
@@ -270,6 +347,7 @@ def load_cut1_grounding_contract(*, root: Path) -> Cut1GroundingContract:
     source_ids: set[str] = set()
     observed_repository_sources: set[str] = set()
     owner_record_seen = False
+    observed_owner_spans: set[str] = set()
     for source_value in source_rows:
         source = _object(
             source_value,
@@ -298,19 +376,25 @@ def load_cut1_grounding_contract(*, root: Path) -> Cut1GroundingContract:
             if source["byteCount"] != len(source_bytes) or source_sha256 != _sha(source_bytes):
                 _fail()
         else:
-            if owner_record_seen or {
-                "locator": locator,
-                "revision": source["revision"],
-                "byteCount": source["byteCount"],
-                "sha256": source_sha256,
-            } != OWNER_RECORD:
+            if (
+                owner_record_seen
+                or {
+                    "locator": locator,
+                    "revision": source["revision"],
+                    "byteCount": source["byteCount"],
+                    "sha256": source_sha256,
+                }
+                != OWNER_RECORD
+            ):
                 _fail()
             owner_record_seen = True
             source_bytes = None
         if not isinstance(source["spans"], list) or not 0 < len(source["spans"]) <= MAX_SPANS:
             _fail()
         for span_value in source["spans"]:
-            span = _object(span_value, {"spanId", "byteStart", "byteEnd", "byteCount", "sha256", "text"})
+            span = _object(
+                span_value, {"spanId", "byteStart", "byteEnd", "byteCount", "sha256", "text"}
+            )
             span_id = _identifier(span["spanId"], prefix="src_")
             source_size = cast(int, source["byteCount"])
             start = _bounded_int(span["byteStart"], maximum=source_size)
@@ -318,6 +402,21 @@ def load_cut1_grounding_contract(*, root: Path) -> Cut1GroundingContract:
             text_value = span["text"]
             if span_id in spans or end <= start or not isinstance(text_value, str):
                 _fail()
+            if source_bytes is None:
+                expected_owner_span = OWNER_RECORD_SPANS.get(span_id)
+                if (
+                    expected_owner_span is None
+                    or {
+                        "byteStart": start,
+                        "byteEnd": end,
+                        "byteCount": span["byteCount"],
+                        "sha256": span["sha256"],
+                        "text": text_value,
+                    }
+                    != expected_owner_span
+                ):
+                    _fail()
+                observed_owner_spans.add(span_id)
             selected = source_bytes[start:end] if source_bytes is not None else text_value.encode()
             if (
                 len(selected) != end - start
@@ -329,7 +428,11 @@ def load_cut1_grounding_contract(*, root: Path) -> Cut1GroundingContract:
             spans[span_id] = SourceSpan(
                 span_id, source_id, start, end, len(selected), cast(str, span["sha256"])
             )
-    if observed_repository_sources != EXACT_REPOSITORY_SOURCES or not owner_record_seen:
+    if (
+        observed_repository_sources != EXACT_REPOSITORY_SOURCES
+        or not owner_record_seen
+        or observed_owner_spans != set(OWNER_RECORD_SPANS)
+    ):
         _fail()
 
     propositions: dict[str, Proposition] = {}
@@ -356,13 +459,15 @@ def load_cut1_grounding_contract(*, root: Path) -> Cut1GroundingContract:
         ):
             _fail()
         checked_predicates = tuple(predicate_ids)
-        if (
-            len(set(checked_predicates)) != len(checked_predicates)
-            or any(not isinstance(item, str) or PREDICATE_PATTERN.fullmatch(item) is None for item in checked_predicates)
+        if len(set(checked_predicates)) != len(checked_predicates) or any(
+            not isinstance(item, str) or PREDICATE_PATTERN.fullmatch(item) is None
+            for item in checked_predicates
         ):
             _fail()
         checked_spans = tuple(_identifier(item, prefix="src_") for item in span_ids)
-        if len(set(checked_spans)) != len(checked_spans) or any(item not in spans for item in checked_spans):
+        if len(set(checked_spans)) != len(checked_spans) or any(
+            item not in spans for item in checked_spans
+        ):
             _fail()
         propositions[proposition_id] = Proposition(
             proposition_id, statement, checked_predicates, checked_spans
@@ -379,7 +484,11 @@ def load_cut1_grounding_contract(*, root: Path) -> Cut1GroundingContract:
         hashes = row["claimSha256ByPresenter"]
         required_predicates = row["requiredPredicateIds"]
         proposition_ids = row["propositionIds"]
-        if claim_id != f"claim_{index:03d}" or not isinstance(hashes, dict) or set(hashes) != set(PRESENTERS):
+        if (
+            claim_id != f"claim_{index:03d}"
+            or not isinstance(hashes, dict)
+            or set(hashes) != set(PRESENTERS)
+        ):
             _fail()
         checked_hashes = {presenter: _checksum(hashes[presenter]) for presenter in PRESENTERS}
         if (
@@ -392,17 +501,23 @@ def load_cut1_grounding_contract(*, root: Path) -> Cut1GroundingContract:
         checked_required = tuple(required_predicates)
         if (
             checked_required != EXPECTED_REQUIRED_PREDICATES[index - 1]
-            or
-            len(set(checked_required)) != len(checked_required)
-            or any(not isinstance(item, str) or PREDICATE_PATTERN.fullmatch(item) is None for item in checked_required)
+            or len(set(checked_required)) != len(checked_required)
+            or any(
+                not isinstance(item, str) or PREDICATE_PATTERN.fullmatch(item) is None
+                for item in checked_required
+            )
         ):
             _fail()
         checked_ids = tuple(_identifier(item, prefix="fact_") for item in proposition_ids)
-        supplied_predicates = {
-            predicate
-            for proposition_id in checked_ids
-            for predicate in propositions[proposition_id].predicate_ids
-        } if all(item in propositions for item in checked_ids) else set()
+        supplied_predicates = (
+            {
+                predicate
+                for proposition_id in checked_ids
+                for predicate in propositions[proposition_id].predicate_ids
+            }
+            if all(item in propositions for item in checked_ids)
+            else set()
+        )
         if (
             len(set(checked_ids)) != len(checked_ids)
             or any(item not in propositions for item in checked_ids)
@@ -478,7 +593,10 @@ def evaluate_cut1_grounding(
                 item.reason != "Claim text is not directly present in the cited retrieved chunk."
                 for item in baseline.unsupported_claims
             )
-            or any(claim.proposition_ids or claim.proposition_evidence_checksum for claim in candidate.claims)
+            or any(
+                claim.proposition_ids or claim.proposition_evidence_checksum
+                for claim in candidate.claims
+            )
         ):
             return baseline
         claim_hashes = [_sha(claim.text.encode()) for claim in candidate.claims]
