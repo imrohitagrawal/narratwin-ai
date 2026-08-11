@@ -130,6 +130,7 @@ ROUTES = {
         "scripts/ci/verify_branch_protection.py",
         "tests/unit/test_branch_protection_verifier.py",
         "tests/unit/test_governance_preflight_github.py",
+        "docs/REPOSITORY_GUARDRAILS.md",
     },
     ISSUE368_PROMPT_BRANCH: {
         "docs/governance/preflights/issue-368.json",
@@ -393,6 +394,7 @@ TEXT_LIMITS = {
             "scripts/ci/verify_branch_protection.py": 80,
             "tests/unit/test_branch_protection_verifier.py": 220,
             "tests/unit/test_governance_preflight_github.py": 80,
+            "docs/REPOSITORY_GUARDRAILS.md": 80,
         }[path]
         for path in ROUTES[ISSUE368_QUOTA_FIX_BRANCH]
     },

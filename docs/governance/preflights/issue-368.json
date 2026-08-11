@@ -8,6 +8,7 @@
     "direct_owner_authority": "https://github.com/imrohitagrawal/narratwin-ai/issues/368#issuecomment-5256748344",
     "route_amendment_authority": "https://github.com/imrohitagrawal/narratwin-ai/issues/368#issuecomment-5257797936",
     "final_route_amendment_authority": "https://github.com/imrohitagrawal/narratwin-ai/issues/368#issuecomment-5257900760",
+    "normative_contract_amendment_authority": "https://github.com/imrohitagrawal/narratwin-ai/issues/368#issuecomment-5258127020",
     "diagnostic_evidence": "https://github.com/imrohitagrawal/narratwin-ai/issues/368#issuecomment-5256656667",
     "accepted_main": "9c165f739788fb0f09b315673f9125d700d6a96b",
     "rejection_inventory_sha256": "e919ce44bddc0e167f3636df3886643847410d1d9615e2fe7fd7f6a60a0698c7",
@@ -29,7 +30,7 @@
     "evidence": "https://github.com/imrohitagrawal/narratwin-ai/issues/368#issuecomment-5256656667"
   },
   "change_budget": {
-    "exact_paths": 17,
+    "exact_paths": 18,
     "maximum_additions_plus_deletions": 2800,
     "deletions_grant_credit": false,
     "per_file_charged_lines": {
@@ -49,7 +50,8 @@
       "docs/TRACEABILITY.md": 220,
       "scripts/ci/verify_branch_protection.py": 80,
       "tests/unit/test_branch_protection_verifier.py": 220,
-      "tests/unit/test_governance_preflight_github.py": 80
+      "tests/unit/test_governance_preflight_github.py": 80,
+      "docs/REPOSITORY_GUARDRAILS.md": 80
     }
   },
   "scope": {
@@ -70,7 +72,8 @@
       "docs/TRACEABILITY.md",
       "scripts/ci/verify_branch_protection.py",
       "tests/unit/test_branch_protection_verifier.py",
-      "tests/unit/test_governance_preflight_github.py"
+      "tests/unit/test_governance_preflight_github.py",
+      "docs/REPOSITORY_GUARDRAILS.md"
     ],
     "allowed_prefixes": [
       "backend/app/google_tts_runtime.py",
@@ -89,7 +92,8 @@
       "docs/TRACEABILITY.md",
       "scripts/ci/verify_branch_protection.py",
       "tests/unit/test_branch_protection_verifier.py",
-      "tests/unit/test_governance_preflight_github.py"
+      "tests/unit/test_governance_preflight_github.py",
+      "docs/REPOSITORY_GUARDRAILS.md"
     ],
     "forbidden": [
       "dependency manifests and lockfiles",
@@ -163,7 +167,7 @@
     "browser OAuth approval if required",
     "zero or multiple qualifying Google projects without deterministic prior OWNER evidence",
     "exact-hash OWNER listening",
-    "unsafe need outside the seventeen-path route",
+    "unsafe need outside the eighteen-path route",
     "new unremediable legal, credential, or safety contradiction"
   ]
 }
