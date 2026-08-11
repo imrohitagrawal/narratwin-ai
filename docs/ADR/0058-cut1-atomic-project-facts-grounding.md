@@ -26,7 +26,7 @@ their immutable source spans.
 
 `docs/governance/cut1-project-facts-v1.json` is the owner-reviewed policy asset.
 Its complete byte-level SHA-256 is
-`7fe8f85c9d803f7c95f6c0122fda784310134778e28c892d43eefc8d4c27917c`;
+`38eb6669aad524658e0271d34ac342dc31ecf4f9d08c658422a760e4ebc62b6d`;
 the verifier pins that digest before parsing any contract field.
 It contains:
 

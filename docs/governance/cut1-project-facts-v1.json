@@ -206,206 +206,92 @@
     {
       "propositionId": "fact_001",
       "statement": "Cut 1 active presenter identities = Meera, Myra, Raj; downstream use includes narration, TTS, rendering, and UI.",
-      "predicateIds": [
-        "presenter.identity",
-        "presenter.downstream_role"
-      ],
-      "sourceSpanIds": [
-        "src_presenter_span_01",
-        "src_presenter_span_02"
-      ]
+      "predicateIds": ["presenter.identity", "presenter.downstream_role"],
+      "sourceSpanIds": ["src_presenter_span_01", "src_presenter_span_02"]
     },
     {
       "propositionId": "fact_002",
       "statement": "StackClimb brand authority = Rohit Agrawal as founder, owner, leader, product thinker, product owner, and producer; its governed product context includes the NarraTwin AI technology platform.",
-      "predicateIds": [
-        "stackclimb.technology_product_brand",
-        "stackclimb.founder.rohit",
-        "stackclimb.owner.rohit",
-        "stackclimb.lead.rohit"
-      ],
-      "sourceSpanIds": [
-        "src_owner_span_01",
-        "src_stage_plan_span_01",
-        "src_readme_span_01"
-      ]
+      "predicateIds": ["stackclimb.technology_product_brand", "stackclimb.founder.rohit", "stackclimb.owner.rohit", "stackclimb.lead.rohit"],
+      "sourceSpanIds": ["src_owner_span_01", "src_stage_plan_span_01", "src_readme_span_01"]
     },
     {
       "propositionId": "fact_003",
       "statement": "OWNER record: NarraTwin AI conception, ownership, and production = Rohit Agrawal under StackClimb.",
-      "predicateIds": [
-        "narratwin.conceived.rohit",
-        "narratwin.owner.rohit",
-        "narratwin.producer.rohit",
-        "narratwin.under_stackclimb"
-      ],
-      "sourceSpanIds": [
-        "src_owner_span_01",
-        "src_stage_plan_span_01"
-      ]
+      "predicateIds": ["narratwin.conceived.rohit", "narratwin.owner.rohit", "narratwin.producer.rohit", "narratwin.under_stackclimb"],
+      "sourceSpanIds": ["src_owner_span_01", "src_stage_plan_span_01"]
     },
     {
       "propositionId": "fact_004",
       "statement": "NarraTwin AI product definition = provider-agnostic multilingual AI avatar walkthrough platform.",
-      "predicateIds": [
-        "narratwin.platform",
-        "narratwin.multilingual",
-        "narratwin.avatar_walkthrough"
-      ],
-      "sourceSpanIds": [
-        "src_readme_span_01"
-      ]
+      "predicateIds": ["narratwin.platform", "narratwin.multilingual", "narratwin.avatar_walkthrough"],
+      "sourceSpanIds": ["src_readme_span_01"]
     },
     {
       "propositionId": "fact_005",
       "statement": "Approved project packs separate summary, architecture, business impact, demo script, technical detail, FAQs, metrics, and visual material.",
-      "predicateIds": [
-        "knowledge.documents",
-        "knowledge.architecture",
-        "knowledge.technical_implementation",
-        "knowledge.decisions"
-      ],
-      "sourceSpanIds": [
-        "src_pack_span_02",
-        "src_pack_span_04"
-      ]
+      "predicateIds": ["knowledge.documents", "knowledge.architecture", "knowledge.technical_implementation", "knowledge.decisions"],
+      "sourceSpanIds": ["src_pack_span_02", "src_pack_span_04"]
     },
     {
       "propositionId": "fact_006",
       "statement": "Approved knowledge is the source for grounded, cited explanations adapted to audience.",
-      "predicateIds": [
-        "product.approved_input",
-        "product.clear_guided_walkthrough",
-        "product.audience_aware"
-      ],
-      "sourceSpanIds": [
-        "src_readme_span_01",
-        "src_pack_span_01"
-      ]
+      "predicateIds": ["product.approved_input", "product.clear_guided_walkthrough", "product.audience_aware"],
+      "sourceSpanIds": ["src_readme_span_01", "src_pack_span_01"]
     },
     {
       "propositionId": "fact_007",
       "statement": "Implemented Stage 4 flow = upload, ingest/chunk, project-scoped retrieval, grounded script, citations, unsupported-claim evaluation, stored UI output.",
-      "predicateIds": [
-        "flow.organize",
-        "flow.retrieve",
-        "flow.explain",
-        "flow.stage4_current"
-      ],
-      "sourceSpanIds": [
-        "src_readme_span_03",
-        "src_status_span_01",
-        "src_readme_span_05"
-      ]
+      "predicateIds": ["flow.organize", "flow.retrieve", "flow.explain", "flow.stage4_current"],
+      "sourceSpanIds": ["src_readme_span_03", "src_status_span_01", "src_readme_span_05"]
     },
     {
       "propositionId": "fact_008",
       "statement": "Grounding policy requires source-supported facts, context references, and recorded unsupported claims.",
-      "predicateIds": [
-        "grounding.source_support",
-        "grounding.context_refs",
-        "grounding.evaluation",
-        "grounding.no_unsupported_fact"
-      ],
-      "sourceSpanIds": [
-        "src_pack_span_03"
-      ]
+      "predicateIds": ["grounding.source_support", "grounding.context_refs", "grounding.evaluation", "grounding.no_unsupported_fact"],
+      "sourceSpanIds": ["src_pack_span_03"]
     },
     {
       "propositionId": "fact_009",
       "statement": "Accepted executable stages bind backend RAG/evaluation/frontend with translation, subtitles, local voice, avatar rendering, and demo export artifacts.",
-      "predicateIds": [
-        "application.python_fastapi_backend",
-        "application.nextjs_ui",
-        "application.rag",
-        "application.evaluation_safety",
-        "application.multilingual",
-        "application.captions",
-        "application.speech",
-        "application.synthetic_presenter_media"
-      ],
-      "sourceSpanIds": [
-        "src_readme_span_03",
-        "src_status_span_01"
-      ]
+      "predicateIds": ["application.python_fastapi_backend", "application.nextjs_ui", "application.rag", "application.evaluation_safety", "application.multilingual", "application.captions", "application.speech", "application.synthetic_presenter_media"],
+      "sourceSpanIds": ["src_readme_span_03", "src_status_span_01"]
     },
     {
       "propositionId": "fact_010",
       "statement": "Core provider logic remains provider-independent; premium providers cannot be hardcoded into core business logic.",
-      "predicateIds": [
-        "architecture.provider_neutral",
-        "architecture.technology_substitution",
-        "architecture.workflow_preserved"
-      ],
-      "sourceSpanIds": [
-        "src_readme_span_04",
-        "src_readme_span_01"
-      ]
+      "predicateIds": ["architecture.provider_neutral", "architecture.technology_substitution", "architecture.workflow_preserved"],
+      "sourceSpanIds": ["src_readme_span_04", "src_readme_span_01"]
     },
     {
       "propositionId": "fact_011",
       "statement": "Reusable approved project packs support explanations for any project across languages, audiences, depths, and output modes.",
-      "predicateIds": [
-        "reuse.other_projects",
-        "reuse.approved_documentation",
-        "reuse.tailored_explanation"
-      ],
-      "sourceSpanIds": [
-        "src_pack_span_01"
-      ]
+      "predicateIds": ["reuse.other_projects", "reuse.approved_documentation", "reuse.tailored_explanation"],
+      "sourceSpanIds": ["src_pack_span_01"]
     },
     {
       "propositionId": "fact_012",
       "statement": "Project-pack explanation scope includes purpose, architecture, technologies, capabilities, decisions, and integration-relevant technical detail.",
-      "predicateIds": [
-        "explanation.purpose",
-        "explanation.architecture",
-        "explanation.technologies",
-        "explanation.capabilities",
-        "explanation.decisions",
-        "explanation.integrations"
-      ],
-      "sourceSpanIds": [
-        "src_pack_span_02",
-        "src_pack_span_04"
-      ]
+      "predicateIds": ["explanation.purpose", "explanation.architecture", "explanation.technologies", "explanation.capabilities", "explanation.decisions", "explanation.integrations"],
+      "sourceSpanIds": ["src_pack_span_02", "src_pack_span_04"]
     },
     {
       "propositionId": "fact_013",
       "statement": "Pre-rendered product mode starts from an existing English demo video or demo script before downstream generation.",
-      "predicateIds": [
-        "experience.prepared_walkthrough",
-        "experience.first_mode"
-      ],
-      "sourceSpanIds": [
-        "src_brief_span_01"
-      ]
+      "predicateIds": ["experience.prepared_walkthrough", "experience.first_mode"],
+      "sourceSpanIds": ["src_brief_span_01"]
     },
     {
       "propositionId": "fact_014",
       "statement": "Interactive avatar Q&A is intended and not currently implemented.",
-      "predicateIds": [
-        "interactive.future",
-        "interactive.not_current_demo"
-      ],
-      "sourceSpanIds": [
-        "src_readme_span_02"
-      ]
+      "predicateIds": ["interactive.future", "interactive.not_current_demo"],
+      "sourceSpanIds": ["src_readme_span_02"]
     },
     {
       "propositionId": "fact_015",
       "statement": "NarraTwin combines approved project knowledge, grounded explanation, and an active presenter identity contract.",
-      "predicateIds": [
-        "experience.stackclimb_product",
-        "experience.approved_knowledge",
-        "experience.grounded",
-        "experience.presenter_led"
-      ],
-      "sourceSpanIds": [
-        "src_owner_span_01",
-        "src_readme_span_01",
-        "src_presenter_span_01"
-      ]
+      "predicateIds": ["experience.stackclimb_product", "experience.approved_knowledge", "experience.grounded", "experience.presenter_led"],
+      "sourceSpanIds": ["src_owner_span_01", "src_readme_span_01", "src_presenter_span_01"]
     }
   ],
   "claimMappings": [
@@ -416,12 +302,8 @@
         "myra": "4220b079c4741e5cd1ca7dc6b42a9145ff85869a8734c552f4d62622ffe8ebbc",
         "raj": "4220b079c4741e5cd1ca7dc6b42a9145ff85869a8734c552f4d62622ffe8ebbc"
       },
-      "requiredPredicateIds": [
-        "narratwin.platform"
-      ],
-      "propositionIds": [
-        "fact_004"
-      ]
+      "requiredPredicateIds": ["narratwin.platform"],
+      "propositionIds": ["fact_004"]
     },
     {
       "claimId": "claim_002",
@@ -430,13 +312,8 @@
         "myra": "d37d5be6558c8d25274d1d6daeb4c4bb838bf75ec366069f5f3b8748b0f14fae",
         "raj": "294dbda9ce456d0cf6ffbdec5efa3d4312ec76704d247148d99514d2a99a56ec"
       },
-      "requiredPredicateIds": [
-        "presenter.identity",
-        "presenter.downstream_role"
-      ],
-      "propositionIds": [
-        "fact_001"
-      ]
+      "requiredPredicateIds": ["presenter.identity", "presenter.downstream_role"],
+      "propositionIds": ["fact_001"]
     },
     {
       "claimId": "claim_003",
@@ -445,15 +322,8 @@
         "myra": "7f7be3895b2e148233e9ddc608bc3f5b3b13eb52cba49b72a8e2921fba870cbd",
         "raj": "7f7be3895b2e148233e9ddc608bc3f5b3b13eb52cba49b72a8e2921fba870cbd"
       },
-      "requiredPredicateIds": [
-        "stackclimb.technology_product_brand",
-        "stackclimb.founder.rohit",
-        "stackclimb.owner.rohit",
-        "stackclimb.lead.rohit"
-      ],
-      "propositionIds": [
-        "fact_002"
-      ]
+      "requiredPredicateIds": ["stackclimb.technology_product_brand", "stackclimb.founder.rohit", "stackclimb.owner.rohit", "stackclimb.lead.rohit"],
+      "propositionIds": ["fact_002"]
     },
     {
       "claimId": "claim_004",
@@ -462,15 +332,8 @@
         "myra": "3d03a1d9ce2954d3823531e97d1085a5518467f7630c9e2a8de12f111439d7a9",
         "raj": "3d03a1d9ce2954d3823531e97d1085a5518467f7630c9e2a8de12f111439d7a9"
       },
-      "requiredPredicateIds": [
-        "narratwin.conceived.rohit",
-        "narratwin.owner.rohit",
-        "narratwin.producer.rohit",
-        "narratwin.under_stackclimb"
-      ],
-      "propositionIds": [
-        "fact_003"
-      ]
+      "requiredPredicateIds": ["narratwin.conceived.rohit", "narratwin.owner.rohit", "narratwin.producer.rohit", "narratwin.under_stackclimb"],
+      "propositionIds": ["fact_003"]
     },
     {
       "claimId": "claim_005",
@@ -479,15 +342,8 @@
         "myra": "0fac1aeaaa5207068f8cfad6f9e72ef96ff1a1c1f9c03fbcdf32d5fe4a0663d1",
         "raj": "0fac1aeaaa5207068f8cfad6f9e72ef96ff1a1c1f9c03fbcdf32d5fe4a0663d1"
       },
-      "requiredPredicateIds": [
-        "knowledge.documents",
-        "knowledge.architecture",
-        "knowledge.technical_implementation",
-        "knowledge.decisions"
-      ],
-      "propositionIds": [
-        "fact_005"
-      ]
+      "requiredPredicateIds": ["knowledge.documents", "knowledge.architecture", "knowledge.technical_implementation", "knowledge.decisions"],
+      "propositionIds": ["fact_005"]
     },
     {
       "claimId": "claim_006",
@@ -496,13 +352,8 @@
         "myra": "e13f55572566d79cdfbd5547fa4ceb33cf88943a131a1932d22ffec4c1968d3e",
         "raj": "e13f55572566d79cdfbd5547fa4ceb33cf88943a131a1932d22ffec4c1968d3e"
       },
-      "requiredPredicateIds": [
-        "product.approved_input",
-        "product.clear_guided_walkthrough"
-      ],
-      "propositionIds": [
-        "fact_006"
-      ]
+      "requiredPredicateIds": ["product.approved_input", "product.clear_guided_walkthrough"],
+      "propositionIds": ["fact_006"]
     },
     {
       "claimId": "claim_007",
@@ -511,12 +362,8 @@
         "myra": "1df2c0f8ced1ed3f03ddaf6ade7a8e36fd6d283fc1e54ea3aac73d320cd5e540",
         "raj": "1df2c0f8ced1ed3f03ddaf6ade7a8e36fd6d283fc1e54ea3aac73d320cd5e540"
       },
-      "requiredPredicateIds": [
-        "product.approved_input"
-      ],
-      "propositionIds": [
-        "fact_006"
-      ]
+      "requiredPredicateIds": ["product.approved_input"],
+      "propositionIds": ["fact_006"]
     },
     {
       "claimId": "claim_008",
@@ -525,15 +372,8 @@
         "myra": "c0e9da6b143a74b8df901bedcafa607fab1b77e894c63776eb2c9fb6479d6cad",
         "raj": "c0e9da6b143a74b8df901bedcafa607fab1b77e894c63776eb2c9fb6479d6cad"
       },
-      "requiredPredicateIds": [
-        "flow.organize",
-        "flow.retrieve",
-        "product.audience_aware"
-      ],
-      "propositionIds": [
-        "fact_006",
-        "fact_007"
-      ]
+      "requiredPredicateIds": ["flow.organize", "flow.retrieve", "product.audience_aware"],
+      "propositionIds": ["fact_006", "fact_007"]
     },
     {
       "claimId": "claim_009",
@@ -542,15 +382,8 @@
         "myra": "816a0c2b3ce413e712998d4a449e4a550d6d9c17a40b1a1a2e28df10094dfef2",
         "raj": "816a0c2b3ce413e712998d4a449e4a550d6d9c17a40b1a1a2e28df10094dfef2"
       },
-      "requiredPredicateIds": [
-        "grounding.source_support",
-        "grounding.context_refs",
-        "grounding.evaluation",
-        "grounding.no_unsupported_fact"
-      ],
-      "propositionIds": [
-        "fact_008"
-      ]
+      "requiredPredicateIds": ["grounding.source_support", "grounding.context_refs", "grounding.evaluation", "grounding.no_unsupported_fact"],
+      "propositionIds": ["fact_008"]
     },
     {
       "claimId": "claim_010",
@@ -559,19 +392,8 @@
         "myra": "9cf733b732055ee1ebe76b899421c4269f0b3b5aa703c73a42d6ed55950d32a9",
         "raj": "9cf733b732055ee1ebe76b899421c4269f0b3b5aa703c73a42d6ed55950d32a9"
       },
-      "requiredPredicateIds": [
-        "application.python_fastapi_backend",
-        "application.nextjs_ui",
-        "application.rag",
-        "application.evaluation_safety",
-        "application.multilingual",
-        "application.captions",
-        "application.speech",
-        "application.synthetic_presenter_media"
-      ],
-      "propositionIds": [
-        "fact_009"
-      ]
+      "requiredPredicateIds": ["application.python_fastapi_backend", "application.nextjs_ui", "application.rag", "application.evaluation_safety", "application.multilingual", "application.captions", "application.speech", "application.synthetic_presenter_media"],
+      "propositionIds": ["fact_009"]
     },
     {
       "claimId": "claim_011",
@@ -580,14 +402,8 @@
         "myra": "167009c2b4518360b2b2548a7ca495b36370d4c18cfb33b0049ef4fb4e19ddb1",
         "raj": "167009c2b4518360b2b2548a7ca495b36370d4c18cfb33b0049ef4fb4e19ddb1"
       },
-      "requiredPredicateIds": [
-        "architecture.provider_neutral",
-        "architecture.technology_substitution",
-        "architecture.workflow_preserved"
-      ],
-      "propositionIds": [
-        "fact_010"
-      ]
+      "requiredPredicateIds": ["architecture.provider_neutral", "architecture.technology_substitution", "architecture.workflow_preserved"],
+      "propositionIds": ["fact_010"]
     },
     {
       "claimId": "claim_012",
@@ -596,12 +412,8 @@
         "myra": "ea913e1e489826f51ca3ffe2490beefb28f642bde937ba7a1f4b17fa97e822cd",
         "raj": "ea913e1e489826f51ca3ffe2490beefb28f642bde937ba7a1f4b17fa97e822cd"
       },
-      "requiredPredicateIds": [
-        "reuse.other_projects"
-      ],
-      "propositionIds": [
-        "fact_011"
-      ]
+      "requiredPredicateIds": ["reuse.other_projects"],
+      "propositionIds": ["fact_011"]
     },
     {
       "claimId": "claim_013",
@@ -610,20 +422,8 @@
         "myra": "f0840ccb0bc40c21a642b104d5664863a7803d57eaf383340e2139d599c48688",
         "raj": "f0840ccb0bc40c21a642b104d5664863a7803d57eaf383340e2139d599c48688"
       },
-      "requiredPredicateIds": [
-        "reuse.approved_documentation",
-        "reuse.tailored_explanation",
-        "explanation.purpose",
-        "explanation.architecture",
-        "explanation.technologies",
-        "explanation.capabilities",
-        "explanation.decisions",
-        "explanation.integrations"
-      ],
-      "propositionIds": [
-        "fact_011",
-        "fact_012"
-      ]
+      "requiredPredicateIds": ["reuse.approved_documentation", "reuse.tailored_explanation", "explanation.purpose", "explanation.architecture", "explanation.technologies", "explanation.capabilities", "explanation.decisions", "explanation.integrations"],
+      "propositionIds": ["fact_011", "fact_012"]
     },
     {
       "claimId": "claim_014",
@@ -632,15 +432,8 @@
         "myra": "8dd22a3a600230f05cb9dd78d93491d31a306531e0d075bdb8a5bc4cfcf36f2c",
         "raj": "8dd22a3a600230f05cb9dd78d93491d31a306531e0d075bdb8a5bc4cfcf36f2c"
       },
-      "requiredPredicateIds": [
-        "experience.prepared_walkthrough",
-        "experience.first_mode",
-        "presenter.identity"
-      ],
-      "propositionIds": [
-        "fact_001",
-        "fact_013"
-      ]
+      "requiredPredicateIds": ["experience.prepared_walkthrough", "experience.first_mode", "presenter.identity"],
+      "propositionIds": ["fact_001", "fact_013"]
     },
     {
       "claimId": "claim_015",
@@ -649,13 +442,8 @@
         "myra": "1bb3923c69d4edfd2185dafd38cafb48261d09c6bbbbbd2919d281524358268f",
         "raj": "1bb3923c69d4edfd2185dafd38cafb48261d09c6bbbbbd2919d281524358268f"
       },
-      "requiredPredicateIds": [
-        "interactive.future",
-        "interactive.not_current_demo"
-      ],
-      "propositionIds": [
-        "fact_014"
-      ]
+      "requiredPredicateIds": ["interactive.future", "interactive.not_current_demo"],
+      "propositionIds": ["fact_014"]
     },
     {
       "claimId": "claim_016",
@@ -664,15 +452,8 @@
         "myra": "01719cc3b3ccff831b7b1d70d5258c2530393dbffa3928947586b5d80747465f",
         "raj": "01719cc3b3ccff831b7b1d70d5258c2530393dbffa3928947586b5d80747465f"
       },
-      "requiredPredicateIds": [
-        "experience.stackclimb_product",
-        "experience.approved_knowledge",
-        "experience.grounded",
-        "experience.presenter_led"
-      ],
-      "propositionIds": [
-        "fact_015"
-      ]
+      "requiredPredicateIds": ["experience.stackclimb_product", "experience.approved_knowledge", "experience.grounded", "experience.presenter_led"],
+      "propositionIds": ["fact_015"]
     },
     {
       "claimId": "claim_017",
@@ -681,12 +462,8 @@
         "myra": "f17e9b9bc8d5c371ae35309bd8b32715720f6b2602665f4442d158e55580eb3e",
         "raj": "f2fb18edb48729d1b43b42f44be5e86974dafdb6de95246c38383279f06bd5dd"
       },
-      "requiredPredicateIds": [
-        "presenter.identity"
-      ],
-      "propositionIds": [
-        "fact_001"
-      ]
+      "requiredPredicateIds": ["presenter.identity"],
+      "propositionIds": ["fact_001"]
     },
     {
       "claimId": "claim_018",
@@ -695,14 +472,8 @@
         "myra": "03ebbedd460ad026ae12d81dc450e854f456abad8ede0088364622ab1312ab01",
         "raj": "03ebbedd460ad026ae12d81dc450e854f456abad8ede0088364622ab1312ab01"
       },
-      "requiredPredicateIds": [
-        "presenter.identity",
-        "reuse.other_projects"
-      ],
-      "propositionIds": [
-        "fact_001",
-        "fact_011"
-      ]
+      "requiredPredicateIds": ["presenter.identity", "reuse.other_projects"],
+      "propositionIds": ["fact_001", "fact_011"]
     }
   ]
 }
