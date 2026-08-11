@@ -1372,7 +1372,7 @@ Required update rules:
   not emit `x-goog-user-project`; synthesis attempts and spend remain zero.
 - OWNER comment `5256748344` authorizes the bounded repair on branch
   `stage8-368-google-tts-quota-project-binding-fix`. The preflight freezes the
-  exact eighteen-path route and forbids real calls before merge.
+  exact nineteen-path route and forbids real calls before merge.
 - Redacted reconciliation established one intended project, equal active/ADC/
   role-bearing principals, effective `serviceusage.services.use` and
   `aiplatform.endpoints.predict`, and matching active, billing/quota, ADC and

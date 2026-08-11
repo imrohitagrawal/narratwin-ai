@@ -131,6 +131,7 @@ ROUTES = {
         "tests/unit/test_branch_protection_verifier.py",
         "tests/unit/test_governance_preflight_github.py",
         "docs/REPOSITORY_GUARDRAILS.md",
+        "docs/agent-context/context-policy-manifest-v1.json",
     },
     ISSUE368_PROMPT_BRANCH: {
         "docs/governance/preflights/issue-368.json",
@@ -395,6 +396,7 @@ TEXT_LIMITS = {
             "tests/unit/test_branch_protection_verifier.py": 220,
             "tests/unit/test_governance_preflight_github.py": 80,
             "docs/REPOSITORY_GUARDRAILS.md": 80,
+            "docs/agent-context/context-policy-manifest-v1.json": 10,
         }[path]
         for path in ROUTES[ISSUE368_QUOTA_FIX_BRANCH]
     },

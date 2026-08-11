@@ -30,7 +30,7 @@
     "evidence": "https://github.com/imrohitagrawal/narratwin-ai/issues/368#issuecomment-5256656667"
   },
   "change_budget": {
-    "exact_paths": 18,
+    "exact_paths": 19,
     "maximum_additions_plus_deletions": 2800,
     "deletions_grant_credit": false,
     "per_file_charged_lines": {
@@ -51,7 +51,8 @@
       "scripts/ci/verify_branch_protection.py": 80,
       "tests/unit/test_branch_protection_verifier.py": 220,
       "tests/unit/test_governance_preflight_github.py": 80,
-      "docs/REPOSITORY_GUARDRAILS.md": 80
+      "docs/REPOSITORY_GUARDRAILS.md": 80,
+      "docs/agent-context/context-policy-manifest-v1.json": 10
     }
   },
   "scope": {
@@ -73,7 +74,8 @@
       "scripts/ci/verify_branch_protection.py",
       "tests/unit/test_branch_protection_verifier.py",
       "tests/unit/test_governance_preflight_github.py",
-      "docs/REPOSITORY_GUARDRAILS.md"
+      "docs/REPOSITORY_GUARDRAILS.md",
+      "docs/agent-context/context-policy-manifest-v1.json"
     ],
     "allowed_prefixes": [
       "backend/app/google_tts_runtime.py",
@@ -93,7 +95,8 @@
       "scripts/ci/verify_branch_protection.py",
       "tests/unit/test_branch_protection_verifier.py",
       "tests/unit/test_governance_preflight_github.py",
-      "docs/REPOSITORY_GUARDRAILS.md"
+      "docs/REPOSITORY_GUARDRAILS.md",
+      "docs/agent-context/context-policy-manifest-v1.json"
     ],
     "forbidden": [
       "dependency manifests and lockfiles",
@@ -167,7 +170,7 @@
     "browser OAuth approval if required",
     "zero or multiple qualifying Google projects without deterministic prior OWNER evidence",
     "exact-hash OWNER listening",
-    "unsafe need outside the eighteen-path route",
+    "unsafe need outside the nineteen-path route",
     "new unremediable legal, credential, or safety contradiction"
   ]
 }
