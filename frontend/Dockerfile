@@ -36,18 +36,33 @@ ENV NARRATWIN_API_PROXY_TARGET=${NARRATWIN_API_PROXY_TARGET}
 COPY frontend ./
 RUN npm run build
 
-FROM cgr.dev/chainguard/node:latest@sha256:d8d2883b26d4fde4e524d0068cd78abbb23c7c2113a22e67a02cc73a9182552d AS runner
+FROM node:26.7.0-bookworm-slim@sha256:cd565714d4da3e84bfd341e31448f81d47c6362198f152345297c9c1154e6341 AS node-source
 
+FROM cgr.dev/chainguard/gcc-glibc@sha256:8cfe0b01dcf3ad08aa8d51811175749f7390228be059497ddc6d94551a68f66e AS atomic-source
+
+USER root
+RUN mkdir -p /runtime/usr/lib /runtime/var/lib/db/sbom \
+    && cp -a /usr/lib/libatomic.so.1 /usr/lib/libatomic.so.1.2.0 /runtime/usr/lib/ \
+    && cp /var/lib/db/sbom/libatomic-16.1.0-r4.spdx.json /runtime/var/lib/db/sbom/ \
+    && awk 'BEGIN { keep=0 } /^P:libatomic$/ { keep=1 } keep { print } keep && /^$/ { exit }' \
+       /usr/lib/apk/db/installed > /runtime/libatomic-record
+
+FROM cgr.dev/chainguard/glibc-dynamic@sha256:eaec65b25f35619be16f4992e7bae1128eafcf63c114f2859b800a7020c1ef70 AS runner
+
+ENV NODE_VERSION=26.7.0
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NARRATWIN_API_PROXY_TARGET=http://127.0.0.1:8000
 ENV HOSTNAME=0.0.0.0
 ENV PORT=3000
+ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 
 WORKDIR /app
 
 USER root
-RUN ["/usr/bin/node", "-e", "const fs=require('fs'); for (const p of ['/usr/lib/node_modules','/usr/local/lib/node_modules','/usr/local/bin','/etc/apk']) fs.rmSync(p,{force:true,recursive:true}); for (const n of fs.readdirSync('/usr/bin')) { const p='/usr/bin/'+n; if (p!=='/usr/bin/node') fs.rmSync(p,{force:true,recursive:true}) } for (const p of ['/bin','/sbin','/usr/sbin']) fs.rmSync(p,{force:true}); fs.chownSync('/app',0,0); fs.chmodSync('/app',0o755)"]
+COPY --from=node-source --chown=0:0 /usr/local/bin/node /usr/bin/node
+COPY --from=atomic-source --chown=0:0 /runtime/ /
+RUN ["/usr/bin/node", "-e", "const fs=require('fs'),p='/usr/lib/apk/db/installed',r=fs.readFileSync('/libatomic-record','utf8'); if(!/^P:libatomic$\\n^V:16\\.1\\.0-r4$/m.test(r)||/^P:libatomic$/m.test(fs.readFileSync(p,'utf8')))throw new Error('libatomic identity invalid'); fs.appendFileSync(p,r.endsWith('\\n\\n')?r:'\\n'+r+'\\n'); fs.rmSync('/libatomic-record'); for(const x of ['/usr/bin/ld.so','/usr/bin/ldconfig','/bin','/sbin','/usr/sbin'])fs.rmSync(x,{force:true,recursive:true})"]
 
 COPY --from=build --chown=0:0 /app/.next/standalone ./
 COPY --from=build --chown=0:0 /app/.next/static ./.next/static

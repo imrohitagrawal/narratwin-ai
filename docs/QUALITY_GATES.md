@@ -1264,7 +1264,7 @@ Google. A final 90–120-second artifact still requires exact-hash OWNER listeni
 ### Issue #368 Google TTS runtime-transport prerequisite gate
 
 Exact branch `stage8-368-cut1-google-tts-runtime-transport` starts at
-`0fea35a7028b22f6d91096b1f46b5418884b9992`, changes exactly 17 governed paths,
+accepted main `6766da34d73e301358f84f8eefb0985927292a26`, changes exactly 18 governed paths,
 and stays within 3,600 additions plus deletions with no deletion credit. The
 route requires committed RED-before-GREEN proof; optional lazy ADC with the
 fixed cloud-platform scope; exact quota-project/checksum binding; all-answer
@@ -1276,3 +1276,35 @@ immutable Issue #401 pypdf exactness while normalizing only the reviewed
 `google-auth==2.56.3` optional-provider closure and rejects any other drift.
 `google-auth==2.56.3` is optional and locked with its complete closure. Tests use fakes only; Google remains disabled,
 no credentials or real call/audio exists, and release remains No-Go.
+
+The historical adapter route remains independently enforced. Exact branch
+`stage8-368-cut1-google-tts-adapter-implementation` starts at
+`de0cd683cd05dda91c8f0df53d05c8b55c81d213`, changes exactly the governed 21
+paths, and stays within 5,600 additions plus deletions with no deletion credit.
+The route requires committed RED-before-GREEN proof; exact prompt/hash and unary
+request tests; receipt, privacy, budget, quota, concurrency and activation
+preconditions before fake identity/transport; redirect/DNS/TLS/proxy refusal;
+strict response/base64/WAV/signal validation; durable replay, billable-unknown,
+tombstone and tamper tests; pre-write transport proof, post-egress authority
+revalidation, privacy-screen evidence, cost reconciliation, transactional
+deletion, cross-instance locking/stale-instance tombstones, required durable
+state, opaque prepared-session send capability and bounded-restore fault tests;
+provider-neutral API regressions; and zero real
+network/provider calls. Google remains disabled and release remains No-Go.
+
+### Issue #413 frontend runtime security gate
+
+Branch `cut1-process-413-frontend-runtime-openssl` owns exactly nineteen paths
+and at most 5,000 charged lines. The gate binds exact multi-arch runtime,
+Node-binary and `libatomic` source indexes plus amd64/arm64 manifests; verifies
+effective OpenSSL 3.5.7 and exactly eight Wolfi package records; preserves
+package/SBOM metadata; checks the non-root Node entrypoint,
+minimal filesystem, permissions and HTTP startup; reproduces two independent
+builds with same-builder normalized inventory equality; validates CycloneDX
+SBOM identity; and requires Trivy/Grype consensus through Medium. Exact image,
+platform, config, package and OpenSSL identities remain portable invariants;
+the complete application-layer filesystem hash is not hardcoded across native
+and emulated builders. Floating references, affected 3.6.0–3.6.3, hidden
+metadata, wrong architecture, malformed or unequal inventories, scanner
+disagreement, and weakened thresholds fail closed. Product behavior,
+deployment and release are outside this gate.

@@ -6,7 +6,7 @@
   "status_decision": "runtime-transport-prerequisite-only",
   "authority": {
     "direct_owner_authority": "https://github.com/imrohitagrawal/narratwin-ai/issues/368#issuecomment-5245861950",
-    "accepted_main": "0fea35a7028b22f6d91096b1f46b5418884b9992",
+    "accepted_main": "6766da34d73e301358f84f8eefb0985927292a26",
     "governance_pr": "https://github.com/imrohitagrawal/narratwin-ai/pull/409",
     "prompt_contract_pr": "https://github.com/imrohitagrawal/narratwin-ai/pull/410",
     "adapter_pr": "https://github.com/imrohitagrawal/narratwin-ai/pull/411",

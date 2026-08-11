@@ -53,6 +53,50 @@ stage8: Any = load(REPO / "scripts/quality/check_stage8_docs.py", "stage8_with_c
 
 
 EXPECTED = {
+    "cut1-process-413-frontend-runtime-openssl": {
+        "docs/governance/preflights/issue-413.json",
+        "frontend/Dockerfile",
+        "scripts/ci/docker-image-scan.sh",
+        "scripts/ci/check_container_scan_consensus.py",
+        "tests/unit/test_container_scan_consensus.py",
+        "tests/unit/test_frontend_container_runtime.py",
+        "tests/unit/test_stage8_quality_gate.py",
+        "scripts/quality/stage8_cut1_routes.py",
+        "scripts/quality/stage8_node_security.py",
+        "scripts/quality/check_stage8_docs.py",
+        "tests/unit/test_stage8_cut1_routes.py",
+        "tests/unit/test_stage8_node_security.py",
+        "docs/ADR/0057-frontend-runtime-openssl-3-6-4.md",
+        "docs/SECURITY_AND_PRIVACY.md",
+        "docs/THIRD_PARTY_NOTICES.md",
+        "docs/QUALITY_GATES.md",
+        "docs/STATUS.md",
+        "docs/TRACEABILITY.md",
+        "docs/STAGE_ISSUE_PLAN.md",
+    },
+    "stage8-368-cut1-google-tts-adapter-implementation": {
+        "docs/governance/preflights/issue-368.json",
+        "backend/app/narration.py",
+        "backend/app/tts_provider.py",
+        "backend/app/stage6.py",
+        "tests/unit/test_cut1_narration.py",
+        "tests/unit/test_stage6_tts_provider.py",
+        "tests/unit/test_stage6_multilingual.py",
+        "tests/api/test_stage6_multilingual_api.py",
+        "scripts/quality/stage8_cut1_routes.py",
+        "tests/unit/test_stage8_cut1_routes.py",
+        "docs/ADR/0056-cut1-google-gemini-tts.md",
+        "docs/ARCHITECTURE.md",
+        "docs/SECURITY_AND_PRIVACY.md",
+        "docs/OBSERVABILITY_AND_COST.md",
+        "docs/QUALITY_GATES.md",
+        "docs/STAGE_ISSUE_PLAN.md",
+        "docs/STATUS.md",
+        "docs/TRACEABILITY.md",
+        "docs/THIRD_PARTY_NOTICES.md",
+        "docs/API_CONTRACT.md",
+        "docs/DATA_MODEL.md",
+    },
     "stage8-368-cut1-google-tts-runtime-transport": {
         "docs/governance/preflights/issue-368.json",
         "backend/app/google_tts_runtime.py",
@@ -395,6 +439,14 @@ def test_google_tts_governance_marks_prompt_prerequisite_satisfied_only() -> Non
 def test_routes_are_exact_pre_registered_and_issue386_preflight_matches() -> None:
     assert routes.ROUTES == EXPECTED
     assert {branch: stage8.EFFECTIVE_STAGE8_ROUTES[branch] for branch in EXPECTED} == EXPECTED
+    issue413 = json.loads((REPO / "docs/governance/preflights/issue-413.json").read_text(encoding="utf-8"))
+    issue413_route = EXPECTED["cut1-process-413-frontend-runtime-openssl"]
+    assert issue413["branch"] == "cut1-process-413-frontend-runtime-openssl"
+    assert set(issue413["scope"]["required"]) == issue413_route
+    assert set(issue413["scope"]["allowed_prefixes"]) == issue413_route
+    assert issue413_route.isdisjoint(issue413["scope"]["forbidden"])
+    assert "exactly nineteen paths" in (REPO / "docs/QUALITY_GATES.md").read_text(encoding="utf-8")
+    assert "exact nineteen-path route" in (REPO / "docs/STAGE_ISSUE_PLAN.md").read_text(encoding="utf-8")
     issue368 = json.loads((REPO / "docs/governance/preflights/issue-368.json").read_text(encoding="utf-8"))
     assert issue368["branch"] == routes.ISSUE368_IMPLEMENTATION_BRANCH
     assert set(issue368["scope"]["required"]) == EXPECTED[routes.ISSUE368_IMPLEMENTATION_BRANCH]

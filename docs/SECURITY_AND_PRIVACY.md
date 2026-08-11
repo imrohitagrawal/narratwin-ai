@@ -587,3 +587,18 @@ provider bodies and audio remain bounded in memory and are never persisted;
 errors and logs contain only bounded codes, semantic IDs and non-content hashes.
 The repository contains no real identity resolver, credential path or network
 client, so activation cannot occur from checked-in configuration.
+
+## Issue #413 frontend runtime OpenSSL boundary
+
+The final frontend runtime composes three exact multi-architecture official
+sources: minimal Chainguard glibc runtime, Docker Official Node 26.7.0 binary,
+and one Chainguard `libatomic` runtime component. The effective embedded OpenSSL
+is 3.5.7, outside CVE-2026-54876's affected 3.6.0-before-3.6.4 range. Exactly
+eight Wolfi package records and their SBOM metadata remain scanner-visible.
+Exact runtime probes, architecture verification, bounded inventory shape,
+same-builder two-build inventory equality, non-root smoke, and Trivy/Grype
+Medium-or-higher consensus fail closed. Exact source/config/package/OpenSSL/SBOM
+identity is portable; a complete application-layer filesystem hash is not
+asserted across native and emulated builders. This is an isolated container
+remediation, not a product, provider, deployment, release, or
+production-readiness claim.

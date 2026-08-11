@@ -43,15 +43,28 @@ FRONTEND_NODE_BUILD_IMAGE = (
     "a4fb14143ee24c038c851864fe85fd90f9121abc8fdca3092798bcc02e06b1d8"
 )
 FRONTEND_NODE_RUNTIME_IMAGE = (
-    "cgr.dev/chainguard/node:latest@sha256:"
-    "d8d2883b26d4fde4e524d0068cd78abbb23c7c2113a22e67a02cc73a9182552d"
+    "cgr.dev/chainguard/glibc-dynamic@sha256:"
+    "eaec65b25f35619be16f4992e7bae1128eafcf63c114f2859b800a7020c1ef70"
+)
+FRONTEND_NODE_SOURCE_IMAGE = (
+    "node:26.7.0-bookworm-slim@sha256:"
+    "cd565714d4da3e84bfd341e31448f81d47c6362198f152345297c9c1154e6341"
+)
+FRONTEND_ATOMIC_SOURCE_IMAGE = (
+    "cgr.dev/chainguard/gcc-glibc@sha256:"
+    "8cfe0b01dcf3ad08aa8d51811175749f7390228be059497ddc6d94551a68f66e"
 )
 ISSUE389_VULNERABLE_RUNTIME_IMAGE = (
     "cgr.dev/chainguard/node:latest@sha256:"
     "cf7ae5ead5aed79a61404d7b1bbb9b89ea461991b21cb8fcb07d4b6ad4d8b734"
 )
 FRONTEND_RUNTIME_NODE_VERSION = "26.7.0"
-FRONTEND_RUNTIME_NPM_PACKAGE = "npm-12 12.0.2-r2"
+FRONTEND_RUNTIME_PACKAGES = {
+    "ca-certificates-bundle": "20260413-r0", "glibc": "2.43-r12",
+    "glibc-locale-posix": "2.43-r12", "ld-linux": "2.43-r12",
+    "libatomic": "16.1.0-r4", "libgcc": "16.1.0-r4",
+    "libstdc++": "16.1.0-r4", "wolfi-baselayout": "20230201-r29",
+}
 FRONTEND_BUILD_ARCHIVE_SHA512 = {
     "npm@12.0.2": (
         "b885e890b9418fa1693544d05f53e64f9a73ec194837d4258b15fecdd692347b"
@@ -83,6 +96,8 @@ def frontend_node_image_valid(dockerfile: str) -> bool:
     expected = [
         f"FROM {FRONTEND_NODE_BUILD_IMAGE} AS deps",
         "FROM deps AS build",
+        f"FROM {FRONTEND_NODE_SOURCE_IMAGE} AS node-source",
+        f"FROM {FRONTEND_ATOMIC_SOURCE_IMAGE} AS atomic-source",
         f"FROM {FRONTEND_NODE_RUNTIME_IMAGE} AS runner",
     ]
     actual = [
@@ -92,6 +107,11 @@ def frontend_node_image_valid(dockerfile: str) -> bool:
     ]
     return (
         actual == expected
+        and ISSUE389_VULNERABLE_RUNTIME_IMAGE not in dockerfile
+        and "COPY --from=node-source --chown=0:0 /usr/local/bin/node /usr/bin/node" in dockerfile
+        and "COPY --from=atomic-source --chown=0:0 /runtime/ /" in dockerfile
+        and "fs.appendFileSync(p" in dockerfile
+        and "P:libatomic" in dockerfile and r"V:16\\.1\\.0-r4" in dockerfile
         and dockerfile.count("sha512sum -c -") == len(FRONTEND_BUILD_ARCHIVE_SHA512)
         and all(
             package in dockerfile and f"echo '{digest}  /tmp/" in dockerfile
