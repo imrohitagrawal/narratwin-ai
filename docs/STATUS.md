@@ -1355,6 +1355,7 @@ Required update rules:
   selected exact three-source minimal glibc composition reports embedded
   OpenSSL 3.5.7 and zero Medium-or-higher Trivy or Grype findings on amd64 and
   arm64 while retaining eight truthful package records.
-- The remediation remains pending dedicated PR CI and eligible latest-head
-  approval. It does not complete Issue #368, Cut 1, deployment or release;
-  release posture remains No-Go and Issue #369 is not started.
+- Dedicated security PR #414 is open and remains pending latest-head CI and
+  eligible non-author approval. It does not complete Issue #368, Cut 1,
+  deployment or release; release posture remains No-Go and Issue #369 is not
+  started.
