@@ -19,6 +19,12 @@
 - Provider-native IDs are metadata, not canonical IDs.
 - Every security-relevant action can produce an audit event.
 
+Issue #368 quota-project activation state is ephemeral server-owned runtime
+configuration, not a domain entity. Durable request state may bind the approved
+project SHA-256 through its config/request fingerprint, but never stores the raw
+Google project ID, ADC material, access token, or Authorization header. This
+preserves provider-neutral project and artifact records.
+
 ## Entity Relationship Summary
 
 ```text

@@ -322,3 +322,9 @@ Tokens, authorization headers, credential type/path, quota-project value,
 request/response bodies, prompts and audio remain excluded. A write or response
 failure after a write is `egress_possible=true` and is never retried; a DNS,
 connect or TLS failure before the write is pre-egress.
+
+Quota-project observability is limited to presence/equality booleans and the
+approved SHA-256. Request fingerprints bind `quotaProjectRequired=true`, that
+hash, and the exact three outbound header names. They never bind or emit the raw
+project value. A mismatch during initial ADC resolution or the immediate
+pre-egress reload releases the unspent reservation and records no paid attempt.

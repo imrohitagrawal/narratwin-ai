@@ -73,6 +73,14 @@ are billable-unknown and suppress retries. Google content logging, abuse
 monitoring, retention, regional processing, commercial use and account/IAM
 approval remain unresolved human/legal/privacy gates.
 
+Enabled authorized-user ADC fails closed unless configured, credential, and
+approved-hash quota-project bindings agree. The binding is reloaded immediately
+before egress, and the application constructs and validates exactly one
+`x-goog-user-project` header. Header removal, value mutation, caller injection,
+or project drift is a proven pre-egress failure. Raw project IDs are treated as
+restricted configuration: they are excluded from logs, errors, durable state,
+evidence, and product/API surfaces.
+
 ### Secret Scanning
 
 Controls:

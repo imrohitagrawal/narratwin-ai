@@ -100,7 +100,12 @@ def test_missing_google_auth_fails_closed_without_network(monkeypatch: pytest.Mo
 
     monkeypatch.setattr(importlib, "import_module", missing)
     provider = ADCGoogleIdentityProvider(
-        config=GoogleADCConfig(enabled=True, activation_evidence_sha256=CHECKSUM),
+        config=GoogleADCConfig(
+            enabled=True,
+            activation_evidence_sha256=CHECKSUM,
+            quota_project_id=QUOTA_PROJECT,
+            quota_project_evidence_sha256=QUOTA_PROJECT_HASH,
+        ),
         request_factory=lambda: object(),
     )
     with pytest.raises(GoogleRuntimeError) as error:
@@ -127,6 +132,7 @@ def test_adc_resolution_binds_exact_scope_and_identity_checksum() -> None:
     assert len(credentials.refresh_calls) == 1
     assert getattr(identity, "quota_project_id", None) == QUOTA_PROJECT
     assert getattr(identity, "quota_project_sha256", None) == QUOTA_PROJECT_HASH
+    assert QUOTA_PROJECT not in repr(identity)
 
 
 def test_adc_rejects_wrong_scope_and_unbound_quota_project() -> None:

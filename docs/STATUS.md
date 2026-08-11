@@ -1366,6 +1366,24 @@ Required update rules:
 - That historical merge did not close Issue #368 or authorize activation,
   final-audio evidence, deployment, distribution or release.
 
+## Issue #368 quota-project repair state (2026-08-11)
+
+- The accepted zero-egress diagnostic found that the merged raw REST path did
+  not emit `x-goog-user-project`; synthesis attempts and spend remain zero.
+- OWNER comment `5256748344` authorizes the bounded repair on branch
+  `stage8-368-google-tts-quota-project-binding-fix`. The preflight freezes the
+  exact fourteen-path route and forbids real calls before merge.
+- Redacted reconciliation established one intended project, equal active/ADC/
+  role-bearing principals, effective `serviceusage.services.use` and
+  `aiplatform.endpoints.predict`, and matching active, billing/quota, ADC and
+  approved project hashes. No identifier or credential is repository evidence.
+- RED tests reproduce missing, mismatched, changed and injected quota binding;
+  the repair makes the exact header and approved hash first-class and fail
+  closed while keeping Google disabled by default and product APIs neutral.
+- Issue #368 remains open. Provider egress, generated audio, listening,
+  deployment, public/commercial distribution, and release remain unproved;
+  release posture remains No-Go.
+
 ## Issue #413 independent frontend runtime security state (2026-08-11)
 
 - PR #414 merged at `6766da34d73e301358f84f8eefb0985927292a26`; Issue #413 is closed.

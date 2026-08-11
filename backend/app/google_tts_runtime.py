@@ -11,6 +11,7 @@ stays at the provider boundary.
 from __future__ import annotations
 
 import hashlib
+import hmac
 import importlib
 import ipaddress
 import json
@@ -40,6 +41,7 @@ _MAX_HEADER_BYTES = 32_768
 _DEFAULT_MAX_RESPONSE_BYTES = 6_000_000
 _READ_CHUNK_BYTES = 64 * 1024
 _HEADER_NAME = re.compile(r"[!#$%&'*+.^_`|~0-9A-Za-z-]+\Z")
+_PROJECT_ID = re.compile(r"[a-z][a-z0-9-]{4,61}[a-z0-9]\Z")
 
 
 class GoogleRuntimeError(RuntimeError):
@@ -63,6 +65,7 @@ class GoogleADCConfig:
 
 class _Credentials(Protocol):
     token: str | None
+    quota_project_id: str | None
 
     def refresh(self, request: object) -> None: ...
 
@@ -93,13 +96,8 @@ class ADCGoogleIdentityProvider:
             raise GoogleRuntimeError(
                 "GOOGLE_TTS_ADC_UNAVAILABLE", "Google TTS ADC identity is unavailable."
             ) from None
-        configured_quota = self.config.quota_project_id
-        credential_quota = getattr(credentials, "quota_project_id", None)
-        if configured_quota and credential_quota not in (None, configured_quota):
-            raise GoogleRuntimeError(
-                "GOOGLE_TTS_QUOTA_PROJECT_MISMATCH",
-                "Google TTS quota-project evidence is invalid.",
-            )
+        configured_quota = cast(str, self.config.quota_project_id)
+        self._validate_credential_quota(credentials, configured_quota)
         request_factory = self._request_factory or self._load_request_factory()
         try:
             credentials.refresh(request_factory())
@@ -115,13 +113,42 @@ class ADCGoogleIdentityProvider:
         evidence = {
             "credentialType": type(credentials).__name__,
             "projectIdPresent": bool(project_id),
-            "quotaProjectId": configured_quota,
+            "quotaProjectSha256": self.config.quota_project_evidence_sha256,
             "scope": GOOGLE_TTS_SCOPE,
         }
         identity_checksum = "sha256:" + hashlib.sha256(
             json.dumps(evidence, sort_keys=True, separators=(",", ":")).encode("utf-8")
         ).hexdigest()
-        return GoogleIdentity(access_token=access_value, identity_evidence_sha256=identity_checksum)
+        return GoogleIdentity(
+            access_token=access_value,
+            identity_evidence_sha256=identity_checksum,
+            quota_project_id=configured_quota,
+            quota_project_sha256=cast(str, self.config.quota_project_evidence_sha256),
+        )
+
+    def revalidate_quota_project(self, identity: GoogleIdentity) -> None:
+        """Reload ADC and fail closed if its quota binding changed before egress."""
+        self._validate_preconditions(GOOGLE_TTS_SCOPE)
+        configured_quota = cast(str, self.config.quota_project_id)
+        if (
+            not isinstance(identity, GoogleIdentity)
+            or identity.quota_project_id != configured_quota
+            or identity.quota_project_sha256 != self.config.quota_project_evidence_sha256
+        ):
+            raise GoogleRuntimeError(
+                "GOOGLE_TTS_QUOTA_PROJECT_MISMATCH",
+                "Google TTS quota-project evidence is invalid.",
+            )
+        loader = self._default_loader or self._load_default_loader()
+        try:
+            credentials, _project_id = loader(
+                scopes=[GOOGLE_TTS_SCOPE], quota_project_id=configured_quota
+            )
+        except Exception:
+            raise GoogleRuntimeError(
+                "GOOGLE_TTS_ADC_UNAVAILABLE", "Google TTS ADC identity is unavailable."
+            ) from None
+        self._validate_credential_quota(credentials, configured_quota)
 
     def _validate_preconditions(self, scope: str) -> None:
         if not self.config.enabled:
@@ -132,17 +159,33 @@ class ADCGoogleIdentityProvider:
             raise GoogleRuntimeError(
                 "GOOGLE_TTS_ACTIVATION_INVALID", "Google TTS activation evidence is invalid."
             )
-        if self.config.quota_project_id is not None:
-            if not re.fullmatch(r"[a-z][a-z0-9-]{4,61}[a-z0-9]", self.config.quota_project_id):
-                raise GoogleRuntimeError(
-                    "GOOGLE_TTS_QUOTA_PROJECT_INVALID",
-                    "Google TTS quota-project evidence is invalid.",
-                )
-            if not _CHECKSUM.fullmatch(self.config.quota_project_evidence_sha256 or ""):
-                raise GoogleRuntimeError(
-                    "GOOGLE_TTS_QUOTA_PROJECT_INVALID",
-                    "Google TTS quota-project evidence is invalid.",
-                )
+        configured_quota = self.config.quota_project_id
+        approved_hash = self.config.quota_project_evidence_sha256
+        if (
+            not isinstance(configured_quota, str)
+            or not _PROJECT_ID.fullmatch(configured_quota)
+            or not isinstance(approved_hash, str)
+            or not _CHECKSUM.fullmatch(approved_hash)
+            or not hmac.compare_digest(
+                approved_hash,
+                "sha256:" + hashlib.sha256(configured_quota.encode("utf-8")).hexdigest(),
+            )
+        ):
+            raise GoogleRuntimeError(
+                "GOOGLE_TTS_QUOTA_PROJECT_INVALID",
+                "Google TTS quota-project evidence is invalid.",
+            )
+
+    @staticmethod
+    def _validate_credential_quota(credentials: _Credentials, configured_quota: str) -> None:
+        credential_quota = getattr(credentials, "quota_project_id", None)
+        if not isinstance(credential_quota, str) or not hmac.compare_digest(
+            credential_quota, configured_quota
+        ):
+            raise GoogleRuntimeError(
+                "GOOGLE_TTS_QUOTA_PROJECT_MISMATCH",
+                "Google TTS quota-project evidence is invalid.",
+            )
 
     @staticmethod
     def _load_default_loader() -> Callable[..., tuple[_Credentials, str | None]]:

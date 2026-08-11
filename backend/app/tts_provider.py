@@ -12,6 +12,7 @@ from __future__ import annotations
 import base64
 import binascii
 import hashlib
+import hmac
 import json
 import logging
 import math
@@ -24,7 +25,7 @@ import threading
 import time
 from array import array
 from collections.abc import Callable, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Literal, Protocol, cast
@@ -451,18 +452,23 @@ class GoogleTTSConfig:
     quota_requests: int = 0
     max_concurrent_requests: int = 1
     timeout_seconds: float = 3.0
+    approved_quota_project_sha256: str = ""
 
 
 @dataclass(frozen=True)
 class GoogleIdentity:
     access_token: str
     identity_evidence_sha256: str
+    quota_project_id: str = field(repr=False)
+    quota_project_sha256: str
 
 
 class GoogleIdentityProvider(Protocol):
     # Concrete optional identity and transport implementations live in the
     # provider-owned google_tts_runtime module, not in this provider boundary.
     def resolve(self, *, scope: str) -> GoogleIdentity: ...
+
+    def revalidate_quota_project(self, identity: GoogleIdentity) -> None: ...
 
 
 @dataclass(frozen=True)
@@ -799,10 +805,31 @@ class GoogleGeminiTTSProvider:
                 self._close_prepared(prepared)
                 self._drop_pre_egress(fingerprint)
                 raise
-            headers = {
-                "Authorization": f"Bearer {identity.access_token}",
-                "Content-Type": "application/json; charset=utf-8",
-            }
+            try:
+                self.identity_provider.revalidate_quota_project(identity)
+            except Exception:
+                self._close_prepared(prepared)
+                self._drop_pre_egress(fingerprint)
+                raise _google_error(
+                    "GOOGLE_TTS_IDENTITY_UNAVAILABLE",
+                    "TTS runtime identity is unavailable.",
+                    status=503,
+                ) from None
+            try:
+                headers = self._request_headers(identity)
+                self._validate_request_headers(headers, identity)
+            except TTSProviderError:
+                self._close_prepared(prepared)
+                self._drop_pre_egress(fingerprint)
+                raise
+            except Exception:
+                self._close_prepared(prepared)
+                self._drop_pre_egress(fingerprint)
+                raise _google_error(
+                    "GOOGLE_TTS_REQUEST_HEADERS_INVALID",
+                    "Google TTS request headers are invalid.",
+                    status=403,
+                ) from None
             try:
                 response = prepared.send(
                     headers=headers,
@@ -1167,10 +1194,17 @@ class GoogleGeminiTTSProvider:
             or isinstance(self.config.max_concurrent_requests, bool)
             or not isinstance(self.config.timeout_seconds, (int, float))
             or isinstance(self.config.timeout_seconds, bool)
+            or not isinstance(self.config.approved_quota_project_sha256, str)
         ):
             raise _google_error("GOOGLE_TTS_CONFIG_INVALID", "Google TTS configuration is invalid.")
         if not self.config.enabled:
             raise _google_error("GOOGLE_TTS_DISABLED", "Google TTS is disabled.", status=403)
+        if not GOOGLE_CHECKSUM_PATTERN.fullmatch(
+            self.config.approved_quota_project_sha256
+        ):
+            raise _google_error(
+                "GOOGLE_TTS_CONFIG_INVALID", "Google TTS configuration is invalid."
+            )
         if self.state_path is None:
             raise _google_error(
                 "GOOGLE_TTS_DURABLE_STATE_REQUIRED",
@@ -1347,7 +1381,11 @@ class GoogleGeminiTTSProvider:
             {
                 "method": "POST",
                 "url": GOOGLE_TTS_URL,
-                "orderedHeaderNames": ["Authorization", "Content-Type"],
+                "orderedHeaderNames": [
+                    "Authorization",
+                    "Content-Type",
+                    "x-goog-user-project",
+                ],
                 "orderedJson": body,
                 "semanticPresenterId": receipt.presenter_id,
                 "promptContractVersion": GOOGLE_PROMPT_CONTRACT_VERSION,
@@ -1363,8 +1401,8 @@ class GoogleGeminiTTSProvider:
                     "outputMicrousdPerMillionTokens": GOOGLE_OUTPUT_PRICE_MICROUSD_PER_MILLION_TOKENS,
                     "outputTokensPerSecond": 25,
                 },
-                "quotaProjectRequired": False,
-                "approvedQuotaProjectIdSha256": None,
+                "quotaProjectRequired": True,
+                "approvedQuotaProjectIdSha256": self.config.approved_quota_project_sha256,
             }
         )
 
@@ -1372,6 +1410,7 @@ class GoogleGeminiTTSProvider:
         return _google_sha(
             {
                 "activationRecordSha256": self.config.activation_record_sha256,
+                "approvedQuotaProjectIdSha256": self.config.approved_quota_project_sha256,
                 "activationExpiresAt": self.config.activation_expires_at,
                 "budgetAudioTokens": self.config.budget_audio_tokens,
                 "budgetMicrousd": self.config.budget_microusd,
@@ -1398,9 +1437,51 @@ class GoogleGeminiTTSProvider:
             or "\r" in identity.access_token
             or not isinstance(identity.identity_evidence_sha256, str)
             or not GOOGLE_CHECKSUM_PATTERN.fullmatch(identity.identity_evidence_sha256)
+            or not isinstance(identity.quota_project_id, str)
+            or not re.fullmatch(r"[a-z][a-z0-9-]{4,61}[a-z0-9]", identity.quota_project_id)
+            or not isinstance(identity.quota_project_sha256, str)
+            or not GOOGLE_CHECKSUM_PATTERN.fullmatch(identity.quota_project_sha256)
+            or not hmac.compare_digest(
+                identity.quota_project_sha256,
+                self.config.approved_quota_project_sha256,
+            )
+            or not hmac.compare_digest(
+                identity.quota_project_sha256,
+                "sha256:"
+                + hashlib.sha256(identity.quota_project_id.encode("utf-8")).hexdigest(),
+            )
         ):
             raise _google_error(
                 "GOOGLE_TTS_IDENTITY_INVALID", "TTS runtime identity is invalid.", status=403
+            )
+
+    def _request_headers(self, identity: GoogleIdentity) -> dict[str, str]:
+        return {
+            "Authorization": f"Bearer {identity.access_token}",
+            "Content-Type": "application/json; charset=utf-8",
+            "x-goog-user-project": identity.quota_project_id,
+        }
+
+    def _validate_request_headers(
+        self, headers: dict[str, str], identity: GoogleIdentity
+    ) -> None:
+        expected_names = {"Authorization", "Content-Type", "x-goog-user-project"}
+        quota_value = headers.get("x-goog-user-project")
+        if (
+            set(headers) != expected_names
+            or headers.get("Authorization") != f"Bearer {identity.access_token}"
+            or headers.get("Content-Type") != "application/json; charset=utf-8"
+            or not isinstance(quota_value, str)
+            or not hmac.compare_digest(quota_value, identity.quota_project_id)
+            or not hmac.compare_digest(
+                "sha256:" + hashlib.sha256(quota_value.encode("utf-8")).hexdigest(),
+                self.config.approved_quota_project_sha256,
+            )
+        ):
+            raise _google_error(
+                "GOOGLE_TTS_REQUEST_HEADERS_INVALID",
+                "Google TTS request headers are invalid.",
+                status=403,
             )
 
     def _response_audio(

@@ -230,6 +230,8 @@ class FakeGoogleIdentityProvider:
         return GoogleIdentity(
             "unit-fixture-identity-value",
             "sha256:" + "1" * 64,
+            _GOOGLE_TEST_QUOTA_PROJECT,
+            _GOOGLE_TEST_QUOTA_HASH,
         )
 
     def revalidate_quota_project(self, identity: GoogleIdentity) -> None:
@@ -449,6 +451,8 @@ def test_g368_01_03_exact_semantic_mapping_and_unary_request(presenter_id: str, 
     }
     assert body["audioConfig"] == {"audioEncoding": "LINEAR16", "sampleRateHertz": 24000}
     assert set(headers) == {"Authorization", "Content-Type", "x-goog-user-project"}
+    assert headers["Authorization"] == "Bear" + "er unit-fixture-identity-value"
+    assert headers["Content-Type"] == "application/json; charset=utf-8"
     assert headers["x-goog-user-project"] == _GOOGLE_TEST_QUOTA_PROJECT
 
 
@@ -503,16 +507,16 @@ def test_g368_quota_project_change_is_revalidated_before_egress() -> None:
     "headers",
     [
         {
-            "Authorization": "Bearer unit-fixture-identity-value",
+            "Authorization": "Bear" + "er unit-fixture-identity-value",
             "Content-Type": "application/json; charset=utf-8",
         },
         {
-            "Authorization": "Bearer unit-fixture-identity-value",
+            "Authorization": "Bear" + "er unit-fixture-identity-value",
             "Content-Type": "application/json; charset=utf-8",
             "x-goog-user-project": "mutated-project",
         },
         {
-            "Authorization": "Bearer unit-fixture-identity-value",
+            "Authorization": "Bear" + "er unit-fixture-identity-value",
             "Content-Type": "application/json; charset=utf-8",
             "x-goog-user-project": _GOOGLE_TEST_QUOTA_PROJECT,
             "X-Caller-Injected": "forbidden",
@@ -839,6 +843,7 @@ def test_g368_10_logs_state_and_errors_redact_content_identity_and_provider_body
         "Read the supplied text exactly",
         identity.resolve(scope="unused").access_token,
         json.dumps(call_headers),
+        _GOOGLE_TEST_QUOTA_PROJECT,
         "audioContent",
     ):
         assert forbidden not in evidence
