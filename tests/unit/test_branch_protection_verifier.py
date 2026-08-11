@@ -1,4 +1,5 @@
 import importlib.util
+import re
 from pathlib import Path
 from types import ModuleType
 from typing import Any
@@ -29,6 +30,58 @@ HISTORICAL_CONTEXTS = (
     "stage8 / performance lighthouse",
 )
 EXPECTED_CONTEXTS = (*HISTORICAL_CONTEXTS, "pr-body-consistency")
+
+
+def documented_required_contexts(markdown: str) -> tuple[str, ...]:
+    lines = markdown.splitlines()
+    start = lines.index("- Required status checks:")
+    entries: list[str] = []
+    for line in lines[start + 1 :]:
+        if line.startswith("- "):
+            break
+        match = re.fullmatch(r"  - `([^`]+)`(?: .*)?", line)
+        if match is not None:
+            entries.append(match.group(1))
+    return tuple(entries)
+
+
+def documented_context_failures(contexts: tuple[str, ...]) -> list[str]:
+    failures: list[str] = []
+    expected = set(EXPECTED_CONTEXTS)
+    actual = set(contexts)
+    if len(contexts) != len(actual):
+        failures.append("duplicate required context")
+    if missing := sorted(expected - actual):
+        failures.append(f"missing required contexts: {', '.join(missing)}")
+    if unexpected := sorted(actual - expected):
+        failures.append(f"unexpected required contexts: {', '.join(unexpected)}")
+    if not failures and contexts != EXPECTED_CONTEXTS:
+        failures.append("required contexts are not in canonical order")
+    return failures
+
+
+def test_documented_required_contexts_match_canonical_contract() -> None:
+    guardrails = Path("docs/REPOSITORY_GUARDRAILS.md").read_text(encoding="utf-8")
+    contexts = documented_required_contexts(guardrails)
+
+    assert documented_context_failures(contexts) == []
+    pr_body_line = next(line for line in guardrails.splitlines() if "`pr-body-consistency`" in line)
+    assert "GitHub Actions app ID `15368`" in pr_body_line
+
+
+def test_documented_required_context_validation_rejects_drift() -> None:
+    assert documented_context_failures(EXPECTED_CONTEXTS[:-1]) == [
+        "missing required contexts: pr-body-consistency"
+    ]
+    assert documented_context_failures((*EXPECTED_CONTEXTS, "unexpected / bypass")) == [
+        "unexpected required contexts: unexpected / bypass"
+    ]
+    assert "duplicate required context" in documented_context_failures(
+        (*EXPECTED_CONTEXTS, "pr-body-consistency")
+    )
+    assert documented_context_failures(tuple(reversed(EXPECTED_CONTEXTS))) == [
+        "required contexts are not in canonical order"
+    ]
 
 
 def protected_payload(**overrides: object) -> dict[str, object]:
