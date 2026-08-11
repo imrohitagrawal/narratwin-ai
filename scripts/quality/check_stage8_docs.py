@@ -327,10 +327,10 @@ def check_backend_and_tests(failures: list[str]) -> None:
         if marker not in stage6_unit_tests:
             fail(f"Stage 8 Stage 6 unit tests must cover {marker}.", failures)
     frontend_dockerfile = read("frontend/Dockerfile")
-    for marker in ("/usr/lib/node_modules", "/usr/local/lib/node_modules", "/usr/local/bin", "/bin", "/usr/bin",
-                   "p!=='/usr/bin/node'"):
+    for marker in ("COPY --from=node-source", "COPY --from=atomic-source", "/usr/lib/apk/db/installed",
+                   "fs.appendFileSync(p", 'USER 65532:65532', 'ENTRYPOINT ["/usr/bin/node"]'):
         if marker not in frontend_dockerfile:
-            fail(f"Stage 8 frontend runtime image must remove {marker}.", failures)
+            fail(f"Stage 8 frontend runtime image must preserve {marker}.", failures)
 def check_dependencies_and_scripts(failures: list[str]) -> None:
     pyproject = read("pyproject.toml")
     package = json.loads(read("frontend/package.json"))
