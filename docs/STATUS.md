@@ -18,7 +18,9 @@ Use it to answer:
   is governed by Issue `#415` and is not product implementation or a release
   claim. Live required-check activation exists only when repository protection
   settings plus Issue #415 canary and closeout evidence establish it; the
-  repository ledger does not assume merge-independent GitHub state.
+  repository ledger does not assume merge-independent GitHub state. The first
+  post-merge canary found a hosted-runner package-import defect; its Issue #415
+  corrective PR must merge and the canary must be resumed before activation.
 
 - Current Cut 1 route authority: Issue `#346` / PR `#347` merged at
   `4c5d7cf16fb8cdf7046d561c882f655d06125127` and established exact branch
