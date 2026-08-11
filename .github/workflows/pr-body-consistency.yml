@@ -30,7 +30,7 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           REPOSITORY: ${{ github.repository }}
-        run: python3 scripts/quality/pr_body_consistency_cli.py --repository "$REPOSITORY" --pr "$PR_NUMBER" --apply
+        run: python3 -m scripts.quality.pr_body_consistency_cli --repository "$REPOSITORY" --pr "$PR_NUMBER" --apply
   check:
     name: pr-body-consistency
     needs: reconcile
@@ -49,4 +49,4 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           REPOSITORY: ${{ github.repository }}
-        run: python3 scripts/quality/pr_body_consistency_cli.py --repository "$REPOSITORY" --pr "$PR_NUMBER"
+        run: python3 -m scripts.quality.pr_body_consistency_cli --repository "$REPOSITORY" --pr "$PR_NUMBER"

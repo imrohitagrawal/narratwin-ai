@@ -140,6 +140,8 @@ def test_workflow_contract_is_trusted_base_and_least_privilege() -> None:
     assert "pr-body-consistency" in text
     assert "needs: reconcile" in text
     assert "uv run python" in Path("Makefile").read_text(encoding="utf-8")
+    assert text.count("python3 -m scripts.quality.pr_body_consistency_cli") == 2
+    assert "python3 scripts/quality/pr_body_consistency_cli.py" not in text
 
 
 def test_workflow_records_bootstrap_boundary_and_fork_safe_skip() -> None:

@@ -73,5 +73,26 @@
       }
     ]
   },
-  "owner_authorization": "GitHub Issue #415 records the direct OWNER authorization dated 2026-08-11."
+  "owner_authorization": "GitHub Issue #415 records the direct OWNER authorization dated 2026-08-11.",
+  "correction_routes": [
+    {
+      "branch": "stage8-415-pr-body-consistency-canary-fix",
+      "accepted_base": "20c1f4f19ee20e613f87bbfa6339f17ebb0ad205",
+      "reason": "Forward-only correction after PR #417 merged: the hosted pull_request_target runner could not import the repository scripts package when the CLI was executed by file path.",
+      "allowed_paths": [
+        ".github/workflows/pr-body-consistency.yml",
+        "tests/unit/test_pr_body_consistency.py",
+        "docs/STATUS.md",
+        "scripts/quality/stage8_cut1_routes.py",
+        "tests/unit/test_stage8_cut1_routes.py",
+        "docs/governance/preflights/issue-415.json"
+      ],
+      "charged_line_budget": 800,
+      "boundaries": {
+        "bootstrap": "PR #419 cannot validate its own pull_request_target correction because that workflow executes the trusted default-branch revision before merge.",
+        "canary": "Reuse draft PR #418 after PR #419 merges; it must prove managed-block-only reconciliation and non-recursion.",
+        "required_check_activation": "Add only the live-successful pr-body-consistency context after the PR #418 canary succeeds and a complete branch-protection before/after comparison proves preservation."
+      }
+    }
+  ]
 }

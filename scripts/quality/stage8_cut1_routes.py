@@ -24,6 +24,7 @@ ISSUE368_PROMPT_BRANCH = "stage8-368-cut1-google-tts-prompt-contract"
 ISSUE368_ADAPTER_BRANCH = "stage8-368-cut1-google-tts-adapter-implementation"
 ISSUE368_IMPLEMENTATION_BRANCH = "stage8-368-cut1-google-tts-runtime-transport"
 ISSUE415_BRANCH = "stage8-415-pr-body-live-state-reconciliation"
+ISSUE415_CORRECTION_BRANCH = "stage8-415-pr-body-consistency-canary-fix"
 ISSUE386_BASE = "48fc32a2689c9bbc03742d774f3eadb8a500dafc"
 ISSUE368_BASE = "ef9cabc23762560912d99f10831241b8a65b869c"
 ISSUE368_PROMPT_BASE = "ba77d59b193da8064d67261e13fb50756c2bd9e8"
@@ -36,6 +37,14 @@ ROUTES = {
         "docs/agent-context/context-policy-manifest-v1.json", "docs/governance/preflights/issue-415.json",
         "scripts/quality/pr_body_consistency.py", "scripts/quality/pr_body_consistency_cli.py", "scripts/quality/stage8_cut1_routes.py",
         "tests/fixtures/pr_body_consistency/live_pr.json", "tests/unit/test_pr_body_consistency.py", "tests/unit/test_stage8_cut1_routes.py",
+    },
+    ISSUE415_CORRECTION_BRANCH: {
+        ".github/workflows/pr-body-consistency.yml",
+        "docs/STATUS.md",
+        "docs/governance/preflights/issue-415.json",
+        "scripts/quality/stage8_cut1_routes.py",
+        "tests/unit/test_pr_body_consistency.py",
+        "tests/unit/test_stage8_cut1_routes.py",
     },
     ISSUE413_BRANCH: {
         "docs/governance/preflights/issue-413.json",
@@ -283,11 +292,11 @@ ROUTES = {
         "docs/THIRD_PARTY_NOTICES.md",
     },
 }
-ROUTE_ISSUES = {ISSUE415_BRANCH: 415, ISSUE413_BRANCH: 413, ISSUE368_ADAPTER_BRANCH: 368, ISSUE368_IMPLEMENTATION_BRANCH: 368, ISSUE368_PROMPT_BRANCH: 368, ISSUE368_BRANCH: 368, ISSUE405_BRANCH: 405, ISSUE403_BRANCH: 403, ISSUE401_BRANCH: 401, ISSUE396_BRANCH: 396,
+ROUTE_ISSUES = {ISSUE415_BRANCH: 415, ISSUE415_CORRECTION_BRANCH: 415, ISSUE413_BRANCH: 413, ISSUE368_ADAPTER_BRANCH: 368, ISSUE368_IMPLEMENTATION_BRANCH: 368, ISSUE368_PROMPT_BRANCH: 368, ISSUE368_BRANCH: 368, ISSUE405_BRANCH: 405, ISSUE403_BRANCH: 403, ISSUE401_BRANCH: 401, ISSUE396_BRANCH: 396,
                 ISSUE386_BRANCH: 386, ISSUE385_BRANCH: 385,
                 ISSUE384_BRANCH: 384, ISSUE383_BRANCH: 383, ISSUE397_BRANCH: 397,
                 ISSUE393_BRANCH: 393, ISSUE382_BRANCH: 382, ISSUE367_BRANCH: 367}
-TOTAL_LIMITS = {ISSUE415_BRANCH: 5000, ISSUE413_BRANCH: 5000, ISSUE368_ADAPTER_BRANCH: 5600, ISSUE368_IMPLEMENTATION_BRANCH: 3600, ISSUE368_PROMPT_BRANCH: 1000, ISSUE368_BRANCH: 3200, ISSUE405_BRANCH: 800, ISSUE403_BRANCH: 650, ISSUE401_BRANCH: 600, ISSUE396_BRANCH: 500,
+TOTAL_LIMITS = {ISSUE415_BRANCH: 5000, ISSUE415_CORRECTION_BRANCH: 800, ISSUE413_BRANCH: 5000, ISSUE368_ADAPTER_BRANCH: 5600, ISSUE368_IMPLEMENTATION_BRANCH: 3600, ISSUE368_PROMPT_BRANCH: 1000, ISSUE368_BRANCH: 3200, ISSUE405_BRANCH: 800, ISSUE403_BRANCH: 650, ISSUE401_BRANCH: 600, ISSUE396_BRANCH: 500,
                 ISSUE386_BRANCH: 700, ISSUE385_BRANCH: 350,
                 ISSUE384_BRANCH: 500, ISSUE383_BRANCH: 700, ISSUE397_BRANCH: 500,
                 ISSUE393_BRANCH: 700, ISSUE382_BRANCH: 3200, ISSUE367_BRANCH: 2000}
@@ -297,6 +306,7 @@ ISSUE383_BINARY_FILES = {
 }
 TEXT_LIMITS = {
     ISSUE415_BRANCH: {path: 1200 if path == "scripts/quality/pr_body_consistency.py" else 900 if path == "tests/unit/test_pr_body_consistency.py" else 400 if path in {"scripts/quality/pr_body_consistency_cli.py", ".github/workflows/pr-body-consistency.yml"} else 250 for path in ROUTES[ISSUE415_BRANCH]},
+    ISSUE415_CORRECTION_BRANCH: {path: 250 for path in ROUTES[ISSUE415_CORRECTION_BRANCH]},
     ISSUE413_BRANCH: {
         path: 700 if path in {"scripts/ci/docker-image-scan.sh", "tests/unit/test_container_scan_consensus.py"}
         else 500 if path in {"scripts/ci/check_container_scan_consensus.py", "tests/unit/test_stage8_quality_gate.py"}
@@ -479,6 +489,7 @@ def route_base(run: Callable[[list[str]], Any], branch: str) -> str:
         ISSUE368_PROMPT_BRANCH: (368, ISSUE368_PROMPT_BASE),
         ISSUE368_BRANCH: (368, ISSUE368_BASE),
         ISSUE386_BRANCH: (386, ISSUE386_BASE),
+        ISSUE415_CORRECTION_BRANCH: (415, "20c1f4f19ee20e613f87bbfa6339f17ebb0ad205"),
     }
     if branch in fixed_routes:
         issue, base = fixed_routes[branch]
