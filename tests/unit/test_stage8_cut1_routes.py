@@ -60,6 +60,14 @@ EXPECTED = {
         "scripts/quality/pr_body_consistency.py", "scripts/quality/pr_body_consistency_cli.py", "scripts/quality/stage8_cut1_routes.py",
         "tests/fixtures/pr_body_consistency/live_pr.json", "tests/unit/test_pr_body_consistency.py", "tests/unit/test_stage8_cut1_routes.py",
     },
+    "stage8-415-pr-body-consistency-canary-fix": {
+        ".github/workflows/pr-body-consistency.yml",
+        "docs/STATUS.md",
+        "docs/governance/preflights/issue-415.json",
+        "scripts/quality/stage8_cut1_routes.py",
+        "tests/unit/test_pr_body_consistency.py",
+        "tests/unit/test_stage8_cut1_routes.py",
+    },
     "cut1-process-413-frontend-runtime-openssl": {
         "docs/governance/preflights/issue-413.json",
         "frontend/Dockerfile",
@@ -560,6 +568,36 @@ def test_issue415_route_is_frozen_to_the_authorized_recovery_paths() -> None:
     assert routes.TOTAL_LIMITS[branch] == 5000
     assert artifact["branch"] == branch
     assert set(artifact["allowed_paths"]) == expected
+
+
+def test_issue415_correction_route_is_fixed_to_its_base_and_six_paths() -> None:
+    branch = "stage8-415-pr-body-consistency-canary-fix"
+    expected = {
+        ".github/workflows/pr-body-consistency.yml",
+        "docs/STATUS.md",
+        "docs/governance/preflights/issue-415.json",
+        "scripts/quality/stage8_cut1_routes.py",
+        "tests/unit/test_pr_body_consistency.py",
+        "tests/unit/test_stage8_cut1_routes.py",
+    }
+    artifact = json.loads((REPO / "docs/governance/preflights/issue-415.json").read_text(encoding="utf-8"))
+    correction = artifact["correction_routes"][0]
+    assert routes.ROUTES[branch] == expected
+    assert routes.ROUTE_ISSUES[branch] == 415
+    assert routes.TOTAL_LIMITS[branch] == 800
+    assert correction["branch"] == branch
+    assert correction["accepted_base"] == "20c1f4f19ee20e613f87bbfa6339f17ebb0ad205"
+    assert set(correction["allowed_paths"]) == expected
+
+
+def test_issue415_correction_route_rejects_wrong_fixed_base() -> None:
+    branch = "stage8-415-pr-body-consistency-canary-fix"
+    outputs = iter((
+        completed([], out="20c1f4f19ee20e613f87bbfa6339f17ebb0ad205\n"),
+        completed([], out="a" * 40 + "\n"),
+    ))
+    error = pytest.raises(RuntimeError, routes.route_base, lambda _: next(outputs), branch)
+    assert "Issue #415 fixed base" in str(error.value)
 
 
 def test_legacy_checker_caps_are_unchanged_and_executable() -> None:
