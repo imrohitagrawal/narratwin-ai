@@ -1441,9 +1441,13 @@ video artifact counts remained zero.
 
 Issue #424 is now the sole next governance action. It preserves and hash-binds
 the OWNER-supplied forty-two-section master program and exposes three
-independent-review surfaces. Its amended twelve-path/8,500-line bootstrap adds
-only exact Stage 8 branch/base/path/budget recognition after committed RED
-evidence. Its proposed files do not activate
+independent-review surfaces. OWNER amendment `5267766081` authorizes its exact
+fourteen-path/8,500-line correction round. The canonical closed
+GovernancePreflightV1 and Stage 8 validator now bind branch/base/path/budget,
+controller digest/bytes/lines/trailing newline, all ordered headings, proposal
+schema, review states, and inactive authority with negative mutations. The exact
+Issue #424 branch is reference-only and does not close Issue #13. Its proposed
+files do not activate
 `ActiveProgramRouteV1`, `Cut1AuthorityManifestV1`, or any implementation route.
 Issues #366/#368/#369/#370/#371 remain open but their historical prose cannot
 authorize new work while the master authority is pending.
@@ -1451,7 +1455,8 @@ authorize new work while the master authority is pending.
 Issue #368 does not resume until Issue #424 receives exact-byte OWNER approval,
 independent review, exact-head non-author approval, merge, merged-main checks,
 and closeout, followed by a separately governed authority-reconciliation and
-stale-route-enforcement child with an approved phase specification. Provider
+stale-route-enforcement child with an approved phase specification and a
+separate current `MasterProgramAuthorityDecisionV1`. Provider
 calls, egress, spend, audio, video, deployment, publication, release, public
 availability, and production readiness remain No-Go.
 

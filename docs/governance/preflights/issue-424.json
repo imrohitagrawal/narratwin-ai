@@ -2,39 +2,8 @@
   "schema_version": "GovernancePreflightV1",
   "issue_number": 424,
   "branch": "stage8-424-master-program-authority-prelog",
-  "accepted_base": "afcf0325c3ec925b68b770eda0bb8c839bcce4dd",
-  "objective": "Create the governance-only, exact-byte pre-log package for the NarraTwin Authoritative Master Program, Cut 1 real-media delivery, and operational closeout controller. Preserve its full scope and exclusions, bind its bytes to a deterministic digest, expose three independent review surfaces, and keep all implementation, provider, paid-operation, audio, video, deployment, publication, release, and production authority blocked until this issue is reviewed, merged, verified on main, and closed.",
-  "status_decision": "prelog-authority-only-no-implementation-unlock",
-  "authority": {
-    "controller_issue": "https://github.com/imrohitagrawal/narratwin-ai/issues/424",
-    "route_freeze": "https://github.com/imrohitagrawal/narratwin-ai/issues/424#issuecomment-5266452787",
-    "bootstrap_route_amendment": "https://github.com/imrohitagrawal/narratwin-ai/issues/424#issuecomment-5266542898",
-    "predecessor_issue": "https://github.com/imrohitagrawal/narratwin-ai/issues/421",
-    "predecessor_pr": "https://github.com/imrohitagrawal/narratwin-ai/pull/422",
-    "predecessor_merge": "afcf0325c3ec925b68b770eda0bb8c839bcce4dd",
-    "predecessor_main_run": "https://github.com/imrohitagrawal/narratwin-ai/actions/runs/31593554541",
-    "owner_approval": "PENDING_EXACT_BYTES",
-    "eligible_non_author_review": "PENDING_EXACT_HEAD"
-  },
-  "change_budget": {
-    "exact_paths": 12,
-    "maximum_additions_plus_deletions": 8500,
-    "deletions_grant_credit": false,
-    "per_file_charged_lines": {
-      "docs/governance/NARRATWIN_MASTER_PROGRAM_V1.md": 5000,
-      "docs/governance/narratwin-master-program-v1.json": 180,
-      "docs/governance/preflights/issue-424.json": 500,
-      "docs/reviews/ISSUE_424_EXECUTION_SPEC_REVIEW.md": 500,
-      "docs/reviews/ISSUE_424_CUT1_FALSE_SUCCESS_REVIEW.md": 500,
-      "docs/reviews/ISSUE_424_PLATFORM_SECURITY_LEARNING_REVIEW.md": 500,
-      "docs/ADR/0059-master-program-authority-and-route-bootstrap.md": 400,
-      "docs/STAGE_ISSUE_PLAN.md": 250,
-      "docs/STATUS.md": 250,
-      "docs/TRACEABILITY.md": 250,
-      "scripts/quality/stage8_cut1_routes.py": 180,
-      "tests/unit/test_stage8_cut1_routes.py": 320
-    }
-  },
+  "objective": "Create the governance-only exact-byte proposal package for the NarraTwin master program. Conform this artifact to canonical GovernancePreflightV1, bind the controller through a fail-closed Stage 8 validator, preserve three independent review surfaces, make Issue #424 reference-only until merged-main closeout, and require a separate future authority-decision record before route activation. No runtime, provider, credential, egress, paid operation, audio, video, deployment, publication, release, or production authority is created.",
+  "status_decision": "update-minimally",
   "scope": {
     "required": [
       "docs/governance/NARRATWIN_MASTER_PROGRAM_V1.md",
@@ -48,218 +17,31 @@
       "docs/STATUS.md",
       "docs/TRACEABILITY.md",
       "scripts/quality/stage8_cut1_routes.py",
-      "tests/unit/test_stage8_cut1_routes.py"
+      "tests/unit/test_stage8_cut1_routes.py",
+      "scripts/guardrails_check.py",
+      "tests/unit/test_guardrails_check.py"
+    ],
+    "allowed_prefixes": [
+      "docs/governance/NARRATWIN_MASTER_PROGRAM_V1.md",
+      "docs/governance/narratwin-master-program-v1.json",
+      "docs/governance/preflights/issue-424.json",
+      "docs/reviews/ISSUE_424_EXECUTION_SPEC_REVIEW.md",
+      "docs/reviews/ISSUE_424_CUT1_FALSE_SUCCESS_REVIEW.md",
+      "docs/reviews/ISSUE_424_PLATFORM_SECURITY_LEARNING_REVIEW.md",
+      "docs/ADR/0059-master-program-authority-and-route-bootstrap.md",
+      "docs/STAGE_ISSUE_PLAN.md",
+      "docs/STATUS.md",
+      "docs/TRACEABILITY.md",
+      "scripts/quality/stage8_cut1_routes.py",
+      "tests/unit/test_stage8_cut1_routes.py",
+      "scripts/guardrails_check.py",
+      "tests/unit/test_guardrails_check.py"
     ],
     "forbidden": [
-      "backend or frontend runtime changes",
-      "quality-checker or guardrail changes beyond exact Issue #424 bootstrap branch/path/budget recognition; workflow or repository-setting changes",
-      "dependencies, containers, provider SDKs, credentials, secret lookup, or egress",
-      "audio, video, captions, media binaries, renderer auditions, or paid operations",
-      "deployment, publication, release, public availability, or production-readiness claims",
-      "activation of ActiveProgramRouteV1 or Cut1AuthorityManifestV1 before merged-main closeout"
+      "backend/",
+      "frontend/",
+      ".github/workflows/",
+      "docs/governance/narratwin-master-program-authority-decision-v1.json"
     ]
-  },
-  "claims": {
-    "G424_01": "One canonical Markdown controller preserves all forty-two numbered sections and their ordering.",
-    "G424_02": "A separate JSON record binds the controller path, byte count, no-trailing-newline state, SHA-256 digest, issue, branch, and base without creating a self-referential hash.",
-    "G424_03": "The controller remains planning and authority input only; no implementation route becomes active in this PR.",
-    "G424_04": "Cut 1 completion remains mechanically separate from full plug-and-play, hosted, production-durability, production-readiness, release, and public-availability claims.",
-    "G424_05": "Stale routes, placeholders, provider success payloads, one output, or machine-only media validation cannot satisfy real-media acceptance.",
-    "G424_06": "Provider selection, credentials, fallback, egress, and spend remain server-controlled, explicit, current, separately approved, and fail closed.",
-    "G424_07": "Cleanup remains inventory-scoped and cannot authorize deletion of unrelated user, workspace, evidence, cache, or infrastructure resources.",
-    "G424_08": "Every terminal handoff and completion claim remains evidence-bound and reports unresolved blockers and retained resources.",
-    "G424_09": "The next implementation child remains blocked until exact-byte OWNER approval, three review dispositions, exact-head non-author review, merge, merged-main checks, issue closeout, and a new active route.",
-    "G424_10": "Repository status remains No-Go and records zero provider calls, zero spend, and zero new media artifacts for this route.",
-    "G424_11": "The Stage 8 checker recognizes only the exact Issue #424 branch, twelve paths, and 8,500-line ceiling; near-match, extra-path, and over-budget mutations fail."
-  },
-  "failure_matrix": [
-    {
-      "id": "G424_01",
-      "failure": "A section, requirement, exclusion, or serialization step is omitted or reordered.",
-      "proof": "deterministic heading/order/count check plus execution-specification human review",
-      "classification": "gate-and-human"
-    },
-    {
-      "id": "G424_02",
-      "failure": "The recorded digest, bytes, path, branch, issue, or base differs from the controller.",
-      "proof": "independent SHA-256 and byte-count command with metadata comparison",
-      "classification": "gate"
-    },
-    {
-      "id": "G424_03",
-      "failure": "The PR activates a route, changes runtime behavior, or is cited as implementation authority.",
-      "proof": "exact ten-path diff, status/ADR negative invariants, reviewer check",
-      "classification": "gate-and-human"
-    },
-    {
-      "id": "G424_04",
-      "failure": "Cut 1 is represented as plug-and-play, hosted, released, public, durable, or production-ready.",
-      "proof": "false-claim review and repository guardrails",
-      "classification": "gate-and-human"
-    },
-    {
-      "id": "G424_05",
-      "failure": "Legacy HTML, JSON, manifest, static/loop media, one aspect ratio, provider success, or machine-only evidence can satisfy acceptance.",
-      "proof": "Cut 1 false-success/media review",
-      "classification": "human-contract-review"
-    },
-    {
-      "id": "G424_06",
-      "failure": "A provider, credential, fallback, region, egress, or spend level activates implicitly.",
-      "proof": "platform/security review and prohibited-action diff review",
-      "classification": "human-contract-review"
-    },
-    {
-      "id": "G424_07",
-      "failure": "Cleanup permits broad, unresolved, or unrelated deletion.",
-      "proof": "operational-closeout review with exact before/after inventory requirement",
-      "classification": "human-contract-review"
-    },
-    {
-      "id": "G424_08",
-      "failure": "Completion, synchronization, cleanup, or deletion is claimed without command-bound evidence.",
-      "proof": "handoff review against mandatory four-part closeout",
-      "classification": "human-contract-review"
-    },
-    {
-      "id": "G424_09",
-      "failure": "An implementation child starts before all predecessor and authority transitions complete.",
-      "proof": "status/stage-plan review; implementation remains an explicit non-goal",
-      "classification": "gate-and-human"
-    },
-    {
-      "id": "G424_10",
-      "failure": "The PR records provider activity, spend, media output, or a Go claim.",
-      "proof": "scoped resource ledger, diff review, and status review",
-      "classification": "gate-and-human"
-    },
-    {
-      "id": "G424_11",
-      "failure": "The bootstrap branch cannot run make quality, or a near-match/extra-path/over-budget route passes.",
-      "proof": "committed unrecognized-route RED followed by focused positive and mutation tests in test_stage8_cut1_routes.py",
-      "classification": "test-and-gate"
-    }
-  ],
-  "verification": {
-    "focused": [
-      "python3 -m json.tool docs/governance/preflights/issue-424.json",
-      "python3 -m json.tool docs/governance/narratwin-master-program-v1.json",
-      "uv run pytest -p no:cacheprovider tests/unit/test_stage8_cut1_routes.py",
-      "python3 scripts/guardrails_check.py",
-      "make quality"
-    ],
-    "human": [
-      "fresh execution-specification review",
-      "fresh Cut 1 false-success/media review",
-      "fresh platform/security/controlled-learning review",
-      "exact-byte OWNER approval",
-      "eligible non-author exact-head approval",
-      "reference-only merge wording inspection"
-    ],
-    "prohibited_substitutes": [
-      "skill invocation",
-      "document existence",
-      "hash record without independent recomputation",
-      "author self-review",
-      "CI shape checks as semantic approval"
-    ]
-  },
-  "skill_ledger": [
-    {
-      "phase": "intent audit",
-      "claim_boundary": "master-plan intent versus merged repository state",
-      "skill_or_source": "intended-vs-implemented",
-      "decision": "guidance consulted in-session; repository activation not claimed",
-      "evidence_or_prevented_action": "prevented treating legacy Stage 7 placeholders and PR #422 as real-media completion",
-      "outcome": "useful and prevented an unsafe or unnecessary action"
-    },
-    {
-      "phase": "specification",
-      "claim_boundary": "controller completeness and negative invariants",
-      "skill_or_source": "spec-driven-development",
-      "decision": "guidance consulted in-session; repository activation not claimed",
-      "evidence_or_prevented_action": "required this preflight and review surfaces before implementation",
-      "outcome": "useful and produced accepted-process evidence pending review"
-    },
-    {
-      "phase": "task planning",
-      "claim_boundary": "dependency-safe serialized route",
-      "skill_or_source": "planning-and-task-breakdown and incremental-implementation",
-      "decision": "guidance consulted in-session; repository activation not claimed",
-      "evidence_or_prevented_action": "split pre-log authority from later enforcement and provider/media work",
-      "outcome": "useful and prevented scope widening"
-    },
-    {
-      "phase": "behavior proof",
-      "claim_boundary": "no behavior changes in a documentation-only PR",
-      "skill_or_source": "test-driven-development",
-      "decision": "considered but not invoked for pure documentation; deterministic contract checks remain required",
-      "evidence_or_prevented_action": "prevented artificial unit tests that would not prove semantics",
-      "outcome": "considered but redundant"
-    },
-    {
-      "phase": "security",
-      "claim_boundary": "provider, spend, credential, cleanup, and deletion boundaries",
-      "skill_or_source": "security-and-hardening",
-      "decision": "considered for the later enforcement child; this PR uses repository security contracts and human review only",
-      "evidence_or_prevented_action": "kept all runtime, credential, egress, and paid-operation actions out of scope",
-      "outcome": "useful and prevented an unsafe action"
-    },
-    {
-      "phase": "review",
-      "claim_boundary": "independence and semantic completeness",
-      "skill_or_source": "code-review-and-quality and doubt-driven-development",
-      "decision": "required later from eligible non-author/fresh-context reviewers; self-authored review files are checklists, not approvals",
-      "evidence_or_prevented_action": "prevents author-generated prose from satisfying independent approval",
-      "outcome": "unavailable as independent evidence in the authoring context"
-    },
-    {
-      "phase": "delivery",
-      "claim_boundary": "launch and production",
-      "skill_or_source": "shipping-and-launch",
-      "decision": "rejected",
-      "evidence_or_prevented_action": "release remains No-Go; no launch level is authorized",
-      "outcome": "invoked at the wrong stage if used"
-    },
-    {
-      "phase": "tooling",
-      "claim_boundary": "architecture documentation helper",
-      "skill_or_source": "architecture-and-decisions",
-      "decision": "deferred to a separate nonblocking trust-review issue",
-      "evidence_or_prevented_action": "no install, hook, telemetry, filesystem, network, or runtime dependency was introduced",
-      "outcome": "unavailable or unapproved"
-    }
-  ],
-  "task_resource_ledger": {
-    "repository": "/Users/rohitagrawal/Projects/narratwin/narratwin-ai/narratwin-ai",
-    "worktree": "/private/tmp/narratwin-issue424-master-program-e6yJZ2/repo",
-    "branch": "stage8-424-master-program-authority-prelog",
-    "base": "afcf0325c3ec925b68b770eda0bb8c839bcce4dd",
-    "temporary_root": "/private/tmp/narratwin-issue424-master-program-e6yJZ2",
-    "temporary_directories": [
-      "/private/tmp/narratwin-issue424-master-program-e6yJZ2/repo/.venv",
-      "/private/tmp/narratwin-issue424-master-program-e6yJZ2/repo/.local/issue424"
-    ],
-    "generated_reports": [],
-    "docker_compose_project": "narratwin-issue424",
-    "task_created_containers": [],
-    "task_created_networks": [],
-    "task_created_volumes": [],
-    "task_built_images": [],
-    "background_processes": [],
-    "provider_jobs": [],
-    "uploaded_provider_assets": [],
-    "accepted_artifacts": [],
-    "cleanup_owner": "Issue #424 implementer",
-    "retained_until": "PR merge/closeout or unmerged cancellation"
-  },
-  "stop_conditions": [
-    "any drift from the exact base, branch, twelve paths, or 8,500-line ceiling",
-    "controller bytes change after exact-byte OWNER approval",
-    "any unresolved blocker in the three review surfaces",
-    "any need to change code or guardrails beyond exact Issue #424 bootstrap branch/path/budget recognition; any workflow, dependency, runtime, or repository-setting change",
-    "any credential, provider, egress, paid operation, audio, video, deployment, publication, release, or production action",
-    "missing exact-head eligible non-author review or required CI"
-  ],
-  "rollback": "Before merge, close the PR unmerged and remove only its clean task branch/worktree and scoped temporary root. After merge, use a new issue, branch, and PR to revert the governance commit; retain historical evidence and never revive a superseded route implicitly."
+  }
 }

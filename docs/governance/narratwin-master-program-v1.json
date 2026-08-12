@@ -1,18 +1,18 @@
 {
-  "schemaVersion": "MasterProgramBindingV1",
+  "schemaVersion": "MasterProgramProposalBindingV1",
   "controllerId": "narratwin-authoritative-master-program-v1",
   "controllerIssue": 424,
   "bootstrapBranch": "stage8-424-master-program-authority-prelog",
   "acceptedBaseSha": "afcf0325c3ec925b68b770eda0bb8c839bcce4dd",
   "documentPath": "docs/governance/NARRATWIN_MASTER_PROGRAM_V1.md",
-  "documentSha256": "a3e1d0180e4e28b99ca3e01ae03aa88d0273e69a0fb14ed090be32734d7f68d4",
-  "documentBytes": 40092,
-  "documentLines": 886,
+  "documentSha256": "c3e3c85bb980aab4f818e80be3db5484e564423d77bc3ab6e81ba736c3af3420",
+  "documentBytes": 40135,
+  "documentLines": 887,
   "hasTrailingNewline": true,
   "numberedSections": 42,
   "firstNumberedSection": "1. Purpose, claims, and execution authority",
   "lastNumberedSection": "42. Final pre-log review gate",
-  "bootstrapState": "PROPOSED",
+  "proposalState": "PROPOSED",
   "implementationAuthority": "NONE",
   "activeProgramRoute": null,
   "requiredReviews": [
@@ -47,6 +47,27 @@
     "mergedMainRunConclusion": "SUCCESS",
     "issueDisposition": "CLOSED_COMPLETED"
   },
+  "authorityTransition": {
+    "decisionSchemaVersion": "MasterProgramAuthorityDecisionV1",
+    "decisionPath": "docs/governance/narratwin-master-program-authority-decision-v1.json",
+    "createdBy": "separately-governed authority-reconciliation-and-stale-route-enforcement child",
+    "requiredDecisionStateForActivation": "ACCEPTED",
+    "requiredEvidence": [
+      "controllerProposalSha256",
+      "exactHeadSha",
+      "ownerExactBytesApproval",
+      "independentReviewDispositions",
+      "eligibleNonAuthorApproval",
+      "mergeSha",
+      "mergedMainChecks",
+      "statusReconciliation",
+      "issueDisposition",
+      "authorityState",
+      "verificationState",
+      "expiryOrRevalidation"
+    ],
+    "routeActivationFromProposal": "PROHIBITED"
+  },
   "prohibitedClaims": [
     "Cut1DemoCompleteV1",
     "CUT1_REAL_MEDIA_ACCEPTED",
@@ -57,5 +78,5 @@
     "public availability",
     "release"
   ],
-  "routeActivationGuard": "No implementation route may activate until exact-byte OWNER approval, all three independent reviews, exact-head non-author approval, merge, merged-main checks, issue closeout, and a separately governed implementation child are complete."
+  "routeActivationGuard": "This proposal never grants execution authority. A current ACCEPTED MasterProgramAuthorityDecisionV1 created by the separately governed authority-reconciliation and stale-route-enforcement child is required before any implementation route may activate."
 }

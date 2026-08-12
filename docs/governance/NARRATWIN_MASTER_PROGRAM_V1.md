@@ -526,8 +526,9 @@ substitution/regeneration, and no timing-changing normalization.
 
 ## 22. Meera asset authority
 
-Define `MeeraAssetAuthorityV1` before upload with original/derivative paths and
-SHA-256, dimensions, crop/mask/color transformations, background hashes,
+Define `MeeraAssetAuthorityV1` before upload with the original source path and
+SHA-256, exact waist-up derivative path and SHA-256, dimensions, crop/mask/color
+transformations, background hashes,
 performance-direction hash, synthetic-person classification, provenance,
 license/commercial derivative/upload rights, permitted providers, retention/
 deletion/revocation, and OWNER visual acceptance.

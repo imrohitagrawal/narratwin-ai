@@ -26,17 +26,28 @@ Adopt a two-step bootstrap:
    three independent-review surfaces, and reconciles status/stage/traceability.
    It is governance-only and creates no active implementation route. A narrow
    bootstrap exception adds exact Stage 8 recognition for only this branch,
-   its twelve paths, fixed base, and 8,500-line ceiling after committed RED
+   its fourteen paths, fixed base, and 8,500-line ceiling after committed RED
    evidence proved the previously unrecognized route could not run quality.
 2. Only after Issue #424 exact-byte OWNER approval, independent exact-head
    review, merge, merged-main checks, and closeout may a separately bounded
    child specify and implement `Cut1AuthorityManifestV1`,
    `ActiveProgramRouteV1`, and stale-route enforcement.
 
+The canonical `GovernancePreflightV1` now uses its closed repository schema and
+the Stage 8 route invokes that validator with the exact fourteen-path context.
 The binding record is
 `docs/governance/narratwin-master-program-v1.json`. It hashes only the canonical
-Markdown document, avoiding self-reference. Review files are prompts and
-disposition surfaces; `PENDING` never means passed.
+Markdown document, avoiding self-reference, and is an immutable
+`MasterProgramProposalBindingV1`. It cannot be mutated from `PROPOSED` into
+authority. A later separately governed reconciliation child must create a
+distinct current `MasterProgramAuthorityDecisionV1` containing exact controller,
+head, approval, review, merge, merged-main, status, issue-disposition, authority,
+verification, and expiry evidence before route activation. Review files are
+prompts and disposition surfaces; `PENDING` never means passed.
+
+The exact Issue #424 branch is reference-only. It does not close the already
+closed Stage 8 umbrella Issue #13; near-match Stage 8 branches retain the normal
+canonical-stage closure rule.
 
 Until the bootstrap closes:
 

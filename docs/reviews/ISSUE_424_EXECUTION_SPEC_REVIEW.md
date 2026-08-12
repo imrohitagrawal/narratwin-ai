@@ -2,7 +2,7 @@
 
 ## Review identity
 
-- Controller digest: `a3e1d0180e4e28b99ca3e01ae03aa88d0273e69a0fb14ed090be32734d7f68d4`
+- Controller digest: `c3e3c85bb980aab4f818e80be3db5484e564423d77bc3ab6e81ba736c3af3420`
 - Review state: `PENDING_INDEPENDENT_REVIEW`
 - Required reviewer: eligible fresh-context non-author
 - Author self-review: prohibited as approval evidence
@@ -27,6 +27,7 @@ stale prose?
 | EX-08 | Completion split | Cut 1 and full plug-and-play claims are separately enumerated | Cut 1 implies hosted/production/release | Sections 1 and 41 |
 | EX-09 | Closeout | Resource, Git, provider, issue, evidence, and documentation closeout are command-bound | Prose-only clean claim is allowed | Sections 36–40 |
 | EX-10 | Bootstrap | This PR remains proposed authority with no active route | Review artifacts or hash alone activate implementation | Section 42 and binding JSON |
+| EX-11 | Proposal-to-authority transition | The immutable proposal requires a separate current `MasterProgramAuthorityDecisionV1` with exact review, merge, main-check, reconciliation, disposition, state, and expiry evidence | `PROPOSED`/`PENDING` fields are mutated in place or treated as accepted authority | Binding JSON and ADR 0059 |
 
 ## Required adversarial mutations
 
