@@ -1340,5 +1340,7 @@ ordinary knowledge cannot pass, Cut 1 mismatch cannot retain generic supports,
 style/policy drift cannot restore, ambient telemetry hooks are never invoked,
 the project-core premise has an entailing PRD span, and live receipt replay
 rejects post-consumption source or presenter drift.
+It also removes or tampers the current facts contract after draft and after
+receipt issuance and requires both live evaluation and receipt replay to fail.
 No real provider call, telemetry egress, audio, deployment, distribution,
 production-readiness, or release claim is part of this gate.

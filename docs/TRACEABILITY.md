@@ -554,6 +554,7 @@ durability, deployment, and release decisions remain outside this trace.
 | Closed Cut 1 authority domain | style-dispatched evaluator; fail-closed Stage 4 and narration/receipt validation | ordinary-narration source-stuffing RED; style/policy/evidence restore tests; Myra/Raj refusal; live receipt drift matrix |
 | Zero ambient telemetry for authority preparation | local Cut 1 trace context bypasses OpenTelemetry and Langfuse adapters | ambient configuration/client trap with zero invocation |
 | Project-understanding premise is independently entailed | exact PRD product-definition/trust-loop span plus separate portability spans | exact byte/hash checks and fresh-context semantic review |
+| Live contract authority remains current | Stage 4 `cut1_run_authority_is_current` canonical redispatch from narration binding checks | missing/tampered facts after draft and receipt issuance fail live evaluation/replay; restore remains fail closed |
 
 This repair proves deterministic grounding lineage only. Voice quality,
 spoken-word correspondence, provider behavior, legal/privacy clearance,

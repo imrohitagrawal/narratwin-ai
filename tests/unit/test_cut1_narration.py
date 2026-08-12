@@ -114,6 +114,7 @@ def _stage4(
         text=supported, token_count=count_tokens(supported), checksum=checksum_text(supported),
         heading_path=[project_name], line_start=1, line_end=1,
     )
+    chunk = service.rag_store.add_chunks([chunk], service.embedder)[0]
     contexts = [RetrievedContext("ctx_0000000000000001", chunk, 1.0)]
     generated = GeneratedScript(visible, claims)
     evaluator = evaluate_cut1_grounding if governed else evaluate_grounding

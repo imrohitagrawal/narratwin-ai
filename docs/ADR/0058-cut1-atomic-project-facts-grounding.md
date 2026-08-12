@@ -98,8 +98,9 @@ checksum drift make the run unavailable rather than trusted.
 
 Cut 1 generation uses an application-local trace identifier and bypasses both
 ambient OpenTelemetry and Langfuse capability lookup. Same-process receipt
-revalidation reruns current source-run, presenter, evaluation, and approval
-checks instead of trusting internal receipt equality alone.
+revalidation invokes the same Stage 4 canonical Cut 1 evaluator against the
+current facts asset/source graph, then reruns presenter, evaluation, and
+approval checks instead of trusting internal receipt equality alone.
 
 ## Alternatives rejected
 

@@ -643,3 +643,5 @@ Langfuse configuration/client code. A generic evaluator result cannot be
 promoted into Cut 1 authority. Live receipt validation rechecks the external
 source run and presenter plus current evaluation and approval, so same-process
 post-consumption drift fails as it does during restore.
+The live check reopens and verifies the pinned facts asset/source graph through
+the canonical Stage 4 evaluator; stored evidence equality alone is insufficient.

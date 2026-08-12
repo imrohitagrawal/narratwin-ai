@@ -1955,3 +1955,7 @@ Cut 1-policy run with no accepted script or support authority. Restore selects
 the evaluator from run style, then requires policy agreement. Narration and TTS
 receipt authority additionally require selected Meera and all eighteen
 proposition-bound supports to remain current.
+Current means the Stage 4 canonical verifier can still reload the exact facts
+contract and reproduce the stored run; missing or tampered contract bytes fail
+evaluation, approval, consumption, and receipt validation in the live process
+as well as during restore.

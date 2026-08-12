@@ -763,6 +763,20 @@ class Stage4Service:
         )
         return reproduced == evaluation
 
+    def cut1_run_authority_is_current(self, run: WalkthroughRunRecord) -> bool:
+        """Recompute current Cut 1 contract authority for a stored run."""
+        if (
+            run.style != CUT1_STYLE
+            or run.status != "COMPLETED"
+            or run.evaluation is None
+            or run.evaluation.policy_version != CUT1_POLICY_VERSION
+        ):
+            return False
+        return (
+            self._fresh_lineage_ownership_is_valid(run)
+            and self._restored_citation_lineage_is_valid(run)
+        )
+
     def _fresh_lineage_ownership_is_valid(self, run: WalkthroughRunRecord) -> bool:
         contexts = {item.context_ref_id: item for item in run.retrieved_context}
         canonical = {item.chunk_id: item for item in self.rag_store.chunks_for_project(

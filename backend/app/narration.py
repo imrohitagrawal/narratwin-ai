@@ -519,6 +519,8 @@ class NarrationService:
             project, run = self._source(LocalPrincipal(row.tenant_id, row.actor_id),
                                         row.project_id, row.source_run_id)
             self._presenter(row.presenter_binding)
+            if not self.stage4.cut1_run_authority_is_current(run):
+                return ("GROUNDING_OR_BINDING_STALE",)
             lineage = derive_evaluation_lineage(run)
             lineage_json = json.dumps(lineage, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
             evaluation = cast(Any, run.evaluation)
