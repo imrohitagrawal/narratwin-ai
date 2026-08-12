@@ -671,6 +671,39 @@ def test_issue421_route_requires_exact_accepted_base_and_branch_point() -> None:
     assert "import scripts.quality.check_stage8_docs" not in module_source
 
 
+def test_issue424_bootstrap_route_requires_exact_accepted_base_and_branch_point() -> None:
+    branch = "stage8-424-master-program-authority-prelog"
+    expected_base = "afcf0325c3ec925b68b770eda0bb8c839bcce4dd"
+    calls: list[list[str]] = []
+
+    def good(args: list[str]) -> subprocess.CompletedProcess[str]:
+        calls.append(args)
+        return completed(args, out=expected_base + "\n")
+
+    assert routes.ISSUE424_BASE == expected_base
+    assert routes.route_base(good, branch) == expected_base
+    assert calls == [
+        ["git", "rev-parse", f"{expected_base}^{{commit}}"],
+        ["git", "merge-base", expected_base, "HEAD"],
+        ["git", "merge-base", "origin/main", "HEAD"],
+    ]
+
+    drifted = iter(
+        (
+            completed([], out=expected_base + "\n"),
+            completed([], out=expected_base + "\n"),
+            completed([], out="a" * 40 + "\n"),
+        )
+    )
+    error = pytest.raises(
+        RuntimeError,
+        routes.route_base,
+        lambda _: next(drifted),
+        branch,
+    )
+    assert "Issue #424 fixed base" in str(error.value)
+
+
 def test_issue415_route_is_frozen_to_the_authorized_recovery_paths() -> None:
     branch = "stage8-415-pr-body-live-state-reconciliation"
     expected = {
