@@ -2641,6 +2641,7 @@ three first-party facts as `OWNER_ASSERTED`, selects Meera, and authorizes the
 `REPOSITORY_SOURCE`. The amended route is exactly twenty-one paths and 4,000
 charged lines. It authorizes no provider call or audio.
 
-After reviewed merge and merged-main checks, Issue #368 may prepare three
-isolated public-lifecycle authority packages, then proceed only under its
+After reviewed merge and merged-main checks, Issue #368 may prepare one
+isolated, authoritative Meera public-lifecycle package. Dormant Myra/Raj text
+variants create no Cut 1 authority. Issue #368 may then proceed only under its
 existing egress, attempts, spend, validation, and exact-hash listening gates.

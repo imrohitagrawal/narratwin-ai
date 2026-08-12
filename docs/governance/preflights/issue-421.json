@@ -137,7 +137,7 @@
     "G421-17": "CUT1_ATOMIC_FACTS_V1 is a closed authority domain: every fresh, restored, replayed, narrated, approved, consumed, and receipt-revalidated Cut 1 path requires selected presenter Meera, cut1-atomic-grounding-v1, all eighteen ordered governed supports, and complete proposition evidence; any Cut 1 prerequisite or contract mismatch remains FAILED and cannot fall back to generic support.",
     "G421-18": "Cut 1 authority preparation creates only a local trace identifier and never consults or invokes ambient OpenTelemetry exporters, Langfuse credentials, clients, DNS, sockets, or provider integrations.",
     "G421-19": "The project-understanding-core predicate is supported by an exact narration-independent PRD product-definition span; provider modularity spans cannot manufacture that separate premise.",
-    "G421-20": "Every live or restored TTS receipt revalidation reruns current Stage 4 grounding, presenter, narration evaluation, and approval checks; post-consumption authority drift fails closed."
+    "G421-20": "Every narration evaluation, approval, consumption, and live or restored TTS receipt revalidation reruns the canonical current Stage 4 Cut 1 evaluator against the current facts asset/source graph plus presenter, narration evaluation, and approval checks; missing or tampered contract bytes and post-consumption authority drift fail closed."
   },
   "invariant_to_test_mapping": {
     "G421-01": ["facts schema/source inventory tests", "human exact-span review"],
@@ -159,7 +159,7 @@
     "G421-17": ["ordinary-knowledge canonical-text fail-open RED", "Cut 1 evaluator mismatch matrix", "style-policy-evidence restore mutations", "Myra/Raj narration and receipt refusal", "persisted Stage 4 and narration restore refusal"],
     "G421-18": ["ambient telemetry trap proving zero OpenTelemetry and Langfuse invocation for Cut 1"],
     "G421-19": ["exact PRD byte-span and proposition semantic review", "source-span mutation suite"],
-    "G421-20": ["same-process post-consumption source-run and presenter drift receipt replay matrix", "restore reconciliation tests"]
+    "G421-20": ["same-process post-consumption source-run, presenter, missing-facts, tampered-facts and source-graph drift receipt replay matrix", "post-draft canonical revalidation tests", "restore reconciliation tests"]
   },
   "architecture_parity": {
     "generic_stage4": "Existing evaluate_grounding direct visible-claim-to-retrieved-chunk semantics remain the default.",
