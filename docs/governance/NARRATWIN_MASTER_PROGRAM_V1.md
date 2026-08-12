@@ -108,9 +108,9 @@ route that defines:
 - two independent final renders, disclosure policy, downstream issue order,
   forbidden actions, expiry, and revalidation triggers.
 
-It must explicitly reconcile Issues #366, #368, #369, #370, #371, #421, PR
-#422, and all affected status, stage, architecture, API, traceability, ADR,
-test, and guardrail records.
+It must explicitly reconcile Issues #366, #368, #369, #370, #371, #421,
+PR #422, and all affected status, stage, architecture, API, traceability,
+ADR, test, and guardrail records.
 
 ## 5. Planning and delivery layers
 
