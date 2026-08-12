@@ -732,7 +732,10 @@ def test_g368_01_consumed_receipt_must_remain_exact_and_current(
     )
 
 
-@pytest.mark.parametrize("mutation", ["source_run", "request_checksum", "presenter"])
+@pytest.mark.parametrize(
+    "mutation",
+    ["source_run", "request_checksum", "presenter", "missing_facts", "tampered_facts"],
+)
 def test_g421_20_live_receipt_revalidation_rejects_external_authority_drift(
     narration: ModuleType, tmp_path: Path, mutation: str
 ) -> None:
@@ -750,15 +753,40 @@ def test_g421_20_live_receipt_revalidation_rejects_external_authority_drift(
             run, request_checksum=checksum_text("changed-after-consumption")
         )
     else:
-        service.registry._identities["meera"] = replace(
-            service.registry._identities["meera"], lifecycle=PresenterLifecycle.REVOKED
-        )
+        if mutation == "presenter":
+            service.registry._identities["meera"] = replace(
+                service.registry._identities["meera"], lifecycle=PresenterLifecycle.REVOKED
+            )
+        else:
+            facts = tmp_path / "facts-root/docs/governance/cut1-project-facts-v1.json"
+            facts.parent.mkdir(parents=True)
+            if mutation == "tampered_facts":
+                facts.write_bytes((ROOT / "docs/governance/cut1-project-facts-v1.json").read_bytes() + b"\n")
+            service.stage4.cut1_contract_root = tmp_path / "facts-root"
 
     _assert_code(
         narration,
         "AUTHORITY_MISMATCH",
         lambda: service.validate_tts_consumption_receipt(principal=principal, receipt=receipt),
     )
+
+
+def test_g421_20_post_draft_evaluation_revalidates_current_facts_contract(
+    narration: ModuleType, tmp_path: Path
+) -> None:
+    service, principal, draft, project_id = _draft(narration, tmp_path)
+    required = service.request_evaluation(
+        principal=principal, project_id=project_id,
+        narration_version=draft.version, narration_checksum=draft.narration_checksum,
+    )
+    service.stage4.cut1_contract_root = tmp_path / "missing-facts-root"
+
+    evaluated = service.evaluate(
+        principal=principal, project_id=project_id,
+        narration_version=required.version, narration_checksum=required.narration_checksum,
+    )
+
+    assert evaluated.evaluation.result == "FAILED"
 
 
 def test_f382_28_module_has_no_external_capability(narration: ModuleType) -> None:
