@@ -38,6 +38,7 @@ ROUTES = {
     ISSUE421_BRANCH: {
         "docs/governance/preflights/issue-421.json",
         "docs/governance/cut1-project-facts-v1.json",
+        "backend/app/narration.py",
         "backend/app/cut1_grounding.py",
         "backend/app/rag/models.py",
         "backend/app/stage4.py",
@@ -356,6 +357,7 @@ TEXT_LIMITS = {
         path: {
             "docs/governance/preflights/issue-421.json": 500,
             "docs/governance/cut1-project-facts-v1.json": 600,
+            "backend/app/narration.py": 160,
             "backend/app/cut1_grounding.py": 900,
             "backend/app/rag/models.py": 180,
             "backend/app/stage4.py": 600,

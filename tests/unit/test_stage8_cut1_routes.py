@@ -56,6 +56,7 @@ EXPECTED = {
     "stage8-421-cut1-atomic-project-facts": {
         "docs/governance/preflights/issue-421.json",
         "docs/governance/cut1-project-facts-v1.json",
+        "backend/app/narration.py",
         "backend/app/cut1_grounding.py",
         "backend/app/rag/models.py",
         "backend/app/stage4.py",
@@ -502,7 +503,7 @@ def test_routes_are_exact_pre_registered_and_issue386_preflight_matches() -> Non
     assert issue421["branch"] == routes.ISSUE421_BRANCH
     assert set(issue421["scope"]["required"]) == issue421_route
     assert set(issue421["scope"]["allowed_prefixes"]) == issue421_route
-    assert issue421["change_budget"]["exact_paths"] == len(issue421_route) == 20
+    assert issue421["change_budget"]["exact_paths"] == len(issue421_route) == 21
     assert issue421["change_budget"]["maximum_additions_plus_deletions"] == 4000
     assert issue421["change_budget"]["deletions_grant_credit"] is False
     assert routes.TOTAL_LIMITS[routes.ISSUE421_BRANCH] == 4000

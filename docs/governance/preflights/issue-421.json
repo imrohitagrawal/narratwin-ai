@@ -2,11 +2,13 @@
   "schema_version": "GovernancePreflightV1",
   "issue_number": 421,
   "branch": "stage8-421-cut1-atomic-project-facts",
-  "objective": "Repair the Cut 1 grounding contract without source stuffing or relaxing ordinary Stage 4 direct support: create an immutable atomic project-facts bundle derived from accepted repository and OWNER records, bind each exact canonical claim hash to every required proposition and immutable source span, independently revalidate that graph during generation and restore, persist proposition evidence into Stage 4 and Issue #382 lineage, and keep provider egress, audio, deployment, distribution, production, and release out of this branch.",
+  "objective": "Repair the Cut 1 grounding contract without source stuffing or relaxing ordinary Stage 4 direct support: classify first-party OWNER_ASSERTED facts separately from narration-independent repository sources, apply the exact OWNER-approved canonical narration revision, bind each exact canonical claim hash to every required proposition and immutable source span, independently revalidate that graph during generation and restore, persist proposition evidence into Stage 4 and Issue #382 lineage, and keep provider egress, audio, deployment, distribution, production, and release out of this branch.",
   "status_decision": "deterministic-cut1-grounding-repair-before-authority-preparation",
   "authority": {
     "repair_issue": "https://github.com/imrohitagrawal/narratwin-ai/issues/421",
     "preimplementation_contract": "https://github.com/imrohitagrawal/narratwin-ai/issues/421#issuecomment-5259236531",
+    "owner_fact_and_narration_revision": "https://github.com/imrohitagrawal/narratwin-ai/issues/421#issuecomment-5263752038",
+    "route_amendment": "https://github.com/imrohitagrawal/narratwin-ai/issues/421#issuecomment-5263757392",
     "related_narration_issue": "https://github.com/imrohitagrawal/narratwin-ai/issues/382",
     "blocked_audio_issue": "https://github.com/imrohitagrawal/narratwin-ai/issues/368",
     "parent_issue": "https://github.com/imrohitagrawal/narratwin-ai/issues/366",
@@ -26,18 +28,20 @@
       "docs/STAGE_ISSUE_PLAN.md"
     ],
     "owner_records": [
-      "https://github.com/imrohitagrawal/narratwin-ai/issues/366#issuecomment-5197711390 (only the independent 350-byte brand/ownership span at bytes 170..520; the later narration body is neither copied nor used)"
+      "https://github.com/imrohitagrawal/narratwin-ai/issues/366#issuecomment-5197711390 (first-party OWNER record for the exact 350-byte NarraTwin ownership span; not externally corroborated)",
+      "https://github.com/imrohitagrawal/narratwin-ai/issues/421#issuecomment-5263752038 (three exact OWNER_ASSERTED facts and canonical narration revision; not externally corroborated)"
     ],
     "implementation_contract": "backend/app/rag/grounding.py requires normalized claim text to occur directly in the cited retrieved chunk; backend/app/stage4.py reproduces the canonical evaluator during restore; backend/app/narration.py accepts only a current completed Stage 4 run and checksum-binds claim/support evidence.",
     "failure_evidence": "The genuine accepted-source probe returned exactly eighteen unsupported claims and zero supports for each presenter; narration-derived fixtures and self-minted Stage 4 authority are prohibited."
   },
   "change_budget": {
-    "exact_paths": 20,
+    "exact_paths": 21,
     "maximum_additions_plus_deletions": 4000,
     "deletions_grant_credit": false,
     "per_file_charged_lines": {
       "docs/governance/preflights/issue-421.json": 500,
       "docs/governance/cut1-project-facts-v1.json": 600,
+      "backend/app/narration.py": 160,
       "backend/app/cut1_grounding.py": 900,
       "backend/app/rag/models.py": 180,
       "backend/app/stage4.py": 600,
@@ -62,6 +66,7 @@
     "required": [
       "docs/governance/preflights/issue-421.json",
       "docs/governance/cut1-project-facts-v1.json",
+      "backend/app/narration.py",
       "backend/app/cut1_grounding.py",
       "backend/app/rag/models.py",
       "backend/app/stage4.py",
@@ -84,6 +89,7 @@
     "allowed_prefixes": [
       "docs/governance/preflights/issue-421.json",
       "docs/governance/cut1-project-facts-v1.json",
+      "backend/app/narration.py",
       "backend/app/cut1_grounding.py",
       "backend/app/rag/models.py",
       "backend/app/stage4.py",
@@ -187,7 +193,7 @@
     "eligible non-author exact-head approval",
     "a newly discovered credential, privacy, legal, destructive-action, or unauthorized-egress risk",
     "an unremediable Critical or High security finding",
-    "unsafe need outside the exact twenty-path route or 4,000-line ceiling",
+    "unsafe need outside the exact twenty-one-path route or 4,000-line ceiling",
     "provider egress before merged-main authority preparation"
   ]
 }

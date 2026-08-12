@@ -333,6 +333,58 @@ def test_reviewed_claim_propositions_bind_complete_independent_sources() -> None
     ]
 
 
+def test_owner_asserted_facts_are_classified_and_separate_from_repository_sources() -> None:
+    payload = json.loads(FACTS_PATH.read_text(encoding="utf-8"))
+    sources = {source["sourceId"]: source for source in payload["sources"]}
+    span_sources = {
+        span["spanId"]: source
+        for source in payload["sources"]
+        for span in source["spans"]
+    }
+    owner = sources["src_owner_5263752038"]
+
+    assert owner["sourceClassification"] == "OWNER_ASSERTED"
+    assert owner["locator"].endswith("issues/421#issuecomment-5263752038")
+    assert {span["spanId"] for span in owner["spans"]} == {
+        "src_owner_421_stackclimb",
+        "src_owner_421_knowledge",
+        "src_owner_421_meera",
+    }
+    assert all(
+        source["sourceClassification"] == "REPOSITORY_SOURCE"
+        for source in sources.values()
+        if source["locatorType"] == "repository"
+    )
+    propositions = {row["propositionId"]: row for row in payload["propositions"]}
+    for proposition_id in ("fact_002", "fact_005", "fact_013"):
+        classifications = {
+            span_sources[span_id]["sourceClassification"]
+            for span_id in propositions[proposition_id]["sourceSpanIds"]
+        }
+        assert classifications == {"OWNER_ASSERTED"}
+
+
+@pytest.mark.parametrize("presenter_id", ["myra", "raj"])
+def test_cut1_owner_selection_refuses_non_selected_presenters(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    presenter_id: str,
+) -> None:
+    service, principal, project_id = _seed_public_stage4(
+        tmp_path,
+        monkeypatch,
+        include_facts=True,
+        presenter_id=presenter_id,
+    )
+
+    run = _generate(service, principal, project_id, key=f"{presenter_id}-not-selected")
+
+    assert run.status == "FAILED"
+    assert run.accepted_script_text is None
+    assert run.evaluation is not None
+    assert run.evaluation.unsupported_claim_count == 18
+
+
 def test_atomic_fact_asset_bytes_are_immutable(tmp_path: Path) -> None:
     from backend.app.cut1_grounding import Cut1GroundingError, load_cut1_grounding_contract
 
@@ -463,7 +515,7 @@ def test_restore_rejects_tampered_persisted_proposition_evidence(
     assert run.run_id not in restored.walkthrough_runs
 
 
-@pytest.mark.parametrize("presenter_id", ["meera", "myra", "raj"])
+@pytest.mark.parametrize("presenter_id", ["meera"])
 def test_public_stage4_and_issue382_lifecycle_persists_one_bound_receipt(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
