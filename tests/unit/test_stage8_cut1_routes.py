@@ -540,6 +540,7 @@ def test_routes_are_exact_pre_registered_and_issue386_preflight_matches() -> Non
     assert len(issue424_route) == 14
     assert routes.ROUTE_ISSUES[issue424_branch] == 424
     assert routes.TOTAL_LIMITS[issue424_branch] == 8500
+    assert routes.TEXT_LIMITS[issue424_branch]["scripts/quality/stage8_cut1_routes.py"] == 300
     assert routes.TEXT_LIMITS[issue424_branch]["scripts/guardrails_check.py"] == 100
     assert routes.TEXT_LIMITS[issue424_branch]["tests/unit/test_guardrails_check.py"] == 180
 
@@ -564,10 +565,16 @@ def test_issue424_controller_and_proposal_binding_are_exact_and_fail_closed(tmp_
 @pytest.mark.parametrize(
     ("field", "value", "expected"),
     [
+        ("schemaVersion", "MasterProgramBindingV1", "schemaVersion"),
+        ("controllerIssue", 425, "controllerIssue"),
         ("documentSha256", "0" * 64, "SHA-256"),
         ("documentBytes", 1, "byte count"),
         ("documentLines", 1, "line count"),
         ("hasTrailingNewline", False, "trailing-newline"),
+        ("documentPath", "docs/governance/other.md", "documentPath"),
+        ("numberedSections", 41, "numberedSections"),
+        ("firstNumberedSection", "1. Wrong", "firstNumberedSection"),
+        ("lastNumberedSection", "42. Wrong", "lastNumberedSection"),
         ("acceptedBaseSha", "0" * 40, "accepted base"),
         ("bootstrapBranch", "stage8-424-master-program-authority-prelog-extra", "branch"),
         ("proposalState", "ACCEPTED", "proposal state"),
@@ -608,6 +615,27 @@ def test_issue424_heading_and_waist_up_asset_mutations_fail(tmp_path: Path) -> N
     assert any("waist-up derivative" in failure for failure in failures)
 
 
+@pytest.mark.parametrize(
+    ("mutate"),
+    [
+        lambda text: text.replace("## 1. Purpose, claims, and execution authority\n", "", 1),
+        lambda text: text.replace("## 1. Purpose, claims, and execution authority", "## 1. Wrong title", 1),
+        lambda text: text.replace(
+            "## 1. Purpose, claims, and execution authority", "## __FIRST__", 1
+        ).replace(
+            "## 2. Capability and evidence classification", "## 1. Purpose, claims, and execution authority", 1
+        ).replace("## __FIRST__", "## 2. Capability and evidence classification", 1),
+    ],
+)
+def test_issue424_heading_count_title_and_order_mutations_fail(
+    tmp_path: Path, mutate: Any
+) -> None:
+    repository = issue424_fixture(tmp_path)
+    path = repository / "docs/governance/NARRATWIN_MASTER_PROGRAM_V1.md"
+    path.write_text(mutate(path.read_text(encoding="utf-8")), encoding="utf-8")
+    assert any("numbered heading" in failure for failure in routes.issue424_governance_failures(repository))
+
+
 def test_issue424_canonical_preflight_rejects_schema_and_scope_mutations(tmp_path: Path) -> None:
     repository = issue424_fixture(tmp_path)
     path = repository / "docs/governance/preflights/issue-424.json"
@@ -626,6 +654,14 @@ def test_issue424_proposal_requires_a_separate_future_decision_record(tmp_path: 
     binding["authorityTransition"]["decisionPath"] = binding["documentPath"]
     path.write_text(json.dumps(binding, indent=2) + "\n", encoding="utf-8")
     assert any("separate authority decision" in failure for failure in routes.issue424_governance_failures(repository))
+
+
+def test_issue424_proposal_rejects_a_decision_record_in_the_bootstrap_pr(tmp_path: Path) -> None:
+    repository = issue424_fixture(tmp_path)
+    decision = repository / routes.ISSUE424_TRANSITION["decisionPath"]
+    decision.write_text("{}\n", encoding="utf-8")
+    assert any("must not be this proposal or exist" in failure
+               for failure in routes.issue424_governance_failures(repository))
 
 
 def test_issue421_route_requires_exact_accepted_base_and_branch_point() -> None:
