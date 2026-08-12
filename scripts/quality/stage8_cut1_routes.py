@@ -27,14 +27,30 @@ ISSUE368_QUOTA_FIX_BRANCH = "stage8-368-google-tts-quota-project-binding-fix"
 ISSUE415_BRANCH = "stage8-415-pr-body-live-state-reconciliation"
 ISSUE415_CORRECTION_BRANCH = "stage8-415-pr-body-consistency-canary-fix"
 ISSUE421_BRANCH = "stage8-421-cut1-atomic-project-facts"
+ISSUE424_BRANCH = "stage8-424-master-program-authority-prelog"
 ISSUE386_BASE = "48fc32a2689c9bbc03742d774f3eadb8a500dafc"
 ISSUE368_BASE = "ef9cabc23762560912d99f10831241b8a65b869c"
 ISSUE368_PROMPT_BASE = "ba77d59b193da8064d67261e13fb50756c2bd9e8"
 ISSUE368_IMPLEMENTATION_BASE = "6766da34d73e301358f84f8eefb0985927292a26"
 ISSUE368_QUOTA_FIX_BASE = "9c165f739788fb0f09b315673f9125d700d6a96b"
 ISSUE421_BASE = "a868137fab607ae75d4b272301e9fc52b898e15c"
+ISSUE424_BASE = "afcf0325c3ec925b68b770eda0bb8c839bcce4dd"
 
 ROUTES = {
+    ISSUE424_BRANCH: {
+        "docs/governance/NARRATWIN_MASTER_PROGRAM_V1.md",
+        "docs/governance/narratwin-master-program-v1.json",
+        "docs/governance/preflights/issue-424.json",
+        "docs/reviews/ISSUE_424_EXECUTION_SPEC_REVIEW.md",
+        "docs/reviews/ISSUE_424_CUT1_FALSE_SUCCESS_REVIEW.md",
+        "docs/reviews/ISSUE_424_PLATFORM_SECURITY_LEARNING_REVIEW.md",
+        "docs/ADR/0059-master-program-authority-and-route-bootstrap.md",
+        "docs/STAGE_ISSUE_PLAN.md",
+        "docs/STATUS.md",
+        "docs/TRACEABILITY.md",
+        "scripts/quality/stage8_cut1_routes.py",
+        "tests/unit/test_stage8_cut1_routes.py",
+    },
     ISSUE421_BRANCH: {
         "docs/governance/preflights/issue-421.json",
         "docs/governance/cut1-project-facts-v1.json",
@@ -340,11 +356,11 @@ ROUTES = {
         "docs/THIRD_PARTY_NOTICES.md",
     },
 }
-ROUTE_ISSUES = {ISSUE421_BRANCH: 421, ISSUE415_BRANCH: 415, ISSUE415_CORRECTION_BRANCH: 415, ISSUE413_BRANCH: 413, ISSUE368_ADAPTER_BRANCH: 368, ISSUE368_IMPLEMENTATION_BRANCH: 368, ISSUE368_QUOTA_FIX_BRANCH: 368, ISSUE368_PROMPT_BRANCH: 368, ISSUE368_BRANCH: 368, ISSUE405_BRANCH: 405, ISSUE403_BRANCH: 403, ISSUE401_BRANCH: 401, ISSUE396_BRANCH: 396,
+ROUTE_ISSUES = {ISSUE424_BRANCH: 424, ISSUE421_BRANCH: 421, ISSUE415_BRANCH: 415, ISSUE415_CORRECTION_BRANCH: 415, ISSUE413_BRANCH: 413, ISSUE368_ADAPTER_BRANCH: 368, ISSUE368_IMPLEMENTATION_BRANCH: 368, ISSUE368_QUOTA_FIX_BRANCH: 368, ISSUE368_PROMPT_BRANCH: 368, ISSUE368_BRANCH: 368, ISSUE405_BRANCH: 405, ISSUE403_BRANCH: 403, ISSUE401_BRANCH: 401, ISSUE396_BRANCH: 396,
                 ISSUE386_BRANCH: 386, ISSUE385_BRANCH: 385,
                 ISSUE384_BRANCH: 384, ISSUE383_BRANCH: 383, ISSUE397_BRANCH: 397,
                 ISSUE393_BRANCH: 393, ISSUE382_BRANCH: 382, ISSUE367_BRANCH: 367}
-TOTAL_LIMITS = {ISSUE421_BRANCH: 4000, ISSUE415_BRANCH: 5000, ISSUE415_CORRECTION_BRANCH: 800, ISSUE413_BRANCH: 5000, ISSUE368_ADAPTER_BRANCH: 5600, ISSUE368_IMPLEMENTATION_BRANCH: 3600, ISSUE368_QUOTA_FIX_BRANCH: 2800, ISSUE368_PROMPT_BRANCH: 1000, ISSUE368_BRANCH: 3200, ISSUE405_BRANCH: 800, ISSUE403_BRANCH: 650, ISSUE401_BRANCH: 600, ISSUE396_BRANCH: 500,
+TOTAL_LIMITS = {ISSUE424_BRANCH: 8500, ISSUE421_BRANCH: 4000, ISSUE415_BRANCH: 5000, ISSUE415_CORRECTION_BRANCH: 800, ISSUE413_BRANCH: 5000, ISSUE368_ADAPTER_BRANCH: 5600, ISSUE368_IMPLEMENTATION_BRANCH: 3600, ISSUE368_QUOTA_FIX_BRANCH: 2800, ISSUE368_PROMPT_BRANCH: 1000, ISSUE368_BRANCH: 3200, ISSUE405_BRANCH: 800, ISSUE403_BRANCH: 650, ISSUE401_BRANCH: 600, ISSUE396_BRANCH: 500,
                 ISSUE386_BRANCH: 700, ISSUE385_BRANCH: 350,
                 ISSUE384_BRANCH: 500, ISSUE383_BRANCH: 700, ISSUE397_BRANCH: 500,
                 ISSUE393_BRANCH: 700, ISSUE382_BRANCH: 3200, ISSUE367_BRANCH: 2000}
@@ -353,6 +369,23 @@ ISSUE383_BINARY_FILES = {
     "frontend/public/demo/raj-synthetic-presenter.webp",
 }
 TEXT_LIMITS = {
+    ISSUE424_BRANCH: {
+        path: {
+            "docs/governance/NARRATWIN_MASTER_PROGRAM_V1.md": 5000,
+            "docs/governance/narratwin-master-program-v1.json": 180,
+            "docs/governance/preflights/issue-424.json": 500,
+            "docs/reviews/ISSUE_424_EXECUTION_SPEC_REVIEW.md": 500,
+            "docs/reviews/ISSUE_424_CUT1_FALSE_SUCCESS_REVIEW.md": 500,
+            "docs/reviews/ISSUE_424_PLATFORM_SECURITY_LEARNING_REVIEW.md": 500,
+            "docs/ADR/0059-master-program-authority-and-route-bootstrap.md": 400,
+            "docs/STAGE_ISSUE_PLAN.md": 250,
+            "docs/STATUS.md": 250,
+            "docs/TRACEABILITY.md": 250,
+            "scripts/quality/stage8_cut1_routes.py": 180,
+            "tests/unit/test_stage8_cut1_routes.py": 320,
+        }[path]
+        for path in ROUTES[ISSUE424_BRANCH]
+    },
     ISSUE421_BRANCH: {
         path: {
             "docs/governance/preflights/issue-421.json": 500,
@@ -583,6 +616,7 @@ def parse_name_status_z(output: str) -> list[str]:
 
 def route_base(run: Callable[[list[str]], Any], branch: str) -> str:
     fixed_routes = {
+        ISSUE424_BRANCH: (424, ISSUE424_BASE),
         ISSUE421_BRANCH: (421, ISSUE421_BASE),
         ISSUE368_IMPLEMENTATION_BRANCH: (368, ISSUE368_IMPLEMENTATION_BASE),
         ISSUE368_QUOTA_FIX_BRANCH: (368, ISSUE368_QUOTA_FIX_BASE),
@@ -598,7 +632,7 @@ def route_base(run: Callable[[list[str]], Any], branch: str) -> str:
         fixed_value = str(fixed.stdout).strip()
         common_value = str(common.stdout).strip()
         branch_point_invalid = False
-        if branch in {ISSUE421_BRANCH, ISSUE368_IMPLEMENTATION_BRANCH,
+        if branch in {ISSUE424_BRANCH, ISSUE421_BRANCH, ISSUE368_IMPLEMENTATION_BRANCH,
                       ISSUE368_QUOTA_FIX_BRANCH, ISSUE368_BRANCH,
                       ISSUE368_PROMPT_BRANCH}:
             branch_point = run(["git", "merge-base", "origin/main", "HEAD"])
