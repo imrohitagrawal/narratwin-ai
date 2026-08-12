@@ -687,6 +687,22 @@ ISSUE424_ROUTE_GUARD = (
 )
 
 
+class DuplicateJsonMember(ValueError):
+    """Reject authority bytes whose meaning depends on parser key precedence."""
+
+
+def load_json_without_duplicate_members(path: Path) -> Any:
+    def unique(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+        result: dict[str, Any] = {}
+        for key, value in pairs:
+            if key in result:
+                raise DuplicateJsonMember(key)
+            result[key] = value
+        return result
+
+    return json.loads(path.read_text(encoding="utf-8"), object_pairs_hook=unique)
+
+
 def issue424_governance_failures(root: Path) -> list[str]:
     """Validate the exact controller proposal without network or mutable external state."""
     failures: list[str] = []
@@ -705,7 +721,9 @@ def issue424_governance_failures(root: Path) -> list[str]:
         failures.append("Issue #424 controller omits the exact waist-up derivative path and SHA-256 invariant.")
 
     try:
-        binding = json.loads(binding_path.read_text(encoding="utf-8"))
+        binding = load_json_without_duplicate_members(binding_path)
+    except DuplicateJsonMember:
+        return failures + ["Issue #424 proposal binding contains a duplicate JSON member."]
     except (OSError, UnicodeDecodeError, json.JSONDecodeError):
         return failures + ["Issue #424 proposal binding is unavailable or invalid JSON."]
     if not isinstance(binding, dict):
@@ -761,7 +779,10 @@ def issue424_governance_failures(root: Path) -> list[str]:
         failures.append("Issue #424 separate authority decision record must not be this proposal or exist in this PR.")
 
     try:
-        preflight = json.loads(preflight_path.read_text(encoding="utf-8"))
+        preflight = load_json_without_duplicate_members(preflight_path)
+    except DuplicateJsonMember:
+        failures.append("Issue #424 preflight contains a duplicate JSON member.")
+        preflight = None
     except (OSError, UnicodeDecodeError, json.JSONDecodeError):
         preflight = None
     findings = validate_governance_preflight(
