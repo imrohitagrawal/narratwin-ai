@@ -32,7 +32,7 @@
       "https://github.com/imrohitagrawal/narratwin-ai/issues/421#issuecomment-5263752038 (three exact OWNER_ASSERTED facts and canonical narration revision; not externally corroborated)"
     ],
     "implementation_contract": "backend/app/rag/grounding.py requires normalized claim text to occur directly in the cited retrieved chunk; backend/app/stage4.py reproduces the canonical evaluator during restore; backend/app/narration.py accepts only a current completed Stage 4 run and checksum-binds claim/support evidence.",
-    "failure_evidence": "The genuine accepted-source probe returned exactly eighteen unsupported claims and zero supports for each presenter; narration-derived fixtures and self-minted Stage 4 authority are prohibited. Fresh-context review at 9d1c682 reproduced a separate fail-open class: canonical narration uploaded as ordinary knowledge could pass the generic policy while carrying the Cut 1 style, then survive Stage 4 and narration restore through speech receipt issuance without proposition evidence, including for non-selected presenters."
+    "failure_evidence": "The genuine accepted-source probe returned exactly eighteen unsupported claims and zero supports for each presenter; narration-derived fixtures and self-minted Stage 4 authority are prohibited. Fresh-context review at 9d1c682 reproduced four separate blocker classes: canonical narration uploaded as ordinary knowledge could pass the generic policy while carrying the Cut 1 style and survive into receipts, Cut 1 dispatch could consult ambient Langfuse configuration, the project-understanding-core predicate lacked an entailing source span, and same-process receipt revalidation did not recheck changed source authority."
   },
   "change_budget": {
     "exact_paths": 21,
@@ -134,7 +134,10 @@
     "G421-14": "Only public persisted Stage 4 and Issue #382 lifecycle methods create authority; no direct state construction is accepted.",
     "G421-15": "Canonical run, evaluation, narration, and receipt lineage changes when any proposition binding changes.",
     "G421-16": "All identifiers, JSON, counts, spans, strings, and evidence sizes are bounded and strict; unknown fields and duplicate keys fail closed.",
-    "G421-17": "CUT1_ATOMIC_FACTS_V1 is a closed authority domain: every fresh, restored, replayed, narrated, approved, consumed, and receipt-revalidated Cut 1 path requires selected presenter Meera, cut1-atomic-grounding-v1, all eighteen ordered governed supports, and complete proposition evidence; any Cut 1 prerequisite or contract mismatch remains FAILED and cannot fall back to generic support."
+    "G421-17": "CUT1_ATOMIC_FACTS_V1 is a closed authority domain: every fresh, restored, replayed, narrated, approved, consumed, and receipt-revalidated Cut 1 path requires selected presenter Meera, cut1-atomic-grounding-v1, all eighteen ordered governed supports, and complete proposition evidence; any Cut 1 prerequisite or contract mismatch remains FAILED and cannot fall back to generic support.",
+    "G421-18": "Cut 1 authority preparation creates only a local trace identifier and never consults or invokes ambient OpenTelemetry exporters, Langfuse credentials, clients, DNS, sockets, or provider integrations.",
+    "G421-19": "The project-understanding-core predicate is supported by an exact narration-independent PRD product-definition span; provider modularity spans cannot manufacture that separate premise.",
+    "G421-20": "Every live or restored TTS receipt revalidation reruns current Stage 4 grounding, presenter, narration evaluation, and approval checks; post-consumption authority drift fails closed."
   },
   "invariant_to_test_mapping": {
     "G421-01": ["facts schema/source inventory tests", "human exact-span review"],
@@ -153,7 +156,10 @@
     "G421-14": ["public service lifecycle integration tests"],
     "G421-15": ["checksum mutation and evaluation-lineage tests"],
     "G421-16": ["schema bounds, unknown-field, and duplicate-key tests"],
-    "G421-17": ["ordinary-knowledge canonical-text fail-open RED", "Cut 1 evaluator mismatch matrix", "style-policy-evidence restore mutations", "Myra/Raj narration and receipt refusal", "persisted Stage 4 and narration restore refusal"]
+    "G421-17": ["ordinary-knowledge canonical-text fail-open RED", "Cut 1 evaluator mismatch matrix", "style-policy-evidence restore mutations", "Myra/Raj narration and receipt refusal", "persisted Stage 4 and narration restore refusal"],
+    "G421-18": ["ambient telemetry trap proving zero OpenTelemetry and Langfuse invocation for Cut 1"],
+    "G421-19": ["exact PRD byte-span and proposition semantic review", "source-span mutation suite"],
+    "G421-20": ["same-process post-consumption source-run and presenter drift receipt replay matrix", "restore reconciliation tests"]
   },
   "architecture_parity": {
     "generic_stage4": "Existing evaluate_grounding direct visible-claim-to-retrieved-chunk semantics remain the default.",
