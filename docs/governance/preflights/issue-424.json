@@ -8,6 +8,7 @@
   "authority": {
     "controller_issue": "https://github.com/imrohitagrawal/narratwin-ai/issues/424",
     "route_freeze": "https://github.com/imrohitagrawal/narratwin-ai/issues/424#issuecomment-5266452787",
+    "bootstrap_route_amendment": "https://github.com/imrohitagrawal/narratwin-ai/issues/424#issuecomment-5266542898",
     "predecessor_issue": "https://github.com/imrohitagrawal/narratwin-ai/issues/421",
     "predecessor_pr": "https://github.com/imrohitagrawal/narratwin-ai/pull/422",
     "predecessor_merge": "afcf0325c3ec925b68b770eda0bb8c839bcce4dd",
@@ -16,8 +17,8 @@
     "eligible_non_author_review": "PENDING_EXACT_HEAD"
   },
   "change_budget": {
-    "exact_paths": 10,
-    "maximum_additions_plus_deletions": 8000,
+    "exact_paths": 12,
+    "maximum_additions_plus_deletions": 8500,
     "deletions_grant_credit": false,
     "per_file_charged_lines": {
       "docs/governance/NARRATWIN_MASTER_PROGRAM_V1.md": 5000,
@@ -29,7 +30,9 @@
       "docs/ADR/0059-master-program-authority-and-route-bootstrap.md": 400,
       "docs/STAGE_ISSUE_PLAN.md": 250,
       "docs/STATUS.md": 250,
-      "docs/TRACEABILITY.md": 250
+      "docs/TRACEABILITY.md": 250,
+      "scripts/quality/stage8_cut1_routes.py": 180,
+      "tests/unit/test_stage8_cut1_routes.py": 320
     }
   },
   "scope": {
@@ -43,11 +46,13 @@
       "docs/ADR/0059-master-program-authority-and-route-bootstrap.md",
       "docs/STAGE_ISSUE_PLAN.md",
       "docs/STATUS.md",
-      "docs/TRACEABILITY.md"
+      "docs/TRACEABILITY.md",
+      "scripts/quality/stage8_cut1_routes.py",
+      "tests/unit/test_stage8_cut1_routes.py"
     ],
     "forbidden": [
       "backend or frontend runtime changes",
-      "quality-checker, guardrail, workflow, or repository-setting changes",
+      "quality-checker or guardrail changes beyond exact Issue #424 bootstrap branch/path/budget recognition; workflow or repository-setting changes",
       "dependencies, containers, provider SDKs, credentials, secret lookup, or egress",
       "audio, video, captions, media binaries, renderer auditions, or paid operations",
       "deployment, publication, release, public availability, or production-readiness claims",
@@ -64,7 +69,8 @@
     "G424_07": "Cleanup remains inventory-scoped and cannot authorize deletion of unrelated user, workspace, evidence, cache, or infrastructure resources.",
     "G424_08": "Every terminal handoff and completion claim remains evidence-bound and reports unresolved blockers and retained resources.",
     "G424_09": "The next implementation child remains blocked until exact-byte OWNER approval, three review dispositions, exact-head non-author review, merge, merged-main checks, issue closeout, and a new active route.",
-    "G424_10": "Repository status remains No-Go and records zero provider calls, zero spend, and zero new media artifacts for this route."
+    "G424_10": "Repository status remains No-Go and records zero provider calls, zero spend, and zero new media artifacts for this route.",
+    "G424_11": "The Stage 8 checker recognizes only the exact Issue #424 branch, twelve paths, and 8,500-line ceiling; near-match, extra-path, and over-budget mutations fail."
   },
   "failure_matrix": [
     {
@@ -126,12 +132,19 @@
       "failure": "The PR records provider activity, spend, media output, or a Go claim.",
       "proof": "scoped resource ledger, diff review, and status review",
       "classification": "gate-and-human"
+    },
+    {
+      "id": "G424_11",
+      "failure": "The bootstrap branch cannot run make quality, or a near-match/extra-path/over-budget route passes.",
+      "proof": "committed unrecognized-route RED followed by focused positive and mutation tests in test_stage8_cut1_routes.py",
+      "classification": "test-and-gate"
     }
   ],
   "verification": {
     "focused": [
       "python3 -m json.tool docs/governance/preflights/issue-424.json",
       "python3 -m json.tool docs/governance/narratwin-master-program-v1.json",
+      "uv run pytest -p no:cacheprovider tests/unit/test_stage8_cut1_routes.py",
       "python3 scripts/guardrails_check.py",
       "make quality"
     ],
@@ -236,10 +249,10 @@
     "retained_until": "PR merge/closeout or unmerged cancellation"
   },
   "stop_conditions": [
-    "any drift from the exact base, branch, ten paths, or 8,000-line ceiling",
+    "any drift from the exact base, branch, twelve paths, or 8,500-line ceiling",
     "controller bytes change after exact-byte OWNER approval",
     "any unresolved blocker in the three review surfaces",
-    "any need to change code, workflows, guardrails, dependencies, runtime, or repository settings",
+    "any need to change code or guardrails beyond exact Issue #424 bootstrap branch/path/budget recognition; any workflow, dependency, runtime, or repository-setting change",
     "any credential, provider, egress, paid operation, audio, video, deployment, publication, release, or production action",
     "missing exact-head eligible non-author review or required CI"
   ],
