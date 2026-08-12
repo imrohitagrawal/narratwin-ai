@@ -345,3 +345,8 @@ The repair performs local hashing, JSON validation, and a bounded local Git
 object read when current source bytes differ from the pinned revision. It makes
 no provider or telemetry call and has no paid-call cost. Issue #368 call and
 US$2 ceilings remain untouched at zero during this branch.
+
+For `CUT1_ATOMIC_FACTS_V1`, the local trace ID is created without entering the
+OpenTelemetry or Langfuse adapters, even when ambient exporter or Langfuse
+configuration exists. Local bounded logs and metrics remain available; no
+external-capable observation context is consulted.

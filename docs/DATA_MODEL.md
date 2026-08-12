@@ -1014,3 +1014,9 @@ asset, safe project upload projection, source document/chunks, retrieved
 contexts, claims, supports, evaluation, narration version, approval, and
 single-use receipt form one restore-validated graph. Generic Stage 4 rows keep
 the existing model with empty optional fields.
+
+`CUT1_ATOMIC_FACTS_V1` and `cut1-atomic-grounding-v1` are a paired authority
+domain. A completed Cut 1 row has exactly eighteen selected-Meera claims and
+supports, with non-empty proposition IDs and checksums on every support. A
+failed Cut 1 row carries no supports. Generic-policy rows cannot enter the Cut 1
+narration, approval, consumption, or receipt graph.

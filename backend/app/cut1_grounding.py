@@ -17,6 +17,7 @@ from backend.app.rag.models import (
     GeneratedScript,
     KnowledgeChunk,
     RetrievedContext,
+    UnsupportedClaim,
 )
 
 CUT1_STYLE = "CUT1_ATOMIC_FACTS_V1"
@@ -25,7 +26,7 @@ CUT1_SCHEMA_VERSION = "cut1-project-facts-v1"
 FACTS_RELATIVE_PATH = Path("docs/governance/cut1-project-facts-v1.json")
 FACTS_SOURCE_FILENAME = "cut1-project-facts-v1.md"
 ACCEPTED_REVISION = "a868137fab607ae75d4b272301e9fc52b898e15c"
-EXPECTED_ASSET_SHA256 = "f9d443bb42ff00028c725e007f5fd52a06cc1863cac44c0bb2214ace79ac0f6e"
+EXPECTED_ASSET_SHA256 = "cb50de12ce2debb3d52308892428b9711e5efb41fe2ad59b175563809e7d314b"
 MAX_CONTRACT_BYTES = 131_072
 MAX_SOURCES = 16
 MAX_SPANS = 64
@@ -630,6 +631,24 @@ def evaluate_cut1_grounding(
         prompt=prompt,
         all_chunks=all_chunks,
     )
+    failed = replace(
+        baseline,
+        evaluation_status="FAILED",
+        groundedness_score=0.0,
+        faithfulness_score=0.0,
+        unsupported_claim_count=len(candidate.claims),
+        unsupported_claims=[
+            UnsupportedClaim(
+                claim_id=claim.claim_id,
+                claim_text=claim.text,
+                reason="The governed Cut 1 atomic grounding contract was not satisfied.",
+            )
+            for claim in candidate.claims
+        ],
+        claim_supports=[],
+        context_ref_coverage=0.0,
+        policy_version=CUT1_POLICY_VERSION,
+    )
     try:
         contract = load_cut1_grounding_contract(root=root)
         baseline_supported = {support.claim_id for support in baseline.claim_supports}
@@ -646,7 +665,7 @@ def evaluate_cut1_grounding(
                 for claim in candidate.claims
             )
         ):
-            return baseline
+            return failed
         claim_hashes = [_sha(claim.text.encode()) for claim in candidate.claims]
         if not all(
             claim.claim_id == mapping.claim_id
@@ -655,13 +674,13 @@ def evaluate_cut1_grounding(
                 candidate.claims, claim_hashes, contract.claim_mappings, strict=True
             )
         ):
-            return baseline
+            return failed
         chunks = {item.chunk_id: item for item in all_chunks}
         fact_checksum = "sha256:" + _sha(contract.project_source_bytes())
         supports: list[ClaimSupport] = []
         for claim, mapping in zip(candidate.claims, contract.claim_mappings, strict=True):
             if claim.chunk_id is None or not 0 < claim.citation_index <= len(retrieved_context):
-                return baseline
+                return failed
             context = retrieved_context[claim.citation_index - 1]
             if (
                 context.chunk != chunks.get(claim.chunk_id)
@@ -669,7 +688,7 @@ def evaluate_cut1_grounding(
                 or context.chunk.source_document_checksum != fact_checksum
                 or (context.chunk.tenant_id, context.chunk.project_id) != (tenant_id, project_id)
             ):
-                return baseline
+                return failed
             supports.append(
                 ClaimSupport(
                     claim_support_id=f"claimsup_{len(supports) + 1:03d}",
@@ -697,4 +716,4 @@ def evaluate_cut1_grounding(
             policy_version=CUT1_POLICY_VERSION,
         )
     except (Cut1GroundingError, OSError, TypeError, ValueError):
-        return baseline
+        return failed

@@ -235,11 +235,11 @@
       "spans": [
         {
           "spanId": "src_prd_span_01",
-          "byteStart": 3680,
-          "byteEnd": 3928,
-          "byteCount": 248,
-          "sha256": "23bcdd091fd59be435342572b6b70dde77dc748a8dd688b4d87d8c8ab650b86c",
-          "text": "| Hiring manager | Needs ownership, trade-offs, maturity, and delivery scope | Concise walkthrough with decisions and outcomes |\n| Engineer | Needs architecture and implementation evidence | Technical walkthrough with citations/context references |"
+          "byteStart": 399,
+          "byteEnd": 1087,
+          "byteCount": 688,
+          "sha256": "f1df6ca8a6a94592e1b19e046ac370b3d69ff8b75fc2402def9dffe3826a32f6",
+          "text": "NarraTwin AI is a provider-agnostic multilingual AI avatar walkthrough platform. It\nturns approved project knowledge into audience-aware, grounded scripts and later\nvoice, subtitle, video, and interactive avatar outputs.\n\nNarraTwin turns approved knowledge into grounded, cited, multilingual avatar\nexplanations and interactive Q&A.\n\nThe first usable product slice must prove the trust loop: upload project knowledge,\ningest and retrieve context, generate a grounded walkthrough script, evaluate\nunsupported claims, store the result, and display it to the user. Avatar rendering,\nvoice, subtitles, premium providers, and interactive Q&A are future slices built on\nthat trusted foundation."
         }
       ]
     },
@@ -374,9 +374,9 @@
     },
     {
       "propositionId": "fact_010",
-      "statement": "Project understanding remains the core contract while modular provider boundaries allow generation and presentation technologies to evolve.",
+      "statement": "Approved project knowledge and grounded walkthrough generation remain the product core while modular provider boundaries allow generation and presentation technologies to evolve.",
       "predicateIds": ["architecture.project_understanding_core", "architecture.modular_provider_boundaries", "architecture.technologies_evolve"],
-      "sourceSpanIds": ["src_readme_span_04", "src_portability_span_01", "src_portability_span_02"]
+      "sourceSpanIds": ["src_readme_span_04", "src_portability_span_01", "src_portability_span_02", "src_prd_span_01"]
     },
     {
       "propositionId": "fact_011",

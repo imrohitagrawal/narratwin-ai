@@ -2577,9 +2577,12 @@ blocked until #382 merges, passes accepted-main validation, and closes. This
 does not authorize API/UI, TTS/audio, providers, rendering/media, deployment,
 publication, release, public availability, or production readiness.
 
-OWNER amendment `5229508771` replaces only the historical opening: Meera, Myra,
-and Raj are spoken as NarraTwin hosts. Restore also rejects any mismatch between
-consumed narration-version keys and fully validated receipt keys.
+OWNER amendment `5229508771` historically replaced only the opening. Issue #421
+OWNER record `5263752038` supersedes that canonical-text description with the
+two exact approved replacements and selects Meera alone for Cut 1 authority.
+Restore and live replay reject mismatched consumption receipts, generic-policy
+fallback, incomplete proposition evidence, non-selected presenters, and changed
+external source authority.
 
 ### Issue #368 governance reconciliation — optional Google Gemini-TTS
 

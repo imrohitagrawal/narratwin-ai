@@ -616,6 +616,29 @@ def test_restore_rejects_tampered_persisted_proposition_evidence(
     assert run.run_id not in restored.walkthrough_runs
 
 
+@pytest.mark.parametrize("mutation", ["generic_policy", "generic_style"])
+def test_g421_17_restore_rejects_cut1_style_policy_disagreement(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, mutation: str
+) -> None:
+    service, principal, project_id = _seed_public_stage4(
+        tmp_path, monkeypatch, include_facts=True
+    )
+    run = _generate(service, principal, project_id, key=f"restore-{mutation}")
+    assert service.state_path is not None
+    payload = json.loads(service.state_path.read_text(encoding="utf-8"))
+    if mutation == "generic_policy":
+        payload["walkthroughRuns"][0]["evaluation"]["policy_version"] = (
+            "stage4-grounding-policy-v1"
+        )
+    else:
+        payload["walkthroughRuns"][0]["style"] = "CONFIDENT"
+    service.state_path.write_text(json.dumps(payload), encoding="utf-8")
+
+    restored = Stage4Service(state_path=service.state_path)
+
+    assert run.run_id not in restored.walkthrough_runs
+
+
 @pytest.mark.parametrize("presenter_id", ["meera"])
 def test_public_stage4_and_issue382_lifecycle_persists_one_bound_receipt(
     tmp_path: Path,

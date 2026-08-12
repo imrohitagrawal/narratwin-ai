@@ -636,3 +636,10 @@ recomputed or code-owned rather than trusted from the facts asset. Logs and publ
 must not include narration, source spans, facts payloads, raw paths, credentials,
 or subprocess output. This repair adds no provider, telemetry, authentication,
 network, billing, release, or distribution authority.
+
+Cut 1 style dispatch occurs before external-capable observability lookup: it
+uses a local trace identifier and invokes neither ambient OpenTelemetry nor
+Langfuse configuration/client code. A generic evaluator result cannot be
+promoted into Cut 1 authority. Live receipt validation rechecks the external
+source run and presenter plus current evaluation and approval, so same-process
+post-consumption drift fails as it does during restore.

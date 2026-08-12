@@ -12,6 +12,7 @@ from pathlib import Path
 from threading import RLock
 from typing import Any, NoReturn, cast
 
+from backend.app.cut1_grounding import CUT1_POLICY_VERSION, CUT1_STYLE, SELECTED_PRESENTER
 from backend.app.evaluation_lineage import build_source_evaluation_checksum, derive_evaluation_lineage, validate_evaluation_lineage_payload
 from backend.app.presenter_registry import PresenterRegistry, PresenterRegistryError, PresenterTraceBinding
 from backend.app.rag.chunking import checksum_text
@@ -286,20 +287,35 @@ class NarrationService:
             _fail("RESOURCE_LIMIT", "Narration project limit reached.")
         if len(self._versions.get(project_id, ())) >= MAX_VERSIONS_PER_PROJECT:
             _fail("RESOURCE_LIMIT", "Narration version limit reached.")
-        _, run = self._source(principal, project_id, source_run_id)
         review = _text(review_text)
+        _, run = self._source(principal, project_id, source_run_id)
         binding = self._presenter(presenter_binding)
-        lineage = derive_evaluation_lineage(run)
-        lineage_json = json.dumps(lineage, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
-        source_checksum = build_source_evaluation_checksum(lineage)
         evaluation = cast(Any, run.evaluation)
-        claim_evidence_json = json.dumps({"claims": [asdict(item) for item in cast(Any, run.generated_script).claims], "supports": [asdict(item) for item in evaluation.claim_supports]}, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+        generated = cast(Any, run.generated_script)
         indexes = tuple(support.citation_index for support in evaluation.claim_supports)
         context_ids = tuple(context.context_ref_id for context in run.retrieved_context)
         support_ids = tuple(support.claim_support_id for support in evaluation.claim_supports)
-        evidence_counts = (len(indexes), len(context_ids), len(support_ids), len(cast(Any, run.generated_script).claims))
-        if max(evidence_counts) > MAX_EVIDENCE_ITEMS or not indexes or len(support_ids) != len(set(support_ids)):
+        evidence_counts = (len(indexes), len(context_ids), len(support_ids), len(generated.claims))
+        if binding.presenter_id != SELECTED_PRESENTER:
+            _fail("AUTHORITY_MISMATCH", "Narration presenter is not selected for Cut 1.")
+        if (
+            max(evidence_counts) > MAX_EVIDENCE_ITEMS
+            or not indexes
+            or len(indexes) != len(support_ids)
+            or len(generated.claims) != len(evaluation.claim_supports)
+            or len(generated.claims) != 18
+            or len(support_ids) != len(set(support_ids))
+            or any(
+                not support.proposition_ids
+                or support.proposition_evidence_checksum is None
+                for support in evaluation.claim_supports
+            )
+        ):
             _fail("EVIDENCE_INVALID", "Narration evidence is missing, duplicated, or exceeds its bounded limit.")
+        lineage = derive_evaluation_lineage(run)
+        lineage_json = json.dumps(lineage, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+        source_checksum = build_source_evaluation_checksum(lineage)
+        claim_evidence_json = json.dumps({"claims": [asdict(item) for item in generated.claims], "supports": [asdict(item) for item in evaluation.claim_supports]}, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
         row = NarrationVersion(
             principal.tenant_id, principal.actor_id, project_id, version,
             binding.presenter_id, binding.presenter_version, binding, binding.registry_sha256,
@@ -414,6 +430,12 @@ class NarrationService:
             )
             if row.state is not NarrationState.CONSUMED_BY_TTS:
                 _fail("AUTHORITY_MISMATCH", "TTS receipt is not current.")
+            try:
+                self._presenter(row.presenter_binding)
+            except NarrationError:
+                _fail("AUTHORITY_MISMATCH", "TTS receipt authority is stale or incomplete.")
+            if self._binding_failures(row) or not _evaluation_current(row) or not _approval_current(row):
+                _fail("AUTHORITY_MISMATCH", "TTS receipt authority is stale or incomplete.")
             if receipt not in self._receipts or not _receipt_matches_version(receipt, row):
                 _fail("AUTHORITY_MISMATCH", "TTS receipt is stale or mismatched.")
             if _receipt_checksum(receipt) != receipt.receipt_checksum:
@@ -456,6 +478,19 @@ class NarrationService:
             principal.tenant_id, principal.actor_id, project_id
         ):
             _fail("AUTHORITY_MISMATCH", "Stage 4 narration source does not match this scope.")
+        evaluation = run.evaluation
+        if (
+            run.status != "COMPLETED"
+            or run.failure_reason is not None
+            or run.evaluation_status != "PASSED"
+            or run.style != CUT1_STYLE
+            or run.generated_script is None
+            or run.accepted_script_text != run.generated_script.text
+            or evaluation is None
+            or evaluation.evaluation_status != "PASSED"
+            or evaluation.policy_version != CUT1_POLICY_VERSION
+        ):
+            _fail("AUTHORITY_MISMATCH", "Stage 4 narration source is not governed Cut 1 authority.")
         return project, run
     def _presenter(self, binding: PresenterTraceBinding) -> PresenterTraceBinding:
         try:
@@ -491,7 +526,15 @@ class NarrationService:
             indexes = tuple(support.citation_index for support in evaluation.claim_supports)
             markers = tuple(int(value) for value in CITATION_PATTERN.findall(row.review_text))
             valid = (
-                run.accepted_script_text == row.review_text
+                row.presenter_id == SELECTED_PRESENTER
+                and run.style == CUT1_STYLE
+                and evaluation.policy_version == CUT1_POLICY_VERSION
+                and len(cast(Any, run.generated_script).claims) == len(evaluation.claim_supports) == 18
+                and all(
+                    support.proposition_ids and support.proposition_evidence_checksum
+                    for support in evaluation.claim_supports
+                )
+                and run.accepted_script_text == row.review_text
                 and run.request_checksum == row.source_request_checksum and run.trace_id == row.source_trace_id
                 and lineage_json == row.source_lineage_json
                 and build_source_evaluation_checksum(lineage) == row.source_evaluation_checksum

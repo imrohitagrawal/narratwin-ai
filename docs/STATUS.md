@@ -1297,8 +1297,10 @@ Required update rules:
 - OWNER comment `5227401987` authorizes exactly fourteen paths and a 3,200-line
   aggregate ceiling. Adversarial review added F382-29 concurrent-transition
   protection by forward commit before code; committed RED precedes GREEN.
-- OWNER amendment `5229508771` supersedes only the spoken opening so Meera/Myra/
-  Raj are NarraTwin hosts. Forward RED/GREEN also closes the Required
+- OWNER amendment `5229508771` historically superseded only the spoken opening
+  so Meera/Myra/Raj were NarraTwin hosts. Issue #421 OWNER record `5263752038`
+  now supersedes that canonical-text description with exactly two further
+  replacements and selects only Meera for Cut 1 authority. Forward RED/GREEN also closes the Required
   F382-19/F382-25 missing-consumption-receipt restore finding.
 - The branch establishes only review/evaluation/approval/invalidation and a
   text-only latest-approved consumption receipt. It is not accepted until PR
@@ -1306,6 +1308,13 @@ Required update rules:
 - Release posture remains No-Go. Issue `#368` and all TTS/audio, renderer/video,
   UI, provider, deployment, publication, release, public, and production work
   remain blocked or out of scope.
+
+Issue #421 adversarial review also closed generic-policy fallback, ordinary
+narration source stuffing, ambient Langfuse/OpenTelemetry lookup, insufficient
+project-core source entailment, and stale live receipt replay. No earlier
+evaluation, approval, receipt, audio, caption, or render authority becomes
+current from these repository changes; fresh post-merge Meera authority remains
+required.
 
 ## Issue #368 governance reconciliation state (2026-08-10)
 

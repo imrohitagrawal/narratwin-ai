@@ -1948,3 +1948,10 @@ values are application-generated evidence included in persisted evaluation and
 narration lineage; changing or removing either field invalidates restore.
 Existing generic direct-substring behavior and all HTTP request/response shapes
 are unchanged.
+
+A request carrying the Cut 1 style never falls back to a generic passing
+evaluation. Contract, facts, presenter, or evidence mismatch returns a failed
+Cut 1-policy run with no accepted script or support authority. Restore selects
+the evaluator from run style, then requires policy agreement. Narration and TTS
+receipt authority additionally require selected Meera and all eighteen
+proposition-bound supports to remain current.

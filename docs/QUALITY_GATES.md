@@ -1335,5 +1335,10 @@ Issue #382 narration/approval/receipt steps for the selected Meera candidate
 through public service methods. The gate pins 261 words, 1,904 UTF-8 bytes,
 SHA-256 `3edffc6169460546ae0bdee867fdeaf3c0ae383535e2976e0333f39c03ff614e`,
 and rejects non-selected presenter authority.
+Adversarial RED/GREEN additionally proves that canonical narration uploaded as
+ordinary knowledge cannot pass, Cut 1 mismatch cannot retain generic supports,
+style/policy drift cannot restore, ambient telemetry hooks are never invoked,
+the project-core premise has an entailing PRD span, and live receipt replay
+rejects post-consumption source or presenter drift.
 No real provider call, telemetry egress, audio, deployment, distribution,
 production-readiness, or release claim is part of this gate.

@@ -27,7 +27,7 @@ their immutable source spans.
 
 `docs/governance/cut1-project-facts-v1.json` is the owner-reviewed policy asset.
 Its complete byte-level SHA-256 is
-`f9d443bb42ff00028c725e007f5fd52a06cc1863cac44c0bb2214ace79ac0f6e`;
+`cb50de12ce2debb3d52308892428b9711e5efb41fe2ad59b175563809e7d314b`;
 the verifier pins that digest before parsing any contract field.
 It contains:
 
@@ -69,7 +69,9 @@ does not need to be weakened.
    claim-hash set rather than trusting the facts asset or caller;
 9. requires every claim to cite a project-owned retrieved chunk from the exact
    canonical project-facts projection; and
-10. emits recomputed predicate/proposition IDs, source classifications, and an
+10. binds the project-understanding premise to the PRD's exact product-definition
+    and trust-loop span rather than inferring it from provider modularity; and
+11. emits recomputed predicate/proposition IDs, source classifications, and an
     evidence checksum into each persisted claim support.
 
 The Stage 4 service selects this verifier only for the exact
@@ -84,11 +86,20 @@ this policy. It binds each claim ID, every proposition ID, each proposition
 evidence checksum, the policy version, and an aggregate checksum. Existing v2
 lineage bytes and their golden digest remain unchanged.
 
-Restore and replay dispatch by the persisted evaluation policy and require the
-exact Cut 1 style. The same canonical verifier reruns against the pinned source
+Every Cut 1 mismatch produces a Cut 1-policy `FAILED` result with no generic
+supports. Successful fresh, restored, replayed, narrated, approved, consumed,
+and receipt-revalidated authority requires the exact style-policy pairing,
+eighteen governed Meera supports, and complete proposition evidence. Restore
+dispatches from the persisted run style and independently requires the matching
+evaluation policy. The same canonical verifier reruns against the pinned source
 revision and current stored project graph. Missing Git objects, modified policy
 assets, stale facts projections, cross-project chunks, incomplete mappings, or
 checksum drift make the run unavailable rather than trusted.
+
+Cut 1 generation uses an application-local trace identifier and bypasses both
+ambient OpenTelemetry and Langfuse capability lookup. Same-process receipt
+revalidation reruns current source-run, presenter, evaluation, and approval
+checks instead of trusting internal receipt equality alone.
 
 ## Alternatives rejected
 
