@@ -480,6 +480,7 @@ durability, deployment, and release decisions remain outside this trace.
 | Preserve platform/security/learning boundaries | `ISSUE_424_PLATFORM_SECURITY_LEARNING_REVIEW.md` covers provider resolution, neutrality, secrets, governance freshness, migration, roles, RAG, lineage, telemetry, data lanes, promotion, cleanup, and honest availability | No provider, credential, egress, spend, runtime, data-processing, or learning automation is activated |
 | Require independent pre-log review | `ISSUE_424_EXECUTION_SPEC_REVIEW.md`, final controller gate, exact-byte OWNER and exact-head non-author approvals | Self-authored documents, CI shape checks, and skill invocation cannot substitute for independent semantic review |
 | Bind operational closeout | Controller Sections 36–40 and preflight task-resource ledger | Cleanup is task-scoped and inventory-backed; unrelated user/shared/evidence resources cannot be removed |
+| Run the existing Stage 8 gate without broadening authority | Committed unrecognized-route RED, amended GovernancePreflightV1, `stage8_cut1_routes.py`, and focused positive/near-match/extra-path/over-budget/base-drift tests | Recognition is limited to exact Issue #424 branch/base/twelve paths/8,500 lines and does not implement active-route semantics |
 
 <!-- ISSUE158-SECURITY-HISTORY-V2:BEGIN -->
 

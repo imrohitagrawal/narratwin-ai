@@ -2657,8 +2657,11 @@ historical route.
 
 Issue #424 is the governance-only bootstrap for the OWNER-supplied NarraTwin
 master program. Branch `stage8-424-master-program-authority-prelog` starts at
-the exact PR #422 merge, owns the ten paths in its GovernancePreflightV1, and
-has an 8,000 charged-line ceiling. Its first commit is the preflight alone.
+the exact PR #422 merge, owns the twelve paths in its amended
+GovernancePreflightV1, and has an 8,500 charged-line ceiling. Its first commit
+is the preflight alone. Full-gate RED at `8890e8e` proved the Stage 8 checker
+did not recognize the bootstrap; a pre-code amendment and committed failing
+tests precede the minimal exact branch/base/path/budget recognition.
 
 The route preserves and SHA-256-binds all forty-two master-controller sections,
 adds execution-specification, Cut 1 false-success/media, and platform/security/

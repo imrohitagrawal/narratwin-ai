@@ -24,7 +24,10 @@ Adopt a two-step bootstrap:
 
 1. Issue #424 preserves and hash-binds the complete master controller, records
    three independent-review surfaces, and reconciles status/stage/traceability.
-   It is governance-only and creates no active implementation route.
+   It is governance-only and creates no active implementation route. A narrow
+   bootstrap exception adds exact Stage 8 recognition for only this branch,
+   its twelve paths, fixed base, and 8,500-line ceiling after committed RED
+   evidence proved the previously unrecognized route could not run quality.
 2. Only after Issue #424 exact-byte OWNER approval, independent exact-head
    review, merge, merged-main checks, and closeout may a separately bounded
    child specify and implement `Cut1AuthorityManifestV1`,

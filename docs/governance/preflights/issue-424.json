@@ -236,6 +236,11 @@
     "branch": "stage8-424-master-program-authority-prelog",
     "base": "afcf0325c3ec925b68b770eda0bb8c839bcce4dd",
     "temporary_root": "/private/tmp/narratwin-issue424-master-program-e6yJZ2",
+    "temporary_directories": [
+      "/private/tmp/narratwin-issue424-master-program-e6yJZ2/repo/.venv",
+      "/private/tmp/narratwin-issue424-master-program-e6yJZ2/repo/.local/issue424"
+    ],
+    "generated_reports": [],
     "docker_compose_project": "narratwin-issue424",
     "task_created_containers": [],
     "task_created_networks": [],

@@ -1441,7 +1441,9 @@ video artifact counts remained zero.
 
 Issue #424 is now the sole next governance action. It preserves and hash-binds
 the OWNER-supplied forty-two-section master program and exposes three
-independent-review surfaces. Its proposed files do not activate
+independent-review surfaces. Its amended twelve-path/8,500-line bootstrap adds
+only exact Stage 8 branch/base/path/budget recognition after committed RED
+evidence. Its proposed files do not activate
 `ActiveProgramRouteV1`, `Cut1AuthorityManifestV1`, or any implementation route.
 Issues #366/#368/#369/#370/#371 remain open but their historical prose cannot
 authorize new work while the master authority is pending.
