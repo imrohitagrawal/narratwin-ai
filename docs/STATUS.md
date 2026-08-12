@@ -1297,8 +1297,10 @@ Required update rules:
 - OWNER comment `5227401987` authorizes exactly fourteen paths and a 3,200-line
   aggregate ceiling. Adversarial review added F382-29 concurrent-transition
   protection by forward commit before code; committed RED precedes GREEN.
-- OWNER amendment `5229508771` supersedes only the spoken opening so Meera/Myra/
-  Raj are NarraTwin hosts. Forward RED/GREEN also closes the Required
+- OWNER amendment `5229508771` historically superseded only the spoken opening
+  so Meera/Myra/Raj were NarraTwin hosts. Issue #421 OWNER record `5263752038`
+  now supersedes that canonical-text description with exactly two further
+  replacements and selects only Meera for Cut 1 authority. Forward RED/GREEN also closes the Required
   F382-19/F382-25 missing-consumption-receipt restore finding.
 - The branch establishes only review/evaluation/approval/invalidation and a
   text-only latest-approved consumption receipt. It is not accepted until PR
@@ -1306,6 +1308,13 @@ Required update rules:
 - Release posture remains No-Go. Issue `#368` and all TTS/audio, renderer/video,
   UI, provider, deployment, publication, release, public, and production work
   remain blocked or out of scope.
+
+Issue #421 adversarial review also closed generic-policy fallback, ordinary
+narration source stuffing, ambient Langfuse/OpenTelemetry lookup, insufficient
+project-core source entailment, and stale live receipt replay. No earlier
+evaluation, approval, receipt, audio, caption, or render authority becomes
+current from these repository changes; fresh post-merge Meera authority remains
+required.
 
 ## Issue #368 governance reconciliation state (2026-08-10)
 
@@ -1403,3 +1412,29 @@ Required update rules:
   approval before merge. It does not complete Issue #368, Cut 1,
   deployment or release; release posture remains No-Go and Issue #369 is not
   started.
+## Issue #421 target state after merge
+
+Issue `#421` repairs the deterministic grounding prerequisite discovered during
+Issue `#368` authority preparation. The accepted generic Stage 4 evaluator
+continues to reject the canonical narration with eighteen unsupported claims
+against ordinary sources. The governed Cut 1 route instead verifies an
+owner-reviewed atomic facts asset, immutable source spans at accepted commit
+`a868137fab607ae75d4b272301e9fc52b898e15c`, exact presenter claim hashes,
+complete proposition mappings, retrieved project scope, persistence, restore,
+and Issue #382 receipt lineage.
+
+OWNER comment `5263752038` resolves the three qualitative facts as explicitly
+first-party `OWNER_ASSERTED` evidence, not external corroboration, selects
+Meera, and authorizes the exact 261-word/1,904-byte canonical narration at
+SHA-256 `3edffc6169460546ae0bdee867fdeaf3c0ae383535e2976e0333f39c03ff614e`.
+The amended twenty-one-path route includes `backend/app/narration.py` and
+invalidates every earlier evaluation, approval, receipt, audio, caption, and
+render authority derived from the superseded narration bytes.
+
+When this PR merges, Issue #421 is satisfied and Issue #368 resumes from merged
+main by creating a fresh evaluated Meera narration version, explicit speech
+approval, and a new TTS consumption receipt. Google calls, spend, and WAV count
+remain zero in this repair. Issue #368 and parent #366 remain open; release
+remains No-Go.
+Routine merge facts belong in Issue #421 and its PR comments, not a standalone
+status-only successor PR.

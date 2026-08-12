@@ -612,3 +612,36 @@ identity is portable; a complete application-layer filesystem hash is not
 asserted across native and emulated builders. This is an isolated container
 remediation, not a product, provider, deployment, release, or
 production-readiness claim.
+## Issue #421 Cut 1 source and proposition trust boundary
+
+The Cut 1 facts JSON, its source spans, uploaded safe projection, generated
+claims, retrieved contexts, persisted evaluations, and restored state are all
+untrusted until recomputed. The verifier accepts only nine allowlisted
+repository paths at the pinned accepted revision plus two exact pre-existing
+OWNER comment identities. Four permitted factual spans are code-owned by
+offset, length, hash, and exact bytes; the full-record hashes remain recorded
+human-reviewed identities because runtime performs no network fetch. Owner
+spans are explicitly `OWNER_ASSERTED`, kept separate from
+`REPOSITORY_SOURCE`, and never represented as externally corroborated.
+Strict bounded JSON, exact byte ranges, and exact SHA-256 values are required.
+Current repository-file drift falls back only to a fixed local Git object
+lookup executed without a shell and with a timeout; missing or mismatched
+objects fail closed.
+
+Caller-supplied proposition IDs/checksums never establish support. Cross-tenant,
+cross-project, foreign-document, stale-policy, partial-predicate/proposition, or
+changed source evidence cannot produce or restore a passing run. Canonical claim
+hashes, selected presenter, classifications, and required-predicate lists are
+recomputed or code-owned rather than trusted from the facts asset. Logs and public errors
+must not include narration, source spans, facts payloads, raw paths, credentials,
+or subprocess output. This repair adds no provider, telemetry, authentication,
+network, billing, release, or distribution authority.
+
+Cut 1 style dispatch occurs before external-capable observability lookup: it
+uses a local trace identifier and invokes neither ambient OpenTelemetry nor
+Langfuse configuration/client code. A generic evaluator result cannot be
+promoted into Cut 1 authority. Live receipt validation rechecks the external
+source run and presenter plus current evaluation and approval, so same-process
+post-consumption drift fails as it does during restore.
+The live check reopens and verifies the pinned facts asset/source graph through
+the canonical Stage 4 evaluator; stored evidence equality alone is insufficient.

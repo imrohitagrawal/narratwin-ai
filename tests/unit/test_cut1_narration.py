@@ -15,6 +15,12 @@ from typing import Any, Callable
 import pytest
 
 from backend.app.presenter_registry import PresenterLifecycle, load_cut1_presenter_registry
+from backend.app.cut1_grounding import (
+    CUT1_STYLE,
+    FACTS_SOURCE_FILENAME,
+    evaluate_cut1_grounding,
+    load_cut1_grounding_contract,
+)
 from backend.app.rag.chunking import checksum_text, count_tokens
 from backend.app.rag.grounding import evaluate_grounding
 from backend.app.rag.models import GeneratedScript, KnowledgeChunk, RetrievedContext, ScriptClaim
@@ -33,7 +39,7 @@ Complex projects often contain valuable knowledge spread across documents, code,
 
 The process begins with approved project material. NarraTwin organizes the content, retrieves the most relevant context, and creates an audience-aware explanation. Important claims are evaluated against their supporting sources, helping the walkthrough remain transparent and grounded instead of presenting unsupported information as fact.
 
-The application combines a Python and FastAPI backend, a Next.js user experience, retrieval-augmented generation, evaluation and safety controls, multilingual content, captions, speech, and synthetic-presenter media. Its provider-neutral design allows individual technologies to change while preserving the same project-understanding workflow.
+The application combines a Python and FastAPI backend, a Next.js user experience, retrieval-augmented generation, evaluation and safety controls, multilingual content, captions, speech, and presenter-led media. NarraTwin keeps project understanding at its core and is being built with modular provider boundaries, so generation and presentation technologies can evolve over time.
 
 This approach can also be applied to other projects. Once their approved documentation is supplied, NarraTwin can create a tailored explanation of their purpose, architecture, technologies, capabilities, important decisions, and possible integrations.
 
@@ -41,11 +47,11 @@ For this first experience, I’m presenting a prepared walkthrough. Interactive 
 
 That is NarraTwin AI: a StackClimb product designed to transform approved project knowledge into clear, grounded, presenter-led experiences. I’m Meera. Thank you for joining me, and I look forward to guiding you through more projects."""
 HASHES = {
-    "meera": "fe9e874748d365a9ebb333426b0e69877cbdbca725ea7082c02334eb724031f0",
-    "myra": "dd05b795b142e5d18ef0c10a8c6b7dc6873235179efc9d661ad7902cf16463d6",
-    "raj": "6972ba4d9d9e5da57fadcddf5f9519d9d18a3e3beec4147eb9ad95ff9e178546",
+    "meera": "3edffc6169460546ae0bdee867fdeaf3c0ae383535e2976e0333f39c03ff614e",
+    "myra": "0cabff207582e80770b798fbb7e90d008e3d9c20f7cb1872773df3b1c6527d71",
+    "raj": "42fb220d7dda293c3be551bd14e3292f0449e0a649079a4d36ee67203f370e49",
 }
-BYTE_LENGTHS = {"meera": 1_868, "myra": 1_866, "raj": 1_864}
+BYTE_LENGTHS = {"meera": 1_904, "myra": 1_902, "raj": 1_900}
 
 
 @pytest.fixture
@@ -64,12 +70,12 @@ def _visible(text: str) -> tuple[str, list[ScriptClaim]]:
     for index, match in enumerate(source_sentences, start=1):
         gap = text[cursor : match.start()]
         sentence = match.group(0)
-        marker = f" [{(index - 1) % 6 + 1}]"
+        marker = " [1]"
         start = sum(len(part) for part in rendered) + len(gap)
         rendered.extend((gap, sentence, marker))
         claims.append(ScriptClaim(
             claim_id=f"claim_{index:03d}", text=sentence,
-            citation_index=(index - 1) % 6 + 1, chunk_id=f"chunk_{(index - 1) % 6 + 1:03d}",
+            citation_index=1, chunk_id="chunk_001",
             script_span_start=start, script_span_end=start + len(sentence) + len(marker),
         ))
         cursor = match.end()
@@ -77,7 +83,19 @@ def _visible(text: str) -> tuple[str, list[ScriptClaim]]:
     return "".join(rendered), claims
 
 
-def _stage4(text: str = MEERA_TEXT, *, project_name: str = "NarraTwin AI") -> tuple[Stage4Service, LocalPrincipal, str]:
+def test_issue421_claim_support_model_exposes_fail_closed_proposition_evidence() -> None:
+    from backend.app.rag.models import ClaimSupport
+
+    fields = set(ClaimSupport.__dataclass_fields__)
+    assert {"proposition_ids", "proposition_evidence_checksum"} <= fields
+
+
+def _stage4(
+    text: str = MEERA_TEXT,
+    *,
+    project_name: str = "NarraTwin AI",
+    governed: bool = True,
+) -> tuple[Stage4Service, LocalPrincipal, str]:
     principal = LocalPrincipal()
     service = Stage4Service()
     project_id, run_id = "proj_narration", "run_narration"
@@ -86,22 +104,24 @@ def _stage4(text: str = MEERA_TEXT, *, project_name: str = "NarraTwin AI") -> tu
         "Grounded narration fixture", "GENERAL", "en", NOW, NOW,
     )
     visible, claims = _visible(text)
-    contexts: list[RetrievedContext] = []
-    for citation_index in range(1, 7):
-        supported = "\n".join(claim.text for claim in claims if claim.citation_index == citation_index)
-        chunk = KnowledgeChunk(
-            chunk_id=f"chunk_{citation_index:03d}", tenant_id=principal.tenant_id,
-            project_id=project_id, document_id=f"doc_{(citation_index - 1) // 3 + 1:03d}",
-            source_filename="approved.md",
-            source_document_checksum=checksum_text(text), approved_at=NOW, chunk_index=citation_index - 1,
-            text=supported, token_count=count_tokens(supported), checksum=checksum_text(supported),
-            heading_path=[project_name], line_start=1, line_end=1,
-        )
-        contexts.append(RetrievedContext(f"ctx_{citation_index:016x}", chunk, 1.0))
+    facts = load_cut1_grounding_contract(root=ROOT).project_source_bytes()
+    supported = facts.decode() if governed else text
+    chunk = KnowledgeChunk(
+        chunk_id="chunk_001", tenant_id=principal.tenant_id,
+        project_id=project_id, document_id="doc_001",
+        source_filename=FACTS_SOURCE_FILENAME if governed else "approved.md",
+        source_document_checksum=checksum_text(supported), approved_at=NOW, chunk_index=0,
+        text=supported, token_count=count_tokens(supported), checksum=checksum_text(supported),
+        heading_path=[project_name], line_start=1, line_end=1,
+    )
+    chunk = service.rag_store.add_chunks([chunk], service.embedder)[0]
+    contexts = [RetrievedContext("ctx_0000000000000001", chunk, 1.0)]
     generated = GeneratedScript(visible, claims)
-    evaluation = evaluate_grounding(
+    evaluator = evaluate_cut1_grounding if governed else evaluate_grounding
+    evaluation = evaluator(
+        **({"root": ROOT} if governed else {}),
         tenant_id=principal.tenant_id, project_id=project_id, run_id=run_id,
-        candidate=generated, retrieved_context=contexts, prompt=text, all_chunks=[row.chunk for row in contexts],
+        candidate=generated, retrieved_context=contexts, prompt=text, all_chunks=[chunk],
     )
     evaluation = replace(
         evaluation, retrieval_strategy_version="stage4-rag-v1", retrieval_top_k=6,
@@ -109,8 +129,10 @@ def _stage4(text: str = MEERA_TEXT, *, project_name: str = "NarraTwin AI") -> tu
     )
     service.walkthrough_runs[run_id] = WalkthroughRunRecord(
         run_id, principal.tenant_id, principal.actor_id, project_id, "COMPLETED", None, "PASSED",
-        "trace_stage4_narration", 1, 1, 1, 0.0, "GENERAL", "en", "CONCISE", "CONFIDENT",
-        visible, generated, contexts, evaluation, NOW, checksum_text("request"),
+        "trace_stage4_narration", 1, 1, 1, 0.0, "GENERAL", "en", "CONCISE",
+        CUT1_STYLE if governed else "CONFIDENT",
+        visible if evaluation.evaluation_status == "PASSED" else None,
+        generated, contexts, evaluation, NOW, checksum_text("request"),
         "stage4-rag-v1", 6, 0.72,
     )
     return service, principal, project_id
@@ -138,6 +160,33 @@ def _service(narration: ModuleType, tmp_path: Path, presenter_id: str = "meera",
         clock=lambda: datetime(2026, 8, 8, 18, 10, tzinfo=UTC),
     )
     return service, principal, binding, project_id
+
+
+@pytest.mark.parametrize("presenter_id", ["myra", "raj"])
+def test_g421_17_non_selected_presenter_cannot_create_narration_authority(
+    narration: ModuleType, tmp_path: Path, presenter_id: str
+) -> None:
+    service, principal, binding, project_id = _service(narration, tmp_path, presenter_id)
+    run = service.stage4.walkthrough_runs["run_narration"]
+
+    _assert_code(narration, "AUTHORITY_MISMATCH", lambda: service.create_draft(
+        principal=principal, project_id=project_id, source_run_id=run.run_id,
+        presenter_binding=binding, review_text=narration.canonical_presenter_text(presenter_id),
+    ))
+
+
+def test_g421_17_generic_passing_run_cannot_create_cut1_narration_authority(
+    narration: ModuleType, tmp_path: Path
+) -> None:
+    stage4, principal, project_id = _stage4(governed=False)
+    registry, binding = _registry_binding()
+    service = narration.NarrationService(stage4=stage4, registry=registry)
+
+    _assert_code(narration, "AUTHORITY_MISMATCH", lambda: service.create_draft(
+        principal=principal, project_id=project_id, source_run_id="run_narration",
+        presenter_binding=binding,
+        review_text=stage4.walkthrough_runs["run_narration"].accepted_script_text,
+    ))
 
 
 def _draft(narration: ModuleType, tmp_path: Path, presenter_id: str = "meera", text: str | None = None) -> tuple[Any, Any, Any, str]:
@@ -185,16 +234,28 @@ def test_f382_01_03_exact_owner_text_substitutions_and_brand(narration: ModuleTy
     assert hashlib.sha256(actual.encode()).hexdigest() == HASHES[presenter_id]
     assert actual.count(presenter_id.title()) == 2
     assert actual.replace(presenter_id.title(), "Meera") == MEERA_TEXT
+    assert len(actual.split()) == 261
     assert "StackClimb" in actual and "stackclimb.com" not in actual and "®" not in actual
     assert "planned as a future capability" in actual
+    assert "synthetic-presenter media" not in actual
+    assert "Its provider-neutral design" not in actual
 
 
 def test_f382_01_03_owner_amendment_changes_only_original_opening() -> None:
-    historical = MEERA_TEXT.replace(AMENDED_OPENING, ORIGINAL_OPENING, 1)
+    prior = MEERA_TEXT.replace("presenter-led media", "synthetic-presenter media").replace(
+        "NarraTwin keeps project understanding at its core and is being built with modular provider boundaries, "
+        "so generation and presentation technologies can evolve over time.",
+        "Its provider-neutral design allows individual technologies to change while preserving the same "
+        "project-understanding workflow.",
+    )
+    assert hashlib.sha256(prior.encode()).hexdigest() == (
+        "fe9e874748d365a9ebb333426b0e69877cbdbca725ea7082c02334eb724031f0"
+    )
+    historical = prior.replace(AMENDED_OPENING, ORIGINAL_OPENING, 1)
     assert hashlib.sha256(historical.encode()).hexdigest() == (
         "2ce08a2e573ad0af0d77d818d8b2ffac018f587a711e10164c724c817a7ad4fc"
     )
-    assert historical.split("\n\n")[1:] == MEERA_TEXT.split("\n\n")[1:]
+    assert historical.split("\n\n")[1:] == prior.split("\n\n")[1:]
 
 
 @pytest.mark.parametrize("mutation", ["extra", "missing", "punctuation", "whitespace", "paragraph", "brand", "domain", "attribution"])
@@ -670,6 +731,63 @@ def test_g368_01_consumed_receipt_must_remain_exact_and_current(
         "AUTHORITY_MISMATCH",
         lambda: service.validate_tts_consumption_receipt(principal=principal, receipt=forged),
     )
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    ["source_run", "request_checksum", "presenter", "missing_facts", "tampered_facts"],
+)
+def test_g421_20_live_receipt_revalidation_rejects_external_authority_drift(
+    narration: ModuleType, tmp_path: Path, mutation: str
+) -> None:
+    service, principal, approved, project_id = _approve(narration, tmp_path)
+    receipt = service.consume_for_tts(
+        principal=principal, project_id=project_id,
+        narration_version=approved.version, narration_checksum=approved.narration_checksum,
+        request_id="consume_current_1", trace_id="trace_current_1",
+    )
+    run = service.stage4.walkthrough_runs["run_narration"]
+    if mutation == "source_run":
+        service.stage4.walkthrough_runs.pop(run.run_id)
+    elif mutation == "request_checksum":
+        service.stage4.walkthrough_runs[run.run_id] = replace(
+            run, request_checksum=checksum_text("changed-after-consumption")
+        )
+    else:
+        if mutation == "presenter":
+            service.registry._identities["meera"] = replace(
+                service.registry._identities["meera"], lifecycle=PresenterLifecycle.REVOKED
+            )
+        else:
+            facts = tmp_path / "facts-root/docs/governance/cut1-project-facts-v1.json"
+            facts.parent.mkdir(parents=True)
+            if mutation == "tampered_facts":
+                facts.write_bytes((ROOT / "docs/governance/cut1-project-facts-v1.json").read_bytes() + b"\n")
+            service.stage4.cut1_contract_root = tmp_path / "facts-root"
+
+    _assert_code(
+        narration,
+        "AUTHORITY_MISMATCH",
+        lambda: service.validate_tts_consumption_receipt(principal=principal, receipt=receipt),
+    )
+
+
+def test_g421_20_post_draft_evaluation_revalidates_current_facts_contract(
+    narration: ModuleType, tmp_path: Path
+) -> None:
+    service, principal, draft, project_id = _draft(narration, tmp_path)
+    required = service.request_evaluation(
+        principal=principal, project_id=project_id,
+        narration_version=draft.version, narration_checksum=draft.narration_checksum,
+    )
+    service.stage4.cut1_contract_root = tmp_path / "missing-facts-root"
+
+    evaluated = service.evaluate(
+        principal=principal, project_id=project_id,
+        narration_version=required.version, narration_checksum=required.narration_checksum,
+    )
+
+    assert evaluated.evaluation.result == "FAILED"
 
 
 def test_f382_28_module_has_no_external_capability(narration: ModuleType) -> None:

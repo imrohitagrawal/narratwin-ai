@@ -328,3 +328,25 @@ approved SHA-256. Request fingerprints bind `quotaProjectRequired=true`, that
 hash, and the exact three outbound header names. They never bind or emit the raw
 project value. A mismatch during initial ADC resolution or the immediate
 pre-egress reload releases the unspent reservation and records no paid attempt.
+## Issue #421 atomic grounding observability
+
+Cut 1 grounding reuses existing bounded Stage 4 run/evaluation metrics. The
+policy version and resulting supported/unsupported counts are sufficient for
+local diagnosis; raw narration, proposition statements, source spans, facts
+JSON, repository paths, and Git output are not log fields. Validation failures
+remain generic and fail closed.
+
+Source classification is checksum lineage, not a log dimension. Metrics must
+not collapse `OWNER_ASSERTED` into an externally verified category or emit the
+owner span text. The canonical Meera revision is 261 words, 1,904 UTF-8 bytes,
+and SHA-256 `3edffc6169460546ae0bdee867fdeaf3c0ae383535e2976e0333f39c03ff614e`.
+
+The repair performs local hashing, JSON validation, and a bounded local Git
+object read when current source bytes differ from the pinned revision. It makes
+no provider or telemetry call and has no paid-call cost. Issue #368 call and
+US$2 ceilings remain untouched at zero during this branch.
+
+For `CUT1_ATOMIC_FACTS_V1`, the local trace ID is created without entering the
+OpenTelemetry or Langfuse adapters, even when ambient exporter or Langfuse
+configuration exists. Local bounded logs and metrics remain available; no
+external-capable observation context is consulted.

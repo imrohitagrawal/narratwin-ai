@@ -2577,9 +2577,12 @@ blocked until #382 merges, passes accepted-main validation, and closes. This
 does not authorize API/UI, TTS/audio, providers, rendering/media, deployment,
 publication, release, public availability, or production readiness.
 
-OWNER amendment `5229508771` replaces only the historical opening: Meera, Myra,
-and Raj are spoken as NarraTwin hosts. Restore also rejects any mismatch between
-consumed narration-version keys and fully validated receipt keys.
+OWNER amendment `5229508771` historically replaced only the opening. Issue #421
+OWNER record `5263752038` supersedes that canonical-text description with the
+two exact approved replacements and selects Meera alone for Cut 1 authority.
+Restore and live replay reject mismatched consumption receipts, generic-policy
+fallback, incomplete proposition evidence, non-selected presenters, and changed
+external source authority.
 
 ### Issue #368 governance reconciliation — optional Google Gemini-TTS
 
@@ -2627,3 +2630,18 @@ Medium, full Stage 8 and repository quality, fresh-context adversarial review,
 dedicated PR CI and eligible latest-head approval passed. It did not close
 Issue #368, begin Issue #369, or authorize Cut 1
 completion, deployment, distribution, release or production readiness.
+## Issue #421 — deterministic Cut 1 project-facts grounding repair
+
+Issue `#421` is a narrow Stage 8 hardening child linked to narration Issue
+`#382`, blocked audio Issue `#368`, and parent `#366`. It preserves ordinary
+Stage 4 direct support while adding an exact owner-reviewed atomic proposition
+policy for the canonical Cut 1 claims. OWNER comment `5263752038` classifies
+three first-party facts as `OWNER_ASSERTED`, selects Meera, and authorizes the
+1,904-byte narration revision; repository evidence remains separately
+`REPOSITORY_SOURCE`. The amended route is exactly twenty-one paths and 4,000
+charged lines. It authorizes no provider call or audio.
+
+After reviewed merge and merged-main checks, Issue #368 may prepare one
+isolated, authoritative Meera public-lifecycle package. Dormant Myra/Raj text
+variants create no Cut 1 authority. Issue #368 may then proceed only under its
+existing egress, attempts, spend, validation, and exact-hash listening gates.

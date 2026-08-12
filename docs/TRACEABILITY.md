@@ -465,7 +465,7 @@ durability, deployment, and release decisions remain outside this trace.
 
 | Evidence | Requirement | Preserved boundary |
 |---|---|---|
-| OWNER comments `5197711390`, `5227401987`, and opening amendment `5229508771`; exact amended Meera/Myra/Raj SHA-256 oracles | Freeze StackClimb attribution, NarraTwin-host opening, and exact two-token presenter substitution | No silent wording, spoken synthetic-presenter/staff claim, `®`, spoken URL/citations, active Q&A, release, or public claim |
+| Historical OWNER comments `5197711390`, `5227401987`, and opening amendment `5229508771`; superseded for current Cut 1 canonical text by Issue #421 comment `5263752038` | Preserve historical StackClimb attribution and presenter variants while current Cut 1 applies the two later exact replacements and selects Meera | No silent wording, spoken synthetic-presenter/staff claim, `®`, spoken URL/citations, active Q&A, release, or public claim |
 | `NarrationVersion` checksum plus Stage 4 lineage and ADR-0054 presenter binding | Bind exact review/spoken bytes, scope, project, presenter/registry, source/run/context/citation/support/evaluation, trace, and measured-audio requirement | No caller assertion, cross-boundary record, provider, audio, or media success |
 | Narration evaluation, explicit UTC approval, invalidation chain, and exact consumed-version/validated-receipt key equality | Allow only current latest passing approved text to cross the future Issue #368 boundary | Edit, stale approval/evaluation, replay, revoked presenter, missing receipt, and detached receipt fail closed |
 | Strict bounded restore, redacted events, F382-01..29 tests, and exact route/budgets | Reject malformed/duplicate/unknown/oversized/tampered state and false-pass governance | No API/UI, Stage 4/6 mutation, dependency/provider/network, cloning/likeness, deployment/publication/release/production work |
@@ -539,3 +539,24 @@ durability, deployment, and release decisions remain outside this trace.
 | Official advisory/CVE record plus inspected Chainguard, Docker Official Node and Distroless manifests/packages | Reject affected OpenSSL 3.6.0–3.6.3 and every candidate with fresh Medium+ scanner findings; bind three selected source indexes and all amd64/arm64 manifests | Never represent 3.6.3 as fixed; no floating final reference or unrelated runtime |
 | Retained APK metadata, exact config/runtime probes, architecture inventories, non-root HTTP smoke and two independent builds | Prove identity, minimization, compatibility and reproducibility without concealment | No UI/application dependency, backend, provider, narration, audio or media behavior change |
 | CycloneDX SBOM, Trivy and Grype raw evidence, fail-closed consensus and Issue #413 route tests | Reject scanner disagreement, malformed/stale identity, Medium-or-higher final findings and route drift | No ignore, VEX overclaim, severity downgrade, deployment, release, public or production claim |
+## Issue #421 Cut 1 atomic grounding traceability
+
+| Requirement | Implementation | Evidence |
+|---|---|---|
+| Classified atomic facts with immutable source spans | `docs/governance/cut1-project-facts-v1.json`; `backend/app/cut1_grounding.py`; OWNER comment `5263752038` | `test_atomic_fact_contract_mutations_fail_closed`; `test_owner_record_span_is_independently_code_bound`; `test_owner_asserted_facts_are_classified_and_separate_from_repository_sources` |
+| Exact canonical Meera revision | `backend/app/narration.py`; 261 words; 1,904 UTF-8 bytes; SHA-256 `3edffc6169460546ae0bdee867fdeaf3c0ae383535e2976e0333f39c03ff614e` | `test_f382_01_03_exact_owner_text_substitutions_and_brand`; earlier derived authority is invalid |
+| Exact complete claim-to-proposition binding | `ClaimMapping`; presenter-specific claim hashes; `ClaimSupport.proposition_ids` | `test_governed_atomic_facts_complete_the_public_persisted_stage4_path` |
+| Caller assertions cannot establish support | empty generated-claim evidence requirement and runtime recomputation | `test_caller_supplied_proposition_metadata_cannot_turn_generic_grounding_green` |
+| Ordinary direct support preserved | style-scoped dispatch in `Stage4Service` | existing retrieval/grounding suites plus the eighteen-unsupported RED control |
+| Restore and checksum binding | canonical Cut 1 redispatch; conditional evaluation `groundingEvidence` | atomic persistence/replay test and evaluation-lineage mutation test |
+| Issue #382 public lifecycle | existing narration service consumes the restored passing Stage 4 graph | selected-Meera public lifecycle/receipt test; Myra/Raj Cut 1 authority refusal |
+| No branch provider egress | local verifier, deterministic fake generator, telemetry-disabled tests | focused/full gates; provider calls, spend, and WAV count remain zero |
+| Closed Cut 1 authority domain | style-dispatched evaluator; fail-closed Stage 4 and narration/receipt validation | ordinary-narration source-stuffing RED; style/policy/evidence restore tests; Myra/Raj refusal; live receipt drift matrix |
+| Zero ambient telemetry for authority preparation | local Cut 1 trace context bypasses OpenTelemetry and Langfuse adapters | ambient configuration/client trap with zero invocation |
+| Project-understanding premise is independently entailed | exact PRD product-definition/trust-loop span plus separate portability spans | exact byte/hash checks and fresh-context semantic review |
+| Live contract authority remains current | Stage 4 `cut1_run_authority_is_current` canonical redispatch from narration binding checks | missing/tampered facts after draft and receipt issuance fail live evaluation/replay; restore remains fail closed |
+
+This repair proves deterministic grounding lineage only. Voice quality,
+spoken-word correspondence, provider behavior, legal/privacy clearance,
+deployment, distribution, production readiness, release, and human listening
+remain separate gates.

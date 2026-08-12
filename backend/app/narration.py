@@ -12,6 +12,7 @@ from pathlib import Path
 from threading import RLock
 from typing import Any, NoReturn, cast
 
+from backend.app.cut1_grounding import CUT1_POLICY_VERSION, CUT1_STYLE, SELECTED_PRESENTER
 from backend.app.evaluation_lineage import build_source_evaluation_checksum, derive_evaluation_lineage, validate_evaluation_lineage_payload
 from backend.app.presenter_registry import PresenterRegistry, PresenterRegistryError, PresenterTraceBinding
 from backend.app.rag.chunking import checksum_text
@@ -46,16 +47,16 @@ Complex projects often contain valuable knowledge spread across documents, code,
 
 The process begins with approved project material. NarraTwin organizes the content, retrieves the most relevant context, and creates an audience-aware explanation. Important claims are evaluated against their supporting sources, helping the walkthrough remain transparent and grounded instead of presenting unsupported information as fact.
 
-The application combines a Python and FastAPI backend, a Next.js user experience, retrieval-augmented generation, evaluation and safety controls, multilingual content, captions, speech, and synthetic-presenter media. Its provider-neutral design allows individual technologies to change while preserving the same project-understanding workflow.
+The application combines a Python and FastAPI backend, a Next.js user experience, retrieval-augmented generation, evaluation and safety controls, multilingual content, captions, speech, and presenter-led media. NarraTwin keeps project understanding at its core and is being built with modular provider boundaries, so generation and presentation technologies can evolve over time.
 
 This approach can also be applied to other projects. Once their approved documentation is supplied, NarraTwin can create a tailored explanation of their purpose, architecture, technologies, capabilities, important decisions, and possible integrations.
 
 For this first experience, I’m presenting a prepared walkthrough. Interactive questions and answers are planned as a future capability and are not part of this demonstration.
 
 That is NarraTwin AI: a StackClimb product designed to transform approved project knowledge into clear, grounded, presenter-led experiences. I’m Meera. Thank you for joining me, and I look forward to guiding you through more projects."""
-CANONICAL_HASHES = {"meera": "fe9e874748d365a9ebb333426b0e69877cbdbca725ea7082c02334eb724031f0",
-    "myra": "dd05b795b142e5d18ef0c10a8c6b7dc6873235179efc9d661ad7902cf16463d6",
-    "raj": "6972ba4d9d9e5da57fadcddf5f9519d9d18a3e3beec4147eb9ad95ff9e178546"}
+CANONICAL_HASHES = {"meera": "3edffc6169460546ae0bdee867fdeaf3c0ae383535e2976e0333f39c03ff614e",
+    "myra": "0cabff207582e80770b798fbb7e90d008e3d9c20f7cb1872773df3b1c6527d71",
+    "raj": "42fb220d7dda293c3be551bd14e3292f0449e0a649079a4d36ee67203f370e49"}
 INVALIDATED_AUTHORITIES = ("EVALUATION", "SPEECH_APPROVAL", "TTS_AUDIO", "CAPTION", "RENDER", "VIDEO_EXPORT", "REPLAY")
 class NarrationState(StrEnum):
     DRAFT = "DRAFT"
@@ -286,20 +287,35 @@ class NarrationService:
             _fail("RESOURCE_LIMIT", "Narration project limit reached.")
         if len(self._versions.get(project_id, ())) >= MAX_VERSIONS_PER_PROJECT:
             _fail("RESOURCE_LIMIT", "Narration version limit reached.")
-        _, run = self._source(principal, project_id, source_run_id)
         review = _text(review_text)
+        _, run = self._source(principal, project_id, source_run_id)
         binding = self._presenter(presenter_binding)
-        lineage = derive_evaluation_lineage(run)
-        lineage_json = json.dumps(lineage, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
-        source_checksum = build_source_evaluation_checksum(lineage)
         evaluation = cast(Any, run.evaluation)
-        claim_evidence_json = json.dumps({"claims": [asdict(item) for item in cast(Any, run.generated_script).claims], "supports": [asdict(item) for item in evaluation.claim_supports]}, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+        generated = cast(Any, run.generated_script)
         indexes = tuple(support.citation_index for support in evaluation.claim_supports)
         context_ids = tuple(context.context_ref_id for context in run.retrieved_context)
         support_ids = tuple(support.claim_support_id for support in evaluation.claim_supports)
-        evidence_counts = (len(indexes), len(context_ids), len(support_ids), len(cast(Any, run.generated_script).claims))
-        if max(evidence_counts) > MAX_EVIDENCE_ITEMS or not indexes or len(support_ids) != len(set(support_ids)):
+        evidence_counts = (len(indexes), len(context_ids), len(support_ids), len(generated.claims))
+        if binding.presenter_id != SELECTED_PRESENTER:
+            _fail("AUTHORITY_MISMATCH", "Narration presenter is not selected for Cut 1.")
+        if (
+            max(evidence_counts) > MAX_EVIDENCE_ITEMS
+            or not indexes
+            or len(indexes) != len(support_ids)
+            or len(generated.claims) != len(evaluation.claim_supports)
+            or len(generated.claims) != 18
+            or len(support_ids) != len(set(support_ids))
+            or any(
+                not support.proposition_ids
+                or support.proposition_evidence_checksum is None
+                for support in evaluation.claim_supports
+            )
+        ):
             _fail("EVIDENCE_INVALID", "Narration evidence is missing, duplicated, or exceeds its bounded limit.")
+        lineage = derive_evaluation_lineage(run)
+        lineage_json = json.dumps(lineage, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+        source_checksum = build_source_evaluation_checksum(lineage)
+        claim_evidence_json = json.dumps({"claims": [asdict(item) for item in generated.claims], "supports": [asdict(item) for item in evaluation.claim_supports]}, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
         row = NarrationVersion(
             principal.tenant_id, principal.actor_id, project_id, version,
             binding.presenter_id, binding.presenter_version, binding, binding.registry_sha256,
@@ -414,6 +430,12 @@ class NarrationService:
             )
             if row.state is not NarrationState.CONSUMED_BY_TTS:
                 _fail("AUTHORITY_MISMATCH", "TTS receipt is not current.")
+            try:
+                self._presenter(row.presenter_binding)
+            except NarrationError:
+                _fail("AUTHORITY_MISMATCH", "TTS receipt authority is stale or incomplete.")
+            if self._binding_failures(row) or not _evaluation_current(row) or not _approval_current(row):
+                _fail("AUTHORITY_MISMATCH", "TTS receipt authority is stale or incomplete.")
             if receipt not in self._receipts or not _receipt_matches_version(receipt, row):
                 _fail("AUTHORITY_MISMATCH", "TTS receipt is stale or mismatched.")
             if _receipt_checksum(receipt) != receipt.receipt_checksum:
@@ -456,6 +478,19 @@ class NarrationService:
             principal.tenant_id, principal.actor_id, project_id
         ):
             _fail("AUTHORITY_MISMATCH", "Stage 4 narration source does not match this scope.")
+        evaluation = run.evaluation
+        if (
+            run.status != "COMPLETED"
+            or run.failure_reason is not None
+            or run.evaluation_status != "PASSED"
+            or run.style != CUT1_STYLE
+            or run.generated_script is None
+            or run.accepted_script_text != run.generated_script.text
+            or evaluation is None
+            or evaluation.evaluation_status != "PASSED"
+            or evaluation.policy_version != CUT1_POLICY_VERSION
+        ):
+            _fail("AUTHORITY_MISMATCH", "Stage 4 narration source is not governed Cut 1 authority.")
         return project, run
     def _presenter(self, binding: PresenterTraceBinding) -> PresenterTraceBinding:
         try:
@@ -484,6 +519,8 @@ class NarrationService:
             project, run = self._source(LocalPrincipal(row.tenant_id, row.actor_id),
                                         row.project_id, row.source_run_id)
             self._presenter(row.presenter_binding)
+            if not self.stage4.cut1_run_authority_is_current(run):
+                return ("GROUNDING_OR_BINDING_STALE",)
             lineage = derive_evaluation_lineage(run)
             lineage_json = json.dumps(lineage, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
             evaluation = cast(Any, run.evaluation)
@@ -491,7 +528,15 @@ class NarrationService:
             indexes = tuple(support.citation_index for support in evaluation.claim_supports)
             markers = tuple(int(value) for value in CITATION_PATTERN.findall(row.review_text))
             valid = (
-                run.accepted_script_text == row.review_text
+                row.presenter_id == SELECTED_PRESENTER
+                and run.style == CUT1_STYLE
+                and evaluation.policy_version == CUT1_POLICY_VERSION
+                and len(cast(Any, run.generated_script).claims) == len(evaluation.claim_supports) == 18
+                and all(
+                    support.proposition_ids and support.proposition_evidence_checksum
+                    for support in evaluation.claim_supports
+                )
+                and run.accepted_script_text == row.review_text
                 and run.request_checksum == row.source_request_checksum and run.trace_id == row.source_trace_id
                 and lineage_json == row.source_lineage_json
                 and build_source_evaluation_checksum(lineage) == row.source_evaluation_checksum

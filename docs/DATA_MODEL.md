@@ -993,3 +993,30 @@ Stage 2 locks these Stage 4 defaults:
 - context reference storage shape: claim-level `ContextRef` and `ClaimSupport`
 - evaluation result JSON schema: fields and enums defined in
   `docs/AI_SAFETY_AND_EVALUATION.md`
+## Cut 1 atomic grounding evidence
+
+Issue #421 extends `ScriptClaim` and `ClaimSupport` with bounded optional
+`proposition_ids` and `proposition_evidence_checksum` fields. Generated claims
+must arrive with both empty; the application fills only support rows after the
+canonical verifier resolves the exact presenter claim hash and every required
+proposition/source span.
+
+Each verified source span carries `OWNER_ASSERTED` or `REPOSITORY_SOURCE`, and
+that classification is included in the proposition evidence checksum and safe
+facts projection. A proposition cannot mix classifications. The three Issue
+Issue #421 owner facts remain first-party assertions, never externally corroborated
+facts. Cut 1 evaluation selects Meera; dormant Myra/Raj canonical narration
+variants do not establish selected-presenter authority.
+
+For `cut1-atomic-grounding-v1`, evaluation lineage also stores an ordered
+`groundingEvidence.claims` projection and its aggregate SHA-256. The source
+asset, safe project upload projection, source document/chunks, retrieved
+contexts, claims, supports, evaluation, narration version, approval, and
+single-use receipt form one restore-validated graph. Generic Stage 4 rows keep
+the existing model with empty optional fields.
+
+`CUT1_ATOMIC_FACTS_V1` and `cut1-atomic-grounding-v1` are a paired authority
+domain. A completed Cut 1 row has exactly eighteen selected-Meera claims and
+supports, with non-empty proposition IDs and checksums on every support. A
+failed Cut 1 row carries no supports. Generic-policy rows cannot enter the Cut 1
+narration, approval, consumption, or receipt graph.

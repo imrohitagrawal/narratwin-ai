@@ -23,6 +23,8 @@ RETRIEVAL_POLICY: dict[str, Any] = {"belowThresholdBackfill": False, "computedEv
     "tieBreakOrder": ["score desc", "approved_at desc", "chunk_index asc", "chunk_id asc"],
 }
 ROOT_KEYS = {"checksumSchema", "evaluation", "retrievalPolicy", "scope", "selectedContext", "sourceCitationIndexes"}
+GROUNDING_EVIDENCE_KEYS = {"checksum", "claims", "policyVersion"}
+GROUNDING_CLAIM_KEYS = {"claimId", "propositionEvidenceChecksum", "propositionIds"}
 CONTEXT_KEYS = {"approvedAt", "chunkChecksum", "chunkId", "chunkIndex", "chunkingStrategyVersion",
                 "contextRefId", "documentId", "projectId", "retrievalScore", "snapshotChecksum",
                 "sourceDocumentChecksum", "tenantId"}
@@ -62,7 +64,8 @@ def validate_evaluation_lineage_payload(payload: Mapping[str, object]) -> dict[s
     contexts = cast(list[dict[str, object]], value.get("selectedContext"))
     citations = cast(list[object], value.get("sourceCitationIndexes"))
     _require(
-        set(value) == ROOT_KEYS and value.get("checksumSchema") == CHECKSUM_SCHEMA,
+        set(value) in {frozenset(ROOT_KEYS), frozenset(ROOT_KEYS | {"groundingEvidence"})}
+        and value.get("checksumSchema") == CHECKSUM_SCHEMA,
         "Noncanonical lineage root.",
     )
     keys = {"evaluationId", "runId", "status", "traceId"}
@@ -141,6 +144,36 @@ def validate_evaluation_lineage_payload(payload: Mapping[str, object]) -> dict[s
         isinstance(citations, list) and all(type(i) is int and i > 0 for i in citations),
         "Bad citations.",
     )
+    grounding = value.get("groundingEvidence")
+    if grounding is not None:
+        _require(
+            isinstance(grounding, dict)
+            and set(grounding) == GROUNDING_EVIDENCE_KEYS
+            and grounding.get("policyVersion") == "cut1-atomic-grounding-v1",
+            "Noncanonical grounding evidence.",
+        )
+        grounding_row = cast(dict[str, object], grounding)
+        claims = grounding_row.get("claims")
+        _require(isinstance(claims, list) and len(claims) == len(citations) > 0, "Bad grounding claims.")
+        claim_rows = cast(list[object], claims)
+        claim_ids: set[str] = set()
+        for claim in claim_rows:
+            _require(isinstance(claim, dict) and set(claim) == GROUNDING_CLAIM_KEYS, "Bad grounding claim.")
+            claim_row = cast(dict[str, object], claim)
+            claim_id = _identifier(claim_row.get("claimId"))
+            propositions = claim_row.get("propositionIds")
+            _require(
+                claim_id not in claim_ids
+                and isinstance(propositions, list)
+                and 0 < len(propositions) <= 8
+                and len(set(propositions)) == len(propositions)
+                and all(isinstance(item, str) and re.fullmatch(r"fact_[0-9]{3}", item) for item in propositions),
+                "Bad grounding propositions.",
+            )
+            claim_ids.add(claim_id)
+            canonical_stage4_checksum(claim_row.get("propositionEvidenceChecksum"))
+        projection = json.dumps(claim_rows, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+        _require(grounding_row.get("checksum") == checksum_text(projection), "Bad grounding evidence checksum.")
     return cast(
         dict[str, Any],
         json.loads(json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False)),
@@ -180,4 +213,23 @@ def derive_evaluation_lineage(run: WalkthroughRunRecord) -> dict[str, Any]:
                "scope": {"projectId": run.project_id, "tenantId": run.tenant_id},
                "selectedContext": selected,
                "sourceCitationIndexes": [support.citation_index for support in ev.claim_supports]}
+    if ev.policy_version == "cut1-atomic-grounding-v1":
+        claims = [
+            {
+                "claimId": support.claim_id,
+                "propositionEvidenceChecksum": support.proposition_evidence_checksum,
+                "propositionIds": list(support.proposition_ids),
+            }
+            for support in ev.claim_supports
+        ]
+        _require(
+            all(item["propositionIds"] and item["propositionEvidenceChecksum"] for item in claims),
+            "Cut 1 grounding evidence is incomplete.",
+        )
+        projection = json.dumps(claims, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+        payload["groundingEvidence"] = {
+            "checksum": checksum_text(projection),
+            "claims": claims,
+            "policyVersion": ev.policy_version,
+        }
     return validate_evaluation_lineage_payload(payload)

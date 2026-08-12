@@ -53,6 +53,29 @@ stage8: Any = load(REPO / "scripts/quality/check_stage8_docs.py", "stage8_with_c
 
 
 EXPECTED = {
+    "stage8-421-cut1-atomic-project-facts": {
+        "docs/governance/preflights/issue-421.json",
+        "docs/governance/cut1-project-facts-v1.json",
+        "backend/app/narration.py",
+        "backend/app/cut1_grounding.py",
+        "backend/app/rag/models.py",
+        "backend/app/stage4.py",
+        "backend/app/evaluation_lineage.py",
+        "tests/unit/test_cut1_atomic_grounding.py",
+        "tests/unit/test_cut1_narration.py",
+        "tests/unit/test_evaluation_lineage.py",
+        "scripts/quality/stage8_cut1_routes.py",
+        "tests/unit/test_stage8_cut1_routes.py",
+        "docs/ADR/0058-cut1-atomic-project-facts-grounding.md",
+        "docs/API_CONTRACT.md",
+        "docs/DATA_MODEL.md",
+        "docs/SECURITY_AND_PRIVACY.md",
+        "docs/OBSERVABILITY_AND_COST.md",
+        "docs/QUALITY_GATES.md",
+        "docs/STAGE_ISSUE_PLAN.md",
+        "docs/STATUS.md",
+        "docs/TRACEABILITY.md",
+    },
     "stage8-415-pr-body-live-state-reconciliation": {
         ".github/pull_request_template.md", ".github/workflows/pr-body-consistency.yml", "AGENTS.md", "Makefile",
         "docs/ADR/0040-pr-body-live-state-reconciliation.md", "docs/CODEX_OPERATING_MODEL.md", "docs/QUALITY_GATES.md", "docs/STATUS.md",
@@ -475,6 +498,46 @@ def test_google_tts_governance_marks_prompt_prerequisite_satisfied_only() -> Non
 def test_routes_are_exact_pre_registered_and_issue386_preflight_matches() -> None:
     assert routes.ROUTES == EXPECTED
     assert {branch: stage8.EFFECTIVE_STAGE8_ROUTES[branch] for branch in EXPECTED} == EXPECTED
+    issue421 = json.loads((REPO / "docs/governance/preflights/issue-421.json").read_text(encoding="utf-8"))
+    issue421_route = EXPECTED[routes.ISSUE421_BRANCH]
+    assert issue421["branch"] == routes.ISSUE421_BRANCH
+    assert set(issue421["scope"]["required"]) == issue421_route
+    assert set(issue421["scope"]["allowed_prefixes"]) == issue421_route
+    assert issue421["change_budget"]["exact_paths"] == len(issue421_route) == 21
+    assert issue421["change_budget"]["maximum_additions_plus_deletions"] == 4000
+    assert issue421["change_budget"]["deletions_grant_credit"] is False
+    assert routes.TOTAL_LIMITS[routes.ISSUE421_BRANCH] == 4000
+    assert routes.TEXT_LIMITS[routes.ISSUE421_BRANCH] == issue421["change_budget"]["per_file_charged_lines"]
+
+
+def test_issue421_route_requires_exact_accepted_base_and_branch_point() -> None:
+    calls: list[list[str]] = []
+
+    def good(args: list[str]) -> subprocess.CompletedProcess[str]:
+        calls.append(args)
+        return completed(args, out=routes.ISSUE421_BASE + "\n")
+
+    assert routes.route_base(good, routes.ISSUE421_BRANCH) == routes.ISSUE421_BASE
+    assert calls == [
+        ["git", "rev-parse", f"{routes.ISSUE421_BASE}^{{commit}}"],
+        ["git", "merge-base", routes.ISSUE421_BASE, "HEAD"],
+        ["git", "merge-base", "origin/main", "HEAD"],
+    ]
+
+    drifted = iter(
+        (
+            completed([], out=routes.ISSUE421_BASE + "\n"),
+            completed([], out=routes.ISSUE421_BASE + "\n"),
+            completed([], out="a" * 40 + "\n"),
+        )
+    )
+    error = pytest.raises(
+        RuntimeError,
+        routes.route_base,
+        lambda _: next(drifted),
+        routes.ISSUE421_BRANCH,
+    )
+    assert "Issue #421 fixed base" in str(error.value)
     issue413 = json.loads((REPO / "docs/governance/preflights/issue-413.json").read_text(encoding="utf-8"))
     issue413_route = EXPECTED["cut1-process-413-frontend-runtime-openssl"]
     assert issue413["branch"] == "cut1-process-413-frontend-runtime-openssl"

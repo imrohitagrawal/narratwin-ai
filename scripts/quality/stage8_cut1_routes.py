@@ -26,13 +26,38 @@ ISSUE368_IMPLEMENTATION_BRANCH = "stage8-368-cut1-google-tts-runtime-transport"
 ISSUE368_QUOTA_FIX_BRANCH = "stage8-368-google-tts-quota-project-binding-fix"
 ISSUE415_BRANCH = "stage8-415-pr-body-live-state-reconciliation"
 ISSUE415_CORRECTION_BRANCH = "stage8-415-pr-body-consistency-canary-fix"
+ISSUE421_BRANCH = "stage8-421-cut1-atomic-project-facts"
 ISSUE386_BASE = "48fc32a2689c9bbc03742d774f3eadb8a500dafc"
 ISSUE368_BASE = "ef9cabc23762560912d99f10831241b8a65b869c"
 ISSUE368_PROMPT_BASE = "ba77d59b193da8064d67261e13fb50756c2bd9e8"
 ISSUE368_IMPLEMENTATION_BASE = "6766da34d73e301358f84f8eefb0985927292a26"
 ISSUE368_QUOTA_FIX_BASE = "9c165f739788fb0f09b315673f9125d700d6a96b"
+ISSUE421_BASE = "a868137fab607ae75d4b272301e9fc52b898e15c"
 
 ROUTES = {
+    ISSUE421_BRANCH: {
+        "docs/governance/preflights/issue-421.json",
+        "docs/governance/cut1-project-facts-v1.json",
+        "backend/app/narration.py",
+        "backend/app/cut1_grounding.py",
+        "backend/app/rag/models.py",
+        "backend/app/stage4.py",
+        "backend/app/evaluation_lineage.py",
+        "tests/unit/test_cut1_atomic_grounding.py",
+        "tests/unit/test_cut1_narration.py",
+        "tests/unit/test_evaluation_lineage.py",
+        "scripts/quality/stage8_cut1_routes.py",
+        "tests/unit/test_stage8_cut1_routes.py",
+        "docs/ADR/0058-cut1-atomic-project-facts-grounding.md",
+        "docs/API_CONTRACT.md",
+        "docs/DATA_MODEL.md",
+        "docs/SECURITY_AND_PRIVACY.md",
+        "docs/OBSERVABILITY_AND_COST.md",
+        "docs/QUALITY_GATES.md",
+        "docs/STAGE_ISSUE_PLAN.md",
+        "docs/STATUS.md",
+        "docs/TRACEABILITY.md",
+    },
     ISSUE415_BRANCH: {
         ".github/pull_request_template.md", ".github/workflows/pr-body-consistency.yml", "AGENTS.md", "Makefile",
         "docs/ADR/0040-pr-body-live-state-reconciliation.md", "docs/CODEX_OPERATING_MODEL.md", "docs/QUALITY_GATES.md", "docs/STATUS.md",
@@ -315,11 +340,11 @@ ROUTES = {
         "docs/THIRD_PARTY_NOTICES.md",
     },
 }
-ROUTE_ISSUES = {ISSUE415_BRANCH: 415, ISSUE415_CORRECTION_BRANCH: 415, ISSUE413_BRANCH: 413, ISSUE368_ADAPTER_BRANCH: 368, ISSUE368_IMPLEMENTATION_BRANCH: 368, ISSUE368_QUOTA_FIX_BRANCH: 368, ISSUE368_PROMPT_BRANCH: 368, ISSUE368_BRANCH: 368, ISSUE405_BRANCH: 405, ISSUE403_BRANCH: 403, ISSUE401_BRANCH: 401, ISSUE396_BRANCH: 396,
+ROUTE_ISSUES = {ISSUE421_BRANCH: 421, ISSUE415_BRANCH: 415, ISSUE415_CORRECTION_BRANCH: 415, ISSUE413_BRANCH: 413, ISSUE368_ADAPTER_BRANCH: 368, ISSUE368_IMPLEMENTATION_BRANCH: 368, ISSUE368_QUOTA_FIX_BRANCH: 368, ISSUE368_PROMPT_BRANCH: 368, ISSUE368_BRANCH: 368, ISSUE405_BRANCH: 405, ISSUE403_BRANCH: 403, ISSUE401_BRANCH: 401, ISSUE396_BRANCH: 396,
                 ISSUE386_BRANCH: 386, ISSUE385_BRANCH: 385,
                 ISSUE384_BRANCH: 384, ISSUE383_BRANCH: 383, ISSUE397_BRANCH: 397,
                 ISSUE393_BRANCH: 393, ISSUE382_BRANCH: 382, ISSUE367_BRANCH: 367}
-TOTAL_LIMITS = {ISSUE415_BRANCH: 5000, ISSUE415_CORRECTION_BRANCH: 800, ISSUE413_BRANCH: 5000, ISSUE368_ADAPTER_BRANCH: 5600, ISSUE368_IMPLEMENTATION_BRANCH: 3600, ISSUE368_QUOTA_FIX_BRANCH: 2800, ISSUE368_PROMPT_BRANCH: 1000, ISSUE368_BRANCH: 3200, ISSUE405_BRANCH: 800, ISSUE403_BRANCH: 650, ISSUE401_BRANCH: 600, ISSUE396_BRANCH: 500,
+TOTAL_LIMITS = {ISSUE421_BRANCH: 4000, ISSUE415_BRANCH: 5000, ISSUE415_CORRECTION_BRANCH: 800, ISSUE413_BRANCH: 5000, ISSUE368_ADAPTER_BRANCH: 5600, ISSUE368_IMPLEMENTATION_BRANCH: 3600, ISSUE368_QUOTA_FIX_BRANCH: 2800, ISSUE368_PROMPT_BRANCH: 1000, ISSUE368_BRANCH: 3200, ISSUE405_BRANCH: 800, ISSUE403_BRANCH: 650, ISSUE401_BRANCH: 600, ISSUE396_BRANCH: 500,
                 ISSUE386_BRANCH: 700, ISSUE385_BRANCH: 350,
                 ISSUE384_BRANCH: 500, ISSUE383_BRANCH: 700, ISSUE397_BRANCH: 500,
                 ISSUE393_BRANCH: 700, ISSUE382_BRANCH: 3200, ISSUE367_BRANCH: 2000}
@@ -328,6 +353,32 @@ ISSUE383_BINARY_FILES = {
     "frontend/public/demo/raj-synthetic-presenter.webp",
 }
 TEXT_LIMITS = {
+    ISSUE421_BRANCH: {
+        path: {
+            "docs/governance/preflights/issue-421.json": 500,
+            "docs/governance/cut1-project-facts-v1.json": 600,
+            "backend/app/narration.py": 160,
+            "backend/app/cut1_grounding.py": 900,
+            "backend/app/rag/models.py": 180,
+            "backend/app/stage4.py": 600,
+            "backend/app/evaluation_lineage.py": 300,
+            "tests/unit/test_cut1_atomic_grounding.py": 1200,
+            "tests/unit/test_cut1_narration.py": 500,
+            "tests/unit/test_evaluation_lineage.py": 400,
+            "scripts/quality/stage8_cut1_routes.py": 180,
+            "tests/unit/test_stage8_cut1_routes.py": 300,
+            "docs/ADR/0058-cut1-atomic-project-facts-grounding.md": 320,
+            "docs/API_CONTRACT.md": 180,
+            "docs/DATA_MODEL.md": 180,
+            "docs/SECURITY_AND_PRIVACY.md": 220,
+            "docs/OBSERVABILITY_AND_COST.md": 180,
+            "docs/QUALITY_GATES.md": 180,
+            "docs/STAGE_ISSUE_PLAN.md": 180,
+            "docs/STATUS.md": 220,
+            "docs/TRACEABILITY.md": 220,
+        }[path]
+        for path in ROUTES[ISSUE421_BRANCH]
+    },
     ISSUE415_BRANCH: {path: 1200 if path == "scripts/quality/pr_body_consistency.py" else 900 if path == "tests/unit/test_pr_body_consistency.py" else 400 if path in {"scripts/quality/pr_body_consistency_cli.py", ".github/workflows/pr-body-consistency.yml"} else 250 for path in ROUTES[ISSUE415_BRANCH]},
     ISSUE415_CORRECTION_BRANCH: {path: 250 for path in ROUTES[ISSUE415_CORRECTION_BRANCH]},
     ISSUE413_BRANCH: {
@@ -532,6 +583,7 @@ def parse_name_status_z(output: str) -> list[str]:
 
 def route_base(run: Callable[[list[str]], Any], branch: str) -> str:
     fixed_routes = {
+        ISSUE421_BRANCH: (421, ISSUE421_BASE),
         ISSUE368_IMPLEMENTATION_BRANCH: (368, ISSUE368_IMPLEMENTATION_BASE),
         ISSUE368_QUOTA_FIX_BRANCH: (368, ISSUE368_QUOTA_FIX_BASE),
         ISSUE368_PROMPT_BRANCH: (368, ISSUE368_PROMPT_BASE),
@@ -546,8 +598,9 @@ def route_base(run: Callable[[list[str]], Any], branch: str) -> str:
         fixed_value = str(fixed.stdout).strip()
         common_value = str(common.stdout).strip()
         branch_point_invalid = False
-        if branch in {ISSUE368_IMPLEMENTATION_BRANCH, ISSUE368_QUOTA_FIX_BRANCH,
-                      ISSUE368_BRANCH, ISSUE368_PROMPT_BRANCH}:
+        if branch in {ISSUE421_BRANCH, ISSUE368_IMPLEMENTATION_BRANCH,
+                      ISSUE368_QUOTA_FIX_BRANCH, ISSUE368_BRANCH,
+                      ISSUE368_PROMPT_BRANCH}:
             branch_point = run(["git", "merge-base", "origin/main", "HEAD"])
             branch_point_invalid = branch_point.returncode != 0 or str(branch_point.stdout).strip() != base
         if (fixed.returncode or common.returncode or fixed_value != base or common_value != base

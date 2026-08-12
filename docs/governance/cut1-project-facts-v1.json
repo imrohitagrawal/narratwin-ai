@@ -1,0 +1,600 @@
+{
+  "schemaVersion": "cut1-project-facts-v1",
+  "policyVersion": "cut1-atomic-grounding-v1",
+  "acceptedRevision": "a868137fab607ae75d4b272301e9fc52b898e15c",
+  "sources": [
+    {
+      "sourceId": "src_readme",
+      "locatorType": "repository",
+      "sourceClassification": "REPOSITORY_SOURCE",
+      "locator": "README.md",
+      "revision": "a868137fab607ae75d4b272301e9fc52b898e15c",
+      "byteCount": 3433,
+      "sha256": "b029fd232dd4e6b5a92024356b6f193283fe39225991921d2a6f27f29ad652f2",
+      "spans": [
+        {
+          "spanId": "src_readme_span_01",
+          "byteStart": 16,
+          "byteEnd": 377,
+          "byteCount": 361,
+          "sha256": "3e3236611435a19a3c6f09879e2ed70927036d317b5c8bd6ac91b4c665debd5e",
+          "text": "**NarraTwin AI** is a provider-agnostic multilingual AI avatar walkthrough platform.\n\nNarraTwin turns approved knowledge into grounded, cited, multilingual avatar\nexplanations and interactive Q&A. It adapts explanations for legitimate product\naudiences including recruiters, hiring managers, engineers, product leaders,\ncustomers, beginners, and global viewers."
+        },
+        {
+          "spanId": "src_readme_span_02",
+          "byteStart": 408,
+          "byteEnd": 587,
+          "byteCount": 179,
+          "sha256": "ff28378aa2092ceadf47ebb0dc161af2cf3bcad2e4af13819a434c79df3ed904",
+          "text": "Interactive avatar Q&A remains intended and is not currently implemented.\nCurrent executable behavior is described below and must not be inferred from the\nproduct statement alone."
+        },
+        {
+          "spanId": "src_readme_span_03",
+          "byteStart": 1382,
+          "byteEnd": 1670,
+          "byteCount": 288,
+          "sha256": "b5ceff26ec748a067b6d1360eeb41ca6ab47dfcaeab5678080a1a9b6e5fd9ccc",
+          "text": "The implemented local/mock Phase 1 path covers:\n\n- project creation\n- markdown/text knowledge upload\n- ingest, chunk, and project-scoped retrieval\n- grounded walkthrough script generation\n- citation/source-reference display\n- unsupported-claim evaluation\n- stored output display in the UI"
+        },
+        {
+          "spanId": "src_readme_span_04",
+          "byteStart": 2541,
+          "byteEnd": 2606,
+          "byteCount": 65,
+          "sha256": "a3960b1d501810a7ce9fcd225f3f4751b4a443b2f3ee9a7e5442834020003689",
+          "text": "Premium providers must not be hardcoded into core business logic."
+        },
+        {
+          "spanId": "src_readme_span_05",
+          "byteStart": 2279,
+          "byteEnd": 2315,
+          "byteCount": 36,
+          "sha256": "5f26db39b2f0b5b01b8510ba183c8f01f80a0d9da118437906500618c5034cf9",
+          "text": "- FastAPI backend\n- Next.js frontend"
+        }
+      ]
+    },
+    {
+      "sourceId": "src_brief",
+      "locatorType": "repository",
+      "sourceClassification": "REPOSITORY_SOURCE",
+      "locator": "docs/AI_BUILD_BRIEF.md",
+      "revision": "a868137fab607ae75d4b272301e9fc52b898e15c",
+      "byteCount": 6417,
+      "sha256": "9ecf725ce4d90094af173ddc42fedc5894f6f23b68b2996b4e59a475c34c5b6e",
+      "spans": [
+        {
+          "spanId": "src_brief_span_01",
+          "byteStart": 724,
+          "byteEnd": 958,
+          "byteCount": 234,
+          "sha256": "2b080f5497c036b4a9d05de5cc3abd7c603d0de196cccd9120794c7e89d917ca",
+          "text": "English demo video or demo script\n→ transcription / script cleanup\n→ audience-specific script generation\n→ translation / localization\n→ voiceover generation\n→ avatar or video rendering\n→ subtitles\n→ export/shareable demo"
+        },
+        {
+          "spanId": "src_brief_span_02",
+          "byteStart": 2039,
+          "byteEnd": 2436,
+          "byteCount": 397,
+          "sha256": "c8291eae4c22c11fe08713af3c9b822e7a55f9ca13c87a95b103b724a93d909f",
+          "text": "The product must support:\n\n- multilingual walkthroughs\n- audience-aware explanations\n- project-specific RAG\n- script generation\n- translation/localization\n- subtitles\n- text-to-speech\n- avatar video generation\n- interactive Q&A\n- free engineering mode\n- optional premium provider mode\n- provider-agnostic architecture\n- AI evaluation\n- observability\n- cost tracking\n- security and privacy controls"
+        }
+      ]
+    },
+    {
+      "sourceId": "src_pack",
+      "locatorType": "repository",
+      "sourceClassification": "REPOSITORY_SOURCE",
+      "locator": "docs/PROJECT_AVATAR_PACK.md",
+      "revision": "a868137fab607ae75d4b272301e9fc52b898e15c",
+      "byteCount": 4205,
+      "sha256": "688e1115164084c1c7e4bf65498fbeb669cd2ecc582c6022d59c08a9e085edf5",
+      "spans": [
+        {
+          "spanId": "src_pack_span_01",
+          "byteStart": 44,
+          "byteEnd": 400,
+          "byteCount": 356,
+          "sha256": "dd759bafccc2d8b540d8797c2b0f720cdfb5fda2577e10bdfaa380178654f642",
+          "text": "The project-avatar-pack is the reusable source-of-truth folder that lets NarraTwin AI explain any project consistently across languages, audiences, depths, and output modes.\n\nThe pack prevents the avatar from inventing claims. It gives the system approved project knowledge for grounded script generation, future video creation, and future interactive Q&A."
+        },
+        {
+          "spanId": "src_pack_span_02",
+          "byteStart": 1019,
+          "byteEnd": 1716,
+          "byteCount": 697,
+          "sha256": "c14afd04561c15f7836f941ccb6ded0e1d79c90acd333eed229f796284d01b40",
+          "text": "| `project-summary.md` | What the project is, who it helps, and why it exists. |\n| `architecture.md` | Components, data flow, provider boundaries, deployment assumptions, and trade-offs. |\n| `business-impact.md` | Problem solved, measurable value, user benefit, and business relevance. |\n| `demo-script.md` | Existing English demo narration or walkthrough script. |\n| `recruiter-pitch.md` | Short career/recruiter-focused explanation of the project. |\n| `technical-deep-dive.md` | Engineering details for developers and technical reviewers. |\n| `faqs.md` | Approved answers to likely questions. |\n| `metrics.md` | Approved claims, metrics, outcomes, latency/cost numbers, and quality indicators. |"
+        },
+        {
+          "spanId": "src_pack_span_03",
+          "byteStart": 2029,
+          "byteEnd": 2357,
+          "byteCount": 328,
+          "sha256": "4b9cea763f11866399def13e2144c02e526a26a8c0eb241fa29dc1751211f78e",
+          "text": "- Generated walkthroughs must only claim facts supported by approved pack content.\n- If a requested answer is not present in the pack, the system must say the information is unavailable in the approved project context.\n- Store context references with every generated output.\n- Record unsupported claims in the evaluation result."
+        },
+        {
+          "spanId": "src_pack_span_04",
+          "byteStart": 2682,
+          "byteEnd": 2881,
+          "byteCount": 199,
+          "sha256": "e7140114f1cd0734f7348147f0e39016ad068ce24a3e42232813587fadbb6fb6",
+          "text": "| Engineer | Architecture, APIs, RAG flow, evaluation, security, observability, testing, and failure handling. |\n| Product Leader | Problem, user value, differentiation, roadmap, and adoption path. |"
+        }
+      ]
+    },
+    {
+      "sourceId": "src_status",
+      "locatorType": "repository",
+      "sourceClassification": "REPOSITORY_SOURCE",
+      "locator": "docs/STATUS.md",
+      "revision": "a868137fab607ae75d4b272301e9fc52b898e15c",
+      "byteCount": 227504,
+      "sha256": "83542b22f031a2b5e83f7d1952a2f2e75cd7e95c5a5ed6a5c8d4b492dc79e239",
+      "spans": [
+        {
+          "spanId": "src_status_span_01",
+          "byteStart": 36733,
+          "byteEnd": 37886,
+          "byteCount": 1153,
+          "sha256": "03ce76d0831dfa94b5c5e5e6cf51b98eee6e03b0302c89a2eae9f7ec44034245",
+          "text": "| Stage 4 | Complete, merged to `main` | `#4` reconcile after merge | PR `#29` merged | Executable locally at merge | First-slice backend RAG pipeline, mock providers, API tests, frontend workflow, deterministic eval smoke, Docker build coverage, quality gate, atomic-ingestion hardening, and sub-agent verification hardening merged through PR `#29`. |\n| Stage 5 | Complete, merged to `main` | `#10` closed | PR `#30` merged | Executable at merge | RAG eval runner, prompt-injection guardrails, file-upload abuse tests, and observability metadata merged through PR `#30`. |\n| Stage 6 | Complete, merged to `main` | `#11` closed | PR `#31` merged | Executable at merge | Translation, subtitles, mock/local voice adapter, downloadable artifacts, and Stage 6 quality checks merged through PR `#31`. |\n| Stage 7 | Complete, merged to `main` | `#12` reconcile after merge | PR `#32` merged | Executable at merge | Mock/local avatar rendering adapter, demo export artifacts, provider config validation, render job status, consent/disclosure controls, artifact validation, UI preview/export workflow, and Stage 7 quality gate merged through commit `7f7196a`. |"
+        }
+      ]
+    },
+    {
+      "sourceId": "src_presenter",
+      "locatorType": "repository",
+      "sourceClassification": "REPOSITORY_SOURCE",
+      "locator": "docs/ADR/0054-cut1-presenter-registry.md",
+      "revision": "a868137fab607ae75d4b272301e9fc52b898e15c",
+      "byteCount": 4858,
+      "sha256": "82836fe9b55a30b6c7c811eb12dc087c0b03270188d6ad24a29a3f6306c888e5",
+      "spans": [
+        {
+          "spanId": "src_presenter_span_01",
+          "byteStart": 158,
+          "byteEnd": 444,
+          "byteCount": 286,
+          "sha256": "db2480ded5111af473655383cf1132e77771d4b2f4598f2202a3ddf4ba8be1da",
+          "text": "Cut 1 has three owner-approved fictional synthetic identity anchors: Meera,\nMyra, and Raj. Later narration, TTS, rendering, and UI work needs one stable\nidentity contract without importing provider-specific profiles or trusting a\ncaller-supplied asset, voice, lifecycle, or trace claim."
+        },
+        {
+          "spanId": "src_presenter_span_02",
+          "byteStart": 880,
+          "byteEnd": 977,
+          "byteCount": 97,
+          "sha256": "8434913a88ad193595bf4e47fa3fc74454472f718c7358a5ffd789a8e26dfccd",
+          "text": "Production identity IDs are exactly\n`meera`, `myra`, and `raj`, each at semantic version `1.0.0`."
+        }
+      ]
+    },
+    {
+      "sourceId": "src_stage_plan",
+      "locatorType": "repository",
+      "sourceClassification": "REPOSITORY_SOURCE",
+      "locator": "docs/STAGE_ISSUE_PLAN.md",
+      "revision": "a868137fab607ae75d4b272301e9fc52b898e15c",
+      "byteCount": 134863,
+      "sha256": "75f6db2aedcc0eafbde58fecf9df5743db5ed15dca7f1daed3a06ec7647af8c1",
+      "spans": [
+        {
+          "spanId": "src_stage_plan_span_01",
+          "byteStart": 115900,
+          "byteEnd": 116062,
+          "byteCount": 162,
+          "sha256": "1b526533d2c681665d79670e3b9bc6e7bbe426ef4e2005008d1602767efea6dd",
+          "text": "Visible brand spelling is exactly `StackClimb`.\nRohit Agrawal founded, owns, and leads StackClimb and conceived, owns, and\nproduces NarraTwin AI under StackClimb."
+        },
+        {
+          "spanId": "src_stage_plan_span_02",
+          "byteStart": 118291,
+          "byteEnd": 118528,
+          "byteCount": 237,
+          "sha256": "37e0af48035b3297158f9671a1df9f1a900570414e88f2d68a47818525735a98",
+          "text": "The exact canonical narration and presenter substitution rule live in OWNER\ncomment `5197711390`: Myra and Raj replace only both occurrences of `Meera`.\nTTS accepts only the latest evaluated script version after explicit speech\napproval."
+        }
+      ]
+    },
+    {
+      "sourceId": "src_portability",
+      "locatorType": "repository",
+      "sourceClassification": "REPOSITORY_SOURCE",
+      "locator": "docs/PORTABILITY_STRATEGY.md",
+      "revision": "a868137fab607ae75d4b272301e9fc52b898e15c",
+      "byteCount": 7342,
+      "sha256": "3e0d3b1056394e984d056c04af86a1bdee2c87c11bfbeb0e718017b21a96c7a5",
+      "spans": [
+        {
+          "spanId": "src_portability_span_01",
+          "byteStart": 163,
+          "byteEnd": 429,
+          "byteCount": 266,
+          "sha256": "e5fe23a9384475d565421fc2a959b58143d0d52e123728286d98af6954f8c965",
+          "text": "NarraTwin AI must remain portable across local development, free engineering mode,\nand future premium showcase mode. Users and maintainers must be able to replace\nproviders, export project data, regenerate derived artifacts, and run tests without\npaid provider keys."
+        },
+        {
+          "spanId": "src_portability_span_02",
+          "byteStart": 6040,
+          "byteEnd": 6197,
+          "byteCount": 157,
+          "sha256": "1c27005272b8ce6eb6bbd2462d5c37d7a1d915140d2b983afa9277cb672c064e",
+          "text": "- add adapter behind `LLMProvider`\n- add contract tests\n- update third-party notices\n- keep prompt/output schema unchanged\n- record provider metadata per run"
+        }
+      ]
+    },
+    {
+      "sourceId": "src_prd",
+      "locatorType": "repository",
+      "sourceClassification": "REPOSITORY_SOURCE",
+      "locator": "docs/PRD.md",
+      "revision": "a868137fab607ae75d4b272301e9fc52b898e15c",
+      "byteCount": 18863,
+      "sha256": "2cde5d9ec7d8e932b25f2fdf66d4dd11f49065b50078f16f59b6a65cbb7d720a",
+      "spans": [
+        {
+          "spanId": "src_prd_span_01",
+          "byteStart": 399,
+          "byteEnd": 1087,
+          "byteCount": 688,
+          "sha256": "f1df6ca8a6a94592e1b19e046ac370b3d69ff8b75fc2402def9dffe3826a32f6",
+          "text": "NarraTwin AI is a provider-agnostic multilingual AI avatar walkthrough platform. It\nturns approved project knowledge into audience-aware, grounded scripts and later\nvoice, subtitle, video, and interactive avatar outputs.\n\nNarraTwin turns approved knowledge into grounded, cited, multilingual avatar\nexplanations and interactive Q&A.\n\nThe first usable product slice must prove the trust loop: upload project knowledge,\ningest and retrieve context, generate a grounded walkthrough script, evaluate\nunsupported claims, store the result, and display it to the user. Avatar rendering,\nvoice, subtitles, premium providers, and interactive Q&A are future slices built on\nthat trusted foundation."
+        }
+      ]
+    },
+    {
+      "sourceId": "src_stage4_code",
+      "locatorType": "repository",
+      "sourceClassification": "REPOSITORY_SOURCE",
+      "locator": "backend/app/stage4.py",
+      "revision": "a868137fab607ae75d4b272301e9fc52b898e15c",
+      "byteCount": 134801,
+      "sha256": "ed9699258e2288d81b3ae7d3f262b24afdb1178a18bcb9a287b1dc411ccba6fb",
+      "spans": [
+        {
+          "spanId": "src_stage4_code_span_01",
+          "byteStart": 0,
+          "byteEnd": 112,
+          "byteCount": 112,
+          "sha256": "b4526a0dcd407b6f0a2a474b825f6396c37f090162f66e9ba3e5adba34bfed51",
+          "text": "\"\"\"Stage 4 local product slice orchestration with source_chunk citations.\"\"\"\n\nfrom __future__ import annotations"
+        }
+      ]
+    },
+    {
+      "sourceId": "src_owner_5197711390",
+      "locatorType": "owner-record",
+      "sourceClassification": "OWNER_ASSERTED",
+      "locator": "https://github.com/imrohitagrawal/narratwin-ai/issues/366#issuecomment-5197711390",
+      "revision": "comment:5197711390@2026-08-05T21:41:25Z",
+      "byteCount": 4322,
+      "sha256": "30d6afe6758598f172c48a65d4d507662a9ab6eefebbcf492af07052c8e13528",
+      "spans": [
+        {
+          "spanId": "src_owner_span_01",
+          "byteStart": 170,
+          "byteEnd": 520,
+          "byteCount": 350,
+          "sha256": "438d9f8e92240781e62472d39e75d8c28c72e20008ba9a82588c7a7f31ff99b2",
+          "text": "- Visible brand spelling is exactly `StackClimb`; domain `stackclimb.com`. Rohit Agrawal is the founder, owner, product thinker, product owner, and producer. NarraTwin AI was conceived, is owned, and is produced by Rohit Agrawal under StackClimb. Do not use `®`, claim registration, public availability, deployment, release, or production readiness."
+        }
+      ]
+    },
+    {
+      "sourceId": "src_owner_5263752038",
+      "locatorType": "owner-record",
+      "sourceClassification": "OWNER_ASSERTED",
+      "locator": "https://github.com/imrohitagrawal/narratwin-ai/issues/421#issuecomment-5263752038",
+      "revision": "comment:5263752038@2026-08-12T07:36:47Z",
+      "byteCount": 2068,
+      "sha256": "a797084c6f2d6c20ceb33deeb54e1dc7104a65e4adba49a8aa3f4b04ed8f5644",
+      "spans": [
+        {
+          "spanId": "src_owner_421_stackclimb",
+          "byteStart": 347,
+          "byteEnd": 452,
+          "byteCount": 105,
+          "sha256": "4982c4c0b87481d71cb592d12df62faf30223324aba5d884024364b6baf249b7",
+          "text": "“StackClimb is the technology and product innovation brand founded, owned, and led by Rohit Agrawal.”"
+        },
+        {
+          "spanId": "src_owner_421_knowledge",
+          "byteStart": 456,
+          "byteEnd": 587,
+          "byteCount": 131,
+          "sha256": "0580768ac894641157cfa71776a919d5dc32a32c34ee8e7c71165921911e4a5b",
+          "text": "“Complex projects often contain valuable knowledge spread across documents, code, architecture notes, and technical decisions.”"
+        },
+        {
+          "spanId": "src_owner_421_meera",
+          "byteStart": 591,
+          "byteEnd": 678,
+          "byteCount": 87,
+          "sha256": "e15d32954d30cb1160ff942fc862ea33c8a70b254d42db56931c487bd4b08719",
+          "text": "“For Cut 1, Meera is the selected presenter and presents the prepared walkthrough.”"
+        }
+      ]
+    }
+  ],
+  "propositions": [
+    {
+      "propositionId": "fact_001",
+      "statement": "Cut 1 active presenter identities = Meera, Myra, Raj; downstream use includes narration, TTS, rendering, and UI.",
+      "predicateIds": ["presenter.identity", "presenter.downstream_role"],
+      "sourceSpanIds": ["src_presenter_span_01", "src_presenter_span_02"]
+    },
+    {
+      "propositionId": "fact_002",
+      "statement": "OWNER_ASSERTED: StackClimb is the technology and product innovation brand founded, owned, and led by Rohit Agrawal.",
+      "predicateIds": ["stackclimb.brand", "stackclimb.technology_context", "stackclimb.product_innovation_context", "stackclimb.founder.rohit", "stackclimb.owner.rohit", "stackclimb.lead.rohit"],
+      "sourceSpanIds": ["src_owner_421_stackclimb"]
+    },
+    {
+      "propositionId": "fact_003",
+      "statement": "OWNER record: NarraTwin AI conception, ownership, and production = Rohit Agrawal under StackClimb.",
+      "predicateIds": ["narratwin.conceived.rohit", "narratwin.owner.rohit", "narratwin.producer.rohit", "narratwin.under_stackclimb"],
+      "sourceSpanIds": ["src_owner_span_01"]
+    },
+    {
+      "propositionId": "fact_004",
+      "statement": "NarraTwin AI product definition = provider-agnostic multilingual AI avatar walkthrough platform.",
+      "predicateIds": ["narratwin.platform", "narratwin.multilingual", "narratwin.avatar_walkthrough"],
+      "sourceSpanIds": ["src_readme_span_01"]
+    },
+    {
+      "propositionId": "fact_005",
+      "statement": "OWNER_ASSERTED: Complex projects often contain valuable knowledge spread across documents, code, architecture notes, and technical decisions.",
+      "predicateIds": ["knowledge.documents", "knowledge.code", "knowledge.architecture", "knowledge.technical_decisions"],
+      "sourceSpanIds": ["src_owner_421_knowledge"]
+    },
+    {
+      "propositionId": "fact_006",
+      "statement": "Approved knowledge is the source for grounded, cited explanations adapted to audience.",
+      "predicateIds": ["product.approved_input", "product.clear_guided_walkthrough", "product.audience_aware"],
+      "sourceSpanIds": ["src_readme_span_01", "src_pack_span_01"]
+    },
+    {
+      "propositionId": "fact_007",
+      "statement": "Implemented Stage 4 flow = upload, ingest/chunk, project-scoped retrieval, grounded script, citations, unsupported-claim evaluation, stored UI output.",
+      "predicateIds": ["flow.organize", "flow.retrieve", "flow.explain", "flow.stage4_current"],
+      "sourceSpanIds": ["src_readme_span_03", "src_status_span_01", "src_readme_span_05"]
+    },
+    {
+      "propositionId": "fact_008",
+      "statement": "Grounding policy requires source-supported facts, context references, and recorded unsupported claims.",
+      "predicateIds": ["grounding.source_support", "grounding.context_refs", "grounding.evaluation", "grounding.no_unsupported_fact"],
+      "sourceSpanIds": ["src_pack_span_03"]
+    },
+    {
+      "propositionId": "fact_009",
+      "statement": "Accepted executable stages bind backend RAG/evaluation/frontend with translation, captions, speech, and presenter-led media artifacts.",
+      "predicateIds": ["application.python_fastapi_backend", "application.nextjs_ui", "application.rag", "application.evaluation_safety", "application.multilingual", "application.captions", "application.speech", "application.presenter_led_media"],
+      "sourceSpanIds": ["src_readme_span_03", "src_status_span_01"]
+    },
+    {
+      "propositionId": "fact_010",
+      "statement": "Approved project knowledge and grounded walkthrough generation remain the product core while modular provider boundaries allow generation and presentation technologies to evolve.",
+      "predicateIds": ["architecture.project_understanding_core", "architecture.modular_provider_boundaries", "architecture.technologies_evolve"],
+      "sourceSpanIds": ["src_readme_span_04", "src_portability_span_01", "src_portability_span_02", "src_prd_span_01"]
+    },
+    {
+      "propositionId": "fact_011",
+      "statement": "Reusable approved project packs support explanations for any project across languages, audiences, depths, and output modes.",
+      "predicateIds": ["reuse.other_projects", "reuse.approved_documentation", "reuse.tailored_explanation"],
+      "sourceSpanIds": ["src_pack_span_01"]
+    },
+    {
+      "propositionId": "fact_012",
+      "statement": "Project-pack explanation scope includes purpose, architecture, technologies, capabilities, decisions, and integration-relevant technical detail.",
+      "predicateIds": ["explanation.purpose", "explanation.architecture", "explanation.technologies", "explanation.capabilities", "explanation.decisions", "explanation.integrations"],
+      "sourceSpanIds": ["src_pack_span_02", "src_pack_span_04"]
+    },
+    {
+      "propositionId": "fact_013",
+      "statement": "OWNER_ASSERTED: For Cut 1, Meera is the selected presenter and presents the prepared walkthrough.",
+      "predicateIds": ["experience.prepared_walkthrough", "experience.first_mode", "presenter.selected_meera"],
+      "sourceSpanIds": ["src_owner_421_meera"]
+    },
+    {
+      "propositionId": "fact_014",
+      "statement": "Interactive avatar Q&A is intended and not currently implemented.",
+      "predicateIds": ["interactive.future", "interactive.not_current_demo"],
+      "sourceSpanIds": ["src_readme_span_02"]
+    },
+    {
+      "propositionId": "fact_015",
+      "statement": "NarraTwin combines approved project knowledge, grounded explanation, and an active presenter identity contract.",
+      "predicateIds": ["experience.approved_knowledge", "experience.grounded", "experience.presenter_led"],
+      "sourceSpanIds": ["src_readme_span_01", "src_presenter_span_01"]
+    },
+    {
+      "propositionId": "fact_016",
+      "statement": "OWNER_ASSERTED: NarraTwin AI is a StackClimb product conceived, owned, and produced by Rohit Agrawal.",
+      "predicateIds": ["experience.stackclimb_product"],
+      "sourceSpanIds": ["src_owner_span_01"]
+    }
+  ],
+  "claimMappings": [
+    {
+      "claimId": "claim_001",
+      "claimSha256ByPresenter": {
+        "meera": "4220b079c4741e5cd1ca7dc6b42a9145ff85869a8734c552f4d62622ffe8ebbc",
+        "myra": "4220b079c4741e5cd1ca7dc6b42a9145ff85869a8734c552f4d62622ffe8ebbc",
+        "raj": "4220b079c4741e5cd1ca7dc6b42a9145ff85869a8734c552f4d62622ffe8ebbc"
+      },
+      "requiredPredicateIds": ["narratwin.platform"],
+      "propositionIds": ["fact_004"]
+    },
+    {
+      "claimId": "claim_002",
+      "claimSha256ByPresenter": {
+        "meera": "226e855da4e0b771fd941239c807a78b87971042979f6e6152a9e41fbeabbfa7",
+        "myra": "d37d5be6558c8d25274d1d6daeb4c4bb838bf75ec366069f5f3b8748b0f14fae",
+        "raj": "294dbda9ce456d0cf6ffbdec5efa3d4312ec76704d247148d99514d2a99a56ec"
+      },
+      "requiredPredicateIds": ["presenter.identity", "presenter.downstream_role"],
+      "propositionIds": ["fact_001"]
+    },
+    {
+      "claimId": "claim_003",
+      "claimSha256ByPresenter": {
+        "meera": "7f7be3895b2e148233e9ddc608bc3f5b3b13eb52cba49b72a8e2921fba870cbd",
+        "myra": "7f7be3895b2e148233e9ddc608bc3f5b3b13eb52cba49b72a8e2921fba870cbd",
+        "raj": "7f7be3895b2e148233e9ddc608bc3f5b3b13eb52cba49b72a8e2921fba870cbd"
+      },
+      "requiredPredicateIds": ["stackclimb.brand", "stackclimb.technology_context", "stackclimb.product_innovation_context", "stackclimb.founder.rohit", "stackclimb.owner.rohit", "stackclimb.lead.rohit"],
+      "propositionIds": ["fact_002"]
+    },
+    {
+      "claimId": "claim_004",
+      "claimSha256ByPresenter": {
+        "meera": "3d03a1d9ce2954d3823531e97d1085a5518467f7630c9e2a8de12f111439d7a9",
+        "myra": "3d03a1d9ce2954d3823531e97d1085a5518467f7630c9e2a8de12f111439d7a9",
+        "raj": "3d03a1d9ce2954d3823531e97d1085a5518467f7630c9e2a8de12f111439d7a9"
+      },
+      "requiredPredicateIds": ["narratwin.conceived.rohit", "narratwin.owner.rohit", "narratwin.producer.rohit", "narratwin.under_stackclimb"],
+      "propositionIds": ["fact_003"]
+    },
+    {
+      "claimId": "claim_005",
+      "claimSha256ByPresenter": {
+        "meera": "0fac1aeaaa5207068f8cfad6f9e72ef96ff1a1c1f9c03fbcdf32d5fe4a0663d1",
+        "myra": "0fac1aeaaa5207068f8cfad6f9e72ef96ff1a1c1f9c03fbcdf32d5fe4a0663d1",
+        "raj": "0fac1aeaaa5207068f8cfad6f9e72ef96ff1a1c1f9c03fbcdf32d5fe4a0663d1"
+      },
+      "requiredPredicateIds": ["knowledge.documents", "knowledge.code", "knowledge.architecture", "knowledge.technical_decisions"],
+      "propositionIds": ["fact_005"]
+    },
+    {
+      "claimId": "claim_006",
+      "claimSha256ByPresenter": {
+        "meera": "e13f55572566d79cdfbd5547fa4ceb33cf88943a131a1932d22ffec4c1968d3e",
+        "myra": "e13f55572566d79cdfbd5547fa4ceb33cf88943a131a1932d22ffec4c1968d3e",
+        "raj": "e13f55572566d79cdfbd5547fa4ceb33cf88943a131a1932d22ffec4c1968d3e"
+      },
+      "requiredPredicateIds": ["product.approved_input", "product.clear_guided_walkthrough"],
+      "propositionIds": ["fact_006"]
+    },
+    {
+      "claimId": "claim_007",
+      "claimSha256ByPresenter": {
+        "meera": "1df2c0f8ced1ed3f03ddaf6ade7a8e36fd6d283fc1e54ea3aac73d320cd5e540",
+        "myra": "1df2c0f8ced1ed3f03ddaf6ade7a8e36fd6d283fc1e54ea3aac73d320cd5e540",
+        "raj": "1df2c0f8ced1ed3f03ddaf6ade7a8e36fd6d283fc1e54ea3aac73d320cd5e540"
+      },
+      "requiredPredicateIds": ["product.approved_input"],
+      "propositionIds": ["fact_006"]
+    },
+    {
+      "claimId": "claim_008",
+      "claimSha256ByPresenter": {
+        "meera": "c0e9da6b143a74b8df901bedcafa607fab1b77e894c63776eb2c9fb6479d6cad",
+        "myra": "c0e9da6b143a74b8df901bedcafa607fab1b77e894c63776eb2c9fb6479d6cad",
+        "raj": "c0e9da6b143a74b8df901bedcafa607fab1b77e894c63776eb2c9fb6479d6cad"
+      },
+      "requiredPredicateIds": ["flow.organize", "flow.retrieve", "product.audience_aware"],
+      "propositionIds": ["fact_006", "fact_007"]
+    },
+    {
+      "claimId": "claim_009",
+      "claimSha256ByPresenter": {
+        "meera": "816a0c2b3ce413e712998d4a449e4a550d6d9c17a40b1a1a2e28df10094dfef2",
+        "myra": "816a0c2b3ce413e712998d4a449e4a550d6d9c17a40b1a1a2e28df10094dfef2",
+        "raj": "816a0c2b3ce413e712998d4a449e4a550d6d9c17a40b1a1a2e28df10094dfef2"
+      },
+      "requiredPredicateIds": ["grounding.source_support", "grounding.context_refs", "grounding.evaluation", "grounding.no_unsupported_fact"],
+      "propositionIds": ["fact_008"]
+    },
+    {
+      "claimId": "claim_010",
+      "claimSha256ByPresenter": {
+        "meera": "57a4383b3e77c7219068c1221538cc2573a1d191422769ffd48eabb6f00ebb37",
+        "myra": "57a4383b3e77c7219068c1221538cc2573a1d191422769ffd48eabb6f00ebb37",
+        "raj": "57a4383b3e77c7219068c1221538cc2573a1d191422769ffd48eabb6f00ebb37"
+      },
+      "requiredPredicateIds": ["application.python_fastapi_backend", "application.nextjs_ui", "application.rag", "application.evaluation_safety", "application.multilingual", "application.captions", "application.speech", "application.presenter_led_media"],
+      "propositionIds": ["fact_009"]
+    },
+    {
+      "claimId": "claim_011",
+      "claimSha256ByPresenter": {
+        "meera": "da5f1a436d77a94553c9fc326293b53c98411029d07f5a6bf08f5f009a469b74",
+        "myra": "da5f1a436d77a94553c9fc326293b53c98411029d07f5a6bf08f5f009a469b74",
+        "raj": "da5f1a436d77a94553c9fc326293b53c98411029d07f5a6bf08f5f009a469b74"
+      },
+      "requiredPredicateIds": ["architecture.project_understanding_core", "architecture.modular_provider_boundaries", "architecture.technologies_evolve"],
+      "propositionIds": ["fact_010"]
+    },
+    {
+      "claimId": "claim_012",
+      "claimSha256ByPresenter": {
+        "meera": "ea913e1e489826f51ca3ffe2490beefb28f642bde937ba7a1f4b17fa97e822cd",
+        "myra": "ea913e1e489826f51ca3ffe2490beefb28f642bde937ba7a1f4b17fa97e822cd",
+        "raj": "ea913e1e489826f51ca3ffe2490beefb28f642bde937ba7a1f4b17fa97e822cd"
+      },
+      "requiredPredicateIds": ["reuse.other_projects"],
+      "propositionIds": ["fact_011"]
+    },
+    {
+      "claimId": "claim_013",
+      "claimSha256ByPresenter": {
+        "meera": "f0840ccb0bc40c21a642b104d5664863a7803d57eaf383340e2139d599c48688",
+        "myra": "f0840ccb0bc40c21a642b104d5664863a7803d57eaf383340e2139d599c48688",
+        "raj": "f0840ccb0bc40c21a642b104d5664863a7803d57eaf383340e2139d599c48688"
+      },
+      "requiredPredicateIds": ["reuse.approved_documentation", "reuse.tailored_explanation", "explanation.purpose", "explanation.architecture", "explanation.technologies", "explanation.capabilities", "explanation.decisions", "explanation.integrations"],
+      "propositionIds": ["fact_011", "fact_012"]
+    },
+    {
+      "claimId": "claim_014",
+      "claimSha256ByPresenter": {
+        "meera": "8dd22a3a600230f05cb9dd78d93491d31a306531e0d075bdb8a5bc4cfcf36f2c",
+        "myra": "8dd22a3a600230f05cb9dd78d93491d31a306531e0d075bdb8a5bc4cfcf36f2c",
+        "raj": "8dd22a3a600230f05cb9dd78d93491d31a306531e0d075bdb8a5bc4cfcf36f2c"
+      },
+      "requiredPredicateIds": ["experience.prepared_walkthrough", "experience.first_mode", "presenter.selected_meera"],
+      "propositionIds": ["fact_013"]
+    },
+    {
+      "claimId": "claim_015",
+      "claimSha256ByPresenter": {
+        "meera": "1bb3923c69d4edfd2185dafd38cafb48261d09c6bbbbbd2919d281524358268f",
+        "myra": "1bb3923c69d4edfd2185dafd38cafb48261d09c6bbbbbd2919d281524358268f",
+        "raj": "1bb3923c69d4edfd2185dafd38cafb48261d09c6bbbbbd2919d281524358268f"
+      },
+      "requiredPredicateIds": ["interactive.future", "interactive.not_current_demo"],
+      "propositionIds": ["fact_014"]
+    },
+    {
+      "claimId": "claim_016",
+      "claimSha256ByPresenter": {
+        "meera": "01719cc3b3ccff831b7b1d70d5258c2530393dbffa3928947586b5d80747465f",
+        "myra": "01719cc3b3ccff831b7b1d70d5258c2530393dbffa3928947586b5d80747465f",
+        "raj": "01719cc3b3ccff831b7b1d70d5258c2530393dbffa3928947586b5d80747465f"
+      },
+      "requiredPredicateIds": ["experience.stackclimb_product", "experience.approved_knowledge", "experience.grounded", "experience.presenter_led"],
+      "propositionIds": ["fact_015", "fact_016"]
+    },
+    {
+      "claimId": "claim_017",
+      "claimSha256ByPresenter": {
+        "meera": "04a96eaebab9531ebf1d84045feed51fed01aa675ee450d6cee1826752815635",
+        "myra": "f17e9b9bc8d5c371ae35309bd8b32715720f6b2602665f4442d158e55580eb3e",
+        "raj": "f2fb18edb48729d1b43b42f44be5e86974dafdb6de95246c38383279f06bd5dd"
+      },
+      "requiredPredicateIds": ["presenter.identity"],
+      "propositionIds": ["fact_001"]
+    },
+    {
+      "claimId": "claim_018",
+      "claimSha256ByPresenter": {
+        "meera": "03ebbedd460ad026ae12d81dc450e854f456abad8ede0088364622ab1312ab01",
+        "myra": "03ebbedd460ad026ae12d81dc450e854f456abad8ede0088364622ab1312ab01",
+        "raj": "03ebbedd460ad026ae12d81dc450e854f456abad8ede0088364622ab1312ab01"
+      },
+      "requiredPredicateIds": ["presenter.identity", "reuse.other_projects"],
+      "propositionIds": ["fact_001", "fact_011"]
+    }
+  ]
+}

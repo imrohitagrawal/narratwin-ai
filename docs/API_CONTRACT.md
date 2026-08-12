@@ -1930,3 +1930,32 @@ Missing/extra fields, wrong schema, invalid normalization/count/order/scope, dup
 stale, mismatched, or arbitrary valid-looking hash fails before render/replay acceptance. Legacy bytes may be audit-preserved
 but cannot be relabeled; regeneration requires a currently verified Stage 4 run. No deployed/customer migration or
 authenticity against full-state rewrite is claimed.
+## Issue #421 governed Cut 1 grounding policy
+
+The existing Stage 4 walkthrough request and response shapes remain
+provider-neutral. For the exact server-owned `CUT1_ATOMIC_FACTS_V1` style, the
+service may apply `cut1-atomic-grounding-v1` only to the selected Meera
+narration when all eighteen canonical claim hashes, the project-owned retrieved
+facts projection, and every immutable source span verify. Evidence records
+distinguish `OWNER_ASSERTED` first-party assertions from narration-independent
+`REPOSITORY_SOURCE` facts; neither label claims external corroboration. Callers
+cannot submit a policy checksum, source classification, or support decision.
+
+Internal persisted claim-support rows add `proposition_ids` and
+`proposition_evidence_checksum`; the existing public response projection does
+not expose them. They are empty/`null` for ordinary direct support. The Cut 1
+values are application-generated evidence included in persisted evaluation and
+narration lineage; changing or removing either field invalidates restore.
+Existing generic direct-substring behavior and all HTTP request/response shapes
+are unchanged.
+
+A request carrying the Cut 1 style never falls back to a generic passing
+evaluation. Contract, facts, presenter, or evidence mismatch returns a failed
+Cut 1-policy run with no accepted script or support authority. Restore selects
+the evaluator from run style, then requires policy agreement. Narration and TTS
+receipt authority additionally require selected Meera and all eighteen
+proposition-bound supports to remain current.
+Current means the Stage 4 canonical verifier can still reload the exact facts
+contract and reproduce the stored run; missing or tampered contract bytes fail
+evaluation, approval, consumption, and receipt validation in the live process
+as well as during restore.
