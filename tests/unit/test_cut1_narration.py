@@ -15,6 +15,12 @@ from typing import Any, Callable
 import pytest
 
 from backend.app.presenter_registry import PresenterLifecycle, load_cut1_presenter_registry
+from backend.app.cut1_grounding import (
+    CUT1_STYLE,
+    FACTS_SOURCE_FILENAME,
+    evaluate_cut1_grounding,
+    load_cut1_grounding_contract,
+)
 from backend.app.rag.chunking import checksum_text, count_tokens
 from backend.app.rag.grounding import evaluate_grounding
 from backend.app.rag.models import GeneratedScript, KnowledgeChunk, RetrievedContext, ScriptClaim
@@ -64,12 +70,12 @@ def _visible(text: str) -> tuple[str, list[ScriptClaim]]:
     for index, match in enumerate(source_sentences, start=1):
         gap = text[cursor : match.start()]
         sentence = match.group(0)
-        marker = f" [{(index - 1) % 6 + 1}]"
+        marker = " [1]"
         start = sum(len(part) for part in rendered) + len(gap)
         rendered.extend((gap, sentence, marker))
         claims.append(ScriptClaim(
             claim_id=f"claim_{index:03d}", text=sentence,
-            citation_index=(index - 1) % 6 + 1, chunk_id=f"chunk_{(index - 1) % 6 + 1:03d}",
+            citation_index=1, chunk_id="chunk_001",
             script_span_start=start, script_span_end=start + len(sentence) + len(marker),
         ))
         cursor = match.end()
@@ -84,7 +90,12 @@ def test_issue421_claim_support_model_exposes_fail_closed_proposition_evidence()
     assert {"proposition_ids", "proposition_evidence_checksum"} <= fields
 
 
-def _stage4(text: str = MEERA_TEXT, *, project_name: str = "NarraTwin AI") -> tuple[Stage4Service, LocalPrincipal, str]:
+def _stage4(
+    text: str = MEERA_TEXT,
+    *,
+    project_name: str = "NarraTwin AI",
+    governed: bool = True,
+) -> tuple[Stage4Service, LocalPrincipal, str]:
     principal = LocalPrincipal()
     service = Stage4Service()
     project_id, run_id = "proj_narration", "run_narration"
@@ -93,22 +104,23 @@ def _stage4(text: str = MEERA_TEXT, *, project_name: str = "NarraTwin AI") -> tu
         "Grounded narration fixture", "GENERAL", "en", NOW, NOW,
     )
     visible, claims = _visible(text)
-    contexts: list[RetrievedContext] = []
-    for citation_index in range(1, 7):
-        supported = "\n".join(claim.text for claim in claims if claim.citation_index == citation_index)
-        chunk = KnowledgeChunk(
-            chunk_id=f"chunk_{citation_index:03d}", tenant_id=principal.tenant_id,
-            project_id=project_id, document_id=f"doc_{(citation_index - 1) // 3 + 1:03d}",
-            source_filename="approved.md",
-            source_document_checksum=checksum_text(text), approved_at=NOW, chunk_index=citation_index - 1,
-            text=supported, token_count=count_tokens(supported), checksum=checksum_text(supported),
-            heading_path=[project_name], line_start=1, line_end=1,
-        )
-        contexts.append(RetrievedContext(f"ctx_{citation_index:016x}", chunk, 1.0))
+    facts = load_cut1_grounding_contract(root=ROOT).project_source_bytes()
+    supported = facts.decode() if governed else text
+    chunk = KnowledgeChunk(
+        chunk_id="chunk_001", tenant_id=principal.tenant_id,
+        project_id=project_id, document_id="doc_001",
+        source_filename=FACTS_SOURCE_FILENAME if governed else "approved.md",
+        source_document_checksum=checksum_text(supported), approved_at=NOW, chunk_index=0,
+        text=supported, token_count=count_tokens(supported), checksum=checksum_text(supported),
+        heading_path=[project_name], line_start=1, line_end=1,
+    )
+    contexts = [RetrievedContext("ctx_0000000000000001", chunk, 1.0)]
     generated = GeneratedScript(visible, claims)
-    evaluation = evaluate_grounding(
+    evaluator = evaluate_cut1_grounding if governed else evaluate_grounding
+    evaluation = evaluator(
+        **({"root": ROOT} if governed else {}),
         tenant_id=principal.tenant_id, project_id=project_id, run_id=run_id,
-        candidate=generated, retrieved_context=contexts, prompt=text, all_chunks=[row.chunk for row in contexts],
+        candidate=generated, retrieved_context=contexts, prompt=text, all_chunks=[chunk],
     )
     evaluation = replace(
         evaluation, retrieval_strategy_version="stage4-rag-v1", retrieval_top_k=6,
@@ -116,8 +128,10 @@ def _stage4(text: str = MEERA_TEXT, *, project_name: str = "NarraTwin AI") -> tu
     )
     service.walkthrough_runs[run_id] = WalkthroughRunRecord(
         run_id, principal.tenant_id, principal.actor_id, project_id, "COMPLETED", None, "PASSED",
-        "trace_stage4_narration", 1, 1, 1, 0.0, "GENERAL", "en", "CONCISE", "CONFIDENT",
-        visible, generated, contexts, evaluation, NOW, checksum_text("request"),
+        "trace_stage4_narration", 1, 1, 1, 0.0, "GENERAL", "en", "CONCISE",
+        CUT1_STYLE if governed else "CONFIDENT",
+        visible if evaluation.evaluation_status == "PASSED" else None,
+        generated, contexts, evaluation, NOW, checksum_text("request"),
         "stage4-rag-v1", 6, 0.72,
     )
     return service, principal, project_id
@@ -145,6 +159,33 @@ def _service(narration: ModuleType, tmp_path: Path, presenter_id: str = "meera",
         clock=lambda: datetime(2026, 8, 8, 18, 10, tzinfo=UTC),
     )
     return service, principal, binding, project_id
+
+
+@pytest.mark.parametrize("presenter_id", ["myra", "raj"])
+def test_g421_17_non_selected_presenter_cannot_create_narration_authority(
+    narration: ModuleType, tmp_path: Path, presenter_id: str
+) -> None:
+    service, principal, binding, project_id = _service(narration, tmp_path, presenter_id)
+    run = service.stage4.walkthrough_runs["run_narration"]
+
+    _assert_code(narration, "AUTHORITY_MISMATCH", lambda: service.create_draft(
+        principal=principal, project_id=project_id, source_run_id=run.run_id,
+        presenter_binding=binding, review_text=narration.canonical_presenter_text(presenter_id),
+    ))
+
+
+def test_g421_17_generic_passing_run_cannot_create_cut1_narration_authority(
+    narration: ModuleType, tmp_path: Path
+) -> None:
+    stage4, principal, project_id = _stage4(governed=False)
+    registry, binding = _registry_binding()
+    service = narration.NarrationService(stage4=stage4, registry=registry)
+
+    _assert_code(narration, "AUTHORITY_MISMATCH", lambda: service.create_draft(
+        principal=principal, project_id=project_id, source_run_id="run_narration",
+        presenter_binding=binding,
+        review_text=stage4.walkthrough_runs["run_narration"].accepted_script_text,
+    ))
 
 
 def _draft(narration: ModuleType, tmp_path: Path, presenter_id: str = "meera", text: str | None = None) -> tuple[Any, Any, Any, str]:
@@ -688,6 +729,35 @@ def test_g368_01_consumed_receipt_must_remain_exact_and_current(
         narration,
         "AUTHORITY_MISMATCH",
         lambda: service.validate_tts_consumption_receipt(principal=principal, receipt=forged),
+    )
+
+
+@pytest.mark.parametrize("mutation", ["source_run", "request_checksum", "presenter"])
+def test_g421_20_live_receipt_revalidation_rejects_external_authority_drift(
+    narration: ModuleType, tmp_path: Path, mutation: str
+) -> None:
+    service, principal, approved, project_id = _approve(narration, tmp_path)
+    receipt = service.consume_for_tts(
+        principal=principal, project_id=project_id,
+        narration_version=approved.version, narration_checksum=approved.narration_checksum,
+        request_id="consume_current_1", trace_id="trace_current_1",
+    )
+    run = service.stage4.walkthrough_runs["run_narration"]
+    if mutation == "source_run":
+        service.stage4.walkthrough_runs.pop(run.run_id)
+    elif mutation == "request_checksum":
+        service.stage4.walkthrough_runs[run.run_id] = replace(
+            run, request_checksum=checksum_text("changed-after-consumption")
+        )
+    else:
+        service.registry._identities["meera"] = replace(
+            service.registry._identities["meera"], lifecycle=PresenterLifecycle.REVOKED
+        )
+
+    _assert_code(
+        narration,
+        "AUTHORITY_MISMATCH",
+        lambda: service.validate_tts_consumption_receipt(principal=principal, receipt=receipt),
     )
 
 

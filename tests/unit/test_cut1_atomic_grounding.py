@@ -12,7 +12,7 @@ import pytest
 
 from backend.app.narration import NarrationService, canonical_presenter_text
 from backend.app.presenter_registry import load_cut1_presenter_registry
-from backend.app.rag.grounding import GROUNDING_POLICY_VERSION, evaluate_grounding
+from backend.app.rag.grounding import evaluate_grounding
 from backend.app.rag.models import GeneratedScript, ScriptClaim
 from backend.app.stage4 import LocalPrincipal, Stage4Service, generated_script_is_bounded
 
@@ -149,6 +149,45 @@ def _seed_public_stage4(
     return service, principal, project.project_id
 
 
+def _seed_canonical_narration_as_ordinary_knowledge(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> tuple[Stage4Service, LocalPrincipal, str]:
+    monkeypatch.setattr("backend.app.stage4.langfuse_observation", _no_observation)
+    service = Stage4Service(state_path=tmp_path / "stage4-ordinary-canonical.json")
+    service.llm = CanonicalCut1Generator()  # type: ignore[assignment]
+    principal = LocalPrincipal()
+    project = service.create_project(
+        principal=principal,
+        name="NarraTwin AI",
+        description="Adversarial ordinary-knowledge source.",
+        default_audience="GENERAL",
+        default_language="en",
+        idempotency_key="ordinary-project",
+    )
+    document = service.upload_document(
+        principal=principal,
+        project_id=project.project_id,
+        source_filename="approved-narration.md",
+        content_type="text/markdown",
+        data=canonical_presenter_text("meera").replace("\n\n", " ").encode(),
+        idempotency_key="ordinary-upload",
+    )
+    service.approve_document(
+        principal=principal,
+        project_id=project.project_id,
+        document_id=document.document_id,
+        idempotency_key="ordinary-approve",
+    )
+    service.ingest_documents(
+        principal=principal,
+        project_id=project.project_id,
+        document_ids=[document.document_id],
+        idempotency_key="ordinary-ingest",
+    )
+    return service, principal, project.project_id
+
+
 def _generate(
     service: Stage4Service,
     principal: LocalPrincipal,
@@ -179,7 +218,7 @@ def test_red_genuine_accepted_sources_produce_exactly_eighteen_unsupported_claim
     assert run.status == "FAILED"
     assert run.accepted_script_text is None
     assert run.evaluation is not None
-    assert run.evaluation.policy_version == GROUNDING_POLICY_VERSION
+    assert run.evaluation.policy_version == "cut1-atomic-grounding-v1"
     assert run.evaluation.unsupported_claim_count == 18
     assert len(run.evaluation.unsupported_claims) == 18
     assert not run.evaluation.claim_supports
@@ -209,6 +248,51 @@ def test_governed_atomic_facts_complete_the_public_persisted_stage4_path(
     restored = Stage4Service(state_path=service.state_path)
     replayed = _generate(restored, principal, project_id, key="green-generate")
     assert replayed == run
+
+
+def test_g421_17_canonical_narration_as_ordinary_knowledge_fails_closed(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    service, principal, project_id = _seed_canonical_narration_as_ordinary_knowledge(
+        tmp_path, monkeypatch
+    )
+
+    run = _generate(service, principal, project_id, key="ordinary_run")
+
+    assert run.status == "FAILED"
+    assert run.accepted_script_text is None
+    assert run.evaluation is not None
+    assert run.evaluation.policy_version == "cut1-atomic-grounding-v1"
+    assert run.evaluation.unsupported_claim_count == 18
+    assert not run.evaluation.claim_supports
+    restored = Stage4Service(state_path=service.state_path)
+    assert restored.walkthrough_runs[run.run_id] == run
+
+
+def test_g421_18_cut1_generation_never_invokes_ambient_telemetry(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    service, principal, project_id = _seed_public_stage4(
+        tmp_path, monkeypatch, include_facts=True
+    )
+    calls: list[str] = []
+
+    def ambient_capability(**_: object) -> Any:
+        calls.append("ambient")
+        raise AssertionError("Cut 1 consulted ambient telemetry")
+
+    monkeypatch.setenv("LANGFUSE_PUBLIC_KEY", "ambient-public")
+    monkeypatch.setenv("LANGFUSE_SECRET_KEY", "ambient-secret")
+    monkeypatch.setenv("LANGFUSE_HOST", "https://telemetry.invalid")
+    monkeypatch.setattr("backend.app.stage4.with_trace", ambient_capability)
+    monkeypatch.setattr("backend.app.stage4.langfuse_observation", ambient_capability)
+
+    run = _generate(service, principal, project_id, key="zero-ambient-telemetry")
+
+    assert run.status == "COMPLETED"
+    assert calls == []
 
 
 @pytest.mark.parametrize(
@@ -333,7 +417,15 @@ def test_reviewed_claim_propositions_bind_complete_independent_sources() -> None
         "src_readme_span_04",
         "src_portability_span_01",
         "src_portability_span_02",
+        "src_prd_span_01",
     ]
+    prd_span = next(
+        span
+        for span in sources["docs/PRD.md"]["spans"]
+        if span["spanId"] == "src_prd_span_01"
+    )
+    assert "turns approved project knowledge into audience-aware, grounded scripts" in prd_span["text"]
+    assert "first usable product slice must prove the trust loop" in prd_span["text"]
     assert propositions["fact_013"]["sourceSpanIds"] == [
         "src_owner_421_meera",
     ]
@@ -388,7 +480,9 @@ def test_cut1_owner_selection_refuses_non_selected_presenters(
     assert run.status == "FAILED"
     assert run.accepted_script_text is None
     assert run.evaluation is not None
-    assert run.evaluation.unsupported_claim_count == 16
+    assert run.evaluation.policy_version == "cut1-atomic-grounding-v1"
+    assert run.evaluation.unsupported_claim_count == 18
+    assert not run.evaluation.claim_supports
 
 
 def test_atomic_fact_asset_bytes_are_immutable(tmp_path: Path) -> None:
@@ -500,15 +594,9 @@ def test_runtime_rejects_foreign_or_changed_project_facts(
     )
 
     assert evaluation.evaluation_status == "FAILED"
-    assert evaluation.unsupported_claim_count == 16
-    assert {support.claim_id for support in evaluation.claim_supports} == {
-        "claim_003",
-        "claim_005",
-    }
-    assert all(not support.proposition_ids for support in evaluation.claim_supports)
-    assert all(
-        support.proposition_evidence_checksum is None for support in evaluation.claim_supports
-    )
+    assert evaluation.policy_version == "cut1-atomic-grounding-v1"
+    assert evaluation.unsupported_claim_count == 18
+    assert not evaluation.claim_supports
 
 
 def test_restore_rejects_tampered_persisted_proposition_evidence(
