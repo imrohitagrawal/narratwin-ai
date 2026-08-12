@@ -3,6 +3,7 @@ from __future__ import annotations
 import importlib.util
 import hashlib
 import json
+import shutil
 import subprocess
 from pathlib import Path
 from types import ModuleType
@@ -53,6 +54,22 @@ stage8: Any = load(REPO / "scripts/quality/check_stage8_docs.py", "stage8_with_c
 
 
 EXPECTED = {
+    "stage8-424-master-program-authority-prelog": {
+        "docs/governance/NARRATWIN_MASTER_PROGRAM_V1.md",
+        "docs/governance/narratwin-master-program-v1.json",
+        "docs/governance/preflights/issue-424.json",
+        "docs/reviews/ISSUE_424_EXECUTION_SPEC_REVIEW.md",
+        "docs/reviews/ISSUE_424_CUT1_FALSE_SUCCESS_REVIEW.md",
+        "docs/reviews/ISSUE_424_PLATFORM_SECURITY_LEARNING_REVIEW.md",
+        "docs/ADR/0059-master-program-authority-and-route-bootstrap.md",
+        "docs/STAGE_ISSUE_PLAN.md",
+        "docs/STATUS.md",
+        "docs/TRACEABILITY.md",
+        "scripts/quality/stage8_cut1_routes.py",
+        "tests/unit/test_stage8_cut1_routes.py",
+        "scripts/guardrails_check.py",
+        "tests/unit/test_guardrails_check.py",
+    },
     "stage8-421-cut1-atomic-project-facts": {
         "docs/governance/preflights/issue-421.json",
         "docs/governance/cut1-project-facts-v1.json",
@@ -509,6 +526,249 @@ def test_routes_are_exact_pre_registered_and_issue386_preflight_matches() -> Non
     assert routes.TOTAL_LIMITS[routes.ISSUE421_BRANCH] == 4000
     assert routes.TEXT_LIMITS[routes.ISSUE421_BRANCH] == issue421["change_budget"]["per_file_charged_lines"]
 
+    issue424 = json.loads((REPO / "docs/governance/preflights/issue-424.json").read_text(encoding="utf-8"))
+    issue424_branch = "stage8-424-master-program-authority-prelog"
+    issue424_route = EXPECTED[issue424_branch]
+    assert issue424["branch"] == issue424_branch
+    assert set(issue424["scope"]["required"]) == issue424_route
+    assert set(issue424) == {
+        "schema_version", "issue_number", "branch", "objective", "status_decision", "scope"
+    }
+    assert issue424["schema_version"] == "GovernancePreflightV1"
+    assert issue424["status_decision"] == "update-minimally"
+    assert set(issue424["scope"]["allowed_prefixes"]) == issue424_route
+    assert len(issue424_route) == 14
+    assert routes.ROUTE_ISSUES[issue424_branch] == 424
+    assert routes.TOTAL_LIMITS[issue424_branch] == 8500
+    assert routes.TEXT_LIMITS[issue424_branch]["scripts/quality/stage8_cut1_routes.py"] == 300
+    assert routes.TEXT_LIMITS[issue424_branch]["scripts/guardrails_check.py"] == 100
+    assert routes.TEXT_LIMITS[issue424_branch]["tests/unit/test_guardrails_check.py"] == 180
+
+
+def issue424_fixture(tmp_path: Path) -> Path:
+    for relative in (
+        "docs/governance/NARRATWIN_MASTER_PROGRAM_V1.md",
+        "docs/governance/narratwin-master-program-v1.json",
+        "docs/governance/preflights/issue-424.json",
+    ):
+        destination = tmp_path / relative
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(REPO / relative, destination)
+    return tmp_path
+
+
+def test_issue424_controller_and_proposal_binding_are_exact_and_fail_closed(tmp_path: Path) -> None:
+    repository = issue424_fixture(tmp_path)
+    assert routes.issue424_governance_failures(repository) == []
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "expected"),
+    [
+        ("schemaVersion", "MasterProgramBindingV1", "schemaVersion"),
+        ("controllerIssue", 425, "controllerIssue"),
+        ("documentSha256", "0" * 64, "SHA-256"),
+        ("documentBytes", 1, "byte count"),
+        ("documentLines", 1, "line count"),
+        ("hasTrailingNewline", False, "trailing-newline"),
+        ("documentPath", "docs/governance/other.md", "documentPath"),
+        ("numberedSections", 41, "numberedSections"),
+        ("firstNumberedSection", "1. Wrong", "firstNumberedSection"),
+        ("lastNumberedSection", "42. Wrong", "lastNumberedSection"),
+        ("acceptedBaseSha", "0" * 40, "accepted base"),
+        ("bootstrapBranch", "stage8-424-master-program-authority-prelog-extra", "branch"),
+        ("proposalState", "ACCEPTED", "proposal state"),
+        ("implementationAuthority", "ACTIVE", "implementation authority"),
+        ("activeProgramRoute", {"route": "forbidden"}, "active route"),
+    ],
+)
+def test_issue424_binding_mutations_fail(
+    tmp_path: Path, field: str, value: object, expected: str
+) -> None:
+    repository = issue424_fixture(tmp_path)
+    path = repository / "docs/governance/narratwin-master-program-v1.json"
+    binding = json.loads(path.read_text(encoding="utf-8"))
+    binding[field] = value
+    path.write_text(json.dumps(binding, indent=2) + "\n", encoding="utf-8")
+    assert any(expected in failure for failure in routes.issue424_governance_failures(repository))
+
+
+def test_issue424_binding_rejects_unknown_fields(tmp_path: Path) -> None:
+    repository = issue424_fixture(tmp_path)
+    path = repository / "docs/governance/narratwin-master-program-v1.json"
+    binding = json.loads(path.read_text(encoding="utf-8"))
+    binding["unreviewedBypass"] = True
+    path.write_text(json.dumps(binding, indent=2) + "\n", encoding="utf-8")
+    assert any("unknown binding field" in failure for failure in routes.issue424_governance_failures(repository))
+
+
+def test_issue424_coordinated_controller_and_binding_mutation_fails(tmp_path: Path) -> None:
+    repository = issue424_fixture(tmp_path)
+    controller_path = repository / "docs/governance/NARRATWIN_MASTER_PROGRAM_V1.md"
+    original = controller_path.read_text(encoding="utf-8")
+    controller = original.replace(
+        "Implementation is forbidden when its governing phase specification",
+        "Implementation is permitted when its governing phase specification",
+        1,
+    )
+    assert controller != original
+    controller_path.write_text(controller, encoding="utf-8")
+    controller_bytes = controller_path.read_bytes()
+    binding_path = repository / "docs/governance/narratwin-master-program-v1.json"
+    binding = json.loads(binding_path.read_text(encoding="utf-8"))
+    binding.update(
+        documentSha256=hashlib.sha256(controller_bytes).hexdigest(),
+        documentBytes=len(controller_bytes),
+        documentLines=len(controller_bytes.splitlines()),
+        hasTrailingNewline=controller_bytes.endswith(b"\n"),
+    )
+    binding_path.write_text(json.dumps(binding, indent=2) + "\n", encoding="utf-8")
+    assert any(
+        "pinned controller fingerprint" in failure
+        for failure in routes.issue424_governance_failures(repository)
+    )
+
+
+@pytest.mark.parametrize(
+    ("canonical", "duplicate"),
+    [
+        ('"proposalState": "PROPOSED",', '"proposalState": "ACCEPTED",'),
+        (
+            '"authorityTransition": {',
+            '"authorityTransition": {"routeActivationFromProposal": "PERMITTED"},',
+        ),
+        (
+            '"routeActivationGuard": "This proposal never grants execution authority.',
+            '"routeActivationGuard": "BYPASS",',
+        ),
+    ],
+)
+def test_issue424_binding_rejects_duplicate_authority_members(
+    tmp_path: Path, canonical: str, duplicate: str
+) -> None:
+    repository = issue424_fixture(tmp_path)
+    path = repository / "docs/governance/narratwin-master-program-v1.json"
+    text = path.read_text(encoding="utf-8")
+    path.write_text(text.replace(canonical, f"{duplicate}\n  {canonical}", 1), encoding="utf-8")
+    assert any(
+        "duplicate JSON member" in failure
+        for failure in routes.issue424_governance_failures(repository)
+    )
+
+
+def test_issue424_binding_rejects_nested_duplicate_transition_member(tmp_path: Path) -> None:
+    repository = issue424_fixture(tmp_path)
+    path = repository / "docs/governance/narratwin-master-program-v1.json"
+    text = path.read_text(encoding="utf-8").replace(
+        '"decisionPath": "docs/governance/narratwin-master-program-authority-decision-v1.json",',
+        '"decisionPath": "docs/governance/bypass.json",\n'
+        '    "decisionPath": "docs/governance/narratwin-master-program-authority-decision-v1.json",',
+        1,
+    )
+    path.write_text(text, encoding="utf-8")
+    assert any(
+        "duplicate JSON member" in failure
+        for failure in routes.issue424_governance_failures(repository)
+    )
+
+
+def test_issue424_heading_and_waist_up_asset_mutations_fail(tmp_path: Path) -> None:
+    repository = issue424_fixture(tmp_path)
+    path = repository / "docs/governance/NARRATWIN_MASTER_PROGRAM_V1.md"
+    controller = path.read_text(encoding="utf-8")
+    controller = controller.replace(
+        "## 42. Final pre-log review gate", "## 99. Final pre-log review gate"
+    ).replace("waist-up derivative path and SHA-256", "derivative path and SHA-256")
+    path.write_text(controller, encoding="utf-8")
+    failures = routes.issue424_governance_failures(repository)
+    assert any("numbered heading" in failure for failure in failures)
+    assert any("waist-up derivative" in failure for failure in failures)
+
+
+@pytest.mark.parametrize(
+    ("mutate"),
+    [
+        lambda text: text.replace("## 1. Purpose, claims, and execution authority\n", "", 1),
+        lambda text: text.replace("## 1. Purpose, claims, and execution authority", "## 1. Wrong title", 1),
+        lambda text: text.replace(
+            "## 1. Purpose, claims, and execution authority", "## __FIRST__", 1
+        ).replace(
+            "## 2. Capability and evidence classification", "## 1. Purpose, claims, and execution authority", 1
+        ).replace("## __FIRST__", "## 2. Capability and evidence classification", 1),
+    ],
+)
+def test_issue424_heading_count_title_and_order_mutations_fail(
+    tmp_path: Path, mutate: Any
+) -> None:
+    repository = issue424_fixture(tmp_path)
+    path = repository / "docs/governance/NARRATWIN_MASTER_PROGRAM_V1.md"
+    path.write_text(mutate(path.read_text(encoding="utf-8")), encoding="utf-8")
+    assert any("numbered heading" in failure for failure in routes.issue424_governance_failures(repository))
+
+
+def test_issue424_canonical_preflight_rejects_schema_and_scope_mutations(tmp_path: Path) -> None:
+    repository = issue424_fixture(tmp_path)
+    path = repository / "docs/governance/preflights/issue-424.json"
+    preflight = json.loads(path.read_text(encoding="utf-8"))
+    preflight["unreviewed_extension"] = True
+    preflight["scope"].pop("allowed_prefixes", None)
+    path.write_text(json.dumps(preflight, indent=2) + "\n", encoding="utf-8")
+    failures = routes.issue424_governance_failures(repository)
+    assert any("GovernancePreflightV1" in failure for failure in failures)
+
+
+@pytest.mark.parametrize(
+    ("canonical", "duplicate"),
+    [
+        ('"issue_number": 424,', '"issue_number": 999,'),
+        ('"status_decision": "update-minimally",', '"status_decision": "activate",'),
+        ('"scope": {', '"scope": {"required": [], "allowed_prefixes": []},'),
+    ],
+)
+def test_issue424_preflight_rejects_duplicate_identity_status_and_scope_members(
+    tmp_path: Path, canonical: str, duplicate: str
+) -> None:
+    repository = issue424_fixture(tmp_path)
+    path = repository / "docs/governance/preflights/issue-424.json"
+    text = path.read_text(encoding="utf-8")
+    path.write_text(text.replace(canonical, f"{duplicate}\n  {canonical}", 1), encoding="utf-8")
+    assert any(
+        "duplicate JSON member" in failure
+        for failure in routes.issue424_governance_failures(repository)
+    )
+
+
+def test_issue424_preflight_rejects_nested_duplicate_required_member(tmp_path: Path) -> None:
+    repository = issue424_fixture(tmp_path)
+    path = repository / "docs/governance/preflights/issue-424.json"
+    text = path.read_text(encoding="utf-8").replace(
+        '"required": [',
+        '"required": [],\n    "required": [',
+        1,
+    )
+    path.write_text(text, encoding="utf-8")
+    assert any(
+        "duplicate JSON member" in failure
+        for failure in routes.issue424_governance_failures(repository)
+    )
+
+
+def test_issue424_proposal_requires_a_separate_future_decision_record(tmp_path: Path) -> None:
+    repository = issue424_fixture(tmp_path)
+    path = repository / "docs/governance/narratwin-master-program-v1.json"
+    binding = json.loads(path.read_text(encoding="utf-8"))
+    binding["authorityTransition"]["decisionPath"] = binding["documentPath"]
+    path.write_text(json.dumps(binding, indent=2) + "\n", encoding="utf-8")
+    assert any("separate authority decision" in failure for failure in routes.issue424_governance_failures(repository))
+
+
+def test_issue424_proposal_rejects_a_decision_record_in_the_bootstrap_pr(tmp_path: Path) -> None:
+    repository = issue424_fixture(tmp_path)
+    decision = repository / routes.ISSUE424_TRANSITION["decisionPath"]
+    decision.write_text("{}\n", encoding="utf-8")
+    assert any("must not be this proposal or exist" in failure
+               for failure in routes.issue424_governance_failures(repository))
+
 
 def test_issue421_route_requires_exact_accepted_base_and_branch_point() -> None:
     calls: list[list[str]] = []
@@ -643,6 +903,39 @@ def test_issue421_route_requires_exact_accepted_base_and_branch_point() -> None:
     module_source = MODULE_PATH.read_text(encoding="utf-8")
     assert "from scripts.quality.check_stage8_docs" not in module_source
     assert "import scripts.quality.check_stage8_docs" not in module_source
+
+
+def test_issue424_bootstrap_route_requires_exact_accepted_base_and_branch_point() -> None:
+    branch = "stage8-424-master-program-authority-prelog"
+    expected_base = "afcf0325c3ec925b68b770eda0bb8c839bcce4dd"
+    calls: list[list[str]] = []
+
+    def good(args: list[str]) -> subprocess.CompletedProcess[str]:
+        calls.append(args)
+        return completed(args, out=expected_base + "\n")
+
+    assert routes.ISSUE424_BASE == expected_base
+    assert routes.route_base(good, branch) == expected_base
+    assert calls == [
+        ["git", "rev-parse", f"{expected_base}^{{commit}}"],
+        ["git", "merge-base", expected_base, "HEAD"],
+        ["git", "merge-base", "origin/main", "HEAD"],
+    ]
+
+    drifted = iter(
+        (
+            completed([], out=expected_base + "\n"),
+            completed([], out=expected_base + "\n"),
+            completed([], out="a" * 40 + "\n"),
+        )
+    )
+    error = pytest.raises(
+        RuntimeError,
+        routes.route_base,
+        lambda _: next(drifted),
+        branch,
+    )
+    assert "Issue #424 fixed base" in str(error.value)
 
 
 def test_issue415_route_is_frozen_to_the_authorized_recovery_paths() -> None:

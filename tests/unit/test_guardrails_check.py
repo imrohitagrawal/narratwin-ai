@@ -2078,6 +2078,36 @@ def test_issue353_recovery_branch_is_exact_and_reference_only(
     assert "Stage 8 pull requests must close the canonical Stage 8 issue" in "\n".join(near_match)
 
 
+def test_issue424_master_program_branch_is_exact_and_reference_only(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    branch = "stage8-424-master-program-authority-prelog"
+    assert run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Bind the master program proposal",
+        body="Refs #424",
+        head_ref=branch,
+    ) == []
+    closing = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Bind the master program proposal",
+        body="Refs #424\nCloses #13",
+        head_ref=branch,
+    )
+    assert "Pull request title/body/commit messages must use reference-only issue wording." in closing
+    near_match = run_issue_link_check(
+        tmp_path,
+        monkeypatch,
+        title="Near match",
+        body="Refs #424",
+        head_ref=branch + "-extra",
+    )
+    assert "Stage 8 pull requests must close the canonical Stage 8 issue" in "\n".join(near_match)
+
+
 def test_force_pull_request_guardrails_enforced_in_non_pull_request_context(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,

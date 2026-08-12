@@ -1,10 +1,14 @@
 """Fail-closed Stage 8 scope and budget routes for governed Cut 1 prerequisites."""
 from __future__ import annotations
 
+import hashlib
+import json
 import re
 import stat
 from pathlib import Path
 from typing import Any, Callable
+
+from scripts.governance_preflight_v1 import validate_governance_preflight
 
 ISSUE386_BRANCH = "cut1-process-386-modular-route-enforcement"
 ISSUE413_BRANCH = "cut1-process-413-frontend-runtime-openssl"
@@ -27,14 +31,32 @@ ISSUE368_QUOTA_FIX_BRANCH = "stage8-368-google-tts-quota-project-binding-fix"
 ISSUE415_BRANCH = "stage8-415-pr-body-live-state-reconciliation"
 ISSUE415_CORRECTION_BRANCH = "stage8-415-pr-body-consistency-canary-fix"
 ISSUE421_BRANCH = "stage8-421-cut1-atomic-project-facts"
+ISSUE424_BRANCH = "stage8-424-master-program-authority-prelog"
 ISSUE386_BASE = "48fc32a2689c9bbc03742d774f3eadb8a500dafc"
 ISSUE368_BASE = "ef9cabc23762560912d99f10831241b8a65b869c"
 ISSUE368_PROMPT_BASE = "ba77d59b193da8064d67261e13fb50756c2bd9e8"
 ISSUE368_IMPLEMENTATION_BASE = "6766da34d73e301358f84f8eefb0985927292a26"
 ISSUE368_QUOTA_FIX_BASE = "9c165f739788fb0f09b315673f9125d700d6a96b"
 ISSUE421_BASE = "a868137fab607ae75d4b272301e9fc52b898e15c"
+ISSUE424_BASE = "afcf0325c3ec925b68b770eda0bb8c839bcce4dd"
 
 ROUTES = {
+    ISSUE424_BRANCH: {
+        "docs/governance/NARRATWIN_MASTER_PROGRAM_V1.md",
+        "docs/governance/narratwin-master-program-v1.json",
+        "docs/governance/preflights/issue-424.json",
+        "docs/reviews/ISSUE_424_EXECUTION_SPEC_REVIEW.md",
+        "docs/reviews/ISSUE_424_CUT1_FALSE_SUCCESS_REVIEW.md",
+        "docs/reviews/ISSUE_424_PLATFORM_SECURITY_LEARNING_REVIEW.md",
+        "docs/ADR/0059-master-program-authority-and-route-bootstrap.md",
+        "docs/STAGE_ISSUE_PLAN.md",
+        "docs/STATUS.md",
+        "docs/TRACEABILITY.md",
+        "scripts/quality/stage8_cut1_routes.py",
+        "tests/unit/test_stage8_cut1_routes.py",
+        "scripts/guardrails_check.py",
+        "tests/unit/test_guardrails_check.py",
+    },
     ISSUE421_BRANCH: {
         "docs/governance/preflights/issue-421.json",
         "docs/governance/cut1-project-facts-v1.json",
@@ -340,11 +362,11 @@ ROUTES = {
         "docs/THIRD_PARTY_NOTICES.md",
     },
 }
-ROUTE_ISSUES = {ISSUE421_BRANCH: 421, ISSUE415_BRANCH: 415, ISSUE415_CORRECTION_BRANCH: 415, ISSUE413_BRANCH: 413, ISSUE368_ADAPTER_BRANCH: 368, ISSUE368_IMPLEMENTATION_BRANCH: 368, ISSUE368_QUOTA_FIX_BRANCH: 368, ISSUE368_PROMPT_BRANCH: 368, ISSUE368_BRANCH: 368, ISSUE405_BRANCH: 405, ISSUE403_BRANCH: 403, ISSUE401_BRANCH: 401, ISSUE396_BRANCH: 396,
+ROUTE_ISSUES = {ISSUE424_BRANCH: 424, ISSUE421_BRANCH: 421, ISSUE415_BRANCH: 415, ISSUE415_CORRECTION_BRANCH: 415, ISSUE413_BRANCH: 413, ISSUE368_ADAPTER_BRANCH: 368, ISSUE368_IMPLEMENTATION_BRANCH: 368, ISSUE368_QUOTA_FIX_BRANCH: 368, ISSUE368_PROMPT_BRANCH: 368, ISSUE368_BRANCH: 368, ISSUE405_BRANCH: 405, ISSUE403_BRANCH: 403, ISSUE401_BRANCH: 401, ISSUE396_BRANCH: 396,
                 ISSUE386_BRANCH: 386, ISSUE385_BRANCH: 385,
                 ISSUE384_BRANCH: 384, ISSUE383_BRANCH: 383, ISSUE397_BRANCH: 397,
                 ISSUE393_BRANCH: 393, ISSUE382_BRANCH: 382, ISSUE367_BRANCH: 367}
-TOTAL_LIMITS = {ISSUE421_BRANCH: 4000, ISSUE415_BRANCH: 5000, ISSUE415_CORRECTION_BRANCH: 800, ISSUE413_BRANCH: 5000, ISSUE368_ADAPTER_BRANCH: 5600, ISSUE368_IMPLEMENTATION_BRANCH: 3600, ISSUE368_QUOTA_FIX_BRANCH: 2800, ISSUE368_PROMPT_BRANCH: 1000, ISSUE368_BRANCH: 3200, ISSUE405_BRANCH: 800, ISSUE403_BRANCH: 650, ISSUE401_BRANCH: 600, ISSUE396_BRANCH: 500,
+TOTAL_LIMITS = {ISSUE424_BRANCH: 8500, ISSUE421_BRANCH: 4000, ISSUE415_BRANCH: 5000, ISSUE415_CORRECTION_BRANCH: 800, ISSUE413_BRANCH: 5000, ISSUE368_ADAPTER_BRANCH: 5600, ISSUE368_IMPLEMENTATION_BRANCH: 3600, ISSUE368_QUOTA_FIX_BRANCH: 2800, ISSUE368_PROMPT_BRANCH: 1000, ISSUE368_BRANCH: 3200, ISSUE405_BRANCH: 800, ISSUE403_BRANCH: 650, ISSUE401_BRANCH: 600, ISSUE396_BRANCH: 500,
                 ISSUE386_BRANCH: 700, ISSUE385_BRANCH: 350,
                 ISSUE384_BRANCH: 500, ISSUE383_BRANCH: 700, ISSUE397_BRANCH: 500,
                 ISSUE393_BRANCH: 700, ISSUE382_BRANCH: 3200, ISSUE367_BRANCH: 2000}
@@ -353,6 +375,25 @@ ISSUE383_BINARY_FILES = {
     "frontend/public/demo/raj-synthetic-presenter.webp",
 }
 TEXT_LIMITS = {
+    ISSUE424_BRANCH: {
+        path: {
+            "docs/governance/NARRATWIN_MASTER_PROGRAM_V1.md": 5000,
+            "docs/governance/narratwin-master-program-v1.json": 180,
+            "docs/governance/preflights/issue-424.json": 500,
+            "docs/reviews/ISSUE_424_EXECUTION_SPEC_REVIEW.md": 500,
+            "docs/reviews/ISSUE_424_CUT1_FALSE_SUCCESS_REVIEW.md": 500,
+            "docs/reviews/ISSUE_424_PLATFORM_SECURITY_LEARNING_REVIEW.md": 500,
+            "docs/ADR/0059-master-program-authority-and-route-bootstrap.md": 400,
+            "docs/STAGE_ISSUE_PLAN.md": 250,
+            "docs/STATUS.md": 250,
+            "docs/TRACEABILITY.md": 250,
+            "scripts/quality/stage8_cut1_routes.py": 300,
+            "tests/unit/test_stage8_cut1_routes.py": 320,
+            "scripts/guardrails_check.py": 100,
+            "tests/unit/test_guardrails_check.py": 180,
+        }[path]
+        for path in ROUTES[ISSUE424_BRANCH]
+    },
     ISSUE421_BRANCH: {
         path: {
             "docs/governance/preflights/issue-421.json": 500,
@@ -549,6 +590,230 @@ TEXT_LIMITS = {
 }
 
 
+ISSUE424_HEADINGS = (
+    "1. Purpose, claims, and execution authority",
+    "2. Capability and evidence classification",
+    "3. Stale-plan and route enforcement",
+    "4. Cut1AuthorityManifestV1",
+    "5. Planning and delivery layers",
+    "6. Roles and separation of duties",
+    "7. Intended-versus-implemented baseline",
+    "8. Architecture and living documentation",
+    "9. Project requirements intake",
+    "10. Composition and provider resolution",
+    "11. Provider-neutral contracts",
+    "12. Credentials and BYOK",
+    "13. Provider governance",
+    "14. Provider switching and migration",
+    "15. Product AI workflow",
+    "16. RAG and knowledge portability",
+    "17. Run lineage",
+    "18. Observability and NFR controls",
+    "19. Controlled feedback and learning",
+    "20. Serialized Cut 1 route",
+    "21. Canonical Meera narration and audio",
+    "22. Meera asset authority",
+    "23. Media calibration",
+    "24. Renderer prequalification",
+    "25. Audition fixture and scoring",
+    "26. Winner lock",
+    "27. PaidOperationV1",
+    "28. ArtifactStore and MediaValidator",
+    "29. Cut1VisualArtifactAcceptanceV1",
+    "30. Independent full renders",
+    "31. Captions",
+    "32. Cut1RealMediaAcceptanceV1",
+    "33. Disclosure policy",
+    "34. UI and browser acceptance",
+    "35. Required negative tests",
+    "36. Task resource ledger",
+    "37. Docker, temporary-file, and process hygiene",
+    "38. Git, main synchronization, and branch cleanup",
+    "39. End-of-process closeout verification",
+    "40. Mandatory plain-English handoff",
+    "41. Completion claims",
+    "42. Final pre-log review gate",
+)
+ISSUE424_CONTROLLER_SHA256 = "c3e3c85bb980aab4f818e80be3db5484e564423d77bc3ab6e81ba736c3af3420"
+ISSUE424_CONTROLLER_BYTES = 40135
+ISSUE424_CONTROLLER_LINES = 887
+ISSUE424_CONTROLLER_HAS_TRAILING_NEWLINE = True
+ISSUE424_BINDING_FIELDS = {
+    "schemaVersion", "controllerId", "controllerIssue", "bootstrapBranch", "acceptedBaseSha",
+    "documentPath", "documentSha256", "documentBytes", "documentLines", "hasTrailingNewline",
+    "numberedSections", "firstNumberedSection", "lastNumberedSection", "proposalState",
+    "implementationAuthority", "activeProgramRoute", "requiredReviews", "requiredApprovals",
+    "predecessor", "authorityTransition", "prohibitedClaims", "routeActivationGuard",
+}
+ISSUE424_REVIEWS = [
+    {"id": "execution-specification", "artifact": "docs/reviews/ISSUE_424_EXECUTION_SPEC_REVIEW.md",
+     "state": "PENDING_INDEPENDENT_REVIEW"},
+    {"id": "cut1-false-success-media", "artifact": "docs/reviews/ISSUE_424_CUT1_FALSE_SUCCESS_REVIEW.md",
+     "state": "PENDING_INDEPENDENT_REVIEW"},
+    {"id": "platform-security-learning", "artifact": "docs/reviews/ISSUE_424_PLATFORM_SECURITY_LEARNING_REVIEW.md",
+     "state": "PENDING_INDEPENDENT_REVIEW"},
+]
+ISSUE424_APPROVALS = {
+    "ownerExactBytes": "PENDING", "eligibleNonAuthorExactHead": "PENDING",
+    "referenceOnlyMergeWording": "PENDING",
+}
+ISSUE424_TRANSITION = {
+    "decisionSchemaVersion": "MasterProgramAuthorityDecisionV1",
+    "decisionPath": "docs/governance/narratwin-master-program-authority-decision-v1.json",
+    "createdBy": "separately-governed authority-reconciliation-and-stale-route-enforcement child",
+    "requiredDecisionStateForActivation": "ACCEPTED",
+    "requiredEvidence": [
+        "controllerProposalSha256", "exactHeadSha", "ownerExactBytesApproval",
+        "independentReviewDispositions", "eligibleNonAuthorApproval", "mergeSha",
+        "mergedMainChecks", "statusReconciliation", "issueDisposition", "authorityState",
+        "verificationState", "expiryOrRevalidation",
+    ],
+    "routeActivationFromProposal": "PROHIBITED",
+}
+ISSUE424_PREDECESSOR = {
+    "issue": 421, "pullRequest": 422,
+    "reviewedHeadSha": "f68c87c6e82715a903666db13a39131b806837c7",
+    "mergeSha": ISSUE424_BASE,
+    "treeSha": "9c5aa188c84757db9b2c851fc11ab77d503200fe",
+    "mergedMainRun": 31593554541, "mergedMainRunConclusion": "SUCCESS",
+    "issueDisposition": "CLOSED_COMPLETED",
+}
+ISSUE424_PROHIBITED_CLAIMS = [
+    "Cut1DemoCompleteV1", "CUT1_REAL_MEDIA_ACCEPTED", "full plug-and-play",
+    "hosted operation", "production durability", "production readiness",
+    "public availability", "release",
+]
+ISSUE424_ROUTE_GUARD = (
+    "This proposal never grants execution authority. A current ACCEPTED "
+    "MasterProgramAuthorityDecisionV1 created by the separately governed "
+    "authority-reconciliation and stale-route-enforcement child is required before any "
+    "implementation route may activate."
+)
+
+
+class DuplicateJsonMember(ValueError):
+    """Reject authority bytes whose meaning depends on parser key precedence."""
+
+
+def load_json_without_duplicate_members(path: Path) -> Any:
+    def unique(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+        result: dict[str, Any] = {}
+        for key, value in pairs:
+            if key in result:
+                raise DuplicateJsonMember(key)
+            result[key] = value
+        return result
+
+    return json.loads(path.read_text(encoding="utf-8"), object_pairs_hook=unique)
+
+
+def issue424_governance_failures(root: Path) -> list[str]:
+    """Validate the exact controller proposal without network or mutable external state."""
+    failures: list[str] = []
+    controller_path = root / "docs/governance/NARRATWIN_MASTER_PROGRAM_V1.md"
+    binding_path = root / "docs/governance/narratwin-master-program-v1.json"
+    preflight_path = root / "docs/governance/preflights/issue-424.json"
+    try:
+        controller_bytes = controller_path.read_bytes()
+        controller = controller_bytes.decode("utf-8")
+    except (OSError, UnicodeDecodeError):
+        return ["Issue #424 controller bytes are unavailable or invalid UTF-8."]
+    headings = tuple(re.findall(r"^## ([0-9]+\. .+)$", controller, flags=re.MULTILINE))
+    if headings != ISSUE424_HEADINGS:
+        failures.append("Issue #424 numbered heading order/titles differ from the exact 42-section contract.")
+    if "exact waist-up derivative path and SHA-256" not in controller:
+        failures.append("Issue #424 controller omits the exact waist-up derivative path and SHA-256 invariant.")
+    actual_fingerprint = (
+        hashlib.sha256(controller_bytes).hexdigest(),
+        len(controller_bytes),
+        len(controller_bytes.splitlines()),
+        controller_bytes.endswith(b"\n"),
+    )
+    expected_fingerprint = (
+        ISSUE424_CONTROLLER_SHA256,
+        ISSUE424_CONTROLLER_BYTES,
+        ISSUE424_CONTROLLER_LINES,
+        ISSUE424_CONTROLLER_HAS_TRAILING_NEWLINE,
+    )
+    if actual_fingerprint != expected_fingerprint:
+        failures.append("Issue #424 pinned controller fingerprint is inconsistent.")
+
+    try:
+        binding = load_json_without_duplicate_members(binding_path)
+    except DuplicateJsonMember:
+        return failures + ["Issue #424 proposal binding contains a duplicate JSON member."]
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+        return failures + ["Issue #424 proposal binding is unavailable or invalid JSON."]
+    if not isinstance(binding, dict):
+        return failures + ["Issue #424 proposal binding must be a JSON object."]
+    unknown = sorted(set(binding) - ISSUE424_BINDING_FIELDS)
+    missing = sorted(ISSUE424_BINDING_FIELDS - set(binding))
+    if unknown:
+        failures.append(f"Issue #424 unknown binding field: {unknown[0]}")
+    if missing:
+        failures.append(f"Issue #424 missing binding field: {missing[0]}")
+    expected_scalars = {
+        "schemaVersion": "MasterProgramProposalBindingV1",
+        "controllerId": "narratwin-authoritative-master-program-v1",
+        "controllerIssue": 424,
+        "bootstrapBranch": ISSUE424_BRANCH,
+        "acceptedBaseSha": ISSUE424_BASE,
+        "documentPath": "docs/governance/NARRATWIN_MASTER_PROGRAM_V1.md",
+        "documentSha256": ISSUE424_CONTROLLER_SHA256,
+        "documentBytes": ISSUE424_CONTROLLER_BYTES,
+        "documentLines": ISSUE424_CONTROLLER_LINES,
+        "hasTrailingNewline": ISSUE424_CONTROLLER_HAS_TRAILING_NEWLINE,
+        "numberedSections": len(ISSUE424_HEADINGS),
+        "firstNumberedSection": ISSUE424_HEADINGS[0],
+        "lastNumberedSection": ISSUE424_HEADINGS[-1],
+        "proposalState": "PROPOSED",
+        "implementationAuthority": "NONE",
+        "activeProgramRoute": None,
+    }
+    labels = {
+        "documentSha256": "SHA-256", "documentBytes": "byte count",
+        "documentLines": "line count", "hasTrailingNewline": "trailing-newline state",
+        "acceptedBaseSha": "accepted base", "bootstrapBranch": "branch",
+        "proposalState": "proposal state", "implementationAuthority": "implementation authority",
+        "activeProgramRoute": "active route",
+    }
+    for field, expected in expected_scalars.items():
+        if binding.get(field) != expected:
+            failures.append(f"Issue #424 binding {labels.get(field, field)} is inconsistent.")
+    if binding.get("requiredReviews") != ISSUE424_REVIEWS:
+        failures.append("Issue #424 binding review contract is inconsistent.")
+    if binding.get("requiredApprovals") != ISSUE424_APPROVALS:
+        failures.append("Issue #424 binding approval contract is inconsistent.")
+    if binding.get("authorityTransition") != ISSUE424_TRANSITION:
+        failures.append("Issue #424 separate authority decision transition is inconsistent.")
+    if binding.get("predecessor") != ISSUE424_PREDECESSOR:
+        failures.append("Issue #424 binding predecessor evidence is inconsistent.")
+    if binding.get("prohibitedClaims") != ISSUE424_PROHIBITED_CLAIMS:
+        failures.append("Issue #424 binding prohibited-claim contract is inconsistent.")
+    if binding.get("routeActivationGuard") != ISSUE424_ROUTE_GUARD:
+        failures.append("Issue #424 binding route-activation guard is inconsistent.")
+    decision_path = str(ISSUE424_TRANSITION["decisionPath"])
+    if decision_path == binding.get("documentPath") or (root / decision_path).exists():
+        failures.append("Issue #424 separate authority decision record must not be this proposal or exist in this PR.")
+
+    try:
+        preflight = load_json_without_duplicate_members(preflight_path)
+    except DuplicateJsonMember:
+        failures.append("Issue #424 preflight contains a duplicate JSON member.")
+        preflight = None
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+        preflight = None
+    findings = validate_governance_preflight(
+        preflight,
+        context={"issue_number": 424, "branch": ISSUE424_BRANCH,
+                 "changed_files": sorted(ROUTES[ISSUE424_BRANCH])},
+    )
+    if findings:
+        codes = ", ".join(finding.code for finding in findings)
+        failures.append(f"Issue #424 GovernancePreflightV1 failed closed: {codes}")
+    return failures
+
+
 def parse_paths_z(output: str) -> list[str]:
     if not output:
         return []
@@ -583,6 +848,7 @@ def parse_name_status_z(output: str) -> list[str]:
 
 def route_base(run: Callable[[list[str]], Any], branch: str) -> str:
     fixed_routes = {
+        ISSUE424_BRANCH: (424, ISSUE424_BASE),
         ISSUE421_BRANCH: (421, ISSUE421_BASE),
         ISSUE368_IMPLEMENTATION_BRANCH: (368, ISSUE368_IMPLEMENTATION_BASE),
         ISSUE368_QUOTA_FIX_BRANCH: (368, ISSUE368_QUOTA_FIX_BASE),
@@ -598,7 +864,7 @@ def route_base(run: Callable[[list[str]], Any], branch: str) -> str:
         fixed_value = str(fixed.stdout).strip()
         common_value = str(common.stdout).strip()
         branch_point_invalid = False
-        if branch in {ISSUE421_BRANCH, ISSUE368_IMPLEMENTATION_BRANCH,
+        if branch in {ISSUE424_BRANCH, ISSUE421_BRANCH, ISSUE368_IMPLEMENTATION_BRANCH,
                       ISSUE368_QUOTA_FIX_BRANCH, ISSUE368_BRANCH,
                       ISSUE368_PROMPT_BRANCH}:
             branch_point = run(["git", "merge-base", "origin/main", "HEAD"])
@@ -704,6 +970,8 @@ def check_exact_route(
     issue = ROUTE_ISSUES[branch]
     files = ROUTES[branch]
     failures.extend(f"Issue #{issue} route is missing required path: {path}" for path in sorted(files - changed))
+    if branch == ISSUE424_BRANCH:
+        failures.extend(issue424_governance_failures(root))
     try:
         base = route_base(run, branch)
         total, charges = route_text_charges(run, base, set(TEXT_LIMITS[branch]))

@@ -2645,3 +2645,41 @@ After reviewed merge and merged-main checks, Issue #368 may prepare one
 isolated, authoritative Meera public-lifecycle package. Dormant Myra/Raj text
 variants create no Cut 1 authority. Issue #368 may then proceed only under its
 existing egress, attempts, spend, validation, and exact-hash listening gates.
+
+## Issue #424 — master program authority pre-log
+
+PR #422 merged from reviewed head
+`f68c87c6e82715a903666db13a39131b806837c7` as
+`afcf0325c3ec925b68b770eda0bb8c839bcce4dd`; merged-main quality run
+`31593554541` passed and Issue #421 closed. That closeout satisfies the
+grounding predecessor but does not authorize Issue #368 to resume under its
+historical route.
+
+Issue #424 is the governance-only bootstrap for the OWNER-supplied NarraTwin
+master program. Branch `stage8-424-master-program-authority-prelog` starts at
+the exact PR #422 merge, owns the fourteen paths in its OWNER-amended canonical
+GovernancePreflightV1, and has an 8,500 charged-line ceiling. Its first commit
+is the preflight alone. Durable RED commits `837d8f4`, `cca266b`, and `2baa0a3`
+prove unrecognized route, base drift, missing proposal binding enforcement, and
+incorrect Issue #13 closing semantics before their implementations.
+
+The route preserves and SHA-256-binds all forty-two master-controller sections,
+adds execution-specification, Cut 1 false-success/media, and platform/security/
+learning review surfaces, records ADR 0059, validates the closed preflight
+schema and controller/binding mutations, and reconciles status and traceability.
+The binding is an immutable proposal; a separate later
+`MasterProgramAuthorityDecisionV1` is required before activation. Review
+surfaces remain `PENDING` until completed by eligible
+independent reviewers; they cannot self-certify.
+
+This pre-log creates no `ActiveProgramRouteV1`, `Cut1AuthorityManifestV1`,
+phase implementation specification, guardrail/runtime behavior, provider
+activation, egress, spend, audio, video, renderer, UI real-media acceptance,
+deployment, publication, release, public availability, or production-readiness
+authority. Issues #366/#368/#369/#370/#371 are historical/planned inputs only.
+
+Only after exact-byte OWNER approval, all independent reviews, exact-head
+eligible non-author approval, merge, merged-main checks, issue closeout, and a
+new separately governed child may authority reconciliation and stale-route
+enforcement begin. Any controller-byte/hash drift after approval stops the
+route. Release remains No-Go.

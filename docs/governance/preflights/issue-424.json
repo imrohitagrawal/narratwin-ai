@@ -1,0 +1,47 @@
+{
+  "schema_version": "GovernancePreflightV1",
+  "issue_number": 424,
+  "branch": "stage8-424-master-program-authority-prelog",
+  "objective": "Create the governance-only exact-byte proposal package for the NarraTwin master program. Conform this artifact to canonical GovernancePreflightV1, bind the controller through a fail-closed Stage 8 validator, preserve three independent review surfaces, make Issue #424 reference-only until merged-main closeout, and require a separate future authority-decision record before route activation. No runtime, provider, credential, egress, paid operation, audio, video, deployment, publication, release, or production authority is created.",
+  "status_decision": "update-minimally",
+  "scope": {
+    "required": [
+      "docs/governance/NARRATWIN_MASTER_PROGRAM_V1.md",
+      "docs/governance/narratwin-master-program-v1.json",
+      "docs/governance/preflights/issue-424.json",
+      "docs/reviews/ISSUE_424_EXECUTION_SPEC_REVIEW.md",
+      "docs/reviews/ISSUE_424_CUT1_FALSE_SUCCESS_REVIEW.md",
+      "docs/reviews/ISSUE_424_PLATFORM_SECURITY_LEARNING_REVIEW.md",
+      "docs/ADR/0059-master-program-authority-and-route-bootstrap.md",
+      "docs/STAGE_ISSUE_PLAN.md",
+      "docs/STATUS.md",
+      "docs/TRACEABILITY.md",
+      "scripts/quality/stage8_cut1_routes.py",
+      "tests/unit/test_stage8_cut1_routes.py",
+      "scripts/guardrails_check.py",
+      "tests/unit/test_guardrails_check.py"
+    ],
+    "allowed_prefixes": [
+      "docs/governance/NARRATWIN_MASTER_PROGRAM_V1.md",
+      "docs/governance/narratwin-master-program-v1.json",
+      "docs/governance/preflights/issue-424.json",
+      "docs/reviews/ISSUE_424_EXECUTION_SPEC_REVIEW.md",
+      "docs/reviews/ISSUE_424_CUT1_FALSE_SUCCESS_REVIEW.md",
+      "docs/reviews/ISSUE_424_PLATFORM_SECURITY_LEARNING_REVIEW.md",
+      "docs/ADR/0059-master-program-authority-and-route-bootstrap.md",
+      "docs/STAGE_ISSUE_PLAN.md",
+      "docs/STATUS.md",
+      "docs/TRACEABILITY.md",
+      "scripts/quality/stage8_cut1_routes.py",
+      "tests/unit/test_stage8_cut1_routes.py",
+      "scripts/guardrails_check.py",
+      "tests/unit/test_guardrails_check.py"
+    ],
+    "forbidden": [
+      "backend/",
+      "frontend/",
+      ".github/workflows/",
+      "docs/governance/narratwin-master-program-authority-decision-v1.json"
+    ]
+  }
+}

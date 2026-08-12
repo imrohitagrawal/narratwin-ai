@@ -1431,10 +1431,34 @@ The amended twenty-one-path route includes `backend/app/narration.py` and
 invalidates every earlier evaluation, approval, receipt, audio, caption, and
 render authority derived from the superseded narration bytes.
 
-When this PR merges, Issue #421 is satisfied and Issue #368 resumes from merged
-main by creating a fresh evaluated Meera narration version, explicit speech
-approval, and a new TTS consumption receipt. Google calls, spend, and WAV count
-remain zero in this repair. Issue #368 and parent #366 remain open; release
-remains No-Go.
-Routine merge facts belong in Issue #421 and its PR comments, not a standalone
-status-only successor PR.
+PR #422 merged from exact reviewed head
+`f68c87c6e82715a903666db13a39131b806837c7` as
+`afcf0325c3ec925b68b770eda0bb8c839bcce4dd`; its merged tree matches the
+reviewed-head tree at `9c5aa188c84757db9b2c851fc11ab77d503200fe`,
+merged-main quality run `31593554541` passed, Issue #421 closed, and its clean
+local/remote branch and worktree were removed. Google calls, spend, WAV, and
+video artifact counts remained zero.
+
+Issue #424 is now the sole next governance action. It preserves and hash-binds
+the OWNER-supplied forty-two-section master program and exposes three
+independent-review surfaces. OWNER amendment `5267766081` authorizes its exact
+fourteen-path/8,500-line correction round. The canonical closed
+GovernancePreflightV1 and Stage 8 validator now bind branch/base/path/budget,
+controller digest/bytes/lines/trailing newline, all ordered headings, proposal
+schema, review states, and inactive authority with negative mutations. The exact
+Issue #424 branch is reference-only and does not close Issue #13. Its proposed
+files do not activate
+`ActiveProgramRouteV1`, `Cut1AuthorityManifestV1`, or any implementation route.
+Issues #366/#368/#369/#370/#371 remain open but their historical prose cannot
+authorize new work while the master authority is pending.
+
+Issue #368 does not resume until Issue #424 receives exact-byte OWNER approval,
+independent review, exact-head non-author approval, merge, merged-main checks,
+and closeout, followed by a separately governed authority-reconciliation and
+stale-route-enforcement child with an approved phase specification and a
+separate current `MasterProgramAuthorityDecisionV1`. Provider
+calls, egress, spend, audio, video, deployment, publication, release, public
+availability, and production readiness remain No-Go.
+
+Routine Issue #424 merge facts belong in its issue/PR comments, not a
+standalone status-only successor PR.
