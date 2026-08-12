@@ -470,6 +470,17 @@ durability, deployment, and release decisions remain outside this trace.
 | Narration evaluation, explicit UTC approval, invalidation chain, and exact consumed-version/validated-receipt key equality | Allow only current latest passing approved text to cross the future Issue #368 boundary | Edit, stale approval/evaluation, replay, revoked presenter, missing receipt, and detached receipt fail closed |
 | Strict bounded restore, redacted events, F382-01..29 tests, and exact route/budgets | Reject malformed/duplicate/unknown/oversized/tampered state and false-pass governance | No API/UI, Stage 4/6 mutation, dependency/provider/network, cloning/likeness, deployment/publication/release/production work |
 
+## Issue #424 master program authority pre-log traceability
+
+| Requirement | Evidence | Preserved boundary |
+|---|---|---|
+| Preserve complete master-controller intent | `docs/governance/NARRATWIN_MASTER_PROGRAM_V1.md` has forty-two ordered numbered sections; `narratwin-master-program-v1.json` binds exact path, bytes, lines, trailing-newline state, and SHA-256 | The controller is proposed authority only and is not an implementation specification |
+| Prevent stale-route implementation | ADR 0059, GovernancePreflightV1 G424-03/G424-09, stage-plan and status reconciliation | Issues #366/#368/#369/#370/#371 remain evidence/planning inputs but cannot activate work before new authority/specification/route |
+| Keep Cut 1 false success mechanically impossible in later specs | `ISSUE_424_CUT1_FALSE_SUCCESS_REVIEW.md` maps audio, presenter, calibration, provider, scoring, paid ambiguity, artifacts, two renders, captions, allOf aggregation, browser authenticity, and disclosure | Review file is a pending human checklist; it proves no current media behavior or acceptance |
+| Preserve platform/security/learning boundaries | `ISSUE_424_PLATFORM_SECURITY_LEARNING_REVIEW.md` covers provider resolution, neutrality, secrets, governance freshness, migration, roles, RAG, lineage, telemetry, data lanes, promotion, cleanup, and honest availability | No provider, credential, egress, spend, runtime, data-processing, or learning automation is activated |
+| Require independent pre-log review | `ISSUE_424_EXECUTION_SPEC_REVIEW.md`, final controller gate, exact-byte OWNER and exact-head non-author approvals | Self-authored documents, CI shape checks, and skill invocation cannot substitute for independent semantic review |
+| Bind operational closeout | Controller Sections 36–40 and preflight task-resource ledger | Cleanup is task-scoped and inventory-backed; unrelated user/shared/evidence resources cannot be removed |
+
 <!-- ISSUE158-SECURITY-HISTORY-V2:BEGIN -->
 
 ## Issue #158 Security History Chronology

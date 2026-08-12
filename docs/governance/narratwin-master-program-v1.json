@@ -1,0 +1,61 @@
+{
+  "schemaVersion": "MasterProgramBindingV1",
+  "controllerId": "narratwin-authoritative-master-program-v1",
+  "controllerIssue": 424,
+  "bootstrapBranch": "stage8-424-master-program-authority-prelog",
+  "acceptedBaseSha": "afcf0325c3ec925b68b770eda0bb8c839bcce4dd",
+  "documentPath": "docs/governance/NARRATWIN_MASTER_PROGRAM_V1.md",
+  "documentSha256": "c356d2d7a2b5d2ad3d84d1e911fdf22b55412346b0c61e3ac39dbeef22c2ae76",
+  "documentBytes": 40092,
+  "documentLines": 886,
+  "hasTrailingNewline": true,
+  "numberedSections": 42,
+  "firstNumberedSection": "1. Purpose, claims, and execution authority",
+  "lastNumberedSection": "42. Final pre-log review gate",
+  "bootstrapState": "PROPOSED",
+  "implementationAuthority": "NONE",
+  "activeProgramRoute": null,
+  "requiredReviews": [
+    {
+      "id": "execution-specification",
+      "artifact": "docs/reviews/ISSUE_424_EXECUTION_SPEC_REVIEW.md",
+      "state": "PENDING_INDEPENDENT_REVIEW"
+    },
+    {
+      "id": "cut1-false-success-media",
+      "artifact": "docs/reviews/ISSUE_424_CUT1_FALSE_SUCCESS_REVIEW.md",
+      "state": "PENDING_INDEPENDENT_REVIEW"
+    },
+    {
+      "id": "platform-security-learning",
+      "artifact": "docs/reviews/ISSUE_424_PLATFORM_SECURITY_LEARNING_REVIEW.md",
+      "state": "PENDING_INDEPENDENT_REVIEW"
+    }
+  ],
+  "requiredApprovals": {
+    "ownerExactBytes": "PENDING",
+    "eligibleNonAuthorExactHead": "PENDING",
+    "referenceOnlyMergeWording": "PENDING"
+  },
+  "predecessor": {
+    "issue": 421,
+    "pullRequest": 422,
+    "reviewedHeadSha": "f68c87c6e82715a903666db13a39131b806837c7",
+    "mergeSha": "afcf0325c3ec925b68b770eda0bb8c839bcce4dd",
+    "treeSha": "9c5aa188c84757db9b2c851fc11ab77d503200fe",
+    "mergedMainRun": 31593554541,
+    "mergedMainRunConclusion": "SUCCESS",
+    "issueDisposition": "CLOSED_COMPLETED"
+  },
+  "prohibitedClaims": [
+    "Cut1DemoCompleteV1",
+    "CUT1_REAL_MEDIA_ACCEPTED",
+    "full plug-and-play",
+    "hosted operation",
+    "production durability",
+    "production readiness",
+    "public availability",
+    "release"
+  ],
+  "routeActivationGuard": "No implementation route may activate until exact-byte OWNER approval, all three independent reviews, exact-head non-author approval, merge, merged-main checks, issue closeout, and a separately governed implementation child are complete."
+}
