@@ -602,6 +602,33 @@ def test_issue424_binding_rejects_unknown_fields(tmp_path: Path) -> None:
     assert any("unknown binding field" in failure for failure in routes.issue424_governance_failures(repository))
 
 
+@pytest.mark.parametrize(
+    ("canonical", "duplicate"),
+    [
+        ('"proposalState": "PROPOSED",', '"proposalState": "ACCEPTED",'),
+        (
+            '"authorityTransition": {',
+            '"authorityTransition": {"routeActivationFromProposal": "PERMITTED"},',
+        ),
+        (
+            '"routeActivationGuard": "This proposal never grants execution authority.',
+            '"routeActivationGuard": "BYPASS",',
+        ),
+    ],
+)
+def test_issue424_binding_rejects_duplicate_authority_members(
+    tmp_path: Path, canonical: str, duplicate: str
+) -> None:
+    repository = issue424_fixture(tmp_path)
+    path = repository / "docs/governance/narratwin-master-program-v1.json"
+    text = path.read_text(encoding="utf-8")
+    path.write_text(text.replace(canonical, f"{duplicate}\n  {canonical}", 1), encoding="utf-8")
+    assert any(
+        "duplicate JSON member" in failure
+        for failure in routes.issue424_governance_failures(repository)
+    )
+
+
 def test_issue424_heading_and_waist_up_asset_mutations_fail(tmp_path: Path) -> None:
     repository = issue424_fixture(tmp_path)
     path = repository / "docs/governance/NARRATWIN_MASTER_PROGRAM_V1.md"
@@ -645,6 +672,27 @@ def test_issue424_canonical_preflight_rejects_schema_and_scope_mutations(tmp_pat
     path.write_text(json.dumps(preflight, indent=2) + "\n", encoding="utf-8")
     failures = routes.issue424_governance_failures(repository)
     assert any("GovernancePreflightV1" in failure for failure in failures)
+
+
+@pytest.mark.parametrize(
+    ("canonical", "duplicate"),
+    [
+        ('"issue_number": 424,', '"issue_number": 999,'),
+        ('"status_decision": "update-minimally",', '"status_decision": "activate",'),
+        ('"scope": {', '"scope": {"required": [], "allowed_prefixes": []},'),
+    ],
+)
+def test_issue424_preflight_rejects_duplicate_identity_status_and_scope_members(
+    tmp_path: Path, canonical: str, duplicate: str
+) -> None:
+    repository = issue424_fixture(tmp_path)
+    path = repository / "docs/governance/preflights/issue-424.json"
+    text = path.read_text(encoding="utf-8")
+    path.write_text(text.replace(canonical, f"{duplicate}\n  {canonical}", 1), encoding="utf-8")
+    assert any(
+        "duplicate JSON member" in failure
+        for failure in routes.issue424_governance_failures(repository)
+    )
 
 
 def test_issue424_proposal_requires_a_separate_future_decision_record(tmp_path: Path) -> None:
