@@ -1414,8 +1414,18 @@ owner-reviewed atomic facts asset, immutable source spans at accepted commit
 complete proposition mappings, retrieved project scope, persistence, restore,
 and Issue #382 receipt lineage.
 
-When this PR merges, Issue #421 is satisfied and Issue #368 resumes authority
-preparation from merged main. Google calls, spend, and WAV count remain zero in
-this repair. Issue #368 and parent #366 remain open; release remains No-Go.
+OWNER comment `5263752038` resolves the three qualitative facts as explicitly
+first-party `OWNER_ASSERTED` evidence, not external corroboration, selects
+Meera, and authorizes the exact 261-word/1,904-byte canonical narration at
+SHA-256 `3edffc6169460546ae0bdee867fdeaf3c0ae383535e2976e0333f39c03ff614e`.
+The amended twenty-one-path route includes `backend/app/narration.py` and
+invalidates every earlier evaluation, approval, receipt, audio, caption, and
+render authority derived from the superseded narration bytes.
+
+When this PR merges, Issue #421 is satisfied and Issue #368 resumes from merged
+main by creating a fresh evaluated Meera narration version, explicit speech
+approval, and a new TTS consumption receipt. Google calls, spend, and WAV count
+remain zero in this repair. Issue #368 and parent #366 remain open; release
+remains No-Go.
 Routine merge facts belong in Issue #421 and its PR comments, not a standalone
 status-only successor PR.

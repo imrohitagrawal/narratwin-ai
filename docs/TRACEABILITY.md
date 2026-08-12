@@ -543,12 +543,13 @@ durability, deployment, and release decisions remain outside this trace.
 
 | Requirement | Implementation | Evidence |
 |---|---|---|
-| Independent atomic facts with immutable source spans | `docs/governance/cut1-project-facts-v1.json`; `backend/app/cut1_grounding.py` | `test_atomic_fact_contract_mutations_fail_closed`; `test_owner_record_span_is_independently_code_bound`; `test_reviewed_claim_propositions_bind_complete_independent_sources` |
+| Classified atomic facts with immutable source spans | `docs/governance/cut1-project-facts-v1.json`; `backend/app/cut1_grounding.py`; OWNER comment `5263752038` | `test_atomic_fact_contract_mutations_fail_closed`; `test_owner_record_span_is_independently_code_bound`; `test_owner_asserted_facts_are_classified_and_separate_from_repository_sources` |
+| Exact canonical Meera revision | `backend/app/narration.py`; 261 words; 1,904 UTF-8 bytes; SHA-256 `3edffc6169460546ae0bdee867fdeaf3c0ae383535e2976e0333f39c03ff614e` | `test_f382_01_03_exact_owner_text_substitutions_and_brand`; earlier derived authority is invalid |
 | Exact complete claim-to-proposition binding | `ClaimMapping`; presenter-specific claim hashes; `ClaimSupport.proposition_ids` | `test_governed_atomic_facts_complete_the_public_persisted_stage4_path` |
 | Caller assertions cannot establish support | empty generated-claim evidence requirement and runtime recomputation | `test_caller_supplied_proposition_metadata_cannot_turn_generic_grounding_green` |
 | Ordinary direct support preserved | style-scoped dispatch in `Stage4Service` | existing retrieval/grounding suites plus the eighteen-unsupported RED control |
 | Restore and checksum binding | canonical Cut 1 redispatch; conditional evaluation `groundingEvidence` | atomic persistence/replay test and evaluation-lineage mutation test |
-| Issue #382 public lifecycle | existing narration service consumes the restored passing Stage 4 graph | three-presenter public lifecycle/receipt test |
+| Issue #382 public lifecycle | existing narration service consumes the restored passing Stage 4 graph | selected-Meera public lifecycle/receipt test; Myra/Raj Cut 1 authority refusal |
 | No branch provider egress | local verifier, deterministic fake generator, telemetry-disabled tests | focused/full gates; provider calls, spend, and WAV count remain zero |
 
 This repair proves deterministic grounding lineage only. Voice quality,

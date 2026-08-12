@@ -1934,10 +1934,12 @@ authenticity against full-state rewrite is claimed.
 
 The existing Stage 4 walkthrough request and response shapes remain
 provider-neutral. For the exact server-owned `CUT1_ATOMIC_FACTS_V1` style, the
-service may apply `cut1-atomic-grounding-v1` only when all eighteen canonical
-claim hashes, the project-owned retrieved facts projection, and every immutable
-source span independently verify. Callers cannot submit a policy checksum or a
-support decision.
+service may apply `cut1-atomic-grounding-v1` only to the selected Meera
+narration when all eighteen canonical claim hashes, the project-owned retrieved
+facts projection, and every immutable source span verify. Evidence records
+distinguish `OWNER_ASSERTED` first-party assertions from narration-independent
+`REPOSITORY_SOURCE` facts; neither label claims external corroboration. Callers
+cannot submit a policy checksum, source classification, or support decision.
 
 Internal persisted claim-support rows add `proposition_ids` and
 `proposition_evidence_checksum`; the existing public response projection does

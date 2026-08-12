@@ -25,7 +25,7 @@ CUT1_SCHEMA_VERSION = "cut1-project-facts-v1"
 FACTS_RELATIVE_PATH = Path("docs/governance/cut1-project-facts-v1.json")
 FACTS_SOURCE_FILENAME = "cut1-project-facts-v1.md"
 ACCEPTED_REVISION = "a868137fab607ae75d4b272301e9fc52b898e15c"
-EXPECTED_ASSET_SHA256 = "b081b7311d4c897de1d27469ffda82a64d3c120783100ee4ef3f8d92a112b62f"
+EXPECTED_ASSET_SHA256 = "f9d443bb42ff00028c725e007f5fd52a06cc1863cac44c0bb2214ace79ac0f6e"
 MAX_CONTRACT_BYTES = 131_072
 MAX_SOURCES = 16
 MAX_SPANS = 64
@@ -41,14 +41,23 @@ EXACT_REPOSITORY_SOURCES = {
     "docs/ADR/0054-cut1-presenter-registry.md",
     "docs/STAGE_ISSUE_PLAN.md",
 }
-OWNER_RECORD = {
-    "locator": "https://github.com/imrohitagrawal/narratwin-ai/issues/366#issuecomment-5197711390",
-    "revision": "comment:5197711390@2026-08-05T21:41:25Z",
-    "byteCount": 4322,
-    "sha256": "30d6afe6758598f172c48a65d4d507662a9ab6eefebbcf492af07052c8e13528",
+OWNER_RECORDS = {
+    "src_owner_5197711390": {
+        "locator": "https://github.com/imrohitagrawal/narratwin-ai/issues/366#issuecomment-5197711390",
+        "revision": "comment:5197711390@2026-08-05T21:41:25Z",
+        "byteCount": 4322,
+        "sha256": "30d6afe6758598f172c48a65d4d507662a9ab6eefebbcf492af07052c8e13528",
+    },
+    "src_owner_5263752038": {
+        "locator": "https://github.com/imrohitagrawal/narratwin-ai/issues/421#issuecomment-5263752038",
+        "revision": "comment:5263752038@2026-08-12T07:36:47Z",
+        "byteCount": 2068,
+        "sha256": "a797084c6f2d6c20ceb33deeb54e1dc7104a65e4adba49a8aa3f4b04ed8f5644",
+    },
 }
 OWNER_RECORD_SPANS = {
     "src_owner_span_01": {
+        "sourceId": "src_owner_5197711390",
         "byteStart": 170,
         "byteEnd": 520,
         "byteCount": 350,
@@ -58,9 +67,30 @@ OWNER_RECORD_SPANS = {
         "NarraTwin AI was conceived, is owned, and is produced by Rohit Agrawal under "
         "StackClimb. Do not use `®`, claim registration, public availability, deployment, "
         "release, or production readiness.",
-    }
+    },
+    "src_owner_421_stackclimb": {
+        "sourceId": "src_owner_5263752038",
+        "byteStart": 347, "byteEnd": 452, "byteCount": 105,
+        "sha256": "4982c4c0b87481d71cb592d12df62faf30223324aba5d884024364b6baf249b7",
+        "text": "“StackClimb is the technology and product innovation brand founded, owned, and led by Rohit Agrawal.”",
+    },
+    "src_owner_421_knowledge": {
+        "sourceId": "src_owner_5263752038",
+        "byteStart": 456, "byteEnd": 587, "byteCount": 131,
+        "sha256": "0580768ac894641157cfa71776a919d5dc32a32c34ee8e7c71165921911e4a5b",
+        "text": "“Complex projects often contain valuable knowledge spread across documents, code, architecture notes, and technical decisions.”",
+    },
+    "src_owner_421_meera": {
+        "sourceId": "src_owner_5263752038",
+        "byteStart": 591, "byteEnd": 678, "byteCount": 87,
+        "sha256": "e15d32954d30cb1160ff942fc862ea33c8a70b254d42db56931c487bd4b08719",
+        "text": "“For Cut 1, Meera is the selected presenter and presents the prepared walkthrough.”",
+    },
 }
 PRESENTERS = ("meera", "myra", "raj")
+SELECTED_PRESENTER = "meera"
+SOURCE_CLASSIFICATIONS = {"OWNER_ASSERTED", "REPOSITORY_SOURCE"}
+OWNER_DIRECT_CLAIMS = {"claim_003", "claim_005"}
 SHA_PATTERN = re.compile(r"[0-9a-f]{64}\Z")
 ID_PATTERN = re.compile(r"(?:src|fact|claim)_[a-z0-9_]{1,64}\Z")
 PREDICATE_PATTERN = re.compile(r"[a-z][a-z0-9_.]{2,80}\Z")
@@ -104,12 +134,12 @@ EXPECTED_REQUIRED_PREDICATES = (
         "application.multilingual",
         "application.captions",
         "application.speech",
-        "application.synthetic_presenter_media",
+        "application.presenter_led_media",
     ),
     (
-        "architecture.provider_neutral",
-        "architecture.technology_substitution",
-        "architecture.workflow_preserved",
+        "architecture.project_understanding_core",
+        "architecture.modular_provider_boundaries",
+        "architecture.technologies_evolve",
     ),
     ("reuse.other_projects",),
     (
@@ -122,7 +152,7 @@ EXPECTED_REQUIRED_PREDICATES = (
         "explanation.decisions",
         "explanation.integrations",
     ),
-    ("experience.prepared_walkthrough", "experience.first_mode", "presenter.identity"),
+    ("experience.prepared_walkthrough", "experience.first_mode", "presenter.selected_meera"),
     ("interactive.future", "interactive.not_current_demo"),
     (
         "experience.stackclimb_product",
@@ -200,6 +230,7 @@ class SourceSpan:
     byte_end: int
     byte_count: int
     sha256: str
+    source_classification: str
 
 
 @dataclass(frozen=True)
@@ -208,6 +239,7 @@ class Proposition:
     statement: str
     predicate_ids: tuple[str, ...]
     source_span_ids: tuple[str, ...]
+    source_classification: str
 
 
 @dataclass(frozen=True)
@@ -231,7 +263,8 @@ class Cut1GroundingContract:
     def project_source_bytes(self) -> bytes:
         return (
             "\n".join(
-                f"{item.proposition_id}: {item.statement}" for item in self.propositions.values()
+                f"{item.proposition_id} [{item.source_classification}]: {item.statement}"
+                for item in self.propositions.values()
             )
             + "\n"
         ).encode()
@@ -249,6 +282,7 @@ class Cut1GroundingContract:
                 {
                     "propositionId": proposition_id,
                     "predicateIds": list(self.propositions[proposition_id].predicate_ids),
+                    "sourceClassification": self.propositions[proposition_id].source_classification,
                     "sourceSpans": [
                         {
                             "byteCount": self.spans[span_id].byte_count,
@@ -256,6 +290,7 @@ class Cut1GroundingContract:
                             "byteStart": self.spans[span_id].byte_start,
                             "sha256": self.spans[span_id].sha256,
                             "sourceId": self.spans[span_id].source_id,
+                            "sourceClassification": self.spans[span_id].source_classification,
                             "spanId": span_id,
                         }
                         for span_id in self.propositions[proposition_id].source_span_ids
@@ -346,18 +381,24 @@ def load_cut1_grounding_contract(*, root: Path) -> Cut1GroundingContract:
     spans: dict[str, SourceSpan] = {}
     source_ids: set[str] = set()
     observed_repository_sources: set[str] = set()
-    owner_record_seen = False
+    observed_owner_records: set[str] = set()
     observed_owner_spans: set[str] = set()
     for source_value in source_rows:
         source = _object(
             source_value,
-            {"sourceId", "locatorType", "locator", "revision", "byteCount", "sha256", "spans"},
+            {
+                "sourceId", "locatorType", "sourceClassification", "locator", "revision",
+                "byteCount", "sha256", "spans",
+            },
         )
         source_id = _identifier(source["sourceId"], prefix="src_")
         locator_type, locator = source["locatorType"], source["locator"]
+        source_classification = source["sourceClassification"]
         if (
             source_id in source_ids
             or locator_type not in {"repository", "owner-record"}
+            or source_classification not in SOURCE_CLASSIFICATIONS
+            or (locator_type == "repository") != (source_classification == "REPOSITORY_SOURCE")
             or not isinstance(locator, str)
         ):
             _fail()
@@ -377,17 +418,17 @@ def load_cut1_grounding_contract(*, root: Path) -> Cut1GroundingContract:
                 _fail()
         else:
             if (
-                owner_record_seen
+                source_id in observed_owner_records
                 or {
                     "locator": locator,
                     "revision": source["revision"],
                     "byteCount": source["byteCount"],
                     "sha256": source_sha256,
                 }
-                != OWNER_RECORD
+                != OWNER_RECORDS.get(source_id)
             ):
                 _fail()
-            owner_record_seen = True
+            observed_owner_records.add(source_id)
             source_bytes = None
         if not isinstance(source["spans"], list) or not 0 < len(source["spans"]) <= MAX_SPANS:
             _fail()
@@ -407,6 +448,7 @@ def load_cut1_grounding_contract(*, root: Path) -> Cut1GroundingContract:
                 if (
                     expected_owner_span is None
                     or {
+                        "sourceId": source_id,
                         "byteStart": start,
                         "byteEnd": end,
                         "byteCount": span["byteCount"],
@@ -426,11 +468,12 @@ def load_cut1_grounding_contract(*, root: Path) -> Cut1GroundingContract:
             ):
                 _fail()
             spans[span_id] = SourceSpan(
-                span_id, source_id, start, end, len(selected), cast(str, span["sha256"])
+                span_id, source_id, start, end, len(selected), cast(str, span["sha256"]),
+                cast(str, source_classification),
             )
     if (
         observed_repository_sources != EXACT_REPOSITORY_SOURCES
-        or not owner_record_seen
+        or observed_owner_records != set(OWNER_RECORDS)
         or observed_owner_spans != set(OWNER_RECORD_SPANS)
     ):
         _fail()
@@ -469,8 +512,12 @@ def load_cut1_grounding_contract(*, root: Path) -> Cut1GroundingContract:
             item not in spans for item in checked_spans
         ):
             _fail()
+        source_classifications = {spans[item].source_classification for item in checked_spans}
+        if len(source_classifications) != 1:
+            _fail()
         propositions[proposition_id] = Proposition(
-            proposition_id, statement, checked_predicates, checked_spans
+            proposition_id, statement, checked_predicates, checked_spans,
+            next(iter(source_classifications)),
         )
 
     mappings: list[ClaimMapping] = []
@@ -585,10 +632,11 @@ def evaluate_cut1_grounding(
     )
     try:
         contract = load_cut1_grounding_contract(root=root)
+        baseline_supported = {support.claim_id for support in baseline.claim_supports}
         if (
             len(candidate.claims) != len(contract.claim_mappings)
-            or baseline.unsupported_claim_count != len(candidate.claims)
-            or baseline.claim_supports
+            or baseline.unsupported_claim_count != len(candidate.claims) - len(OWNER_DIRECT_CLAIMS)
+            or baseline_supported != OWNER_DIRECT_CLAIMS
             or any(
                 item.reason != "Claim text is not directly present in the cited retrieved chunk."
                 for item in baseline.unsupported_claims
@@ -600,21 +648,13 @@ def evaluate_cut1_grounding(
         ):
             return baseline
         claim_hashes = [_sha(claim.text.encode()) for claim in candidate.claims]
-        presenter = next(
-            (
-                presenter_id
-                for presenter_id in PRESENTERS
-                if all(
-                    claim.claim_id == mapping.claim_id
-                    and claim_hash == mapping.claim_sha256_by_presenter[presenter_id]
-                    for claim, claim_hash, mapping in zip(
-                        candidate.claims, claim_hashes, contract.claim_mappings, strict=True
-                    )
-                )
-            ),
-            None,
-        )
-        if presenter is None:
+        if not all(
+            claim.claim_id == mapping.claim_id
+            and claim_hash == mapping.claim_sha256_by_presenter[SELECTED_PRESENTER]
+            for claim, claim_hash, mapping in zip(
+                candidate.claims, claim_hashes, contract.claim_mappings, strict=True
+            )
+        ):
             return baseline
         chunks = {item.chunk_id: item for item in all_chunks}
         fact_checksum = "sha256:" + _sha(contract.project_source_bytes())

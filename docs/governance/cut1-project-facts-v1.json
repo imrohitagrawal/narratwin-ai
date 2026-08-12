@@ -6,6 +6,7 @@
     {
       "sourceId": "src_readme",
       "locatorType": "repository",
+      "sourceClassification": "REPOSITORY_SOURCE",
       "locator": "README.md",
       "revision": "a868137fab607ae75d4b272301e9fc52b898e15c",
       "byteCount": 3433,
@@ -56,6 +57,7 @@
     {
       "sourceId": "src_brief",
       "locatorType": "repository",
+      "sourceClassification": "REPOSITORY_SOURCE",
       "locator": "docs/AI_BUILD_BRIEF.md",
       "revision": "a868137fab607ae75d4b272301e9fc52b898e15c",
       "byteCount": 6417,
@@ -82,6 +84,7 @@
     {
       "sourceId": "src_pack",
       "locatorType": "repository",
+      "sourceClassification": "REPOSITORY_SOURCE",
       "locator": "docs/PROJECT_AVATAR_PACK.md",
       "revision": "a868137fab607ae75d4b272301e9fc52b898e15c",
       "byteCount": 4205,
@@ -124,6 +127,7 @@
     {
       "sourceId": "src_status",
       "locatorType": "repository",
+      "sourceClassification": "REPOSITORY_SOURCE",
       "locator": "docs/STATUS.md",
       "revision": "a868137fab607ae75d4b272301e9fc52b898e15c",
       "byteCount": 227504,
@@ -142,6 +146,7 @@
     {
       "sourceId": "src_presenter",
       "locatorType": "repository",
+      "sourceClassification": "REPOSITORY_SOURCE",
       "locator": "docs/ADR/0054-cut1-presenter-registry.md",
       "revision": "a868137fab607ae75d4b272301e9fc52b898e15c",
       "byteCount": 4858,
@@ -168,6 +173,7 @@
     {
       "sourceId": "src_stage_plan",
       "locatorType": "repository",
+      "sourceClassification": "REPOSITORY_SOURCE",
       "locator": "docs/STAGE_ISSUE_PLAN.md",
       "revision": "a868137fab607ae75d4b272301e9fc52b898e15c",
       "byteCount": 134863,
@@ -194,6 +200,7 @@
     {
       "sourceId": "src_portability",
       "locatorType": "repository",
+      "sourceClassification": "REPOSITORY_SOURCE",
       "locator": "docs/PORTABILITY_STRATEGY.md",
       "revision": "a868137fab607ae75d4b272301e9fc52b898e15c",
       "byteCount": 7342,
@@ -220,6 +227,7 @@
     {
       "sourceId": "src_prd",
       "locatorType": "repository",
+      "sourceClassification": "REPOSITORY_SOURCE",
       "locator": "docs/PRD.md",
       "revision": "a868137fab607ae75d4b272301e9fc52b898e15c",
       "byteCount": 18863,
@@ -238,6 +246,7 @@
     {
       "sourceId": "src_stage4_code",
       "locatorType": "repository",
+      "sourceClassification": "REPOSITORY_SOURCE",
       "locator": "backend/app/stage4.py",
       "revision": "a868137fab607ae75d4b272301e9fc52b898e15c",
       "byteCount": 134801,
@@ -256,6 +265,7 @@
     {
       "sourceId": "src_owner_5197711390",
       "locatorType": "owner-record",
+      "sourceClassification": "OWNER_ASSERTED",
       "locator": "https://github.com/imrohitagrawal/narratwin-ai/issues/366#issuecomment-5197711390",
       "revision": "comment:5197711390@2026-08-05T21:41:25Z",
       "byteCount": 4322,
@@ -270,6 +280,41 @@
           "text": "- Visible brand spelling is exactly `StackClimb`; domain `stackclimb.com`. Rohit Agrawal is the founder, owner, product thinker, product owner, and producer. NarraTwin AI was conceived, is owned, and is produced by Rohit Agrawal under StackClimb. Do not use `®`, claim registration, public availability, deployment, release, or production readiness."
         }
       ]
+    },
+    {
+      "sourceId": "src_owner_5263752038",
+      "locatorType": "owner-record",
+      "sourceClassification": "OWNER_ASSERTED",
+      "locator": "https://github.com/imrohitagrawal/narratwin-ai/issues/421#issuecomment-5263752038",
+      "revision": "comment:5263752038@2026-08-12T07:36:47Z",
+      "byteCount": 2068,
+      "sha256": "a797084c6f2d6c20ceb33deeb54e1dc7104a65e4adba49a8aa3f4b04ed8f5644",
+      "spans": [
+        {
+          "spanId": "src_owner_421_stackclimb",
+          "byteStart": 347,
+          "byteEnd": 452,
+          "byteCount": 105,
+          "sha256": "4982c4c0b87481d71cb592d12df62faf30223324aba5d884024364b6baf249b7",
+          "text": "“StackClimb is the technology and product innovation brand founded, owned, and led by Rohit Agrawal.”"
+        },
+        {
+          "spanId": "src_owner_421_knowledge",
+          "byteStart": 456,
+          "byteEnd": 587,
+          "byteCount": 131,
+          "sha256": "0580768ac894641157cfa71776a919d5dc32a32c34ee8e7c71165921911e4a5b",
+          "text": "“Complex projects often contain valuable knowledge spread across documents, code, architecture notes, and technical decisions.”"
+        },
+        {
+          "spanId": "src_owner_421_meera",
+          "byteStart": 591,
+          "byteEnd": 678,
+          "byteCount": 87,
+          "sha256": "e15d32954d30cb1160ff942fc862ea33c8a70b254d42db56931c487bd4b08719",
+          "text": "“For Cut 1, Meera is the selected presenter and presents the prepared walkthrough.”"
+        }
+      ]
     }
   ],
   "propositions": [
@@ -281,15 +326,15 @@
     },
     {
       "propositionId": "fact_002",
-      "statement": "StackClimb is the visible brand founded, owned, and led by Rohit Agrawal; Rohit is its product thinker, product owner, and producer, and NarraTwin AI is its governed technology-platform product.",
+      "statement": "OWNER_ASSERTED: StackClimb is the technology and product innovation brand founded, owned, and led by Rohit Agrawal.",
       "predicateIds": ["stackclimb.brand", "stackclimb.technology_context", "stackclimb.product_innovation_context", "stackclimb.founder.rohit", "stackclimb.owner.rohit", "stackclimb.lead.rohit"],
-      "sourceSpanIds": ["src_owner_span_01", "src_stage_plan_span_01", "src_readme_span_01"]
+      "sourceSpanIds": ["src_owner_421_stackclimb"]
     },
     {
       "propositionId": "fact_003",
       "statement": "OWNER record: NarraTwin AI conception, ownership, and production = Rohit Agrawal under StackClimb.",
       "predicateIds": ["narratwin.conceived.rohit", "narratwin.owner.rohit", "narratwin.producer.rohit", "narratwin.under_stackclimb"],
-      "sourceSpanIds": ["src_owner_span_01", "src_stage_plan_span_01"]
+      "sourceSpanIds": ["src_owner_span_01"]
     },
     {
       "propositionId": "fact_004",
@@ -299,9 +344,9 @@
     },
     {
       "propositionId": "fact_005",
-      "statement": "The accepted project evidence includes documents, executable orchestration code, architecture and implementation material, and decision-and-outcome guidance.",
+      "statement": "OWNER_ASSERTED: Complex projects often contain valuable knowledge spread across documents, code, architecture notes, and technical decisions.",
       "predicateIds": ["knowledge.documents", "knowledge.code", "knowledge.architecture", "knowledge.technical_decisions"],
-      "sourceSpanIds": ["src_pack_span_02", "src_stage4_code_span_01", "src_prd_span_01"]
+      "sourceSpanIds": ["src_owner_421_knowledge"]
     },
     {
       "propositionId": "fact_006",
@@ -323,14 +368,14 @@
     },
     {
       "propositionId": "fact_009",
-      "statement": "Accepted executable stages bind backend RAG/evaluation/frontend with translation, subtitles, local voice, avatar rendering, and demo export artifacts.",
-      "predicateIds": ["application.python_fastapi_backend", "application.nextjs_ui", "application.rag", "application.evaluation_safety", "application.multilingual", "application.captions", "application.speech", "application.synthetic_presenter_media"],
+      "statement": "Accepted executable stages bind backend RAG/evaluation/frontend with translation, captions, speech, and presenter-led media artifacts.",
+      "predicateIds": ["application.python_fastapi_backend", "application.nextjs_ui", "application.rag", "application.evaluation_safety", "application.multilingual", "application.captions", "application.speech", "application.presenter_led_media"],
       "sourceSpanIds": ["src_readme_span_03", "src_status_span_01"]
     },
     {
       "propositionId": "fact_010",
-      "statement": "Provider adapters preserve the core contract: maintainers can replace a provider while keeping the prompt/output schema unchanged, and premium providers cannot be hardcoded into core business logic.",
-      "predicateIds": ["architecture.provider_neutral", "architecture.technology_substitution", "architecture.workflow_preserved"],
+      "statement": "Project understanding remains the core contract while modular provider boundaries allow generation and presentation technologies to evolve.",
+      "predicateIds": ["architecture.project_understanding_core", "architecture.modular_provider_boundaries", "architecture.technologies_evolve"],
       "sourceSpanIds": ["src_readme_span_04", "src_portability_span_01", "src_portability_span_02"]
     },
     {
@@ -347,9 +392,9 @@
     },
     {
       "propositionId": "fact_013",
-      "statement": "The governed first experience is prepared from an existing English demo script: its exact canonical narration is owner-locked before approved speech consumption.",
-      "predicateIds": ["experience.prepared_walkthrough", "experience.first_mode"],
-      "sourceSpanIds": ["src_brief_span_01", "src_stage_plan_span_02"]
+      "statement": "OWNER_ASSERTED: For Cut 1, Meera is the selected presenter and presents the prepared walkthrough.",
+      "predicateIds": ["experience.prepared_walkthrough", "experience.first_mode", "presenter.selected_meera"],
+      "sourceSpanIds": ["src_owner_421_meera"]
     },
     {
       "propositionId": "fact_014",
@@ -360,8 +405,14 @@
     {
       "propositionId": "fact_015",
       "statement": "NarraTwin combines approved project knowledge, grounded explanation, and an active presenter identity contract.",
-      "predicateIds": ["experience.stackclimb_product", "experience.approved_knowledge", "experience.grounded", "experience.presenter_led"],
-      "sourceSpanIds": ["src_owner_span_01", "src_readme_span_01", "src_presenter_span_01"]
+      "predicateIds": ["experience.approved_knowledge", "experience.grounded", "experience.presenter_led"],
+      "sourceSpanIds": ["src_readme_span_01", "src_presenter_span_01"]
+    },
+    {
+      "propositionId": "fact_016",
+      "statement": "OWNER_ASSERTED: NarraTwin AI is a StackClimb product conceived, owned, and produced by Rohit Agrawal.",
+      "predicateIds": ["experience.stackclimb_product"],
+      "sourceSpanIds": ["src_owner_span_01"]
     }
   ],
   "claimMappings": [
@@ -458,21 +509,21 @@
     {
       "claimId": "claim_010",
       "claimSha256ByPresenter": {
-        "meera": "9cf733b732055ee1ebe76b899421c4269f0b3b5aa703c73a42d6ed55950d32a9",
-        "myra": "9cf733b732055ee1ebe76b899421c4269f0b3b5aa703c73a42d6ed55950d32a9",
-        "raj": "9cf733b732055ee1ebe76b899421c4269f0b3b5aa703c73a42d6ed55950d32a9"
+        "meera": "57a4383b3e77c7219068c1221538cc2573a1d191422769ffd48eabb6f00ebb37",
+        "myra": "57a4383b3e77c7219068c1221538cc2573a1d191422769ffd48eabb6f00ebb37",
+        "raj": "57a4383b3e77c7219068c1221538cc2573a1d191422769ffd48eabb6f00ebb37"
       },
-      "requiredPredicateIds": ["application.python_fastapi_backend", "application.nextjs_ui", "application.rag", "application.evaluation_safety", "application.multilingual", "application.captions", "application.speech", "application.synthetic_presenter_media"],
+      "requiredPredicateIds": ["application.python_fastapi_backend", "application.nextjs_ui", "application.rag", "application.evaluation_safety", "application.multilingual", "application.captions", "application.speech", "application.presenter_led_media"],
       "propositionIds": ["fact_009"]
     },
     {
       "claimId": "claim_011",
       "claimSha256ByPresenter": {
-        "meera": "167009c2b4518360b2b2548a7ca495b36370d4c18cfb33b0049ef4fb4e19ddb1",
-        "myra": "167009c2b4518360b2b2548a7ca495b36370d4c18cfb33b0049ef4fb4e19ddb1",
-        "raj": "167009c2b4518360b2b2548a7ca495b36370d4c18cfb33b0049ef4fb4e19ddb1"
+        "meera": "da5f1a436d77a94553c9fc326293b53c98411029d07f5a6bf08f5f009a469b74",
+        "myra": "da5f1a436d77a94553c9fc326293b53c98411029d07f5a6bf08f5f009a469b74",
+        "raj": "da5f1a436d77a94553c9fc326293b53c98411029d07f5a6bf08f5f009a469b74"
       },
-      "requiredPredicateIds": ["architecture.provider_neutral", "architecture.technology_substitution", "architecture.workflow_preserved"],
+      "requiredPredicateIds": ["architecture.project_understanding_core", "architecture.modular_provider_boundaries", "architecture.technologies_evolve"],
       "propositionIds": ["fact_010"]
     },
     {
@@ -502,8 +553,8 @@
         "myra": "8dd22a3a600230f05cb9dd78d93491d31a306531e0d075bdb8a5bc4cfcf36f2c",
         "raj": "8dd22a3a600230f05cb9dd78d93491d31a306531e0d075bdb8a5bc4cfcf36f2c"
       },
-      "requiredPredicateIds": ["experience.prepared_walkthrough", "experience.first_mode", "presenter.identity"],
-      "propositionIds": ["fact_001", "fact_013"]
+      "requiredPredicateIds": ["experience.prepared_walkthrough", "experience.first_mode", "presenter.selected_meera"],
+      "propositionIds": ["fact_013"]
     },
     {
       "claimId": "claim_015",
@@ -523,7 +574,7 @@
         "raj": "01719cc3b3ccff831b7b1d70d5258c2530393dbffa3928947586b5d80747465f"
       },
       "requiredPredicateIds": ["experience.stackclimb_product", "experience.approved_knowledge", "experience.grounded", "experience.presenter_led"],
-      "propositionIds": ["fact_015"]
+      "propositionIds": ["fact_015", "fact_016"]
     },
     {
       "claimId": "claim_017",

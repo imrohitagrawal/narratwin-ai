@@ -1321,16 +1321,19 @@ disagreement, and weakened thresholds fail closed. Product behavior,
 deployment and release are outside this gate.
 ## Issue #421 Cut 1 atomic grounding repair gate
 
-Branch `stage8-421-cut1-atomic-project-facts` is limited to the exact twenty
+Branch `stage8-421-cut1-atomic-project-facts` is limited to the exact twenty-one
 paths in `docs/governance/preflights/issue-421.json` and 4,000 additions plus
 deletions without deletion credit. The committed RED reproduces exactly
 eighteen unsupported claims from genuine accepted sources before the special
 policy exists.
 
-GREEN requires exact facts/source/span validation, code-owned required-predicate
+GREEN requires exact facts/source/classification/span validation, code-owned required-predicate
 coverage and complete proposition mapping, all-style caller-injection refusal,
 generic-evaluator parity, project/tenant isolation,
 persist/restore replay, conditional evaluation-lineage binding, and all three
-Issue #382 narration/approval/receipt lifecycles through public service methods.
+Issue #382 narration/approval/receipt steps for the selected Meera candidate
+through public service methods. The gate pins 261 words, 1,904 UTF-8 bytes,
+SHA-256 `3edffc6169460546ae0bdee867fdeaf3c0ae383535e2976e0333f39c03ff614e`,
+and rejects non-selected presenter authority.
 No real provider call, telemetry egress, audio, deployment, distribution,
 production-readiness, or release claim is part of this gate.

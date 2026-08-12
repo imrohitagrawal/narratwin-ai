@@ -2632,8 +2632,11 @@ completion, deployment, distribution, release or production readiness.
 Issue `#421` is a narrow Stage 8 hardening child linked to narration Issue
 `#382`, blocked audio Issue `#368`, and parent `#366`. It preserves ordinary
 Stage 4 direct support while adding an exact owner-reviewed atomic proposition
-policy for the canonical Cut 1 claims. The route is exactly twenty paths and
-4,000 charged lines. It authorizes no provider call or audio.
+policy for the canonical Cut 1 claims. OWNER comment `5263752038` classifies
+three first-party facts as `OWNER_ASSERTED`, selects Meera, and authorizes the
+1,904-byte narration revision; repository evidence remains separately
+`REPOSITORY_SOURCE`. The amended route is exactly twenty-one paths and 4,000
+charged lines. It authorizes no provider call or audio.
 
 After reviewed merge and merged-main checks, Issue #368 may prepare three
 isolated public-lifecycle authority packages, then proceed only under its

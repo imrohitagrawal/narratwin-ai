@@ -228,6 +228,8 @@ def test_governed_atomic_facts_complete_the_public_persisted_stage4_path(
         "source_checksum",
         "span_checksum",
         "span_text",
+        "source_classification",
+        "owner_span_source",
         "unknown_field",
     ],
 )
@@ -270,6 +272,11 @@ def test_atomic_fact_contract_mutations_fail_closed(
         payload["sources"][0]["spans"][0]["sha256"] = "0" * 64
     elif mutation == "span_text":
         payload["sources"][0]["spans"][0]["text"] += " changed"
+    elif mutation == "source_classification":
+        payload["sources"][0]["sourceClassification"] = "OWNER_ASSERTED"
+    elif mutation == "owner_span_source":
+        first_owner, second_owner = payload["sources"][-2:]
+        second_owner["spans"].append(first_owner["spans"].pop())
     elif mutation == "unknown_field":
         payload["callerApproved"] = True
 
@@ -328,8 +335,7 @@ def test_reviewed_claim_propositions_bind_complete_independent_sources() -> None
         "src_portability_span_02",
     ]
     assert propositions["fact_013"]["sourceSpanIds"] == [
-        "src_brief_span_01",
-        "src_stage_plan_span_02",
+        "src_owner_421_meera",
     ]
 
 
@@ -382,7 +388,7 @@ def test_cut1_owner_selection_refuses_non_selected_presenters(
     assert run.status == "FAILED"
     assert run.accepted_script_text is None
     assert run.evaluation is not None
-    assert run.evaluation.unsupported_claim_count == 18
+    assert run.evaluation.unsupported_claim_count == 16
 
 
 def test_atomic_fact_asset_bytes_are_immutable(tmp_path: Path) -> None:
@@ -494,8 +500,15 @@ def test_runtime_rejects_foreign_or_changed_project_facts(
     )
 
     assert evaluation.evaluation_status == "FAILED"
-    assert evaluation.unsupported_claim_count == 18
-    assert not evaluation.claim_supports
+    assert evaluation.unsupported_claim_count == 16
+    assert {support.claim_id for support in evaluation.claim_supports} == {
+        "claim_003",
+        "claim_005",
+    }
+    assert all(not support.proposition_ids for support in evaluation.claim_supports)
+    assert all(
+        support.proposition_evidence_checksum is None for support in evaluation.claim_supports
+    )
 
 
 def test_restore_rejects_tampered_persisted_proposition_evidence(

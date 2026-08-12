@@ -3,10 +3,11 @@
 - Status: proposed in Issue #421; effective only after reviewed merge
 - Date: 2026-08-12
 - Decision owner: Rohit Agrawal / StackClimb
-- Contract-identity dependency only: ADR 0055 supplies canonical claim bytes but
-  is never facts/source evidence; all factual support is pinned to accepted
-  commit `a868137fab607ae75d4b272301e9fc52b898e15c` and the independent OWNER span
-  below.
+- Contract-identity dependency only: ADR 0055 and OWNER comment `5263752038`
+  supply canonical claim bytes but are never self-grounding evidence. Factual
+  support is pinned to accepted commit
+  `a868137fab607ae75d4b272301e9fc52b898e15c` or exact first-party
+  `OWNER_ASSERTED` spans. Owner assertions are not externally corroborated.
 
 ## Context
 
@@ -26,23 +27,26 @@ their immutable source spans.
 
 `docs/governance/cut1-project-facts-v1.json` is the owner-reviewed policy asset.
 Its complete byte-level SHA-256 is
-`b081b7311d4c897de1d27469ffda82a64d3c120783100ee4ef3f8d92a112b62f`;
+`f9d443bb42ff00028c725e007f5fd52a06cc1863cac44c0bb2214ace79ac0f6e`;
 the verifier pins that digest before parsing any contract field.
 It contains:
 
-- independent, concise proposition statements;
-- exact accepted repository source paths/revision plus the immutable OWNER
-  comment URL/revision and only its independent 350-byte brand/ownership span;
+- concise proposition statements classified as `REPOSITORY_SOURCE` or
+  `OWNER_ASSERTED`; repository means narration-independent checked-in evidence,
+  not external corroboration;
+- exact accepted repository source paths/revision plus two immutable OWNER
+  comment URL/revisions and only their four code-owned factual spans;
 - full-source byte counts and SHA-256 values;
 - exact byte ranges, span bytes, byte counts, and SHA-256 values;
 - eighteen ordered claim IDs with exact presenter-specific claim hashes; and
 - a code-owned predicate checklist and the complete proposition set required
   for each claim.
 
-The asset is not ordinary generated knowledge and does not copy canonical
-narration sentences. Its safe Stage 4 upload projection contains only
-proposition IDs and independent statements. Hashes and source-span bytes remain
-in the repository policy asset so the ordinary untrusted-upload secret detector
+The asset is not ordinary generated knowledge and does not copy the narration
+as a whole. Three exact narration claims are separately authorized first-party
+facts; their Stage 4 projection is visibly tagged `OWNER_ASSERTED`. Other
+propositions remain `REPOSITORY_SOURCE`. Hashes and source-span bytes remain in
+the repository policy asset so the ordinary untrusted-upload secret detector
 does not need to be weakened.
 
 `backend.app.cut1_grounding` is an exact-policy verifier. It:
@@ -52,22 +56,21 @@ does not need to be weakened.
 2. requires the frozen schema, policy, source allowlist, and accepted revision;
 3. loads each repository source from current bytes only when its SHA-256
    matches, otherwise from the pinned local Git object at the accepted revision;
-4. records the pre-existing OWNER record's exact URL, comment revision, complete
-   body byte count/SHA-256, and independently code-pins the one permitted
-   non-narration span's offset, length, digest, and bytes; runtime does not fetch
-   the complete OWNER comment, and later narration bytes are not stored or used;
+4. records both OWNER records' exact URL, comment revision, complete body byte
+   count/SHA-256, classification, and code-pins all four permitted factual
+   spans' offset, length, digest, and bytes; runtime does not fetch comments;
 5. independently verifies every repository source and exact span byte range;
 6. requires all propositions to be used and every code-owned required predicate
    to be covered by a verified proposition;
-7. first runs the unchanged ordinary evaluator and permits the special route
-   only when its sole failure is direct-substring absence for all eighteen
-   structurally valid claims;
-8. identifies the exact presenter by recomputing the complete ordered canonical
-   claim-hash set rather than trusting the facts asset;
+7. first runs the unchanged ordinary evaluator and requires exactly the two
+   literal OWNER claims to have generic direct support while the other sixteen
+   remain unsupported only for direct-substring absence;
+8. accepts only Meera for Cut 1 by recomputing her complete ordered canonical
+   claim-hash set rather than trusting the facts asset or caller;
 9. requires every claim to cite a project-owned retrieved chunk from the exact
    canonical project-facts projection; and
-10. emits recomputed predicate/proposition IDs and an evidence checksum into each persisted
-   claim support.
+10. emits recomputed predicate/proposition IDs, source classifications, and an
+    evidence checksum into each persisted claim support.
 
 The Stage 4 service selects this verifier only for the exact
 `CUT1_ATOMIC_FACTS_V1` style. That selection is not proof: any caller-provided
@@ -116,8 +119,10 @@ checksum drift make the run unavailable rather than trusted.
 This policy proves deterministic proposition/source binding, not spoken-word
 accuracy, pronunciation, voice quality, legal clearance, release readiness, or
 production durability. It is intentionally specific to the owner-reviewed Cut
-1 narration and accepted revision. Other scripts and projects retain ordinary
-direct support unless separately governed.
+1 Meera narration at 261 words, 1,904 UTF-8 bytes and SHA-256
+`3edffc6169460546ae0bdee867fdeaf3c0ae383535e2976e0333f39c03ff614e`.
+Other scripts and projects retain ordinary direct support unless separately
+governed.
 
 Issue #368 remains open. Release, deployment, distribution, and public or
 commercial use remain No-Go.

@@ -46,16 +46,16 @@ Complex projects often contain valuable knowledge spread across documents, code,
 
 The process begins with approved project material. NarraTwin organizes the content, retrieves the most relevant context, and creates an audience-aware explanation. Important claims are evaluated against their supporting sources, helping the walkthrough remain transparent and grounded instead of presenting unsupported information as fact.
 
-The application combines a Python and FastAPI backend, a Next.js user experience, retrieval-augmented generation, evaluation and safety controls, multilingual content, captions, speech, and synthetic-presenter media. Its provider-neutral design allows individual technologies to change while preserving the same project-understanding workflow.
+The application combines a Python and FastAPI backend, a Next.js user experience, retrieval-augmented generation, evaluation and safety controls, multilingual content, captions, speech, and presenter-led media. NarraTwin keeps project understanding at its core and is being built with modular provider boundaries, so generation and presentation technologies can evolve over time.
 
 This approach can also be applied to other projects. Once their approved documentation is supplied, NarraTwin can create a tailored explanation of their purpose, architecture, technologies, capabilities, important decisions, and possible integrations.
 
 For this first experience, I’m presenting a prepared walkthrough. Interactive questions and answers are planned as a future capability and are not part of this demonstration.
 
 That is NarraTwin AI: a StackClimb product designed to transform approved project knowledge into clear, grounded, presenter-led experiences. I’m Meera. Thank you for joining me, and I look forward to guiding you through more projects."""
-CANONICAL_HASHES = {"meera": "fe9e874748d365a9ebb333426b0e69877cbdbca725ea7082c02334eb724031f0",
-    "myra": "dd05b795b142e5d18ef0c10a8c6b7dc6873235179efc9d661ad7902cf16463d6",
-    "raj": "6972ba4d9d9e5da57fadcddf5f9519d9d18a3e3beec4147eb9ad95ff9e178546"}
+CANONICAL_HASHES = {"meera": "3edffc6169460546ae0bdee867fdeaf3c0ae383535e2976e0333f39c03ff614e",
+    "myra": "0cabff207582e80770b798fbb7e90d008e3d9c20f7cb1872773df3b1c6527d71",
+    "raj": "42fb220d7dda293c3be551bd14e3292f0449e0a649079a4d36ee67203f370e49"}
 INVALIDATED_AUTHORITIES = ("EVALUATION", "SPEECH_APPROVAL", "TTS_AUDIO", "CAPTION", "RENDER", "VIDEO_EXPORT", "REPLAY")
 class NarrationState(StrEnum):
     DRAFT = "DRAFT"

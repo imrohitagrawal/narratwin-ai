@@ -336,6 +336,11 @@ local diagnosis; raw narration, proposition statements, source spans, facts
 JSON, repository paths, and Git output are not log fields. Validation failures
 remain generic and fail closed.
 
+Source classification is checksum lineage, not a log dimension. Metrics must
+not collapse `OWNER_ASSERTED` into an externally verified category or emit the
+owner span text. The canonical Meera revision is 261 words, 1,904 UTF-8 bytes,
+and SHA-256 `3edffc6169460546ae0bdee867fdeaf3c0ae383535e2976e0333f39c03ff614e`.
+
 The repair performs local hashing, JSON validation, and a bounded local Git
 object read when current source bytes differ from the pinned revision. It makes
 no provider or telemetry call and has no paid-call cost. Issue #368 call and

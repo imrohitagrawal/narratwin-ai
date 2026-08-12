@@ -1001,6 +1001,13 @@ must arrive with both empty; the application fills only support rows after the
 canonical verifier resolves the exact presenter claim hash and every required
 proposition/source span.
 
+Each verified source span carries `OWNER_ASSERTED` or `REPOSITORY_SOURCE`, and
+that classification is included in the proposition evidence checksum and safe
+facts projection. A proposition cannot mix classifications. The three Issue
+#421 owner facts remain first-party assertions, never externally corroborated
+facts. Cut 1 evaluation selects Meera; dormant Myra/Raj canonical narration
+variants do not establish selected-presenter authority.
+
 For `cut1-atomic-grounding-v1`, evaluation lineage also stores an ordered
 `groundingEvidence.claims` projection and its aggregate SHA-256. The source
 asset, safe project upload projection, source document/chunks, retrieved

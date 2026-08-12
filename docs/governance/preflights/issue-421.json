@@ -118,11 +118,11 @@
     ]
   },
   "invariants": {
-    "G421-01": "Facts are independent atomic propositions derived only from accepted immutable repository and OWNER sources; narration is never source evidence.",
-    "G421-02": "Every proposition binds exact source identity, immutable revision, byte range, byte count, source checksum, span checksum, and span bytes, and runtime recomputes repository bindings.",
+    "G421-01": "Facts are atomic propositions derived only from accepted immutable repository and OWNER sources; OWNER_ASSERTED stays separate from REPOSITORY_SOURCE and never claims external corroboration; narration as a whole is never source evidence.",
+    "G421-02": "Every proposition binds exact source identity, source classification, immutable revision, byte range, byte count, source checksum, span checksum, and span bytes, and runtime recomputes repository bindings.",
     "G421-03": "Every exact canonical claim hash maps to a code-owned non-empty required-predicate set and proposition IDs whose verified predicates cover every requirement.",
     "G421-04": "Generic Stage 4 direct-substring support remains unchanged outside the exact governed Cut 1 policy.",
-    "G421-05": "Cut 1 accepts only the exact canonical claim set, facts artifact, retrieved project-owned facts chunk, and policy digest.",
+    "G421-05": "Cut 1 accepts only selected presenter Meera, the exact canonical claim set, facts artifact, retrieved project-owned facts chunk, and policy digest.",
     "G421-06": "Caller assertions cannot establish support; runtime independently resolves and recomputes all evidence.",
     "G421-07": "Missing, changed, stale, partial, foreign, unsupported, malformed, duplicated, or unexpected evidence fails closed.",
     "G421-08": "Evidence cannot cross tenant, actor, project, document, chunk, run, retrieval, citation, or presenter scope.",
@@ -145,7 +145,7 @@
     "G421-07": ["fail-closed negative matrix"],
     "G421-08": ["cross-scope copied-evidence tests"],
     "G421-09": ["persist/restore success and graph-tamper tests"],
-    "G421-10": ["three-presenter public narration lifecycle and restore tests"],
+    "G421-10": ["selected-Meera public narration lifecycle and restore test", "non-selected Myra/Raj refusal tests"],
     "G421-11": ["local fake-only tests and private launch-policy evidence"],
     "G421-12": ["captured log/error redaction tests"],
     "G421-13": ["committed genuine-source eighteen-unsupported RED test"],
@@ -166,7 +166,7 @@
     "regression": "Run focused Stage 4/evaluation/narration/route tests, full backend/frontend/browser quality, lint/type, audit/security/container/eval gates, stage8-quality, and make quality."
   },
   "human_only_surfaces": {
-    "source_truth": "OWNER authority is the pre-existing immutable record; an eligible non-author reviewer confirms proposition-by-proposition that the atomic facts and predicate coverage faithfully state the cited spans without copying narration.",
+    "source_truth": "Two immutable OWNER records supply four exact OWNER_ASSERTED spans; an eligible non-author reviewer confirms proposition-by-proposition that each classification, fact, and predicate coverage faithfully states its cited span without representing owner assertions as externally corroborated.",
     "exact_head_approval": "Eligible non-author approval by rohitagrawal4u on the final exact PR head.",
     "merge_wording": "Reference-only merge wording is inspected before merge.",
     "listening": "Exact-hash OWNER listening occurs only after a later merged-main synthesis operation."
