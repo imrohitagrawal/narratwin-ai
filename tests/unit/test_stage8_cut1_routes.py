@@ -602,6 +602,33 @@ def test_issue424_binding_rejects_unknown_fields(tmp_path: Path) -> None:
     assert any("unknown binding field" in failure for failure in routes.issue424_governance_failures(repository))
 
 
+def test_issue424_coordinated_controller_and_binding_mutation_fails(tmp_path: Path) -> None:
+    repository = issue424_fixture(tmp_path)
+    controller_path = repository / "docs/governance/NARRATWIN_MASTER_PROGRAM_V1.md"
+    original = controller_path.read_text(encoding="utf-8")
+    controller = original.replace(
+        "Implementation is forbidden when its governing phase specification",
+        "Implementation is permitted when its governing phase specification",
+        1,
+    )
+    assert controller != original
+    controller_path.write_text(controller, encoding="utf-8")
+    controller_bytes = controller_path.read_bytes()
+    binding_path = repository / "docs/governance/narratwin-master-program-v1.json"
+    binding = json.loads(binding_path.read_text(encoding="utf-8"))
+    binding.update(
+        documentSha256=hashlib.sha256(controller_bytes).hexdigest(),
+        documentBytes=len(controller_bytes),
+        documentLines=len(controller_bytes.splitlines()),
+        hasTrailingNewline=controller_bytes.endswith(b"\n"),
+    )
+    binding_path.write_text(json.dumps(binding, indent=2) + "\n", encoding="utf-8")
+    assert any(
+        "pinned controller fingerprint" in failure
+        for failure in routes.issue424_governance_failures(repository)
+    )
+
+
 @pytest.mark.parametrize(
     ("canonical", "duplicate"),
     [
@@ -623,6 +650,22 @@ def test_issue424_binding_rejects_duplicate_authority_members(
     path = repository / "docs/governance/narratwin-master-program-v1.json"
     text = path.read_text(encoding="utf-8")
     path.write_text(text.replace(canonical, f"{duplicate}\n  {canonical}", 1), encoding="utf-8")
+    assert any(
+        "duplicate JSON member" in failure
+        for failure in routes.issue424_governance_failures(repository)
+    )
+
+
+def test_issue424_binding_rejects_nested_duplicate_transition_member(tmp_path: Path) -> None:
+    repository = issue424_fixture(tmp_path)
+    path = repository / "docs/governance/narratwin-master-program-v1.json"
+    text = path.read_text(encoding="utf-8").replace(
+        '"decisionPath": "docs/governance/narratwin-master-program-authority-decision-v1.json",',
+        '"decisionPath": "docs/governance/bypass.json",\n'
+        '    "decisionPath": "docs/governance/narratwin-master-program-authority-decision-v1.json",',
+        1,
+    )
+    path.write_text(text, encoding="utf-8")
     assert any(
         "duplicate JSON member" in failure
         for failure in routes.issue424_governance_failures(repository)
@@ -689,6 +732,21 @@ def test_issue424_preflight_rejects_duplicate_identity_status_and_scope_members(
     path = repository / "docs/governance/preflights/issue-424.json"
     text = path.read_text(encoding="utf-8")
     path.write_text(text.replace(canonical, f"{duplicate}\n  {canonical}", 1), encoding="utf-8")
+    assert any(
+        "duplicate JSON member" in failure
+        for failure in routes.issue424_governance_failures(repository)
+    )
+
+
+def test_issue424_preflight_rejects_nested_duplicate_required_member(tmp_path: Path) -> None:
+    repository = issue424_fixture(tmp_path)
+    path = repository / "docs/governance/preflights/issue-424.json"
+    text = path.read_text(encoding="utf-8").replace(
+        '"required": [',
+        '"required": [],\n    "required": [',
+        1,
+    )
+    path.write_text(text, encoding="utf-8")
     assert any(
         "duplicate JSON member" in failure
         for failure in routes.issue424_governance_failures(repository)
