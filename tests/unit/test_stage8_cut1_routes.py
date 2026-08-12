@@ -53,6 +53,20 @@ stage8: Any = load(REPO / "scripts/quality/check_stage8_docs.py", "stage8_with_c
 
 
 EXPECTED = {
+    "stage8-424-master-program-authority-prelog": {
+        "docs/governance/NARRATWIN_MASTER_PROGRAM_V1.md",
+        "docs/governance/narratwin-master-program-v1.json",
+        "docs/governance/preflights/issue-424.json",
+        "docs/reviews/ISSUE_424_EXECUTION_SPEC_REVIEW.md",
+        "docs/reviews/ISSUE_424_CUT1_FALSE_SUCCESS_REVIEW.md",
+        "docs/reviews/ISSUE_424_PLATFORM_SECURITY_LEARNING_REVIEW.md",
+        "docs/ADR/0059-master-program-authority-and-route-bootstrap.md",
+        "docs/STAGE_ISSUE_PLAN.md",
+        "docs/STATUS.md",
+        "docs/TRACEABILITY.md",
+        "scripts/quality/stage8_cut1_routes.py",
+        "tests/unit/test_stage8_cut1_routes.py",
+    },
     "stage8-421-cut1-atomic-project-facts": {
         "docs/governance/preflights/issue-421.json",
         "docs/governance/cut1-project-facts-v1.json",
@@ -508,6 +522,18 @@ def test_routes_are_exact_pre_registered_and_issue386_preflight_matches() -> Non
     assert issue421["change_budget"]["deletions_grant_credit"] is False
     assert routes.TOTAL_LIMITS[routes.ISSUE421_BRANCH] == 4000
     assert routes.TEXT_LIMITS[routes.ISSUE421_BRANCH] == issue421["change_budget"]["per_file_charged_lines"]
+
+    issue424 = json.loads((REPO / "docs/governance/preflights/issue-424.json").read_text(encoding="utf-8"))
+    issue424_branch = "stage8-424-master-program-authority-prelog"
+    issue424_route = EXPECTED[issue424_branch]
+    assert issue424["branch"] == issue424_branch
+    assert set(issue424["scope"]["required"]) == issue424_route
+    assert issue424["change_budget"]["exact_paths"] == len(issue424_route) == 12
+    assert issue424["change_budget"]["maximum_additions_plus_deletions"] == 8500
+    assert issue424["change_budget"]["deletions_grant_credit"] is False
+    assert routes.ROUTE_ISSUES[issue424_branch] == 424
+    assert routes.TOTAL_LIMITS[issue424_branch] == 8500
+    assert routes.TEXT_LIMITS[issue424_branch] == issue424["change_budget"]["per_file_charged_lines"]
 
 
 def test_issue421_route_requires_exact_accepted_base_and_branch_point() -> None:
