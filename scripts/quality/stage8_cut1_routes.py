@@ -634,6 +634,10 @@ ISSUE424_HEADINGS = (
     "41. Completion claims",
     "42. Final pre-log review gate",
 )
+ISSUE424_CONTROLLER_SHA256 = "c3e3c85bb980aab4f818e80be3db5484e564423d77bc3ab6e81ba736c3af3420"
+ISSUE424_CONTROLLER_BYTES = 40135
+ISSUE424_CONTROLLER_LINES = 887
+ISSUE424_CONTROLLER_HAS_TRAILING_NEWLINE = True
 ISSUE424_BINDING_FIELDS = {
     "schemaVersion", "controllerId", "controllerIssue", "bootstrapBranch", "acceptedBaseSha",
     "documentPath", "documentSha256", "documentBytes", "documentLines", "hasTrailingNewline",
@@ -719,6 +723,20 @@ def issue424_governance_failures(root: Path) -> list[str]:
         failures.append("Issue #424 numbered heading order/titles differ from the exact 42-section contract.")
     if "exact waist-up derivative path and SHA-256" not in controller:
         failures.append("Issue #424 controller omits the exact waist-up derivative path and SHA-256 invariant.")
+    actual_fingerprint = (
+        hashlib.sha256(controller_bytes).hexdigest(),
+        len(controller_bytes),
+        len(controller_bytes.splitlines()),
+        controller_bytes.endswith(b"\n"),
+    )
+    expected_fingerprint = (
+        ISSUE424_CONTROLLER_SHA256,
+        ISSUE424_CONTROLLER_BYTES,
+        ISSUE424_CONTROLLER_LINES,
+        ISSUE424_CONTROLLER_HAS_TRAILING_NEWLINE,
+    )
+    if actual_fingerprint != expected_fingerprint:
+        failures.append("Issue #424 pinned controller fingerprint is inconsistent.")
 
     try:
         binding = load_json_without_duplicate_members(binding_path)
@@ -741,10 +759,10 @@ def issue424_governance_failures(root: Path) -> list[str]:
         "bootstrapBranch": ISSUE424_BRANCH,
         "acceptedBaseSha": ISSUE424_BASE,
         "documentPath": "docs/governance/NARRATWIN_MASTER_PROGRAM_V1.md",
-        "documentSha256": hashlib.sha256(controller_bytes).hexdigest(),
-        "documentBytes": len(controller_bytes),
-        "documentLines": len(controller_bytes.splitlines()),
-        "hasTrailingNewline": controller_bytes.endswith(b"\n"),
+        "documentSha256": ISSUE424_CONTROLLER_SHA256,
+        "documentBytes": ISSUE424_CONTROLLER_BYTES,
+        "documentLines": ISSUE424_CONTROLLER_LINES,
+        "hasTrailingNewline": ISSUE424_CONTROLLER_HAS_TRAILING_NEWLINE,
         "numberedSections": len(ISSUE424_HEADINGS),
         "firstNumberedSection": ISSUE424_HEADINGS[0],
         "lastNumberedSection": ISSUE424_HEADINGS[-1],
