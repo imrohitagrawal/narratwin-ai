@@ -3,6 +3,7 @@ from __future__ import annotations
 import importlib.util
 import hashlib
 import json
+import shutil
 import subprocess
 from pathlib import Path
 from types import ModuleType
@@ -66,6 +67,8 @@ EXPECTED = {
         "docs/TRACEABILITY.md",
         "scripts/quality/stage8_cut1_routes.py",
         "tests/unit/test_stage8_cut1_routes.py",
+        "scripts/guardrails_check.py",
+        "tests/unit/test_guardrails_check.py",
     },
     "stage8-421-cut1-atomic-project-facts": {
         "docs/governance/preflights/issue-421.json",
@@ -528,12 +531,101 @@ def test_routes_are_exact_pre_registered_and_issue386_preflight_matches() -> Non
     issue424_route = EXPECTED[issue424_branch]
     assert issue424["branch"] == issue424_branch
     assert set(issue424["scope"]["required"]) == issue424_route
-    assert issue424["change_budget"]["exact_paths"] == len(issue424_route) == 12
-    assert issue424["change_budget"]["maximum_additions_plus_deletions"] == 8500
-    assert issue424["change_budget"]["deletions_grant_credit"] is False
+    assert set(issue424) == {
+        "schema_version", "issue_number", "branch", "objective", "status_decision", "scope"
+    }
+    assert issue424["schema_version"] == "GovernancePreflightV1"
+    assert issue424["status_decision"] == "update-minimally"
+    assert set(issue424["scope"]["allowed_prefixes"]) == issue424_route
+    assert len(issue424_route) == 14
     assert routes.ROUTE_ISSUES[issue424_branch] == 424
     assert routes.TOTAL_LIMITS[issue424_branch] == 8500
-    assert routes.TEXT_LIMITS[issue424_branch] == issue424["change_budget"]["per_file_charged_lines"]
+    assert routes.TEXT_LIMITS[issue424_branch]["scripts/guardrails_check.py"] == 100
+    assert routes.TEXT_LIMITS[issue424_branch]["tests/unit/test_guardrails_check.py"] == 180
+
+
+def issue424_fixture(tmp_path: Path) -> Path:
+    for relative in (
+        "docs/governance/NARRATWIN_MASTER_PROGRAM_V1.md",
+        "docs/governance/narratwin-master-program-v1.json",
+        "docs/governance/preflights/issue-424.json",
+    ):
+        destination = tmp_path / relative
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(REPO / relative, destination)
+    return tmp_path
+
+
+def test_issue424_controller_and_proposal_binding_are_exact_and_fail_closed(tmp_path: Path) -> None:
+    repository = issue424_fixture(tmp_path)
+    assert routes.issue424_governance_failures(repository) == []
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "expected"),
+    [
+        ("documentSha256", "0" * 64, "SHA-256"),
+        ("documentBytes", 1, "byte count"),
+        ("documentLines", 1, "line count"),
+        ("hasTrailingNewline", False, "trailing-newline"),
+        ("acceptedBaseSha", "0" * 40, "accepted base"),
+        ("bootstrapBranch", "stage8-424-master-program-authority-prelog-extra", "branch"),
+        ("proposalState", "ACCEPTED", "proposal state"),
+        ("implementationAuthority", "ACTIVE", "implementation authority"),
+        ("activeProgramRoute", {"route": "forbidden"}, "active route"),
+    ],
+)
+def test_issue424_binding_mutations_fail(
+    tmp_path: Path, field: str, value: object, expected: str
+) -> None:
+    repository = issue424_fixture(tmp_path)
+    path = repository / "docs/governance/narratwin-master-program-v1.json"
+    binding = json.loads(path.read_text(encoding="utf-8"))
+    binding[field] = value
+    path.write_text(json.dumps(binding, indent=2) + "\n", encoding="utf-8")
+    assert any(expected in failure for failure in routes.issue424_governance_failures(repository))
+
+
+def test_issue424_binding_rejects_unknown_fields(tmp_path: Path) -> None:
+    repository = issue424_fixture(tmp_path)
+    path = repository / "docs/governance/narratwin-master-program-v1.json"
+    binding = json.loads(path.read_text(encoding="utf-8"))
+    binding["unreviewedBypass"] = True
+    path.write_text(json.dumps(binding, indent=2) + "\n", encoding="utf-8")
+    assert any("unknown binding field" in failure for failure in routes.issue424_governance_failures(repository))
+
+
+def test_issue424_heading_and_waist_up_asset_mutations_fail(tmp_path: Path) -> None:
+    repository = issue424_fixture(tmp_path)
+    path = repository / "docs/governance/NARRATWIN_MASTER_PROGRAM_V1.md"
+    controller = path.read_text(encoding="utf-8")
+    controller = controller.replace(
+        "## 42. Final pre-log review gate", "## 99. Final pre-log review gate"
+    ).replace("waist-up derivative path and SHA-256", "derivative path and SHA-256")
+    path.write_text(controller, encoding="utf-8")
+    failures = routes.issue424_governance_failures(repository)
+    assert any("numbered heading" in failure for failure in failures)
+    assert any("waist-up derivative" in failure for failure in failures)
+
+
+def test_issue424_canonical_preflight_rejects_schema_and_scope_mutations(tmp_path: Path) -> None:
+    repository = issue424_fixture(tmp_path)
+    path = repository / "docs/governance/preflights/issue-424.json"
+    preflight = json.loads(path.read_text(encoding="utf-8"))
+    preflight["unreviewed_extension"] = True
+    preflight["scope"].pop("allowed_prefixes", None)
+    path.write_text(json.dumps(preflight, indent=2) + "\n", encoding="utf-8")
+    failures = routes.issue424_governance_failures(repository)
+    assert any("GovernancePreflightV1" in failure for failure in failures)
+
+
+def test_issue424_proposal_requires_a_separate_future_decision_record(tmp_path: Path) -> None:
+    repository = issue424_fixture(tmp_path)
+    path = repository / "docs/governance/narratwin-master-program-v1.json"
+    binding = json.loads(path.read_text(encoding="utf-8"))
+    binding["authorityTransition"]["decisionPath"] = binding["documentPath"]
+    path.write_text(json.dumps(binding, indent=2) + "\n", encoding="utf-8")
+    assert any("separate authority decision" in failure for failure in routes.issue424_governance_failures(repository))
 
 
 def test_issue421_route_requires_exact_accepted_base_and_branch_point() -> None:
