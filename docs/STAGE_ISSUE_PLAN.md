@@ -2688,3 +2688,26 @@ eligible non-author approval, merge, merged-main checks, issue closeout, and a
 new separately governed child may authority reconciliation and stale-route
 enforcement begin. Any controller-byte/hash drift after approval stops the
 route. Release remains No-Go.
+
+## Issue #427 architecture reset route
+
+Issue `#427`, under parent `#426`, replaces its abandoned monolithic design
+attempt with the exact non-activating architecture reset approved in OWNER
+comment `5273244742`. The clean branch
+`cut1-process-427-authority-architecture-reset` starts at
+`a02286240212ad8958915aec01aa5ebaf60fa705`, changes exactly the fourteen paths
+in its GovernancePreflightV1, and is capped at 2,000 aggregate additions plus
+deletions. Its first commit is the preflight alone.
+
+The reset assigns 23 architecture-kernel invariants to serialized Children A–F
+in strict order: core schemas/state matrices; evidence/trust; projection/CAS/
+bootstrap; audit/closeout coordination; historical reconciliation; integrated
+offline kernel/oracle. It does not begin any child. After Issue #427 closes,
+the exact next child is `A — Core schemas and state matrices`, which requires a
+new OWNER-approved issue and full child-specific route.
+
+Issue #427 uses the dedicated Stage 8 reset gate. `make phase1-closure-quality`
+is `NOT_APPLICABLE_SUPERSEDED_BY_OWNER`. The reset creates no accepted authority
+decision, active route, runtime/product change, provider, credential, egress,
+spend, media, infrastructure, deployment, publication, release, SLA, commercial
+readiness or production capability. Release remains No-Go.

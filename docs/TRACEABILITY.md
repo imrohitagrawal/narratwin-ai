@@ -573,3 +573,14 @@ This repair proves deterministic grounding lineage only. Voice quality,
 spoken-word correspondence, provider behavior, legal/privacy clearance,
 deployment, distribution, production readiness, release, and human listening
 remain separate gates.
+
+## Issue #427 architecture-reset traceability
+
+| Requirement | Evidence | Preserved boundary |
+|---|---|---|
+| Preserve the approved compact architecture kernel | Exact 17,847-byte, 326-line proposal at SHA-256 `bb8513fb82402d9d3e34590569ec2a07b42688a46e395fe9243f0fc2f8408b45`; strict non-activating binding JSON | Proposal state remains `RESET_PROPOSAL_UNAPPROVED`; activation remains `NONE` |
+| Prevent the former monolith from reappearing | ADR 0060; Children A–F each own one protocol family in strict `A → B → C → D → E → F` order | Issue #427 defines architecture and boundaries only; no field schema, evidence service, CAS, audit coordinator, reconciliation runner, or integrated kernel is implemented |
+| Fail closed on route and artifact drift | Dedicated Issue #427 gate; focused RED/GREEN tests; exact Stage 8 registration | Wrong branch/base/history/first commit/scope/budget/numstat/JSON/proposal/review/section/invariant/child/nonactivation state fails |
+| Preserve human authority boundaries | OWNER route comments `5273122120` and `5273244742`; frozen-head review packet; later eligible non-author and exact-byte OWNER approvals | Author, tests, files, hashes, CI and review templates cannot self-approve or activate authority |
+| Preserve capability No-Go | Preflight, proposal, security review, ADR, stage plan, status and quality-gate statements | No runtime/product, provider, credential, egress, spend, media, infrastructure, deployment, publication, release, SLA, commercial-readiness or production capability |
+| Identify the next bounded work without starting it | Issue #427 stage plan and status target state | Next child is `A — Core schemas and state matrices` only after separate OWNER route approval and #427 closeout |
