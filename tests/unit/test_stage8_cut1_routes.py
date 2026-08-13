@@ -54,6 +54,30 @@ stage8: Any = load(REPO / "scripts/quality/check_stage8_docs.py", "stage8_with_c
 
 
 EXPECTED = {
+    "cut1-process-150-semgrep-mcp-renewal": {
+        "docs/governance/preflights/issue-150.json",
+        "docs/ADR/0061-semgrep-1-172-mcp-override-renewal.md",
+        "docs/RELEASE_CHECKLIST.md",
+        "docs/RISK_REGISTER.md",
+        "docs/SECURITY_AND_PRIVACY.md",
+        "scripts/ci/check_semgrep_security.py",
+        "tools/semgrep/pyproject.toml",
+        "tools/semgrep/reviewed-inputs.sha256",
+        "tools/semgrep/uv.lock",
+        "docs/governance/preflights/issue-428.json",
+        "frontend/package-lock.json",
+        "scripts/quality/stage8_cut1_routes.py",
+        "tests/unit/test_stage8_cut1_routes.py",
+        "tests/unit/test_frontend_dependency_security_contract.py",
+        "tests/unit/test_dependency_security_contract.py",
+        "tests/unit/test_stage8_quality_gate.py",
+        "docs/ADR/0062-nanoid-3-3-18-security-refresh.md",
+        "docs/QUALITY_GATES.md",
+        "docs/STAGE_ISSUE_PLAN.md",
+        "docs/STATUS.md",
+        "docs/THIRD_PARTY_NOTICES.md",
+        "docs/TRACEABILITY.md",
+    },
     "cut1-process-428-nanoid-3-3-18-security": {
         "docs/governance/preflights/issue-428.json", "frontend/package-lock.json",
         "scripts/quality/stage8_cut1_routes.py", "tests/unit/test_stage8_cut1_routes.py",
@@ -524,6 +548,11 @@ def test_google_tts_governance_marks_prompt_prerequisite_satisfied_only() -> Non
 def test_routes_are_exact_pre_registered_and_issue386_preflight_matches() -> None:
     assert routes.ROUTES == EXPECTED
     assert {branch: stage8.EFFECTIVE_STAGE8_ROUTES[branch] for branch in EXPECTED} == EXPECTED
+    issue150 = json.loads((REPO / "docs/governance/preflights/issue-150.json").read_text(encoding="utf-8"))
+    issue150_route = EXPECTED["cut1-process-150-semgrep-mcp-renewal"]
+    assert issue150["branch"] == "cut1-process-150-semgrep-mcp-renewal"
+    assert set(issue150["scope"]["required"]) == issue150_route
+    assert issue150["change_budget"]["maximum_additions_plus_deletions"] == 1000
     issue421 = json.loads((REPO / "docs/governance/preflights/issue-421.json").read_text(encoding="utf-8"))
     issue421_route = EXPECTED[routes.ISSUE421_BRANCH]
     assert issue421["branch"] == routes.ISSUE421_BRANCH
