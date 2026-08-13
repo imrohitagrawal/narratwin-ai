@@ -121,9 +121,7 @@ def test_ci_detached_fixture_uses_route_parent_of_synthetic_merge(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     source = Path(__file__).resolve().parents[2]
-    route_head = subprocess.run(
-        ["/usr/bin/git", "rev-parse", "HEAD"], cwd=source, check=True, capture_output=True, text=True
-    ).stdout.strip()
+    route_head = reset.ci_route_head(source)
     synthetic = tmp_path / "synthetic"
     subprocess.run(
         ["/usr/bin/git", "clone", "--quiet", "--no-local", str(source), str(synthetic)], check=True
