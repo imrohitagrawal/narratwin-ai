@@ -574,6 +574,23 @@ def test_security_preflights_reject_duplicate_and_exact_byte_drift(tmp_path: Pat
         assert routes.security_preflight_failures(tmp_path, issue) == [
             f"Issue #{issue} security preflight is malformed or unreadable."
         ]
+
+
+def test_security_preflight_identity_rejects_coordinated_branch_mutation(
+    monkeypatch: Any, tmp_path: Path,
+) -> None:
+    issue = 150
+    source = REPO / "docs/governance/preflights/issue-150.json"
+    target = tmp_path / "docs/governance/preflights/issue-150.json"
+    target.parent.mkdir(parents=True)
+    artifact = json.loads(source.read_text(encoding="utf-8"))
+    artifact["branch"] = routes.ISSUE428_BRANCH
+    target.write_text(json.dumps(artifact), encoding="utf-8")
+    digest = hashlib.sha256(target.read_bytes()).hexdigest()
+    monkeypatch.setitem(routes.SECURITY_PREFLIGHTS, issue, (artifact["schema_version"], digest))
+    assert routes.security_preflight_failures(tmp_path, issue) == [
+        "Issue #150 security preflight identity drifted."
+    ]
     issue421 = json.loads((REPO / "docs/governance/preflights/issue-421.json").read_text(encoding="utf-8"))
     issue421_route = EXPECTED[routes.ISSUE421_BRANCH]
     assert issue421["branch"] == routes.ISSUE421_BRANCH

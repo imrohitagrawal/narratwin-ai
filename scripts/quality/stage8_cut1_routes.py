@@ -777,12 +777,13 @@ def security_preflight_failures(root: Path, issue: int) -> list[str]:
         failures.append(f"Issue #{issue} security preflight exact bytes drifted.")
     if artifact.get("schema_version") != schema:
         failures.append(f"Issue #{issue} security preflight schema drifted.")
-    if artifact.get("issue_number") != issue or artifact.get("branch") not in ROUTES:
+    expected_branch = ISSUE150_BRANCH if issue == 150 else ISSUE428_BRANCH
+    if artifact.get("issue_number") != issue or artifact.get("branch") != expected_branch:
         failures.append(f"Issue #{issue} security preflight identity drifted.")
     scope = artifact.get("scope")
     required = scope.get("required") if isinstance(scope, dict) else None
     forbidden = scope.get("forbidden") if isinstance(scope, dict) else None
-    expected = ROUTES[ISSUE150_BRANCH if issue == 150 else ISSUE428_BRANCH]
+    expected = ROUTES[expected_branch]
     if not isinstance(required, list) or set(required) != expected or len(required) != len(expected):
         failures.append(f"Issue #{issue} security preflight scope drifted.")
     if not isinstance(forbidden, list) or any(
