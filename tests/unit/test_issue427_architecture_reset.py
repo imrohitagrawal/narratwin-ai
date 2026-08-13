@@ -7,6 +7,7 @@ import json
 import subprocess
 from collections.abc import Callable
 from dataclasses import replace
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -88,6 +89,25 @@ def test_repository_facts_fail_closed(
 
 def test_repository_facts_accept_only_the_exact_route() -> None:
     assert reset.repository_findings(facts()) == []
+
+
+def test_repository_facts_accept_the_ci_detached_head(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    source = Path(__file__).resolve().parents[2]
+    checkout = tmp_path / "checkout"
+    head = subprocess.run(
+        ["/usr/bin/git", "rev-parse", "HEAD"], cwd=source, check=True, capture_output=True, text=True
+    ).stdout.strip()
+    subprocess.run(
+        ["/usr/bin/git", "clone", "--quiet", "--no-local", str(source), str(checkout)], check=True
+    )
+    subprocess.run(
+        ["/usr/bin/git", "checkout", "--quiet", "--detach", head], cwd=checkout, check=True
+    )
+    monkeypatch.setenv("GITHUB_HEAD_REF", reset.BRANCH)
+
+    assert reset.repository_findings(reset.collect_repository_facts(checkout)) == []
 
 
 @pytest.mark.parametrize(
