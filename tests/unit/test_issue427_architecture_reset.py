@@ -134,12 +134,43 @@ def test_ci_detached_fixture_uses_route_parent_of_synthetic_merge(
          "merge", "--quiet", "--no-ff", "--no-edit", route_head], cwd=synthetic, check=True
     )
     monkeypatch.setenv("GITHUB_HEAD_REF", reset.BRANCH)
-    monkeypatch.setenv("GITHUB_BASE_SHA", reset.BASE)
+    event = tmp_path / "event.json"
+    event.write_text(json.dumps({"pull_request": {
+        "base": {"sha": reset.BASE}, "head": {"sha": route_head, "ref": reset.BRANCH},
+    }}))
+    monkeypatch.setenv("GITHUB_EVENT_PATH", str(event))
+    monkeypatch.delenv("GITHUB_BASE_SHA", raising=False)
 
     assert reset.ci_route_head(synthetic) == route_head
     assert reset.repository_findings(reset.collect_repository_facts(synthetic)) == []
-    monkeypatch.setenv("GITHUB_BASE_SHA", "0" * 40)
+    valid = event.read_bytes()
+    configured_base = reset.BASE
+    monkeypatch.setenv("GITHUB_BASE_SHA", configured_base)
+    invalid = (
+        b'{"pull_request":NaN}',
+        b'{"pull_request":{},"pull_request":{}}',
+        b'{"pull_request":',
+        valid.replace(reset.BASE.encode(), b"0" * 40),
+        valid.replace(route_head.encode(), b"0" * 40),
+        valid.replace(reset.BRANCH.encode(), b"wrong-branch"),
+        valid.replace(f'"{reset.BASE}"'.encode(), b"427"),
+    )
+    for hostile in invalid:
+        event.write_bytes(hostile)
+        assert reset.ci_route_head(synthetic) != route_head
+    event.write_bytes(b"x" * (reset.EVENT_MAX_BYTES + 1))
     assert reset.ci_route_head(synthetic) != route_head
+    target = tmp_path / "event-target.json"
+    target.write_bytes(valid)
+    event.unlink()
+    event.symlink_to(target)
+    assert reset.ci_route_head(synthetic) != route_head
+    event.unlink()
+    os.mkfifo(event)
+    assert reset.ci_route_head(synthetic) != route_head
+    event.unlink()
+    monkeypatch.delenv("GITHUB_EVENT_PATH")
+    assert reset.ci_route_head(synthetic) == route_head
 
 
 @pytest.mark.parametrize(
