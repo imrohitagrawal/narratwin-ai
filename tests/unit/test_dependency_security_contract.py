@@ -402,8 +402,8 @@ def test_installed_semgrep_tool_identity_requires_locked_mcp(monkeypatch: pytest
     site_packages = tmp_path / "semgrep-tool" / "lib"
     site_packages.mkdir(parents=True)
     monkeypatch.setattr(semgrep_security, "TOOL_ENV", tmp_path)
-    lock = {"semgrep": {"1.172.0"}, "click": {"8.4.2"}, "mcp": {"1.28.1"}, "cryptography": {"50.0.0"}}
-    installed = [dist("semgrep", "1.172.0"), dist("click", "8.4.2"), dist("mcp", "1.28.1"), dist("cryptography", "50.0.0")]
+    lock = {"semgrep": {"1.172.0"}, "click": {"8.4.2"}, "mcp": {"1.28.1"}, "cryptography": {"50.0.0"}, "pyjwt": {"2.13.0"}}
+    installed = [dist("semgrep", "1.172.0"), dist("click", "8.4.2"), dist("mcp", "1.28.1"), dist("cryptography", "50.0.0"), dist("PyJWT", "2.13.0")]
     monkeypatch.setattr(semgrep_security, "_locked_versions", lambda path: lock)
     monkeypatch.setattr(importlib.metadata, "distributions", lambda path: installed)
     validate_installed_tool(site_packages)
@@ -426,6 +426,7 @@ def test_installed_semgrep_tool_identity_rejects_vulnerable_cryptography(
         "click": {"8.4.2"},
         "mcp": {"1.28.1"},
         "cryptography": {"50.0.0"},
+        "pyjwt": {"2.13.0"},
     }
     monkeypatch.setattr(semgrep_security, "_locked_versions", lambda path: locked)
     installed = [
@@ -433,9 +434,28 @@ def test_installed_semgrep_tool_identity_rejects_vulnerable_cryptography(
         dist("click", "8.4.2"),
         dist("mcp", "1.28.1"),
         dist("cryptography", "49.0.0"),
+        dist("PyJWT", "2.13.0"),
     ]
     monkeypatch.setattr(importlib.metadata, "distributions", lambda path: installed)
     with pytest.raises(ContractError, match="cryptography"):
+        validate_installed_tool(site_packages)
+
+
+@pytest.mark.parametrize("version", [None, "2.12.0"])
+def test_installed_semgrep_tool_identity_requires_exact_pyjwt(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, version: str | None
+) -> None:
+    def dist(name: str, value: str) -> object:
+        return type("Dist", (), {"metadata": {"Name": name}, "version": value})()
+
+    site_packages = tmp_path / "semgrep-tool" / "lib"
+    site_packages.mkdir(parents=True)
+    monkeypatch.setattr(semgrep_security, "TOOL_ENV", tmp_path)
+    installed = [dist("semgrep", "1.172.0"), dist("click", "8.4.2"), dist("mcp", "1.28.1"), dist("cryptography", "50.0.0")]
+    if version is not None:
+        installed.append(dist("PyJWT", version))
+    monkeypatch.setattr(importlib.metadata, "distributions", lambda path: installed)
+    with pytest.raises(ContractError, match="PyJWT identity"):
         validate_installed_tool(site_packages)
 
 

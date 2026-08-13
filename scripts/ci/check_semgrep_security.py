@@ -187,6 +187,7 @@ def validate_installed_tool(site_packages: Path) -> None:
     _require(installed.get("click") == "8.4.2", "installed Click identity mismatch")
     _require(installed.get("mcp") == "1.28.1", "installed MCP identity mismatch")
     _require(installed.get("cryptography") == "50.0.0", "installed cryptography identity mismatch")
+    _require(installed.get("pyjwt") == "2.13.0", "installed PyJWT identity mismatch")
     locked = _locked_versions(TOOL_ROOT / "uv.lock")
     unexpected = {
         f"{name}=={version}"

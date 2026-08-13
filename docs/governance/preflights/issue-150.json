@@ -1,5 +1,5 @@
 {
-  "schema_version": "GovernancePreflightV1",
+  "schema_version": "Issue150SecurityRenewalPreflightV1",
   "issue_number": 150,
   "branch": "cut1-process-150-semgrep-mcp-renewal",
   "base": "a02286240212ad8958915aec01aa5ebaf60fa705",

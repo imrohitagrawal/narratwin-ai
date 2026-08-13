@@ -557,6 +557,23 @@ def test_routes_are_exact_pre_registered_and_issue386_preflight_matches() -> Non
         for path in issue150_route for rule in issue150["scope"]["forbidden"]
     )
     assert issue150["change_budget"]["maximum_additions_plus_deletions"] == 1000
+    assert routes.security_preflight_failures(REPO, 150) == []
+    assert routes.security_preflight_failures(REPO, 428) == []
+
+
+def test_security_preflights_reject_duplicate_and_exact_byte_drift(tmp_path: Path) -> None:
+    for issue in (150, 428):
+        source = REPO / f"docs/governance/preflights/issue-{issue}.json"
+        target = tmp_path / f"docs/governance/preflights/issue-{issue}.json"
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(source.read_bytes() + b"\n")
+        assert routes.security_preflight_failures(tmp_path, issue) == [
+            f"Issue #{issue} security preflight exact bytes drifted."
+        ]
+        target.write_text('{"schema_version":"x","schema_version":"y"}', encoding="utf-8")
+        assert routes.security_preflight_failures(tmp_path, issue) == [
+            f"Issue #{issue} security preflight is malformed or unreadable."
+        ]
     issue421 = json.loads((REPO / "docs/governance/preflights/issue-421.json").read_text(encoding="utf-8"))
     issue421_route = EXPECTED[routes.ISSUE421_BRANCH]
     assert issue421["branch"] == routes.ISSUE421_BRANCH

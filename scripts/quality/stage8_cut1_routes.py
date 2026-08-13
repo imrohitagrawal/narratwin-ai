@@ -42,6 +42,10 @@ ISSUE368_QUOTA_FIX_BASE = "9c165f739788fb0f09b315673f9125d700d6a96b"
 ISSUE421_BASE = "a868137fab607ae75d4b272301e9fc52b898e15c"
 ISSUE424_BASE = "afcf0325c3ec925b68b770eda0bb8c839bcce4dd"
 ISSUE150_BASE = "a02286240212ad8958915aec01aa5ebaf60fa705"
+SECURITY_PREFLIGHTS = {
+    150: ("Issue150SecurityRenewalPreflightV1", "e6a569cb6254ef58c36fb44e9cdece26e0816b49c9f62ce08e9d90f3843c97e3"),
+    428: ("Issue428NanoidSecurityPreflightV1", "0d8da352c98855bc481581f1ca13cc2d4e994838b1afb31d974ad2b17caf7a9b"),
+}
 
 ROUTES = {
     ISSUE150_BRANCH: {
@@ -751,7 +755,42 @@ def load_json_without_duplicate_members(path: Path) -> Any:
             result[key] = value
         return result
 
-    return json.loads(path.read_text(encoding="utf-8"), object_pairs_hook=unique)
+    return json.loads(
+        path.read_text(encoding="utf-8"), object_pairs_hook=unique,
+        parse_constant=lambda value: (_ for _ in ()).throw(ValueError(value)),
+    )
+
+
+def security_preflight_failures(root: Path, issue: int) -> list[str]:
+    path = root / f"docs/governance/preflights/issue-{issue}.json"
+    schema, expected_sha = SECURITY_PREFLIGHTS[issue]
+    try:
+        metadata = path.lstat()
+        if path.is_symlink() or not stat.S_ISREG(metadata.st_mode) or metadata.st_size > 65536:
+            raise ValueError("preflight must be a bounded regular file")
+        payload = path.read_bytes()
+        artifact = load_json_without_duplicate_members(path)
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError, DuplicateJsonMember, ValueError):
+        return [f"Issue #{issue} security preflight is malformed or unreadable."]
+    failures: list[str] = []
+    if hashlib.sha256(payload).hexdigest() != expected_sha:
+        failures.append(f"Issue #{issue} security preflight exact bytes drifted.")
+    if artifact.get("schema_version") != schema:
+        failures.append(f"Issue #{issue} security preflight schema drifted.")
+    if artifact.get("issue_number") != issue or artifact.get("branch") not in ROUTES:
+        failures.append(f"Issue #{issue} security preflight identity drifted.")
+    scope = artifact.get("scope")
+    required = scope.get("required") if isinstance(scope, dict) else None
+    forbidden = scope.get("forbidden") if isinstance(scope, dict) else None
+    expected = ROUTES[ISSUE150_BRANCH if issue == 150 else ISSUE428_BRANCH]
+    if not isinstance(required, list) or set(required) != expected or len(required) != len(expected):
+        failures.append(f"Issue #{issue} security preflight scope drifted.")
+    if not isinstance(forbidden, list) or any(
+        path == rule or (isinstance(rule, str) and rule.endswith("/") and path.startswith(rule))
+        for path in expected for rule in (forbidden if isinstance(forbidden, list) else [])
+    ):
+        failures.append(f"Issue #{issue} security preflight forbidden scope conflicts.")
+    return failures
 
 
 def issue424_governance_failures(root: Path) -> list[str]:
@@ -1018,6 +1057,11 @@ def check_exact_route(
     issue = ROUTE_ISSUES[branch]
     files = ROUTES[branch]
     failures.extend(f"Issue #{issue} route is missing required path: {path}" for path in sorted(files - changed))
+    if branch == ISSUE150_BRANCH:
+        failures.extend(security_preflight_failures(root, 150))
+        failures.extend(security_preflight_failures(root, 428))
+    elif branch == ISSUE428_BRANCH:
+        failures.extend(security_preflight_failures(root, 428))
     if branch == ISSUE424_BRANCH:
         failures.extend(issue424_governance_failures(root))
     try:

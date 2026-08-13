@@ -1,9 +1,9 @@
 {
-  "schema_version": "GovernancePreflightV1",
+  "schema_version": "Issue428NanoidSecurityPreflightV1",
   "issue_number": 428,
   "branch": "cut1-process-428-nanoid-3-3-18-security",
   "base": "a02286240212ad8958915aec01aa5ebaf60fa705",
-  "objective": "Remove the current High-severity GHSA-2v37-7h3g-55p8/CVE-2026-67213 finding by refreshing only transitive nanoid 3.3.17 to official 3.3.18 under PostCSS's existing compatible range. Official registry metadata binds nanoid-3.3.18.tgz to SHA-512 DTg4MJbGMWkfi6VZFdNt2/caMbQy4Ou+Op/hJQvGEWcnVfoA1QA+xzRKAzw9jD6+GVOOeYr/mIcuDSdug6F6+w==. Preserve package.json and every unrelated lock entry. Commit RED before GREEN for affected version, wrong identity/integrity, direct dependency, unrelated drift, route, and budget mutations. Replace, never append, architecture-specific frontend runtime inventory bindings after native reproduction. Require npm audit, complete security/quality/CI/container/eval gates, independent exact-head review, eligible approval, reference-only merge, and merged-main acceptance before Issue #150 resumes. No product, runtime, API, UI, provider, media, Dockerfile, workflow, deployment, release, public, or production authority is granted.",
+  "objective": "Remove the current High-severity GHSA-2v37-7h3g-55p8/CVE-2026-67213 finding by refreshing only transitive nanoid 3.3.17 to official 3.3.18 under PostCSS's existing compatible range. Official registry metadata binds nanoid-3.3.18.tgz to SHA-512 DTg4MJbGMWkfi6VZFdNt2/caMbQy4Ou+Op/hJQvGEWcnVfoA1QA+xzRKAzw9jD6+GVOOeYr/mIcuDSdug6F6+w==. Preserve package.json and every unrelated lock entry. Commit RED before GREEN for affected version, wrong identity/integrity, direct dependency, unrelated drift, route, and budget mutations. Preserve the architecture-specific frontend runtime inventory contract. Require npm audit, complete security/quality/CI/container/eval gates, independent exact-head review, eligible approval, reference-only merge, and joint merged-main acceptance with Issue #150 through the OWNER-approved convergence PR. No product, runtime, API, UI, provider, media, Dockerfile, workflow, deployment, release, public, or production authority is granted.",
   "authority": {
     "issue": "https://github.com/imrohitagrawal/narratwin-ai/issues/428",
     "security_owner_decision": "https://github.com/imrohitagrawal/narratwin-ai/issues/150#issuecomment-5286137927",
@@ -62,7 +62,7 @@
     "N428-04": "npm audit and repository gates contain zero unresolved High or Critical findings and no ignore or threshold change.",
     "N428-05": "The current bounded architecture-checked frontend inventory contract and container evidence remain unchanged and pass with the refreshed lock.",
     "N428-06": "Exactly twelve paths and no more than 500 charged lines are accepted from the exact base.",
-    "N428-07": "Issue #150 remains serialized until merged-main acceptance; frozen Issue #427 remains byte-identical and inactive.",
+    "N428-07": "Issue #150 is completed in the same protected convergence PR; frozen Issue #427 remains byte-identical and inactive until joint merged-main acceptance.",
     "N428-08": "The route changes no product behavior, runtime dependency ownership, provider, deployment, release, or production posture."
   },
   "tdd_sequence": {

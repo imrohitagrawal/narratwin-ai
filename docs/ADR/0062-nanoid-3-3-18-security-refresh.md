@@ -28,8 +28,9 @@ superseded exact-inventory binding used by Issue #403.
 
 ## Consequences
 
-The High dependency finding is removed without suppressing it. Issue #150 may
-resume only after Issue #428 passes local and hosted gates, independent review,
-eligible approval, merge, and merged-main verification. Issue #427 remains
-frozen and inactive. Deployment, release, public availability, and production
-readiness remain No-Go.
+The High dependency finding is removed without suppressing it. The OWNER-approved
+convergence carries Issues #428 and #150 through one protected PR, with both
+contracts passing local and hosted gates, independent review, eligible approval,
+merge, and merged-main verification together. Issue #427 remains frozen and
+inactive. Deployment, release, public availability, and production readiness
+remain No-Go.

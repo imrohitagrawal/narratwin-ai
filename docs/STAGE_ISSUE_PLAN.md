@@ -1,9 +1,9 @@
 # Stage Issue Plan
 
-Issue `#428` is a serialized Stage 8 security prerequisite for Issue `#150`:
-refresh only transitive Nano ID `3.3.17` to `3.3.18`, preserve the current
-container-evidence architecture and all product/runtime behavior, and require
-merged-main acceptance before resuming the Semgrep renewal.
+Issues `#428` and `#150` are converged Stage 8 security prerequisites in one
+OWNER-approved protected PR: refresh only transitive Nano ID `3.3.17` to
+`3.3.18`, preserve the current container-evidence architecture and all
+product/runtime behavior, and require joint merged-main acceptance.
 
 Every NarraTwin AI stage must move through issue, branch, pull request, review, quality gate, and merge. This file defines the required issue plan and branch pattern for Stage 0 through Stage 8 plus Final Review.
 
