@@ -33,4 +33,3 @@ resume only after Issue #428 passes local and hosted gates, independent review,
 eligible approval, merge, and merged-main verification. Issue #427 remains
 frozen and inactive. Deployment, release, public availability, and production
 readiness remain No-Go.
-

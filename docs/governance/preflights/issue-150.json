@@ -52,7 +52,6 @@
       "backend/",
       "demo/",
       "evals/",
-      "frontend/",
       "perf/",
       "portfolio/",
       "pyproject.toml",

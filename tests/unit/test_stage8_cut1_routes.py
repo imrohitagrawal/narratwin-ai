@@ -552,6 +552,10 @@ def test_routes_are_exact_pre_registered_and_issue386_preflight_matches() -> Non
     issue150_route = EXPECTED["cut1-process-150-semgrep-mcp-renewal"]
     assert issue150["branch"] == "cut1-process-150-semgrep-mcp-renewal"
     assert set(issue150["scope"]["required"]) == issue150_route
+    assert not any(
+        path == rule or (rule.endswith("/") and path.startswith(rule))
+        for path in issue150_route for rule in issue150["scope"]["forbidden"]
+    )
     assert issue150["change_budget"]["maximum_additions_plus_deletions"] == 1000
     issue421 = json.loads((REPO / "docs/governance/preflights/issue-421.json").read_text(encoding="utf-8"))
     issue421_route = EXPECTED[routes.ISSUE421_BRANCH]

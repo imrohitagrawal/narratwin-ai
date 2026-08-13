@@ -34,4 +34,3 @@ The renewal remains temporary. If upstream does not support fixed MCP before
 2026-08-28, a security/repository owner must again choose a reviewed short
 renewal, scanner replacement, or removal. A silent extension or audit waiver is
 prohibited.
-
