@@ -10,6 +10,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from scripts.quality.branch_identity import current_branch
+
 BRANCH = "cut1-process-427-authority-architecture-reset"
 BASE = "a02286240212ad8958915aec01aa5ebaf60fa705"
 PREFLIGHT_PATH = "docs/governance/preflights/issue-427.json"
@@ -300,7 +302,7 @@ def _zlist(raw: bytes) -> tuple[str, ...]:
 
 def collect_repository_facts(root: Path) -> RepositoryFacts:
     try:
-        branch = _git(root, "symbolic-ref", "--short", "HEAD").decode().strip()
+        branch = current_branch(root)
         head = _git(root, "rev-parse", "HEAD").decode().strip()
         base = _git(root, "merge-base", BASE, head).decode().strip()
         shallow = _git(root, "rev-parse", "--is-shallow-repository").decode().strip() != "false"
