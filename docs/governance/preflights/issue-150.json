@@ -1,0 +1,111 @@
+{
+  "schema_version": "GovernancePreflightV1",
+  "issue_number": 150,
+  "branch": "cut1-process-150-semgrep-mcp-renewal",
+  "base": "a02286240212ad8958915aec01aa5ebaf60fa705",
+  "objective": "Replace the expired Semgrep compatibility exception with the OWNER-selected short MCP-only renewal: upgrade isolated Semgrep from 1.168.0 to exactly 1.172.0 so upstream supplies fixed Click 8.4.2, remove the obsolete Click override, retain only mcp==1.28.1 because upstream still pins advisory-bearing MCP 1.23.3, and expire the renewed exception on 2026-08-28. Preserve the isolated tool boundary, exact local rules and targets, zero audit ignores, scan and canary behavior, backend image exclusion, nonproduction posture, and the frozen Issue #427 packet. Require RED/GREEN tests, generated lock review, reviewed-input rebinding, complete local security and quality gates, independent security and technical review, protected hosted checks, eligible non-author approval, merge verification, and Issue #150 closeout. No product, runtime, provider, credential, infrastructure, deployment, release, SLA, commercial-readiness, or production capability is authorized.",
+  "authority": {
+    "issue": "https://github.com/imrohitagrawal/narratwin-ai/issues/150",
+    "owner_decision": "https://github.com/imrohitagrawal/narratwin-ai/issues/150#issuecomment-5286137927",
+    "deadline_evidence": "https://github.com/imrohitagrawal/narratwin-ai/issues/150#issuecomment-5286091000",
+    "blocked_issue_427_packet": "https://github.com/imrohitagrawal/narratwin-ai/issues/427#issuecomment-5286114129"
+  },
+  "source_facts": {
+    "verified_on": "2026-08-14",
+    "semgrep_1_172_metadata": "https://pypi.org/pypi/semgrep/1.172.0/json",
+    "upstream_click_requirement": "click~=8.4.2",
+    "upstream_mcp_requirement": "mcp==1.23.3",
+    "repository_mcp_baseline": "mcp==1.28.1",
+    "renewal_expiry": "2026-08-28"
+  },
+  "scope": {
+    "required": [
+      "docs/governance/preflights/issue-150.json",
+      "docs/ADR/0061-semgrep-1-172-mcp-override-renewal.md",
+      "docs/QUALITY_GATES.md",
+      "docs/RELEASE_CHECKLIST.md",
+      "docs/RISK_REGISTER.md",
+      "docs/SECURITY_AND_PRIVACY.md",
+      "docs/STATUS.md",
+      "docs/THIRD_PARTY_NOTICES.md",
+      "docs/TRACEABILITY.md",
+      "scripts/ci/check_semgrep_security.py",
+      "tests/unit/test_dependency_security_contract.py",
+      "tools/semgrep/pyproject.toml",
+      "tools/semgrep/reviewed-inputs.sha256",
+      "tools/semgrep/uv.lock"
+    ],
+    "forbidden": [
+      ".github/",
+      "AGENTS.md",
+      "Makefile",
+      "backend/",
+      "demo/",
+      "evals/",
+      "frontend/",
+      "perf/",
+      "portfolio/",
+      "pyproject.toml",
+      "scripts/ci/dependency-audit.sh",
+      "scripts/ci/dependency-security.sh",
+      "scripts/ci/run-semgrep.sh",
+      "scripts/ci/semgrep-targets.txt",
+      "scripts/guardrails_check.py",
+      "semgrep.yml",
+      "uv.lock"
+    ]
+  },
+  "change_budget": {
+    "exact_paths": 14,
+    "maximum_additions_plus_deletions": 900,
+    "deletions_grant_credit": false
+  },
+  "invariants": {
+    "S150-01": "The root application graph remains free of Semgrep and dependency overrides and retains fixed Click.",
+    "S150-02": "The isolated tool pins exactly Semgrep 1.172.0 and resolves upstream Click 8.4.2 without a Click override.",
+    "S150-03": "The isolated tool contains exactly one override, mcp==1.28.1; missing, stale, additional, broadened, or reordered overrides fail closed.",
+    "S150-04": "The MCP-only exception expires after 2026-08-28 and any relevant tool, lock, rule, target, invocation, reviewed input, or advisory change triggers earlier review.",
+    "S150-05": "Semgrep, Click, MCP, cryptography, and PyJWT installed identities match the generated frozen lock.",
+    "S150-06": "Root and isolated inventories are audited separately with strict zero-ignore behavior before SAST runs.",
+    "S150-07": "Exact local rules, targets, metrics-off invocation, engine validation, clean scan, positive canary, and backend image exclusion remain unchanged.",
+    "S150-08": "Every reviewed input hash is rebound after the manifest, lock, checker, or evidence changes; stale or extra bindings fail closed.",
+    "S150-09": "The renewal is security-tooling-only and creates no runtime MCP server, provider, network service, release, deployment, or production authority.",
+    "S150-10": "The frozen Issue #427 branch, base, artifacts, and evidence refs remain unchanged until this prerequisite is merged and verified."
+  },
+  "tdd_sequence": {
+    "preflight": "Commit only this file before behavior tests or implementation.",
+    "red": "Commit focused tests that require Semgrep 1.172.0, upstream Click 8.4.2, the sole MCP 1.28.1 override, exact expiry 2026-08-28, and rejection of expired, Click, stale MCP, missing, or additional overrides.",
+    "green": "Change only the tool manifest, generated lock, checker, and reviewed-input binding needed to satisfy the frozen contract.",
+    "reconcile": "Update the required ADR and security/governance ledgers without changing release or production posture."
+  },
+  "verification": [
+    "uv run pytest -q tests/unit/test_dependency_security_contract.py",
+    "python3 scripts/guardrails_check.py",
+    "uv lock --project tools/semgrep --check",
+    "python3 scripts/ci/check_semgrep_security.py contract",
+    "make security",
+    "make dependency-audit",
+    "make container-scan",
+    "make secrets-scan",
+    "make stage8-quality",
+    "make quality",
+    "make ci",
+    "uv run ruff check backend scripts tests",
+    "uv run mypy backend scripts tests",
+    "git diff --check"
+  ],
+  "review_and_stop_conditions": {
+    "required_reviews": [
+      "independent security/privacy review",
+      "independent technical and delivery review",
+      "eligible non-author exact-head GitHub approval"
+    ],
+    "stop": [
+      "official Semgrep metadata or generated lock does not match the recorded dependency facts",
+      "any mandatory audit, scan, canary, container, CI, or quality gate fails",
+      "any unapproved path or more than 900 charged lines",
+      "the renewal requires an additional dependency override, audit ignore, waiver, scanner weakening, or runtime change",
+      "independent review identifies an unresolved high-confidence security blocker"
+    ]
+  }
+}
