@@ -146,7 +146,8 @@ def ci_route_head(root: Path) -> str:
     if len(parents) != 3 or os.environ.get("GITHUB_HEAD_REF", "") != BRANCH:
         return head
     detached = _git(root, "rev-parse", "--abbrev-ref", "HEAD").decode().strip() == "HEAD"
-    return parents[2] if detached else head
+    event_base = os.environ.get("GITHUB_BASE_SHA", "").strip()
+    return parents[2] if detached and event_base and parents[1] == event_base else head
 
 
 def read_route_file(root: Path, path: str, limit: int) -> bytes:

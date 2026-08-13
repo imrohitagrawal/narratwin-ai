@@ -136,9 +136,12 @@ def test_ci_detached_fixture_uses_route_parent_of_synthetic_merge(
          "merge", "--quiet", "--no-ff", "--no-edit", route_head], cwd=synthetic, check=True
     )
     monkeypatch.setenv("GITHUB_HEAD_REF", reset.BRANCH)
+    monkeypatch.setenv("GITHUB_BASE_SHA", reset.BASE)
 
     assert reset.ci_route_head(synthetic) == route_head
     assert reset.repository_findings(reset.collect_repository_facts(synthetic)) == []
+    monkeypatch.setenv("GITHUB_BASE_SHA", "0" * 40)
+    assert reset.ci_route_head(synthetic) != route_head
 
 
 @pytest.mark.parametrize(
