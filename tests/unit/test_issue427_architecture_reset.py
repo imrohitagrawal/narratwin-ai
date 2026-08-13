@@ -327,6 +327,37 @@ def test_binding_accepts_only_the_approved_nonactivating_identity() -> None:
     assert reset.binding_findings(json.dumps(binding()).encode()) == []
 
 
+@pytest.mark.parametrize(
+    ("path", "replacement"),
+    [
+        (("issue",), 427.0),
+        (("issue",), True),
+        (("ownerApprovalRequestComment",), 5273122120.0),
+        (("ownerApprovalComment",), 5273244742.0),
+        (("correctionApprovalRequestComment",), 5273917279.0),
+        (("correctionApprovalComment",), 5276469372.0),
+        (("proposal", "bytes"), 17_847.0),
+        (("proposal", "lines"), 326.0),
+        (("architectureReview", "bytes"), 1_540.0),
+        (("architectureReview", "lines"), 28.0),
+        (("securityReview", "bytes"), 1_809.0),
+        (("securityReview", "lines"), 35.0),
+    ],
+)
+def test_binding_rejects_numerically_equal_wrong_scalar_types(
+    path: tuple[str, ...], replacement: object
+) -> None:
+    value = binding()
+    target: dict[str, Any] = value
+    for member in path[:-1]:
+        child = target[member]
+        assert isinstance(child, dict)
+        target = child
+    target[path[-1]] = replacement
+
+    assert reset.binding_findings(json.dumps(value).encode())
+
+
 def test_review_and_claim_surfaces_reject_stale_or_accidental_authority() -> None:
     valid = reset.required_review_text()
     assert reset.review_findings(valid) == []
