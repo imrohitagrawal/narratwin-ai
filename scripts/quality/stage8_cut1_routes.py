@@ -13,6 +13,7 @@ from scripts.governance_preflight_v1 import validate_governance_preflight
 ISSUE386_BRANCH = "cut1-process-386-modular-route-enforcement"
 ISSUE413_BRANCH = "cut1-process-413-frontend-runtime-openssl"
 ISSUE405_BRANCH = "process-405-heartbeat2-main-reliability"
+ISSUE428_BRANCH = "cut1-process-428-nanoid-3-3-18-security"
 ISSUE403_BRANCH = "cut1-process-403-nanoid-3-3-17-security"
 ISSUE401_BRANCH = "cut1-process-401-pypdf-6-15-0-security"
 ISSUE396_BRANCH = "cut1-process-396-js-yaml-4-3-1-security"
@@ -233,6 +234,14 @@ ROUTES = {
         "docs/QUALITY_GATES.md",
         "docs/STATUS.md",
     },
+    ISSUE428_BRANCH: {
+        "docs/governance/preflights/issue-428.json", "frontend/package-lock.json",
+        "scripts/quality/stage8_cut1_routes.py", "tests/unit/test_stage8_cut1_routes.py",
+        "tests/unit/test_frontend_dependency_security_contract.py", "tests/unit/test_stage8_quality_gate.py",
+        "docs/ADR/0062-nanoid-3-3-18-security-refresh.md", "docs/QUALITY_GATES.md",
+        "docs/STAGE_ISSUE_PLAN.md", "docs/STATUS.md", "docs/TRACEABILITY.md",
+        "docs/THIRD_PARTY_NOTICES.md",
+    },
     ISSUE403_BRANCH: {
         "docs/governance/preflights/issue-403.json",
         "frontend/package-lock.json",
@@ -362,11 +371,11 @@ ROUTES = {
         "docs/THIRD_PARTY_NOTICES.md",
     },
 }
-ROUTE_ISSUES = {ISSUE424_BRANCH: 424, ISSUE421_BRANCH: 421, ISSUE415_BRANCH: 415, ISSUE415_CORRECTION_BRANCH: 415, ISSUE413_BRANCH: 413, ISSUE368_ADAPTER_BRANCH: 368, ISSUE368_IMPLEMENTATION_BRANCH: 368, ISSUE368_QUOTA_FIX_BRANCH: 368, ISSUE368_PROMPT_BRANCH: 368, ISSUE368_BRANCH: 368, ISSUE405_BRANCH: 405, ISSUE403_BRANCH: 403, ISSUE401_BRANCH: 401, ISSUE396_BRANCH: 396,
+ROUTE_ISSUES = {ISSUE424_BRANCH: 424, ISSUE421_BRANCH: 421, ISSUE415_BRANCH: 415, ISSUE415_CORRECTION_BRANCH: 415, ISSUE413_BRANCH: 413, ISSUE368_ADAPTER_BRANCH: 368, ISSUE368_IMPLEMENTATION_BRANCH: 368, ISSUE368_QUOTA_FIX_BRANCH: 368, ISSUE368_PROMPT_BRANCH: 368, ISSUE368_BRANCH: 368, ISSUE405_BRANCH: 405, ISSUE428_BRANCH: 428, ISSUE403_BRANCH: 403, ISSUE401_BRANCH: 401, ISSUE396_BRANCH: 396,
                 ISSUE386_BRANCH: 386, ISSUE385_BRANCH: 385,
                 ISSUE384_BRANCH: 384, ISSUE383_BRANCH: 383, ISSUE397_BRANCH: 397,
                 ISSUE393_BRANCH: 393, ISSUE382_BRANCH: 382, ISSUE367_BRANCH: 367}
-TOTAL_LIMITS = {ISSUE424_BRANCH: 8500, ISSUE421_BRANCH: 4000, ISSUE415_BRANCH: 5000, ISSUE415_CORRECTION_BRANCH: 800, ISSUE413_BRANCH: 5000, ISSUE368_ADAPTER_BRANCH: 5600, ISSUE368_IMPLEMENTATION_BRANCH: 3600, ISSUE368_QUOTA_FIX_BRANCH: 2800, ISSUE368_PROMPT_BRANCH: 1000, ISSUE368_BRANCH: 3200, ISSUE405_BRANCH: 800, ISSUE403_BRANCH: 650, ISSUE401_BRANCH: 600, ISSUE396_BRANCH: 500,
+TOTAL_LIMITS = {ISSUE424_BRANCH: 8500, ISSUE421_BRANCH: 4000, ISSUE415_BRANCH: 5000, ISSUE415_CORRECTION_BRANCH: 800, ISSUE413_BRANCH: 5000, ISSUE368_ADAPTER_BRANCH: 5600, ISSUE368_IMPLEMENTATION_BRANCH: 3600, ISSUE368_QUOTA_FIX_BRANCH: 2800, ISSUE368_PROMPT_BRANCH: 1000, ISSUE368_BRANCH: 3200, ISSUE405_BRANCH: 800, ISSUE428_BRANCH: 500, ISSUE403_BRANCH: 650, ISSUE401_BRANCH: 600, ISSUE396_BRANCH: 500,
                 ISSUE386_BRANCH: 700, ISSUE385_BRANCH: 350,
                 ISSUE384_BRANCH: 500, ISSUE383_BRANCH: 700, ISSUE397_BRANCH: 500,
                 ISSUE393_BRANCH: 700, ISSUE382_BRANCH: 3200, ISSUE367_BRANCH: 2000}
@@ -529,6 +538,11 @@ TEXT_LIMITS = {
         else 70 if path == "scripts/quality/stage8_cut1_routes.py"
         else 60 if path.startswith("docs/ADR/") else 40
         for path in ROUTES[ISSUE403_BRANCH]
+    },
+    ISSUE428_BRANCH: {
+        path: 150 if path.endswith("issue-428.json") else 110
+        if path == "tests/unit/test_frontend_dependency_security_contract.py" else 70
+        for path in ROUTES[ISSUE428_BRANCH]
     },
     ISSUE401_BRANCH: {
         path: 190 if path.endswith("issue-401.json")
