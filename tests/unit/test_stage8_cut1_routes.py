@@ -54,6 +54,39 @@ stage8: Any = load(REPO / "scripts/quality/check_stage8_docs.py", "stage8_with_c
 
 
 EXPECTED = {
+    "cut1-process-150-semgrep-mcp-renewal": {
+        "docs/governance/preflights/issue-150.json",
+        "docs/ADR/0061-semgrep-1-172-mcp-override-renewal.md",
+        "docs/RELEASE_CHECKLIST.md",
+        "docs/RISK_REGISTER.md",
+        "docs/SECURITY_AND_PRIVACY.md",
+        "scripts/ci/check_semgrep_security.py",
+        "tools/semgrep/pyproject.toml",
+        "tools/semgrep/reviewed-inputs.sha256",
+        "tools/semgrep/uv.lock",
+        "docs/governance/preflights/issue-428.json",
+        "frontend/package-lock.json",
+        "scripts/quality/stage8_cut1_routes.py",
+        "tests/unit/test_stage8_cut1_routes.py",
+        "tests/unit/test_frontend_dependency_security_contract.py",
+        "tests/unit/test_dependency_security_contract.py",
+        "tests/unit/test_stage8_quality_gate.py",
+        "docs/ADR/0062-nanoid-3-3-18-security-refresh.md",
+        "docs/QUALITY_GATES.md",
+        "docs/STAGE_ISSUE_PLAN.md",
+        "docs/STATUS.md",
+        "docs/THIRD_PARTY_NOTICES.md",
+        "docs/TRACEABILITY.md",
+    },
+    "cut1-process-428-nanoid-3-3-18-security": {
+        "docs/governance/preflights/issue-428.json", "frontend/package-lock.json",
+        "scripts/quality/stage8_cut1_routes.py", "tests/unit/test_stage8_cut1_routes.py",
+        "tests/unit/test_frontend_dependency_security_contract.py",
+        "tests/unit/test_stage8_quality_gate.py",
+        "docs/ADR/0062-nanoid-3-3-18-security-refresh.md", "docs/QUALITY_GATES.md",
+        "docs/STAGE_ISSUE_PLAN.md", "docs/STATUS.md", "docs/TRACEABILITY.md",
+        "docs/THIRD_PARTY_NOTICES.md",
+    },
     "stage8-424-master-program-authority-prelog": {
         "docs/governance/NARRATWIN_MASTER_PROGRAM_V1.md",
         "docs/governance/narratwin-master-program-v1.json",
@@ -515,6 +548,49 @@ def test_google_tts_governance_marks_prompt_prerequisite_satisfied_only() -> Non
 def test_routes_are_exact_pre_registered_and_issue386_preflight_matches() -> None:
     assert routes.ROUTES == EXPECTED
     assert {branch: stage8.EFFECTIVE_STAGE8_ROUTES[branch] for branch in EXPECTED} == EXPECTED
+    issue150 = json.loads((REPO / "docs/governance/preflights/issue-150.json").read_text(encoding="utf-8"))
+    issue150_route = EXPECTED["cut1-process-150-semgrep-mcp-renewal"]
+    assert issue150["branch"] == "cut1-process-150-semgrep-mcp-renewal"
+    assert set(issue150["scope"]["required"]) == issue150_route
+    assert not any(
+        path == rule or (rule.endswith("/") and path.startswith(rule))
+        for path in issue150_route for rule in issue150["scope"]["forbidden"]
+    )
+    assert issue150["change_budget"]["maximum_additions_plus_deletions"] == 1000
+    assert routes.security_preflight_failures(REPO, 150) == []
+    assert routes.security_preflight_failures(REPO, 428) == []
+
+
+def test_security_preflights_reject_duplicate_and_exact_byte_drift(tmp_path: Path) -> None:
+    for issue in (150, 428):
+        source = REPO / f"docs/governance/preflights/issue-{issue}.json"
+        target = tmp_path / f"docs/governance/preflights/issue-{issue}.json"
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(source.read_bytes() + b"\n")
+        assert routes.security_preflight_failures(tmp_path, issue) == [
+            f"Issue #{issue} security preflight exact bytes drifted."
+        ]
+        target.write_text('{"schema_version":"x","schema_version":"y"}', encoding="utf-8")
+        assert routes.security_preflight_failures(tmp_path, issue) == [
+            f"Issue #{issue} security preflight is malformed or unreadable."
+        ]
+
+
+def test_security_preflight_identity_rejects_coordinated_branch_mutation(
+    monkeypatch: Any, tmp_path: Path,
+) -> None:
+    issue = 150
+    source = REPO / "docs/governance/preflights/issue-150.json"
+    target = tmp_path / "docs/governance/preflights/issue-150.json"
+    target.parent.mkdir(parents=True)
+    artifact = json.loads(source.read_text(encoding="utf-8"))
+    artifact["branch"] = routes.ISSUE428_BRANCH
+    target.write_text(json.dumps(artifact), encoding="utf-8")
+    digest = hashlib.sha256(target.read_bytes()).hexdigest()
+    monkeypatch.setitem(routes.SECURITY_PREFLIGHTS, issue, (artifact["schema_version"], digest))
+    assert routes.security_preflight_failures(tmp_path, issue) == [
+        "Issue #150 security preflight identity drifted."
+    ]
     issue421 = json.loads((REPO / "docs/governance/preflights/issue-421.json").read_text(encoding="utf-8"))
     issue421_route = EXPECTED[routes.ISSUE421_BRANCH]
     assert issue421["branch"] == routes.ISSUE421_BRANCH

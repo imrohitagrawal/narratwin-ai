@@ -267,8 +267,15 @@ Gate validates:
   canaries, and the tool lock are hash-bound as reviewed inputs, engine config
   validation must pass, JSON output must prove nonempty file coverage with no
   findings or parse/engine errors, and positive/clean canaries must pass
+- Issue `#150` pins isolated Semgrep `1.172.0`, accepts upstream Click `8.4.2`
+  without an override, and permits only `mcp==1.28.1` as a tool override through
+  `2026-08-28`; any additional override or expired date fails closed
 - the backend Docker build explicitly verifies Click `>=8.3.3` and Semgrep
   absence in addition to the critical/high image vulnerability scan
+- Issue `#428` requires the sole transitive frontend Nano ID record to be exact
+  official `3.3.18`, with no direct dependency, unrelated lock drift, audit
+  ignore, or threshold reduction; current architecture-checked container
+  evidence must pass unchanged
 - Docker build paths exist for backend and frontend foundation images; runtime
   containers run as non-root, base/service images are digest pinned, and local
   Compose port bindings are localhost-only
@@ -1087,7 +1094,8 @@ The exact Issue #360 Stage 8 route requires base `b9a2a8cd4aa05328116565990fc30a
 5.0.9 and isolated Semgrep `cryptography` 49.0.0 to 50.0.0, preserving all other package versions. Parsed-lock
 isolation, strict audits, installed identities, Semgrep validation/scan/canaries, full gates, exact-head CI, and
 independent review are mandatory. Issue #359 remains open with its branch immutable until convergence merge and
-merged-main verification; Issue #150 expiry and Issue #358 remain unchanged. This reference-only gate grants no
+merged-main verification; that historical Issue #360 route did not change Issue #150 or Issue #358. Issue #150's
+later MCP-only renewal expires `2026-08-28`. This reference-only gate grants no
 product, provider, deployment, release, public-availability, or production-readiness authority.
 
 ## Issue #375 ignored-cache pruning gate

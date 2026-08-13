@@ -416,12 +416,13 @@ Frontend/backend deployment must include:
 
 Issue `#138` removes Semgrep from the application/development dependency graph
 so the backend, local test environment, and runtime image resolve a fixed Click
-release. Semgrep `1.168.0` remains in the separate `tools/semgrep` project with
-an exact `click==8.3.3` uv override because upstream declares
-`click~=8.1.8`.
+release. Issue `#150` upgrades the separate tool to Semgrep `1.172.0`, whose
+upstream metadata resolves fixed Click `8.4.2` without an override. Upstream
+still pins MCP `1.23.3`, so the isolated tool retains exactly one reviewed
+override, `mcp==1.28.1`.
 
-This is a narrow compatibility exception, not a vulnerability ignore and not a
-claim that every Semgrep CLI path supports Click `8.3.3`. The repository:
+This is a narrow MCP compatibility exception, not a vulnerability ignore and
+not a claim that every Semgrep or MCP CLI path is approved. The repository:
 
 - audits the root environment and exact isolated tool site-packages separately,
   with no ignored advisory IDs;
@@ -431,14 +432,13 @@ claim that every Semgrep CLI path supports Click `8.3.3`. The repository:
   exact target/rule manifests;
 - requires positive and clean Semgrep execution canaries;
 - verifies the backend image contains Click `>=8.3.3` and no Semgrep; and
-- fails the contract after `2026-08-13` unless a security/repo owner renews or
+- fails the contract after `2026-08-28` unless a security/repo owner renews or
   removes the exception through review.
 
 Any Semgrep version, lock, rule, target, canary, or invocation change breaks the
 reviewed-input hash manifest and requires renewed compatibility review. Remove
 the override when upstream publishes a reviewed
-Semgrep version compatible with a fixed Click release; issue `#150` tracks the
-deadline and removal work.
+Semgrep version compatible with fixed MCP; ADR `0061` records the renewal.
 
 ## Cut 1 Presenter Registry Boundary
 
@@ -551,7 +551,8 @@ the fixed 5.x version. GHSA-g6cj-pr64-35w5 / CVE-2026-69247 affects isolated Sem
 50.0.0 is fixed. Issue #360 permits only those two lock repairs, strict installed identities, audits, Semgrep
 validation/scan/canaries, and hash binding, with zero ignore, waiver, suppression, downgrade, override relaxation,
 or risk acceptance. Issue #359 remains open and immutable until convergence merge plus merged-main verification;
-Issue #150 and its `2026-08-13` expiry and Issue #358 remain unchanged. This provides no product, provider,
+That Issue #360 point-in-time evidence did not change Issue #150 or Issue #358. Issue #150's later MCP-only
+renewal expires `2026-08-28`. This provides no product, provider,
 runtime, deployment, release, public-availability, or production-readiness authority.
 
 ## Related Documents

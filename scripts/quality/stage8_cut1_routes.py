@@ -10,9 +10,11 @@ from typing import Any, Callable
 
 from scripts.governance_preflight_v1 import validate_governance_preflight
 
+ISSUE150_BRANCH = "cut1-process-150-semgrep-mcp-renewal"
 ISSUE386_BRANCH = "cut1-process-386-modular-route-enforcement"
 ISSUE413_BRANCH = "cut1-process-413-frontend-runtime-openssl"
 ISSUE405_BRANCH = "process-405-heartbeat2-main-reliability"
+ISSUE428_BRANCH = "cut1-process-428-nanoid-3-3-18-security"
 ISSUE403_BRANCH = "cut1-process-403-nanoid-3-3-17-security"
 ISSUE401_BRANCH = "cut1-process-401-pypdf-6-15-0-security"
 ISSUE396_BRANCH = "cut1-process-396-js-yaml-4-3-1-security"
@@ -39,8 +41,37 @@ ISSUE368_IMPLEMENTATION_BASE = "6766da34d73e301358f84f8eefb0985927292a26"
 ISSUE368_QUOTA_FIX_BASE = "9c165f739788fb0f09b315673f9125d700d6a96b"
 ISSUE421_BASE = "a868137fab607ae75d4b272301e9fc52b898e15c"
 ISSUE424_BASE = "afcf0325c3ec925b68b770eda0bb8c839bcce4dd"
+ISSUE150_BASE = "a02286240212ad8958915aec01aa5ebaf60fa705"
+SECURITY_PREFLIGHTS = {
+    150: ("Issue150SecurityRenewalPreflightV1", "e6a569cb6254ef58c36fb44e9cdece26e0816b49c9f62ce08e9d90f3843c97e3"),
+    428: ("Issue428NanoidSecurityPreflightV1", "0d8da352c98855bc481581f1ca13cc2d4e994838b1afb31d974ad2b17caf7a9b"),
+}
 
 ROUTES = {
+    ISSUE150_BRANCH: {
+        "docs/governance/preflights/issue-150.json",
+        "docs/ADR/0061-semgrep-1-172-mcp-override-renewal.md",
+        "docs/RELEASE_CHECKLIST.md",
+        "docs/RISK_REGISTER.md",
+        "docs/SECURITY_AND_PRIVACY.md",
+        "scripts/ci/check_semgrep_security.py",
+        "tools/semgrep/pyproject.toml",
+        "tools/semgrep/reviewed-inputs.sha256",
+        "tools/semgrep/uv.lock",
+        "docs/governance/preflights/issue-428.json",
+        "frontend/package-lock.json",
+        "scripts/quality/stage8_cut1_routes.py",
+        "tests/unit/test_stage8_cut1_routes.py",
+        "tests/unit/test_frontend_dependency_security_contract.py",
+        "tests/unit/test_dependency_security_contract.py",
+        "tests/unit/test_stage8_quality_gate.py",
+        "docs/ADR/0062-nanoid-3-3-18-security-refresh.md",
+        "docs/QUALITY_GATES.md",
+        "docs/STAGE_ISSUE_PLAN.md",
+        "docs/STATUS.md",
+        "docs/THIRD_PARTY_NOTICES.md",
+        "docs/TRACEABILITY.md",
+    },
     ISSUE424_BRANCH: {
         "docs/governance/NARRATWIN_MASTER_PROGRAM_V1.md",
         "docs/governance/narratwin-master-program-v1.json",
@@ -233,6 +264,14 @@ ROUTES = {
         "docs/QUALITY_GATES.md",
         "docs/STATUS.md",
     },
+    ISSUE428_BRANCH: {
+        "docs/governance/preflights/issue-428.json", "frontend/package-lock.json",
+        "scripts/quality/stage8_cut1_routes.py", "tests/unit/test_stage8_cut1_routes.py",
+        "tests/unit/test_frontend_dependency_security_contract.py", "tests/unit/test_stage8_quality_gate.py",
+        "docs/ADR/0062-nanoid-3-3-18-security-refresh.md", "docs/QUALITY_GATES.md",
+        "docs/STAGE_ISSUE_PLAN.md", "docs/STATUS.md", "docs/TRACEABILITY.md",
+        "docs/THIRD_PARTY_NOTICES.md",
+    },
     ISSUE403_BRANCH: {
         "docs/governance/preflights/issue-403.json",
         "frontend/package-lock.json",
@@ -362,11 +401,11 @@ ROUTES = {
         "docs/THIRD_PARTY_NOTICES.md",
     },
 }
-ROUTE_ISSUES = {ISSUE424_BRANCH: 424, ISSUE421_BRANCH: 421, ISSUE415_BRANCH: 415, ISSUE415_CORRECTION_BRANCH: 415, ISSUE413_BRANCH: 413, ISSUE368_ADAPTER_BRANCH: 368, ISSUE368_IMPLEMENTATION_BRANCH: 368, ISSUE368_QUOTA_FIX_BRANCH: 368, ISSUE368_PROMPT_BRANCH: 368, ISSUE368_BRANCH: 368, ISSUE405_BRANCH: 405, ISSUE403_BRANCH: 403, ISSUE401_BRANCH: 401, ISSUE396_BRANCH: 396,
+ROUTE_ISSUES = {ISSUE150_BRANCH: 150, ISSUE424_BRANCH: 424, ISSUE421_BRANCH: 421, ISSUE415_BRANCH: 415, ISSUE415_CORRECTION_BRANCH: 415, ISSUE413_BRANCH: 413, ISSUE368_ADAPTER_BRANCH: 368, ISSUE368_IMPLEMENTATION_BRANCH: 368, ISSUE368_QUOTA_FIX_BRANCH: 368, ISSUE368_PROMPT_BRANCH: 368, ISSUE368_BRANCH: 368, ISSUE405_BRANCH: 405, ISSUE428_BRANCH: 428, ISSUE403_BRANCH: 403, ISSUE401_BRANCH: 401, ISSUE396_BRANCH: 396,
                 ISSUE386_BRANCH: 386, ISSUE385_BRANCH: 385,
                 ISSUE384_BRANCH: 384, ISSUE383_BRANCH: 383, ISSUE397_BRANCH: 397,
                 ISSUE393_BRANCH: 393, ISSUE382_BRANCH: 382, ISSUE367_BRANCH: 367}
-TOTAL_LIMITS = {ISSUE424_BRANCH: 8500, ISSUE421_BRANCH: 4000, ISSUE415_BRANCH: 5000, ISSUE415_CORRECTION_BRANCH: 800, ISSUE413_BRANCH: 5000, ISSUE368_ADAPTER_BRANCH: 5600, ISSUE368_IMPLEMENTATION_BRANCH: 3600, ISSUE368_QUOTA_FIX_BRANCH: 2800, ISSUE368_PROMPT_BRANCH: 1000, ISSUE368_BRANCH: 3200, ISSUE405_BRANCH: 800, ISSUE403_BRANCH: 650, ISSUE401_BRANCH: 600, ISSUE396_BRANCH: 500,
+TOTAL_LIMITS = {ISSUE150_BRANCH: 1000, ISSUE424_BRANCH: 8500, ISSUE421_BRANCH: 4000, ISSUE415_BRANCH: 5000, ISSUE415_CORRECTION_BRANCH: 800, ISSUE413_BRANCH: 5000, ISSUE368_ADAPTER_BRANCH: 5600, ISSUE368_IMPLEMENTATION_BRANCH: 3600, ISSUE368_QUOTA_FIX_BRANCH: 2800, ISSUE368_PROMPT_BRANCH: 1000, ISSUE368_BRANCH: 3200, ISSUE405_BRANCH: 800, ISSUE428_BRANCH: 500, ISSUE403_BRANCH: 650, ISSUE401_BRANCH: 600, ISSUE396_BRANCH: 500,
                 ISSUE386_BRANCH: 700, ISSUE385_BRANCH: 350,
                 ISSUE384_BRANCH: 500, ISSUE383_BRANCH: 700, ISSUE397_BRANCH: 500,
                 ISSUE393_BRANCH: 700, ISSUE382_BRANCH: 3200, ISSUE367_BRANCH: 2000}
@@ -375,6 +414,13 @@ ISSUE383_BINARY_FILES = {
     "frontend/public/demo/raj-synthetic-presenter.webp",
 }
 TEXT_LIMITS = {
+    ISSUE150_BRANCH: {
+        path: 180 if path.endswith("issue-150.json")
+        else 150 if path in {"scripts/quality/stage8_cut1_routes.py", "tests/unit/test_stage8_cut1_routes.py"}
+        else 120 if path.startswith("tests/unit/") or path.endswith("issue-428.json")
+        else 100
+        for path in ROUTES[ISSUE150_BRANCH]
+    },
     ISSUE424_BRANCH: {
         path: {
             "docs/governance/NARRATWIN_MASTER_PROGRAM_V1.md": 5000,
@@ -529,6 +575,11 @@ TEXT_LIMITS = {
         else 70 if path == "scripts/quality/stage8_cut1_routes.py"
         else 60 if path.startswith("docs/ADR/") else 40
         for path in ROUTES[ISSUE403_BRANCH]
+    },
+    ISSUE428_BRANCH: {
+        path: 150 if path.endswith("issue-428.json") else 110
+        if path == "tests/unit/test_frontend_dependency_security_contract.py" else 70
+        for path in ROUTES[ISSUE428_BRANCH]
     },
     ISSUE401_BRANCH: {
         path: 190 if path.endswith("issue-401.json")
@@ -704,7 +755,43 @@ def load_json_without_duplicate_members(path: Path) -> Any:
             result[key] = value
         return result
 
-    return json.loads(path.read_text(encoding="utf-8"), object_pairs_hook=unique)
+    return json.loads(
+        path.read_text(encoding="utf-8"), object_pairs_hook=unique,
+        parse_constant=lambda value: (_ for _ in ()).throw(ValueError(value)),
+    )
+
+
+def security_preflight_failures(root: Path, issue: int) -> list[str]:
+    path = root / f"docs/governance/preflights/issue-{issue}.json"
+    schema, expected_sha = SECURITY_PREFLIGHTS[issue]
+    try:
+        metadata = path.lstat()
+        if path.is_symlink() or not stat.S_ISREG(metadata.st_mode) or metadata.st_size > 65536:
+            raise ValueError("preflight must be a bounded regular file")
+        payload = path.read_bytes()
+        artifact = load_json_without_duplicate_members(path)
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError, DuplicateJsonMember, ValueError):
+        return [f"Issue #{issue} security preflight is malformed or unreadable."]
+    failures: list[str] = []
+    if hashlib.sha256(payload).hexdigest() != expected_sha:
+        failures.append(f"Issue #{issue} security preflight exact bytes drifted.")
+    if artifact.get("schema_version") != schema:
+        failures.append(f"Issue #{issue} security preflight schema drifted.")
+    expected_branch = ISSUE150_BRANCH if issue == 150 else ISSUE428_BRANCH
+    if artifact.get("issue_number") != issue or artifact.get("branch") != expected_branch:
+        failures.append(f"Issue #{issue} security preflight identity drifted.")
+    scope = artifact.get("scope")
+    required = scope.get("required") if isinstance(scope, dict) else None
+    forbidden = scope.get("forbidden") if isinstance(scope, dict) else None
+    expected = ROUTES[expected_branch]
+    if not isinstance(required, list) or set(required) != expected or len(required) != len(expected):
+        failures.append(f"Issue #{issue} security preflight scope drifted.")
+    if not isinstance(forbidden, list) or any(
+        path == rule or (isinstance(rule, str) and rule.endswith("/") and path.startswith(rule))
+        for path in expected for rule in (forbidden if isinstance(forbidden, list) else [])
+    ):
+        failures.append(f"Issue #{issue} security preflight forbidden scope conflicts.")
+    return failures
 
 
 def issue424_governance_failures(root: Path) -> list[str]:
@@ -848,6 +935,7 @@ def parse_name_status_z(output: str) -> list[str]:
 
 def route_base(run: Callable[[list[str]], Any], branch: str) -> str:
     fixed_routes = {
+        ISSUE150_BRANCH: (150, ISSUE150_BASE),
         ISSUE424_BRANCH: (424, ISSUE424_BASE),
         ISSUE421_BRANCH: (421, ISSUE421_BASE),
         ISSUE368_IMPLEMENTATION_BRANCH: (368, ISSUE368_IMPLEMENTATION_BASE),
@@ -864,7 +952,7 @@ def route_base(run: Callable[[list[str]], Any], branch: str) -> str:
         fixed_value = str(fixed.stdout).strip()
         common_value = str(common.stdout).strip()
         branch_point_invalid = False
-        if branch in {ISSUE424_BRANCH, ISSUE421_BRANCH, ISSUE368_IMPLEMENTATION_BRANCH,
+        if branch in {ISSUE150_BRANCH, ISSUE424_BRANCH, ISSUE421_BRANCH, ISSUE368_IMPLEMENTATION_BRANCH,
                       ISSUE368_QUOTA_FIX_BRANCH, ISSUE368_BRANCH,
                       ISSUE368_PROMPT_BRANCH}:
             branch_point = run(["git", "merge-base", "origin/main", "HEAD"])
@@ -970,6 +1058,11 @@ def check_exact_route(
     issue = ROUTE_ISSUES[branch]
     files = ROUTES[branch]
     failures.extend(f"Issue #{issue} route is missing required path: {path}" for path in sorted(files - changed))
+    if branch == ISSUE150_BRANCH:
+        failures.extend(security_preflight_failures(root, 150))
+        failures.extend(security_preflight_failures(root, 428))
+    elif branch == ISSUE428_BRANCH:
+        failures.extend(security_preflight_failures(root, 428))
     if branch == ISSUE424_BRANCH:
         failures.extend(issue424_governance_failures(root))
     try:
