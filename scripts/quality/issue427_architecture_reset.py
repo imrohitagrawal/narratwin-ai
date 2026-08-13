@@ -227,6 +227,20 @@ def proposal_findings(data: bytes, *, expected: ProposalIdentity = PROPOSAL) -> 
     return findings
 
 
+def _exact_json_equal(value: object, expected: object) -> bool:
+    if type(value) is not type(expected):
+        return False
+    if isinstance(expected, dict):
+        if not isinstance(value, dict) or value.keys() != expected.keys():
+            return False
+        return all(_exact_json_equal(value[key], member) for key, member in expected.items())
+    if isinstance(expected, list):
+        return isinstance(value, list) and len(value) == len(expected) and all(
+            _exact_json_equal(item, member) for item, member in zip(value, expected, strict=True)
+        )
+    return value == expected
+
+
 def binding_findings(raw: bytes) -> list[str]:
     top = {"schemaVersion", "state", "issue", "branch", "base", "proposal",
            "ownerApprovalRequestComment", "ownerApprovalComment",
@@ -275,7 +289,9 @@ def binding_findings(raw: bytes) -> list[str]:
         "children": list(CHILDREN),
         "activation": "NONE",
     }
-    return [] if value == expected else ["Issue #427 binding drifted or activates authority."]
+    return [] if _exact_json_equal(value, expected) else [
+        "Issue #427 binding drifted, has wrong scalar types, or activates authority."
+    ]
 
 
 def required_review_text() -> str:
