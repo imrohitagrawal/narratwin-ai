@@ -54,6 +54,16 @@ stage8: Any = load(REPO / "scripts/quality/check_stage8_docs.py", "stage8_with_c
 
 
 EXPECTED = {
+    "cut1-process-428-nanoid-3-3-18-security": {
+        "docs/governance/preflights/issue-428.json", "frontend/package-lock.json",
+        "scripts/quality/stage8_cut1_routes.py", "tests/unit/test_stage8_cut1_routes.py",
+        "tests/unit/test_frontend_dependency_security_contract.py",
+        "tests/unit/test_dependency_security_contract.py", "tests/unit/test_stage8_quality_gate.py",
+        "scripts/ci/check_container_scan_consensus.py", "tests/unit/test_container_scan_consensus.py",
+        "docs/ADR/0062-nanoid-3-3-18-security-refresh.md", "docs/QUALITY_GATES.md",
+        "docs/STAGE_ISSUE_PLAN.md", "docs/STATUS.md", "docs/TRACEABILITY.md",
+        "docs/THIRD_PARTY_NOTICES.md",
+    },
     "stage8-424-master-program-authority-prelog": {
         "docs/governance/NARRATWIN_MASTER_PROGRAM_V1.md",
         "docs/governance/narratwin-master-program-v1.json",
