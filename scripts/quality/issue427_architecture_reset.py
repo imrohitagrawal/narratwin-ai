@@ -98,7 +98,24 @@ GOVERNANCE_ARTIFACTS = (
 def governance_artifact_findings(
     data: bytes, expected: ProposalIdentity, path: str
 ) -> list[str]:
-    return []
+    return [] if _identity(data) == expected else [
+        f"Issue #427 governance artifact drifted or contains authority claims: {path}."
+    ]
+
+
+def required_governance_findings(
+    root: Path,
+    artifacts: tuple[tuple[str, ProposalIdentity], ...] = GOVERNANCE_ARTIFACTS,
+) -> list[str]:
+    findings: list[str] = []
+    for path, expected in artifacts:
+        try:
+            data = (root / path).read_bytes()
+        except OSError:
+            findings.append(f"Issue #427 governance artifact is missing or unreadable: {path}.")
+            continue
+        findings.extend(governance_artifact_findings(data, expected, path))
+    return findings
 
 
 def review_artifact_findings(
@@ -454,6 +471,7 @@ def check(root: Path, failures: list[str], active: bool) -> None:
         failures.extend(proposal_findings((root / PROPOSAL_PATH).read_bytes()))
         failures.extend(binding_findings((root / BINDING_PATH).read_bytes()))
         failures.extend(required_review_findings(root))
+        failures.extend(required_governance_findings(root))
         failures.extend(preflight_findings((root / PREFLIGHT_PATH).read_bytes()))
     except (KeyError, OSError, TypeError, UnicodeDecodeError, ValueError):
         failures.append("Issue #427 preflight or required reset artifact is malformed or drifted.")
