@@ -10,6 +10,7 @@ from typing import Any, Callable
 
 from scripts.governance_preflight_v1 import validate_governance_preflight
 
+ISSUE150_BRANCH = "cut1-process-150-semgrep-mcp-renewal"
 ISSUE386_BRANCH = "cut1-process-386-modular-route-enforcement"
 ISSUE413_BRANCH = "cut1-process-413-frontend-runtime-openssl"
 ISSUE405_BRANCH = "process-405-heartbeat2-main-reliability"
@@ -40,8 +41,33 @@ ISSUE368_IMPLEMENTATION_BASE = "6766da34d73e301358f84f8eefb0985927292a26"
 ISSUE368_QUOTA_FIX_BASE = "9c165f739788fb0f09b315673f9125d700d6a96b"
 ISSUE421_BASE = "a868137fab607ae75d4b272301e9fc52b898e15c"
 ISSUE424_BASE = "afcf0325c3ec925b68b770eda0bb8c839bcce4dd"
+ISSUE150_BASE = "a02286240212ad8958915aec01aa5ebaf60fa705"
 
 ROUTES = {
+    ISSUE150_BRANCH: {
+        "docs/governance/preflights/issue-150.json",
+        "docs/ADR/0061-semgrep-1-172-mcp-override-renewal.md",
+        "docs/RELEASE_CHECKLIST.md",
+        "docs/RISK_REGISTER.md",
+        "docs/SECURITY_AND_PRIVACY.md",
+        "scripts/ci/check_semgrep_security.py",
+        "tools/semgrep/pyproject.toml",
+        "tools/semgrep/reviewed-inputs.sha256",
+        "tools/semgrep/uv.lock",
+        "docs/governance/preflights/issue-428.json",
+        "frontend/package-lock.json",
+        "scripts/quality/stage8_cut1_routes.py",
+        "tests/unit/test_stage8_cut1_routes.py",
+        "tests/unit/test_frontend_dependency_security_contract.py",
+        "tests/unit/test_dependency_security_contract.py",
+        "tests/unit/test_stage8_quality_gate.py",
+        "docs/ADR/0062-nanoid-3-3-18-security-refresh.md",
+        "docs/QUALITY_GATES.md",
+        "docs/STAGE_ISSUE_PLAN.md",
+        "docs/STATUS.md",
+        "docs/THIRD_PARTY_NOTICES.md",
+        "docs/TRACEABILITY.md",
+    },
     ISSUE424_BRANCH: {
         "docs/governance/NARRATWIN_MASTER_PROGRAM_V1.md",
         "docs/governance/narratwin-master-program-v1.json",
@@ -371,11 +397,11 @@ ROUTES = {
         "docs/THIRD_PARTY_NOTICES.md",
     },
 }
-ROUTE_ISSUES = {ISSUE424_BRANCH: 424, ISSUE421_BRANCH: 421, ISSUE415_BRANCH: 415, ISSUE415_CORRECTION_BRANCH: 415, ISSUE413_BRANCH: 413, ISSUE368_ADAPTER_BRANCH: 368, ISSUE368_IMPLEMENTATION_BRANCH: 368, ISSUE368_QUOTA_FIX_BRANCH: 368, ISSUE368_PROMPT_BRANCH: 368, ISSUE368_BRANCH: 368, ISSUE405_BRANCH: 405, ISSUE428_BRANCH: 428, ISSUE403_BRANCH: 403, ISSUE401_BRANCH: 401, ISSUE396_BRANCH: 396,
+ROUTE_ISSUES = {ISSUE150_BRANCH: 150, ISSUE424_BRANCH: 424, ISSUE421_BRANCH: 421, ISSUE415_BRANCH: 415, ISSUE415_CORRECTION_BRANCH: 415, ISSUE413_BRANCH: 413, ISSUE368_ADAPTER_BRANCH: 368, ISSUE368_IMPLEMENTATION_BRANCH: 368, ISSUE368_QUOTA_FIX_BRANCH: 368, ISSUE368_PROMPT_BRANCH: 368, ISSUE368_BRANCH: 368, ISSUE405_BRANCH: 405, ISSUE428_BRANCH: 428, ISSUE403_BRANCH: 403, ISSUE401_BRANCH: 401, ISSUE396_BRANCH: 396,
                 ISSUE386_BRANCH: 386, ISSUE385_BRANCH: 385,
                 ISSUE384_BRANCH: 384, ISSUE383_BRANCH: 383, ISSUE397_BRANCH: 397,
                 ISSUE393_BRANCH: 393, ISSUE382_BRANCH: 382, ISSUE367_BRANCH: 367}
-TOTAL_LIMITS = {ISSUE424_BRANCH: 8500, ISSUE421_BRANCH: 4000, ISSUE415_BRANCH: 5000, ISSUE415_CORRECTION_BRANCH: 800, ISSUE413_BRANCH: 5000, ISSUE368_ADAPTER_BRANCH: 5600, ISSUE368_IMPLEMENTATION_BRANCH: 3600, ISSUE368_QUOTA_FIX_BRANCH: 2800, ISSUE368_PROMPT_BRANCH: 1000, ISSUE368_BRANCH: 3200, ISSUE405_BRANCH: 800, ISSUE428_BRANCH: 500, ISSUE403_BRANCH: 650, ISSUE401_BRANCH: 600, ISSUE396_BRANCH: 500,
+TOTAL_LIMITS = {ISSUE150_BRANCH: 1000, ISSUE424_BRANCH: 8500, ISSUE421_BRANCH: 4000, ISSUE415_BRANCH: 5000, ISSUE415_CORRECTION_BRANCH: 800, ISSUE413_BRANCH: 5000, ISSUE368_ADAPTER_BRANCH: 5600, ISSUE368_IMPLEMENTATION_BRANCH: 3600, ISSUE368_QUOTA_FIX_BRANCH: 2800, ISSUE368_PROMPT_BRANCH: 1000, ISSUE368_BRANCH: 3200, ISSUE405_BRANCH: 800, ISSUE428_BRANCH: 500, ISSUE403_BRANCH: 650, ISSUE401_BRANCH: 600, ISSUE396_BRANCH: 500,
                 ISSUE386_BRANCH: 700, ISSUE385_BRANCH: 350,
                 ISSUE384_BRANCH: 500, ISSUE383_BRANCH: 700, ISSUE397_BRANCH: 500,
                 ISSUE393_BRANCH: 700, ISSUE382_BRANCH: 3200, ISSUE367_BRANCH: 2000}
@@ -384,6 +410,13 @@ ISSUE383_BINARY_FILES = {
     "frontend/public/demo/raj-synthetic-presenter.webp",
 }
 TEXT_LIMITS = {
+    ISSUE150_BRANCH: {
+        path: 180 if path.endswith("issue-150.json")
+        else 150 if path in {"scripts/quality/stage8_cut1_routes.py", "tests/unit/test_stage8_cut1_routes.py"}
+        else 120 if path.startswith("tests/unit/") or path.endswith("issue-428.json")
+        else 100
+        for path in ROUTES[ISSUE150_BRANCH]
+    },
     ISSUE424_BRANCH: {
         path: {
             "docs/governance/NARRATWIN_MASTER_PROGRAM_V1.md": 5000,
@@ -862,6 +895,7 @@ def parse_name_status_z(output: str) -> list[str]:
 
 def route_base(run: Callable[[list[str]], Any], branch: str) -> str:
     fixed_routes = {
+        ISSUE150_BRANCH: (150, ISSUE150_BASE),
         ISSUE424_BRANCH: (424, ISSUE424_BASE),
         ISSUE421_BRANCH: (421, ISSUE421_BASE),
         ISSUE368_IMPLEMENTATION_BRANCH: (368, ISSUE368_IMPLEMENTATION_BASE),
@@ -878,7 +912,7 @@ def route_base(run: Callable[[list[str]], Any], branch: str) -> str:
         fixed_value = str(fixed.stdout).strip()
         common_value = str(common.stdout).strip()
         branch_point_invalid = False
-        if branch in {ISSUE424_BRANCH, ISSUE421_BRANCH, ISSUE368_IMPLEMENTATION_BRANCH,
+        if branch in {ISSUE150_BRANCH, ISSUE424_BRANCH, ISSUE421_BRANCH, ISSUE368_IMPLEMENTATION_BRANCH,
                       ISSUE368_QUOTA_FIX_BRANCH, ISSUE368_BRANCH,
                       ISSUE368_PROMPT_BRANCH}:
             branch_point = run(["git", "merge-base", "origin/main", "HEAD"])
