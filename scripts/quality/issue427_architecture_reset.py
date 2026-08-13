@@ -496,7 +496,9 @@ def _charge(raw: bytes) -> tuple[int, bool]:
     total = 0
     for record in raw.split(b"\0")[:-1]:
         fields = record.split(b"\t", 2)
-        if len(fields) != 3 or b"-" in fields[:2]:
+        if len(fields) != 3 or not all(field and field.isdigit() for field in fields[:2]):
+            return -1, False
+        if not fields[2]:
             return -1, False
         try:
             total += int(fields[0]) + int(fields[1])
