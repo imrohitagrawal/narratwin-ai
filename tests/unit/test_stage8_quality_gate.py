@@ -54,8 +54,8 @@ def test_cut1_routes_are_exact_stage8_and_not_preflight_owned(monkeypatch: Any, 
                         if path.name in {"issue-346.json", "issue-335.json", "issue-349.json", "issue-351.json",
                                          "issue-358.json", "issue-372.json"}
                         else ORIGINAL_READ(path, *a, **kw))
-    policy = load("scripts/quality/check_stage8_docs.py", "reloaded").PROCESS_BRANCH_ALLOWED_FILES
-    assert {branch: policy[branch] for branch in SCOPES} == SCOPES and policy.pop(i.BRANCH) == set(i.PATHS);r=cut1_routes
+    policy = load("scripts/quality/check_stage8_docs.py", "reloaded").PROCESS_BRANCH_ALLOWED_FILES;assert policy.pop(i.BRANCH)==set(i.PATHS)
+    assert {branch: policy[branch] for branch in SCOPES} == SCOPES;r=cut1_routes
     registered = {getattr(r, f"ISSUE{i}_BRANCH") for i in (150, 396, 401, 403, 413, 428)}
     assert {b for b in policy if b[:5] == "cut1-"} - set(SCOPES) == registered
     dispatcher:Any=load("scripts/quality/check_quality_stage.py","dispatcher");stage_file=tmp_path/"stage"
