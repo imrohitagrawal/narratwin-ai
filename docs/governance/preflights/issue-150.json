@@ -3,12 +3,14 @@
   "issue_number": 150,
   "branch": "cut1-process-150-semgrep-mcp-renewal",
   "base": "a02286240212ad8958915aec01aa5ebaf60fa705",
-  "objective": "Replace the expired Semgrep compatibility exception with the OWNER-selected short MCP-only renewal: upgrade isolated Semgrep from 1.168.0 to exactly 1.172.0 so upstream supplies fixed Click 8.4.2, remove the obsolete Click override, retain only mcp==1.28.1 because upstream still pins advisory-bearing MCP 1.23.3, and expire the renewed exception on 2026-08-28. Preserve the isolated tool boundary, exact local rules and targets, zero audit ignores, scan and canary behavior, backend image exclusion, nonproduction posture, and the frozen Issue #427 packet. Require RED/GREEN tests, generated lock review, reviewed-input rebinding, complete local security and quality gates, independent security and technical review, protected hosted checks, eligible non-author approval, merge verification, and Issue #150 closeout. No product, runtime, provider, credential, infrastructure, deployment, release, SLA, commercial-readiness, or production capability is authorized.",
+  "objective": "Replace the expired Semgrep compatibility exception with the OWNER-selected short MCP-only renewal: upgrade isolated Semgrep from 1.168.0 to exactly 1.172.0 so upstream supplies fixed Click 8.4.2, remove the obsolete Click override, retain only mcp==1.28.1 because upstream still pins advisory-bearing MCP 1.23.3, and expire the renewed exception on 2026-08-28. Preserve the isolated tool boundary, exact local rules and targets, zero audit ignores, scan and canary behavior, backend image exclusion, nonproduction posture, and the frozen Issue #427 packet. Require RED/GREEN tests, generated lock review, reviewed-input rebinding, complete local security and quality gates, independent security and technical review, protected hosted checks, eligible non-author approval, merge verification, and Issue #150 closeout. No product, runtime, provider, credential, infrastructure, deployment, release, SLA, commercial-readiness, or production capability is authorized. Complete-gate evidence additionally requires the exact Issue #428 Nano ID 3.3.18 lock refresh in the same protected PR because either route alone is blocked by the other mandatory gate; the OWNER-recorded convergence amendment is https://github.com/imrohitagrawal/narratwin-ai/issues/150#issuecomment-5286312333.",
   "authority": {
     "issue": "https://github.com/imrohitagrawal/narratwin-ai/issues/150",
     "owner_decision": "https://github.com/imrohitagrawal/narratwin-ai/issues/150#issuecomment-5286137927",
     "deadline_evidence": "https://github.com/imrohitagrawal/narratwin-ai/issues/150#issuecomment-5286091000",
-    "blocked_issue_427_packet": "https://github.com/imrohitagrawal/narratwin-ai/issues/427#issuecomment-5286114129"
+    "blocked_issue_427_packet": "https://github.com/imrohitagrawal/narratwin-ai/issues/427#issuecomment-5286114129",
+    "scope_convergence": "https://github.com/imrohitagrawal/narratwin-ai/issues/150#issuecomment-5286312333",
+    "issue_428": "https://github.com/imrohitagrawal/narratwin-ai/issues/428"
   },
   "source_facts": {
     "verified_on": "2026-08-14",
@@ -22,18 +24,26 @@
     "required": [
       "docs/governance/preflights/issue-150.json",
       "docs/ADR/0061-semgrep-1-172-mcp-override-renewal.md",
-      "docs/QUALITY_GATES.md",
       "docs/RELEASE_CHECKLIST.md",
       "docs/RISK_REGISTER.md",
       "docs/SECURITY_AND_PRIVACY.md",
-      "docs/STATUS.md",
-      "docs/THIRD_PARTY_NOTICES.md",
-      "docs/TRACEABILITY.md",
       "scripts/ci/check_semgrep_security.py",
-      "tests/unit/test_dependency_security_contract.py",
       "tools/semgrep/pyproject.toml",
       "tools/semgrep/reviewed-inputs.sha256",
-      "tools/semgrep/uv.lock"
+      "tools/semgrep/uv.lock",
+      "docs/governance/preflights/issue-428.json",
+      "frontend/package-lock.json",
+      "scripts/quality/stage8_cut1_routes.py",
+      "tests/unit/test_stage8_cut1_routes.py",
+      "tests/unit/test_frontend_dependency_security_contract.py",
+      "tests/unit/test_dependency_security_contract.py",
+      "tests/unit/test_stage8_quality_gate.py",
+      "docs/ADR/0062-nanoid-3-3-18-security-refresh.md",
+      "docs/QUALITY_GATES.md",
+      "docs/STAGE_ISSUE_PLAN.md",
+      "docs/STATUS.md",
+      "docs/THIRD_PARTY_NOTICES.md",
+      "docs/TRACEABILITY.md"
     ],
     "forbidden": [
       ".github/",
@@ -56,8 +66,8 @@
     ]
   },
   "change_budget": {
-    "exact_paths": 14,
-    "maximum_additions_plus_deletions": 900,
+    "exact_paths": 22,
+    "maximum_additions_plus_deletions": 1000,
     "deletions_grant_credit": false
   },
   "invariants": {
@@ -70,7 +80,8 @@
     "S150-07": "Exact local rules, targets, metrics-off invocation, engine validation, clean scan, positive canary, and backend image exclusion remain unchanged.",
     "S150-08": "Every reviewed input hash is rebound after the manifest, lock, checker, or evidence changes; stale or extra bindings fail closed.",
     "S150-09": "The renewal is security-tooling-only and creates no runtime MCP server, provider, network service, release, deployment, or production authority.",
-    "S150-10": "The frozen Issue #427 branch, base, artifacts, and evidence refs remain unchanged until this prerequisite is merged and verified."
+    "S150-10": "The frozen Issue #427 branch, base, artifacts, and evidence refs remain unchanged until this prerequisite is merged and verified.",
+    "S150-11": "The same protected PR resolves Issue #428 with exact transitive Nano ID 3.3.18 identity, no direct dependency, and no unrelated lock drift; separate route evidence remains preserved."
   },
   "tdd_sequence": {
     "preflight": "Commit only this file before behavior tests or implementation.",
@@ -103,7 +114,7 @@
     "stop": [
       "official Semgrep metadata or generated lock does not match the recorded dependency facts",
       "any mandatory audit, scan, canary, container, CI, or quality gate fails",
-      "any unapproved path or more than 900 charged lines",
+      "any twenty-third path or more than 1,000 charged lines",
       "the renewal requires an additional dependency override, audit ignore, waiver, scanner weakening, or runtime change",
       "independent review identifies an unresolved high-confidence security blocker"
     ]
