@@ -115,7 +115,9 @@ def read_frozen_file(root: Path, path: str, limit: int) -> bytes:
             )
             os.close(descriptor)
             descriptor = next_descriptor
-        file_descriptor = os.open(parts[-1], os.O_RDONLY | os.O_NOFOLLOW, dir_fd=descriptor)
+        file_descriptor = os.open(
+            parts[-1], os.O_RDONLY | os.O_NONBLOCK | os.O_NOFOLLOW, dir_fd=descriptor
+        )
         try:
             metadata = os.fstat(file_descriptor)
             if not stat.S_ISREG(metadata.st_mode) or metadata.st_size > limit:
