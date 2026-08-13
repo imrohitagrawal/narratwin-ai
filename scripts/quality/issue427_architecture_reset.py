@@ -4,8 +4,11 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import re
+import selectors
 import subprocess
+import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -57,6 +60,11 @@ PROPOSAL = ProposalIdentity(
     "bb8513fb82402d9d3e34590569ec2a07b42688a46e395fe9243f0fc2f8408b45",
     17_847,
     326,
+)
+PREFLIGHT = ProposalIdentity(
+    "6c8d3c93891f0555976a16068b7fa0100b984173aa19aaf8b8a20dcea61e0200",
+    4_067,
+    54,
 )
 
 ARCHITECTURE_REVIEW = ProposalIdentity(
@@ -133,6 +141,8 @@ def repository_findings(facts: RepositoryFacts) -> list[str]:
         findings.append("Issue #427 charged-line budget is invalid or exceeds 2,000.")
     if not facts.numstat_valid:
         findings.append("Issue #427 Git numstat is failed, binary, or malformed.")
+    if facts.first_commit != FIRST_COMMIT:
+        findings.append("Issue #427 first commit identity does not match the preserved commit.")
     if facts.first_commit_paths != (PREFLIGHT_PATH,):
         findings.append("Issue #427 first commit must change only the preflight.")
     if facts.first_parent != BASE:
@@ -158,7 +168,11 @@ def closed_json(raw: bytes, fields: set[str]) -> dict[str, Any]:
         return value
 
     try:
-        value = json.loads(raw.decode("utf-8"), object_pairs_hook=pairs)
+        value = json.loads(
+            raw.decode("utf-8"),
+            object_pairs_hook=pairs,
+            parse_constant=lambda value: (_ for _ in ()).throw(ValueError(value)),
+        )
     except (UnicodeDecodeError, json.JSONDecodeError) as error:
         raise ValueError("malformed UTF-8 JSON") from error
     if not isinstance(value, dict) or set(value) != fields:
@@ -169,23 +183,12 @@ def closed_json(raw: bytes, fields: set[str]) -> dict[str, Any]:
 def preflight_findings(raw: bytes) -> list[str]:
     fields = {"schema_version", "issue_number", "branch", "objective", "status_decision", "scope"}
     try:
-        preflight = closed_json(raw, fields)
-        scope = preflight["scope"]
-        if (preflight["issue_number"], preflight["branch"], preflight["status_decision"]) != (
-            427, BRANCH, "update-minimally"
-        ):
-            raise ValueError("preflight binding")
-        if not isinstance(scope, dict) or set(scope) != {"required", "allowed_prefixes", "forbidden"}:
-            raise ValueError("preflight scope")
-        if tuple(scope["required"]) != PATHS or tuple(scope["allowed_prefixes"]) != PATHS:
-            raise ValueError("preflight path drift")
-        objective = preflight["objective"]
-        markers = (BASE, PROPOSAL.sha256, "2,000", "NOT_APPLICABLE_SUPERSEDED_BY_OWNER", "one correction wave")
-        if not isinstance(objective, str) or any(marker not in objective for marker in markers):
-            raise ValueError("preflight objective drift")
-    except (KeyError, TypeError, ValueError):
-        return ["Issue #427 preflight or required reset artifact is malformed or drifted."]
-    return []
+        closed_json(raw, fields)
+    except ValueError:
+        return ["Issue #427 preflight is not strict UTF-8 JSON."]
+    return [] if _identity(raw) == PREFLIGHT else [
+        "Issue #427 preflight contract drifted or activates authority."
+    ]
 
 
 def _identity(data: bytes) -> ProposalIdentity:
@@ -296,10 +299,45 @@ def review_findings(text: str) -> list[str]:
 def _bounded_process_output(
     process: subprocess.Popen[bytes], *, timeout: float = 5, limit: int = 1_000_000
 ) -> bytes:
-    stdout, stderr = process.communicate(timeout=timeout)
-    if len(stdout) + len(stderr) > limit:
-        raise RuntimeError("bounded Git command overflowed")
-    return stdout
+    if process.stdout is None or process.stderr is None:
+        process.kill()
+        process.wait()
+        raise RuntimeError("bounded Git pipes are unavailable")
+    selector = selectors.DefaultSelector()
+    chunks: dict[int, list[bytes]] = {
+        process.stdout.fileno(): [],
+        process.stderr.fileno(): [],
+    }
+    total = 0
+    deadline = time.monotonic() + timeout
+    try:
+        for stream in (process.stdout, process.stderr):
+            os.set_blocking(stream.fileno(), False)
+            selector.register(stream, selectors.EVENT_READ)
+        while selector.get_map():
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise subprocess.TimeoutExpired(process.args, timeout)
+            events = selector.select(remaining)
+            if not events:
+                raise subprocess.TimeoutExpired(process.args, timeout)
+            for key, _ in events:
+                data = os.read(key.fd, min(65_536, limit - total + 1))
+                if not data:
+                    selector.unregister(key.fileobj)
+                    continue
+                total += len(data)
+                if total > limit:
+                    raise RuntimeError("bounded Git command overflowed")
+                chunks[key.fd].append(data)
+        process.wait(timeout=max(0.0, deadline - time.monotonic()))
+    except BaseException:
+        process.kill()
+        process.wait()
+        raise
+    finally:
+        selector.close()
+    return b"".join(chunks[process.stdout.fileno()])
 
 
 def _git(root: Path, *args: str) -> bytes:
