@@ -8,7 +8,7 @@ from scripts.quality.check_stage8_docs import (CUT1_REAL_MEDIA_TRANSITION_BRANCH
     CITATION_PARITY_BRANCH as CP, CITATION_PARITY_FILES as CP_SCOPE,
     QUIET_PRESENCE_BRANCH as QP, QUIET_PRESENCE_FILES as QP_SCOPE)
 TRANSITION = "cut1-process-346-governance-transition"; A2_1 = "cut1-335-r0c-a2-1-stage4-rag-v1-lineage"
-A2_2 = "cut1-349-r0c-a2-2-machine-contract-parity"
+A2_2 = "cut1-349-r0c-a2-2-machine-contract-parity"; C1 = CUT1_REAL_MEDIA_TRANSITION
 SCOPES = {TRANSITION: set("docs/governance/preflights/issue-346.json scripts/quality/check_stage8_docs.py "
     "tests/unit/test_stage8_quality_gate.py docs/QUALITY_GATES.md docs/STAGE_ISSUE_PLAN.md docs/STATUS.md".split()),
     A2_1: set(("docs/governance/preflights/issue-335.json tests/unit/test_retrieval_strategy_v1_contract.py "
@@ -22,7 +22,7 @@ SCOPES = {TRANSITION: set("docs/governance/preflights/issue-346.json scripts/qua
     A2_2: set("""docs/governance/preflights/issue-349.json docs/STAGE2_ARCHITECTURE_CONTRACT.json docs/STATUS.md
         scripts/quality/check_stage2_docs.py tests/unit/test_stage8_quality_gate.py docs/STAGE_ISSUE_PLAN.md
         scripts/quality/check_stage8_docs.py docs/ADR/0002-rag-storage.md docs/QUALITY_GATES.md""".split()),
-    QP: QP_SCOPE, CP: CP_SCOPE, CUT1_REAL_MEDIA_TRANSITION: CUT1_REAL_MEDIA_TRANSITION_SCOPE, **a23b.A23_ROUTES}
+    QP:QP_SCOPE,CP:CP_SCOPE,C1:CUT1_REAL_MEDIA_TRANSITION_SCOPE,i.BRANCH:set(i.PATHS),**a23b.A23_ROUTES}
 def load(relative: str, name: str) -> ModuleType:
     spec=importlib.util.spec_from_file_location(name,Path(__file__).parents[2]/relative);assert spec and spec.loader
     module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module);return module
@@ -55,9 +55,9 @@ def test_cut1_routes_are_exact_stage8_and_not_preflight_owned(monkeypatch: Any, 
                                          "issue-358.json", "issue-372.json"}
                         else ORIGINAL_READ(path, *a, **kw))
     policy = load("scripts/quality/check_stage8_docs.py", "reloaded").PROCESS_BRANCH_ALLOWED_FILES
-    assert {branch: policy[branch] for branch in SCOPES} == SCOPES;r=cut1_routes;x=i.BRANCH
+    assert {branch: policy[branch] for branch in SCOPES} == SCOPES;r=cut1_routes
     registered = {getattr(r, f"ISSUE{i}_BRANCH") for i in (150, 396, 401, 403, 413, 428)}
-    assert {b for b in policy if b[:5] == "cut1-"} - {x, *SCOPES} == registered
+    assert {b for b in policy if b[:5] == "cut1-"} - set(SCOPES) == registered
     dispatcher:Any=load("scripts/quality/check_quality_stage.py","dispatcher");stage_file=tmp_path/"stage"
     status_file=tmp_path/"status";mode="| SSV1-MODE | repo-mode | Phase 1 Closure | phase1-closure | phase1-closure |\n"
     stage_file.write_text("8\n"); status_file.write_text(mode)
