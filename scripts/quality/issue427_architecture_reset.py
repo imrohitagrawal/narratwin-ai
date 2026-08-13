@@ -143,17 +143,32 @@ def read_frozen_file(root: Path, path: str, limit: int) -> bytes:
 def ci_route_head(root: Path) -> str:
     head = _git(root, "rev-parse", "HEAD").decode().strip()
     parents = _git(root, "rev-list", "--parents", "-n", "1", head).decode().split()
-    return parents[2] if len(parents) == 3 else head
+    if len(parents) != 3 or os.environ.get("GITHUB_HEAD_REF", "") != BRANCH:
+        return head
+    detached = _git(root, "rev-parse", "--abbrev-ref", "HEAD").decode().strip() == "HEAD"
+    return parents[2] if detached else head
+
+
+def read_route_file(root: Path, path: str, limit: int) -> bytes:
+    head = _git(root, "rev-parse", "HEAD").decode().strip()
+    route_head = ci_route_head(root)
+    if route_head == head:
+        return read_frozen_file(root, path, limit)
+    data = _git(root, "show", f"{route_head}:{path}")
+    if len(data) > limit:
+        raise OSError("frozen route artifact exceeded its byte bound")
+    return data
 
 
 def required_governance_findings(
     root: Path,
     artifacts: tuple[tuple[str, ProposalIdentity], ...] = GOVERNANCE_ARTIFACTS,
+    reader: Any = read_frozen_file,
 ) -> list[str]:
     findings: list[str] = []
     for path, expected in artifacts:
         try:
-            data = read_frozen_file(root, path, expected.bytes)
+            data = reader(root, path, expected.bytes)
         except OSError:
             findings.append(f"Issue #427 governance artifact is missing or unreadable: {path}.")
             continue
@@ -176,11 +191,12 @@ def review_artifact_findings(
 def required_review_findings(
     root: Path,
     reviews: tuple[tuple[str, ProposalIdentity, str], ...] = REVIEW_ARTIFACTS,
+    reader: Any = read_frozen_file,
 ) -> list[str]:
     findings: list[str] = []
     for path, expected, surface in reviews:
         try:
-            data = read_frozen_file(root, path, expected.bytes)
+            data = reader(root, path, expected.bytes)
         except OSError:
             findings.append(f"Issue #427 {surface} review is missing or unreadable.")
             continue
@@ -469,7 +485,7 @@ def _zlist(raw: bytes) -> tuple[str, ...]:
 def collect_repository_facts(root: Path) -> RepositoryFacts:
     try:
         branch = current_branch(root)
-        head = _git(root, "rev-parse", "HEAD").decode().strip()
+        head = ci_route_head(root)
         base = _git(root, "merge-base", BASE, head).decode().strip()
         shallow = _git(root, "rev-parse", "--is-shallow-repository").decode().strip() != "false"
         replaces = tuple(line for line in _git(root, "replace", "-l").decode().splitlines() if line)
@@ -513,10 +529,10 @@ def check(root: Path, failures: list[str], active: bool) -> None:
         return
     failures.extend(repository_findings(collect_repository_facts(root)))
     try:
-        failures.extend(proposal_findings(read_frozen_file(root, PROPOSAL_PATH, PROPOSAL.bytes)))
-        failures.extend(binding_findings(read_frozen_file(root, BINDING_PATH, BINDING_MAX_BYTES)))
-        failures.extend(required_review_findings(root))
-        failures.extend(required_governance_findings(root))
-        failures.extend(preflight_findings(read_frozen_file(root, PREFLIGHT_PATH, PREFLIGHT.bytes)))
+        failures.extend(proposal_findings(read_route_file(root, PROPOSAL_PATH, PROPOSAL.bytes)))
+        failures.extend(binding_findings(read_route_file(root, BINDING_PATH, BINDING_MAX_BYTES)))
+        failures.extend(required_review_findings(root, reader=read_route_file))
+        failures.extend(required_governance_findings(root, reader=read_route_file))
+        failures.extend(preflight_findings(read_route_file(root, PREFLIGHT_PATH, PREFLIGHT.bytes)))
     except (KeyError, OSError, TypeError, UnicodeDecodeError, ValueError):
         failures.append("Issue #427 preflight or required reset artifact is malformed or drifted.")

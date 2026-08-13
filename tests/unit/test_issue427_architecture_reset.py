@@ -117,7 +117,9 @@ def test_repository_facts_accept_the_ci_detached_head(
     assert reset.repository_findings(reset.collect_repository_facts(checkout)) == []
 
 
-def test_ci_detached_fixture_uses_route_parent_of_synthetic_merge(tmp_path: Path) -> None:
+def test_ci_detached_fixture_uses_route_parent_of_synthetic_merge(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
     source = Path(__file__).resolve().parents[2]
     route_head = subprocess.run(
         ["/usr/bin/git", "rev-parse", "HEAD"], cwd=source, check=True, capture_output=True, text=True
@@ -133,8 +135,10 @@ def test_ci_detached_fixture_uses_route_parent_of_synthetic_merge(tmp_path: Path
         ["/usr/bin/git", "-c", "user.name=CI", "-c", "user.email=ci@example.invalid",
          "merge", "--quiet", "--no-ff", "--no-edit", route_head], cwd=synthetic, check=True
     )
+    monkeypatch.setenv("GITHUB_HEAD_REF", reset.BRANCH)
 
     assert reset.ci_route_head(synthetic) == route_head
+    assert reset.repository_findings(reset.collect_repository_facts(synthetic)) == []
 
 
 @pytest.mark.parametrize(
