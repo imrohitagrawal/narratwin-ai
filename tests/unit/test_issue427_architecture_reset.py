@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import subprocess
 import sys
 from collections.abc import Callable
@@ -247,6 +248,29 @@ def test_frozen_file_reader_rejects_oversized_regular_files(tmp_path: Path) -> N
 
     with pytest.raises(OSError):
         reset.read_frozen_file(tmp_path, "oversized", 4)
+
+
+def test_frozen_file_reader_rejects_fifo_without_blocking(tmp_path: Path) -> None:
+    fifo = tmp_path / "fifo"
+    os.mkfifo(fifo)
+    root = Path(__file__).resolve().parents[2]
+    script = (
+        "from pathlib import Path; "
+        "from scripts.quality.issue427_architecture_reset import read_frozen_file; "
+        f"read_frozen_file(Path({str(tmp_path)!r}), 'fifo', 4)"
+    )
+
+    process = subprocess.Popen(
+        [sys.executable, "-c", script], cwd=root, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+    )
+    try:
+        process.communicate(timeout=1)
+    except subprocess.TimeoutExpired:
+        process.kill()
+        process.wait()
+        pytest.fail("frozen file reader blocked while opening a FIFO")
+    result = process
+    assert result.returncode != 0
 
 
 def test_proposal_identity_and_structure_are_exact() -> None:
