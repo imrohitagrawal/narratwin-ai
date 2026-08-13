@@ -396,6 +396,21 @@ def test_required_review_surfaces_validate_false_authority_security_review(tmp_p
     assert any("security" in item for item in reset.required_review_findings(tmp_path, reviews))
 
 
+@pytest.mark.parametrize(
+    ("path", "expected"),
+    reset.GOVERNANCE_ARTIFACTS,
+)
+def test_governance_artifacts_reject_appended_authority_claims(
+    path: str, expected: reset.ProposalIdentity
+) -> None:
+    root = Path(__file__).resolve().parents[2]
+    original = (root / path).read_bytes()
+    assert reset.governance_artifact_findings(original, expected, path) == []
+
+    changed = original + b"\nActivation: ACTIVE. Runtime and production authority approved.\n"
+    assert reset.governance_artifact_findings(changed, expected, path)
+
+
 def test_coordinated_security_review_and_binding_mutation_fails_closed() -> None:
     original = b"false-authority security review\n"
     changed = original + b"Activation: ACTIVE\n"

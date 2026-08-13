@@ -81,6 +81,24 @@ REVIEW_ARTIFACTS = (
     (ARCHITECTURE_REVIEW_PATH, ARCHITECTURE_REVIEW, "architecture"),
     (SECURITY_REVIEW_PATH, SECURITY_REVIEW, "false-authority security"),
 )
+GOVERNANCE_ARTIFACTS = (
+    ("docs/ADR/0060-authority-reconciliation-and-stale-route-phase-spec.md",
+     ProposalIdentity("70bf0d70a094eb13b4ba872ae8928b9b534347549d06433d6ca6cbcfe06481ab", 3_141, 66)),
+    ("docs/STAGE_ISSUE_PLAN.md",
+     ProposalIdentity("5baadf4810b870ac1c79b9101404a070e0f93babbb5ff1df17d562bb56ca73bf", 139_531, 2_708)),
+    ("docs/STATUS.md",
+     ProposalIdentity("6b3e769117171dd9201c3d2e4a023d3c9aec229645a6c281ac8243e8ca5f3926", 232_021, 1_478)),
+    ("docs/TRACEABILITY.md",
+     ProposalIdentity("b61b4cd57dc868c38fbf93b0587a53539b592f9537231250f0ad3441990f018a", 142_701, 585)),
+    ("docs/QUALITY_GATES.md",
+     ProposalIdentity("e740fa14d353d96abeffa4884af1e1ec1168994182dd710b5ea971ec0e785d77", 86_297, 1_386)),
+)
+
+
+def governance_artifact_findings(
+    data: bytes, expected: ProposalIdentity, path: str
+) -> list[str]:
+    return []
 
 
 def review_artifact_findings(
