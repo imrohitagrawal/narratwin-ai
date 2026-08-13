@@ -182,7 +182,18 @@ def test_preflight_rejects_schema_forbidden_and_activation_drift(
 
 @pytest.mark.parametrize(
     "raw",
-    [b"1\t-\tbinary\0", b"1\t2", b"bad\t2\tpath\0", b"1\t2\t\xff\0", b"1\t2\0"],
+    [
+        b"1\t-\tbinary\0",
+        b"1\t2",
+        b"bad\t2\tpath\0",
+        b"1\t2\t\xff\0",
+        b"1\t2\0",
+        b"-100\t2100\tpath\0",
+        b"+1\t2\tpath\0",
+        b" 1\t2\tpath\0",
+        b"1 \t2\tpath\0",
+        b"1\t2\t\0",
+    ],
 )
 def test_numstat_parser_rejects_binary_malformed_and_non_utf8_output(raw: bytes) -> None:
     assert reset._charge(raw)[1] is False
