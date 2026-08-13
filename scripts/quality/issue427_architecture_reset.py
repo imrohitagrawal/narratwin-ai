@@ -103,6 +103,14 @@ def governance_artifact_findings(
     ]
 
 
+def read_frozen_file(root: Path, path: str, limit: int) -> bytes:
+    return (root / path).read_bytes()
+
+
+def ci_route_head(root: Path) -> str:
+    return _git(root, "rev-parse", "HEAD").decode().strip()
+
+
 def required_governance_findings(
     root: Path,
     artifacts: tuple[tuple[str, ProposalIdentity], ...] = GOVERNANCE_ARTIFACTS,

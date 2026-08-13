@@ -118,6 +118,26 @@ def test_repository_facts_accept_the_ci_detached_head(
     assert reset.repository_findings(reset.collect_repository_facts(checkout)) == []
 
 
+def test_ci_detached_fixture_uses_route_parent_of_synthetic_merge(tmp_path: Path) -> None:
+    source = Path(__file__).resolve().parents[2]
+    route_head = subprocess.run(
+        ["/usr/bin/git", "rev-parse", "HEAD"], cwd=source, check=True, capture_output=True, text=True
+    ).stdout.strip()
+    synthetic = tmp_path / "synthetic"
+    subprocess.run(
+        ["/usr/bin/git", "clone", "--quiet", "--no-local", str(source), str(synthetic)], check=True
+    )
+    subprocess.run(
+        ["/usr/bin/git", "checkout", "--quiet", "--detach", reset.BASE], cwd=synthetic, check=True
+    )
+    subprocess.run(
+        ["/usr/bin/git", "-c", "user.name=CI", "-c", "user.email=ci@example.invalid",
+         "merge", "--quiet", "--no-ff", "--no-edit", route_head], cwd=synthetic, check=True
+    )
+
+    assert reset.ci_route_head(synthetic) == route_head
+
+
 @pytest.mark.parametrize(
     "raw",
     [
@@ -213,6 +233,22 @@ def test_process_output_is_stopped_while_crossing_the_bound(
     with pytest.raises(RuntimeError):
         reset._bounded_process_output(process, timeout=3)
     assert not sentinel.exists()
+
+
+def test_frozen_file_reader_rejects_symlinks(tmp_path: Path) -> None:
+    target = tmp_path / "target"
+    target.write_bytes(b"safe")
+    (tmp_path / "linked").symlink_to(target)
+
+    with pytest.raises(OSError):
+        reset.read_frozen_file(tmp_path, "linked", 4)
+
+
+def test_frozen_file_reader_rejects_oversized_regular_files(tmp_path: Path) -> None:
+    (tmp_path / "oversized").write_bytes(b"12345")
+
+    with pytest.raises(OSError):
+        reset.read_frozen_file(tmp_path, "oversized", 4)
 
 
 def test_proposal_identity_and_structure_are_exact() -> None:
