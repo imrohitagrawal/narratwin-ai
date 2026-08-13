@@ -55,10 +55,9 @@ def test_cut1_routes_are_exact_stage8_and_not_preflight_owned(monkeypatch: Any, 
                                          "issue-358.json", "issue-372.json"}
                         else ORIGINAL_READ(path, *a, **kw))
     policy = load("scripts/quality/check_stage8_docs.py", "reloaded").PROCESS_BRANCH_ALLOWED_FILES
-    assert policy.pop(i.BRANCH)==set(i.PATHS)
-    assert {branch: policy[branch] for branch in SCOPES} == SCOPES;r=cut1_routes
+    assert {branch: policy[branch] for branch in SCOPES} == SCOPES;r=cut1_routes;x=i.BRANCH
     registered = {getattr(r, f"ISSUE{i}_BRANCH") for i in (150, 396, 401, 403, 413, 428)}
-    assert {b for b in policy if b[:5] == "cut1-"} - set(SCOPES) == registered
+    assert {b for b in policy if b[:5] == "cut1-"} - {x, *SCOPES} == registered
     dispatcher:Any=load("scripts/quality/check_quality_stage.py","dispatcher");stage_file=tmp_path/"stage"
     status_file=tmp_path/"status";mode="| SSV1-MODE | repo-mode | Phase 1 Closure | phase1-closure | phase1-closure |\n"
     stage_file.write_text("8\n"); status_file.write_text(mode)
@@ -178,7 +177,8 @@ def test_legacy_route_allowlists_and_behavior_remain_exact(monkeypatch: Any) -> 
         error=f"Stage 8 changed file outside the allowlist: {rejected}"
         for c,w in ((sorted(source[branch]),[]),([rejected],[error])): assert route(monkeypatch,branch,c)==w
 def test_stage8_script_markers_match_mandatory_container_scanners() -> None:
-    f:list[str]=[]; stage8.check_dependencies_and_scripts(f)
+    f:list[str]=[];stage8.check_dependencies_and_scripts(f);policy=stage8.PROCESS_BRANCH_ALLOWED_FILES
+    assert policy[i.BRANCH]==set(i.PATHS)
     assert not any(m in "\n".join(f) for m in ("docker scout cves","--only-severity critical,high"))
 def test_unrouted_stage8_branch_is_rejected(monkeypatch:Any)->None:
     b="feature/untracked-stage8-work"; monkeypatch.setattr(stage8,"current_branch",lambda:b); f:list[str]=[]
