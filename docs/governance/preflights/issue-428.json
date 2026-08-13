@@ -25,10 +25,7 @@
       "scripts/quality/stage8_cut1_routes.py",
       "tests/unit/test_stage8_cut1_routes.py",
       "tests/unit/test_frontend_dependency_security_contract.py",
-      "tests/unit/test_dependency_security_contract.py",
       "tests/unit/test_stage8_quality_gate.py",
-      "scripts/ci/check_container_scan_consensus.py",
-      "tests/unit/test_container_scan_consensus.py",
       "docs/ADR/0062-nanoid-3-3-18-security-refresh.md",
       "docs/QUALITY_GATES.md",
       "docs/STAGE_ISSUE_PLAN.md",
@@ -54,8 +51,8 @@
     ]
   },
   "change_budget": {
-    "exact_paths": 15,
-    "maximum_additions_plus_deletions": 650,
+    "exact_paths": 12,
+    "maximum_additions_plus_deletions": 500,
     "deletions_grant_credit": false
   },
   "invariants": {
@@ -63,15 +60,15 @@
     "N428-02": "No direct nanoid dependency or override is added and package.json remains byte-identical to base.",
     "N428-03": "Normalizing the nanoid record makes the entire package lock equal to base; all unrelated entries remain exact.",
     "N428-04": "npm audit and repository gates contain zero unresolved High or Critical findings and no ignore or threshold change.",
-    "N428-05": "Native arm64 and amd64 frontend runtime inventories are independently reproduced and replace stale bindings; wrong architecture, stale, appended, or mutated values fail closed.",
-    "N428-06": "Exactly fifteen paths and no more than 650 charged lines are accepted from the exact base.",
+    "N428-05": "The current bounded architecture-checked frontend inventory contract and container evidence remain unchanged and pass with the refreshed lock.",
+    "N428-06": "Exactly twelve paths and no more than 500 charged lines are accepted from the exact base.",
     "N428-07": "Issue #150 remains serialized until merged-main acceptance; frozen Issue #427 remains byte-identical and inactive.",
     "N428-08": "The route changes no product behavior, runtime dependency ownership, provider, deployment, release, or production posture."
   },
   "tdd_sequence": {
     "preflight": "Commit only this artifact first.",
     "red": "Require 3.3.18 identity/integrity, exact lock isolation, route registration, and reject stale 3.3.17 before changing the lock or inventories.",
-    "green": "Refresh only the transitive lock record, then replace only native-reproduced inventory bindings.",
+    "green": "Refresh only the transitive lock record; current container inventory contracts remain unchanged unless a complete gate proves otherwise.",
     "reconcile": "Record ADR and required governance ledgers after executable controls are green."
   },
   "verification": [
@@ -92,8 +89,8 @@
   "stop": [
     "official advisory or registry metadata contradicts the selected identity",
     "any unrelated lock entry or package.json changes",
-    "native architecture inventory cannot be reproduced",
-    "any sixteenth path or more than 650 charged lines",
+    "current architecture-checked container evidence does not pass unchanged",
+    "any thirteenth path or more than 500 charged lines",
     "any unresolved High/Critical finding, waiver, ignore, threshold reduction, or scanner weakening",
     "any product/runtime/workflow/Dockerfile/provider/release/production expansion",
     "any unresolved high-confidence independent-review blocker"
