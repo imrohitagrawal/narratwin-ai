@@ -75,7 +75,12 @@ REVIEW_ARTIFACTS = (
 def review_artifact_findings(
     data: bytes, expected: ProposalIdentity, surface: str
 ) -> list[str]:
-    """Deliberately incomplete RED scaffold for exact review identities."""
+    if _identity(data) != expected:
+        return [f"Issue #427 {surface} review identity drifted or contains appended claims."]
+    try:
+        data.decode("utf-8")
+    except UnicodeDecodeError:
+        return [f"Issue #427 {surface} review is not UTF-8."]
     return []
 
 
@@ -83,8 +88,18 @@ def required_review_findings(
     root: Path,
     reviews: tuple[tuple[str, ProposalIdentity, str], ...] = REVIEW_ARTIFACTS,
 ) -> list[str]:
-    """Deliberately incomplete RED scaffold for the two required reviews."""
-    return []
+    findings: list[str] = []
+    for path, expected, surface in reviews:
+        try:
+            data = (root / path).read_bytes()
+        except OSError:
+            findings.append(f"Issue #427 {surface} review is missing or unreadable.")
+            continue
+        identity_findings = review_artifact_findings(data, expected, surface)
+        findings.extend(identity_findings)
+        if not identity_findings and surface == "architecture":
+            findings.extend(review_findings(data.decode("utf-8")))
+    return findings
 
 
 @dataclass(frozen=True)
@@ -185,16 +200,24 @@ def proposal_findings(data: bytes, *, expected: ProposalIdentity = PROPOSAL) -> 
 
 def binding_findings(raw: bytes) -> list[str]:
     top = {"schemaVersion", "state", "issue", "branch", "base", "proposal",
-           "ownerApprovalRequestComment", "ownerApprovalComment", "architectureReview",
-           "children", "activation"}
+           "ownerApprovalRequestComment", "ownerApprovalComment",
+           "correctionApprovalRequestComment", "correctionApprovalComment",
+           "architectureReview", "securityReview", "children", "activation"}
     try:
         value = closed_json(raw, top)
         proposal = value["proposal"]
         review = value["architectureReview"]
+        security_review = value["securityReview"]
         if not isinstance(proposal, dict) or set(proposal) != {"path", "sha256", "bytes", "lines"}:
             raise ValueError("proposal binding members")
-        if not isinstance(review, dict) or set(review) != {"path", "proposalSha256", "disposition"}:
+        if not isinstance(review, dict) or set(review) != {
+            "path", "sha256", "bytes", "lines", "proposalSha256", "disposition"
+        }:
             raise ValueError("review binding members")
+        if not isinstance(security_review, dict) or set(security_review) != {
+            "path", "sha256", "bytes", "lines", "disposition"
+        }:
+            raise ValueError("security review binding members")
     except (KeyError, TypeError, ValueError):
         return ["Issue #427 binding JSON is malformed, duplicated, missing, or unknown."]
     expected = {
@@ -207,9 +230,19 @@ def binding_findings(raw: bytes) -> list[str]:
                      "bytes": PROPOSAL.bytes, "lines": PROPOSAL.lines},
         "ownerApprovalRequestComment": 5273122120,
         "ownerApprovalComment": 5273244742,
+        "correctionApprovalRequestComment": 5273917279,
+        "correctionApprovalComment": 5276469372,
         "architectureReview": {"path": ARCHITECTURE_REVIEW_PATH,
+                               "sha256": ARCHITECTURE_REVIEW.sha256,
+                               "bytes": ARCHITECTURE_REVIEW.bytes,
+                               "lines": ARCHITECTURE_REVIEW.lines,
                                "proposalSha256": PROPOSAL.sha256,
                                "disposition": "PASS_ARCHITECTURE_DECOMPOSITION"},
+        "securityReview": {"path": SECURITY_REVIEW_PATH,
+                           "sha256": SECURITY_REVIEW.sha256,
+                           "bytes": SECURITY_REVIEW.bytes,
+                           "lines": SECURITY_REVIEW.lines,
+                           "disposition": "NONACTIVATING_FALSE_AUTHORITY_REVIEW_SURFACE"},
         "children": list(CHILDREN),
         "activation": "NONE",
     }
@@ -247,7 +280,7 @@ def _git(root: Path, *args: str) -> bytes:
     try:
         result = subprocess.run(
             ["/usr/bin/git", *args], cwd=root, env=env, shell=False,
-            stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False, timeout=5,
+            capture_output=True, check=False, timeout=5,
         )
     except (OSError, subprocess.TimeoutExpired) as error:
         raise RuntimeError("bounded Git command failed") from error
@@ -312,7 +345,7 @@ def check(root: Path, failures: list[str], active: bool) -> None:
     try:
         failures.extend(proposal_findings((root / PROPOSAL_PATH).read_bytes()))
         failures.extend(binding_findings((root / BINDING_PATH).read_bytes()))
-        failures.extend(review_findings((root / ARCHITECTURE_REVIEW_PATH).read_text(encoding="utf-8")))
+        failures.extend(required_review_findings(root))
         preflight = closed_json((root / PREFLIGHT_PATH).read_bytes(),
                                 {"schema_version", "issue_number", "branch", "objective", "status_decision", "scope"})
         scope = preflight["scope"]

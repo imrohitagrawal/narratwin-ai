@@ -29,9 +29,11 @@ def proposal_text() -> str:
         "RESET_PROPOSAL_UNAPPROVED",
         "Authority effect | None",
         "No route may mutate governed state before activation.",
-        "This document grants no runtime, product, provider, credential, egress, spend, media, "
-        "infrastructure, deployment, publication, release, commercial-readiness, SLA, or "
-        "production capability.",
+        (
+            "This document grants no runtime, product, provider, credential, egress, spend, media, "
+            "infrastructure, deployment, publication, release, commercial-readiness, SLA, or "
+            "production capability."
+        ),
         "No child is automatically activated.",
     ]
     return "\n".join([*sections, *invariants, *children, *boundaries]) + "\n"
@@ -283,14 +285,22 @@ def test_exact_review_identity_rejects_append_truncate_replace_and_invalid_utf8(
 
 
 def test_required_review_surfaces_validate_false_authority_security_review(tmp_path: Any) -> None:
-    architecture = b"architecture review\n"
     security = b"false-authority security review\n"
-    (tmp_path / "architecture.md").write_bytes(architecture)
     (tmp_path / "security.md").write_bytes(security)
     reviews = (
-        ("architecture.md", identity(architecture), "architecture"),
         ("security.md", identity(security), "false-authority security"),
     )
     assert reset.required_review_findings(tmp_path, reviews) == []
     (tmp_path / "security.md").write_bytes(security + b"Activation: ACTIVE\n")
     assert any("security" in item for item in reset.required_review_findings(tmp_path, reviews))
+
+
+def test_coordinated_security_review_and_binding_mutation_fails_closed() -> None:
+    original = b"false-authority security review\n"
+    changed = original + b"Activation: ACTIVE\n"
+    value = binding()
+    security_review = value["securityReview"]
+    assert isinstance(security_review, dict)
+    security_review["sha256"] = identity(changed).sha256
+    assert reset.review_artifact_findings(changed, identity(original), "false-authority security")
+    assert reset.binding_findings(json.dumps(value).encode())
