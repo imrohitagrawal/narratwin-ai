@@ -14,6 +14,7 @@ from scripts.quality.branch_identity import current_branch
 
 BRANCH = "cut1-process-427-authority-architecture-reset"
 BASE = "a02286240212ad8958915aec01aa5ebaf60fa705"
+FIRST_COMMIT = "8954f0ab09c1c8c5d0d6ffeb54272d764140493d"
 PREFLIGHT_PATH = "docs/governance/preflights/issue-427.json"
 PROPOSAL_PATH = "docs/governance/AUTHORITY_RECONCILIATION_AND_STALE_ROUTE_PHASE_SPEC_V1.md"
 BINDING_PATH = "docs/governance/authority-reconciliation-and-stale-route-phase-spec-v1.json"
@@ -111,6 +112,7 @@ class RepositoryFacts:
     changed_paths: tuple[str, ...]
     charged_lines: int
     numstat_valid: bool
+    first_commit: str
     first_commit_paths: tuple[str, ...]
     first_parent: str
     shallow: bool
@@ -162,6 +164,28 @@ def closed_json(raw: bytes, fields: set[str]) -> dict[str, Any]:
     if not isinstance(value, dict) or set(value) != fields:
         raise ValueError("JSON members are missing or unknown")
     return value
+
+
+def preflight_findings(raw: bytes) -> list[str]:
+    fields = {"schema_version", "issue_number", "branch", "objective", "status_decision", "scope"}
+    try:
+        preflight = closed_json(raw, fields)
+        scope = preflight["scope"]
+        if (preflight["issue_number"], preflight["branch"], preflight["status_decision"]) != (
+            427, BRANCH, "update-minimally"
+        ):
+            raise ValueError("preflight binding")
+        if not isinstance(scope, dict) or set(scope) != {"required", "allowed_prefixes", "forbidden"}:
+            raise ValueError("preflight scope")
+        if tuple(scope["required"]) != PATHS or tuple(scope["allowed_prefixes"]) != PATHS:
+            raise ValueError("preflight path drift")
+        objective = preflight["objective"]
+        markers = (BASE, PROPOSAL.sha256, "2,000", "NOT_APPLICABLE_SUPERSEDED_BY_OWNER", "one correction wave")
+        if not isinstance(objective, str) or any(marker not in objective for marker in markers):
+            raise ValueError("preflight objective drift")
+    except (KeyError, TypeError, ValueError):
+        return ["Issue #427 preflight or required reset artifact is malformed or drifted."]
+    return []
 
 
 def _identity(data: bytes) -> ProposalIdentity:
@@ -269,6 +293,15 @@ def review_findings(text: str) -> list[str]:
     return []
 
 
+def _bounded_process_output(
+    process: subprocess.Popen[bytes], *, timeout: float = 5, limit: int = 1_000_000
+) -> bytes:
+    stdout, stderr = process.communicate(timeout=timeout)
+    if len(stdout) + len(stderr) > limit:
+        raise RuntimeError("bounded Git command overflowed")
+    return stdout
+
+
 def _git(root: Path, *args: str) -> bytes:
     env = {
         "PATH": "/usr/bin:/bin",
@@ -280,15 +313,16 @@ def _git(root: Path, *args: str) -> bytes:
         "GIT_NO_REPLACE_OBJECTS": "1",
     }
     try:
-        result = subprocess.run(
+        process = subprocess.Popen(
             ["/usr/bin/git", *args], cwd=root, env=env, shell=False,
-            capture_output=True, check=False, timeout=5,
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE,
         )
+        stdout = _bounded_process_output(process)
     except (OSError, subprocess.TimeoutExpired) as error:
         raise RuntimeError("bounded Git command failed") from error
-    if result.returncode or len(result.stdout) > 1_000_000:
-        raise RuntimeError("bounded Git command failed or overflowed")
-    return result.stdout
+    if process.returncode:
+        raise RuntimeError("bounded Git command failed")
+    return stdout
 
 
 def _zlist(raw: bytes) -> tuple[str, ...]:
@@ -319,8 +353,8 @@ def collect_repository_facts(root: Path) -> RepositoryFacts:
         charged, valid = _charge(numstat)
         ambiguous = base != BASE or len(commits) > 100
     except (UnicodeDecodeError, ValueError, RuntimeError):
-        return RepositoryFacts("", "", (), -1, False, (), "", True, (), (), True)
-    return RepositoryFacts(branch, base, paths, charged, valid, first_paths, first_parent,
+        return RepositoryFacts("", "", (), -1, False, "", (), "", True, (), (), True)
+    return RepositoryFacts(branch, base, paths, charged, valid, first, first_paths, first_parent,
                            shallow, replaces, merges, ambiguous)
 
 
@@ -348,18 +382,6 @@ def check(root: Path, failures: list[str], active: bool) -> None:
         failures.extend(proposal_findings((root / PROPOSAL_PATH).read_bytes()))
         failures.extend(binding_findings((root / BINDING_PATH).read_bytes()))
         failures.extend(required_review_findings(root))
-        preflight = closed_json((root / PREFLIGHT_PATH).read_bytes(),
-                                {"schema_version", "issue_number", "branch", "objective", "status_decision", "scope"})
-        scope = preflight["scope"]
-        if (preflight["issue_number"], preflight["branch"], preflight["status_decision"]) != (427, BRANCH, "update-minimally"):
-            raise ValueError("preflight binding")
-        if not isinstance(scope, dict) or set(scope) != {"required", "allowed_prefixes", "forbidden"}:
-            raise ValueError("preflight scope")
-        if tuple(scope["required"]) != PATHS or tuple(scope["allowed_prefixes"]) != PATHS:
-            raise ValueError("preflight path drift")
-        objective = preflight["objective"]
-        if not isinstance(objective, str) or any(marker not in objective for marker in
-                (BASE, PROPOSAL.sha256, "2,000", "NOT_APPLICABLE_SUPERSEDED_BY_OWNER", "one correction wave")):
-            raise ValueError("preflight objective drift")
+        failures.extend(preflight_findings((root / PREFLIGHT_PATH).read_bytes()))
     except (KeyError, OSError, TypeError, UnicodeDecodeError, ValueError):
         failures.append("Issue #427 preflight or required reset artifact is malformed or drifted.")

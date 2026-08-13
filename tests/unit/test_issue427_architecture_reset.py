@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import subprocess
+import sys
 from collections.abc import Callable
 from dataclasses import replace
 from pathlib import Path
@@ -55,6 +56,7 @@ def facts() -> reset.RepositoryFacts:
         changed_paths=reset.PATHS,
         charged_lines=2000,
         numstat_valid=True,
+        first_commit=reset.FIRST_COMMIT,
         first_commit_paths=(reset.PREFLIGHT_PATH,),
         first_parent=reset.BASE,
         shallow=False,
@@ -89,6 +91,12 @@ def test_repository_facts_fail_closed(
 
 def test_repository_facts_accept_only_the_exact_route() -> None:
     assert reset.repository_findings(facts()) == []
+
+
+def test_repository_facts_reject_a_rewritten_first_commit_identity() -> None:
+    findings = reset.repository_findings(replace(facts(), first_commit="0" * 40))
+
+    assert any("first commit identity" in item.lower() for item in findings)
 
 
 def test_repository_facts_accept_the_ci_detached_head(
@@ -128,6 +136,31 @@ def test_closed_json_accepts_exact_members() -> None:
     assert reset.closed_json(b'{"a":1}', {"a"}) == {"a": 1}
 
 
+def test_closed_json_rejects_non_finite_constants() -> None:
+    with pytest.raises(ValueError):
+        reset.closed_json(b'{"a":NaN}', {"a"})
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    [
+        lambda value: value.update({"schema_version": "GovernancePreflightV2"}),
+        lambda value: value["scope"].update({"forbidden": value["scope"]["forbidden"][:-1]}),
+        lambda value: value.update(
+            {"objective": value["objective"] + " This preflight activates production authority."}
+        ),
+    ],
+)
+def test_preflight_rejects_schema_forbidden_and_activation_drift(
+    mutation: Callable[[dict[str, Any]], None]
+) -> None:
+    root = Path(__file__).resolve().parents[2]
+    value = json.loads((root / reset.PREFLIGHT_PATH).read_bytes())
+    mutation(value)
+
+    assert reset.preflight_findings(json.dumps(value).encode())
+
+
 @pytest.mark.parametrize(
     "raw",
     [b"1\t-\tbinary\0", b"1\t2", b"bad\t2\tpath\0", b"1\t2\t\xff\0", b"1\t2\0"],
@@ -140,29 +173,46 @@ def test_numstat_parser_charges_additions_plus_deletions() -> None:
     assert reset._charge(b"3\t4\tone\0" + b"5\t6\ttwo\0") == (18, True)
 
 
-def test_git_runner_is_bounded_allowlisted_and_fails_on_overflow(monkeypatch: Any, tmp_path: Any) -> None:
+def test_git_runner_is_absolute_allowlisted_and_uses_bounded_reader(monkeypatch: Any, tmp_path: Any) -> None:
     captured: dict[str, Any] = {}
 
-    def overflow(args: list[str], **kwargs: Any) -> subprocess.CompletedProcess[bytes]:
-        captured.update({"args": args, **kwargs})
-        return subprocess.CompletedProcess(args, 0, b"x" * 1_000_001, b"")
+    class Process:
+        returncode = 0
 
-    monkeypatch.setattr(subprocess, "run", overflow)
-    with pytest.raises(RuntimeError):
-        reset._git(tmp_path, "status")
+    def popen(args: list[str], **kwargs: Any) -> Process:
+        captured.update({"args": args, **kwargs})
+        return Process()
+
+    monkeypatch.setattr(subprocess, "Popen", popen)
+    monkeypatch.setattr(reset, "_bounded_process_output", lambda process: b"ok")
+    assert reset._git(tmp_path, "status") == b"ok"
     assert captured["args"] == ["/usr/bin/git", "status"]
-    assert captured["shell"] is False and captured["timeout"] == 5
+    assert captured["shell"] is False
     assert set(captured["env"]) == {
         "PATH", "LC_ALL", "GIT_CONFIG_NOSYSTEM", "GIT_CONFIG_GLOBAL", "GIT_OPTIONAL_LOCKS",
         "GIT_NO_LAZY_FETCH", "GIT_NO_REPLACE_OBJECTS",
     }
 
-    def timeout(*args: Any, **kwargs: Any) -> Any:
-        raise subprocess.TimeoutExpired("git", 5)
 
-    monkeypatch.setattr(subprocess, "run", timeout)
+@pytest.mark.parametrize("stream", ["stdout", "stderr"])
+def test_process_output_is_stopped_while_crossing_the_bound(
+    stream: str, tmp_path: Path
+) -> None:
+    sentinel = tmp_path / f"{stream}-completed"
+    script = (
+        "import pathlib,sys,time; "
+        f"stream=sys.{stream}.buffer; "
+        "stream.write(b'x'*1_000_001); stream.flush(); "
+        "time.sleep(1); "
+        f"pathlib.Path({str(sentinel)!r}).write_text('completed')"
+    )
+    process = subprocess.Popen(
+        [sys.executable, "-c", script], stdout=subprocess.PIPE, stderr=subprocess.PIPE
+    )
+
     with pytest.raises(RuntimeError):
-        reset._git(tmp_path, "status")
+        reset._bounded_process_output(process, timeout=3)
+    assert not sentinel.exists()
 
 
 def test_proposal_identity_and_structure_are_exact() -> None:
