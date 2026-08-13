@@ -272,6 +272,10 @@ Gate validates:
   `2026-08-28`; any additional override or expired date fails closed
 - the backend Docker build explicitly verifies Click `>=8.3.3` and Semgrep
   absence in addition to the critical/high image vulnerability scan
+- Issue `#428` requires the sole transitive frontend Nano ID record to be exact
+  official `3.3.18`, with no direct dependency, unrelated lock drift, audit
+  ignore, or threshold reduction; current architecture-checked container
+  evidence must pass unchanged
 - Docker build paths exist for backend and frontend foundation images; runtime
   containers run as non-root, base/service images are digest pinned, and local
   Compose port bindings are localhost-only
