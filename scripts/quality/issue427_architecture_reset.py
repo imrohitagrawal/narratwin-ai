@@ -7,6 +7,7 @@ import json
 import os
 import re
 import selectors
+import stat
 import subprocess
 import time
 from dataclasses import dataclass
@@ -66,6 +67,7 @@ PREFLIGHT = ProposalIdentity(
     4_067,
     54,
 )
+BINDING_MAX_BYTES = 1_587
 
 ARCHITECTURE_REVIEW = ProposalIdentity(
     "766b19ce823dadba152631516bd5e2af658cbf073f770a713c76417abacc0f2e",
@@ -104,11 +106,42 @@ def governance_artifact_findings(
 
 
 def read_frozen_file(root: Path, path: str, limit: int) -> bytes:
-    return (root / path).read_bytes()
+    descriptor = os.open(root, os.O_RDONLY | os.O_DIRECTORY)
+    try:
+        parts = Path(path).parts
+        for part in parts[:-1]:
+            next_descriptor = os.open(
+                part, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=descriptor
+            )
+            os.close(descriptor)
+            descriptor = next_descriptor
+        file_descriptor = os.open(parts[-1], os.O_RDONLY | os.O_NOFOLLOW, dir_fd=descriptor)
+        try:
+            metadata = os.fstat(file_descriptor)
+            if not stat.S_ISREG(metadata.st_mode) or metadata.st_size > limit:
+                raise OSError("frozen artifact is not a bounded regular file")
+            chunks: list[bytes] = []
+            remaining = limit + 1
+            while remaining:
+                chunk = os.read(file_descriptor, min(65_536, remaining))
+                if not chunk:
+                    break
+                chunks.append(chunk)
+                remaining -= len(chunk)
+            data = b"".join(chunks)
+            if len(data) > limit:
+                raise OSError("frozen artifact exceeded its byte bound")
+            return data
+        finally:
+            os.close(file_descriptor)
+    finally:
+        os.close(descriptor)
 
 
 def ci_route_head(root: Path) -> str:
-    return _git(root, "rev-parse", "HEAD").decode().strip()
+    head = _git(root, "rev-parse", "HEAD").decode().strip()
+    parents = _git(root, "rev-list", "--parents", "-n", "1", head).decode().split()
+    return parents[2] if len(parents) == 3 else head
 
 
 def required_governance_findings(
@@ -118,7 +151,7 @@ def required_governance_findings(
     findings: list[str] = []
     for path, expected in artifacts:
         try:
-            data = (root / path).read_bytes()
+            data = read_frozen_file(root, path, expected.bytes)
         except OSError:
             findings.append(f"Issue #427 governance artifact is missing or unreadable: {path}.")
             continue
@@ -145,7 +178,7 @@ def required_review_findings(
     findings: list[str] = []
     for path, expected, surface in reviews:
         try:
-            data = (root / path).read_bytes()
+            data = read_frozen_file(root, path, expected.bytes)
         except OSError:
             findings.append(f"Issue #427 {surface} review is missing or unreadable.")
             continue
@@ -476,10 +509,10 @@ def check(root: Path, failures: list[str], active: bool) -> None:
         return
     failures.extend(repository_findings(collect_repository_facts(root)))
     try:
-        failures.extend(proposal_findings((root / PROPOSAL_PATH).read_bytes()))
-        failures.extend(binding_findings((root / BINDING_PATH).read_bytes()))
+        failures.extend(proposal_findings(read_frozen_file(root, PROPOSAL_PATH, PROPOSAL.bytes)))
+        failures.extend(binding_findings(read_frozen_file(root, BINDING_PATH, BINDING_MAX_BYTES)))
         failures.extend(required_review_findings(root))
         failures.extend(required_governance_findings(root))
-        failures.extend(preflight_findings((root / PREFLIGHT_PATH).read_bytes()))
+        failures.extend(preflight_findings(read_frozen_file(root, PREFLIGHT_PATH, PREFLIGHT.bytes)))
     except (KeyError, OSError, TypeError, UnicodeDecodeError, ValueError):
         failures.append("Issue #427 preflight or required reset artifact is malformed or drifted.")

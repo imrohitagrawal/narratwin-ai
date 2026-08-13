@@ -104,9 +104,7 @@ def test_repository_facts_accept_the_ci_detached_head(
 ) -> None:
     source = Path(__file__).resolve().parents[2]
     checkout = tmp_path / "checkout"
-    head = subprocess.run(
-        ["/usr/bin/git", "rev-parse", "HEAD"], cwd=source, check=True, capture_output=True, text=True
-    ).stdout.strip()
+    head = reset.ci_route_head(source)
     subprocess.run(
         ["/usr/bin/git", "clone", "--quiet", "--no-local", str(source), str(checkout)], check=True
     )
