@@ -3,12 +3,11 @@ name = "narratwin-semgrep-tool"
 version = "0.1.0"
 requires-python = ">=3.13,<3.14"
 dependencies = [
-    "semgrep==1.168.0",
+    "semgrep==1.172.0",
 ]
 
 [tool.uv]
 package = false
 override-dependencies = [
-    "click==8.3.3",
     "mcp==1.28.1",
 ]

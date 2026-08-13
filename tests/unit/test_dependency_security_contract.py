@@ -49,6 +49,7 @@ BRACE_509_INTEGRITY = (
     "sha512-ScQ4IuvIEF1TMlP7Zt+vjJ//9zlPb2SDcxWxM3bk8s6t6GGdJ7KO1dCcTidOPJKePW30LE/2cT7wCyPho9/Wxg=="
 )
 SEMGREP_LOCK_SHA256 = "1975bebb0fca718a45742ad13a759e2092162c44c944c310572b4d553de4d51c"
+ISSUE150_BASE = "a02286240212ad8958915aec01aa5ebaf60fa705"
 PYPDF_WHEEL_SHA256 = "14e001d6504822cb1ca9c7ed9a69bccb320f59b320730f55af804361abe4d5ee"
 PYPDF_SDIST_SHA256 = "d39c4d955a76409284a905e2d65b40076d77ab76129e0faaeeb6612403ecfc79"
 GOOGLE_AUTH_PACKAGES = {
@@ -310,16 +311,19 @@ def test_root_and_semgrep_tool_locks_are_separate_and_patched() -> None:
 def test_semgrep_cryptography_generated_lock_delta_is_exact_and_isolated() -> None:
     lock_bytes = (ROOT / "tools/semgrep/uv.lock").read_bytes()
     lock = tomllib.loads(lock_bytes.decode())
-    base_lock = tomllib.loads(_base_text("tools/semgrep/uv.lock"))
-    assert hashlib.sha256(lock_bytes).hexdigest() == SEMGREP_LOCK_SHA256
-
-    current_indexes = [i for i, package in enumerate(lock["package"]) if package["name"] == "cryptography"]
-    base_crypto = [package for package in base_lock["package"] if package["name"] == "cryptography"]
-    assert len(current_indexes) == len(base_crypto) == 1
-    assert lock["package"][current_indexes[0]]["version"] == "50.0.0"
-    assert base_crypto[0]["version"] == "49.0.0"
+    base_lock = tomllib.loads(_text_at(ISSUE150_BASE, "tools/semgrep/uv.lock"))
+    assert hashlib.sha256(lock_bytes).hexdigest() == "482cbb34aa540d8dc08598112ec6907e20aa99ff2fd17a248de2d2eba0a9a636"
+    assert lock["manifest"]["overrides"] == [{"name": "mcp", "specifier": "==1.28.1"}]
+    assert [package["name"] for package in lock["package"]] == [
+        package["name"] for package in base_lock["package"]
+    ]
     normalized = copy.deepcopy(lock)
-    normalized["package"][current_indexes[0]] = base_crypto[0]
+    normalized["manifest"] = base_lock["manifest"]
+    for name in ("click", "narratwin-semgrep-tool", "semgrep"):
+        current_index = next(i for i, package in enumerate(normalized["package"]) if package["name"] == name)
+        normalized["package"][current_index] = next(
+            package for package in base_lock["package"] if package["name"] == name
+        )
     assert normalized == base_lock
 
 
@@ -328,8 +332,8 @@ def test_semgrep_tool_contract_rejects_vulnerable_cryptography_lock(
 ) -> None:
     root_project: dict[str, Any] = {"tool": {"uv": {}}}
     tool_project: dict[str, Any] = {
-        "project": {"dependencies": ["semgrep==1.168.0"]},
-        "tool": {"uv": {"override-dependencies": ["click==8.3.3", "mcp==1.28.1"]}},
+        "project": {"dependencies": ["semgrep==1.172.0"]},
+        "tool": {"uv": {"override-dependencies": ["mcp==1.28.1"]}},
     }
     root_lock = {"click": {"8.3.3"}}
 
@@ -349,8 +353,8 @@ def test_semgrep_tool_contract_rejects_vulnerable_cryptography_lock(
 
     for version, accepted in (("49.0.0", False), ("50.0.0", True)):
         tool_lock = {
-            "semgrep": {"1.168.0"},
-            "click": {"8.3.3"},
+            "semgrep": {"1.172.0"},
+            "click": {"8.4.2"},
             "mcp": {"1.28.1"},
             "cryptography": {version},
         }
@@ -398,8 +402,8 @@ def test_installed_semgrep_tool_identity_requires_locked_mcp(monkeypatch: pytest
     site_packages = tmp_path / "semgrep-tool" / "lib"
     site_packages.mkdir(parents=True)
     monkeypatch.setattr(semgrep_security, "TOOL_ENV", tmp_path)
-    lock = {"semgrep": {"1.168.0"}, "click": {"8.3.3"}, "mcp": {"1.28.1"}, "cryptography": {"50.0.0"}}
-    installed = [dist("semgrep", "1.168.0"), dist("click", "8.3.3"), dist("mcp", "1.28.1"), dist("cryptography", "50.0.0")]
+    lock = {"semgrep": {"1.172.0"}, "click": {"8.4.2"}, "mcp": {"1.28.1"}, "cryptography": {"50.0.0"}}
+    installed = [dist("semgrep", "1.172.0"), dist("click", "8.4.2"), dist("mcp", "1.28.1"), dist("cryptography", "50.0.0")]
     monkeypatch.setattr(semgrep_security, "_locked_versions", lambda path: lock)
     monkeypatch.setattr(importlib.metadata, "distributions", lambda path: installed)
     validate_installed_tool(site_packages)
@@ -418,15 +422,15 @@ def test_installed_semgrep_tool_identity_rejects_vulnerable_cryptography(
     site_packages.mkdir(parents=True)
     monkeypatch.setattr(semgrep_security, "TOOL_ENV", tmp_path)
     locked = {
-        "semgrep": {"1.168.0"},
-        "click": {"8.3.3"},
+        "semgrep": {"1.172.0"},
+        "click": {"8.4.2"},
         "mcp": {"1.28.1"},
         "cryptography": {"50.0.0"},
     }
     monkeypatch.setattr(semgrep_security, "_locked_versions", lambda path: locked)
     installed = [
-        dist("semgrep", "1.168.0"),
-        dist("click", "8.3.3"),
+        dist("semgrep", "1.172.0"),
+        dist("click", "8.4.2"),
         dist("mcp", "1.28.1"),
         dist("cryptography", "49.0.0"),
     ]

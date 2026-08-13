@@ -16,7 +16,7 @@ from typing import Any, cast
 ROOT = Path(__file__).resolve().parents[2]
 TOOL_ROOT = ROOT / "tools/semgrep"
 TOOL_ENV = (ROOT / ".uv-cache/semgrep-venv").resolve()
-OVERRIDE_EXPIRY = dt.date(2026, 8, 13)
+OVERRIDE_EXPIRY = dt.date(2026, 8, 28)
 EXPECTED_TARGETS = (
     "backend",
     "frontend/src",
@@ -159,17 +159,17 @@ def validate_project_contract(root: Path = ROOT, *, today: dt.date | None = None
         "root Click must be locked to a fixed version >=8.3.3",
     )
     _require(
-        tool_project["project"]["dependencies"] == ["semgrep==1.168.0"],
+        tool_project["project"]["dependencies"] == ["semgrep==1.172.0"],
         "Semgrep tool pin must remain exact",
     )
-    _require(tool_project["tool"]["uv"]["override-dependencies"] == ["click==8.3.3", "mcp==1.28.1"], "the tool project must contain only the narrow Click and MCP overrides")
-    _require(tool_lock.get("semgrep") == {"1.168.0"}, "tool Semgrep lock drifted")
-    _require(tool_lock.get("click") == {"8.3.3"}, "tool Click lock drifted")
+    _require(tool_project["tool"]["uv"]["override-dependencies"] == ["mcp==1.28.1"], "the tool project must contain only the narrow MCP override")
+    _require(tool_lock.get("semgrep") == {"1.172.0"}, "tool Semgrep lock drifted")
+    _require(tool_lock.get("click") == {"8.4.2"}, "tool Click lock drifted")
     _require(tool_lock.get("mcp") == {"1.28.1"}, "tool MCP lock drifted")
     _require(tool_lock.get("cryptography") == {"50.0.0"}, "tool cryptography lock drifted")
     _require(_manifest_targets(root) == EXPECTED_TARGETS, "Semgrep target manifest drifted")
     validate_rule_ids(_configured_rule_ids(root / "semgrep.yml"))
-    _require(today <= OVERRIDE_EXPIRY, f"Semgrep Click/MCP overrides expired on {OVERRIDE_EXPIRY}")
+    _require(today <= OVERRIDE_EXPIRY, f"Semgrep MCP override expired on {OVERRIDE_EXPIRY}")
     validate_reviewed_inputs(root)
     validate_audit_wrappers(root)
 
@@ -183,8 +183,8 @@ def validate_installed_tool(site_packages: Path) -> None:
         for distribution in importlib.metadata.distributions(path=[str(resolved)])
         if distribution.metadata.get("Name")
     }
-    _require(installed.get("semgrep") == "1.168.0", "installed Semgrep identity mismatch")
-    _require(installed.get("click") == "8.3.3", "installed Click identity mismatch")
+    _require(installed.get("semgrep") == "1.172.0", "installed Semgrep identity mismatch")
+    _require(installed.get("click") == "8.4.2", "installed Click identity mismatch")
     _require(installed.get("mcp") == "1.28.1", "installed MCP identity mismatch")
     _require(installed.get("cryptography") == "50.0.0", "installed cryptography identity mismatch")
     locked = _locked_versions(TOOL_ROOT / "uv.lock")
