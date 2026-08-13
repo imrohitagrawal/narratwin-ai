@@ -285,7 +285,7 @@ def _packages(lock_path: Path) -> dict[str, set[str]]:
 
 
 def test_root_and_semgrep_tool_locks_are_separate_and_patched() -> None:
-    validate_project_contract(ROOT, today=dt.date(2026, 7, 14))
+    validate_project_contract(ROOT, today=dt.date(2026, 8, 28))
 
     root_project = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
     tool_project = tomllib.loads(
@@ -298,10 +298,10 @@ def test_root_and_semgrep_tool_locks_are_separate_and_patched() -> None:
     assert "semgrep" not in root_packages
     assert len(root_packages["click"]) == 1
     assert Version(next(iter(root_packages["click"]))) >= Version("8.3.3")
-    assert tool_project["project"]["dependencies"] == ["semgrep==1.168.0"]
-    assert tool_project["tool"]["uv"]["override-dependencies"] == ["click==8.3.3", "mcp==1.28.1"]
-    assert tool_packages["semgrep"] == {"1.168.0"}
-    assert tool_packages["click"] == {"8.3.3"}
+    assert tool_project["project"]["dependencies"] == ["semgrep==1.172.0"]
+    assert tool_project["tool"]["uv"]["override-dependencies"] == ["mcp==1.28.1"]
+    assert tool_packages["semgrep"] == {"1.172.0"}
+    assert tool_packages["click"] == {"8.4.2"}
     assert tool_packages["mcp"] == {"1.28.1"}
     assert tool_packages["cryptography"] == {"50.0.0"}
     assert tool_packages["pyjwt"] == {"2.13.0"}
@@ -369,8 +369,8 @@ def test_semgrep_tool_contract_rejects_vulnerable_cryptography_lock(
 def test_semgrep_tool_contract_rejects_missing_wrong_or_extra_mcp_override(monkeypatch: pytest.MonkeyPatch) -> None:
     root_project: dict[str, Any] = {"tool": {"uv": {}}}
     root_lock: dict[str, set[str]] = {"click": {"8.3.3"}}
-    base_tool: dict[str, Any] = {"project": {"dependencies": ["semgrep==1.168.0"]}, "tool": {"uv": {"override-dependencies": ["click==8.3.3", "mcp==1.28.1"]}}}
-    base_lock: dict[str, set[str]] = {"semgrep": {"1.168.0"}, "click": {"8.3.3"}, "mcp": {"1.28.1"}}
+    base_tool: dict[str, Any] = {"project": {"dependencies": ["semgrep==1.172.0"]}, "tool": {"uv": {"override-dependencies": ["mcp==1.28.1"]}}}
+    base_lock: dict[str, set[str]] = {"semgrep": {"1.172.0"}, "click": {"8.4.2"}, "mcp": {"1.28.1"}, "cryptography": {"50.0.0"}}
 
     def install(tool_project: dict[str, Any], tool_lock: dict[str, set[str]]) -> None:
         monkeypatch.setattr(semgrep_security, "_toml", lambda path: tool_project if "tools/semgrep" in str(path) else root_project)
@@ -380,15 +380,15 @@ def test_semgrep_tool_contract_rejects_missing_wrong_or_extra_mcp_override(monke
         monkeypatch.setattr(semgrep_security, "validate_reviewed_inputs", lambda root: None)
         monkeypatch.setattr(semgrep_security, "validate_audit_wrappers", lambda root: None)
 
-    for overrides in (["click==8.3.3"], ["click==8.3.3", "mcp==1.23.3"], ["click==8.3.3", "mcp==1.28.1", "other==1"]):
+    for overrides in ([], ["mcp==1.23.3"], ["click==8.4.2", "mcp==1.28.1"], ["mcp==1.28.1", "other==1"]):
         candidate = copy.deepcopy(base_tool)
         candidate["tool"]["uv"]["override-dependencies"] = overrides
         install(candidate, copy.deepcopy(base_lock))
-        with pytest.raises(ContractError, match="Click and MCP"):
-            validate_project_contract(ROOT, today=dt.date(2026, 7, 17))
+        with pytest.raises(ContractError, match="MCP override"):
+            validate_project_contract(ROOT, today=dt.date(2026, 8, 28))
     install(copy.deepcopy(base_tool), {**base_lock, "mcp": {"1.23.3"}})
     with pytest.raises(ContractError, match="MCP lock"):
-        validate_project_contract(ROOT, today=dt.date(2026, 7, 17))
+        validate_project_contract(ROOT, today=dt.date(2026, 8, 28))
 
 
 def test_installed_semgrep_tool_identity_requires_locked_mcp(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
@@ -573,7 +573,7 @@ def test_semgrep_canary_requires_one_finding_and_both_files() -> None:
 
 def test_override_expiry_fails_closed() -> None:
     with pytest.raises(ContractError, match="expired"):
-        validate_project_contract(ROOT, today=dt.date(2026, 8, 14))
+        validate_project_contract(ROOT, today=dt.date(2026, 8, 29))
 
 
 def test_backend_build_requires_explicit_click_and_semgrep_inventory() -> None:
