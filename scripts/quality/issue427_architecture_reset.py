@@ -68,6 +68,7 @@ PREFLIGHT = ProposalIdentity(
     54,
 )
 BINDING_MAX_BYTES = 1_587
+EVENT_MAX_BYTES = 1_048_576
 
 ARCHITECTURE_REVIEW = ProposalIdentity(
     "766b19ce823dadba152631516bd5e2af658cbf073f770a713c76417abacc0f2e",
@@ -140,14 +141,72 @@ def read_frozen_file(root: Path, path: str, limit: int) -> bytes:
         os.close(descriptor)
 
 
+def _unique_pairs(items: list[tuple[str, Any]]) -> dict[str, Any]:
+    value: dict[str, Any] = {}
+    for key, member in items:
+        if key in value:
+            raise ValueError(f"duplicate JSON member: {key}")
+        value[key] = member
+    return value
+
+
+def github_pr_identity() -> tuple[bool, str, str]:
+    path = os.environ.get("GITHUB_EVENT_PATH", "").strip()
+    if not path:
+        return False, "", ""
+    try:
+        descriptor = os.open(path, os.O_RDONLY | os.O_NONBLOCK | os.O_NOFOLLOW)
+        try:
+            metadata = os.fstat(descriptor)
+            if not stat.S_ISREG(metadata.st_mode) or metadata.st_size > EVENT_MAX_BYTES:
+                return True, "", ""
+            chunks: list[bytes] = []
+            remaining = EVENT_MAX_BYTES + 1
+            while remaining:
+                chunk = os.read(descriptor, min(65_536, remaining))
+                if not chunk:
+                    break
+                chunks.append(chunk)
+                remaining -= len(chunk)
+            raw = b"".join(chunks)
+        finally:
+            os.close(descriptor)
+        if len(raw) > EVENT_MAX_BYTES:
+            return True, "", ""
+        value = json.loads(
+            raw.decode("utf-8"),
+            object_pairs_hook=_unique_pairs,
+            parse_constant=lambda item: (_ for _ in ()).throw(ValueError(item)),
+        )
+        pull_request = value["pull_request"]
+        base = pull_request["base"]["sha"]
+        head = pull_request["head"]["sha"]
+        branch = pull_request["head"]["ref"]
+    except (KeyError, OSError, TypeError, UnicodeError, ValueError, json.JSONDecodeError):
+        return True, "", ""
+    sha = re.compile(r"[0-9a-f]{40}")
+    if branch != BRANCH or not isinstance(base, str) or not isinstance(head, str):
+        return True, "", ""
+    if not sha.fullmatch(base) or not sha.fullmatch(head):
+        return True, "", ""
+    return True, base, head
+
+
 def ci_route_head(root: Path) -> str:
     head = _git(root, "rev-parse", "HEAD").decode().strip()
     parents = _git(root, "rev-list", "--parents", "-n", "1", head).decode().split()
     if len(parents) != 3 or os.environ.get("GITHUB_HEAD_REF", "") != BRANCH:
         return head
     detached = _git(root, "rev-parse", "--abbrev-ref", "HEAD").decode().strip() == "HEAD"
-    event_base = os.environ.get("GITHUB_BASE_SHA", "").strip()
-    return parents[2] if detached and event_base and parents[1] == event_base else head
+    event_present, event_base, event_head = github_pr_identity()
+    configured_base = os.environ.get("GITHUB_BASE_SHA", "").strip()
+    if event_present and (not event_base or not event_head):
+        return head
+    if configured_base and event_base and configured_base != event_base:
+        return head
+    base = event_base or configured_base
+    head_identity_ok = not event_present or event_head == parents[2]
+    return parents[2] if detached and base == parents[1] and head_identity_ok else head
 
 
 def read_route_file(root: Path, path: str, limit: int) -> bytes:
@@ -254,18 +313,10 @@ def repository_findings(facts: RepositoryFacts) -> list[str]:
 
 
 def closed_json(raw: bytes, fields: set[str]) -> dict[str, Any]:
-    def pairs(items: list[tuple[str, Any]]) -> dict[str, Any]:
-        value: dict[str, Any] = {}
-        for key, member in items:
-            if key in value:
-                raise ValueError(f"duplicate JSON member: {key}")
-            value[key] = member
-        return value
-
     try:
         value = json.loads(
             raw.decode("utf-8"),
-            object_pairs_hook=pairs,
+            object_pairs_hook=_unique_pairs,
             parse_constant=lambda value: (_ for _ in ()).throw(ValueError(value)),
         )
     except (UnicodeDecodeError, json.JSONDecodeError) as error:
