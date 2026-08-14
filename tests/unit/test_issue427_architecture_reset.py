@@ -377,6 +377,7 @@ def test_owner_markdown_reset_is_bound_to_approval_comment() -> None:
     [
         reset.PREFLIGHT_PATH,
         "docs/ADR/0060-authority-reconciliation-and-stale-route-phase-spec.md",
+        "docs/STAGE_ISSUE_PLAN.md",
         "docs/STATUS.md",
         "docs/TRACEABILITY.md",
     ],
