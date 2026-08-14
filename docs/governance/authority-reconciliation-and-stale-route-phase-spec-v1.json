@@ -1,0 +1,44 @@
+{
+  "schemaVersion": "Issue427ArchitectureResetBindingV1",
+  "state": "RESET_PROPOSAL_UNAPPROVED",
+  "issue": 427,
+  "branch": "cut1-process-427-authority-architecture-reset",
+  "base": "f2a32b8c022c015dfa4e87c700fbfe1ed0d85183",
+  "proposal": {
+    "path": "docs/governance/AUTHORITY_RECONCILIATION_AND_STALE_ROUTE_PHASE_SPEC_V1.md",
+    "sha256": "794c2e90034a8012363a6a859dd3bac826280452e787b8a7afe5a49164849b29",
+    "bytes": 17853,
+    "lines": 326
+  },
+  "ownerApprovalRequestComment": 5273122120,
+  "ownerApprovalComment": 5273244742,
+  "correctionApprovalRequestComment": 5273917279,
+  "correctionApprovalComment": 5276469372,
+  "markdownResetRequestComment": 5287631143,
+  "markdownResetApprovalComment": 5289686674,
+  "ciRouteResetComment": 5292268215,
+  "architectureReview": {
+    "path": "docs/reviews/ISSUE_427_AUTHORITY_ROUTE_SPEC_REVIEW.md",
+    "sha256": "31e09cec832ee7367251bab9f3514fe4619c42dd59f94d5739c8564010eab94b",
+    "bytes": 1639,
+    "lines": 29,
+    "proposalSha256": "794c2e90034a8012363a6a859dd3bac826280452e787b8a7afe5a49164849b29",
+    "disposition": "PASS_ARCHITECTURE_DECOMPOSITION"
+  },
+  "securityReview": {
+    "path": "docs/reviews/ISSUE_427_FALSE_AUTHORITY_SECURITY_REVIEW.md",
+    "sha256": "750878d6acd4a2360860f1446ec15535183024794f1cfdbdf5f826f136cef6c3",
+    "bytes": 1997,
+    "lines": 37,
+    "disposition": "NONACTIVATING_FALSE_AUTHORITY_REVIEW_SURFACE"
+  },
+  "children": [
+    "A — Core schemas and state matrices",
+    "B — Evidence and trust",
+    "C — Projection, CAS and bootstrap",
+    "D — Audit and closeout coordinator protocol",
+    "E — Historical reconciliation",
+    "F — Integrated offline kernel and oracle"
+  ],
+  "activation": "NONE"
+}

@@ -1352,3 +1352,43 @@ It also removes or tampers the current facts contract after draft and after
 receipt issuance and requires both live evaluation and receipt replay to fail.
 No real provider call, telemetry egress, audio, deployment, distribution,
 production-readiness, or release claim is part of this gate.
+
+### Issue #427 Architecture Reset Gate
+
+The exact branch `cut1-process-427-authority-architecture-reset` dispatches to
+Stage 8 and delegates to `scripts/quality/issue427_architecture_reset.py`. The
+dedicated standard-library gate fails closed on exact branch/base/history,
+preflight-only first commit, no merge or replace-ref interference, fourteen-path
+scope, 2,000 aggregate additions-plus-deletions, valid text numstat, strict
+duplicate-free closed JSON, approved proposal hash/bytes/lines, Sections 1–12,
+AK-001 through AK-023, ordered Children A–F, frozen architecture-review identity,
+nonactivation, and prohibited-capability boundaries.
+
+Required local commands are:
+
+```text
+uv run pytest -q tests/unit/test_issue427_architecture_reset.py
+uv run pytest -q tests/unit/test_stage8_quality_gate.py
+python3 scripts/guardrails_check.py
+GITHUB_BASE_SHA=f2a32b8c022c015dfa4e87c700fbfe1ed0d85183 NARRATWIN_POLICY_ONLY=1 make quality
+GITHUB_BASE_SHA=f2a32b8c022c015dfa4e87c700fbfe1ed0d85183 make stage8-quality
+make quality
+uv run ruff check scripts tests
+uv run mypy scripts tests
+git diff --check
+make ci
+make security
+make dependency-audit
+make container-scan
+make secrets-scan
+make eval
+```
+
+For Issue #427, `make phase1-closure-quality` is exactly
+`NOT_APPLICABLE_SUPERSEDED_BY_OWNER`; it must not be run or reported as passed.
+Hosted exact-head protected contexts, fresh specialist reviews, eligible
+non-author approval, final exact-byte OWNER approval, reference-only merge text,
+merged-main verification, status reconciliation and explicit issue closeout
+remain human/external gates. A green local gate creates no authority decision,
+active route, automatic Child A–F authorization, or runtime/release/production
+capability.

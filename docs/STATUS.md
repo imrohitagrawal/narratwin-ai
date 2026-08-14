@@ -14,6 +14,21 @@ Use it to answer:
 
 ## Current Baseline
 
+- Issue `#427` architecture-reset target state: OWNER reset comment `5289686674`
+  approves request `5287631143`; CI route-reset provenance `5292268215` binds current main after the
+  original route comments `5273122120` and `5273244742`. The replacement branch
+  is `cut1-process-427-authority-architecture-reset` from exact base
+  `f2a32b8c022c015dfa4e87c700fbfe1ed0d85183`, with fourteen exact paths and a
+  2,000-line aggregate charge ceiling. Its immutable 17,853-byte/326-line
+  proposal at SHA-256
+  `794c2e90034a8012363a6a859dd3bac826280452e787b8a7afe5a49164849b29`
+  establishes only the architecture kernel and serialized A–F ownership. Once
+  this PR is reviewed, approved, merged, green on merged main and Issue #427 is
+  explicitly closed, the exact next child is `A — Core schemas and state
+  matrices`, under a separate future OWNER-approved route. Until then no child,
+  authority decision, active route, runtime/product/provider/media/deployment/
+  release/production capability is activated and release remains No-Go.
+
 - The repository capability for deterministic PR-body live-state reconciliation
   is governed by Issue `#415` and is not product implementation or a release
   claim. Live required-check activation exists only when repository protection

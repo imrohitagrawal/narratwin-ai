@@ -2,13 +2,13 @@
 import hashlib; import importlib.util; import json; import subprocess as sp
 from pathlib import Path; from types import ModuleType; from typing import Any
 import pytest; from scripts.guardrails_check import canonical_stage_issue
-from scripts.quality import stage8_a23b as a23b, stage8_cut1_routes as cut1_routes
+from scripts.quality import stage8_a23b as a23b, stage8_cut1_routes as cut1_routes, issue427_architecture_reset as i
 from scripts.quality.check_stage8_docs import (CUT1_REAL_MEDIA_TRANSITION_BRANCH as CUT1_REAL_MEDIA_TRANSITION,
     CUT1_REAL_MEDIA_TRANSITION_FILES as CUT1_REAL_MEDIA_TRANSITION_SCOPE,
     CITATION_PARITY_BRANCH as CP, CITATION_PARITY_FILES as CP_SCOPE,
     QUIET_PRESENCE_BRANCH as QP, QUIET_PRESENCE_FILES as QP_SCOPE)
 TRANSITION = "cut1-process-346-governance-transition"; A2_1 = "cut1-335-r0c-a2-1-stage4-rag-v1-lineage"
-A2_2 = "cut1-349-r0c-a2-2-machine-contract-parity"
+A2_2 = "cut1-349-r0c-a2-2-machine-contract-parity"; C1 = CUT1_REAL_MEDIA_TRANSITION
 SCOPES = {TRANSITION: set("docs/governance/preflights/issue-346.json scripts/quality/check_stage8_docs.py "
     "tests/unit/test_stage8_quality_gate.py docs/QUALITY_GATES.md docs/STAGE_ISSUE_PLAN.md docs/STATUS.md".split()),
     A2_1: set(("docs/governance/preflights/issue-335.json tests/unit/test_retrieval_strategy_v1_contract.py "
@@ -22,7 +22,7 @@ SCOPES = {TRANSITION: set("docs/governance/preflights/issue-346.json scripts/qua
     A2_2: set("""docs/governance/preflights/issue-349.json docs/STAGE2_ARCHITECTURE_CONTRACT.json docs/STATUS.md
         scripts/quality/check_stage2_docs.py tests/unit/test_stage8_quality_gate.py docs/STAGE_ISSUE_PLAN.md
         scripts/quality/check_stage8_docs.py docs/ADR/0002-rag-storage.md docs/QUALITY_GATES.md""".split()),
-    QP: QP_SCOPE, CP: CP_SCOPE, CUT1_REAL_MEDIA_TRANSITION: CUT1_REAL_MEDIA_TRANSITION_SCOPE, **a23b.A23_ROUTES}
+    QP:QP_SCOPE,CP:CP_SCOPE,C1:CUT1_REAL_MEDIA_TRANSITION_SCOPE,i.BRANCH:set(i.PATHS),**a23b.A23_ROUTES}
 def load(relative: str, name: str) -> ModuleType:
     spec=importlib.util.spec_from_file_location(name,Path(__file__).parents[2]/relative);assert spec and spec.loader
     module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module);return module

@@ -1,0 +1,54 @@
+{
+  "schema_version": "GovernancePreflightV1",
+  "issue_number": 427,
+  "branch": "cut1-process-427-authority-architecture-reset",
+  "objective": "Under Issue #427 rewrite request comment 5273122120, exact OWNER approval comment 5273244742, markdown reset request comment 5287631143, exact OWNER reset approval comment 5289686674, and OWNER-directed CI route-reset provenance comment 5292268215, replace the abandoned monolithic route with a documentation-only architecture kernel and delivery decomposition from exact current-main base f2a32b8c022c015dfa4e87c700fbfe1ed0d85183. Preserve the route-reset proposal identity 794c2e90034a8012363a6a859dd3bac826280452e787b8a7afe5a49164849b29, 17,853 UTF-8 bytes, 326 LF lines, 12 ordered sections, AK-001 through AK-023, and serialized Children A through F. Require exactly the fourteen scoped paths, at most 2,000 aggregate additions plus deletions, strict JSON, fail-closed route/base/history/first-commit/numstat/budget/proposal/review/nonactivation checks, focused RED then GREEN evidence, Stage 8 delegation only, local and hosted push, pull-request, quality, security and secret checks, fresh exact-head architecture/security/quality/SRE reviews, later exact-byte OWNER approval, eligible non-author approval, reference-only merge wording, merged-main verification, status reconciliation, and explicit #427 closeout. Record make phase1-closure-quality only as NOT_APPLICABLE_SUPERSEDED_BY_OWNER; require policy-only quality and stage8-quality against the exact base plus normal make quality and PR-template commands. Allow one correction wave; stop and return to Issue #426/OWNER for any new subsystem, changed definition of done, second new blocker class, scope/base/history/budget/proposal/review drift, self-approval, historical deletion, authority activation, child A-F implementation, or runtime, product, provider, credential, egress, spend, media, infrastructure, deployment, publication, release, commercial-readiness, SLA, or production behavior or claim. This branch creates no active authority decision, route, capability, or automatic child authorization.",
+  "status_decision": "update-minimally",
+  "scope": {
+    "required": [
+      "docs/governance/preflights/issue-427.json",
+      "docs/governance/AUTHORITY_RECONCILIATION_AND_STALE_ROUTE_PHASE_SPEC_V1.md",
+      "docs/governance/authority-reconciliation-and-stale-route-phase-spec-v1.json",
+      "docs/reviews/ISSUE_427_AUTHORITY_ROUTE_SPEC_REVIEW.md",
+      "docs/reviews/ISSUE_427_FALSE_AUTHORITY_SECURITY_REVIEW.md",
+      "docs/ADR/0060-authority-reconciliation-and-stale-route-phase-spec.md",
+      "docs/STAGE_ISSUE_PLAN.md",
+      "docs/STATUS.md",
+      "docs/TRACEABILITY.md",
+      "docs/QUALITY_GATES.md",
+      "scripts/quality/check_stage8_docs.py",
+      "tests/unit/test_stage8_quality_gate.py",
+      "scripts/quality/issue427_architecture_reset.py",
+      "tests/unit/test_issue427_architecture_reset.py"
+    ],
+    "allowed_prefixes": [
+      "docs/governance/preflights/issue-427.json",
+      "docs/governance/AUTHORITY_RECONCILIATION_AND_STALE_ROUTE_PHASE_SPEC_V1.md",
+      "docs/governance/authority-reconciliation-and-stale-route-phase-spec-v1.json",
+      "docs/reviews/ISSUE_427_AUTHORITY_ROUTE_SPEC_REVIEW.md",
+      "docs/reviews/ISSUE_427_FALSE_AUTHORITY_SECURITY_REVIEW.md",
+      "docs/ADR/0060-authority-reconciliation-and-stale-route-phase-spec.md",
+      "docs/STAGE_ISSUE_PLAN.md",
+      "docs/STATUS.md",
+      "docs/TRACEABILITY.md",
+      "docs/QUALITY_GATES.md",
+      "scripts/quality/check_stage8_docs.py",
+      "tests/unit/test_stage8_quality_gate.py",
+      "scripts/quality/issue427_architecture_reset.py",
+      "tests/unit/test_issue427_architecture_reset.py"
+    ],
+    "forbidden": [
+      "backend/",
+      "frontend/",
+      ".github/workflows/",
+      "scripts/guardrails_check.py",
+      "scripts/quality/check_phase1_closure_docs.py",
+      "tests/unit/test_guardrails_check.py",
+      "tests/unit/test_phase1_closure_docs.py",
+      "docs/governance/narratwin-master-program-v1.json",
+      "docs/governance/narratwin-master-program-authority-decision-v1.json",
+      "docs/governance/active-program-route-v1.json",
+      "docs/governance/cut1-authority-manifest-v1.json"
+    ]
+  }
+}
