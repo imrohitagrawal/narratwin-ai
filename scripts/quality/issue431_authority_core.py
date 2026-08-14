@@ -7,6 +7,8 @@ import json
 import hashlib
 import math
 import re
+import os
+import subprocess
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -510,17 +512,233 @@ def lineage_findings(objects: list[dict[str, Any]]) -> list[str]:
 
 
 def authority_effect_findings(source: str, claimed_effect: str) -> list[str]:
-    """Return AK-001 false-authority defects; tests define the next behavior slice."""
+    """Prove that every Child A marker source has exactly no authority effect."""
 
-    del source, claimed_effect
-    return ["AUTHORITY_EFFECT_VALIDATOR_NOT_IMPLEMENTED"]
+    if source not in FALSE_AUTHORITY_SOURCES:
+        return ["Unknown authority source is rejected."]
+    if claimed_effect != "NONE":
+        return [f"{source} cannot produce authority effect {claimed_effect}."]
+    return []
 
 
 def repository_findings(root: Path = ROOT) -> list[str]:
-    """Return exact Child A repository defects; tests define the next gate slice."""
+    """Validate Child A artifacts and, on its branch, the exact governed route."""
 
-    del root
-    return ["REPOSITORY_GATE_NOT_IMPLEMENTED"]
+    findings: list[str] = []
+    required = {
+        "docs/governance/preflights/issue-431.json",
+        "docs/governance/AUTHORITY_CORE_SCHEMAS_AND_STATE_MATRICES_V1.md",
+        *SUPPORTED_SCHEMAS.values(),
+        MATRIX_PATH,
+        "tests/fixtures/authority-core-v1-cases.json",
+        "scripts/quality/issue431_authority_core.py",
+        "tests/unit/test_issue431_authority_core.py",
+        "scripts/quality/check_stage8_docs.py",
+        "tests/unit/test_stage8_quality_gate.py",
+        "docs/ADR/0061-core-authority-schemas-state-matrices.md",
+        "docs/QUALITY_GATES.md",
+        "docs/STAGE_ISSUE_PLAN.md",
+        "docs/STATUS.md",
+        "docs/TRACEABILITY.md",
+    }
+    if required != set(PATHS):
+        findings.append("Child A code-owned path inventory mismatches the approved route.")
+    missing = [path for path in PATHS if not (root / path).is_file()]
+    findings.extend(f"Child A required path is missing: {path}." for path in missing)
+    if missing:
+        return findings
+    try:
+        preflight = _strict_file(root / "docs/governance/preflights/issue-431.json")
+        if (
+            preflight.get("schema_version") != "GovernancePreflightV1"
+            or preflight.get("issue_number") != 431
+            or preflight.get("branch") != BRANCH
+            or preflight.get("scope", {}).get("required") != list(PATHS)
+            or preflight.get("scope", {}).get("allowed_prefixes") != list(PATHS)
+        ):
+            findings.append("Child A preflight binding or exact scope mismatches.")
+        preflight_bytes = (root / "docs/governance/preflights/issue-431.json").read_bytes()
+        if (
+            hashlib.sha256(preflight_bytes).hexdigest()
+            != "35a241b0ab581e4eb2fdb08bbf4ba4850322ee58bd15b545865e7cc7a7d2832b"
+        ):
+            findings.append("Child A approved preflight bytes drifted.")
+        objective = preflight.get("objective", "")
+        for marker in (
+            "5296984551",
+            "209d4833e655404d05db50f12b1e7d58c8b45bf50c2d33fe08a4964722cc6e72",
+            BASE,
+            "AK-001/AK-004/AK-012",
+            "Activation is NONE",
+            "One correction wave only",
+        ):
+            if marker not in objective:
+                findings.append(f"Child A preflight objective is missing {marker}.")
+        for schema, relative in SUPPORTED_SCHEMAS.items():
+            _read_schema(root / relative, schema)
+        matrix = _strict_file(root / MATRIX_PATH)
+        findings.extend(matrix_findings(matrix))
+        fixture = _strict_file(root / "tests/fixtures/authority-core-v1-cases.json")
+        findings.extend(_fixture_findings(fixture))
+    except AuthorityValidationError as error:
+        findings.append(f"Child A strict artifact validation failed: {error.code}.")
+    spec = (root / "docs/governance/AUTHORITY_CORE_SCHEMAS_AND_STATE_MATRICES_V1.md").read_text(
+        encoding="utf-8"
+    )
+    for marker in (
+        "CHILD_A_CONTRACT_NONACTIVATING",
+        "Activation: `NONE`",
+        "AK-001",
+        "AK-004",
+        "AK-012",
+        "NarraTwinAuthorityCanonicalJsonV1",
+        "NARRATWIN-AUTHORITY-V1",
+        "FIPS 180-4",
+        "DecisionManifestLifecycleV1",
+        "ActiveProgramRouteLifecycleV1",
+        "R16–R20",
+        "Child F",
+    ):
+        if marker not in spec:
+            findings.append(f"Child A specification is missing {marker}.")
+    stage8_source = (root / "scripts/quality/check_stage8_docs.py").read_text(encoding="utf-8")
+    if "issue431_authority_core.repository_findings" not in stage8_source:
+        findings.append("Stage 8 does not invoke the semantic Child A repository gate.")
+    branch = os.environ.get("GITHUB_HEAD_REF", "").strip() or _git(root, "branch", "--show-current")
+    if branch == BRANCH:
+        findings.extend(_route_findings(root))
+    return findings
+
+
+def _strict_file(path: Path) -> dict[str, Any]:
+    try:
+        value = json.loads(
+            path.read_text(encoding="utf-8"), object_pairs_hook=_reject_duplicate_members
+        )
+    except (OSError, UnicodeError, json.JSONDecodeError) as error:
+        raise AuthorityValidationError("MALFORMED_JSON", path.as_posix()) from error
+    if not isinstance(value, dict):
+        raise AuthorityValidationError("WRONG_ROOT_TYPE", path.as_posix())
+    return value
+
+
+def _fixture_findings(fixture: dict[str, Any]) -> list[str]:
+    findings: list[str] = []
+    if set(fixture) != {"activation", "cases", "fixtureOnly", "repository", "schemaVersion"}:
+        findings.append("Fixture corpus root is not closed.")
+        return findings
+    if (
+        fixture["schemaVersion"] != "AuthorityCoreFixtureCorpusV1"
+        or fixture["fixtureOnly"] is not True
+        or fixture["activation"] != "NONE"
+        or fixture["repository"] != "example.invalid/narratwin-authority-fixtures"
+    ):
+        findings.append("Fixture corpus could be confused with authority.")
+    cases = fixture["cases"]
+    if not isinstance(cases, list) or not cases:
+        return [*findings, "Fixture case inventory is empty."]
+    if any(
+        not isinstance(case, dict) or set(case) != {"classification", "expect", "id", "target"}
+        for case in cases
+    ):
+        findings.append("Fixture case is malformed or open.")
+        return findings
+    ids = [case["id"] for case in cases]
+    if len(ids) != len(set(ids)):
+        findings.append("Fixture case identifiers are duplicate.")
+    if {case["classification"] for case in cases} != {"positive", "negative", "adversarial"}:
+        findings.append("Fixture classes are incomplete.")
+    required_ids = {
+        "positive-decision",
+        "positive-manifest",
+        "positive-route",
+        "duplicate-member",
+        "unknown-member",
+        "malformed-json",
+        "invalid-utf8",
+        "non-finite-number",
+        "scalar-confusion",
+        "missing-required",
+        "wrong-repository",
+        "wrong-schema",
+        "wrong-program",
+        "wrong-generation",
+        "unsupported-version",
+        "downgrade",
+        "equivalent-noncanonical",
+        "normalization-ambiguity",
+        "oversized",
+        "deeply-nested",
+        "excessive-collection",
+        "accepted-byte-mutation",
+        "missing-predecessor",
+        "wrong-predecessor",
+        "forked-predecessor",
+        "cyclic-predecessor",
+        "unlinked-successor",
+        "identity-collision",
+        "illegal-transition",
+        "missing-actor",
+        "missing-guard",
+        "missing-effect",
+        "missing-recovery",
+        "wildcard-row",
+        "duplicate-row",
+        "incomplete-grid",
+        "rejected-after-acceptance",
+        "evaluation-outcome-state",
+        "route-mutation-after-expiry",
+        "closeout-as-authority",
+        "marker-as-authority",
+        "fixture-as-authority",
+        "schema-binding-co-mutation",
+        "scope-leakage",
+    }
+    if not required_ids.issubset(ids):
+        findings.append("Fixture adversarial inventory is incomplete.")
+    return findings
+
+
+def _git(root: Path, *args: str) -> str:
+    result = subprocess.run(["git", *args], cwd=root, text=True, capture_output=True)
+    if result.returncode != 0:
+        raise AuthorityValidationError("GIT_EVIDENCE_UNAVAILABLE", result.stderr.strip())
+    return result.stdout.strip()
+
+
+def _route_findings(root: Path) -> list[str]:
+    findings: list[str] = []
+    if _git(root, "merge-base", BASE, "HEAD") != BASE:
+        findings.append("Child A exact base is not an ancestor of HEAD.")
+    commits = _git(root, "rev-list", "--reverse", f"{BASE}..HEAD").splitlines()
+    if not commits or commits[0] != FIRST_COMMIT:
+        findings.append("Child A first commit identity mismatches.")
+    first_parent = _git(root, "rev-parse", f"{FIRST_COMMIT}^")
+    first_paths = _git(
+        root, "diff-tree", "--no-commit-id", "--name-only", "-r", FIRST_COMMIT
+    ).splitlines()
+    if first_parent != BASE or first_paths != ["docs/governance/preflights/issue-431.json"]:
+        findings.append("Child A first commit is not preflight-only on the exact base.")
+    changed = set(_git(root, "diff", "--name-only", f"{BASE}..HEAD", "--").splitlines())
+    changed.update(_git(root, "diff", "--name-only", "HEAD", "--").splitlines())
+    if changed != set(PATHS):
+        findings.append("Child A changed paths do not equal the sixteen-path approved scope.")
+    charge = 0
+    for line in _git(root, "diff", "--numstat", BASE, "--").splitlines():
+        fields = line.split("\t")
+        if len(fields) != 3 or not fields[0].isdigit() or not fields[1].isdigit():
+            findings.append("Child A charged-line evidence is malformed or binary.")
+            break
+        charge += int(fields[0]) + int(fields[1])
+    if charge > LIMIT:
+        findings.append(f"Child A charge {charge} exceeds {LIMIT}.")
+    if _git(root, "rev-list", "--merges", f"{BASE}..HEAD"):
+        findings.append("Child A route contains a merge commit.")
+    if _git(root, "rev-parse", "--is-shallow-repository") != "false":
+        findings.append("Child A history is shallow.")
+    if _git(root, "replace", "-l"):
+        findings.append("Child A history contains replace refs.")
+    return findings
 
 
 def _lineage_transition_findings(

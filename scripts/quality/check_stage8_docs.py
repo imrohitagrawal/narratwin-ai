@@ -489,6 +489,8 @@ def main() -> int:
         node_security.check(ROOT, run, current_branch(), changed_files_for_stage_scope(), failures)
         cache_pruning.check_exact_route(ROOT, run, failures, current_branch() == cache_pruning.BRANCH)
         issue427_reset.check(ROOT, failures, current_branch() == issue427_reset.BRANCH)
+        if current_branch() == issue431_authority_core.BRANCH or (ROOT / issue431_authority_core.MATRIX_PATH).is_file():
+            failures.extend(issue431_authority_core.repository_findings(ROOT))
         check_backend_and_tests(failures)
         check_dependencies_and_scripts(failures)
         check_docs(failures)

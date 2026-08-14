@@ -131,6 +131,8 @@ The machine-readable matrix is `DecisionManifestLifecycleV1`. Each guard means a
 
 ## 8. Route lifecycle
 
+The machine-readable route matrix is `ActiveProgramRouteLifecycleV1`.
+
 | ID | Source → operation → target | Exact actor | Required guard | Deterministic effect | Recovery |
 |---|---|---|---|---|---|
 | R01 | DRAFT → REVIEW → REVIEWED | Eligible non-author reviewer | Exact route-byte architecture/test review reference | Create REVIEWED successor | Hash-linked successor |
