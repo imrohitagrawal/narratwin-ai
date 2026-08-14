@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
-import json
 import hashlib
+import json
 from collections.abc import Callable
+from copy import deepcopy
 from pathlib import Path
 
 import pytest
@@ -203,6 +204,195 @@ def test_canonical_bytes_fail_closed(value: object, code: str) -> None:
         authority.canonical_bytes(value)
 
     assert caught.value.code == code
+
+
+DECISION_STATES = [
+    "PROPOSED",
+    "REVIEWED",
+    "OWNER_APPROVED",
+    "MERGED",
+    "ACCEPTED_CURRENT",
+    "REJECTED",
+    "SUPERSEDED",
+    "REVOKED",
+    "EXPIRED",
+]
+DECISION_OPERATIONS = [
+    "REVIEW",
+    "REJECT",
+    "OWNER_APPROVE",
+    "MERGE",
+    "ACCEPT_CURRENT",
+    "SUPERSEDE",
+    "REVOKE",
+    "EXPIRE",
+]
+DECISION_EDGES = [
+    ("D01", "PROPOSED", "REVIEW", "REVIEWED"),
+    ("D02", "PROPOSED", "REJECT", "REJECTED"),
+    ("D03", "REVIEWED", "OWNER_APPROVE", "OWNER_APPROVED"),
+    ("D04", "REVIEWED", "REJECT", "REJECTED"),
+    ("D05", "OWNER_APPROVED", "MERGE", "MERGED"),
+    ("D06", "OWNER_APPROVED", "REJECT", "REJECTED"),
+    ("D07", "MERGED", "ACCEPT_CURRENT", "ACCEPTED_CURRENT"),
+    ("D08", "MERGED", "REJECT", "REJECTED"),
+    ("D09", "ACCEPTED_CURRENT", "SUPERSEDE", "SUPERSEDED"),
+    ("D10", "ACCEPTED_CURRENT", "REVOKE", "REVOKED"),
+    ("D11", "ACCEPTED_CURRENT", "EXPIRE", "EXPIRED"),
+]
+ROUTE_STATES = [
+    "DRAFT",
+    "REVIEWED",
+    "OWNER_APPROVED",
+    "PREDECESSOR_VERIFIED",
+    "ACTIVE",
+    "MERGED",
+    "CLOSED",
+    "REJECTED",
+    "SUPERSEDED",
+    "EXECUTION_EXPIRED",
+]
+ROUTE_OPERATIONS = [
+    "REVIEW",
+    "REJECT",
+    "OWNER_APPROVE",
+    "VERIFY_PREDECESSOR",
+    "ACTIVATE",
+    "MERGE",
+    "CLOSE",
+    "SUPERSEDE",
+    "EXPIRE",
+]
+ROUTE_EDGES = [
+    ("R01", "DRAFT", "REVIEW", "REVIEWED"),
+    ("R02", "DRAFT", "REJECT", "REJECTED"),
+    ("R03", "REVIEWED", "OWNER_APPROVE", "OWNER_APPROVED"),
+    ("R04", "REVIEWED", "REJECT", "REJECTED"),
+    ("R05", "OWNER_APPROVED", "VERIFY_PREDECESSOR", "PREDECESSOR_VERIFIED"),
+    ("R06", "OWNER_APPROVED", "REJECT", "REJECTED"),
+    ("R07", "PREDECESSOR_VERIFIED", "ACTIVATE", "ACTIVE"),
+    ("R08", "PREDECESSOR_VERIFIED", "REJECT", "REJECTED"),
+    ("R09", "ACTIVE", "MERGE", "MERGED"),
+    ("R10", "MERGED", "CLOSE", "CLOSED"),
+    ("R11", "DRAFT", "SUPERSEDE", "SUPERSEDED"),
+    ("R12", "REVIEWED", "SUPERSEDE", "SUPERSEDED"),
+    ("R13", "OWNER_APPROVED", "SUPERSEDE", "SUPERSEDED"),
+    ("R14", "PREDECESSOR_VERIFIED", "SUPERSEDE", "SUPERSEDED"),
+    ("R15", "ACTIVE", "SUPERSEDE", "SUPERSEDED"),
+    ("R16", "DRAFT", "EXPIRE", "EXECUTION_EXPIRED"),
+    ("R17", "REVIEWED", "EXPIRE", "EXECUTION_EXPIRED"),
+    ("R18", "OWNER_APPROVED", "EXPIRE", "EXECUTION_EXPIRED"),
+    ("R19", "PREDECESSOR_VERIFIED", "EXPIRE", "EXECUTION_EXPIRED"),
+    ("R20", "ACTIVE", "EXPIRE", "EXECUTION_EXPIRED"),
+    ("R21", "EXECUTION_EXPIRED", "CLOSE", "CLOSED"),
+]
+
+
+def transition_row(edge: tuple[str, str, str, str]) -> dict[str, object]:
+    row_id, source, operation, target = edge
+    actor = {
+        "REVIEW": "ELIGIBLE_NON_AUTHOR_REVIEWER",
+        "OWNER_APPROVE": "OWNER",
+        "REJECT": "OWNER",
+        "MERGE": "MERGE_COORDINATOR",
+        "ACCEPT_CURRENT": "AUTHORITY_EVALUATOR",
+        "SUPERSEDE": "OWNER",
+        "REVOKE": "OWNER",
+        "EXPIRE": "AUTHORITY_EVALUATOR",
+        "VERIFY_PREDECESSOR": "AUTHORITY_EVALUATOR",
+        "ACTIVATE": "OWNER",
+        "CLOSE": "ADMINISTRATIVE_CLOSER",
+    }[operation]
+    return {
+        "actorClass": actor,
+        "effect": f"EFFECT_{row_id}_{target}",
+        "id": row_id,
+        "idempotency": "IDEMPOTENT_SAME_BYTES",
+        "immutability": "HASH_LINKED_SUCCESSOR_ONLY",
+        "legal": True,
+        "operation": operation,
+        "prohibitedSubstitutes": ["ISSUE", "COMMENT", "FILE", "FIXTURE", "TEST", "CI"],
+        "recoveryClassification": (
+            "ADMINISTRATIVE_CLOSEOUT" if operation == "CLOSE" else "CREATE_HASH_LINKED_SUCCESSOR"
+        ),
+        "rejectionBehavior": "NO_MUTATION_TYPED_ERROR",
+        "requiredGuards": [f"GUARD_{row_id}_TYPED_REFERENCES"],
+        "requiredTypedReferences": ["ContentAddressedReferenceV1"],
+        "sourceState": source,
+        "targetState": target,
+    }
+
+
+def matrix(
+    matrix_id: str,
+    states: list[str],
+    operations: list[str],
+    edges: list[tuple[str, str, str, str]],
+) -> dict[str, object]:
+    grid = {state: {operation: "ILLEGAL" for operation in operations} for state in states}
+    for row_id, source, operation, _ in edges:
+        grid[source][operation] = row_id
+    return {
+        "grid": grid,
+        "id": matrix_id,
+        "illegalEffect": "NO_MUTATION_TYPED_ERROR",
+        "illegalRecovery": "CORRECT_AND_RETRY_OR_CREATE_SUCCESSOR",
+        "legalTransitions": [transition_row(edge) for edge in edges],
+        "operations": operations,
+        "states": states,
+    }
+
+
+def matrix_document() -> dict[str, object]:
+    return {
+        "activation": "NONE",
+        "evaluationOutcomes": ["UNVERIFIED", "CONFLICTING"],
+        "matrices": [
+            matrix(
+                "DecisionManifestLifecycleV1", DECISION_STATES, DECISION_OPERATIONS, DECISION_EDGES
+            ),
+            matrix("ActiveProgramRouteLifecycleV1", ROUTE_STATES, ROUTE_OPERATIONS, ROUTE_EDGES),
+        ],
+        "schemaVersion": "AuthorityCoreStateMatricesV1",
+    }
+
+
+def test_state_matrices_are_complete_closed_and_exact() -> None:
+    assert authority.matrix_findings(matrix_document()) == []
+
+
+@pytest.mark.parametrize(
+    ("mutator", "finding"),
+    [
+        (lambda doc: doc["matrices"][0]["grid"]["PROPOSED"].pop("REVIEW"), "incomplete"),
+        (
+            lambda doc: doc["matrices"][0]["legalTransitions"].append(
+                deepcopy(doc["matrices"][0]["legalTransitions"][0])
+            ),
+            "duplicate",
+        ),
+        (lambda doc: doc["matrices"][0]["legalTransitions"][0].update(sourceState="*"), "wildcard"),
+        (lambda doc: doc["matrices"][0]["legalTransitions"][0].pop("actorClass"), "actor"),
+        (lambda doc: doc["matrices"][0]["legalTransitions"][0].update(requiredGuards=[]), "guard"),
+        (lambda doc: doc["matrices"][0]["legalTransitions"][0].update(effect=""), "effect"),
+        (
+            lambda doc: doc["matrices"][0]["legalTransitions"][0].update(recoveryClassification=""),
+            "recovery",
+        ),
+        (lambda doc: doc["matrices"][0]["states"].append("UNVERIFIED"), "evaluation"),
+        (
+            lambda doc: doc["matrices"][1]["grid"]["EXECUTION_EXPIRED"].update(ACTIVATE="R07"),
+            "illegal",
+        ),
+    ],
+)
+def test_state_matrix_mutations_fail_closed(
+    mutator: Callable[[dict[str, object]], object], finding: str
+) -> None:
+    document = matrix_document()
+    mutator(document)
+
+    assert any(finding in item.lower() for item in authority.matrix_findings(document))
 
 
 @pytest.mark.parametrize(
