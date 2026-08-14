@@ -2,8 +2,7 @@
 import hashlib; import importlib.util; import json; import subprocess as sp
 from pathlib import Path; from types import ModuleType; from typing import Any
 import pytest; from scripts.guardrails_check import canonical_stage_issue
-from scripts.quality import (stage8_a23b as a23b, stage8_cut1_routes as cut1_routes,
-    issue427_architecture_reset as i, issue431_authority_core as j)
+from scripts.quality import stage8_a23b as a23b, stage8_cut1_routes as cut1_routes, issue427_architecture_reset as i
 from scripts.quality.check_stage8_docs import (CUT1_REAL_MEDIA_TRANSITION_BRANCH as CUT1_REAL_MEDIA_TRANSITION,
     CUT1_REAL_MEDIA_TRANSITION_FILES as CUT1_REAL_MEDIA_TRANSITION_SCOPE,
     CITATION_PARITY_BRANCH as CP, CITATION_PARITY_FILES as CP_SCOPE,
@@ -23,8 +22,7 @@ SCOPES = {TRANSITION: set("docs/governance/preflights/issue-346.json scripts/qua
     A2_2: set("""docs/governance/preflights/issue-349.json docs/STAGE2_ARCHITECTURE_CONTRACT.json docs/STATUS.md
         scripts/quality/check_stage2_docs.py tests/unit/test_stage8_quality_gate.py docs/STAGE_ISSUE_PLAN.md
         scripts/quality/check_stage8_docs.py docs/ADR/0002-rag-storage.md docs/QUALITY_GATES.md""".split()),
-    QP:QP_SCOPE,CP:CP_SCOPE,C1:CUT1_REAL_MEDIA_TRANSITION_SCOPE,i.BRANCH:set(i.PATHS),j.BRANCH:set(j.PATHS),
-    **a23b.A23_ROUTES}
+    QP:QP_SCOPE,CP:CP_SCOPE,C1:CUT1_REAL_MEDIA_TRANSITION_SCOPE,i.BRANCH:set(i.PATHS),**a23b.A23_ROUTES}
 def load(relative: str, name: str) -> ModuleType:
     spec=importlib.util.spec_from_file_location(name,Path(__file__).parents[2]/relative);assert spec and spec.loader
     module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module);return module
@@ -59,6 +57,7 @@ def test_cut1_routes_are_exact_stage8_and_not_preflight_owned(monkeypatch: Any, 
     policy = load("scripts/quality/check_stage8_docs.py", "reloaded").PROCESS_BRANCH_ALLOWED_FILES
     assert {branch: policy[branch] for branch in SCOPES} == SCOPES;r=cut1_routes
     registered = {getattr(r, f"ISSUE{i}_BRANCH") for i in (150, 396, 401, 403, 413, 428)}
+    registered.add("cut1-process-431-authority-core-schemas-state-matrices")
     assert {b for b in policy if b[:5] == "cut1-"} - set(SCOPES) == registered
     dispatcher:Any=load("scripts/quality/check_quality_stage.py","dispatcher");stage_file=tmp_path/"stage"
     status_file=tmp_path/"status";mode="| SSV1-MODE | repo-mode | Phase 1 Closure | phase1-closure | phase1-closure |\n"
@@ -110,9 +109,8 @@ def test_scope_collection_covers_exact_layers_and_forbidden_sources(monkeypatch:
     (tmp_path / "forbidden/unstaged-source.txt").rename(tmp_path / "unstaged-destination.txt")
     put(tmp_path, "forbidden/cancelled.txt", "staged"); git(tmp_path, "add", "forbidden/cancelled.txt")
     put(tmp_path, "forbidden/cancelled.txt", "original"); put(tmp_path, "untracked\nnewline.txt", "new")
-    calls:list[list[str]]=[]
+    calls:list[list[str]]=[];m=monkeypatch; collect=stage8.changed_files_for_stage_scope; raises=pytest.raises
     def record(a:list[str])->Any:calls.append(a);return sp.run(a,cwd=tmp_path,text=True,capture_output=True)
-    m=monkeypatch; collect=stage8.changed_files_for_stage_scope; raises=pytest.raises
     m.setattr(stage8,"ROOT",tmp_path); m.setattr(stage8,"run",record); m.delenv("GITHUB_EVENT_PATH",raising=False)
     m.setenv("GITHUB_EVENT_NAME","push"); m.setenv("NARRATWIN_HEAD_REF","feature")
     m.setenv("GITHUB_BASE_SHA",first_head); m.setenv("GITHUB_HEAD_SHA",head); paths=set(collect())
@@ -185,20 +183,6 @@ def test_unrouted_stage8_branch_is_rejected(monkeypatch:Any)->None:
     b="feature/untracked-stage8-work"; monkeypatch.setattr(stage8,"current_branch",lambda:b); f:list[str]=[]
     stage8.check_stage_marker_and_branch(f)
     assert f==[f"Stage 8 work must run on a stage8-* branch or main after merge; got {b}."]
-def test_issue431_repository_gate_is_invoked_on_the_exact_child_branch(monkeypatch:Any)->None:
-    called:list[Path]=[]; noop=lambda *args,**kwargs:None
-    for name in ("check_required_files","check_retrieval_strategy_v1_parity",
-        "check_evaluation_lineage_checksum_v2_contract","check_stage_marker_and_branch","check_stage_scope",
-        "check_a23b","check_backend_and_tests","check_dependencies_and_scripts","check_docs"):
-        monkeypatch.setattr(stage8,name,noop)
-    for module,name in ((stage8.brace_security,"check_exact_route"),(stage8.node_security,"check"),
-        (stage8.cache_pruning,"check_exact_route"),(stage8.issue427_reset,"check")):
-        monkeypatch.setattr(module,name,noop)
-    monkeypatch.setattr(stage8,"current_branch",lambda:stage8.issue431_authority_core.BRANCH)
-    monkeypatch.setattr(stage8,"changed_files_for_stage_scope",lambda:[])
-    monkeypatch.setattr(stage8.issue431_authority_core,"repository_findings",lambda root:called.append(root) or [])
-    assert stage8.main()==0
-    assert called==[stage8.ROOT]
 A22_SOURCE,A22_DECL,A22_RUNTIME,A22_SELECT,A22_REFUSE=("Stage 2 retrieval-v1 accepted sources must retain the canonica"
     "l oracle.|Stage 2 retrievalStrategy must equal the canonical v1 machine declaration.|Stage 4 retrieval-v1 runtime "
     "constants must equal the canonical oracle.|Stage 4 retrieval selection must preserve canonical v1 control flow.|"

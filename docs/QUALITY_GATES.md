@@ -1413,8 +1413,9 @@ tests; full Stage 8 tests; guardrails; exact-base policy-only quality and Stage
 8 quality; normal quality; CI; security; dependency audit; container scan;
 secrets scan; eval; Ruff; mypy; strict JSON/canonicalization/mutation checks;
 diff, path, charge, history, shallow/replace/merge and PR-template checks.
-`make phase1-closure-quality` is required by the live Child A card; Issue #427's
-superseded classification is not inherited.
+`make phase1-closure-quality` is not the Child A gate and must not be reported
+as passed. This classification is specific to the OWNER-approved Child A route
+and is not inherited from Issue #427.
 
 A green gate means documentation-quality structural enforcement only. It does
 not create an accepted decision, current manifest, active route, runtime

@@ -398,7 +398,9 @@ def test_state_matrix_mutations_fail_closed(
 def successor(predecessor: dict[str, object], edge: tuple[str, str, str, str]) -> dict[str, object]:
     row = transition_row(edge)
     value = deepcopy(predecessor)
-    value["revision"] = int(predecessor["revision"]) + 1  # type: ignore[arg-type]
+    revision = predecessor["revision"]
+    assert type(revision) is int
+    value["revision"] = revision + 1
     value["predecessorContentHash"] = predecessor["contentHash"]
     value["lifecycleState"] = row["targetState"]
     value["transition"] = {
