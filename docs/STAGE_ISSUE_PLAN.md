@@ -2714,3 +2714,26 @@ is `NOT_APPLICABLE_SUPERSEDED_BY_OWNER`. The reset creates no accepted authority
 decision, active route, runtime/product change, provider, credential, egress,
 spend, media, infrastructure, deployment, publication, release, SLA, commercial
 readiness or production capability. Release remains No-Go.
+
+## Issue #431 Child A core schemas and matrices
+
+Issue `#431` is the first serialized child of controller `#426` and depends on
+completed Issue `#427` / PR `#430`. OWNER comment `5296984551` approves the
+exact 43,333-byte/437-line issue body at SHA-256
+`209d4833e655404d05db50f12b1e7d58c8b45bf50c2d33fe08a4964722cc6e72`, exact
+base `4d239942eeda0c0b6c385b2d85dae873af076aa6`, sixteen paths, and 4,000 charged
+lines. The preflight-only first commit is `7a5594357c24ac864c850a2e1cb92f9cd8acb940`.
+
+Child A defines three closed schemas, two exhaustive state/operation grids,
+canonical serialization and domain-separated content hashes, immutable
+successor validation, adversarial fixtures, and a dedicated Stage 8 gate. It
+owns AK-001, AK-004, and AK-012 only. It creates no accepted/current/active
+object and no Child B–F service or behavior.
+
+The route requires fresh Principal Architect and Principal Test Engineer
+reviews at one frozen exact head, then every exact-head hosted check, eligible
+non-author approval, and final exact-head OWNER approval. One bounded
+correction wave is permitted. Approval expires 2026-09-15 or on base, branch,
+scope, budget, schema, command, reviewer, predecessor, or nonactivation drift.
+After successful merge and closeout, the exact next child is
+`B — Evidence and trust`; it is not started here.

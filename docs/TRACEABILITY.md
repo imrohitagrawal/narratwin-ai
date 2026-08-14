@@ -584,3 +584,16 @@ remain separate gates.
 | Preserve human authority boundaries | OWNER route comments `5273122120` and `5273244742`; frozen-head review packet; later eligible non-author and exact-byte OWNER approvals | Author, tests, files, hashes, CI and review templates cannot self-approve or activate authority |
 | Preserve capability No-Go | Preflight, proposal, security review, ADR, stage plan, status and quality-gate statements | No runtime/product, provider, credential, egress, spend, media, infrastructure, deployment, publication, release, SLA, commercial-readiness or production capability |
 | Identify the next bounded work without starting it | Issue #427 stage plan and status target state | Next child is `A — Core schemas and state matrices` only after separate OWNER route approval and #427 closeout |
+
+## Issue #431 Child A authority-core traceability
+
+| Requirement | Evidence | Preserved boundary |
+|---|---|---|
+| Closed, versioned decision, manifest and route shapes | Three `NarraTwinClosedSchemaDocumentV1` artifacts; strict parser and semantic mutation tests | Structural validation is not approval, acceptance, currency or activation |
+| Canonical bytes and compatibility | `NarraTwinAuthorityCanonicalJsonV1`; duplicate/UTF-8/float/ASCII/order/bounds/version tests; SHA-256 domain separation | No external JSON-canonicalization conformance claim; hashing is not signature or trust |
+| AK-004 immutable successors | Content-hash recomputation and lineage mutations for missing/wrong/cyclic parents, forks, identity collisions, revision gaps and in-place mutation | Persistence, CAS, fencing and recovery execution remain Child C |
+| AK-012 exact transitions | 72-cell decision/manifest and 90-cell route grids; 32 expanded legal rows; actor/guard/effect/recovery and mutation tests | `UNVERIFIED`/`CONFLICTING` are evaluation outcomes; implementation-defined transitions fail |
+| AK-001 false-authority resistance | Source-class mutation tests for issue, comment, file, fixture, test and CI; activation `NONE`; `.invalid` fixture repository | Only later Child F integration may evaluate authority; no marker independently activates it |
+| Execution expiry | R16–R21 rows and lineage tests | Governed mutation/reactivation is prohibited; administrative closeout has no execution authority |
+| B–F ownership preservation | Specification, ADR 0061, preflight and dedicated repository gate | No evidence trust, CAS/bootstrap, audit service, GitHub acquisition/reconciliation, kernel/oracle or runtime implementation |
+| Exact governed delivery route | Issue #431, OWNER comment `5296984551`, preflight-only first commit, focused RED, Stage 8 dispatch and 4,000-line ceiling | Reviews, hosted checks, non-author/final OWNER approvals, merge and closeout remain external/human gates |
