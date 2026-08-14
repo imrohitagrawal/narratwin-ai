@@ -6,6 +6,7 @@ import hashlib, json, os, re, subprocess, sys
 from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT));import scripts.quality.issue427_architecture_reset as issue427_reset  # noqa: E402
+import scripts.quality.issue431_authority_core as issue431_authority_core  # noqa: E402
 from scripts.quality.branch_identity import current_branch  # noqa: E402
 from scripts.quality.check_stage2_docs import check_retrieval_strategy_v1_parity  # noqa: E402
 from scripts.quality import stage8_brace_expansion_unblock as brace_security  # noqa: E402
@@ -62,7 +63,9 @@ REQUIRED_FILES = [
     "docs/SKILL_LOCK.md", "docs/STAGE_ISSUE_PLAN.md", "docs/STATUS.md", "docs/THIRD_PARTY_NOTICES.md",
     "docs/TRACEABILITY.md", "docs/demo/CONTROLLED_LOCAL_DEMO.md",
 ]; STAGE8_ALLOWED_FILES = set(REQUIRED_FILES) | {"tests/api/test_health_api.py", "tests/unit/test_health_contract.py"}
-PROCESS_BRANCH_ALLOWED_FILES = {issue427_reset.BRANCH: set(issue427_reset.PATHS),
+PROCESS_BRANCH_ALLOWED_FILES = {
+    issue427_reset.BRANCH: set(issue427_reset.PATHS),
+    issue431_authority_core.BRANCH: set(issue431_authority_core.PATHS),
     node_security.ISSUE374_SECURITY_BRANCH: node_security.ISSUE374_SECURITY_FILES,
     ISSUE346_TRANSITION_BRANCH: {
         "docs/governance/preflights/issue-346.json", "scripts/quality/check_stage8_docs.py",
