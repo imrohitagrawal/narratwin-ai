@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+import hashlib
+from collections.abc import Callable
 from pathlib import Path
 
 import pytest
@@ -31,6 +33,123 @@ PATHS = {
     "docs/STATUS.md",
     "docs/TRACEABILITY.md",
 }
+PROHIBITED = [
+    "ACCEPT_AUTHORITY_FROM_CI",
+    "ACCEPT_AUTHORITY_FROM_COMMENT",
+    "ACCEPT_AUTHORITY_FROM_FILE",
+    "ACCEPT_AUTHORITY_FROM_FIXTURE",
+    "ACCEPT_AUTHORITY_FROM_ISSUE",
+    "ACCEPT_AUTHORITY_FROM_TEST",
+    "ACTIVATE_AUTHORITY",
+    "AUDIT_SERVICE",
+    "CAS_STORAGE",
+    "CREDENTIAL_USE",
+    "DEPLOYMENT",
+    "EVIDENCE_CAPTURE",
+    "EXTERNAL_EGRESS",
+    "GITHUB_ACQUISITION",
+    "HISTORICAL_RECONCILIATION",
+    "INFRASTRUCTURE",
+    "INTEGRATED_KERNEL",
+    "KEY_MANAGEMENT",
+    "MEDIA_GENERATION",
+    "PRODUCTION_OPERATION",
+    "PROVIDER_CALL",
+    "PUBLICATION",
+    "RELEASE",
+    "RUNTIME_SERVICE",
+    "SPENDING",
+]
+
+
+def reference(kind: str, subject: str) -> dict[str, str]:
+    return {
+        "referenceType": kind,
+        "schemaVersion": "ContentAddressedReferenceV1",
+        "sha256": "1" * 64,
+        "subject": subject,
+    }
+
+
+def authority_object(schema: str) -> dict[str, object]:
+    common: dict[str, object] = {
+        "contentHash": "0" * 64,
+        "generationId": "generation:fixture-only",
+        "lifecycleState": "DRAFT" if schema == "ActiveProgramRouteV1" else "PROPOSED",
+        "objectId": {
+            "MasterProgramAuthorityDecisionV1": "decision:fixture-only",
+            "Cut1AuthorityManifestV1": "manifest:fixture-only",
+            "ActiveProgramRouteV1": "route:fixture-only",
+        }[schema],
+        "predecessorContentHash": None,
+        "programId": "narratwin-cut1",
+        "prohibitedCapabilities": PROHIBITED,
+        "repository": "github.com/imrohitagrawal/narratwin-ai",
+        "revision": 1,
+        "schemaVersion": schema,
+        "transition": None,
+        "validity": {
+            "expiresAt": "2026-09-15T00:00:00Z",
+            "notBefore": "2026-08-15T00:00:00Z",
+            "revocationReference": None,
+            "revokedAt": None,
+        },
+    }
+    if schema == "MasterProgramAuthorityDecisionV1":
+        common.update(
+            decisionAction="SELECT_MANIFEST",
+            priorDecision=None,
+            selectedManifest=reference("MANIFEST", "manifest:fixture-only"),
+            sourceProposal=reference("PROPOSAL", "proposal:fixture-only"),
+        )
+    elif schema == "Cut1AuthorityManifestV1":
+        common.update(
+            authorityValues={
+                name: reference("POLICY", f"{name}:fixture-only")
+                for name in (
+                    "canonicalNarration",
+                    "downstreamOrderPolicy",
+                    "finalRenderPolicy",
+                    "ownerAuthoritySource",
+                    "presenterSelection",
+                    "providerPolicy",
+                    "rendererPolicy",
+                    "revalidationPolicy",
+                    "spendPolicy",
+                    "supersededSourceSet",
+                )
+            },
+            decisionBacklink=reference("DECISION", "decision:fixture-only"),
+            sourceProposal=reference("PROPOSAL", "proposal:fixture-only"),
+        )
+    else:
+        common.update(
+            allowedPaths=["docs/example.invalid"],
+            baseSha="2" * 40,
+            branch="example-invalid-authority-route",
+            childIssue=431,
+            controllerIssue=426,
+            decision=reference("DECISION", "decision:fixture-only"),
+            executionWindow={
+                "approvedAt": "2026-08-15T00:00:00Z",
+                "expired": False,
+                "expiresAt": "2026-09-15T00:00:00Z",
+            },
+            maxChargedLines=4000,
+            maxPathCount=16,
+            parentIssue=426,
+            predecessorMergeSha="3" * 40,
+            pullRequest=None,
+            reviewerRoles=["OWNER", "PRINCIPAL_ARCHITECT", "PRINCIPAL_TEST_ENGINEER", "NON_AUTHOR"],
+            selectedManifest=reference("MANIFEST", "manifest:fixture-only"),
+            targetBranch="main",
+            testCommands=["make stage8-quality"],
+        )
+    unsigned = dict(common)
+    del unsigned["contentHash"]
+    domain = b"NARRATWIN-AUTHORITY-V1\0" + schema.encode("ascii") + b"\0"
+    common["contentHash"] = hashlib.sha256(domain + authority.canonical_bytes(unsigned)).hexdigest()
+    return common
 
 
 def test_fixture_corpus_is_explicitly_non_authoritative_and_adversarial() -> None:
@@ -111,3 +230,36 @@ def test_parser_rejects_an_unsupported_future_schema_before_semantic_use() -> No
         authority.validate_authority_bytes(b"{}", "MasterProgramAuthorityDecisionV2")
 
     assert caught.value.code == "UNSUPPORTED_VERSION"
+
+
+@pytest.mark.parametrize("schema", sorted(authority.SUPPORTED_SCHEMAS))
+def test_closed_schema_accepts_one_fixture_only_blueprint(schema: str) -> None:
+    value = authority_object(schema)
+
+    assert authority.validate_authority_bytes(authority.canonical_bytes(value), schema) == value
+
+
+@pytest.mark.parametrize(
+    ("mutation", "code"),
+    [
+        (lambda value: value.update(extra="closed"), "UNKNOWN_MEMBER"),
+        (lambda value: value.update(revision=True), "WRONG_SCALAR_TYPE"),
+        (lambda value: value.update(repository="example.invalid/wrong"), "REPOSITORY_MISMATCH"),
+        (lambda value: value.update(programId="wrong"), "PROGRAM_MISMATCH"),
+        (lambda value: value.update(generationId="wrong"), "GENERATION_MISMATCH"),
+        (lambda value: value.update(contentHash="f" * 64), "CONTENT_HASH_MISMATCH"),
+    ],
+)
+def test_closed_schema_rejects_identity_type_closure_and_hash_mutations(
+    mutation: Callable[[dict[str, object]], object], code: str
+) -> None:
+    value = authority_object("MasterProgramAuthorityDecisionV1")
+    mutation(value)
+
+    with pytest.raises(authority.AuthorityValidationError) as caught:
+        authority.validate_authority_bytes(
+            authority.canonical_bytes(value),
+            "MasterProgramAuthorityDecisionV1",
+        )
+
+    assert caught.value.code == code
