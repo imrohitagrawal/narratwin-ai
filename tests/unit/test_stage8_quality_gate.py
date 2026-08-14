@@ -183,6 +183,20 @@ def test_unrouted_stage8_branch_is_rejected(monkeypatch:Any)->None:
     b="feature/untracked-stage8-work"; monkeypatch.setattr(stage8,"current_branch",lambda:b); f:list[str]=[]
     stage8.check_stage_marker_and_branch(f)
     assert f==[f"Stage 8 work must run on a stage8-* branch or main after merge; got {b}."]
+def test_issue431_repository_gate_is_invoked_on_the_exact_child_branch(monkeypatch:Any)->None:
+    called:list[Path]=[]; noop=lambda *args,**kwargs:None
+    for name in ("check_required_files","check_retrieval_strategy_v1_parity",
+        "check_evaluation_lineage_checksum_v2_contract","check_stage_marker_and_branch","check_stage_scope",
+        "check_a23b","check_backend_and_tests","check_dependencies_and_scripts","check_docs"):
+        monkeypatch.setattr(stage8,name,noop)
+    for module,name in ((stage8.brace_security,"check_exact_route"),(stage8.node_security,"check"),
+        (stage8.cache_pruning,"check_exact_route"),(stage8.issue427_reset,"check")):
+        monkeypatch.setattr(module,name,noop)
+    monkeypatch.setattr(stage8,"current_branch",lambda:stage8.issue431_authority_core.BRANCH)
+    monkeypatch.setattr(stage8,"changed_files_for_stage_scope",lambda:[])
+    monkeypatch.setattr(stage8.issue431_authority_core,"repository_findings",lambda root:called.append(root) or [])
+    assert stage8.main()==0
+    assert called==[stage8.ROOT]
 A22_SOURCE,A22_DECL,A22_RUNTIME,A22_SELECT,A22_REFUSE=("Stage 2 retrieval-v1 accepted sources must retain the canonica"
     "l oracle.|Stage 2 retrievalStrategy must equal the canonical v1 machine declaration.|Stage 4 retrieval-v1 runtime "
     "constants must equal the canonical oracle.|Stage 4 retrieval selection must preserve canonical v1 control flow.|"
