@@ -445,6 +445,13 @@ def matrix_findings(document: dict[str, Any]) -> list[str]:
     return findings
 
 
+def lineage_findings(objects: list[dict[str, Any]]) -> list[str]:
+    """Return typed immutable-lineage defects; tests define the next behavior slice."""
+
+    del objects
+    return ["LINEAGE_VALIDATOR_NOT_IMPLEMENTED"]
+
+
 def _expected_actor(operation: str) -> str:
     return {
         "REVIEW": "ELIGIBLE_NON_AUTHOR_REVIEWER",
