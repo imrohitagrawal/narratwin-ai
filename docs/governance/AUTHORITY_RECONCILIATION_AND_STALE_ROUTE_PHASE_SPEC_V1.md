@@ -7,7 +7,7 @@
 | Status | `RESET_PROPOSAL_UNAPPROVED` |
 | Issue | `#427`, under parent `#426` |
 | Repository | `imrohitagrawal/narratwin-ai` |
-| Existing approved base | `a02286240212ad8958915aec01aa5ebaf60fa705` |
+| Existing approved base | `f2a32b8c022c015dfa4e87c700fbfe1ed0d85183` |
 | Current local committed head | `2f2779d7a79daf3ccbe3cab441b5a3b5596142c0` |
 | Purpose | Replace an oversized specification attempt with a bounded architecture kernel and serialized child graph |
 | Authority effect | None |

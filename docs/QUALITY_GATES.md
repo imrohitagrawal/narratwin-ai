@@ -1370,8 +1370,8 @@ Required local commands are:
 uv run pytest -q tests/unit/test_issue427_architecture_reset.py
 uv run pytest -q tests/unit/test_stage8_quality_gate.py
 python3 scripts/guardrails_check.py
-GITHUB_BASE_SHA=a02286240212ad8958915aec01aa5ebaf60fa705 NARRATWIN_POLICY_ONLY=1 make quality
-GITHUB_BASE_SHA=a02286240212ad8958915aec01aa5ebaf60fa705 make stage8-quality
+GITHUB_BASE_SHA=f2a32b8c022c015dfa4e87c700fbfe1ed0d85183 NARRATWIN_POLICY_ONLY=1 make quality
+GITHUB_BASE_SHA=f2a32b8c022c015dfa4e87c700fbfe1ed0d85183 make stage8-quality
 make quality
 uv run ruff check scripts tests
 uv run mypy scripts tests

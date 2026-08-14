@@ -17,8 +17,8 @@ from typing import Any
 from scripts.quality.branch_identity import current_branch
 
 BRANCH = "cut1-process-427-authority-architecture-reset"
-BASE = "a02286240212ad8958915aec01aa5ebaf60fa705"
-FIRST_COMMIT = "8954f0ab09c1c8c5d0d6ffeb54272d764140493d"
+BASE = "f2a32b8c022c015dfa4e87c700fbfe1ed0d85183"
+FIRST_COMMIT = "ec6e4140488e96fee9b979125c37a7572c5c7a30"
 PREFLIGHT_PATH = "docs/governance/preflights/issue-427.json"
 PROPOSAL_PATH = "docs/governance/AUTHORITY_RECONCILIATION_AND_STALE_ROUTE_PHASE_SPEC_V1.md"
 BINDING_PATH = "docs/governance/authority-reconciliation-and-stale-route-phase-spec-v1.json"
@@ -58,27 +58,27 @@ class ProposalIdentity:
 
 
 PROPOSAL = ProposalIdentity(
-    "4796ba7847611a1b18882d2164b7f6a94f98c5d0670d226f75c7c558c67feac8",
+    "794c2e90034a8012363a6a859dd3bac826280452e787b8a7afe5a49164849b29",
     17_853,
     326,
 )
 PREFLIGHT = ProposalIdentity(
-    "e260ec2d50b817680eea33b86d3f36b5ced34081cbf4b081ea340c10845610b5",
-    4_155,
+    "e347d0b01205d84d655e862384f3797dc623f5839c66ec58756065d9baa2925e",
+    4_260,
     54,
 )
-BINDING_MAX_BYTES = 1_678
+BINDING_MAX_BYTES = 1_715
 EVENT_MAX_BYTES = 1_048_576
 
 ARCHITECTURE_REVIEW = ProposalIdentity(
-    "4f48b512db2a6ac3579e52a887c302e82d1aba140dfe07e55e1eb548cd8d0116",
-    1_540,
-    28,
+    "31e09cec832ee7367251bab9f3514fe4619c42dd59f94d5739c8564010eab94b",
+    1_639,
+    29,
 )
 SECURITY_REVIEW = ProposalIdentity(
-    "f3e6b90175fba9add8d13886d40e0902eaabae2a527eeea372a62cd32e2d900f",
-    1_903,
-    36,
+    "750878d6acd4a2360860f1446ec15535183024794f1cfdbdf5f826f136cef6c3",
+    1_997,
+    37,
 )
 REVIEW_ARTIFACTS = (
     (ARCHITECTURE_REVIEW_PATH, ARCHITECTURE_REVIEW, "architecture"),
@@ -86,15 +86,15 @@ REVIEW_ARTIFACTS = (
 )
 GOVERNANCE_ARTIFACTS = (
     ("docs/ADR/0060-authority-reconciliation-and-stale-route-phase-spec.md",
-     ProposalIdentity("cca8f511824af4635596d11499600b27466f33fc19f02891abe8309219fc0af0", 3_208, 67)),
+     ProposalIdentity("031a02604a560f4ce08ea05eae40bf93810d09d7d443ddc744391f4f98f2ef31", 3_258, 67)),
     ("docs/STAGE_ISSUE_PLAN.md",
-     ProposalIdentity("0526fd171aa4b571f27fe6884bedd1152c77352b9fe261a4b24146658500f4ab", 139_722, 2_711)),
+     ProposalIdentity("c9ffd2819ed52db4db724f770f1333be9e5044852becb84462a58844e290c757", 140_071, 2_716)),
     ("docs/STATUS.md",
-     ProposalIdentity("6c95fc28c401a8c85543539219ca5b787523cb532be482b2c47f316516728a74", 232_094, 1_479)),
+     ProposalIdentity("fe5a514ccd1e6a84c6ffedf971af736c015aa019499edb9b6878d70f8be40e80", 232_597, 1_480)),
     ("docs/TRACEABILITY.md",
-     ProposalIdentity("6faa9dc8a9e28c64c787b6677c1d7563fa548ade90d46b95984c9f494616ec53", 142_755, 585)),
+     ProposalIdentity("b5e12cba34d5a3a654a5a2a5cffa0734b9f006661dbff6545f306e3e332f9c97", 143_187, 586)),
     ("docs/QUALITY_GATES.md",
-     ProposalIdentity("e740fa14d353d96abeffa4884af1e1ec1168994182dd710b5ea971ec0e785d77", 86_297, 1_386)),
+     ProposalIdentity("55074e176f2ef41f649c388c143dcbadc9878a0cee936cfdd9b1c9f953a61a98", 86_867, 1_394)),
 )
 
 
@@ -391,7 +391,7 @@ def binding_findings(raw: bytes) -> list[str]:
     top = {"schemaVersion", "state", "issue", "branch", "base", "proposal",
            "ownerApprovalRequestComment", "ownerApprovalComment",
            "correctionApprovalRequestComment", "correctionApprovalComment",
-           "markdownResetRequestComment", "markdownResetApprovalComment",
+           "markdownResetRequestComment", "markdownResetApprovalComment", "ciRouteResetComment",
            "architectureReview", "securityReview", "children", "activation"}
     try:
         value = closed_json(raw, top)
@@ -424,6 +424,7 @@ def binding_findings(raw: bytes) -> list[str]:
         "correctionApprovalComment": 5276469372,
         "markdownResetRequestComment": 5287631143,
         "markdownResetApprovalComment": 5289686674,
+        "ciRouteResetComment": 5292268215,
         "architectureReview": {"path": ARCHITECTURE_REVIEW_PATH,
                                "sha256": ARCHITECTURE_REVIEW.sha256,
                                "bytes": ARCHITECTURE_REVIEW.bytes,

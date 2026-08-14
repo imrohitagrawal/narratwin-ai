@@ -353,14 +353,14 @@ def test_proposal_identity_and_structure_are_exact() -> None:
 
 
 OWNER_RESET_PROPOSAL = reset.ProposalIdentity(
-    "4796ba7847611a1b18882d2164b7f6a94f98c5d0670d226f75c7c558c67feac8", 17_853, 326
+    "794c2e90034a8012363a6a859dd3bac826280452e787b8a7afe5a49164849b29", 17_853, 326
 )
 OWNER_RESET_REVIEWS = {
     reset.ARCHITECTURE_REVIEW_PATH: reset.ProposalIdentity(
-        "4f48b512db2a6ac3579e52a887c302e82d1aba140dfe07e55e1eb548cd8d0116", 1_540, 28
+        "31e09cec832ee7367251bab9f3514fe4619c42dd59f94d5739c8564010eab94b", 1_639, 29
     ),
     reset.SECURITY_REVIEW_PATH: reset.ProposalIdentity(
-        "f3e6b90175fba9add8d13886d40e0902eaabae2a527eeea372a62cd32e2d900f", 1_903, 36
+        "750878d6acd4a2360860f1446ec15535183024794f1cfdbdf5f826f136cef6c3", 1_997, 37
     ),
 }
 
@@ -388,6 +388,7 @@ def test_owner_markdown_reset_is_bound_to_approval_comment() -> None:
     value = json.loads(route_bytes(reset.BINDING_PATH))
     assert value.get("markdownResetRequestComment") == 5287631143
     assert value.get("markdownResetApprovalComment") == 5289686674
+    assert value.get("ciRouteResetComment") == 5292268215
     assert value["proposal"] == {
         "path": reset.PROPOSAL_PATH,
         "sha256": OWNER_RESET_PROPOSAL.sha256,
@@ -408,9 +409,13 @@ def test_owner_markdown_reset_is_bound_to_approval_comment() -> None:
 )
 def test_every_active_proposal_identity_surface_names_only_owner_reset(path: str) -> None:
     data = route_bytes(path)
-    for marker in (OWNER_RESET_PROPOSAL.sha256.encode(), b"17,853", b"5287631143", b"5289686674"):
+    for marker in (
+        OWNER_RESET_PROPOSAL.sha256.encode(), b"17,853", b"5287631143", b"5289686674",
+        b"5292268215",
+    ):
         assert marker in data
     assert b"bb8513fb82402d9d3e34590569ec2a07b42688a46e395fe9243f0fc2f8408b45" not in data
+    assert b"4796ba7847611a1b18882d2164b7f6a94f98c5d0670d226f75c7c558c67feac8" not in data
     assert b"17,847" not in data
 
 
@@ -474,6 +479,7 @@ def binding() -> dict[str, object]:
         "correctionApprovalComment": 5276469372,
         "markdownResetRequestComment": 5287631143,
         "markdownResetApprovalComment": 5289686674,
+        "ciRouteResetComment": 5292268215,
         "architectureReview": {
             "path": reset.ARCHITECTURE_REVIEW_PATH,
             "sha256": reset.ARCHITECTURE_REVIEW.sha256,
@@ -505,6 +511,7 @@ def binding() -> dict[str, object]:
         lambda value: value["securityReview"].update({"sha256": "0" * 64}),
         lambda value: value.update({"correctionApprovalComment": 0}),
         lambda value: value.update({"markdownResetApprovalComment": 0}),
+        lambda value: value.update({"ciRouteResetComment": 0}),
         lambda value: value.update({"children": list(reversed(reset.CHILDREN))}),
         lambda value: value.update({"activation": "ACTIVE"}),
     ],
@@ -532,12 +539,13 @@ def test_binding_accepts_only_the_approved_nonactivating_identity() -> None:
         (("correctionApprovalComment",), 5276469372.0),
         (("markdownResetRequestComment",), 5287631143.0),
         (("markdownResetApprovalComment",), 5289686674.0),
+        (("ciRouteResetComment",), 5292268215.0),
         (("proposal", "bytes"), 17_853.0),
         (("proposal", "lines"), 326.0),
-        (("architectureReview", "bytes"), 1_540.0),
-        (("architectureReview", "lines"), 28.0),
-        (("securityReview", "bytes"), 1_903.0),
-        (("securityReview", "lines"), 36.0),
+        (("architectureReview", "bytes"), 1_639.0),
+        (("architectureReview", "lines"), 29.0),
+        (("securityReview", "bytes"), 1_997.0),
+        (("securityReview", "lines"), 37.0),
     ],
 )
 def test_binding_rejects_numerically_equal_wrong_scalar_types(

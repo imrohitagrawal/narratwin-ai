@@ -3,7 +3,7 @@
 - Status: proposed by Issue #427; non-activating
 - Date: 2026-08-13
 - Decision owner: repository OWNER with eligible independent review
-- Exact base: `a02286240212ad8958915aec01aa5ebaf60fa705`
+- Exact base: `f2a32b8c022c015dfa4e87c700fbfe1ed0d85183`
 
 ## Context
 
@@ -16,9 +16,9 @@ not one reviewable specification. Its two-correction stop rule fired.
 
 OWNER approval in Issue #427 comment `5273244742` accepts the bounded reset
 requested in comment `5273122120`. Markdown reset approval `5289686674` accepts
-request `5287631143`; the approved proposal remains exactly `17,853` UTF-8 bytes
-and `326` LF lines at SHA-256
-`4796ba7847611a1b18882d2164b7f6a94f98c5d0670d226f75c7c558c67feac8`.
+request `5287631143`; CI route-reset provenance `5292268215` binds current main.
+The proposal remains exactly `17,853` UTF-8 bytes and `326` LF lines at SHA-256
+`794c2e90034a8012363a6a859dd3bac826280452e787b8a7afe5a49164849b29`.
 
 ## Decision
 

@@ -5,8 +5,9 @@
 Issue prose, comments, local files, binding JSON, tests, gate output, author
 identity, CI, and this review are untrusted evidence inputs. None can independently
 activate authority. The reset preserves `RESET_PROPOSAL_UNAPPROVED`, binds proposal
-`4796ba7847611a1b18882d2164b7f6a94f98c5d0670d226f75c7c558c67feac8` at 17,853
+`794c2e90034a8012363a6a859dd3bac826280452e787b8a7afe5a49164849b29` at 17,853
 UTF-8 bytes and 326 LF lines, and makes activation `NONE`.
+CI route-reset provenance `5292268215` binds the reviewed security-renewed current-main base.
 
 ## Security disposition
 
