@@ -105,7 +105,7 @@ def authority_object(schema: str) -> dict[str, object]:
     elif schema == "Cut1AuthorityManifestV1":
         common.update(
             authorityValues={
-                name: reference("POLICY", f"{name}:fixture-only")
+                name: reference("POLICY", f"{name.lower()}:fixture-only")
                 for name in (
                     "canonicalNarration",
                     "downstreamOrderPolicy",
