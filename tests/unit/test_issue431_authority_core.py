@@ -395,6 +395,91 @@ def test_state_matrix_mutations_fail_closed(
     assert any(finding in item.lower() for item in authority.matrix_findings(document))
 
 
+def successor(predecessor: dict[str, object], edge: tuple[str, str, str, str]) -> dict[str, object]:
+    row = transition_row(edge)
+    value = deepcopy(predecessor)
+    value["revision"] = int(predecessor["revision"]) + 1  # type: ignore[arg-type]
+    value["predecessorContentHash"] = predecessor["contentHash"]
+    value["lifecycleState"] = row["targetState"]
+    value["transition"] = {
+        "actorClass": row["actorClass"],
+        "effectId": row["effect"],
+        "guardReferences": [reference("GUARD", f"guard:{str(row['id']).lower()}")],
+        "idempotency": row["idempotency"],
+        "operation": row["operation"],
+        "prohibitedSubstitutes": row["prohibitedSubstitutes"],
+        "recoveryClass": row["recoveryClassification"],
+        "rejectionBehavior": row["rejectionBehavior"],
+        "sourceState": row["sourceState"],
+        "targetState": row["targetState"],
+    }
+    if (
+        value["schemaVersion"] == "ActiveProgramRouteV1"
+        and row["targetState"] == "EXECUTION_EXPIRED"
+    ):
+        value["executionWindow"]["expired"] = True  # type: ignore[index]
+    value["contentHash"] = authority.content_hash(value)
+    return value
+
+
+def test_hash_linked_successor_lineage_is_immutable_and_transition_bound() -> None:
+    genesis = authority_object("MasterProgramAuthorityDecisionV1")
+    reviewed = successor(genesis, DECISION_EDGES[0])
+
+    assert authority.lineage_findings([genesis, reviewed]) == []
+
+
+@pytest.mark.parametrize(
+    ("mutator", "finding"),
+    [
+        (lambda first, second: second.update(predecessorContentHash="f" * 64), "unlinked"),
+        (lambda first, second: second.update(objectId="decision:different"), "identity"),
+        (lambda first, second: second.update(revision=3), "revision"),
+        (lambda first, second: second.update(lifecycleState="ACCEPTED_CURRENT"), "illegal"),
+        (
+            lambda first, second: second.update(predecessorContentHash=second["contentHash"]),
+            "cyclic",
+        ),
+        (
+            lambda first, second: second["sourceProposal"].update(subject="proposal:mutated"),
+            "content hash",
+        ),
+    ],
+)
+def test_lineage_mutations_fail_closed(
+    mutator: Callable[[dict[str, object], dict[str, object]], object], finding: str
+) -> None:
+    genesis = authority_object("MasterProgramAuthorityDecisionV1")
+    reviewed = successor(genesis, DECISION_EDGES[0])
+    mutator(genesis, reviewed)
+
+    assert any(finding in item.lower() for item in authority.lineage_findings([genesis, reviewed]))
+
+
+def test_two_incompatible_successors_are_a_fork_and_identity_collision() -> None:
+    genesis = authority_object("MasterProgramAuthorityDecisionV1")
+    reviewed = successor(genesis, DECISION_EDGES[0])
+    rejected = successor(genesis, DECISION_EDGES[1])
+
+    findings = authority.lineage_findings([genesis, reviewed, rejected])
+
+    assert any("fork" in item.lower() for item in findings)
+    assert any("identity" in item.lower() for item in findings)
+
+
+def test_execution_expiry_allows_closeout_but_never_reactivation() -> None:
+    draft = authority_object("ActiveProgramRouteV1")
+    expired = successor(draft, ROUTE_EDGES[15])
+    closed = successor(expired, ROUTE_EDGES[20])
+    invalid_active = successor(expired, ("R07", "EXECUTION_EXPIRED", "ACTIVATE", "ACTIVE"))
+
+    assert authority.lineage_findings([draft, expired, closed]) == []
+    assert any(
+        "illegal" in item.lower()
+        for item in authority.lineage_findings([draft, expired, invalid_active])
+    )
+
+
 @pytest.mark.parametrize(
     ("data", "code"),
     [
