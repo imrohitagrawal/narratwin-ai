@@ -2,15 +2,15 @@
 
 ## Frozen proposal review
 
-- Proposal SHA-256: `bb8513fb82402d9d3e34590569ec2a07b42688a46e395fe9243f0fc2f8408b45`
-- Proposal bytes: `17847`
+- Proposal SHA-256: `4796ba7847611a1b18882d2164b7f6a94f98c5d0670d226f75c7c558c67feac8`
+- Proposal bytes: `17853`
 - Proposal LF lines: `326`
 - Scope: architecture kernel, six-child ownership, dependency order, and nonactivation only.
 - Disposition: `PASS_ARCHITECTURE_DECOMPOSITION`.
 
 PASS — architecture decomposition planning gate
-proposal SHA-256: bb8513fb82402d9d3e34590569ec2a07b42688a46e395fe9243f0fc2f8408b45
-proposal bytes: 17847
+proposal SHA-256: 4796ba7847611a1b18882d2164b7f6a94f98c5d0670d226f75c7c558c67feac8
+proposal bytes: 17853
 proposal LF lines: 326
 This disposition is non-activating and grants no runtime, provider, credential, spend, media, deployment, release, production, SLA, or commercial-readiness capability.
 

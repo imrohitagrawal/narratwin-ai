@@ -6,27 +6,29 @@
   "base": "a02286240212ad8958915aec01aa5ebaf60fa705",
   "proposal": {
     "path": "docs/governance/AUTHORITY_RECONCILIATION_AND_STALE_ROUTE_PHASE_SPEC_V1.md",
-    "sha256": "bb8513fb82402d9d3e34590569ec2a07b42688a46e395fe9243f0fc2f8408b45",
-    "bytes": 17847,
+    "sha256": "4796ba7847611a1b18882d2164b7f6a94f98c5d0670d226f75c7c558c67feac8",
+    "bytes": 17853,
     "lines": 326
   },
   "ownerApprovalRequestComment": 5273122120,
   "ownerApprovalComment": 5273244742,
   "correctionApprovalRequestComment": 5273917279,
   "correctionApprovalComment": 5276469372,
+  "markdownResetRequestComment": 5287631143,
+  "markdownResetApprovalComment": 5289686674,
   "architectureReview": {
     "path": "docs/reviews/ISSUE_427_AUTHORITY_ROUTE_SPEC_REVIEW.md",
-    "sha256": "766b19ce823dadba152631516bd5e2af658cbf073f770a713c76417abacc0f2e",
+    "sha256": "4f48b512db2a6ac3579e52a887c302e82d1aba140dfe07e55e1eb548cd8d0116",
     "bytes": 1540,
     "lines": 28,
-    "proposalSha256": "bb8513fb82402d9d3e34590569ec2a07b42688a46e395fe9243f0fc2f8408b45",
+    "proposalSha256": "4796ba7847611a1b18882d2164b7f6a94f98c5d0670d226f75c7c558c67feac8",
     "disposition": "PASS_ARCHITECTURE_DECOMPOSITION"
   },
   "securityReview": {
     "path": "docs/reviews/ISSUE_427_FALSE_AUTHORITY_SECURITY_REVIEW.md",
-    "sha256": "af5026a51d0319cbde0cd0e95d2eab84bcda0bfe3a3958300c055bc616b9e49f",
-    "bytes": 1809,
-    "lines": 35,
+    "sha256": "f3e6b90175fba9add8d13886d40e0902eaabae2a527eeea372a62cd32e2d900f",
+    "bytes": 1903,
+    "lines": 36,
     "disposition": "NONACTIVATING_FALSE_AUTHORITY_REVIEW_SURFACE"
   },
   "children": [

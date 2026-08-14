@@ -58,8 +58,8 @@ class ProposalIdentity:
 
 
 PROPOSAL = ProposalIdentity(
-    "bb8513fb82402d9d3e34590569ec2a07b42688a46e395fe9243f0fc2f8408b45",
-    17_847,
+    "4796ba7847611a1b18882d2164b7f6a94f98c5d0670d226f75c7c558c67feac8",
+    17_853,
     326,
 )
 PREFLIGHT = ProposalIdentity(
@@ -67,18 +67,18 @@ PREFLIGHT = ProposalIdentity(
     4_067,
     54,
 )
-BINDING_MAX_BYTES = 1_587
+BINDING_MAX_BYTES = 1_678
 EVENT_MAX_BYTES = 1_048_576
 
 ARCHITECTURE_REVIEW = ProposalIdentity(
-    "766b19ce823dadba152631516bd5e2af658cbf073f770a713c76417abacc0f2e",
+    "4f48b512db2a6ac3579e52a887c302e82d1aba140dfe07e55e1eb548cd8d0116",
     1_540,
     28,
 )
 SECURITY_REVIEW = ProposalIdentity(
-    "af5026a51d0319cbde0cd0e95d2eab84bcda0bfe3a3958300c055bc616b9e49f",
-    1_809,
-    35,
+    "f3e6b90175fba9add8d13886d40e0902eaabae2a527eeea372a62cd32e2d900f",
+    1_903,
+    36,
 )
 REVIEW_ARTIFACTS = (
     (ARCHITECTURE_REVIEW_PATH, ARCHITECTURE_REVIEW, "architecture"),
@@ -391,6 +391,7 @@ def binding_findings(raw: bytes) -> list[str]:
     top = {"schemaVersion", "state", "issue", "branch", "base", "proposal",
            "ownerApprovalRequestComment", "ownerApprovalComment",
            "correctionApprovalRequestComment", "correctionApprovalComment",
+           "markdownResetRequestComment", "markdownResetApprovalComment",
            "architectureReview", "securityReview", "children", "activation"}
     try:
         value = closed_json(raw, top)
@@ -421,6 +422,8 @@ def binding_findings(raw: bytes) -> list[str]:
         "ownerApprovalComment": 5273244742,
         "correctionApprovalRequestComment": 5273917279,
         "correctionApprovalComment": 5276469372,
+        "markdownResetRequestComment": 5287631143,
+        "markdownResetApprovalComment": 5289686674,
         "architectureReview": {"path": ARCHITECTURE_REVIEW_PATH,
                                "sha256": ARCHITECTURE_REVIEW.sha256,
                                "bytes": ARCHITECTURE_REVIEW.bytes,

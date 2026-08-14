@@ -336,7 +336,7 @@ OWNER_RESET_REVIEWS = {
         "4f48b512db2a6ac3579e52a887c302e82d1aba140dfe07e55e1eb548cd8d0116", 1_540, 28
     ),
     reset.SECURITY_REVIEW_PATH: reset.ProposalIdentity(
-        "955e61a5cc07ed07da925acab61d9c29831c75f1280d72289f53bba87bf26010", 1_903, 36
+        "f3e6b90175fba9add8d13886d40e0902eaabae2a527eeea372a62cd32e2d900f", 1_903, 36
     ),
 }
 
@@ -430,6 +430,8 @@ def binding() -> dict[str, object]:
         "ownerApprovalComment": 5273244742,
         "correctionApprovalRequestComment": 5273917279,
         "correctionApprovalComment": 5276469372,
+        "markdownResetRequestComment": 5287631143,
+        "markdownResetApprovalComment": 5289686674,
         "architectureReview": {
             "path": reset.ARCHITECTURE_REVIEW_PATH,
             "sha256": reset.ARCHITECTURE_REVIEW.sha256,
@@ -460,6 +462,7 @@ def binding() -> dict[str, object]:
         lambda value: value["architectureReview"].update({"proposalSha256": "0" * 64}),
         lambda value: value["securityReview"].update({"sha256": "0" * 64}),
         lambda value: value.update({"correctionApprovalComment": 0}),
+        lambda value: value.update({"markdownResetApprovalComment": 0}),
         lambda value: value.update({"children": list(reversed(reset.CHILDREN))}),
         lambda value: value.update({"activation": "ACTIVE"}),
     ],
@@ -485,12 +488,14 @@ def test_binding_accepts_only_the_approved_nonactivating_identity() -> None:
         (("ownerApprovalComment",), 5273244742.0),
         (("correctionApprovalRequestComment",), 5273917279.0),
         (("correctionApprovalComment",), 5276469372.0),
-        (("proposal", "bytes"), 17_847.0),
+        (("markdownResetRequestComment",), 5287631143.0),
+        (("markdownResetApprovalComment",), 5289686674.0),
+        (("proposal", "bytes"), 17_853.0),
         (("proposal", "lines"), 326.0),
         (("architectureReview", "bytes"), 1_540.0),
         (("architectureReview", "lines"), 28.0),
-        (("securityReview", "bytes"), 1_809.0),
-        (("securityReview", "lines"), 35.0),
+        (("securityReview", "bytes"), 1_903.0),
+        (("securityReview", "lines"), 36.0),
     ],
 )
 def test_binding_rejects_numerically_equal_wrong_scalar_types(

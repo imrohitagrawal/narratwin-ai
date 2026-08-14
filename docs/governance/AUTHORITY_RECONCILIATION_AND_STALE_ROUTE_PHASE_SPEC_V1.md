@@ -67,7 +67,7 @@ non-activating. After it closes, create the serialized children in Section 7.
 
 Preserve its review history as an unsuccessful design exploration, close it
 without completion, and create a new architecture-kernel issue from parent
-#426. The new issue must have its own branch, base, paths, budget, preflight,
+Issue #426. The new issue must have its own branch, base, paths, budget, preflight,
 review conditions and expiry.
 
 No implementer chooses between these routes. Until the OWNER chooses, the
