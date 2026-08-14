@@ -373,6 +373,23 @@ def test_owner_markdown_reset_is_bound_to_approval_comment() -> None:
 
 
 @pytest.mark.parametrize(
+    "path",
+    [
+        reset.PREFLIGHT_PATH,
+        "docs/ADR/0060-authority-reconciliation-and-stale-route-phase-spec.md",
+        "docs/STATUS.md",
+        "docs/TRACEABILITY.md",
+    ],
+)
+def test_every_active_proposal_identity_surface_names_only_owner_reset(path: str) -> None:
+    data = route_bytes(path)
+    for marker in (OWNER_RESET_PROPOSAL.sha256.encode(), b"17,853", b"5287631143", b"5289686674"):
+        assert marker in data
+    assert b"bb8513fb82402d9d3e34590569ec2a07b42688a46e395fe9243f0fc2f8408b45" not in data
+    assert b"17,847" not in data
+
+
+@pytest.mark.parametrize(
     ("mutate", "finding"),
     [
         (lambda text: text.replace("## 2. Section 2", "## 13. Section 2"), "sections"),
