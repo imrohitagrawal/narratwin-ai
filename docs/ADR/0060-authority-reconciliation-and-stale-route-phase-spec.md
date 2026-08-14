@@ -15,9 +15,10 @@ review rounds showed that this was multiple independently testable subsystems,
 not one reviewable specification. Its two-correction stop rule fired.
 
 OWNER approval in Issue #427 comment `5273244742` accepts the bounded reset
-requested in comment `5273122120`. The approved proposal remains exactly
-`17,847` UTF-8 bytes and `326` LF lines at SHA-256
-`bb8513fb82402d9d3e34590569ec2a07b42688a46e395fe9243f0fc2f8408b45`.
+requested in comment `5273122120`. Markdown reset approval `5289686674` accepts
+request `5287631143`; the approved proposal remains exactly `17,853` UTF-8 bytes
+and `326` LF lines at SHA-256
+`4796ba7847611a1b18882d2164b7f6a94f98c5d0670d226f75c7c558c67feac8`.
 
 ## Decision
 

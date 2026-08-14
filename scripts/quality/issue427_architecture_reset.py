@@ -63,8 +63,8 @@ PROPOSAL = ProposalIdentity(
     326,
 )
 PREFLIGHT = ProposalIdentity(
-    "6c8d3c93891f0555976a16068b7fa0100b984173aa19aaf8b8a20dcea61e0200",
-    4_067,
+    "e260ec2d50b817680eea33b86d3f36b5ced34081cbf4b081ea340c10845610b5",
+    4_155,
     54,
 )
 BINDING_MAX_BYTES = 1_678
@@ -86,13 +86,13 @@ REVIEW_ARTIFACTS = (
 )
 GOVERNANCE_ARTIFACTS = (
     ("docs/ADR/0060-authority-reconciliation-and-stale-route-phase-spec.md",
-     ProposalIdentity("70bf0d70a094eb13b4ba872ae8928b9b534347549d06433d6ca6cbcfe06481ab", 3_141, 66)),
+     ProposalIdentity("cca8f511824af4635596d11499600b27466f33fc19f02891abe8309219fc0af0", 3_208, 67)),
     ("docs/STAGE_ISSUE_PLAN.md",
      ProposalIdentity("0526fd171aa4b571f27fe6884bedd1152c77352b9fe261a4b24146658500f4ab", 139_722, 2_711)),
     ("docs/STATUS.md",
-     ProposalIdentity("6b3e769117171dd9201c3d2e4a023d3c9aec229645a6c281ac8243e8ca5f3926", 232_021, 1_478)),
+     ProposalIdentity("6c95fc28c401a8c85543539219ca5b787523cb532be482b2c47f316516728a74", 232_094, 1_479)),
     ("docs/TRACEABILITY.md",
-     ProposalIdentity("b61b4cd57dc868c38fbf93b0587a53539b592f9537231250f0ad3441990f018a", 142_701, 585)),
+     ProposalIdentity("6faa9dc8a9e28c64c787b6677c1d7563fa548ade90d46b95984c9f494616ec53", 142_755, 585)),
     ("docs/QUALITY_GATES.md",
      ProposalIdentity("e740fa14d353d96abeffa4884af1e1ec1168994182dd710b5ea971ec0e785d77", 86_297, 1_386)),
 )

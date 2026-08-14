@@ -578,7 +578,7 @@ remain separate gates.
 
 | Requirement | Evidence | Preserved boundary |
 |---|---|---|
-| Preserve the approved compact architecture kernel | Exact 17,847-byte, 326-line proposal at SHA-256 `bb8513fb82402d9d3e34590569ec2a07b42688a46e395fe9243f0fc2f8408b45`; strict non-activating binding JSON | Proposal state remains `RESET_PROPOSAL_UNAPPROVED`; activation remains `NONE` |
+| Preserve the approved compact architecture kernel | Reset request `5287631143` and approval `5289686674`; exact 17,853-byte, 326-line proposal at SHA-256 `4796ba7847611a1b18882d2164b7f6a94f98c5d0670d226f75c7c558c67feac8`; strict non-activating binding JSON | Proposal state remains `RESET_PROPOSAL_UNAPPROVED`; activation remains `NONE` |
 | Prevent the former monolith from reappearing | ADR 0060; Children A–F each own one protocol family in strict `A → B → C → D → E → F` order | Issue #427 defines architecture and boundaries only; no field schema, evidence service, CAS, audit coordinator, reconciliation runner, or integrated kernel is implemented |
 | Fail closed on route and artifact drift | Dedicated Issue #427 gate; focused RED/GREEN tests; exact Stage 8 registration | Wrong branch/base/history/first commit/scope/budget/numstat/JSON/proposal/review/section/invariant/child/nonactivation state fails |
 | Preserve human authority boundaries | OWNER route comments `5273122120` and `5273244742`; frozen-head review packet; later eligible non-author and exact-byte OWNER approvals | Author, tests, files, hashes, CI and review templates cannot self-approve or activate authority |

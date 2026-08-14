@@ -14,13 +14,14 @@ Use it to answer:
 
 ## Current Baseline
 
-- Issue `#427` architecture-reset target state: OWNER comment `5273244742`
-  approves the exact rewrite requested in comment `5273122120`. The replacement
-  branch is `cut1-process-427-authority-architecture-reset` from exact base
+- Issue `#427` architecture-reset target state: OWNER reset comment `5289686674`
+  approves the markdown reset requested in comment `5287631143` after the
+  original route comments `5273122120` and `5273244742`. The replacement branch
+  is `cut1-process-427-authority-architecture-reset` from exact base
   `a02286240212ad8958915aec01aa5ebaf60fa705`, with fourteen exact paths and a
-  2,000-line aggregate charge ceiling. Its immutable 17,847-byte/326-line
+  2,000-line aggregate charge ceiling. Its immutable 17,853-byte/326-line
   proposal at SHA-256
-  `bb8513fb82402d9d3e34590569ec2a07b42688a46e395fe9243f0fc2f8408b45`
+  `4796ba7847611a1b18882d2164b7f6a94f98c5d0670d226f75c7c558c67feac8`
   establishes only the architecture kernel and serialized A–F ownership. Once
   this PR is reviewed, approved, merged, green on merged main and Issue #427 is
   explicitly closed, the exact next child is `A — Core schemas and state
