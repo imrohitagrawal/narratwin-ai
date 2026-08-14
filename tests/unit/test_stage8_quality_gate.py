@@ -2,7 +2,8 @@
 import hashlib; import importlib.util; import json; import subprocess as sp
 from pathlib import Path; from types import ModuleType; from typing import Any
 import pytest; from scripts.guardrails_check import canonical_stage_issue
-from scripts.quality import stage8_a23b as a23b, stage8_cut1_routes as cut1_routes, issue427_architecture_reset as i
+from scripts.quality import (stage8_a23b as a23b, stage8_cut1_routes as cut1_routes,
+    issue427_architecture_reset as i, issue431_authority_core as j)
 from scripts.quality.check_stage8_docs import (CUT1_REAL_MEDIA_TRANSITION_BRANCH as CUT1_REAL_MEDIA_TRANSITION,
     CUT1_REAL_MEDIA_TRANSITION_FILES as CUT1_REAL_MEDIA_TRANSITION_SCOPE,
     CITATION_PARITY_BRANCH as CP, CITATION_PARITY_FILES as CP_SCOPE,
@@ -22,7 +23,8 @@ SCOPES = {TRANSITION: set("docs/governance/preflights/issue-346.json scripts/qua
     A2_2: set("""docs/governance/preflights/issue-349.json docs/STAGE2_ARCHITECTURE_CONTRACT.json docs/STATUS.md
         scripts/quality/check_stage2_docs.py tests/unit/test_stage8_quality_gate.py docs/STAGE_ISSUE_PLAN.md
         scripts/quality/check_stage8_docs.py docs/ADR/0002-rag-storage.md docs/QUALITY_GATES.md""".split()),
-    QP:QP_SCOPE,CP:CP_SCOPE,C1:CUT1_REAL_MEDIA_TRANSITION_SCOPE,i.BRANCH:set(i.PATHS),**a23b.A23_ROUTES}
+    QP:QP_SCOPE,CP:CP_SCOPE,C1:CUT1_REAL_MEDIA_TRANSITION_SCOPE,i.BRANCH:set(i.PATHS),j.BRANCH:set(j.PATHS),
+    **a23b.A23_ROUTES}
 def load(relative: str, name: str) -> ModuleType:
     spec=importlib.util.spec_from_file_location(name,Path(__file__).parents[2]/relative);assert spec and spec.loader
     module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module);return module
