@@ -29,6 +29,7 @@ SUPPORTED_SCHEMAS = {
     "Cut1AuthorityManifestV1": "docs/governance/schemas/cut1-authority-manifest-v1.schema.json",
     "ActiveProgramRouteV1": "docs/governance/schemas/active-program-route-v1.schema.json",
 }
+MATRIX_PATH = "docs/governance/authority-core-state-matrices-v1.json"
 SCHEMA_DOCUMENT_KEYS = {
     "$defs",
     "activation",
@@ -328,3 +329,10 @@ def validate_authority_bytes(data: bytes, expected_schema: str) -> dict[str, Any
     _validate_descriptor(value, schema["root"], schema["$defs"])
     _validate_semantics(value)
     return value
+
+
+def matrix_findings(document: dict[str, Any]) -> list[str]:
+    """Return typed matrix defects; the next RED checkpoint defines completeness."""
+
+    del document
+    return ["MATRIX_VALIDATOR_NOT_IMPLEMENTED"]
