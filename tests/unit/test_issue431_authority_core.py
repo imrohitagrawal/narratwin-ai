@@ -480,6 +480,24 @@ def test_execution_expiry_allows_closeout_but_never_reactivation() -> None:
     )
 
 
+@pytest.mark.parametrize("source", authority.FALSE_AUTHORITY_SOURCES)
+def test_issue_comment_file_fixture_test_and_ci_never_activate_authority(source: str) -> None:
+    assert authority.authority_effect_findings(source, "NONE") == []
+    assert authority.authority_effect_findings(source, "ACTIVE") == [
+        f"{source} cannot produce authority effect ACTIVE."
+    ]
+
+
+def test_unknown_authority_source_and_marker_substitution_fail_closed() -> None:
+    assert authority.authority_effect_findings("IMPLEMENTATION_DEFINED", "NONE") == [
+        "Unknown authority source is rejected."
+    ]
+
+
+def test_exact_child_a_repository_gate_passes_only_the_complete_route() -> None:
+    assert authority.repository_findings(ROOT) == []
+
+
 @pytest.mark.parametrize(
     ("data", "code"),
     [
