@@ -328,6 +328,50 @@ def test_proposal_identity_and_structure_are_exact() -> None:
     ]
 
 
+OWNER_RESET_PROPOSAL = reset.ProposalIdentity(
+    "4796ba7847611a1b18882d2164b7f6a94f98c5d0670d226f75c7c558c67feac8", 17_853, 326
+)
+OWNER_RESET_REVIEWS = {
+    reset.ARCHITECTURE_REVIEW_PATH: reset.ProposalIdentity(
+        "4f48b512db2a6ac3579e52a887c302e82d1aba140dfe07e55e1eb548cd8d0116", 1_540, 28
+    ),
+    reset.SECURITY_REVIEW_PATH: reset.ProposalIdentity(
+        "955e61a5cc07ed07da925acab61d9c29831c75f1280d72289f53bba87bf26010", 1_903, 36
+    ),
+}
+
+
+def route_bytes(path: str) -> bytes:
+    root = Path(__file__).resolve().parents[2]
+    return reset._git(root, "show", f"{reset.ci_route_head(root)}:{path}")
+
+
+def test_owner_markdown_reset_proposal_is_exact() -> None:
+    data = route_bytes(reset.PROPOSAL_PATH)
+    assert identity(data) == OWNER_RESET_PROPOSAL
+    assert b"\nIssue #426. The new issue must have" in data
+    assert b"\n#426. The new issue must have" not in data
+
+
+@pytest.mark.parametrize(("path", "expected"), OWNER_RESET_REVIEWS.items())
+def test_owner_markdown_reset_review_identity_is_exact(
+    path: str, expected: reset.ProposalIdentity
+) -> None:
+    assert identity(route_bytes(path)) == expected
+
+
+def test_owner_markdown_reset_is_bound_to_approval_comment() -> None:
+    value = json.loads(route_bytes(reset.BINDING_PATH))
+    assert value.get("markdownResetRequestComment") == 5287631143
+    assert value.get("markdownResetApprovalComment") == 5289686674
+    assert value["proposal"] == {
+        "path": reset.PROPOSAL_PATH,
+        "sha256": OWNER_RESET_PROPOSAL.sha256,
+        "bytes": OWNER_RESET_PROPOSAL.bytes,
+        "lines": OWNER_RESET_PROPOSAL.lines,
+    }
+
+
 @pytest.mark.parametrize(
     ("mutate", "finding"),
     [
