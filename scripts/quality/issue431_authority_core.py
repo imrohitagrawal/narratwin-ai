@@ -446,10 +446,121 @@ def matrix_findings(document: dict[str, Any]) -> list[str]:
 
 
 def lineage_findings(objects: list[dict[str, Any]]) -> list[str]:
-    """Return typed immutable-lineage defects; tests define the next behavior slice."""
+    """Validate immutable bytes, unique identities, links, forks, and exact transitions."""
 
-    del objects
-    return ["LINEAGE_VALIDATOR_NOT_IMPLEMENTED"]
+    findings: list[str] = []
+    if not objects:
+        return ["Lineage is empty."]
+    by_hash: dict[str, dict[str, Any]] = {}
+    identities: dict[tuple[Any, ...], set[str]] = {}
+    successors: dict[str, list[dict[str, Any]]] = {}
+    for value in objects:
+        if not isinstance(value, dict):
+            findings.append("Lineage member is malformed.")
+            continue
+        schema = value.get("schemaVersion")
+        if not isinstance(schema, str):
+            findings.append("Lineage schema version is missing.")
+            continue
+        try:
+            validate_authority_bytes(canonical_bytes(value), schema)
+        except AuthorityValidationError as error:
+            findings.append(f"Lineage content hash or schema defect: {error.code}.")
+        object_hash = value.get("contentHash")
+        if not isinstance(object_hash, str):
+            findings.append("Lineage content hash is missing.")
+            continue
+        if object_hash in by_hash and by_hash[object_hash] != value:
+            findings.append("Two incompatible bytes claim one content hash.")
+        by_hash[object_hash] = value
+        identity = (
+            schema,
+            value.get("repository"),
+            value.get("programId"),
+            value.get("generationId"),
+            value.get("objectId"),
+            value.get("revision"),
+        )
+        identities.setdefault(identity, set()).add(object_hash)
+        predecessor_hash = value.get("predecessorContentHash")
+        if isinstance(predecessor_hash, str):
+            successors.setdefault(predecessor_hash, []).append(value)
+            if predecessor_hash == object_hash:
+                findings.append("Cyclic predecessor hash is prohibited.")
+    if any(len(hashes) > 1 for hashes in identities.values()):
+        findings.append("Immutable identity collision has incompatible objects.")
+    if any(len(items) > 1 for items in successors.values()):
+        findings.append("Forked successors claim one predecessor hash.")
+    for value in objects:
+        if not isinstance(value, dict) or value.get("revision") == 1:
+            continue
+        predecessor_hash = value.get("predecessorContentHash")
+        predecessor = by_hash.get(predecessor_hash) if isinstance(predecessor_hash, str) else None
+        if predecessor is None:
+            findings.append("Unlinked successor predecessor is absent.")
+            continue
+        stable = ("schemaVersion", "repository", "programId", "generationId", "objectId")
+        if any(value.get(key) != predecessor.get(key) for key in stable):
+            findings.append("Successor immutable identity differs from predecessor.")
+        if value.get("revision") != predecessor.get("revision", 0) + 1:
+            findings.append("Successor revision is not exactly predecessor plus one.")
+        _lineage_transition_findings(predecessor, value, findings)
+    return findings
+
+
+def _lineage_transition_findings(
+    predecessor: dict[str, Any], successor: dict[str, Any], findings: list[str]
+) -> None:
+    transition = successor.get("transition")
+    if not isinstance(transition, dict):
+        findings.append("Successor transition is missing or ambiguous.")
+        return
+    edges = (
+        ROUTE_EDGES if successor.get("schemaVersion") == "ActiveProgramRouteV1" else DECISION_EDGES
+    )
+    edge = next(
+        (
+            item
+            for item in edges
+            if item[1] == predecessor.get("lifecycleState")
+            and item[2] == transition.get("operation")
+        ),
+        None,
+    )
+    if (
+        edge is None
+        or transition.get("sourceState") != predecessor.get("lifecycleState")
+        or transition.get("targetState") != successor.get("lifecycleState")
+        or edge[3] != successor.get("lifecycleState")
+    ):
+        findings.append("Illegal lifecycle transition is rejected.")
+        return
+    row_id, _, operation, target = edge
+    exact = {
+        "actorClass": _expected_actor(operation),
+        "effectId": f"EFFECT_{row_id}_{target}",
+        "idempotency": "IDEMPOTENT_SAME_BYTES",
+        "operation": operation,
+        "prohibitedSubstitutes": ["ISSUE", "COMMENT", "FILE", "FIXTURE", "TEST", "CI"],
+        "recoveryClass": "ADMINISTRATIVE_CLOSEOUT"
+        if operation == "CLOSE"
+        else "CREATE_HASH_LINKED_SUCCESSOR",
+        "rejectionBehavior": "NO_MUTATION_TYPED_ERROR",
+        "sourceState": edge[1],
+        "targetState": target,
+    }
+    if any(transition.get(key) != expected for key, expected in exact.items()):
+        findings.append(
+            "Transition actor, guard-independent effect, or recovery mismatches exact row."
+        )
+    guards = transition.get("guardReferences")
+    if (
+        not isinstance(guards, list)
+        or len(guards) != 1
+        or not isinstance(guards[0], dict)
+        or guards[0].get("subject") != f"guard:{row_id.lower()}"
+    ):
+        findings.append("Transition guard reference does not bind its exact row.")
 
 
 def _expected_actor(operation: str) -> str:
