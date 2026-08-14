@@ -50,6 +50,30 @@ def identity(data: bytes) -> reset.ProposalIdentity:
     )
 
 
+def test_current_main_route_reset_identities_are_exact() -> None:
+    assert reset.BASE == "f2a32b8c022c015dfa4e87c700fbfe1ed0d85183"
+    assert reset.FIRST_COMMIT == "ec6e4140488e96fee9b979125c37a7572c5c7a30"
+    assert reset.PREFLIGHT == reset.ProposalIdentity(
+        "e347d0b01205d84d655e862384f3797dc623f5839c66ec58756065d9baa2925e",
+        4_260,
+        54,
+    )
+    assert reset.PROPOSAL == reset.ProposalIdentity(
+        "794c2e90034a8012363a6a859dd3bac826280452e787b8a7afe5a49164849b29",
+        17_853,
+        326,
+    )
+
+
+def test_current_main_base_contains_the_reviewed_security_renewal() -> None:
+    root = Path(__file__).resolve().parents[2]
+    lock = json.loads((root / "frontend/package-lock.json").read_text())
+    assert lock["packages"]["node_modules/nanoid"]["version"] == "3.3.18"
+    assert "OVERRIDE_EXPIRY = dt.date(2026, 8, 28)" in (
+        root / "scripts/ci/check_semgrep_security.py"
+    ).read_text()
+
+
 def facts() -> reset.RepositoryFacts:
     return reset.RepositoryFacts(
         branch=reset.BRANCH,
