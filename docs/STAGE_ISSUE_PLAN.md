@@ -2692,8 +2692,11 @@ route. Release remains No-Go.
 ## Issue #427 architecture reset route
 
 Issue `#427`, under parent `#426`, replaces its abandoned monolithic design
-attempt with the exact non-activating architecture reset approved in OWNER
-comment `5273244742`. The clean branch
+attempt with the non-activating architecture reset initially approved in OWNER
+comment `5273244742` and amended by request `5287631143` and reset approval
+`5289686674`. The exact 17,853-byte/326-line proposal is SHA-256
+`4796ba7847611a1b18882d2164b7f6a94f98c5d0670d226f75c7c558c67feac8`.
+The clean branch
 `cut1-process-427-authority-architecture-reset` starts at
 `a02286240212ad8958915aec01aa5ebaf60fa705`, changes exactly the fourteen paths
 in its GovernancePreflightV1, and is capped at 2,000 aggregate additions plus

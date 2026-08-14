@@ -88,7 +88,7 @@ GOVERNANCE_ARTIFACTS = (
     ("docs/ADR/0060-authority-reconciliation-and-stale-route-phase-spec.md",
      ProposalIdentity("70bf0d70a094eb13b4ba872ae8928b9b534347549d06433d6ca6cbcfe06481ab", 3_141, 66)),
     ("docs/STAGE_ISSUE_PLAN.md",
-     ProposalIdentity("5baadf4810b870ac1c79b9101404a070e0f93babbb5ff1df17d562bb56ca73bf", 139_531, 2_708)),
+     ProposalIdentity("0526fd171aa4b571f27fe6884bedd1152c77352b9fe261a4b24146658500f4ab", 139_722, 2_711)),
     ("docs/STATUS.md",
      ProposalIdentity("6b3e769117171dd9201c3d2e4a023d3c9aec229645a6c281ac8243e8ca5f3926", 232_021, 1_478)),
     ("docs/TRACEABILITY.md",
