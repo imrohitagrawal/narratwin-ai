@@ -30,6 +30,86 @@ SUPPORTED_SCHEMAS = {
     "ActiveProgramRouteV1": "docs/governance/schemas/active-program-route-v1.schema.json",
 }
 MATRIX_PATH = "docs/governance/authority-core-state-matrices-v1.json"
+DECISION_STATES = (
+    "PROPOSED",
+    "REVIEWED",
+    "OWNER_APPROVED",
+    "MERGED",
+    "ACCEPTED_CURRENT",
+    "REJECTED",
+    "SUPERSEDED",
+    "REVOKED",
+    "EXPIRED",
+)
+DECISION_OPERATIONS = (
+    "REVIEW",
+    "REJECT",
+    "OWNER_APPROVE",
+    "MERGE",
+    "ACCEPT_CURRENT",
+    "SUPERSEDE",
+    "REVOKE",
+    "EXPIRE",
+)
+DECISION_EDGES = (
+    ("D01", "PROPOSED", "REVIEW", "REVIEWED"),
+    ("D02", "PROPOSED", "REJECT", "REJECTED"),
+    ("D03", "REVIEWED", "OWNER_APPROVE", "OWNER_APPROVED"),
+    ("D04", "REVIEWED", "REJECT", "REJECTED"),
+    ("D05", "OWNER_APPROVED", "MERGE", "MERGED"),
+    ("D06", "OWNER_APPROVED", "REJECT", "REJECTED"),
+    ("D07", "MERGED", "ACCEPT_CURRENT", "ACCEPTED_CURRENT"),
+    ("D08", "MERGED", "REJECT", "REJECTED"),
+    ("D09", "ACCEPTED_CURRENT", "SUPERSEDE", "SUPERSEDED"),
+    ("D10", "ACCEPTED_CURRENT", "REVOKE", "REVOKED"),
+    ("D11", "ACCEPTED_CURRENT", "EXPIRE", "EXPIRED"),
+)
+ROUTE_STATES = (
+    "DRAFT",
+    "REVIEWED",
+    "OWNER_APPROVED",
+    "PREDECESSOR_VERIFIED",
+    "ACTIVE",
+    "MERGED",
+    "CLOSED",
+    "REJECTED",
+    "SUPERSEDED",
+    "EXECUTION_EXPIRED",
+)
+ROUTE_OPERATIONS = (
+    "REVIEW",
+    "REJECT",
+    "OWNER_APPROVE",
+    "VERIFY_PREDECESSOR",
+    "ACTIVATE",
+    "MERGE",
+    "CLOSE",
+    "SUPERSEDE",
+    "EXPIRE",
+)
+ROUTE_EDGES = (
+    ("R01", "DRAFT", "REVIEW", "REVIEWED"),
+    ("R02", "DRAFT", "REJECT", "REJECTED"),
+    ("R03", "REVIEWED", "OWNER_APPROVE", "OWNER_APPROVED"),
+    ("R04", "REVIEWED", "REJECT", "REJECTED"),
+    ("R05", "OWNER_APPROVED", "VERIFY_PREDECESSOR", "PREDECESSOR_VERIFIED"),
+    ("R06", "OWNER_APPROVED", "REJECT", "REJECTED"),
+    ("R07", "PREDECESSOR_VERIFIED", "ACTIVATE", "ACTIVE"),
+    ("R08", "PREDECESSOR_VERIFIED", "REJECT", "REJECTED"),
+    ("R09", "ACTIVE", "MERGE", "MERGED"),
+    ("R10", "MERGED", "CLOSE", "CLOSED"),
+    ("R11", "DRAFT", "SUPERSEDE", "SUPERSEDED"),
+    ("R12", "REVIEWED", "SUPERSEDE", "SUPERSEDED"),
+    ("R13", "OWNER_APPROVED", "SUPERSEDE", "SUPERSEDED"),
+    ("R14", "PREDECESSOR_VERIFIED", "SUPERSEDE", "SUPERSEDED"),
+    ("R15", "ACTIVE", "SUPERSEDE", "SUPERSEDED"),
+    ("R16", "DRAFT", "EXPIRE", "EXECUTION_EXPIRED"),
+    ("R17", "REVIEWED", "EXPIRE", "EXECUTION_EXPIRED"),
+    ("R18", "OWNER_APPROVED", "EXPIRE", "EXECUTION_EXPIRED"),
+    ("R19", "PREDECESSOR_VERIFIED", "EXPIRE", "EXECUTION_EXPIRED"),
+    ("R20", "ACTIVE", "EXPIRE", "EXECUTION_EXPIRED"),
+    ("R21", "EXECUTION_EXPIRED", "CLOSE", "CLOSED"),
+)
 SCHEMA_DOCUMENT_KEYS = {
     "$defs",
     "activation",
@@ -332,7 +412,164 @@ def validate_authority_bytes(data: bytes, expected_schema: str) -> dict[str, Any
 
 
 def matrix_findings(document: dict[str, Any]) -> list[str]:
-    """Return typed matrix defects; the next RED checkpoint defines completeness."""
+    """Return closed, exhaustive, exact transition matrix defects without throwing."""
 
-    del document
-    return ["MATRIX_VALIDATOR_NOT_IMPLEMENTED"]
+    findings: list[str] = []
+    try:
+        if set(document) != {"activation", "evaluationOutcomes", "matrices", "schemaVersion"}:
+            return ["Matrix document root is not closed."]
+        if (
+            document["schemaVersion"] != "AuthorityCoreStateMatricesV1"
+            or document["activation"] != "NONE"
+        ):
+            findings.append("Matrix version or nonactivation binding mismatches.")
+        outcomes = document["evaluationOutcomes"]
+        if outcomes != ["UNVERIFIED", "CONFLICTING"]:
+            findings.append("Evaluation outcomes are incomplete or reordered.")
+        expected = {
+            "DecisionManifestLifecycleV1": (DECISION_STATES, DECISION_OPERATIONS, DECISION_EDGES),
+            "ActiveProgramRouteLifecycleV1": (ROUTE_STATES, ROUTE_OPERATIONS, ROUTE_EDGES),
+        }
+        matrices = document["matrices"]
+        if not isinstance(matrices, list) or len(matrices) != 2:
+            return [*findings, "Matrix collection is incomplete."]
+        if {item.get("id") for item in matrices if isinstance(item, dict)} != set(expected):
+            findings.append("Matrix identifiers are incomplete or duplicate.")
+        for item in matrices:
+            if not isinstance(item, dict) or item.get("id") not in expected:
+                findings.append("Matrix entry is malformed or unknown.")
+                continue
+            _matrix_item_findings(item, *expected[item["id"]], findings)
+    except (AttributeError, KeyError, TypeError, ValueError):
+        findings.append("Matrix document is malformed and rejected.")
+    return findings
+
+
+def _expected_actor(operation: str) -> str:
+    return {
+        "REVIEW": "ELIGIBLE_NON_AUTHOR_REVIEWER",
+        "OWNER_APPROVE": "OWNER",
+        "REJECT": "OWNER",
+        "MERGE": "MERGE_COORDINATOR",
+        "ACCEPT_CURRENT": "AUTHORITY_EVALUATOR",
+        "SUPERSEDE": "OWNER",
+        "REVOKE": "OWNER",
+        "EXPIRE": "AUTHORITY_EVALUATOR",
+        "VERIFY_PREDECESSOR": "AUTHORITY_EVALUATOR",
+        "ACTIVATE": "OWNER",
+        "CLOSE": "ADMINISTRATIVE_CLOSER",
+    }[operation]
+
+
+def _matrix_item_findings(
+    item: dict[str, Any],
+    states: tuple[str, ...],
+    operations: tuple[str, ...],
+    edges: tuple[tuple[str, str, str, str], ...],
+    findings: list[str],
+) -> None:
+    keys = {
+        "grid",
+        "id",
+        "illegalEffect",
+        "illegalRecovery",
+        "legalTransitions",
+        "operations",
+        "states",
+    }
+    if set(item) != keys:
+        findings.append(f"{item['id']} matrix is not closed.")
+    if item.get("states") != list(states) or item.get("operations") != list(operations):
+        findings.append(f"{item['id']} state or operation inventory is incomplete.")
+    if any(outcome in item.get("states", []) for outcome in ("UNVERIFIED", "CONFLICTING")):
+        findings.append(f"{item['id']} persists an evaluation outcome as a lifecycle state.")
+    if (
+        item.get("illegalEffect") != "NO_MUTATION_TYPED_ERROR"
+        or item.get("illegalRecovery") != "CORRECT_AND_RETRY_OR_CREATE_SUCCESSOR"
+    ):
+        findings.append(f"{item['id']} illegal transition effect or recovery mismatches.")
+    rows = item.get("legalTransitions")
+    if not isinstance(rows, list):
+        findings.append(f"{item['id']} legal rows are malformed.")
+        return
+    ids = [row.get("id") for row in rows if isinstance(row, dict)]
+    if len(ids) != len(set(ids)):
+        findings.append(f"{item['id']} has a duplicate transition row.")
+    expected_by_id = {edge[0]: edge for edge in edges}
+    if set(ids) != set(expected_by_id):
+        findings.append(f"{item['id']} legal transition inventory is incomplete.")
+    row_keys = {
+        "actorClass",
+        "effect",
+        "id",
+        "idempotency",
+        "immutability",
+        "legal",
+        "operation",
+        "prohibitedSubstitutes",
+        "recoveryClassification",
+        "rejectionBehavior",
+        "requiredGuards",
+        "requiredTypedReferences",
+        "sourceState",
+        "targetState",
+    }
+    for row in rows:
+        if not isinstance(row, dict):
+            findings.append(f"{item['id']} row is malformed.")
+            continue
+        missing = row_keys - set(row)
+        if "actorClass" in missing:
+            findings.append(f"{item['id']} row actor is missing.")
+        if set(row) != row_keys:
+            findings.append(f"{item['id']} row is not closed.")
+            continue
+        if "*" in row.values():
+            findings.append(f"{item['id']} wildcard transition is prohibited.")
+        edge = expected_by_id.get(row["id"])
+        if (
+            edge is None
+            or tuple(row[name] for name in ("id", "sourceState", "operation", "targetState"))
+            != edge
+        ):
+            findings.append(f"{item['id']} illegal or mismatched legal transition row.")
+            continue
+        row_id, _, operation, target = edge
+        if row["actorClass"] != _expected_actor(operation):
+            findings.append(f"{row_id} actor mismatch.")
+        if row["requiredGuards"] != [f"GUARD_{row_id}_TYPED_REFERENCES"]:
+            findings.append(f"{row_id} guard mismatch.")
+        if row["requiredTypedReferences"] != ["ContentAddressedReferenceV1"]:
+            findings.append(f"{row_id} typed reference mismatch.")
+        if row["effect"] != f"EFFECT_{row_id}_{target}":
+            findings.append(f"{row_id} effect mismatch.")
+        recovery = (
+            "ADMINISTRATIVE_CLOSEOUT" if operation == "CLOSE" else "CREATE_HASH_LINKED_SUCCESSOR"
+        )
+        if row["recoveryClassification"] != recovery:
+            findings.append(f"{row_id} recovery mismatch.")
+        if row["idempotency"] != "IDEMPOTENT_SAME_BYTES":
+            findings.append(f"{row_id} idempotency mismatch.")
+        if row["immutability"] != "HASH_LINKED_SUCCESSOR_ONLY":
+            findings.append(f"{row_id} immutability mismatch.")
+        if row["rejectionBehavior"] != "NO_MUTATION_TYPED_ERROR":
+            findings.append(f"{row_id} rejection mismatch.")
+        if row["prohibitedSubstitutes"] != ["ISSUE", "COMMENT", "FILE", "FIXTURE", "TEST", "CI"]:
+            findings.append(f"{row_id} prohibited substitutes mismatch.")
+        if row["legal"] is not True:
+            findings.append(f"{row_id} legal classification mismatch.")
+    expected_grid = {state: {operation: "ILLEGAL" for operation in operations} for state in states}
+    for row_id, source, operation, _ in edges:
+        expected_grid[source][operation] = row_id
+    grid = item.get("grid")
+    if not isinstance(grid, dict) or set(grid) != set(states):
+        findings.append(f"{item['id']} grid is incomplete.")
+        return
+    for state in states:
+        if not isinstance(grid[state], dict) or set(grid[state]) != set(operations):
+            findings.append(f"{item['id']} grid cell inventory is incomplete.")
+            continue
+        for operation in operations:
+            if grid[state][operation] != expected_grid[state][operation]:
+                kind = "illegal" if expected_grid[state][operation] == "ILLEGAL" else "legal"
+                findings.append(f"{item['id']} {kind} grid classification mismatches.")
