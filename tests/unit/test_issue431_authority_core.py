@@ -8,6 +8,7 @@ from pathlib import Path
 import pytest
 
 from scripts.quality import check_stage8_docs as stage8
+from scripts.quality import issue431_authority_core as authority
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -60,3 +61,53 @@ def test_child_a_branch_is_stage8_eligible(monkeypatch: pytest.MonkeyPatch) -> N
     stage8.check_stage_marker_and_branch(failures)
 
     assert failures == []
+
+
+def test_canonical_bytes_are_ascii_stable_and_member_sorted() -> None:
+    assert authority.canonical_bytes({"z": True, "a": [1, "ASCII"]}) == (
+        b'{"a":[1,"ASCII"],"z":true}'
+    )
+
+
+@pytest.mark.parametrize(
+    ("value", "code"),
+    [
+        ({"value": 1.0}, "FLOAT_PROHIBITED"),
+        ({"value": float("nan")}, "NON_FINITE_NUMBER"),
+        ({"value": float("inf")}, "NON_FINITE_NUMBER"),
+        ({"value": "caf\u00e9"}, "NON_ASCII_STRING"),
+        ({"value": [0] * 129}, "COLLECTION_LIMIT"),
+    ],
+)
+def test_canonical_bytes_fail_closed(value: object, code: str) -> None:
+    with pytest.raises(authority.AuthorityValidationError) as caught:
+        authority.canonical_bytes(value)
+
+    assert caught.value.code == code
+
+
+@pytest.mark.parametrize(
+    ("data", "code"),
+    [
+        (b"\xff", "INVALID_UTF8"),
+        (b'{"a":1,"a":2}', "DUPLICATE_MEMBER"),
+        (b'{"a":', "MALFORMED_JSON"),
+        (b'{"value":NaN}', "NON_FINITE_NUMBER"),
+        (b'{"value":1.0}', "FLOAT_PROHIBITED"),
+        (b' {"a":1}', "NONCANONICAL_BYTES"),
+        (b"[" * 13 + b"]" * 13, "DEPTH_LIMIT"),
+        (b'"' + b"a" * 131_073 + b'"', "SIZE_LIMIT"),
+    ],
+)
+def test_parser_rejects_malformed_or_noncanonical_bytes(data: bytes, code: str) -> None:
+    with pytest.raises(authority.AuthorityValidationError) as caught:
+        authority.validate_authority_bytes(data, "MasterProgramAuthorityDecisionV1")
+
+    assert caught.value.code == code
+
+
+def test_parser_rejects_an_unsupported_future_schema_before_semantic_use() -> None:
+    with pytest.raises(authority.AuthorityValidationError) as caught:
+        authority.validate_authority_bytes(b"{}", "MasterProgramAuthorityDecisionV2")
+
+    assert caught.value.code == "UNSUPPORTED_VERSION"
