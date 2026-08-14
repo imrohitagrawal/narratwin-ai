@@ -30,6 +30,7 @@ SUPPORTED_SCHEMAS = {
     "ActiveProgramRouteV1": "docs/governance/schemas/active-program-route-v1.schema.json",
 }
 MATRIX_PATH = "docs/governance/authority-core-state-matrices-v1.json"
+FALSE_AUTHORITY_SOURCES = ("ISSUE", "COMMENT", "FILE", "FIXTURE", "TEST", "CI")
 DECISION_STATES = (
     "PROPOSED",
     "REVIEWED",
@@ -506,6 +507,20 @@ def lineage_findings(objects: list[dict[str, Any]]) -> list[str]:
             findings.append("Successor revision is not exactly predecessor plus one.")
         _lineage_transition_findings(predecessor, value, findings)
     return findings
+
+
+def authority_effect_findings(source: str, claimed_effect: str) -> list[str]:
+    """Return AK-001 false-authority defects; tests define the next behavior slice."""
+
+    del source, claimed_effect
+    return ["AUTHORITY_EFFECT_VALIDATOR_NOT_IMPLEMENTED"]
+
+
+def repository_findings(root: Path = ROOT) -> list[str]:
+    """Return exact Child A repository defects; tests define the next gate slice."""
+
+    del root
+    return ["REPOSITORY_GATE_NOT_IMPLEMENTED"]
 
 
 def _lineage_transition_findings(
