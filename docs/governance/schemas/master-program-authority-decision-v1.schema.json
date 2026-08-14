@@ -1,0 +1,75 @@
+{
+  "schemaDocumentVersion": "NarraTwinClosedSchemaDocumentV1",
+  "contractVersion": "MasterProgramAuthorityDecisionV1",
+  "canonicalProfile": "NarraTwinAuthorityCanonicalJsonV1",
+  "closed": true,
+  "activation": "NONE",
+  "$defs": {
+    "reference": {
+      "type": "object",
+      "closed": true,
+      "required": ["referenceType", "schemaVersion", "sha256", "subject"],
+      "properties": {
+        "referenceType": {"type": "string", "pattern": "[A-Z][A-Z0-9_]{1,63}"},
+        "schemaVersion": {"type": "string", "const": "ContentAddressedReferenceV1"},
+        "sha256": {"type": "sha256"},
+        "subject": {"type": "string", "pattern": "[a-z][a-z0-9-]{1,31}:[a-z0-9][a-z0-9.-]{0,127}"}
+      }
+    },
+    "validity": {
+      "type": "object",
+      "closed": true,
+      "required": ["expiresAt", "notBefore", "revocationReference", "revokedAt"],
+      "properties": {
+        "expiresAt": {"type": "timestamp"},
+        "notBefore": {"type": "timestamp"},
+        "revocationReference": {"type": "nullable", "item": {"$ref": "reference"}},
+        "revokedAt": {"type": "nullable", "item": {"type": "timestamp"}}
+      }
+    },
+    "transition": {
+      "type": "object",
+      "closed": true,
+      "required": ["actorClass", "effectId", "guardReferences", "idempotency", "operation", "prohibitedSubstitutes", "recoveryClass", "rejectionBehavior", "sourceState", "targetState"],
+      "properties": {
+        "actorClass": {"type": "string", "enum": ["OWNER", "ELIGIBLE_NON_AUTHOR_REVIEWER", "MERGE_COORDINATOR", "AUTHORITY_EVALUATOR", "ADMINISTRATIVE_CLOSER"]},
+        "effectId": {"type": "string", "pattern": "[A-Z][A-Z0-9_]{2,63}"},
+        "guardReferences": {"type": "array", "minItems": 1, "maxItems": 16, "unique": true, "items": {"$ref": "reference"}},
+        "idempotency": {"type": "string", "enum": ["IDEMPOTENT_SAME_BYTES", "REJECT_DUPLICATE"]},
+        "operation": {"type": "string", "pattern": "[A-Z][A-Z0-9_]{1,63}"},
+        "prohibitedSubstitutes": {"type": "array", "minItems": 1, "maxItems": 16, "unique": true, "items": {"type": "string", "pattern": "[A-Z][A-Z0-9_]{1,63}"}},
+        "recoveryClass": {"type": "string", "enum": ["CORRECT_AND_RETRY", "CREATE_HASH_LINKED_SUCCESSOR", "ADMINISTRATIVE_CLOSEOUT", "NONE_TERMINAL"]},
+        "rejectionBehavior": {"type": "string", "enum": ["NO_MUTATION_TYPED_ERROR", "IDEMPOTENT_NOOP"]},
+        "sourceState": {"type": "string", "pattern": "[A-Z][A-Z0-9_]{1,63}"},
+        "targetState": {"type": "string", "pattern": "[A-Z][A-Z0-9_]{1,63}"}
+      }
+    },
+    "prohibited": {
+      "type": "array",
+      "exactItems": ["ACCEPT_AUTHORITY_FROM_CI", "ACCEPT_AUTHORITY_FROM_COMMENT", "ACCEPT_AUTHORITY_FROM_FILE", "ACCEPT_AUTHORITY_FROM_FIXTURE", "ACCEPT_AUTHORITY_FROM_ISSUE", "ACCEPT_AUTHORITY_FROM_TEST", "ACTIVATE_AUTHORITY", "AUDIT_SERVICE", "CAS_STORAGE", "CREDENTIAL_USE", "DEPLOYMENT", "EVIDENCE_CAPTURE", "EXTERNAL_EGRESS", "GITHUB_ACQUISITION", "HISTORICAL_RECONCILIATION", "INFRASTRUCTURE", "INTEGRATED_KERNEL", "KEY_MANAGEMENT", "MEDIA_GENERATION", "PRODUCTION_OPERATION", "PROVIDER_CALL", "PUBLICATION", "RELEASE", "RUNTIME_SERVICE", "SPENDING"]
+    }
+  },
+  "root": {
+    "type": "object",
+    "closed": true,
+    "required": ["contentHash", "decisionAction", "generationId", "lifecycleState", "objectId", "predecessorContentHash", "priorDecision", "programId", "prohibitedCapabilities", "repository", "revision", "schemaVersion", "selectedManifest", "sourceProposal", "transition", "validity"],
+    "properties": {
+      "contentHash": {"type": "sha256"},
+      "decisionAction": {"type": "string", "enum": ["REJECT_MANIFEST", "REVOKE_CURRENT", "SELECT_MANIFEST", "SUPERSEDE_CURRENT"]},
+      "generationId": {"type": "string", "pattern": "generation:[a-z0-9][a-z0-9.-]{0,63}"},
+      "lifecycleState": {"type": "string", "enum": ["PROPOSED", "REVIEWED", "OWNER_APPROVED", "MERGED", "ACCEPTED_CURRENT", "REJECTED", "SUPERSEDED", "REVOKED", "EXPIRED"]},
+      "objectId": {"type": "string", "pattern": "decision:[a-z0-9][a-z0-9.-]{0,127}"},
+      "predecessorContentHash": {"type": "nullable", "item": {"type": "sha256"}},
+      "priorDecision": {"type": "nullable", "item": {"$ref": "reference"}},
+      "programId": {"type": "string", "const": "narratwin-cut1"},
+      "prohibitedCapabilities": {"$ref": "prohibited"},
+      "repository": {"type": "string", "const": "github.com/imrohitagrawal/narratwin-ai"},
+      "revision": {"type": "integer", "minimum": 1},
+      "schemaVersion": {"type": "string", "const": "MasterProgramAuthorityDecisionV1"},
+      "selectedManifest": {"type": "nullable", "item": {"$ref": "reference"}},
+      "sourceProposal": {"$ref": "reference"},
+      "transition": {"type": "nullable", "item": {"$ref": "transition"}},
+      "validity": {"$ref": "validity"}
+    }
+  }
+}

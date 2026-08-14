@@ -4,7 +4,10 @@
 from __future__ import annotations
 
 import json
+import hashlib
 import math
+import re
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -26,6 +29,18 @@ SUPPORTED_SCHEMAS = {
     "Cut1AuthorityManifestV1": "docs/governance/schemas/cut1-authority-manifest-v1.schema.json",
     "ActiveProgramRouteV1": "docs/governance/schemas/active-program-route-v1.schema.json",
 }
+SCHEMA_DOCUMENT_KEYS = {
+    "$defs",
+    "activation",
+    "canonicalProfile",
+    "closed",
+    "contractVersion",
+    "root",
+    "schemaDocumentVersion",
+}
+SHA256_PATTERN = re.compile(r"[0-9a-f]{64}")
+GIT_SHA_PATTERN = re.compile(r"[0-9a-f]{40}")
+TIMESTAMP_PATTERN = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z")
 PATHS = (
     "docs/governance/preflights/issue-431.json",
     "docs/governance/AUTHORITY_CORE_SCHEMAS_AND_STATE_MATRICES_V1.md",
@@ -144,6 +159,159 @@ def _parse_json(data: bytes) -> Any:
     return value
 
 
+def _read_schema(path: Path, expected_schema: str) -> dict[str, Any]:
+    try:
+        value = json.loads(
+            path.read_text(encoding="utf-8"), object_pairs_hook=_reject_duplicate_members
+        )
+    except (OSError, UnicodeError, json.JSONDecodeError) as error:
+        raise AuthorityValidationError("SCHEMA_UNAVAILABLE") from error
+    if not isinstance(value, dict) or set(value) != SCHEMA_DOCUMENT_KEYS:
+        raise AuthorityValidationError("SCHEMA_DOCUMENT_OPEN")
+    if (
+        value["schemaDocumentVersion"] != "NarraTwinClosedSchemaDocumentV1"
+        or value["contractVersion"] != expected_schema
+        or value["canonicalProfile"] != "NarraTwinAuthorityCanonicalJsonV1"
+        or value["closed"] is not True
+        or value["activation"] != "NONE"
+    ):
+        raise AuthorityValidationError("SCHEMA_DOCUMENT_MISMATCH")
+    return value
+
+
+def _wrong_type(value: Any, expected: str) -> None:
+    actual = type(value).__name__
+    raise AuthorityValidationError("WRONG_SCALAR_TYPE", f"expected {expected}, got {actual}")
+
+
+def _validate_descriptor(
+    value: Any, descriptor: dict[str, Any], definitions: dict[str, Any]
+) -> None:
+    if "$ref" in descriptor:
+        reference = descriptor["$ref"]
+        if reference not in definitions:
+            raise AuthorityValidationError("SCHEMA_REFERENCE_UNKNOWN")
+        _validate_descriptor(value, definitions[reference], definitions)
+        return
+    kind = descriptor.get("type")
+    if kind == "nullable":
+        if value is not None:
+            _validate_descriptor(value, descriptor["item"], definitions)
+        return
+    if kind in {"string", "sha256", "gitSha", "timestamp"}:
+        if not isinstance(value, str):
+            _wrong_type(value, "string")
+        if kind == "sha256" and not SHA256_PATTERN.fullmatch(value):
+            raise AuthorityValidationError("SHA256_FORMAT")
+        if kind == "gitSha" and not GIT_SHA_PATTERN.fullmatch(value):
+            raise AuthorityValidationError("GIT_SHA_FORMAT")
+        if kind == "timestamp":
+            if not TIMESTAMP_PATTERN.fullmatch(value):
+                raise AuthorityValidationError("TIMESTAMP_FORMAT")
+            try:
+                datetime.strptime(value, "%Y-%m-%dT%H:%M:%SZ")
+            except ValueError as error:
+                raise AuthorityValidationError("TIMESTAMP_FORMAT") from error
+        pattern = descriptor.get("pattern")
+        if pattern and re.fullmatch(pattern, value) is None:
+            raise AuthorityValidationError("STRING_PATTERN")
+    elif kind == "integer":
+        if type(value) is not int:
+            _wrong_type(value, "integer")
+        if value < descriptor.get("minimum", -(2**63)) or value > descriptor.get(
+            "maximum", 2**63 - 1
+        ):
+            raise AuthorityValidationError("INTEGER_RANGE")
+    elif kind == "boolean":
+        if type(value) is not bool:
+            _wrong_type(value, "boolean")
+    elif kind == "object":
+        if not isinstance(value, dict):
+            _wrong_type(value, "object")
+        properties = descriptor.get("properties", {})
+        unknown = set(value) - set(properties)
+        missing = set(descriptor.get("required", ())) - set(value)
+        if unknown:
+            raise AuthorityValidationError("UNKNOWN_MEMBER", sorted(unknown)[0])
+        if missing:
+            raise AuthorityValidationError("MISSING_MEMBER", sorted(missing)[0])
+        if descriptor.get("closed") is not True:
+            raise AuthorityValidationError("SCHEMA_OBJECT_OPEN")
+        for key, item in value.items():
+            _validate_descriptor(item, properties[key], definitions)
+    elif kind == "array":
+        if not isinstance(value, list):
+            _wrong_type(value, "array")
+        if "exactItems" in descriptor and value != descriptor["exactItems"]:
+            raise AuthorityValidationError("EXACT_COLLECTION_MISMATCH")
+        if len(value) < descriptor.get("minItems", 0) or len(value) > descriptor.get(
+            "maxItems", MAX_COLLECTION
+        ):
+            raise AuthorityValidationError("COLLECTION_LIMIT")
+        if descriptor.get("unique") and len({canonical_bytes(item) for item in value}) != len(
+            value
+        ):
+            raise AuthorityValidationError("DUPLICATE_COLLECTION_ITEM")
+        if "items" in descriptor:
+            for item in value:
+                _validate_descriptor(item, descriptor["items"], definitions)
+    else:
+        raise AuthorityValidationError("SCHEMA_TYPE_UNKNOWN")
+    if "const" in descriptor and value != descriptor["const"]:
+        raise AuthorityValidationError("CONST_MISMATCH")
+    if "enum" in descriptor and value not in descriptor["enum"]:
+        raise AuthorityValidationError("ENUM_MISMATCH")
+
+
+def content_hash(value: dict[str, Any]) -> str:
+    if not isinstance(value.get("schemaVersion"), str):
+        raise AuthorityValidationError("SCHEMA_VERSION_MISMATCH")
+    unsigned = dict(value)
+    unsigned.pop("contentHash", None)
+    domain = b"NARRATWIN-AUTHORITY-V1\0" + value["schemaVersion"].encode("ascii") + b"\0"
+    return hashlib.sha256(domain + canonical_bytes(unsigned)).hexdigest()
+
+
+def _validate_identity(value: dict[str, Any], expected_schema: str) -> None:
+    incoming = value.get("schemaVersion")
+    if incoming != expected_schema:
+        prefix = expected_schema.removesuffix("V1")
+        if incoming == f"{prefix}V0":
+            raise AuthorityValidationError("DOWNGRADE_REJECTED")
+        if isinstance(incoming, str) and incoming.startswith(prefix):
+            raise AuthorityValidationError("UNSUPPORTED_VERSION")
+        raise AuthorityValidationError("SCHEMA_VERSION_MISMATCH")
+    if value.get("repository") != "github.com/imrohitagrawal/narratwin-ai":
+        raise AuthorityValidationError("REPOSITORY_MISMATCH")
+    if value.get("programId") != "narratwin-cut1":
+        raise AuthorityValidationError("PROGRAM_MISMATCH")
+    generation = value.get("generationId")
+    if (
+        not isinstance(generation, str)
+        or re.fullmatch(r"generation:[a-z0-9][a-z0-9.-]{0,63}", generation) is None
+    ):
+        raise AuthorityValidationError("GENERATION_MISMATCH")
+
+
+def _validate_semantics(value: dict[str, Any]) -> None:
+    if value.get("contentHash") != content_hash(value):
+        raise AuthorityValidationError("CONTENT_HASH_MISMATCH")
+    revision = value["revision"]
+    predecessor = value["predecessorContentHash"]
+    transition = value["transition"]
+    if revision == 1 and (predecessor is not None or transition is not None):
+        raise AuthorityValidationError("GENESIS_LINK_MISMATCH")
+    if revision > 1 and (predecessor is None or transition is None):
+        raise AuthorityValidationError("PREDECESSOR_REQUIRED")
+    if predecessor == value["contentHash"]:
+        raise AuthorityValidationError("CYCLIC_LINK")
+    validity = value["validity"]
+    if validity["notBefore"] >= validity["expiresAt"]:
+        raise AuthorityValidationError("VALIDITY_ORDER")
+    if (validity["revokedAt"] is None) != (validity["revocationReference"] is None):
+        raise AuthorityValidationError("REVOCATION_LINK_MISMATCH")
+
+
 def validate_authority_bytes(data: bytes, expected_schema: str) -> dict[str, Any]:
     """Parse canonical bytes and validate them against one exact supported schema."""
 
@@ -155,4 +323,8 @@ def validate_authority_bytes(data: bytes, expected_schema: str) -> dict[str, Any
     schema_path = ROOT / SUPPORTED_SCHEMAS[expected_schema]
     if not schema_path.is_file():
         raise AuthorityValidationError("SCHEMA_UNAVAILABLE")
+    schema = _read_schema(schema_path, expected_schema)
+    _validate_identity(value, expected_schema)
+    _validate_descriptor(value, schema["root"], schema["$defs"])
+    _validate_semantics(value)
     return value
