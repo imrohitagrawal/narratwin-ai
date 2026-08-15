@@ -441,6 +441,11 @@ def content_hash(value: dict[str, Any]) -> str:
     return hashlib.sha256(domain + canonical_bytes(unsigned)).hexdigest()
 
 
+def _guard_scalar_hash(reference_type: str, value: str) -> str:
+    domain = b"NARRATWIN-AUTHORITY-GUARD-V1\0" + reference_type.encode("ascii") + b"\0"
+    return hashlib.sha256(domain + value.encode("ascii")).hexdigest()
+
+
 def _validate_identity(value: dict[str, Any], expected_schema: str) -> None:
     incoming = value.get("schemaVersion")
     if incoming != expected_schema:
@@ -486,6 +491,8 @@ def _validate_semantics(value: dict[str, Any]) -> None:
         raise AuthorityValidationError("VALIDITY_ORDER")
     if (validity["revokedAt"] is None) != (validity["revocationReference"] is None):
         raise AuthorityValidationError("REVOCATION_LINK_MISMATCH")
+    if (value["lifecycleState"] == "REVOKED") != (validity["revokedAt"] is not None):
+        raise AuthorityValidationError("REVOCATION_STATE_MISMATCH")
     schema = value["schemaVersion"]
     if schema == "MasterProgramAuthorityDecisionV1":
         selected = value["decisionAction"] in {"SELECT_MANIFEST", "SUPERSEDE_CURRENT"}
@@ -662,7 +669,7 @@ def lineage_findings(objects: list[dict[str, Any]]) -> list[str]:
             findings.append("Successor immutable identity differs from predecessor.")
         if value.get("revision") != predecessor.get("revision", 0) + 1:
             findings.append("Successor revision is not exactly predecessor plus one.")
-        _lineage_transition_findings(predecessor, value, findings)
+        _lineage_transition_findings(predecessor, value, by_hash, findings)
         transition = value.get("transition")
         operation = transition.get("operation") if isinstance(transition, dict) else None
         if _stable_payload(predecessor, operation) != _stable_payload(value, operation):
@@ -735,19 +742,49 @@ def _cross_contract_findings(
                 )
         return target
 
+    def ancestor_in_state(value: dict[str, Any], state: str) -> dict[str, Any] | None:
+        current: dict[str, Any] | None = value
+        visited: set[str] = set()
+        while current is not None:
+            current_hash = current.get("contentHash")
+            if not isinstance(current_hash, str) or current_hash in visited:
+                return None
+            visited.add(current_hash)
+            if current.get("lifecycleState") == state:
+                return current
+            predecessor_hash = current.get("predecessorContentHash")
+            current = by_hash.get(predecessor_hash) if isinstance(predecessor_hash, str) else None
+        return None
+
     for value in objects:
         schema = value.get("schemaVersion")
         if schema == "MasterProgramAuthorityDecisionV1":
-            resolve(value, "selectedManifest")
+            selected_manifest = resolve(value, "selectedManifest")
+            if (
+                value.get("lifecycleState")
+                in {"ACCEPTED_CURRENT", "SUPERSEDED", "REVOKED", "EXPIRED"}
+                and selected_manifest is not None
+                and selected_manifest.get("lifecycleState") != "MERGED"
+            ):
+                findings.append(
+                    f"Cross-contract selected manifest lifecycle is not MERGED for {value.get('objectId')}."
+                )
             resolve(value, "priorDecision")
         elif schema == "Cut1AuthorityManifestV1":
             decision = resolve(value, "decisionBacklink")
             if decision is not None:
+                if decision.get("lifecycleState") != "ACCEPTED_CURRENT":
+                    findings.append(
+                        f"Cross-contract accepted decision lifecycle mismatches for {value.get('objectId')}."
+                    )
+                accepted_ancestor = ancestor_in_state(value, "ACCEPTED_CURRENT")
                 selected = decision.get("selectedManifest")
                 if (
-                    not isinstance(selected, dict)
+                    accepted_ancestor is None
+                    or not isinstance(selected, dict)
                     or selected.get("subject") != value.get("objectId")
-                    or selected.get("sha256") != value.get("predecessorContentHash")
+                    or selected.get("sha256")
+                    != accepted_ancestor.get("predecessorContentHash")
                 ):
                     findings.append(
                         f"Cross-contract reciprocal decision/manifest linkage disagrees for {value.get('objectId')}."
@@ -756,6 +793,14 @@ def _cross_contract_findings(
             decision = resolve(value, "decision")
             manifest = resolve(value, "selectedManifest")
             if decision is not None and manifest is not None:
+                if decision.get("lifecycleState") != "ACCEPTED_CURRENT":
+                    findings.append(
+                        f"Cross-contract accepted decision lifecycle mismatches for {value.get('objectId')}."
+                    )
+                if manifest.get("lifecycleState") != "ACCEPTED_CURRENT":
+                    findings.append(
+                        f"Cross-contract accepted manifest lifecycle mismatches for {value.get('objectId')}."
+                    )
                 backlink = manifest.get("decisionBacklink")
                 if (
                     not isinstance(backlink, dict)
@@ -1412,7 +1457,10 @@ def _route_findings(root: Path) -> list[str]:
 
 
 def _lineage_transition_findings(
-    predecessor: dict[str, Any], successor: dict[str, Any], findings: list[str]
+    predecessor: dict[str, Any],
+    successor: dict[str, Any],
+    by_hash: dict[str, dict[str, Any]],
+    findings: list[str],
 ) -> None:
     transition = successor.get("transition")
     if not isinstance(transition, dict):
@@ -1508,13 +1556,72 @@ def _lineage_transition_findings(
         for guard in guards:
             if isinstance(guard, dict) and isinstance(guard.get("referenceType"), str):
                 guards_by_type[guard["referenceType"]] = guard
+    if row_id == "D09":
+        accepted_guard = guards_by_type.get("ACCEPTED_SUCCESSOR")
+        accepted_hash = accepted_guard.get("sha256") if accepted_guard is not None else None
+        accepted_successor = by_hash.get(accepted_hash) if isinstance(accepted_hash, str) else None
+        stable = ("schemaVersion", "repository", "programId", "generationId")
+        if (
+            accepted_successor is None
+            or accepted_successor.get("lifecycleState") != "ACCEPTED_CURRENT"
+            or accepted_successor.get("objectId") == predecessor.get("objectId")
+            or any(accepted_successor.get(key) != predecessor.get(key) for key in stable)
+        ):
+            findings.append("Transition accepted successor does not resolve to the exact accepted object.")
+        else:
+            expected_hashes["ACCEPTED_SUCCESSOR"] = accepted_successor.get("contentHash")
+            if successor.get("schemaVersion") == "MasterProgramAuthorityDecisionV1":
+                prior = accepted_successor.get("priorDecision")
+                if (
+                    not isinstance(prior, dict)
+                    or prior.get("sha256") != predecessor.get("contentHash")
+                    or prior.get("subject") != predecessor.get("objectId")
+                ):
+                    findings.append(
+                        "Transition accepted successor does not carry the reciprocal prior-decision linkage."
+                    )
+                expected_hashes["RECIPROCAL_LINKAGE"] = predecessor.get("contentHash")
+            elif successor.get("schemaVersion") == "Cut1AuthorityManifestV1":
+                current_decision = predecessor.get("decisionBacklink")
+                replacement_decision = accepted_successor.get("decisionBacklink")
+                replacement_hash = (
+                    replacement_decision.get("sha256")
+                    if isinstance(replacement_decision, dict)
+                    else None
+                )
+                replacement = by_hash.get(replacement_hash) if isinstance(replacement_hash, str) else None
+                prior = replacement.get("priorDecision") if isinstance(replacement, dict) else None
+                if (
+                    not isinstance(current_decision, dict)
+                    or not isinstance(replacement_decision, dict)
+                    or not isinstance(replacement, dict)
+                    or not isinstance(prior, dict)
+                    or replacement_decision.get("subject") != replacement.get("objectId")
+                    or prior.get("sha256") != current_decision.get("sha256")
+                    or prior.get("subject") != current_decision.get("subject")
+                ):
+                    findings.append(
+                        "Transition accepted successor does not carry the reciprocal manifest-pair linkage."
+                    )
+                else:
+                    expected_hashes["RECIPROCAL_LINKAGE"] = current_decision.get("sha256")
+    if row_id == "D10":
+        validity = successor.get("validity")
+        revocation_reference = (
+            validity.get("revocationReference") if isinstance(validity, dict) else None
+        )
+        revoked_at = validity.get("revokedAt") if isinstance(validity, dict) else None
+        if not isinstance(revocation_reference, dict) or not isinstance(revoked_at, str):
+            findings.append("Transition revocation representation is absent or incomplete.")
+        else:
+            expected_hashes["REVOCATION_REFERENCE"] = revocation_reference.get("sha256")
+            expected_hashes["EFFECTIVE_TIME"] = _guard_scalar_hash("EFFECTIVE_TIME", revoked_at)
     for reference_type, expected_hash in expected_hashes.items():
         if reference_type in guards_by_type and guards_by_type[reference_type].get(
             "sha256"
         ) != expected_hash:
-            findings.append(
-                f"Transition guard hash {reference_type} does not bind the governed field."
-            )
+            label = reference_type.lower().replace("_", " ")
+            findings.append(f"Transition guard hash {label} does not bind the governed field.")
 
 
 def _matrix_item_findings(

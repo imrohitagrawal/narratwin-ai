@@ -67,7 +67,7 @@ The closed transition record contains `actorClass`, `effectId`, `guardReferences
 
 These references bind content identities only. They do not authorize a provider, credential, expense, presenter, narration, render, or execution.
 
-Linking is directional to avoid a content-hash cycle: the decision selects the exact merged manifest hash; the accepted manifest successor backlinks the exact accepted decision hash; and the route references that accepted decision/manifest pair. Bundle validation resolves every governed hash and subject, requires common repository/program/generation identity, and requires the accepted manifest backlink to agree with the route decision. It does not select a current set or establish evidence trust.
+Linking is directional to avoid a content-hash cycle: an accepted or post-accepted decision selects the exact `MERGED` manifest revision; the accepted manifest successor backlinks the exact `ACCEPTED_CURRENT` decision revision; and every route revision references that exact `ACCEPTED_CURRENT` decision/manifest pair. The manifest backlink remains unchanged in terminal successors. Bundle validation therefore walks a terminal manifest back to its `ACCEPTED_CURRENT` ancestor and compares the decision's selected-manifest hash with that ancestor's `MERGED` predecessor, not with the terminal revision's immediate predecessor. Every governed hash and subject resolves with common repository/program/generation identity. These checks do not select a current set or establish evidence trust.
 
 ### 3.4 Route-only fields
 
@@ -105,6 +105,8 @@ SHA-256 is the algorithm specified by NIST FIPS 180-4, August 2015 final/update 
 
 For each successor, `predecessorContentHash` must resolve to exactly one validated prior object with the same stable identity and revision exactly one lower. Two different bytes at one immutable identity/revision are a collision; two successors of one predecessor are a fork; self-reference or any cycle is illegal. Repair creates a new hash-linked successor; it never edits accepted bytes.
 
+For a scalar-backed transition guard, the guard SHA-256 is lower-case hexadecimal over `UTF8("NARRATWIN-AUTHORITY-GUARD-V1") || 0x00 || UTF8(referenceType) || 0x00 || UTF8(exactScalar)`. D10 uses this rule for `EFFECTIVE_TIME` and the exact `revokedAt` timestamp; `REVOCATION_REFERENCE` equals the `validity.revocationReference.sha256`. A `REVOKED` object requires both revocation fields, while every other lifecycle state requires both to remain null.
+
 ## 6. Compatibility
 
 - Supported negotiation is an exact match to one of the three V1 names. There is no “latest,” wildcard, prefix, or best-effort selection.
@@ -128,8 +130,8 @@ The machine-readable matrix is `DecisionManifestLifecycleV1`. Each guard means a
 | D06 | OWNER_APPROVED → REJECT → REJECTED | OWNER | Exact-byte OWNER withdrawal/rejection reference | Create terminal REJECTED successor | Hash-linked successor |
 | D07 | MERGED → ACCEPT_CURRENT → ACCEPTED_CURRENT | Authority acceptor | Exact merged decision, selected-manifest link, validity, and conflict-free evaluation references | Create ACCEPTED_CURRENT successor; no source alone activates | Hash-linked successor |
 | D08 | MERGED → REJECT → REJECTED | OWNER | Exact merged bytes plus OWNER rejection reference | Create terminal REJECTED successor | Hash-linked successor |
-| D09 | ACCEPTED_CURRENT → SUPERSEDE → SUPERSEDED | Authority acceptor | Exact current object plus approved successor reference | Create SUPERSEDED successor linked to replacement | Hash-linked successor |
-| D10 | ACCEPTED_CURRENT → REVOKE → REVOKED | OWNER | Exact current object plus revocation reason/reference | Create REVOKED successor | Hash-linked successor |
+| D09 | ACCEPTED_CURRENT → SUPERSEDE → SUPERSEDED | Authority acceptor | `CURRENT_HASH` equals the source hash; `ACCEPTED_SUCCESSOR` resolves to a distinct same-contract `ACCEPTED_CURRENT` object with common repository/program/generation; `RECIPROCAL_LINKAGE` equals the replacement decision's `priorDecision` link to the current decision, or for a manifest pair the replacement decision's prior link to the current manifest's decision backlink | Create SUPERSEDED successor linked to replacement | Hash-linked successor |
+| D10 | ACCEPTED_CURRENT → REVOKE → REVOKED | OWNER | `CURRENT_HASH` equals the source hash; `REVOCATION_REFERENCE` equals `validity.revocationReference.sha256`; `EFFECTIVE_TIME` is the domain-separated hash of exact `revokedAt`; both revocation fields are mandatory | Create REVOKED successor | Hash-linked successor |
 | D11 | ACCEPTED_CURRENT → EXPIRE → EXPIRED | Expiry evaluator | Exact current object plus deterministic expiry-time reference | Create EXPIRED successor | Hash-linked successor |
 
 `REJECT` has no legal source after `ACCEPTED_CURRENT`. All terminal-state operations are illegal. Illegal cells have effect `NO_MUTATION_TYPED_ERROR` and recovery `CORRECT_AND_RETRY_OR_CREATE_SUCCESSOR`.
