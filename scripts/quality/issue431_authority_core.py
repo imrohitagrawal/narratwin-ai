@@ -259,10 +259,10 @@ def _check_value(value: Any, depth: int) -> None:
         code = "FLOAT_PROHIBITED" if math.isfinite(value) else "NON_FINITE_NUMBER"
         raise AuthorityValidationError(code)
     if isinstance(value, str):
-        if len(value.encode("utf-8")) > MAX_STRING:
-            raise AuthorityValidationError("STRING_LIMIT")
         if any(ord(char) < 0x20 or ord(char) > 0x7E for char in value):
             raise AuthorityValidationError("NON_ASCII_STRING")
+        if len(value.encode("utf-8")) > MAX_STRING:
+            raise AuthorityValidationError("STRING_LIMIT")
         return
     if isinstance(value, list):
         if len(value) > MAX_COLLECTION:
