@@ -123,7 +123,7 @@ def authority_object(schema: str) -> dict[str, object]:
                 name: reference("POLICY", f"{name.lower()}:fixture-only") for name in names
             },
             capabilityClassifications={name: "DEFERRED" for name in names},
-            decisionBacklink=reference("DECISION", "decision:fixture-only"),
+            decisionBacklink=None,
             sourceProposal=reference("PROPOSAL", "proposal:fixture-only"),
         )
     else:
@@ -480,13 +480,39 @@ def successor(predecessor: dict[str, object], edge: tuple[str, str, str, str]) -
     value["lifecycleState"] = row["targetState"]
     reference_types = row["requiredTypedReferences"]
     assert isinstance(reference_types, list)
+    source_hash_references = {
+        "ACTIVE_HASH",
+        "APPROVED_HASH",
+        "CANDIDATE_HASH",
+        "CURRENT_HASH",
+        "EXPIRED_HASH",
+        "MERGED_HASH",
+        "REVIEWED_HASH",
+        "ROUTE_HASH",
+        "SOURCE_HASH",
+        "VERIFIED_HASH",
+    }
+
+    def guard(kind: str) -> dict[str, str]:
+        item = reference(kind, f"guard:{str(row['id']).lower()}-{kind.lower().replace('_', '-')}")
+        if kind in source_hash_references:
+            predecessor_hash = predecessor["contentHash"]
+            assert isinstance(predecessor_hash, str)
+            item["sha256"] = predecessor_hash
+        elif kind == "ACCEPTED_DECISION":
+            decision = value["decision"]
+            assert isinstance(decision, dict)
+            item["sha256"] = decision["sha256"]
+        elif kind == "ACCEPTED_MANIFEST":
+            manifest = value["selectedManifest"]
+            assert isinstance(manifest, dict)
+            item["sha256"] = manifest["sha256"]
+        return item
+
     value["transition"] = {
         "actorClass": row["actorClass"],
         "effectId": row["effect"],
-        "guardReferences": [
-            reference(kind, f"guard:{str(row['id']).lower()}-{kind.lower().replace('_', '-')}")
-            for kind in reference_types
-        ],
+        "guardReferences": [guard(kind) for kind in reference_types],
         "idempotency": row["idempotency"],
         "operation": row["operation"],
         "prohibitedSubstitutes": row["prohibitedSubstitutes"],
@@ -509,6 +535,96 @@ def test_hash_linked_successor_lineage_is_immutable_and_transition_bound() -> No
     reviewed = successor(genesis, DECISION_EDGES[0])
 
     assert authority.lineage_findings([genesis, reviewed]) == []
+
+
+def test_transition_guard_hash_binds_the_exact_predecessor_bytes() -> None:
+    genesis = authority_object("MasterProgramAuthorityDecisionV1")
+    reviewed = successor(genesis, DECISION_EDGES[0])
+    assert authority.lineage_findings([genesis, reviewed]) == []
+
+    reviewed["transition"]["guardReferences"][0]["sha256"] = "f" * 64  # type: ignore[index]
+    reviewed["contentHash"] = authority.content_hash(reviewed)
+
+    assert any(
+        "guard hash" in item.lower() for item in authority.lineage_findings([genesis, reviewed])
+    )
+
+
+def _manifest_lineage_through_merge() -> list[dict[str, object]]:
+    proposed = authority_object("Cut1AuthorityManifestV1")
+    reviewed = successor(proposed, DECISION_EDGES[0])
+    approved = successor(reviewed, DECISION_EDGES[2])
+    merged = successor(approved, DECISION_EDGES[4])
+    return [proposed, reviewed, approved, merged]
+
+
+def _decision_lineage_for_manifest(manifest: dict[str, object]) -> list[dict[str, object]]:
+    proposed = authority_object("MasterProgramAuthorityDecisionV1")
+    selected = proposed["selectedManifest"]
+    assert isinstance(selected, dict)
+    selected["sha256"] = manifest["contentHash"]
+    selected["subject"] = manifest["objectId"]
+    proposed["contentHash"] = authority.content_hash(proposed)
+    reviewed = successor(proposed, DECISION_EDGES[0])
+    approved = successor(reviewed, DECISION_EDGES[2])
+    merged = successor(approved, DECISION_EDGES[4])
+    accepted = successor(merged, DECISION_EDGES[6])
+    return [proposed, reviewed, approved, merged, accepted]
+
+
+def test_manifest_backlink_is_lifecycle_safe_and_added_only_at_acceptance() -> None:
+    manifests = _manifest_lineage_through_merge()
+    decision = _decision_lineage_for_manifest(manifests[-1])[-1]
+    accepted = successor(manifests[-1], DECISION_EDGES[6])
+    accepted["decisionBacklink"] = reference("DECISION", str(decision["objectId"]))
+    accepted["decisionBacklink"]["sha256"] = decision["contentHash"]  # type: ignore[index]
+    accepted["contentHash"] = authority.content_hash(accepted)
+
+    assert authority.lineage_findings([*manifests, accepted]) == []
+
+    missing = deepcopy(accepted)
+    missing["decisionBacklink"] = None
+    _assert_semantic_rejection(missing, "MANIFEST_BACKLINK_STATE_MISMATCH")
+
+
+def _linked_contract_objects() -> list[dict[str, object]]:
+    manifests = _manifest_lineage_through_merge()
+    decisions = _decision_lineage_for_manifest(manifests[-1])
+    accepted_manifest = successor(manifests[-1], DECISION_EDGES[6])
+    accepted_manifest["decisionBacklink"] = reference(
+        "DECISION", str(decisions[-1]["objectId"])
+    )
+    accepted_manifest["decisionBacklink"]["sha256"] = decisions[-1]["contentHash"]  # type: ignore[index]
+    accepted_manifest["contentHash"] = authority.content_hash(accepted_manifest)
+    route = authority_object("ActiveProgramRouteV1")
+    route["decision"] = reference("DECISION", str(decisions[-1]["objectId"]))
+    route["decision"]["sha256"] = decisions[-1]["contentHash"]  # type: ignore[index]
+    route["selectedManifest"] = reference("MANIFEST", str(accepted_manifest["objectId"]))
+    route["selectedManifest"]["sha256"] = accepted_manifest["contentHash"]  # type: ignore[index]
+    route["contentHash"] = authority.content_hash(route)
+    return [*manifests, *decisions, accepted_manifest, route]
+
+
+def test_decision_manifest_and_route_hashes_agree_across_contracts() -> None:
+    linked = _linked_contract_objects()
+    assert authority.lineage_findings(linked) == []
+
+    manifest = linked[3]
+    decision = linked[8]
+    route = linked[-1]
+    selected = decision["selectedManifest"]
+    assert isinstance(selected, dict)
+    selected["sha256"] = "f" * 64
+    decision["contentHash"] = authority.content_hash(decision)
+    route_decision = route["decision"]
+    assert isinstance(route_decision, dict)
+    route_decision["sha256"] = decision["contentHash"]
+    route["contentHash"] = authority.content_hash(route)
+
+    assert any(
+        "cross-contract" in item.lower() and str(manifest["objectId"]) in item
+        for item in authority.lineage_findings(linked)
+    )
 
 
 def test_hash_linked_successor_cannot_mutate_stable_payload_even_with_a_valid_hash() -> None:
@@ -713,6 +829,14 @@ def test_cross_field_and_lifecycle_mutations_fail_closed(
     _assert_semantic_rejection(value, code)
 
 
+def test_set_like_route_paths_must_be_lexicographically_sorted() -> None:
+    route = authority_object("ActiveProgramRouteV1")
+    route["allowedPaths"] = ["z/example.invalid", "a/example.invalid"]
+    route["maxPathCount"] = 2
+
+    _assert_semantic_rejection(route, "COLLECTION_ORDER_MISMATCH")
+
+
 def test_fixture_catalog_is_executable_not_metadata_only() -> None:
     corpus = json.loads(
         (ROOT / "tests/fixtures/authority-core-v1-cases.json").read_text(encoding="utf-8")
@@ -720,6 +844,18 @@ def test_fixture_catalog_is_executable_not_metadata_only() -> None:
 
     assert all(isinstance(case.get("probe"), str) for case in corpus["cases"])
     assert authority.fixture_execution_findings(corpus) == []
+
+
+def test_every_fixture_expectation_is_verified_by_its_behavior_probe() -> None:
+    corpus = json.loads(
+        (ROOT / "tests/fixtures/authority-core-v1-cases.json").read_text(encoding="utf-8")
+    )
+
+    for index, case in enumerate(corpus["cases"]):
+        mutated = deepcopy(corpus)
+        mutated["cases"][index]["expect"] = "WRONG_EXPECTATION"
+        findings = authority.fixture_execution_findings(mutated)
+        assert any(case["id"] in finding for finding in findings), case["id"]
 
 
 def test_schema_reads_are_bounded_before_parsing(tmp_path: Path) -> None:
