@@ -191,6 +191,26 @@ def test_canonical_bytes_are_ascii_stable_and_member_sorted() -> None:
     )
 
 
+def test_content_hash_uses_the_exact_owner_approved_domain() -> None:
+    value = authority_object("MasterProgramAuthorityDecisionV1")
+    unsigned = dict(value)
+    unsigned.pop("contentHash")
+    expected = hashlib.sha256(
+        b"NARRATWIN-AUTHORITY-OBJECT-V1\0"
+        + b"MasterProgramAuthorityDecisionV1\0"
+        + authority.canonical_bytes(unsigned)
+    ).hexdigest()
+
+    assert authority.content_hash(value) == expected
+
+
+def test_canonical_bytes_reject_a_string_above_2048_utf8_bytes() -> None:
+    with pytest.raises(authority.AuthorityValidationError) as caught:
+        authority.canonical_bytes({"value": "a" * 2049})
+
+    assert caught.value.code == "STRING_LIMIT"
+
+
 @pytest.mark.parametrize(
     ("value", "code"),
     [
@@ -289,6 +309,41 @@ ROUTE_EDGES = [
     ("R21", "EXECUTION_EXPIRED", "CLOSE", "CLOSED"),
 ]
 
+EXACT_ACTORS = {
+    "D01": "INDEPENDENT_REVIEWER",
+    "D02": "REPOSITORY_OWNER",
+    "D03": "REPOSITORY_OWNER",
+    "D04": "REPOSITORY_OWNER",
+    "D05": "MERGE_COORDINATOR",
+    "D06": "REPOSITORY_OWNER",
+    "D07": "AUTHORITY_ACCEPTOR",
+    "D08": "REPOSITORY_OWNER",
+    "D09": "AUTHORITY_ACCEPTOR",
+    "D10": "REPOSITORY_OWNER",
+    "D11": "EXPIRY_EVALUATOR",
+    "R01": "INDEPENDENT_REVIEWER",
+    "R02": "REPOSITORY_OWNER",
+    "R03": "REPOSITORY_OWNER",
+    "R04": "REPOSITORY_OWNER",
+    "R05": "PREDECESSOR_VERIFIER",
+    "R06": "REPOSITORY_OWNER",
+    "R07": "ROUTE_ACTIVATOR",
+    "R08": "REPOSITORY_OWNER",
+    "R09": "MERGE_COORDINATOR",
+    "R10": "CLOSEOUT_COORDINATOR",
+    "R11": "REPOSITORY_OWNER",
+    "R12": "REPOSITORY_OWNER",
+    "R13": "REPOSITORY_OWNER",
+    "R14": "REPOSITORY_OWNER",
+    "R15": "REPOSITORY_OWNER",
+    "R16": "EXPIRY_EVALUATOR",
+    "R17": "EXPIRY_EVALUATOR",
+    "R18": "EXPIRY_EVALUATOR",
+    "R19": "EXPIRY_EVALUATOR",
+    "R20": "EXPIRY_EVALUATOR",
+    "R21": "CLOSEOUT_COORDINATOR",
+}
+
 
 def transition_row(edge: tuple[str, str, str, str]) -> dict[str, object]:
     row_id, source, operation, target = edge
@@ -363,6 +418,35 @@ def test_state_matrices_are_complete_closed_and_exact() -> None:
     assert authority.matrix_findings(matrix_document()) == []
 
 
+def test_persisted_matrix_uses_exact_approved_actor_classes_and_typed_guards() -> None:
+    document = json.loads(
+        (ROOT / "docs/governance/authority-core-state-matrices-v1.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    rows = {
+        row["id"]: row
+        for matrix_item in document["matrices"]
+        for row in matrix_item["legalTransitions"]
+    }
+
+    assert {row_id: row["actorClass"] for row_id, row in rows.items()} == EXACT_ACTORS
+    assert rows["D07"]["requiredTypedReferences"] == [
+        "MERGE_REFERENCE",
+        "MERGED_MAIN_CHECK",
+        "ISSUE_DISPOSITION",
+        "VALIDITY_OBSERVATION",
+        "DECISION_MANIFEST_LINKS",
+    ]
+    assert rows["R07"]["requiredTypedReferences"] == [
+        "ACCEPTED_DECISION",
+        "ACCEPTED_MANIFEST",
+        "PREDECESSOR_VERIFICATION",
+        "ROUTE_BOUNDARIES",
+        "EXECUTION_DEADLINE_OBSERVATION",
+    ]
+
+
 @pytest.mark.parametrize(
     ("mutator", "finding"),
     [
@@ -431,6 +515,18 @@ def test_hash_linked_successor_lineage_is_immutable_and_transition_bound() -> No
     reviewed = successor(genesis, DECISION_EDGES[0])
 
     assert authority.lineage_findings([genesis, reviewed]) == []
+
+
+def test_hash_linked_successor_cannot_mutate_stable_payload_even_with_a_valid_hash() -> None:
+    genesis = authority_object("MasterProgramAuthorityDecisionV1")
+    reviewed = successor(genesis, DECISION_EDGES[0])
+    reviewed["sourceProposal"] = reference("PROPOSAL", "proposal:mutated")
+    reviewed["contentHash"] = authority.content_hash(reviewed)
+
+    assert any(
+        "immutable payload" in item.lower()
+        for item in authority.lineage_findings([genesis, reviewed])
+    )
 
 
 @pytest.mark.parametrize(
@@ -560,3 +656,101 @@ def test_closed_schema_rejects_identity_type_closure_and_hash_mutations(
         )
 
     assert caught.value.code == code
+
+
+def _assert_semantic_rejection(value: dict[str, object], code: str) -> None:
+    value["contentHash"] = authority.content_hash(value)
+    schema = value["schemaVersion"]
+    assert isinstance(schema, str)
+    with pytest.raises(authority.AuthorityValidationError) as caught:
+        authority.validate_authority_bytes(authority.canonical_bytes(value), schema)
+
+    assert caught.value.code == code
+
+
+@pytest.mark.parametrize(
+    ("schema", "mutator", "code"),
+    [
+        (
+            "MasterProgramAuthorityDecisionV1",
+            lambda value: value.update(decisionAction="REJECT_MANIFEST"),
+            "ACTION_LINK_MISMATCH",
+        ),
+        (
+            "MasterProgramAuthorityDecisionV1",
+            lambda value: value.update(lifecycleState="ACCEPTED_CURRENT"),
+            "INITIAL_STATE_MISMATCH",
+        ),
+        (
+            "MasterProgramAuthorityDecisionV1",
+            lambda value: value.update(selectedManifest=reference("POLICY", "wrong:fixture")),
+            "REFERENCE_TYPE_MISMATCH",
+        ),
+        (
+            "ActiveProgramRouteV1",
+            lambda value: value.update(lifecycleState="ACTIVE"),
+            "ROUTE_PR_STATE_MISMATCH",
+        ),
+        (
+            "ActiveProgramRouteV1",
+            lambda value: value.update(lifecycleState="EXECUTION_EXPIRED"),
+            "EXECUTION_EXPIRY_MISMATCH",
+        ),
+        (
+            "ActiveProgramRouteV1",
+            lambda value: value.update(allowedPaths=["../outside"]),
+            "REPOSITORY_PATH_INVALID",
+        ),
+        (
+            "ActiveProgramRouteV1",
+            lambda value: value.update(maxPathCount=2),
+            "PATH_COUNT_MISMATCH",
+        ),
+    ],
+)
+def test_cross_field_and_lifecycle_mutations_fail_closed(
+    schema: str,
+    mutator: Callable[[dict[str, object]], object],
+    code: str,
+) -> None:
+    value = authority_object(schema)
+    mutator(value)
+
+    _assert_semantic_rejection(value, code)
+
+
+def test_fixture_catalog_is_executable_not_metadata_only() -> None:
+    corpus = json.loads(
+        (ROOT / "tests/fixtures/authority-core-v1-cases.json").read_text(encoding="utf-8")
+    )
+
+    assert all(isinstance(case.get("probe"), str) for case in corpus["cases"])
+    assert authority.fixture_execution_findings(corpus) == []
+
+
+def test_schema_reads_are_bounded_before_parsing(tmp_path: Path) -> None:
+    oversized = tmp_path / "oversized.schema.json"
+    oversized.write_bytes(b" " * 131_073 + b"{}")
+
+    with pytest.raises(authority.AuthorityValidationError) as caught:
+        authority._read_schema(oversized, "MasterProgramAuthorityDecisionV1")
+
+    assert caught.value.code == "SIZE_LIMIT"
+
+
+def test_schema_and_matrix_bytes_have_independently_frozen_identities() -> None:
+    expected_paths = {
+        *authority.SUPPORTED_SCHEMAS.values(),
+        authority.MATRIX_PATH,
+    }
+
+    assert set(authority.ARTIFACT_SHA256) == expected_paths
+    for relative, expected in authority.ARTIFACT_SHA256.items():
+        assert hashlib.sha256((ROOT / relative).read_bytes()).hexdigest() == expected
+
+
+def test_quality_gate_records_the_actual_durable_red_commit_only() -> None:
+    text = (ROOT / "docs/QUALITY_GATES.md").read_text(encoding="utf-8")
+
+    assert "b7f122f704dc2168c64202c090e3e11164c67e80" in text
+    assert "b7f122fe3aebbf958bb96950a569a3a818dbf046" not in text
