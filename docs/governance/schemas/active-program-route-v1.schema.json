@@ -20,7 +20,7 @@
       "required": ["expiresAt", "notBefore", "revocationReference", "revokedAt"],
       "properties": {
         "expiresAt": {"type": "timestamp"}, "notBefore": {"type": "timestamp"},
-        "revocationReference": {"type": "nullable", "item": {"$ref": "reference"}},
+        "revocationReference": {"type": "nullable", "item": {"$ref": "reference", "referenceType": "REVOCATION"}},
         "revokedAt": {"type": "nullable", "item": {"type": "timestamp"}}
       }
     },

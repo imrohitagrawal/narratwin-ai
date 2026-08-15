@@ -33,9 +33,9 @@ SUPPORTED_SCHEMAS = {
 }
 MATRIX_PATH = "docs/governance/authority-core-state-matrices-v1.json"
 ARTIFACT_SHA256 = {
-    "docs/governance/schemas/master-program-authority-decision-v1.schema.json": "9bd0d4328b5966ba1029f0d62032fe540d1d838386ed52eeee24490d702626cc",
-    "docs/governance/schemas/cut1-authority-manifest-v1.schema.json": "455a051ed9cc966b68457149a0a9f3883b3f0fea251c5120970e3af5e99abfa5",
-    "docs/governance/schemas/active-program-route-v1.schema.json": "e7a094a4351ab4342eef9db68868a3204395443e259c7d9184108f8a98033175",
+    "docs/governance/schemas/master-program-authority-decision-v1.schema.json": "59b5c761fbf772cac9780dcbb3028eea0a2059f54fc5fc7b82ccac4ae8ee8872",
+    "docs/governance/schemas/cut1-authority-manifest-v1.schema.json": "3bde62593557058250258bed96eb5e51185873cf6e8504f3cc362ee9cf8f1513",
+    "docs/governance/schemas/active-program-route-v1.schema.json": "6723637f628bb484598c37a73174e520c6fa9f5cc8458b9c79d509c6c2bd8cb2",
     MATRIX_PATH: "8bf72f95444887b0a0c92f7cdb31dc00ffbf86409504060fa3029321b08d7206",
 }
 FALSE_AUTHORITY_SOURCES = ("ISSUE", "COMMENT", "FILE", "FIXTURE", "TEST", "CI")
@@ -491,6 +491,7 @@ def _validate_semantics(value: dict[str, Any]) -> None:
         raise AuthorityValidationError("VALIDITY_ORDER")
     if (validity["revokedAt"] is None) != (validity["revocationReference"] is None):
         raise AuthorityValidationError("REVOCATION_LINK_MISMATCH")
+    _require_reference(validity["revocationReference"], "REVOCATION", nullable=True)
     if (value["lifecycleState"] == "REVOKED") != (validity["revokedAt"] is not None):
         raise AuthorityValidationError("REVOCATION_STATE_MISMATCH")
     schema = value["schemaVersion"]
@@ -1556,6 +1557,31 @@ def _lineage_transition_findings(
         for guard in guards:
             if isinstance(guard, dict) and isinstance(guard.get("referenceType"), str):
                 guards_by_type[guard["referenceType"]] = guard
+    if row_id in {"R11", "R12", "R13", "R14", "R15"}:
+        route_reference = successor.get("supersededRoute")
+        replacement_hash = (
+            route_reference.get("sha256") if isinstance(route_reference, dict) else None
+        )
+        replacement = by_hash.get(replacement_hash) if isinstance(replacement_hash, str) else None
+        route_identity_fields = ("repository", "programId", "generationId")
+        if (
+            replacement is None
+            or replacement.get("schemaVersion") != "ActiveProgramRouteV1"
+            or replacement.get("lifecycleState") != "DRAFT"
+            or replacement.get("revision") != 1
+            or replacement.get("objectId") == predecessor.get("objectId")
+            or not isinstance(route_reference, dict)
+            or route_reference.get("subject") != replacement.get("objectId")
+            or any(
+                replacement.get(key) != predecessor.get(key)
+                for key in route_identity_fields
+            )
+        ):
+            findings.append(
+                "Transition replacement route does not resolve to the exact distinct DRAFT route."
+            )
+        else:
+            expected_hashes["REPLACEMENT_ROUTE"] = replacement.get("contentHash")
     if row_id == "D09":
         accepted_guard = guards_by_type.get("ACCEPTED_SUCCESSOR")
         accepted_hash = accepted_guard.get("sha256") if accepted_guard is not None else None

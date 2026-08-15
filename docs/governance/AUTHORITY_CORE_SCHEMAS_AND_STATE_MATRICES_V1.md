@@ -47,7 +47,7 @@ All root and nested objects reject unknown members. All listed root members are 
 | `transition` | `null` for revision 1; otherwise the exact closed transition record. |
 | `prohibitedCapabilities` | The exact ordered denial set embedded in each schema. Omission, addition, or reordering fails. |
 
-`ContentAddressedReferenceV1` is a closed four-member value: `referenceType`, `schemaVersion`, `sha256`, and `subject`. It is only a content pointer. Production, signer trust, freshness, capture, and authenticity are Child B responsibilities.
+`ContentAddressedReferenceV1` is a closed four-member value: `referenceType`, `schemaVersion`, `sha256`, and `subject`. It is only a content pointer. Every non-null `validity.revocationReference` has exact `referenceType = REVOCATION`; a generic policy, issue, comment, file, fixture, test, or CI reference is not a substitute. Production, signer trust, freshness, capture, authenticity, and revocation processing are Child B responsibilities.
 
 The closed transition record contains `actorClass`, `effectId`, `guardReferences`, `idempotency`, `operation`, `prohibitedSubstitutes`, `recoveryClass`, `rejectionBehavior`, `sourceState`, and `targetState`.
 
@@ -71,7 +71,7 @@ Linking is directional to avoid a content-hash cycle: an accepted or post-accept
 
 ### 3.4 Route-only fields
 
-The route requires `controllerIssue`, `parentIssue`, `childIssue`, `branch`, `targetBranch`, state-bound `pullRequest`, `baseSha`, `predecessorMergeSha`, traversal-safe `allowedPaths`, exact `maxPathCount`, `maxChargedLines`, separate `focusedTestCommands` and `aggregateTestCommands`, `reviewerRoles`, typed `decision` and `selectedManifest`, nullable state-bound `supersededRoute`, and `executionWindow`. `targetBranch` is exactly `main`; reviewer roles are exactly OWNER, Principal Architect, Principal Test Engineer, and non-author.
+The route requires `controllerIssue`, `parentIssue`, `childIssue`, `branch`, `targetBranch`, state-bound `pullRequest`, `baseSha`, `predecessorMergeSha`, traversal-safe `allowedPaths`, exact `maxPathCount`, `maxChargedLines`, separate `focusedTestCommands` and `aggregateTestCommands`, `reviewerRoles`, typed `decision` and `selectedManifest`, nullable state-bound `supersededRoute`, and `executionWindow`. For R11–R15, `supersededRoute` and `REPLACEMENT_ROUTE` resolve the same exact, distinct revision-1 `DRAFT` `ActiveProgramRouteV1` object with matching repository, program, generation, hash, and subject; a missing, terminal, progressed, cross-generation, or self reference fails closed. This defines a replacement candidate and performs no Child C current-set selection. `targetBranch` is exactly `main`; reviewer roles are exactly OWNER, Principal Architect, Principal Test Engineer, and non-author.
 
 Schema definition never changes a route from `DRAFT`, and this repository contains no conforming route instance.
 
@@ -152,7 +152,7 @@ The machine-readable route matrix is `ActiveProgramRouteLifecycleV1`.
 | R08 | PREDECESSOR_VERIFIED → REJECT → REJECTED | OWNER | Exact route-byte rejection reference | Create REJECTED successor | Hash-linked successor |
 | R09 | ACTIVE → MERGE → MERGED | Merge coordinator | Exact-head merge reference within path, budget, test, and review boundaries | Create MERGED successor | Hash-linked successor |
 | R10 | MERGED → CLOSE → CLOSED | Closeout coordinator | Exact merge and terminal-check references | Create CLOSED successor; no execution effect | Administrative closeout |
-| R11–R15 | DRAFT, REVIEWED, OWNER_APPROVED, PREDECESSOR_VERIFIED, or ACTIVE → SUPERSEDE → SUPERSEDED | OWNER | Exact route plus replacement-route reference | Create SUPERSEDED successor | Hash-linked successor |
+| R11–R15 | DRAFT, REVIEWED, OWNER_APPROVED, PREDECESSOR_VERIFIED, or ACTIVE → SUPERSEDE → SUPERSEDED | OWNER | Exact route plus an exact distinct same-generation revision-1 DRAFT replacement-route reference | Create SUPERSEDED successor | Hash-linked successor |
 | R16–R20 | DRAFT, REVIEWED, OWNER_APPROVED, PREDECESSOR_VERIFIED, or ACTIVE → EXPIRE → EXECUTION_EXPIRED | Expiry evaluator | Exact route and deterministic execution-expiry reference | Create EXECUTION_EXPIRED successor and prohibit governed mutation | Hash-linked successor |
 | R21 | EXECUTION_EXPIRED → CLOSE → CLOSED | Closeout coordinator | Exact expired route plus administrative closeout references | Create CLOSED successor with no activation/execution effect | Administrative closeout |
 

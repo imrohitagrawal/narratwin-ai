@@ -16,7 +16,7 @@ Adopt exhaustive `DecisionManifestLifecycleV1` and `ActiveProgramRouteLifecycleV
 
 SHA-256 content identities use an explicit NarraTwin domain prefix and exclude only the `contentHash` member. Structural validation never accepts or activates authority.
 
-Cross-contract linkage is acyclic: an accepted decision selects merged-manifest bytes, an accepted manifest successor backlinks accepted-decision bytes, terminal manifest revisions retain that backlink through their acceptance ancestor, and a route binds that exact accepted pair. Governed subjects and hashes must resolve with identical repository, program, generation, and required lifecycle state. Set-like route arrays are lexicographically canonical; typed source-state, accepted-successor, reciprocal, revocation-reference, and effective-time guards bind their exact governed bytes or scalar.
+Cross-contract linkage is acyclic: an accepted decision selects merged-manifest bytes, an accepted manifest successor backlinks accepted-decision bytes, terminal manifest revisions retain that backlink through their acceptance ancestor, and a route binds that exact accepted pair. Governed subjects and hashes must resolve with identical repository, program, generation, and required lifecycle state. Route supersession resolves one distinct same-generation revision-1 DRAFT replacement route without selecting a Child C current set. Set-like route arrays are lexicographically canonical; typed source-state, accepted-successor, reciprocal, exact `REVOCATION`, and effective-time guards bind their exact governed bytes or scalar.
 
 ## Consequences
 
