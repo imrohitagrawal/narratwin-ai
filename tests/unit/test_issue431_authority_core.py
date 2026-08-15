@@ -627,6 +627,105 @@ def test_decision_manifest_and_route_hashes_agree_across_contracts() -> None:
     )
 
 
+def test_decision_acceptance_requires_the_selected_manifest_merged_revision() -> None:
+    proposed_manifest = authority_object("Cut1AuthorityManifestV1")
+    decisions = _decision_lineage_for_manifest(proposed_manifest)
+
+    assert any(
+        "selected manifest lifecycle" in item.lower()
+        for item in authority.lineage_findings([proposed_manifest, *decisions])
+    )
+
+
+def test_route_and_manifest_references_resolve_to_the_exact_accepted_pair() -> None:
+    manifests = _manifest_lineage_through_merge()
+    proposed_decision = authority_object("MasterProgramAuthorityDecisionV1")
+    selected = proposed_decision["selectedManifest"]
+    assert isinstance(selected, dict)
+    selected["sha256"] = manifests[-1]["contentHash"]
+    selected["subject"] = manifests[-1]["objectId"]
+    proposed_decision["contentHash"] = authority.content_hash(proposed_decision)
+    accepted_manifest = successor(manifests[-1], DECISION_EDGES[6])
+    accepted_manifest["decisionBacklink"] = reference(
+        "DECISION", str(proposed_decision["objectId"])
+    )
+    accepted_manifest["decisionBacklink"]["sha256"] = proposed_decision["contentHash"]  # type: ignore[index]
+    accepted_manifest["contentHash"] = authority.content_hash(accepted_manifest)
+    route = authority_object("ActiveProgramRouteV1")
+    route["decision"] = reference("DECISION", str(proposed_decision["objectId"]))
+    route["decision"]["sha256"] = proposed_decision["contentHash"]  # type: ignore[index]
+    route["selectedManifest"] = reference("MANIFEST", str(accepted_manifest["objectId"]))
+    route["selectedManifest"]["sha256"] = accepted_manifest["contentHash"]  # type: ignore[index]
+    route["contentHash"] = authority.content_hash(route)
+
+    assert any(
+        "accepted decision lifecycle" in item.lower()
+        for item in authority.lineage_findings(
+            [*manifests, proposed_decision, accepted_manifest, route]
+        )
+    )
+
+
+def test_terminal_manifest_backlink_resolves_through_acceptance_ancestor() -> None:
+    linked = _linked_contract_objects()
+    accepted_manifest = linked[-2]
+    expired_manifest = successor(accepted_manifest, DECISION_EDGES[10])
+
+    assert authority.lineage_findings([*linked[:-1], expired_manifest]) == []
+
+
+def _replacement_decision_lineage(
+    manifest: dict[str, object], current: dict[str, object]
+) -> list[dict[str, object]]:
+    proposed = authority_object("MasterProgramAuthorityDecisionV1")
+    proposed["objectId"] = "decision:replacement-fixture-only"
+    proposed["decisionAction"] = "SUPERSEDE_CURRENT"
+    proposed["priorDecision"] = reference("DECISION", str(current["objectId"]))
+    proposed["priorDecision"]["sha256"] = current["contentHash"]  # type: ignore[index]
+    selected = proposed["selectedManifest"]
+    assert isinstance(selected, dict)
+    selected["sha256"] = manifest["contentHash"]
+    selected["subject"] = manifest["objectId"]
+    proposed["contentHash"] = authority.content_hash(proposed)
+    reviewed = successor(proposed, DECISION_EDGES[0])
+    approved = successor(reviewed, DECISION_EDGES[2])
+    merged = successor(approved, DECISION_EDGES[4])
+    accepted = successor(merged, DECISION_EDGES[6])
+    return [proposed, reviewed, approved, merged, accepted]
+
+
+def test_decision_supersession_guards_bind_the_accepted_reciprocal_successor() -> None:
+    manifests = _manifest_lineage_through_merge()
+    current_lineage = _decision_lineage_for_manifest(manifests[-1])
+    replacement_lineage = _replacement_decision_lineage(manifests[-1], current_lineage[-1])
+    superseded = successor(current_lineage[-1], DECISION_EDGES[8])
+    guards = superseded["transition"]["guardReferences"]  # type: ignore[index]
+    by_type = {guard["referenceType"]: guard for guard in guards}
+    by_type["ACCEPTED_SUCCESSOR"]["sha256"] = replacement_lineage[-1]["contentHash"]
+    by_type["RECIPROCAL_LINKAGE"]["sha256"] = current_lineage[-1]["contentHash"]
+    superseded["contentHash"] = authority.content_hash(superseded)
+    objects = [*manifests, *current_lineage, *replacement_lineage, superseded]
+
+    assert authority.lineage_findings(objects) == []
+
+    by_type["ACCEPTED_SUCCESSOR"]["sha256"] = "f" * 64
+    superseded["contentHash"] = authority.content_hash(superseded)
+    assert any(
+        "accepted successor" in item.lower() for item in authority.lineage_findings(objects)
+    )
+
+
+def test_revocation_requires_representation_and_binds_both_exact_guards() -> None:
+    manifests = _manifest_lineage_through_merge()
+    decisions = _decision_lineage_for_manifest(manifests[-1])
+    revoked = successor(decisions[-1], DECISION_EDGES[9])
+
+    assert any(
+        "revocation representation" in item.lower()
+        for item in authority.lineage_findings([*manifests, *decisions, revoked])
+    )
+
+
 def test_hash_linked_successor_cannot_mutate_stable_payload_even_with_a_valid_hash() -> None:
     genesis = authority_object("MasterProgramAuthorityDecisionV1")
     reviewed = successor(genesis, DECISION_EDGES[0])
