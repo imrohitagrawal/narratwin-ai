@@ -1396,9 +1396,10 @@ capability.
 ## Issue #431 Child A authority-core gate
 
 The exact branch `cut1-process-431-authority-core-schemas-state-matrices` starts
-at `4d239942eeda0c0b6c385b2d85dae873af076aa6`, owns exactly the sixteen paths in
-`docs/governance/preflights/issue-431.json`, and permits at most 4,000 aggregate
-additions plus deletions. Commit `7a5594357c24ac864c850a2e1cb92f9cd8acb940`
+at `4d239942eeda0c0b6c385b2d85dae873af076aa6`, owns the original sixteen paths
+in `docs/governance/preflights/issue-431.json` plus the two exact Issue #427
+compatibility paths approved by OWNER comment `5301054923`, and permits at most
+4,000 aggregate additions plus deletions. Commit `7a5594357c24ac864c850a2e1cb92f9cd8acb940`
 is the preflight-only first commit. The following test/fixture-only commit
 `b7f122fe3aebbf958bb96950a569a3a818dbf046` records genuine RED route failures.
 
@@ -1407,6 +1408,8 @@ three closed V1 schemas, immutable hash-linked lineage, exhaustive legal and
 illegal lifecycle grids, exact actor/guard/effect/recovery rows, fixture-only
 boundaries, AK-001 false-authority refusal, and exact route/history/budget
 constraints. The Stage 8 gate invokes it on the Child A branch and after merge.
+The final correction pins the merged #427 head only for descendants containing
+the exact #427 merge; rewritten or pre-merge histories remain rejected.
 
 Required commands are the approved Issue #431 command matrix: focused Child A
 tests; full Stage 8 tests; guardrails; exact-base policy-only quality and Stage

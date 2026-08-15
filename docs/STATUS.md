@@ -19,8 +19,11 @@ Use it to answer:
   binds issue-body SHA-256
   `209d4833e655404d05db50f12b1e7d58c8b45bf50c2d33fe08a4964722cc6e72`, exact
   base/predecessor merge `4d239942eeda0c0b6c385b2d85dae873af076aa6`, branch
-  `cut1-process-431-authority-core-schemas-state-matrices`, sixteen paths and a
-  4,000-line charge ceiling. Its repository target is closed V1 decision,
+  `cut1-process-431-authority-core-schemas-state-matrices`, the original sixteen
+  paths and a 4,000-line charge ceiling. OWNER reset comment `5301054923` adds
+  only the two #427 frozen-head compatibility paths, making eighteen paths
+  without changing the base, branch, budget or nonactivation boundary. Its
+  repository target is closed V1 decision,
   manifest, and route schemas; exhaustive lifecycle matrices; canonical bytes;
   immutable hash links; adversarial fixtures; and documentation-quality
   enforcement for AK-001, AK-004 and AK-012. Structural validity creates no

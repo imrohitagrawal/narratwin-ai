@@ -125,7 +125,7 @@ SCHEMA_DOCUMENT_KEYS = {
 SHA256_PATTERN = re.compile(r"[0-9a-f]{64}")
 GIT_SHA_PATTERN = re.compile(r"[0-9a-f]{40}")
 TIMESTAMP_PATTERN = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z")
-PATHS = (
+ORIGINAL_PATHS = (
     "docs/governance/preflights/issue-431.json",
     "docs/governance/AUTHORITY_CORE_SCHEMAS_AND_STATE_MATRICES_V1.md",
     "docs/governance/schemas/master-program-authority-decision-v1.schema.json",
@@ -143,6 +143,11 @@ PATHS = (
     "docs/STATUS.md",
     "docs/TRACEABILITY.md",
 )
+AMENDMENT_PATHS = (
+    "scripts/quality/issue427_architecture_reset.py",
+    "tests/unit/test_issue427_architecture_reset.py",
+)
+PATHS = (*ORIGINAL_PATHS, *AMENDMENT_PATHS)
 
 
 class AuthorityValidationError(ValueError):
@@ -540,6 +545,7 @@ def repository_findings(root: Path = ROOT) -> list[str]:
         "docs/STAGE_ISSUE_PLAN.md",
         "docs/STATUS.md",
         "docs/TRACEABILITY.md",
+        *AMENDMENT_PATHS,
     }
     if required != set(PATHS):
         findings.append("Child A code-owned path inventory mismatches the approved route.")
@@ -553,8 +559,8 @@ def repository_findings(root: Path = ROOT) -> list[str]:
             preflight.get("schema_version") != "GovernancePreflightV1"
             or preflight.get("issue_number") != 431
             or preflight.get("branch") != BRANCH
-            or preflight.get("scope", {}).get("required") != list(PATHS)
-            or preflight.get("scope", {}).get("allowed_prefixes") != list(PATHS)
+            or preflight.get("scope", {}).get("required") != list(ORIGINAL_PATHS)
+            or preflight.get("scope", {}).get("allowed_prefixes") != list(ORIGINAL_PATHS)
         ):
             findings.append("Child A preflight binding or exact scope mismatches.")
         preflight_bytes = (root / "docs/governance/preflights/issue-431.json").read_bytes()
@@ -722,7 +728,7 @@ def _route_findings(root: Path) -> list[str]:
     changed = set(_git(root, "diff", "--name-only", f"{BASE}..HEAD", "--").splitlines())
     changed.update(_git(root, "diff", "--name-only", "HEAD", "--").splitlines())
     if changed != set(PATHS):
-        findings.append("Child A changed paths do not equal the sixteen-path approved scope.")
+        findings.append("Child A changed paths do not equal the eighteen-path amended scope.")
     charge = 0
     for line in _git(root, "diff", "--numstat", BASE, "--").splitlines():
         fields = line.split("\t")

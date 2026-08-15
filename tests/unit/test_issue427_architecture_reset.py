@@ -63,6 +63,21 @@ def test_current_main_route_reset_identities_are_exact() -> None:
         17_853,
         326,
     )
+    assert reset.MERGED_HEAD == "6635e98c0eb6f45d9b046da0f78e2f3d3adba236"
+    assert reset.MERGE_COMMIT == "4d239942eeda0c0b6c385b2d85dae873af076aa6"
+
+
+def test_serialized_successor_uses_only_the_merged_frozen_reset_head(tmp_path: Path) -> None:
+    source = Path(__file__).resolve().parents[2]
+    assert reset.ci_route_head(source) == reset.MERGED_HEAD
+    checkout = tmp_path / "premerge"
+    subprocess.run(
+        ["/usr/bin/git", "clone", "--quiet", "--no-local", str(source), str(checkout)], check=True
+    )
+    subprocess.run(
+        ["/usr/bin/git", "checkout", "--quiet", "--detach", reset.BASE], cwd=checkout, check=True
+    )
+    assert reset.ci_route_head(checkout) == reset.BASE
 
 
 def test_current_main_base_contains_the_reviewed_security_renewal() -> None:

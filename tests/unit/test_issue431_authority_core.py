@@ -33,6 +33,8 @@ PATHS = {
     "docs/STAGE_ISSUE_PLAN.md",
     "docs/STATUS.md",
     "docs/TRACEABILITY.md",
+    "scripts/quality/issue427_architecture_reset.py",
+    "tests/unit/test_issue427_architecture_reset.py",
 }
 PROHIBITED = [
     "ACCEPT_AUTHORITY_FROM_CI",
