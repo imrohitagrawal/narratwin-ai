@@ -714,6 +714,13 @@ def test_decision_supersession_guards_bind_the_accepted_reciprocal_successor() -
         "accepted successor" in item.lower() for item in authority.lineage_findings(objects)
     )
 
+    by_type["ACCEPTED_SUCCESSOR"]["sha256"] = replacement_lineage[-1]["contentHash"]
+    by_type["RECIPROCAL_LINKAGE"]["sha256"] = "f" * 64
+    superseded["contentHash"] = authority.content_hash(superseded)
+    assert any(
+        "reciprocal linkage" in item.lower() for item in authority.lineage_findings(objects)
+    )
+
 
 def test_revocation_requires_representation_and_binds_both_exact_guards() -> None:
     manifests = _manifest_lineage_through_merge()
@@ -724,6 +731,37 @@ def test_revocation_requires_representation_and_binds_both_exact_guards() -> Non
         "revocation representation" in item.lower()
         for item in authority.lineage_findings([*manifests, *decisions, revoked])
     )
+
+    revoked_at = "2026-08-16T00:00:00Z"
+    revoked["validity"]["revokedAt"] = revoked_at  # type: ignore[index]
+    revoked["validity"]["revocationReference"] = reference(  # type: ignore[index]
+        "REVOCATION", "revocation:fixture-only"
+    )
+    guards = revoked["transition"]["guardReferences"]  # type: ignore[index]
+    by_type = {guard["referenceType"]: guard for guard in guards}
+    by_type["REVOCATION_REFERENCE"]["sha256"] = revoked["validity"][  # type: ignore[index]
+        "revocationReference"
+    ]["sha256"]
+    by_type["EFFECTIVE_TIME"]["sha256"] = hashlib.sha256(
+        b"NARRATWIN-AUTHORITY-GUARD-V1\0EFFECTIVE_TIME\0" + revoked_at.encode("ascii")
+    ).hexdigest()
+    revoked["contentHash"] = authority.content_hash(revoked)
+    objects = [*manifests, *decisions, revoked]
+
+    assert authority.lineage_findings(objects) == []
+
+    by_type["REVOCATION_REFERENCE"]["sha256"] = "f" * 64
+    revoked["contentHash"] = authority.content_hash(revoked)
+    assert any(
+        "revocation reference" in item.lower() for item in authority.lineage_findings(objects)
+    )
+
+    by_type["REVOCATION_REFERENCE"]["sha256"] = revoked["validity"][  # type: ignore[index]
+        "revocationReference"
+    ]["sha256"]
+    by_type["EFFECTIVE_TIME"]["sha256"] = "f" * 64
+    revoked["contentHash"] = authority.content_hash(revoked)
+    assert any("effective time" in item.lower() for item in authority.lineage_findings(objects))
 
 
 def test_hash_linked_successor_cannot_mutate_stable_payload_even_with_a_valid_hash() -> None:
