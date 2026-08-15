@@ -13,7 +13,6 @@ import pytest
 from scripts.quality import check_stage8_docs as stage8
 from scripts.quality import issue431_authority_core as authority
 
-
 ROOT = Path(__file__).resolve().parents[2]
 BRANCH = "cut1-process-431-authority-core-schemas-state-matrices"
 PATHS = {
@@ -101,32 +100,35 @@ def authority_object(schema: str) -> dict[str, object]:
     if schema == "MasterProgramAuthorityDecisionV1":
         common.update(
             decisionAction="SELECT_MANIFEST",
+            effectiveAt="2026-08-15T00:00:00Z",
             priorDecision=None,
             selectedManifest=reference("MANIFEST", "manifest:fixture-only"),
             sourceProposal=reference("PROPOSAL", "proposal:fixture-only"),
         )
     elif schema == "Cut1AuthorityManifestV1":
+        names = (
+            "canonicalNarration",
+            "downstreamOrderPolicy",
+            "finalRenderPolicy",
+            "ownerAuthoritySource",
+            "presenterSelection",
+            "providerPolicy",
+            "rendererPolicy",
+            "revalidationPolicy",
+            "spendPolicy",
+            "supersededSourceSet",
+        )
         common.update(
             authorityValues={
-                name: reference("POLICY", f"{name.lower()}:fixture-only")
-                for name in (
-                    "canonicalNarration",
-                    "downstreamOrderPolicy",
-                    "finalRenderPolicy",
-                    "ownerAuthoritySource",
-                    "presenterSelection",
-                    "providerPolicy",
-                    "rendererPolicy",
-                    "revalidationPolicy",
-                    "spendPolicy",
-                    "supersededSourceSet",
-                )
+                name: reference("POLICY", f"{name.lower()}:fixture-only") for name in names
             },
+            capabilityClassifications={name: "DEFERRED" for name in names},
             decisionBacklink=reference("DECISION", "decision:fixture-only"),
             sourceProposal=reference("PROPOSAL", "proposal:fixture-only"),
         )
     else:
         common.update(
+            aggregateTestCommands=["make stage8-quality"],
             allowedPaths=["docs/example.invalid"],
             baseSha="2" * 40,
             branch="example-invalid-authority-route",
@@ -138,19 +140,20 @@ def authority_object(schema: str) -> dict[str, object]:
                 "expired": False,
                 "expiresAt": "2026-09-15T00:00:00Z",
             },
+            focusedTestCommands=["python3 -m pytest tests/unit/test_issue431_authority_core.py"],
             maxChargedLines=4000,
-            maxPathCount=16,
+            maxPathCount=1,
             parentIssue=426,
             predecessorMergeSha="3" * 40,
             pullRequest=None,
             reviewerRoles=["OWNER", "PRINCIPAL_ARCHITECT", "PRINCIPAL_TEST_ENGINEER", "NON_AUTHOR"],
             selectedManifest=reference("MANIFEST", "manifest:fixture-only"),
+            supersededRoute=None,
             targetBranch="main",
-            testCommands=["make stage8-quality"],
         )
     unsigned = dict(common)
     del unsigned["contentHash"]
-    domain = b"NARRATWIN-AUTHORITY-V1\0" + schema.encode("ascii") + b"\0"
+    domain = b"NARRATWIN-AUTHORITY-OBJECT-V1\0" + schema.encode("ascii") + b"\0"
     common["contentHash"] = hashlib.sha256(domain + authority.canonical_bytes(unsigned)).hexdigest()
     return common
 
@@ -347,21 +350,9 @@ EXACT_ACTORS = {
 
 def transition_row(edge: tuple[str, str, str, str]) -> dict[str, object]:
     row_id, source, operation, target = edge
-    actor = {
-        "REVIEW": "ELIGIBLE_NON_AUTHOR_REVIEWER",
-        "OWNER_APPROVE": "OWNER",
-        "REJECT": "OWNER",
-        "MERGE": "MERGE_COORDINATOR",
-        "ACCEPT_CURRENT": "AUTHORITY_EVALUATOR",
-        "SUPERSEDE": "OWNER",
-        "REVOKE": "OWNER",
-        "EXPIRE": "AUTHORITY_EVALUATOR",
-        "VERIFY_PREDECESSOR": "AUTHORITY_EVALUATOR",
-        "ACTIVATE": "OWNER",
-        "CLOSE": "ADMINISTRATIVE_CLOSER",
-    }[operation]
+    references = list(authority.ROW_REFERENCES[row_id])
     return {
-        "actorClass": actor,
+        "actorClass": EXACT_ACTORS[row_id],
         "effect": f"EFFECT_{row_id}_{target}",
         "id": row_id,
         "idempotency": "IDEMPOTENT_SAME_BYTES",
@@ -373,8 +364,8 @@ def transition_row(edge: tuple[str, str, str, str]) -> dict[str, object]:
             "ADMINISTRATIVE_CLOSEOUT" if operation == "CLOSE" else "CREATE_HASH_LINKED_SUCCESSOR"
         ),
         "rejectionBehavior": "NO_MUTATION_TYPED_ERROR",
-        "requiredGuards": [f"GUARD_{row_id}_TYPED_REFERENCES"],
-        "requiredTypedReferences": ["ContentAddressedReferenceV1"],
+        "requiredGuards": [f"REQUIRE_{item}" for item in references],
+        "requiredTypedReferences": references,
         "sourceState": source,
         "targetState": target,
     }
@@ -420,9 +411,7 @@ def test_state_matrices_are_complete_closed_and_exact() -> None:
 
 def test_persisted_matrix_uses_exact_approved_actor_classes_and_typed_guards() -> None:
     document = json.loads(
-        (ROOT / "docs/governance/authority-core-state-matrices-v1.json").read_text(
-            encoding="utf-8"
-        )
+        (ROOT / "docs/governance/authority-core-state-matrices-v1.json").read_text(encoding="utf-8")
     )
     rows = {
         row["id"]: row
@@ -489,10 +478,15 @@ def successor(predecessor: dict[str, object], edge: tuple[str, str, str, str]) -
     value["revision"] = revision + 1
     value["predecessorContentHash"] = predecessor["contentHash"]
     value["lifecycleState"] = row["targetState"]
+    reference_types = row["requiredTypedReferences"]
+    assert isinstance(reference_types, list)
     value["transition"] = {
         "actorClass": row["actorClass"],
         "effectId": row["effect"],
-        "guardReferences": [reference("GUARD", f"guard:{str(row['id']).lower()}")],
+        "guardReferences": [
+            reference(kind, f"guard:{str(row['id']).lower()}-{kind.lower().replace('_', '-')}")
+            for kind in reference_types
+        ],
         "idempotency": row["idempotency"],
         "operation": row["operation"],
         "prohibitedSubstitutes": row["prohibitedSubstitutes"],
@@ -739,14 +733,16 @@ def test_schema_reads_are_bounded_before_parsing(tmp_path: Path) -> None:
 
 
 def test_schema_and_matrix_bytes_have_independently_frozen_identities() -> None:
-    expected_paths = {
-        *authority.SUPPORTED_SCHEMAS.values(),
-        authority.MATRIX_PATH,
+    expected = {
+        "docs/governance/schemas/master-program-authority-decision-v1.schema.json": "9bd0d4328b5966ba1029f0d62032fe540d1d838386ed52eeee24490d702626cc",
+        "docs/governance/schemas/cut1-authority-manifest-v1.schema.json": "15ea469f3d63eb55cc9cd4c73bf0e81b3cbe6741265eca02af71a038a95256ea",
+        "docs/governance/schemas/active-program-route-v1.schema.json": "b5a6888784eae93cc690adfb880c3923914087aea4a8a3bdae07aae878399675",
+        "docs/governance/authority-core-state-matrices-v1.json": "8bf72f95444887b0a0c92f7cdb31dc00ffbf86409504060fa3029321b08d7206",
     }
 
-    assert set(authority.ARTIFACT_SHA256) == expected_paths
-    for relative, expected in authority.ARTIFACT_SHA256.items():
-        assert hashlib.sha256((ROOT / relative).read_bytes()).hexdigest() == expected
+    assert authority.ARTIFACT_SHA256 == expected
+    for relative, expected_hash in expected.items():
+        assert hashlib.sha256((ROOT / relative).read_bytes()).hexdigest() == expected_hash
 
 
 def test_quality_gate_records_the_actual_durable_red_commit_only() -> None:

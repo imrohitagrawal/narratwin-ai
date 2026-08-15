@@ -55,19 +55,21 @@ The closed transition record contains `actorClass`, `effectId`, `guardReferences
 
 - `sourceProposal`: required content-addressed proposal reference.
 - `decisionAction`: exactly `SELECT_MANIFEST`, `REJECT_MANIFEST`, `SUPERSEDE_CURRENT`, or `REVOKE_CURRENT`.
-- `selectedManifest`: nullable manifest reference; later integration must enforce action/state consistency.
+- `effectiveAt`: exact UTC decision-effect time.
+- `selectedManifest`: exact manifest reference if and only if the action selects or supersedes; `ACCEPTED_CURRENT` requires it.
 - `priorDecision`: nullable prior-decision reference used by supersession or revocation.
 
 ### 3.3 Manifest-only fields
 
 - `sourceProposal` and `decisionBacklink`: required proposal and decision references.
 - `authorityValues`: a closed object containing exactly ten content-addressed references: `canonicalNarration`, `downstreamOrderPolicy`, `finalRenderPolicy`, `ownerAuthoritySource`, `presenterSelection`, `providerPolicy`, `rendererPolicy`, `revalidationPolicy`, `spendPolicy`, and `supersededSourceSet`.
+- `capabilityClassifications`: the same ten closed keys, each exactly `PRESENT` or `DEFERRED`.
 
 These references bind content identities only. They do not authorize a provider, credential, expense, presenter, narration, render, or execution.
 
 ### 3.4 Route-only fields
 
-The route requires `controllerIssue`, `parentIssue`, `childIssue`, `branch`, `targetBranch`, `pullRequest`, `baseSha`, `predecessorMergeSha`, `allowedPaths`, `maxPathCount`, `maxChargedLines`, `testCommands`, `reviewerRoles`, `decision`, `selectedManifest`, and `executionWindow`. `targetBranch` is exactly `main`; reviewer roles are exactly OWNER, Principal Architect, Principal Test Engineer, and non-author.
+The route requires `controllerIssue`, `parentIssue`, `childIssue`, `branch`, `targetBranch`, state-bound `pullRequest`, `baseSha`, `predecessorMergeSha`, traversal-safe `allowedPaths`, exact `maxPathCount`, `maxChargedLines`, separate `focusedTestCommands` and `aggregateTestCommands`, `reviewerRoles`, typed `decision` and `selectedManifest`, nullable state-bound `supersededRoute`, and `executionWindow`. `targetBranch` is exactly `main`; reviewer roles are exactly OWNER, Principal Architect, Principal Test Engineer, and non-author.
 
 Schema definition never changes a route from `DRAFT`, and this repository contains no conforming route instance.
 
@@ -79,7 +81,7 @@ Schema definition never changes a route from `DRAFT`, and this repository contai
 2. Duplicate object members are rejected during syntactic parsing, before schema interpretation.
 3. JSON syntax errors, trailing data, NaN, positive/negative infinity, and every floating-point lexical form are rejected.
 4. Values are limited to objects, arrays, printable-ASCII strings, signed 64-bit integers, booleans, and null. Python/JSON bool-versus-int confusion is rejected by exact type checks.
-5. Object depth is at most 12, objects have at most 64 members, arrays at most 128 items, and strings at most 4,096 UTF-8 bytes. Schemas may impose smaller bounds.
+5. Object depth is at most 12, objects have at most 64 members, arrays at most 128 items, and strings at most 2,048 UTF-8 bytes. Repository paths are separately bounded to 512 bytes.
 6. Member names are sorted by ASCII code point; no insignificant whitespace is emitted; separators are exactly comma and colon; JSON literals are lowercase.
 7. Strings are not normalized. Only code points U+0020 through U+007E are allowed, so normalization-equivalent non-ASCII spellings fail instead of converging silently. Quote and reverse-solidus use the required JSON escapes; solidus is unescaped.
 8. Integers use base-10 shortest form with no leading zero, plus sign, exponent, fraction, or negative zero. The canonical re-encoding comparison enforces the lexical rule.
@@ -91,7 +93,7 @@ Schema definition never changes a route from `DRAFT`, and this repository contai
 The content hash is lower-case hexadecimal SHA-256 over:
 
 ```text
-UTF8("NARRATWIN-AUTHORITY-V1") || 0x00 ||
+UTF8("NARRATWIN-AUTHORITY-OBJECT-V1") || 0x00 ||
 UTF8(schemaVersion) || 0x00 ||
 canonicalBytes(object with contentHash member removed)
 ```
@@ -115,17 +117,17 @@ The machine-readable matrix is `DecisionManifestLifecycleV1`. Each guard means a
 
 | ID | Source → operation → target | Exact actor | Required guard | Deterministic effect | Recovery |
 |---|---|---|---|---|---|
-| D01 | PROPOSED → REVIEW → REVIEWED | Eligible non-author reviewer | Exact-byte review reference covering schema, hash, and generation | Create REVIEWED successor | Hash-linked successor |
+| D01 | PROPOSED → REVIEW → REVIEWED | Independent reviewer | Exact-byte review reference covering schema, hash, and generation | Create REVIEWED successor | Hash-linked successor |
 | D02 | PROPOSED → REJECT → REJECTED | OWNER | Exact-byte OWNER rejection reference | Create terminal REJECTED successor | Hash-linked successor |
 | D03 | REVIEWED → OWNER_APPROVE → OWNER_APPROVED | OWNER | OWNER approval for exact reviewed bytes and validity window | Create OWNER_APPROVED successor | Hash-linked successor |
 | D04 | REVIEWED → REJECT → REJECTED | OWNER | Exact-byte OWNER rejection reference | Create terminal REJECTED successor | Hash-linked successor |
 | D05 | OWNER_APPROVED → MERGE → MERGED | Merge coordinator | Exact-head merge reference preserving approved bytes | Create MERGED successor | Hash-linked successor |
 | D06 | OWNER_APPROVED → REJECT → REJECTED | OWNER | Exact-byte OWNER withdrawal/rejection reference | Create terminal REJECTED successor | Hash-linked successor |
-| D07 | MERGED → ACCEPT_CURRENT → ACCEPTED_CURRENT | Authority evaluator | Exact merged decision, selected-manifest link, validity, and conflict-free evaluation references | Create ACCEPTED_CURRENT successor; no source alone activates | Hash-linked successor |
+| D07 | MERGED → ACCEPT_CURRENT → ACCEPTED_CURRENT | Authority acceptor | Exact merged decision, selected-manifest link, validity, and conflict-free evaluation references | Create ACCEPTED_CURRENT successor; no source alone activates | Hash-linked successor |
 | D08 | MERGED → REJECT → REJECTED | OWNER | Exact merged bytes plus OWNER rejection reference | Create terminal REJECTED successor | Hash-linked successor |
-| D09 | ACCEPTED_CURRENT → SUPERSEDE → SUPERSEDED | OWNER | Exact current object plus approved successor reference | Create SUPERSEDED successor linked to replacement | Hash-linked successor |
+| D09 | ACCEPTED_CURRENT → SUPERSEDE → SUPERSEDED | Authority acceptor | Exact current object plus approved successor reference | Create SUPERSEDED successor linked to replacement | Hash-linked successor |
 | D10 | ACCEPTED_CURRENT → REVOKE → REVOKED | OWNER | Exact current object plus revocation reason/reference | Create REVOKED successor | Hash-linked successor |
-| D11 | ACCEPTED_CURRENT → EXPIRE → EXPIRED | Authority evaluator | Exact current object plus deterministic expiry-time reference | Create EXPIRED successor | Hash-linked successor |
+| D11 | ACCEPTED_CURRENT → EXPIRE → EXPIRED | Expiry evaluator | Exact current object plus deterministic expiry-time reference | Create EXPIRED successor | Hash-linked successor |
 
 `REJECT` has no legal source after `ACCEPTED_CURRENT`. All terminal-state operations are illegal. Illegal cells have effect `NO_MUTATION_TYPED_ERROR` and recovery `CORRECT_AND_RETRY_OR_CREATE_SUCCESSOR`.
 
@@ -135,19 +137,19 @@ The machine-readable route matrix is `ActiveProgramRouteLifecycleV1`.
 
 | ID | Source → operation → target | Exact actor | Required guard | Deterministic effect | Recovery |
 |---|---|---|---|---|---|
-| R01 | DRAFT → REVIEW → REVIEWED | Eligible non-author reviewer | Exact route-byte architecture/test review reference | Create REVIEWED successor | Hash-linked successor |
+| R01 | DRAFT → REVIEW → REVIEWED | Independent reviewer | Exact route-byte architecture/test review reference | Create REVIEWED successor | Hash-linked successor |
 | R02 | DRAFT → REJECT → REJECTED | OWNER | Exact route-byte rejection reference | Create REJECTED successor | Hash-linked successor |
 | R03 | REVIEWED → OWNER_APPROVE → OWNER_APPROVED | OWNER | Exact route bytes, scope, budget, base, and expiry approval | Create OWNER_APPROVED successor | Hash-linked successor |
 | R04 | REVIEWED → REJECT → REJECTED | OWNER | Exact route-byte rejection reference | Create REJECTED successor | Hash-linked successor |
-| R05 | OWNER_APPROVED → VERIFY_PREDECESSOR → PREDECESSOR_VERIFIED | Authority evaluator | Exact predecessor merge/base/history reference | Create PREDECESSOR_VERIFIED successor | Hash-linked successor |
+| R05 | OWNER_APPROVED → VERIFY_PREDECESSOR → PREDECESSOR_VERIFIED | Predecessor verifier | Exact predecessor merge/base/history reference | Create PREDECESSOR_VERIFIED successor | Hash-linked successor |
 | R06 | OWNER_APPROVED → REJECT → REJECTED | OWNER | Exact route-byte rejection/withdrawal reference | Create REJECTED successor | Hash-linked successor |
-| R07 | PREDECESSOR_VERIFIED → ACTIVATE → ACTIVE | OWNER | Exact final route bytes, unexpired window, linked accepted decision/manifest, predecessor verification, and required reviews | Create ACTIVE successor; no marker substitutes | Hash-linked successor |
+| R07 | PREDECESSOR_VERIFIED → ACTIVATE → ACTIVE | Route activator | Exact final route bytes, unexpired window, linked accepted decision/manifest, predecessor verification, and required reviews | Create ACTIVE successor; no marker substitutes | Hash-linked successor |
 | R08 | PREDECESSOR_VERIFIED → REJECT → REJECTED | OWNER | Exact route-byte rejection reference | Create REJECTED successor | Hash-linked successor |
 | R09 | ACTIVE → MERGE → MERGED | Merge coordinator | Exact-head merge reference within path, budget, test, and review boundaries | Create MERGED successor | Hash-linked successor |
-| R10 | MERGED → CLOSE → CLOSED | Administrative closer | Exact merge and terminal-check references | Create CLOSED successor; no execution effect | Administrative closeout |
+| R10 | MERGED → CLOSE → CLOSED | Closeout coordinator | Exact merge and terminal-check references | Create CLOSED successor; no execution effect | Administrative closeout |
 | R11–R15 | DRAFT, REVIEWED, OWNER_APPROVED, PREDECESSOR_VERIFIED, or ACTIVE → SUPERSEDE → SUPERSEDED | OWNER | Exact route plus replacement-route reference | Create SUPERSEDED successor | Hash-linked successor |
-| R16–R20 | DRAFT, REVIEWED, OWNER_APPROVED, PREDECESSOR_VERIFIED, or ACTIVE → EXPIRE → EXECUTION_EXPIRED | Authority evaluator | Exact route and deterministic execution-expiry reference | Create EXECUTION_EXPIRED successor and prohibit governed mutation | Hash-linked successor |
-| R21 | EXECUTION_EXPIRED → CLOSE → CLOSED | Administrative closer | Exact expired route plus administrative closeout references | Create CLOSED successor with no activation/execution effect | Administrative closeout |
+| R16–R20 | DRAFT, REVIEWED, OWNER_APPROVED, PREDECESSOR_VERIFIED, or ACTIVE → EXPIRE → EXECUTION_EXPIRED | Expiry evaluator | Exact route and deterministic execution-expiry reference | Create EXECUTION_EXPIRED successor and prohibit governed mutation | Hash-linked successor |
+| R21 | EXECUTION_EXPIRED → CLOSE → CLOSED | Closeout coordinator | Exact expired route plus administrative closeout references | Create CLOSED successor with no activation/execution effect | Administrative closeout |
 
 The JSON artifact expands R11–R20 into one row per source and explicitly classifies all 90 route state × operation cells. `EXECUTION_EXPIRED` permits only R21. Administrative closeout cannot be substituted for R07 and cannot reactivate, mutate, merge, spend, call a provider, or perform governed execution.
 
@@ -155,7 +157,7 @@ Every legal row has `IDEMPOTENT_SAME_BYTES`; a repeat with different bytes is re
 
 ## 9. Fail-closed fixtures and enforcement
 
-`tests/fixtures/authority-core-v1-cases.json` is visibly fixture-only, uses an `.invalid` repository, and declares activation `NONE`. Its positive recipes cover all three contracts; negative and adversarial recipes cover parser, closure, identity, compatibility, canonical bytes, bounds, hash linkage, lineage, matrix completeness, actor/guard/effect/recovery closure, false-authority sources, coordinated mutation, expiry, and Child B–F scope leakage.
+`tests/fixtures/authority-core-v1-cases.json` is visibly fixture-only, uses an `.invalid` repository, and declares activation `NONE`. Every closed case binds an executable probe consumed by the gate; the accompanying mutation tests feed its parser, schema, lineage, matrix, false-authority, coordinated-mutation, expiry, and Child B–F boundary cases through the validators.
 
 `scripts/quality/issue431_authority_core.py` is a documentation-quality validator. It parses no live authority location, persists nothing, performs no egress, and exposes no runtime service. `check_stage8_docs.py` invokes it only as a repository quality gate.
 

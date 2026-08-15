@@ -3,16 +3,16 @@
 
 from __future__ import annotations
 
-import json
 import hashlib
+import json
 import math
-import re
 import os
+import re
 import subprocess
-from datetime import datetime
+from copy import deepcopy
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
-
 
 ROOT = Path(__file__).resolve().parents[2]
 BRANCH = "cut1-process-431-authority-core-schemas-state-matrices"
@@ -23,7 +23,7 @@ MAX_BYTES = 131_072
 MAX_DEPTH = 12
 MAX_COLLECTION = 128
 MAX_MEMBERS = 64
-MAX_STRING = 4_096
+MAX_STRING = 2_048
 SUPPORTED_SCHEMAS = {
     "MasterProgramAuthorityDecisionV1": (
         "docs/governance/schemas/master-program-authority-decision-v1.schema.json"
@@ -32,6 +32,12 @@ SUPPORTED_SCHEMAS = {
     "ActiveProgramRouteV1": "docs/governance/schemas/active-program-route-v1.schema.json",
 }
 MATRIX_PATH = "docs/governance/authority-core-state-matrices-v1.json"
+ARTIFACT_SHA256 = {
+    "docs/governance/schemas/master-program-authority-decision-v1.schema.json": "9bd0d4328b5966ba1029f0d62032fe540d1d838386ed52eeee24490d702626cc",
+    "docs/governance/schemas/cut1-authority-manifest-v1.schema.json": "15ea469f3d63eb55cc9cd4c73bf0e81b3cbe6741265eca02af71a038a95256ea",
+    "docs/governance/schemas/active-program-route-v1.schema.json": "b5a6888784eae93cc690adfb880c3923914087aea4a8a3bdae07aae878399675",
+    MATRIX_PATH: "8bf72f95444887b0a0c92f7cdb31dc00ffbf86409504060fa3029321b08d7206",
+}
 FALSE_AUTHORITY_SOURCES = ("ISSUE", "COMMENT", "FILE", "FIXTURE", "TEST", "CI")
 DECISION_STATES = (
     "PROPOSED",
@@ -113,6 +119,75 @@ ROUTE_EDGES = (
     ("R20", "ACTIVE", "EXPIRE", "EXECUTION_EXPIRED"),
     ("R21", "EXECUTION_EXPIRED", "CLOSE", "CLOSED"),
 )
+ROW_ACTORS = {
+    **{row: "REPOSITORY_OWNER" for row in ("D02", "D03", "D04", "D06", "D08", "D10")},
+    **{
+        row: "REPOSITORY_OWNER"
+        for row in ("R02", "R03", "R04", "R06", "R08", "R11", "R12", "R13", "R14", "R15")
+    },
+    "D01": "INDEPENDENT_REVIEWER",
+    "D05": "MERGE_COORDINATOR",
+    "D07": "AUTHORITY_ACCEPTOR",
+    "D09": "AUTHORITY_ACCEPTOR",
+    "D11": "EXPIRY_EVALUATOR",
+    "R01": "INDEPENDENT_REVIEWER",
+    "R05": "PREDECESSOR_VERIFIER",
+    "R07": "ROUTE_ACTIVATOR",
+    "R09": "MERGE_COORDINATOR",
+    "R10": "CLOSEOUT_COORDINATOR",
+    "R21": "CLOSEOUT_COORDINATOR",
+    **{f"R{number:02d}": "EXPIRY_EVALUATOR" for number in range(16, 21)},
+}
+ROW_REFERENCES = {
+    "D01": ("CANDIDATE_HASH", "SCHEMA_CANONICAL_PASS", "REVIEW_SUBJECT"),
+    "D02": ("CANDIDATE_HASH", "REJECTION_REASON"),
+    "D03": ("REVIEWED_HASH", "REVIEW_DISPOSITIONS", "APPROVAL_SUBJECT"),
+    "D04": ("REVIEWED_HASH", "REJECTION_REASON"),
+    "D05": ("APPROVED_HASH", "MERGE_REFERENCE", "EXACT_HEAD_OWNER_APPROVAL"),
+    "D06": ("APPROVED_HASH", "WITHDRAWAL_OR_REJECTION"),
+    "D07": (
+        "MERGE_REFERENCE",
+        "MERGED_MAIN_CHECK",
+        "ISSUE_DISPOSITION",
+        "VALIDITY_OBSERVATION",
+        "DECISION_MANIFEST_LINKS",
+    ),
+    "D08": ("MERGED_HASH", "FAILED_ACCEPTANCE", "NO_CURRENT_ACCEPTANCE"),
+    "D09": ("CURRENT_HASH", "ACCEPTED_SUCCESSOR", "RECIPROCAL_LINKAGE"),
+    "D10": ("CURRENT_HASH", "REVOCATION_REFERENCE", "EFFECTIVE_TIME"),
+    "D11": ("CURRENT_HASH", "TIME_OBSERVATION", "EXPIRY_THRESHOLD"),
+    "R01": ("ROUTE_HASH", "SCHEMA_CANONICAL_PASS", "REVIEW_SUBJECT"),
+    "R02": ("ROUTE_HASH", "REJECTION_REASON"),
+    "R03": ("REVIEWED_HASH", "REVIEW_DISPOSITIONS", "APPROVAL_SUBJECT"),
+    "R04": ("REVIEWED_HASH", "REJECTION_REASON"),
+    "R05": ("APPROVED_HASH", "PREDECESSOR_MERGE", "PREDECESSOR_TREE", "MERGED_MAIN_CHECK"),
+    "R06": ("APPROVED_HASH", "WITHDRAWAL_OR_REJECTION"),
+    "R07": (
+        "ACCEPTED_DECISION",
+        "ACCEPTED_MANIFEST",
+        "PREDECESSOR_VERIFICATION",
+        "ROUTE_BOUNDARIES",
+        "EXECUTION_DEADLINE_OBSERVATION",
+    ),
+    "R08": ("VERIFIED_HASH", "REJECTION_REASON"),
+    "R09": (
+        "ACTIVE_HASH",
+        "EXACT_HEAD_APPROVALS",
+        "PROTECTED_CHECK_TUPLES",
+        "MERGE_REFERENCE",
+        "EXECUTION_DEADLINE_OBSERVATION",
+    ),
+    "R10": ("MERGED_HASH", "MERGED_MAIN_CHECK", "STATUS_ISSUE_BRANCH_CLEANUP"),
+    **{
+        f"R{number:02d}": ("SOURCE_HASH", "REPLACEMENT_ROUTE", "NO_GOVERNED_MUTATION")
+        for number in range(11, 16)
+    },
+    **{
+        f"R{number:02d}": ("SOURCE_HASH", "TIME_OBSERVATION", "EXECUTION_DEADLINE")
+        for number in range(16, 21)
+    },
+    "R21": ("EXPIRED_HASH", "ADMINISTRATIVE_CLOSEOUT", "NO_GOVERNED_MUTATION"),
+}
 SCHEMA_DOCUMENT_KEYS = {
     "$defs",
     "activation",
@@ -250,9 +325,7 @@ def _parse_json(data: bytes) -> Any:
 
 def _read_schema(path: Path, expected_schema: str) -> dict[str, Any]:
     try:
-        value = json.loads(
-            path.read_text(encoding="utf-8"), object_pairs_hook=_reject_duplicate_members
-        )
+        value = json.loads(_bounded_text(path), object_pairs_hook=_reject_duplicate_members)
     except (OSError, UnicodeError, json.JSONDecodeError) as error:
         raise AuthorityValidationError("SCHEMA_UNAVAILABLE") from error
     if not isinstance(value, dict) or set(value) != SCHEMA_DOCUMENT_KEYS:
@@ -281,6 +354,9 @@ def _validate_descriptor(
         if reference not in definitions:
             raise AuthorityValidationError("SCHEMA_REFERENCE_UNKNOWN")
         _validate_descriptor(value, definitions[reference], definitions)
+        required_type = descriptor.get("referenceType")
+        if required_type is not None and value.get("referenceType") != required_type:
+            raise AuthorityValidationError("REFERENCE_TYPE_MISMATCH")
         return
     kind = descriptor.get("type")
     if kind == "nullable":
@@ -298,12 +374,14 @@ def _validate_descriptor(
             if not TIMESTAMP_PATTERN.fullmatch(value):
                 raise AuthorityValidationError("TIMESTAMP_FORMAT")
             try:
-                datetime.strptime(value, "%Y-%m-%dT%H:%M:%SZ")
+                datetime.strptime(value, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=UTC)
             except ValueError as error:
                 raise AuthorityValidationError("TIMESTAMP_FORMAT") from error
         pattern = descriptor.get("pattern")
         if pattern and re.fullmatch(pattern, value) is None:
             raise AuthorityValidationError("STRING_PATTERN")
+        if len(value.encode("utf-8")) > descriptor.get("maxBytes", MAX_STRING):
+            raise AuthorityValidationError("STRING_LIMIT")
     elif kind == "integer":
         if type(value) is not int:
             _wrong_type(value, "integer")
@@ -321,9 +399,9 @@ def _validate_descriptor(
         unknown = set(value) - set(properties)
         missing = set(descriptor.get("required", ())) - set(value)
         if unknown:
-            raise AuthorityValidationError("UNKNOWN_MEMBER", sorted(unknown)[0])
+            raise AuthorityValidationError("UNKNOWN_MEMBER", min(unknown))
         if missing:
-            raise AuthorityValidationError("MISSING_MEMBER", sorted(missing)[0])
+            raise AuthorityValidationError("MISSING_MEMBER", min(missing))
         if descriptor.get("closed") is not True:
             raise AuthorityValidationError("SCHEMA_OBJECT_OPEN")
         for key, item in value.items():
@@ -357,7 +435,7 @@ def content_hash(value: dict[str, Any]) -> str:
         raise AuthorityValidationError("SCHEMA_VERSION_MISMATCH")
     unsigned = dict(value)
     unsigned.pop("contentHash", None)
-    domain = b"NARRATWIN-AUTHORITY-V1\0" + value["schemaVersion"].encode("ascii") + b"\0"
+    domain = b"NARRATWIN-AUTHORITY-OBJECT-V1\0" + value["schemaVersion"].encode("ascii") + b"\0"
     return hashlib.sha256(domain + canonical_bytes(unsigned)).hexdigest()
 
 
@@ -390,6 +468,13 @@ def _validate_semantics(value: dict[str, Any]) -> None:
     transition = value["transition"]
     if revision == 1 and (predecessor is not None or transition is not None):
         raise AuthorityValidationError("GENESIS_LINK_MISMATCH")
+    initial = "DRAFT" if value["schemaVersion"] == "ActiveProgramRouteV1" else "PROPOSED"
+    if (
+        revision == 1
+        and value["lifecycleState"] != initial
+        and value["schemaVersion"] != "ActiveProgramRouteV1"
+    ):
+        raise AuthorityValidationError("INITIAL_STATE_MISMATCH")
     if revision > 1 and (predecessor is None or transition is None):
         raise AuthorityValidationError("PREDECESSOR_REQUIRED")
     if predecessor == value["contentHash"]:
@@ -399,6 +484,61 @@ def _validate_semantics(value: dict[str, Any]) -> None:
         raise AuthorityValidationError("VALIDITY_ORDER")
     if (validity["revokedAt"] is None) != (validity["revocationReference"] is None):
         raise AuthorityValidationError("REVOCATION_LINK_MISMATCH")
+    schema = value["schemaVersion"]
+    if schema == "MasterProgramAuthorityDecisionV1":
+        selected = value["decisionAction"] in {"SELECT_MANIFEST", "SUPERSEDE_CURRENT"}
+        if (value["selectedManifest"] is not None) != selected:
+            raise AuthorityValidationError("ACTION_LINK_MISMATCH")
+        prior = value["decisionAction"] in {"SUPERSEDE_CURRENT", "REVOKE_CURRENT"}
+        if (value["priorDecision"] is not None) != prior:
+            raise AuthorityValidationError("ACTION_LINK_MISMATCH")
+        _require_reference(value["sourceProposal"], "PROPOSAL")
+        _require_reference(value["selectedManifest"], "MANIFEST", nullable=True)
+        _require_reference(value["priorDecision"], "DECISION", nullable=True)
+        if value["lifecycleState"] == "ACCEPTED_CURRENT" and value["selectedManifest"] is None:
+            raise AuthorityValidationError("ACTION_LINK_MISMATCH")
+    elif schema == "Cut1AuthorityManifestV1":
+        _require_reference(value["sourceProposal"], "PROPOSAL")
+        _require_reference(value["decisionBacklink"], "DECISION")
+    else:
+        _validate_route_semantics(value)
+        if revision == 1 and value["lifecycleState"] != initial:
+            raise AuthorityValidationError("INITIAL_STATE_MISMATCH")
+
+
+def _require_reference(value: Any, expected: str, *, nullable: bool = False) -> None:
+    if value is None and nullable:
+        return
+    if not isinstance(value, dict) or value.get("referenceType") != expected:
+        raise AuthorityValidationError("REFERENCE_TYPE_MISMATCH")
+
+
+def _validate_route_semantics(value: dict[str, Any]) -> None:
+    _require_reference(value["decision"], "DECISION")
+    _require_reference(value["selectedManifest"], "MANIFEST")
+    _require_reference(value.get("supersededRoute"), "ROUTE", nullable=True)
+    state = value["lifecycleState"]
+    if state in {"ACTIVE", "MERGED"} and value["pullRequest"] is None:
+        raise AuthorityValidationError("ROUTE_PR_STATE_MISMATCH")
+    expired = value["executionWindow"]["expired"]
+    if (state == "EXECUTION_EXPIRED" and not expired) or (
+        state not in {"EXECUTION_EXPIRED", "CLOSED"} and expired
+    ):
+        raise AuthorityValidationError("EXECUTION_EXPIRY_MISMATCH")
+    if (state == "SUPERSEDED") != (value.get("supersededRoute") is not None):
+        raise AuthorityValidationError("ROUTE_SUPERSESSION_MISMATCH")
+    paths = value["allowedPaths"]
+    if value["maxPathCount"] != len(paths):
+        raise AuthorityValidationError("PATH_COUNT_MISMATCH")
+    for path in paths:
+        parts = path.split("/")
+        if path.startswith("/") or "" in parts or "." in parts or ".." in parts:
+            raise AuthorityValidationError("REPOSITORY_PATH_INVALID")
+        if len(path.encode("utf-8")) > 512:
+            raise AuthorityValidationError("REPOSITORY_PATH_INVALID")
+    window = value["executionWindow"]
+    if window["approvedAt"] >= window["expiresAt"]:
+        raise AuthorityValidationError("EXECUTION_WINDOW_ORDER")
 
 
 def validate_authority_bytes(data: bytes, expected_schema: str) -> dict[str, Any]:
@@ -513,7 +653,33 @@ def lineage_findings(objects: list[dict[str, Any]]) -> list[str]:
         if value.get("revision") != predecessor.get("revision", 0) + 1:
             findings.append("Successor revision is not exactly predecessor plus one.")
         _lineage_transition_findings(predecessor, value, findings)
+        transition = value.get("transition")
+        operation = transition.get("operation") if isinstance(transition, dict) else None
+        if _stable_payload(predecessor, operation) != _stable_payload(value, operation):
+            findings.append("Successor immutable payload differs from predecessor.")
     return findings
+
+
+def _stable_payload(value: dict[str, Any], operation: Any) -> dict[str, Any]:
+    payload = deepcopy(value)
+    for key in (
+        "contentHash",
+        "lifecycleState",
+        "predecessorContentHash",
+        "revision",
+        "transition",
+    ):
+        payload.pop(key, None)
+    if operation == "EXPIRE" and payload.get("schemaVersion") == "ActiveProgramRouteV1":
+        payload["executionWindow"].pop("expired", None)
+    if operation == "ACTIVATE":
+        payload.pop("pullRequest", None)
+    if operation == "SUPERSEDE" and payload.get("schemaVersion") == "ActiveProgramRouteV1":
+        payload.pop("supersededRoute", None)
+    if operation == "REVOKE":
+        payload["validity"].pop("revokedAt", None)
+        payload["validity"].pop("revocationReference", None)
+    return payload
 
 
 def authority_effect_findings(source: str, claimed_effect: str) -> list[str]:
@@ -582,15 +748,19 @@ def repository_findings(root: Path = ROOT) -> list[str]:
                 findings.append(f"Child A preflight objective is missing {marker}.")
         for schema, relative in SUPPORTED_SCHEMAS.items():
             _read_schema(root / relative, schema)
+        if set(ARTIFACT_SHA256) != {*SUPPORTED_SCHEMAS.values(), MATRIX_PATH}:
+            findings.append("Child A frozen schema/matrix identity inventory is incomplete.")
+        for relative, expected_hash in ARTIFACT_SHA256.items():
+            if hashlib.sha256(_bounded_bytes(root / relative)).hexdigest() != expected_hash:
+                findings.append(f"Child A frozen artifact bytes drifted: {relative}.")
         matrix = _strict_file(root / MATRIX_PATH)
         findings.extend(matrix_findings(matrix))
         fixture = _strict_file(root / "tests/fixtures/authority-core-v1-cases.json")
         findings.extend(_fixture_findings(fixture))
+        findings.extend(fixture_execution_findings(fixture))
     except AuthorityValidationError as error:
         findings.append(f"Child A strict artifact validation failed: {error.code}.")
-    spec = (root / "docs/governance/AUTHORITY_CORE_SCHEMAS_AND_STATE_MATRICES_V1.md").read_text(
-        encoding="utf-8"
-    )
+    spec = _bounded_text(root / "docs/governance/AUTHORITY_CORE_SCHEMAS_AND_STATE_MATRICES_V1.md")
     for marker in (
         "CHILD_A_CONTRACT_NONACTIVATING",
         "Activation: `NONE`",
@@ -598,7 +768,7 @@ def repository_findings(root: Path = ROOT) -> list[str]:
         "AK-004",
         "AK-012",
         "NarraTwinAuthorityCanonicalJsonV1",
-        "NARRATWIN-AUTHORITY-V1",
+        "NARRATWIN-AUTHORITY-OBJECT-V1",
         "FIPS 180-4",
         "DecisionManifestLifecycleV1",
         "ActiveProgramRouteLifecycleV1",
@@ -607,7 +777,7 @@ def repository_findings(root: Path = ROOT) -> list[str]:
     ):
         if marker not in spec:
             findings.append(f"Child A specification is missing {marker}.")
-    stage8_source = (root / "scripts/quality/check_stage8_docs.py").read_text(encoding="utf-8")
+    stage8_source = _bounded_text(root / "scripts/quality/check_stage8_docs.py")
     if "issue431_authority_core.repository_findings" not in stage8_source:
         findings.append("Stage 8 does not invoke the semantic Child A repository gate.")
     branch = os.environ.get("GITHUB_HEAD_REF", "").strip() or _git(root, "branch", "--show-current")
@@ -618,14 +788,30 @@ def repository_findings(root: Path = ROOT) -> list[str]:
 
 def _strict_file(path: Path) -> dict[str, Any]:
     try:
-        value = json.loads(
-            path.read_text(encoding="utf-8"), object_pairs_hook=_reject_duplicate_members
-        )
+        value = json.loads(_bounded_text(path), object_pairs_hook=_reject_duplicate_members)
     except (OSError, UnicodeError, json.JSONDecodeError) as error:
         raise AuthorityValidationError("MALFORMED_JSON", path.as_posix()) from error
     if not isinstance(value, dict):
         raise AuthorityValidationError("WRONG_ROOT_TYPE", path.as_posix())
     return value
+
+
+def _bounded_bytes(path: Path) -> bytes:
+    try:
+        with path.open("rb") as stream:
+            data = stream.read(MAX_BYTES + 1)
+    except OSError as error:
+        raise AuthorityValidationError("ARTIFACT_UNAVAILABLE", path.as_posix()) from error
+    if len(data) > MAX_BYTES:
+        raise AuthorityValidationError("SIZE_LIMIT", path.as_posix())
+    return data
+
+
+def _bounded_text(path: Path) -> str:
+    try:
+        return _bounded_bytes(path).decode("utf-8", errors="strict")
+    except UnicodeDecodeError as error:
+        raise AuthorityValidationError("INVALID_UTF8", path.as_posix()) from error
 
 
 def _fixture_findings(fixture: dict[str, Any]) -> list[str]:
@@ -644,7 +830,8 @@ def _fixture_findings(fixture: dict[str, Any]) -> list[str]:
     if not isinstance(cases, list) or not cases:
         return [*findings, "Fixture case inventory is empty."]
     if any(
-        not isinstance(case, dict) or set(case) != {"classification", "expect", "id", "target"}
+        not isinstance(case, dict)
+        or set(case) != {"classification", "expect", "id", "probe", "target"}
         for case in cases
     ):
         findings.append("Fixture case is malformed or open.")
@@ -705,8 +892,50 @@ def _fixture_findings(fixture: dict[str, Any]) -> list[str]:
     return findings
 
 
+def fixture_execution_findings(fixture: dict[str, Any]) -> list[str]:
+    """Execute the corpus bindings; unit tests exercise every referenced defect class."""
+
+    findings: list[str] = []
+    cases = fixture.get("cases", [])
+    parser_probes = {
+        "duplicate-member": (b'{"a":1,"a":2}', "DUPLICATE_MEMBER"),
+        "malformed-json": (b'{"a":', "MALFORMED_JSON"),
+        "invalid-utf8": (b"\xff", "INVALID_UTF8"),
+        "non-finite-number": (b'{"a":NaN}', "NON_FINITE_NUMBER"),
+        "equivalent-noncanonical": (b' {"a":1}', "NONCANONICAL_BYTES"),
+        "oversized": (b'"' + b"a" * (MAX_BYTES + 1) + b'"', "SIZE_LIMIT"),
+        "deeply-nested": (b"[" * 13 + b"]" * 13, "DEPTH_LIMIT"),
+        "excessive-collection": (b"[" + b",".join([b"0"] * 129) + b"]", "COLLECTION_LIMIT"),
+    }
+    for case in cases:
+        if not isinstance(case, dict) or case.get("probe") != case.get("id"):
+            findings.append("Fixture probe is absent or ambiguously bound.")
+            continue
+        probe = case["probe"]
+        if probe in parser_probes:
+            data, expected = parser_probes[probe]
+            try:
+                _parse_json(data)
+            except AuthorityValidationError as error:
+                if error.code != expected:
+                    findings.append(f"Fixture probe {probe} returned {error.code}, not {expected}.")
+            else:
+                findings.append(f"Fixture probe {probe} false-passed.")
+        elif probe in {"marker-as-authority", "fixture-as-authority"}:
+            source = "FIXTURE" if probe.startswith("fixture") else "FILE"
+            if not authority_effect_findings(source, "ACTIVE"):
+                findings.append(f"Fixture probe {probe} false-passed.")
+        elif case.get("target") in SUPPORTED_SCHEMAS:
+            _read_schema(ROOT / SUPPORTED_SCHEMAS[case["target"]], case["target"])
+        elif case.get("target") == "matrix" and matrix_findings(_strict_file(ROOT / MATRIX_PATH)):
+            findings.append(f"Fixture probe {probe} cannot execute against an invalid matrix.")
+        elif not isinstance(case.get("expect"), str):
+            findings.append(f"Fixture probe {probe} has no typed outcome.")
+    return findings
+
+
 def _git(root: Path, *args: str) -> str:
-    result = subprocess.run(["git", *args], cwd=root, text=True, capture_output=True)
+    result = subprocess.run(["git", *args], cwd=root, text=True, capture_output=True, check=False)
     if result.returncode != 0:
         raise AuthorityValidationError("GIT_EVIDENCE_UNAVAILABLE", result.stderr.strip())
     return result.stdout.strip()
@@ -776,7 +1005,7 @@ def _lineage_transition_findings(
         return
     row_id, _, operation, target = edge
     exact = {
-        "actorClass": _expected_actor(operation),
+        "actorClass": ROW_ACTORS[row_id],
         "effectId": f"EFFECT_{row_id}_{target}",
         "idempotency": "IDEMPOTENT_SAME_BYTES",
         "operation": operation,
@@ -793,29 +1022,21 @@ def _lineage_transition_findings(
             "Transition actor, guard-independent effect, or recovery mismatches exact row."
         )
     guards = transition.get("guardReferences")
-    if (
-        not isinstance(guards, list)
-        or len(guards) != 1
-        or not isinstance(guards[0], dict)
-        or guards[0].get("subject") != f"guard:{row_id.lower()}"
-    ):
+    expected_guards = [
+        (reference_type, f"guard:{row_id.lower()}-{reference_type.lower().replace('_', '-')}")
+        for reference_type in ROW_REFERENCES[row_id]
+    ]
+    actual_guards = (
+        [
+            (guard.get("referenceType"), guard.get("subject"))
+            for guard in guards
+            if isinstance(guard, dict)
+        ]
+        if isinstance(guards, list)
+        else []
+    )
+    if actual_guards != expected_guards:
         findings.append("Transition guard reference does not bind its exact row.")
-
-
-def _expected_actor(operation: str) -> str:
-    return {
-        "REVIEW": "ELIGIBLE_NON_AUTHOR_REVIEWER",
-        "OWNER_APPROVE": "OWNER",
-        "REJECT": "OWNER",
-        "MERGE": "MERGE_COORDINATOR",
-        "ACCEPT_CURRENT": "AUTHORITY_EVALUATOR",
-        "SUPERSEDE": "OWNER",
-        "REVOKE": "OWNER",
-        "EXPIRE": "AUTHORITY_EVALUATOR",
-        "VERIFY_PREDECESSOR": "AUTHORITY_EVALUATOR",
-        "ACTIVATE": "OWNER",
-        "CLOSE": "ADMINISTRATIVE_CLOSER",
-    }[operation]
 
 
 def _matrix_item_findings(
@@ -892,11 +1113,12 @@ def _matrix_item_findings(
             findings.append(f"{item['id']} illegal or mismatched legal transition row.")
             continue
         row_id, _, operation, target = edge
-        if row["actorClass"] != _expected_actor(operation):
+        if row["actorClass"] != ROW_ACTORS[row_id]:
             findings.append(f"{row_id} actor mismatch.")
-        if row["requiredGuards"] != [f"GUARD_{row_id}_TYPED_REFERENCES"]:
+        expected_references = list(ROW_REFERENCES[row_id])
+        if row["requiredGuards"] != [f"REQUIRE_{item}" for item in expected_references]:
             findings.append(f"{row_id} guard mismatch.")
-        if row["requiredTypedReferences"] != ["ContentAddressedReferenceV1"]:
+        if row["requiredTypedReferences"] != expected_references:
             findings.append(f"{row_id} typed reference mismatch.")
         if row["effect"] != f"EFFECT_{row_id}_{target}":
             findings.append(f"{row_id} effect mismatch.")

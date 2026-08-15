@@ -1401,7 +1401,11 @@ in `docs/governance/preflights/issue-431.json` plus the two exact Issue #427
 compatibility paths approved by OWNER comment `5301054923`, and permits at most
 4,000 aggregate additions plus deletions. Commit `7a5594357c24ac864c850a2e1cb92f9cd8acb940`
 is the preflight-only first commit. The following test/fixture-only commit
-`b7f122fe3aebbf958bb96950a569a3a818dbf046` records genuine RED route failures.
+`b7f122f704dc2168c64202c090e3e11164c67e80` records genuine RED route failures.
+After the frozen reviews exposed successor-compatibility defects, OWNER comment
+`5301231033` authorized one final bounded correction wave. Test-only commit
+`5bfcb0017ecce6646aa9a840ce3c111351151e44` reproduces those defects before the
+corresponding GREEN implementation.
 
 `scripts/quality/issue431_authority_core.py` enforces strict canonical JSON,
 three closed V1 schemas, immutable hash-linked lineage, exhaustive legal and
