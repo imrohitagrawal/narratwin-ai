@@ -871,8 +871,8 @@ def test_schema_reads_are_bounded_before_parsing(tmp_path: Path) -> None:
 def test_schema_and_matrix_bytes_have_independently_frozen_identities() -> None:
     expected = {
         "docs/governance/schemas/master-program-authority-decision-v1.schema.json": "9bd0d4328b5966ba1029f0d62032fe540d1d838386ed52eeee24490d702626cc",
-        "docs/governance/schemas/cut1-authority-manifest-v1.schema.json": "15ea469f3d63eb55cc9cd4c73bf0e81b3cbe6741265eca02af71a038a95256ea",
-        "docs/governance/schemas/active-program-route-v1.schema.json": "b5a6888784eae93cc690adfb880c3923914087aea4a8a3bdae07aae878399675",
+        "docs/governance/schemas/cut1-authority-manifest-v1.schema.json": "455a051ed9cc966b68457149a0a9f3883b3f0fea251c5120970e3af5e99abfa5",
+        "docs/governance/schemas/active-program-route-v1.schema.json": "e7a094a4351ab4342eef9db68868a3204395443e259c7d9184108f8a98033175",
         "docs/governance/authority-core-state-matrices-v1.json": "8bf72f95444887b0a0c92f7cdb31dc00ffbf86409504060fa3029321b08d7206",
     }
 

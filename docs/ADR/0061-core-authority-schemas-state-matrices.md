@@ -16,6 +16,8 @@ Adopt exhaustive `DecisionManifestLifecycleV1` and `ActiveProgramRouteLifecycleV
 
 SHA-256 content identities use an explicit NarraTwin domain prefix and exclude only the `contentHash` member. Structural validation never accepts or activates authority.
 
+Cross-contract linkage is acyclic: a decision selects merged-manifest bytes, an accepted manifest successor backlinks accepted-decision bytes, and a route binds that accepted pair. Governed subjects and hashes must resolve with identical repository, program, and generation identity. Set-like route arrays are lexicographically canonical; typed source-state guards bind the exact predecessor hash.
+
 ## Consequences
 
 - Accepted bytes can only be changed by a new hash-linked successor.

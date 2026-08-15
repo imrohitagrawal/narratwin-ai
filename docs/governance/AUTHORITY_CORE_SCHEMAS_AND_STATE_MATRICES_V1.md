@@ -61,11 +61,13 @@ The closed transition record contains `actorClass`, `effectId`, `guardReferences
 
 ### 3.3 Manifest-only fields
 
-- `sourceProposal` and `decisionBacklink`: required proposal and decision references.
+- `sourceProposal`: required proposal reference. `decisionBacklink` is null through `MERGED`, is added only by the `ACCEPT_CURRENT` successor, and is then immutable through `ACCEPTED_CURRENT`, `SUPERSEDED`, `REVOKED`, or `EXPIRED`.
 - `authorityValues`: a closed object containing exactly ten content-addressed references: `canonicalNarration`, `downstreamOrderPolicy`, `finalRenderPolicy`, `ownerAuthoritySource`, `presenterSelection`, `providerPolicy`, `rendererPolicy`, `revalidationPolicy`, `spendPolicy`, and `supersededSourceSet`.
 - `capabilityClassifications`: the same ten closed keys, each exactly `PRESENT` or `DEFERRED`.
 
 These references bind content identities only. They do not authorize a provider, credential, expense, presenter, narration, render, or execution.
+
+Linking is directional to avoid a content-hash cycle: the decision selects the exact merged manifest hash; the accepted manifest successor backlinks the exact accepted decision hash; and the route references that accepted decision/manifest pair. Bundle validation resolves every governed hash and subject, requires common repository/program/generation identity, and requires the accepted manifest backlink to agree with the route decision. It does not select a current set or establish evidence trust.
 
 ### 3.4 Route-only fields
 
@@ -83,6 +85,7 @@ Schema definition never changes a route from `DRAFT`, and this repository contai
 4. Values are limited to objects, arrays, printable-ASCII strings, signed 64-bit integers, booleans, and null. Python/JSON bool-versus-int confusion is rejected by exact type checks.
 5. Object depth is at most 12, objects have at most 64 members, arrays at most 128 items, and strings at most 2,048 UTF-8 bytes. Repository paths are separately bounded to 512 bytes.
 6. Member names are sorted by ASCII code point; no insignificant whitespace is emitted; separators are exactly comma and colon; JSON literals are lowercase.
+   Set-like route arrays (`allowedPaths`, `focusedTestCommands`, and `aggregateTestCommands`) are unique and sorted by their canonical byte encoding. All other arrays are explicitly ordered vectors or exact fixed arrays.
 7. Strings are not normalized. Only code points U+0020 through U+007E are allowed, so normalization-equivalent non-ASCII spellings fail instead of converging silently. Quote and reverse-solidus use the required JSON escapes; solidus is unescaped.
 8. Integers use base-10 shortest form with no leading zero, plus sign, exponent, fraction, or negative zero. The canonical re-encoding comparison enforces the lexical rule.
 9. Timestamps are printable ASCII UTC instants exactly `YYYY-MM-DDTHH:MM:SSZ`, with real calendar values, no fractional seconds, offset, or leap-second spelling.
