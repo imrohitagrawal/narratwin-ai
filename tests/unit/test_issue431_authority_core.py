@@ -971,6 +971,24 @@ def test_parser_rejects_malformed_or_noncanonical_bytes(data: bytes, code: str) 
     assert caught.value.code == code
 
 
+@pytest.mark.parametrize(
+    "data",
+    [
+        b'"\\ud800"',
+        b'"\\udfff"',
+        b'{"value":"\\ud800"}',
+        b'{"\\ud800":1}',
+    ],
+)
+def test_parser_rejects_escaped_lone_surrogates_through_typed_error(
+    data: bytes,
+) -> None:
+    with pytest.raises(authority.AuthorityValidationError) as caught:
+        authority.validate_authority_bytes(data, "MasterProgramAuthorityDecisionV1")
+
+    assert caught.value.code == "NON_ASCII_STRING"
+
+
 def test_parser_rejects_an_unsupported_future_schema_before_semantic_use() -> None:
     with pytest.raises(authority.AuthorityValidationError) as caught:
         authority.validate_authority_bytes(b"{}", "MasterProgramAuthorityDecisionV2")
