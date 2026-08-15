@@ -722,6 +722,102 @@ def test_decision_supersession_guards_bind_the_accepted_reciprocal_successor() -
     )
 
 
+def _route_supersession_bundle() -> tuple[
+    dict[str, object], dict[str, object], dict[str, object]
+]:
+    source = authority_object("ActiveProgramRouteV1")
+    replacement = authority_object("ActiveProgramRouteV1")
+    replacement["objectId"] = "route:replacement-fixture-only"
+    replacement["contentHash"] = authority.content_hash(replacement)
+    superseded = successor(source, ROUTE_EDGES[10])
+    superseded["supersededRoute"] = reference(
+        "ROUTE", str(replacement["objectId"])
+    )
+    superseded["supersededRoute"]["sha256"] = replacement["contentHash"]  # type: ignore[index]
+    guards = superseded["transition"]["guardReferences"]  # type: ignore[index]
+    by_type = {guard["referenceType"]: guard for guard in guards}
+    by_type["REPLACEMENT_ROUTE"]["sha256"] = replacement["contentHash"]
+    superseded["contentHash"] = authority.content_hash(superseded)
+    return source, replacement, superseded
+
+
+def test_route_supersession_requires_the_exact_replacement_object() -> None:
+    source, replacement, superseded = _route_supersession_bundle()
+
+    assert authority.lineage_findings([source, replacement, superseded]) == []
+    assert any(
+        "replacement route" in item.lower()
+        for item in authority.lineage_findings([source, superseded])
+    )
+
+
+@pytest.mark.parametrize("mutation", ["same-object", "wrong-subject", "wrong-generation"])
+def test_route_supersession_requires_distinct_matching_replacement(mutation: str) -> None:
+    source, replacement, superseded = _route_supersession_bundle()
+    route_reference = superseded["supersededRoute"]
+    assert isinstance(route_reference, dict)
+    guards = superseded["transition"]["guardReferences"]  # type: ignore[index]
+    by_type = {guard["referenceType"]: guard for guard in guards}
+    if mutation == "same-object":
+        route_reference["subject"] = source["objectId"]
+        route_reference["sha256"] = source["contentHash"]
+    elif mutation == "wrong-subject":
+        route_reference["subject"] = "route:wrong-subject"
+    else:
+        replacement["generationId"] = "generation:replacement-mismatch"
+        replacement["contentHash"] = authority.content_hash(replacement)
+        route_reference["sha256"] = replacement["contentHash"]
+    by_type["REPLACEMENT_ROUTE"]["sha256"] = route_reference["sha256"]
+    superseded["contentHash"] = authority.content_hash(superseded)
+
+    assert any(
+        "replacement route" in item.lower()
+        for item in authority.lineage_findings([source, replacement, superseded])
+    )
+
+
+def test_route_supersession_requires_a_draft_replacement() -> None:
+    source, replacement, superseded = _route_supersession_bundle()
+    reviewed_replacement = successor(replacement, ROUTE_EDGES[0])
+    route_reference = superseded["supersededRoute"]
+    assert isinstance(route_reference, dict)
+    route_reference["sha256"] = reviewed_replacement["contentHash"]
+    route_reference["subject"] = reviewed_replacement["objectId"]
+    guards = superseded["transition"]["guardReferences"]  # type: ignore[index]
+    by_type = {guard["referenceType"]: guard for guard in guards}
+    by_type["REPLACEMENT_ROUTE"]["sha256"] = reviewed_replacement["contentHash"]
+    superseded["contentHash"] = authority.content_hash(superseded)
+
+    assert any(
+        "replacement route" in item.lower()
+        for item in authority.lineage_findings(
+            [source, replacement, reviewed_replacement, superseded]
+        )
+    )
+
+
+@pytest.mark.parametrize(
+    "schema",
+    [
+        "MasterProgramAuthorityDecisionV1",
+        "Cut1AuthorityManifestV1",
+        "ActiveProgramRouteV1",
+    ],
+)
+def test_revocation_reference_is_exactly_typed_for_every_contract(schema: str) -> None:
+    value = authority_object(schema)
+    value["validity"]["revokedAt"] = "2026-08-16T00:00:00Z"  # type: ignore[index]
+    value["validity"]["revocationReference"] = reference(  # type: ignore[index]
+        "POLICY", "policy:revocation-lookalike"
+    )
+    value["contentHash"] = authority.content_hash(value)
+
+    with pytest.raises(authority.AuthorityValidationError) as caught:
+        authority.validate_authority_bytes(authority.canonical_bytes(value), schema)
+
+    assert caught.value.code == "REFERENCE_TYPE_MISMATCH"
+
+
 def test_revocation_requires_representation_and_binds_both_exact_guards() -> None:
     manifests = _manifest_lineage_through_merge()
     decisions = _decision_lineage_for_manifest(manifests[-1])
@@ -762,6 +858,16 @@ def test_revocation_requires_representation_and_binds_both_exact_guards() -> Non
     by_type["EFFECTIVE_TIME"]["sha256"] = "f" * 64
     revoked["contentHash"] = authority.content_hash(revoked)
     assert any("effective time" in item.lower() for item in authority.lineage_findings(objects))
+
+    by_type["EFFECTIVE_TIME"]["sha256"] = hashlib.sha256(
+        b"NARRATWIN-AUTHORITY-GUARD-V1\0EFFECTIVE_TIME\0" + revoked_at.encode("ascii")
+    ).hexdigest()
+    revoked["validity"]["revocationReference"]["referenceType"] = "POLICY"  # type: ignore[index]
+    revoked["contentHash"] = authority.content_hash(revoked)
+    assert any(
+        "reference_type_mismatch" in item.lower()
+        for item in authority.lineage_findings(objects)
+    )
 
 
 def test_hash_linked_successor_cannot_mutate_stable_payload_even_with_a_valid_hash() -> None:
