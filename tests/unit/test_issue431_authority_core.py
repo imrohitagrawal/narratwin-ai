@@ -76,6 +76,16 @@ def reference(kind: str, subject: str) -> dict[str, str]:
     }
 
 
+def guard_hash(kind: str, value: str) -> str:
+    domain = b"NARRATWIN-AUTHORITY-GUARD-V1\0" + kind.encode("ascii") + b"\0"
+    return hashlib.sha256(domain + value.encode("ascii")).hexdigest()
+
+
+def observation_subject(row_id: str, kind: str, observed_at: str) -> str:
+    encoded = observed_at.lower().replace(":", "-")
+    return f"guard:{row_id.lower()}-{kind.lower().replace('_', '-')}-{encoded}"
+
+
 def authority_object(schema: str) -> dict[str, object]:
     common: dict[str, object] = {
         "contentHash": "0" * 64,
@@ -481,6 +491,8 @@ def successor(predecessor: dict[str, object], edge: tuple[str, str, str, str]) -
     value["revision"] = revision + 1
     value["predecessorContentHash"] = predecessor["contentHash"]
     value["lifecycleState"] = row["targetState"]
+    if value["schemaVersion"] == "ActiveProgramRouteV1" and row["targetState"] == "ACTIVE":
+        value["pullRequest"] = 433
     reference_types = row["requiredTypedReferences"]
     assert isinstance(reference_types, list)
     source_hash_references = {
@@ -510,6 +522,17 @@ def successor(predecessor: dict[str, object], edge: tuple[str, str, str, str]) -
             manifest = value["selectedManifest"]
             assert isinstance(manifest, dict)
             item["sha256"] = manifest["sha256"]
+        elif kind in {"TIME_OBSERVATION", "EXECUTION_DEADLINE_OBSERVATION"}:
+            if kind == "TIME_OBSERVATION":
+                observed_at = value["validity"]["expiresAt"]  # type: ignore[index]
+            else:
+                observed_at = value["executionWindow"]["approvedAt"]  # type: ignore[index]
+            item["subject"] = observation_subject(str(row["id"]), kind, observed_at)
+            item["sha256"] = guard_hash(kind, observed_at)
+        elif kind == "EXPIRY_THRESHOLD":
+            item["sha256"] = guard_hash(kind, value["validity"]["expiresAt"])  # type: ignore[index]
+        elif kind == "EXECUTION_DEADLINE":
+            item["sha256"] = guard_hash(kind, value["executionWindow"]["expiresAt"])  # type: ignore[index]
         return item
 
     value["transition"] = {
@@ -934,6 +957,74 @@ def test_execution_expiry_allows_closeout_but_never_reactivation() -> None:
         "illegal" in item.lower()
         for item in authority.lineage_findings([draft, expired, invalid_active])
     )
+
+
+def _set_observation(value: dict[str, object], observed_at: str) -> None:
+    guards = value["transition"]["guardReferences"]  # type: ignore[index]
+    observation = next(
+        guard
+        for guard in guards
+        if guard["referenceType"] in {"TIME_OBSERVATION", "EXECUTION_DEADLINE_OBSERVATION"}
+    )
+    kind = observation["referenceType"]
+    row_id = value["transition"]["effectId"].split("_")[1]  # type: ignore[index]
+    observation["subject"] = observation_subject(row_id, kind, observed_at)
+    observation["sha256"] = guard_hash(kind, observed_at)
+    value["contentHash"] = authority.content_hash(value)
+
+
+def test_expiry_guards_bind_threshold_and_reject_premature_observation() -> None:
+    manifests = _manifest_lineage_through_merge()
+    decisions = _decision_lineage_for_manifest(manifests[-1])
+    expired = successor(decisions[-1], DECISION_EDGES[10])
+    objects = [*manifests, *decisions, expired]
+
+    assert authority.lineage_findings(objects) == []
+    _set_observation(expired, "2026-09-14T23:59:59Z")
+    assert any("before" in item.lower() for item in authority.lineage_findings(objects))
+
+    _set_observation(expired, "2026-09-15T00:00:00Z")
+    guards = expired["transition"]["guardReferences"]  # type: ignore[index]
+    next(guard for guard in guards if guard["referenceType"] == "EXPIRY_THRESHOLD")[
+        "sha256"
+    ] = "1" * 64
+    expired["contentHash"] = authority.content_hash(expired)
+    assert any("expiry threshold" in item.lower() for item in authority.lineage_findings(objects))
+
+
+@pytest.mark.parametrize("expiry_index", range(5))
+def test_route_expiry_requires_observation_at_or_after_deadline(
+    expiry_index: int,
+) -> None:
+    lineage = _linked_contract_objects() if expiry_index == 4 else [authority_object("ActiveProgramRouteV1")]
+    route = lineage[-1]
+    for edge in ROUTE_EDGES[:7:2][:expiry_index]:
+        route = successor(route, edge)
+        lineage.append(route)
+    expired = successor(route, ROUTE_EDGES[15 + expiry_index])
+    lineage.append(expired)
+
+    assert authority.lineage_findings(lineage) == []
+    _set_observation(expired, "2026-09-14T23:59:59Z")
+    assert any("before" in item.lower() for item in authority.lineage_findings(lineage))
+
+
+@pytest.mark.parametrize("edge_index", [6, 8])
+def test_route_execution_rejects_observation_at_deadline(edge_index: int) -> None:
+    linked = _linked_contract_objects()
+    route = linked[-1]
+    reviewed = successor(route, ROUTE_EDGES[0])
+    approved = successor(reviewed, ROUTE_EDGES[2])
+    verified = successor(approved, ROUTE_EDGES[4])
+    active = successor(verified, ROUTE_EDGES[6])
+    candidate = active if edge_index == 6 else successor(active, ROUTE_EDGES[8])
+    lineage = [*linked, reviewed, approved, verified, active]
+    if candidate is not active:
+        lineage.append(candidate)
+
+    assert authority.lineage_findings(lineage) == []
+    _set_observation(candidate, "2026-09-15T00:00:00Z")
+    assert any("deadline" in item.lower() for item in authority.lineage_findings(lineage))
 
 
 @pytest.mark.parametrize("source", authority.FALSE_AUTHORITY_SOURCES)
