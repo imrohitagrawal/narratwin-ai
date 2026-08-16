@@ -15,6 +15,9 @@ from scripts.quality import issue431_authority_core as authority
 
 ROOT = Path(__file__).resolve().parents[2]
 BRANCH = "cut1-process-431-authority-core-schemas-state-matrices"
+BASE = "4d239942eeda0c0b6c385b2d85dae873af076aa6"
+HEAD = "65b8d2ba965f8089372cf60f88cbb9d28c0317ba"
+REPOSITORY = "imrohitagrawal/narratwin-ai"
 PATHS = {
     "docs/governance/preflights/issue-431.json",
     "docs/governance/AUTHORITY_CORE_SCHEMAS_AND_STATE_MATRICES_V1.md",
@@ -949,6 +952,96 @@ def test_unknown_authority_source_and_marker_substitution_fail_closed() -> None:
 
 def test_exact_child_a_repository_gate_passes_only_the_complete_route() -> None:
     assert authority.repository_findings(ROOT) == []
+
+
+def pull_request_event() -> dict[str, object]:
+    return {
+        "repository": {"full_name": REPOSITORY},
+        "pull_request": {
+            "base": {"ref": "main", "sha": BASE},
+            "head": {"ref": BRANCH, "sha": HEAD, "repo": {"full_name": REPOSITORY}},
+        },
+    }
+
+
+def test_pull_request_merge_ref_uses_the_exact_event_head_for_route_history(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    event_path = tmp_path / "pull-request.json"
+    event_path.write_text(json.dumps(pull_request_event()), encoding="utf-8")
+    monkeypatch.setenv("GITHUB_EVENT_NAME", "pull_request")
+    monkeypatch.setenv("GITHUB_EVENT_PATH", str(event_path))
+    monkeypatch.setenv("GITHUB_HEAD_REF", BRANCH)
+    revisions: list[str] = []
+    monkeypatch.setattr(
+        authority,
+        "_route_findings",
+        lambda root, revision="HEAD": revisions.append(revision) or [],
+    )
+
+    assert authority.repository_findings(ROOT) == []
+    assert revisions == [HEAD]
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    [
+        "malformed",
+        "wrong-repository",
+        "forked-head",
+        "wrong-branch",
+        "wrong-base",
+        "invalid-head-sha",
+    ],
+)
+def test_pull_request_event_identity_failures_stop_route_validation(
+    mutation: str, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    event = pull_request_event()
+    pull_request = event["pull_request"]
+    assert isinstance(pull_request, dict)
+    if mutation == "wrong-repository":
+        event["repository"] = {"full_name": "attacker/example"}
+    elif mutation == "forked-head":
+        pull_request["head"] = {"ref": BRANCH, "sha": HEAD, "repo": {"full_name": "fork/example"}}
+    elif mutation == "wrong-branch":
+        pull_request["head"] = {"ref": "attacker", "sha": HEAD, "repo": {"full_name": REPOSITORY}}
+    elif mutation == "wrong-base":
+        pull_request["base"] = {"ref": "main", "sha": "f" * 40}
+    elif mutation == "invalid-head-sha":
+        pull_request["head"] = {"ref": BRANCH, "sha": "not-a-sha", "repo": {"full_name": REPOSITORY}}
+    event_path = tmp_path / "pull-request.json"
+    event_path.write_text("{" if mutation == "malformed" else json.dumps(event), encoding="utf-8")
+    monkeypatch.setenv("GITHUB_EVENT_NAME", "pull_request")
+    monkeypatch.setenv("GITHUB_EVENT_PATH", str(event_path))
+    monkeypatch.setenv("GITHUB_HEAD_REF", BRANCH)
+    revisions: list[str] = []
+    monkeypatch.setattr(
+        authority,
+        "_route_findings",
+        lambda root, revision="HEAD": revisions.append(revision) or [],
+    )
+
+    assert authority.repository_findings(ROOT) == [
+        "Child A trusted pull-request head identity is unavailable or invalid."
+    ]
+    assert revisions == []
+
+
+def test_pull_request_head_must_exist_on_the_exact_base(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    event_path = tmp_path / "pull-request.json"
+    event_path.write_text(json.dumps(pull_request_event()), encoding="utf-8")
+    monkeypatch.setenv("GITHUB_EVENT_NAME", "pull_request")
+    monkeypatch.setenv("GITHUB_EVENT_PATH", str(event_path))
+    monkeypatch.setenv("GITHUB_HEAD_REF", BRANCH)
+    monkeypatch.setattr(authority, "_git", lambda root, *args: "f" * 40)
+    monkeypatch.setattr(authority, "_route_findings", lambda root, revision="HEAD": [])
+
+    assert authority.repository_findings(ROOT) == [
+        "Child A trusted pull-request head is unavailable or not based on the exact approved base."
+    ]
 
 
 @pytest.mark.parametrize(
