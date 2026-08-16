@@ -1470,6 +1470,20 @@ def _trusted_pull_request_head(root: Path) -> tuple[str | None, str | None]:
             None,
             "Child A trusted pull-request head is unavailable or not based on the exact approved base.",
         )
+    try:
+        checkout = _git(root, "rev-parse", "--verify", "HEAD^{commit}")
+        if checkout != head_sha:
+            parents = _git(root, "rev-list", "--parents", "-n", "1", checkout).split()
+            if parents != [checkout, BASE, head_sha]:
+                return (
+                    None,
+                    "Child A trusted pull-request head does not match the checked-out commit or synthetic merge.",
+                )
+    except AuthorityValidationError:
+        return (
+            None,
+            "Child A trusted pull-request head does not match the checked-out commit or synthetic merge.",
+        )
     return head_sha, None
 
 
