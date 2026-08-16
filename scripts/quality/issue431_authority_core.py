@@ -446,6 +446,29 @@ def _guard_scalar_hash(reference_type: str, value: str) -> str:
     return hashlib.sha256(domain + value.encode("ascii")).hexdigest()
 
 
+def _guard_observation(
+    guard: dict[str, Any] | None, row_id: str, reference_type: str, findings: list[str]
+) -> datetime | None:
+    prefix = f"guard:{row_id.lower()}-{reference_type.lower().replace('_', '-')}"
+    if not isinstance(guard, dict):
+        findings.append(f"Transition {reference_type.lower()} subject is malformed or unbound.")
+        return None
+    subject = guard.get("subject")
+    encoded = subject.removeprefix(f"{prefix}-") if isinstance(subject, str) else ""
+    if re.fullmatch(r"\d{4}-\d{2}-\d{2}t\d{2}-\d{2}-\d{2}z", encoded) is None:
+        findings.append(f"Transition {reference_type.lower()} subject is malformed or unbound.")
+        return None
+    timestamp = f"{encoded[:10]}T{encoded[11:13]}:{encoded[14:16]}:{encoded[17:19]}Z"
+    try:
+        observed = datetime.strptime(timestamp, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=UTC)
+    except ValueError:
+        findings.append(f"Transition {reference_type.lower()} subject is malformed or unbound.")
+        return None
+    if guard.get("sha256") != _guard_scalar_hash(reference_type, timestamp):
+        findings.append(f"Transition guard hash {reference_type.lower()} is unbound.")
+    return observed
+
+
 def _validate_identity(value: dict[str, Any], expected_schema: str) -> None:
     incoming = value.get("schemaVersion")
     if incoming != expected_schema:
@@ -1575,15 +1598,18 @@ def _lineage_transition_findings(
         (reference_type, f"guard:{row_id.lower()}-{reference_type.lower().replace('_', '-')}")
         for reference_type in ROW_REFERENCES[row_id]
     ]
-    actual_guards = (
-        [
-            (guard.get("referenceType"), guard.get("subject"))
-            for guard in guards
-            if isinstance(guard, dict)
-        ]
-        if isinstance(guards, list)
-        else []
-    )
+    actual_guards = []
+    if isinstance(guards, list):
+        for guard in guards:
+            if not isinstance(guard, dict):
+                continue
+            kind, subject = guard.get("referenceType"), guard.get("subject")
+            expected_subject = f"guard:{row_id.lower()}-{str(kind).lower().replace('_', '-')}"
+            if kind in {"TIME_OBSERVATION", "EXECUTION_DEADLINE_OBSERVATION"} and isinstance(
+                subject, str
+            ) and subject.startswith(f"{expected_subject}-"):
+                subject = expected_subject
+            actual_guards.append((kind, subject))
     if actual_guards != expected_guards:
         findings.append("Transition guard reference does not bind its exact row.")
         return
@@ -1707,6 +1733,36 @@ def _lineage_transition_findings(
         else:
             expected_hashes["REVOCATION_REFERENCE"] = revocation_reference.get("sha256")
             expected_hashes["EFFECTIVE_TIME"] = _guard_scalar_hash("EFFECTIVE_TIME", revoked_at)
+    temporal: tuple[str, str, str] | None = None
+    if row_id == "D11":
+        temporal = ("TIME_OBSERVATION", "EXPIRY_THRESHOLD", successor["validity"]["expiresAt"])
+    elif row_id in {"R16", "R17", "R18", "R19", "R20"}:
+        temporal = (
+            "TIME_OBSERVATION",
+            "EXECUTION_DEADLINE",
+            successor["executionWindow"]["expiresAt"],
+        )
+    if temporal is not None:
+        observation_type, threshold_type, threshold = temporal
+        expected_hashes[threshold_type] = _guard_scalar_hash(threshold_type, threshold)
+        observed = _guard_observation(
+            guards_by_type.get(observation_type), row_id, observation_type, findings
+        )
+        deadline = datetime.strptime(threshold, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=UTC)
+        if observed is not None and observed < deadline:
+            findings.append("Transition expiry observation is before the governed deadline.")
+    if row_id in {"R07", "R09"}:
+        window = successor["executionWindow"]
+        observed = _guard_observation(
+            guards_by_type.get("EXECUTION_DEADLINE_OBSERVATION"),
+            row_id,
+            "EXECUTION_DEADLINE_OBSERVATION",
+            findings,
+        )
+        start = datetime.strptime(window["approvedAt"], "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=UTC)
+        deadline = datetime.strptime(window["expiresAt"], "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=UTC)
+        if observed is not None and not start <= observed < deadline:
+            findings.append("Transition execution observation is outside the governed deadline.")
     for reference_type, expected_hash in expected_hashes.items():
         if reference_type in guards_by_type and guards_by_type[reference_type].get(
             "sha256"

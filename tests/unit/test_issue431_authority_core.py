@@ -991,6 +991,21 @@ def test_expiry_guards_bind_threshold_and_reject_premature_observation() -> None
     expired["contentHash"] = authority.content_hash(expired)
     assert any("expiry threshold" in item.lower() for item in authority.lineage_findings(objects))
 
+    next(guard for guard in guards if guard["referenceType"] == "EXPIRY_THRESHOLD")[
+        "sha256"
+    ] = guard_hash("EXPIRY_THRESHOLD", "2026-09-15T00:00:00Z")
+    observation = next(guard for guard in guards if guard["referenceType"] == "TIME_OBSERVATION")
+    observation["subject"] = "guard:wrong-subject"
+    expired["contentHash"] = authority.content_hash(expired)
+    assert any("exact row" in item.lower() for item in authority.lineage_findings(objects))
+    observation["subject"] = "guard:d11-time-observation-not-a-time"
+    expired["contentHash"] = authority.content_hash(expired)
+    assert any("subject" in item.lower() for item in authority.lineage_findings(objects))
+    _set_observation(expired, "2026-09-15T00:00:00Z")
+    observation["sha256"] = "1" * 64
+    expired["contentHash"] = authority.content_hash(expired)
+    assert any("unbound" in item.lower() for item in authority.lineage_findings(objects))
+
 
 @pytest.mark.parametrize("expiry_index", range(5))
 def test_route_expiry_requires_observation_at_or_after_deadline(
@@ -1010,7 +1025,10 @@ def test_route_expiry_requires_observation_at_or_after_deadline(
 
 
 @pytest.mark.parametrize("edge_index", [6, 8])
-def test_route_execution_rejects_observation_at_deadline(edge_index: int) -> None:
+@pytest.mark.parametrize("observed_at", ["2026-08-14T23:59:59Z", "2026-09-15T00:00:00Z"])
+def test_route_execution_rejects_observation_at_deadline(
+    edge_index: int, observed_at: str
+) -> None:
     linked = _linked_contract_objects()
     route = linked[-1]
     reviewed = successor(route, ROUTE_EDGES[0])
@@ -1023,7 +1041,7 @@ def test_route_execution_rejects_observation_at_deadline(edge_index: int) -> Non
         lineage.append(candidate)
 
     assert authority.lineage_findings(lineage) == []
-    _set_observation(candidate, "2026-09-15T00:00:00Z")
+    _set_observation(candidate, observed_at)
     assert any("deadline" in item.lower() for item in authority.lineage_findings(lineage))
 
 
