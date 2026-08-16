@@ -978,10 +978,48 @@ def test_pull_request_merge_ref_uses_the_exact_event_head_for_route_history(
         revisions.append(revision)
         return []
 
+    def git(root: Path, *args: str) -> str:
+        if args == ("rev-parse", "--verify", f"{HEAD}^{{commit}}"):
+            return HEAD
+        if args == ("merge-base", BASE, HEAD):
+            return BASE
+        if args == ("rev-parse", "--verify", "HEAD^{commit}"):
+            return "a" * 40
+        if args == ("rev-list", "--parents", "-n", "1", "a" * 40):
+            return f"{'a' * 40} {BASE} {HEAD}"
+        raise AssertionError(f"unexpected git arguments: {args}")
+
+    monkeypatch.setattr(authority, "_git", git)
     monkeypatch.setattr(authority, "_route_findings", route_findings)
 
     assert authority.repository_findings(ROOT) == []
     assert revisions == [HEAD]
+
+
+def test_pull_request_event_head_must_match_the_checked_out_commit_or_merge_parent(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    event_path = tmp_path / "pull-request.json"
+    event_path.write_text(json.dumps(pull_request_event()), encoding="utf-8")
+    monkeypatch.setenv("GITHUB_EVENT_PATH", str(event_path))
+
+    def git(root: Path, *args: str) -> str:
+        if args == ("rev-parse", "--verify", f"{HEAD}^{{commit}}"):
+            return HEAD
+        if args == ("merge-base", BASE, HEAD):
+            return BASE
+        if args == ("rev-parse", "--verify", "HEAD^{commit}"):
+            return "a" * 40
+        if args == ("rev-list", "--parents", "-n", "1", "a" * 40):
+            return f"{'a' * 40} {BASE} {'b' * 40}"
+        raise AssertionError(f"unexpected git arguments: {args}")
+
+    monkeypatch.setattr(authority, "_git", git)
+
+    assert authority._trusted_pull_request_head(ROOT) == (
+        None,
+        "Child A trusted pull-request head does not match the checked-out commit or synthetic merge.",
+    )
 
 
 @pytest.mark.parametrize(
