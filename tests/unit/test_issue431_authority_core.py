@@ -973,11 +973,12 @@ def test_pull_request_merge_ref_uses_the_exact_event_head_for_route_history(
     monkeypatch.setenv("GITHUB_EVENT_PATH", str(event_path))
     monkeypatch.setenv("GITHUB_HEAD_REF", BRANCH)
     revisions: list[str] = []
-    monkeypatch.setattr(
-        authority,
-        "_route_findings",
-        lambda root, revision="HEAD": revisions.append(revision) or [],
-    )
+
+    def route_findings(root: Path, revision: str = "HEAD") -> list[str]:
+        revisions.append(revision)
+        return []
+
+    monkeypatch.setattr(authority, "_route_findings", route_findings)
 
     assert authority.repository_findings(ROOT) == []
     assert revisions == [HEAD]
@@ -1016,11 +1017,12 @@ def test_pull_request_event_identity_failures_stop_route_validation(
     monkeypatch.setenv("GITHUB_EVENT_PATH", str(event_path))
     monkeypatch.setenv("GITHUB_HEAD_REF", BRANCH)
     revisions: list[str] = []
-    monkeypatch.setattr(
-        authority,
-        "_route_findings",
-        lambda root, revision="HEAD": revisions.append(revision) or [],
-    )
+
+    def route_findings(root: Path, revision: str = "HEAD") -> list[str]:
+        revisions.append(revision)
+        return []
+
+    monkeypatch.setattr(authority, "_route_findings", route_findings)
 
     assert authority.repository_findings(ROOT) == [
         "Child A trusted pull-request head identity is unavailable or invalid."

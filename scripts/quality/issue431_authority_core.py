@@ -913,7 +913,13 @@ def repository_findings(root: Path = ROOT) -> list[str]:
         findings.append("Stage 8 does not invoke the semantic Child A repository gate.")
     branch = os.environ.get("GITHUB_HEAD_REF", "").strip() or _git(root, "branch", "--show-current")
     if branch == BRANCH:
-        findings.extend(_route_findings(root))
+        revision: str | None = "HEAD"
+        if os.environ.get("GITHUB_EVENT_NAME", "").strip() == "pull_request":
+            revision, event_finding = _trusted_pull_request_head(root)
+            if event_finding:
+                findings.append(event_finding)
+        if revision is not None:
+            findings.extend(_route_findings(root, revision))
     return findings
 
 
@@ -1422,11 +1428,56 @@ def _git(root: Path, *args: str) -> str:
     return result.stdout.strip()
 
 
-def _route_findings(root: Path) -> list[str]:
+def _trusted_pull_request_head(root: Path) -> tuple[str | None, str | None]:
+    identity_finding = "Child A trusted pull-request head identity is unavailable or invalid."
+    event_path = os.environ.get("GITHUB_EVENT_PATH", "").strip()
+    try:
+        event = json.loads(
+            _bounded_text(Path(event_path)), object_pairs_hook=_reject_duplicate_members
+        )
+    except (OSError, UnicodeError, json.JSONDecodeError, AuthorityValidationError):
+        return None, identity_finding
+    if not isinstance(event, dict):
+        return None, identity_finding
+    repository = event.get("repository")
+    pull_request = event.get("pull_request")
+    if not isinstance(repository, dict) or not isinstance(pull_request, dict):
+        return None, identity_finding
+    base = pull_request.get("base")
+    head = pull_request.get("head")
+    if not isinstance(base, dict) or not isinstance(head, dict):
+        return None, identity_finding
+    head_repository = head.get("repo")
+    head_sha = head.get("sha")
+    if (
+        repository.get("full_name") != "imrohitagrawal/narratwin-ai"
+        or not isinstance(head_repository, dict)
+        or head_repository.get("full_name") != "imrohitagrawal/narratwin-ai"
+        or base.get("ref") != "main"
+        or base.get("sha") != BASE
+        or head.get("ref") != BRANCH
+        or not isinstance(head_sha, str)
+        or GIT_SHA_PATTERN.fullmatch(head_sha) is None
+    ):
+        return None, identity_finding
+    try:
+        resolved = _git(root, "rev-parse", "--verify", f"{head_sha}^{{commit}}")
+        merge_base = _git(root, "merge-base", BASE, head_sha)
+    except AuthorityValidationError:
+        resolved = merge_base = ""
+    if resolved != head_sha or merge_base != BASE:
+        return (
+            None,
+            "Child A trusted pull-request head is unavailable or not based on the exact approved base.",
+        )
+    return head_sha, None
+
+
+def _route_findings(root: Path, revision: str = "HEAD") -> list[str]:
     findings: list[str] = []
-    if _git(root, "merge-base", BASE, "HEAD") != BASE:
+    if _git(root, "merge-base", BASE, revision) != BASE:
         findings.append("Child A exact base is not an ancestor of HEAD.")
-    commits = _git(root, "rev-list", "--reverse", f"{BASE}..HEAD").splitlines()
+    commits = _git(root, "rev-list", "--reverse", f"{BASE}..{revision}").splitlines()
     if not commits or commits[0] != FIRST_COMMIT:
         findings.append("Child A first commit identity mismatches.")
     first_parent = _git(root, "rev-parse", f"{FIRST_COMMIT}^")
@@ -1435,12 +1486,12 @@ def _route_findings(root: Path) -> list[str]:
     ).splitlines()
     if first_parent != BASE or first_paths != ["docs/governance/preflights/issue-431.json"]:
         findings.append("Child A first commit is not preflight-only on the exact base.")
-    changed = set(_git(root, "diff", "--name-only", f"{BASE}..HEAD", "--").splitlines())
-    changed.update(_git(root, "diff", "--name-only", "HEAD", "--").splitlines())
+    changed = set(_git(root, "diff", "--name-only", f"{BASE}..{revision}", "--").splitlines())
+    changed.update(_git(root, "diff", "--name-only", revision, "--").splitlines())
     if changed != set(PATHS):
         findings.append("Child A changed paths do not equal the eighteen-path amended scope.")
     charge = 0
-    for line in _git(root, "diff", "--numstat", BASE, "--").splitlines():
+    for line in _git(root, "diff", "--numstat", BASE, revision, "--").splitlines():
         fields = line.split("\t")
         if len(fields) != 3 or not fields[0].isdigit() or not fields[1].isdigit():
             findings.append("Child A charged-line evidence is malformed or binary.")
@@ -1448,7 +1499,7 @@ def _route_findings(root: Path) -> list[str]:
         charge += int(fields[0]) + int(fields[1])
     if charge > LIMIT:
         findings.append(f"Child A charge {charge} exceeds {LIMIT}.")
-    if _git(root, "rev-list", "--merges", f"{BASE}..HEAD"):
+    if _git(root, "rev-list", "--merges", f"{BASE}..{revision}"):
         findings.append("Child A route contains a merge commit.")
     if _git(root, "rev-parse", "--is-shallow-repository") != "false":
         findings.append("Child A history is shallow.")
