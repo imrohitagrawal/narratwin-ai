@@ -18,7 +18,7 @@ ROOT = Path(__file__).resolve().parents[2]
 BRANCH = "cut1-process-431-authority-core-schemas-state-matrices"
 BASE = "4d239942eeda0c0b6c385b2d85dae873af076aa6"
 FIRST_COMMIT = "7a5594357c24ac864c850a2e1cb92f9cd8acb940"
-LIMIT = 4_064
+LIMIT = 4_096
 MAX_BYTES = 131_072
 MAX_DEPTH = 12
 MAX_COLLECTION = 128
@@ -717,8 +717,15 @@ def lineage_findings(objects: list[dict[str, Any]]) -> list[str]:
         operation = transition.get("operation") if isinstance(transition, dict) else None
         if _stable_payload(predecessor, operation) != _stable_payload(value, operation):
             findings.append("Successor immutable payload differs from predecessor.")
-    if len({item.get("schemaVersion") for item in objects if isinstance(item, dict)}) > 1:
-        _cross_contract_findings(objects, by_hash, findings)
+    contract_objects = [
+        item
+        for item in objects
+        if isinstance(item, dict)
+        and isinstance(item.get("schemaVersion"), str)
+        and id(item) not in invalid_members
+    ]
+    if len({item["schemaVersion"] for item in contract_objects}) > 1:
+        _cross_contract_findings(contract_objects, by_hash, findings)
     return findings
 
 
