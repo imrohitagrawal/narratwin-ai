@@ -590,9 +590,9 @@ def key_rows() -> dict[str, dict[str, object]]:
         public_key_hex="2" * 64,
         predecessor_signature="0" * 128,
     )
-    k03 = key_record(3, operation="RETIRE", previous=k02, key_object_id=cast(str, k02["keyObjectId"]), public_key_hex=cast(str, k02["publicKeyHex"]), revision=2)
-    k04 = key_record(3, operation="REVOKE", previous=k02, key_object_id=cast(str, k02["keyObjectId"]), public_key_hex=cast(str, k02["publicKeyHex"]), revision=2)
-    k05 = key_record(4, operation="REVOKE", previous=k03, key_object_id=cast(str, k03["keyObjectId"]), public_key_hex=cast(str, k03["publicKeyHex"]), revision=3)
+    k03 = key_record(3, operation="RETIRE", previous=k02, key_object_id=cast(str, k02["keyObjectId"]), public_key_hex=cast(str, k02["publicKeyHex"]), revision=2, activationTime=T10)
+    k04 = key_record(3, operation="REVOKE", previous=k02, key_object_id=cast(str, k02["keyObjectId"]), public_key_hex=cast(str, k02["publicKeyHex"]), revision=2, activationTime=T10)
+    k05 = key_record(4, operation="REVOKE", previous=k03, key_object_id=cast(str, k03["keyObjectId"]), public_key_hex=cast(str, k03["publicKeyHex"]), revision=3, activationTime=T10, retiredAt=T20)
     return {"K01": k01, "K02": k02, "K03": k03, "K04": k04, "K05": k05}
 
 
@@ -842,3 +842,439 @@ def test_exact_duplicate_is_idempotent_b009() -> None:
     once = inspect_structure(records, expected_head=head(rows["K02"]))
     twice = inspect_structure(records + (rows["K02"],), expected_head=head(rows["K02"]))
     assert twice == once
+
+
+# Bounded reset RED: these pure interfaces freeze the trust inputs before GREEN.
+def slice3_contract() -> dict[str, object]:
+    return cast(dict[str, object], fixture_corpus()["slice3PublicContract"])
+
+
+RESET_CANDIDATE_HASHES = {"docs/governance/AUTHORITY_EVIDENCE_AND_TRUST_V1.md": "e01e60c7281200e55d9f2d586e8082f02548ff7d97f35e4e4e657858d9c7c264", "docs/governance/authority-evidence-trust-state-matrices-v1.json": "31682fb423cb9a26ab14d0e6ea6e39b0848df23b46b2da3e296583ec82a7f473", "docs/governance/schemas/authority-evidence-envelope-v1.schema.json": "4e699c1223c20790b5dbcfb461fa72978448474a7de348aa0267e2befe334585", "docs/governance/schemas/authority-evidence-reconstruction-v1.schema.json": "7951450388b8e78650a380e852ac95bd9114b67cdaae24c73122f365273ad65b", "docs/governance/schemas/authority-producer-key-v1.schema.json": "90c47cf64be8815fbbfe8a3e074929d767f71696ee8bfdeb63ebf09da30f4ba6", "docs/governance/schemas/authority-producer-trust-root-v1.schema.json": "a3d9f10fb09e4e1b26d4845c4c5953391be50959a826d2fbc323faa46d1ee329"}
+
+
+class ResetResult(Protocol):
+    findings: tuple[trust.Finding, ...]
+    authority_effect: str
+    activation: str
+
+
+class RootInvalidationResult(ResetResult, Protocol):
+    structural_invalidation_applies: bool
+
+
+class IssuingResult(ResetResult, Protocol):
+    issuing_key_eligible: bool
+
+
+class TrustResult(ResetResult, Protocol):
+    trusted: bool
+
+
+def finding_codes(result: object) -> set[str]:
+    return {item.code for item in cast(ResetResult, result).findings}
+
+
+def assert_no_authority(result: object) -> None:
+    typed = cast(ResetResult, result)
+    assert typed.authority_effect == "NO_AUTHORITY_EFFECT"
+    assert typed.activation == "NONE"
+
+
+def contract_artifacts() -> dict[str, bytes]:
+    if not callable(getattr(trust, "validate_contract_artifacts", None)):
+        pytest.fail("validate_contract_artifacts is NOT_IMPLEMENTED")
+    paths = cast(list[str], slice3_contract()["artifactPaths"])
+    return {path: (ROOT / path).read_bytes() for path in paths}
+
+
+def pin_hash(descriptor: Mapping[str, object]) -> str:
+    canonical = json.dumps(descriptor, sort_keys=True, separators=(",", ":")).encode("ascii")
+    return hashlib.sha256(
+        b"NARRATWIN-AUTHORITY-ROOT-PIN-SET-V1\0AuthorityRootPinSetV1\0" + canonical
+    ).hexdigest()
+
+
+def pin_descriptor_for(*hashes: object, phase: str = "ACCEPTANCE") -> dict[str, object]:
+    descriptor = dict(cast(dict[str, object], slice3_contract()["rootPinDescriptor"]))
+    descriptor.update({"evaluationPhase": phase, "rootContentHashes": sorted(cast(tuple[str, ...], hashes))})
+    return descriptor
+
+
+def valid_fixture_root(**changes: object) -> dict[str, object]:
+    value = cast(dict[str, object], json.loads(json.dumps(slice3_contract()["trustRootTemplate"])))
+    value.update(changes)
+    value["contentHash"] = trust.content_hash(
+        trust.ContentKind.TRUST_ROOT, "AuthorityProducerTrustRootV1", value
+    )
+    return value
+
+
+def test_phase_scoped_root_pin_descriptor_exact_known_vector() -> None:
+    contract = slice3_contract()
+    descriptor = cast(dict[str, object], contract["rootPinDescriptor"])
+    assert len(descriptor) == 7
+    assert pin_hash(descriptor) == contract["rootPinSetHash"]
+    assert call_future("root_pin_set_hash", descriptor=descriptor) == contract["rootPinSetHash"]
+
+
+@pytest.mark.parametrize(
+    ("changes", "expected_hash", "source", "expected"),
+    [
+        (None, "FIXTURE", "INDEPENDENT", {"ROOT_PIN_DESCRIPTOR_REQUIRED"}),
+        ({}, None, "INDEPENDENT", {"ROOT_PIN_SET_HASH_REQUIRED"}),
+        ({"repository": "other.invalid/repository"}, "FIXTURE", "INDEPENDENT", {"ROOT_PIN_SCOPE_MISMATCH"}),
+        ({"evaluationPhase": "CURRENT"}, "FIXTURE", "INDEPENDENT", {"ROOT_PIN_PHASE_MISMATCH"}),
+        ({"rootContentHashes": ["2" * 64, "2" * 64]}, "REHASH", "INDEPENDENT", {"ROOT_PIN_DUPLICATE"}),
+        ({"rootContentHashes": ["f" * 64, "2" * 64]}, "REHASH", "INDEPENDENT", {"ROOT_PIN_ORDER"}),
+        ({}, "f" * 64, "INDEPENDENT", {"ROOT_PIN_SET_HASH_MISMATCH"}),
+        ({}, None, "CANDIDATE", {"ROOT_PIN_SET_HASH_REQUIRED", "ROOT_PIN_SOURCE_PROHIBITED"}),
+    ],
+)
+def test_root_pin_absence_scope_order_hash_and_source_fail_closed(
+    changes: dict[str, object] | None, expected_hash: str | None, source: str, expected: set[str]
+) -> None:
+    descriptor = None if changes is None else dict(cast(dict[str, object], slice3_contract()["rootPinDescriptor"]))
+    if descriptor is not None:
+        descriptor.update(cast(dict[str, object], changes))
+    if expected_hash == "FIXTURE":
+        expected_hash = cast(str, slice3_contract()["rootPinSetHash"])
+    elif expected_hash == "REHASH":
+        expected_hash = pin_hash(cast(Mapping[str, object], descriptor))
+    result = call_future(
+        "validate_root_pin_set",
+        descriptor=descriptor,
+        expected_hash=expected_hash,
+        expected_phase="ACCEPTANCE",
+        expected_scope=(REPOSITORY, PROGRAM, GENERATION, PRODUCER),
+        source=source,
+    )
+    assert expected <= finding_codes(result)
+    assert_no_authority(result)
+
+
+def test_acceptance_current_pin_rollback_is_invalid() -> None:
+    acceptance = dict(cast(dict[str, object], slice3_contract()["rootPinDescriptor"]))
+    acceptance["rootContentHashes"] = ["2" * 64, "3" * 64]
+    current = dict(acceptance)
+    current.update({"evaluationPhase": "CURRENT", "rootContentHashes": ["2" * 64]})
+    result = call_future(
+        "validate_root_pin_transition",
+        acceptance_descriptor=acceptance,
+        acceptance_expected_hash=pin_hash(acceptance),
+        current_descriptor=current,
+        current_expected_hash=pin_hash(current),
+    )
+    assert "ROOT_PIN_ROLLBACK" in finding_codes(result)
+    assert_no_authority(result)
+
+
+@pytest.mark.parametrize(("when", "expected"), [(T09, "ROOT_NOT_YET_VALID"), (T10, None), ("2026-08-18T00:00:00Z", "ROOT_EXPIRED")])
+def test_root_validity_is_half_open(when: str, expected: str | None) -> None:
+    root = valid_fixture_root(validFrom=T10)
+    descriptor = pin_descriptor_for(root["contentHash"])
+    result = call_future("validate_trust_root", root_bytes=trust.canonical_bytes(root), expected_root_hash=root["contentHash"], pin_descriptor=descriptor, expected_pin_set_hash=pin_hash(descriptor), evaluation_time=when)
+    assert (expected in finding_codes(result)) if expected else not ({"ROOT_NOT_YET_VALID", "ROOT_EXPIRED"} & finding_codes(result))
+    assert_no_authority(result)
+
+
+@pytest.mark.parametrize(
+    ("case", "expected"),
+    [
+        ("root-bytes", "ROOT_CONTENT_HASH_MISMATCH"),
+        ("genesis", "GENESIS_KEY_BINDING_MISMATCH"),
+        ("root-auth", "ROOT_AUTHORIZATION_KEY_ID_MISMATCH"),
+    ],
+)
+def test_exact_root_bytes_genesis_and_root_authorization(case: str, expected: str) -> None:
+    root = valid_fixture_root()
+    expected_hash = cast(str, root["contentHash"])
+    if case == "root-bytes":
+        root["fixtureOnly"] = False
+    else:
+        member = "genesisCaptureKey" if case == "genesis" else "rootAuthorizationKey"
+        binding = dict(cast(dict[str, object], root[member]))
+        binding["keyId"] = "f" * 64
+        root[member] = binding
+        root["contentHash"] = trust.content_hash(
+            trust.ContentKind.TRUST_ROOT, "AuthorityProducerTrustRootV1", root
+        )
+        expected_hash = cast(str, root["contentHash"])
+    result = call_future(
+        "validate_trust_root",
+        root_bytes=trust.canonical_bytes(root),
+        expected_root_hash=expected_hash,
+        pin_descriptor=pin_descriptor_for(expected_hash),
+        expected_pin_set_hash=pin_hash(pin_descriptor_for(expected_hash)),
+        evaluation_time=T10,
+    )
+    assert expected in finding_codes(result)
+    assert_no_authority(result)
+
+
+@pytest.mark.parametrize(
+    ("when", "invalidated"), [(T19, False), (T20, True), ("2026-08-17T00:20:01Z", True)]
+)
+def test_pinned_successor_root_invalidation_before_at_after(
+    when: str, invalidated: bool
+) -> None:
+    prior = valid_fixture_root()
+    successor = valid_fixture_root(
+        rootId="root:successor-fixture-only",
+        rootVersion=2,
+        predecessorRootContentHash=prior["contentHash"],
+        priorRootCompromise={"priorRootContentHash": prior["contentHash"], "invalidatesPriorRootFrom": T20},
+    )
+    hashes = sorted((cast(str, prior["contentHash"]), cast(str, successor["contentHash"])))
+    descriptor = dict(cast(dict[str, object], slice3_contract()["rootPinDescriptor"]))
+    descriptor.update({"evaluationPhase": "CURRENT", "rootContentHashes": hashes})
+    result = call_future(
+        "resolve_root_invalidation_structure",
+        root_documents={hashes[0]: trust.canonical_bytes(prior if prior["contentHash"] == hashes[0] else successor), hashes[1]: trust.canonical_bytes(successor if successor["contentHash"] == hashes[1] else prior)},
+        pin_descriptor=descriptor,
+        expected_pin_set_hash=pin_hash(descriptor),
+        expected_scope=(REPOSITORY, PROGRAM, GENERATION, PRODUCER),
+        prior_root_content_hash=prior["contentHash"],
+        evaluation_time=when,
+    )
+    assert cast(RootInvalidationResult, result).structural_invalidation_applies is invalidated
+    assert_no_authority(result)
+
+
+@pytest.mark.parametrize(
+    ("row", "changes", "expected"),
+    [
+        ("K01", {"revision": 2}, "GENESIS_RELATION"),
+        ("K01", {"retiredAt": T20}, "GENESIS_RELATION"),
+        ("K02", {"rotationRevision": 99}, "ROTATION_PREDECESSOR_RELATION"),
+        ("K02", {"predecessorAuthorizationSignature": None}, "PREDECESSOR_AUTHORIZATION_REQUIRED"),
+        ("K03", {"retiredAt": None}, "RETIREMENT_REQUIRED"),
+        ("K03", {"activationTime": T00}, "KEY_ACTIVATION_CHANGED"),
+        ("K03", {"predecessorAuthorizationSignature": "0" * 128}, "PREDECESSOR_AUTHORIZATION_PROHIBITED"),
+        ("K04", {"retiredAt": T20}, "REVOKE_SOURCE_STATE"),
+        ("K04", {"invalidatesFrom": None}, "REVOCATION_BOUNDARY_REQUIRED"),
+        ("K05", {"retiredAt": T10}, "RETIRED_STATE_NOT_PRESERVED"),
+        ("K05", {"predecessorContentHash": "0" * 64}, "REVOKE_SOURCE_STATE"),
+        ("K05", {"rootAuthorizationSignature": None}, "ROOT_AUTHORIZATION_REQUIRED"),
+    ],
+)
+def test_k01_k05_exact_condition_and_carry_rules(
+    row: str, changes: dict[str, object], expected: str
+) -> None:
+    rows = key_rows()
+    record = dict(rows[row])
+    if "rotationRevision" in changes:
+        rotation = dict(cast(dict[str, object], record["rotationPredecessor"]))
+        rotation["revision"] = changes.pop("rotationRevision")
+        record["rotationPredecessor"] = rotation
+    record.update(changes)
+    record["contentHash"] = trust.content_hash(
+        trust.ContentKind.PRODUCER_KEY, "AuthorityProducerKeyV1", record
+    )
+    prefix = {"K01": (), "K02": (rows["K01"],), "K03": (rows["K01"], rows["K02"]), "K04": (rows["K01"], rows["K02"]), "K05": (rows["K01"], rows["K02"], rows["K03"])}[row]
+    assert expected in finding_codes(
+        inspect_structure(prefix + (record,), expected_head=head(record))
+    )
+
+
+@pytest.mark.parametrize(("operation", "capture", "eligible"), [("ROTATE", T14, True), ("RETIRE", T19, True), ("RETIRE", T20, False), ("REVOKE", T14, True), ("REVOKE", T15, False)])
+def test_issuing_key_overlap_retirement_and_revocation_use_raw_history(
+    operation: str, capture: str, eligible: bool
+) -> None:
+    rows = key_rows()
+    records: tuple[Mapping[str, object], ...] = (rows["K01"], rows["K02"])
+    if operation != "ROTATE":
+        event = key_record(3, operation=operation, previous=rows["K02"], key_object_id=cast(str, rows["K01"]["keyObjectId"]), public_key_hex=cast(str, rows["K01"]["publicKeyHex"]), revision=2, predecessorContentHash=rows["K01"]["contentHash"], activationTime=T00)
+        records += (event,)
+    result = call_future(
+        "resolve_issuing_key_structure",
+        records=records,
+        expected_head=head(records[-1]),
+        issuing_key=(rows["K01"]["keyObjectId"], rows["K01"]["keyId"], 1, rows["K01"]["contentHash"]),
+        capture_time=capture,
+    )
+    assert cast(IssuingResult, result).issuing_key_eligible is eligible
+    assert_no_authority(result)
+
+
+@pytest.mark.parametrize(("field", "expected"), [(name, "PUBLIC_KEY_FORMAT" if name == "publicKeyHex" else "WRONG_SCALAR_TYPE") for name in ["contentHash", "historySequence", "revision", "keyId", "keyObjectId", "publicKeyHex", "historyPredecessorContentHash", "predecessorContentHash", "rotationPredecessor.contentHash", "rotationPredecessor.keyObjectId", "rotationPredecessor.revision", "expectedHead.root_content_hash", "expectedHead.producer_id", "expectedHead.history_sequence", "expectedHead.key_record_content_hash"]])
+def test_every_graph_indexed_wrong_type_is_isolated(field: str, expected: str) -> None:
+    rows = key_rows()
+    malformed = dict(rows["K02"])
+    if field.startswith("rotationPredecessor"):
+        rotation = dict(cast(dict[str, object], malformed["rotationPredecessor"]))
+        rotation[field.rsplit(".", 1)[1]] = {}
+        malformed["rotationPredecessor"] = rotation
+    elif not field.startswith("expectedHead"):
+        malformed[field] = {}
+    if field != "contentHash":
+        malformed["contentHash"] = trust.content_hash(trust.ContentKind.PRODUCER_KEY, "AuthorityProducerKeyV1", malformed)
+    expected_head = trust.HistoryHead(ROOT_HASH, PRODUCER, 2, cast(str, malformed["contentHash"]))
+    if field == "contentHash":
+        expected_head = head(rows["K02"])
+    if field.startswith("expectedHead"):
+        values: list[object] = [ROOT_HASH, PRODUCER, 2, rows["K02"]["contentHash"]]
+        values[["root_content_hash", "producer_id", "history_sequence", "key_record_content_hash"].index(field.split(".")[1])] = {}
+        expected_head = trust.HistoryHead(*cast(tuple[str, str, int, str], tuple(values)))
+    try:
+        result = inspect_structure((rows["K01"], malformed), expected_head=expected_head)
+    except Exception as exc:  # noqa: BLE001 - RED converts any leak to assertion failure.
+        pytest.fail(f"RAW_EXCEPTION:{type(exc).__name__}")
+    assert {"HISTORY_FORK", "DUPLICATE_KEY_ID", "DUPLICATE_PUBLIC_KEY", "CONFLICTING"}.isdisjoint(finding_codes(result))
+    assert expected in finding_codes(result)
+
+
+@pytest.mark.parametrize(
+    ("mutation", "expected"),
+    [
+        ("missing-schema", "CONTRACT_ARTIFACT_MISSING"),
+        ("corrupt-matrix", "CONTRACT_MATRIX_INVALID"),
+        ("taxonomy-44", "TAXONOMY_CARDINALITY"),
+        ("reverse-32", "REVERSE_ROW_CARDINALITY"),
+        ("mime-12", "PAYLOAD_MIME_CARDINALITY"),
+        ("coordinated", "CHILD_A_TAXONOMY_MISMATCH"),
+    ],
+)
+def test_schema_matrix_deletion_corruption_and_coordinated_drift(
+    mutation: str, expected: str
+) -> None:
+    artifacts = contract_artifacts()
+    paths = cast(list[str], slice3_contract()["artifactPaths"])
+    matrix_path = paths[1]
+    if mutation == "missing-schema":
+        artifacts.pop(paths[2], None)
+    elif mutation == "corrupt-matrix":
+        artifacts[matrix_path] = b"{"
+    else:
+        matrix: dict[str, Any]
+        if artifacts[matrix_path] != b"{}":
+            matrix = cast(dict[str, Any], json.loads(artifacts[matrix_path]))
+        else:
+            matrix = {
+                "typedReferenceTypes": [f"REF_{index:02d}" for index in range(44)],
+                "typedReferenceTaxonomy": [],
+                "reverseTransitionRequirements": {f"R{index:02d}": [] for index in range(32)},
+                "payloadMediaTypeByClass": {f"CLASS_{index:02d}": f"application/vnd.narratwin.fixture-{index:02d}+json" for index in range(12)},
+            }
+        if mutation == "taxonomy-44":
+            matrix["typedReferenceTypes"].append("EXTRA_REFERENCE")
+        elif mutation == "reverse-32":
+            matrix["reverseTransitionRequirements"].pop(next(iter(matrix["reverseTransitionRequirements"])))
+        elif mutation == "mime-12":
+            matrix["payloadMediaTypeByClass"].pop(next(iter(matrix["payloadMediaTypeByClass"])))
+        else:
+            removed = matrix["typedReferenceTypes"].pop()
+            for references in matrix["reverseTransitionRequirements"].values():
+                if removed in references:
+                    references.remove(removed)
+        artifacts[matrix_path] = json.dumps(matrix, sort_keys=True, separators=(",", ":")).encode()
+    result = call_future(
+        "validate_contract_artifacts",
+        artifacts=artifacts,
+        child_a_matrix_bytes=(ROOT / "docs/governance/authority-core-state-matrices-v1.json").read_bytes(),
+    )
+    assert expected in finding_codes(result)
+    assert_no_authority(result)
+
+
+def replace_json(value: object, old: str, new: str) -> object:
+    if isinstance(value, dict):
+        return {key: replace_json(item, old, new) for key, item in value.items()}
+    if isinstance(value, list):
+        return [replace_json(item, old, new) for item in value]
+    return new if value == old else value
+
+
+def test_reset_candidate_artifact_identities_compare_supplied_bytes() -> None:
+    fixture_hashes = cast(dict[str, str], slice3_contract()["resetCandidateArtifactSha256"])
+    assert fixture_hashes == RESET_CANDIDATE_HASHES
+    synthetic = {path: f"synthetic-mutated:{path}".encode() for path in RESET_CANDIDATE_HASHES}
+    result = call_future(
+        "validate_contract_artifacts",
+        artifacts=synthetic,
+        expected_artifact_hashes=RESET_CANDIDATE_HASHES,
+        child_a_matrix_bytes=(ROOT / "docs/governance/authority-core-state-matrices-v1.json").read_bytes(),
+    )
+    assert "ARTIFACT_IDENTITY_MISMATCH" in finding_codes(result)
+    assert_no_authority(result)
+
+
+@pytest.mark.parametrize(
+    ("mutation", "expected"),
+    [("nested", "NESTED_CLOSURE_REQUIRED"), ("required", "REQUIRED_SURFACE_MISMATCH"), ("pin-domain", "ROOT_PIN_DOMAIN_MISMATCH"), ("k-row", "K02_CONTRACT_MISMATCH"), ("mime-duplicate", "PAYLOAD_MIME_BIJECTION"), ("coordinated", "COORDINATED_CONTRACT_MUTATION"), ("predecessor", "ROOT_PREDECESSOR_COMPROMISE_DISTINCT"), ("recovery", "ROOT_RECOVERY_SEMANTICS_REQUIRED"), ("revocation", "ROOT_REVOCATION_SEMANTICS_REQUIRED"), ("k04-k05", "K04_K05_DISTINCT"), ("statuses", "RECONSTRUCTION_STATUS_SET"), ("retained-set", "RETAINED_EXACT_SET_REQUIRED"), ("historical-current", "HISTORICAL_CURRENT_SEPARATION_REQUIRED")],
+)
+def test_nested_schema_pin_domain_k_rows_and_mime_are_executable(
+    mutation: str, expected: str
+) -> None:
+    artifacts = contract_artifacts()
+    paths = cast(list[str], slice3_contract()["artifactPaths"])
+    matrix = cast(dict[str, Any], json.loads(artifacts[paths[1]]))
+    if mutation in {"nested", "required"}:
+        envelope = cast(dict[str, Any], json.loads(artifacts[paths[2]]))
+        if mutation == "nested":
+            envelope["$defs"]["subject"].pop("closed")
+        else:
+            envelope["root"]["required"].remove("signature")
+        artifacts[paths[2]] = json.dumps(envelope, sort_keys=True, separators=(",", ":")).encode()
+    elif mutation == "pin-domain":
+        matrix["contentDomains"]["AuthorityRootPinSetV1"] = "WRONG"
+    elif mutation == "k-row":
+        matrix["keyLifecycle"][1]["predecessorEligibility"] = "IMPLICIT_RETIREMENT"
+    elif mutation in {"predecessor", "recovery", "revocation"}:
+        root = cast(dict[str, Any], json.loads(artifacts[paths[5]]))
+        field = {"predecessor": "priorRootCompromise", "recovery": "recoverySemantics", "revocation": "revocationSemantics"}[mutation]
+        root["root"]["properties"].pop(field)
+        root["root"]["required"].remove(field)
+        artifacts[paths[5]] = json.dumps(root, sort_keys=True, separators=(",", ":")).encode()
+    elif mutation == "k04-k05":
+        matrix["keyLifecycle"][4]["source"] = "ACTIVE"
+    elif mutation in {"statuses", "retained-set", "historical-current"}:
+        reconstruction = cast(dict[str, Any], json.loads(artifacts[paths[3]]))
+        if mutation == "statuses":
+            reconstruction["root"]["properties"]["reconstructionStatus"]["enum"] = ["VALID", "INVALID", "CONFLICTING", "UNAVAILABLE"]
+        elif mutation == "retained-set":
+            reconstruction["root"]["conditions"] = [item for item in reconstruction["root"]["conditions"] if "exact set" not in item]
+        else:
+            reconstruction["root"]["required"].remove("currentVerdict")
+        artifacts[paths[3]] = json.dumps(reconstruction, sort_keys=True, separators=(",", ":")).encode()
+    else:
+        old = matrix["payloadMediaTypeByClass"]["CONTENT_REFERENCE"]
+        new = matrix["payloadMediaTypeByClass"]["CHECK_SET"] if mutation == "mime-duplicate" else "application/vnd.narratwin.authority.alias-v1+json"
+        matrix["payloadMediaTypeByClass"]["CONTENT_REFERENCE"] = new
+        if mutation == "coordinated":
+            for path in paths[2:]:
+                artifacts[path] = json.dumps(replace_json(json.loads(artifacts[path]), old, new), sort_keys=True, separators=(",", ":")).encode()
+    artifacts[paths[1]] = json.dumps(matrix, sort_keys=True, separators=(",", ":")).encode()
+    result = call_future("validate_contract_artifacts", artifacts=artifacts, child_a_matrix_bytes=(ROOT / "docs/governance/authority-core-state-matrices-v1.json").read_bytes())
+    assert expected in finding_codes(result)
+    assert_no_authority(result)
+
+
+def test_valid_signature_alone_cannot_create_validated_key_trust() -> None:
+    vector = rfc_vector()
+    signature = trust.verify_ed25519_signature(
+        public_key_hex=vector["publicKeyHex"],
+        signature_hex=vector["signatureHex"],
+        message=bytes.fromhex(vector["messageHex"]),
+    )
+    assert signature.valid is True
+    root = valid_fixture_root()
+    rows = key_rows()
+    descriptor = dict(cast(dict[str, object], slice3_contract()["rootPinDescriptor"]))
+    descriptor["rootContentHashes"] = [root["contentHash"]]
+    result = call_future(
+        "resolve_evidence_key_trust",
+        envelope_bytes=envelope_bytes(signature=vector["signatureHex"]),
+        root_documents={root["contentHash"]: trust.canonical_bytes(root)},
+        key_record_documents={row["contentHash"]: trust.canonical_bytes(row) for row in rows.values()},
+        acceptance_pin_descriptor=descriptor,
+        acceptance_expected_pin_hash=pin_hash(descriptor),
+        current_pin_descriptor={**descriptor, "evaluationPhase": "CURRENT"},
+        current_expected_pin_hash=pin_hash({**descriptor, "evaluationPhase": "CURRENT"}),
+        acceptance_head=head(rows["K02"]),
+        current_head=head(rows["K05"]),
+        acceptance_time=T19,
+        current_time=T30,
+    )
+    assert {"EVIDENCE_SIGNATURE_INVALID", "ROOT_AUTHORIZATION_INVALID"} <= finding_codes(result)
+    assert cast(TrustResult, result).trusted is False
+    assert_no_authority(result)

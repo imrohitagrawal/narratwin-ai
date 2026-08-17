@@ -10,6 +10,63 @@
     "messageHex": "",
     "signatureHex": "e5564300c360ac729086e2cc806e828a84877f1eb8e5d974d873e065224901555fb8821590a33bacc61e39701cf9b46bd25bf5f0595bbe24655141438e7a100b"
   },
+  "slice3PublicContract": {
+    "provenance": "Issue 434 frozen public contract; no signing or private material",
+    "rootPinDescriptor": {
+      "schemaVersion": "AuthorityRootPinSetV1",
+      "repository": "example.invalid/narratwin-authority-evidence-fixtures",
+      "programId": "program:fixture-only",
+      "generationId": "generation:fixture-only",
+      "producerId": "producer:fixture-only",
+      "evaluationPhase": "ACCEPTANCE",
+      "rootContentHashes": ["2222222222222222222222222222222222222222222222222222222222222222"]
+    },
+    "rootPinSetHash": "3f61cd49bcc289ed78d5ad8b6501f86df895ba0a973259dae72dd600661bcacf",
+    "artifactPaths": [
+      "docs/governance/AUTHORITY_EVIDENCE_AND_TRUST_V1.md",
+      "docs/governance/authority-evidence-trust-state-matrices-v1.json",
+      "docs/governance/schemas/authority-evidence-envelope-v1.schema.json",
+      "docs/governance/schemas/authority-evidence-reconstruction-v1.schema.json",
+      "docs/governance/schemas/authority-producer-key-v1.schema.json",
+      "docs/governance/schemas/authority-producer-trust-root-v1.schema.json"
+    ],
+    "resetCandidateArtifactSha256": {
+      "docs/governance/AUTHORITY_EVIDENCE_AND_TRUST_V1.md": "e01e60c7281200e55d9f2d586e8082f02548ff7d97f35e4e4e657858d9c7c264",
+      "docs/governance/authority-evidence-trust-state-matrices-v1.json": "31682fb423cb9a26ab14d0e6ea6e39b0848df23b46b2da3e296583ec82a7f473",
+      "docs/governance/schemas/authority-evidence-envelope-v1.schema.json": "4e699c1223c20790b5dbcfb461fa72978448474a7de348aa0267e2befe334585",
+      "docs/governance/schemas/authority-evidence-reconstruction-v1.schema.json": "7951450388b8e78650a380e852ac95bd9114b67cdaae24c73122f365273ad65b",
+      "docs/governance/schemas/authority-producer-key-v1.schema.json": "90c47cf64be8815fbbfe8a3e074929d767f71696ee8bfdeb63ebf09da30f4ba6",
+      "docs/governance/schemas/authority-producer-trust-root-v1.schema.json": "a3d9f10fb09e4e1b26d4845c4c5953391be50959a826d2fbc323faa46d1ee329"
+    },
+    "trustRootTemplate": {
+      "schemaVersion": "AuthorityProducerTrustRootV1",
+      "repository": "example.invalid/narratwin-authority-evidence-fixtures",
+      "programId": "program:fixture-only",
+      "generationId": "generation:fixture-only",
+      "rootId": "root:fixture-only",
+      "rootVersion": 1,
+      "predecessorRootContentHash": null,
+      "priorRootCompromise": null,
+      "producerId": "producer:fixture-only",
+      "validFrom": "2026-08-17T00:00:00Z",
+      "expiresAt": "2026-08-18T00:00:00Z",
+      "signatureAlgorithm": "Ed25519",
+      "publicKeyEncoding": "RAW_32_BYTE_LOWER_HEX",
+      "rootAuthorizationKey": {"keyId": "083fd8788d3b5fee721a59750fa7570310de3870cb4dc7bf04e292f8571c9619", "publicKeyHex": "d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a"},
+      "genesisCaptureKey": {"keyObjectId": "key:a:fixture-only", "keyId": "083fd8788d3b5fee721a59750fa7570310de3870cb4dc7bf04e292f8571c9619", "publicKeyHex": "d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a", "revision": 1, "activationTime": "2026-08-17T00:00:00Z"},
+      "allowedSubjectSchemaVersions": ["ActiveProgramRouteV1"],
+      "allowedTransitionRows": ["R01"],
+      "allowedEvidenceRoles": ["INDEPENDENT_REVIEW"],
+      "allowedPayloadMediaTypes": ["application/vnd.narratwin.authority.content-reference-v1+json"],
+      "freshnessPolicies": [{"transitionRowId": "R01", "evidenceRole": "INDEPENDENT_REVIEW", "freshnessClass": "TRANSITION_WINDOW", "maxCaptureDelaySeconds": 60, "maxObservationAgeSeconds": 300, "maxEnvelopeLifetimeSeconds": 300}],
+      "maxPayloadBytes": 131072,
+      "recoverySemantics": "INDEPENDENT_SUCCESSOR_PIN_ONLY",
+      "revocationSemantics": "INDEPENDENT_SUCCESSOR_PIN_WITH_EXACT_PRIOR_ROOT_BOUNDARY_ONLY",
+      "prohibitedCapabilities": ["ACTIVATE_AUTHORITY", "DERIVE_ROOT_PIN", "GENERATE_KEY", "NETWORK_LOOKUP", "PERSIST_EVIDENCE", "SIGN"],
+      "fixtureOnly": true
+    },
+    "expectedCardinalities": {"typedReferenceTypes": 44, "childATransitionRows": 32, "payloadMediaTypes": 12}
+  },
   "cases": [
     {"id": "rfc8032-positive", "boundary": "B-005", "classification": "positive", "probe": "RFC_VECTOR", "expectedVerdict": "VALID", "expectedFindings": []},
     {"id": "signature-bit-mutation", "boundary": "B-005", "classification": "mutation", "probe": "SIGNATURE_BIT_FLIP", "expectedVerdict": "INVALID", "expectedFindings": ["SIGNATURE_INVALID"]},
