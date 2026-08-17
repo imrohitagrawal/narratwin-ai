@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Typed RED interface for the Issue #434 offline evidence verifier.
+"""Pure offline public verifier for Issue #434 authority evidence.
 
 This module intentionally contains no signing, key generation, persistence,
 network, ambient-clock, provider, or authority-activation capability.
@@ -11,7 +11,6 @@ import hashlib
 import json
 import math
 import re
-import sys
 from collections.abc import Mapping
 from copy import deepcopy
 from dataclasses import dataclass, field
@@ -32,7 +31,6 @@ MAX_OBJECT_MEMBERS = 64
 MAX_STRING_BYTES = 2_048
 ACTIVATION: Literal["NONE"] = "NONE"
 NO_AUTHORITY_EFFECT: Literal["NO_AUTHORITY_EFFECT"] = "NO_AUTHORITY_EFFECT"
-NOT_IMPLEMENTED = "NOT_IMPLEMENTED: issue 434 authority-evidence trust verifier"
 LOWER_SHA256 = re.compile(r"[0-9a-f]{64}")
 UTC_SECOND = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z")
 ENVELOPE_SCHEMA_VERSION = "AuthorityEvidenceEnvelopeV1"
@@ -138,35 +136,27 @@ class AuthorityEvidenceTrustError(ValueError):
 
 @dataclass(frozen=True)
 class NotImplementedResult:
-    """Deterministic RED sentinel with no authority or activation effect."""
-
     implemented: Literal[False] = False
     code: Literal["NOT_IMPLEMENTED"] = "NOT_IMPLEMENTED"
-    detail: str = NOT_IMPLEMENTED
+    detail: str = "NOT_IMPLEMENTED: issue 434 authority-evidence trust verifier"
     authority_effect: Literal["NO_AUTHORITY_EFFECT"] = "NO_AUTHORITY_EFFECT"
     activation: Literal["NONE"] = "NONE"
 
 
 @dataclass(frozen=True)
 class Finding:
-    """A stable bounded diagnostic that does not echo untrusted bytes."""
-
     code: str
     location: str | None = None
 
 
 @dataclass(frozen=True)
 class SignatureResult:
-    """Public-key verification result."""
-
     valid: bool
     findings: tuple[Finding, ...]
 
 
 @dataclass(frozen=True)
 class HistoryHead:
-    """An independently supplied root-and-producer-scoped history head."""
-
     root_content_hash: str
     producer_id: str
     history_sequence: int
@@ -175,8 +165,6 @@ class HistoryHead:
 
 @dataclass(frozen=True)
 class IndependentTrustInputs:
-    """Pins and heads supplied independently from all candidate evidence."""
-
     acceptance_root_pins: tuple[str, ...]
     acceptance_root_pin_set_hash: str | None
     current_root_pins: tuple[str, ...]
@@ -187,8 +175,6 @@ class IndependentTrustInputs:
 
 @dataclass(frozen=True)
 class Evaluation:
-    """Historical/current result with an immutable nonactivation boundary."""
-
     historical_verdict: Verdict
     current_verdict: Verdict
     findings: tuple[Finding, ...]
@@ -588,11 +574,486 @@ def _missing_trust_findings(inputs: IndependentTrustInputs) -> list[Finding]:
     return findings
 
 
-def main() -> int:
-    """Expose a deterministic nonzero RED sentinel without reading external input."""
+KEY_RECORD_MEMBERS = frozenset(("activationTime contentHash fixtureOnly generationId historyPredecessorContentHash historySequence invalidatesFrom keyId keyObjectId operation predecessorAuthorizationSignature predecessorContentHash producerId programId publicKeyHex repository retiredAt revision revokedAt rootAuthorizationSignature rootContentHash rotationPredecessor schemaVersion signatureAlgorithm").split())
+KEY_OPERATIONS = frozenset({"ISSUE_GENESIS", "ROTATE", "RETIRE", "REVOKE"})
 
-    print(NOT_IMPLEMENTED, file=sys.stderr)
-    return 1
+
+@dataclass(frozen=True)
+class KeyHistoryStructureResult:
+    findings: tuple[Finding, ...]
+    authorization_evaluated: Literal[False] = field(default=False, init=False)
+    root_invalidation_applied: Literal[False] = field(default=False, init=False)
+    authority_effect: Literal["NO_AUTHORITY_EFFECT"] = field(default=NO_AUTHORITY_EFFECT, init=False)
+    activation: Literal["NONE"] = field(default=ACTIVATION, init=False)
+
+
+@dataclass(frozen=True)
+class TrustBoundaryResult:
+    findings: tuple[Finding, ...]
+    valid: bool = False
+    structural_invalidation_applies: bool = False
+    issuing_key_eligible: bool = False
+    trusted: bool = False
+    authority_effect: Literal["NO_AUTHORITY_EFFECT"] = field(default=NO_AUTHORITY_EFFECT, init=False)
+    activation: Literal["NONE"] = field(default=ACTIVATION, init=False)
+
+
+def _public_key_id(public_key_hex: str) -> str:
+    return hashlib.sha256(b"NARRATWIN-AUTHORITY-ED25519-PUBLIC-KEY-V1\0" + bytes.fromhex(public_key_hex)).hexdigest()
+
+
+def _key_authorization_input(record: Mapping[str, object], domain: bytes) -> bytes:
+    schema_version = record.get("schemaVersion")
+    if schema_version != PRODUCER_KEY_SCHEMA_VERSION:
+        raise AuthorityEvidenceTrustError("SCHEMA_VERSION_MISMATCH")
+    unsigned = deepcopy(dict(record))
+    for name in (
+        "contentHash",
+        "rootAuthorizationSignature",
+        "predecessorAuthorizationSignature",
+    ):
+        unsigned.pop(name, None)
+    return domain + b"\0" + PRODUCER_KEY_SCHEMA_VERSION.encode("ascii") + b"\0" + canonical_bytes(unsigned)
+
+
+def verify_key_record_authorization_signatures(*, record: Mapping[str, object], root_public_key_hex: str, predecessor_public_key_hex: str | None) -> SignatureResult:
+    """Verify caller-supplied public signatures; never establish trust or identity."""
+
+    findings: list[Finding] = []
+    if record.get("signatureAlgorithm") != "Ed25519":
+        findings.append(Finding("SIGNATURE_ALGORITHM", "keyRecord"))
+    public_key_hex = record.get("publicKeyHex")
+    key_id = record.get("keyId")
+    if not isinstance(public_key_hex, str) or not re.fullmatch(
+        r"[0-9a-f]{64}", public_key_hex
+    ):
+        findings.append(Finding("PUBLIC_KEY_FORMAT", "keyRecord.publicKeyHex"))
+    elif key_id != _public_key_id(public_key_hex):
+        findings.append(Finding("KEY_ID_MISMATCH", "keyRecord.keyId"))
+    try:
+        root_message = _key_authorization_input(record, b"NARRATWIN-AUTHORITY-KEY-ROOT-AUTHORIZATION-V1")
+        predecessor_message = _key_authorization_input(record, b"NARRATWIN-AUTHORITY-KEY-PREDECESSOR-AUTHORIZATION-V1")
+    except AuthorityEvidenceTrustError as exc:
+        findings.append(Finding(exc.code, "keyRecord"))
+        return SignatureResult(False, tuple(findings))
+
+    root_signature = record.get("rootAuthorizationSignature")
+    if root_signature is None:
+        findings.append(Finding("ROOT_AUTHORIZATION_REQUIRED", "keyRecord"))
+    else:
+        root_result = verify_ed25519_signature(
+            public_key_hex=root_public_key_hex,
+            signature_hex=cast(str, root_signature),
+            message=root_message,
+        )
+        if not root_result.valid:
+            findings.append(Finding("ROOT_AUTHORIZATION_INVALID", "keyRecord"))
+
+    if record.get("operation") == "ROTATE":
+        predecessor_signature = record.get("predecessorAuthorizationSignature")
+        if predecessor_signature is None or predecessor_public_key_hex is None:
+            findings.append(Finding("PREDECESSOR_AUTHORIZATION_REQUIRED", "keyRecord"))
+        else:
+            predecessor_result = verify_ed25519_signature(
+                public_key_hex=predecessor_public_key_hex,
+                signature_hex=cast(str, predecessor_signature),
+                message=predecessor_message,
+            )
+            if not predecessor_result.valid:
+                findings.append(Finding("PREDECESSOR_AUTHORIZATION_INVALID", "keyRecord"))
+    return SignatureResult(not findings, tuple(findings))
+
+
+def _utc_value(value: object) -> datetime | None:
+    if _validate_explicit_time(value, "time"):
+        return None
+    return datetime.strptime(cast(str, value), "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=UTC)
+
+
+def inspect_key_history_structure(
+    *,
+    records: tuple[Mapping[str, object], ...],
+    expected_head: HistoryHead | None,
+    repository: str, program_id: str, generation_id: str, producer_id: str,
+    root_content_hash: str, capture_time: str, evaluation_time: str,
+    independently_pinned_roots: tuple[str, ...],
+    root_invalidations: tuple[Mapping[str, object], ...],
+) -> KeyHistoryStructureResult:
+    """Inspect a bounded history without evaluating signatures, trust, or authority."""
+
+    findings: list[Finding] = []
+
+    def add(code: str, location: str = "keyHistory") -> None:
+        finding = Finding(code, location)
+        if finding not in findings:
+            findings.append(finding)
+
+    if len(records) > 64:
+        add("HISTORY_RECORD_LIMIT")
+        return KeyHistoryStructureResult(tuple(findings))
+    capture, evaluation = _utc_value(capture_time), _utc_value(evaluation_time)
+    if capture is None:
+        add("TIME_FORMAT", "captureTime")
+    if evaluation is None:
+        add("TIME_FORMAT", "evaluationTime")
+    pinned_roots = independently_pinned_roots[:64]
+    if len(independently_pinned_roots) > 64 or len(root_invalidations) > 64:
+        add("ROOT_PIN_SET_LIMIT")
+    if root_content_hash not in pinned_roots:
+        add("ROOT_PIN_REQUIRED")
+
+    unique: list[Mapping[str, object]] = []
+    presented: dict[str, Mapping[str, object]] = {}
+    for candidate in records:
+        if not isinstance(candidate, Mapping):
+            add("WRONG_SCALAR_TYPE", "keyHistory.record")
+            continue
+        record = candidate
+        record_hash = record.get("contentHash")
+        if isinstance(record_hash, str) and record_hash in presented:
+            if record == presented[record_hash]:
+                continue
+            add("DUPLICATE_CONTENT_HASH")
+        if isinstance(record_hash, str):
+            presented[record_hash] = record
+        unique.append(record)
+
+    declared_ids: dict[str, tuple[object, object]] = {}
+    declared_keys: dict[str, object] = {}
+    for record in unique:
+        key_id, public_key, key_object = (record.get(name) for name in ("keyId", "publicKeyHex", "keyObjectId"))
+        if all(isinstance(item, str) for item in (key_id, public_key, key_object)):
+            if key_id in declared_ids and declared_ids[key_id] != (public_key, key_object):
+                add("DUPLICATE_KEY_ID")
+            if public_key in declared_keys and declared_keys[public_key] != key_object:
+                add("DUPLICATE_PUBLIC_KEY")
+            declared_ids.setdefault(cast(str, key_id), (public_key, key_object))
+            declared_keys.setdefault(cast(str, public_key), key_object)
+
+    valid: list[Mapping[str, object]] = []
+    for record in unique:
+        local: list[Finding] = []
+
+        def reject(code: str, member: str = "keyRecord") -> None:
+            local.append(Finding(code, member))
+
+        try:
+            _check_json_value(record)
+        except AuthorityEvidenceTrustError as exc:
+            reject(exc.code)
+        if set(record) - KEY_RECORD_MEMBERS:
+            reject("UNKNOWN_MEMBER")
+        if KEY_RECORD_MEMBERS - set(record):
+            reject("MISSING_MEMBER")
+        for name in ("historySequence", "revision"):
+            value = record.get(name)
+            if isinstance(value, bool) or not isinstance(value, int):
+                reject("WRONG_SCALAR_TYPE", f"keyRecord.{name}")
+        for name in ("contentHash", "keyId", "keyObjectId", "publicKeyHex", "repository", "programId", "generationId", "producerId", "rootContentHash"):
+            if not isinstance(record.get(name), str):
+                reject("WRONG_SCALAR_TYPE", f"keyRecord.{name}")
+        for name in ("historyPredecessorContentHash", "predecessorContentHash"):
+            value = record.get(name)
+            if value is not None and not isinstance(value, str):
+                reject("WRONG_SCALAR_TYPE", f"keyRecord.{name}")
+        rotation_value = record.get("rotationPredecessor")
+        if rotation_value is not None:
+            if not isinstance(rotation_value, Mapping):
+                reject("WRONG_SCALAR_TYPE", "keyRecord.rotationPredecessor")
+            else:
+                if set(rotation_value) != {"contentHash", "keyObjectId", "revision"}:
+                    reject("ROTATION_PREDECESSOR_RELATION")
+                for name, expected_type in (("contentHash", str), ("keyObjectId", str), ("revision", int)):
+                    value = rotation_value.get(name)
+                    if isinstance(value, bool) or not isinstance(value, expected_type):
+                        reject("WRONG_SCALAR_TYPE", f"keyRecord.rotationPredecessor.{name}")
+        operation = record.get("operation")
+        if operation not in KEY_OPERATIONS:
+            reject("UNKNOWN_KEY_OPERATION", "keyRecord.operation")
+        for name in ("activationTime", "retiredAt", "revokedAt", "invalidatesFrom"):
+            value = record.get(name)
+            if value is not None and _utc_value(value) is None:
+                reject("TIME_FORMAT", f"keyRecord.{name}")
+        if operation == "ISSUE_GENESIS" and any((record.get("revision") != 1, record.get("historySequence") != 1, record.get("historyPredecessorContentHash") is not None, record.get("predecessorContentHash") is not None, record.get("rotationPredecessor") is not None, record.get("predecessorAuthorizationSignature") is not None, record.get("retiredAt") is not None, record.get("revokedAt") is not None, record.get("invalidatesFrom") is not None)):
+            reject("GENESIS_RELATION")
+        if operation == "ROTATE":
+            if record.get("predecessorAuthorizationSignature") is None:
+                reject("PREDECESSOR_AUTHORIZATION_REQUIRED")
+            if record.get("revision") != 1 or record.get("predecessorContentHash") is not None or record.get("rotationPredecessor") is None or any(record.get(name) is not None for name in ("retiredAt", "revokedAt", "invalidatesFrom")):
+                reject("ROTATION_PREDECESSOR_RELATION")
+        if operation in KEY_OPERATIONS and record.get("rootAuthorizationSignature") is None:
+            reject("ROOT_AUTHORIZATION_REQUIRED")
+        if operation == "RETIRE":
+            if record.get("retiredAt") is None:
+                reject("RETIREMENT_REQUIRED")
+            if any(record.get(name) is not None for name in ("rotationPredecessor", "revokedAt", "invalidatesFrom", "predecessorAuthorizationSignature")):
+                reject("PREDECESSOR_AUTHORIZATION_PROHIBITED")
+        if operation == "REVOKE":
+            if record.get("revokedAt") is None or record.get("invalidatesFrom") is None:
+                reject("REVOCATION_BOUNDARY_REQUIRED")
+            activation, invalidates, revoked = (_utc_value(record.get(name)) for name in ("activationTime", "invalidatesFrom", "revokedAt"))
+            if None not in (activation, invalidates, revoked) and not cast(datetime, activation) <= cast(datetime, invalidates) <= cast(datetime, revoked):
+                reject("REVOCATION_BOUNDARY_ORDER")
+        scope = {"repository": (repository, "REPOSITORY_SCOPE_MISMATCH"), "programId": (program_id, "PROGRAM_SCOPE_MISMATCH"), "generationId": (generation_id, "GENERATION_SCOPE_MISMATCH"), "producerId": (producer_id, "PRODUCER_SCOPE_MISMATCH"), "rootContentHash": (root_content_hash, "ROOT_SCOPE_MISMATCH")}
+        for name, (expected, code) in scope.items():
+            if record.get(name) != expected:
+                reject(code, f"keyRecord.{name}")
+        public_key_hex = record.get("publicKeyHex")
+        if not isinstance(public_key_hex, str) or not re.fullmatch(
+            r"[0-9a-f]{64}", public_key_hex
+        ):
+            reject("PUBLIC_KEY_FORMAT", "keyRecord.publicKeyHex")
+        elif record.get("keyId") != _public_key_id(public_key_hex):
+            reject("KEY_ID_MISMATCH", "keyRecord.keyId")
+        try:
+            actual_hash = content_hash(
+                ContentKind.PRODUCER_KEY, PRODUCER_KEY_SCHEMA_VERSION, record
+            )
+        except AuthorityEvidenceTrustError as exc:
+            reject(exc.code)
+        else:
+            if record.get("contentHash") != actual_hash:
+                reject("CONTENT_HASH_MISMATCH", "keyRecord.contentHash")
+        for finding in local:
+            add(finding.code, finding.location or "keyRecord")
+        if {finding.code for finding in local} <= {"ROOT_AUTHORIZATION_REQUIRED", "PREDECESSOR_AUTHORIZATION_REQUIRED"}:
+            valid.append(record)
+
+    by_hash = {cast(str, row["contentHash"]): row for row in valid}
+    children: dict[str, list[str]] = {}
+    key_ids: dict[str, tuple[str, str]] = {}
+    public_keys: dict[str, str] = {}
+    for record in valid:
+        record_hash = cast(str, record["contentHash"])
+        sequence = cast(int, record["historySequence"])
+        predecessor_hash = record.get("historyPredecessorContentHash")
+        if sequence == 1:
+            if predecessor_hash is not None:
+                add("HISTORY_SEQUENCE_JUMP")
+        elif not isinstance(predecessor_hash, str) or predecessor_hash not in by_hash:
+            add("HISTORY_PREDECESSOR_UNAVAILABLE")
+        else:
+            children.setdefault(predecessor_hash, []).append(record_hash)
+            if by_hash[predecessor_hash].get("historySequence") != sequence - 1:
+                add("HISTORY_SEQUENCE_JUMP")
+
+        key_id = cast(str, record["keyId"])
+        public_key = cast(str, record["publicKeyHex"])
+        key_object = cast(str, record["keyObjectId"])
+        prior_identity = key_ids.get(key_id)
+        if prior_identity and prior_identity[0] != public_key:
+            add("DUPLICATE_KEY_ID")
+        elif prior_identity and prior_identity[1] != key_object:
+            add("DUPLICATE_PUBLIC_KEY")
+        key_ids.setdefault(key_id, (public_key, key_object))
+        if public_key in public_keys and public_keys[public_key] != key_object:
+            add("DUPLICATE_PUBLIC_KEY")
+        public_keys.setdefault(public_key, key_object)
+
+        operation = record["operation"]
+        if operation == "ROTATE":
+            rotation = record.get("rotationPredecessor")
+            rotation_hash = rotation.get("contentHash") if isinstance(rotation, Mapping) else None
+            prior = by_hash.get(rotation_hash) if isinstance(rotation_hash, str) else None
+            wrong_relation = (
+                not isinstance(rotation, Mapping)
+                or record.get("predecessorContentHash") is not None
+                or record.get("revision") != 1
+                or prior is None
+                or prior.get("contentHash") != record.get("historyPredecessorContentHash")
+                or rotation.get("keyObjectId") != prior.get("keyObjectId")
+                or prior.get("keyObjectId") == key_object
+                or prior.get("publicKeyHex") == public_key
+                or rotation.get("revision") != prior.get("revision")
+            )
+            if wrong_relation:
+                add("ROTATION_PREDECESSOR_RELATION")
+        elif operation in {"RETIRE", "REVOKE"}:
+            same_predecessor = record.get("predecessorContentHash")
+            prior = by_hash.get(same_predecessor) if isinstance(same_predecessor, str) else None
+            if prior is None:
+                add("SAME_KEY_PREDECESSOR_REQUIRED")
+                if operation == "REVOKE":
+                    add("REVOKE_SOURCE_STATE")
+            elif prior.get("keyObjectId") != key_object or prior.get("publicKeyHex") != public_key:
+                add("SAME_KEY_PREDECESSOR_RELATION")
+            elif cast(int, record["revision"]) <= cast(int, prior["revision"]):
+                add("KEY_REVISION_DOWNGRADE")
+            elif cast(int, record["revision"]) != cast(int, prior["revision"]) + 1:
+                add("KEY_REVISION_GAP")
+            else:
+                if record.get("activationTime") != prior.get("activationTime"):
+                    add("KEY_ACTIVATION_CHANGED")
+                if operation == "REVOKE":
+                    if prior.get("retiredAt") is None and record.get("retiredAt") is not None:
+                        add("REVOKE_SOURCE_STATE")
+                    if prior.get("retiredAt") is not None and record.get("retiredAt") != prior.get("retiredAt"):
+                        add("RETIRED_STATE_NOT_PRESERVED")
+
+    if any(len(successors) > 1 for successors in children.values()) or sum(row.get("historySequence") == 1 for row in valid) > 1:
+        add("HISTORY_FORK")
+    for record in valid:
+        seen: set[str] = set()
+        cursor: Mapping[str, object] | None = record
+        while cursor is not None:
+            cursor_hash = cast(str, cursor["contentHash"])
+            if cursor_hash in seen:
+                add("HISTORY_CYCLE")
+                break
+            seen.add(cursor_hash)
+            predecessor = cursor.get("historyPredecessorContentHash")
+            cursor = by_hash.get(predecessor) if isinstance(predecessor, str) else None
+
+    head_record: Mapping[str, object] | None = None
+    if expected_head is not None and not isinstance(expected_head, HistoryHead):
+        add("WRONG_SCALAR_TYPE", "expectedHead")
+        expected_head = None
+    if expected_head is None:
+        add("CURRENT_HEAD_REQUIRED")
+    else:
+        head_strings = (expected_head.root_content_hash, expected_head.producer_id, expected_head.key_record_content_hash)
+        if any(not isinstance(value, str) for value in head_strings) or isinstance(expected_head.history_sequence, bool) or not isinstance(expected_head.history_sequence, int):
+            add("WRONG_SCALAR_TYPE", "expectedHead")
+            return KeyHistoryStructureResult(tuple(findings))
+        head_record = by_hash.get(expected_head.key_record_content_hash)
+        if (
+            expected_head.root_content_hash != root_content_hash
+            or expected_head.producer_id != producer_id
+            or head_record is None
+            or head_record.get("historySequence") != expected_head.history_sequence
+        ):
+            add("CURRENT_HEAD_MISMATCH")
+            head_record = None
+        else:
+            head_chain: set[str] = set()
+            head_cursor: Mapping[str, object] | None = head_record
+            while head_cursor is not None and cast(str, head_cursor["contentHash"]) not in head_chain:
+                head_chain.add(cast(str, head_cursor["contentHash"]))
+                predecessor = head_cursor.get("historyPredecessorContentHash")
+                head_cursor = by_hash.get(predecessor) if isinstance(predecessor, str) else None
+            if set(by_hash) != head_chain:
+                add("CURRENT_HEAD_ROLLBACK")
+
+    if head_record is not None and capture is not None and evaluation is not None:
+        activation = _utc_value(head_record.get("activationTime"))
+        retired = _utc_value(head_record.get("retiredAt"))
+        revoked = _utc_value(head_record.get("revokedAt"))
+        invalidates = _utc_value(head_record.get("invalidatesFrom"))
+        if activation is not None and capture < activation:
+            add("KEY_NOT_YET_ACTIVE")
+        if retired is not None and capture >= retired:
+            add("KEY_RETIRED")
+        if revoked is not None and invalidates is not None and evaluation >= revoked and capture >= invalidates:
+            add("KEY_REVOKED")
+
+    for declaration in root_invalidations[:64]:
+        if not isinstance(declaration, Mapping):
+            add("WRONG_SCALAR_TYPE", "rootInvalidation")
+            continue
+        successor = declaration.get("successorRootContentHash")
+        if not isinstance(successor, str) or successor not in pinned_roots:
+            add("ROOT_SUCCESSOR_PIN_REQUIRED", "rootInvalidation")
+    return KeyHistoryStructureResult(tuple(findings))
+
+
+PIN_MEMBERS = frozenset({"schemaVersion", "repository", "programId", "generationId", "producerId", "evaluationPhase", "rootContentHashes"})
+PIN_DOMAIN = b"NARRATWIN-AUTHORITY-ROOT-PIN-SET-V1\0AuthorityRootPinSetV1\0"
+
+
+def root_pin_set_hash(*, descriptor: Mapping[str, object]) -> str:
+    return hashlib.sha256(PIN_DOMAIN + canonical_bytes(descriptor)).hexdigest()
+
+
+def _codes(*codes: str, valid: bool = False, **flags: bool) -> TrustBoundaryResult:
+    return TrustBoundaryResult(tuple(Finding(code) for code in dict.fromkeys(codes)), valid=valid, **flags)
+
+
+def _closed_boundary(result: object) -> TrustBoundaryResult:
+    from scripts.quality.issue434_authority_evidence_reconstruction import ClosedResult
+
+    closed = cast(ClosedResult, result)
+    return TrustBoundaryResult(
+        closed.findings,
+        valid=closed.valid,
+        structural_invalidation_applies=closed.structural_invalidation_applies,
+        issuing_key_eligible=closed.issuing_key_eligible,
+        trusted=closed.trusted,
+    )
+
+
+def validate_root_pin_set(*, descriptor: Mapping[str, object] | None, expected_hash: str | None, expected_phase: str, expected_scope: tuple[str, str, str, str], source: str) -> TrustBoundaryResult:
+    from scripts.quality import issue434_authority_evidence_reconstruction as closed
+
+    codes = (["ROOT_PIN_DESCRIPTOR_REQUIRED"] if descriptor is None else closed._pin_codes(descriptor, expected_hash, expected_phase, expected_scope))
+    if source != "INDEPENDENT":
+        codes.append("ROOT_PIN_SOURCE_PROHIBITED")
+    return _codes(*dict.fromkeys(codes), valid=not codes)
+
+
+def validate_root_pin_transition(*, acceptance_descriptor: Mapping[str, object], acceptance_expected_hash: str, current_descriptor: Mapping[str, object], current_expected_hash: str) -> TrustBoundaryResult:
+    from scripts.quality import issue434_authority_evidence_reconstruction as closed
+
+    values = tuple(acceptance_descriptor.get(name) for name in ("repository", "programId", "generationId", "producerId")) if isinstance(acceptance_descriptor, Mapping) else ()
+    scope = cast(tuple[str, str, str, str], values) if len(values) == 4 and all(isinstance(item, str) for item in values) else ("", "", "", "")
+    return _closed_boundary(closed.validate_pin_transition(acceptance_descriptor=acceptance_descriptor, acceptance_expected_hash=acceptance_expected_hash, current_descriptor=current_descriptor, current_expected_hash=current_expected_hash, expected_scope=scope))
+
+
+def validate_trust_root(*, root_bytes: bytes, expected_root_hash: object, pin_descriptor: Mapping[str, object], expected_pin_set_hash: str, evaluation_time: str) -> TrustBoundaryResult:
+    from scripts.quality import issue434_authority_evidence_reconstruction as closed
+
+    values = tuple(pin_descriptor.get(name) for name in ("repository", "programId", "generationId", "producerId")) if isinstance(pin_descriptor, Mapping) else ()
+    scope = cast(tuple[str, str, str, str], values) if len(values) == 4 and all(isinstance(item, str) for item in values) else ("", "", "", "")
+    phase = pin_descriptor.get("evaluationPhase") if isinstance(pin_descriptor, Mapping) and pin_descriptor.get("evaluationPhase") in {"ACCEPTANCE", "CURRENT"} else "ACCEPTANCE"
+    return _closed_boundary(closed.validate_closed_root(root_bytes=root_bytes, expected_root_hash=expected_root_hash, pin_descriptor=pin_descriptor, expected_pin_set_hash=expected_pin_set_hash, expected_phase=cast(str, phase), expected_scope=scope, evaluation_time=evaluation_time))
+
+
+def resolve_root_invalidation_structure(*, root_documents: Mapping[str, bytes], pin_descriptor: Mapping[str, object], expected_pin_set_hash: str, expected_scope: tuple[str, str, str, str], prior_root_content_hash: object, evaluation_time: str) -> TrustBoundaryResult:
+    from scripts.quality import issue434_authority_evidence_reconstruction as closed
+
+    return _closed_boundary(closed.resolve_root_invalidation(root_documents=root_documents, pin_descriptor=pin_descriptor, expected_pin_set_hash=expected_pin_set_hash, expected_scope=expected_scope, prior_root_content_hash=prior_root_content_hash, evaluation_time=evaluation_time))
+
+
+def resolve_issuing_key_structure(*, records: tuple[Mapping[str, object], ...], expected_head: HistoryHead, issuing_key: tuple[object, object, object, object], capture_time: str) -> TrustBoundaryResult:
+    if not records or not all(isinstance(row, Mapping) for row in records) or not isinstance(expected_head, HistoryHead) or not isinstance(issuing_key, tuple) or len(issuing_key) != 4:
+        return _codes("KEY_RECORD_INVALID")
+    first = records[0]
+    values = tuple(first.get(name) for name in ("repository", "programId", "generationId", "producerId", "rootContentHash"))
+    if any(not isinstance(item, str) for item in values):
+        return _codes("KEY_RECORD_INVALID")
+    structure = inspect_key_history_structure(records=records, expected_head=expected_head, repository=cast(str, values[0]), program_id=cast(str, values[1]), generation_id=cast(str, values[2]), producer_id=cast(str, values[3]), root_content_hash=cast(str, values[4]), capture_time=capture_time, evaluation_time=capture_time, independently_pinned_roots=(cast(str, values[4]),), root_invalidations=())
+    findings = [item.code for item in structure.findings]
+    key_object, key_id, revision, record_hash = issuing_key
+    capture = _utc_value(capture_time)
+    selected = next((row for row in records if row.get("keyObjectId") == key_object and row.get("keyId") == key_id and row.get("revision") == revision and row.get("contentHash") == record_hash), None)
+    eligible = capture is not None and selected is not None and not findings
+    if selected is None:
+        findings.append("ISSUING_KEY_IDENTITY_MISMATCH")
+    for row in records:
+        if row.get("keyObjectId") != key_object or row.get("operation") not in {"RETIRE", "REVOKE"}:
+            continue
+        boundary = _utc_value(row.get("retiredAt") if row.get("operation") == "RETIRE" else row.get("invalidatesFrom"))
+        if capture is not None and boundary is not None and capture >= boundary:
+            eligible = False
+    return _codes(*dict.fromkeys(findings), issuing_key_eligible=eligible)
+
+
+def validate_contract_artifacts(*, artifacts: Mapping[str, bytes], child_a_matrix_bytes: bytes, expected_artifact_hashes: Mapping[str, str] | None = None) -> TrustBoundaryResult:
+    from scripts.quality import issue434_authority_evidence_reconstruction as closed
+
+    return _closed_boundary(closed.validate_artifact_set(artifacts=artifacts, child_a_matrix_bytes=child_a_matrix_bytes, expected_artifact_hashes=expected_artifact_hashes))
+
+
+def resolve_evidence_key_trust(*, envelope_bytes: bytes, root_documents: Mapping[str, bytes], key_record_documents: Mapping[str, bytes], acceptance_pin_descriptor: Mapping[str, object], acceptance_expected_pin_hash: str, current_pin_descriptor: Mapping[str, object], current_expected_pin_hash: str, acceptance_head: HistoryHead, current_head: HistoryHead, acceptance_time: str, current_time: str, payload_bytes: bytes | None = None, taxonomy_matrix_bytes: bytes = b"{}") -> TrustBoundaryResult:
+    from scripts.quality import issue434_authority_evidence_reconstruction as closed
+
+    return _closed_boundary(closed.resolve_complete_evidence(envelope_bytes=envelope_bytes, payload_bytes=payload_bytes, root_documents=root_documents, key_record_documents=key_record_documents, acceptance_pin_descriptor=acceptance_pin_descriptor, acceptance_expected_pin_hash=acceptance_expected_pin_hash, current_pin_descriptor=current_pin_descriptor, current_expected_pin_hash=current_expected_pin_hash, acceptance_head=acceptance_head, current_head=current_head, acceptance_time=acceptance_time, current_time=current_time, taxonomy_matrix_bytes=taxonomy_matrix_bytes))
+
+
+def main() -> int:
+    """Report availability without reading input or activating authority."""
+
+    print("AuthorityEvidenceTrustV1: READY; authorityEffect=NO_AUTHORITY_EFFECT; activation=NONE")
+    return 0
 
 
 if __name__ == "__main__":

@@ -1,0 +1,21 @@
+{
+  "schemaDocumentVersion":"NarraTwinClosedSchemaDocumentV1", "contractVersion":"AuthorityProducerKeyV1", "canonicalProfile":"NarraTwinAuthorityCanonicalJsonV1", "closed":true, "activation":"NONE",
+  "$defs":{"rotationPredecessor":{"type":"object","closed":true,"required":["contentHash","keyObjectId","revision"],"properties":{"contentHash":{"type":"sha256"},"keyObjectId":{"type":"string","minLength":3,"maxLength":128},"revision":{"type":"integer","minimum":1}}}},
+  "root":{"type":"object","closed":true,
+    "required":["activationTime","contentHash","fixtureOnly","generationId","historyPredecessorContentHash","historySequence","invalidatesFrom","keyId","keyObjectId","operation","predecessorAuthorizationSignature","predecessorContentHash","producerId","programId","publicKeyHex","repository","retiredAt","revision","revokedAt","rootAuthorizationSignature","rootContentHash","rotationPredecessor","schemaVersion","signatureAlgorithm"],
+    "properties":{
+      "schemaVersion":{"type":"string","const":"AuthorityProducerKeyV1"}, "repository":{"type":"string","minLength":3,"maxLength":512}, "programId":{"type":"string","minLength":3,"maxLength":128}, "generationId":{"type":"string","minLength":3,"maxLength":128},
+      "rootContentHash":{"type":"sha256"}, "producerId":{"type":"string","minLength":3,"maxLength":128}, "keyObjectId":{"type":"string","minLength":3,"maxLength":128}, "keyId":{"type":"sha256"}, "publicKeyHex":{"type":"string","pattern":"[0-9a-f]{64}"},
+      "revision":{"type":"integer","minimum":1}, "predecessorContentHash":{"type":"nullable","item":{"type":"sha256"}}, "historySequence":{"type":"integer","minimum":1,"maximum":64}, "historyPredecessorContentHash":{"type":"nullable","item":{"type":"sha256"}}, "rotationPredecessor":{"type":"nullable","item":{"$ref":"rotationPredecessor"}},
+      "operation":{"type":"string","enum":["ISSUE_GENESIS","ROTATE","RETIRE","REVOKE"]}, "activationTime":{"type":"timestamp"}, "retiredAt":{"type":"nullable","item":{"type":"timestamp"}}, "revokedAt":{"type":"nullable","item":{"type":"timestamp"}}, "invalidatesFrom":{"type":"nullable","item":{"type":"timestamp"}},
+      "signatureAlgorithm":{"type":"string","const":"Ed25519"}, "rootAuthorizationSignature":{"type":"string","pattern":"[0-9a-f]{128}"}, "predecessorAuthorizationSignature":{"type":"nullable","item":{"type":"string","pattern":"[0-9a-f]{128}"}}, "contentHash":{"type":"sha256"}, "fixtureOnly":{"type":"boolean"}
+    },
+    "conditions":[
+      "ISSUE_GENESIS: revision=1, historySequence=1, all predecessors and lifecycle endpoints null",
+      "ROTATE: revision=1, predecessorContentHash=null, rotationPredecessor and predecessorAuthorizationSignature required, retiredAt/revokedAt/invalidatesFrom null",
+      "RETIRE: next same-key revision, predecessorContentHash required, retiredAt required, rotationPredecessor/revokedAt/invalidatesFrom/predecessorAuthorizationSignature null",
+      "REVOKE: next same-key revision, predecessorContentHash/revokedAt/invalidatesFrom required and activationTime<=invalidatesFrom<=revokedAt",
+      "every non-genesis event increments historySequence and names the exact scoped history predecessor"
+    ]
+  }
+}

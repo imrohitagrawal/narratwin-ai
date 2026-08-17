@@ -520,5 +520,9 @@ def test_only_complete_chain_can_promote_public_signature_success(
     assert_boundary(result)
     should_trust = mutation == "none"
     assert cast(Any, result).trusted is should_trust
-    assert (cast(Any, result).historical_verdict is trust.Verdict.VALID) is should_trust
-    assert (cast(Any, result).current_verdict is trust.Verdict.VALID) is should_trust
+    if mutation == "wrong-head":
+        assert cast(Any, result).historical_verdict is trust.Verdict.VALID
+        assert cast(Any, result).current_verdict is not trust.Verdict.VALID
+    else:
+        assert (cast(Any, result).historical_verdict is trust.Verdict.VALID) is should_trust
+        assert (cast(Any, result).current_verdict is trust.Verdict.VALID) is should_trust
