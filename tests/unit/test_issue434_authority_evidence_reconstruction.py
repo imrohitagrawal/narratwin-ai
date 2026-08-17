@@ -281,25 +281,47 @@ def test_subject_taxonomy_phase_and_freshness_are_one_binding(
     assert cast(Any, result).valid is False
 
 
-def reconstruction_manifest(blobs: Mapping[str, bytes], **changes: object) -> bytes:
-    references = [
-        {
-            "contentHash": digest,
-            "byteLength": len(blob),
-            "ordinal": ordinal,
-            "role": "PAYLOAD",
-        }
-        for ordinal, (digest, blob) in enumerate(sorted(blobs.items()))
+def reconstruction_bundle(payload: bytes) -> tuple[bytes, dict[str, bytes]]:
+    root = root_document()
+    root_hash = cast(str, root["contentHash"])
+    key = key_record(root_hash, root)
+    envelope = complete_envelope(root_hash, key, payload)
+    pin_a, pin_c = pin_descriptor(root_hash, "ACCEPTANCE"), pin_descriptor(root_hash, "CURRENT")
+    objects = [pin_a, pin_c, root, key, envelope]
+    blobs = {pin_hash(pin_a): trust.canonical_bytes(pin_a), pin_hash(pin_c): trust.canonical_bytes(pin_c)}
+    for item in objects[2:]:
+        blobs[cast(str, item["contentHash"])] = trust.canonical_bytes(item)
+    blobs[hashlib.sha256(payload).hexdigest()] = payload
+    digests = list(blobs)
+    roles = ["PAYLOAD", "PAYLOAD", "TRUST_ROOT", "PRODUCER_KEY", "EVIDENCE_ENVELOPE", "PAYLOAD"]
+    media = ["application/vnd.narratwin.authority.content-reference-v1+json"] * 2 + [
+        "application/vnd.narratwin.authority.producer-trust-root-v1+json",
+        "application/vnd.narratwin.authority.producer-key-v1+json",
+        "application/vnd.narratwin.authority.evidence-envelope-v1+json",
+        "application/vnd.narratwin.authority.content-reference-v1+json",
     ]
+    refs = [{"contentHash": digest, "byteLength": len(blobs[digest]), "mediaType": media[n], "ordinal": n, "role": roles[n]} for n, digest in enumerate(digests)]
+    head = {"rootContentHash": root_hash, "producerId": PRODUCER, "historySequence": 1, "keyRecordContentHash": key["contentHash"]}
+    subject = dict(cast(Mapping[str, object], envelope["subject"]), generationId=GENERATION)
     value: dict[str, object] = {
-        "schemaVersion": "AuthorityEvidenceReconstructionV1",
-        "references": references,
-        "retainedBlobCount": len(references),
+        "schemaVersion": "AuthorityEvidenceReconstructionV1", "repository": REPOSITORY,
+        "programId": PROGRAM, "generationId": GENERATION, "reconstructionId": "reconstruction:fixture-only",
+        "revision": 1, "predecessorContentHash": None, "contentHash": "0" * 64, "subject": subject,
+        "typedReferenceType": "REVIEW_SUBJECT", "evidenceRole": "INDEPENDENT_REVIEW",
+        "producerTrustClass": "INDEPENDENT_REVIEWER", "freshnessClass": "TRANSITION_WINDOW",
+        "payloadClass": "CONTENT_REFERENCE", "acceptanceRootPinSetHash": digests[0],
+        "acceptanceRootPinReferences": [refs[0]], "currentRootPinSetHash": digests[1],
+        "currentRootPinReferences": [refs[1]], "acceptanceHead": head, "currentHead": head,
+        "rootReferences": [refs[2]], "keyReferences": [refs[3]], "envelopeReference": refs[4],
+        "payloadReference": refs[5], "retainedBlobCount": len(refs),
         "aggregateRetainedByteLength": sum(len(blob) for blob in blobs.values()),
-        "retentionUntil": "2026-08-18T00:00:00Z",
+        "historicalEvaluationTime": T10, "currentEvaluationTime": T10,
+        "historicalVerdict": "VALID", "currentVerdict": "VALID", "historicalFindings": [],
+        "currentFindings": [], "retentionUntil": "2026-08-18T00:00:00Z",
+        "reconstructionStatus": "COMPLETE", "limitations": ["FIXTURE_ONLY"], "fixtureOnly": True,
     }
-    value.update(changes)
-    return trust.canonical_bytes(value)
+    value["contentHash"] = trust.content_hash(trust.ContentKind.RECONSTRUCTION, "AuthorityEvidenceReconstructionV1", value)
+    return trust.canonical_bytes(value), blobs
 
 
 @pytest.mark.parametrize(
@@ -315,8 +337,8 @@ def test_reconstruction_exact_set_deletion_corruption_and_retention(
     mutation: str, expected: str, status: str
 ) -> None:
     payload = b"fixture-only payload"
+    manifest, original = reconstruction_bundle(payload)
     digest = hashlib.sha256(payload).hexdigest()
-    original = {digest: payload}
     blobs = dict(original)
     evaluation_time = T10
     if mutation == "delete":
@@ -329,7 +351,7 @@ def test_reconstruction_exact_set_deletion_corruption_and_retention(
         evaluation_time = "2026-08-19T00:00:00Z"
     result = future(
         "reconstruct_retained_evidence",
-        manifest_bytes=reconstruction_manifest(original),
+        manifest_bytes=manifest,
         retained_blobs=blobs,
         evaluation_time=evaluation_time,
     )
@@ -526,3 +548,109 @@ def test_only_complete_chain_can_promote_public_signature_success(
     else:
         assert (cast(Any, result).historical_verdict is trust.Verdict.VALID) is should_trust
         assert (cast(Any, result).current_verdict is trust.Verdict.VALID) is should_trust
+
+
+def complete_arguments(**envelope_changes: object) -> tuple[dict[str, object], dict[str, object]]:
+    root = root_document()
+    root_hash = cast(str, root["contentHash"])
+    key = key_record(root_hash, root)
+    payload = b"fixture-only payload"
+    envelope = complete_envelope(root_hash, key, payload, **envelope_changes)
+    pin_a, pin_c = pin_descriptor(root_hash, "ACCEPTANCE"), pin_descriptor(root_hash, "CURRENT")
+    head = trust.HistoryHead(root_hash, PRODUCER, 1, cast(str, key["contentHash"]))
+    return {
+        "envelope_bytes": trust.canonical_bytes(envelope), "payload_bytes": payload,
+        "root_documents": {root_hash: trust.canonical_bytes(root)},
+        "key_record_documents": {key["contentHash"]: trust.canonical_bytes(key)},
+        "acceptance_pin_descriptor": pin_a, "acceptance_expected_pin_hash": pin_hash(pin_a),
+        "current_pin_descriptor": pin_c, "current_expected_pin_hash": pin_hash(pin_c),
+        "acceptance_head": head, "current_head": head, "acceptance_time": T10,
+        "current_time": T10, "taxonomy_matrix_bytes": taxonomy_matrix(),
+    }, {"root": root, "key": key, "envelope": envelope}
+
+
+def trusted_result(monkeypatch: pytest.MonkeyPatch, arguments: Mapping[str, object]) -> Any:
+    monkeypatch.setattr(trust, "verify_ed25519_signature", lambda **_: trust.SignatureResult(True, ()))
+    return cast(Any, future("resolve_complete_evidence", **dict(arguments)))
+
+
+def test_full_reconstruction_contract_is_required_and_malformed_values_are_typed() -> None:
+    manifest, blobs = reconstruction_bundle(b"fixture-only payload")
+    valid = future("reconstruct_retained_evidence", manifest_bytes=manifest, retained_blobs=blobs, evaluation_time=T10)
+    assert_boundary(valid)
+    assert cast(Any, valid).valid is True
+    document = json.loads(manifest)
+    document["payloadReference"]["contentHash"] = {}
+    malformed = future("reconstruct_retained_evidence", manifest_bytes=trust.canonical_bytes(document), retained_blobs=blobs, evaluation_time=T10)
+    assert_boundary(malformed)
+    assert cast(Any, malformed).valid is False
+
+
+@pytest.mark.parametrize("change", [{"maxPayloadBytes": False}, {"freshnessPolicies": [{}]}, {"rootId": {}}])
+def test_closed_root_schema_rejects_invalid_scalars(change: dict[str, object]) -> None:
+    root = root_document(**change)
+    root["contentHash"] = trust.content_hash(trust.ContentKind.TRUST_ROOT, "AuthorityProducerTrustRootV1", root)
+    descriptor = pin_descriptor(cast(str, root["contentHash"]), "CURRENT")
+    result = future("validate_closed_root", root_bytes=trust.canonical_bytes(root), expected_root_hash=root["contentHash"], pin_descriptor=descriptor, expected_pin_set_hash=pin_hash(descriptor), expected_phase="CURRENT", expected_scope=(REPOSITORY, PROGRAM, GENERATION, PRODUCER), evaluation_time=T10)
+    assert_boundary(result)
+    assert cast(Any, result).valid is False
+
+
+def test_freshness_policy_and_child_a_transition_are_enforced(monkeypatch: pytest.MonkeyPatch) -> None:
+    for changes in ({"observedAt": T00}, {"operation": "REJECT"}):
+        if "operation" in changes:
+            _, state = complete_arguments()
+            envelope = cast(Mapping[str, object], state["envelope"])
+            subject = dict(cast(Mapping[str, object], envelope["subject"]), operation="REJECT")
+            arguments, _ = complete_arguments(subject=subject)
+        else:
+            arguments, _ = complete_arguments(**changes)
+        result = trusted_result(monkeypatch, arguments)
+        assert result.trusted is False
+        assert result.historical_verdict is not trust.Verdict.VALID
+
+
+def test_current_pin_failure_does_not_contaminate_history(monkeypatch: pytest.MonkeyPatch) -> None:
+    arguments, _ = complete_arguments()
+    arguments["current_expected_pin_hash"] = "f" * 64
+    result = trusted_result(monkeypatch, arguments)
+    assert result.historical_verdict is trust.Verdict.VALID
+    assert result.current_verdict is not trust.Verdict.VALID
+
+
+def test_current_successor_compromise_invalidates_only_current(monkeypatch: pytest.MonkeyPatch) -> None:
+    arguments, state = complete_arguments()
+    prior = cast(dict[str, object], state["root"])
+    successor = root_document(rootId="root:successor", rootVersion=2, predecessorRootContentHash=prior["contentHash"], priorRootCompromise={"priorRootContentHash": prior["contentHash"], "invalidatesPriorRootFrom": T10})
+    successor["contentHash"] = trust.content_hash(trust.ContentKind.TRUST_ROOT, "AuthorityProducerTrustRootV1", successor)
+    hashes = sorted([cast(str, prior["contentHash"]), cast(str, successor["contentHash"])])
+    current = dict(cast(Mapping[str, object], arguments["current_pin_descriptor"]), rootContentHashes=hashes)
+    arguments["current_pin_descriptor"] = current
+    arguments["current_expected_pin_hash"] = pin_hash(current)
+    cast(dict[str, bytes], arguments["root_documents"])[cast(str, successor["contentHash"])] = trust.canonical_bytes(successor)
+    result = trusted_result(monkeypatch, arguments)
+    assert result.historical_verdict is trust.Verdict.VALID
+    assert result.current_verdict is not trust.Verdict.VALID
+
+
+def test_replay_identity_is_idempotent_only_for_exact_bytes() -> None:
+    arguments, state = complete_arguments()
+    first = cast(bytes, arguments["envelope_bytes"])
+    root = cast(Mapping[str, object], state["root"])
+    changed = complete_envelope(cast(str, root["contentHash"]), cast(Mapping[str, object], state["key"]), cast(bytes, arguments["payload_bytes"]), collectionMethod="OTHER_FIXTURE")
+    same = future("validate_evidence_replay_set", envelope_documents=(first, first))
+    conflict = future("validate_evidence_replay_set", envelope_documents=(first, trust.canonical_bytes(changed)))
+    assert_boundary(same)
+    assert cast(Any, same).valid is True
+    assert_boundary(conflict)
+    assert cast(Any, conflict).valid is False
+    assert cast(Any, conflict).historical_verdict is trust.Verdict.CONFLICTING
+
+
+def test_invalid_findings_precede_unavailable_findings() -> None:
+    arguments, _ = complete_arguments()
+    arguments["envelope_bytes"], arguments["payload_bytes"] = b"{}", None
+    result = future("resolve_complete_evidence", **arguments)
+    assert_boundary(result)
+    assert cast(Any, result).historical_verdict is trust.Verdict.INVALID
+    assert cast(Any, result).current_verdict is trust.Verdict.INVALID
