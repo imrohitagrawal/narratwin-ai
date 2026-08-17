@@ -956,6 +956,118 @@ def inspect_key_history_structure(
     return KeyHistoryStructureResult(tuple(findings))
 
 
+def validate_closed_schema_value(
+    value: object, schema_document: Mapping[str, object]
+) -> tuple[Finding, ...]:
+    """Execute the bounded closed-schema vocabulary used by Child B artifacts."""
+
+    findings: list[Finding] = []
+    definitions = schema_document.get("$defs")
+    root = schema_document.get("root")
+    if not isinstance(definitions, Mapping) or not isinstance(root, Mapping):
+        return (Finding("SCHEMA_DOCUMENT_INVALID"),)
+
+    def add(code: str, location: str) -> None:
+        findings.append(Finding(code, location))
+
+    def walk(item: object, descriptor: object, location: str, depth: int = 1) -> None:
+        if depth > MAX_DEPTH or not isinstance(descriptor, Mapping):
+            add("SCHEMA_DESCRIPTOR_INVALID", location)
+            return
+        reference = descriptor.get("$ref")
+        if reference is not None:
+            target = definitions.get(reference) if isinstance(reference, str) else None
+            if not isinstance(target, Mapping):
+                add("SCHEMA_REFERENCE_UNKNOWN", location)
+            else:
+                walk(item, target, location, depth + 1)
+            return
+        kind = descriptor.get("type")
+        if kind == "nullable":
+            if item is not None:
+                walk(item, descriptor.get("item"), location, depth + 1)
+            return
+        if kind in {"string", "sha256", "timestamp"}:
+            if not isinstance(item, str):
+                add("WRONG_SCALAR_TYPE", location)
+                return
+            size = len(item.encode("utf-8"))
+            if size < descriptor.get("minLength", 0) or size > descriptor.get("maxLength", MAX_STRING_BYTES):
+                add("STRING_LIMIT", location)
+            pattern = descriptor.get("pattern")
+            if isinstance(pattern, str) and re.fullmatch(pattern, item) is None:
+                add("STRING_PATTERN", location)
+            if kind == "sha256" and LOWER_SHA256.fullmatch(item) is None:
+                add("HEX_FORMAT", location)
+            if kind == "timestamp" and _utc_value(item) is None:
+                add("TIME_FORMAT", location)
+        elif kind == "integer":
+            if isinstance(item, bool) or not isinstance(item, int):
+                add("WRONG_SCALAR_TYPE", location)
+                return
+            if item < descriptor.get("minimum", -(2**63)) or item > descriptor.get("maximum", 2**63 - 1):
+                add("INTEGER_RANGE", location)
+        elif kind == "boolean":
+            if not isinstance(item, bool):
+                add("WRONG_SCALAR_TYPE", location)
+        elif kind == "object":
+            if not isinstance(item, Mapping):
+                add("WRONG_SCALAR_TYPE", location)
+                return
+            properties = descriptor.get("properties")
+            required = descriptor.get("required")
+            if not isinstance(properties, Mapping) or not isinstance(required, list) or descriptor.get("closed") is not True:
+                add("SCHEMA_DESCRIPTOR_INVALID", location)
+                return
+            if set(item) - set(properties):
+                add("UNKNOWN_MEMBER", location)
+            if set(required) - set(item):
+                add("MISSING_MEMBER", location)
+            for name, child in item.items():
+                child_descriptor = properties.get(name)
+                if child_descriptor is not None:
+                    walk(child, child_descriptor, f"{location}.{name}", depth + 1)
+        elif kind == "array":
+            if not isinstance(item, list):
+                add("WRONG_SCALAR_TYPE", location)
+                return
+            if len(item) < descriptor.get("minItems", 0) or len(item) > descriptor.get("maxItems", MAX_ARRAY_ITEMS):
+                add("COLLECTION_LIMIT", location)
+            encoded = [canonical_bytes(child) for child in item]
+            if descriptor.get("unique") is True and len(set(encoded)) != len(encoded):
+                add("DUPLICATE_COLLECTION_ITEM", location)
+            exact = descriptor.get("exactItems")
+            if exact is not None and item != exact:
+                add("EXACT_COLLECTION_MISMATCH", location)
+            order = descriptor.get("order")
+            if order == "LEXICOGRAPHIC_ASCENDING" and all(isinstance(child, str) for child in item) and item != sorted(item):
+                add("COLLECTION_ORDER_MISMATCH", location)
+            if order == "TRANSITION_ROW_THEN_EVIDENCE_ROLE_ASCENDING" and all(isinstance(child, Mapping) and isinstance(child.get("transitionRowId"), str) and isinstance(child.get("evidenceRole"), str) for child in item):
+                ordered = sorted(item, key=lambda child: (cast(Mapping[str, object], child).get("transitionRowId", ""), cast(Mapping[str, object], child).get("evidenceRole", "")))
+                if item != ordered:
+                    add("COLLECTION_ORDER_MISMATCH", location)
+            unique_by = descriptor.get("uniqueBy")
+            if isinstance(unique_by, list) and all(isinstance(child, Mapping) for child in item):
+                keys = [canonical_bytes([cast(Mapping[str, object], child).get(cast(str, name)) for name in unique_by]) for child in item]
+                if len(set(keys)) != len(keys):
+                    add("DUPLICATE_COLLECTION_ITEM", location)
+            child_descriptor = descriptor.get("items")
+            if child_descriptor is not None:
+                for index, child in enumerate(item):
+                    walk(child, child_descriptor, f"{location}[{index}]", depth + 1)
+        else:
+            add("SCHEMA_TYPE_UNKNOWN", location)
+            return
+        if "const" in descriptor and item != descriptor["const"]:
+            add("CONST_MISMATCH", location)
+        values = descriptor.get("enum")
+        if isinstance(values, list) and item not in values:
+            add("ENUM_MISMATCH", location)
+
+    walk(value, root, "document")
+    return tuple(dict.fromkeys(findings))
+
+
 PIN_MEMBERS = frozenset({"schemaVersion", "repository", "programId", "generationId", "producerId", "evaluationPhase", "rootContentHashes"})
 PIN_DOMAIN = b"NARRATWIN-AUTHORITY-ROOT-PIN-SET-V1\0AuthorityRootPinSetV1\0"
 
