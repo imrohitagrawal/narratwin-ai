@@ -6,9 +6,9 @@ import hashlib
 import importlib.metadata
 import json
 import tomllib
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from pathlib import Path
-from typing import Any, cast
+from typing import Any, Protocol, cast
 
 import pytest
 
@@ -498,3 +498,347 @@ def test_presented_artifacts_have_no_authority_effect_b015(source: str) -> None:
     assert trust.Finding("NO_AUTHORITY_EFFECT", "authority") in result.findings
     assert result.historical_verdict is not trust.Verdict.VALID
     assert result.current_verdict is not trust.Verdict.VALID
+
+
+class StructureResult(Protocol):
+    findings: tuple[trust.Finding, ...]
+    authorization_evaluated: bool
+    root_invalidation_applied: bool
+    authority_effect: str
+    activation: str
+
+
+ROOT_HASH = "a" * 64
+OTHER_ROOT_HASH = "b" * 64
+REPOSITORY = "example.invalid/narratwin-authority-evidence-fixtures"
+PROGRAM = "program:fixture-only"
+GENERATION = "generation:fixture-only"
+PRODUCER = "producer:fixture-only"
+T00, T09, T10 = "2026-08-17T00:00:00Z", "2026-08-17T00:09:59Z", "2026-08-17T00:10:00Z"
+T14, T15 = "2026-08-17T00:14:59Z", "2026-08-17T00:15:00Z"
+T19, T20 = "2026-08-17T00:19:59Z", "2026-08-17T00:20:00Z"
+T29, T30 = "2026-08-17T00:29:59Z", "2026-08-17T00:30:00Z"
+
+
+def public_key_id(public_key_hex: str) -> str:
+    return hashlib.sha256(
+        b"NARRATWIN-AUTHORITY-ED25519-PUBLIC-KEY-V1\0" + bytes.fromhex(public_key_hex)
+    ).hexdigest()
+
+
+def key_record(
+    sequence: int,
+    *,
+    operation: str = "ISSUE_GENESIS",
+    previous: Mapping[str, object] | None = None,
+    key_object_id: str = "key:a:fixture-only",
+    public_key_hex: str = "1" * 64,
+    revision: object = 1,
+    root_signature: object = "0" * 128,
+    predecessor_signature: object = None,
+    **changes: object,
+) -> dict[str, object]:
+    value: dict[str, object] = {
+        "schemaVersion": "AuthorityProducerKeyV1",
+        "repository": REPOSITORY,
+        "programId": PROGRAM,
+        "generationId": GENERATION,
+        "rootContentHash": ROOT_HASH,
+        "producerId": PRODUCER,
+        "keyObjectId": key_object_id,
+        "keyId": public_key_id(public_key_hex),
+        "publicKeyHex": public_key_hex,
+        "revision": revision,
+        "predecessorContentHash": (
+            previous["contentHash"] if previous and operation != "ROTATE" else None
+        ),
+        "historySequence": sequence,
+        "historyPredecessorContentHash": previous["contentHash"] if previous else None,
+        "rotationPredecessor": (
+            {
+                "keyObjectId": previous["keyObjectId"],
+                "revision": previous["revision"],
+                "contentHash": previous["contentHash"],
+            }
+            if previous and operation == "ROTATE"
+            else None
+        ),
+        "operation": operation,
+        "activationTime": T10 if operation == "ROTATE" else T00,
+        "retiredAt": T20 if operation == "RETIRE" else None,
+        "revokedAt": T30 if operation == "REVOKE" else None,
+        "invalidatesFrom": T15 if operation == "REVOKE" else None,
+        "signatureAlgorithm": "Ed25519",
+        "rootAuthorizationSignature": root_signature,
+        "predecessorAuthorizationSignature": predecessor_signature,
+        "fixtureOnly": True,
+    }
+    value.update(changes)
+    value["contentHash"] = trust.content_hash(
+        trust.ContentKind.PRODUCER_KEY, "AuthorityProducerKeyV1", value
+    )
+    return value
+
+
+def key_rows() -> dict[str, dict[str, object]]:
+    k01 = key_record(1)
+    k02 = key_record(
+        2,
+        operation="ROTATE",
+        previous=k01,
+        key_object_id="key:b:fixture-only",
+        public_key_hex="2" * 64,
+        predecessor_signature="0" * 128,
+    )
+    k03 = key_record(3, operation="RETIRE", previous=k02, key_object_id=cast(str, k02["keyObjectId"]), public_key_hex=cast(str, k02["publicKeyHex"]), revision=2)
+    k04 = key_record(3, operation="REVOKE", previous=k02, key_object_id=cast(str, k02["keyObjectId"]), public_key_hex=cast(str, k02["publicKeyHex"]), revision=2)
+    k05 = key_record(4, operation="REVOKE", previous=k03, key_object_id=cast(str, k03["keyObjectId"]), public_key_hex=cast(str, k03["publicKeyHex"]), revision=3)
+    return {"K01": k01, "K02": k02, "K03": k03, "K04": k04, "K05": k05}
+
+
+def call_future(name: str, **kwargs: object) -> object:
+    function = cast(Callable[..., object] | None, getattr(trust, name, None))
+    if not callable(function):
+        pytest.fail(f"{name} is NOT_IMPLEMENTED")
+    return function(**kwargs)
+
+
+def inspect_structure(
+    records: tuple[Mapping[str, object], ...],
+    *,
+    expected_head: trust.HistoryHead | None,
+    capture_time: str = T14,
+    evaluation_time: str = T29,
+    root_pins: tuple[str, ...] = (ROOT_HASH,),
+    root_invalidations: tuple[Mapping[str, object], ...] = (),
+) -> StructureResult:
+    result = call_future(
+        "inspect_key_history_structure",
+        records=records,
+        expected_head=expected_head,
+        repository=REPOSITORY,
+        program_id=PROGRAM,
+        generation_id=GENERATION,
+        producer_id=PRODUCER,
+        root_content_hash=ROOT_HASH,
+        capture_time=capture_time,
+        evaluation_time=evaluation_time,
+        independently_pinned_roots=root_pins,
+        root_invalidations=root_invalidations,
+    )
+    required = ("findings", "authorization_evaluated", "root_invalidation_applied", "authority_effect", "activation")
+    assert all(hasattr(result, name) for name in required)
+    return cast(StructureResult, result)
+
+
+def head(record: Mapping[str, object]) -> trust.HistoryHead:
+    return trust.HistoryHead(
+        cast(str, record["rootContentHash"]),
+        cast(str, record["producerId"]),
+        cast(int, record["historySequence"]),
+        cast(str, record["contentHash"]),
+    )
+
+
+def assert_structure(result: StructureResult, expected_code: str | None) -> None:
+    codes = [finding.code for finding in result.findings]
+    if expected_code is None:
+        assert codes == []
+    else:
+        assert expected_code in codes
+    assert result.authorization_evaluated is False
+    assert result.authority_effect == "NO_AUTHORITY_EFFECT"
+    assert result.activation == "NONE"
+
+
+@pytest.mark.parametrize(
+    ("row", "capture", "evaluation", "expected"),
+    [
+        ("K02", T09, T19, "KEY_NOT_YET_ACTIVE"),
+        ("K02", T10, T19, None),
+        ("K02", T14, T19, None),
+        ("K03", T19, T29, None),
+        ("K03", T20, T29, "KEY_RETIRED"),
+        ("K03", "2026-08-17T00:20:01Z", T29, "KEY_RETIRED"),
+        ("K04", T15, T29, None),
+        ("K04", T14, T30, None),
+        ("K04", T15, T30, "KEY_REVOKED"),
+        ("K04", "2026-08-17T00:15:01Z", "2026-08-17T00:30:01Z", "KEY_REVOKED"),
+        ("K05", T14, "2026-08-17T00:30:01Z", None),
+    ],
+)
+def test_k02_k03_k04_k05_half_open_structure_b002_b006_b007(
+    row: str, capture: str, evaluation: str, expected: str | None
+) -> None:
+    rows = key_rows()
+    records = {
+        "K02": (rows["K01"], rows["K02"]),
+        "K03": (rows["K01"], rows["K02"], rows["K03"]),
+        "K04": (rows["K01"], rows["K02"], rows["K04"]),
+        "K05": (rows["K01"], rows["K02"], rows["K03"], rows["K05"]),
+    }[row]
+    result = inspect_structure(records, expected_head=head(records[-1]), capture_time=capture, evaluation_time=evaluation)
+    assert_structure(result, expected)
+
+
+@pytest.mark.parametrize(
+    ("scenario", "expected"),
+    [
+        ("missing-predecessor-bytes", "HISTORY_PREDECESSOR_UNAVAILABLE"),
+        ("sequence-jump", "HISTORY_SEQUENCE_JUMP"),
+        ("fork", "HISTORY_FORK"),
+        ("duplicate-key-id", "DUPLICATE_KEY_ID"),
+        ("duplicate-key-bytes", "DUPLICATE_PUBLIC_KEY"),
+        ("rotation-uses-same-key", "ROTATION_PREDECESSOR_RELATION"),
+        ("same-key-missing-predecessor", "SAME_KEY_PREDECESSOR_REQUIRED"),
+        ("malformed-fork", "WRONG_SCALAR_TYPE"),
+        ("suppressed-suffix", "CURRENT_HEAD_ROLLBACK"),
+        ("missing-head", "CURRENT_HEAD_REQUIRED"),
+        ("over-64", "HISTORY_RECORD_LIMIT"),
+        ("unknown-operation", "UNKNOWN_KEY_OPERATION"),
+        ("revision-downgrade", "KEY_REVISION_DOWNGRADE"),
+    ],
+)
+def test_graph_head_and_bound_failures_are_typed_b008(scenario: str, expected: str) -> None:
+    rows = key_rows()
+    records: tuple[Mapping[str, object], ...] = (rows["K01"], rows["K02"])
+    expected_head: trust.HistoryHead | None = head(rows["K02"])
+    same_key = {
+        "key_object_id": cast(str, rows["K02"]["keyObjectId"]),
+        "public_key_hex": cast(str, rows["K02"]["publicKeyHex"]),
+    }
+    if scenario == "missing-predecessor-bytes":
+        records = (rows["K02"],)
+    elif scenario == "sequence-jump":
+        records = (rows["K01"], key_record(3, operation="ROTATE", previous=rows["K01"], key_object_id="key:c", public_key_hex="3" * 64))
+        expected_head = head(records[-1])
+    elif scenario in {"fork", "duplicate-key-id", "duplicate-key-bytes"}:
+        other = key_record(2, operation="ROTATE", previous=rows["K01"], key_object_id="key:c", public_key_hex=(cast(str, rows["K02"]["publicKeyHex"]) if scenario == "duplicate-key-bytes" else "3" * 64), keyId=(rows["K02"]["keyId"] if scenario == "duplicate-key-id" else public_key_id("3" * 64)))
+        records += (other,)
+    elif scenario == "rotation-uses-same-key":
+        records = (rows["K01"], key_record(2, operation="ROTATE", previous=rows["K01"], predecessorContentHash=rows["K01"]["contentHash"]))
+        expected_head = head(records[-1])
+    elif scenario == "same-key-missing-predecessor":
+        records += (
+            key_record(3, operation="RETIRE", previous=rows["K02"],
+                       revision=2, predecessorContentHash=None, **same_key),
+        )
+        expected_head = head(records[-1])
+    elif scenario == "malformed-fork":
+        records += (key_record(2, operation="ROTATE", previous=rows["K01"], revision=True),)
+    elif scenario == "suppressed-suffix":
+        records += (rows["K03"],)
+    elif scenario == "missing-head":
+        expected_head = None
+    elif scenario == "unknown-operation":
+        records += (key_record(3, operation="REISSUE", previous=rows["K02"]),)
+        expected_head = head(records[-1])
+    elif scenario == "revision-downgrade":
+        records += (
+            key_record(3, operation="RETIRE", previous=rows["K02"],
+                       revision=1, **same_key),
+        )
+        expected_head = head(records[-1])
+    else:
+        records = tuple(key_record(index + 1) for index in range(65))
+    assert_structure(inspect_structure(records, expected_head=expected_head), expected)
+
+
+def test_cycle_mutated_after_hash_fails_integrity_before_graph_classification_b008() -> None:
+    rows = key_rows()
+    cycled = dict(rows["K02"])
+    cycled["historyPredecessorContentHash"] = cycled["contentHash"]
+    assert_structure(
+        inspect_structure((rows["K01"], cycled), expected_head=head(cycled)),
+        "CONTENT_HASH_MISMATCH",
+    )
+
+
+@pytest.mark.parametrize(
+    ("field", "replacement", "expected"),
+    [
+        ("rootContentHash", OTHER_ROOT_HASH, "ROOT_SCOPE_MISMATCH"),
+        ("producerId", "producer:other", "PRODUCER_SCOPE_MISMATCH"),
+        ("repository", "example.invalid/other", "REPOSITORY_SCOPE_MISMATCH"),
+        ("programId", "program:other", "PROGRAM_SCOPE_MISMATCH"),
+        ("generationId", "generation:other", "GENERATION_SCOPE_MISMATCH"),
+    ],
+)
+def test_scope_replay_is_typed_b009(field: str, replacement: str, expected: str) -> None:
+    rows = key_rows()
+    replay = key_record(2, operation="ROTATE", previous=rows["K01"], **{field: replacement})
+    assert_structure(inspect_structure((rows["K01"], replay), expected_head=head(replay)), expected)
+
+
+@pytest.mark.parametrize(
+    ("case", "expected"),
+    [
+        ("root-missing", "ROOT_AUTHORIZATION_REQUIRED"),
+        ("root-bad", "ROOT_AUTHORIZATION_INVALID"),
+        ("root-wrong-domain", "ROOT_AUTHORIZATION_INVALID"),
+        ("root-wrong-key", "ROOT_AUTHORIZATION_INVALID"),
+        ("k02-predecessor-missing", "PREDECESSOR_AUTHORIZATION_REQUIRED"),
+        ("k02-predecessor-bad", "PREDECESSOR_AUTHORIZATION_INVALID"),
+        ("wrong-algorithm", "SIGNATURE_ALGORITHM"),
+        ("wrong-key-id", "KEY_ID_MISMATCH"),
+    ],
+)
+def test_key_authorization_substitutions_are_invalid_b005_b008(case: str, expected: str) -> None:
+    # Positive cryptographic lineage waits for paths 4-8 to freeze canonical signed bytes.
+    rows = key_rows()
+    record = dict(rows["K02"] if case.startswith("k02") else rows["K01"])
+    vector = rfc_vector()
+    if case == "root-missing":
+        record["rootAuthorizationSignature"] = None
+    elif case == "root-wrong-domain":
+        record["rootAuthorizationSignature"] = vector["signatureHex"]
+    elif case == "root-wrong-key":
+        record["rootAuthorizationSignature"] = vector["signatureHex"]
+    elif case == "wrong-algorithm":
+        record["signatureAlgorithm"] = "Ed448"
+    elif case == "wrong-key-id":
+        record["keyId"] = "f" * 64
+    elif case == "k02-predecessor-missing":
+        record["predecessorAuthorizationSignature"] = None
+    else:
+        signature_field = "predecessorAuthorizationSignature" if case == "k02-predecessor-bad" else "rootAuthorizationSignature"
+        record[signature_field] = "f" * 128
+    record.pop("contentHash", None)
+    record["contentHash"] = trust.content_hash(trust.ContentKind.PRODUCER_KEY, "AuthorityProducerKeyV1", record)
+    # This low-level primitive proves only signatures against caller-supplied
+    # public keys; it cannot establish identity, trust, authority, or activation.
+    result = call_future(
+        "verify_key_record_authorization_signatures",
+        record=record,
+        root_public_key_hex=("e" * 64 if case == "root-wrong-key" else vector["publicKeyHex"]),
+        predecessor_public_key_hex=vector["publicKeyHex"],
+    )
+    assert isinstance(result, trust.SignatureResult)
+    assert result.valid is False
+    assert expected in {finding.code for finding in result.findings}
+
+
+def test_unpinned_naked_successor_invalidation_has_no_effect_b007() -> None:
+    # Positive successor invalidation waits for the independently pinned root schema freeze.
+    rows = key_rows()
+    declaration = {
+        "successorRootContentHash": OTHER_ROOT_HASH,
+        "priorRootContentHash": ROOT_HASH,
+        "invalidatesPriorRootFrom": T20,
+    }
+    result = inspect_structure(
+        (rows["K01"], rows["K02"]),
+        expected_head=head(rows["K02"]),
+        evaluation_time=T30,
+        root_invalidations=(declaration,),
+    )
+    assert_structure(result, "ROOT_SUCCESSOR_PIN_REQUIRED")
+    assert result.root_invalidation_applied is False
+
+
+def test_exact_duplicate_is_idempotent_b009() -> None:
+    rows = key_rows()
+    records = (rows["K01"], rows["K02"])
+    once = inspect_structure(records, expected_head=head(rows["K02"]))
+    twice = inspect_structure(records + (rows["K02"],), expected_head=head(rows["K02"]))
+    assert twice == once
