@@ -1055,6 +1055,53 @@ def test_route_execution_rejects_observation_at_deadline(
     assert any("governed timestamp" in item.lower() for item in authority.lineage_findings(lineage))
 
 
+@pytest.mark.parametrize(
+    ("row_id", "field"),
+    [
+        ("D11", "expiresAt"),
+        *((f"R{index}", "expiresAt") for index in range(16, 21)),
+        *((row_id, field) for row_id in ("R07", "R09") for field in ("approvedAt", "expiresAt")),
+    ],
+)
+@pytest.mark.parametrize("mutation", ["missing", "null", "integer", "object", "non-ascii"])
+def test_schema_invalid_governed_fields_fail_closed(
+    row_id: str, field: str, mutation: str
+) -> None:
+    if row_id == "D11":
+        manifests = _manifest_lineage_through_merge()
+        decisions = _decision_lineage_for_manifest(manifests[-1])
+        candidate = successor(decisions[-1], DECISION_EDGES[10])
+        lineage, container = [*manifests, *decisions, candidate], candidate["validity"]
+    elif row_id.startswith("R1"):
+        expiry_index = int(row_id[1:]) - 16
+        lineage = _linked_contract_objects() if expiry_index == 4 else [authority_object("ActiveProgramRouteV1")]
+        route = lineage[-1]
+        for edge in ROUTE_EDGES[:7:2][:expiry_index]:
+            route = successor(route, edge)
+            lineage.append(route)
+        candidate = successor(route, ROUTE_EDGES[15 + expiry_index])
+        lineage.append(candidate)
+        container = candidate["executionWindow"]
+    else:
+        lineage = _linked_contract_objects()
+        reviewed = successor(lineage[-1], ROUTE_EDGES[0])
+        approved = successor(reviewed, ROUTE_EDGES[2])
+        verified = successor(approved, ROUTE_EDGES[4])
+        active = successor(verified, ROUTE_EDGES[6])
+        candidate = active if row_id == "R07" else successor(active, ROUTE_EDGES[8])
+        lineage.extend([reviewed, approved, verified, active])
+        if candidate is not active:
+            lineage.append(candidate)
+        container = candidate["executionWindow"]
+    if mutation == "missing":
+        container.pop(field)
+    else:
+        container[field] = {"null": None, "integer": 1, "object": {}, "non-ascii": "é"}[mutation]
+    if mutation != "non-ascii":
+        candidate["contentHash"] = authority.content_hash(candidate)
+    assert any("schema defect" in item.lower() for item in authority.lineage_findings(lineage))
+
+
 @pytest.mark.parametrize("source", authority.FALSE_AUTHORITY_SOURCES)
 def test_issue_comment_file_fixture_test_and_ci_never_activate_authority(source: str) -> None:
     assert authority.authority_effect_findings(source, "NONE") == []
