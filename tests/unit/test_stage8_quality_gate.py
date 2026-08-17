@@ -57,6 +57,7 @@ def test_cut1_routes_are_exact_stage8_and_not_preflight_owned(monkeypatch: Any, 
     policy = load("scripts/quality/check_stage8_docs.py", "reloaded").PROCESS_BRANCH_ALLOWED_FILES
     assert {branch: policy[branch] for branch in SCOPES} == SCOPES;r=cut1_routes
     registered = {getattr(r, f"ISSUE{i}_BRANCH") for i in (150, 396, 401, 403, 413, 428)}
+    registered.add("cut1-process-431-authority-core-schemas-state-matrices")
     assert {b for b in policy if b[:5] == "cut1-"} - set(SCOPES) == registered
     dispatcher:Any=load("scripts/quality/check_quality_stage.py","dispatcher");stage_file=tmp_path/"stage"
     status_file=tmp_path/"status";mode="| SSV1-MODE | repo-mode | Phase 1 Closure | phase1-closure | phase1-closure |\n"
@@ -108,9 +109,8 @@ def test_scope_collection_covers_exact_layers_and_forbidden_sources(monkeypatch:
     (tmp_path / "forbidden/unstaged-source.txt").rename(tmp_path / "unstaged-destination.txt")
     put(tmp_path, "forbidden/cancelled.txt", "staged"); git(tmp_path, "add", "forbidden/cancelled.txt")
     put(tmp_path, "forbidden/cancelled.txt", "original"); put(tmp_path, "untracked\nnewline.txt", "new")
-    calls:list[list[str]]=[]
+    calls:list[list[str]]=[];m=monkeypatch; collect=stage8.changed_files_for_stage_scope; raises=pytest.raises
     def record(a:list[str])->Any:calls.append(a);return sp.run(a,cwd=tmp_path,text=True,capture_output=True)
-    m=monkeypatch; collect=stage8.changed_files_for_stage_scope; raises=pytest.raises
     m.setattr(stage8,"ROOT",tmp_path); m.setattr(stage8,"run",record); m.delenv("GITHUB_EVENT_PATH",raising=False)
     m.setenv("GITHUB_EVENT_NAME","push"); m.setenv("NARRATWIN_HEAD_REF","feature")
     m.setenv("GITHUB_BASE_SHA",first_head); m.setenv("GITHUB_HEAD_SHA",head); paths=set(collect())

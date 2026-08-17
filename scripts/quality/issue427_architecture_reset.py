@@ -19,6 +19,8 @@ from scripts.quality.branch_identity import current_branch
 BRANCH = "cut1-process-427-authority-architecture-reset"
 BASE = "f2a32b8c022c015dfa4e87c700fbfe1ed0d85183"
 FIRST_COMMIT = "ec6e4140488e96fee9b979125c37a7572c5c7a30"
+MERGED_HEAD = "6635e98c0eb6f45d9b046da0f78e2f3d3adba236"
+MERGE_COMMIT = "4d239942eeda0c0b6c385b2d85dae873af076aa6"
 PREFLIGHT_PATH = "docs/governance/preflights/issue-427.json"
 PROPOSAL_PATH = "docs/governance/AUTHORITY_RECONCILIATION_AND_STALE_ROUTE_PHASE_SPEC_V1.md"
 BINDING_PATH = "docs/governance/authority-reconciliation-and-stale-route-phase-spec-v1.json"
@@ -194,8 +196,18 @@ def github_pr_identity() -> tuple[bool, str, str]:
 
 def ci_route_head(root: Path) -> str:
     head = _git(root, "rev-parse", "HEAD").decode().strip()
+    branch = current_branch(root)
+    head_ref = os.environ.get("GITHUB_HEAD_REF", "")
+    if branch != BRANCH and head_ref != BRANCH:
+        try:
+            merged_base = _git(root, "merge-base", MERGE_COMMIT, head).decode().strip()
+            frozen_base = _git(root, "merge-base", MERGED_HEAD, head).decode().strip()
+        except RuntimeError:
+            return head
+        if merged_base == MERGE_COMMIT and frozen_base == MERGED_HEAD:
+            return MERGED_HEAD
     parents = _git(root, "rev-list", "--parents", "-n", "1", head).decode().split()
-    if len(parents) != 3 or os.environ.get("GITHUB_HEAD_REF", "") != BRANCH:
+    if len(parents) != 3 or head_ref != BRANCH:
         return head
     detached = _git(root, "rev-parse", "--abbrev-ref", "HEAD").decode().strip() == "HEAD"
     event_present, event_base, event_head = github_pr_identity()

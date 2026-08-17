@@ -1392,3 +1392,39 @@ merged-main verification, status reconciliation and explicit issue closeout
 remain human/external gates. A green local gate creates no authority decision,
 active route, automatic Child A–F authorization, or runtime/release/production
 capability.
+
+## Issue #431 Child A authority-core gate
+
+The exact branch `cut1-process-431-authority-core-schemas-state-matrices` starts
+at `4d239942eeda0c0b6c385b2d85dae873af076aa6`, owns the original sixteen paths
+in `docs/governance/preflights/issue-431.json` plus the two exact Issue #427
+compatibility paths approved by OWNER comment `5301054923`, and permits at most
+4,000 aggregate additions plus deletions. Commit `7a5594357c24ac864c850a2e1cb92f9cd8acb940`
+is the preflight-only first commit. The following test/fixture-only commit
+`b7f122f704dc2168c64202c090e3e11164c67e80` records genuine RED route failures.
+After the frozen reviews exposed successor-compatibility defects, OWNER comment
+`5301231033` authorized one final bounded correction wave. Test-only commit
+`5bfcb0017ecce6646aa9a840ce3c111351151e44` reproduces those defects before the
+corresponding GREEN implementation.
+
+`scripts/quality/issue431_authority_core.py` enforces strict canonical JSON,
+three closed V1 schemas, immutable hash-linked lineage, exhaustive legal and
+illegal lifecycle grids, exact actor/guard/effect/recovery rows, fixture-only
+boundaries, AK-001 false-authority refusal, and exact route/history/budget
+constraints. The Stage 8 gate invokes it on the Child A branch and after merge.
+The final correction pins the merged #427 head only for descendants containing
+the exact #427 merge; rewritten or pre-merge histories remain rejected.
+
+Required commands are the approved Issue #431 command matrix: focused Child A
+tests; full Stage 8 tests; guardrails; exact-base policy-only quality and Stage
+8 quality; normal quality; CI; security; dependency audit; container scan;
+secrets scan; eval; Ruff; mypy; strict JSON/canonicalization/mutation checks;
+diff, path, charge, history, shallow/replace/merge and PR-template checks.
+`make phase1-closure-quality` is not the Child A gate and must not be reported
+as passed. This classification is specific to the OWNER-approved Child A route
+and is not inherited from Issue #427.
+
+A green gate means documentation-quality structural enforcement only. It does
+not create an accepted decision, current manifest, active route, runtime
+service, provider call, credential use, egress, spend, media, deployment,
+publication, release, SLA, commercial-readiness, or production claim.

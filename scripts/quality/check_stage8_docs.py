@@ -6,6 +6,7 @@ import hashlib, json, os, re, subprocess, sys
 from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT));import scripts.quality.issue427_architecture_reset as issue427_reset  # noqa: E402
+import scripts.quality.issue431_authority_core as issue431_authority_core  # noqa: E402
 from scripts.quality.branch_identity import current_branch  # noqa: E402
 from scripts.quality.check_stage2_docs import check_retrieval_strategy_v1_parity  # noqa: E402
 from scripts.quality import stage8_brace_expansion_unblock as brace_security  # noqa: E402
@@ -63,6 +64,7 @@ REQUIRED_FILES = [
     "docs/TRACEABILITY.md", "docs/demo/CONTROLLED_LOCAL_DEMO.md",
 ]; STAGE8_ALLOWED_FILES = set(REQUIRED_FILES) | {"tests/api/test_health_api.py", "tests/unit/test_health_contract.py"}
 PROCESS_BRANCH_ALLOWED_FILES = {issue427_reset.BRANCH: set(issue427_reset.PATHS),
+    issue431_authority_core.BRANCH: set(issue431_authority_core.PATHS),
     node_security.ISSUE374_SECURITY_BRANCH: node_security.ISSUE374_SECURITY_FILES,
     ISSUE346_TRANSITION_BRANCH: {
         "docs/governance/preflights/issue-346.json", "scripts/quality/check_stage8_docs.py",
@@ -182,13 +184,10 @@ def parse_paths_z(output: str) -> list[str]:
     if not output:return []
     if not output.endswith("\0"):raise RuntimeError("Malformed NUL-delimited Git path output.")
     paths = output[:-1].split("\0")
-    if any(not path for path in paths):
-        raise RuntimeError("Malformed empty Git path.")
+    if any(not path for path in paths): raise RuntimeError("Malformed empty Git path.")
     return paths
 def parse_name_status_z(output: str) -> list[str]:
-    fields = parse_paths_z(output)
-    paths: list[str] = []
-    index = 0
+    fields = parse_paths_z(output); paths: list[str] = []; index = 0
     while index < len(fields):
         status = fields[index]
         index += 1
@@ -486,6 +485,7 @@ def main() -> int:
         node_security.check(ROOT, run, current_branch(), changed_files_for_stage_scope(), failures)
         cache_pruning.check_exact_route(ROOT, run, failures, current_branch() == cache_pruning.BRANCH)
         issue427_reset.check(ROOT, failures, current_branch() == issue427_reset.BRANCH)
+        failures.extend(issue431_authority_core.repository_findings(ROOT))
         check_backend_and_tests(failures)
         check_dependencies_and_scripts(failures)
         check_docs(failures)

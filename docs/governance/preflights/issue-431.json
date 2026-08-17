@@ -1,0 +1,55 @@
+{
+  "schema_version": "GovernancePreflightV1",
+  "issue_number": 431,
+  "branch": "cut1-process-431-authority-core-schemas-state-matrices",
+  "objective": "Under parent #426, completed #427, merged PR #430, approval request 5296919566, and exact OWNER approval 5296984551, deliver only non-activating Child A closed V1 schemas for MasterProgramAuthorityDecisionV1, Cut1AuthorityManifestV1, and ActiveProgramRouteV1; exhaustive legal/illegal state matrices; exact actor/guard/effect/recovery; NarraTwin canonical JSON, SHA-256 linkage, compatibility rules; non-authoritative fixtures; a standard-library documentation gate; and minimal Stage 8/status/plan/traceability/ADR reconciliation. Bind exact base and predecessor merge 4d239942eeda0c0b6c385b2d85dae873af076aa6, predecessor head 6635e98c0eb6f45d9b046da0f78e2f3d3adba236, proposal 794c2e90034a8012363a6a859dd3bac826280452e787b8a7afe5a49164849b29, issue body 209d4833e655404d05db50f12b1e7d58c8b45bf50c2d33fe08a4964722cc6e72, these sixteen exact paths, 4000 charged lines, preflight-only first commit, test/fixture-only RED second behavior commit, AK-001/AK-004/AK-012, Principal Architect and Principal Test Engineer plus focused security review, exact local/hosted commands, reference-only Refs #431 wording, expiry 2026-09-15T23:59:59Z, final exact-head non-author and OWNER approvals, protected merge and closeout. Children B-F retain evidence/trust; projection/CAS/bootstrap/fencing/storage/recovery; audit/reservation/receipt transport/closeout service; historical/GitHub acquisition/replay; and integrated kernel/oracle. Activation is NONE. Prohibit accepted/current/active instances, workflow/dependency/product/runtime/provider/credential/egress/spend/media/infrastructure/deployment/publication/public/release/SLA/commercial/production behavior or claims. One correction wave only; stop on authority, approval, base/history, scope/budget, RED, artifact, review, check, protection, expiry, ownership, or prohibited-capability drift.",
+  "status_decision": "update-minimally",
+  "scope": {
+    "required": [
+      "docs/governance/preflights/issue-431.json",
+      "docs/governance/AUTHORITY_CORE_SCHEMAS_AND_STATE_MATRICES_V1.md",
+      "docs/governance/schemas/master-program-authority-decision-v1.schema.json",
+      "docs/governance/schemas/cut1-authority-manifest-v1.schema.json",
+      "docs/governance/schemas/active-program-route-v1.schema.json",
+      "docs/governance/authority-core-state-matrices-v1.json",
+      "tests/fixtures/authority-core-v1-cases.json",
+      "scripts/quality/issue431_authority_core.py",
+      "tests/unit/test_issue431_authority_core.py",
+      "scripts/quality/check_stage8_docs.py",
+      "tests/unit/test_stage8_quality_gate.py",
+      "docs/ADR/0061-core-authority-schemas-state-matrices.md",
+      "docs/QUALITY_GATES.md",
+      "docs/STAGE_ISSUE_PLAN.md",
+      "docs/STATUS.md",
+      "docs/TRACEABILITY.md"
+    ],
+    "allowed_prefixes": [
+      "docs/governance/preflights/issue-431.json",
+      "docs/governance/AUTHORITY_CORE_SCHEMAS_AND_STATE_MATRICES_V1.md",
+      "docs/governance/schemas/master-program-authority-decision-v1.schema.json",
+      "docs/governance/schemas/cut1-authority-manifest-v1.schema.json",
+      "docs/governance/schemas/active-program-route-v1.schema.json",
+      "docs/governance/authority-core-state-matrices-v1.json",
+      "tests/fixtures/authority-core-v1-cases.json",
+      "scripts/quality/issue431_authority_core.py",
+      "tests/unit/test_issue431_authority_core.py",
+      "scripts/quality/check_stage8_docs.py",
+      "tests/unit/test_stage8_quality_gate.py",
+      "docs/ADR/0061-core-authority-schemas-state-matrices.md",
+      "docs/QUALITY_GATES.md",
+      "docs/STAGE_ISSUE_PLAN.md",
+      "docs/STATUS.md",
+      "docs/TRACEABILITY.md"
+    ],
+    "forbidden": [
+      ".github/workflows/",
+      "backend/",
+      "frontend/",
+      "Makefile",
+      "scripts/guardrails_check.py",
+      "docs/governance/narratwin-master-program-authority-decision-v1.json",
+      "docs/governance/cut1-authority-manifest-v1.json",
+      "docs/governance/active-program-route-v1.json"
+    ]
+  }
+}
