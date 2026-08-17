@@ -8,7 +8,7 @@ import json
 import tomllib
 from collections.abc import Mapping
 from pathlib import Path
-from typing import cast
+from typing import Any, cast
 
 import pytest
 
@@ -70,6 +70,77 @@ def evaluate_absent(
         current_time="2026-08-17T00:00:00Z",
         claimed_authority_sources=claimed_authority_sources,
     )
+
+
+def valid_fixture_envelope(**mutations: object) -> dict[str, object]:
+    """Return one schema-shaped, visibly synthetic R01 fixture envelope."""
+
+    envelope: dict[str, object] = {
+        "schemaVersion": "AuthorityEvidenceEnvelopeV1",
+        "repository": "example.invalid/narratwin-authority-evidence-fixtures",
+        "programId": "program:fixture-only",
+        "generationId": "generation:fixture-only",
+        "evidenceId": "evidence:fixture-only",
+        "revision": 1,
+        "predecessorContentHash": None,
+        "contentHash": "0" * 64,
+        "subject": {
+            "schemaVersion": "ActiveProgramRouteV1",
+            "objectId": "route:fixture-only",
+            "revision": 1,
+            "contentHash": "1" * 64,
+            "sourceState": "DRAFT",
+            "operation": "REVIEW",
+            "targetState": "REVIEWED",
+            "transitionRowId": "R01",
+        },
+        "typedReferenceType": "REVIEW_SUBJECT",
+        "evidenceRole": "INDEPENDENT_REVIEW",
+        "producerTrustClass": "INDEPENDENT_REVIEWER",
+        "freshnessClass": "TRANSITION_WINDOW",
+        "payloadClass": "CONTENT_REFERENCE",
+        "producerId": "producer:fixture-only",
+        "rootId": "trust-root:fixture-only",
+        "rootContentHash": "2" * 64,
+        "signingKeyId": "3" * 64,
+        "issuingKeyObjectId": "producer-key:fixture-only",
+        "issuingKeyRevision": 1,
+        "issuingKeyRecordContentHash": "4" * 64,
+        "signatureAlgorithm": "Ed25519",
+        "canonicalSignatureProfile": "NarraTwinAuthorityEvidenceSignatureV1",
+        "payloadMediaType": (
+            "application/vnd.narratwin.authority.content-reference-v1+json"
+        ),
+        "payloadSha256": "5" * 64,
+        "payloadByteLength": 16,
+        "observedAt": "2026-08-17T00:00:00Z",
+        "capturedAt": "2026-08-17T00:00:01Z",
+        "notBefore": "2026-08-17T00:00:00Z",
+        "expiresAt": "2026-08-17T00:05:00Z",
+        "sourceClass": "FIXTURE",
+        "collectionMethod": "SYNTHETIC_PUBLIC_VECTOR",
+        "limitations": ["FIXTURE_ONLY"],
+        "fixtureOnly": True,
+        "signature": "6" * 128,
+    }
+    envelope.update(mutations)
+    return envelope
+
+
+def envelope_bytes(**mutations: object) -> bytes:
+    return json.dumps(
+        valid_fixture_envelope(**mutations),
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("utf-8")
+
+
+def deeply_nested_value() -> dict[str, object]:
+    value: dict[str, object] = {"leaf": 1}
+    for index in range(13):
+        value = {f"level{index}": value}
+    return value
 
 
 def test_fixture_corpus_is_public_only_non_authoritative_and_complete_for_red() -> None:
@@ -182,6 +253,46 @@ def test_rfc8032_mutations_fail_with_a_typed_finding(mutation: str) -> None:
 
 
 @pytest.mark.parametrize(
+    ("public_key_hex", "signature_hex", "message", "expected_finding"),
+    [
+        (
+            None,
+            "0" * 128,
+            b"",
+            trust.Finding("PUBLIC_KEY_FORMAT", "publicKey"),
+        ),
+        (
+            "0" * 64,
+            None,
+            b"",
+            trust.Finding("SIGNATURE_FORMAT", "signature"),
+        ),
+        (
+            "0" * 64,
+            "0" * 128,
+            None,
+            trust.Finding("MESSAGE_TYPE", "message"),
+        ),
+    ],
+    ids=["public-key-runtime-type", "signature-runtime-type", "message-runtime-type"],
+)
+def test_signature_runtime_type_errors_are_typed_and_never_escape(
+    public_key_hex: object,
+    signature_hex: object,
+    message: object,
+    expected_finding: trust.Finding,
+) -> None:
+    result = trust.verify_ed25519_signature(
+        public_key_hex=cast(str, public_key_hex),
+        signature_hex=cast(str, signature_hex),
+        message=cast(bytes, message),
+    )
+
+    assert isinstance(result, trust.SignatureResult), result
+    assert result == trust.SignatureResult(False, (expected_finding,))
+
+
+@pytest.mark.parametrize(
     ("raw", "allowed", "required", "expected_code"),
     [
         (b'{"a":1,"a":1}', frozenset({"a"}), frozenset({"a"}), "DUPLICATE_MEMBER"),
@@ -242,17 +353,20 @@ def test_absent_independent_pins_and_heads_never_backfill_from_candidates_b004()
 
 
 @pytest.mark.parametrize(
-    "raw",
+    ("raw", "expected_code"),
     [
-        b'{"count":true}',
-        b'{"count":1.0}',
-        b'{"count":"1"}',
-        b'{"count":null}',
-        '{"producerId":"prod\u00e9"}'.encode(),
-        b'{"observedAt":"2026-08-17"}',
-        b'{"contentHash":"NOT-HEX"}',
-        b'{"nested":{"a":{"b":{"c":{"d":{"e":{"f":{"g":{"h":{"i":{"j":{"k":{"l":1}}}}}}}}}}}}}',
-        b'{"padding":"' + b"a" * trust.RAW_JSON_MAX_BYTES + b'"}',
+        (envelope_bytes(payloadByteLength=True), "WRONG_SCALAR_TYPE"),
+        (envelope_bytes(payloadByteLength=1.0), "FLOAT_PROHIBITED"),
+        (envelope_bytes(payloadByteLength="1"), "WRONG_SCALAR_TYPE"),
+        (envelope_bytes(payloadByteLength=None), "WRONG_SCALAR_TYPE"),
+        (envelope_bytes(producerId="prod\u00e9"), "NON_ASCII_STRING"),
+        (envelope_bytes(observedAt="2026-08-17"), "TIME_FORMAT"),
+        (envelope_bytes(payloadSha256="NOT-HEX"), "HEX_FORMAT"),
+        (envelope_bytes(unexpectedNested=deeply_nested_value()), "DEPTH_LIMIT"),
+        (
+            envelope_bytes(collectionMethod="a" * trust.RAW_JSON_MAX_BYTES),
+            "SIZE_LIMIT",
+        ),
     ],
     ids=[
         "boolean-as-integer",
@@ -266,7 +380,10 @@ def test_absent_independent_pins_and_heads_never_backfill_from_candidates_b004()
         "oversized",
     ],
 )
-def test_b012_untrusted_shapes_return_bounded_typed_findings(raw: bytes) -> None:
+def test_b012_untrusted_shapes_return_the_exact_bounded_typed_finding(
+    raw: bytes,
+    expected_code: str,
+) -> None:
     first = evaluate_absent(envelope_bytes=raw, payload_bytes=b"fixture payload")
     second = evaluate_absent(envelope_bytes=raw, payload_bytes=b"fixture payload")
 
@@ -277,6 +394,98 @@ def test_b012_untrusted_shapes_return_bounded_typed_findings(raw: bytes) -> None
     assert first.current_verdict is trust.Verdict.INVALID
     assert first.findings
     assert all(len(finding.code) <= 64 for finding in first.findings)
+    assert [finding.code for finding in first.findings].count(expected_code) == 1
+
+
+@pytest.mark.parametrize(
+    ("kind", "schema_version", "location", "mapping_name"),
+    [
+        (
+            trust.ContentKind.TRUST_ROOT,
+            "AuthorityProducerTrustRootV1",
+            "rootDocuments",
+            "root_documents",
+        ),
+        (
+            trust.ContentKind.PRODUCER_KEY,
+            "AuthorityProducerKeyV1",
+            "producerKeyRecords",
+            "producer_key_records",
+        ),
+    ],
+    ids=["trust-root", "producer-key"],
+)
+def test_raw_sha_blob_keys_cannot_substitute_for_domain_content_identity(
+    kind: trust.ContentKind,
+    schema_version: str,
+    location: str,
+    mapping_name: str,
+) -> None:
+    blob = json.dumps(
+        {"fixtureOnly": True, "schemaVersion": schema_version},
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("ascii")
+    raw_sha = hashlib.sha256(blob).hexdigest()
+    expected_domain_hash = hashlib.sha256(
+        kind.value.encode("ascii") + b"\0" + schema_version.encode("ascii") + b"\0" + blob
+    ).hexdigest()
+    assert raw_sha != expected_domain_hash
+
+    inputs: dict[str, object] = {
+        "envelope_bytes": None,
+        "payload_bytes": None,
+        "root_documents": {},
+        "producer_key_records": {},
+        "independent_trust": empty_trust_inputs(),
+        "acceptance_time": "2026-08-17T00:00:00Z",
+        "current_time": "2026-08-17T00:00:00Z",
+    }
+    inputs[mapping_name] = {raw_sha: blob}
+    result = trust.evaluate_evidence(**cast(Any, inputs))
+
+    assert isinstance(result, trust.Evaluation), result
+    assert trust.Finding("BLOB_CONTENT_HASH_MISMATCH", location) in result.findings
+    assert result.historical_verdict is trust.Verdict.INVALID
+    assert result.current_verdict is trust.Verdict.INVALID
+
+
+@pytest.mark.parametrize(
+    ("field", "forged_value"),
+    [("authority_effect", "AUTHORITY"), ("activation", "ACTIVE")],
+)
+def test_evaluation_nonactivation_fields_are_not_caller_initializable(
+    field: str,
+    forged_value: str,
+) -> None:
+    constructor = cast(Any, trust.Evaluation)
+
+    with pytest.raises(TypeError, match=field):
+        constructor(
+            historical_verdict=trust.Verdict.VALID,
+            current_verdict=trust.Verdict.VALID,
+            findings=(),
+            **{field: forged_value},
+        )
+
+
+def test_content_hash_rejects_argument_and_object_schema_version_mismatch() -> None:
+    value: dict[str, object] = {
+        "schemaVersion": "AuthorityEvidenceEnvelopeV1",
+        "value": "fixture-only",
+    }
+
+    with pytest.raises(
+        trust.AuthorityEvidenceTrustError,
+        match="SCHEMA_VERSION_MISMATCH",
+    ) as exc_info:
+        trust.content_hash(
+            trust.ContentKind.EVIDENCE_OBJECT,
+            "AuthorityProducerTrustRootV1",
+            value,
+        )
+
+    assert exc_info.value.code == "SCHEMA_VERSION_MISMATCH"
 
 
 @pytest.mark.parametrize("source", ["FIXTURE", "SIGNATURE", "TEST", "CI", "FILE"])
