@@ -446,6 +446,13 @@ def _guard_scalar_hash(reference_type: str, value: str) -> str:
     return hashlib.sha256(domain + value.encode("ascii")).hexdigest()
 
 
+def _utc_timestamp(value: Any) -> datetime | None:
+    try:
+        return datetime.strptime(value, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=UTC)
+    except (TypeError, ValueError):
+        return None
+
+
 def _guard_observation(
     guard: dict[str, Any] | None, row_id: str, reference_type: str, findings: list[str]
 ) -> datetime | None:
@@ -459,9 +466,8 @@ def _guard_observation(
         findings.append(f"Transition {reference_type.lower()} subject is malformed or unbound.")
         return None
     timestamp = f"{encoded[:10]}T{encoded[11:13]}:{encoded[14:16]}:{encoded[17:19]}Z"
-    try:
-        observed = datetime.strptime(timestamp, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=UTC)
-    except ValueError:
+    observed = _utc_timestamp(timestamp)
+    if observed is None:
         findings.append(f"Transition {reference_type.lower()} subject is malformed or unbound.")
         return None
     if guard.get("sha256") != _guard_scalar_hash(reference_type, timestamp):
@@ -1748,8 +1754,10 @@ def _lineage_transition_findings(
         observed = _guard_observation(
             guards_by_type.get(observation_type), row_id, observation_type, findings
         )
-        deadline = datetime.strptime(threshold, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=UTC)
-        if observed is not None and observed < deadline:
+        deadline = _utc_timestamp(threshold)
+        if deadline is None:
+            findings.append("Transition governed timestamp is malformed.")
+        elif observed is not None and observed < deadline:
             findings.append("Transition expiry observation is before the governed deadline.")
     if row_id in {"R07", "R09"}:
         window = successor["executionWindow"]
@@ -1759,9 +1767,11 @@ def _lineage_transition_findings(
             "EXECUTION_DEADLINE_OBSERVATION",
             findings,
         )
-        start = datetime.strptime(window["approvedAt"], "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=UTC)
-        deadline = datetime.strptime(window["expiresAt"], "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=UTC)
-        if observed is not None and not start <= observed < deadline:
+        start = _utc_timestamp(window["approvedAt"])
+        deadline = _utc_timestamp(window["expiresAt"])
+        if start is None or deadline is None:
+            findings.append("Transition governed timestamp is malformed.")
+        elif observed is not None and not start <= observed < deadline:
             findings.append("Transition execution observation is outside the governed deadline.")
     for reference_type, expected_hash in expected_hashes.items():
         if reference_type in guards_by_type and guards_by_type[reference_type].get(
