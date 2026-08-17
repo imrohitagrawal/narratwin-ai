@@ -11,6 +11,7 @@ from typing import Any, cast
 import pytest
 
 from scripts.quality import issue434_authority_evidence_trust as trust
+from tests.unit import test_issue434_authority_evidence_trust as prior_tests
 
 
 def future(name: str, **kwargs: object) -> object:
@@ -660,3 +661,36 @@ def test_invalid_findings_precede_unavailable_findings() -> None:
     assert_boundary(result)
     assert cast(Any, result).historical_verdict is trust.Verdict.INVALID
     assert cast(Any, result).current_verdict is trust.Verdict.INVALID
+
+
+@pytest.mark.parametrize(("field", "bad"), [("issuingKeyRecordContentHash", {}), ("payloadClass", {}), ("schemaVersion", {})])
+def test_malformed_envelope_values_are_typed(field: str, bad: object) -> None:
+    arguments, state = complete_arguments()
+    envelope = dict(cast(Mapping[str, object], state["envelope"])); envelope[field] = bad  # noqa: E702
+    result = future("resolve_complete_evidence", **dict(arguments, envelope_bytes=trust.canonical_bytes(envelope)))
+    assert_boundary(result)
+    assert cast(Any, result).trusted is False
+
+
+def test_signing_root_requires_each_exact_pin_set(monkeypatch: pytest.MonkeyPatch) -> None:
+    arguments, _ = complete_arguments(); other = root_document(rootId="root:other")  # noqa: E702
+    other["contentHash"] = trust.content_hash(trust.ContentKind.TRUST_ROOT, "AuthorityProducerTrustRootV1", other)
+    for phase in ("ACCEPTANCE", "CURRENT"):
+        descriptor = pin_descriptor(cast(str, other["contentHash"]), phase); arguments[f"{phase.lower()}_pin_descriptor"] = descriptor; arguments[f"{phase.lower()}_expected_pin_hash"] = pin_hash(descriptor)  # noqa: E702
+    cast(dict[str, bytes], arguments["root_documents"])[cast(str, other["contentHash"])] = trust.canonical_bytes(other)
+    assert trusted_result(monkeypatch, arguments).trusted is False
+
+
+@pytest.mark.parametrize(("field", "value"), [("subject", {"objectId": "route:other"}), ("reconstructionStatus", "INVALID")])
+def test_reconstruction_claims_bind_retained_envelope(monkeypatch: pytest.MonkeyPatch, field: str, value: object) -> None:
+    manifest, blobs = reconstruction_bundle(b"fixture-only payload"); document = json.loads(manifest)  # noqa: E702
+    document[field] = dict(document[field], **cast(dict[str, object], value)) if field == "subject" else value
+    document["contentHash"] = trust.content_hash(trust.ContentKind.RECONSTRUCTION, "AuthorityEvidenceReconstructionV1", document)
+    inputs, _ = complete_arguments(); monkeypatch.setattr(trust, "verify_ed25519_signature", lambda **_: trust.SignatureResult(True, ()))  # noqa: E702
+    result = future("reconstruct_retained_evidence", manifest_bytes=trust.canonical_bytes(document), retained_blobs=blobs, evaluation_time=T10, trust_inputs=inputs)
+    assert cast(Any, result).valid is False
+
+
+def test_k02_does_not_retire_k01_before_explicit_boundary() -> None:
+    rows = prior_tests.key_rows(); result = trust.resolve_issuing_key_structure(records=(rows["K01"], rows["K02"]), expected_head=prior_tests.head(rows["K02"]), issuing_key=(rows["K01"]["keyObjectId"], rows["K01"]["keyId"], 1, rows["K01"]["contentHash"]), capture_time=prior_tests.T09)  # noqa: E702
+    assert result.issuing_key_eligible is True
