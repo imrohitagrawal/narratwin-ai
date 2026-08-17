@@ -1005,6 +1005,9 @@ def test_expiry_guards_bind_threshold_and_reject_premature_observation() -> None
     observation["sha256"] = "1" * 64
     expired["contentHash"] = authority.content_hash(expired)
     assert any("unbound" in item.lower() for item in authority.lineage_findings(objects))
+    expired["validity"]["expiresAt"] = "2026-02-30T00:00:00Z"  # type: ignore[index]
+    expired["contentHash"] = authority.content_hash(expired)
+    assert any("schema defect" in item.lower() for item in authority.lineage_findings(objects))
 
 
 @pytest.mark.parametrize("expiry_index", range(5))
@@ -1022,12 +1025,16 @@ def test_route_expiry_requires_observation_at_or_after_deadline(
     assert authority.lineage_findings(lineage) == []
     _set_observation(expired, "2026-09-14T23:59:59Z")
     assert any("before" in item.lower() for item in authority.lineage_findings(lineage))
+    expired["executionWindow"]["expiresAt"] = "2026-02-30T00:00:00Z"  # type: ignore[index]
+    expired["contentHash"] = authority.content_hash(expired)
+    assert any("schema defect" in item.lower() for item in authority.lineage_findings(lineage))
 
 
 @pytest.mark.parametrize("edge_index", [6, 8])
 @pytest.mark.parametrize("observed_at", ["2026-08-14T23:59:59Z", "2026-09-15T00:00:00Z"])
+@pytest.mark.parametrize("field", ["approvedAt", "expiresAt"])
 def test_route_execution_rejects_observation_at_deadline(
-    edge_index: int, observed_at: str
+    edge_index: int, observed_at: str, field: str
 ) -> None:
     linked = _linked_contract_objects()
     route = linked[-1]
@@ -1043,6 +1050,9 @@ def test_route_execution_rejects_observation_at_deadline(
     assert authority.lineage_findings(lineage) == []
     _set_observation(candidate, observed_at)
     assert any("deadline" in item.lower() for item in authority.lineage_findings(lineage))
+    candidate["executionWindow"][field] = "2026-02-30T00:00:00Z"  # type: ignore[index]
+    candidate["contentHash"] = authority.content_hash(candidate)
+    assert any("schema defect" in item.lower() for item in authority.lineage_findings(lineage))
 
 
 @pytest.mark.parametrize("source", authority.FALSE_AUTHORITY_SOURCES)
