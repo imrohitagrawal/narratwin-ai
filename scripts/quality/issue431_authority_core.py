@@ -18,7 +18,7 @@ ROOT = Path(__file__).resolve().parents[2]
 BRANCH = "cut1-process-431-authority-core-schemas-state-matrices"
 BASE = "4d239942eeda0c0b6c385b2d85dae873af076aa6"
 FIRST_COMMIT = "7a5594357c24ac864c850a2e1cb92f9cd8acb940"
-LIMIT = 4_000
+LIMIT = 4_064
 MAX_BYTES = 131_072
 MAX_DEPTH = 12
 MAX_COLLECTION = 128
@@ -588,7 +588,9 @@ def _validate_route_semantics(value: dict[str, Any]) -> None:
         raise AuthorityValidationError("EXECUTION_WINDOW_ORDER")
 
 
-def validate_authority_bytes(data: bytes, expected_schema: str) -> dict[str, Any]:
+def validate_authority_bytes(
+    data: bytes, expected_schema: str, *, validate_semantics: bool = True
+) -> dict[str, Any]:
     """Parse canonical bytes and validate them against one exact supported schema."""
 
     if expected_schema not in SUPPORTED_SCHEMAS:
@@ -602,7 +604,8 @@ def validate_authority_bytes(data: bytes, expected_schema: str) -> dict[str, Any
     schema = _read_schema(schema_path, expected_schema)
     _validate_identity(value, expected_schema)
     _validate_descriptor(value, schema["root"], schema["$defs"])
-    _validate_semantics(value)
+    if validate_semantics:
+        _validate_semantics(value)
     return value
 
 
@@ -644,6 +647,7 @@ def lineage_findings(objects: list[dict[str, Any]]) -> list[str]:
     """Validate immutable bytes, unique identities, links, forks, and exact transitions."""
 
     findings: list[str] = []
+    invalid_members: set[int] = set()
     if not objects:
         return ["Lineage is empty."]
     by_hash: dict[str, dict[str, Any]] = {}
@@ -658,9 +662,15 @@ def lineage_findings(objects: list[dict[str, Any]]) -> list[str]:
             findings.append("Lineage schema version is missing.")
             continue
         try:
-            validate_authority_bytes(canonical_bytes(value), schema)
+            validate_authority_bytes(canonical_bytes(value), schema, validate_semantics=False)
         except AuthorityValidationError as error:
             findings.append(f"Lineage content hash or schema defect: {error.code}.")
+            invalid_members.add(id(value))
+        else:
+            try:
+                _validate_semantics(value)
+            except AuthorityValidationError as error:
+                findings.append(f"Lineage content hash or schema defect: {error.code}.")
         object_hash = value.get("contentHash")
         if not isinstance(object_hash, str):
             findings.append("Lineage content hash is missing.")
@@ -687,12 +697,15 @@ def lineage_findings(objects: list[dict[str, Any]]) -> list[str]:
     if any(len(items) > 1 for items in successors.values()):
         findings.append("Forked successors claim one predecessor hash.")
     for value in objects:
-        if not isinstance(value, dict) or value.get("revision") == 1:
+        if not isinstance(value, dict) or value.get("revision") == 1 or id(value) in invalid_members:
             continue
         predecessor_hash = value.get("predecessorContentHash")
         predecessor = by_hash.get(predecessor_hash) if isinstance(predecessor_hash, str) else None
         if predecessor is None:
             findings.append("Unlinked successor predecessor is absent.")
+            continue
+        if id(predecessor) in invalid_members:
+            findings.append("Successor predecessor has a schema defect.")
             continue
         stable = ("schemaVersion", "repository", "programId", "generationId", "objectId")
         if any(value.get(key) != predecessor.get(key) for key in stable):

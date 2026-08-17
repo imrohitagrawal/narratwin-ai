@@ -1007,7 +1007,7 @@ def test_expiry_guards_bind_threshold_and_reject_premature_observation() -> None
     assert any("unbound" in item.lower() for item in authority.lineage_findings(objects))
     expired["validity"]["expiresAt"] = "2026-02-30T00:00:00Z"  # type: ignore[index]
     expired["contentHash"] = authority.content_hash(expired)
-    assert any("governed timestamp" in item.lower() for item in authority.lineage_findings(objects))
+    assert any("schema defect" in item.lower() for item in authority.lineage_findings(objects))
 
 
 @pytest.mark.parametrize("expiry_index", range(5))
@@ -1027,7 +1027,7 @@ def test_route_expiry_requires_observation_at_or_after_deadline(
     assert any("before" in item.lower() for item in authority.lineage_findings(lineage))
     expired["executionWindow"]["expiresAt"] = "2026-02-30T00:00:00Z"  # type: ignore[index]
     expired["contentHash"] = authority.content_hash(expired)
-    assert any("governed timestamp" in item.lower() for item in authority.lineage_findings(lineage))
+    assert any("schema defect" in item.lower() for item in authority.lineage_findings(lineage))
 
 
 @pytest.mark.parametrize("edge_index", [6, 8])
@@ -1052,7 +1052,7 @@ def test_route_execution_rejects_observation_at_deadline(
     assert any("deadline" in item.lower() for item in authority.lineage_findings(lineage))
     candidate["executionWindow"][field] = "2026-02-30T00:00:00Z"  # type: ignore[index]
     candidate["contentHash"] = authority.content_hash(candidate)
-    assert any("governed timestamp" in item.lower() for item in authority.lineage_findings(lineage))
+    assert any("schema defect" in item.lower() for item in authority.lineage_findings(lineage))
 
 
 @pytest.mark.parametrize(
@@ -1093,6 +1093,7 @@ def test_schema_invalid_governed_fields_fail_closed(
         if candidate is not active:
             lineage.append(candidate)
         container = candidate["executionWindow"]
+    assert isinstance(container, dict)
     if mutation == "missing":
         container.pop(field)
     else:
@@ -1108,7 +1109,7 @@ def test_schema_invalid_predecessor_fails_closed() -> None:
     draft.pop("executionWindow")
     draft["contentHash"] = authority.content_hash(draft)
     expired["predecessorContentHash"] = draft["contentHash"]
-    expired["transition"]["guardReferences"][0]["sha256"] = draft["contentHash"]
+    expired["transition"]["guardReferences"][0]["sha256"] = draft["contentHash"]  # type: ignore[index]
     expired["contentHash"] = authority.content_hash(expired)
     assert any("schema defect" in item.lower() for item in authority.lineage_findings([draft, expired]))
 
