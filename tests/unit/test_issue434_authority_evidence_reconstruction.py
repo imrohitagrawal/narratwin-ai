@@ -105,7 +105,7 @@ def root_document(**changes: object) -> dict[str, object]:
                 "freshnessClass": "TRANSITION_WINDOW",
                 "maxCaptureDelaySeconds": 60,
                 "maxObservationAgeSeconds": 300,
-                "maxEnvelopeLifetimeSeconds": 300,
+                "maxEnvelopeLifetimeSeconds": 600,
             }
         ],
         "maxPayloadBytes": 131072,
@@ -574,9 +574,11 @@ def trusted_result(monkeypatch: pytest.MonkeyPatch, arguments: Mapping[str, obje
     return cast(Any, future("resolve_complete_evidence", **dict(arguments)))
 
 
-def test_full_reconstruction_contract_is_required_and_malformed_values_are_typed() -> None:
+def test_full_reconstruction_contract_is_required_and_malformed_values_are_typed(monkeypatch: pytest.MonkeyPatch) -> None:
     manifest, blobs = reconstruction_bundle(b"fixture-only payload")
-    valid = future("reconstruct_retained_evidence", manifest_bytes=manifest, retained_blobs=blobs, evaluation_time=T10)
+    trust_inputs, _ = complete_arguments()
+    monkeypatch.setattr(trust, "verify_ed25519_signature", lambda **_: trust.SignatureResult(True, ()))
+    valid = future("reconstruct_retained_evidence", manifest_bytes=manifest, retained_blobs=blobs, evaluation_time=T10, trust_inputs=trust_inputs)
     assert_boundary(valid)
     assert cast(Any, valid).valid is True
     document = json.loads(manifest)
