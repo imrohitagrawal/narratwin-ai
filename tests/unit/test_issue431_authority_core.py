@@ -670,6 +670,23 @@ def test_cross_contract_dispatch_rejects_malformed_roots(
     )
 
 
+@pytest.mark.parametrize("schema", sorted(authority.SUPPORTED_SCHEMAS))
+@pytest.mark.parametrize(
+    "identity_field", ["repository", "programId", "generationId", "objectId", "revision"]
+)
+@pytest.mark.parametrize("malformed", [[], {}, {"nested": []}, [["nested"]]])
+def test_structurally_invalid_identity_fields_fail_closed(
+    schema: str, identity_field: str, malformed: object
+) -> None:
+    candidate = authority_object(schema)
+    candidate[identity_field] = malformed
+
+    assert any(
+        "schema defect" in item.lower()
+        for item in authority.lineage_findings([candidate])
+    )
+
+
 def test_decision_acceptance_requires_the_selected_manifest_merged_revision() -> None:
     proposed_manifest = authority_object("Cut1AuthorityManifestV1")
     decisions = _decision_lineage_for_manifest(proposed_manifest)
