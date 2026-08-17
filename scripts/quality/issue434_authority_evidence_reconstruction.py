@@ -23,26 +23,18 @@ MEDIA = {
 ROOT_AUTH_MEMBERS = frozenset({"keyId", "publicKeyHex"})
 GENESIS_MEMBERS = frozenset({"activationTime", "keyId", "keyObjectId", "publicKeyHex", "revision"})
 GOVERNANCE = Path(__file__).resolve().parents[2] / "docs" / "governance"
-
 @dataclass(frozen=True)
 class ClosedResult:
     findings: tuple[core.Finding, ...]
-    valid: bool = False
-    structural_invalidation_applies: bool = False
-    issuing_key_eligible: bool = False
-    trusted: bool = False
-    historical_verdict: core.Verdict | None = None
-    current_verdict: core.Verdict | None = None
-    reconstruction_status: str | None = None
-    authorization_evaluated: bool = False
+    valid: bool = False; structural_invalidation_applies: bool = False  # noqa: E702
+    issuing_key_eligible: bool = False; trusted: bool = False  # noqa: E702
+    historical_verdict: core.Verdict | None = None; current_verdict: core.Verdict | None = None  # noqa: E702
+    reconstruction_status: str | None = None; authorization_evaluated: bool = False  # noqa: E702
     root_invalidation_applied: bool = False
     authority_effect: Literal["NO_AUTHORITY_EFFECT"] = field(default=core.NO_AUTHORITY_EFFECT, init=False)
     activation: Literal["NONE"] = field(default=core.ACTIVATION, init=False)
-
-def _result(codes: list[str] | tuple[str, ...], *, valid: bool = False,
-            structural_invalidation_applies: bool = False, issuing_key_eligible: bool = False,
-            trusted: bool = False, historical_verdict: core.Verdict | None = None,
-            current_verdict: core.Verdict | None = None,
+def _result(codes: list[str] | tuple[str, ...], *, valid: bool = False, structural_invalidation_applies: bool = False,
+            issuing_key_eligible: bool = False, trusted: bool = False, historical_verdict: core.Verdict | None = None, current_verdict: core.Verdict | None = None,
             reconstruction_status: str | None = None) -> ClosedResult:
     findings = tuple(core.Finding(code) for code in dict.fromkeys(codes))
     return ClosedResult(findings, valid=valid and not findings,
@@ -50,7 +42,6 @@ def _result(codes: list[str] | tuple[str, ...], *, valid: bool = False,
                         issuing_key_eligible=issuing_key_eligible and not findings,
                         trusted=trusted and not findings, historical_verdict=historical_verdict,
                         current_verdict=current_verdict, reconstruction_status=reconstruction_status)
-
 def _parse(raw: object, *, code: str) -> tuple[dict[str, object] | None, list[str]]:
     if not isinstance(raw, bytes):
         return None, [code]
@@ -58,8 +49,6 @@ def _parse(raw: object, *, code: str) -> tuple[dict[str, object] | None, list[st
         return core._parse_json_object(raw, max_bytes=core.RETAINED_BLOB_MAX_BYTES), []
     except core.AuthorityEvidenceTrustError as exc:
         return None, [f"{code}_{exc.code}"]
-
-
 def _schema_codes(value: object, filename: str) -> list[str]:
     try:
         raw = (GOVERNANCE / "schemas" / filename).read_bytes()
@@ -68,13 +57,10 @@ def _schema_codes(value: object, filename: str) -> list[str]:
     if hashlib.sha256(raw).hexdigest() != FROZEN_ARTIFACT_SHA256[filename]: return ["CONTRACT_ARTIFACT_IDENTITY_MISMATCH"]  # noqa: E701
     schema, codes = _parse(raw, code="CONTRACT_SCHEMA_INVALID")
     return codes if schema is None else [item.code for item in core.validate_closed_schema_value(value, schema)]
-
 def _time(value: object) -> datetime | None:
     return core._utc_value(value)
-
 def _pin_hash(descriptor: Mapping[str, object]) -> str:
     return hashlib.sha256(core.PIN_DOMAIN + core.canonical_bytes(descriptor)).hexdigest()
-
 def _pin_codes(descriptor: object, expected_hash: object, phase: str,
                scope: tuple[str, str, str, str]) -> list[str]:
     codes: list[str] = []
@@ -149,8 +135,7 @@ def _key_binding_codes(root: Mapping[str, object]) -> list[str]:
     return codes
 
 
-def validate_closed_root(*, root_bytes: object, expected_root_hash: object,
-                         pin_descriptor: object, expected_pin_set_hash: object,
+def validate_closed_root(*, root_bytes: object, expected_root_hash: object, pin_descriptor: object, expected_pin_set_hash: object,
                          expected_phase: str, expected_scope: tuple[str, str, str, str],
                          evaluation_time: object) -> ClosedResult:
     root, codes = _parse(root_bytes, code="ROOT_DOCUMENT_INVALID")
@@ -233,9 +218,7 @@ def validate_closed_root(*, root_bytes: object, expected_root_hash: object,
     return _result(codes, valid=not codes)
 
 
-def resolve_root_invalidation(*, root_documents: object, pin_descriptor: object,
-                              expected_pin_set_hash: object,
-                              expected_scope: tuple[str, str, str, str],
+def resolve_root_invalidation(*, root_documents: object, pin_descriptor: object, expected_pin_set_hash: object, expected_scope: tuple[str, str, str, str],
                               prior_root_content_hash: object,
                               evaluation_time: object) -> ClosedResult:
     codes = _pin_codes(
@@ -306,8 +289,7 @@ def resolve_issuing_key(*, records: object, expected_head: object, issuing_key: 
     )
 
 
-def validate_subject_phase(*, envelope: object, root: object,
-                           taxonomy_matrix_bytes: object,
+def validate_subject_phase(*, envelope: object, root: object, taxonomy_matrix_bytes: object,
                            evaluation_time: object) -> ClosedResult:
     codes: list[str] = []
     if not isinstance(envelope, Mapping) or not isinstance(root, Mapping):
@@ -646,13 +628,18 @@ def reconstruct_retained_evidence(*, manifest_bytes: object, retained_blobs: obj
         if not isinstance(trust_inputs, Mapping):
             codes.append("RECONSTRUCTION_TRUST_INPUTS_UNAVAILABLE")
         else:
+            trust_keys = {"envelope_bytes", "payload_bytes", "root_documents", "key_record_documents", "acceptance_pin_descriptor", "acceptance_expected_pin_hash", "current_pin_descriptor", "current_expected_pin_hash", "acceptance_head", "current_head", "acceptance_time", "current_time", "taxonomy_matrix_bytes"}
+            if set(trust_inputs) != trust_keys: return _result(["RECONSTRUCTION_TRUST_INPUTS_INVALID"], reconstruction_status="INVALID")  # noqa: E701
             pin_bindings = (("acceptanceRootPinSetHash", "acceptanceRootPinReferences", "acceptance_expected_pin_hash"), ("currentRootPinSetHash", "currentRootPinReferences", "current_expected_pin_hash"))
             if any(manifest.get(digest_name) != trust_inputs.get(input_name) or manifest.get(digest_name) not in [item.get("contentHash") for item in cast(list[Mapping[str, object]], manifest.get(refs_name))] for digest_name, refs_name, input_name in pin_bindings) or any(not isinstance(trust_inputs.get(input_name), core.HistoryHead) or manifest.get(head_name) != {"rootContentHash": trust_inputs[input_name].root_content_hash, "producerId": trust_inputs[input_name].producer_id, "historySequence": trust_inputs[input_name].history_sequence, "keyRecordContentHash": trust_inputs[input_name].key_record_content_hash} for head_name, input_name in (("acceptanceHead", "acceptance_head"), ("currentHead", "current_head"))) or manifest.get("historicalEvaluationTime") != trust_inputs.get("acceptance_time") or manifest.get("currentEvaluationTime") != trust_inputs.get("current_time"): codes.append("RECONSTRUCTION_PIN_BINDING_MISMATCH")  # noqa: E701
             supplied = dict(trust_inputs)
             ref_blob: Callable[[object], object] = lambda value: retained_blobs.get(value.get("contentHash")) if isinstance(value, Mapping) else None  # noqa: E731
+            retained_envelope, retained_codes = _parse(ref_blob(manifest.get("envelopeReference")), code="RETAINED_ENVELOPE_INVALID"); codes += retained_codes  # noqa: E702
+            expected_subject = dict(cast(Mapping[str, object], retained_envelope.get("subject")), generationId=manifest.get("generationId")) if retained_envelope is not None and isinstance(retained_envelope.get("subject"), Mapping) else None
+            if retained_envelope is None or manifest.get("subject") != expected_subject or any(manifest.get(name) != retained_envelope.get(name) for name in ("typedReferenceType", "evidenceRole", "producerTrustClass", "freshnessClass", "payloadClass")): codes.append("RECONSTRUCTION_ENVELOPE_BINDING_MISMATCH")  # noqa: E701
             supplied.update(envelope_bytes=ref_blob(manifest.get("envelopeReference")), payload_bytes=ref_blob(manifest.get("payloadReference")), root_documents={item["contentHash"]: ref_blob(item) for item in cast(list[Mapping[str, object]], manifest.get("rootReferences"))}, key_record_documents={item["contentHash"]: ref_blob(item) for item in cast(list[Mapping[str, object]], manifest.get("keyReferences"))})
             trust = resolve_complete_evidence(**cast(Any, supplied))
-            if not trust.trusted or manifest.get("historicalVerdict") != getattr(trust.historical_verdict, "value", None) or manifest.get("currentVerdict") != getattr(trust.current_verdict, "value", None) or manifest.get("historicalFindings") != [] or manifest.get("currentFindings") != []:
+            if not trust.trusted or manifest.get("reconstructionStatus") != "COMPLETE" or manifest.get("historicalVerdict") != getattr(trust.historical_verdict, "value", None) or manifest.get("currentVerdict") != getattr(trust.current_verdict, "value", None) or manifest.get("historicalFindings") != [] or manifest.get("currentFindings") != []:
                 codes.append("RECONSTRUCTED_TRUST_MISMATCH")
     status = "INVALID" if any("UNAVAILABLE" not in code and code != "RETENTION_EXPIRED" for code in codes) else "UNAVAILABLE" if codes else "COMPLETE"
     return _result(codes, valid=not codes, reconstruction_status=status)
@@ -666,7 +653,11 @@ def validate_evidence_replay_set(*, envelope_documents: object) -> ClosedResult:
         envelope, parsed = _parse(raw, code="ENVELOPE_INVALID")
         codes += parsed
         if envelope is None or not isinstance(raw, bytes): continue  # noqa: E701
-        codes += _schema_codes(envelope, "authority-evidence-envelope-v1.schema.json")
+        envelope_codes = _schema_codes(envelope, "authority-evidence-envelope-v1.schema.json")
+        if envelope_codes: codes += envelope_codes; continue  # noqa: E701, E702
+        try: identity_valid = raw == core.canonical_bytes(envelope) and envelope.get("contentHash") == core.content_hash(core.ContentKind.EVIDENCE_OBJECT, core.ENVELOPE_SCHEMA_VERSION, envelope)  # noqa: E701
+        except core.AuthorityEvidenceTrustError: identity_valid = False  # noqa: E701
+        if not identity_valid or (envelope.get("revision") == 1) != (envelope.get("predecessorContentHash") is None): codes.append("ENVELOPE_CONTENT_HASH_MISMATCH")  # noqa: E701
         identity = tuple(envelope.get(name) for name in ("repository", "programId", "generationId", "evidenceId", "revision"))
         prior = identities.setdefault(identity, raw)
         if prior != raw: codes.append("EVIDENCE_IDENTITY_CONFLICT")  # noqa: E701
@@ -708,7 +699,7 @@ def resolve_complete_evidence(*, envelope_bytes: object, payload_bytes: object,
         verdict = _verdict(common)
         return _result(common, historical_verdict=verdict, current_verdict=verdict)
     common += [item.code for item in core._validate_envelope(envelope)]
-    common += _schema_codes(envelope, "authority-evidence-envelope-v1.schema.json")
+    envelope_schema_codes = _schema_codes(envelope, "authority-evidence-envelope-v1.schema.json"); common += envelope_schema_codes  # noqa: E702
     if (envelope.get("revision") == 1) != (envelope.get("predecessorContentHash") is None): common.append("ENVELOPE_PREDECESSOR_REVISION_MISMATCH")  # noqa: E701
     try:
         if envelope_bytes != core.canonical_bytes(envelope) or envelope.get("contentHash") != core.content_hash(
@@ -726,6 +717,9 @@ def resolve_complete_evidence(*, envelope_bytes: object, payload_bytes: object,
             common.append("PAYLOAD_LENGTH_MISMATCH")
         if envelope.get("payloadSha256") != hashlib.sha256(payload_bytes).hexdigest():
             common.append("PAYLOAD_HASH_MISMATCH")
+    if envelope_schema_codes or "ENVELOPE_PREDECESSOR_REVISION_MISMATCH" in common:
+        verdict = _verdict(common)
+        return _result(common, historical_verdict=verdict, current_verdict=verdict)
     scope_values = tuple(envelope.get(name) for name in (
         "repository", "programId", "generationId", "producerId"
     ))
@@ -746,6 +740,10 @@ def resolve_complete_evidence(*, envelope_bytes: object, payload_bytes: object,
     current_pins = current_pin_descriptor.get("rootContentHashes") if isinstance(current_pin_descriptor, Mapping) else None
     if isinstance(acceptance_pins, list) and isinstance(current_pins, list) and all(isinstance(item, str) for item in acceptance_pins + current_pins) and not set(acceptance_pins).issubset(current_pins):
         current_codes.append("ROOT_PIN_ROLLBACK")
+    if isinstance(acceptance_pins, list) and root_hash not in acceptance_pins: historical_codes.append("ROOT_PIN_REQUIRED")  # noqa: E701
+    if isinstance(current_pins, list) and root_hash not in current_pins: current_codes.append("ROOT_PIN_REQUIRED")  # noqa: E701
+    if isinstance(acceptance_pins, list) and isinstance(current_pins, list) and all(isinstance(item, str) for item in acceptance_pins + current_pins) and set(root_documents) != set(acceptance_pins + current_pins):
+        historical_codes.append("ROOT_DOCUMENT_SET_MISMATCH"); current_codes.append("ROOT_DOCUMENT_SET_MISMATCH")  # noqa: E702
     for phase, descriptor, expected_hash, when, target in (
         ("ACCEPTANCE", acceptance_pin_descriptor, acceptance_expected_pin_hash, acceptance_time, historical_codes),
         ("CURRENT", current_pin_descriptor, current_expected_pin_hash, current_time, current_codes),
@@ -766,17 +764,19 @@ def resolve_complete_evidence(*, envelope_bytes: object, payload_bytes: object,
         if invalidation.structural_invalidation_applies:
             current_codes.append("ROOT_COMPROMISE_INVALIDATION")
     root, _ = _parse(root_raw, code="ROOT_DOCUMENT_INVALID")
+    if root is not None and root.get("rootId") != envelope.get("rootId"):
+        historical_codes.append("ROOT_ID_MISMATCH"); current_codes.append("ROOT_ID_MISMATCH")  # noqa: E702
     parsed_keys: dict[str, Mapping[str, object]] = {}
     for digest, raw in key_record_documents.items():
         record, parse_codes = _parse(raw, code="KEY_RECORD_INVALID")
         historical_codes += parse_codes
         current_codes += parse_codes
         if isinstance(digest, str) and record is not None:
-            historical_codes += _schema_codes(record, "authority-producer-key-v1.schema.json")
-            current_codes += _schema_codes(record, "authority-producer-key-v1.schema.json")
-            if record.get("contentHash") != digest or raw != core.canonical_bytes(record):
-                historical_codes.append("KEY_DOCUMENT_IDENTITY_MISMATCH")
-                current_codes.append("KEY_DOCUMENT_IDENTITY_MISMATCH")
+            record_codes = _schema_codes(record, "authority-producer-key-v1.schema.json")
+            if record.get("contentHash") != digest or raw != core.canonical_bytes(record): record_codes.append("KEY_DOCUMENT_IDENTITY_MISMATCH")  # noqa: E701
+            historical_codes += record_codes; current_codes += record_codes  # noqa: E702
+            if record_codes:
+                continue
             parsed_keys[digest] = record
     if not isinstance(acceptance_head, core.HistoryHead) or not isinstance(current_head, core.HistoryHead):
         historical_codes.append("CURRENT_HEAD_REQUIRED")

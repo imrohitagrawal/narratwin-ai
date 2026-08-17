@@ -768,7 +768,7 @@ def inspect_key_history_structure(
                     if isinstance(value, bool) or not isinstance(value, expected_type):
                         reject("WRONG_SCALAR_TYPE", f"keyRecord.rotationPredecessor.{name}")
         operation = record.get("operation")
-        if operation not in KEY_OPERATIONS:
+        if not isinstance(operation, str) or operation not in KEY_OPERATIONS:
             reject("UNKNOWN_KEY_OPERATION", "keyRecord.operation")
         for name in ("activationTime", "retiredAt", "revokedAt", "invalidatesFrom"):
             value = record.get(name)
@@ -781,7 +781,7 @@ def inspect_key_history_structure(
                 reject("PREDECESSOR_AUTHORIZATION_REQUIRED")
             if record.get("revision") != 1 or record.get("predecessorContentHash") is not None or record.get("rotationPredecessor") is None or any(record.get(name) is not None for name in ("retiredAt", "revokedAt", "invalidatesFrom")):
                 reject("ROTATION_PREDECESSOR_RELATION")
-        if operation in KEY_OPERATIONS and record.get("rootAuthorizationSignature") is None:
+        if isinstance(operation, str) and operation in KEY_OPERATIONS and record.get("rootAuthorizationSignature") is None:
             reject("ROOT_AUTHORIZATION_REQUIRED")
         if operation == "RETIRE":
             if record.get("retiredAt") is None:
@@ -1137,9 +1137,14 @@ def resolve_issuing_key_structure(*, records: tuple[Mapping[str, object], ...], 
     key_object, key_id, revision, record_hash = issuing_key
     capture = _utc_value(capture_time)
     selected = next((row for row in records if row.get("keyObjectId") == key_object and row.get("keyId") == key_id and row.get("revision") == revision and row.get("contentHash") == record_hash), None)
+    if selected is not None and selected.get("contentHash") != expected_head.key_record_content_hash:
+        findings = [code for code in findings if code not in {"KEY_NOT_YET_ACTIVE", "KEY_RETIRED", "KEY_REVOKED"}]
     eligible = capture is not None and selected is not None and not findings
     if selected is None:
         findings.append("ISSUING_KEY_IDENTITY_MISMATCH")
+    elif capture is not None and (activation := _utc_value(selected.get("activationTime"))) is not None and capture < activation:
+        findings.append("KEY_NOT_YET_ACTIVE")
+        eligible = False
     for row in records:
         if row.get("keyObjectId") != key_object or row.get("operation") not in {"RETIRE", "REVOKE"}:
             continue
