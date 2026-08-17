@@ -1,0 +1,39 @@
+{
+  "schemaVersion": "AuthorityEvidenceTrustFixtureCorpusV1",
+  "fixtureOnly": true,
+  "repository": "example.invalid/narratwin-authority-evidence-fixtures",
+  "activation": "NONE",
+  "privateMaterialIncluded": false,
+  "rfc8032Section7_1Vector1": {
+    "source": "RFC 8032 section 7.1 TEST 1",
+    "publicKeyHex": "d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a",
+    "messageHex": "",
+    "signatureHex": "e5564300c360ac729086e2cc806e828a84877f1eb8e5d974d873e065224901555fb8821590a33bacc61e39701cf9b46bd25bf5f0595bbe24655141438e7a100b"
+  },
+  "cases": [
+    {"id": "rfc8032-positive", "boundary": "B-005", "classification": "positive", "probe": "RFC_VECTOR", "expectedVerdict": "VALID", "expectedFindings": []},
+    {"id": "signature-bit-mutation", "boundary": "B-005", "classification": "mutation", "probe": "SIGNATURE_BIT_FLIP", "expectedVerdict": "INVALID", "expectedFindings": ["SIGNATURE_INVALID"]},
+    {"id": "wrong-public-key", "boundary": "B-005", "classification": "negative", "probe": "WRONG_PUBLIC_KEY", "expectedVerdict": "INVALID", "expectedFindings": ["SIGNATURE_INVALID"]},
+    {"id": "wrong-message-domain", "boundary": "B-005", "classification": "mutation", "probe": "WRONG_MESSAGE", "expectedVerdict": "INVALID", "expectedFindings": ["SIGNATURE_INVALID"]},
+    {"id": "missing-envelope", "boundary": "B-001", "classification": "negative", "probe": "MISSING_ENVELOPE", "expectedVerdict": "UNAVAILABLE", "expectedFindings": ["ENVELOPE_UNAVAILABLE"]},
+    {"id": "missing-payload", "boundary": "B-001", "classification": "negative", "probe": "MISSING_PAYLOAD", "expectedVerdict": "UNAVAILABLE", "expectedFindings": ["PAYLOAD_UNAVAILABLE"]},
+    {"id": "absent-acceptance-pin", "boundary": "B-004", "classification": "negative", "probe": "MISSING_ACCEPTANCE_PIN", "expectedVerdict": "UNAVAILABLE", "expectedFindings": ["ACCEPTANCE_ROOT_PIN_REQUIRED"]},
+    {"id": "mismatched-current-pin", "boundary": "B-004", "classification": "mutation", "probe": "CURRENT_PIN_MISMATCH", "expectedVerdict": "INVALID", "expectedFindings": ["CURRENT_ROOT_PIN_MISMATCH"]},
+    {"id": "absent-acceptance-head", "boundary": "B-004", "classification": "negative", "probe": "MISSING_ACCEPTANCE_HEAD", "expectedVerdict": "UNAVAILABLE", "expectedFindings": ["ACCEPTANCE_HEAD_REQUIRED"]},
+    {"id": "suppressed-current-head", "boundary": "B-004", "classification": "adversarial", "probe": "CURRENT_HEAD_ROLLBACK", "expectedVerdict": "INVALID", "expectedFindings": ["CURRENT_HEAD_MISMATCH"]},
+    {"id": "duplicate-member", "boundary": "B-012", "classification": "negative", "probe": "DUPLICATE_MEMBER", "expectedVerdict": "INVALID", "expectedFindings": ["DUPLICATE_MEMBER"]},
+    {"id": "unknown-member", "boundary": "B-012", "classification": "negative", "probe": "UNKNOWN_MEMBER", "expectedVerdict": "INVALID", "expectedFindings": ["UNKNOWN_MEMBER"]},
+    {"id": "boolean-as-integer", "boundary": "B-012", "classification": "adversarial", "probe": "BOOLEAN_AS_INTEGER", "expectedVerdict": "INVALID", "expectedFindings": ["WRONG_SCALAR_TYPE"]},
+    {"id": "floating-number", "boundary": "B-012", "classification": "negative", "probe": "FLOAT", "expectedVerdict": "INVALID", "expectedFindings": ["FLOAT_PROHIBITED"]},
+    {"id": "numeric-string", "boundary": "B-012", "classification": "negative", "probe": "NUMERIC_STRING", "expectedVerdict": "INVALID", "expectedFindings": ["WRONG_SCALAR_TYPE"]},
+    {"id": "null-substitution", "boundary": "B-012", "classification": "negative", "probe": "NULL_SUBSTITUTION", "expectedVerdict": "INVALID", "expectedFindings": ["WRONG_SCALAR_TYPE"]},
+    {"id": "non-ascii", "boundary": "B-012", "classification": "negative", "probe": "NON_ASCII", "expectedVerdict": "INVALID", "expectedFindings": ["NON_ASCII_STRING"]},
+    {"id": "malformed-time", "boundary": "B-012", "classification": "negative", "probe": "MALFORMED_TIME", "expectedVerdict": "INVALID", "expectedFindings": ["TIME_FORMAT"]},
+    {"id": "invalid-hex", "boundary": "B-012", "classification": "negative", "probe": "INVALID_HEX", "expectedVerdict": "INVALID", "expectedFindings": ["HEX_FORMAT"]},
+    {"id": "deeply-nested", "boundary": "B-012", "classification": "adversarial", "probe": "DEPTH_LIMIT", "expectedVerdict": "INVALID", "expectedFindings": ["DEPTH_LIMIT"]},
+    {"id": "oversized-input", "boundary": "B-012", "classification": "adversarial", "probe": "SIZE_LIMIT", "expectedVerdict": "INVALID", "expectedFindings": ["SIZE_LIMIT"]},
+    {"id": "fixture-as-authority", "boundary": "B-015", "classification": "adversarial", "probe": "FIXTURE_AUTHORITY_CLAIM", "expectedVerdict": "UNAVAILABLE", "expectedFindings": ["NO_AUTHORITY_EFFECT"], "authorityEffect": "NO_AUTHORITY_EFFECT"},
+    {"id": "signature-as-authority", "boundary": "B-015", "classification": "adversarial", "probe": "SIGNATURE_AUTHORITY_CLAIM", "expectedVerdict": "UNAVAILABLE", "expectedFindings": ["NO_AUTHORITY_EFFECT"], "authorityEffect": "NO_AUTHORITY_EFFECT"},
+    {"id": "check-as-authority", "boundary": "B-015", "classification": "adversarial", "probe": "CHECK_AUTHORITY_CLAIM", "expectedVerdict": "UNAVAILABLE", "expectedFindings": ["NO_AUTHORITY_EFFECT"], "authorityEffect": "NO_AUTHORITY_EFFECT"}
+  ]
+}
