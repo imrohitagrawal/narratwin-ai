@@ -359,3 +359,166 @@ def test_partial_signature_success_can_never_become_trusted() -> None:
     assert cast(Any, result).trusted is False
     assert cast(Any, result).historical_verdict is not trust.Verdict.VALID
     assert cast(Any, result).current_verdict is not trust.Verdict.VALID
+
+
+def key_record(root_hash: str, root: Mapping[str, object]) -> dict[str, object]:
+    genesis = cast(Mapping[str, object], root["genesisCaptureKey"])
+    value: dict[str, object] = {
+        "schemaVersion": "AuthorityProducerKeyV1",
+        "repository": REPOSITORY,
+        "programId": PROGRAM,
+        "generationId": GENERATION,
+        "rootContentHash": root_hash,
+        "producerId": PRODUCER,
+        "keyObjectId": genesis["keyObjectId"],
+        "keyId": genesis["keyId"],
+        "publicKeyHex": genesis["publicKeyHex"],
+        "revision": 1,
+        "predecessorContentHash": None,
+        "historySequence": 1,
+        "historyPredecessorContentHash": None,
+        "rotationPredecessor": None,
+        "operation": "ISSUE_GENESIS",
+        "activationTime": T00,
+        "retiredAt": None,
+        "revokedAt": None,
+        "invalidatesFrom": None,
+        "signatureAlgorithm": "Ed25519",
+        "rootAuthorizationSignature": "0" * 128,
+        "predecessorAuthorizationSignature": None,
+        "fixtureOnly": True,
+        "contentHash": "0" * 64,
+    }
+    value["contentHash"] = trust.content_hash(
+        trust.ContentKind.PRODUCER_KEY,
+        "AuthorityProducerKeyV1",
+        value,
+    )
+    return value
+
+
+def complete_envelope(
+    root_hash: str,
+    key: Mapping[str, object],
+    payload: bytes,
+    **changes: object,
+) -> dict[str, object]:
+    value: dict[str, object] = {
+        "schemaVersion": "AuthorityEvidenceEnvelopeV1",
+        "repository": REPOSITORY,
+        "programId": PROGRAM,
+        "generationId": GENERATION,
+        "evidenceId": "evidence:fixture-only",
+        "revision": 1,
+        "predecessorContentHash": None,
+        "contentHash": "0" * 64,
+        "subject": {
+            "schemaVersion": "ActiveProgramRouteV1",
+            "objectId": "route:fixture-only",
+            "revision": 1,
+            "contentHash": "1" * 64,
+            "sourceState": "DRAFT",
+            "operation": "REVIEW",
+            "targetState": "REVIEWED",
+            "transitionRowId": "R01",
+        },
+        "typedReferenceType": "REVIEW_SUBJECT",
+        "evidenceRole": "INDEPENDENT_REVIEW",
+        "producerTrustClass": "INDEPENDENT_REVIEWER",
+        "freshnessClass": "TRANSITION_WINDOW",
+        "payloadClass": "CONTENT_REFERENCE",
+        "producerId": PRODUCER,
+        "rootId": "root:fixture-only",
+        "rootContentHash": root_hash,
+        "signingKeyId": key["keyId"],
+        "issuingKeyObjectId": key["keyObjectId"],
+        "issuingKeyRevision": 1,
+        "issuingKeyRecordContentHash": key["contentHash"],
+        "signatureAlgorithm": "Ed25519",
+        "canonicalSignatureProfile": "NarraTwinAuthorityEvidenceSignatureV1",
+        "payloadMediaType": (
+            "application/vnd.narratwin.authority.content-reference-v1+json"
+        ),
+        "payloadSha256": hashlib.sha256(payload).hexdigest(),
+        "payloadByteLength": len(payload),
+        "observedAt": T10,
+        "capturedAt": T10,
+        "notBefore": T10,
+        "expiresAt": T20,
+        "sourceClass": "FIXTURE",
+        "collectionMethod": "SYNTHETIC_PUBLIC_VECTOR",
+        "limitations": ["FIXTURE_ONLY"],
+        "fixtureOnly": True,
+        "signature": "0" * 128,
+    }
+    value.update(changes)
+    value["contentHash"] = trust.content_hash(
+        trust.ContentKind.EVIDENCE_OBJECT,
+        "AuthorityEvidenceEnvelopeV1",
+        value,
+    )
+    return value
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    ["none", "missing-genesis", "wrong-head", "issuing-object", "signing-key"],
+)
+def test_only_complete_chain_can_promote_public_signature_success(
+    monkeypatch: pytest.MonkeyPatch,
+    mutation: str,
+) -> None:
+    try:
+        module = importlib.import_module(
+            "scripts.quality.issue434_authority_evidence_reconstruction"
+        )
+    except ModuleNotFoundError:
+        result: object = trust.NotImplementedResult()
+    else:
+        # Orchestration-only control: RFC8032 tests prove real crypto separately.
+        monkeypatch.setattr(
+            trust,
+            "verify_ed25519_signature",
+            lambda **_: trust.SignatureResult(True, ()),
+        )
+        root = root_document()
+        root_hash = cast(str, root["contentHash"])
+        key = key_record(root_hash, root)
+        payload = b"fixture-only payload"
+        changes: dict[str, object] = {}
+        if mutation == "issuing-object":
+            changes["issuingKeyObjectId"] = "key:other"
+        elif mutation == "signing-key":
+            changes["signingKeyId"] = "f" * 64
+        envelope = complete_envelope(root_hash, key, payload, **changes)
+        descriptor_a = pin_descriptor(root_hash, "ACCEPTANCE")
+        descriptor_c = pin_descriptor(root_hash, "CURRENT")
+        head = trust.HistoryHead(root_hash, PRODUCER, 1, cast(str, key["contentHash"]))
+        result = cast(Callable[..., object], module.resolve_complete_evidence)(
+            envelope_bytes=trust.canonical_bytes(envelope),
+            payload_bytes=payload,
+            root_documents={root_hash: trust.canonical_bytes(root)},
+            key_record_documents=(
+                {} if mutation == "missing-genesis" else {
+                    key["contentHash"]: trust.canonical_bytes(key)
+                }
+            ),
+            acceptance_pin_descriptor=descriptor_a,
+            acceptance_expected_pin_hash=pin_hash(descriptor_a),
+            current_pin_descriptor=descriptor_c,
+            current_expected_pin_hash=pin_hash(descriptor_c),
+            acceptance_head=head,
+            current_head=(
+                trust.HistoryHead(root_hash, PRODUCER, 2, head.key_record_content_hash)
+                if mutation == "wrong-head"
+                else head
+            ),
+            acceptance_time=T10,
+            current_time=T10,
+            taxonomy_matrix_bytes=taxonomy_matrix(),
+        )
+    assert_boundary(result)
+    should_trust = mutation == "none"
+    assert cast(Any, result).trusted is should_trust
+    assert (cast(Any, result).historical_verdict is trust.Verdict.VALID) is should_trust
+    assert (cast(Any, result).current_verdict is trust.Verdict.VALID) is should_trust
