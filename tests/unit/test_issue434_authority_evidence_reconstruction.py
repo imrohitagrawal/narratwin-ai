@@ -581,6 +581,10 @@ def test_full_reconstruction_contract_is_required_and_malformed_values_are_typed
     valid = future("reconstruct_retained_evidence", manifest_bytes=manifest, retained_blobs=blobs, evaluation_time=T10, trust_inputs=trust_inputs)
     assert_boundary(valid)
     assert cast(Any, valid).valid is True
+    unbound = future("reconstruct_retained_evidence", manifest_bytes=manifest, retained_blobs=blobs, evaluation_time=T10)
+    assert_boundary(unbound)
+    assert cast(Any, unbound).valid is False
+    assert cast(Any, unbound).reconstruction_status == "UNAVAILABLE"
     document = json.loads(manifest)
     document["payloadReference"]["contentHash"] = {}
     malformed = future("reconstruct_retained_evidence", manifest_bytes=trust.canonical_bytes(document), retained_blobs=blobs, evaluation_time=T10)
