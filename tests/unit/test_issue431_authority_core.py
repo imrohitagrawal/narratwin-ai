@@ -653,6 +653,23 @@ def test_decision_manifest_and_route_hashes_agree_across_contracts() -> None:
     )
 
 
+@pytest.mark.parametrize(
+    "malformed",
+    [None, False, 1, 1.0, "scalar", [], object(), {"schemaVersion": []}, {"schemaVersion": {}}],
+)
+@pytest.mark.parametrize("mixed", [False, True])
+def test_cross_contract_dispatch_rejects_malformed_roots(
+    malformed: object, mixed: bool
+) -> None:
+    objects = _linked_contract_objects() if mixed else [authority_object("MasterProgramAuthorityDecisionV1")]
+    objects.append(malformed)  # type: ignore[arg-type]
+    findings = authority.lineage_findings(objects)
+    assert any(
+        "malformed" in item.lower() or "schema version is missing" in item.lower()
+        for item in findings
+    )
+
+
 def test_decision_acceptance_requires_the_selected_manifest_merged_revision() -> None:
     proposed_manifest = authority_object("Cut1AuthorityManifestV1")
     decisions = _decision_lineage_for_manifest(proposed_manifest)
