@@ -1102,6 +1102,17 @@ def test_schema_invalid_governed_fields_fail_closed(
     assert any("schema defect" in item.lower() for item in authority.lineage_findings(lineage))
 
 
+def test_schema_invalid_predecessor_fails_closed() -> None:
+    draft = authority_object("ActiveProgramRouteV1")
+    expired = successor(draft, ROUTE_EDGES[15])
+    draft.pop("executionWindow")
+    draft["contentHash"] = authority.content_hash(draft)
+    expired["predecessorContentHash"] = draft["contentHash"]
+    expired["transition"]["guardReferences"][0]["sha256"] = draft["contentHash"]
+    expired["contentHash"] = authority.content_hash(expired)
+    assert any("schema defect" in item.lower() for item in authority.lineage_findings([draft, expired]))
+
+
 @pytest.mark.parametrize("source", authority.FALSE_AUTHORITY_SOURCES)
 def test_issue_comment_file_fixture_test_and_ci_never_activate_authority(source: str) -> None:
     assert authority.authority_effect_findings(source, "NONE") == []
