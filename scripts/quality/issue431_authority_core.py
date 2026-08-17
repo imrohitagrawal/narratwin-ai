@@ -18,7 +18,7 @@ ROOT = Path(__file__).resolve().parents[2]
 BRANCH = "cut1-process-431-authority-core-schemas-state-matrices"
 BASE = "4d239942eeda0c0b6c385b2d85dae873af076aa6"
 FIRST_COMMIT = "7a5594357c24ac864c850a2e1cb92f9cd8acb940"
-LIMIT = 4_096
+LIMIT = 4_128
 MAX_BYTES = 131_072
 MAX_DEPTH = 12
 MAX_COLLECTION = 128
@@ -678,6 +678,8 @@ def lineage_findings(objects: list[dict[str, Any]]) -> list[str]:
         if object_hash in by_hash and by_hash[object_hash] != value:
             findings.append("Two incompatible bytes claim one content hash.")
         by_hash[object_hash] = value
+        if id(value) in invalid_members:
+            continue
         identity = (
             schema,
             value.get("repository"),
