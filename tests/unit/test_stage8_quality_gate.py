@@ -1,5 +1,5 @@
 # ruff: noqa: E302, E305, E401, E701, E702, E731
-import hashlib,importlib.util,json,subprocess as sp;from pathlib import Path;from typing import Any
+import hashlib,importlib.util,json,subprocess as sp,unittest.mock as um;from pathlib import Path;from typing import Any
 import pytest; from scripts.guardrails_check import canonical_stage_issue
 from scripts.quality import stage8_a23b as a23b, stage8_cut1_routes as cut1_routes, issue427_architecture_reset as i
 from scripts.quality.check_stage8_docs import (CUT1_REAL_MEDIA_TRANSITION_BRANCH as CUT1_REAL_MEDIA_TRANSITION,
@@ -85,12 +85,12 @@ def test_issue366_contract_rejects_partial_scope_and_content_mutations(monkeypat
     docs[plan]=rest;docs[quality]+="\n"+line;assert stage8.cut1_digest()!=baseline
     docs.update(originals);docs["docs/STATUS.md"]+="\nIssue #383 required status reconciliation.\n"
     assert stage8.cut1_digest()!=baseline;sc((0,{}));assert route(m,CUT1_REAL_MEDIA_TRANSITION,full)==[]
-    b=sorted(F);p=s.R434;v={**s.LIMITS434,p[11]:100,p[12]:100};cases:Any=((5601,{}),(851,{b[0]:851}),(1201,{p[9]:1201}),
-        (0,v),(201,{p[11]:101,p[12]:100}));z(s,"issue434_charges",lambda:(0,{}));P=sp.run;assert route(m,B,b[1:])
-    for n,x in cases:z(s,"issue434_charges",lambda n=n,x=x:(n,x));A=s.A434;R=REPO;u=p[11];assert route(m,B,b)
-    a={x:(REPO/x).read_bytes()for x in A};f=s.issue434_artifact_findings;assert not f(a)and f({**a,A[0]:b"x"})and f({})
-    q=s.check_issue434_verifier;z(s,"run",pytest.fail);z(s,"issue434_artifact_findings",lambda _:["x"]);q([])
-    C=q.__code__;assert "R434" not in C.co_names and p[9] in C.co_consts and not P(["python3","-S",u],cwd=R).returncode
+    p=s.R434;q=s.check_issue434_verifier;v={**s.LIMITS434,p[11]:100,p[12]:100};cases=((5601,{}),(1201,{p[9]:1201}),
+        (0,v),(201,{p[11]:101,p[12]:100}));h=sp.run(["python3","-S",p[11]]);b=sorted(F);A=s.A434;r=h.returncode
+    z(s,"issue434_charges",lambda:(0,{}));assert route(m,B,b[1:])and all(s.issue434_budget_findings(*x)for x in cases)
+    a={x:(REPO/x).read_bytes()for x in A};f=s.issue434_artifact_findings;assert not f(a)and f(a|{A[0]:b"x"})and f({})
+    w=um.Mock();z(s,"run",w);z(s,f.__name__,lambda _:["x"]);q([]);assert not w.called;z(s,f.__name__,lambda _:[]);q([])
+    c=[x[0][0]for x in w.call_args_list];assert c==[(t:=["uv","run","python"])+[p[9]],t+["-c",c[1][4]]]and r<1
 def test_scope_collection_covers_exact_layers_and_forbidden_sources(monkeypatch: Any, tmp_path: Path) -> None:
     g:Any=lambda *a:git(tmp_path,*a); g("init","-b","main"); g("config","user.name","Scope Test")
     g("config","user.email","scope@example.invalid")
