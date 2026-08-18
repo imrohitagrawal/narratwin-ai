@@ -24,12 +24,13 @@ Authority effect: `NO_AUTHORITY_EFFECT`
   `6096803a39364cb45738c68e4899e24c6212b352d3b57a80d02934a8e79676f5`.
 - Original OWNER approval comment `5313883532` SHA-256:
   `aaac7acfee0ea15265a4977602316eb65163e5fa56a77632f73385e4a0749e7f`.
-- The original route owns 22 exact paths. Later bounded OWNER resets add only
-  the reconstruction verifier and its focused test as paths 23 and 24; they do
-  not widen the 5,600-line aggregate cap or activate authority.
-- Latest bounded schema-context reset: Child comment `5328617265` and parent
-  decision `5328616970`. Earlier reset evidence remains historical and is not
-  rewritten.
+- The original route owns 22 exact paths. Later bounded OWNER resets add the
+  reconstruction verifier and its focused test as paths 23 and 24, then the
+  dependency-security compatibility test as path 25. They do not widen the
+  5,600-line aggregate cap or activate authority.
+- Latest bounded dependency reset: Child approval `5329071783`, clarification
+  `5329073440`, and parent decision `5329071466`. Earlier reset evidence remains
+  historical and is not rewritten.
 - Approval expires at `2026-09-30T23:59:59Z`.
 
 These are delivery and historical facts, not accepted authority evidence.

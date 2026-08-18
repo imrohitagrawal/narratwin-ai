@@ -7,6 +7,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT));import scripts.quality.issue427_architecture_reset as issue427_reset  # noqa: E402
 import scripts.quality.issue431_authority_core as issue431_authority_core  # noqa: E402
+import scripts.quality.issue434_authority_evidence_reconstruction as issue434_reconstruction  # noqa: E402
 from scripts.quality.branch_identity import current_branch  # noqa: E402
 from scripts.quality.check_stage2_docs import check_retrieval_strategy_v1_parity  # noqa: E402
 from scripts.quality import stage8_brace_expansion_unblock as brace_security  # noqa: E402
@@ -23,12 +24,16 @@ ISSUE335_A2_1_BRANCH = "cut1-335-r0c-a2-1-stage4-rag-v1-lineage"
 ISSUE349_A2_2_BRANCH = "cut1-349-r0c-a2-2-machine-contract-parity"
 CITATION_PARITY_BRANCH = "cut1-372-citation-index-parity-post380"
 ISSUE434_BRANCH = "cut1-process-434-authority-evidence-trust"
-_I434 = json.loads((ROOT / "docs/governance/preflights/issue-434.json").read_text())
-ISSUE434_FILES = set(_I434["scope"]["required"])
-_I434_HASH = hashlib.sha256(json.dumps(sorted(ISSUE434_FILES),separators=(",",":")).encode()).hexdigest()
-if _I434_HASH != "c3414778d2ee1c9326d1c81537d5dfe9f528b22f12ec98394e0ac4270f7cab90": ISSUE434_FILES=set()
+_I434=json.loads((ROOT/"docs/governance/preflights/issue-434.json").read_text());R434=tuple(_I434["scope"]["required"])
+ISSUE434_FILES=set(R434);H434=hashlib.sha256(json.dumps(sorted(R434),separators=(",",":")).encode()).hexdigest()
+if H434 != "c3414778d2ee1c9326d1c81537d5dfe9f528b22f12ec98394e0ac4270f7cab90": ISSUE434_FILES=set()
 else: ISSUE434_FILES |= {"scripts/quality/issue434_authority_evidence_reconstruction.py",
     "tests/unit/test_issue434_authority_evidence_reconstruction.py", "tests/unit/test_dependency_security_contract.py"}
+B434="87b8504ca8d5e094394343aeaa4ef5bad46133d5";I434_ARTIFACT_SHA=tuple(R434[i] for i in (0,1,2,3,4,5,6,7,8,13))
+I434_ARTIFACT_DIGEST="3ccf1eb51a359c734a0a3da7e66df6e4ed79843c8d05273b823636b788fb8a28"
+I434_GROUPS=((450,{R434[0],R434[2]}),(850,{R434[1],R434[13],R434[18]}),(1350,set(R434[3:9])),
+    (4300,set(R434[9:11])|set(ISSUE434_FILES)-set(R434)),(250,{R434[i] for i in (14,15,16,17,19,20,21)}))
+LIMITS434=dict(zip((R434[9],R434[10],*sorted(ISSUE434_FILES-set(R434))),(1200,1300,900,30,700),strict=True))
 CP_BASE, CP_LIMIT = "372fb78245b8890157ffe54f48b90e523017bc43", 1200
 CITATION_PARITY_FILES = {"docs/governance/preflights/issue-372.json", "backend/app/stage4.py",
     "tests/acceptance/test_checkpoint3_output_correctness.py", "tests/unit/test_local_durability.py",
@@ -118,10 +123,23 @@ PROCESS_BRANCH_ALLOWED_FILES.update(
 EFFECTIVE_STAGE8_ROUTES = PROCESS_BRANCH_ALLOWED_FILES | brace_security.BRACE_EXPANSION_ROUTES \
     | node_security.I389_ROUTES | cut1_routes.ROUTES
 def run(a:list[str])->subprocess.CompletedProcess[str]:return subprocess.run(a,cwd=ROOT,text=True,capture_output=True)
+def issue434_artifact_findings(artifacts:dict[str,bytes])->list[str]:
+    if set(artifacts)!=set(I434_ARTIFACT_SHA) or any(not isinstance(v,bytes) for v in artifacts.values()):
+        return ["Issue #434 frozen primary artifact set is incomplete or malformed."]
+    hashes={p:hashlib.sha256(artifacts[p]).hexdigest() for p in I434_ARTIFACT_SHA}
+    digest=hashlib.sha256(json.dumps(hashes,sort_keys=True,separators=(",",":")).encode()).hexdigest()
+    if digest!=I434_ARTIFACT_DIGEST:return ["Issue #434 frozen primary artifact bytes drifted."]
+    semantic={p:artifacts[p] for p in (I434_ARTIFACT_SHA[i] for i in (1,3,4,5,6,7))}
+    child=(ROOT/"docs/governance/authority-core-state-matrices-v1.json").read_bytes()
+    result=issue434_reconstruction.validate_artifact_set(artifacts=semantic,child_a_matrix_bytes=child,
+        expected_artifact_hashes={p:hashes[p] for p in semantic})
+    return [] if result.valid and not result.findings else ["Issue #434 frozen artifact semantics failed closed."]
 def check_issue434_verifier(failures:list[str])->None:
-    try: result=run(["uv","run","python","scripts/quality/issue434_authority_evidence_trust.py"])
+    try:
+        artifacts={p:(ROOT/p).read_bytes() for p in I434_ARTIFACT_SHA};findings=issue434_artifact_findings(artifacts)
+        result=run(["uv","run","python","scripts/quality/issue434_authority_evidence_trust.py"])
     except OSError: fail("Issue #434 verifier is unavailable through the frozen uv environment.",failures);return
-    if result.returncode: fail("Issue #434 authority-evidence verifier failed closed.",failures)
+    failures.extend(findings+([] if not result.returncode else ["Issue #434 verifier failed closed."]))
 def read(path:str)->str: return (ROOT/path).read_text(encoding="utf-8")
 def fail(message:str,failures:list[str])->None: failures.append(message)
 def changed_files_for_stage_scope() -> list[str]:
@@ -185,6 +203,22 @@ def citation_parity_charge() -> int:
     if bad:raise RuntimeError("Issue #372 base diff unavailable.")
     try:return max(sum(int(a)+int(x) for a,x,_ in map(lambda line:line.split("\t"),d.stdout.splitlines())) for d in ds)
     except ValueError as error: raise RuntimeError("Issue #372 malformed or binary numstat.") from error
+def issue434_charges()->tuple[int,dict[str,int]]:
+    b=run(["git","merge-base",B434,"HEAD"])
+    rs=tuple(run(["git",*kind,"--numstat",B434,"--"]) for kind in (("diff","--cached"),("diff",)))
+    if b.returncode or b.stdout.strip()!=B434 or any(r.returncode for r in rs):raise RuntimeError("I434 base.")
+    lines=[result.stdout.splitlines() for result in rs]
+    try:maps=[{p:int(a)+int(d) for a,d,p in map(lambda line:line.split("\t"),rows)} for rows in lines]
+    except ValueError as error:raise RuntimeError("Issue #434 numstat is malformed or binary.") from error
+    if any(len(m)!=len(r) for m,r in zip(maps,lines,strict=True)):raise RuntimeError("Issue #434 duplicate numstat.")
+    charges={p:max(row.get(p,0) for row in maps) for p in set().union(*maps)}
+    return sum(charges.values()),charges
+def issue434_budget_findings(total:int,charges:dict[str,int])->list[str]:
+    findings=[] if total<=5600 else [f"Issue #434 charge {total} exceeds 5600."]
+    findings += [f"Issue #434 partition exceeds {n}." for n,ps in I434_GROUPS if sum(charges.get(p,0) for p in ps)>n]
+    findings += [f"Issue #434 charge for {p} exceeds {n}." for p,n in LIMITS434.items() if charges.get(p,0)>n]
+    if sum(charges.get(p,0) for p in R434[11:13])>200:findings.append("Issue #434 Stage 8 charge exceeds 200.")
+    return findings
 def cut1_transition_charges() -> tuple[int, dict[str, int]]:
     return cut1_routes.cut1_transition_charges(run, C1_BASE, CUT1_REAL_MEDIA_TRANSITION_FILES)
 def cut1_digest() -> str:
@@ -201,19 +235,13 @@ def parse_paths_z(output: str) -> list[str]:
 def parse_name_status_z(output: str) -> list[str]:
     fields = parse_paths_z(output); paths: list[str] = []; index = 0
     while index < len(fields):
-        status = fields[index]
-        index += 1
-        if status in {"A", "B", "D", "M", "T", "U"}:
-            arity = 1
-        elif re.fullmatch(r"[RC]\d{1,3}", status) and int(status[1:]) <= 100:
-            arity = 2
-        else:
-            raise RuntimeError(f"Malformed Git name-status record: {status!r}")
+        status=fields[index];index+=1
+        if status in {"A","B","D","M","T","U"}:arity=1
+        elif re.fullmatch(r"[RC]\d{1,3}",status) and int(status[1:])<=100:arity=2
+        else:raise RuntimeError(f"Malformed Git name-status record: {status!r}")
         record_paths = fields[index : index + arity]
-        if len(record_paths) != arity:
-            raise RuntimeError(f"Incomplete Git name-status record: {status!r}")
-        paths.extend(record_paths)
-        index += arity
+        if len(record_paths)!=arity:raise RuntimeError(f"Incomplete Git name-status record: {status!r}")
+        paths.extend(record_paths);index+=arity
     return paths
 def check_required_files(failures: list[str]) -> None:
     for path in REQUIRED_FILES:
@@ -277,6 +305,9 @@ def check_stage_scope(failures: list[str]) -> None:
     if not outside: cut1_routes.check_exact_route(ROOT, run, branch, changed_files, failures)
     for path in sorted(outside):
         fail(f"Stage 8 changed file outside the allowlist: {path}", failures)
+    if branch==ISSUE434_BRANCH and not outside:
+        failures.extend(f"Issue #434 route is missing required path: {p}" for p in sorted(allowed_files-changed_files))
+        total,charges=issue434_charges();failures.extend(issue434_budget_findings(total,charges))
     if branch == CITATION_PARITY_BRANCH and not outside:
         failures.extend(f"Issue #372 missing required path: {path}" for path in sorted(allowed_files-changed_files))
         charge=citation_parity_charge()
@@ -301,8 +332,7 @@ def check_backend_and_tests(failures: list[str]) -> None:
         "Stage8WriteRateLimiter", "RATE_LIMIT_EXCEEDED",
         "REQUEST_TOO_LARGE", "CONTENT_LENGTH_REQUIRED",
         "MAX_STAGE8_RATE_LIMIT_KEYS", "rate_limit_key_from_scope",
-        "actual_bytes", "Stage8RequestSizeLimitMiddleware",
-        "stage8_write_rate_limiter.reset",
+        "actual_bytes", "Stage8RequestSizeLimitMiddleware", "stage8_write_rate_limiter.reset",
     ):
         if marker not in main_text:
             fail(f"Stage 8 API hardening must include {marker}.", failures)
@@ -426,45 +456,16 @@ def check_docs(failures: list[str]) -> None:
     }
     combined = "\n".join(docs.values())
     for marker in (
-        "Stage 8",
-        "Performance, security hardening, release readiness",
-        "health endpoint < 200 ms local",
-        "script generation mocked path < 2 sec",
-        "upload limit enforced",
-        "no critical/high dependency vulnerabilities",
-        "no critical/high container vulnerabilities", "rate limiting",
-        "request size limits", "Content-Length is required",
-        "actual ASGI body", "SECRET_LIKE_CONTENT",
-        "Voice provider artifacts must be JSON manifests", "top-level or nested fields fail",
-        "upload MIME validation",
-        "Lighthouse",
-        "p95",
-        "Trivy",
-        "Docker Scout",
-        "release checklist",
-        "rollback",
-        "runbook",
-        "demo seed data",
-        "Controlled Local Demo",
-        "LRN-001",
-        "LRN-002",
-        "Review Rigor Retrospective",
-        "Project Governance Learnings",
-        "PROJECT_LEARNINGS_TRACKER.md",
-        "REVIEW_RIGOR_RETROSPECTIVE.md",
-        "invariant, exploit-matrix, and contract/gate review",
-        "branch protection",
-        "Required status checks",
-        "stage8 / performance lighthouse",
-        "RR-029",
-        "RR-030",
-        "RR-031",
-        "RR-032",
-        "RR-033",
-        "RR-034",
-        "RR-035",
-        "multi-worker deployment blocked",
-        "source-run based avatar export",
+        "Stage 8", "Performance, security hardening, release readiness", "health endpoint < 200 ms local",
+        "script generation mocked path < 2 sec", "upload limit enforced", "no critical/high dependency vulnerabilities",
+        "no critical/high container vulnerabilities","rate limiting","request size limits","Content-Length is required",
+        "actual ASGI body", "SECRET_LIKE_CONTENT", "Voice provider artifacts must be JSON manifests",
+        "top-level or nested fields fail", "upload MIME validation", "Lighthouse", "p95", "Trivy", "Docker Scout",
+        "release checklist", "rollback", "runbook", "demo seed data", "Controlled Local Demo", "LRN-001", "LRN-002",
+        "Review Rigor Retrospective", "Project Governance Learnings", "PROJECT_LEARNINGS_TRACKER.md",
+        "REVIEW_RIGOR_RETROSPECTIVE.md", "invariant, exploit-matrix, and contract/gate review", "branch protection",
+        "Required status checks", "stage8 / performance lighthouse", "RR-029", "RR-030", "RR-031", "RR-032",
+        "RR-033", "RR-034", "RR-035", "multi-worker deployment blocked", "source-run based avatar export",
     ):
         if marker not in combined:
             fail(f"Stage 8 docs must include {marker}.", failures)
@@ -484,8 +485,7 @@ def main() -> int:
         cache_pruning.check_exact_route(ROOT, run, failures, current_branch() == cache_pruning.BRANCH)
         issue427_reset.check(ROOT, failures, current_branch() == issue427_reset.BRANCH)
         failures.extend(issue431_authority_core.repository_findings(ROOT))
-        current = current_branch()
-        if current in {ISSUE434_BRANCH,"main"}: check_issue434_verifier(failures)
+        if current_branch() in {ISSUE434_BRANCH,"main"}: check_issue434_verifier(failures)
         check_backend_and_tests(failures)
         check_dependencies_and_scripts(failures)
         check_docs(failures)
