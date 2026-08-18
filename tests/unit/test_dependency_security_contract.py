@@ -58,6 +58,11 @@ GOOGLE_AUTH_PACKAGES = {
     "pyasn1-modules": ("0.4.2", "6ca56d4d6b05cbc23d8920a3e91de1bac50e43b90e49439cc0d7aa7e143eb692", "677091de870a80aae844b1ca6134f54652fa2c8c5a52aa396440ac3106e941e6", "29253a9207ce32b64c3ac6600edc75368f98473906e8fd1043bd6b5b1de2c14a"),
     "pyasn1": ("0.6.4", "3ad96cec94414e068c189c877f0b9ffa701f05c7c1317874cf5dafff6a34130a", "9c447d8431c947fe4c8febc4ed9e760bc29011a5b01e5c74b67025bd9fb8ce81", "deda9277cfd454080ec40b207fb6df82206a3a2688735233cdcd8d3d565f088b"),
 }
+def _normalize_issue434_project(project: dict[str, Any]) -> None:
+    dev = project["dependency-groups"]["dev"]; assert dev.count("cryptography==50.0.0") == 1; dev.remove("cryptography==50.0.0")  # noqa: E702
+def _normalize_issue434_lock(lock: dict[str, Any]) -> None:
+    root = next(package for package in lock["package"] if package["name"] == "narratwin-ai"); dependencies = root["dev-dependencies"]["dev"]; metadata = root["metadata"]["requires-dev"]["dev"]  # noqa: E702
+    assert dependencies.count({"name": "cryptography"}) == 1 and metadata.count({"name": "cryptography", "specifier": "==50.0.0"}) == 1; dependencies.remove({"name": "cryptography"}); metadata.remove({"name": "cryptography", "specifier": "==50.0.0"})  # noqa: E702
 
 
 def _assert_google_auth_delta(project: dict[str, Any], lock: dict[str, Any], base_project: dict[str, Any], base_lock: dict[str, Any]) -> None:
@@ -81,12 +86,14 @@ def _assert_google_auth_delta(project: dict[str, Any], lock: dict[str, Any], bas
     assert google_metadata == [{"name": "google-auth", "marker": "extra == 'providers'", "specifier": "==2.56.3"}]
     normalized_project = copy.deepcopy(project)
     normalized_project["project"]["optional-dependencies"]["providers"] = base_providers
+    _normalize_issue434_project(normalized_project)
     assert normalized_project == base_project
     normalized_lock = copy.deepcopy(lock)
     normalized_root = next(package for package in normalized_lock["package"] if package["name"] == "narratwin-ai")
     normalized_root["optional-dependencies"]["providers"].remove({"name": "google-auth"})
     normalized_root["metadata"]["requires-dist"].remove(google_metadata[0])
     normalized_lock["package"] = [package for package in normalized_lock["package"] if package["name"] not in GOOGLE_AUTH_PACKAGES]
+    _normalize_issue434_lock(normalized_lock)
     assert normalized_lock == base_lock
 
 
@@ -124,6 +131,7 @@ def _assert_pypdf_615_contract(project_text: str, lock_text: str) -> None:
     index = dependencies.index("pypdf>=6.15.0")
     normalized_project["project"]["dependencies"][index] = "pypdf>=6.14.2"
     normalized_project["project"]["optional-dependencies"]["providers"] = base_project["project"]["optional-dependencies"]["providers"]
+    _normalize_issue434_project(normalized_project)
     assert normalized_project == base_project
 
     pypdf = [package for package in lock["package"] if package["name"] == "pypdf"]
@@ -150,6 +158,7 @@ def _assert_pypdf_615_contract(project_text: str, lock_text: str) -> None:
         package for package in base_lock["package"] if package["name"] == "pypdf"
     )
     normalized_lock["package"] = [package for package in normalized_lock["package"] if package["name"] not in GOOGLE_AUTH_PACKAGES]
+    _normalize_issue434_lock(normalized_lock)
     assert normalized_lock == base_lock
 
 
@@ -165,6 +174,8 @@ def test_pypdf_contract_rejects_vulnerable_hash_and_unrelated_drift() -> None:
     lock_text = (ROOT / "uv.lock").read_text(encoding="utf-8")
     mutations = (
         (project_text.replace("pypdf>=6.15.0", "pypdf>=6.14.2"), lock_text),
+        (project_text.replace('"cryptography==50.0.0"', '"cryptography==49.0.0"'), lock_text),
+        (project_text, lock_text.replace('{ name = "cryptography", specifier = "==50.0.0" }', '{ name = "cryptography", specifier = "==49.0.0" }')),
         (project_text, lock_text.replace(f"sha256:{PYPDF_WHEEL_SHA256}", "sha256:wrong")),
         (project_text, lock_text.replace('version = "2.6.2"', 'version = "0.0.0"', 1)),
     )

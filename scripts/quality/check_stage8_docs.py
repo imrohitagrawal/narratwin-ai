@@ -23,7 +23,12 @@ ISSUE335_A2_1_BRANCH = "cut1-335-r0c-a2-1-stage4-rag-v1-lineage"
 ISSUE349_A2_2_BRANCH = "cut1-349-r0c-a2-2-machine-contract-parity"
 CITATION_PARITY_BRANCH = "cut1-372-citation-index-parity-post380"
 ISSUE434_BRANCH = "cut1-process-434-authority-evidence-trust"
-ISSUE434_FILES = set("""docs/governance/preflights/issue-434.json docs/governance/AUTHORITY_EVIDENCE_AND_TRUST_V1.md docs/governance/ISSUE_434_AUTHORITY_EVIDENCE_TRUST_SOURCE_FACTS.md docs/governance/schemas/authority-evidence-envelope-v1.schema.json docs/governance/schemas/authority-producer-trust-root-v1.schema.json docs/governance/schemas/authority-producer-key-v1.schema.json docs/governance/schemas/authority-evidence-reconstruction-v1.schema.json docs/governance/authority-evidence-trust-state-matrices-v1.json tests/fixtures/authority-evidence-trust-v1-cases.json scripts/quality/issue434_authority_evidence_trust.py tests/unit/test_issue434_authority_evidence_trust.py scripts/quality/check_stage8_docs.py tests/unit/test_stage8_quality_gate.py docs/ADR/0063-authority-evidence-and-trust.md docs/QUALITY_GATES.md docs/STAGE_ISSUE_PLAN.md docs/STATUS.md docs/TRACEABILITY.md docs/SECURITY_AND_PRIVACY.md pyproject.toml uv.lock docs/THIRD_PARTY_NOTICES.md scripts/quality/issue434_authority_evidence_reconstruction.py tests/unit/test_issue434_authority_evidence_reconstruction.py""".split())
+_I434 = json.loads((ROOT / "docs/governance/preflights/issue-434.json").read_text())
+ISSUE434_FILES = set(_I434["scope"]["required"])
+_I434_HASH = hashlib.sha256(json.dumps(sorted(ISSUE434_FILES),separators=(",",":")).encode()).hexdigest()
+if _I434_HASH != "c3414778d2ee1c9326d1c81537d5dfe9f528b22f12ec98394e0ac4270f7cab90": ISSUE434_FILES=set()
+else: ISSUE434_FILES |= {"scripts/quality/issue434_authority_evidence_reconstruction.py",
+    "tests/unit/test_issue434_authority_evidence_reconstruction.py", "tests/unit/test_dependency_security_contract.py"}
 CP_BASE, CP_LIMIT = "372fb78245b8890157ffe54f48b90e523017bc43", 1200
 CITATION_PARITY_FILES = {"docs/governance/preflights/issue-372.json", "backend/app/stage4.py",
     "tests/acceptance/test_checkpoint3_output_correctness.py", "tests/unit/test_local_durability.py",
@@ -292,16 +297,11 @@ def check_backend_and_tests(failures: list[str]) -> None:
     stage6_api_tests = read("tests/api/test_stage6_multilingual_api.py")
     stage6_unit_tests = read("tests/unit/test_stage6_multilingual.py")
     for marker in (
-        'stage="8"',
-        "MAX_STAGE8_WRITE_REQUESTS_PER_MINUTE",
-        "Stage8WriteRateLimiter",
-        "RATE_LIMIT_EXCEEDED",
-        "REQUEST_TOO_LARGE",
-        "CONTENT_LENGTH_REQUIRED",
-        "MAX_STAGE8_RATE_LIMIT_KEYS",
-        "rate_limit_key_from_scope",
-        "actual_bytes",
-        "Stage8RequestSizeLimitMiddleware",
+        'stage="8"', "MAX_STAGE8_WRITE_REQUESTS_PER_MINUTE",
+        "Stage8WriteRateLimiter", "RATE_LIMIT_EXCEEDED",
+        "REQUEST_TOO_LARGE", "CONTENT_LENGTH_REQUIRED",
+        "MAX_STAGE8_RATE_LIMIT_KEYS", "rate_limit_key_from_scope",
+        "actual_bytes", "Stage8RequestSizeLimitMiddleware",
         "stage8_write_rate_limiter.reset",
     ):
         if marker not in main_text:
@@ -309,16 +309,11 @@ def check_backend_and_tests(failures: list[str]) -> None:
     if "MAX_API_REQUEST_BYTES" not in stage4_text:
         fail("Stage 8 must define a general API request size limit.", failures)
     for marker in (
-        "health_reports_stage8_with_local_latency_budget",
-        "write_rate_limit_rejects_excess_requests",
-        "write_rate_limit_uses_client_ip_and_bounds_retained_keys",
-        "json_request_size_limit_is_enforced",
+        "health_reports_stage8_with_local_latency_budget", "write_rate_limit_rejects_excess_requests",
+        "write_rate_limit_uses_client_ip_and_bounds_retained_keys", "json_request_size_limit_is_enforced",
         "json_request_size_limit_rejects_missing_content_length",
-        "json_request_size_limit_rejects_underreported_content_length",
-        "upload_mime_validation_rejects_octet_stream",
-        "mocked_script_generation_path_stays_under_two_seconds",
-        "latency_ms < 200",
-        "latency_ms < 2_000",
+        "json_request_size_limit_rejects_underreported_content_length", "upload_mime_validation_rejects_octet_stream",
+        "mocked_script_generation_path_stays_under_two_seconds", "latency_ms < 200", "latency_ms < 2_000",
     ):
         if marker not in tests:
             fail(f"Stage 8 tests must cover {marker}.", failures)
@@ -437,14 +432,10 @@ def check_docs(failures: list[str]) -> None:
         "script generation mocked path < 2 sec",
         "upload limit enforced",
         "no critical/high dependency vulnerabilities",
-        "no critical/high container vulnerabilities",
-        "rate limiting",
-        "request size limits",
-        "Content-Length is required",
-        "actual ASGI body",
-        "SECRET_LIKE_CONTENT",
-        "Voice provider artifacts must be JSON manifests",
-        "top-level or nested fields fail",
+        "no critical/high container vulnerabilities", "rate limiting",
+        "request size limits", "Content-Length is required",
+        "actual ASGI body", "SECRET_LIKE_CONTENT",
+        "Voice provider artifacts must be JSON manifests", "top-level or nested fields fail",
         "upload MIME validation",
         "Lighthouse",
         "p95",
@@ -493,7 +484,8 @@ def main() -> int:
         cache_pruning.check_exact_route(ROOT, run, failures, current_branch() == cache_pruning.BRANCH)
         issue427_reset.check(ROOT, failures, current_branch() == issue427_reset.BRANCH)
         failures.extend(issue431_authority_core.repository_findings(ROOT))
-        if current_branch() in {ISSUE434_BRANCH,"main"}: check_issue434_verifier(failures)
+        current = current_branch()
+        if current in {ISSUE434_BRANCH,"main"}: check_issue434_verifier(failures)
         check_backend_and_tests(failures)
         check_dependencies_and_scripts(failures)
         check_docs(failures)
