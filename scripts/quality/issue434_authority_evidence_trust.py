@@ -718,18 +718,6 @@ def inspect_key_history_structure(
             presented[record_hash] = record
         unique.append(record)
 
-    declared_ids: dict[str, tuple[object, object]] = {}
-    declared_keys: dict[str, object] = {}
-    for record in unique:
-        key_id, public_key, key_object = (record.get(name) for name in ("keyId", "publicKeyHex", "keyObjectId"))
-        if all(isinstance(item, str) for item in (key_id, public_key, key_object)):
-            if key_id in declared_ids and declared_ids[key_id] != (public_key, key_object):
-                add("DUPLICATE_KEY_ID")
-            if public_key in declared_keys and declared_keys[public_key] != key_object:
-                add("DUPLICATE_PUBLIC_KEY")
-            declared_ids.setdefault(cast(str, key_id), (public_key, key_object))
-            declared_keys.setdefault(cast(str, public_key), key_object)
-
     valid: list[Mapping[str, object]] = []
     for record in unique:
         local: list[Finding] = []
@@ -770,7 +758,9 @@ def inspect_key_history_structure(
         operation = record.get("operation")
         if not isinstance(operation, str) or operation not in KEY_OPERATIONS:
             reject("UNKNOWN_KEY_OPERATION", "keyRecord.operation")
-        for name in ("activationTime", "retiredAt", "revokedAt", "invalidatesFrom"):
+        activation_value = record.get("activationTime")
+        if _utc_value(activation_value) is None: reject("WRONG_SCALAR_TYPE" if activation_value is None else "TIME_FORMAT", "keyRecord.activationTime")  # noqa: E701
+        for name in ("retiredAt", "revokedAt", "invalidatesFrom"):
             value = record.get(name)
             if value is not None and _utc_value(value) is None:
                 reject("TIME_FORMAT", f"keyRecord.{name}")
@@ -1049,6 +1039,7 @@ def validate_closed_schema_value(
                 return
             if len(item) < descriptor.get("minItems", 0) or len(item) > descriptor.get("maxItems", MAX_ARRAY_ITEMS):
                 add("COLLECTION_LIMIT", location)
+                return
             encoded = [canonical_bytes(child) for child in item]
             if descriptor.get("unique") is True and len(set(encoded)) != len(encoded):
                 add("DUPLICATE_COLLECTION_ITEM", location)

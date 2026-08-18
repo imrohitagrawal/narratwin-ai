@@ -235,6 +235,7 @@ def resolve_root_invalidation(*, root_documents: object, pin_descriptor: object,
     if not isinstance(root_documents, Mapping) or not isinstance(pin_descriptor, Mapping):
         return _result(codes + ["ROOT_DOCUMENT_INVALID"])
     if len(root_documents) > 64: return _result(codes + ["ROOT_DOCUMENT_LIMIT"])  # noqa: E701
+    if codes: return _result(codes)  # noqa: E701
     pins = pin_descriptor.get("rootContentHashes")
     if not isinstance(pins, list) or any(not isinstance(item, str) for item in pins):
         return _result(codes + ["ROOT_PIN_DESCRIPTOR_INVALID"])
