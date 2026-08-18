@@ -86,7 +86,7 @@ def test_issue366_contract_rejects_partial_scope_and_content_mutations(monkeypat
     docs.update(originals);docs["docs/STATUS.md"]+="\nIssue #383 required status reconciliation.\n"
     assert stage8.cut1_digest()!=baseline;sc((0,{}));assert route(m,CUT1_REAL_MEDIA_TRANSITION,full)==[]
     b=sorted(F);m.setattr(s,"issue434_charges",lambda:(0,{}),raising=False);assert route(m,B,b[1:])
-    cases=((5601,{}),(851,{b[0]:851}),(1201,{"scripts/quality/issue434_authority_evidence_trust.py":1201}),
+    cases:Any=((5601,{}),(851,{b[0]:851}),(1201,{"scripts/quality/issue434_authority_evidence_trust.py":1201}),
         (201,{"scripts/quality/check_stage8_docs.py":101,"tests/unit/test_stage8_quality_gate.py":100}))
     for n,x in cases:m.setattr(s,"issue434_charges",lambda n=n,x=x:(n,x));assert route(m,B,b)
     a={p:(REPO/p).read_bytes() for p in s.I434_ARTIFACT_SHA};f=s.issue434_artifact_findings
