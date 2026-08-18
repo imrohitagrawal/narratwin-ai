@@ -147,7 +147,7 @@ def _key_binding_codes(root: Mapping[str, object]) -> list[str]:
         ):
             codes.append(code)
     return codes
-def validate_closed_root(*, root_bytes: object, expected_root_hash: object, pin_descriptor: object, expected_pin_set_hash: object, expected_phase: str, expected_scope: tuple[str, str, str, str], evaluation_time: object, temporal: bool = True) -> ClosedResult:
+def _validate_closed_root(*, root_bytes: object, expected_root_hash: object, pin_descriptor: object, expected_pin_set_hash: object, expected_phase: str, expected_scope: tuple[str, str, str, str], evaluation_time: object, temporal: bool) -> ClosedResult:
     root, codes = _parse(root_bytes, code="ROOT_DOCUMENT_INVALID")
     codes += _pin_codes(
         pin_descriptor,
@@ -226,6 +226,8 @@ def validate_closed_root(*, root_bytes: object, expected_root_hash: object, pin_
     elif temporal and cast(datetime, now) >= expires:
         codes.append("ROOT_EXPIRED")
     return _result(codes, valid=not codes)
+def validate_closed_root(*, root_bytes: object, expected_root_hash: object, pin_descriptor: object, expected_pin_set_hash: object, expected_phase: str, expected_scope: tuple[str, str, str, str], evaluation_time: object) -> ClosedResult:
+    return _validate_closed_root(root_bytes=root_bytes, expected_root_hash=expected_root_hash, pin_descriptor=pin_descriptor, expected_pin_set_hash=expected_pin_set_hash, expected_phase=expected_phase, expected_scope=expected_scope, evaluation_time=evaluation_time, temporal=True)
 def resolve_root_invalidation(*, root_documents: object, pin_descriptor: object, expected_pin_set_hash: object, expected_scope: tuple[str, str, str, str], prior_root_content_hash: object, evaluation_time: object, expected_phase: object = "CURRENT", authorization_time: object = None) -> ClosedResult:
     phase = expected_phase if isinstance(expected_phase, str) else "INVALID"
     codes = _pin_codes(
@@ -250,7 +252,7 @@ def resolve_root_invalidation(*, root_documents: object, pin_descriptor: object,
     applies = False; boundaries: list[datetime] = []  # noqa: E702
     for expected_hash, raw in root_documents.items():
         root, _ = _parse(raw, code="ROOT_DOCUMENT_INVALID"); compromise = root.get("priorRootCompromise") if root is not None else None; relevant = root is not None and root.get("predecessorRootContentHash") == prior_root_content_hash and isinstance(compromise, Mapping) and compromise.get("priorRootContentHash") == prior_root_content_hash  # noqa: E702
-        result = validate_closed_root(
+        result = _validate_closed_root(
             root_bytes=raw,
             expected_root_hash=expected_hash,
             pin_descriptor=pin_descriptor,
@@ -759,7 +761,7 @@ def resolve_complete_evidence(*, envelope_bytes: object, payload_bytes: object, 
                 if raw is None:
                     target.append("ROOT_DOCUMENT_UNAVAILABLE")
                     continue
-                pinned_root, _ = _parse(raw, code="ROOT_DOCUMENT_INVALID"); compromise = pinned_root.get("priorRootCompromise") if pinned_root is not None else None; temporal = pinned_hash == root_hash or (pinned_root is not None and pinned_root.get("predecessorRootContentHash") == root_hash and isinstance(compromise, Mapping) and compromise.get("priorRootContentHash") == root_hash); root_result = validate_closed_root(root_bytes=raw, expected_root_hash=pinned_hash, pin_descriptor=descriptor, expected_pin_set_hash=expected_hash, expected_phase=phase, expected_scope=scope, evaluation_time=when, temporal=temporal)  # noqa: E702
+                pinned_root, _ = _parse(raw, code="ROOT_DOCUMENT_INVALID"); compromise = pinned_root.get("priorRootCompromise") if pinned_root is not None else None; temporal = pinned_hash == root_hash or (pinned_root is not None and pinned_root.get("predecessorRootContentHash") == root_hash and isinstance(compromise, Mapping) and compromise.get("priorRootContentHash") == root_hash); root_result = _validate_closed_root(root_bytes=raw, expected_root_hash=pinned_hash, pin_descriptor=descriptor, expected_pin_set_hash=expected_hash, expected_phase=phase, expected_scope=scope, evaluation_time=when, temporal=temporal)  # noqa: E702
                 target += [item.code for item in root_result.findings]
             if all(isinstance(item, str) for item in pins): target += _root_history_codes({cast(str, item): root_documents.get(item) for item in pins})  # noqa: E701
             if all(isinstance(item, str) and item in root_documents for item in pins):
