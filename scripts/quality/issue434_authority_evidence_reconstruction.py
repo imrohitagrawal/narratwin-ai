@@ -226,8 +226,7 @@ def _validate_closed_root(*, root_bytes: object, expected_root_hash: object, pin
     elif temporal and cast(datetime, now) >= expires:
         codes.append("ROOT_EXPIRED")
     return _result(codes, valid=not codes)
-def validate_closed_root(*, root_bytes: object, expected_root_hash: object, pin_descriptor: object, expected_pin_set_hash: object, expected_phase: str, expected_scope: tuple[str, str, str, str], evaluation_time: object) -> ClosedResult:
-    return _validate_closed_root(root_bytes=root_bytes, expected_root_hash=expected_root_hash, pin_descriptor=pin_descriptor, expected_pin_set_hash=expected_pin_set_hash, expected_phase=expected_phase, expected_scope=expected_scope, evaluation_time=evaluation_time, temporal=True)
+def validate_closed_root(*, root_bytes: object, expected_root_hash: object, pin_descriptor: object, expected_pin_set_hash: object, expected_phase: str, expected_scope: tuple[str, str, str, str], evaluation_time: object) -> ClosedResult: return _validate_closed_root(root_bytes=root_bytes, expected_root_hash=expected_root_hash, pin_descriptor=pin_descriptor, expected_pin_set_hash=expected_pin_set_hash, expected_phase=expected_phase, expected_scope=expected_scope, evaluation_time=evaluation_time, temporal=True)  # noqa: E704
 def resolve_root_invalidation(*, root_documents: object, pin_descriptor: object, expected_pin_set_hash: object, expected_scope: tuple[str, str, str, str], prior_root_content_hash: object, evaluation_time: object, expected_phase: object = "CURRENT", authorization_time: object = None) -> ClosedResult:
     phase = expected_phase if isinstance(expected_phase, str) else "INVALID"
     codes = _pin_codes(
