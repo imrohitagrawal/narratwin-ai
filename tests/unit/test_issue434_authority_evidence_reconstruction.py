@@ -5,7 +5,7 @@ from collections.abc import Callable, Mapping
 from typing import Any, cast
 import pytest
 from scripts.quality import issue434_authority_evidence_trust as trust
-from tests.unit import test_issue434_authority_evidence_trust as prior_tests
+import test_issue434_authority_evidence_trust as prior_tests
 def future(name: str, **kwargs: object) -> object:
     try:
         module = importlib.import_module("scripts.quality.issue434_authority_evidence_reconstruction")
