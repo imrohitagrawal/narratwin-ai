@@ -963,18 +963,57 @@ def validate_closed_schema_value(
     value: object, schema_document: Mapping[str, object]
 ) -> tuple[Finding, ...]:
     """Execute the bounded closed-schema vocabulary used by Child B artifacts."""
-
-    findings: list[Finding] = []
+    top_members = {"schemaDocumentVersion", "contractVersion", "canonicalProfile", "closed", "activation", "$defs", "root"}
     if not isinstance(schema_document, Mapping): return (Finding("SCHEMA_DOCUMENT_INVALID"),)  # noqa: E701
+    if set(schema_document) - top_members: return (Finding("SCHEMA_DESCRIPTOR_INVALID"),)  # noqa: E701
     try:
         _check_json_value(schema_document)
     except AuthorityEvidenceTrustError:
         return (Finding("SCHEMA_DOCUMENT_INVALID"),)
-    definitions = schema_document.get("$defs")
-    root = schema_document.get("root")
-    if not isinstance(definitions, Mapping) or not isinstance(root, Mapping):
-        return (Finding("SCHEMA_DOCUMENT_INVALID"),)
+    definitions, root = schema_document.get("$defs"), schema_document.get("root")
+    if not isinstance(definitions, Mapping) or not isinstance(root, Mapping): return (Finding("SCHEMA_DOCUMENT_INVALID"),)  # noqa: E701
+    descriptor_members = {"string": {"type", "const", "enum", "maxLength", "minLength", "pattern"}, "sha256": {"type"}, "timestamp": {"type"}, "integer": {"type", "const", "minimum", "maximum"}, "boolean": {"type"}, "nullable": {"type", "item"}, "object": {"type", "closed", "conditions", "properties", "required"}, "array": {"type", "exactItems", "items", "maxItems", "minItems", "order", "unique", "uniqueBy"}}
+    def malformed(descriptor: object) -> bool:
+        if not isinstance(descriptor, Mapping): return True  # noqa: E701
+        reference = descriptor.get("$ref")
+        if reference is not None: return set(descriptor) != {"$ref"} or not isinstance(reference, str) or not isinstance(definitions.get(reference), Mapping)  # noqa: E701
+        kind = descriptor.get("type")
+        if not isinstance(kind, str) or kind not in descriptor_members or set(descriptor) - descriptor_members[kind]: return True  # noqa: E701
+        if kind in {"string", "sha256", "timestamp"}:
+            minimum, maximum = descriptor.get("minLength", 0), descriptor.get("maxLength", MAX_STRING_BYTES)
+            pattern, enum, const = descriptor.get("pattern"), descriptor.get("enum"), descriptor.get("const")
+            if any(isinstance(item, bool) or not isinstance(item, int) for item in (minimum, maximum)) or not 0 <= cast(int, minimum) <= cast(int, maximum) <= MAX_STRING_BYTES: return True  # noqa: E701
+            if enum is not None and (not isinstance(enum, list) or any(not isinstance(item, str) for item in enum)): return True  # noqa: E701
+            if const is not None and not isinstance(const, str) or pattern is not None and not isinstance(pattern, str): return True  # noqa: E701
+            try:
+                if isinstance(pattern, str): re.compile(pattern)  # noqa: E701
+            except re.error:
+                return True
+        elif kind == "integer":
+            minimum, maximum, const = descriptor.get("minimum", -(2**63)), descriptor.get("maximum", 2**63 - 1), descriptor.get("const")
+            if any(isinstance(item, bool) or not isinstance(item, int) for item in (minimum, maximum)) or not -(2**63) <= cast(int, minimum) <= cast(int, maximum) <= 2**63 - 1 or const is not None and (isinstance(const, bool) or not isinstance(const, int)): return True  # noqa: E701
+        elif kind == "nullable":
+            if not isinstance(descriptor.get("item"), Mapping): return True  # noqa: E701
+        elif kind == "object":
+            properties, required, conditions = descriptor.get("properties"), descriptor.get("required"), descriptor.get("conditions")
+            if descriptor.get("closed") is not True or not isinstance(properties, Mapping) or not isinstance(required, list) or any(not isinstance(item, str) for item in required) or not set(required).issubset(properties) or conditions is not None and (not isinstance(conditions, list) or any(not isinstance(item, str) for item in conditions)): return True  # noqa: E701
+        elif kind == "array":
+            minimum, maximum = descriptor.get("minItems", 0), descriptor.get("maxItems", 256)
+            items, exact, unique, order, unique_by = descriptor.get("items"), descriptor.get("exactItems"), descriptor.get("unique"), descriptor.get("order"), descriptor.get("uniqueBy")
+            if any(isinstance(item, bool) or not isinstance(item, int) for item in (minimum, maximum)) or not 0 <= cast(int, minimum) <= cast(int, maximum) <= 256 or not isinstance(items, Mapping) and not isinstance(exact, list): return True  # noqa: E701
+            if unique is not None and not isinstance(unique, bool) or order is not None and order not in {"LEXICOGRAPHIC_ASCENDING", "TRANSITION_ROW_THEN_EVIDENCE_ROLE_ASCENDING"} or unique_by is not None and (not isinstance(unique_by, list) or any(not isinstance(item, str) for item in unique_by)): return True  # noqa: E701
+        return False
+    stack: list[object] = [root, *definitions.values()]
+    while stack:
+        descriptor = stack.pop()
+        if malformed(descriptor): return (Finding("SCHEMA_DESCRIPTOR_INVALID"),)  # noqa: E701
+        node = cast(Mapping[str, object], descriptor)
+        if "$ref" in node: continue  # noqa: E701
+        kind = node.get("type")
+        if kind == "object": stack.extend(cast(Mapping[str, object], node["properties"]).values())  # noqa: E701
+        elif kind in {"array", "nullable"} and isinstance(node.get("items" if kind == "array" else "item"), Mapping): stack.append(node["items" if kind == "array" else "item"])  # noqa: E701
 
+    findings: list[Finding] = []
     def add(code: str, location: str) -> None:
         if len(findings) < 256: findings.append(Finding(code, location))  # noqa: E701
         elif code == "SCHEMA_WORK_LIMIT": findings[-1] = Finding(code, location)  # noqa: E701
@@ -983,107 +1022,68 @@ def validate_closed_schema_value(
         nonlocal visited
         if visited >= 4096: add("SCHEMA_WORK_LIMIT", location); return  # noqa: E701, E702
         visited += 1
-        if depth > MAX_DEPTH or not isinstance(descriptor, Mapping):
-            add("SCHEMA_DESCRIPTOR_INVALID", location)
-            return
+        if depth > MAX_DEPTH or not isinstance(descriptor, Mapping): add("SCHEMA_DESCRIPTOR_INVALID", location); return  # noqa: E701, E702
         reference = descriptor.get("$ref"); kind = descriptor.get("type")  # noqa: E702
-        allowed = {"$ref"} if reference is not None else {"string": {"type", "const", "enum", "maxLength", "minLength", "pattern"}, "sha256": {"type"}, "timestamp": {"type"}, "integer": {"type", "const", "minimum", "maximum"}, "boolean": {"type"}, "nullable": {"type", "item"}, "object": {"type", "closed", "conditions", "properties", "required"}, "array": {"type", "exactItems", "items", "maxItems", "minItems", "order", "unique", "uniqueBy"}}.get(cast(str, kind), set())
-        if set(descriptor) - allowed: add("SCHEMA_DESCRIPTOR_INVALID", location); return  # noqa: E701, E702
         if reference is not None:
             target = definitions.get(reference) if isinstance(reference, str) else None
-            if not isinstance(target, Mapping):
-                add("SCHEMA_REFERENCE_UNKNOWN", location)
-            else:
-                walk(item, target, location, depth + 1)
+            if not isinstance(target, Mapping): add("SCHEMA_REFERENCE_UNKNOWN", location)  # noqa: E701
+            else: walk(item, target, location, depth + 1)  # noqa: E701
             return
         if kind == "nullable":
-            if item is not None:
-                walk(item, descriptor.get("item"), location, depth + 1)
+            if item is not None: walk(item, descriptor.get("item"), location, depth + 1)  # noqa: E701
             return
         if kind in {"string", "sha256", "timestamp"}:
-            if not isinstance(item, str):
-                add("WRONG_SCALAR_TYPE", location)
-                return
+            if not isinstance(item, str): add("WRONG_SCALAR_TYPE", location); return  # noqa: E701, E702
             size = len(item.encode("utf-8"))
-            if size < descriptor.get("minLength", 0) or size > descriptor.get("maxLength", MAX_STRING_BYTES):
-                add("STRING_LIMIT", location)
+            if size < descriptor.get("minLength", 0) or size > descriptor.get("maxLength", MAX_STRING_BYTES): add("STRING_LIMIT", location)  # noqa: E701
             pattern = descriptor.get("pattern")
-            if isinstance(pattern, str) and re.fullmatch(pattern, item) is None:
-                add("STRING_PATTERN", location)
-            if kind == "sha256" and LOWER_SHA256.fullmatch(item) is None:
-                add("HEX_FORMAT", location)
-            if kind == "timestamp" and _utc_value(item) is None:
-                add("TIME_FORMAT", location)
+            if isinstance(pattern, str) and re.fullmatch(pattern, item) is None: add("STRING_PATTERN", location)  # noqa: E701
+            if kind == "sha256" and LOWER_SHA256.fullmatch(item) is None: add("HEX_FORMAT", location)  # noqa: E701
+            if kind == "timestamp" and _utc_value(item) is None: add("TIME_FORMAT", location)  # noqa: E701
         elif kind == "integer":
-            if isinstance(item, bool) or not isinstance(item, int):
-                add("WRONG_SCALAR_TYPE", location)
-                return
-            if item < descriptor.get("minimum", -(2**63)) or item > descriptor.get("maximum", 2**63 - 1):
-                add("INTEGER_RANGE", location)
+            if isinstance(item, bool) or not isinstance(item, int): add("WRONG_SCALAR_TYPE", location); return  # noqa: E701, E702
+            if item < descriptor.get("minimum", -(2**63)) or item > descriptor.get("maximum", 2**63 - 1): add("INTEGER_RANGE", location)  # noqa: E701
         elif kind == "boolean":
-            if not isinstance(item, bool):
-                add("WRONG_SCALAR_TYPE", location)
+            if not isinstance(item, bool): add("WRONG_SCALAR_TYPE", location)  # noqa: E701
         elif kind == "object":
-            if not isinstance(item, Mapping):
-                add("WRONG_SCALAR_TYPE", location)
-                return
+            if not isinstance(item, Mapping): add("WRONG_SCALAR_TYPE", location); return  # noqa: E701, E702
             if len(item) > MAX_OBJECT_MEMBERS: add("MEMBER_LIMIT", location); return  # noqa: E701, E702
-            properties = descriptor.get("properties")
-            required = descriptor.get("required")
-            if not isinstance(properties, Mapping) or not isinstance(required, list) or descriptor.get("closed") is not True:
-                add("SCHEMA_DESCRIPTOR_INVALID", location)
-                return
-            if set(item) - set(properties):
-                add("UNKNOWN_MEMBER", location)
-            if set(required) - set(item):
-                add("MISSING_MEMBER", location)
+            properties, required = cast(Mapping[str, object], descriptor["properties"]), cast(list[object], descriptor["required"])
+            if set(item) - set(properties): add("UNKNOWN_MEMBER", location)  # noqa: E701
+            if set(required) - set(item): add("MISSING_MEMBER", location)  # noqa: E701
             for name, child in item.items():
                 if visited >= 4096: add("SCHEMA_WORK_LIMIT", location); break  # noqa: E701, E702
                 child_descriptor = properties.get(name)
-                if child_descriptor is not None:
-                    walk(child, child_descriptor, f"{location}.{name}", depth + 1)
+                if child_descriptor is not None: walk(child, child_descriptor, f"{location}.{name}", depth + 1)  # noqa: E701
         elif kind == "array":
-            if not isinstance(item, list):
-                add("WRONG_SCALAR_TYPE", location)
-                return
-            if len(item) < descriptor.get("minItems", 0) or len(item) > descriptor.get("maxItems", MAX_ARRAY_ITEMS):
-                add("COLLECTION_LIMIT", location)
-                return
-            if descriptor.get("unique") is True and len({canonical_bytes(child) for child in item}) != len(item):
-                add("DUPLICATE_COLLECTION_ITEM", location)
+            if not isinstance(item, list): add("WRONG_SCALAR_TYPE", location); return  # noqa: E701, E702
+            if len(item) < descriptor.get("minItems", 0) or len(item) > descriptor.get("maxItems", MAX_ARRAY_ITEMS): add("COLLECTION_LIMIT", location); return  # noqa: E701, E702
+            if descriptor.get("unique") is True and len({canonical_bytes(child) for child in item}) != len(item): add("DUPLICATE_COLLECTION_ITEM", location)  # noqa: E701
             exact = descriptor.get("exactItems")
-            if exact is not None and item != exact:
-                add("EXACT_COLLECTION_MISMATCH", location)
+            if exact is not None and item != exact: add("EXACT_COLLECTION_MISMATCH", location)  # noqa: E701
             order = descriptor.get("order")
-            if order == "LEXICOGRAPHIC_ASCENDING" and all(isinstance(child, str) for child in item) and item != sorted(item):
-                add("COLLECTION_ORDER_MISMATCH", location)
+            if order == "LEXICOGRAPHIC_ASCENDING" and all(isinstance(child, str) for child in item) and item != sorted(item): add("COLLECTION_ORDER_MISMATCH", location)  # noqa: E701
             if order == "TRANSITION_ROW_THEN_EVIDENCE_ROLE_ASCENDING" and all(isinstance(child, Mapping) and isinstance(child.get("transitionRowId"), str) and isinstance(child.get("evidenceRole"), str) for child in item):
                 ordered = sorted(item, key=lambda child: (cast(Mapping[str, object], child).get("transitionRowId", ""), cast(Mapping[str, object], child).get("evidenceRole", "")))
-                if item != ordered:
-                    add("COLLECTION_ORDER_MISMATCH", location)
+                if item != ordered: add("COLLECTION_ORDER_MISMATCH", location)  # noqa: E701
             unique_by = descriptor.get("uniqueBy")
             if isinstance(unique_by, list) and all(isinstance(child, Mapping) for child in item):
                 keys = [canonical_bytes([cast(Mapping[str, object], child).get(cast(str, name)) for name in unique_by]) for child in item]
-                if len(set(keys)) != len(keys):
-                    add("DUPLICATE_COLLECTION_ITEM", location)
+                if len(set(keys)) != len(keys): add("DUPLICATE_COLLECTION_ITEM", location)  # noqa: E701
             child_descriptor = descriptor.get("items")
             if child_descriptor is not None:
                 for index, child in enumerate(item):
                     if visited >= 4096: add("SCHEMA_WORK_LIMIT", location); break  # noqa: E701, E702
                     walk(child, child_descriptor, f"{location}[{index}]", depth + 1)
-        else:
-            add("SCHEMA_TYPE_UNKNOWN", location)
-            return
-        if "const" in descriptor and item != descriptor["const"]:
-            add("CONST_MISMATCH", location)
+        else: add("SCHEMA_TYPE_UNKNOWN", location); return  # noqa: E701, E702
+        if "const" in descriptor and item != descriptor["const"]: add("CONST_MISMATCH", location)  # noqa: E701
         values = descriptor.get("enum")
-        if isinstance(values, list) and item not in values:
-            add("ENUM_MISMATCH", location)
+        if isinstance(values, list) and item not in values: add("ENUM_MISMATCH", location)  # noqa: E701
 
     try:
         walk(value, root, "document")
     except (AuthorityEvidenceTrustError, TypeError, ValueError, re.error):
-        findings.append(Finding("SCHEMA_DESCRIPTOR_INVALID", "document"))
+        add("SCHEMA_DESCRIPTOR_INVALID", "document")
     return tuple(dict.fromkeys(findings))
 
 
