@@ -791,6 +791,7 @@ def inspect_key_history_structure(
         if operation == "REVOKE":
             if record.get("revokedAt") is None or record.get("invalidatesFrom") is None:
                 reject("REVOCATION_BOUNDARY_REQUIRED")
+            if record.get("rotationPredecessor") is not None or record.get("predecessorAuthorizationSignature") is not None: reject("PREDECESSOR_AUTHORIZATION_PROHIBITED")  # noqa: E701
             activation, invalidates, revoked = (_utc_value(record.get(name)) for name in ("activationTime", "invalidatesFrom", "revokedAt"))
             if None not in (activation, invalidates, revoked) and not cast(datetime, activation) <= cast(datetime, invalidates) <= cast(datetime, revoked):
                 reject("REVOCATION_BOUNDARY_ORDER")
@@ -1138,6 +1139,7 @@ def resolve_root_invalidation_structure(*, root_documents: Mapping[str, bytes], 
 def resolve_issuing_key_structure(*, records: tuple[Mapping[str, object], ...], expected_head: HistoryHead, issuing_key: tuple[object, object, object, object], capture_time: str, evaluation_time: str | None = None) -> TrustBoundaryResult:
     if not records or not all(isinstance(row, Mapping) for row in records) or not isinstance(expected_head, HistoryHead) or not isinstance(issuing_key, tuple) or len(issuing_key) != 4:
         return _codes("KEY_RECORD_INVALID")
+    if evaluation_time is not None and _utc_value(evaluation_time) is None: return _codes("TIME_FORMAT")  # noqa: E701
     first = records[0]
     values = tuple(first.get(name) for name in ("repository", "programId", "generationId", "producerId", "rootContentHash"))
     if any(not isinstance(item, str) for item in values):
