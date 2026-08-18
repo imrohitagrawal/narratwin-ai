@@ -76,6 +76,7 @@ def _pin_codes(descriptor: object, expected_hash: object, phase: str,
     if set(descriptor) != PIN_MEMBERS or descriptor.get("schemaVersion") != "AuthorityRootPinSetV1":
         codes.append("ROOT_PIN_DESCRIPTOR_INVALID")
     actual_scope = tuple(descriptor.get(name) for name in ("repository", "programId", "generationId", "producerId"))
+    if any(not isinstance(item, str) or not minimum <= len(item) <= maximum for item, (minimum, maximum) in zip(actual_scope, ((3, 512), (3, 128), (3, 128), (3, 128)), strict=True)): codes.append("ROOT_PIN_DESCRIPTOR_INVALID")  # noqa: E701
     if actual_scope != scope or any(not isinstance(item, str) for item in actual_scope):
         codes.append("ROOT_PIN_SCOPE_MISMATCH")
     if descriptor.get("evaluationPhase") != phase:

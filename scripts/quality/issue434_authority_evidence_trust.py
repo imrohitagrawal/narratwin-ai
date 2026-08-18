@@ -185,7 +185,7 @@ class Evaluation:
     activation: Literal["NONE"] = field(default=ACTIVATION, init=False)
 
 
-def _check_json_value(value: object, depth: int = 1) -> None:
+def _check_json_value(value: object, depth: int = 1, array_limit: int = MAX_ARRAY_ITEMS) -> None:
     if depth > MAX_DEPTH:
         raise AuthorityEvidenceTrustError("DEPTH_LIMIT")
     if value is None or isinstance(value, bool):
@@ -204,7 +204,7 @@ def _check_json_value(value: object, depth: int = 1) -> None:
             raise AuthorityEvidenceTrustError("STRING_LIMIT")
         return
     if isinstance(value, list):
-        if len(value) > MAX_ARRAY_ITEMS:
+        if len(value) > array_limit:
             raise AuthorityEvidenceTrustError("COLLECTION_LIMIT")
         for item in value:
             _check_json_value(item, depth + 1)
@@ -216,15 +216,11 @@ def _check_json_value(value: object, depth: int = 1) -> None:
             if not isinstance(key, str):
                 raise AuthorityEvidenceTrustError("NON_STRING_MEMBER")
             _check_json_value(key, depth + 1)
-            _check_json_value(item, depth + 1)
+            _check_json_value(item, depth + 1, 256 if key in {"historicalFindings", "currentFindings"} else MAX_ARRAY_ITEMS)
         return
     raise AuthorityEvidenceTrustError("UNSUPPORTED_JSON_TYPE")
-
-
 def _reject_float(_: str) -> Never:
     raise AuthorityEvidenceTrustError("FLOAT_PROHIBITED")
-
-
 def _reject_constant(_: str) -> Never:
     raise AuthorityEvidenceTrustError("NON_FINITE_NUMBER")
 
@@ -966,6 +962,7 @@ def validate_closed_schema_value(
     top_members = {"schemaDocumentVersion", "contractVersion", "canonicalProfile", "closed", "activation", "$defs", "root"}
     if not isinstance(schema_document, Mapping): return (Finding("SCHEMA_DOCUMENT_INVALID"),)  # noqa: E701
     if set(schema_document) - top_members: return (Finding("SCHEMA_DESCRIPTOR_INVALID"),)  # noqa: E701
+    if any(name in schema_document and schema_document.get(name) != expected for name, expected in (("schemaDocumentVersion", "NarraTwinClosedSchemaDocumentV1"), ("canonicalProfile", "NarraTwinAuthorityCanonicalJsonV1"), ("closed", True), ("activation", "NONE"))) or "contractVersion" in schema_document and (not isinstance(schema_document.get("contractVersion"), str) or not 3 <= len(cast(str, schema_document["contractVersion"])) <= 128): return (Finding("SCHEMA_DESCRIPTOR_INVALID"),)  # noqa: E701
     try:
         _check_json_value(schema_document)
     except AuthorityEvidenceTrustError:
@@ -983,7 +980,7 @@ def validate_closed_schema_value(
             minimum, maximum = descriptor.get("minLength", 0), descriptor.get("maxLength", MAX_STRING_BYTES)
             pattern, enum, const = descriptor.get("pattern"), descriptor.get("enum"), descriptor.get("const")
             if any(isinstance(item, bool) or not isinstance(item, int) for item in (minimum, maximum)) or not 0 <= cast(int, minimum) <= cast(int, maximum) <= MAX_STRING_BYTES: return True  # noqa: E701
-            if enum is not None and (not isinstance(enum, list) or any(not isinstance(item, str) for item in enum)): return True  # noqa: E701
+            if enum is not None and (not isinstance(enum, list) or any(not isinstance(item, str) for item in enum) or len(enum) != len(set(enum))): return True  # noqa: E701
             if const is not None and not isinstance(const, str) or pattern is not None and not isinstance(pattern, str): return True  # noqa: E701
             try:
                 if isinstance(pattern, str): re.compile(pattern)  # noqa: E701
@@ -996,12 +993,13 @@ def validate_closed_schema_value(
             if not isinstance(descriptor.get("item"), Mapping): return True  # noqa: E701
         elif kind == "object":
             properties, required, conditions = descriptor.get("properties"), descriptor.get("required"), descriptor.get("conditions")
-            if descriptor.get("closed") is not True or not isinstance(properties, Mapping) or not isinstance(required, list) or any(not isinstance(item, str) for item in required) or not set(required).issubset(properties) or conditions is not None and (not isinstance(conditions, list) or any(not isinstance(item, str) for item in conditions)): return True  # noqa: E701
+            if descriptor.get("closed") is not True or not isinstance(properties, Mapping) or not isinstance(required, list) or any(not isinstance(item, str) for item in required) or len(required) != len(set(required)) or not set(required).issubset(properties) or conditions is not None and (not isinstance(conditions, list) or any(not isinstance(item, str) for item in conditions)): return True  # noqa: E701
         elif kind == "array":
-            minimum, maximum = descriptor.get("minItems", 0), descriptor.get("maxItems", 256)
+            minimum, maximum = descriptor.get("minItems", 0), descriptor.get("maxItems", 64)
             items, exact, unique, order, unique_by = descriptor.get("items"), descriptor.get("exactItems"), descriptor.get("unique"), descriptor.get("order"), descriptor.get("uniqueBy")
-            if any(isinstance(item, bool) or not isinstance(item, int) for item in (minimum, maximum)) or not 0 <= cast(int, minimum) <= cast(int, maximum) <= 256 or not isinstance(items, Mapping) and not isinstance(exact, list): return True  # noqa: E701
-            if unique is not None and not isinstance(unique, bool) or order is not None and order not in {"LEXICOGRAPHIC_ASCENDING", "TRANSITION_ROW_THEN_EVIDENCE_ROLE_ASCENDING"} or unique_by is not None and (not isinstance(unique_by, list) or any(not isinstance(item, str) for item in unique_by)): return True  # noqa: E701
+            item_node = definitions.get(items.get("$ref")) if isinstance(items, Mapping) and isinstance(items.get("$ref"), str) else items; item_kind = item_node.get("type") if isinstance(item_node, Mapping) else None; item_properties = item_node.get("properties") if isinstance(item_node, Mapping) else None  # noqa: E702
+            if any(isinstance(item, bool) or not isinstance(item, int) for item in (minimum, maximum)) or not 0 <= cast(int, minimum) <= cast(int, maximum) <= (256 if isinstance(items, Mapping) and items.get("$ref") == "finding" else 64) or not isinstance(items, Mapping) and not isinstance(exact, list): return True  # noqa: E701
+            if unique is not None and not isinstance(unique, bool) or order is not None and order not in {"LEXICOGRAPHIC_ASCENDING", "TRANSITION_ROW_THEN_EVIDENCE_ROLE_ASCENDING"} or order == "LEXICOGRAPHIC_ASCENDING" and item_kind != "string" or order == "TRANSITION_ROW_THEN_EVIDENCE_ROLE_ASCENDING" and (item_kind != "object" or not isinstance(item_properties, Mapping) or not {"transitionRowId", "evidenceRole"} <= set(item_properties)) or unique_by is not None and (not isinstance(unique_by, list) or any(not isinstance(item, str) for item in unique_by) or len(unique_by) != len(set(unique_by)) or item_kind != "object" or not isinstance(item_properties, Mapping) or not set(unique_by).issubset(item_properties)): return True  # noqa: E701
         return False
     stack: list[object] = [root, *definitions.values()]
     while stack:
