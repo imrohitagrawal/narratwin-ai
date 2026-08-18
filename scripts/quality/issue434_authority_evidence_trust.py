@@ -735,6 +735,11 @@ def inspect_key_history_structure(
             value = record.get(name)
             if value is not None and not isinstance(value, str):
                 reject("WRONG_SCALAR_TYPE", f"keyRecord.{name}")
+        if not isinstance(record.get("signatureAlgorithm"), str): reject("WRONG_SCALAR_TYPE", "keyRecord.signatureAlgorithm")  # noqa: E701
+        elif record.get("signatureAlgorithm") != "Ed25519": reject("SIGNATURE_ALGORITHM", "keyRecord.signatureAlgorithm")  # noqa: E701
+        if not isinstance(record.get("fixtureOnly"), bool): reject("WRONG_SCALAR_TYPE", "keyRecord.fixtureOnly")  # noqa: E701
+        for name in ("rootAuthorizationSignature", "predecessorAuthorizationSignature"):
+            if (value := record.get(name)) is not None and (not isinstance(value, str) or re.fullmatch(r"[0-9a-f]{128}", value) is None): reject("WRONG_SCALAR_TYPE", f"keyRecord.{name}")  # noqa: E701
         rotation_value = record.get("rotationPredecessor")
         if rotation_value is not None:
             if not isinstance(rotation_value, Mapping):
@@ -971,13 +976,19 @@ def validate_closed_schema_value(
         return (Finding("SCHEMA_DOCUMENT_INVALID"),)
 
     def add(code: str, location: str) -> None:
-        findings.append(Finding(code, location))
-
+        if len(findings) < 256: findings.append(Finding(code, location))  # noqa: E701
+        elif code == "SCHEMA_WORK_LIMIT": findings[-1] = Finding(code, location)  # noqa: E701
+    visited = 0
     def walk(item: object, descriptor: object, location: str, depth: int = 1) -> None:
+        nonlocal visited
+        if visited >= 4096: add("SCHEMA_WORK_LIMIT", location); return  # noqa: E701, E702
+        visited += 1
         if depth > MAX_DEPTH or not isinstance(descriptor, Mapping):
             add("SCHEMA_DESCRIPTOR_INVALID", location)
             return
-        reference = descriptor.get("$ref")
+        reference = descriptor.get("$ref"); kind = descriptor.get("type")  # noqa: E702
+        allowed = {"$ref"} if reference is not None else {"string": {"type", "const", "enum", "maxLength", "minLength", "pattern"}, "sha256": {"type"}, "timestamp": {"type"}, "integer": {"type", "const", "minimum", "maximum"}, "boolean": {"type"}, "nullable": {"type", "item"}, "object": {"type", "closed", "conditions", "properties", "required"}, "array": {"type", "exactItems", "items", "maxItems", "minItems", "order", "unique", "uniqueBy"}}.get(cast(str, kind), set())
+        if set(descriptor) - allowed: add("SCHEMA_DESCRIPTOR_INVALID", location); return  # noqa: E701, E702
         if reference is not None:
             target = definitions.get(reference) if isinstance(reference, str) else None
             if not isinstance(target, Mapping):
@@ -985,7 +996,6 @@ def validate_closed_schema_value(
             else:
                 walk(item, target, location, depth + 1)
             return
-        kind = descriptor.get("type")
         if kind == "nullable":
             if item is not None:
                 walk(item, descriptor.get("item"), location, depth + 1)
@@ -1017,6 +1027,7 @@ def validate_closed_schema_value(
             if not isinstance(item, Mapping):
                 add("WRONG_SCALAR_TYPE", location)
                 return
+            if len(item) > MAX_OBJECT_MEMBERS: add("MEMBER_LIMIT", location); return  # noqa: E701, E702
             properties = descriptor.get("properties")
             required = descriptor.get("required")
             if not isinstance(properties, Mapping) or not isinstance(required, list) or descriptor.get("closed") is not True:
@@ -1027,6 +1038,7 @@ def validate_closed_schema_value(
             if set(required) - set(item):
                 add("MISSING_MEMBER", location)
             for name, child in item.items():
+                if visited >= 4096: add("SCHEMA_WORK_LIMIT", location); break  # noqa: E701, E702
                 child_descriptor = properties.get(name)
                 if child_descriptor is not None:
                     walk(child, child_descriptor, f"{location}.{name}", depth + 1)
@@ -1037,8 +1049,7 @@ def validate_closed_schema_value(
             if len(item) < descriptor.get("minItems", 0) or len(item) > descriptor.get("maxItems", MAX_ARRAY_ITEMS):
                 add("COLLECTION_LIMIT", location)
                 return
-            encoded = [canonical_bytes(child) for child in item]
-            if descriptor.get("unique") is True and len(set(encoded)) != len(encoded):
+            if descriptor.get("unique") is True and len({canonical_bytes(child) for child in item}) != len(item):
                 add("DUPLICATE_COLLECTION_ITEM", location)
             exact = descriptor.get("exactItems")
             if exact is not None and item != exact:
@@ -1058,6 +1069,7 @@ def validate_closed_schema_value(
             child_descriptor = descriptor.get("items")
             if child_descriptor is not None:
                 for index, child in enumerate(item):
+                    if visited >= 4096: add("SCHEMA_WORK_LIMIT", location); break  # noqa: E701, E702
                     walk(child, child_descriptor, f"{location}[{index}]", depth + 1)
         else:
             add("SCHEMA_TYPE_UNKNOWN", location)
