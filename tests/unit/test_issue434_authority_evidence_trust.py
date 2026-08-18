@@ -1101,7 +1101,7 @@ def test_issuing_key_overlap_retirement_and_revocation_use_raw_history(
     assert_no_authority(result)
 
 
-@pytest.mark.parametrize(("field", "expected"), [(name, "PUBLIC_KEY_FORMAT" if name == "publicKeyHex" else "WRONG_SCALAR_TYPE") for name in ["contentHash", "historySequence", "revision", "keyId", "keyObjectId", "publicKeyHex", "activationTime", "historyPredecessorContentHash", "predecessorContentHash", "rotationPredecessor.contentHash", "rotationPredecessor.keyObjectId", "rotationPredecessor.revision", "expectedHead.root_content_hash", "expectedHead.producer_id", "expectedHead.history_sequence", "expectedHead.key_record_content_hash"]])
+@pytest.mark.parametrize(("field", "expected"), [(name, "PUBLIC_KEY_FORMAT" if name == "publicKeyHex" else "WRONG_SCALAR_TYPE") for name in ["contentHash", "historySequence", "revision", "keyId", "keyObjectId", "publicKeyHex", "signatureAlgorithm", "fixtureOnly", "rootAuthorizationSignature", "predecessorAuthorizationSignature", "activationTime", "historyPredecessorContentHash", "predecessorContentHash", "rotationPredecessor.contentHash", "rotationPredecessor.keyObjectId", "rotationPredecessor.revision", "expectedHead.root_content_hash", "expectedHead.producer_id", "expectedHead.history_sequence", "expectedHead.key_record_content_hash"]])
 def test_every_graph_indexed_wrong_type_is_isolated(field: str, expected: str) -> None:
     rows = key_rows()
     malformed = dict(rows["K02"])
@@ -1133,6 +1133,11 @@ def test_every_graph_indexed_wrong_type_is_isolated(field: str, expected: str) -
 def test_schema_collection_bound_precedes_item_work(monkeypatch: pytest.MonkeyPatch) -> None:
     calls: list[object] = []; original = trust.canonical_bytes; monkeypatch.setattr(trust, "canonical_bytes", lambda value: (calls.__iadd__([value]), original(value))[1]); schema = {"$defs": {}, "root": {"type": "array", "minItems": 1, "maxItems": 64, "unique": True, "items": {"type": "string"}}}; result = trust.validate_closed_schema_value([str(index) for index in range(65)], schema)  # noqa: E702
     assert any(item.code == "COLLECTION_LIMIT" for item in result) and not calls
+
+@pytest.mark.parametrize(("value", "schema", "expected"), [("ok", {"$defs": {}, "root": {"type": "string", "rogueKeyword": True}}, "SCHEMA_DESCRIPTOR_INVALID"), ({str(i): i for i in range(65)}, {"$defs": {}, "root": {"type": "object", "closed": True, "required": [], "properties": {}}}, "COLLECTION_LIMIT"), ([["bad"] * 64 for _ in range(64)], {"$defs": {}, "root": {"type": "array", "maxItems": 64, "items": {"type": "array", "maxItems": 64, "items": {"type": "boolean"}}}}, 256)])
+def test_schema_executor_closes_descriptors_members_and_result_work(value: object, schema: Mapping[str, object], expected: str | int) -> None:
+    findings = trust.validate_closed_schema_value(value, schema)
+    assert len(findings) == expected if isinstance(expected, int) else expected in {item.code for item in findings}
 
 
 @pytest.mark.parametrize(
