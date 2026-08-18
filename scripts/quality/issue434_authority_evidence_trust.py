@@ -868,6 +868,8 @@ def inspect_key_history_structure(
             )
             if wrong_relation:
                 add("ROTATION_PREDECESSOR_RELATION")
+            elif prior is not None and prior.get("operation") not in {"ISSUE_GENESIS", "ROTATE"}:
+                add("ROTATION_SOURCE_STATE")
         elif operation in {"RETIRE", "REVOKE"}:
             same_predecessor = record.get("predecessorContentHash")
             prior = by_hash.get(same_predecessor) if isinstance(same_predecessor, str) else None
@@ -884,7 +886,11 @@ def inspect_key_history_structure(
             else:
                 if record.get("activationTime") != prior.get("activationTime"):
                     add("KEY_ACTIVATION_CHANGED")
+                if operation == "RETIRE" and prior.get("operation") not in {"ISSUE_GENESIS", "ROTATE"}:
+                    add("RETIRE_SOURCE_STATE")
                 if operation == "REVOKE":
+                    if prior.get("operation") not in {"ISSUE_GENESIS", "ROTATE", "RETIRE"}:
+                        add("REVOKE_SOURCE_STATE")
                     if prior.get("retiredAt") is None and record.get("retiredAt") is not None:
                         add("REVOKE_SOURCE_STATE")
                     if prior.get("retiredAt") is not None and record.get("retiredAt") != prior.get("retiredAt"):
@@ -1125,7 +1131,7 @@ def resolve_root_invalidation_structure(*, root_documents: Mapping[str, bytes], 
     return _closed_boundary(closed.resolve_root_invalidation(root_documents=root_documents, pin_descriptor=pin_descriptor, expected_pin_set_hash=expected_pin_set_hash, expected_scope=expected_scope, prior_root_content_hash=prior_root_content_hash, evaluation_time=evaluation_time))
 
 
-def resolve_issuing_key_structure(*, records: tuple[Mapping[str, object], ...], expected_head: HistoryHead, issuing_key: tuple[object, object, object, object], capture_time: str) -> TrustBoundaryResult:
+def resolve_issuing_key_structure(*, records: tuple[Mapping[str, object], ...], expected_head: HistoryHead, issuing_key: tuple[object, object, object, object], capture_time: str, evaluation_time: str | None = None) -> TrustBoundaryResult:
     if not records or not all(isinstance(row, Mapping) for row in records) or not isinstance(expected_head, HistoryHead) or not isinstance(issuing_key, tuple) or len(issuing_key) != 4:
         return _codes("KEY_RECORD_INVALID")
     first = records[0]
@@ -1147,6 +1153,9 @@ def resolve_issuing_key_structure(*, records: tuple[Mapping[str, object], ...], 
         eligible = False
     for row in records:
         if row.get("keyObjectId") != key_object or row.get("operation") not in {"RETIRE", "REVOKE"}:
+            continue
+        observed = _utc_value(row.get("retiredAt") if row.get("operation") == "RETIRE" else row.get("revokedAt"))
+        if evaluation_time is not None and (evaluation := _utc_value(evaluation_time)) is not None and observed is not None and evaluation < observed:
             continue
         boundary = _utc_value(row.get("retiredAt") if row.get("operation") == "RETIRE" else row.get("invalidatesFrom"))
         if capture is not None and boundary is not None and capture >= boundary:
