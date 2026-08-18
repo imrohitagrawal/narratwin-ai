@@ -90,7 +90,7 @@ def test_issue366_contract_rejects_partial_scope_and_content_mutations(monkeypat
     z(s,"issue434_charges",lambda:(0,{}));assert route(m,B,b[1:])and all(s.issue434_budget_findings(*x)for x in cases)
     a={x:(REPO/x).read_bytes()for x in A};f=s.issue434_artifact_findings;assert not f(a)and f(a|{A[0]:b"x"})and f({})
     w=um.Mock();z(s,"run",w);z(s,f.__name__,lambda _:["x"]);q([]);assert not w.called;z(s,f.__name__,lambda _:[]);q([])
-    C:Any=[x[0][0]for x in w.call_args_list];assert C==[(t:=["uv","run","python"])+[p[9]],t+["-c",C[1][4]]]and r<1
+    C:Any=[x[0][0]for x in w.call_args_list];e="from scripts.quality.check_stage8_docs import A434 as A;from scripts.quality.issue434_authority_evidence_reconstruction import validate_artifact_set as v;a={p:open(p,'rb').read()for p in A[1:2]+A[3:8]};z=open(A[7].replace('evidence-trust','core'),'rb').read();raise SystemExit(not v(artifacts=a,child_a_matrix_bytes=z).valid)";assert C==[(t:=["uv","run","python"])+[p[9]],t+["-c",e]]and r<1
 def test_scope_collection_covers_exact_layers_and_forbidden_sources(monkeypatch: Any, tmp_path: Path) -> None:
     g:Any=lambda *a:git(tmp_path,*a); g("init","-b","main"); g("config","user.name","Scope Test")
     g("config","user.email","scope@example.invalid")
