@@ -382,7 +382,7 @@ def evaluate_evidence(
     claimed_authority_sources: tuple[str, ...] = (),
 ) -> Evaluation:
     """Evaluate evidence offline using only explicit bytes, pins, heads, and times."""
-    if not isinstance(root_documents, Mapping) or not isinstance(producer_key_records, Mapping) or not isinstance(independent_trust, IndependentTrustInputs):
+    if not isinstance(root_documents, Mapping) or not isinstance(producer_key_records, Mapping) or not isinstance(independent_trust, IndependentTrustInputs) or not (envelope_bytes is None or isinstance(envelope_bytes, bytes)) or not (payload_bytes is None or isinstance(payload_bytes, bytes)):
         return Evaluation(Verdict.INVALID, Verdict.INVALID, (Finding("TRUST_INPUT_INVALID", "independentTrust"),))
 
     invalid: list[Finding] = []
@@ -532,6 +532,7 @@ def _validate_blob_mapping(
     expected_schema_version: str,
 ) -> list[Finding]:
     findings: list[Finding] = []
+    if len(blobs) > 64: return [Finding("BLOB_COUNT_LIMIT", location)]  # noqa: E701
     items = sorted(
         blobs.items(),
         key=lambda item: item[0] if isinstance(item[0], str) else "",
@@ -972,6 +973,7 @@ def validate_closed_schema_value(
     """Execute the bounded closed-schema vocabulary used by Child B artifacts."""
 
     findings: list[Finding] = []
+    if not isinstance(schema_document, Mapping): return (Finding("SCHEMA_DOCUMENT_INVALID"),)  # noqa: E701
     try:
         _check_json_value(schema_document)
     except AuthorityEvidenceTrustError:
