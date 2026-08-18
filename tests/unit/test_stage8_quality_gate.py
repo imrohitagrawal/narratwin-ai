@@ -1,4 +1,4 @@
-# ruff: noqa: E302, E305, E701, E702, E731
+# ruff: noqa: E302, E305, E401, E701, E702, E731
 import hashlib,importlib.util,json,subprocess as sp;from pathlib import Path;from typing import Any
 import pytest; from scripts.guardrails_check import canonical_stage_issue
 from scripts.quality import stage8_a23b as a23b, stage8_cut1_routes as cut1_routes, issue427_architecture_reset as i
