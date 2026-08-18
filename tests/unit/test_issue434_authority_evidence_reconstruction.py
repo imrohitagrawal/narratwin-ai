@@ -531,8 +531,6 @@ def test_invalid_findings_precede_unavailable_findings() -> None:
     assert_boundary(result)
     assert cast(Any, result).historical_verdict is trust.Verdict.INVALID
     assert cast(Any, result).current_verdict is trust.Verdict.INVALID
-
-
 @pytest.mark.parametrize(("field", "bad"), [("issuingKeyRecordContentHash", {}), ("payloadClass", {}), ("schemaVersion", {})])
 def test_malformed_envelope_values_are_typed(field: str, bad: object) -> None:
     arguments, state = complete_arguments()
@@ -540,8 +538,6 @@ def test_malformed_envelope_values_are_typed(field: str, bad: object) -> None:
     result = future("resolve_complete_evidence", **dict(arguments, envelope_bytes=trust.canonical_bytes(envelope)))
     assert_boundary(result)
     assert cast(Any, result).trusted is False
-
-
 @pytest.mark.parametrize("phase", ["acceptance", "current"])
 def test_signing_root_requires_each_exact_pin_set(monkeypatch: pytest.MonkeyPatch, phase: str) -> None:
     arguments, _ = complete_arguments(); other = root_document(rootId="root:other")  # noqa: E702
@@ -549,8 +545,6 @@ def test_signing_root_requires_each_exact_pin_set(monkeypatch: pytest.MonkeyPatc
     descriptor = pin_descriptor(cast(str, other["contentHash"]), phase.upper()); arguments[f"{phase}_pin_descriptor"] = descriptor; arguments[f"{phase}_expected_pin_hash"] = pin_hash(descriptor)  # noqa: E702
     cast(dict[str, bytes], arguments["root_documents"])[cast(str, other["contentHash"])] = trust.canonical_bytes(other)
     assert trusted_result(monkeypatch, arguments).trusted is False
-
-
 @pytest.mark.parametrize(("field", "value"), [("subject", {"objectId": "route:other"}), ("reconstructionStatus", "INVALID"), ("repository", "other.invalid/repo"), ("programId", "program:other"), ("generationId", "generation:other")])
 def test_reconstruction_claims_bind_retained_envelope(monkeypatch: pytest.MonkeyPatch, field: str, value: object) -> None:
     manifest, blobs = reconstruction_bundle(b"fixture-only payload"); document = json.loads(manifest)  # noqa: E702
@@ -615,6 +609,11 @@ def test_reconstruction_lineage_and_status_are_independent(monkeypatch: pytest.M
     manifest, blobs = reconstruction_bundle(b"fixture-only payload"); document = json.loads(manifest); document.update(revision=2, predecessorContentHash=None); document["contentHash"] = trust.content_hash(trust.ContentKind.RECONSTRUCTION, "AuthorityEvidenceReconstructionV1", document)  # noqa: E702
     lineage = future("reconstruct_retained_evidence", manifest_bytes=trust.canonical_bytes(document), retained_blobs=blobs, evaluation_time=T10); document = json.loads(manifest); document.update(currentVerdict="INVALID", currentFindings=[{"code": "KEY_REVOKED", "location": None}]); document["contentHash"] = trust.content_hash(trust.ContentKind.RECONSTRUCTION, "AuthorityEvidenceReconstructionV1", document)  # noqa: E702
     module = importlib.import_module("scripts.quality.issue434_authority_evidence_reconstruction"); monkeypatch.setattr(module, "resolve_complete_evidence", lambda **_: module._result(["KEY_REVOKED"], historical_verdict=trust.Verdict.VALID, current_verdict=trust.Verdict.INVALID)); inputs, _ = complete_arguments(); status = future("reconstruct_retained_evidence", manifest_bytes=trust.canonical_bytes(document), retained_blobs=blobs, evaluation_time=T10, trust_inputs=inputs); assert cast(Any, lineage).valid is False and cast(Any, status).valid is True  # noqa: E702
+def test_reconstruction_finding_arrays_use_exact_evidence_member_bound() -> None:
+    manifest, _ = reconstruction_bundle(b"fixture-only payload"); document = json.loads(manifest); document["historicalFindings"] = [{"code": "FIXTURE_FINDING", "location": None} for _ in range(65)]  # noqa: E702
+    try: raw = trust.canonical_bytes(document)  # noqa: E701
+    except Exception as exc: pytest.fail(f"RAW_EXCEPTION:{type(exc).__name__}")  # noqa: BLE001, E701
+    schema = json.loads(prior_tests.contract_artifacts()["docs/governance/schemas/authority-evidence-reconstruction-v1.schema.json"]); findings = trust.validate_closed_schema_value(document, schema); assert raw and "COLLECTION_LIMIT" not in {item.code for item in findings}  # noqa: E702
 class _BoundedMap(dict[str, bytes]):
     traversed = False
     def items(self) -> Any: self.traversed = True; return super().items()  # noqa: E702

@@ -932,7 +932,7 @@ def test_phase_scoped_root_pin_descriptor_exact_known_vector() -> None:
         ({"rootContentHashes": ["2" * 64, "2" * 64]}, "REHASH", "INDEPENDENT", {"ROOT_PIN_DUPLICATE"}),
         ({"rootContentHashes": ["f" * 64, "2" * 64]}, "REHASH", "INDEPENDENT", {"ROOT_PIN_ORDER"}),
         ({}, "f" * 64, "INDEPENDENT", {"ROOT_PIN_SET_HASH_MISMATCH"}),
-        ({}, None, "CANDIDATE", {"ROOT_PIN_SET_HASH_REQUIRED", "ROOT_PIN_SOURCE_PROHIBITED"}),
+        ({}, None, "CANDIDATE", {"ROOT_PIN_SET_HASH_REQUIRED", "ROOT_PIN_SOURCE_PROHIBITED"}), ({"repository": "", "programId": "", "generationId": "", "producerId": ""}, "REHASH", "MATCH_SCOPE", {"ROOT_PIN_DESCRIPTOR_INVALID"}), ({"repository": "r" * 513, "programId": "p" * 129, "generationId": "g" * 129, "producerId": "x" * 129}, "REHASH", "MATCH_SCOPE", {"ROOT_PIN_DESCRIPTOR_INVALID"}),
     ],
 )
 def test_root_pin_absence_scope_order_hash_and_source_fail_closed(
@@ -950,8 +950,8 @@ def test_root_pin_absence_scope_order_hash_and_source_fail_closed(
         descriptor=descriptor,
         expected_hash=expected_hash,
         expected_phase="ACCEPTANCE",
-        expected_scope=(REPOSITORY, PROGRAM, GENERATION, PRODUCER),
-        source=source,
+        expected_scope=cast(tuple[str, str, str, str], tuple(cast(Mapping[str, object], descriptor).get(name) for name in ("repository", "programId", "generationId", "producerId"))) if source == "MATCH_SCOPE" else (REPOSITORY, PROGRAM, GENERATION, PRODUCER),
+        source="INDEPENDENT" if source == "MATCH_SCOPE" else source,
     )
     assert expected <= finding_codes(result)
     assert_no_authority(result)
@@ -1138,7 +1138,7 @@ def test_schema_collection_bound_precedes_item_work(monkeypatch: pytest.MonkeyPa
 def test_schema_executor_closes_descriptors_members_and_result_work(value: object, schema: Mapping[str, object], expected: str | int) -> None:
     findings = trust.validate_closed_schema_value(value, schema)
     assert expected in {item.code for item in findings} and len(findings) <= 256
-@pytest.mark.parametrize(("value", "schema"), [([], {"$defs": {}, "root": {"type": "array", "maxItems": 64}}), (None, {"$defs": {}, "root": {"type": "nullable"}}), ("x", {"$defs": {}, "root": {"type": "string", "enum": "bad"}}), ("x", {"$defs": {}, "root": {"type": "string", "pattern": 1}}), ([], {"$defs": {}, "root": {"type": "array", "maxItems": 64, "items": {"type": "string"}, "unique": "yes"}}), ([], {"$defs": {}, "root": {"type": "array", "maxItems": 64, "items": {"type": "string"}, "order": 1, "uniqueBy": "bad"}}), ({}, {"$defs": {}, "root": {"type": "object", "closed": True, "required": [], "properties": {}, "conditions": {}}}), ("x", {"$defs": {"unused": {"type": "NOT_A_TYPE"}}, "root": {"type": "string"}}), ("x", {"$defs": {}, "root": {"type": "string"}, "rogue": True}), ([str(i) for i in range(65)], {"$defs": {}, "root": {"type": "array", "maxItems": 1000, "unique": True, "items": {"type": "string"}}}), ("x" * 2049, {"$defs": {}, "root": {"type": "string", "maxLength": 10000}}), ({"a": ["x"] * 64, "z": "x"}, {"$defs": {}, "root": {"type": "object", "closed": True, "required": ["a", "z"], "properties": {"a": {"type": "array", "maxItems": 64, "items": {"type": "string", "minLength": 2, "pattern": "z", "const": "c", "enum": ["e"]}}, "z": {"type": "string", "pattern": "["}}}})])
+@pytest.mark.parametrize(("value", "schema"), [([], {"$defs": {}, "root": {"type": "array", "maxItems": 64}}), (None, {"$defs": {}, "root": {"type": "nullable"}}), ("x", {"$defs": {}, "root": {"type": "string", "enum": "bad"}}), ("x", {"$defs": {}, "root": {"type": "string", "pattern": 1}}), ([], {"$defs": {}, "root": {"type": "array", "maxItems": 64, "items": {"type": "string"}, "unique": "yes"}}), ([], {"$defs": {}, "root": {"type": "array", "maxItems": 64, "items": {"type": "string"}, "order": 1, "uniqueBy": "bad"}}), ({}, {"$defs": {}, "root": {"type": "object", "closed": True, "required": [], "properties": {}, "conditions": {}}}), ("x", {"$defs": {"unused": {"type": "NOT_A_TYPE"}}, "root": {"type": "string"}}), ("x", {"$defs": {}, "root": {"type": "string"}, "rogue": True}), ([str(i) for i in range(65)], {"$defs": {}, "root": {"type": "array", "maxItems": 1000, "unique": True, "items": {"type": "string"}}}), ("x" * 2049, {"$defs": {}, "root": {"type": "string", "maxLength": 10000}}), ({"a": ["x"] * 64, "z": "x"}, {"$defs": {}, "root": {"type": "object", "closed": True, "required": ["a", "z"], "properties": {"a": {"type": "array", "maxItems": 64, "items": {"type": "string", "minLength": 2, "pattern": "z", "const": "c", "enum": ["e"]}}, "z": {"type": "string", "pattern": "["}}}}), ("x", {"schemaDocumentVersion": {}, "contractVersion": [], "canonicalProfile": 1, "closed": "yes", "activation": "ACTIVE", "$defs": {}, "root": {"type": "string"}}), ({}, {"$defs": {}, "root": {"type": "object", "closed": True, "required": ["x", "x"], "properties": {"x": {"type": "string"}}}}), ("x", {"$defs": {}, "root": {"type": "string", "enum": ["x", "x"]}}), ([2, 1], {"$defs": {}, "root": {"type": "array", "maxItems": 64, "items": {"type": "integer"}, "order": "LEXICOGRAPHIC_ASCENDING"}}), ([2, 1], {"$defs": {}, "root": {"type": "array", "maxItems": 64, "items": {"type": "integer"}, "order": "TRANSITION_ROW_THEN_EVIDENCE_ROLE_ASCENDING"}}), (["a", "b"], {"$defs": {}, "root": {"type": "array", "maxItems": 64, "items": {"type": "string"}, "uniqueBy": ["id"]}})])
 def test_schema_descriptor_values_are_closed_and_bounded(value: object, schema: Mapping[str, object]) -> None:
     findings = trust.validate_closed_schema_value(value, schema); assert "SCHEMA_DESCRIPTOR_INVALID" in {item.code for item in findings} and len(findings) <= 256  # noqa: E702
 
