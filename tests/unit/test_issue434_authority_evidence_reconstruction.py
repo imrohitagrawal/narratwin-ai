@@ -26,6 +26,7 @@ PRODUCER = "producer:fixture-only"
 T00 = "2026-08-17T00:00:00Z"
 T10 = "2026-08-17T00:10:00Z"
 T20 = "2026-08-17T00:20:00Z"
+_BadMap=type("_BadMap",(Mapping,),{"__len__":lambda _:1,"__iter__":lambda _:iter([[]]),"__getitem__":lambda *_:None})
 def pin_descriptor(root_hash: str, phase: str) -> dict[str, object]:
     return {
         "schemaVersion": "AuthorityRootPinSetV1",
@@ -555,15 +556,14 @@ def test_reconstruction_claims_bind_retained_envelope(monkeypatch: pytest.Monkey
     result = future("reconstruct_retained_evidence", manifest_bytes=trust.canonical_bytes(document), retained_blobs=blobs, evaluation_time=T10, trust_inputs=inputs)
     assert cast(Any, result).valid is False
 
-
 def test_k02_does_not_retire_k01_before_explicit_boundary() -> None:
     rows = prior_tests.key_rows(); result = trust.resolve_issuing_key_structure(records=(rows["K01"], rows["K02"]), expected_head=prior_tests.head(rows["K02"]), issuing_key=(rows["K01"]["keyObjectId"], rows["K01"]["keyId"], 1, rows["K01"]["contentHash"]), capture_time=prior_tests.T09)  # noqa: E702
     assert result.issuing_key_eligible is True
 @pytest.mark.parametrize("change", [{"payloadClass": {}}, {"limitations": [set()]}])
 def test_public_subject_boundary_contains_unhashable_payload_class(change: dict[str, object]) -> None:
-    try: result = future("validate_subject_phase", envelope=subject_envelope(**change), root=root_document(), taxonomy_matrix_bytes=taxonomy_matrix(), evaluation_time=T10)  # noqa: E701
+    try: result = future("validate_subject_phase", envelope=subject_envelope(**change), root=root_document(), taxonomy_matrix_bytes=taxonomy_matrix(), evaluation_time=T10); arguments, _ = complete_arguments(); high = future("resolve_complete_evidence", **dict(arguments, root_documents=_BadMap())); rows = prior_tests.key_rows(); low = prior_tests.inspect_structure((cast(Any, _BadMap()),), expected_head=prior_tests.head(rows["K01"]))  # noqa: E701, E702
     except Exception as exc: pytest.fail(f"RAW_EXCEPTION:{type(exc).__name__}")  # noqa: BLE001, E701
-    malformed = cast(Any, trust.evaluate_evidence)(envelope_bytes={}, payload_bytes={}, root_documents={}, producer_key_records={}, independent_trust={}, acceptance_time=T10, current_time=T10); schema = trust.validate_closed_schema_value("x", cast(Any, [])); assert cast(Any, result).valid is False and malformed.historical_verdict is trust.Verdict.INVALID and schema[0].code == "SCHEMA_DOCUMENT_INVALID"  # noqa: E702
+    malformed = cast(Any, trust.evaluate_evidence)(envelope_bytes={}, payload_bytes={}, root_documents={}, producer_key_records={}, independent_trust={}, acceptance_time=T10, current_time=T10); schema = trust.validate_closed_schema_value("x", cast(Any, [])); assert cast(Any, result).valid is False and malformed.historical_verdict is trust.Verdict.INVALID and schema[0].code == "SCHEMA_DOCUMENT_INVALID" and cast(Any, high).historical_verdict is trust.Verdict.INVALID and "UNSUPPORTED_JSON_TYPE" in prior_tests.finding_codes(low)  # noqa: E702
 def test_replay_requires_exact_contiguous_predecessor() -> None:
     arguments, state = complete_arguments(); first = cast(bytes, arguments["envelope_bytes"]); second = dict(cast(Mapping[str, object], state["envelope"]), revision=2, predecessorContentHash="f" * 64)  # noqa: E702
     second["contentHash"] = trust.content_hash(trust.ContentKind.EVIDENCE_OBJECT, trust.ENVELOPE_SCHEMA_VERSION, second); raw = trust.canonical_bytes(second)  # noqa: E702
@@ -587,10 +587,10 @@ def test_root_payload_limit_and_conflicting_successor_boundaries_fail_closed(mon
     arguments["current_pin_descriptor"] = descriptor; arguments["current_expected_pin_hash"] = pin_hash(descriptor); cast(dict[str, bytes], arguments["root_documents"]).update({cast(str, row["contentHash"]): trust.canonical_bytes(row) for row in successors})  # noqa: E702
     conflict_result = trusted_result(monkeypatch, arguments)
     assert payload_result.trusted is False and conflict_result.current_verdict is trust.Verdict.CONFLICTING
-@pytest.mark.parametrize("source", ["K03", "K04"])
-def test_terminal_key_states_cannot_repeat(source: str) -> None:
+@pytest.mark.parametrize(("source", "expected"), [("K03", "RETIRE_SOURCE_STATE"), ("K04", "REVOKE_SOURCE_STATE")])
+def test_terminal_key_states_cannot_repeat(source: str, expected: str) -> None:
     rows = prior_tests.key_rows(); prior = rows[source]; operation = cast(str, prior["operation"]); illegal = prior_tests.key_record(4, operation=operation, previous=prior, key_object_id=cast(str, prior["keyObjectId"]), public_key_hex=cast(str, prior["publicKeyHex"]), revision=3, activationTime=prior_tests.T10)  # noqa: E702
-    assert prior_tests.finding_codes(prior_tests.inspect_structure((rows["K01"], rows["K02"], prior, illegal), expected_head=prior_tests.head(illegal)))
+    assert prior_tests.finding_codes(prior_tests.inspect_structure((rows["K01"], rows["K02"], prior, illegal), expected_head=prior_tests.head(illegal))) == {expected}
 def test_k04_observation_time_and_predecessor_overlap_are_high_level(monkeypatch: pytest.MonkeyPatch) -> None:
     rows = prior_tests.key_rows(); result = future("resolve_issuing_key", records=(rows["K01"], rows["K02"], rows["K04"]), expected_head=prior_tests.head(rows["K04"]), issuing_key=(rows["K02"]["keyObjectId"], rows["K02"]["keyId"], 1, rows["K02"]["contentHash"]), capture_time=prior_tests.T15, evaluation_time=prior_tests.T29)  # noqa: E702
     malformed = [future("resolve_issuing_key", records=(rows["K01"], rows["K02"]), expected_head=prior_tests.head(rows["K02"]), issuing_key=(rows["K02"]["keyObjectId"], rows["K02"]["keyId"], 1, rows["K02"]["contentHash"]), capture_time=prior_tests.T15, evaluation_time=value) for value in cast(tuple[object, ...], ({}, "bad-time"))]
@@ -655,7 +655,7 @@ def test_competing_and_temporally_illegal_key_successors_fail_closed() -> None:
     bad_k05 = prior_tests.key_record(4, operation="REVOKE", previous=rows["K03"], revision=3, activationTime=prior_tests.T10, retiredAt=prior_tests.T20, invalidatesFrom=prior_tests.T10, revokedAt=prior_tests.T15, **same)
     bad_k04 = dict(rows["K04"], predecessorAuthorizationSignature="1" * 128); bad_k04["contentHash"] = trust.content_hash(trust.ContentKind.PRODUCER_KEY, trust.PRODUCER_KEY_SCHEMA_VERSION, bad_k04); bad_k05_fields = dict(rows["K05"], rotationPredecessor={"keyObjectId": rows["K01"]["keyObjectId"], "revision": 1, "contentHash": rows["K01"]["contentHash"]}); bad_k05_fields["contentHash"] = trust.content_hash(trust.ContentKind.PRODUCER_KEY, trust.PRODUCER_KEY_SCHEMA_VERSION, bad_k05_fields); cases = [((rows["K01"], k02, rotate_fork), rotate_fork), ((rows["K01"], k02, rows["K03"], revoke_fork), revoke_fork), ((rows["K01"], k02, rows["K03"], retired_rotation), retired_rotation), ((parent, early), early), ((rows["K01"], k02, bad_k04), bad_k04), ((rows["K01"], k02, rows["K03"], bad_k05_fields), bad_k05_fields)]  # noqa: E702
     findings = [prior_tests.finding_codes(prior_tests.inspect_structure(records, expected_head=prior_tests.head(head))) for records, head in cases]
-    findings.append(prior_tests.finding_codes(prior_tests.inspect_structure((rows["K01"], k02, rows["K03"], bad_k05), expected_head=prior_tests.head(bad_k05), evaluation_time=prior_tests.T14))); assert all(findings), findings  # noqa: E702
+    findings.append(prior_tests.finding_codes(prior_tests.inspect_structure((rows["K01"], k02, rows["K03"], bad_k05), expected_head=prior_tests.head(bad_k05), evaluation_time=prior_tests.T14))); expected = ("HISTORY_FORK", "HISTORY_FORK", "ROTATION_SOURCE_STATE", "ROTATION_TEMPORAL_ORDER", "PREDECESSOR_AUTHORIZATION_PROHIBITED", "PREDECESSOR_AUTHORIZATION_PROHIBITED", "REVOCATION_BOUNDARY_ORDER"); assert all(code in found for code, found in zip(expected, findings, strict=True)), findings  # noqa: E702
 def test_taxonomy_mime_exactness_and_immutable_freshness() -> None:
     matrix = json.loads(taxonomy_matrix()); selected = next(row for row in matrix["typedReferenceTaxonomy"] if row["typedReferenceType"] == "REVIEW_SUBJECT"); truncated = trust.canonical_bytes({"typedReferenceTaxonomy": [selected], "payloadMediaTypeByClass": {"CONTENT_REFERENCE": matrix["payloadMediaTypeByClass"]["CONTENT_REFERENCE"]}})  # noqa: E702
     r01 = {"schemaVersion": "ActiveProgramRouteV1", "transitionRowId": "R01", "sourceState": "DRAFT", "operation": "REVIEW", "targetState": "REVIEWED"}; exact = future("validate_subject_phase", envelope=subject_envelope(subject=r01), root=root_document(), taxonomy_matrix_bytes=truncated, evaluation_time=T10); matrix["payloadMediaTypeByClass"]["CONTENT_REFERENCE"] = matrix["payloadMediaTypeByClass"]["OWNER_DECISION"]; mime = future("validate_subject_phase", envelope=subject_envelope(subject=r01, payloadMediaType=matrix["payloadMediaTypeByClass"]["OWNER_DECISION"]), root=root_document(allowedPayloadMediaTypes=[matrix["payloadMediaTypeByClass"]["OWNER_DECISION"]]), taxonomy_matrix_bytes=trust.canonical_bytes(matrix), evaluation_time=T10)  # noqa: E702

@@ -67,7 +67,7 @@ def test_cut1_routes_are_exact_stage8_and_not_preflight_owned(monkeypatch: Any, 
         assert (dispatcher.main(), calls) == (0, [["make", "stage8-quality"]])
         assert branch == a23b.A23B_BRANCH or canonical_stage_issue(branch) is None
 def test_issue366_contract_rejects_partial_scope_and_content_mutations(monkeypatch: Any) -> None:
-    m=monkeypatch;raises=pytest.raises;e=pytest.fail;full=sorted(CUT1_REAL_MEDIA_TRANSITION_SCOPE);d=sp.CompletedProcess
+    m=monkeypatch;raises=pytest.raises;full=sorted(CUT1_REAL_MEDIA_TRANSITION_SCOPE);d=sp.CompletedProcess
     s=stage8;fn=s.cut1_transition_charges;sc:Any=lambda v:m.setattr(s,"cut1_transition_charges",lambda:v);sc((0,{}))
     assert route(m,CUT1_REAL_MEDIA_TRANSITION,full[1:])==[f"Issue #366 route is missing required path: {full[0]}"]
     limits=[(901,{},"Issue #366 charge 901 exceeds 900."),*((n+1,{p:n+1},
@@ -89,8 +89,8 @@ def test_issue366_contract_rejects_partial_scope_and_content_mutations(monkeypat
         (0,v),(201,{p[11]:101,p[12]:100}));m.setattr(s,"issue434_charges",lambda:(0,{}));assert route(m,B,b[1:])
     for n,x in cases:m.setattr(s,"issue434_charges",lambda n=n,x=x:(n,x));A=s.A434;R=REPO;u=p[11];assert route(m,B,b)
     a={x:(REPO/x).read_bytes()for x in A};f=s.issue434_artifact_findings;assert not f(a)and f({**a,A[0]:b"x"})and f({})
-    m.setattr(s,"run",e);m.setattr(s,"issue434_artifact_findings",lambda _:["x"]);s.check_issue434_verifier([])
-    t=(R/u).read_text();assert p[9] in t and "R434[9]])" not in t and not sp.run(["python3","-S",u],cwd=R).returncode
+    mock=__import__("unittest.mock",fromlist=["Mock"]).Mock(return_value=sp.CompletedProcess([],0));m.setattr(s,"run",mock);m.setattr(s,"issue434_artifact_findings",lambda _:["x"]);s.check_issue434_verifier([]);assert not mock.called  # noqa: E702
+    m.setattr(s,"issue434_artifact_findings",lambda _:[]);s.check_issue434_verifier([]);t=__import__("inspect").getsource(s.check_issue434_verifier);assert mock.call_args_list[0].args[0]==["uv","run","python",p[9]] and "R434" not in t and not sp.run(["python3","-S",u],cwd=R).returncode  # noqa: E702
 def test_scope_collection_covers_exact_layers_and_forbidden_sources(monkeypatch: Any, tmp_path: Path) -> None:
     g:Any=lambda *a:git(tmp_path,*a); g("init","-b","main"); g("config","user.name","Scope Test")
     g("config","user.email","scope@example.invalid")
