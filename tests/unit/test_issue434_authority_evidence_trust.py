@@ -844,7 +844,9 @@ def test_exact_duplicate_is_idempotent_b009() -> None:
     records = (rows["K01"], rows["K02"])
     once = inspect_structure(records, expected_head=head(rows["K02"]))
     twice = inspect_structure(records + (rows["K02"],), expected_head=head(rows["K02"]))
+    malformed = dict(rows["K02"], activationTime=None); rejected = inspect_structure(records + (malformed,), expected_head=head(rows["K02"]))  # noqa: E702
     assert twice == once
+    assert "WRONG_SCALAR_TYPE" in finding_codes(rejected) and "DUPLICATE_CONTENT_HASH" not in finding_codes(rejected)
 
 
 # Bounded reset RED: these pure interfaces freeze the trust inputs before GREEN.

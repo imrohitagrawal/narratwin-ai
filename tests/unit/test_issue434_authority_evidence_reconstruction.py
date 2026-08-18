@@ -509,11 +509,9 @@ def test_current_successor_compromise_invalidates_only_current(monkeypatch: pyte
     arguments["current_pin_descriptor"] = current
     arguments["current_expected_pin_hash"] = pin_hash(current)
     cast(dict[str, bytes], arguments["root_documents"])[cast(str, successor["contentHash"])] = trust.canonical_bytes(successor)
-    result = trusted_result(monkeypatch, arguments)
-    assert result.historical_verdict is trust.Verdict.VALID
+    result = trusted_result(monkeypatch, arguments); acceptance = dict(current, evaluationPhase="ACCEPTANCE"); both = dict(arguments, acceptance_pin_descriptor=acceptance, acceptance_expected_pin_hash=pin_hash(acceptance)); both_result = trusted_result(monkeypatch, both)  # noqa: E702
+    assert result.historical_verdict is trust.Verdict.VALID and both_result.historical_verdict is trust.Verdict.INVALID
     assert result.current_verdict is not trust.Verdict.VALID
-
-
 def test_replay_identity_is_idempotent_only_for_exact_bytes() -> None:
     arguments, state = complete_arguments()
     first = cast(bytes, arguments["envelope_bytes"])
@@ -526,8 +524,6 @@ def test_replay_identity_is_idempotent_only_for_exact_bytes() -> None:
     assert_boundary(conflict)
     assert cast(Any, conflict).valid is False
     assert cast(Any, conflict).historical_verdict is trust.Verdict.CONFLICTING
-
-
 def test_invalid_findings_precede_unavailable_findings() -> None:
     arguments, _ = complete_arguments()
     arguments["envelope_bytes"], arguments["payload_bytes"] = b"{}", None
@@ -584,6 +580,10 @@ def test_missing_head_does_not_contaminate_other_phase(monkeypatch: pytest.Monke
     arguments, _ = complete_arguments(); arguments[missing] = None; result = trusted_result(monkeypatch, arguments)  # noqa: E702
     expected = {"acceptance_head": "ACCEPTANCE_HEAD_REQUIRED", "current_head": "CURRENT_HEAD_REQUIRED", "acceptance_pin_descriptor": "ROOT_PIN_DESCRIPTOR_REQUIRED"}[missing]
     assert getattr(result, preserved) is trust.Verdict.VALID and getattr(result, absent) is trust.Verdict.UNAVAILABLE and expected in codes(result)
+@pytest.mark.parametrize(("phase", "member"), [(phase, member) for phase in ("acceptance_head", "current_head") for member in ("root_content_hash", "producer_id", "history_sequence", "key_record_content_hash")])
+def test_malformed_head_members_are_phase_local(monkeypatch: pytest.MonkeyPatch, phase: str, member: str) -> None:
+    arguments, _ = complete_arguments(); head = cast(trust.HistoryHead, arguments[phase]); values: list[object] = [head.root_content_hash, head.producer_id, head.history_sequence, head.key_record_content_hash]; values[("root_content_hash", "producer_id", "history_sequence", "key_record_content_hash").index(member)] = {}; arguments[phase] = trust.HistoryHead(*cast(tuple[str, str, int, str], tuple(values))); result = trusted_result(monkeypatch, arguments)  # noqa: E702
+    affected, preserved = (("historical_verdict", "current_verdict") if phase == "acceptance_head" else ("current_verdict", "historical_verdict")); assert getattr(result, affected) is trust.Verdict.INVALID and getattr(result, preserved) is trust.Verdict.VALID and f"{phase.split('_')[0].upper()}_HEAD_INVALID" in codes(result)  # noqa: E702
 def test_missing_exact_key_bytes_are_unavailable(monkeypatch: pytest.MonkeyPatch) -> None:
     arguments, _ = complete_arguments(); result = trusted_result(monkeypatch, dict(arguments, key_record_documents={})); partial = _rotated_arguments(); current = cast(trust.HistoryHead, partial["current_head"]); cast(dict[str, bytes], partial["key_record_documents"]).pop(current.key_record_content_hash); partial_result = trusted_result(monkeypatch, partial); assert result.historical_verdict is trust.Verdict.UNAVAILABLE and result.current_verdict is trust.Verdict.UNAVAILABLE and "KEY_RECORD_UNAVAILABLE" in codes(result) and partial_result.historical_verdict is trust.Verdict.VALID and partial_result.current_verdict is trust.Verdict.UNAVAILABLE  # noqa: E702
 def test_root_payload_limit_and_conflicting_successor_boundaries_fail_closed(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -695,6 +695,6 @@ def test_fixture_case_expectations_execute_governed_behavior(monkeypatch: pytest
     for probe, raw in malformed.items(): malformed_result = cast(trust.Evaluation, prior_tests.evaluate_absent(envelope_bytes=raw, payload_bytes=b"fixture payload")); actual[probe] = (malformed_result.historical_verdict.value, {item.code for item in malformed_result.findings})  # noqa: E701, E702
     absent_cases = {"MISSING_ENVELOPE": prior_tests.evaluate_absent(payload_bytes=b"fixture payload"), "MISSING_PAYLOAD": prior_tests.evaluate_absent(envelope_bytes=prior_tests.envelope_bytes()), "MISSING_ACCEPTANCE_PIN": prior_tests.evaluate_absent(independent_trust=trust.IndependentTrustInputs((), None, ("0" * 64,), "0" * 64, trust.HistoryHead("0" * 64, PRODUCER, 1, "0" * 64), trust.HistoryHead("0" * 64, PRODUCER, 1, "0" * 64))), "MISSING_ACCEPTANCE_HEAD": prior_tests.evaluate_absent(independent_trust=trust.IndependentTrustInputs(("0" * 64,), "0" * 64, ("0" * 64,), "0" * 64, None, trust.HistoryHead("0" * 64, PRODUCER, 1, "0" * 64)))}  # noqa: E702
     for probe, absent_result in absent_cases.items(): evaluation = cast(trust.Evaluation, absent_result); actual[probe] = (evaluation.historical_verdict.value, {item.code for item in evaluation.findings})  # noqa: E701, E702
-    arguments, _ = complete_arguments(); arguments["current_expected_pin_hash"] = "f" * 64; pin = trusted_result(monkeypatch, arguments); actual["CURRENT_PIN_MISMATCH"] = (pin.current_verdict.value, {"CURRENT_ROOT_PIN_MISMATCH"} if "ROOT_PIN_SET_HASH_MISMATCH" in codes(pin) else set()); arguments, _ = complete_arguments(); head = cast(trust.HistoryHead, arguments["current_head"]); arguments["current_head"] = trust.HistoryHead(head.root_content_hash, head.producer_id, 99, head.key_record_content_hash); rollback = trusted_result(monkeypatch, arguments); actual["CURRENT_HEAD_ROLLBACK"] = (rollback.current_verdict.value, codes(rollback))  # noqa: E702
+    arguments, _ = complete_arguments(); arguments["current_expected_pin_hash"] = "f" * 64; pin = trusted_result(monkeypatch, arguments); actual["CURRENT_PIN_MISMATCH"] = (pin.current_verdict.value, codes(pin)); arguments, _ = complete_arguments(); head = cast(trust.HistoryHead, arguments["current_head"]); arguments["current_head"] = trust.HistoryHead(head.root_content_hash, head.producer_id, 99, head.key_record_content_hash); rollback = trusted_result(monkeypatch, arguments); actual["CURRENT_HEAD_ROLLBACK"] = (rollback.current_verdict.value, codes(rollback))  # noqa: E702
     for probe, source in (("FIXTURE_AUTHORITY_CLAIM", "FIXTURE"), ("SIGNATURE_AUTHORITY_CLAIM", "SIGNATURE"), ("CHECK_AUTHORITY_CLAIM", "CHECK")): authority_result = cast(trust.Evaluation, prior_tests.evaluate_absent(claimed_authority_sources=(source,))); actual[probe] = (authority_result.historical_verdict.value, {item.code for item in authority_result.findings})  # noqa: E701, E702
     for case in prior_tests.fixture_cases(): verdict, findings = actual[cast(str, case["probe"])]; assert verdict == case["expectedVerdict"] and set(cast(list[str], case["expectedFindings"])) <= findings  # noqa: E701, E702
