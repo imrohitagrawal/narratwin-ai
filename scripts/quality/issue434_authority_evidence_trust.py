@@ -820,7 +820,7 @@ def inspect_key_history_structure(
             valid.append(record)
 
     by_hash = {cast(str, row["contentHash"]): row for row in valid}
-    children: dict[str, list[str]] = {}
+    children: dict[str, list[str]] = {}; rotation_children: dict[str, list[str]] = {}; same_key_children: dict[str, list[str]] = {}  # noqa: E702
     key_ids: dict[str, tuple[str, str]] = {}
     public_keys: dict[str, str] = {}
     for record in valid:
@@ -855,6 +855,7 @@ def inspect_key_history_structure(
             rotation = record.get("rotationPredecessor")
             rotation_hash = rotation.get("contentHash") if isinstance(rotation, Mapping) else None
             prior = by_hash.get(rotation_hash) if isinstance(rotation_hash, str) else None
+            if isinstance(rotation_hash, str): rotation_children.setdefault(rotation_hash, []).append(record_hash)  # noqa: E701
             wrong_relation = (
                 not isinstance(rotation, Mapping)
                 or record.get("predecessorContentHash") is not None
@@ -869,9 +870,12 @@ def inspect_key_history_structure(
                 add("ROTATION_PREDECESSOR_RELATION")
             elif prior is not None and prior.get("operation") not in {"ISSUE_GENESIS", "ROTATE"}:
                 add("ROTATION_SOURCE_STATE")
+            elif prior is not None and any(row.get("keyObjectId") == prior.get("keyObjectId") and row.get("operation") in {"RETIRE", "REVOKE"} and cast(int, row["historySequence"]) < sequence for row in valid): add("ROTATION_SOURCE_STATE")  # noqa: E701
+            elif prior is not None and cast(datetime, _utc_value(record.get("activationTime"))) < cast(datetime, _utc_value(prior.get("activationTime"))): add("ROTATION_TEMPORAL_ORDER")  # noqa: E701
         elif operation in {"RETIRE", "REVOKE"}:
             same_predecessor = record.get("predecessorContentHash")
             prior = by_hash.get(same_predecessor) if isinstance(same_predecessor, str) else None
+            if isinstance(same_predecessor, str): same_key_children.setdefault(same_predecessor, []).append(record_hash)  # noqa: E701
             if prior is None:
                 add("SAME_KEY_PREDECESSOR_REQUIRED")
                 if operation == "REVOKE":
@@ -894,8 +898,9 @@ def inspect_key_history_structure(
                         add("REVOKE_SOURCE_STATE")
                     if prior.get("retiredAt") is not None and record.get("retiredAt") != prior.get("retiredAt"):
                         add("RETIRED_STATE_NOT_PRESERVED")
+                    if prior.get("retiredAt") is not None and cast(datetime, _utc_value(record.get("revokedAt"))) < cast(datetime, _utc_value(prior.get("retiredAt"))): add("REVOCATION_BOUNDARY_ORDER")  # noqa: E701
 
-    if any(len(successors) > 1 for successors in children.values()) or sum(row.get("historySequence") == 1 for row in valid) > 1:
+    if any(len(successors) > 1 for graph in (children, rotation_children, same_key_children) for successors in graph.values()) or sum(row.get("historySequence") == 1 for row in valid) > 1:
         add("HISTORY_FORK")
     for record in valid:
         seen: set[str] = set()
@@ -919,7 +924,7 @@ def inspect_key_history_structure(
         head_strings = (expected_head.root_content_hash, expected_head.producer_id, expected_head.key_record_content_hash)
         if any(not isinstance(value, str) for value in head_strings) or isinstance(expected_head.history_sequence, bool) or not isinstance(expected_head.history_sequence, int):
             add("WRONG_SCALAR_TYPE", "expectedHead")
-            return KeyHistoryStructureResult(tuple(findings))
+            return KeyHistoryStructureResult(tuple(sorted(findings, key=lambda item: (item.code, item.location or ""))))
         head_record = by_hash.get(expected_head.key_record_content_hash)
         if (
             expected_head.root_content_hash != root_content_hash
@@ -958,7 +963,7 @@ def inspect_key_history_structure(
         successor = declaration.get("successorRootContentHash")
         if not isinstance(successor, str) or successor not in pinned_roots:
             add("ROOT_SUCCESSOR_PIN_REQUIRED", "rootInvalidation")
-    return KeyHistoryStructureResult(tuple(findings))
+    return KeyHistoryStructureResult(tuple(sorted(findings, key=lambda item: (item.code, item.location or ""))))
 
 
 def validate_closed_schema_value(

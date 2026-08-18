@@ -108,6 +108,7 @@ def validate_pin_transition(*, acceptance_descriptor: object, acceptance_expecte
     return _result(codes, valid=not codes)
 def _root_history_codes(documents: Mapping[str, object]) -> list[str]:
     roots = {digest: root for digest, raw in documents.items() if isinstance(digest, str) and (root := _parse(raw, code="ROOT_DOCUMENT_INVALID")[0]) is not None}; codes: list[str] = []  # noqa: E702
+    roots = {digest: root for digest, root in roots.items() if not _schema_codes(root, "authority-producer-trust-root-v1.schema.json")}
     predecessors: dict[object, int] = {}; identities: set[tuple[object, object]] = set()  # noqa: E702
     for digest, root in roots.items():
         predecessor = root.get("predecessorRootContentHash"); version = root.get("rootVersion"); identity = (root.get("rootId"), version); prior = roots.get(predecessor) if isinstance(predecessor, str) else None  # noqa: E702
@@ -115,7 +116,7 @@ def _root_history_codes(documents: Mapping[str, object]) -> list[str]:
         if predecessor is not None: predecessors[predecessor] = predecessors.get(predecessor, 0) + 1  # noqa: E701
         if identity in identities: codes.append("ROOT_HISTORY_CONFLICT")  # noqa: E701
         identities.add(identity)
-    if any(count > 1 for count in predecessors.values()): codes.append("ROOT_HISTORY_CONFLICT")  # noqa: E701
+    if any(count > 1 for count in predecessors.values()) or sum(root.get("predecessorRootContentHash") is None for root in roots.values()) > 1: codes.append("ROOT_HISTORY_CONFLICT")  # noqa: E701
     return codes
 def _key_binding_codes(root: Mapping[str, object]) -> list[str]:
     codes: list[str] = []
@@ -289,6 +290,8 @@ def validate_subject_phase(*, envelope: object, root: object, taxonomy_matrix_by
     codes: list[str] = []
     if not isinstance(envelope, Mapping) or not isinstance(root, Mapping):
         return _result(["SUBJECT_BINDING_INVALID"])
+    try: core.canonical_bytes(envelope)  # noqa: E701
+    except core.AuthorityEvidenceTrustError: return _result(["SUBJECT_BINDING_INVALID"])  # noqa: E701
     if set(core.ENVELOPE_MEMBERS).issubset(envelope):
         codes += _schema_codes(envelope, "authority-evidence-envelope-v1.schema.json")
     matrix, parse_codes = _parse(taxonomy_matrix_bytes, code="TAXONOMY_INVALID")
@@ -329,6 +332,7 @@ def validate_subject_phase(*, envelope: object, root: object, taxonomy_matrix_by
     frozen, frozen_codes = _parse(frozen_raw, code="TAXONOMY_CONTRACT_INVALID")
     if hashlib.sha256(frozen_raw).hexdigest() != FROZEN_ARTIFACT_SHA256["authority-evidence-trust-state-matrices-v1.json"]:
         codes.append("CONTRACT_ARTIFACT_IDENTITY_MISMATCH")
+    elif taxonomy_matrix_bytes != frozen_raw: codes.append("TAXONOMY_CONTRACT_MISMATCH")  # noqa: E701
     elif frozen is None:
         codes += frozen_codes
     else:
@@ -378,7 +382,7 @@ def validate_subject_phase(*, envelope: object, root: object, taxonomy_matrix_by
         else:
             limits = tuple(policy.get(name) for name in ("maxCaptureDelaySeconds", "maxObservationAgeSeconds", "maxEnvelopeLifetimeSeconds"))
             if any(isinstance(limit, bool) or not isinstance(limit, int) for limit in limits): codes.append("FRESHNESS_POLICY_INVALID")  # noqa: E701
-            elif ((cast(datetime, captured) - cast(datetime, observed)).total_seconds() > cast(int, limits[0]) or (cast(datetime, now) - cast(datetime, observed)).total_seconds() > cast(int, limits[1]) or (cast(datetime, expires) - cast(datetime, not_before)).total_seconds() > cast(int, limits[2])): codes.append("FRESHNESS_EXCEEDED")  # noqa: E701
+            elif ((cast(datetime, captured) - cast(datetime, observed)).total_seconds() > cast(int, limits[0]) or (envelope.get("freshnessClass") != "IMMUTABLE" and (cast(datetime, now) - cast(datetime, observed)).total_seconds() > cast(int, limits[1])) or (cast(datetime, expires) - cast(datetime, not_before)).total_seconds() > cast(int, limits[2])): codes.append("FRESHNESS_EXCEEDED")  # noqa: E701
     return _result(codes, valid=not codes)
 def _object_nodes(value: object) -> list[Mapping[str, object]]:
     nodes: list[Mapping[str, object]] = []
@@ -523,7 +527,8 @@ def validate_artifact_set(*, artifacts: object, child_a_matrix_bytes: object,
         codes.append("REQUIRED_SURFACE_MISMATCH")
     by_contract = {schema.get("contractVersion"): schema for schema in schemas}
     root_schema = by_contract.get(core.TRUST_ROOT_SCHEMA_VERSION, {})
-    root_properties = cast(Mapping[str, object], cast(Mapping[str, object], root_schema).get("root", {})).get("properties", {})
+    root_node = cast(Mapping[str, object], root_schema).get("root", {}) if isinstance(root_schema, Mapping) else {}
+    root_properties = root_node.get("properties", {}) if isinstance(root_node, Mapping) else {}
     if not isinstance(root_properties, Mapping) or not {"predecessorRootContentHash", "priorRootCompromise"} <= set(root_properties):
         codes.append("ROOT_PREDECESSOR_COMPROMISE_DISTINCT")
     if not isinstance(root_properties, Mapping) or "recoverySemantics" not in root_properties:
@@ -551,7 +556,7 @@ def reconstruct_retained_evidence(*, manifest_bytes: object, retained_blobs: obj
     if (manifest.get("revision") == 1) != (manifest.get("predecessorContentHash") is None): codes.append("RECONSTRUCTION_PREDECESSOR_REVISION_MISMATCH")  # noqa: E701
     if codes: return _result(codes, reconstruction_status="INVALID")  # noqa: E701
     try:
-        if manifest.get("contentHash") != core.content_hash(core.ContentKind.RECONSTRUCTION, "AuthorityEvidenceReconstructionV1", manifest):
+        if not isinstance(manifest_bytes, bytes) or manifest_bytes != core.canonical_bytes(manifest) or manifest.get("contentHash") != core.content_hash(core.ContentKind.RECONSTRUCTION, "AuthorityEvidenceReconstructionV1", manifest):
             codes.append("RECONSTRUCTION_CONTENT_HASH_MISMATCH")
     except core.AuthorityEvidenceTrustError:
         codes.append("RECONSTRUCTION_CONTENT_HASH_MISMATCH")
@@ -587,7 +592,7 @@ def reconstruct_retained_evidence(*, manifest_bytes: object, retained_blobs: obj
             continue
         maximum = core.PAYLOAD_MAX_BYTES if index == len(references) - 1 else core.RETAINED_BLOB_MAX_BYTES
         if len(blob) != reference.get("byteLength") or len(blob) > maximum:
-            codes.append("RETAINED_BLOB_LENGTH_MISMATCH")
+            codes += ["RETAINED_BLOB_LENGTH_MISMATCH", "RETAINED_BLOB_HASH_MISMATCH"]; continue  # noqa: E702
         role, identity = reference.get("role"), None
         parsed: dict[str, object] | None = None
         if index in (0, 1) or role in {"TRUST_ROOT", "PRODUCER_KEY", "EVIDENCE_ENVELOPE"}:
@@ -631,7 +636,7 @@ def reconstruct_retained_evidence(*, manifest_bytes: object, retained_blobs: obj
             ref_blob: Callable[[object], object] = lambda value: retained_blobs.get(value.get("contentHash")) if isinstance(value, Mapping) else None  # noqa: E731
             retained_envelope, retained_codes = _parse(ref_blob(manifest.get("envelopeReference")), code="RETAINED_ENVELOPE_INVALID"); codes += retained_codes  # noqa: E702
             expected_subject = dict(cast(Mapping[str, object], retained_envelope.get("subject")), generationId=manifest.get("generationId")) if retained_envelope is not None and isinstance(retained_envelope.get("subject"), Mapping) else None
-            if retained_envelope is None or manifest.get("subject") != expected_subject or any(manifest.get(name) != retained_envelope.get(name) for name in ("typedReferenceType", "evidenceRole", "producerTrustClass", "freshnessClass", "payloadClass")): codes.append("RECONSTRUCTION_ENVELOPE_BINDING_MISMATCH")  # noqa: E701
+            if retained_envelope is None or manifest.get("subject") != expected_subject or any(manifest.get(name) != retained_envelope.get(name) for name in ("repository", "programId", "generationId", "typedReferenceType", "evidenceRole", "producerTrustClass", "freshnessClass", "payloadClass")): codes.append("RECONSTRUCTION_ENVELOPE_BINDING_MISMATCH")  # noqa: E701
             supplied.update(envelope_bytes=ref_blob(manifest.get("envelopeReference")), payload_bytes=ref_blob(manifest.get("payloadReference")), root_documents={item["contentHash"]: ref_blob(item) for item in cast(list[Mapping[str, object]], manifest.get("rootReferences"))}, key_record_documents={item["contentHash"]: ref_blob(item) for item in cast(list[Mapping[str, object]], manifest.get("keyReferences"))})
             trust = resolve_complete_evidence(**cast(Any, supplied))
             historical_claims = [{"code": item.code, "location": item.location} for item in trust.historical_findings]; current_claims = [{"code": item.code, "location": item.location} for item in trust.current_findings]  # noqa: E702
@@ -651,7 +656,7 @@ def validate_evidence_replay_set(*, envelope_documents: object) -> ClosedResult:
         if envelope_codes: codes += envelope_codes; continue  # noqa: E701, E702
         try: identity_valid = raw == core.canonical_bytes(envelope) and envelope.get("contentHash") == core.content_hash(core.ContentKind.EVIDENCE_OBJECT, core.ENVELOPE_SCHEMA_VERSION, envelope)  # noqa: E701
         except core.AuthorityEvidenceTrustError: identity_valid = False  # noqa: E701
-        if not identity_valid or (envelope.get("revision") == 1) != (envelope.get("predecessorContentHash") is None): codes.append("ENVELOPE_CONTENT_HASH_MISMATCH")  # noqa: E701
+        if not identity_valid or (envelope.get("revision") == 1) != (envelope.get("predecessorContentHash") is None): codes.append("ENVELOPE_CONTENT_HASH_MISMATCH"); continue  # noqa: E701, E702
         identity = tuple(envelope.get(name) for name in ("repository", "programId", "generationId", "evidenceId", "revision"))
         prior = identities.setdefault(identity, raw)
         if prior != raw: codes.append("EVIDENCE_IDENTITY_CONFLICT")  # noqa: E701
@@ -707,8 +712,6 @@ def resolve_complete_evidence(*, envelope_bytes: object, payload_bytes: object, 
     else:
         if len(payload_bytes) > core.PAYLOAD_MAX_BYTES or envelope.get("payloadByteLength") != len(payload_bytes):
             common.append("PAYLOAD_LENGTH_MISMATCH")
-        if envelope.get("payloadSha256") != hashlib.sha256(payload_bytes).hexdigest():
-            common.append("PAYLOAD_HASH_MISMATCH")
     if envelope_schema_codes or "ENVELOPE_PREDECESSOR_REVISION_MISMATCH" in common:
         verdict = _verdict(common)
         return _result(common, historical_verdict=verdict, current_verdict=verdict)
@@ -764,6 +767,7 @@ def resolve_complete_evidence(*, envelope_bytes: object, payload_bytes: object, 
         historical_codes.append("ROOT_ID_MISMATCH"); current_codes.append("ROOT_ID_MISMATCH")  # noqa: E702
     if root is not None and isinstance(payload_bytes, bytes) and isinstance(root.get("maxPayloadBytes"), int) and not isinstance(root.get("maxPayloadBytes"), bool) and len(payload_bytes) > cast(int, root["maxPayloadBytes"]):
         historical_codes.append("ROOT_PAYLOAD_LIMIT"); current_codes.append("ROOT_PAYLOAD_LIMIT")  # noqa: E702
+    elif root is not None and isinstance(payload_bytes, bytes) and len(payload_bytes) <= core.PAYLOAD_MAX_BYTES and envelope.get("payloadSha256") != hashlib.sha256(payload_bytes).hexdigest(): historical_codes.append("PAYLOAD_HASH_MISMATCH"); current_codes.append("PAYLOAD_HASH_MISMATCH")  # noqa: E701, E702
     parsed_keys: dict[str, Mapping[str, object]] = {}; key_candidates: dict[str, Mapping[str, object]] = {}; key_errors: dict[str, list[str]] = {}  # noqa: E702
     for digest, raw in key_record_documents.items():
         record, parse_codes = _parse(raw, code="KEY_RECORD_INVALID")
@@ -775,7 +779,7 @@ def resolve_complete_evidence(*, envelope_bytes: object, payload_bytes: object, 
             if record.get("contentHash") != digest or raw != core.canonical_bytes(record): record_codes.append("KEY_DOCUMENT_IDENTITY_MISMATCH")  # noqa: E701
             key_errors[digest] += record_codes
             if not key_errors[digest]: parsed_keys[digest] = record  # noqa: E701
-    current_codes += [code for errors in key_errors.values() for code in errors]
+    current_codes += sorted(code for errors in key_errors.values() for code in errors)
     if isinstance(acceptance_head, core.HistoryHead):
         cursor: object = acceptance_head.key_record_content_hash; seen: set[str] = set()  # noqa: E702
         while isinstance(cursor, str) and cursor not in seen:
@@ -853,17 +857,12 @@ def resolve_complete_evidence(*, envelope_bytes: object, payload_bytes: object, 
         current_codes += ["ROOT_AUTHORIZATION_INVALID", "EVIDENCE_SIGNATURE_INVALID"]
     else:
         genesis = root.get("genesisCaptureKey")
-        genesis_record = next((row for row in parsed_keys.values() if row.get("operation") == "ISSUE_GENESIS"), None)
-        if not isinstance(genesis, Mapping) or genesis_record is None or any(
-            genesis.get(name) != genesis_record.get(name)
-            for name in ("keyObjectId", "keyId", "publicKeyHex", "revision", "activationTime")
-        ):
-            historical_codes.append("GENESIS_KEY_BINDING_MISMATCH")
-            current_codes.append("GENESIS_KEY_BINDING_MISMATCH")
         root_key = root.get("rootAuthorizationKey")
         root_public = root_key.get("publicKeyHex") if isinstance(root_key, Mapping) else None
         for head, target in ((acceptance_head, historical_codes), (current_head, current_codes)):
-            for item in _history_chain(parsed_keys, head) if isinstance(head, core.HistoryHead) else ():
+            chain = _history_chain(parsed_keys, head) if isinstance(head, core.HistoryHead) else (); genesis_record = next((row for row in chain if row.get("operation") == "ISSUE_GENESIS"), None)  # noqa: E702
+            if isinstance(head, core.HistoryHead) and (not isinstance(genesis, Mapping) or genesis_record is None or any(genesis.get(name) != genesis_record.get(name) for name in ("keyObjectId", "keyId", "publicKeyHex", "revision", "activationTime"))): target.append("GENESIS_KEY_BINDING_MISMATCH")  # noqa: E701
+            for item in chain:
                 rotation = item.get("rotationPredecessor"); predecessor = parsed_keys.get(cast(str, rotation.get("contentHash"))) if isinstance(rotation, Mapping) and isinstance(rotation.get("contentHash"), str) else None  # noqa: E702
                 signatures = core.verify_key_record_authorization_signatures(record=item, root_public_key_hex=cast(str, root_public), predecessor_public_key_hex=(cast(str, predecessor.get("publicKeyHex")) if predecessor is not None else None))
                 if not signatures.valid: target.append("ROOT_AUTHORIZATION_INVALID")  # noqa: E701
@@ -883,8 +882,8 @@ def resolve_complete_evidence(*, envelope_bytes: object, payload_bytes: object, 
                 evaluation_time=when,
             )
             target += [item.code for item in subject.findings]
-    historical_codes = list(dict.fromkeys(historical_codes))
-    current_codes = list(dict.fromkeys(current_codes))
+    historical_codes = sorted(set(historical_codes))
+    current_codes = sorted(set(current_codes))
     historical = _verdict(historical_codes)
     current = _verdict(current_codes)
     all_codes = list(dict.fromkeys(historical_codes + current_codes))
