@@ -147,7 +147,7 @@ def _key_binding_codes(root: Mapping[str, object]) -> list[str]:
         ):
             codes.append(code)
     return codes
-def validate_closed_root(*, root_bytes: object, expected_root_hash: object, pin_descriptor: object, expected_pin_set_hash: object, expected_phase: str, expected_scope: tuple[str, str, str, str], evaluation_time: object) -> ClosedResult:
+def validate_closed_root(*, root_bytes: object, expected_root_hash: object, pin_descriptor: object, expected_pin_set_hash: object, expected_phase: str, expected_scope: tuple[str, str, str, str], evaluation_time: object, temporal: bool = True) -> ClosedResult:
     root, codes = _parse(root_bytes, code="ROOT_DOCUMENT_INVALID")
     codes += _pin_codes(
         pin_descriptor,
@@ -217,13 +217,13 @@ def validate_closed_root(*, root_bytes: object, expected_root_hash: object, pin_
         _time(root.get("validFrom")),
         _time(root.get("expiresAt")),
     )
-    if None in (now, valid_from, expires) or (
+    if valid_from is None or expires is None or (temporal and now is None) or (
         valid_from is not None and expires is not None and valid_from >= expires
     ):
         codes.append("TIME_FORMAT")
-    elif cast(datetime, now) < cast(datetime, valid_from):
+    elif temporal and cast(datetime, now) < valid_from:
         codes.append("ROOT_NOT_YET_VALID")
-    elif cast(datetime, now) >= cast(datetime, expires):
+    elif temporal and cast(datetime, now) >= expires:
         codes.append("ROOT_EXPIRED")
     return _result(codes, valid=not codes)
 def resolve_root_invalidation(*, root_documents: object, pin_descriptor: object, expected_pin_set_hash: object, expected_scope: tuple[str, str, str, str], prior_root_content_hash: object, evaluation_time: object, expected_phase: object = "CURRENT", authorization_time: object = None) -> ClosedResult:
@@ -249,6 +249,7 @@ def resolve_root_invalidation(*, root_documents: object, pin_descriptor: object,
         codes.append("TIME_FORMAT")
     applies = False; boundaries: list[datetime] = []  # noqa: E702
     for expected_hash, raw in root_documents.items():
+        root, _ = _parse(raw, code="ROOT_DOCUMENT_INVALID"); compromise = root.get("priorRootCompromise") if root is not None else None; relevant = root is not None and root.get("predecessorRootContentHash") == prior_root_content_hash and isinstance(compromise, Mapping) and compromise.get("priorRootContentHash") == prior_root_content_hash  # noqa: E702
         result = validate_closed_root(
             root_bytes=raw,
             expected_root_hash=expected_hash,
@@ -257,17 +258,12 @@ def resolve_root_invalidation(*, root_documents: object, pin_descriptor: object,
             expected_phase=phase,
             expected_scope=expected_scope,
             evaluation_time=evaluation_time,
+            temporal=relevant,
         )
         codes += [item.code for item in result.findings]
-        root, _ = _parse(raw, code="ROOT_DOCUMENT_INVALID")
         if not result.valid or root is None:
             continue
-        compromise = root.get("priorRootCompromise")
-        if (
-            root.get("predecessorRootContentHash") == prior_root_content_hash
-            and isinstance(compromise, Mapping)
-            and compromise.get("priorRootContentHash") == prior_root_content_hash
-        ):
+        if relevant and isinstance(compromise, Mapping):
             boundary = _time(compromise.get("invalidatesPriorRootFrom"))
             if boundary is not None: boundaries.append(boundary)  # noqa: E701
     if len(set(boundaries)) > 1: codes.append("ROOT_INVALIDATION_CONFLICT")  # noqa: E701
@@ -763,7 +759,7 @@ def resolve_complete_evidence(*, envelope_bytes: object, payload_bytes: object, 
                 if raw is None:
                     target.append("ROOT_DOCUMENT_UNAVAILABLE")
                     continue
-                root_result = validate_closed_root(root_bytes=raw, expected_root_hash=pinned_hash, pin_descriptor=descriptor, expected_pin_set_hash=expected_hash, expected_phase=phase, expected_scope=scope, evaluation_time=when)
+                pinned_root, _ = _parse(raw, code="ROOT_DOCUMENT_INVALID"); compromise = pinned_root.get("priorRootCompromise") if pinned_root is not None else None; temporal = pinned_hash == root_hash or (pinned_root is not None and pinned_root.get("predecessorRootContentHash") == root_hash and isinstance(compromise, Mapping) and compromise.get("priorRootContentHash") == root_hash); root_result = validate_closed_root(root_bytes=raw, expected_root_hash=pinned_hash, pin_descriptor=descriptor, expected_pin_set_hash=expected_hash, expected_phase=phase, expected_scope=scope, evaluation_time=when, temporal=temporal)  # noqa: E702
                 target += [item.code for item in root_result.findings]
             if all(isinstance(item, str) for item in pins): target += _root_history_codes({cast(str, item): root_documents.get(item) for item in pins})  # noqa: E701
             if all(isinstance(item, str) and item in root_documents for item in pins):
@@ -799,9 +795,9 @@ def resolve_complete_evidence(*, envelope_bytes: object, payload_bytes: object, 
             cursor = candidate.get("historyPredecessorContentHash")
     if not isinstance(acceptance_head, core.HistoryHead): historical_codes.append("ACCEPTANCE_HEAD_REQUIRED")  # noqa: E701
     if not isinstance(current_head, core.HistoryHead): current_codes.append("CURRENT_HEAD_REQUIRED")  # noqa: E701
-    for head, when, target in (
-        (acceptance_head, acceptance_time, historical_codes),
-        (current_head, current_time, current_codes),
+    for head, when, target, descriptor, expected_hash, pins, phase in (
+        (acceptance_head, acceptance_time, historical_codes, acceptance_pin_descriptor, acceptance_expected_pin_hash, acceptance_pins, "ACCEPTANCE"),
+        (current_head, current_time, current_codes, current_pin_descriptor, current_expected_pin_hash, current_pins, "CURRENT"),
     ):
         if _valid_head(head):
             valid_head = cast(core.HistoryHead, head)
@@ -821,6 +817,9 @@ def resolve_complete_evidence(*, envelope_bytes: object, payload_bytes: object, 
                 root_invalidations=(),
             )
             target += [item.code for item in history.findings if item.code not in {"KEY_NOT_YET_ACTIVE", "KEY_RETIRED", "KEY_REVOKED"}]
+            if isinstance(descriptor, Mapping) and isinstance(pins, list) and all(isinstance(item, str) and item in root_documents for item in pins):
+                for item in chain:
+                    field = {"ISSUE_GENESIS": "activationTime", "ROTATE": "activationTime", "RETIRE": "retiredAt", "REVOKE": "revokedAt"}.get(cast(str, item.get("operation"))); invalidation = resolve_root_invalidation(root_documents={cast(str, digest): root_documents[digest] for digest in pins}, pin_descriptor=descriptor, expected_pin_set_hash=expected_hash, expected_scope=scope, prior_root_content_hash=root_hash, evaluation_time=when, expected_phase=phase, authorization_time=item.get(field) if field is not None else None); target += [finding.code for finding in invalidation.findings]; target += ["ROOT_COMPROMISE_INVALIDATION"] if invalidation.structural_invalidation_applies else []  # noqa: E702
     if _verdict(historical_codes) is not core.Verdict.VALID and _verdict(current_codes) is not core.Verdict.VALID: return _phase_result(historical_codes, current_codes)  # noqa: E701
     if _valid_head(current_head) and "KEY_RECORD_UNAVAILABLE" not in current_codes:
         full_history = inspect_key_history(
