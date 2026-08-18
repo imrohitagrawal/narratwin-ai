@@ -242,8 +242,6 @@ def reconstruction_bundle(payload: bytes) -> tuple[bytes, dict[str, bytes]]:
     }
     value["contentHash"] = trust.content_hash(trust.ContentKind.RECONSTRUCTION, "AuthorityEvidenceReconstructionV1", value)
     return trust.canonical_bytes(value), blobs
-
-
 @pytest.mark.parametrize(
     ("mutation", "expected", "status"),
     [
@@ -278,8 +276,6 @@ def test_reconstruction_exact_set_deletion_corruption_and_retention(
     assert_boundary(result)
     assert expected in codes(result)
     assert cast(Any, result).reconstruction_status == status
-
-
 def test_partial_signature_success_can_never_become_trusted() -> None:
     result = future(
         "resolve_complete_evidence",
@@ -301,8 +297,6 @@ def test_partial_signature_success_can_never_become_trusted() -> None:
     assert cast(Any, result).trusted is False
     assert cast(Any, result).historical_verdict is not trust.Verdict.VALID
     assert cast(Any, result).current_verdict is not trust.Verdict.VALID
-
-
 def key_record(root_hash: str, root: Mapping[str, object]) -> dict[str, object]:
     genesis = cast(Mapping[str, object], root["genesisCaptureKey"])
     value: dict[str, object] = {
@@ -337,8 +331,6 @@ def key_record(root_hash: str, root: Mapping[str, object]) -> dict[str, object]:
         value,
     )
     return value
-
-
 def complete_envelope(
     root_hash: str,
     key: Mapping[str, object],
@@ -378,8 +370,6 @@ def complete_envelope(
         value,
     )
     return value
-
-
 @pytest.mark.parametrize(
     "mutation",
     ["none", "missing-genesis", "wrong-head", "issuing-object", "signing-key"],
@@ -446,8 +436,6 @@ def test_only_complete_chain_can_promote_public_signature_success(
     else:
         assert (cast(Any, result).historical_verdict is trust.Verdict.VALID) is should_trust
         assert (cast(Any, result).current_verdict is trust.Verdict.VALID) is should_trust
-
-
 def complete_arguments(**envelope_changes: object) -> tuple[dict[str, object], dict[str, object]]:
     root_changes = cast(Mapping[str, object], envelope_changes.pop("_root_changes", {})); root = root_document(**dict(root_changes))  # noqa: E702
     root_hash = cast(str, root["contentHash"])
@@ -465,13 +453,9 @@ def complete_arguments(**envelope_changes: object) -> tuple[dict[str, object], d
         "acceptance_head": head, "current_head": head, "acceptance_time": T10,
         "current_time": T10, "taxonomy_matrix_bytes": taxonomy_matrix(),
     }, {"root": root, "key": key, "envelope": envelope}
-
-
 def trusted_result(monkeypatch: pytest.MonkeyPatch, arguments: Mapping[str, object]) -> Any:
     monkeypatch.setattr(trust, "verify_ed25519_signature", lambda **_: trust.SignatureResult(True, ()))
     return cast(Any, future("resolve_complete_evidence", **dict(arguments)))
-
-
 def test_full_reconstruction_contract_is_required_and_malformed_values_are_typed(monkeypatch: pytest.MonkeyPatch) -> None:
     manifest, blobs = reconstruction_bundle(b"fixture-only payload")
     trust_inputs, _ = complete_arguments()
@@ -513,10 +497,9 @@ def test_freshness_policy_and_child_a_transition_are_enforced(monkeypatch: pytes
 def test_current_pin_failure_does_not_contaminate_history(monkeypatch: pytest.MonkeyPatch) -> None:
     arguments, _ = complete_arguments(); arguments["current_expected_pin_hash"] = "f" * 64; result = trusted_result(monkeypatch, arguments)  # noqa: E702
     missing, state = complete_arguments(); prior = cast(Mapping[str, object], state["root"]); successor = root_document(rootVersion=2, predecessorRootContentHash=prior["contentHash"]); descriptor = dict(cast(Mapping[str, object], missing["current_pin_descriptor"]), rootContentHashes=sorted([cast(str, prior["contentHash"]), cast(str, successor["contentHash"])])); missing.update(current_pin_descriptor=descriptor, current_expected_pin_hash=pin_hash(descriptor)); absent = trusted_result(monkeypatch, missing)  # noqa: E702
+    misbound, _ = complete_arguments(); other = root_document(rootId="root:other"); descriptor = dict(cast(Mapping[str, object], misbound["acceptance_pin_descriptor"]), rootContentHashes=[other["contentHash"]]); misbound.update(acceptance_pin_descriptor=descriptor, acceptance_expected_pin_hash=pin_hash(descriptor)); cast(dict[str, bytes], misbound["root_documents"])[cast(str, other["contentHash"])] = trust.canonical_bytes(other); mismatch = trusted_result(monkeypatch, misbound)  # noqa: E702
     assert result.historical_verdict is trust.Verdict.VALID and result.current_verdict is not trust.Verdict.VALID
-    assert absent.historical_verdict is trust.Verdict.VALID and absent.current_verdict is trust.Verdict.UNAVAILABLE
-
-
+    assert absent.historical_verdict is trust.Verdict.VALID and absent.current_verdict is trust.Verdict.UNAVAILABLE and mismatch.historical_verdict is trust.Verdict.INVALID
 def test_current_successor_compromise_invalidates_only_current(monkeypatch: pytest.MonkeyPatch) -> None:
     arguments, state = complete_arguments()
     prior = cast(dict[str, object], state["root"])
@@ -600,7 +583,10 @@ def test_replay_requires_exact_contiguous_predecessor() -> None:
 @pytest.mark.parametrize(("missing", "preserved", "absent"), [("acceptance_head", "current_verdict", "historical_verdict"), ("current_head", "historical_verdict", "current_verdict"), ("acceptance_pin_descriptor", "current_verdict", "historical_verdict")])
 def test_missing_head_does_not_contaminate_other_phase(monkeypatch: pytest.MonkeyPatch, missing: str, preserved: str, absent: str) -> None:
     arguments, _ = complete_arguments(); arguments[missing] = None; result = trusted_result(monkeypatch, arguments)  # noqa: E702
-    assert getattr(result, preserved) is trust.Verdict.VALID and getattr(result, absent) is trust.Verdict.UNAVAILABLE
+    expected = {"acceptance_head": "ACCEPTANCE_HEAD_REQUIRED", "current_head": "CURRENT_HEAD_REQUIRED", "acceptance_pin_descriptor": "ROOT_PIN_DESCRIPTOR_REQUIRED"}[missing]
+    assert getattr(result, preserved) is trust.Verdict.VALID and getattr(result, absent) is trust.Verdict.UNAVAILABLE and expected in codes(result)
+def test_missing_exact_key_bytes_are_unavailable(monkeypatch: pytest.MonkeyPatch) -> None:
+    arguments, _ = complete_arguments(); result = trusted_result(monkeypatch, dict(arguments, key_record_documents={})); assert result.historical_verdict is trust.Verdict.UNAVAILABLE and result.current_verdict is trust.Verdict.UNAVAILABLE and "KEY_RECORD_UNAVAILABLE" in codes(result)  # noqa: E702
 def test_root_payload_limit_and_conflicting_successor_boundaries_fail_closed(monkeypatch: pytest.MonkeyPatch) -> None:
     arguments, _ = complete_arguments(_root_changes={"maxPayloadBytes": 1}); payload_result = trusted_result(monkeypatch, arguments)  # noqa: E702
     arguments, state = complete_arguments(); prior = cast(dict[str, object], state["root"]); successors = [root_document(rootId=f"root:s{n}", rootVersion=2, predecessorRootContentHash=prior["contentHash"], priorRootCompromise={"priorRootContentHash": prior["contentHash"], "invalidatesPriorRootFrom": when}) for n, when in enumerate((T00, T20))]  # noqa: E702
@@ -637,11 +623,11 @@ class _BoundedMap(dict[str, bytes]):
 def test_cardinality_bounds_precede_graph_and_crypto(monkeypatch: pytest.MonkeyPatch) -> None:
     manifest, _ = reconstruction_bundle(b"fixture-only payload"); blobs = _BoundedMap({f"{n:064x}": b"" for n in range(257)}); result = future("reconstruct_retained_evidence", manifest_bytes=manifest, retained_blobs=blobs, evaluation_time=T10); aggregate_manifest, aggregate_blobs = reconstruction_bundle(b"fixture-only payload"); aggregate = json.loads(aggregate_manifest); reference = aggregate["keyReferences"][0]; aggregate_blobs.pop(reference["contentHash"]); aggregate["keyReferences"] = []  # noqa: E702
     for n in range(64): blob = b" " * (trust.RETAINED_BLOB_MAX_BYTES - 64) + f"{n:064x}".encode(); digest = hashlib.sha256(blob).hexdigest(); aggregate["keyReferences"].append(dict(reference, contentHash=digest, byteLength=len(blob), ordinal=3 + n)); aggregate_blobs[digest] = blob  # noqa: E701, E702
-    aggregate["envelopeReference"]["ordinal"] = 67; aggregate["payloadReference"]["ordinal"] = 68; aggregate["retainedBlobCount"] = 69; aggregate["aggregateRetainedByteLength"] = trust.RETAINED_BLOBS_AGGREGATE_MAX_BYTES; aggregate["contentHash"] = trust.content_hash(trust.ContentKind.RECONSTRUCTION, "AuthorityEvidenceReconstructionV1", aggregate); module = importlib.import_module("scripts.quality.issue434_authority_evidence_reconstruction"); original_parse = module._parse; parsed: list[int] = []; monkeypatch.setattr(module, "_parse", lambda raw, **kw: (parsed.__iadd__([len(raw)]) if isinstance(raw, bytes) and len(raw) == trust.RETAINED_BLOB_MAX_BYTES else parsed, original_parse(raw, **kw))[1]); aggregate_result = future("reconstruct_retained_evidence", manifest_bytes=trust.canonical_bytes(aggregate), retained_blobs=aggregate_blobs, evaluation_time=T10)  # noqa: E702
+    aggregate["envelopeReference"]["ordinal"] = 67; aggregate["payloadReference"]["ordinal"] = 68; aggregate["retainedBlobCount"] = 69; aggregate["aggregateRetainedByteLength"] = trust.RETAINED_BLOBS_AGGREGATE_MAX_BYTES; aggregate["contentHash"] = trust.content_hash(trust.ContentKind.RECONSTRUCTION, "AuthorityEvidenceReconstructionV1", aggregate); module = importlib.import_module("scripts.quality.issue434_authority_evidence_reconstruction"); original_parse = module._parse; parsed: list[int] = []; monkeypatch.setattr(module, "_parse", lambda raw, **kw: (parsed.__iadd__([len(raw)]) if isinstance(raw, bytes) and len(raw) == trust.RETAINED_BLOB_MAX_BYTES else parsed, original_parse(raw, **kw))[1]); aggregate_result = future("reconstruct_retained_evidence", manifest_bytes=trust.canonical_bytes(aggregate), retained_blobs=aggregate_blobs, evaluation_time=T10); original_json = trust._parse_json_object; core_parsed: list[int] = []; monkeypatch.setattr(trust, "_parse_json_object", lambda raw, **kw: (core_parsed.__iadd__([len(raw)]), original_json(raw, **kw))[1]); core_blobs = {f"{n:064x}": b" " * (trust.RETAINED_BLOB_MAX_BYTES - len(suffix)) + suffix for n in range(65) for suffix in [f'{{"n":{n}}}'.encode()]}; core_result = trust._validate_blob_mapping(core_blobs, "rootDocuments", trust.ContentKind.TRUST_ROOT, trust.TRUST_ROOT_SCHEMA_VERSION)  # noqa: E702
     arguments, state = complete_arguments(); documents = cast(dict[str, bytes], arguments["key_record_documents"]); original = cast(Mapping[str, object], state["key"])  # noqa: E702
     for n in range(64): clone = dict(original, keyObjectId=f"key:extra:{n}"); clone["contentHash"] = trust.content_hash(trust.ContentKind.PRODUCER_KEY, trust.PRODUCER_KEY_SCHEMA_VERSION, clone); documents[cast(str, clone["contentHash"])] = trust.canonical_bytes(clone)  # noqa: E701, E702
     calls: list[int] = []; monkeypatch.setattr(trust, "verify_ed25519_signature", lambda **_: (calls.__iadd__([1]), trust.SignatureResult(True, ()))[1]); key_result = future("resolve_complete_evidence", **arguments); key_calls = len(calls); pin_args, state = complete_arguments(); root_hash = cast(str, cast(Mapping[str, object], state["root"])["contentHash"]); descriptor = dict(cast(Mapping[str, object], pin_args["current_pin_descriptor"]), rootContentHashes=sorted([root_hash, *(f"{n:064x}" for n in range(64))])); pin_args.update(current_pin_descriptor=descriptor, current_expected_pin_hash="f" * 64); root_calls: list[str] = []; original_root = module.validate_closed_root; monkeypatch.setattr(module, "validate_closed_root", lambda **kw: (root_calls.__iadd__([cast(str, kw["expected_phase"])]), original_root(**kw))[1]); pin_result = future("resolve_complete_evidence", **pin_args)  # noqa: E702
-    assert "BLOB_COUNT_LIMIT" in codes(result) and not blobs.traversed and "BLOB_AGGREGATE_SIZE_LIMIT" in codes(aggregate_result) and not parsed and "HISTORY_RECORD_LIMIT" in codes(key_result) and not key_calls and "ROOT_PIN_DESCRIPTOR_INVALID" in codes(pin_result) and "CURRENT" not in root_calls
+    assert "BLOB_COUNT_LIMIT" in codes(result) and not blobs.traversed and "BLOB_AGGREGATE_SIZE_LIMIT" in codes(aggregate_result) and not parsed and any(item.code == "BLOB_AGGREGATE_SIZE_LIMIT" for item in core_result) and not core_parsed and "HISTORY_RECORD_LIMIT" in codes(key_result) and not key_calls and "ROOT_PIN_DESCRIPTOR_INVALID" in codes(pin_result) and "CURRENT" not in root_calls
 def test_capture_and_root_must_be_valid_at_each_evaluation(monkeypatch: pytest.MonkeyPatch) -> None:
     policy = [{"transitionRowId": "R01", "evidenceRole": "INDEPENDENT_REVIEW", "freshnessClass": "TRANSITION_WINDOW", "maxCaptureDelaySeconds": 60, "maxObservationAgeSeconds": 1200, "maxEnvelopeLifetimeSeconds": 1200}]
     future_args, _ = complete_arguments(_root_changes={"freshnessPolicies": policy}, observedAt=prior_tests.T19, capturedAt=prior_tests.T19, expiresAt=prior_tests.T30); early_args, _ = complete_arguments(_root_changes={"validFrom": T10, "freshnessPolicies": policy}, observedAt=T00, capturedAt=T00)  # noqa: E702
@@ -658,9 +644,9 @@ def test_replay_revision_carries_all_immutable_bindings(field: str, value: str) 
     arguments, state = complete_arguments(); first = cast(Mapping[str, object], state["envelope"]); second = dict(first, revision=2, predecessorContentHash=first["contentHash"]); second[field] = dict(cast(Mapping[str, object], second["subject"]), objectId=value) if field == "subject" else value; second["contentHash"] = trust.content_hash(trust.ContentKind.EVIDENCE_OBJECT, trust.ENVELOPE_SCHEMA_VERSION, second)  # noqa: E702
     assert cast(Any, future("validate_evidence_replay_set", envelope_documents=(arguments["envelope_bytes"], trust.canonical_bytes(second)))).valid is False
 def test_artifact_aliases_and_root_history_topology_fail_closed(monkeypatch: pytest.MonkeyPatch) -> None:
-    artifacts = prior_tests.contract_artifacts(); aliases = dict(artifacts, **{f"duplicate/{name}": raw for name, raw in artifacts.items()}); child = (prior_tests.ROOT / "docs/governance/authority-core-state-matrices-v1.json").read_bytes(); artifact_result = future("validate_artifact_set", artifacts=aliases, child_a_matrix_bytes=child, expected_artifact_hashes=None)  # noqa: E702
+    artifacts = prior_tests.contract_artifacts(); aliases = dict(artifacts, **{f"duplicate/{name}": raw for name, raw in artifacts.items()}); renamed = {f"alias/{name.rsplit('/', 1)[-1]}": raw for name, raw in artifacts.items()}; child = (prior_tests.ROOT / "docs/governance/authority-core-state-matrices-v1.json").read_bytes(); artifact_results = [future("validate_artifact_set", artifacts=value, child_a_matrix_bytes=child, expected_artifact_hashes=None) for value in (aliases, renamed)]  # noqa: E702
     arguments, state = complete_arguments(); prior = cast(Mapping[str, object], state["root"]); successors = [root_document(rootId=prior["rootId"], rootVersion=2, predecessorRootContentHash=prior["contentHash"], expiresAt=f"2026-08-{18 + n}T00:00:00Z") for n in range(2)]; hashes = sorted([cast(str, prior["contentHash"]), *(cast(str, row["contentHash"]) for row in successors)]); descriptor = dict(cast(Mapping[str, object], arguments["current_pin_descriptor"]), rootContentHashes=hashes); arguments.update(current_pin_descriptor=descriptor, current_expected_pin_hash=pin_hash(descriptor)); cast(dict[str, bytes], arguments["root_documents"]).update({cast(str, row["contentHash"]): trust.canonical_bytes(row) for row in successors}); topology = trusted_result(monkeypatch, arguments); genesis = root_document(rootId="root:unrelated"); roots = [cast(str, prior["contentHash"]), cast(str, genesis["contentHash"])]; descriptor = dict(cast(Mapping[str, object], complete_arguments()[0]["current_pin_descriptor"]), rootContentHashes=sorted(roots)); genesis_args, _ = complete_arguments(); genesis_args.update(current_pin_descriptor=descriptor, current_expected_pin_hash=pin_hash(descriptor)); cast(dict[str, bytes], genesis_args["root_documents"])[cast(str, genesis["contentHash"])] = trust.canonical_bytes(genesis); genesis_result = trusted_result(monkeypatch, genesis_args); malformed = dict(prior, surprise=True); malformed["contentHash"] = trust.content_hash(trust.ContentKind.TRUST_ROOT, trust.TRUST_ROOT_SCHEMA_VERSION, malformed); malformed_args, _ = complete_arguments(); roots = [cast(str, prior["contentHash"]), cast(str, malformed["contentHash"])]; descriptor = dict(cast(Mapping[str, object], malformed_args["current_pin_descriptor"]), rootContentHashes=sorted(roots)); malformed_args.update(current_pin_descriptor=descriptor, current_expected_pin_hash=pin_hash(descriptor)); cast(dict[str, bytes], malformed_args["root_documents"])[cast(str, malformed["contentHash"])] = trust.canonical_bytes(malformed); malformed_result = trusted_result(monkeypatch, malformed_args)  # noqa: E702
-    assert cast(Any, artifact_result).valid is False and topology.current_verdict is trust.Verdict.CONFLICTING and genesis_result.current_verdict is trust.Verdict.CONFLICTING and malformed_result.current_verdict is trust.Verdict.INVALID
+    assert all(cast(Any, result).valid is False for result in artifact_results) and topology.current_verdict is trust.Verdict.CONFLICTING and genesis_result.current_verdict is trust.Verdict.CONFLICTING and malformed_result.current_verdict is trust.Verdict.INVALID
 def test_competing_and_temporally_illegal_key_successors_fail_closed() -> None:
     rows = prior_tests.key_rows(); k02 = rows["K02"]; same = {"key_object_id": cast(str, k02["keyObjectId"]), "public_key_hex": cast(str, k02["publicKeyHex"])}  # noqa: E702
     rotate_fork = prior_tests.key_record(3, operation="ROTATE", previous=rows["K01"], key_object_id="key:c:fixture-only", public_key_hex="3" * 64, predecessor_signature="0" * 128, historyPredecessorContentHash=k02["contentHash"])
@@ -678,11 +664,16 @@ def test_taxonomy_mime_exactness_and_immutable_freshness() -> None:
     immutable = future("validate_subject_phase", envelope=subject_envelope(typedReferenceType="APPROVED_HASH", evidenceRole="TECHNICAL_VERIFICATION", producerTrustClass="CONTENT_EVALUATOR", freshnessClass="IMMUTABLE", subject=subject, observedAt=T00, capturedAt=T00, notBefore=T00), root=root_document(allowedTransitionRows=["R05"], allowedEvidenceRoles=["TECHNICAL_VERIFICATION"], freshnessPolicies=policy), taxonomy_matrix_bytes=taxonomy_matrix(), evaluation_time=T10)
     assert cast(Any, exact).valid is False and cast(Any, mime).valid is False and cast(Any, immutable).valid is True
 def test_malformed_contract_artifact_is_typed() -> None:
-    root_name = "docs/governance/schemas/authority-producer-trust-root-v1.schema.json"; matrix_name = "docs/governance/authority-evidence-trust-state-matrices-v1.json"; mutations = [(root_name, "root", "not-an-object"), (matrix_name, "typedReferenceTypes", 1), (matrix_name, "reverseTransitionRequirements", 1), (matrix_name, "keyLifecycle", [1] * 5), (matrix_name, "payloadMediaTypeByClass", {str(n): [] for n in range(12)})]; results = []  # noqa: E702
-    for name, field, value in mutations:
-        artifacts = prior_tests.contract_artifacts(); malformed = json.loads(artifacts[name]); malformed[field] = value; artifacts[name] = trust.canonical_bytes(malformed)  # noqa: E702
-        try: results.append(future("validate_artifact_set", artifacts=artifacts, child_a_matrix_bytes=(prior_tests.ROOT / "docs/governance/authority-core-state-matrices-v1.json").read_bytes()))  # noqa: E701
-        except Exception as exc: pytest.fail(f"RAW_EXCEPTION:{field}:{type(exc).__name__}")  # noqa: BLE001, E701
+    root_name = "docs/governance/schemas/authority-producer-trust-root-v1.schema.json"; envelope_name = "docs/governance/schemas/authority-evidence-envelope-v1.schema.json"; reconstruction_name = "docs/governance/schemas/authority-evidence-reconstruction-v1.schema.json"; matrix_name = "docs/governance/authority-evidence-trust-state-matrices-v1.json"; mutations = [(root_name, ("root",), "not-an-object"), (matrix_name, ("typedReferenceTypes",), 1), (matrix_name, ("reverseTransitionRequirements",), 1), (matrix_name, ("keyLifecycle",), [1] * 5), (matrix_name, ("payloadMediaTypeByClass",), {str(n): [] for n in range(12)}), (envelope_name, ("contractVersion",), {}), (envelope_name, ("root", "required"), [{}]), (reconstruction_name, ("root", "conditions"), 1)]; results = []  # noqa: E702
+    child = (prior_tests.ROOT / "docs/governance/authority-core-state-matrices-v1.json").read_bytes()
+    for name, path, value in mutations:
+        artifacts = prior_tests.contract_artifacts(); malformed = json.loads(artifacts[name]); target = malformed if len(path) == 1 else cast(dict[str, object], malformed[path[0]]); target[path[-1]] = value; artifacts[name] = trust.canonical_bytes(malformed)  # noqa: E702
+        try: results.append(future("validate_artifact_set", artifacts=artifacts, child_a_matrix_bytes=child))  # noqa: E701
+        except Exception as exc: pytest.fail(f"RAW_EXCEPTION:{path}:{type(exc).__name__}")  # noqa: BLE001, E701
+    for value in (1, None, [{"legalTransitions": 1}], [{"legalTransitions": [{"id": {}}]}]):
+        malformed_child = json.loads(child); malformed_child["matrices"] = value  # noqa: E702
+        try: results.append(future("validate_artifact_set", artifacts=prior_tests.contract_artifacts(), child_a_matrix_bytes=trust.canonical_bytes(malformed_child)))  # noqa: E701
+        except Exception as exc: pytest.fail(f"RAW_EXCEPTION:child:{type(exc).__name__}")  # noqa: BLE001, E701
     assert all(cast(Any, result).valid is False for result in results)
 def test_noncanonical_manifest_and_invalid_replay_fail_before_trust(monkeypatch: pytest.MonkeyPatch) -> None:
     manifest, blobs = reconstruction_bundle(b"fixture-only payload"); inputs, state = complete_arguments(); monkeypatch.setattr(trust, "verify_ed25519_signature", lambda **_: trust.SignatureResult(True, ())); noncanonical = json.dumps(json.loads(manifest), indent=2).encode() + b"\n"; rebuilt = future("reconstruct_retained_evidence", manifest_bytes=noncanonical, retained_blobs=blobs, evaluation_time=T10, trust_inputs=inputs)  # noqa: E702
@@ -693,6 +684,16 @@ def test_payload_bound_precedes_hash_and_findings_are_order_independent(monkeypa
     def observed_hash(raw: bytes = b"") -> Any:
         if len(raw) > trust.PAYLOAD_MAX_BYTES: oversized.append(len(raw))  # noqa: E701
         return original(raw)
-    monkeypatch.setattr(module.hashlib, "sha256", observed_hash); oversized_result = future("resolve_complete_evidence", **dict(arguments, payload_bytes=b"x" * (trust.PAYLOAD_MAX_BYTES + 1)))  # noqa: E702
+    monkeypatch.setattr(module.hashlib, "sha256", observed_hash); oversized_result = future("resolve_complete_evidence", **dict(arguments, payload_bytes=b"x" * (trust.PAYLOAD_MAX_BYTES + 1))); corrupt = future("resolve_complete_evidence", **dict(arguments, payload_bytes=b"x" * len(cast(bytes, arguments["payload_bytes"])))); bad_pins = dict(arguments, acceptance_expected_pin_hash="f" * 64, current_expected_pin_hash="f" * 64); pin_result = future("resolve_complete_evidence", **bad_pins); malformed_root = dict(arguments); root_hash = cast(str, json.loads(cast(bytes, arguments["envelope_bytes"]))["rootContentHash"]); roots = dict(cast(Mapping[str, bytes], arguments["root_documents"])); root = json.loads(roots[root_hash]); root["allowedEvidenceRoles"] = {}; roots[root_hash] = trust.canonical_bytes(root); root_result = future("resolve_complete_evidence", **dict(malformed_root, root_documents=roots)); pre_crypto = len(crypto)  # noqa: E702
     documents = cast(dict[str, bytes], arguments["key_record_documents"]); malformed = {"a" * 64: b"{}", "b" * 64: b'{"schemaVersion":{}}'}; first = trusted_result(monkeypatch, dict(arguments, key_record_documents=dict(documents, **malformed))); second = trusted_result(monkeypatch, dict(arguments, key_record_documents=dict(reversed(list(dict(documents, **malformed).items())))))  # noqa: E702
-    assert cast(Any, oversized_result).valid is False and not oversized and not crypto and first.current_findings == second.current_findings
+    assert all(cast(Any, item).valid is False for item in (oversized_result, corrupt, pin_result, root_result)) and not oversized and not pre_crypto and first.current_findings == second.current_findings
+def test_fixture_case_expectations_execute_governed_behavior(monkeypatch: pytest.MonkeyPatch) -> None:
+    vector = prior_tests.rfc_vector(); signature_cases = {"RFC_VECTOR": (vector["publicKeyHex"], vector["signatureHex"], bytes.fromhex(vector["messageHex"])), "SIGNATURE_BIT_FLIP": (vector["publicKeyHex"], vector["signatureHex"][:-1] + ("0" if vector["signatureHex"][-1] != "0" else "1"), bytes.fromhex(vector["messageHex"])), "WRONG_PUBLIC_KEY": ("0" * 64, vector["signatureHex"], bytes.fromhex(vector["messageHex"])), "WRONG_MESSAGE": (vector["publicKeyHex"], vector["signatureHex"], b"x")}; actual: dict[str, tuple[str, set[str]]] = {}  # noqa: E702
+    for probe, (public, signature, message) in signature_cases.items(): signature_result = trust.verify_ed25519_signature(public_key_hex=public, signature_hex=signature, message=message); actual[probe] = ("VALID" if signature_result.valid else "INVALID", {item.code for item in signature_result.findings})  # noqa: E701, E702
+    malformed = {"DUPLICATE_MEMBER": b'{"schemaVersion":"AuthorityEvidenceEnvelopeV1","schemaVersion":"AuthorityEvidenceEnvelopeV1"}', "UNKNOWN_MEMBER": prior_tests.envelope_bytes(unexpected=True), "BOOLEAN_AS_INTEGER": prior_tests.envelope_bytes(payloadByteLength=True), "FLOAT": prior_tests.envelope_bytes(payloadByteLength=1.0), "NUMERIC_STRING": prior_tests.envelope_bytes(payloadByteLength="1"), "NULL_SUBSTITUTION": prior_tests.envelope_bytes(payloadByteLength=None), "NON_ASCII": prior_tests.envelope_bytes(producerId="prod\u00e9"), "MALFORMED_TIME": prior_tests.envelope_bytes(observedAt="2026-08-17"), "INVALID_HEX": prior_tests.envelope_bytes(payloadSha256="NOT-HEX"), "DEPTH_LIMIT": prior_tests.envelope_bytes(unexpectedNested=prior_tests.deeply_nested_value()), "SIZE_LIMIT": prior_tests.envelope_bytes(collectionMethod="a" * trust.RAW_JSON_MAX_BYTES)}  # noqa: E702
+    for probe, raw in malformed.items(): malformed_result = cast(trust.Evaluation, prior_tests.evaluate_absent(envelope_bytes=raw, payload_bytes=b"fixture payload")); actual[probe] = (malformed_result.historical_verdict.value, {item.code for item in malformed_result.findings})  # noqa: E701, E702
+    absent_cases = {"MISSING_ENVELOPE": prior_tests.evaluate_absent(payload_bytes=b"fixture payload"), "MISSING_PAYLOAD": prior_tests.evaluate_absent(envelope_bytes=prior_tests.envelope_bytes()), "MISSING_ACCEPTANCE_PIN": prior_tests.evaluate_absent(independent_trust=trust.IndependentTrustInputs((), None, ("0" * 64,), "0" * 64, trust.HistoryHead("0" * 64, PRODUCER, 1, "0" * 64), trust.HistoryHead("0" * 64, PRODUCER, 1, "0" * 64))), "MISSING_ACCEPTANCE_HEAD": prior_tests.evaluate_absent(independent_trust=trust.IndependentTrustInputs(("0" * 64,), "0" * 64, ("0" * 64,), "0" * 64, None, trust.HistoryHead("0" * 64, PRODUCER, 1, "0" * 64)))}  # noqa: E702
+    for probe, absent_result in absent_cases.items(): evaluation = cast(trust.Evaluation, absent_result); actual[probe] = (evaluation.historical_verdict.value, {item.code for item in evaluation.findings})  # noqa: E701, E702
+    arguments, _ = complete_arguments(); arguments["current_expected_pin_hash"] = "f" * 64; pin = trusted_result(monkeypatch, arguments); actual["CURRENT_PIN_MISMATCH"] = (pin.current_verdict.value, {"CURRENT_ROOT_PIN_MISMATCH"} if "ROOT_PIN_SET_HASH_MISMATCH" in codes(pin) else set()); arguments, _ = complete_arguments(); head = cast(trust.HistoryHead, arguments["current_head"]); arguments["current_head"] = trust.HistoryHead(head.root_content_hash, head.producer_id, 99, head.key_record_content_hash); rollback = trusted_result(monkeypatch, arguments); actual["CURRENT_HEAD_ROLLBACK"] = (rollback.current_verdict.value, codes(rollback))  # noqa: E702
+    for probe, source in (("FIXTURE_AUTHORITY_CLAIM", "FIXTURE"), ("SIGNATURE_AUTHORITY_CLAIM", "SIGNATURE"), ("CHECK_AUTHORITY_CLAIM", "CHECK")): authority_result = cast(trust.Evaluation, prior_tests.evaluate_absent(claimed_authority_sources=(source,))); actual[probe] = (authority_result.historical_verdict.value, {item.code for item in authority_result.findings})  # noqa: E701, E702
+    for case in prior_tests.fixture_cases(): verdict, findings = actual[cast(str, case["probe"])]; assert verdict == case["expectedVerdict"] and set(cast(list[str], case["expectedFindings"])) <= findings  # noqa: E701, E702
