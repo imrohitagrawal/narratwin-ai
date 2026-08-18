@@ -703,20 +703,11 @@ def inspect_key_history_structure(
         add("ROOT_PIN_REQUIRED")
 
     unique: list[Mapping[str, object]] = []
-    presented: dict[str, Mapping[str, object]] = {}
     for candidate in records:
         if not isinstance(candidate, Mapping):
             add("WRONG_SCALAR_TYPE", "keyHistory.record")
             continue
-        record = candidate
-        record_hash = record.get("contentHash")
-        if isinstance(record_hash, str) and record_hash in presented:
-            if record == presented[record_hash]:
-                continue
-            add("DUPLICATE_CONTENT_HASH")
-        if isinstance(record_hash, str):
-            presented[record_hash] = record
-        unique.append(record)
+        unique.append(candidate)
 
     valid: list[Mapping[str, object]] = []
     for record in unique:
@@ -810,6 +801,12 @@ def inspect_key_history_structure(
         if {finding.code for finding in local} <= {"ROOT_AUTHORIZATION_REQUIRED", "PREDECESSOR_AUTHORIZATION_REQUIRED"}:
             valid.append(record)
 
+    deduplicated: dict[str, Mapping[str, object]] = {}
+    for record in valid:
+        digest = cast(str, record["contentHash"]); prior = deduplicated.get(digest)  # noqa: E702
+        if prior is not None and prior != record: add("DUPLICATE_CONTENT_HASH")  # noqa: E701
+        elif prior is None: deduplicated[digest] = record  # noqa: E701
+    valid = list(deduplicated.values())
     by_hash = {cast(str, row["contentHash"]): row for row in valid}
     children: dict[str, list[str]] = {}; rotation_children: dict[str, list[str]] = {}; same_key_children: dict[str, list[str]] = {}  # noqa: E702
     key_ids: dict[str, tuple[str, str]] = {}

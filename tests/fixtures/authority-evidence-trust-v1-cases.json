@@ -75,7 +75,7 @@
     {"id": "missing-envelope", "boundary": "B-001", "classification": "negative", "probe": "MISSING_ENVELOPE", "expectedVerdict": "UNAVAILABLE", "expectedFindings": ["ENVELOPE_UNAVAILABLE"]},
     {"id": "missing-payload", "boundary": "B-001", "classification": "negative", "probe": "MISSING_PAYLOAD", "expectedVerdict": "UNAVAILABLE", "expectedFindings": ["PAYLOAD_UNAVAILABLE"]},
     {"id": "absent-acceptance-pin", "boundary": "B-004", "classification": "negative", "probe": "MISSING_ACCEPTANCE_PIN", "expectedVerdict": "UNAVAILABLE", "expectedFindings": ["ACCEPTANCE_ROOT_PIN_REQUIRED"]},
-    {"id": "mismatched-current-pin", "boundary": "B-004", "classification": "mutation", "probe": "CURRENT_PIN_MISMATCH", "expectedVerdict": "INVALID", "expectedFindings": ["CURRENT_ROOT_PIN_MISMATCH"]},
+    {"id": "mismatched-current-pin", "boundary": "B-004", "classification": "mutation", "probe": "CURRENT_PIN_MISMATCH", "expectedVerdict": "INVALID", "expectedFindings": ["ROOT_PIN_SET_HASH_MISMATCH"]},
     {"id": "absent-acceptance-head", "boundary": "B-004", "classification": "negative", "probe": "MISSING_ACCEPTANCE_HEAD", "expectedVerdict": "UNAVAILABLE", "expectedFindings": ["ACCEPTANCE_HEAD_REQUIRED"]},
     {"id": "suppressed-current-head", "boundary": "B-004", "classification": "adversarial", "probe": "CURRENT_HEAD_ROLLBACK", "expectedVerdict": "INVALID", "expectedFindings": ["CURRENT_HEAD_MISMATCH"]},
     {"id": "duplicate-member", "boundary": "B-012", "classification": "negative", "probe": "DUPLICATE_MEMBER", "expectedVerdict": "INVALID", "expectedFindings": ["DUPLICATE_MEMBER"]},
