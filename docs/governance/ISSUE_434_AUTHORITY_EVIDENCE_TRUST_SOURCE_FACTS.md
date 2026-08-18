@@ -1,8 +1,8 @@
 # Issue 434 Authority-Evidence and Trust Source Facts
 
-Status: frozen documentation source record  
-Access date: 2026-08-17  
-Activation: `NONE`  
+Status: frozen documentation source record
+Access date: 2026-08-17
+Activation: `NONE`
 Authority effect: `NO_AUTHORITY_EFFECT`
 
 ## Repository and route facts
