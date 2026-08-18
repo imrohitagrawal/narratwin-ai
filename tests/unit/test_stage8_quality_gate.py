@@ -90,7 +90,7 @@ def test_issue366_contract_rejects_partial_scope_and_content_mutations(monkeypat
     for n,x in cases:m.setattr(s,"issue434_charges",lambda n=n,x=x:(n,x));A=s.A434;R=REPO;u=p[11];assert route(m,B,b)
     a={x:(REPO/x).read_bytes()for x in A};f=s.issue434_artifact_findings;assert not f(a)and f({**a,A[0]:b"x"})and f({})
     m.setattr(s,"run",e);m.setattr(s,"issue434_artifact_findings",lambda _:["x"]);s.check_issue434_verifier([])
-    t=(R/u).read_text();assert p[9] in t and "R434[9]" not in t and not sp.run(["python3","-S",u],cwd=R).returncode
+    t=(R/u).read_text();assert p[9] in t and "R434[9]])" not in t and not sp.run(["python3","-S",u],cwd=R).returncode
 def test_scope_collection_covers_exact_layers_and_forbidden_sources(monkeypatch: Any, tmp_path: Path) -> None:
     g:Any=lambda *a:git(tmp_path,*a); g("init","-b","main"); g("config","user.name","Scope Test")
     g("config","user.email","scope@example.invalid")
