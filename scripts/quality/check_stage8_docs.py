@@ -28,8 +28,8 @@ ISSUE434_FILES=set(R434);H434=hashlib.sha256(json.dumps(sorted(R434),separators=
 if H434 != "c3414778d2ee1c9326d1c81537d5dfe9f528b22f12ec98394e0ac4270f7cab90": ISSUE434_FILES=set()
 else: ISSUE434_FILES |= {"scripts/quality/issue434_authority_evidence_reconstruction.py",
     "tests/unit/test_issue434_authority_evidence_reconstruction.py", "tests/unit/test_dependency_security_contract.py"}
-B434="87b8504ca8d5e094394343aeaa4ef5bad46133d5";A434=tuple(R434[i] for i in (0,1,2,3,4,5,6,7,8,13));I434_ARTIFACT_SHA=A434
-D434="3ccf1eb51a359c734a0a3da7e66df6e4ed79843c8d05273b823636b788fb8a28"
+B434="87b8504ca8d5e094394343aeaa4ef5bad46133d5";A434=R434[:9]+R434[13:14]
+D434="3ccf1eb51a359c734a0a3da7e66df6e4ed79843c8d05273b823636b788fb8a28";I434_ARTIFACT_SHA=A434
 G434=((450,{R434[0],R434[2]}),(850,{R434[1],R434[13],R434[18]}),(1350,set(R434[3:9])),
     (4300,set(R434[9:13])|set(ISSUE434_FILES)-set(R434)),(250,{R434[i] for i in (14,15,16,17,19,20,21)}))
 LIMITS434=dict(zip((R434[9],R434[10],*sorted(ISSUE434_FILES-set(R434))),(1200,1300,900,30,700),strict=True))
@@ -124,14 +124,20 @@ EFFECTIVE_STAGE8_ROUTES = PROCESS_BRANCH_ALLOWED_FILES | brace_security.BRACE_EX
 def run(a:list[str])->subprocess.CompletedProcess[str]:return subprocess.run(a,cwd=ROOT,text=True,capture_output=True)
 def issue434_artifact_findings(a:dict[str,bytes])->list[str]:
     if set(a)!=set(A434) or any(not isinstance(v,bytes) for v in a.values()):return ["I434 set."]
-    digest=hashlib.sha256(json.dumps({p:hashlib.sha256(a[p]).hexdigest() for p in A434},sort_keys=True,separators=(",",":")).encode()).hexdigest()
-    return [] if digest==D434 else ["I434 bytes."]
+    h={p:hashlib.sha256(a[p]).hexdigest() for p in A434}
+    d=hashlib.sha256(json.dumps(h,sort_keys=True,separators=(",",":")).encode()).hexdigest()
+    return [] if d==D434 else ["I434 bytes."]
 def check_issue434_verifier(f:list[str])->None:
     try:
-        a={p:(ROOT/p).read_bytes() for p in A434};findings=issue434_artifact_findings(a)
-        r=run(["uv","run","python","scripts/quality/issue434_authority_evidence_trust.py"]);s=run(["uv","run","python","-c","from scripts.quality.check_stage8_docs import A434;from scripts.quality.issue434_authority_evidence_reconstruction import validate_artifact_set as v;a={p:open(p,'rb').read() for p in A434[1:2]+A434[3:8]};raise SystemExit(not v(artifacts=a,child_a_matrix_bytes=open('docs/governance/authority-core-state-matrices-v1.json','rb').read()).valid)"])
+        a={p:(ROOT/p).read_bytes() for p in A434};q=issue434_artifact_findings(a)
+        c=("from scripts.quality.check_stage8_docs import A434 as A;"
+              "from scripts.quality.issue434_authority_evidence_reconstruction import validate_artifact_set as v;"
+              "a={p:open(p,'rb').read() for p in A[1:2]+A[3:8]};"
+              "z=open(A[7].replace('evidence-trust','core'),'rb').read();"
+              "raise SystemExit(not v(artifacts=a,child_a_matrix_bytes=z).valid)")
+        r=run(["uv","run","python",R434[9]]);s=run(["uv","run","python","-c",c])
     except OSError:fail("I434 unavailable.",f);return
-    f.extend(findings+([] if not r.returncode and not s.returncode else ["I434 verify."]))
+    f.extend(q+([] if not r.returncode and not s.returncode else ["I434 verify."]))
 def read(path:str)->str: return (ROOT/path).read_text(encoding="utf-8")
 def fail(message:str,failures:list[str])->None: failures.append(message)
 def changed_files_for_stage_scope() -> list[str]:
@@ -227,12 +233,14 @@ def parse_paths_z(output: str) -> list[str]:
 def parse_name_status_z(output: str) -> list[str]:
     fields = parse_paths_z(output); paths: list[str] = []; index = 0
     while index < len(fields):
-        status=fields[index];index+=1
+        status = fields[index]
+        index += 1
         if status in {"A","B","D","M","T","U"}:arity=1
         elif re.fullmatch(r"[RC]\d{1,3}",status) and int(status[1:])<=100:arity=2
         else:raise RuntimeError(f"Malformed Git name-status record: {status!r}")
         record_paths = fields[index : index + arity]
-        if len(record_paths)!=arity:raise RuntimeError(f"Incomplete Git name-status record: {status!r}")
+        if len(record_paths) != arity:
+            raise RuntimeError(f"Incomplete Git name-status record: {status!r}")
         paths.extend(record_paths);index+=arity
     return paths
 def check_required_files(failures: list[str]) -> None:
