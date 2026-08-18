@@ -22,6 +22,8 @@ ISSUE346_TRANSITION_BRANCH = "cut1-process-346-governance-transition"
 ISSUE335_A2_1_BRANCH = "cut1-335-r0c-a2-1-stage4-rag-v1-lineage"
 ISSUE349_A2_2_BRANCH = "cut1-349-r0c-a2-2-machine-contract-parity"
 CITATION_PARITY_BRANCH = "cut1-372-citation-index-parity-post380"
+ISSUE434_BRANCH = "cut1-process-434-authority-evidence-trust"
+ISSUE434_FILES = set("""docs/governance/preflights/issue-434.json docs/governance/AUTHORITY_EVIDENCE_AND_TRUST_V1.md docs/governance/ISSUE_434_AUTHORITY_EVIDENCE_TRUST_SOURCE_FACTS.md docs/governance/schemas/authority-evidence-envelope-v1.schema.json docs/governance/schemas/authority-producer-trust-root-v1.schema.json docs/governance/schemas/authority-producer-key-v1.schema.json docs/governance/schemas/authority-evidence-reconstruction-v1.schema.json docs/governance/authority-evidence-trust-state-matrices-v1.json tests/fixtures/authority-evidence-trust-v1-cases.json scripts/quality/issue434_authority_evidence_trust.py tests/unit/test_issue434_authority_evidence_trust.py scripts/quality/check_stage8_docs.py tests/unit/test_stage8_quality_gate.py docs/ADR/0063-authority-evidence-and-trust.md docs/QUALITY_GATES.md docs/STAGE_ISSUE_PLAN.md docs/STATUS.md docs/TRACEABILITY.md docs/SECURITY_AND_PRIVACY.md pyproject.toml uv.lock docs/THIRD_PARTY_NOTICES.md scripts/quality/issue434_authority_evidence_reconstruction.py tests/unit/test_issue434_authority_evidence_reconstruction.py""".split())
 CP_BASE, CP_LIMIT = "372fb78245b8890157ffe54f48b90e523017bc43", 1200
 CITATION_PARITY_FILES = {"docs/governance/preflights/issue-372.json", "backend/app/stage4.py",
     "tests/acceptance/test_checkpoint3_output_correctness.py", "tests/unit/test_local_durability.py",
@@ -65,6 +67,7 @@ REQUIRED_FILES = [
 ]; STAGE8_ALLOWED_FILES = set(REQUIRED_FILES) | {"tests/api/test_health_api.py", "tests/unit/test_health_contract.py"}
 PROCESS_BRANCH_ALLOWED_FILES = {issue427_reset.BRANCH: set(issue427_reset.PATHS),
     issue431_authority_core.BRANCH: set(issue431_authority_core.PATHS),
+    ISSUE434_BRANCH: ISSUE434_FILES,
     node_security.ISSUE374_SECURITY_BRANCH: node_security.ISSUE374_SECURITY_FILES,
     ISSUE346_TRANSITION_BRANCH: {
         "docs/governance/preflights/issue-346.json", "scripts/quality/check_stage8_docs.py",
@@ -110,6 +113,10 @@ PROCESS_BRANCH_ALLOWED_FILES.update(
 EFFECTIVE_STAGE8_ROUTES = PROCESS_BRANCH_ALLOWED_FILES | brace_security.BRACE_EXPANSION_ROUTES \
     | node_security.I389_ROUTES | cut1_routes.ROUTES
 def run(a:list[str])->subprocess.CompletedProcess[str]:return subprocess.run(a,cwd=ROOT,text=True,capture_output=True)
+def check_issue434_verifier(failures:list[str])->None:
+    try: result=run(["uv","run","python","scripts/quality/issue434_authority_evidence_trust.py"])
+    except OSError: fail("Issue #434 verifier is unavailable through the frozen uv environment.",failures);return
+    if result.returncode: fail("Issue #434 authority-evidence verifier failed closed.",failures)
 def read(path:str)->str: return (ROOT/path).read_text(encoding="utf-8")
 def fail(message:str,failures:list[str])->None: failures.append(message)
 def changed_files_for_stage_scope() -> list[str]:
@@ -486,6 +493,7 @@ def main() -> int:
         cache_pruning.check_exact_route(ROOT, run, failures, current_branch() == cache_pruning.BRANCH)
         issue427_reset.check(ROOT, failures, current_branch() == issue427_reset.BRANCH)
         failures.extend(issue431_authority_core.repository_findings(ROOT))
+        if current_branch() in {ISSUE434_BRANCH,"main"}: check_issue434_verifier(failures)
         check_backend_and_tests(failures)
         check_dependencies_and_scripts(failures)
         check_docs(failures)

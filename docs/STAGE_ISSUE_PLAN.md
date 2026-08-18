@@ -2741,3 +2741,18 @@ expires 2026-09-15 or on base, branch,
 scope, budget, schema, command, reviewer, predecessor, or nonactivation drift.
 After successful merge and closeout, the exact next child is
 `B — Evidence and trust`; it is not started here.
+
+## Issue #434 Child B authority evidence and producer trust
+
+Child A Issue `#431` / PR `#433` is complete at merge `87b8504`, with 18 paths
+and 4,107/4,128 charged lines. Issue `#434` is the current serialized Child B
+route. It adds closed documentation-quality contracts and offline verification
+for signed evidence, independent producer-root pins, K01–K05 key lifecycle,
+explicit-time freshness, compromise, reconstruction, replay, and separate
+historical/current verdicts. Activation remains `NONE`; release remains No-Go.
+
+After Child B's required review, protected merge, merged-main verification and
+closeout, Child C remains next under the current architecture. Issue `#432` is
+unmerged source authority only and requires a separately audited post-B parent
+`#426` amendment before it may be inserted ahead of C. Child B does not
+implement that amendment or any Child C–F capability.

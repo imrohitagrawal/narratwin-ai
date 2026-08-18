@@ -6,6 +6,7 @@ from scripts.quality import stage8_a23b as a23b, stage8_cut1_routes as cut1_rout
 from scripts.quality.check_stage8_docs import (CUT1_REAL_MEDIA_TRANSITION_BRANCH as CUT1_REAL_MEDIA_TRANSITION,
     CUT1_REAL_MEDIA_TRANSITION_FILES as CUT1_REAL_MEDIA_TRANSITION_SCOPE,
     CITATION_PARITY_BRANCH as CP, CITATION_PARITY_FILES as CP_SCOPE,
+    ISSUE434_BRANCH as I434, ISSUE434_FILES as I434_SCOPE,
     QUIET_PRESENCE_BRANCH as QP, QUIET_PRESENCE_FILES as QP_SCOPE)
 TRANSITION = "cut1-process-346-governance-transition"; A2_1 = "cut1-335-r0c-a2-1-stage4-rag-v1-lineage"
 A2_2 = "cut1-349-r0c-a2-2-machine-contract-parity"; C1 = CUT1_REAL_MEDIA_TRANSITION
@@ -22,7 +23,7 @@ SCOPES = {TRANSITION: set("docs/governance/preflights/issue-346.json scripts/qua
     A2_2: set("""docs/governance/preflights/issue-349.json docs/STAGE2_ARCHITECTURE_CONTRACT.json docs/STATUS.md
         scripts/quality/check_stage2_docs.py tests/unit/test_stage8_quality_gate.py docs/STAGE_ISSUE_PLAN.md
         scripts/quality/check_stage8_docs.py docs/ADR/0002-rag-storage.md docs/QUALITY_GATES.md""".split()),
-    QP:QP_SCOPE,CP:CP_SCOPE,C1:CUT1_REAL_MEDIA_TRANSITION_SCOPE,i.BRANCH:set(i.PATHS),**a23b.A23_ROUTES}
+    QP:QP_SCOPE,CP:CP_SCOPE,C1:CUT1_REAL_MEDIA_TRANSITION_SCOPE,i.BRANCH:set(i.PATHS),I434:I434_SCOPE,**a23b.A23_ROUTES}
 def load(relative: str, name: str) -> ModuleType:
     spec=importlib.util.spec_from_file_location(name,Path(__file__).parents[2]/relative);assert spec and spec.loader
     module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module);return module
@@ -183,6 +184,10 @@ def test_unrouted_stage8_branch_is_rejected(monkeypatch:Any)->None:
     b="feature/untracked-stage8-work"; monkeypatch.setattr(stage8,"current_branch",lambda:b); f:list[str]=[]
     stage8.check_stage_marker_and_branch(f)
     assert f==[f"Stage 8 work must run on a stage8-* branch or main after merge; got {b}."]
+def test_issue434_verifier_uses_exact_uv_subprocess_and_fails_closed(monkeypatch:Any)->None:
+    command=["uv","run","python","scripts/quality/issue434_authority_evidence_trust.py"]; calls:list[list[str]]=[]; success:Any=lambda args:calls.__iadd__([args]) and sp.CompletedProcess(args,0,"READY",""); monkeypatch.setattr(stage8,"run",success); failures:list[str]=[];stage8.check_issue434_verifier(failures);assert (calls,failures)==([command],[])
+    monkeypatch.setattr(stage8,"run",lambda args:sp.CompletedProcess(args,1,"","failed"));stage8.check_issue434_verifier(failures);assert failures==["Issue #434 authority-evidence verifier failed closed."]
+    monkeypatch.setattr(stage8,"run",lambda args:(_ for _ in ()).throw(FileNotFoundError()));stage8.check_issue434_verifier(failures);assert failures[-1]=="Issue #434 verifier is unavailable through the frozen uv environment."
 A22_SOURCE,A22_DECL,A22_RUNTIME,A22_SELECT,A22_REFUSE=("Stage 2 retrieval-v1 accepted sources must retain the canonica"
     "l oracle.|Stage 2 retrievalStrategy must equal the canonical v1 machine declaration.|Stage 4 retrieval-v1 runtime "
     "constants must equal the canonical oracle.|Stage 4 retrieval selection must preserve canonical v1 control flow.|"

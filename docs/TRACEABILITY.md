@@ -598,3 +598,16 @@ remain separate gates.
 | B–F ownership preservation | Specification, ADR 0061, preflight and dedicated repository gate | No evidence trust, CAS/bootstrap, audit service, GitHub acquisition/reconciliation, kernel/oracle or runtime implementation |
 | Exact governed delivery route | Issue #431; OWNER comments `5296984551` and reset `5301054923`; preflight-only first commit; focused RED; eighteen-path Stage 8 dispatch; 4,000-line ceiling | Reviews, hosted checks, non-author/final OWNER approvals, merge and closeout remain external/human gates |
 | Serialized predecessor compatibility | Exact #427 merged head `6635e98c0eb6f45d9b046da0f78e2f3d3adba236` plus merge `4d239942eeda0c0b6c385b2d85dae873af076aa6`; six-failure RED and focused successor/rewritten-history tests | Only descendants containing the real merge resolve frozen #427 bytes; pre-merge, rewritten and hostile-event histories remain rejected |
+
+## Issue #434 Child B authority-evidence traceability
+
+| Requirement | Evidence | Preserved boundary |
+|---|---|---|
+| Signed evidence and public verification | Closed envelope schema; RFC 8032 vector; domain-separated Ed25519 public verification | Signature validity alone never creates trust; no private key, signing, or key generation |
+| Independent producer trust | Phase-scoped root-pin descriptors and expected hashes; exact root bytes; root topology and compromise mutation tests | No candidate-derived root, TOFU, network lookup, or live trust root |
+| K01–K05 lifecycle and exact heads | Closed key schema; dual authorization; rotation, retirement, revocation, overlap, fork, replay and boundary tests | No implicit retirement, cross-root promotion, or incomplete-history trust |
+| Historical/current separation | Explicit acceptance/current pins, heads and times; typed precedence; phase-local tests | Later revocation cannot rewrite historical acceptance; missing and malformed remain distinct |
+| Reconstruction and replay | Closed reconstruction schema; exact retained set, hashes, lineage, retention and idempotency tests | No CAS, persistence, acquisition, audit receipt, or runtime service; those remain Child C–F |
+| Exact Child A taxonomy | Executable 44-type/32-row/12-MIME equality and coordinated-mutation resistance | Child A bytes and ownership are not rewritten |
+| Delivery route | Issue `#434`, preflight, bounded OWNER resets, exact Stage 8 subprocess, 5,600-line ceiling | Eligible non-author and final OWNER approval, merge and closeout remain GitHub gates |
+| Source-authority boundary | Source-facts record and explicit `#432` ledger entries | `#432` is unmerged source authority only; no realism/media/statistical implementation |

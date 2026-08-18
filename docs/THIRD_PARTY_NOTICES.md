@@ -268,6 +268,15 @@ No Google Cloud TTS SDK, requests extra, gcloud binary, API key or service
 account JSON is added. The runtime remains disabled and activation still
 requires fresh terms, privacy, account, IAM, billing, quota, endpoint-policy
 and effective-output review. Sources: [google-auth PyPI](https://pypi.org/project/google-auth/2.56.3/), [cryptography PyPI](https://pypi.org/project/cryptography/50.0.0/), [pyasn1 PyPI](https://pypi.org/project/pyasn1/0.6.4/), [pyasn1-modules PyPI](https://pypi.org/project/pyasn1-modules/0.4.2/), [cffi PyPI](https://pypi.org/project/cffi/2.0.0/), [pycparser PyPI](https://pypi.org/project/pycparser/3.0/).
+
+## Authority-evidence public verification
+
+Issue #434 also declares the already locked `cryptography==50.0.0` package as
+a direct development dependency for offline Ed25519 public-key verification.
+License: Apache-2.0 OR BSD-3-Clause. No private key, signer, key generator,
+provider SDK, model, dataset, media asset, or generated sample is added. Source:
+[cryptography 50.0.0 documentation](https://cryptography.io/en/50.0.0/hazmat/primitives/asymmetric/ed25519/)
+and [PyPI metadata](https://pypi.org/project/cryptography/50.0.0/).
 ## Minimal composed frontend runtime
 
 Issue #413 composes the final image from exact Chainguard `glibc-dynamic`,

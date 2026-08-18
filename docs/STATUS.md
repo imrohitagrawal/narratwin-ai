@@ -14,24 +14,23 @@ Use it to answer:
 
 ## Current Baseline
 
-- Issue `#431` is the OWNER-approved, nonactivating Child A route under Issue
-  `#426`, dependent on completed `#427` / PR `#430`. OWNER comment `5296984551`
-  binds issue-body SHA-256
-  `209d4833e655404d05db50f12b1e7d58c8b45bf50c2d33fe08a4964722cc6e72`, exact
-  base/predecessor merge `4d239942eeda0c0b6c385b2d85dae873af076aa6`, branch
-  `cut1-process-431-authority-core-schemas-state-matrices`, the original sixteen
-  paths and a 4,000-line charge ceiling. OWNER reset comment `5301054923` adds
-  only the two #427 frozen-head compatibility paths, making eighteen paths
-  without changing the base, branch, budget or nonactivation boundary. Its
-  repository target is closed V1 decision,
-  manifest, and route schemas; exhaustive lifecycle matrices; canonical bytes;
-  immutable hash links; adversarial fixtures; and documentation-quality
-  enforcement for AK-001, AK-004 and AK-012. Structural validity creates no
-  accepted decision, current manifest, active route, B–F implementation, or
+- Issue `#434` is the current OWNER-approved, nonactivating Child B route under
+  `#426`, based on completed Child A Issue `#431` / merged PR `#433` at merge
+  `87b8504ca8d5e094394343aeaa4ef5bad46133d5`. Child A completed with 18 paths
+  and 4,107/4,128 charged lines after its bounded corrections. Child B owns only
+  signed authority-evidence envelopes, independently pinned producer trust,
+  key lifecycle, explicit-time freshness, reconstruction, replay, and distinct
+  historical/current verdicts. Its documentation-quality verifier has
+  activation `NONE` and authority effect `NO_AUTHORITY_EFFECT`. It creates no
+  accepted decision, current manifest, active route, live root or producer,
   runtime/provider/credential/egress/spend/media/deployment/release/production
-  capability. Human/external reviews, approvals, hosted checks, merge and
-  closeout remain required. The exact next child after closeout is
-  `B — Evidence and trust`, which has not started.
+  capability. Review, hosted checks, eligible non-author approval, merge and
+  closeout remain required. Child C remains next under the currently merged
+  `A -> B -> C -> D -> E -> F` architecture.
+
+- Issue `#432` remains unmerged source authority, not repository authority. It
+  is outside Child B and can enter the serialized route only through a future,
+  separately audited parent `#426` amendment after Child B closeout.
 
 - Issue `#427` architecture-reset target state: OWNER reset comment `5289686674`
   approves request `5287631143`; CI route-reset provenance `5292268215` binds current main after the

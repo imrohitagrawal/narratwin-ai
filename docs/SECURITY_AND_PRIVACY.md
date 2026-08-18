@@ -644,5 +644,32 @@ Langfuse configuration/client code. A generic evaluator result cannot be
 promoted into Cut 1 authority. Live receipt validation rechecks the external
 source run and presenter plus current evaluation and approval, so same-process
 post-consumption drift fails as it does during restore.
+
+## Child B authority-evidence and producer-trust boundary
+
+Issue `#434` adds offline, public-verification-only authority-evidence
+contracts. Trust roots, pin descriptors, expected set hashes, history heads,
+evaluation times, and retained bytes are explicit inputs. The verifier performs
+no network access, ambient-clock read, persistence, credential lookup, signing,
+private-key handling, key generation, provider call, or external side effect.
+
+All JSON, schemas, fixtures, retained blobs, comments, and caller values are
+untrusted. Byte, member, depth, collection, record, payload, and aggregate
+bounds apply before expensive parsing, hashing, signature verification,
+identity indexing, or graph traversal. Malformed input returns bounded typed
+findings; it cannot manufacture a higher-precedence conflict through indexing.
+
+Trust requires independently validated phase pins and exact expected hashes,
+exact root bytes and topology, exact K01–K05 lineage and heads, exact issuing
+identity, explicit-time freshness, subject/taxonomy binding, replay validity,
+and public signature validity. Candidate-derived roots and trust-on-first-use
+are prohibited. Root compromise applies only through an independently pinned
+successor with an exact boundary.
+
+The direct development dependency `cryptography==50.0.0` is used only for
+Ed25519 public verification. The system-Python Stage 8 wrapper invokes the
+verifier through the frozen `uv` environment and never imports it. Activation
+is `NONE`, authority effect is `NO_AUTHORITY_EFFECT`, and release remains No-Go.
+Child C–F retain storage, acquisition, audit, reconciliation and integration.
 The live check reopens and verifies the pinned facts asset/source graph through
 the canonical Stage 4 evaluator; stored evidence equality alone is insufficient.
