@@ -67,12 +67,12 @@ def _pin_hash(descriptor: Mapping[str, object]) -> str:
 def _pin_codes(descriptor: object, expected_hash: object, phase: str,
                scope: tuple[str, str, str, str]) -> list[str]:
     codes: list[str] = []
-    if not isinstance(descriptor, Mapping):
+    if not isinstance(descriptor, dict):
         return ["ROOT_PIN_DESCRIPTOR_REQUIRED" if descriptor is None else "ROOT_PIN_DESCRIPTOR_INVALID"]
     try:
         core._check_json_value(descriptor)
     except core.AuthorityEvidenceTrustError:
-        codes.append("ROOT_PIN_DESCRIPTOR_INVALID")
+        codes.append("ROOT_PIN_DESCRIPTOR_INVALID");return codes  # noqa: E702
     if set(descriptor) != PIN_MEMBERS or descriptor.get("schemaVersion") != "AuthorityRootPinSetV1":
         codes.append("ROOT_PIN_DESCRIPTOR_INVALID")
     actual_scope = tuple(descriptor.get(name) for name in ("repository", "programId", "generationId", "producerId"))
@@ -234,7 +234,7 @@ def resolve_root_invalidation(*, root_documents: object, pin_descriptor: object,
         phase if phase in {"ACCEPTANCE", "CURRENT"} else "INVALID",
         expected_scope,
     )
-    if not isinstance(root_documents, Mapping) or not isinstance(pin_descriptor, Mapping):
+    if not isinstance(root_documents, dict) or not isinstance(pin_descriptor, dict):
         return _result(codes + ["ROOT_DOCUMENT_INVALID"])
     if len(root_documents) > 64: return _result(codes + ["ROOT_DOCUMENT_LIMIT"])  # noqa: E701
     if codes: return _result(codes)  # noqa: E701
@@ -730,7 +730,7 @@ def resolve_complete_evidence(*, envelope_bytes: object, payload_bytes: object, 
         verdict = _verdict(common)
         return _result(common, historical_verdict=verdict, current_verdict=verdict)
     scope = cast(tuple[str, str, str, str], scope_values)
-    if not isinstance(root_documents, Mapping) or not isinstance(key_record_documents, Mapping):
+    if not isinstance(root_documents, dict) or not isinstance(key_record_documents, dict):
         common.append("TRUST_DOCUMENT_MAPPING_INVALID")
         verdict = _verdict(common)
         return _result(common, historical_verdict=verdict, current_verdict=verdict)

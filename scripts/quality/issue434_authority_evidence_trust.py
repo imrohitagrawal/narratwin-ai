@@ -716,7 +716,7 @@ def inspect_key_history_structure(
         try:
             _check_json_value(record)
         except AuthorityEvidenceTrustError as exc:
-            reject(exc.code)
+            reject(exc.code);findings.extend(local);continue  # noqa: E702
         if set(record) - KEY_RECORD_MEMBERS:
             reject("UNKNOWN_MEMBER")
         if KEY_RECORD_MEMBERS - set(record):

@@ -123,21 +123,21 @@ EFFECTIVE_STAGE8_ROUTES = PROCESS_BRANCH_ALLOWED_FILES | brace_security.BRACE_EX
     | node_security.I389_ROUTES | cut1_routes.ROUTES
 def run(a:list[str])->subprocess.CompletedProcess[str]:return subprocess.run(a,cwd=ROOT,text=True,capture_output=True)
 def issue434_artifact_findings(a:dict[str,bytes])->list[str]:
-    if set(a)!=set(A434) or any(not isinstance(v,bytes) for v in a.values()):return ["I434 set."]
-    s=hashlib.sha256;j=json.dumps;h={p:s(a[p]).hexdigest() for p in A434}
-    d=s(j(h,sort_keys=True,separators=(",",":")).encode()).hexdigest();return [] if d==D434 else ["I434 bytes."]
+    if set(a)!=set(A434)or any(not isinstance(v,bytes)for v in a.values()):return["I434 set."]
+    s=hashlib.sha256;j=json.dumps;h={p:s(a[p]).hexdigest()for p in A434}
+    d=s(j(h,sort_keys=True,separators=(",",":")).encode()).hexdigest();return[]if d==D434 else["I434 bytes."]
 def check_issue434_verifier(f:list[str])->None:
     try:
-        a={p:(ROOT/p).read_bytes() for p in A434};q=issue434_artifact_findings(a)
+        a={p:(ROOT/p).read_bytes()for p in A434};q=issue434_artifact_findings(a)
         if q:f.extend(q);return
         c=("from scripts.quality.check_stage8_docs import A434 as A;"
-              "from scripts.quality.issue434_authority_evidence_reconstruction import validate_artifact_set as v;"
-              "a={p:open(p,'rb').read() for p in A[1:2]+A[3:8]};"
-              "z=open(A[7].replace('evidence-trust','core'),'rb').read();"
-              "raise SystemExit(not v(artifacts=a,child_a_matrix_bytes=z).valid)")
+    "from scripts.quality.issue434_authority_evidence_reconstruction import validate_artifact_set as v;"
+    "a={p:open(p,'rb').read()for p in A[1:2]+A[3:8]};"
+    "z=open(A[7].replace('evidence-trust','core'),'rb').read();"
+    "raise SystemExit(not v(artifacts=a,child_a_matrix_bytes=z).valid)")
         t=["uv","run","python"];r=run(t+["scripts/quality/issue434_authority_evidence_trust.py"]);s=run(t+["-c",c])
     except OSError:fail("I434 unavailable.",f);return
-    f.extend(q+([] if not r.returncode and not s.returncode else ["I434 verify."]))
+    f.extend(q+([]if not(r.returncode or s.returncode)else["I434 verify."]))
 def read(path:str)->str: return (ROOT/path).read_text(encoding="utf-8")
 def fail(message:str,failures:list[str])->None: failures.append(message)
 def changed_files_for_stage_scope() -> list[str]:
