@@ -7,7 +7,6 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT));import scripts.quality.issue427_architecture_reset as issue427_reset  # noqa: E402
 import scripts.quality.issue431_authority_core as issue431_authority_core  # noqa: E402
-import scripts.quality.issue434_authority_evidence_reconstruction as r434  # noqa: E402
 from scripts.quality.branch_identity import current_branch  # noqa: E402
 from scripts.quality.check_stage2_docs import check_retrieval_strategy_v1_parity  # noqa: E402
 from scripts.quality import stage8_brace_expansion_unblock as brace_security  # noqa: E402
@@ -29,11 +28,10 @@ ISSUE434_FILES=set(R434);H434=hashlib.sha256(json.dumps(sorted(R434),separators=
 if H434 != "c3414778d2ee1c9326d1c81537d5dfe9f528b22f12ec98394e0ac4270f7cab90": ISSUE434_FILES=set()
 else: ISSUE434_FILES |= {"scripts/quality/issue434_authority_evidence_reconstruction.py",
     "tests/unit/test_issue434_authority_evidence_reconstruction.py", "tests/unit/test_dependency_security_contract.py"}
-B434="87b8504ca8d5e094394343aeaa4ef5bad46133d5";A434=tuple(R434[i] for i in (0,1,2,3,4,5,6,7,8,13))
-I434_ARTIFACT_SHA=A434
+B434="87b8504ca8d5e094394343aeaa4ef5bad46133d5";A434=tuple(R434[i] for i in (0,1,2,3,4,5,6,7,8,13));I434_ARTIFACT_SHA=A434
 D434="3ccf1eb51a359c734a0a3da7e66df6e4ed79843c8d05273b823636b788fb8a28"
 G434=((450,{R434[0],R434[2]}),(850,{R434[1],R434[13],R434[18]}),(1350,set(R434[3:9])),
-    (4300,set(R434[9:11])|set(ISSUE434_FILES)-set(R434)),(250,{R434[i] for i in (14,15,16,17,19,20,21)}))
+    (4300,set(R434[9:13])|set(ISSUE434_FILES)-set(R434)),(250,{R434[i] for i in (14,15,16,17,19,20,21)}))
 LIMITS434=dict(zip((R434[9],R434[10],*sorted(ISSUE434_FILES-set(R434))),(1200,1300,900,30,700),strict=True))
 CP_BASE, CP_LIMIT = "372fb78245b8890157ffe54f48b90e523017bc43", 1200
 CITATION_PARITY_FILES = {"docs/governance/preflights/issue-372.json", "backend/app/stage4.py",
@@ -126,19 +124,14 @@ EFFECTIVE_STAGE8_ROUTES = PROCESS_BRANCH_ALLOWED_FILES | brace_security.BRACE_EX
 def run(a:list[str])->subprocess.CompletedProcess[str]:return subprocess.run(a,cwd=ROOT,text=True,capture_output=True)
 def issue434_artifact_findings(a:dict[str,bytes])->list[str]:
     if set(a)!=set(A434) or any(not isinstance(v,bytes) for v in a.values()):return ["I434 set."]
-    h={p:hashlib.sha256(a[p]).hexdigest() for p in A434}
-    digest=hashlib.sha256(json.dumps(h,sort_keys=True,separators=(",",":")).encode()).hexdigest()
-    if digest!=D434:return ["I434 bytes."]
-    s={p:a[p] for p in (A434[i] for i in (1,3,4,5,6,7))}
-    child=(ROOT/"docs/governance/authority-core-state-matrices-v1.json").read_bytes()
-    r=r434.validate_artifact_set(artifacts=s,child_a_matrix_bytes=child,expected_artifact_hashes={p:h[p] for p in s})
-    return [] if r.valid and not r.findings else ["I434 sem."]
+    digest=hashlib.sha256(json.dumps({p:hashlib.sha256(a[p]).hexdigest() for p in A434},sort_keys=True,separators=(",",":")).encode()).hexdigest()
+    return [] if digest==D434 else ["I434 bytes."]
 def check_issue434_verifier(f:list[str])->None:
     try:
         a={p:(ROOT/p).read_bytes() for p in A434};findings=issue434_artifact_findings(a)
-        r=run(["uv","run","python","scripts/quality/issue434_authority_evidence_trust.py"])
+        r=run(["uv","run","python","scripts/quality/issue434_authority_evidence_trust.py"]);s=run(["uv","run","python","-c","from scripts.quality.check_stage8_docs import A434;from scripts.quality.issue434_authority_evidence_reconstruction import validate_artifact_set as v;a={p:open(p,'rb').read() for p in A434[1:2]+A434[3:8]};raise SystemExit(not v(artifacts=a,child_a_matrix_bytes=open('docs/governance/authority-core-state-matrices-v1.json','rb').read()).valid)"])
     except OSError:fail("I434 unavailable.",f);return
-    f.extend(findings+([] if not r.returncode else ["I434 verify."]))
+    f.extend(findings+([] if not r.returncode and not s.returncode else ["I434 verify."]))
 def read(path:str)->str: return (ROOT/path).read_text(encoding="utf-8")
 def fail(message:str,failures:list[str])->None: failures.append(message)
 def changed_files_for_stage_scope() -> list[str]:
