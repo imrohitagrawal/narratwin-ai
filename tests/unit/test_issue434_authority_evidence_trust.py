@@ -687,8 +687,8 @@ def test_k02_k03_k04_k05_half_open_structure_b002_b006_b007(
         ("missing-predecessor-bytes", "HISTORY_PREDECESSOR_UNAVAILABLE"),
         ("sequence-jump", "HISTORY_SEQUENCE_JUMP"),
         ("fork", "HISTORY_FORK"),
-        ("duplicate-key-id", "DUPLICATE_KEY_ID"),
-        ("duplicate-key-bytes", "DUPLICATE_PUBLIC_KEY"),
+        ("duplicate-key-id", "KEY_ID_MISMATCH"),
+        ("duplicate-key-bytes", "KEY_ID_MISMATCH"),
         ("rotation-uses-same-key", "ROTATION_PREDECESSOR_RELATION"),
         ("same-key-missing-predecessor", "SAME_KEY_PREDECESSOR_REQUIRED"),
         ("malformed-fork", "WRONG_SCALAR_TYPE"),
@@ -741,7 +741,10 @@ def test_graph_head_and_bound_failures_are_typed_b008(scenario: str, expected: s
         expected_head = head(records[-1])
     else:
         records = tuple(key_record(index + 1) for index in range(65))
-    assert_structure(inspect_structure(records, expected_head=expected_head), expected)
+    result = inspect_structure(records, expected_head=expected_head)
+    if scenario in {"duplicate-key-id", "duplicate-key-bytes"}:
+        assert {"DUPLICATE_KEY_ID", "DUPLICATE_PUBLIC_KEY", "CONFLICTING"}.isdisjoint(finding_codes(result))
+    assert_structure(result, expected)
 
 
 def test_cycle_mutated_after_hash_fails_integrity_before_graph_classification_b008() -> None:
@@ -1096,7 +1099,7 @@ def test_issuing_key_overlap_retirement_and_revocation_use_raw_history(
     assert_no_authority(result)
 
 
-@pytest.mark.parametrize(("field", "expected"), [(name, "PUBLIC_KEY_FORMAT" if name == "publicKeyHex" else "WRONG_SCALAR_TYPE") for name in ["contentHash", "historySequence", "revision", "keyId", "keyObjectId", "publicKeyHex", "historyPredecessorContentHash", "predecessorContentHash", "rotationPredecessor.contentHash", "rotationPredecessor.keyObjectId", "rotationPredecessor.revision", "expectedHead.root_content_hash", "expectedHead.producer_id", "expectedHead.history_sequence", "expectedHead.key_record_content_hash"]])
+@pytest.mark.parametrize(("field", "expected"), [(name, "PUBLIC_KEY_FORMAT" if name == "publicKeyHex" else "WRONG_SCALAR_TYPE") for name in ["contentHash", "historySequence", "revision", "keyId", "keyObjectId", "publicKeyHex", "activationTime", "historyPredecessorContentHash", "predecessorContentHash", "rotationPredecessor.contentHash", "rotationPredecessor.keyObjectId", "rotationPredecessor.revision", "expectedHead.root_content_hash", "expectedHead.producer_id", "expectedHead.history_sequence", "expectedHead.key_record_content_hash"]])
 def test_every_graph_indexed_wrong_type_is_isolated(field: str, expected: str) -> None:
     rows = key_rows()
     malformed = dict(rows["K02"])
@@ -1104,6 +1107,8 @@ def test_every_graph_indexed_wrong_type_is_isolated(field: str, expected: str) -
         rotation = dict(cast(dict[str, object], malformed["rotationPredecessor"]))
         rotation[field.rsplit(".", 1)[1]] = {}
         malformed["rotationPredecessor"] = rotation
+    elif field == "activationTime":
+        malformed[field] = None
     elif not field.startswith("expectedHead"):
         malformed[field] = {}
     if field != "contentHash":
@@ -1121,6 +1126,11 @@ def test_every_graph_indexed_wrong_type_is_isolated(field: str, expected: str) -
         pytest.fail(f"RAW_EXCEPTION:{type(exc).__name__}")
     assert {"HISTORY_FORK", "DUPLICATE_KEY_ID", "DUPLICATE_PUBLIC_KEY", "CONFLICTING"}.isdisjoint(finding_codes(result))
     assert expected in finding_codes(result)
+
+
+def test_schema_collection_bound_precedes_item_work(monkeypatch: pytest.MonkeyPatch) -> None:
+    calls: list[object] = []; original = trust.canonical_bytes; monkeypatch.setattr(trust, "canonical_bytes", lambda value: (calls.__iadd__([value]), original(value))[1]); schema = {"$defs": {}, "root": {"type": "array", "minItems": 1, "maxItems": 64, "unique": True, "items": {"type": "string"}}}; result = trust.validate_closed_schema_value([str(index) for index in range(65)], schema)  # noqa: E702
+    assert any(item.code == "COLLECTION_LIMIT" for item in result) and not calls
 
 
 @pytest.mark.parametrize(
