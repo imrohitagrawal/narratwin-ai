@@ -382,6 +382,8 @@ def evaluate_evidence(
     claimed_authority_sources: tuple[str, ...] = (),
 ) -> Evaluation:
     """Evaluate evidence offline using only explicit bytes, pins, heads, and times."""
+    if not isinstance(root_documents, Mapping) or not isinstance(producer_key_records, Mapping) or not isinstance(independent_trust, IndependentTrustInputs):
+        return Evaluation(Verdict.INVALID, Verdict.INVALID, (Finding("TRUST_INPUT_INVALID", "independentTrust"),))
 
     invalid: list[Finding] = []
     unavailable: list[Finding] = []
@@ -530,16 +532,15 @@ def _validate_blob_mapping(
     expected_schema_version: str,
 ) -> list[Finding]:
     findings: list[Finding] = []
-    total = 0
     items = sorted(
         blobs.items(),
         key=lambda item: item[0] if isinstance(item[0], str) else "",
     )
+    if sum(len(blob) for _, blob in items if isinstance(blob, bytes)) > RETAINED_BLOBS_AGGREGATE_MAX_BYTES: return [Finding("BLOB_AGGREGATE_SIZE_LIMIT", location)]  # noqa: E701
     for expected_hash, blob in items:
         if not isinstance(expected_hash, str) or not isinstance(blob, bytes):
             findings.append(Finding("BLOB_MAPPING_TYPE", location))
             continue
-        total += len(blob)
         if not LOWER_SHA256.fullmatch(expected_hash):
             findings.append(Finding("BLOB_REFERENCE_HASH_FORMAT", location))
         if len(blob) > RETAINED_BLOB_MAX_BYTES:
@@ -556,8 +557,6 @@ def _validate_blob_mapping(
         actual_hash = content_hash(kind, expected_schema_version, value)
         if expected_hash != actual_hash:
             findings.append(Finding("BLOB_CONTENT_HASH_MISMATCH", location))
-    if total > RETAINED_BLOBS_AGGREGATE_MAX_BYTES:
-        findings.append(Finding("BLOB_AGGREGATE_SIZE_LIMIT", location))
     return findings
 
 
@@ -973,6 +972,10 @@ def validate_closed_schema_value(
     """Execute the bounded closed-schema vocabulary used by Child B artifacts."""
 
     findings: list[Finding] = []
+    try:
+        _check_json_value(schema_document)
+    except AuthorityEvidenceTrustError:
+        return (Finding("SCHEMA_DOCUMENT_INVALID"),)
     definitions = schema_document.get("$defs")
     root = schema_document.get("root")
     if not isinstance(definitions, Mapping) or not isinstance(root, Mapping):
@@ -1075,7 +1078,10 @@ def validate_closed_schema_value(
         if isinstance(values, list) and item not in values:
             add("ENUM_MISMATCH", location)
 
-    walk(value, root, "document")
+    try:
+        walk(value, root, "document")
+    except (AuthorityEvidenceTrustError, TypeError, ValueError, re.error):
+        findings.append(Finding("SCHEMA_DESCRIPTOR_INVALID", "document"))
     return tuple(dict.fromkeys(findings))
 
 

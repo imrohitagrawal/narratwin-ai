@@ -60,6 +60,8 @@ def _schema_codes(value: object, filename: str) -> list[str]:
     return codes if schema is None else [item.code for item in core.validate_closed_schema_value(value, schema)]
 def _time(value: object) -> datetime | None:
     return core._utc_value(value)
+def _strings(value: object) -> set[str] | None:
+    return set(value) if isinstance(value, list) and all(isinstance(item, str) for item in value) else None
 def _pin_hash(descriptor: Mapping[str, object]) -> str:
     return hashlib.sha256(core.PIN_DOMAIN + core.canonical_bytes(descriptor)).hexdigest()
 def _pin_codes(descriptor: object, expected_hash: object, phase: str,
@@ -400,21 +402,16 @@ def validate_artifact_set(*, artifacts: object, child_a_matrix_bytes: object,
     if not isinstance(artifacts, Mapping):
         return _result(["CONTRACT_ARTIFACT_INVALID"])
     required = {
-        "AUTHORITY_EVIDENCE_AND_TRUST_V1.md",
-        "authority-evidence-trust-state-matrices-v1.json",
-        "authority-evidence-envelope-v1.schema.json",
-        "authority-evidence-reconstruction-v1.schema.json",
-        "authority-producer-key-v1.schema.json",
-        "authority-producer-trust-root-v1.schema.json",
+        "docs/governance/AUTHORITY_EVIDENCE_AND_TRUST_V1.md",
+        "docs/governance/authority-evidence-trust-state-matrices-v1.json",
+        "docs/governance/schemas/authority-evidence-envelope-v1.schema.json",
+        "docs/governance/schemas/authority-evidence-reconstruction-v1.schema.json",
+        "docs/governance/schemas/authority-producer-key-v1.schema.json",
+        "docs/governance/schemas/authority-producer-trust-root-v1.schema.json",
     }
     if len(artifacts) > len(required): return _result(["CONTRACT_ARTIFACT_INVALID"])  # noqa: E701
-    basenames = {
-        path.rsplit("/", 1)[-1]
-        for path in artifacts
-        if isinstance(path, str)
-    }
     codes: list[str] = []
-    if basenames != required:
+    if set(artifacts) != required:
         codes.append("CONTRACT_ARTIFACT_MISSING")
     if any(not isinstance(path, str) or not isinstance(raw, bytes) for path, raw in artifacts.items()):
         return _result(codes + ["CONTRACT_ARTIFACT_INVALID"])
@@ -461,12 +458,12 @@ def validate_artifact_set(*, artifacts: object, child_a_matrix_bytes: object,
         return _result(codes or ["CONTRACT_MATRIX_INVALID"])
     transitions = [
         row
-        for table in cast(list[object], child.get("matrices", []))
+        for table in cast(list[object], child.get("matrices") if isinstance(child.get("matrices"), list) else [])
         if isinstance(table, Mapping)
-        for row in cast(list[object], table.get("legalTransitions", []))
+        for row in cast(list[object], table.get("legalTransitions") if isinstance(table.get("legalTransitions"), list) else [])
         if isinstance(row, Mapping)
     ]
-    child_rows = {row.get("id"): row.get("requiredTypedReferences") for row in transitions}
+    child_rows = {cast(str, row["id"]): row.get("requiredTypedReferences") for row in transitions if isinstance(row.get("id"), str)}
     child_types = sorted({
         item
         for values in child_rows.values()
@@ -520,12 +517,12 @@ def validate_artifact_set(*, artifacts: object, child_a_matrix_bytes: object,
         codes.append("NESTED_CLOSURE_REQUIRED")
     if any(
         not isinstance(schema.get("root"), Mapping)
-        or set(cast(list[object], cast(Mapping[str, object], schema["root"]).get("required", [])))
+        or _strings(cast(Mapping[str, object], schema["root"]).get("required"))
         != set(cast(Mapping[object, object], cast(Mapping[str, object], schema["root"]).get("properties", {})))
         for schema in schemas
     ):
         codes.append("REQUIRED_SURFACE_MISMATCH")
-    by_contract = {schema.get("contractVersion"): schema for schema in schemas}
+    by_contract = {cast(str, schema["contractVersion"]): schema for schema in schemas if isinstance(schema.get("contractVersion"), str)}
     root_schema = by_contract.get(core.TRUST_ROOT_SCHEMA_VERSION, {})
     root_node = cast(Mapping[str, object], root_schema).get("root", {}) if isinstance(root_schema, Mapping) else {}
     root_properties = root_node.get("properties", {}) if isinstance(root_node, Mapping) else {}
@@ -541,9 +538,10 @@ def validate_artifact_set(*, artifacts: object, child_a_matrix_bytes: object,
     status = cast(Mapping[str, object], reconstruction_properties).get("reconstructionStatus", {}) if isinstance(reconstruction_properties, Mapping) else {}
     if not isinstance(status, Mapping) or status.get("enum") != ["COMPLETE", "UNAVAILABLE", "CONFLICTING", "INVALID"]:
         codes.append("RECONSTRUCTION_STATUS_SET")
-    if not any("exact set" in item for item in cast(list[object], reconstruction_map.get("conditions", [])) if isinstance(item, str)):
+    conditions = reconstruction_map.get("conditions") if isinstance(reconstruction_map.get("conditions"), list) else []
+    if not any("exact set" in item for item in cast(list[object], conditions) if isinstance(item, str)):
         codes.append("RETAINED_EXACT_SET_REQUIRED")
-    if not {"historicalVerdict", "currentVerdict", "historicalFindings", "currentFindings"} <= set(cast(list[object], reconstruction_map.get("required", []))):
+    if not {"historicalVerdict", "currentVerdict", "historicalFindings", "currentFindings"} <= (_strings(reconstruction_map.get("required")) or set()):
         codes.append("HISTORICAL_CURRENT_SEPARATION_REQUIRED")
     return _result(codes, valid=not codes)
 def reconstruct_retained_evidence(*, manifest_bytes: object, retained_blobs: object,
@@ -670,12 +668,13 @@ def validate_evidence_replay_set(*, envelope_documents: object) -> ClosedResult:
 def _verdict(codes: list[str]) -> core.Verdict:
     if any("CONFLICT" in code or "FORK" in code for code in codes):
         return core.Verdict.CONFLICTING
-    invalid = [code for code in codes if "UNAVAILABLE" not in code and "REQUIRED" not in code]
+    invalid = [code for code in codes if "UNAVAILABLE" not in code and code not in {"ROOT_PIN_DESCRIPTOR_REQUIRED", "ACCEPTANCE_HEAD_REQUIRED", "CURRENT_HEAD_REQUIRED"}]
     if invalid:
         return core.Verdict.INVALID
     return core.Verdict.UNAVAILABLE if codes else core.Verdict.VALID
-
-
+def _phase_result(historical_codes: list[str], current_codes: list[str]) -> ClosedResult:
+    historical_codes = sorted(set(historical_codes)); current_codes = sorted(set(current_codes)); historical = _verdict(historical_codes); current = _verdict(current_codes); trusted = historical is core.Verdict.VALID and current is core.Verdict.VALID  # noqa: E702
+    return _result(list(dict.fromkeys(historical_codes + current_codes)), valid=trusted, trusted=trusted, historical_verdict=historical, current_verdict=current, historical_findings=historical_codes, current_findings=current_codes)
 def _history_chain(documents: Mapping[str, Mapping[str, object]], head: core.HistoryHead) -> tuple[Mapping[str, object], ...]:
     chain: list[Mapping[str, object]] = []
     seen: set[str] = set()
@@ -767,7 +766,8 @@ def resolve_complete_evidence(*, envelope_bytes: object, payload_bytes: object, 
     if root is not None and isinstance(payload_bytes, bytes) and isinstance(root.get("maxPayloadBytes"), int) and not isinstance(root.get("maxPayloadBytes"), bool) and len(payload_bytes) > cast(int, root["maxPayloadBytes"]):
         historical_codes.append("ROOT_PAYLOAD_LIMIT"); current_codes.append("ROOT_PAYLOAD_LIMIT")  # noqa: E702
     elif root is not None and isinstance(payload_bytes, bytes) and len(payload_bytes) <= core.PAYLOAD_MAX_BYTES and envelope.get("payloadSha256") != hashlib.sha256(payload_bytes).hexdigest(): historical_codes.append("PAYLOAD_HASH_MISMATCH"); current_codes.append("PAYLOAD_HASH_MISMATCH")  # noqa: E701, E702
-    if "ROOT_PAYLOAD_LIMIT" in historical_codes: return _result(sorted(set(historical_codes + current_codes)), historical_verdict=_verdict(historical_codes), current_verdict=_verdict(current_codes), historical_findings=historical_codes, current_findings=current_codes)  # noqa: E701
+    if root_raw is None and "ROOT_DOCUMENT_UNAVAILABLE" not in historical_codes + current_codes: historical_codes += ["ROOT_AUTHORIZATION_INVALID", "EVIDENCE_SIGNATURE_INVALID"]; current_codes += ["ROOT_AUTHORIZATION_INVALID", "EVIDENCE_SIGNATURE_INVALID"]  # noqa: E701, E702
+    if _verdict(historical_codes) is not core.Verdict.VALID and _verdict(current_codes) is not core.Verdict.VALID: return _phase_result(historical_codes, current_codes)  # noqa: E701
     parsed_keys: dict[str, Mapping[str, object]] = {}; key_candidates: dict[str, Mapping[str, object]] = {}; key_errors: dict[str, list[str]] = {}  # noqa: E702
     for digest, raw in key_record_documents.items():
         record, parse_codes = _parse(raw, code="KEY_RECORD_INVALID")
@@ -786,13 +786,14 @@ def resolve_complete_evidence(*, envelope_bytes: object, payload_bytes: object, 
             seen.add(cursor); historical_codes += key_errors.get(cursor, []); candidate = key_candidates.get(cursor)  # noqa: E702
             if candidate is None: break  # noqa: E701
             cursor = candidate.get("historyPredecessorContentHash")
-    if not isinstance(acceptance_head, core.HistoryHead): historical_codes.append("CURRENT_HEAD_REQUIRED")  # noqa: E701
+    if not isinstance(acceptance_head, core.HistoryHead): historical_codes.append("ACCEPTANCE_HEAD_REQUIRED")  # noqa: E701
     if not isinstance(current_head, core.HistoryHead): current_codes.append("CURRENT_HEAD_REQUIRED")  # noqa: E701
     for head, when, target in (
         (acceptance_head, acceptance_time, historical_codes),
         (current_head, current_time, current_codes),
     ):
         if isinstance(head, core.HistoryHead):
+            if head.key_record_content_hash not in key_record_documents: target.append("KEY_RECORD_UNAVAILABLE"); continue  # noqa: E701, E702
             chain = _history_chain(parsed_keys, head)
             history = inspect_key_history(
                 records=chain,
@@ -808,6 +809,7 @@ def resolve_complete_evidence(*, envelope_bytes: object, payload_bytes: object, 
                 root_invalidations=(),
             )
             target += [item.code for item in history.findings if item.code not in {"KEY_NOT_YET_ACTIVE", "KEY_RETIRED", "KEY_REVOKED"}]
+    if _verdict(historical_codes) is not core.Verdict.VALID and _verdict(current_codes) is not core.Verdict.VALID: return _phase_result(historical_codes, current_codes)  # noqa: E701
     if isinstance(current_head, core.HistoryHead):
         full_history = inspect_key_history(
             records=tuple(parsed_keys.values()),
@@ -881,18 +883,4 @@ def resolve_complete_evidence(*, envelope_bytes: object, payload_bytes: object, 
             target += [item.code for item in subject.findings]
     elif root_raw is not None or "ROOT_DOCUMENT_UNAVAILABLE" not in historical_codes + current_codes:
         historical_codes += ["ROOT_AUTHORIZATION_INVALID", "EVIDENCE_SIGNATURE_INVALID"]; current_codes += ["ROOT_AUTHORIZATION_INVALID", "EVIDENCE_SIGNATURE_INVALID"]  # noqa: E702
-    historical_codes = sorted(set(historical_codes))
-    current_codes = sorted(set(current_codes))
-    historical = _verdict(historical_codes)
-    current = _verdict(current_codes)
-    all_codes = list(dict.fromkeys(historical_codes + current_codes))
-    trusted = historical is core.Verdict.VALID and current is core.Verdict.VALID
-    return _result(
-        all_codes,
-        valid=trusted,
-        trusted=trusted,
-        historical_verdict=historical,
-        current_verdict=current,
-        historical_findings=historical_codes,
-        current_findings=current_codes,
-    )
+    return _phase_result(historical_codes, current_codes)
