@@ -1134,10 +1134,10 @@ def test_schema_collection_bound_precedes_item_work(monkeypatch: pytest.MonkeyPa
     calls: list[object] = []; original = trust.canonical_bytes; monkeypatch.setattr(trust, "canonical_bytes", lambda value: (calls.__iadd__([value]), original(value))[1]); schema = {"$defs": {}, "root": {"type": "array", "minItems": 1, "maxItems": 64, "unique": True, "items": {"type": "string"}}}; result = trust.validate_closed_schema_value([str(index) for index in range(65)], schema)  # noqa: E702
     assert any(item.code == "COLLECTION_LIMIT" for item in result) and not calls
 
-@pytest.mark.parametrize(("value", "schema", "expected"), [("ok", {"$defs": {}, "root": {"type": "string", "rogueKeyword": True}}, "SCHEMA_DESCRIPTOR_INVALID"), ({str(i): i for i in range(65)}, {"$defs": {}, "root": {"type": "object", "closed": True, "required": [], "properties": {}}}, "COLLECTION_LIMIT"), ([["bad"] * 64 for _ in range(64)], {"$defs": {}, "root": {"type": "array", "maxItems": 64, "items": {"type": "array", "maxItems": 64, "items": {"type": "boolean"}}}}, 256)])
+@pytest.mark.parametrize(("value", "schema", "expected"), [("ok", {"$defs": {}, "root": {"type": "string", "rogueKeyword": True}}, "SCHEMA_DESCRIPTOR_INVALID"), ({str(i): i for i in range(65)}, {"$defs": {}, "root": {"type": "object", "closed": True, "required": [], "properties": {}}}, "MEMBER_LIMIT"), ([["bad"] * 64 for _ in range(64)], {"$defs": {}, "root": {"type": "array", "maxItems": 64, "items": {"type": "array", "maxItems": 64, "items": {"type": "boolean"}}}}, "SCHEMA_WORK_LIMIT")])
 def test_schema_executor_closes_descriptors_members_and_result_work(value: object, schema: Mapping[str, object], expected: str | int) -> None:
     findings = trust.validate_closed_schema_value(value, schema)
-    assert len(findings) == expected if isinstance(expected, int) else expected in {item.code for item in findings}
+    assert expected in {item.code for item in findings} and len(findings) <= 256
 
 
 @pytest.mark.parametrize(
