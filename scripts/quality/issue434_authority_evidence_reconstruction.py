@@ -226,7 +226,7 @@ def validate_closed_root(*, root_bytes: object, expected_root_hash: object, pin_
     elif cast(datetime, now) >= cast(datetime, expires):
         codes.append("ROOT_EXPIRED")
     return _result(codes, valid=not codes)
-def resolve_root_invalidation(*, root_documents: object, pin_descriptor: object, expected_pin_set_hash: object, expected_scope: tuple[str, str, str, str], prior_root_content_hash: object, evaluation_time: object, expected_phase: object = "CURRENT") -> ClosedResult:
+def resolve_root_invalidation(*, root_documents: object, pin_descriptor: object, expected_pin_set_hash: object, expected_scope: tuple[str, str, str, str], prior_root_content_hash: object, evaluation_time: object, expected_phase: object = "CURRENT", authorization_time: object = None) -> ClosedResult:
     phase = expected_phase if isinstance(expected_phase, str) else "INVALID"
     codes = _pin_codes(
         pin_descriptor,
@@ -244,8 +244,8 @@ def resolve_root_invalidation(*, root_documents: object, pin_descriptor: object,
     if set(root_documents) != set(pins):
         codes.append("ROOT_DOCUMENT_SET_MISMATCH")
     codes += _root_history_codes(root_documents)
-    now = _time(evaluation_time)
-    if now is None:
+    now, authorization = _time(evaluation_time), _time(authorization_time) if authorization_time is not None else _time(evaluation_time)
+    if now is None or authorization is None:
         codes.append("TIME_FORMAT")
     applies = False; boundaries: list[datetime] = []  # noqa: E702
     for expected_hash, raw in root_documents.items():
@@ -271,7 +271,7 @@ def resolve_root_invalidation(*, root_documents: object, pin_descriptor: object,
             boundary = _time(compromise.get("invalidatesPriorRootFrom"))
             if boundary is not None: boundaries.append(boundary)  # noqa: E701
     if len(set(boundaries)) > 1: codes.append("ROOT_INVALIDATION_CONFLICT")  # noqa: E701
-    applies = not codes and now is not None and any(now >= boundary for boundary in boundaries)
+    applies = not codes and authorization is not None and any(authorization >= boundary for boundary in boundaries)
     return _result(codes, structural_invalidation_applies=applies)
 def inspect_key_history(**kwargs: object) -> ClosedResult:
     result = core.inspect_key_history_structure(**cast(Any, kwargs))
@@ -566,6 +566,7 @@ def reconstruct_retained_evidence(*, manifest_bytes: object, retained_blobs: obj
     except core.AuthorityEvidenceTrustError:
         codes.append("RECONSTRUCTION_CONTENT_HASH_MISMATCH")
     groups = [manifest.get(name) for name in ("acceptanceRootPinReferences", "currentRootPinReferences", "rootReferences", "keyReferences")]
+    pin_hashes = {item.get("contentHash") for group in groups[:2] if isinstance(group, list) for item in group if isinstance(item, Mapping)}
     references = [item for group in groups if isinstance(group, list) for item in group] + [manifest.get("envelopeReference"), manifest.get("payloadReference")]
     if any(not isinstance(item, Mapping) for item in references):
         return _result(codes + ["RECONSTRUCTION_REFERENCE_INVALID"], reconstruction_status="INVALID")
@@ -601,12 +602,12 @@ def reconstruct_retained_evidence(*, manifest_bytes: object, retained_blobs: obj
             codes += ["RETAINED_BLOB_LENGTH_MISMATCH", "RETAINED_BLOB_HASH_MISMATCH"]; continue  # noqa: E702
         role, identity = reference.get("role"), None
         parsed: dict[str, object] | None = None
-        if index in (0, 1) or role in {"TRUST_ROOT", "PRODUCER_KEY", "EVIDENCE_ENVELOPE"}:
+        if digest in pin_hashes or role in {"TRUST_ROOT", "PRODUCER_KEY", "EVIDENCE_ENVELOPE"}:
             parsed, parse_codes = _parse(blob, code="RETAINED_BLOB_INVALID")
             codes += parse_codes
             if parsed is not None and blob != core.canonical_bytes(parsed):
                 codes.append("RETAINED_BLOB_CANONICAL_MISMATCH")
-        if parsed is not None and index in (0, 1):
+        if parsed is not None and digest in pin_hashes:
             identity = _pin_hash(parsed)
         elif parsed is not None and role in {"TRUST_ROOT", "PRODUCER_KEY", "EVIDENCE_ENVELOPE"}:
             kind = {"TRUST_ROOT": core.ContentKind.TRUST_ROOT, "PRODUCER_KEY": core.ContentKind.PRODUCER_KEY, "EVIDENCE_ENVELOPE": core.ContentKind.EVIDENCE_OBJECT}[role]
@@ -766,7 +767,7 @@ def resolve_complete_evidence(*, envelope_bytes: object, payload_bytes: object, 
                 target += [item.code for item in root_result.findings]
             if all(isinstance(item, str) for item in pins): target += _root_history_codes({cast(str, item): root_documents.get(item) for item in pins})  # noqa: E701
             if all(isinstance(item, str) and item in root_documents for item in pins):
-                invalidation = resolve_root_invalidation(root_documents={cast(str, item): root_documents[item] for item in pins}, pin_descriptor=descriptor, expected_pin_set_hash=expected_hash, expected_scope=scope, prior_root_content_hash=root_hash, evaluation_time=when, expected_phase=phase)
+                invalidation = resolve_root_invalidation(root_documents={cast(str, item): root_documents[item] for item in pins}, pin_descriptor=descriptor, expected_pin_set_hash=expected_hash, expected_scope=scope, prior_root_content_hash=root_hash, evaluation_time=when, expected_phase=phase, authorization_time=envelope.get("capturedAt"))
                 target += [item.code for item in invalidation.findings]
                 if invalidation.structural_invalidation_applies: target.append("ROOT_COMPROMISE_INVALIDATION")  # noqa: E701
     root, _ = _parse(root_raw, code="ROOT_DOCUMENT_INVALID")
