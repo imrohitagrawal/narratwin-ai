@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Closed offline trust and retained-evidence verification for Issue #434."""
+# ruff: noqa: E302, E305
 
 from __future__ import annotations
 
@@ -94,8 +95,6 @@ def _pin_codes(descriptor: object, expected_hash: object, phase: str,
         except core.AuthorityEvidenceTrustError:
             codes.append("ROOT_PIN_DESCRIPTOR_INVALID")
     return codes
-
-
 def validate_pin_transition(*, acceptance_descriptor: object, acceptance_expected_hash: object,
                             current_descriptor: object, current_expected_hash: object,
                             expected_scope: tuple[str, str, str, str]) -> ClosedResult:
@@ -107,8 +106,17 @@ def validate_pin_transition(*, acceptance_descriptor: object, acceptance_expecte
         if isinstance(acceptance, list) and isinstance(current, list) and all(isinstance(item, str) for item in acceptance + current) and not set(acceptance) <= set(current):
             codes.append("ROOT_PIN_ROLLBACK")
     return _result(codes, valid=not codes)
-
-
+def _root_history_codes(documents: Mapping[str, object]) -> list[str]:
+    roots = {digest: root for digest, raw in documents.items() if isinstance(digest, str) and (root := _parse(raw, code="ROOT_DOCUMENT_INVALID")[0]) is not None}; codes: list[str] = []  # noqa: E702
+    predecessors: dict[object, int] = {}; identities: set[tuple[object, object]] = set()  # noqa: E702
+    for digest, root in roots.items():
+        predecessor = root.get("predecessorRootContentHash"); version = root.get("rootVersion"); identity = (root.get("rootId"), version); prior = roots.get(predecessor) if isinstance(predecessor, str) else None  # noqa: E702
+        if predecessor is not None and (isinstance(version, bool) or not isinstance(version, int) or prior is None or prior.get("rootVersion") != version - 1): codes.append("ROOT_PREDECESSOR_MISMATCH")  # noqa: E701
+        if predecessor is not None: predecessors[predecessor] = predecessors.get(predecessor, 0) + 1  # noqa: E701
+        if identity in identities: codes.append("ROOT_HISTORY_CONFLICT")  # noqa: E701
+        identities.add(identity)
+    if any(count > 1 for count in predecessors.values()): codes.append("ROOT_HISTORY_CONFLICT")  # noqa: E701
+    return codes
 def _key_binding_codes(root: Mapping[str, object]) -> list[str]:
     codes: list[str] = []
     for name, members, code in (
@@ -133,8 +141,6 @@ def _key_binding_codes(root: Mapping[str, object]) -> list[str]:
         ):
             codes.append(code)
     return codes
-
-
 def validate_closed_root(*, root_bytes: object, expected_root_hash: object, pin_descriptor: object, expected_pin_set_hash: object, expected_phase: str, expected_scope: tuple[str, str, str, str], evaluation_time: object) -> ClosedResult:
     root, codes = _parse(root_bytes, code="ROOT_DOCUMENT_INVALID")
     codes += _pin_codes(
@@ -214,8 +220,6 @@ def validate_closed_root(*, root_bytes: object, expected_root_hash: object, pin_
     elif cast(datetime, now) >= cast(datetime, expires):
         codes.append("ROOT_EXPIRED")
     return _result(codes, valid=not codes)
-
-
 def resolve_root_invalidation(*, root_documents: object, pin_descriptor: object, expected_pin_set_hash: object, expected_scope: tuple[str, str, str, str], prior_root_content_hash: object, evaluation_time: object) -> ClosedResult:
     codes = _pin_codes(
         pin_descriptor,
@@ -259,14 +263,10 @@ def resolve_root_invalidation(*, root_documents: object, pin_descriptor: object,
     if len(set(boundaries)) > 1: codes.append("ROOT_INVALIDATION_CONFLICT")  # noqa: E701
     applies = now is not None and any(now >= boundary for boundary in boundaries)
     return _result(codes, structural_invalidation_applies=applies)
-
-
 def inspect_key_history(**kwargs: object) -> ClosedResult:
     result = core.inspect_key_history_structure(**cast(Any, kwargs))
     codes = [item.code for item in result.findings]
     return _result(codes, valid=not codes)
-
-
 def resolve_issuing_key(*, records: object, expected_head: object, issuing_key: object,
                         capture_time: object,
                         evaluation_time: object | None = None) -> ClosedResult:
@@ -285,8 +285,6 @@ def resolve_issuing_key(*, records: object, expected_head: object, issuing_key: 
         [item.code for item in result.findings],
         issuing_key_eligible=result.issuing_key_eligible,
     )
-
-
 def validate_subject_phase(*, envelope: object, root: object, taxonomy_matrix_bytes: object, evaluation_time: object) -> ClosedResult:
     codes: list[str] = []
     if not isinstance(envelope, Mapping) or not isinstance(root, Mapping):
@@ -364,6 +362,9 @@ def validate_subject_phase(*, envelope: object, root: object, taxonomy_matrix_by
     else:
         if cast(datetime, captured) < cast(datetime, observed):
             codes.append("CAPTURE_PRECEDES_OBSERVATION")
+        if cast(datetime, captured) > cast(datetime, now): codes.append("CAPTURE_AFTER_EVALUATION")  # noqa: E701
+        root_start, root_end = _time(root.get("validFrom")), _time(root.get("expiresAt"))
+        if root_start is None or root_end is None or not root_start <= cast(datetime, captured) < root_end: codes.append("ROOT_CAPTURE_WINDOW")  # noqa: E701
         if cast(datetime, not_before) >= cast(datetime, expires):
             codes.append("ENVELOPE_TIME_WINDOW")
         if cast(datetime, now) < cast(datetime, not_before):
@@ -379,8 +380,6 @@ def validate_subject_phase(*, envelope: object, root: object, taxonomy_matrix_by
             if any(isinstance(limit, bool) or not isinstance(limit, int) for limit in limits): codes.append("FRESHNESS_POLICY_INVALID")  # noqa: E701
             elif ((cast(datetime, captured) - cast(datetime, observed)).total_seconds() > cast(int, limits[0]) or (cast(datetime, now) - cast(datetime, observed)).total_seconds() > cast(int, limits[1]) or (cast(datetime, expires) - cast(datetime, not_before)).total_seconds() > cast(int, limits[2])): codes.append("FRESHNESS_EXCEEDED")  # noqa: E701
     return _result(codes, valid=not codes)
-
-
 def _object_nodes(value: object) -> list[Mapping[str, object]]:
     nodes: list[Mapping[str, object]] = []
     if isinstance(value, Mapping):
@@ -392,8 +391,6 @@ def _object_nodes(value: object) -> list[Mapping[str, object]]:
         for child in value:
             nodes += _object_nodes(child)
     return nodes
-
-
 def validate_artifact_set(*, artifacts: object, child_a_matrix_bytes: object,
                           expected_artifact_hashes: object = None) -> ClosedResult:
     if not isinstance(artifacts, Mapping):
@@ -406,6 +403,7 @@ def validate_artifact_set(*, artifacts: object, child_a_matrix_bytes: object,
         "authority-producer-key-v1.schema.json",
         "authority-producer-trust-root-v1.schema.json",
     }
+    if len(artifacts) > len(required): return _result(["CONTRACT_ARTIFACT_INVALID"])  # noqa: E701
     basenames = {
         path.rsplit("/", 1)[-1]
         for path in artifacts
@@ -543,8 +541,6 @@ def validate_artifact_set(*, artifacts: object, child_a_matrix_bytes: object,
     if not {"historicalVerdict", "currentVerdict", "historicalFindings", "currentFindings"} <= set(cast(list[object], reconstruction_map.get("required", []))):
         codes.append("HISTORICAL_CURRENT_SEPARATION_REQUIRED")
     return _result(codes, valid=not codes)
-
-
 def reconstruct_retained_evidence(*, manifest_bytes: object, retained_blobs: object,
                                   evaluation_time: object, trust_inputs: object = None) -> ClosedResult:
     manifest, codes = _parse(manifest_bytes, code="RECONSTRUCTION_INVALID")
@@ -643,8 +639,6 @@ def reconstruct_retained_evidence(*, manifest_bytes: object, retained_blobs: obj
                 codes.append("RECONSTRUCTED_TRUST_MISMATCH")
     status = "INVALID" if any("UNAVAILABLE" not in code and code != "RETENTION_EXPIRED" for code in codes) else "UNAVAILABLE" if codes else "COMPLETE"
     return _result(codes, valid=not codes, reconstruction_status=status)
-
-
 def validate_evidence_replay_set(*, envelope_documents: object) -> ClosedResult:
     if not isinstance(envelope_documents, (tuple, list)) or len(envelope_documents) > 256: return _result(["EVIDENCE_REPLAY_SET_INVALID"])  # noqa: E701
     identities: dict[tuple[object, ...], bytes] = {}; lineage: dict[tuple[object, ...], Mapping[str, object]] = {}  # noqa: E702
@@ -665,11 +659,10 @@ def validate_evidence_replay_set(*, envelope_documents: object) -> ClosedResult:
     for identity, replay_document in lineage.items():
         revision = cast(int, identity[-1]); predecessor = lineage.get(identity[:-1] + (revision - 1,))  # noqa: E702
         if revision > 1 and (predecessor is None or replay_document.get("predecessorContentHash") != predecessor.get("contentHash")): codes.append("EVIDENCE_PREDECESSOR_MISMATCH")  # noqa: E701
+        elif predecessor is not None and any(replay_document.get(name) != predecessor.get(name) for name in core.ENVELOPE_MEMBERS - {"contentHash", "predecessorContentHash", "revision", "signature"}): codes.append("EVIDENCE_BINDING_MISMATCH")  # noqa: E701
     codes = list(dict.fromkeys(codes))
     verdict = _verdict(codes)
     return _result(codes, valid=not codes, historical_verdict=verdict, current_verdict=verdict)
-
-
 def _verdict(codes: list[str]) -> core.Verdict:
     if any("CONFLICT" in code or "FORK" in code for code in codes):
         return core.Verdict.CONFLICTING
@@ -759,6 +752,7 @@ def resolve_complete_evidence(*, envelope_bytes: object, payload_bytes: object, 
                     continue
                 root_result = validate_closed_root(root_bytes=raw, expected_root_hash=pinned_hash, pin_descriptor=descriptor, expected_pin_set_hash=expected_hash, expected_phase=phase, expected_scope=scope, evaluation_time=when)
                 target += [item.code for item in root_result.findings]
+            if all(isinstance(item, str) for item in pins): target += _root_history_codes({cast(str, item): root_documents.get(item) for item in pins})  # noqa: E701
     if isinstance(current_pins, list) and all(isinstance(item, str) and item in root_documents for item in current_pins):
         current_roots = {cast(str, item): root_documents[item] for item in current_pins}
         invalidation = resolve_root_invalidation(root_documents=current_roots, pin_descriptor=current_pin_descriptor, expected_pin_set_hash=current_expected_pin_hash, expected_scope=scope, prior_root_content_hash=root_hash, evaluation_time=current_time)
@@ -770,18 +764,24 @@ def resolve_complete_evidence(*, envelope_bytes: object, payload_bytes: object, 
         historical_codes.append("ROOT_ID_MISMATCH"); current_codes.append("ROOT_ID_MISMATCH")  # noqa: E702
     if root is not None and isinstance(payload_bytes, bytes) and isinstance(root.get("maxPayloadBytes"), int) and not isinstance(root.get("maxPayloadBytes"), bool) and len(payload_bytes) > cast(int, root["maxPayloadBytes"]):
         historical_codes.append("ROOT_PAYLOAD_LIMIT"); current_codes.append("ROOT_PAYLOAD_LIMIT")  # noqa: E702
-    parsed_keys: dict[str, Mapping[str, object]] = {}
+    parsed_keys: dict[str, Mapping[str, object]] = {}; key_candidates: dict[str, Mapping[str, object]] = {}; key_errors: dict[str, list[str]] = {}  # noqa: E702
     for digest, raw in key_record_documents.items():
         record, parse_codes = _parse(raw, code="KEY_RECORD_INVALID")
-        historical_codes += parse_codes
-        current_codes += parse_codes
-        if isinstance(digest, str) and record is not None:
+        if not isinstance(digest, str): current_codes += parse_codes or ["KEY_DOCUMENT_IDENTITY_MISMATCH"]; continue  # noqa: E701, E702
+        key_errors[digest] = list(parse_codes)
+        if record is not None:
+            key_candidates[digest] = record
             record_codes = _schema_codes(record, "authority-producer-key-v1.schema.json")
             if record.get("contentHash") != digest or raw != core.canonical_bytes(record): record_codes.append("KEY_DOCUMENT_IDENTITY_MISMATCH")  # noqa: E701
-            historical_codes += record_codes; current_codes += record_codes  # noqa: E702
-            if record_codes:
-                continue
-            parsed_keys[digest] = record
+            key_errors[digest] += record_codes
+            if not key_errors[digest]: parsed_keys[digest] = record  # noqa: E701
+    current_codes += [code for errors in key_errors.values() for code in errors]
+    if isinstance(acceptance_head, core.HistoryHead):
+        cursor: object = acceptance_head.key_record_content_hash; seen: set[str] = set()  # noqa: E702
+        while isinstance(cursor, str) and cursor not in seen:
+            seen.add(cursor); historical_codes += key_errors.get(cursor, []); candidate = key_candidates.get(cursor)  # noqa: E702
+            if candidate is None: break  # noqa: E701
+            cursor = candidate.get("historyPredecessorContentHash")
     if not isinstance(acceptance_head, core.HistoryHead): historical_codes.append("CURRENT_HEAD_REQUIRED")  # noqa: E701
     if not isinstance(current_head, core.HistoryHead): current_codes.append("CURRENT_HEAD_REQUIRED")  # noqa: E701
     for head, when, target in (

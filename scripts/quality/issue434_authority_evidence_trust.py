@@ -860,7 +860,6 @@ def inspect_key_history_structure(
                 or record.get("predecessorContentHash") is not None
                 or record.get("revision") != 1
                 or prior is None
-                or prior.get("contentHash") != record.get("historyPredecessorContentHash")
                 or rotation.get("keyObjectId") != prior.get("keyObjectId")
                 or prior.get("keyObjectId") == key_object
                 or prior.get("publicKeyHex") == public_key
