@@ -177,20 +177,12 @@ def test_legacy_route_allowlists_and_behavior_remain_exact(monkeypatch: Any) -> 
         error=f"Stage 8 changed file outside the allowlist: {rejected}"
         for c,w in ((sorted(source[branch]),[]),([rejected],[error])): assert route(monkeypatch,branch,c)==w
 def test_stage8_script_markers_match_mandatory_container_scanners() -> None:
-    f:list[str]=[]; stage8.check_dependencies_and_scripts(f)
+    f:list[str]=[]; stage8.check_dependencies_and_scripts(f); assert stage8.node_security.I376_ROUTES
     assert not any(m in "\n".join(f) for m in ("docker scout cves","--only-severity critical,high"))
 def test_unrouted_stage8_branch_is_rejected(monkeypatch:Any)->None:
     b="feature/untracked-stage8-work"; monkeypatch.setattr(stage8,"current_branch",lambda:b); f:list[str]=[]
     stage8.check_stage_marker_and_branch(f)
     assert f==[f"Stage 8 work must run on a stage8-* branch or main after merge; got {b}."]
-def test_issue376_security_route_is_exact(monkeypatch: Any) -> None:
-    from scripts.quality import stage8_node_security as security
-    branch = security.ISSUE376_SECURITY_BRANCH
-    files = sorted(security.ISSUE376_SECURITY_FILES)
-    assert route(monkeypatch, branch, files) == []
-    assert route(monkeypatch, branch, files + ["frontend/package-lock.json"]) == [
-        "Stage 8 changed file outside the allowlist: frontend/package-lock.json"
-    ]
 A22_SOURCE,A22_DECL,A22_RUNTIME,A22_SELECT,A22_REFUSE=("Stage 2 retrieval-v1 accepted sources must retain the canonica"
     "l oracle.|Stage 2 retrievalStrategy must equal the canonical v1 machine declaration.|Stage 4 retrieval-v1 runtime "
     "constants must equal the canonical oracle.|Stage 4 retrieval selection must preserve canonical v1 control flow.|"
