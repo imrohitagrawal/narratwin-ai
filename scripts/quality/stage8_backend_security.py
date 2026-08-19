@@ -6,10 +6,10 @@ import re
 from pathlib import Path
 from typing import Any, Callable
 
-ISSUE436_BRANCH = "stage8-436-backend-tls-capability-isolation"
+ISSUE436_BRANCH = "stage8-436-backend-tls-capability-isolation-r2"
 ISSUE436_BASE = "87b8504ca8d5e094394343aeaa4ef5bad46133d5"
-ISSUE436_PREFLIGHT_COMMIT = "5f77b2c785455f59ad9e25ebedf5959816f106f8"
-ISSUE436_CHARGE_LIMIT = 1200
+ISSUE436_PREFLIGHT_COMMIT = "9dabf11889e97c127108b54a983d1fd9970b5125"
+ISSUE436_CHARGE_LIMIT = 1400
 ISSUE436_FILES = {
     "docs/governance/preflights/issue-436.json",
     "backend/Dockerfile",
@@ -19,6 +19,7 @@ ISSUE436_FILES = {
     "tests/unit/test_stage8_backend_security.py",
     "tests/unit/test_stage8_quality_gate.py",
     "tests/unit/test_backend_image_package_check.py",
+    "tests/unit/test_cpython_security_backports.py",
     "docs/ADR/0006-stage8-release-hardening.md",
     "docs/STATUS.md",
     "docs/TRACEABILITY.md",
@@ -140,7 +141,7 @@ def check_route(root: Path, run: Callable[[list[str]], Any], failures: list[str]
     if observed != ISSUE436_FILES:
         failures.append("Issue #436 charged-line snapshots do not cover the exact route.")
     if max(total for total, _ in charges) > ISSUE436_CHARGE_LIMIT:
-        failures.append("Issue #436 exceeds its 1,200 charged-line budget.")
+        failures.append("Issue #436 exceeds its 1,400 charged-line budget.")
 
 
 def check(

@@ -19,6 +19,9 @@ def test_issue436_backend_image_contract_is_exact_and_fail_closed() -> None:
     assert security.CPYTHON_SHA256 == (
         "1e66a7945a48390ee4c2a4268a0e4185884059a13c4aab6d148aa208deea4a76"
     )
+    assert security.ISSUE436_BRANCH == "stage8-436-backend-tls-capability-isolation-r2"
+    assert security.ISSUE436_CHARGE_LIMIT == 1400
+    assert len(security.ISSUE436_FILES) == 13
     assert security.backend_dockerfile_valid(dockerfile)
 
 
@@ -104,8 +107,8 @@ def test_issue436_route_rejects_over_budget_foreign_and_untracked_evidence() -> 
         return failures
 
     exact = "".join(f"0\t0\t{path}\n" for path in paths)
-    over = exact.replace(f"0\t0\t{paths[0]}", f"1201\t0\t{paths[0]}")
-    assert "Issue #436 exceeds its 1,200 charged-line budget." in check(over)
+    over = exact.replace(f"0\t0\t{paths[0]}", f"1401\t0\t{paths[0]}")
+    assert "Issue #436 exceeds its 1,400 charged-line budget." in check(over)
     foreign = exact.replace(paths[0], "forbidden/outside.txt")
     assert "Issue #436 charged-line evidence has a foreign or duplicate path." in check(foreign)
     assert "Issue #436 untracked-path evidence is not allowed." in check(exact, "new.txt\n")

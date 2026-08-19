@@ -1502,9 +1502,11 @@ standalone status-only successor PR.
 
 Issue #436 is the separately governed backend half of the Stage 8 container
 security prerequisite discovered while validating Child B Issue #434. Branch
-`stage8-436-backend-tls-capability-isolation` began at exact accepted main
+`stage8-436-backend-tls-capability-isolation-r2` began at exact accepted main
 `87b8504ca8d5e094394343aeaa4ef5bad46133d5` with a committed preflight and
-RED-before-GREEN tests. Child B remains frozen at its original 89-commit exact
+preserved RED-before-GREEN tests after OWNER reset comment `5347307361` added
+the obsolete CPython Docker-shape contract to the exact route. Child B remains
+frozen at its original 89-commit exact
 head; this prerequisite does not modify, rebase, or activate it.
 
 The candidate backend image now uses verified CPython 3.13.15 source and exact

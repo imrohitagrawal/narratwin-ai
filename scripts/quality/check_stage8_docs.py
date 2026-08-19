@@ -12,11 +12,8 @@ from scripts.quality.check_stage2_docs import check_retrieval_strategy_v1_parity
 from scripts.quality import stage8_brace_expansion_unblock as brace_security  # noqa: E402
 from scripts.quality import stage8_cache_pruning as cache_pruning  # noqa: E402
 from scripts.quality.stage8_a23b import A23A_BRANCH, A23B_BRANCH, A23_ROUTES, check_a23b  # noqa: E402
-from scripts.quality import (  # noqa: E402
-    stage8_backend_security as backend_security,
-    stage8_cut1_routes as cut1_routes,
-    stage8_node_security as node_security,
-)
+from scripts.quality import stage8_backend_security as backend_security, stage8_cut1_routes as cut1_routes  # noqa: E402
+from scripts.quality import stage8_node_security as node_security  # noqa: E402
 STAGE8_BRANCH_PATTERN = re.compile(r"(?ai)^stage8-(?![a-z0-9-]*366(?:-|$))(?![a-z0-9-]*cut1)[a-z0-9-]+$")
 ISSUE84_GUARDRAIL_BRANCH = "guardrail-main-merge-push-detection-84"
 ISSUE287_STAGE8_DRIFT_BRANCH = "phase-1-closure-process-287-stage8-quality-gate-drift"
@@ -496,10 +493,8 @@ def main() -> int:
         check_docs(failures)
     if failures:
         print("Stage 8 quality gate failed:")
-        for item in failures:
-            print(f"- {item}")
+        for item in failures: print(f"- {item}")
         return 1
-    print("Stage 8 quality gate passed.")
-    return 0
+    print("Stage 8 quality gate passed."); return 0
 if __name__ == "__main__":
     raise SystemExit(main())

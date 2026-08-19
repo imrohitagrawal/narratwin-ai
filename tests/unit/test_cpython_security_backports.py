@@ -136,10 +136,12 @@ def test_runtime_regression_cli_is_bounded_and_probe_entrypoint_fails_closed() -
     assert module.run_regressions(expect="fixed", max_seconds=2.0, probes=probes)["status"] == "fail"
 
 
-def test_dockerfile_copies_verified_backport_files_into_final_runtime() -> None:
+def test_dockerfile_builds_verified_fixed_cpython_release_for_final_runtime() -> None:
     dockerfile = (ROOT / "backend/Dockerfile").read_text(encoding="utf-8")
-    assert "FROM " + BASE_IMAGE + " AS cpython-backports" in dockerfile
-    assert "apply_backports.py" in dockerfile and "verify-cpython-backports.py" in dockerfile
-    assert "COPY --from=cpython-backports /usr/local/lib/python3.13/tarfile.py /usr/local/lib/python3.13/tarfile.py" in dockerfile
-    assert "COPY --from=cpython-backports /usr/local/lib/python3.13/html/parser.py /usr/local/lib/python3.13/html/parser.py" in dockerfile
-    assert "curl " not in dockerfile and "wget " not in dockerfile and "ADD https://" not in dockerfile
+    assert "ENV PYTHON_VERSION=3.13.15" in dockerfile
+    assert "ENV PYTHON_SHA256=1e66a7945a48390ee4c2a4268a0e4185884059a13c4aab6d148aa208deea4a76" in dockerfile
+    assert '"https://www.python.org/ftp/python/${PYTHON_VERSION}/Python-${PYTHON_VERSION}.tar.xz"' in dockerfile
+    assert 'echo "$PYTHON_SHA256 *python.tar.xz" | sha256sum -c -' in dockerfile
+    assert "gpg --batch --verify python.tar.xz.asc python.tar.xz" in dockerfile
+    assert "libcrypto3=3.3.7-r0" in dockerfile and "libssl3=3.3.7-r0" in dockerfile
+    assert "apply_backports.py" not in dockerfile and BASE_IMAGE not in dockerfile
