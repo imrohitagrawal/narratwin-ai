@@ -1053,7 +1053,7 @@ def test_pinned_successor_root_invalidation_before_at_after(
         ("K02", {"rotationRevision": 99}, "ROTATION_PREDECESSOR_RELATION"),
         ("K02", {"predecessorAuthorizationSignature": None}, "PREDECESSOR_AUTHORIZATION_REQUIRED"),
         ("K03", {"retiredAt": None}, "RETIREMENT_REQUIRED"),
-        ("K03", {"activationTime": T00}, "KEY_ACTIVATION_CHANGED"),
+        ("K03", {"retiredAt": T00}, "RETIREMENT_BOUNDARY_ORDER"),
         ("K03", {"predecessorAuthorizationSignature": "0" * 128}, "PREDECESSOR_AUTHORIZATION_PROHIBITED"),
         ("K04", {"retiredAt": T20}, "REVOKE_SOURCE_STATE"),
         ("K04", {"invalidatesFrom": None}, "REVOCATION_BOUNDARY_REQUIRED"),
