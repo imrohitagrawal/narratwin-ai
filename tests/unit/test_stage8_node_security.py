@@ -107,6 +107,7 @@ def test_issue376_shell_free_dependency_builder_contract_fails_closed() -> None:
         "/runtime/libatomic-record",
         "/runtime/var/lib/db/sbom/",
         "process.config.variables.node_use_quic!==false",
+        "/tmp/narratwin-build-nonce",
     )
     prohibited = ("/bin/sh", "apk ", "apt-get", "sha512sum", "npm ci --", "libcrypto3", "libssl3", "busybox")
     assert all(marker in dockerfile for marker in required)
@@ -119,6 +120,7 @@ def test_issue376_shell_free_dependency_builder_contract_fails_closed() -> None:
         dockerfile + "\nCOPY --from=node-source /lib/libssl.so.3 /lib/\n",
         dockerfile.replace("/runtime/libatomic-record", "/tmp/libatomic-record", 1),
         dockerfile.replace("process.config.variables.node_use_quic!==false", "true"),
+        dockerfile.replace("randomBytes(32)", "Buffer.alloc(32)"),
     ]
     assert all(not security.issue376_frontend_builder_valid(candidate) for candidate in mutations)
 
