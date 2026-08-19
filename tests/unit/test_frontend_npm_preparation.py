@@ -71,3 +71,11 @@ def test_preparer_rejects_unexpected_cli_arguments() -> None:
     )
     assert result.returncode != 0
     assert "arguments" in result.stderr.lower()
+
+
+def test_runtime_assembler_is_ephemeral_and_shell_free() -> None:
+    source = PREPARER.read_text(encoding="utf-8")
+    required = ("assembleFrontendRuntime", "spawnSync", "/mnt/deps", "/mnt/frontend", "/tmp/frontend-build")
+    prohibited = ("shell: true", "execSync", "/bin/sh", "narratwin-build-nonce")
+    assert all(marker in source for marker in required)
+    assert all(marker not in source for marker in prohibited)
