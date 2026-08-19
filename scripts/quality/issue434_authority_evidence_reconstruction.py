@@ -823,19 +823,13 @@ def resolve_complete_evidence(*, envelope_bytes: object, payload_bytes: object, 
                     field = {"ISSUE_GENESIS": "activationTime", "ROTATE": "activationTime", "RETIRE": "retiredAt", "REVOKE": "revokedAt"}.get(cast(str, item.get("operation"))); invalidation = resolve_root_invalidation(root_documents={cast(str, digest): root_documents[digest] for digest in pins}, pin_descriptor=descriptor, expected_pin_set_hash=expected_hash, expected_scope=scope, prior_root_content_hash=root_hash, evaluation_time=when, expected_phase=phase, authorization_time=item.get(field) if field is not None else None); target += [finding.code for finding in invalidation.findings]; target += ["ROOT_COMPROMISE_INVALIDATION"] if invalidation.structural_invalidation_applies else []  # noqa: E702
     if _verdict(historical_codes) is not core.Verdict.VALID and _verdict(current_codes) is not core.Verdict.VALID: return _phase_result(historical_codes, current_codes)  # noqa: E701
     if _valid_head(current_head) and "KEY_RECORD_UNAVAILABLE" not in current_codes:
-        full_history = inspect_key_history(
-            records=tuple(parsed_keys.values()),
-            expected_head=current_head,
-            repository=scope[0],
-            program_id=scope[1],
-            generation_id=scope[2],
-            producer_id=scope[3],
-            root_content_hash=cast(str, root_hash),
-            capture_time=envelope.get("capturedAt"),
-            evaluation_time=current_time,
-            independently_pinned_roots=(root_hash,),
-            root_invalidations=(),
-        )
+        root_key = root.get("rootAuthorizationKey") if root is not None else None; root_public = root_key.get("publicKeyHex") if isinstance(root_key, Mapping) else None; authorized_keys: dict[str, Mapping[str, object]] = {}  # noqa: E701, E702
+        for digest in sorted(parsed_keys):
+            item = parsed_keys[digest]; rotation = item.get("rotationPredecessor"); predecessor = parsed_keys.get(cast(str, rotation.get("contentHash"))) if isinstance(rotation, Mapping) and isinstance(rotation.get("contentHash"), str) else None  # noqa: E702
+            signatures = core.verify_key_record_authorization_signatures(record=item, root_public_key_hex=cast(str, root_public), predecessor_public_key_hex=(cast(str, predecessor.get("publicKeyHex")) if predecessor is not None else None))
+            if signatures.valid: authorized_keys[digest] = item  # noqa: E701
+            else: current_codes += [finding.code for finding in signatures.findings] or ["ROOT_AUTHORIZATION_INVALID"]  # noqa: E701
+        full_history = inspect_key_history(records=tuple(authorized_keys.values()), expected_head=current_head, repository=scope[0], program_id=scope[1], generation_id=scope[2], producer_id=scope[3], root_content_hash=cast(str, root_hash), capture_time=envelope.get("capturedAt"), evaluation_time=current_time, independently_pinned_roots=(root_hash,), root_invalidations=())
         current_codes += [item.code for item in full_history.findings if item.code not in {"KEY_NOT_YET_ACTIVE", "KEY_RETIRED", "KEY_REVOKED"}]
     issuing_tuple = (
         envelope.get("issuingKeyObjectId"),

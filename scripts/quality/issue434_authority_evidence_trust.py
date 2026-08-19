@@ -767,10 +767,10 @@ def inspect_key_history_structure(
         if isinstance(operation, str) and operation in KEY_OPERATIONS and record.get("rootAuthorizationSignature") is None:
             reject("ROOT_AUTHORIZATION_REQUIRED")
         if operation == "RETIRE":
-            if record.get("retiredAt") is None:
-                reject("RETIREMENT_REQUIRED")
-            if any(record.get(name) is not None for name in ("rotationPredecessor", "revokedAt", "invalidatesFrom", "predecessorAuthorizationSignature")):
-                reject("PREDECESSOR_AUTHORIZATION_PROHIBITED")
+            if record.get("retiredAt") is None: reject("RETIREMENT_REQUIRED")  # noqa: E701
+            if any(record.get(name) is not None for name in ("rotationPredecessor", "revokedAt", "invalidatesFrom", "predecessorAuthorizationSignature")): reject("PREDECESSOR_AUTHORIZATION_PROHIBITED")  # noqa: E701
+            activation, retired = _utc_value(record.get("activationTime")), _utc_value(record.get("retiredAt"))
+            if None not in (activation, retired) and cast(datetime, retired) < cast(datetime, activation): reject("RETIREMENT_BOUNDARY_ORDER")  # noqa: E701
         if operation == "REVOKE":
             if record.get("revokedAt") is None or record.get("invalidatesFrom") is None:
                 reject("REVOCATION_BOUNDARY_REQUIRED")
