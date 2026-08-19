@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import subprocess
 from pathlib import Path
 
 from scripts.quality import stage8_backend_security as security
@@ -48,3 +49,63 @@ def test_issue436_runtime_probe_requires_tls_and_safe_openssl_line() -> None:
         'packages["libssl3"] == "3.3.7-r0"',
     ):
         assert marker in probe
+
+
+def test_issue436_route_binds_base_first_commit_scope_and_budget() -> None:
+    numstat = "".join(f"1\t1\t{path}\n" for path in sorted(security.ISSUE436_FILES))
+
+    def run(args: list[str]) -> subprocess.CompletedProcess[str]:
+        if args[1] == "merge-base":
+            output = security.ISSUE436_BASE + "\n"
+        elif args[1] == "rev-list":
+            output = security.ISSUE436_PREFLIGHT_COMMIT + "\nnext\n"
+        elif args[1] == "diff-tree":
+            output = "docs/governance/preflights/issue-436.json\n"
+        elif args[1] == "ls-files":
+            output = ""
+        else:
+            output = numstat
+        return subprocess.CompletedProcess(args, 0, output, "")
+
+    failures: list[str] = []
+    security.check_route(ROOT, run, failures)
+    assert failures == []
+
+    def wrong_first(args: list[str]) -> subprocess.CompletedProcess[str]:
+        result = run(args)
+        if args[1] == "rev-list":
+            return subprocess.CompletedProcess(args, 0, "0" * 40 + "\n", "")
+        return result
+
+    failures = []
+    security.check_route(ROOT, wrong_first, failures)
+    assert failures == ["Issue #436 base, first commit, or charged-line evidence failed closed."]
+
+
+def test_issue436_route_rejects_over_budget_foreign_and_untracked_evidence() -> None:
+    paths = sorted(security.ISSUE436_FILES)
+
+    def check(numstat: str, untracked: str = "") -> list[str]:
+        def run(args: list[str]) -> subprocess.CompletedProcess[str]:
+            if args[1] == "merge-base":
+                output = security.ISSUE436_BASE + "\n"
+            elif args[1] == "rev-list":
+                output = security.ISSUE436_PREFLIGHT_COMMIT + "\nnext\n"
+            elif args[1] == "diff-tree":
+                output = "docs/governance/preflights/issue-436.json\n"
+            elif args[1] == "ls-files":
+                output = untracked
+            else:
+                output = numstat
+            return subprocess.CompletedProcess(args, 0, output, "")
+
+        failures: list[str] = []
+        security.check_route(ROOT, run, failures)
+        return failures
+
+    exact = "".join(f"0\t0\t{path}\n" for path in paths)
+    over = exact.replace(f"0\t0\t{paths[0]}", f"1201\t0\t{paths[0]}")
+    assert "Issue #436 exceeds its 1,200 charged-line budget." in check(over)
+    foreign = exact.replace(paths[0], "forbidden/outside.txt")
+    assert "Issue #436 charged-line evidence has a foreign or duplicate path." in check(foreign)
+    assert "Issue #436 untracked-path evidence is not allowed." in check(exact, "new.txt\n")

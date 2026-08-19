@@ -554,6 +554,17 @@ durability, deployment, and release decisions remain outside this trace.
 | CycloneDX SBOM, Trivy and Grype raw evidence, fail-closed consensus and Issue #413 route tests | Reject scanner disagreement, malformed/stale identity, Medium-or-higher final findings and route drift | No ignore, VEX overclaim, severity downgrade, deployment, release, public or production claim |
 ## Issue #421 Cut 1 atomic grounding traceability
 
+## Issue #436 backend TLS capability-isolation traceability
+
+| Evidence | Requirement | Preserved boundary |
+|---|---|---|
+| OpenSSL 2026-08-13 advisory, Grype `CVE-2026-14456` evidence, and Issue #436 preflight | Treat scanner disagreement as a real fail-closed prerequisite and isolate the backend from the affected OpenSSL 3.5 QUIC-server line | No ignore, VEX, severity downgrade, scanner change, or claim that an affected package is safe |
+| Exact Alpine 3.21.7 index digest, OpenSSL 3.3.7 packages, official CPython 3.13.15 archive checksum and release signature | Provide immutable, independently verifiable runtime provenance on a TLS line predating the affected QUIC server implementation | No floating base, unverified source, dependency relaxation, or general OpenSSL security claim |
+| Scratch final stage, truthful APK database, Python binary catalog, non-root identity, CA verification, and package probe | Retain runtime identity and required HTTPS/application behavior while excluding compiler, shell, package manager, build-only pip, and unused SQLite capability | No package-metadata concealment and no backend API, provider, storage, media, or product behavior change |
+| Fresh Trivy and Grype scans plus exact route/mutation tests | Require independent zero-Critical/High scanner consensus and fail closed on image, TLS, provenance, inventory, scope, or budget drift | Issue #376 frontend repair and full combined Stage 8 acceptance remain separate; no release or production authority |
+
+## Issue #421 Cut 1 atomic grounding traceability
+
 | Requirement | Implementation | Evidence |
 |---|---|---|
 | Classified atomic facts with immutable source spans | `docs/governance/cut1-project-facts-v1.json`; `backend/app/cut1_grounding.py`; OWNER comment `5263752038` | `test_atomic_fact_contract_mutations_fail_closed`; `test_owner_record_span_is_independently_code_bound`; `test_owner_asserted_facts_are_classified_and_separate_from_repository_sources` |

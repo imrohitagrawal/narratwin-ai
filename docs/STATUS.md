@@ -1497,3 +1497,29 @@ availability, and production readiness remain No-Go.
 
 Routine Issue #424 merge facts belong in its issue/PR comments, not a
 standalone status-only successor PR.
+
+## Issue #436 backend TLS prerequisite state (2026-08-20)
+
+Issue #436 is the separately governed backend half of the Stage 8 container
+security prerequisite discovered while validating Child B Issue #434. Branch
+`stage8-436-backend-tls-capability-isolation` began at exact accepted main
+`87b8504ca8d5e094394343aeaa4ef5bad46133d5` with a committed preflight and
+RED-before-GREEN tests. Child B remains frozen at its original 89-commit exact
+head; this prerequisite does not modify, rebase, or activate it.
+
+The candidate backend image now uses verified CPython 3.13.15 source and exact
+Alpine 3.21.7 OpenSSL 3.3.7 packages in a minimal scratch runtime. It retains
+truthful APK and Python binary identity, default CA verification, the existing
+application environment, and non-root execution. Build-only pip, the compiler,
+shell, package manager, and unused SQLite extension are absent. Fresh Grype
+reports zero Critical/High findings and fresh Trivy reports zero
+Critical/High/Medium findings without ignores, VEX, downgrades, suppressions,
+or scanner changes.
+
+This state is locally implemented but not yet accepted main: exact-head review,
+hosted checks, eligible non-author approval, merge, and merged-main verification
+remain required. Issue #376 owns the separate frontend minimal-runtime repair;
+the two prerequisites must pass the unchanged full Stage 8 scanner consensus
+together before Child B resumes. Release, deployment, publication, provider
+activation, egress, spend, media generation, and production readiness remain
+No-Go.

@@ -316,6 +316,34 @@ replacement. Returning to the Issue #374 digest, npm r1, a mutable tag, an
 unscanned image, or a waiver is forbidden. This refresh changes no application,
 provider, media, deployment, release, public-availability, or production claim.
 
+## Issue #436 Backend TLS Capability Isolation
+
+Date: 2026-08-20
+
+The pinned backend dependency image inherited OpenSSL 3.5.7, which the OpenSSL
+2026-08-13 advisory identifies as affected by `CVE-2026-14456`: an unbounded
+memory-growth defect in the QUIC server listener introduced with OpenSSL 3.5.
+The backend neither implements nor needs an OpenSSL QUIC listener, but scanner
+consensus correctly failed closed while one scanner identified the affected
+package. A waiver, ignore, VEX assertion, severity change, or scanner change is
+not an acceptable resolution.
+
+Issue #436 therefore replaces the backend image foundation, not application
+behavior. It builds exact CPython 3.13.15 from the official PSF source archive,
+verifies the pinned SHA-256 and release signature, and links it to exact Alpine
+3.21.7 OpenSSL 3.3.7 packages. The 3.3 line predates the affected QUIC server
+implementation. The final scratch runtime retains truthful Alpine package
+identity and the Python binary inventory while excluding the compiler, shell,
+package manager, build-only pip implementation, and unused SQLite extension.
+The CA bundle, default certificate verification, non-root identity, application
+virtual environment, and backend HTTP behavior remain required.
+
+Fresh Trivy and Grype scans of the built image must independently report zero
+Critical/High findings; the runtime probe must verify OpenSSL 3.3.7, exact APK
+records, CA-backed certificate verification, fixed Click, absent Semgrep, and
+the absence of pip and `_sqlite3`. This decision creates no provider, egress,
+media, deployment, release, public-availability, or production authority.
+
 ## Related Documents
 
 - `docs/QUALITY_GATES.md`

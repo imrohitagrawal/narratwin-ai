@@ -8,6 +8,7 @@ from typing import Any, Callable
 
 ISSUE436_BRANCH = "stage8-436-backend-tls-capability-isolation"
 ISSUE436_BASE = "87b8504ca8d5e094394343aeaa4ef5bad46133d5"
+ISSUE436_PREFLIGHT_COMMIT = "5f77b2c785455f59ad9e25ebedf5959816f106f8"
 ISSUE436_CHARGE_LIMIT = 1200
 ISSUE436_FILES = {
     "docs/governance/preflights/issue-436.json",
@@ -102,16 +103,35 @@ def check_route(root: Path, run: Callable[[list[str]], Any], failures: list[str]
     ):
         failures.append("Issue #436 preflight identity or exact scope drifted.")
     merge = run(["git", "merge-base", ISSUE436_BASE, "HEAD"])
+    commits = run(["git", "rev-list", "--reverse", f"{ISSUE436_BASE}..HEAD"])
+    first_paths = run(
+        [
+            "git",
+            "diff-tree",
+            "--no-commit-id",
+            "--name-only",
+            "-r",
+            ISSUE436_PREFLIGHT_COMMIT,
+        ]
+    )
     results = [
         run(["git", "diff", "--numstat", "--no-renames", f"{ISSUE436_BASE}..HEAD", "--"]),
         run(["git", "diff", "--cached", "--numstat", "--no-renames", ISSUE436_BASE, "--"]),
         run(["git", "diff", "--numstat", "--no-renames", ISSUE436_BASE, "--"]),
     ]
     untracked = run(["git", "ls-files", "--others", "--exclude-standard", "--"])
-    if merge.returncode or merge.stdout.strip() != ISSUE436_BASE or any(
-        result.returncode for result in (*results, untracked)
+    commit_rows = commits.stdout.splitlines()
+    if (
+        merge.returncode
+        or merge.stdout.strip() != ISSUE436_BASE
+        or commits.returncode
+        or not commit_rows
+        or commit_rows[0] != ISSUE436_PREFLIGHT_COMMIT
+        or first_paths.returncode
+        or first_paths.stdout.splitlines() != ["docs/governance/preflights/issue-436.json"]
+        or any(result.returncode for result in (*results, untracked))
     ):
-        failures.append("Issue #436 base or charged-line evidence failed closed.")
+        failures.append("Issue #436 base, first commit, or charged-line evidence failed closed.")
         return
     if untracked.stdout.strip():
         failures.append("Issue #436 untracked-path evidence is not allowed.")
