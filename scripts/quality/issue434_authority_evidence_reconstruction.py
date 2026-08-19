@@ -111,9 +111,12 @@ def validate_pin_transition(*, acceptance_descriptor: object, acceptance_expecte
         if isinstance(acceptance, list) and isinstance(current, list) and all(isinstance(item, str) for item in acceptance + current) and not set(acceptance) <= set(current):
             codes.append("ROOT_PIN_ROLLBACK")
     return _result(codes, valid=not codes)
+def _exact_root_identity(digest: str, raw: object, root: Mapping[str, object]) -> bool:
+    try: return isinstance(raw, bytes) and raw == core.canonical_bytes(root) and root.get("contentHash") == digest and core.content_hash(core.ContentKind.TRUST_ROOT, core.TRUST_ROOT_SCHEMA_VERSION, root) == digest  # noqa: E701
+    except core.AuthorityEvidenceTrustError: return False  # noqa: E701
 def _root_history_codes(documents: Mapping[str, object]) -> list[str]:
     roots = {digest: root for digest, raw in documents.items() if isinstance(digest, str) and (root := _parse(raw, code="ROOT_DOCUMENT_INVALID")[0]) is not None}; codes: list[str] = []  # noqa: E702
-    roots = {digest: root for digest, root in roots.items() if not _schema_codes(root, "authority-producer-trust-root-v1.schema.json")}
+    roots = {digest: root for digest, root in roots.items() if not _schema_codes(root, "authority-producer-trust-root-v1.schema.json") and _exact_root_identity(digest, documents.get(digest), root)}
     predecessors: dict[object, int] = {}; identities: set[tuple[object, object]] = set()  # noqa: E702
     for digest, root in roots.items():
         predecessor = root.get("predecessorRootContentHash"); version = root.get("rootVersion"); identity = (root.get("rootId"), version); prior = roots.get(predecessor) if isinstance(predecessor, str) else None  # noqa: E702
@@ -783,7 +786,7 @@ def resolve_complete_evidence(*, envelope_bytes: object, payload_bytes: object, 
         if record is not None:
             key_candidates[digest] = record
             record_codes = _schema_codes(record, "authority-producer-key-v1.schema.json")
-            if isinstance(record.get("publicKeyHex"), str) and record.get("keyId") != core._public_key_id(cast(str, record["publicKeyHex"])): record_codes.append("KEY_ID_MISMATCH")  # noqa: E701
+            if isinstance(record.get("publicKeyHex"), str) and core.LOWER_SHA256.fullmatch(cast(str, record["publicKeyHex"])) and record.get("keyId") != core._public_key_id(cast(str, record["publicKeyHex"])): record_codes.append("KEY_ID_MISMATCH")  # noqa: E701
             if record.get("contentHash") != digest or raw != core.canonical_bytes(record): record_codes.append("KEY_DOCUMENT_IDENTITY_MISMATCH")  # noqa: E701
             key_errors[digest] += record_codes
             if not key_errors[digest]: parsed_keys[digest] = record  # noqa: E701
