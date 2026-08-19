@@ -29,7 +29,7 @@ def test_issue374_scope_and_pinned_images_fail_closed(monkeypatch: Any) -> None:
     mutations = [
         dockerfile.replace(security.FRONTEND_NODE_BUILD_IMAGE, prior),
         dockerfile.replace(security.FRONTEND_NODE_BUILD_IMAGE, "node:26.6.0-alpine"),
-        dockerfile.replace("sha512sum -c -", "REMOVED", 1),
+        dockerfile.replace("--checksum=sha256:", "--checksum=sha256:0", 1),
         dockerfile.replace(
             security.FRONTEND_NODE_RUNTIME_IMAGE,
             security.FRONTEND_NODE_RUNTIME_IMAGE[:-1] + "1",
@@ -54,8 +54,8 @@ def test_issue374_scope_and_pinned_images_fail_closed(monkeypatch: Any) -> None:
     mutations.extend(
         dockerfile.replace(marker, "REMOVED")
         for marker in (
-            *security.FRONTEND_BUILD_ARCHIVE_SHA512,
-            *security.FRONTEND_BUILD_ARCHIVE_SHA512.values(),
+            *security.FRONTEND_BUILD_ARCHIVE_SHA256,
+            *security.FRONTEND_BUILD_ARCHIVE_SHA256.values(),
         )
     )
     assert all(not security.frontend_node_image_valid(mutated) for mutated in mutations)
@@ -106,6 +106,7 @@ def test_issue376_shell_free_dependency_builder_contract_fails_closed() -> None:
         '"node_modules/next/dist/bin/next", "build"',
         "/runtime/libatomic-record",
         "/runtime/var/lib/db/sbom/",
+        "process.config.variables.node_use_quic!==false",
     )
     prohibited = ("/bin/sh", "apk ", "apt-get", "sha512sum", "npm ci --", "libcrypto3", "libssl3", "busybox")
     assert all(marker in dockerfile for marker in required)
@@ -117,6 +118,7 @@ def test_issue376_shell_free_dependency_builder_contract_fails_closed() -> None:
         dockerfile + "\nRUN apk add openssl\n",
         dockerfile + "\nCOPY --from=node-source /lib/libssl.so.3 /lib/\n",
         dockerfile.replace("/runtime/libatomic-record", "/tmp/libatomic-record", 1),
+        dockerfile.replace("process.config.variables.node_use_quic!==false", "true"),
     ]
     assert all(not security.issue376_frontend_builder_valid(candidate) for candidate in mutations)
 

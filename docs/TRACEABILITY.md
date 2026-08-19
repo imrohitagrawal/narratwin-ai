@@ -454,6 +454,15 @@ durability, deployment, and release decisions remain outside this trace.
 | Architecture-bound immutable inventories, runtime probe, reproduction check, raw SBOM/SARIF envelopes, and both-scanner consensus | Prove the shipped image is executable, hardened, reproducible, and clean through Medium without hidden scanner disagreement | No suppression, ignore, downgrade, waiver, deployment, release, public, or production claim |
 | GovernancePreflightV1 and exact Stage 8 route | Bind base, branch, fourteen paths, 900 aggregate charge, 180/220/40 route-file ceilings, and fail-closed Git evidence | PR `#388` remains blocked until #389 merged-main acceptance |
 
+## Issue #376 frontend dependency-builder security traceability
+
+| Evidence | Requirement | Preserved boundary |
+|---|---|---|
+| Official OpenSSL advisory, refreshed Trivy/Grype databases, and rejected Node Alpine, Chainguard Node development, Distroless, and stale Alpine candidates | Replace the affected Alpine dependency image only through a fixed or capability-isolated exact candidate with zero scanner disagreement through Medium | OpenSSL 3.5.7 is never represented as fixed; no finding suppression, VEX, threshold change, floating reference, or stale builder acceptance |
+| Digest-pinned minimal glibc composition, truthful eight-package APK/SPDX inventory, and executable Node identity assertion | Import only Node 26.7.0, npm JavaScript, and `libatomic`; require embedded/non-shared OpenSSL 3.5.7 and `node_use_quic=false`; omit OS `libcrypto`/`libssl`, shell, package manager, and OpenSSL executable | No frontend source, package manifest/lock, backend, provider, media, network policy, or final-runtime behavior change |
+| BuildKit SHA-256 plus Node SHA-512 archive checks, extracted package identity checks, direct npm/Next execution, full image build, and both-scanner exact dependency-image scan | Preserve exact npm 12.0.2 and fixed nested packages without shell bootstrap or ranged repair; reject archive, destination, identity, digest, stage-order, command, or prohibited-tool drift | Passing local evidence does not authorize merge, deployment, release, public availability, or production readiness |
+| Issue #376 GovernancePreflightV1 and exact twelve-path route | Bind accepted-main base, dedicated branch, 1,200 charged-line ceiling, RED-before-GREEN history, and fail-closed scope evidence | Child B Issue #434 remains unchanged and blocked until this prerequisite is accepted on main |
+
 ## Issue #396 transitive js-yaml security traceability
 
 | Evidence | Requirement | Preserved boundary |

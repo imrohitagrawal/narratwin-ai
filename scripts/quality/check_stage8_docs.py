@@ -108,7 +108,7 @@ PROCESS_BRANCH_ALLOWED_FILES.update(
     | {branch: paths for branch, paths in cut1_routes.ROUTES.items() if branch != cut1_routes.ISSUE386_BRANCH}
 )
 EFFECTIVE_STAGE8_ROUTES = PROCESS_BRANCH_ALLOWED_FILES | brace_security.BRACE_EXPANSION_ROUTES \
-    | node_security.I389_ROUTES | cut1_routes.ROUTES
+    | node_security.I389_ROUTES | node_security.I376_ROUTES | cut1_routes.ROUTES
 def run(a:list[str])->subprocess.CompletedProcess[str]:return subprocess.run(a,cwd=ROOT,text=True,capture_output=True)
 def read(path:str)->str: return (ROOT/path).read_text(encoding="utf-8")
 def fail(message:str,failures:list[str])->None: failures.append(message)
