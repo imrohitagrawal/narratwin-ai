@@ -418,10 +418,10 @@ def validate_artifact_set(*, artifacts: object, child_a_matrix_bytes: object,
     }
     if len(artifacts) > len(required): return _result(["CONTRACT_ARTIFACT_INVALID"])  # noqa: E701
     codes: list[str] = []
-    if set(artifacts) != required:
-        codes.append("CONTRACT_ARTIFACT_MISSING")
     if any(not isinstance(path, str) or not isinstance(raw, bytes) for path, raw in artifacts.items()):
         return _result(codes + ["CONTRACT_ARTIFACT_INVALID"])
+    if set(artifacts) != required:
+        codes.append("CONTRACT_ARTIFACT_MISSING")
     if any(FROZEN_ARTIFACT_SHA256.get(path.rsplit("/", 1)[-1]) != hashlib.sha256(raw).hexdigest() for path, raw in artifacts.items()):
         codes.append("ARTIFACT_IDENTITY_MISMATCH")
     if isinstance(expected_artifact_hashes, Mapping):
@@ -705,7 +705,7 @@ def resolve_complete_evidence(*, envelope_bytes: object, payload_bytes: object, 
         return _result(common, historical_verdict=verdict, current_verdict=verdict)
     common += [item.code for item in core._validate_envelope(envelope)]
     envelope_schema_codes = _schema_codes(envelope, "authority-evidence-envelope-v1.schema.json"); common += envelope_schema_codes  # noqa: E702
-    if (envelope.get("revision") == 1) != (envelope.get("predecessorContentHash") is None): common.append("ENVELOPE_PREDECESSOR_REVISION_MISMATCH")  # noqa: E701
+    if envelope.get("revision") != 1 or envelope.get("predecessorContentHash") is not None: common.append("EVIDENCE_PREDECESSOR_MISMATCH")  # noqa: E701
     try:
         if envelope_bytes != core.canonical_bytes(envelope) or envelope.get("contentHash") != core.content_hash(
             core.ContentKind.EVIDENCE_OBJECT,

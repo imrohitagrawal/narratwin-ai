@@ -962,12 +962,12 @@ def validate_closed_schema_value(
     """Execute the bounded closed-schema vocabulary used by Child B artifacts."""
     top_members = {"schemaDocumentVersion", "contractVersion", "canonicalProfile", "closed", "activation", "$defs", "root"}
     if not isinstance(schema_document, Mapping): return (Finding("SCHEMA_DOCUMENT_INVALID"),)  # noqa: E701
-    if set(schema_document) - top_members: return (Finding("SCHEMA_DESCRIPTOR_INVALID"),)  # noqa: E701
-    if any(name in schema_document and schema_document.get(name) != expected for name, expected in (("schemaDocumentVersion", "NarraTwinClosedSchemaDocumentV1"), ("canonicalProfile", "NarraTwinAuthorityCanonicalJsonV1"), ("closed", True), ("activation", "NONE"))) or "contractVersion" in schema_document and (not isinstance(schema_document.get("contractVersion"), str) or not 3 <= len(cast(str, schema_document["contractVersion"])) <= 128): return (Finding("SCHEMA_DESCRIPTOR_INVALID"),)  # noqa: E701
     try:
         _check_json_value(schema_document)
     except AuthorityEvidenceTrustError:
         return (Finding("SCHEMA_DOCUMENT_INVALID"),)
+    if set(schema_document) - top_members: return (Finding("SCHEMA_DESCRIPTOR_INVALID"),)  # noqa: E701
+    if any(name in schema_document and schema_document.get(name) != expected for name, expected in (("schemaDocumentVersion", "NarraTwinClosedSchemaDocumentV1"), ("canonicalProfile", "NarraTwinAuthorityCanonicalJsonV1"), ("closed", True), ("activation", "NONE"))) or "contractVersion" in schema_document and (not isinstance(schema_document.get("contractVersion"), str) or not 3 <= len(cast(str, schema_document["contractVersion"])) <= 128): return (Finding("SCHEMA_DESCRIPTOR_INVALID"),)  # noqa: E701
     definitions, root = schema_document.get("$defs"), schema_document.get("root")
     if not isinstance(definitions, Mapping) or not isinstance(root, Mapping): return (Finding("SCHEMA_DOCUMENT_INVALID"),)  # noqa: E701
     exact_reconstruction_schema = hashlib.sha256(json.dumps(schema_document, ensure_ascii=False, sort_keys=True, separators=(",", ":"), allow_nan=False).encode("ascii")).hexdigest() == "dba74997ec3fa80a6aaf5700964fca9edadc3cff0b7978597288c8f6e07932b9"
