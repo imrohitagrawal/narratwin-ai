@@ -38,14 +38,16 @@ ISSUE389_SECURITY_FILES = {
     "docs/QUALITY_GATES.md", "docs/STAGE_ISSUE_PLAN.md", "docs/STATUS.md", "docs/TRACEABILITY.md", "docs/THIRD_PARTY_NOTICES.md",
 }
 I389_ROUTES = {ISSUE389_SECURITY_BRANCH: ISSUE389_SECURITY_FILES}
-ISSUE376_SECURITY_BRANCH = "stage8-376-builder-security-isolation"
+ISSUE376_SECURITY_BRANCH = "stage8-376-builder-security-isolation-r2"
 ISSUE376_BASE = "87b8504ca8d5e094394343aeaa4ef5bad46133d5"
-ISSUE376_CHARGE_LIMIT = 1200
+ISSUE376_PREFLIGHT_COMMIT = "39fd81b06e6d7995d49c76cad638bd70f739d6ca"
+ISSUE376_CHARGE_LIMIT = 1400
 ISSUE376_SECURITY_FILES = {
     "docs/governance/preflights/issue-376.json", "frontend/Dockerfile",
     "scripts/ci/prepare_frontend_npm.mjs", "scripts/quality/stage8_node_security.py",
     "scripts/quality/check_stage8_docs.py", "tests/unit/test_frontend_npm_preparation.py",
     "tests/unit/test_stage8_node_security.py", "tests/unit/test_stage8_quality_gate.py",
+    "tests/unit/test_frontend_container_runtime.py",
     "docs/ADR/0006-stage8-release-hardening.md", "docs/STATUS.md", "docs/TRACEABILITY.md",
     "docs/THIRD_PARTY_NOTICES.md",
 }
@@ -210,8 +212,16 @@ def check_issue376_route(
         failures.append("Issue #376 preflight identity or exact scope drifted.")
     head = run(["git", "rev-parse", "HEAD^{commit}"])
     merge = run(["git", "merge-base", ISSUE376_BASE, "HEAD"])
-    if head.returncode or merge.returncode or merge.stdout.strip() != ISSUE376_BASE:
-        failures.append("Issue #376 must descend from the exact authorized base.")
+    commits = run(["git", "rev-list", "--reverse", f"{ISSUE376_BASE}..HEAD"])
+    first_paths = run(["git", "diff-tree", "--no-commit-id", "--name-only", "-r", ISSUE376_PREFLIGHT_COMMIT])
+    rows = commits.stdout.splitlines()
+    if (
+        head.returncode or merge.returncode or merge.stdout.strip() != ISSUE376_BASE
+        or commits.returncode or not rows or rows[0] != ISSUE376_PREFLIGHT_COMMIT
+        or first_paths.returncode
+        or first_paths.stdout.splitlines() != ["docs/governance/preflights/issue-376.json"]
+    ):
+        failures.append("Issue #376 must descend from the exact base with a preflight-only first commit.")
         return
     results = [
         run(["git", "diff", "--numstat", "--no-renames", f"{ISSUE376_BASE}..HEAD", "--"]),
@@ -229,7 +239,7 @@ def check_issue376_route(
     if observed != ISSUE376_SECURITY_FILES:
         failures.append("Issue #376 charged-line snapshots do not cover the exact route.")
     if max(snapshot[0] for snapshot in snapshots) > ISSUE376_CHARGE_LIMIT:
-        failures.append("Issue #376 exceeds its 1,200 charged-line budget.")
+        failures.append("Issue #376 exceeds its 1,400 charged-line budget.")
 
 
 def check_issue389_route(

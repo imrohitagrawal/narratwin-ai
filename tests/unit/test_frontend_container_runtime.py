@@ -43,8 +43,8 @@ def test_runtime_pins_the_reviewed_node_source_and_minimal_final_stage() -> None
     source = DOCKERFILE.read_text(encoding="utf-8")
     assert f"FROM node:26.7.0-bookworm-slim@{NODE_SOURCE_INDEX} AS node-source" in source
     assert f"FROM cgr.dev/chainguard/gcc-glibc@{ATOMIC_SOURCE_INDEX} AS atomic-source" in source
-    assert f"FROM cgr.dev/chainguard/glibc-dynamic@{INDEX_DIGEST} AS runner" in source
-    assert ":latest" not in source.split(" AS runner", 1)[0].rsplit("FROM ", 1)[1]
+    assert f"FROM cgr.dev/chainguard/glibc-dynamic@{INDEX_DIGEST} AS build" in source
+    assert ":latest" not in source.split(" AS build", 1)[0].rsplit("FROM ", 1)[1]
 
 
 def test_runtime_contract_binds_platform_manifests_and_unaffected_openssl() -> None:
@@ -64,13 +64,13 @@ def test_runtime_contract_binds_platform_manifests_and_unaffected_openssl() -> N
 
 def test_runtime_preserves_package_identity_while_removing_tools() -> None:
     source = DOCKERFILE.read_text(encoding="utf-8")
-    runner = source.split(" AS runner", 1)[1]
-    assert "COPY --from=node-source --chown=0:0 /usr/local/bin/node /usr/bin/node" in runner
-    assert "COPY --from=atomic-source --chown=0:0 /runtime/ /" in runner
-    assert "ENTRYPOINT [\"/usr/bin/node\"]" in runner
-    assert "USER 65532:65532" in runner
-    assert "fs.appendFileSync(p" in runner
-    assert "fs.rmSync('/usr/lib/apk/db/installed')" not in runner
+    final = source.split(" AS build", 1)[1]
+    assert "COPY --from=node-source --chown=0:0 /usr/local/bin/node /usr/bin/node" in final
+    assert "COPY --from=atomic-source --chown=0:0 /runtime/ /" in final
+    assert "ENTRYPOINT [\"/usr/bin/node\"]" in final
+    assert "USER 65532:65532" in final
+    assert "fs.appendFileSync(p" in final
+    assert "fs.rmSync('/usr/lib/apk/db/installed')" not in final
 
 
 def test_scan_contract_requires_runtime_package_metadata_and_openssl_identity() -> None:

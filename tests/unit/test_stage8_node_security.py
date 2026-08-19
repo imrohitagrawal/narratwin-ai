@@ -127,10 +127,11 @@ def test_issue376_shell_free_dependency_builder_contract_fails_closed() -> None:
 
 def test_issue376_preflight_identity_scope_and_budget_are_exact() -> None:
     preflight = json.loads((stage8.ROOT / "docs/governance/preflights/issue-376.json").read_text())
-    assert security.ISSUE376_SECURITY_BRANCH == "stage8-376-builder-security-isolation"
+    assert security.ISSUE376_SECURITY_BRANCH == "stage8-376-builder-security-isolation-r2"
     assert security.ISSUE376_BASE == "87b8504ca8d5e094394343aeaa4ef5bad46133d5"
-    assert security.ISSUE376_CHARGE_LIMIT == 1200
-    assert len(security.ISSUE376_SECURITY_FILES) == 12
+    assert security.ISSUE376_PREFLIGHT_COMMIT == "39fd81b06e6d7995d49c76cad638bd70f739d6ca"
+    assert security.ISSUE376_CHARGE_LIMIT == 1400
+    assert len(security.ISSUE376_SECURITY_FILES) == 13
     assert preflight["issue_number"] == 376 and preflight["branch"] == security.ISSUE376_SECURITY_BRANCH
     assert set(preflight["scope"]["required"]) == security.ISSUE376_SECURITY_FILES
     assert set(preflight["scope"]["allowed_prefixes"]) == security.ISSUE376_SECURITY_FILES

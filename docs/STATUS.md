@@ -1299,7 +1299,7 @@ Required update rules:
 ## Issue 376 frontend dependency-builder security target state
 
 - The expired Issue #374 BusyBox acceptance is not renewed. Issue `#376` uses
-  the separately authorized branch `stage8-376-builder-security-isolation` to
+  the separately authorized branch `stage8-376-builder-security-isolation-r2` to
   remove the Alpine builder that Grype reports for `CVE-2026-14456` in
   `libcrypto3` and `libssl3` 3.5.7-r0.
 - The exact replacement composes a shell-free dependency stage from pinned
