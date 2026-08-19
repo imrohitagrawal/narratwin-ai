@@ -113,8 +113,7 @@ def frontend_node_image_valid(dockerfile: str) -> bool:
         f"FROM {FRONTEND_NODE_SOURCE_IMAGE} AS node-source",
         f"FROM {FRONTEND_ATOMIC_SOURCE_IMAGE} AS atomic-source",
         f"FROM {FRONTEND_NODE_BUILD_IMAGE} AS deps",
-        "FROM deps AS build",
-        f"FROM {FRONTEND_NODE_RUNTIME_IMAGE} AS runner",
+        f"FROM {FRONTEND_NODE_RUNTIME_IMAGE} AS build",
     ]
     actual = [
         line.strip()
@@ -135,7 +134,9 @@ def frontend_node_image_valid(dockerfile: str) -> bool:
         and "COPY scripts/ci/prepare_frontend_npm.mjs /tmp/prepare_frontend_npm.mjs" in dockerfile
         and '["/usr/bin/node", "/tmp/prepare_frontend_npm.mjs"]' in dockerfile
         and '["/usr/bin/node", "/usr/local/lib/node_modules/npm/bin/npm-cli.js", "ci", "--ignore-scripts"]' in dockerfile
-        and '["/usr/bin/node", "node_modules/next/dist/bin/next", "build"]' in dockerfile
+        and "--mount=from=deps,source=/app,target=/mnt/deps,readonly" in dockerfile
+        and "--mount=type=bind,source=frontend,target=/mnt/frontend,readonly" in dockerfile
+        and "await m.assembleFrontendRuntime()" in dockerfile
         and all(
             f"ADD --checksum=sha256:{digest} https://registry.npmjs.org/" in dockerfile
             and f"/tmp/frontend-npm-archives/{filename}" in dockerfile
@@ -143,6 +144,7 @@ def frontend_node_image_valid(dockerfile: str) -> bool:
         )
         and all(marker not in dockerfile.lower() for marker in (
             "/bin/sh", "apk add", "apt-get", "sha512sum", "npm ci --", "libcrypto", "libssl", "busybox",
+            "narratwin-build-nonce", "from deps as build", " as runner",
         ))
     )
 

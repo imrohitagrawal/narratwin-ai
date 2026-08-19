@@ -332,7 +332,12 @@ APK/SPDX identity are imported into the dependency stage. The stage contains no
 shell, package manager, OpenSSL executable, or operating-system `libcrypto` or
 `libssl` package. Exact npm and nested repair archives are independently bound
 by BuildKit SHA-256 and Node SHA-512 checks before identity-checked extraction;
-npm and Next execute directly through the pinned Node binary.
+npm and Next execute directly through the pinned Node binary. The final minimal
+stage is the fail-closed `build` stage: it mounts dependencies and source
+read-only, compiles in an ephemeral directory, copies only standalone output,
+and removes the temporary tree in the same layer. The existing stage-filtered
+reproduction therefore rotates all four Next secrets without retaining build
+inputs or weakening the normalized-inventory comparison.
 
 Node continues to truthfully report embedded OpenSSL 3.5.7. The build rejects
 any Node identity where OpenSSL is shared or `node_use_quic` is enabled; the

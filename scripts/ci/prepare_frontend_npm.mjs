@@ -1,11 +1,19 @@
 import { createHash, timingSafeEqual } from "node:crypto";
-import { existsSync, mkdirSync, readFileSync, renameSync, rmSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import {
+  chmodSync, chownSync, cpSync, existsSync, lchownSync, lstatSync, mkdirSync,
+  readFileSync, readdirSync, renameSync, rmSync,
+} from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 const NPM_ROOT = "/usr/local/lib/node_modules/npm";
 const ARCHIVE_ROOT = "/tmp/frontend-npm-archives";
+const FRONTEND_BUILD_ROOT = "/tmp/frontend-build";
+const FRONTEND_DEPS_ROOT = "/mnt/deps";
+const FRONTEND_SOURCE_ROOT = "/mnt/frontend";
+const FRONTEND_RUNTIME_ROOT = "/app";
 
 export const ARCHIVES = Object.freeze([
   Object.freeze({ filename: "npm-12.0.2.tgz", package: "npm", version: "12.0.2",
@@ -79,6 +87,52 @@ async function prepare() {
   }
   rmSync(ARCHIVE_ROOT, { recursive: true, force: true });
   rmSync(fileURLToPath(import.meta.url), { force: true });
+}
+
+function secureTree(path) {
+  const stat = lstatSync(path);
+  if (stat.isSymbolicLink()) {
+    lchownSync(path, 0, 0);
+    return;
+  }
+  chownSync(path, 0, 0);
+  chmodSync(path, stat.isDirectory() ? 0o755 : (stat.mode & 0o111) ? 0o755 : 0o644);
+  if (stat.isDirectory()) for (const name of readdirSync(path)) secureTree(join(path, name));
+}
+
+export function assembleFrontendRuntime() {
+  if (!existsSync(join(FRONTEND_DEPS_ROOT, "node_modules", "next", "dist", "bin", "next"))) {
+    throw new Error("Mounted frontend dependencies are incomplete.");
+  }
+  if (!existsSync(join(FRONTEND_SOURCE_ROOT, "package.json"))) {
+    throw new Error("Mounted frontend source is incomplete.");
+  }
+  rmSync(FRONTEND_BUILD_ROOT, { recursive: true, force: true });
+  rmSync(FRONTEND_RUNTIME_ROOT, { recursive: true, force: true });
+  try {
+    cpSync(FRONTEND_SOURCE_ROOT, FRONTEND_BUILD_ROOT, {
+      recursive: true,
+      filter: (source) => ![".next", "node_modules"].includes(relative(FRONTEND_SOURCE_ROOT, source).split(sep)[0]),
+    });
+    cpSync(join(FRONTEND_DEPS_ROOT, "node_modules"), join(FRONTEND_BUILD_ROOT, "node_modules"), { recursive: true });
+    const next = join(FRONTEND_BUILD_ROOT, "node_modules", "next", "dist", "bin", "next");
+    const result = spawnSync("/usr/bin/node", [next, "build"], {
+      cwd: FRONTEND_BUILD_ROOT,
+      env: process.env,
+      stdio: "inherit",
+    });
+    if (result.error || result.signal || result.status !== 0) {
+      throw new Error(`Frontend build failed: ${result.error?.message ?? result.signal ?? result.status}`);
+    }
+    mkdirSync(FRONTEND_RUNTIME_ROOT, { recursive: true, mode: 0o755 });
+    cpSync(join(FRONTEND_BUILD_ROOT, ".next", "standalone"), FRONTEND_RUNTIME_ROOT, { recursive: true });
+    cpSync(join(FRONTEND_BUILD_ROOT, ".next", "static"), join(FRONTEND_RUNTIME_ROOT, ".next", "static"), {
+      recursive: true,
+    });
+    secureTree(FRONTEND_RUNTIME_ROOT);
+  } finally {
+    rmSync(FRONTEND_BUILD_ROOT, { recursive: true, force: true });
+  }
 }
 
 const isMain = process.argv[1] && pathToFileURL(resolve(process.argv[1])).href === import.meta.url;

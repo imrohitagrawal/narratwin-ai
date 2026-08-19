@@ -1312,9 +1312,12 @@ Required update rules:
   affected QUIC-server capability without a VEX assertion or upstream-fix claim.
 - Local exact-image evidence on 2026-08-20 shows Node v26.7.0, no shared
   OpenSSL, QUIC disabled, and zero Critical/High/Medium findings from refreshed
-  Trivy and Grype data. Merge, latest-head hosted checks, independent approval,
-  and merged-main verification remain required before Issue #376 is complete or
-  dependent branches may consume the repair.
+  Trivy and Grype data. The minimal final stage builds through read-only source
+  and dependency mounts in one ephemeral layer, so the existing stage-filtered
+  reproduction rotates Next secrets without retaining build inputs. Merge,
+  latest-head hosted checks, independent approval, and merged-main verification
+  remain required before Issue #376 is complete or dependent branches may
+  consume the repair.
 - Scanner thresholds and consensus, final-runtime hardening, application and
   lockfile behavior, providers, media, deployment, release, public availability,
   and production readiness remain unchanged.

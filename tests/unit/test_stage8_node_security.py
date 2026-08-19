@@ -43,8 +43,8 @@ def test_issue374_scope_and_pinned_images_fail_closed(monkeypatch: Any) -> None:
             security.FRONTEND_ATOMIC_SOURCE_IMAGE[:-1] + "0",
         ),
         dockerfile.replace(
-            f"FROM {security.FRONTEND_NODE_RUNTIME_IMAGE} AS runner",
-            f"FROM {prior} AS runner",
+                f"FROM {security.FRONTEND_NODE_RUNTIME_IMAGE} AS build",
+                f"FROM {prior} AS build",
         ),
     ]
     mutations.extend(
@@ -87,7 +87,7 @@ def test_issue389_fixed_runtime_pin_and_package_contract_fail_closed() -> None:
     expected_runtime = "cgr.dev/chainguard/glibc-dynamic@sha256:eaec65b25f35619be16f4992e7bae1128eafcf63c114f2859b800a7020c1ef70"
     dockerfile = stage8.read("frontend/Dockerfile")
     scan = stage8.read("scripts/ci/docker-image-scan.sh")
-    assert security.FRONTEND_NODE_RUNTIME_IMAGE == expected_runtime and f"FROM {expected_runtime} AS runner" in dockerfile
+    assert security.FRONTEND_NODE_RUNTIME_IMAGE == expected_runtime and f"FROM {expected_runtime} AS build" in dockerfile
     assert 'process.version!=="v26.7.0"' in scan and '"org.opencontainers.image.created": "2026-08-07T21:12:55Z"' in scan
     assert security.FRONTEND_RUNTIME_NODE_VERSION == "26.7.0"
     assert security.FRONTEND_RUNTIME_PACKAGES == {"ca-certificates-bundle":"20260413-r0","glibc":"2.43-r12","glibc-locale-posix":"2.43-r12","ld-linux":"2.43-r12","libatomic":"16.1.0-r4","libgcc":"16.1.0-r4","libstdc++":"16.1.0-r4","wolfi-baselayout":"20230201-r29"}
@@ -103,7 +103,6 @@ def test_issue376_shell_free_dependency_builder_contract_fails_closed() -> None:
         "AS deps",
         "prepare_frontend_npm.mjs",
         '"ci", "--ignore-scripts"',
-        '"node_modules/next/dist/bin/next", "build"',
         "/runtime/libatomic-record",
         "/runtime/var/lib/db/sbom/",
         "process.config.variables.node_use_quic!==false",

@@ -37,15 +37,7 @@ COPY frontend/package.json frontend/package-lock.json ./
 RUN ["/usr/bin/node", "/usr/local/lib/node_modules/npm/bin/npm-cli.js", "ci", "--ignore-scripts"]
 RUN ["/usr/bin/node", "-e", "require('fs').rmSync('/tmp/npm-cache',{recursive:true,force:true})"]
 
-FROM deps AS build
-
-ARG NARRATWIN_API_PROXY_TARGET=http://127.0.0.1:8000
-ENV NARRATWIN_API_PROXY_TARGET=${NARRATWIN_API_PROXY_TARGET}
-
-COPY frontend ./
-RUN ["/usr/bin/node", "node_modules/next/dist/bin/next", "build"]
-
-FROM cgr.dev/chainguard/glibc-dynamic@sha256:eaec65b25f35619be16f4992e7bae1128eafcf63c114f2859b800a7020c1ef70 AS runner
+FROM cgr.dev/chainguard/glibc-dynamic@sha256:eaec65b25f35619be16f4992e7bae1128eafcf63c114f2859b800a7020c1ef70 AS build
 
 ENV NODE_VERSION=26.7.0
 ENV NODE_ENV=production
@@ -62,9 +54,10 @@ COPY --from=node-source --chown=0:0 /usr/local/bin/node /usr/bin/node
 COPY --from=atomic-source --chown=0:0 /runtime/ /
 RUN ["/usr/bin/node", "-e", "const fs=require('fs'),p='/usr/lib/apk/db/installed',r=fs.readFileSync('/libatomic-record','utf8'); if(!/^P:libatomic$\\n^V:16\\.1\\.0-r4$/m.test(r)||/^P:libatomic$/m.test(fs.readFileSync(p,'utf8')))throw new Error('libatomic identity invalid'); fs.appendFileSync(p,r.endsWith('\\n\\n')?r:'\\n'+r+'\\n'); fs.rmSync('/libatomic-record'); for(const x of ['/usr/bin/ld.so','/usr/bin/ldconfig','/bin','/sbin','/usr/sbin'])fs.rmSync(x,{force:true,recursive:true})"]
 
-COPY --from=build --chown=0:0 /app/.next/standalone ./
-COPY --from=build --chown=0:0 /app/.next/static ./.next/static
-RUN ["/usr/bin/node", "-e", "const fs=require('fs'); function secure(p){const s=fs.lstatSync(p); if(s.isSymbolicLink()){fs.lchownSync(p,0,0);return} fs.chownSync(p,0,0); fs.chmodSync(p,s.isDirectory()?0o755:(s.mode&0o111)?0o755:0o644); if(s.isDirectory())for(const n of fs.readdirSync(p))secure(p+'/'+n)} secure('/app')"]
+RUN --mount=from=deps,source=/app,target=/mnt/deps,readonly \
+    --mount=type=bind,source=frontend,target=/mnt/frontend,readonly \
+    --mount=type=bind,source=scripts/ci/prepare_frontend_npm.mjs,target=/tmp/prepare_frontend_npm.mjs,readonly \
+    ["/usr/bin/node", "--input-type=module", "-e", "const m=await import('/tmp/prepare_frontend_npm.mjs');await m.assembleFrontendRuntime()"]
 USER 65532:65532
 
 EXPOSE 3000
