@@ -720,7 +720,7 @@ def resolve_complete_evidence(*, envelope_bytes: object, payload_bytes: object, 
     else:
         if len(payload_bytes) > core.PAYLOAD_MAX_BYTES or envelope.get("payloadByteLength") != len(payload_bytes):
             common.append("PAYLOAD_LENGTH_MISMATCH")
-    if envelope_schema_codes or "ENVELOPE_PREDECESSOR_REVISION_MISMATCH" in common or "PAYLOAD_LENGTH_MISMATCH" in common:
+    if envelope_schema_codes or "EVIDENCE_PREDECESSOR_MISMATCH" in common or "PAYLOAD_LENGTH_MISMATCH" in common:
         verdict = _verdict(common)
         return _result(common, historical_verdict=verdict, current_verdict=verdict)
     scope_values = tuple(envelope.get(name) for name in (
@@ -791,10 +791,14 @@ def resolve_complete_evidence(*, envelope_bytes: object, payload_bytes: object, 
             key_errors[digest] += record_codes
             if not key_errors[digest]: parsed_keys[digest] = record  # noqa: E701
     current_codes += sorted(code for errors in key_errors.values() for code in errors)
+    root_key = root.get("rootAuthorizationKey") if root is not None else None; root_public = root_key.get("publicKeyHex") if isinstance(root_key, Mapping) else None; authorized_keys: dict[str, Mapping[str, object]] = {}; authorization_errors: dict[str, list[str]] = {}  # noqa: E701, E702
+    for digest in sorted(parsed_keys):
+        item = parsed_keys[digest]; rotation = item.get("rotationPredecessor"); predecessor = parsed_keys.get(cast(str, rotation.get("contentHash"))) if isinstance(rotation, Mapping) and isinstance(rotation.get("contentHash"), str) else None; signatures = core.verify_key_record_authorization_signatures(record=item, root_public_key_hex=cast(str, root_public), predecessor_public_key_hex=(cast(str, predecessor.get("publicKeyHex")) if predecessor is not None else None)); authorization_errors[digest] = [finding.code for finding in signatures.findings] or ([] if signatures.valid else ["ROOT_AUTHORIZATION_INVALID"]); authorized_keys.update({digest: item} if signatures.valid else {})  # noqa: E702
+    current_codes += sorted(code for errors in authorization_errors.values() for code in errors)
     if _valid_head(acceptance_head):
         cursor: object = cast(core.HistoryHead, acceptance_head).key_record_content_hash; seen: set[str] = set()  # noqa: E702
         while isinstance(cursor, str) and cursor not in seen:
-            seen.add(cursor); historical_codes += key_errors.get(cursor, []); candidate = key_candidates.get(cursor)  # noqa: E702
+            seen.add(cursor); historical_codes += key_errors.get(cursor, []) + authorization_errors.get(cursor, []); candidate = key_candidates.get(cursor)  # noqa: E702
             if candidate is None: break  # noqa: E701
             cursor = candidate.get("historyPredecessorContentHash")
     if not isinstance(acceptance_head, core.HistoryHead): historical_codes.append("ACCEPTANCE_HEAD_REQUIRED")  # noqa: E701
@@ -806,7 +810,7 @@ def resolve_complete_evidence(*, envelope_bytes: object, payload_bytes: object, 
         if _valid_head(head):
             valid_head = cast(core.HistoryHead, head)
             if valid_head.key_record_content_hash not in key_record_documents: target.append("KEY_RECORD_UNAVAILABLE"); continue  # noqa: E701, E702
-            chain = _history_chain(parsed_keys, valid_head)
+            chain = _history_chain(authorized_keys, valid_head)
             history = inspect_key_history(
                 records=chain,
                 expected_head=head,
@@ -826,12 +830,6 @@ def resolve_complete_evidence(*, envelope_bytes: object, payload_bytes: object, 
                     field = {"ISSUE_GENESIS": "activationTime", "ROTATE": "activationTime", "RETIRE": "retiredAt", "REVOKE": "revokedAt"}.get(cast(str, item.get("operation"))); invalidation = resolve_root_invalidation(root_documents={cast(str, digest): root_documents[digest] for digest in pins}, pin_descriptor=descriptor, expected_pin_set_hash=expected_hash, expected_scope=scope, prior_root_content_hash=root_hash, evaluation_time=when, expected_phase=phase, authorization_time=item.get(field) if field is not None else None); target += [finding.code for finding in invalidation.findings]; target += ["ROOT_COMPROMISE_INVALIDATION"] if invalidation.structural_invalidation_applies else []  # noqa: E702
     if _verdict(historical_codes) is not core.Verdict.VALID and _verdict(current_codes) is not core.Verdict.VALID: return _phase_result(historical_codes, current_codes)  # noqa: E701
     if _valid_head(current_head) and "KEY_RECORD_UNAVAILABLE" not in current_codes:
-        root_key = root.get("rootAuthorizationKey") if root is not None else None; root_public = root_key.get("publicKeyHex") if isinstance(root_key, Mapping) else None; authorized_keys: dict[str, Mapping[str, object]] = {}  # noqa: E701, E702
-        for digest in sorted(parsed_keys):
-            item = parsed_keys[digest]; rotation = item.get("rotationPredecessor"); predecessor = parsed_keys.get(cast(str, rotation.get("contentHash"))) if isinstance(rotation, Mapping) and isinstance(rotation.get("contentHash"), str) else None  # noqa: E702
-            signatures = core.verify_key_record_authorization_signatures(record=item, root_public_key_hex=cast(str, root_public), predecessor_public_key_hex=(cast(str, predecessor.get("publicKeyHex")) if predecessor is not None else None))
-            if signatures.valid: authorized_keys[digest] = item  # noqa: E701
-            else: current_codes += [finding.code for finding in signatures.findings] or ["ROOT_AUTHORIZATION_INVALID"]  # noqa: E701
         full_history = inspect_key_history(records=tuple(authorized_keys.values()), expected_head=current_head, repository=scope[0], program_id=scope[1], generation_id=scope[2], producer_id=scope[3], root_content_hash=cast(str, root_hash), capture_time=envelope.get("capturedAt"), evaluation_time=current_time, independently_pinned_roots=(root_hash,), root_invalidations=())
         current_codes += [item.code for item in full_history.findings if item.code not in {"KEY_NOT_YET_ACTIVE", "KEY_RETIRED", "KEY_REVOKED"}]
     issuing_tuple = (
@@ -842,7 +840,7 @@ def resolve_complete_evidence(*, envelope_bytes: object, payload_bytes: object, 
     )
     if _valid_head(acceptance_head) and "KEY_RECORD_UNAVAILABLE" not in historical_codes:
         issuing_a = resolve_issuing_key(
-            records=_history_chain(parsed_keys, cast(core.HistoryHead, acceptance_head)),
+            records=_history_chain(authorized_keys, cast(core.HistoryHead, acceptance_head)),
             expected_head=acceptance_head,
             issuing_key=issuing_tuple,
             capture_time=envelope.get("capturedAt"),
@@ -853,7 +851,7 @@ def resolve_complete_evidence(*, envelope_bytes: object, payload_bytes: object, 
             historical_codes.append("ISSUING_KEY_INELIGIBLE")
     if _valid_head(current_head) and "KEY_RECORD_UNAVAILABLE" not in current_codes:
         issuing_c = resolve_issuing_key(
-            records=_history_chain(parsed_keys, cast(core.HistoryHead, current_head)),
+            records=_history_chain(authorized_keys, cast(core.HistoryHead, current_head)),
             expected_head=current_head,
             issuing_key=issuing_tuple,
             capture_time=envelope.get("capturedAt"),
@@ -862,14 +860,14 @@ def resolve_complete_evidence(*, envelope_bytes: object, payload_bytes: object, 
         current_codes += [item.code for item in issuing_c.findings]
         if not issuing_c.issuing_key_eligible:
             current_codes.append("ISSUING_KEY_INELIGIBLE")
-    issuing = parsed_keys.get(cast(str, envelope.get("issuingKeyRecordContentHash")))
+    issuing = authorized_keys.get(cast(str, envelope.get("issuingKeyRecordContentHash")))
     if root is not None and issuing is not None:
         genesis = root.get("genesisCaptureKey")
         root_key = root.get("rootAuthorizationKey")
         root_public = root_key.get("publicKeyHex") if isinstance(root_key, Mapping) else None
         for head, target in ((acceptance_head, historical_codes), (current_head, current_codes)):
             if "KEY_RECORD_UNAVAILABLE" in target: continue  # noqa: E701
-            chain = _history_chain(parsed_keys, cast(core.HistoryHead, head)) if _valid_head(head) else (); genesis_record = next((row for row in chain if row.get("operation") == "ISSUE_GENESIS"), None)  # noqa: E702
+            chain = _history_chain(authorized_keys, cast(core.HistoryHead, head)) if _valid_head(head) else (); genesis_record = next((row for row in chain if row.get("operation") == "ISSUE_GENESIS"), None)  # noqa: E702
             if _valid_head(head) and (not isinstance(genesis, Mapping) or genesis_record is None or any(genesis.get(name) != genesis_record.get(name) for name in ("keyObjectId", "keyId", "publicKeyHex", "revision", "activationTime"))): target.append("GENESIS_KEY_BINDING_MISMATCH")  # noqa: E701
             for item in chain:
                 rotation = item.get("rotationPredecessor"); predecessor = parsed_keys.get(cast(str, rotation.get("contentHash"))) if isinstance(rotation, Mapping) and isinstance(rotation.get("contentHash"), str) else None  # noqa: E702
