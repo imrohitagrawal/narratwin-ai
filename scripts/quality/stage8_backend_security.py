@@ -6,9 +6,12 @@ import re
 from pathlib import Path
 from typing import Any, Callable
 
-ISSUE436_BRANCH = "stage8-436-backend-tls-capability-isolation-r2"
+from scripts.quality import stage8_node_security as node_security
+
+ISSUE436_BRANCH = "stage8-436-backend-tls-capability-isolation-r4"
 ISSUE436_BASE = "87b8504ca8d5e094394343aeaa4ef5bad46133d5"
-ISSUE436_PREFLIGHT_COMMIT = "9dabf11889e97c127108b54a983d1fd9970b5125"
+ISSUE436_STACK_BASE = "6bcdb8d60ebb4d1e5fef3725cffc459dd5525987"
+ISSUE436_PREFLIGHT_COMMIT = "733122fb3e743813bcd54ea0cd69a558d9625fe9"
 ISSUE436_CHARGE_LIMIT = 1400
 ISSUE436_FILES = {
     "docs/governance/preflights/issue-436.json",
@@ -25,7 +28,8 @@ ISSUE436_FILES = {
     "docs/TRACEABILITY.md",
     "docs/THIRD_PARTY_NOTICES.md",
 }
-ISSUE436_ROUTES = {ISSUE436_BRANCH: ISSUE436_FILES}
+ISSUE436_STACK_FILES = ISSUE436_FILES | node_security.ISSUE376_SECURITY_FILES
+ISSUE436_ROUTES = {ISSUE436_BRANCH: ISSUE436_STACK_FILES}
 BACKEND_BASE_IMAGE = (
     "docker.io/library/alpine:3.21@sha256:"
     "48b0309ca019d89d40f670aa1bc06e426dc0931948452e8491e3d65087abc07d"
@@ -103,8 +107,9 @@ def check_route(root: Path, run: Callable[[list[str]], Any], failures: list[str]
         or set(scope.get("allowed_prefixes", ())) != ISSUE436_FILES
     ):
         failures.append("Issue #436 preflight identity or exact scope drifted.")
-    merge = run(["git", "merge-base", ISSUE436_BASE, "HEAD"])
-    commits = run(["git", "rev-list", "--reverse", f"{ISSUE436_BASE}..HEAD"])
+    merge = run(["git", "merge-base", ISSUE436_STACK_BASE, "HEAD"])
+    ancestry = run(["git", "merge-base", "--is-ancestor", ISSUE436_STACK_BASE, "HEAD"])
+    commits = run(["git", "rev-list", "--first-parent", "--reverse", f"{ISSUE436_BASE}..HEAD"])
     first_paths = run(
         [
             "git",
@@ -116,15 +121,16 @@ def check_route(root: Path, run: Callable[[list[str]], Any], failures: list[str]
         ]
     )
     results = [
-        run(["git", "diff", "--numstat", "--no-renames", f"{ISSUE436_BASE}..HEAD", "--"]),
-        run(["git", "diff", "--cached", "--numstat", "--no-renames", ISSUE436_BASE, "--"]),
-        run(["git", "diff", "--numstat", "--no-renames", ISSUE436_BASE, "--"]),
+        run(["git", "diff", "--numstat", "--no-renames", f"{ISSUE436_STACK_BASE}..HEAD", "--"]),
+        run(["git", "diff", "--cached", "--numstat", "--no-renames", ISSUE436_STACK_BASE, "--"]),
+        run(["git", "diff", "--numstat", "--no-renames", ISSUE436_STACK_BASE, "--"]),
     ]
     untracked = run(["git", "ls-files", "--others", "--exclude-standard", "--"])
     commit_rows = commits.stdout.splitlines()
     if (
         merge.returncode
-        or merge.stdout.strip() != ISSUE436_BASE
+        or merge.stdout.strip() != ISSUE436_STACK_BASE
+        or ancestry.returncode
         or commits.returncode
         or not commit_rows
         or commit_rows[0] != ISSUE436_PREFLIGHT_COMMIT

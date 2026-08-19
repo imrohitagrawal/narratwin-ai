@@ -4,6 +4,7 @@ import subprocess
 from pathlib import Path
 
 from scripts.quality import stage8_backend_security as security
+from scripts.quality import stage8_node_security as node_security
 
 
 ROOT = Path(__file__).parents[2]
@@ -19,9 +20,11 @@ def test_issue436_backend_image_contract_is_exact_and_fail_closed() -> None:
     assert security.CPYTHON_SHA256 == (
         "1e66a7945a48390ee4c2a4268a0e4185884059a13c4aab6d148aa208deea4a76"
     )
-    assert security.ISSUE436_BRANCH == "stage8-436-backend-tls-capability-isolation-r2"
+    assert security.ISSUE436_BRANCH == "stage8-436-backend-tls-capability-isolation-r4"
     assert security.ISSUE436_CHARGE_LIMIT == 1400
     assert len(security.ISSUE436_FILES) == 13
+    assert security.ISSUE436_STACK_BASE == "6bcdb8d60ebb4d1e5fef3725cffc459dd5525987"
+    assert security.ISSUE436_STACK_FILES == security.ISSUE436_FILES | node_security.ISSUE376_SECURITY_FILES
     assert security.backend_dockerfile_valid(dockerfile)
 
 
@@ -58,8 +61,10 @@ def test_issue436_route_binds_base_first_commit_scope_and_budget() -> None:
     numstat = "".join(f"1\t1\t{path}\n" for path in sorted(security.ISSUE436_FILES))
 
     def run(args: list[str]) -> subprocess.CompletedProcess[str]:
-        if args[1] == "merge-base":
-            output = security.ISSUE436_BASE + "\n"
+        if args[1:3] == ["merge-base", "--is-ancestor"]:
+            output = ""
+        elif args[1] == "merge-base":
+            output = security.ISSUE436_STACK_BASE + "\n"
         elif args[1] == "rev-list":
             output = security.ISSUE436_PREFLIGHT_COMMIT + "\nnext\n"
         elif args[1] == "diff-tree":
@@ -90,8 +95,10 @@ def test_issue436_route_rejects_over_budget_foreign_and_untracked_evidence() -> 
 
     def check(numstat: str, untracked: str = "") -> list[str]:
         def run(args: list[str]) -> subprocess.CompletedProcess[str]:
-            if args[1] == "merge-base":
-                output = security.ISSUE436_BASE + "\n"
+            if args[1:3] == ["merge-base", "--is-ancestor"]:
+                output = ""
+            elif args[1] == "merge-base":
+                output = security.ISSUE436_STACK_BASE + "\n"
             elif args[1] == "rev-list":
                 output = security.ISSUE436_PREFLIGHT_COMMIT + "\nnext\n"
             elif args[1] == "diff-tree":

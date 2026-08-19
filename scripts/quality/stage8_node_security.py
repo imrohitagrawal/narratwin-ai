@@ -38,14 +38,25 @@ ISSUE389_SECURITY_FILES = {
     "docs/QUALITY_GATES.md", "docs/STAGE_ISSUE_PLAN.md", "docs/STATUS.md", "docs/TRACEABILITY.md", "docs/THIRD_PARTY_NOTICES.md",
 }
 I389_ROUTES = {ISSUE389_SECURITY_BRANCH: ISSUE389_SECURITY_FILES}
-FRONTEND_NODE_BUILD_IMAGE = (
-    "node:26.6.0-alpine@sha256:"
-    "a4fb14143ee24c038c851864fe85fd90f9121abc8fdca3092798bcc02e06b1d8"
-)
+ISSUE376_SECURITY_BRANCH = "stage8-376-builder-security-isolation-r2"
+ISSUE376_BASE = "87b8504ca8d5e094394343aeaa4ef5bad46133d5"
+ISSUE376_PREFLIGHT_COMMIT = "39fd81b06e6d7995d49c76cad638bd70f739d6ca"
+ISSUE376_CHARGE_LIMIT = 1400
+ISSUE376_SECURITY_FILES = {
+    "docs/governance/preflights/issue-376.json", "frontend/Dockerfile",
+    "scripts/ci/prepare_frontend_npm.mjs", "scripts/quality/stage8_node_security.py",
+    "scripts/quality/check_stage8_docs.py", "tests/unit/test_frontend_npm_preparation.py",
+    "tests/unit/test_stage8_node_security.py", "tests/unit/test_stage8_quality_gate.py",
+    "tests/unit/test_frontend_container_runtime.py",
+    "docs/ADR/0006-stage8-release-hardening.md", "docs/STATUS.md", "docs/TRACEABILITY.md",
+    "docs/THIRD_PARTY_NOTICES.md",
+}
+I376_ROUTES = {ISSUE376_SECURITY_BRANCH: ISSUE376_SECURITY_FILES}
 FRONTEND_NODE_RUNTIME_IMAGE = (
     "cgr.dev/chainguard/glibc-dynamic@sha256:"
     "eaec65b25f35619be16f4992e7bae1128eafcf63c114f2859b800a7020c1ef70"
 )
+FRONTEND_NODE_BUILD_IMAGE = FRONTEND_NODE_RUNTIME_IMAGE
 FRONTEND_NODE_SOURCE_IMAGE = (
     "node:26.7.0-bookworm-slim@sha256:"
     "cd565714d4da3e84bfd341e31448f81d47c6362198f152345297c9c1154e6341"
@@ -87,6 +98,13 @@ FRONTEND_BUILD_ARCHIVE_SHA512 = {
         "74e02509f767847e3d2b567fbb54a30f06950f894a0129f84dc8b236dc413f28"
     ),
 }
+FRONTEND_BUILD_ARCHIVE_SHA256 = {
+    "npm-12.0.2.tgz": "5dbb86c71d07a1957f2e90734092dd6a58bdcd9ebc2d8d41ca1c6e6a21d364e1",
+    "brace-expansion-5.0.9.tgz": "5d06001fddd25cbee90c96db4dc5b7b57711b984c3141e28d10f143deb52dbaf",
+    "ip-address-10.3.1.tgz": "ad1790063beea11a312c801df30d58e147de762f4f77787552376eb7424623e5",
+    "tar-7.5.21.tgz": "bcedf25a21daecd1a18fb5e19ab855b7d79ec8ef1da175e8ba85cfc0ed0069d1",
+    "undici-6.28.0.tgz": "32a86c6fa28fd48b915555048c05bbd37ad35457d9e945953831a4374c886a9c",
+}
 FRONTEND_NODE_IMAGE_FAILURE = (
     "Stage 8 frontend build and runtime images must retain the reviewed Node image pin."
 )
@@ -94,11 +112,10 @@ FRONTEND_NODE_IMAGE_FAILURE = (
 
 def frontend_node_image_valid(dockerfile: str) -> bool:
     expected = [
-        f"FROM {FRONTEND_NODE_BUILD_IMAGE} AS deps",
-        "FROM deps AS build",
         f"FROM {FRONTEND_NODE_SOURCE_IMAGE} AS node-source",
         f"FROM {FRONTEND_ATOMIC_SOURCE_IMAGE} AS atomic-source",
-        f"FROM {FRONTEND_NODE_RUNTIME_IMAGE} AS runner",
+        f"FROM {FRONTEND_NODE_BUILD_IMAGE} AS deps",
+        f"FROM {FRONTEND_NODE_RUNTIME_IMAGE} AS build",
     ]
     actual = [
         line.strip()
@@ -108,16 +125,34 @@ def frontend_node_image_valid(dockerfile: str) -> bool:
     return (
         actual == expected
         and ISSUE389_VULNERABLE_RUNTIME_IMAGE not in dockerfile
-        and "COPY --from=node-source --chown=0:0 /usr/local/bin/node /usr/bin/node" in dockerfile
-        and "COPY --from=atomic-source --chown=0:0 /runtime/ /" in dockerfile
-        and "fs.appendFileSync(p" in dockerfile
+        and dockerfile.count("COPY --from=node-source --chown=0:0 /usr/local/bin/node /usr/bin/node") == 2
+        and "process.config.variables.node_use_quic!==false" in dockerfile
+        and "process.config.variables.node_shared_openssl!==false" in dockerfile
+        and dockerfile.count("COPY --from=atomic-source --chown=0:0 /runtime/ /") == 2
+        and dockerfile.count("fs.appendFileSync(p") == 2
         and "P:libatomic" in dockerfile and r"V:16\\.1\\.0-r4" in dockerfile
-        and dockerfile.count("sha512sum -c -") == len(FRONTEND_BUILD_ARCHIVE_SHA512)
+        and dockerfile.count("/runtime/libatomic-record") == 1
+        and dockerfile.count("/runtime/var/lib/db/sbom/") == 1
+        and "COPY scripts/ci/prepare_frontend_npm.mjs /tmp/prepare_frontend_npm.mjs" in dockerfile
+        and '["/usr/bin/node", "/tmp/prepare_frontend_npm.mjs"]' in dockerfile
+        and '["/usr/bin/node", "/usr/local/lib/node_modules/npm/bin/npm-cli.js", "ci", "--ignore-scripts"]' in dockerfile
+        and "--mount=from=deps,source=/app,target=/mnt/deps,readonly" in dockerfile
+        and "--mount=type=bind,source=frontend,target=/mnt/frontend,readonly" in dockerfile
+        and "await m.assembleFrontendRuntime()" in dockerfile
         and all(
-            package in dockerfile and f"echo '{digest}  /tmp/" in dockerfile
-            for package, digest in FRONTEND_BUILD_ARCHIVE_SHA512.items()
+            f"ADD --checksum=sha256:{digest} https://registry.npmjs.org/" in dockerfile
+            and f"/tmp/frontend-npm-archives/{filename}" in dockerfile
+            for filename, digest in FRONTEND_BUILD_ARCHIVE_SHA256.items()
         )
+        and all(marker not in dockerfile.lower() for marker in (
+            "/bin/sh", "apk add", "apt-get", "sha512sum", "npm ci --", "libcrypto", "libssl", "busybox",
+            "narratwin-build-nonce", "from deps as build", " as runner",
+        ))
     )
+
+
+def issue376_frontend_builder_valid(dockerfile: str) -> bool:
+    return frontend_node_image_valid(dockerfile)
 
 
 def check_frontend_node_image(dockerfile: str, failures: list[str]) -> None:
@@ -127,26 +162,84 @@ def check_frontend_node_image(dockerfile: str, failures: list[str]) -> None:
 
 def check(root: Path, run: Callable[[list[str]], Any], branch: str, changed_files: list[str], failures: list[str]) -> None:
     check_frontend_node_image((root / "frontend/Dockerfile").read_text(encoding="utf-8"), failures)
+    if branch == ISSUE376_SECURITY_BRANCH:
+        failures.extend(f"Issue #376 route is missing required path: {path}" for path in sorted(ISSUE376_SECURITY_FILES - set(changed_files)))
+        check_issue376_route(root, run, failures, True)
+        return
     if branch != ISSUE389_SECURITY_BRANCH:
         return
     failures.extend(f"Issue #389 route is missing required path: {path}" for path in sorted(ISSUE389_SECURITY_FILES - set(changed_files)))
     check_issue389_route(root, run, failures, True)
 
 
-def _charges(output: str, failures: list[str]) -> tuple[int, dict[str, int]]:
+def _charges(
+    output: str, failures: list[str], files: set[str] = ISSUE389_SECURITY_FILES, issue: int = 389
+) -> tuple[int, dict[str, int]]:
     total, paths = 0, {}
     for row in output.splitlines():
         fields = row.split("\t")
         if len(fields) != 3 or not fields[0].isdigit() or not fields[1].isdigit():
-            failures.append("Issue #389 charged-line evidence is malformed or binary.")
+            failures.append(f"Issue #{issue} charged-line evidence is malformed or binary.")
             return 0, {}
-        if fields[2] not in ISSUE389_SECURITY_FILES or fields[2] in paths:
-            failures.append("Issue #389 charged-line evidence has a foreign or duplicate path.")
+        if fields[2] not in files or fields[2] in paths:
+            failures.append(f"Issue #{issue} charged-line evidence has a foreign or duplicate path.")
             return 0, {}
         charge = int(fields[0]) + int(fields[1])
         total += charge
         paths[fields[2]] = charge
     return total, paths
+
+
+def check_issue376_route(
+    root: Path, run: Callable[[list[str]], Any], failures: list[str], active: bool
+) -> None:
+    if not active:
+        return
+    try:
+        preflight = json.loads((root / "docs/governance/preflights/issue-376.json").read_text(encoding="utf-8"))
+    except (OSError, TypeError, ValueError):
+        failures.append("Issue #376 GovernancePreflightV1 is unreadable.")
+        return
+    scope = preflight.get("scope", {})
+    if (
+        preflight.get("schema_version") != "GovernancePreflightV1"
+        or preflight.get("issue_number") != 376
+        or preflight.get("branch") != ISSUE376_SECURITY_BRANCH
+        or preflight.get("objective", "").count(ISSUE376_BASE) != 1
+        or set(scope.get("required", ())) != ISSUE376_SECURITY_FILES
+        or set(scope.get("allowed_prefixes", ())) != ISSUE376_SECURITY_FILES
+    ):
+        failures.append("Issue #376 preflight identity or exact scope drifted.")
+    head = run(["git", "rev-parse", "HEAD^{commit}"])
+    merge = run(["git", "merge-base", ISSUE376_BASE, "HEAD"])
+    commits = run(["git", "rev-list", "--reverse", f"{ISSUE376_BASE}..HEAD"])
+    first_paths = run(["git", "diff-tree", "--no-commit-id", "--name-only", "-r", ISSUE376_PREFLIGHT_COMMIT])
+    rows = commits.stdout.splitlines()
+    if (
+        head.returncode or merge.returncode or merge.stdout.strip() != ISSUE376_BASE
+        or commits.returncode or not rows or rows[0] != ISSUE376_PREFLIGHT_COMMIT
+        or first_paths.returncode
+        or first_paths.stdout.splitlines() != ["docs/governance/preflights/issue-376.json"]
+    ):
+        failures.append("Issue #376 must descend from the exact base with a preflight-only first commit.")
+        return
+    results = [
+        run(["git", "diff", "--numstat", "--no-renames", f"{ISSUE376_BASE}..HEAD", "--"]),
+        run(["git", "diff", "--cached", "--numstat", "--no-renames", ISSUE376_BASE, "--"]),
+        run(["git", "diff", "--numstat", "--no-renames", ISSUE376_BASE, "--"]),
+    ]
+    untracked = run(["git", "ls-files", "--others", "--exclude-standard", "--"])
+    if any(result.returncode for result in results) or untracked.returncode:
+        failures.append("Issue #376 charged-line evidence failed closed.")
+        return
+    if untracked.stdout.strip():
+        failures.append("Issue #376 untracked-path evidence is not allowed.")
+    snapshots = [_charges(result.stdout, failures, ISSUE376_SECURITY_FILES, 376) for result in results]
+    observed = set().union(*(set(snapshot[1]) for snapshot in snapshots))
+    if observed != ISSUE376_SECURITY_FILES:
+        failures.append("Issue #376 charged-line snapshots do not cover the exact route.")
+    if max(snapshot[0] for snapshot in snapshots) > ISSUE376_CHARGE_LIMIT:
+        failures.append("Issue #376 exceeds its 1,400 charged-line budget.")
 
 
 def check_issue389_route(

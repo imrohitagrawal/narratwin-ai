@@ -1296,6 +1296,32 @@ Required update rules:
 - No application, provider, presenter, media, deployment, release,
   public-availability, production-readiness, suppression, or waiver is added.
 
+## Issue 376 frontend dependency-builder security target state
+
+- The expired Issue #374 BusyBox acceptance is not renewed. Issue `#376` uses
+  the separately authorized branch `stage8-376-builder-security-isolation-r2` to
+  remove the Alpine builder that Grype reports for `CVE-2026-14456` in
+  `libcrypto3` and `libssl3` 3.5.7-r0.
+- The exact replacement composes a shell-free dependency stage from pinned
+  Chainguard `glibc-dynamic`, Docker Official Node 26.7.0 Bookworm-slim, and
+  Chainguard `gcc-glibc` sources. It imports only Node, npm's JavaScript tree,
+  and truthfully recorded `libatomic`; no OS OpenSSL package or executable is
+  copied into the stage.
+- Node still reports embedded OpenSSL 3.5.7. The Docker build fails unless that
+  OpenSSL is non-shared and `node_use_quic` is false. This removes the advisory's
+  affected QUIC-server capability without a VEX assertion or upstream-fix claim.
+- Local exact-image evidence on 2026-08-20 shows Node v26.7.0, no shared
+  OpenSSL, QUIC disabled, and zero Critical/High/Medium findings from refreshed
+  Trivy and Grype data. The minimal final stage builds through read-only source
+  and dependency mounts in one ephemeral layer, so the existing stage-filtered
+  reproduction rotates Next secrets without retaining build inputs. Merge,
+  latest-head hosted checks, independent approval, and merged-main verification
+  remain required before Issue #376 is complete or dependent branches may
+  consume the repair.
+- Scanner thresholds and consensus, final-runtime hardening, application and
+  lockfile behavior, providers, media, deployment, release, public availability,
+  and production readiness remain unchanged.
+
 ## Issue 375 Stage 8 ignored-cache traversal status
 
 - Issue `#375` repairs the A2.3b repository semantic scan so exact ignored
@@ -1502,7 +1528,7 @@ standalone status-only successor PR.
 
 Issue #436 is the separately governed backend half of the Stage 8 container
 security prerequisite discovered while validating Child B Issue #434. Branch
-`stage8-436-backend-tls-capability-isolation-r2` began at exact accepted main
+`stage8-436-backend-tls-capability-isolation-r4` began at exact accepted main
 `87b8504ca8d5e094394343aeaa4ef5bad46133d5` with a committed preflight and
 preserved RED-before-GREEN tests after OWNER reset comment `5347307361` added
 the obsolete CPython Docker-shape contract to the exact route. Child B remains
