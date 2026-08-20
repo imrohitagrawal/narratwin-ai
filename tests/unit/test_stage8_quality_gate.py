@@ -83,14 +83,14 @@ def test_issue366_contract_rejects_partial_scope_and_content_mutations(monkeypat
     docs[plan]=rest;docs[quality]+="\n"+line;assert stage8.cut1_digest()!=baseline
     docs.update(originals);docs["docs/STATUS.md"]+="\nIssue #383 required status reconciliation.\n"
     assert stage8.cut1_digest()!=baseline;sc((0,{}));assert route(m,CUT1_REAL_MEDIA_TRANSITION,full)==[]
-    p=s.R434;q=s.check_issue434_verifier;v={**s.LIMITS434,p[11]:100,p[12]:100};cases:Any=((5601,{}),(1201,{p[9]:1201}),
-        (0,v),(201,{p[11]:101,p[12]:100}));h=sp.run(["python3","-S",p[11]]);b=sorted(F);A=s.A434;r=h.returncode
+    p=s.R434;q=s.check_issue434_verifier;v={**s.LIMITS434,p[11]:100,p[12]:100};k="NARRATWIN_POLICY_ONLY"
+    cases:Any=((5601,{}),(1201,{p[9]:1201}),(0,v),(201,{p[11]:101,p[12]:100}))
+    r=sp.run(["python3","-S",p[11]]).returncode;b=sorted(F);A=s.A434;g=["git"];x:Any=d(g,0);w=um.Mock()
     z(s,"issue434_charges",lambda:(0,{}));assert route(m,B,b[1:])and all(s.issue434_budget_findings(*x)for x in cases)
     a={x:(REPO/x).read_bytes()for x in A};f=s.issue434_artifact_findings;assert not f(a)and f(a|{A[0]:b"x"})and f({})
-    w=um.Mock();z(s,"run",w);m.setenv("NARRATWIN_POLICY_ONLY","1");q([]);assert not w.called;m.delenv("NARRATWIN_POLICY_ONLY");z(s,f.__name__,lambda _:["x"]);q([]);assert not w.called;z(s,f.__name__,lambda _:[]);q([])
+    z(s,"run",w);m.setenv(k,"1");q([]);m.delenv(k);z(s,f.__name__,um.Mock(side_effect=(["x"],[])));q([]);q([])
     assert hashlib.shake_256(str((w.mock_calls,r)).encode()).hexdigest(20)=="c0be82aafcc30a7904d3618d5f4ed1731eaaa3a8"
-    m.undo();z(s,"run",w);w.side_effect=(d([],0,s.B434+"\n"),d([],1),d([],0),d([],0))
-    raises(RuntimeError,s.issue434_charges)
+    m.undo();z(s,"run",w);w.side_effect=(d(g,0,s.B434+"\n"),d(g,1),x,x);raises(RuntimeError,s.issue434_charges)
 def test_scope_collection_covers_exact_layers_and_forbidden_sources(monkeypatch: Any, tmp_path: Path) -> None:
     g:Any=lambda *a:git(tmp_path,*a); g("init","-b","main"); g("config","user.name","Scope Test")
     g("config","user.email","scope@example.invalid")

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Executable Stage 8 quality gate for hardening and release readiness."""
+"""Stage 8 quality gate for hardening and release readiness."""
 from __future__ import annotations
 # ruff: noqa: E302, E305, E401, E701, E702
 import hashlib, json, os, re, subprocess, sys
@@ -30,7 +30,7 @@ if H434 != "c3414778d2ee1c9326d1c81537d5dfe9f528b22f12ec98394e0ac4270f7cab90": I
 else: ISSUE434_FILES |= {"scripts/quality/issue434_authority_evidence_reconstruction.py",
     "tests/unit/test_issue434_authority_evidence_reconstruction.py", "tests/unit/test_dependency_security_contract.py"}
 B434="87b8504ca8d5e094394343aeaa4ef5bad46133d5";A434=R434[:9]+R434[13:14]
-D434="3ccf1eb51a359c734a0a3da7e66df6e4ed79843c8d05273b823636b788fb8a28";I434_ARTIFACT_SHA=A434
+D434="3ccf1eb51a359c734a0a3da7e66df6e4ed79843c8d05273b823636b788fb8a28"
 G434=((450,{R434[0],R434[2]}),(850,{R434[1],R434[13],R434[18]}),(1350,set(R434[3:9])),
     (4300,set(R434[9:13])|set(ISSUE434_FILES)-set(R434)),(250,{R434[i] for i in (14,15,16,17,19,20,21)}))
 LIMITS434=dict(zip((R434[9],R434[10],*sorted(ISSUE434_FILES-set(R434))),(1200,1300,900,30,700),strict=True))
@@ -128,7 +128,7 @@ def issue434_artifact_findings(a:dict[str,bytes])->list[str]:
     s=hashlib.sha256;j=json.dumps;h={p:s(a[p]).hexdigest()for p in A434}
     d=s(j(h,sort_keys=True,separators=(",",":")).encode()).hexdigest();return[]if d==D434 else["I434 bytes."]
 def check_issue434_verifier(f:list[str])->None:
-    if __import__("os").environ.get("NARRATWIN_POLICY_ONLY")=="1":return  # noqa: E701
+    if os.getenv("NARRATWIN_POLICY_ONLY")=="1":return
     try:
         a={p:(ROOT/p).read_bytes()for p in A434};q=issue434_artifact_findings(a)
         if q:f.extend(q);return
