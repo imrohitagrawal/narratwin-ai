@@ -12,7 +12,8 @@ from scripts.quality.check_stage2_docs import check_retrieval_strategy_v1_parity
 from scripts.quality import stage8_brace_expansion_unblock as brace_security  # noqa: E402
 from scripts.quality import stage8_cache_pruning as cache_pruning  # noqa: E402
 from scripts.quality.stage8_a23b import A23A_BRANCH, A23B_BRANCH, A23_ROUTES, check_a23b  # noqa: E402
-from scripts.quality import stage8_node_security as node_security, stage8_cut1_routes as cut1_routes  # noqa: E402
+from scripts.quality import stage8_backend_security as backend_security, stage8_cut1_routes as cut1_routes  # noqa: E402
+from scripts.quality import stage8_node_security as node_security  # noqa: E402
 STAGE8_BRANCH_PATTERN = re.compile(r"(?ai)^stage8-(?![a-z0-9-]*366(?:-|$))(?![a-z0-9-]*cut1)[a-z0-9-]+$")
 ISSUE84_GUARDRAIL_BRANCH = "guardrail-main-merge-push-detection-84"
 ISSUE287_STAGE8_DRIFT_BRANCH = "phase-1-closure-process-287-stage8-quality-gate-drift"
@@ -108,7 +109,7 @@ PROCESS_BRANCH_ALLOWED_FILES.update(
     | {branch: paths for branch, paths in cut1_routes.ROUTES.items() if branch != cut1_routes.ISSUE386_BRANCH}
 )
 EFFECTIVE_STAGE8_ROUTES = PROCESS_BRANCH_ALLOWED_FILES | brace_security.BRACE_EXPANSION_ROUTES \
-    | node_security.I389_ROUTES | cut1_routes.ROUTES
+    | node_security.I389_ROUTES | node_security.I376_ROUTES | backend_security.ISSUE436_ROUTES | cut1_routes.ROUTES
 def run(a:list[str])->subprocess.CompletedProcess[str]:return subprocess.run(a,cwd=ROOT,text=True,capture_output=True)
 def read(path:str)->str: return (ROOT/path).read_text(encoding="utf-8")
 def fail(message:str,failures:list[str])->None: failures.append(message)
@@ -483,6 +484,7 @@ def main() -> int:
         check_a23b(ROOT, run, failures, current_branch() == A23B_BRANCH)
         brace_security.check_exact_route(ROOT, run, failures, current_branch() == brace_security.BRANCH)
         node_security.check(ROOT, run, current_branch(), changed_files_for_stage_scope(), failures)
+        backend_security.check(ROOT, run, current_branch(), failures)
         cache_pruning.check_exact_route(ROOT, run, failures, current_branch() == cache_pruning.BRANCH)
         issue427_reset.check(ROOT, failures, current_branch() == issue427_reset.BRANCH)
         failures.extend(issue431_authority_core.repository_findings(ROOT))
@@ -491,10 +493,8 @@ def main() -> int:
         check_docs(failures)
     if failures:
         print("Stage 8 quality gate failed:")
-        for item in failures:
-            print(f"- {item}")
+        for item in failures: print(f"- {item}")
         return 1
-    print("Stage 8 quality gate passed.")
-    return 0
+    print("Stage 8 quality gate passed."); return 0
 if __name__ == "__main__":
     raise SystemExit(main())

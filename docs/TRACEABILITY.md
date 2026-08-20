@@ -454,6 +454,15 @@ durability, deployment, and release decisions remain outside this trace.
 | Architecture-bound immutable inventories, runtime probe, reproduction check, raw SBOM/SARIF envelopes, and both-scanner consensus | Prove the shipped image is executable, hardened, reproducible, and clean through Medium without hidden scanner disagreement | No suppression, ignore, downgrade, waiver, deployment, release, public, or production claim |
 | GovernancePreflightV1 and exact Stage 8 route | Bind base, branch, fourteen paths, 900 aggregate charge, 180/220/40 route-file ceilings, and fail-closed Git evidence | PR `#388` remains blocked until #389 merged-main acceptance |
 
+## Issue #376 frontend dependency-builder security traceability
+
+| Evidence | Requirement | Preserved boundary |
+|---|---|---|
+| Official OpenSSL advisory, refreshed Trivy/Grype databases, and rejected Node Alpine, Chainguard Node development, Distroless, and stale Alpine candidates | Replace the affected Alpine dependency image only through a fixed or capability-isolated exact candidate with zero scanner disagreement through Medium | OpenSSL 3.5.7 is never represented as fixed; no finding suppression, VEX, threshold change, floating reference, or stale builder acceptance |
+| Digest-pinned minimal glibc composition, truthful eight-package APK/SPDX inventory, and executable Node identity assertion | Import only Node 26.7.0, npm JavaScript, and `libatomic`; require embedded/non-shared OpenSSL 3.5.7 and `node_use_quic=false`; omit OS `libcrypto`/`libssl`, shell, package manager, and OpenSSL executable | No frontend source, package manifest/lock, backend, provider, media, network policy, or final-runtime behavior change |
+| BuildKit SHA-256 plus Node SHA-512 archive checks, extracted package identity checks, direct npm/Next execution, read-only ephemeral final-stage assembly, full image build, and both-scanner exact dependency-image scan | Preserve exact npm 12.0.2 and fixed nested packages without shell bootstrap or ranged repair; reject archive, destination, identity, digest, stage-order, command, cache-reuse, retained-build-input, or prohibited-tool drift | Passing local evidence does not authorize merge, deployment, release, public availability, or production readiness |
+| Issue #376 GovernancePreflightV1 and exact twelve-path route | Bind accepted-main base, dedicated branch, 1,200 charged-line ceiling, RED-before-GREEN history, and fail-closed scope evidence | Child B Issue #434 remains unchanged and blocked until this prerequisite is accepted on main |
+
 ## Issue #396 transitive js-yaml security traceability
 
 | Evidence | Requirement | Preserved boundary |
@@ -552,6 +561,17 @@ durability, deployment, and release decisions remain outside this trace.
 | Official advisory/CVE record plus inspected Chainguard, Docker Official Node and Distroless manifests/packages | Reject affected OpenSSL 3.6.0–3.6.3 and every candidate with fresh Medium+ scanner findings; bind three selected source indexes and all amd64/arm64 manifests | Never represent 3.6.3 as fixed; no floating final reference or unrelated runtime |
 | Retained APK metadata, exact config/runtime probes, architecture inventories, non-root HTTP smoke and two independent builds | Prove identity, minimization, compatibility and reproducibility without concealment | No UI/application dependency, backend, provider, narration, audio or media behavior change |
 | CycloneDX SBOM, Trivy and Grype raw evidence, fail-closed consensus and Issue #413 route tests | Reject scanner disagreement, malformed/stale identity, Medium-or-higher final findings and route drift | No ignore, VEX overclaim, severity downgrade, deployment, release, public or production claim |
+## Issue #421 Cut 1 atomic grounding traceability
+
+## Issue #436 backend TLS capability-isolation traceability
+
+| Evidence | Requirement | Preserved boundary |
+|---|---|---|
+| OpenSSL 2026-08-13 advisory, Grype `CVE-2026-14456` evidence, and Issue #436 preflight | Treat scanner disagreement as a real fail-closed prerequisite and isolate the backend from the affected OpenSSL 3.5 QUIC-server line | No ignore, VEX, severity downgrade, scanner change, or claim that an affected package is safe |
+| Exact Alpine 3.21.7 index digest, OpenSSL 3.3.7 packages, official CPython 3.13.15 archive checksum and release signature | Provide immutable, independently verifiable runtime provenance on a TLS line predating the affected QUIC server implementation | No floating base, unverified source, dependency relaxation, or general OpenSSL security claim |
+| Scratch final stage, truthful APK database, Python binary catalog, non-root identity, CA verification, and package probe | Retain runtime identity and required HTTPS/application behavior while excluding compiler, shell, package manager, build-only pip, and unused SQLite capability | No package-metadata concealment and no backend API, provider, storage, media, or product behavior change |
+| Fresh Trivy and Grype scans plus exact route/mutation tests | Require independent zero-Critical/High scanner consensus and fail closed on image, TLS, provenance, inventory, scope, or budget drift | Issue #376 frontend repair and full combined Stage 8 acceptance remain separate; no release or production authority |
+
 ## Issue #421 Cut 1 atomic grounding traceability
 
 | Requirement | Implementation | Evidence |

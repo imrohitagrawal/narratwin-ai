@@ -27,6 +27,7 @@ def load(relative: str, name: str) -> ModuleType:
     spec=importlib.util.spec_from_file_location(name,Path(__file__).parents[2]/relative);assert spec and spec.loader
     module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module);return module
 stage8=load("scripts/quality/check_stage8_docs.py","s8"); stage2=load("scripts/quality/check_stage2_docs.py","s2")
+b=stage8.backend_security
 def git(r:Path,*a:str)->str:return sp.run(["git",*a],cwd=r,text=True,capture_output=True,check=True).stdout.strip()
 def put(r:Path,p:str,v:str)->None:t=r/p;t.parent.mkdir(parents=True,exist_ok=True);t.write_text(v)
 def route(m:Any,b:str,c:list[str])->list[str]:
@@ -35,21 +36,20 @@ def route(m:Any,b:str,c:list[str])->list[str]:
     if b==CUT1_REAL_MEDIA_TRANSITION:m.setattr(s,"cut1_digest",lambda:s.C1_DOC_SHA)
     s.check_stage_marker_and_branch(f);s.check_stage_scope(f);m.setattr(s,"cut1_digest",digest);return f
 def test_cut1_routes_are_exact_stage8_and_not_preflight_owned(monkeypatch: Any, tmp_path: Path) -> None:
-    for branch, s in SCOPES.items():
+    for x, s in (SCOPES | b.ISSUE436_ROUTES).items():
         m=monkeypatch;m.setattr(stage8,"cut1_transition_charges",lambda:(0,{}))
-        m.setattr(stage8,"citation_parity_charge",lambda:1200);assert route(m,branch,sorted(s))==[]
-        assert route(m,branch,[e:="forbidden/outside.txt"])==[f"Stage 8 changed file outside the allowlist: {e}"]
-        if branch == CP:
-            m.setattr(stage8,"citation_parity_charge",lambda:1201);assert len(route(m,branch,sorted(s)[1:]))==2
+        m.setattr(stage8,"citation_parity_charge",lambda:1200);assert route(m,x,sorted(s))==[]
+        assert route(m,x,[e:="forbidden/outside.txt"])==[f"Stage 8 changed file outside the allowlist: {e}"]
+        if x==CP:m.setattr(stage8,"citation_parity_charge",lambda:1201);assert len(route(m,x,sorted(s)[1:]))==2
     for branch in (f"{TRANSITION}-retry", f"{TRANSITION}/child", "cut1-process-347-governance-transition",
                    "cut1-336-r0c-a2-1-stage4-rag-v1-lineage", f"{A2_2}-retry", "cut1-proces\u0455-346-transition",
                    A2_2.replace("-349-", "-350-"), A2_2[:-1]+"\u0443", f"{CP}-retry", f"{a23b.A23A_BRANCH}-retry",
                    *(f"stage8-{CUT1_REAL_MEDIA_TRANSITION.replace(a,b)}" for a,b in (("cut1","CUT1"),("cut1","Cut1"),
                    ("c","\u0441"),("1","l"),("on","\u043en")))): assert len(route(m,branch,[])) == 2
     for issue,branch in ((346,TRANSITION),(349,A2_2),(351,a23b.A23A_BRANCH),(353,a23b.A23B_BRANCH),(358,QP),
-                         (366,CUT1_REAL_MEDIA_TRANSITION),(372,CP)):
+                         (366,CUT1_REAL_MEDIA_TRANSITION),(372,CP),(436,b.ISSUE436_BRANCH)):
         artifact = json.loads((Path(__file__).parents[2]/f"docs/governance/preflights/issue-{issue}.json").read_text())
-        assert artifact["branch"] == branch and set(artifact["scope"]["required"]) == SCOPES[branch]
+        assert artifact["branch"]==branch and set(artifact["scope"]["required"])==SCOPES.get(branch,b.ISSUE436_FILES)
     m.setattr(Path, "read_text", lambda path, *a, **kw: (_ for _ in ()).throw(AssertionError())
                         if path.name in {"issue-346.json", "issue-335.json", "issue-349.json", "issue-351.json",
                                          "issue-358.json", "issue-372.json"}
@@ -65,10 +65,10 @@ def test_cut1_routes_are_exact_stage8_and_not_preflight_owned(monkeypatch: Any, 
     calls: list[list[str]] = []; m.setattr(dispatcher, "run_recommended_review_item_check", lambda _stage: 0)
     m.setattr(dispatcher, "CURRENT_STAGE", stage_file); m.setattr(dispatcher, "STATUS_DOC", status_file)
     record:Any=lambda args,cwd:calls.__iadd__([args])and 0;m.setattr(dispatcher.subprocess,"call",record)
-    for branch in SCOPES:
+    for branch in SCOPES | b.ISSUE436_ROUTES:
         calls.clear(); m.setattr(dispatcher, "current_branch", lambda branch=branch: branch)
         assert (dispatcher.main(), calls) == (0, [["make", "stage8-quality"]])
-        assert branch == a23b.A23B_BRANCH or canonical_stage_issue(branch) is None
+        assert branch in (a23b.A23B_BRANCH,b.ISSUE436_BRANCH) or canonical_stage_issue(branch) is None
 def test_issue366_contract_rejects_partial_scope_and_content_mutations(monkeypatch: Any) -> None:
     m=monkeypatch; raises=pytest.raises; full=sorted(CUT1_REAL_MEDIA_TRANSITION_SCOPE)
     fn=stage8.cut1_transition_charges;sc:Any=lambda v:m.setattr(stage8,"cut1_transition_charges",lambda:v);sc((0,{}))
@@ -177,7 +177,7 @@ def test_legacy_route_allowlists_and_behavior_remain_exact(monkeypatch: Any) -> 
         error=f"Stage 8 changed file outside the allowlist: {rejected}"
         for c,w in ((sorted(source[branch]),[]),([rejected],[error])): assert route(monkeypatch,branch,c)==w
 def test_stage8_script_markers_match_mandatory_container_scanners() -> None:
-    f:list[str]=[]; stage8.check_dependencies_and_scripts(f)
+    f:list[str]=[]; stage8.check_dependencies_and_scripts(f); assert stage8.node_security.I376_ROUTES
     assert not any(m in "\n".join(f) for m in ("docker scout cves","--only-severity critical,high"))
 def test_unrouted_stage8_branch_is_rejected(monkeypatch:Any)->None:
     b="feature/untracked-stage8-work"; monkeypatch.setattr(stage8,"current_branch",lambda:b); f:list[str]=[]

@@ -316,6 +316,70 @@ replacement. Returning to the Issue #374 digest, npm r1, a mutable tag, an
 unscanned image, or a waiver is forbidden. This refresh changes no application,
 provider, media, deployment, release, public-availability, or production claim.
 
+## Issue #436 Backend TLS Capability Isolation
+
+Date: 2026-08-20
+
+The pinned backend dependency image inherited OpenSSL 3.5.7, which the OpenSSL
+2026-08-13 advisory identifies as affected by `CVE-2026-14456`: an unbounded
+memory-growth defect in the QUIC server listener introduced with OpenSSL 3.5.
+The backend neither implements nor needs an OpenSSL QUIC listener, but scanner
+consensus correctly failed closed while one scanner identified the affected
+package. A waiver, ignore, VEX assertion, severity change, or scanner change is
+not an acceptable resolution.
+
+Issue #436 therefore replaces the backend image foundation, not application
+behavior. It builds exact CPython 3.13.15 from the official PSF source archive,
+verifies the pinned SHA-256 and release signature, and links it to exact Alpine
+3.21.7 OpenSSL 3.3.7 packages. The 3.3 line predates the affected QUIC server
+implementation. The final scratch runtime retains truthful Alpine package
+identity and the Python binary inventory while excluding the compiler, shell,
+package manager, build-only pip implementation, and unused SQLite extension.
+The CA bundle, default certificate verification, non-root identity, application
+virtual environment, and backend HTTP behavior remain required.
+
+Fresh Trivy and Grype scans of the built image must independently report zero
+Critical/High findings; the runtime probe must verify OpenSSL 3.3.7, exact APK
+records, CA-backed certificate verification, fixed Click, absent Semgrep, and
+the absence of pip and `_sqlite3`. This decision creates no provider, egress,
+media, deployment, release, public-availability, or production authority.
+
+## Issue #376 Frontend Dependency Builder Isolation
+
+Date: 2026-08-20
+
+The expired Issue #374 builder-only BusyBox acceptance cannot be renewed, and
+the later Grype `CVE-2026-14456` High against Alpine `libcrypto3` and `libssl3`
+3.5.7-r0 cannot be suppressed or represented as fixed. Issue #376 therefore
+replaces the Alpine dependency image with the same minimal, digest-pinned
+Chainguard `glibc-dynamic`, Docker Official Node 26.7.0 Bookworm-slim, and
+Chainguard `gcc-glibc` composition already reviewed for the final runtime.
+
+Only the Node executable, npm JavaScript tree, `libatomic`, and its truthful
+APK/SPDX identity are imported into the dependency stage. The stage contains no
+shell, package manager, OpenSSL executable, or operating-system `libcrypto` or
+`libssl` package. Exact npm and nested repair archives are independently bound
+by BuildKit SHA-256 and Node SHA-512 checks before identity-checked extraction;
+npm and Next execute directly through the pinned Node binary. The final minimal
+stage is the fail-closed `build` stage: it mounts dependencies and source
+read-only, compiles in an ephemeral directory, copies only standalone output,
+and removes the temporary tree in the same layer. The existing stage-filtered
+reproduction therefore rotates all four Next secrets without retaining build
+inputs or weakening the normalized-inventory comparison.
+
+Node continues to truthfully report embedded OpenSSL 3.5.7. The build rejects
+any Node identity where OpenSSL is shared or `node_use_quic` is enabled; the
+reviewed executable exposes neither the QUIC server path described by the
+OpenSSL advisory nor a shared affected operating-system library. This is a
+bounded capability-removal decision, not VEX, an upstream-fix claim, scanner
+logic change, severity downgrade, or exception. Both Trivy and Grype must find
+zero Medium-or-higher vulnerabilities in the exact dependency image.
+
+The final runtime identity, inventory, non-root behavior, reproduction, secret
+freshness, scanner consensus, and HTTP checks remain unchanged. This builder
+repair adds no application, dependency-lock, provider, media, deployment,
+release, public-availability, or production-readiness authority.
+
 ## Related Documents
 
 - `docs/QUALITY_GATES.md`
