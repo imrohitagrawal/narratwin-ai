@@ -87,7 +87,7 @@ def test_issue366_contract_rejects_partial_scope_and_content_mutations(monkeypat
         (0,v),(201,{p[11]:101,p[12]:100}));h=sp.run(["python3","-S",p[11]]);b=sorted(F);A=s.A434;r=h.returncode
     z(s,"issue434_charges",lambda:(0,{}));assert route(m,B,b[1:])and all(s.issue434_budget_findings(*x)for x in cases)
     a={x:(REPO/x).read_bytes()for x in A};f=s.issue434_artifact_findings;assert not f(a)and f(a|{A[0]:b"x"})and f({})
-    w=um.Mock();z(s,"run",w);z(s,f.__name__,lambda _:["x"]);q([]);assert not w.called;z(s,f.__name__,lambda _:[]);q([])
+    w=um.Mock();z(s,"run",w);m.setenv("NARRATWIN_POLICY_ONLY","1");q([]);assert not w.called;m.delenv("NARRATWIN_POLICY_ONLY");z(s,f.__name__,lambda _:["x"]);q([]);assert not w.called;z(s,f.__name__,lambda _:[]);q([])
     assert hashlib.shake_256(str((w.mock_calls,r)).encode()).hexdigest(20)=="c0be82aafcc30a7904d3618d5f4ed1731eaaa3a8"
     m.undo();z(s,"run",w);w.side_effect=(d([],0,s.B434+"\n"),d([],1),d([],0),d([],0))
     raises(RuntimeError,s.issue434_charges)
