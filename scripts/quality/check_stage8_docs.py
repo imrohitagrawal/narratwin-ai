@@ -131,12 +131,8 @@ def check_issue434_verifier(f:list[str])->None:
     try:
         a={p:(ROOT/p).read_bytes()for p in A434};q=issue434_artifact_findings(a)
         if q:f.extend(q);return
-        c=("from scripts.quality.check_stage8_docs import A434 as A;"
-    "from scripts.quality.issue434_authority_evidence_reconstruction import validate_artifact_set as v;"
-    "a={p:open(p,'rb').read()for p in A[1:2]+A[3:8]};"
-    "z=open(A[7].replace('evidence-trust','core'),'rb').read();"
-    "raise SystemExit(not v(artifacts=a,child_a_matrix_bytes=z).valid)")
-        t=["uv","run","python"];r=run(t+["scripts/quality/issue434_authority_evidence_trust.py"]);s=run(t+["-c",c])
+        t=["uv","run","python"];r=run(t+["scripts/quality/issue434_authority_evidence_trust.py"])
+        s=run(t+["-m","scripts.quality.issue434_authority_evidence_reconstruction"])
     except OSError:fail("I434 unavailable.",f);return
     f.extend(q+([]if not(r.returncode or s.returncode)else["I434 verify."]))
 def read(path:str)->str: return (ROOT/path).read_text(encoding="utf-8")
@@ -204,10 +200,9 @@ def citation_parity_charge() -> int:
     except ValueError as error: raise RuntimeError("Issue #372 malformed or binary numstat.") from error
 def issue434_charges()->tuple[int,dict[str,int]]:
     b=run(["git","merge-base",B434,"HEAD"])
-    m=run(["git","merge-base","origin/main","HEAD"]);o=run(["git","rev-parse","origin/main^{commit}"]);p=m.stdout.strip()
-    rs=tuple(run(["git",*kind,"--numstat",p,"--"]) for kind in (("diff","--cached"),("diff",)))
-    if b.returncode or b.stdout.strip()!=B434 or m.returncode or o.returncode or p!=o.stdout.strip() or any(r.returncode for r in rs):
-        raise RuntimeError("I434 base.")
+    m=run(["git","merge-base","--is-ancestor","origin/main","HEAD"])
+    rs=tuple(run(["git",*kind,"--numstat","origin/main","--"]) for kind in (("diff","--cached"),("diff",)))
+    if b.returncode or b.stdout.strip()!=B434 or m.returncode or any(x.returncode for x in rs):raise RuntimeError
     lines=[result.stdout.splitlines() for result in rs]
     try:maps=[{p:int(a)+int(d) for a,d,p in map(lambda line:line.split("\t"),rows)} for rows in lines]
     except ValueError as e:raise RuntimeError("I434 num.") from e

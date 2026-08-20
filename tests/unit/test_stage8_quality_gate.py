@@ -26,7 +26,6 @@ def load(relative: str, name: str) -> Any:
     spec=importlib.util.spec_from_file_location(name,Path(__file__).parents[2]/relative);assert spec and spec.loader
     module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module);return module
 stage8=load("scripts/quality/check_stage8_docs.py","s8"); stage2=load("scripts/quality/check_stage2_docs.py","s2")
-b=stage8.backend_security
 def git(r:Path,*a:str)->str:return sp.run(["git",*a],cwd=r,text=True,capture_output=True,check=True).stdout.strip()
 def put(r:Path,p:str,v:str)->None:t=r/p;t.parent.mkdir(parents=True,exist_ok=True);t.write_text(v)
 def route(m:Any,b:str,c:list[str])->list[str]:
@@ -35,7 +34,7 @@ def route(m:Any,b:str,c:list[str])->list[str]:
     if b==CUT1_REAL_MEDIA_TRANSITION:m.setattr(s,"cut1_digest",lambda:s.C1_DOC_SHA)
     s.check_stage_marker_and_branch(f);s.check_stage_scope(f);m.setattr(s,"cut1_digest",digest);return f
 def test_cut1_routes_are_exact_stage8_and_not_preflight_owned(monkeypatch: Any, tmp_path: Path) -> None:
-    for x, s in (SCOPES | b.ISSUE436_ROUTES).items():
+    for x,s in (SCOPES|(b:=stage8.backend_security).ISSUE436_ROUTES).items():
         m=monkeypatch;m.setattr(stage8,"cut1_transition_charges",lambda:(0,{}))
         m.setattr(stage8,"citation_parity_charge",lambda:1200);assert route(m,x,sorted(s))==[]
         assert route(m,x,[e:="forbidden/outside.txt"])==[f"Stage 8 changed file outside the allowlist: {e}"]
@@ -49,10 +48,8 @@ def test_cut1_routes_are_exact_stage8_and_not_preflight_owned(monkeypatch: Any, 
                          (366,CUT1_REAL_MEDIA_TRANSITION),(372,CP),(436,b.ISSUE436_BRANCH)):
         artifact = json.loads((Path(__file__).parents[2]/f"docs/governance/preflights/issue-{issue}.json").read_text())
         assert artifact["branch"]==branch and set(artifact["scope"]["required"])==SCOPES.get(branch,b.ISSUE436_FILES)
-    m.setattr(Path, "read_text", lambda path, *a, **kw: (_ for _ in ()).throw(AssertionError())
-                        if path.name in {"issue-346.json", "issue-335.json", "issue-349.json", "issue-351.json",
-                                         "issue-358.json", "issue-372.json"}
-                        else ORIGINAL_READ(path, *a, **kw))
+    m.setattr(Path,"read_text",lambda path,*a,**kw:(_ for _ in ()).throw(AssertionError()) if path.name in
+        {f"issue-{n}.json" for n in (346,335,349,351,358,372)} else ORIGINAL_READ(path,*a,**kw))
     policy = load("scripts/quality/check_stage8_docs.py", "reloaded").PROCESS_BRANCH_ALLOWED_FILES
     assert {b:policy[b] for b in SCOPES}==SCOPES;r=cut1_routes;c=stage8.issue431_authority_core.BRANCH
     registered={getattr(r,f"ISSUE{i}_BRANCH") for i in (150,396,401,403,413,428)}|{c}
@@ -91,9 +88,9 @@ def test_issue366_contract_rejects_partial_scope_and_content_mutations(monkeypat
     z(s,"issue434_charges",lambda:(0,{}));assert route(m,B,b[1:])and all(s.issue434_budget_findings(*x)for x in cases)
     a={x:(REPO/x).read_bytes()for x in A};f=s.issue434_artifact_findings;assert not f(a)and f(a|{A[0]:b"x"})and f({})
     w=um.Mock();z(s,"run",w);z(s,f.__name__,lambda _:["x"]);q([]);assert not w.called;z(s,f.__name__,lambda _:[]);q([])
-    assert hashlib.shake_256(str((w.mock_calls,r)).encode()).hexdigest(20)=="260571f4bc25840c70a95c3d1d62359be5ba6794"
-def test_issue434_charge_rejects_unsynchronized_main(monkeypatch:Any)->None:
-    d=sp.CompletedProcess;o=iter((d([],0,stdout=stage8.B434+"\n"),d([],0,stdout="a"*40+"\n"),d([],0,stdout="b"*40+"\n"),d([],0,stdout=""),d([],0,stdout="")));monkeypatch.setattr(stage8,"run",lambda _:next(o));pytest.raises(RuntimeError,stage8.issue434_charges)
+    assert hashlib.shake_256(str((w.mock_calls,r)).encode()).hexdigest(20)=="c0be82aafcc30a7904d3618d5f4ed1731eaaa3a8"
+    m.undo();z(s,"run",w);w.side_effect=(d([],0,s.B434+"\n"),d([],1),d([],0),d([],0))
+    raises(RuntimeError,s.issue434_charges)
 def test_scope_collection_covers_exact_layers_and_forbidden_sources(monkeypatch: Any, tmp_path: Path) -> None:
     g:Any=lambda *a:git(tmp_path,*a); g("init","-b","main"); g("config","user.name","Scope Test")
     g("config","user.email","scope@example.invalid")

@@ -892,3 +892,4 @@ def resolve_complete_evidence(*, envelope_bytes: object, payload_bytes: object, 
     elif root_raw is not None or "ROOT_DOCUMENT_UNAVAILABLE" not in historical_codes + current_codes:
         historical_codes += ["ROOT_AUTHORIZATION_INVALID", "EVIDENCE_SIGNATURE_INVALID"]; current_codes += ["ROOT_AUTHORIZATION_INVALID", "EVIDENCE_SIGNATURE_INVALID"]  # noqa: E702
     return _phase_result(historical_codes, current_codes)
+if __name__=="__main__":from scripts.quality.check_stage8_docs import A434 as A;a={p:open(p,"rb").read()for p in A[1:2]+A[3:8]};z=open(A[7].replace("evidence-trust","core"),"rb").read();raise SystemExit(not validate_artifact_set(artifacts=a,child_a_matrix_bytes=z).valid)  # noqa: E701,E702
