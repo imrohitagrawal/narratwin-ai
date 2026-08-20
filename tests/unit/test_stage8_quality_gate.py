@@ -92,6 +92,8 @@ def test_issue366_contract_rejects_partial_scope_and_content_mutations(monkeypat
     a={x:(REPO/x).read_bytes()for x in A};f=s.issue434_artifact_findings;assert not f(a)and f(a|{A[0]:b"x"})and f({})
     w=um.Mock();z(s,"run",w);z(s,f.__name__,lambda _:["x"]);q([]);assert not w.called;z(s,f.__name__,lambda _:[]);q([])
     assert hashlib.shake_256(str((w.mock_calls,r)).encode()).hexdigest(20)=="260571f4bc25840c70a95c3d1d62359be5ba6794"
+def test_issue434_charge_rejects_unsynchronized_main(monkeypatch:Any)->None:
+    d=sp.CompletedProcess;o=iter((d([],0,stdout=stage8.B434+"\n"),d([],0,stdout="a"*40+"\n"),d([],0,stdout="b"*40+"\n"),d([],0,stdout=""),d([],0,stdout="")));monkeypatch.setattr(stage8,"run",lambda _:next(o));pytest.raises(RuntimeError,stage8.issue434_charges)
 def test_scope_collection_covers_exact_layers_and_forbidden_sources(monkeypatch: Any, tmp_path: Path) -> None:
     g:Any=lambda *a:git(tmp_path,*a); g("init","-b","main"); g("config","user.name","Scope Test")
     g("config","user.email","scope@example.invalid")

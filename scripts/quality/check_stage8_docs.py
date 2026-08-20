@@ -204,8 +204,10 @@ def citation_parity_charge() -> int:
     except ValueError as error: raise RuntimeError("Issue #372 malformed or binary numstat.") from error
 def issue434_charges()->tuple[int,dict[str,int]]:
     b=run(["git","merge-base",B434,"HEAD"])
-    rs=tuple(run(["git",*kind,"--numstat",B434,"--"]) for kind in (("diff","--cached"),("diff",)))
-    if b.returncode or b.stdout.strip()!=B434 or any(r.returncode for r in rs):raise RuntimeError("I434 base.")
+    m=run(["git","merge-base","origin/main","HEAD"]);o=run(["git","rev-parse","origin/main^{commit}"]);p=m.stdout.strip()
+    rs=tuple(run(["git",*kind,"--numstat",p,"--"]) for kind in (("diff","--cached"),("diff",)))
+    if b.returncode or b.stdout.strip()!=B434 or m.returncode or o.returncode or p!=o.stdout.strip() or any(r.returncode for r in rs):
+        raise RuntimeError("I434 base.")
     lines=[result.stdout.splitlines() for result in rs]
     try:maps=[{p:int(a)+int(d) for a,d,p in map(lambda line:line.split("\t"),rows)} for rows in lines]
     except ValueError as e:raise RuntimeError("I434 num.") from e
