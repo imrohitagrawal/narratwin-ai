@@ -20,10 +20,10 @@ FREEZE_PATH = ROOT / "docs/governance/adversarial-convergence-red-freeze-v1.json
 REPOSITORY_TEST_PATH = ROOT / "tests/unit/test_issue435_adversarial_convergence_repository.py"
 IDENTITY_DOMAIN = b"NARRATWIN:ACP:IDENTITY:V1\x00"
 SIGNATURE_DOMAIN = b"NARRATWIN:ACP:SIGNATURE:V1\x00"
-EXPECTED_SEMANTIC_SHA256 = "404a183bd92de9f862ee63d31b992bbfcaf03f2b2bcad0a5b1090405c9e5ff10"
-EXPECTED_MUTANT_OUTCOMES_SHA256 = "82827fdb52e95398c0e0afe3ff79b9f46dede3abe814cb816bcc5b1bc270cd1c"
+EXPECTED_SEMANTIC_SHA256 = "5a3705e3d938b92291755a32ca363387a2e60b17723d5f68ed4a6c10268279e8"
+EXPECTED_MUTANT_OUTCOMES_SHA256 = "c46ed60ebf67f8c941b8a8a277b033a426377bf9a979d75802baf9e522195db6"
 EXPECTED_FIXTURE_REGISTRY_SHA256 = (
-    "953f0029a7f2d4149789cfdd24303c5899e19a6f08e49d3c5dc9a0bdf2e85cf6"
+    "dc5f9a689a937e24ce24b1e8f82bce08a2e9608f682a01a59406cbc73a2969a2"
 )
 PIPELINE = (
     "bounds",
@@ -62,6 +62,7 @@ TEST_CLASSES = (
     "substitution",
     "maximum_cardinality",
 )
+OPAQUE_STIMULUS_CONTENT = tuple(f"opaque-stimulus-{index:03d}" for index in range(130))
 EXPECTED_RED_FAILURES = (
     "tests/unit/test_issue435_adversarial_convergence.py::test_matrix_cross_product_and_exact_outcomes_are_closed",
     "tests/unit/test_issue435_adversarial_convergence.py::test_closed_universe_shrink_fails_exactly",
@@ -117,9 +118,31 @@ MUTANT_ASSERTION_IDS = {
 }
 
 
-def assert_mutant(assertion_id: str, observed: object, expected: object) -> None:
+def assert_mutant(
+    assertion_id: str,
+    evaluation: protocol.Evaluation,
+    *,
+    expected_stage_calls: tuple[protocol.StageCall, ...],
+    expected_selected: str | None = None,
+) -> None:
     assert assertion_id in MUTANT_ASSERTION_IDS.values()
-    assert observed == expected, assertion_id
+    outcome = next(
+        item for item in matrix_document()["mutantOutcomes"] if item["assertionId"] == assertion_id
+    )
+    expected_finding = outcome["finding"]
+    if expected_finding is not None:
+        assert evaluation.findings == (protocol.Finding(*expected_finding),), assertion_id
+    assert tuple(item.verdict.value for item in evaluation.phase_verdicts) == tuple(
+        outcome["phaseVerdicts"]
+    ), assertion_id
+    mutant_id = next(key for key, value in MUTANT_ASSERTION_IDS.items() if value == assertion_id)
+    assert matrix_document()["mutantStageLedgerClaims"][mutant_id]
+    assert evaluation.stage_calls == expected_stage_calls, assertion_id
+    if outcome["selectedRule"] is None:
+        assert evaluation.selected_candidate_id is None, assertion_id
+    else:
+        assert expected_selected is not None
+        assert evaluation.selected_candidate_id == expected_selected, assertion_id
 
 
 def canonical(value: object) -> bytes:
@@ -590,18 +613,6 @@ DIMENSION_CONTRACTS = (
         protocol.BlockerClass.EVIDENCE,
     ),
 )
-CLASS_CONTRACTS = (
-    ("positive", None, protocol.Verdict.VALID, True),
-    ("negative", "NEGATIVE", protocol.Verdict.INVALID, False),
-    ("boundary", "BOUNDARY", protocol.Verdict.INVALID, False),
-    ("malformed", "MALFORMED", protocol.Verdict.INVALID, False),
-    ("deletion", "DELETED", protocol.Verdict.UNAVAILABLE, False),
-    ("corruption", "CORRUPT", protocol.Verdict.INVALID, False),
-    ("reordering", None, protocol.Verdict.VALID, True),
-    ("duplication", "DUPLICATE", protocol.Verdict.INVALID, False),
-    ("substitution", "SUBSTITUTED", protocol.Verdict.INVALID, False),
-    ("maximum_cardinality", None, protocol.Verdict.VALID, True),
-)
 
 
 @dataclass(frozen=True)
@@ -733,8 +744,64 @@ def positive_graph_vector(token: str, test_class: str) -> MatrixVector:
     )
 
 
+def boundary_matrix_vector(dimension: str, token: str) -> MatrixVector:
+    if dimension == "cardinality_limit":
+        return positive_matrix_vector(token, "maximum_cardinality")
+    if dimension in {"deletion_corruption", "reconstruction_replay"}:
+        return positive_replay_vector(token, "positive")
+    if dimension == "reordering_duplication":
+        return positive_matrix_vector(token, "reordering")
+    if dimension in {"substitution", "graph_conflict_precedence"}:
+        return positive_graph_vector(token, "positive")
+    if dimension == "phase_separation":
+        raw, candidate_id, message = candidate(payload=token, phase="ACCEPTANCE")
+        probes = (expected_probe(candidate_id, message, phase=protocol.Phase.ACCEPTANCE),)
+        evaluation = protocol.Evaluation(
+            findings=(),
+            historical_verdict=protocol.Verdict.UNAVAILABLE,
+            current_verdict=protocol.Verdict.UNAVAILABLE,
+            acceptance_verdict=protocol.Verdict.VALID,
+            phase_verdicts=phase_verdicts(protocol.Phase.ACCEPTANCE, protocol.Verdict.VALID),
+            eligible_candidate_ids=(candidate_id,),
+            selected_candidate_id=candidate_id,
+            stage_calls=pipeline_calls((candidate_id,)),
+            crypto_calls=expected_crypto_calls(
+                (candidate_id,), (message,), (True,), phase=protocol.Phase.ACCEPTANCE
+            ),
+            graph_call_count=1,
+        )
+        return MatrixVector(
+            protocol.MatrixStimulus(
+                (raw,), context((candidate_id,), phase=protocol.Phase.ACCEPTANCE), None
+            ),
+            evaluation,
+            probes,
+        )
+    if dimension == "temporal_boundary":
+        raw, candidate_id, message = candidate(payload=token, valid_from="2026-08-21T00:00:00Z")
+        vector = positive_matrix_vector(token, "positive")
+        return replace(
+            vector,
+            stimulus=protocol.MatrixStimulus(
+                (raw,), context((candidate_id,), evaluation_time="2026-08-21T00:00:00Z"), None
+            ),
+            evaluation=replace(
+                vector.evaluation,
+                eligible_candidate_ids=(candidate_id,),
+                selected_candidate_id=candidate_id,
+                stage_calls=pipeline_calls((candidate_id,)),
+                crypto_calls=expected_crypto_calls((candidate_id,), (message,), (True,)),
+            ),
+            probes=(expected_probe(candidate_id, message),),
+        )
+    return positive_matrix_vector(token, "positive")
+
+
 def hostile_matrix_vector(dimension: str, test_class: str) -> MatrixVector:
-    token = hashlib.sha256(f"{dimension}:{test_class}".encode()).hexdigest()
+    ordinal = DIMENSIONS.index(dimension) * len(TEST_CLASSES) + TEST_CLASSES.index(test_class)
+    token = OPAQUE_STIMULUS_CONTENT[ordinal]
+    if test_class == "boundary":
+        return boundary_matrix_vector(dimension, token)
     if test_class in {"positive", "reordering", "maximum_cardinality"}:
         if dimension in {"deletion_corruption", "reconstruction_replay"}:
             return positive_replay_vector(token, test_class)
@@ -1049,10 +1116,13 @@ def expected_matrix_cases() -> tuple[protocol.MatrixCase, ...]:
                     case_id=case_id,
                     dimension=dimension,
                     test_class=test_class,
-                    target_phase=protocol.Phase.CURRENT,
+                    target_phase=vector.stimulus.context.expected_phase,
                     input_class=f"{dimension}.{test_class}",
                     input_reference=f"fixture://{case_id}",
                     input_sha256=hashlib.sha256(fixture_bytes).hexdigest(),
+                    execution_mode=(
+                        "reconstruct" if vector.stimulus.retained is not None else "evaluate"
+                    ),
                     stage=(
                         vector.evaluation.findings[0].stage if vector.evaluation.findings else stage
                     ),
@@ -1083,6 +1153,40 @@ def expected_matrix_cases() -> tuple[protocol.MatrixCase, ...]:
                 )
             )
     return tuple(cases)
+
+
+def resolved_matrix_contract(
+    document: dict[str, Any], case: protocol.MatrixCase, vector: MatrixVector
+) -> tuple[str, str, str | None, str | None, str, str]:
+    contracts = document["materializedOutcomeContracts"]
+    mode = contracts["dimensionExecutionModes"][case.dimension]
+    if case.test_class == "boundary":
+        boundary = contracts["materializedBoundaryContracts"][case.dimension]
+        return (
+            boundary["executionMode"],
+            boundary["terminalStage"],
+            None,
+            None,
+            boundary["verdict"],
+            boundary["targetPhase"],
+        )
+    exception = contracts["exceptions"].get(case.case_id)
+    if exception is not None:
+        return (*exception, case.target_phase.value)
+    if case.test_class in contracts["successClasses"]:
+        return mode, "phase_verdict", None, None, "VALID", case.target_phase.value
+    if case.test_class == "negative":
+        resolved = contracts["dimensions"][case.dimension]
+    elif case.test_class in contracts["reconstructionClassOverrides"] and mode == "reconstruct":
+        resolved = (mode, *contracts["reconstructionClassOverrides"][case.test_class])
+    else:
+        precedence = contracts["classPrecedence"][case.test_class]
+        resolved = (mode, *precedence[mode]) if isinstance(precedence, dict) else precedence
+    resolved_mode, stage, code, location, verdict = resolved
+    if location is not None and "exact-id" in location:
+        candidate_id = strict_object(vector.stimulus.candidate_documents[0])["candidateId"]
+        location = location.replace("exact-id", candidate_id)
+    return resolved_mode, stage, code, location, verdict, case.target_phase.value
 
 
 def test_matrix_cross_product_and_exact_outcomes_are_closed(
@@ -1127,6 +1231,7 @@ def test_matrix_cross_product_and_exact_outcomes_are_closed(
         "expectedFindings",
         "mutantId",
     }
+    modes = document["materializedOutcomeContracts"]["dimensionExecutionModes"]
 
     def all_keys(value: object) -> set[str]:
         if isinstance(value, dict):
@@ -1135,12 +1240,95 @@ def test_matrix_cross_product_and_exact_outcomes_are_closed(
             return set().union(*(all_keys(item) for item in value))
         return set()
 
+    def all_strings(value: object) -> set[str]:
+        if isinstance(value, dict):
+            return {item for key, nested in value.items() for item in (key, *all_strings(nested))}
+        if isinstance(value, list):
+            return set().union(*(all_strings(item) for item in value))
+        return {value} if isinstance(value, str) else set()
+
+    original_evaluate = protocol.evaluate_candidates
+    original_reconstruct = protocol.reconstruct_candidates
+    engine_calls: list[tuple[str, object, protocol.Evaluation]] = []
+
+    def observe_evaluate(
+        documents: tuple[bytes, ...],
+        *,
+        context: protocol.EvaluationContext,
+        crypto_verifier: protocol.CryptoVerifier,
+    ) -> protocol.Evaluation:
+        result = original_evaluate(documents, context=context, crypto_verifier=crypto_verifier)
+        engine_calls.append(("evaluate", (documents, context, None, crypto_verifier), result))
+        return result
+
+    def observe_reconstruct(
+        documents: tuple[bytes, ...],
+        *,
+        retained: protocol.RetainedEvaluation,
+        context: protocol.EvaluationContext,
+        crypto_verifier: protocol.CryptoVerifier,
+    ) -> protocol.Evaluation:
+        result = original_reconstruct(
+            documents,
+            retained=retained,
+            context=context,
+            crypto_verifier=crypto_verifier,
+        )
+        engine_calls.append(
+            ("reconstruct", (documents, context, retained, crypto_verifier), result)
+        )
+        return result
+
+    monkeypatch.setattr(protocol, "evaluate_candidates", observe_evaluate)
+    monkeypatch.setattr(protocol, "reconstruct_candidates", observe_reconstruct)
+    observations: dict[str, protocol.MatrixObservation] = {}
+
     for case in expected:
         fixture = registry[case.input_reference]
         fixture_document = strict_object(fixture)
         assert not (all_keys(fixture_document) & forbidden_wire_keys)
+        scalar_strings = all_strings(fixture_document)
+        label = f"{case.dimension}:{case.test_class}"
+        assert case.dimension not in scalar_strings
+        assert case.test_class not in scalar_strings
+        assert label not in scalar_strings
+        assert hashlib.sha256(label.encode()).hexdigest() not in scalar_strings
         assert hashlib.sha256(fixture).hexdigest() == case.input_sha256
         vector = DIMENSION_MATERIALIZERS[case.dimension](case.test_class)
+        mode, stage, code, location, verdict, target_phase = resolved_matrix_contract(
+            document, case, vector
+        )
+        assert mode == case.execution_mode
+        assert target_phase == case.target_phase.value
+        assert stage == (case.findings[0].stage if case.findings else "phase_verdict")
+        assert case.findings == (
+            ()
+            if code is None
+            else exact_finding(stage, case.target_phase.value, code, cast(str, location))
+        )
+        assert (
+            next(
+                item.verdict.value
+                for item in case.phase_verdicts
+                if item.phase is case.target_phase
+            )
+            == verdict
+        )
+        assert case.execution_mode == modes[case.dimension]
+        assert case.execution_mode == (
+            "reconstruct" if vector.stimulus.retained is not None else "evaluate"
+        )
+        if case.test_class == "boundary":
+            boundary_contract = document["materializedOutcomeContracts"][
+                "materializedBoundaryContracts"
+            ][case.dimension]
+            assert boundary_contract == {
+                "executionMode": case.execution_mode,
+                "terminalStage": "phase_verdict",
+                "finding": None,
+                "verdict": "VALID",
+                "targetPhase": case.target_phase.value,
+            }
         if case.test_class == "malformed":
             assert vector.stimulus.candidate_documents == (b"{",)
         elif case.test_class == "deletion":
@@ -1163,89 +1351,156 @@ def test_matrix_cross_product_and_exact_outcomes_are_closed(
                 strict_object(item)["predecessorId"] is not None
                 for item in vector.stimulus.candidate_documents
             )
-        assert protocol.parse_matrix_stimulus(fixture) == vector.stimulus
+        assert protocol.parse_matrix_stimulus(fixture) == protocol.MatrixStimulusParse(
+            vector.stimulus, ()
+        )
         spy = ExactCryptoSpy(list(vector.probes))
+        prior_call_count = len(engine_calls)
         observed = protocol.execute_matrix_fixture(fixture, crypto_verifier=spy)
         assert observed == protocol.MatrixObservation(case.input_sha256, vector.evaluation)
+        assert observed is not None
+        assert len(engine_calls) == prior_call_count + 1
+        called_mode, called_arguments, delegated_result = engine_calls[-1]
+        assert called_mode == case.execution_mode
+        assert called_arguments == (
+            vector.stimulus.candidate_documents,
+            vector.stimulus.context,
+            vector.stimulus.retained,
+            spy,
+        )
+        assert observed.evaluation is delegated_result
         spy.assert_exhausted()
         assert tuple(hashlib.sha256(probe.message).hexdigest() for probe in spy.calls) == tuple(
             item.message_sha256 for item in case.crypto_expectations
         )
+        observations[case.case_id] = observed
 
-    first, second = expected[0], expected[10]
-    first_spy = ExactCryptoSpy(
-        list(DIMENSION_MATERIALIZERS[first.dimension](first.test_class).probes)
-    )
-    swapped = protocol.execute_matrix_fixture(
-        registry[first.input_reference], crypto_verifier=first_spy
-    )
-    first_spy.assert_exhausted()
-    assert swapped != protocol.MatrixObservation(
-        second.input_sha256,
-        DIMENSION_MATERIALIZERS[second.dimension](second.test_class).evaluation,
-    )
-
-    raw = b'{"schemaVersion":"AdversarialMatrixStimulusV1"}'
-    evaluate_vector = DIMENSION_MATERIALIZERS["validation_order"]("positive")
-    reconstruct_vector = DIMENSION_MATERIALIZERS["reconstruction_replay"]("negative")
-    verifier = ExactCryptoSpy([])
-    calls: list[tuple[str, object]] = []
-
-    def parse_evaluate(_: bytes) -> protocol.MatrixStimulus:
-        calls.append(("parse", raw))
-        return evaluate_vector.stimulus
-
-    def evaluate_once(
-        documents: tuple[bytes, ...],
-        *,
-        context: protocol.EvaluationContext,
-        crypto_verifier: protocol.CryptoVerifier,
-    ) -> protocol.Evaluation:
-        assert (documents, context, crypto_verifier) == (
-            evaluate_vector.stimulus.candidate_documents,
-            evaluate_vector.stimulus.context,
-            verifier,
+    for dimension in DIMENSIONS:
+        negative = observations[f"{dimension}:negative"].evaluation
+        boundary = observations[f"{dimension}:boundary"].evaluation
+        assert negative != boundary
+        assert (
+            DIMENSION_MATERIALIZERS[dimension]("negative").stimulus
+            != DIMENSION_MATERIALIZERS[dimension]("boundary").stimulus
         )
-        calls.append(("evaluate", documents))
-        return evaluate_vector.evaluation
-
-    def reconstruct_forbidden(*args: object, **kwargs: object) -> protocol.Evaluation:
-        raise AssertionError((args, kwargs))
-
-    monkeypatch.setattr(protocol, "parse_matrix_stimulus", parse_evaluate)
-    monkeypatch.setattr(protocol, "evaluate_candidates", evaluate_once)
-    monkeypatch.setattr(protocol, "reconstruct_candidates", reconstruct_forbidden)
-    assert protocol.execute_matrix_fixture(raw, crypto_verifier=verifier) == (
-        protocol.MatrixObservation(hashlib.sha256(raw).hexdigest(), evaluate_vector.evaluation)
+    temporal_negative = DIMENSION_MATERIALIZERS["temporal_boundary"]("negative")
+    temporal_boundary = DIMENSION_MATERIALIZERS["temporal_boundary"]("boundary")
+    assert temporal_negative.stimulus.context.evaluation_time != (
+        temporal_boundary.stimulus.context.evaluation_time
     )
-    assert calls == [("parse", raw), ("evaluate", evaluate_vector.stimulus.candidate_documents)]
+    phase_negative = DIMENSION_MATERIALIZERS["phase_separation"]("negative")
+    phase_boundary = DIMENSION_MATERIALIZERS["phase_separation"]("boundary")
+    assert phase_negative.stimulus.context.expected_phase is protocol.Phase.CURRENT
+    assert phase_boundary.stimulus.context.expected_phase is protocol.Phase.ACCEPTANCE
+    crypto_negative = DIMENSION_MATERIALIZERS["cryptographic_eligibility"]("negative")
+    crypto_boundary = DIMENSION_MATERIALIZERS["cryptographic_eligibility"]("boundary")
+    assert tuple(result for _, result in crypto_negative.probes) == (False,)
+    assert tuple(result for _, result in crypto_boundary.probes) == (True,)
+    auth_negative = DIMENSION_MATERIALIZERS["authorization_eligibility"]("negative")
+    auth_boundary = DIMENSION_MATERIALIZERS["authorization_eligibility"]("boundary")
+    assert auth_negative.stimulus.context.authorized_candidate_ids == frozenset()
+    assert auth_boundary.stimulus.context.authorized_candidate_ids
+    graph_negative = DIMENSION_MATERIALIZERS["graph_conflict_precedence"]("negative")
+    graph_boundary = DIMENSION_MATERIALIZERS["graph_conflict_precedence"]("boundary")
+    assert len(graph_negative.stimulus.candidate_documents) == 1
+    assert len(graph_boundary.stimulus.candidate_documents) == 2
+    replay_negative = DIMENSION_MATERIALIZERS["reconstruction_replay"]("negative")
+    replay_boundary = DIMENSION_MATERIALIZERS["reconstruction_replay"]("boundary")
+    assert replay_negative.stimulus.retained != replay_boundary.stimulus.retained
 
-    calls.clear()
-    monkeypatch.setattr(protocol, "parse_matrix_stimulus", lambda _: reconstruct_vector.stimulus)
-
-    def reconstruct_once(
-        documents: tuple[bytes, ...],
-        *,
-        retained: protocol.RetainedEvaluation,
-        context: protocol.EvaluationContext,
-        crypto_verifier: protocol.CryptoVerifier,
-    ) -> protocol.Evaluation:
-        assert (documents, retained, context, crypto_verifier) == (
-            reconstruct_vector.stimulus.candidate_documents,
-            reconstruct_vector.stimulus.retained,
-            reconstruct_vector.stimulus.context,
-            verifier,
-        )
-        calls.append(("reconstruct", documents))
-        return reconstruct_vector.evaluation
-
-    monkeypatch.setattr(protocol, "evaluate_candidates", reconstruct_forbidden)
-    monkeypatch.setattr(protocol, "reconstruct_candidates", reconstruct_once)
-    assert protocol.execute_matrix_fixture(raw, crypto_verifier=verifier) == (
-        protocol.MatrixObservation(hashlib.sha256(raw).hexdigest(), reconstruct_vector.evaluation)
-    )
-    assert calls == [("reconstruct", reconstruct_vector.stimulus.candidate_documents)]
     monkeypatch.undo()
+    valid_document = strict_object(registry["fixture://validation_order:positive"])
+    hostile_stimuli: list[tuple[bytes, str, str, str]] = []
+    for key in document["fixtureContract"]["forbiddenRecursiveFields"]:
+        changed = json.loads(json.dumps(valid_document))
+        changed[key] = "forbidden"
+        hostile_stimuli.append((canonical(changed), "schema", "ACP.STIMULUS.FORBIDDEN_FIELD", key))
+        nested = json.loads(json.dumps(valid_document))
+        nested["evaluationContext"][key] = "forbidden"
+        hostile_stimuli.append(
+            (
+                canonical(nested),
+                "schema",
+                "ACP.STIMULUS.FORBIDDEN_FIELD",
+                f"evaluationContext.{key}",
+            )
+        )
+        retained_nested = strict_object(registry["fixture://reconstruction_replay:positive"])
+        retained_nested["retainedEvaluation"][key] = "forbidden"
+        hostile_stimuli.append(
+            (
+                canonical(retained_nested),
+                "schema",
+                "ACP.STIMULUS.FORBIDDEN_FIELD",
+                f"retainedEvaluation.{key}",
+            )
+        )
+    mutations = (
+        ("unknown", "value", "ACP.STIMULUS.UNKNOWN_FIELD", "unknown"),
+        ("candidateDocumentsHex", "00", "ACP.STIMULUS.TYPE", "candidateDocumentsHex"),
+        ("candidateDocumentsHex", ["zz"], "ACP.STIMULUS.HEX", "candidateDocumentsHex[0]"),
+    )
+    for key, value, code, location in mutations:
+        changed = json.loads(json.dumps(valid_document))
+        changed[key] = value
+        hostile_stimuli.append((canonical(changed), "schema", code, location))
+    missing = json.loads(json.dumps(valid_document))
+    del missing["candidateDocumentsHex"]
+    hostile_stimuli.append(
+        (
+            canonical(missing),
+            "schema",
+            "ACP.STIMULUS.REQUIRED_FIELD",
+            "candidateDocumentsHex",
+        )
+    )
+    invalid_phase = json.loads(json.dumps(valid_document))
+    invalid_phase["evaluationContext"]["expectedPhase"] = "OTHER"
+    hostile_stimuli.append(
+        (
+            canonical(invalid_phase),
+            "schema",
+            "ACP.STIMULUS.ENUM",
+            "evaluationContext.expectedPhase",
+        )
+    )
+    missing_context = json.loads(json.dumps(valid_document))
+    del missing_context["evaluationContext"]["limits"]
+    hostile_stimuli.append(
+        (
+            canonical(missing_context),
+            "schema",
+            "ACP.STIMULUS.REQUIRED_FIELD",
+            "evaluationContext.limits",
+        )
+    )
+    malformed_retained = json.loads(json.dumps(valid_document))
+    malformed_retained["retainedEvaluation"] = {}
+    hostile_stimuli.append(
+        (
+            canonical(malformed_retained),
+            "schema",
+            "ACP.STIMULUS.RETAINED_TYPE",
+            "retainedEvaluation",
+        )
+    )
+    hostile_stimuli.extend(
+        (
+            (
+                b'{"schemaVersion":"AdversarialMatrixStimulusV1",'
+                b'"schemaVersion":"AdversarialMatrixStimulusV1"}',
+                "parse",
+                "ACP.STIMULUS.DUPLICATE_MEMBER",
+                "schemaVersion",
+            ),
+            (b"{" + b" " * 65536, "bounds", "ACP.BOUNDS.MATRIX_STIMULUS_BYTES", "fixture"),
+        )
+    )
+    for raw, stage, code, location in hostile_stimuli:
+        assert protocol.parse_matrix_stimulus(raw) == protocol.MatrixStimulusParse(
+            None, exact_finding(stage, "CURRENT", code, location)
+        )
+
     result = protocol.validate_matrix_bytes(MATRIX_PATH.read_bytes(), synthetic_freeze(document))
     assert result.findings == ()
     assert result.semantic_sha256 == EXPECTED_SEMANTIC_SHA256
@@ -1304,11 +1559,28 @@ def test_case_catalog_rejects_missing_duplicate_reordered_unknown_and_field_drif
         (("fixtureContract", "schemaVersion"), "OtherStimulusV1"),
         (("fixtureContract", "orderedFields"), ["schemaVersion"]),
         (("fixtureContract", "forbiddenRecursiveFields"), []),
+        (("limits", "stimulusBytes"), 65535),
         (
             ("materializedOutcomeContracts", "dimensions", "authorization_eligibility", 2),
             "ACP.AUTHORIZATION.ALLOW",
         ),
-        (("materializedOutcomeContracts", "classPrecedence", "malformed", 2), "ACP.PARSE.OTHER"),
+        (
+            ("materializedOutcomeContracts", "dimensionExecutionModes", "deletion_corruption"),
+            "evaluate",
+        ),
+        (
+            (
+                "materializedOutcomeContracts",
+                "materializedBoundaryContracts",
+                "phase_separation",
+                "targetPhase",
+            ),
+            "CURRENT",
+        ),
+        (
+            ("materializedOutcomeContracts", "classPrecedence", "malformed", "reconstruct", 1),
+            "ACP.PARSE.OTHER",
+        ),
         (("controlledMutants", 0, "assertionId"), "wrong-assertion"),
         (("mutantOutcomes", 0, "assertionId"), "wrong-assertion"),
         (("invariants", 0, "stage"), "parse"),
@@ -1343,12 +1615,9 @@ def test_zero_candidates_and_duplicate_identity_fail_exactly() -> None:
     )
     assert_mutant(
         "MUT-DUPLICATE-BYPASS::exact-finding",
-        duplicate.findings,
-        exact_finding(
-            "canonical_identity",
-            "CURRENT",
-            "ACP.IDENTITY.DUPLICATE",
-            f"candidate[{candidate_id}]",
+        duplicate,
+        expected_stage_calls=pipeline_calls(
+            (candidate_id, candidate_id), terminal="canonical_identity"
         ),
     )
     assert duplicate.current_verdict is protocol.Verdict.INVALID
@@ -1389,14 +1658,18 @@ def test_every_early_rejection_has_zero_later_callbacks() -> None:
             crypto_verifier=ExactCryptoSpy([]),
         )
         assert result.findings == expected
-        assert_mutant(
-            "MUT-ORDER-REORDER::exact-stage-ledger",
-            result.stage_calls,
-            tuple(
-                protocol.StageCall(PIPELINE[index], "candidate[0]", 0)
-                for index in range(expected_stage_count)
-            ),
+        expected_calls = tuple(
+            protocol.StageCall(PIPELINE[index], "candidate[0]", 0)
+            for index in range(expected_stage_count)
         )
+        if expected_stage_count == 1:
+            assert_mutant(
+                "MUT-ORDER-REORDER::exact-stage-ledger",
+                result,
+                expected_stage_calls=expected_calls,
+            )
+        else:
+            assert result.stage_calls == expected_calls
         assert result.crypto_calls == ()
         assert result.graph_call_count == 0
 
@@ -1407,13 +1680,16 @@ def test_lifecycle_and_explicit_time_boundaries_are_exact() -> None:
         result = protocol.evaluate_candidates(
             (raw,), context=context((candidate_id,)), crypto_verifier=ExactCryptoSpy([])
         )
-        assert_mutant(
-            "MUT-LIFECYCLE-REPLACE::exact-finding",
-            result.findings,
-            exact_finding(
+        if state == "RETIRED":
+            assert_mutant(
+                "MUT-LIFECYCLE-REPLACE::exact-finding",
+                result,
+                expected_stage_calls=pipeline_calls((candidate_id,), terminal="schema"),
+            )
+        else:
+            assert result.findings == exact_finding(
                 "schema", "CURRENT", "ACP.LIFECYCLE.STATE", "candidate[0].lifecycleState"
-            ),
-        )
+            )
         assert result.stage_calls == pipeline_calls((candidate_id,), terminal="schema")
         assert result.crypto_calls == () and result.graph_call_count == 0
 
@@ -1447,11 +1723,16 @@ def test_lifecycle_and_explicit_time_boundaries_are_exact() -> None:
             context=context((candidate_id,), evaluation_time=evaluation_time),
             crypto_verifier=ExactCryptoSpy([]),
         )
-        assert_mutant(
-            "MUT-TIME-BYPASS::exact-finding",
-            result.findings,
-            exact_finding("schema", "CURRENT", code, "candidate[0].validity"),
-        )
+        if code == "ACP.TIME.OUTSIDE_WINDOW":
+            assert_mutant(
+                "MUT-TIME-BYPASS::exact-finding",
+                result,
+                expected_stage_calls=pipeline_calls((candidate_id,), terminal="schema"),
+            )
+        else:
+            assert result.findings == exact_finding(
+                "schema", "CURRENT", code, "candidate[0].validity"
+            )
         assert result.stage_calls == pipeline_calls((candidate_id,), terminal="schema")
         assert result.crypto_calls == () and result.graph_call_count == 0
 
@@ -1498,8 +1779,8 @@ def test_all_resource_bounds_cover_exact_n_and_n_plus_one(
     )
     assert_mutant(
         "MUT-BOUNDS-BYPASS::exact-finding",
-        over_count.findings,
-        exact_finding("bounds", "CURRENT", "ACP.BOUNDS.CANDIDATE_COUNT", "candidate-set"),
+        over_count,
+        expected_stage_calls=(protocol.StageCall("bounds", "candidate-set", 0),),
     )
     assert over_count.stage_calls == (protocol.StageCall("bounds", "candidate-set", 0),)
 
@@ -1606,6 +1887,22 @@ def test_all_resource_bounds_cover_exact_n_and_n_plus_one(
     assert calls[0]["retained_material_count"] == 4
     assert calls[0]["matrix_row_count"] == 130
     monkeypatch.undo()
+    matrix_at_cap = matrix + b" " * (65536 - len(matrix))
+    matrix_over_cap = matrix_at_cap + b" "
+    freeze_at_cap = freeze + b" " * (32768 - len(freeze))
+    freeze_over_cap = freeze_at_cap + b" "
+    assert protocol.validate_matrix_bytes(matrix_at_cap, freeze).findings != exact_finding(
+        "bounds", "CURRENT", "ACP.BOUNDS.MATRIX_BYTES", "matrix"
+    )
+    assert protocol.validate_matrix_bytes(matrix_over_cap, freeze).findings == exact_finding(
+        "bounds", "CURRENT", "ACP.BOUNDS.MATRIX_BYTES", "matrix"
+    )
+    assert protocol.validate_matrix_bytes(matrix, freeze_at_cap).findings != exact_finding(
+        "bounds", "CURRENT", "ACP.BOUNDS.FREEZE_BYTES", "freeze"
+    )
+    assert protocol.validate_matrix_bytes(matrix, freeze_over_cap).findings == exact_finding(
+        "bounds", "CURRENT", "ACP.BOUNDS.FREEZE_BYTES", "freeze"
+    )
     for field, value, code, location in (
         ("findingCount", 33, "ACP.BOUNDS.FINDING_COUNT", "findings"),
         ("retainedMaterialCount", 5, "ACP.BOUNDS.RETAINED_COUNT", "retained-materials"),
@@ -1614,6 +1911,12 @@ def test_all_resource_bounds_cover_exact_n_and_n_plus_one(
         document["limits"][field] = value
         bounded_result = protocol.validate_matrix_bytes(canonical(document), freeze)
         assert bounded_result.findings == exact_finding("bounds", "CURRENT", code, location)
+    document = matrix_document()
+    assert len(document["caseIndex"]) == 130
+    document["caseIndex"].append("unknown:overflow")
+    assert protocol.validate_matrix_bytes(canonical(document), freeze).findings == exact_finding(
+        "bounds", "CURRENT", "ACP.BOUNDS.MATRIX_ROWS", "caseIndex"
+    )
 
 
 def test_hostile_input_families_stop_before_later_work() -> None:
@@ -1644,11 +1947,14 @@ def test_hostile_input_families_stop_before_later_work() -> None:
         result = protocol.evaluate_candidates(
             (hostile,), context=context((candidate_id,)), crypto_verifier=ExactCryptoSpy([])
         )
-        assert_mutant(
-            "MUT-PARSE-REPLACE::exact-finding",
-            result.findings,
-            exact_finding(stage, "CURRENT", code, location),
-        )
+        if code == "ACP.PARSE.DUPLICATE_MEMBER":
+            assert_mutant(
+                "MUT-PARSE-REPLACE::exact-finding",
+                result,
+                expected_stage_calls=pipeline_calls((candidate_id,), terminal="parse"),
+            )
+        else:
+            assert result.findings == exact_finding(stage, "CURRENT", code, location)
         assert result.stage_calls == pipeline_calls((candidate_id,), terminal=stage)
         assert result.crypto_calls == () and result.graph_call_count == 0
 
@@ -1660,10 +1966,8 @@ def test_identity_substitution_never_reaches_crypto() -> None:
     )
     assert_mutant(
         "MUT-IDENTITY-BYPASS::exact-finding",
-        result.findings,
-        exact_finding(
-            "canonical_identity", "CURRENT", "ACP.IDENTITY.MISMATCH", "candidate[0].candidateId"
-        ),
+        result,
+        expected_stage_calls=pipeline_calls((expected_id,), terminal="canonical_identity"),
     )
     assert result.stage_calls == pipeline_calls((expected_id,), terminal="canonical_identity")
     assert result.current_verdict is protocol.Verdict.INVALID
@@ -1722,13 +2026,8 @@ def test_crypto_spy_ledger_is_exact_and_self_trust_fails() -> None:
     )
     assert_mutant(
         "MUT-SELF-TRUST-REPLACE::exact-finding",
-        rejected.findings,
-        exact_finding(
-            "independent_trust",
-            "CURRENT",
-            "ACP.TRUST.KEY_UNAVAILABLE",
-            f"candidate[{candidate_id}]",
-        ),
+        rejected,
+        expected_stage_calls=pipeline_calls((candidate_id,), terminal="independent_trust"),
     )
     assert rejected.current_verdict is protocol.Verdict.UNAVAILABLE
     assert rejected.stage_calls == pipeline_calls((candidate_id,), terminal="independent_trust")
@@ -1785,13 +2084,8 @@ def test_only_trusted_authorized_candidates_can_conflict() -> None:
     )
     assert_mutant(
         "MUT-AUTH-BYPASS::exact-finding",
-        unauthorized.findings,
-        exact_finding(
-            "authorization",
-            "CURRENT",
-            "ACP.AUTHORIZATION.DENIED",
-            f"candidate[{second_id}]",
-        ),
+        unauthorized,
+        expected_stage_calls=pipeline_calls((first_id, second_id), terminal="authorization"),
     )
     assert unauthorized.current_verdict is protocol.Verdict.INVALID
     assert unauthorized.stage_calls == pipeline_calls(
@@ -1960,8 +2254,9 @@ def test_graph_result_is_permutation_invariant() -> None:
     assert forward.eligible_candidate_ids == tuple(sorted((first_id, second_id)))
     assert_mutant(
         "MUT-PRECEDENCE-REPLACE::exact-selection",
-        forward.selected_candidate_id,
-        second_id,
+        forward,
+        expected_stage_calls=pipeline_calls((first_id, second_id)),
+        expected_selected=second_id,
     )
     assert reverse.selected_candidate_id == second_id
     assert forward.stage_calls == pipeline_calls((first_id, second_id))
@@ -1983,8 +2278,8 @@ def test_phase_substitution_returns_exact_verdicts() -> None:
     )
     assert_mutant(
         "MUT-PHASE-REPLACE::exact-finding",
-        result.findings,
-        exact_finding("schema", "CURRENT", "ACP.SCHEMA.PHASE_MISMATCH", "candidate[0].phase"),
+        result,
+        expected_stage_calls=pipeline_calls((candidate_id,), terminal="schema"),
     )
     assert result.stage_calls == pipeline_calls((candidate_id,), terminal="schema")
     assert result.historical_verdict is protocol.Verdict.UNAVAILABLE
@@ -2156,8 +2451,8 @@ def test_reconstruction_exact_equality_kills_subset_replay(
     )
     assert_mutant(
         "MUT-REPLAY-SUBSET::exact-finding",
-        mismatch.findings,
-        exact_finding("phase_verdict", "CURRENT", "ACP.REPLAY.EXACT_MISMATCH", "findings"),
+        mismatch,
+        expected_stage_calls=pipeline_calls((candidate_id,)),
     )
 
 
@@ -2222,10 +2517,8 @@ def test_reconstruction_rejects_missing_extra_corrupt_and_substituted_inputs() -
         assert result.crypto_calls == () and result.graph_call_count == 0
     assert_mutant(
         "MUT-SUBSTITUTION-REMOVE::exact-finding",
-        result.findings,
-        exact_finding(
-            "canonical_identity", "CURRENT", "ACP.REPLAY.IDENTITY_MISMATCH", "candidate[0]"
-        ),
+        result,
+        expected_stage_calls=expected_calls,
     )
 
     wrong_phase, _, _ = candidate(payload="first", priority=1, phase="HISTORICAL")
@@ -2395,10 +2688,16 @@ def test_controlled_mutation_anchors_are_executable_and_complete() -> None:
             if cast(ast.Constant, call.args[0]).value == mutant["assertionId"]
         ]
         assert len(matching) == 1
+        keyword_names = {item.arg for item in matching[0].keywords}
+        assert "expected_stage_calls" in keyword_names
+        if outcomes_by_id[mutant["id"]]["selectedRule"] is not None:
+            assert "expected_selected" in keyword_names
         assertion = cast(ast.Constant, matching[0].args[0]).value
         assert isinstance(assertion, str)
         bound_assertions[mutant["id"]] = assertion
     assert bound_assertions == MUTANT_ASSERTION_IDS
+    assert set(document["mutantStageLedgerClaims"]) == expected
+    assert all(document["mutantStageLedgerClaims"].values())
     assert all(
         mutant["assertionId"] == outcomes_by_id[mutant_id]["assertionId"]
         and mutant["expectedCode"]

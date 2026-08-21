@@ -492,6 +492,75 @@ def test_repository_validator_is_read_only_and_static_boundary_is_ast_exact(
     ):
         assert protocol.static_boundary_findings(hostile) == finding("static", code, "source")
 
+    allowed_argv = (
+        ("git", "rev-parse", "HEAD"),
+        ("git", "rev-parse", "HEAD^"),
+        ("git", "rev-parse", "red-head:docs/freeze.json"),
+        ("git", "merge-base", "--is-ancestor", "red-head", "HEAD"),
+        ("git", "diff-tree", "--no-commit-id", "--name-only", "-r", "HEAD"),
+        ("git", "show", "-s", "--format=%ae", "red-head"),
+        ("git", "cat-file", "-e", "red-head"),
+    )
+    for argv in allowed_argv:
+        variants = [argv[:-1], (*argv, "--extra"), (*argv[:-1], "wrong-token")]
+        if len(argv) > 3:
+            reordered = list(argv)
+            reordered[-1], reordered[-2] = reordered[-2], reordered[-1]
+            variants.append(tuple(reordered))
+        for variant in variants:
+            check = argv[1] != "merge-base"
+            source = (
+                "import subprocess\n"
+                f"subprocess.run({variant!r}, cwd=root, check={check!r}, "
+                "capture_output=True, text=True)\n"
+            )
+            assert protocol.static_boundary_findings(source) == finding(
+                "static", "ACP.STATIC.GIT_FORBIDDEN", "source"
+            )
+    allowed_expressions = (
+        ("('git', 'rev-parse', 'HEAD')", True),
+        ("('git', 'rev-parse', 'HEAD^')", True),
+        ("('git', 'rev-parse', f'{red_head}:docs/freeze.json')", True),
+        ("('git', 'merge-base', '--is-ancestor', red_head, 'HEAD')", False),
+        ("('git', 'diff-tree', '--no-commit-id', '--name-only', '-r', 'HEAD')", True),
+        ("('git', 'show', '-s', '--format=%ae', red_head)", True),
+        ("('git', 'cat-file', '-e', red_head)", True),
+    )
+    for expression, check in allowed_expressions:
+        for changed_kwarg, code in (
+            ("env=environment", "ACP.STATIC.GIT_DYNAMIC"),
+            ("shell=True", "ACP.STATIC.PROCESS"),
+            ("cwd=dynamic_root", "ACP.STATIC.GIT_DYNAMIC"),
+        ):
+            cwd = "" if changed_kwarg.startswith("cwd=") else "cwd=root, "
+            source = (
+                "import subprocess\n"
+                f"subprocess.run({expression}, {cwd}check={check!r}, capture_output=True, "
+                f"text=True, {changed_kwarg})\n"
+            )
+            assert protocol.static_boundary_findings(source) == finding("static", code, "source")
+    for aliased_source, code in (
+        (
+            "from pathlib import Path as P\nP('state').write_text('x')\n",
+            "ACP.STATIC.WRITE",
+        ),
+        (
+            "from shutil import rmtree as erase\nerase('state')\n",
+            "ACP.STATIC.PERSISTENCE",
+        ),
+        (
+            "from os import remove as erase\nerase('state')\n",
+            "ACP.STATIC.WRITE",
+        ),
+        (
+            "from asyncio import create_subprocess_exec as launch\nlaunch('git', 'status')\n",
+            "ACP.STATIC.PROCESS",
+        ),
+    ):
+        assert protocol.static_boundary_findings(aliased_source) == finding(
+            "static", code, "source"
+        )
+
 
 def write_preflight(root: Path, *, objective: str, required: list[str], issue: int = 435) -> Path:
     path = root / f"docs/governance/preflights/issue-{issue}.json"
@@ -549,10 +618,21 @@ def test_sensitive_route_uses_paths_and_exact_issue_artifacts(tmp_path: Path) ->
     assert protocol.route_findings(root) == finding(
         "freeze", "ACP.FREEZE.REVIEW_DISPOSITION", "reviewers[0].disposition"
     )
-    freeze_path.write_bytes(canonical(freeze) + b" " * 32768)
+    freeze_raw = canonical(freeze) + b"\n"
+    freeze_at_cap = freeze_raw + b" " * (32768 - len(freeze_raw))
+    freeze_path.write_bytes(freeze_at_cap)
+    assert protocol.route_findings(root) != finding("bounds", "ACP.BOUNDS.FREEZE_BYTES", "freeze")
+    freeze_path.write_bytes(freeze_at_cap + b" ")
     assert protocol.route_findings(root) == finding("bounds", "ACP.BOUNDS.FREEZE_BYTES", "freeze")
     matrix_path = root / protocol.MATRIX_PATH.relative_to(protocol.ROOT)
     matrix = json.loads(matrix_path.read_text(encoding="utf-8"))
+    matrix_raw = matrix_path.read_bytes()
+    matrix_at_cap = matrix_raw + b" " * (65536 - len(matrix_raw))
+    matrix_path.write_bytes(matrix_at_cap)
+    freeze_path.write_bytes(freeze_raw)
+    assert protocol.route_findings(root) != finding("bounds", "ACP.BOUNDS.MATRIX_BYTES", "matrix")
+    matrix_path.write_bytes(matrix_at_cap + b" ")
+    assert protocol.route_findings(root) == finding("bounds", "ACP.BOUNDS.MATRIX_BYTES", "matrix")
     for field, limit_value, code, finding_location in (
         ("findingCount", 33, "ACP.BOUNDS.FINDING_COUNT", "findings"),
         ("retainedMaterialCount", 5, "ACP.BOUNDS.RETAINED_COUNT", "retained-materials"),
@@ -561,6 +641,11 @@ def test_sensitive_route_uses_paths_and_exact_issue_artifacts(tmp_path: Path) ->
         changed_matrix["limits"][field] = limit_value
         matrix_path.write_bytes(canonical(changed_matrix) + b"\n")
         assert protocol.route_findings(root) == finding("bounds", code, finding_location)
+    changed_matrix = deepcopy(matrix)
+    assert len(changed_matrix["caseIndex"]) == 130
+    changed_matrix["caseIndex"].append("unknown:overflow")
+    matrix_path.write_bytes(canonical(changed_matrix) + b"\n")
+    assert protocol.route_findings(root) == finding("bounds", "ACP.BOUNDS.MATRIX_ROWS", "caseIndex")
     matrix_path.write_bytes(canonical(matrix) + b"\n")
     freeze_path.write_bytes(canonical(freeze) + b"\n")
     assert protocol.route_findings(root, changed_paths=("../escape",)) == finding(

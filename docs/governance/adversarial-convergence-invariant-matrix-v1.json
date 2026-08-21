@@ -182,12 +182,12 @@
   "materializedOutcomeContracts": {
     "successClasses": [
       "positive",
+      "boundary",
       "reordering",
       "maximum_cardinality"
     ],
     "failureClasses": [
       "negative",
-      "boundary",
       "malformed",
       "deletion",
       "corruption",
@@ -211,13 +211,20 @@
       ]
     },
     "classPrecedence": {
-      "malformed": [
-        "evaluate",
-        "parse",
-        "ACP.PARSE.INVALID_JSON",
-        "candidate[0]",
-        "INVALID"
-      ],
+      "malformed": {
+        "evaluate": [
+          "parse",
+          "ACP.PARSE.INVALID_JSON",
+          "candidate[0]",
+          "INVALID"
+        ],
+        "reconstruct": [
+          "parse",
+          "ACP.PARSE.INVALID_JSON",
+          "candidate[0]",
+          "INVALID"
+        ]
+      },
       "deletion": {
         "evaluate": [
           "bounds",
@@ -273,6 +280,75 @@
         "candidate[0]",
         "INVALID"
       ]
+    },
+    "dimensionExecutionModes": {
+      "validation_order": "evaluate",
+      "lifecycle_state": "evaluate",
+      "temporal_boundary": "evaluate",
+      "phase_separation": "evaluate",
+      "cardinality_limit": "evaluate",
+      "malformed_input": "evaluate",
+      "deletion_corruption": "reconstruct",
+      "reordering_duplication": "evaluate",
+      "substitution": "evaluate",
+      "cryptographic_eligibility": "evaluate",
+      "authorization_eligibility": "evaluate",
+      "graph_conflict_precedence": "evaluate",
+      "reconstruction_replay": "reconstruct"
+    },
+    "materializedBoundaryContracts": {
+      "validation_order": {
+        "executionMode": "evaluate", "terminalStage": "phase_verdict",
+        "finding": null, "verdict": "VALID", "targetPhase": "CURRENT"
+      },
+      "lifecycle_state": {
+        "executionMode": "evaluate", "terminalStage": "phase_verdict",
+        "finding": null, "verdict": "VALID", "targetPhase": "CURRENT"
+      },
+      "temporal_boundary": {
+        "executionMode": "evaluate", "terminalStage": "phase_verdict",
+        "finding": null, "verdict": "VALID", "targetPhase": "CURRENT"
+      },
+      "phase_separation": {
+        "executionMode": "evaluate", "terminalStage": "phase_verdict",
+        "finding": null, "verdict": "VALID", "targetPhase": "ACCEPTANCE"
+      },
+      "cardinality_limit": {
+        "executionMode": "evaluate", "terminalStage": "phase_verdict",
+        "finding": null, "verdict": "VALID", "targetPhase": "CURRENT"
+      },
+      "malformed_input": {
+        "executionMode": "evaluate", "terminalStage": "phase_verdict",
+        "finding": null, "verdict": "VALID", "targetPhase": "CURRENT"
+      },
+      "deletion_corruption": {
+        "executionMode": "reconstruct", "terminalStage": "phase_verdict",
+        "finding": null, "verdict": "VALID", "targetPhase": "CURRENT"
+      },
+      "reordering_duplication": {
+        "executionMode": "evaluate", "terminalStage": "phase_verdict",
+        "finding": null, "verdict": "VALID", "targetPhase": "CURRENT"
+      },
+      "substitution": {
+        "executionMode": "evaluate", "terminalStage": "phase_verdict",
+        "finding": null, "verdict": "VALID", "targetPhase": "CURRENT"
+      },
+      "cryptographic_eligibility": {
+        "executionMode": "evaluate", "terminalStage": "phase_verdict",
+        "finding": null, "verdict": "VALID", "targetPhase": "CURRENT"
+      },
+      "authorization_eligibility": {
+        "executionMode": "evaluate", "terminalStage": "phase_verdict",
+        "finding": null, "verdict": "VALID", "targetPhase": "CURRENT"
+      },
+      "graph_conflict_precedence": {
+        "executionMode": "evaluate", "terminalStage": "phase_verdict",
+        "finding": null, "verdict": "VALID", "targetPhase": "CURRENT"
+      },
+      "reconstruction_replay": {
+        "executionMode": "reconstruct", "terminalStage": "phase_verdict",
+        "finding": null, "verdict": "VALID", "targetPhase": "CURRENT"
+      }
     },
     "dimensions": {
       "validation_order": [
@@ -377,6 +453,7 @@
     "findingCount": 32,
     "retainedMaterialCount": 4,
     "matrixRowCount": 130,
+    "stimulusBytes": 65536,
     "matrixBytes": 65536,
     "freezeBytes": 32768
   },
@@ -448,16 +525,12 @@
       "graphCallCount": 0
     },
     "boundary": {
-      "findingSuffix": "BOUNDARY",
-      "targetPhase": "CURRENT",
-      "phaseVerdicts": {
-        "HISTORICAL": "UNAVAILABLE",
-        "CURRENT": "INVALID",
-        "ACCEPTANCE": "UNAVAILABLE"
-      },
-      "eligibleForGraph": false,
-      "laterStageCalls": 0,
-      "graphCallCount": 0
+      "findingSuffix": null,
+      "targetPhase": "MATERIALIZED",
+      "phaseVerdicts": "materializedBoundaryContracts",
+      "eligibleForGraph": "materializedBoundaryContracts",
+      "laterStageCalls": "materializedBoundaryContracts",
+      "graphCallCount": "materializedBoundaryContracts"
     },
     "malformed": {
       "findingSuffix": "MALFORMED",
@@ -1214,6 +1287,21 @@
   },
   "mutantSourcePath": "scripts/quality/issue435_adversarial_convergence.py",
   "mutantCommandTemplate": "uv run pytest -q tests/unit/test_issue435_adversarial_convergence.py::{killTest}",
+  "mutantStageLedgerClaims": {
+    "MUT-ORDER-REORDER": "bounds_only",
+    "MUT-LIFECYCLE-REPLACE": "through_schema_single_candidate",
+    "MUT-TIME-BYPASS": "through_schema_single_candidate",
+    "MUT-PHASE-REPLACE": "through_schema_single_candidate",
+    "MUT-BOUNDS-BYPASS": "bounds_candidate_set_only",
+    "MUT-PARSE-REPLACE": "through_parse_single_candidate",
+    "MUT-IDENTITY-BYPASS": "through_identity_single_candidate",
+    "MUT-DUPLICATE-BYPASS": "through_identity_two_duplicate_records",
+    "MUT-SUBSTITUTION-REMOVE": "through_identity_single_replay_record",
+    "MUT-SELF-TRUST-REPLACE": "through_trust_single_candidate",
+    "MUT-AUTH-BYPASS": "through_authorization_two_candidates",
+    "MUT-PRECEDENCE-REPLACE": "full_pipeline_two_candidates_input_order",
+    "MUT-REPLAY-SUBSET": "full_pipeline_single_candidate"
+  },
   "controlledMutants": [
     {
       "id": "MUT-ORDER-REORDER",
@@ -1222,7 +1310,7 @@
       "find": "ACP_MUTATION_ANCHOR_PIPELINE_ORDER = PIPELINE",
       "replace": "ACP_MUTATION_ANCHOR_PIPELINE_ORDER = tuple(reversed(PIPELINE))",
       "killTest": "test_every_early_rejection_has_zero_later_callbacks",
-      "expectedCode": null,
+      "expectedCode": "ACP.BOUNDS.CANDIDATE_BYTES",
       "assertionId": "MUT-ORDER-REORDER::exact-stage-ledger"
     },
     {
@@ -1350,13 +1438,18 @@
     {
       "id": "MUT-ORDER-REORDER",
       "assertionId": "MUT-ORDER-REORDER::exact-stage-ledger",
-      "finding": null,
+      "finding": [
+        "bounds",
+        "CURRENT",
+        "ACP.BOUNDS.CANDIDATE_BYTES",
+        "candidate[0]"
+      ],
       "phaseVerdicts": [
         "UNAVAILABLE",
-        "VALID",
+        "INVALID",
         "UNAVAILABLE"
       ],
-      "selectedRule": "highest_priority_then_candidate_id",
+      "selectedRule": null,
       "assertion": "exact_stage_calls"
     },
     {
@@ -1421,7 +1514,7 @@
       ],
       "phaseVerdicts": [
         "UNAVAILABLE",
-        "INVALID",
+        "UNAVAILABLE",
         "UNAVAILABLE"
       ],
       "selectedRule": null,

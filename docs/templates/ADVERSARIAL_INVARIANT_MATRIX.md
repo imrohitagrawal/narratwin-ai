@@ -40,17 +40,25 @@ invariant-label-derived finding.
 Every normalized case must resolve through a closed independent fixture
 registry. Each fixture carries only already-mutated untrusted candidate bytes,
 evaluation context, independent trust and authorization inputs, and optional
-retained reconstruction material. Case, dimension, class, mutation recipe,
-finding, verdict, assertion, mutant, and expected-outcome labels are forbidden.
+retained reconstruction material. Outside that retained historical transcript,
+case, dimension, class, mutation recipe, finding, verdict, assertion, mutant,
+and expected-outcome labels are forbidden; retained values are observations,
+never instructions for the current result.
+Opaque content must not be derived from those public labels. The strict parser
+must return an exact typed rejection for duplicate, unknown, forbidden, missing,
+wrongly typed, malformed-hex, invalid-enum, malformed-context, malformed-retained,
+or oversized stimulus input.
 Bind the fixture bytes/hash, exact assertion identity, ordered stage ledger, exact
 signature/key/message crypto ledger or explicit no-call, graph result/selection,
 three-phase verdicts, mutant, blocker class, and evidence state. The executor
 accepts only the stimulus, calls exactly one canonical evaluator or
-reconstructor, and wraps its returned evaluation with the stimulus digest.
-Execute every resolved reference, assert complete crypto-spy consumption,
-cross-swap payloads against external expectations, and perturb the operational
-stimulus independently; label, count, recipe, or echo completeness is not
-behavioral completeness.
+reconstructor selected by the frozen per-cell mode, and wraps the exact returned
+object with the stimulus digest. Observe that delegation for every resolved
+reference, assert complete crypto-spy consumption, compare evaluation transcripts
+under outcome-distinct derangements, and perturb phase, time, trust,
+authorization, crypto, graph, and replay inputs independently. Every dimension's
+negative and boundary cases must differ operationally; label, digest, count,
+recipe, or echo completeness is not behavioral completeness.
 
 ## Pipeline-call ledger
 
@@ -76,7 +84,8 @@ negative vectors without private/signing material.
 | `MUT-...` | remove/bypass/reorder/replace | exact path and unique anchor | exact edit | exact test | exact tuple/enums | exact tuple/enums | killed/survived | implementation/evidence |
 
 Run only in disposable copies. An import failure or unrelated assertion does
-not kill the intended mutant.
+not kill the intended mutant. Bind each assertion identity to its matrix-owned
+exact code, location, three-phase verdict, stage ledger, and selection rule.
 
 ## Budget feasibility
 

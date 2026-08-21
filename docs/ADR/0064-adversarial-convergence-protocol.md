@@ -44,14 +44,20 @@ nonactivation. The two fixed test blobs are independent oracles that prevent a
 coordinated matrix/validator edit from self-approving. Their closed fixture
 registry resolves each already-mutated, unlabeled operational stimulus and
 executes it without being given case identity or the expected outcome. A thin
-executor calls exactly one canonical evaluator or reconstructor and wraps its
-returned evaluation with the stimulus digest. A distinct observed transcript,
-payload cross-swaps, and exact crypto-spy exhaustion prevent an echo oracle,
-while the freeze binds the actual
+executor strictly parses a typed closed stimulus, rejects unknown, duplicate,
+missing, malformed, wrongly typed, or outcome-bearing fields, calls the exact
+matrix-bound canonical evaluator or reconstructor for every real fixture, and
+wraps that engine's returned object with the stimulus digest. Fixture content is
+opaque and independent of case labels. Each dimension has a behaviorally
+distinct negative and boundary stimulus. Direct evaluation derangements,
+per-fixture delegation observation, and exact crypto-spy exhaustion prevent an
+echo oracle, while the freeze binds the actual
 ordered RED-node catalog rather than a caller-supplied count. Reconstruction is
 required to call the same independently tested complete retained-equality
 comparison used by the standalone oracle; the public validator and route gate
-must likewise compose the bounded matrix/freeze checks.
+must likewise compose matrix/freeze byte, finding, retained-material, and row
+N/N+1 checks. Controlled mutant identities bind the exact finding, three-phase
+verdict, stage ledger, and selection claim, not an adjacent string.
 
 `predecessorId` participates in canonical candidate identity. A cyclic
 predecessor construction therefore cannot remain identity-valid; it is rejected

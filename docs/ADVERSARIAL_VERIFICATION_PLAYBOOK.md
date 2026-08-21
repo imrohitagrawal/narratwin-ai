@@ -56,6 +56,15 @@ The reference dimensions are:
 - graph/conflict eligibility and precedence; and
 - reconstruction and replay.
 
+Every Cartesian cell resolves to an independently frozen execution mode and an
+opaque serialized operational stimulus. Payload content must not encode the
+dimension or test-class label. The parser is a closed typed boundary: unknown,
+duplicate, forbidden, missing, wrongly typed, malformed, or oversized fields
+produce an exact finding. The executor delegates every real fixture to exactly
+one canonical evaluator or reconstructor and returns that engine's object; a
+sentinel-only composition test is insufficient. Negative and boundary cases
+must differ in operational input and observed enforcement for every dimension.
+
 The reference test classes are positive, negative, boundary, malformed,
 deletion, corruption, reordering, duplication, substitution, and maximum
 cardinality. A new applicable class returns the work to RED review.
@@ -85,7 +94,9 @@ skipping is forbidden.
 Check zero, one, N, N+1, individual bytes, aggregate bytes, depth, member count,
 row count, candidate count, finding count, and retained-material count before
 parse, hashing, cryptography, or graph work. Malformed evidence never excuses a
-pre-work bound.
+pre-work bound. Matrix bytes, freeze bytes, findings, retained materials, and
+rows require exact N/N+1 evidence through both the public validator and the
+route gate; helper-only evidence is insufficient.
 
 ### Parse and schema
 
@@ -163,6 +174,10 @@ and create a superseding freeze under explicit route authority.
 Every important enforcement claim names one mutation action and one kill test.
 Allowed actions are remove, bypass, reorder, and replace. A mutation row is not
 evidence by itself.
+
+The named assertion identity owns the exact matrix finding code and location,
+three-phase verdict, stage ledger, and selection claim. An adjacent ID-bearing
+equality or metadata-to-metadata comparison is not evidence.
 
 Execute mutants in a disposable copy or clone. Never mutate the governed branch.
 For each mutant record:

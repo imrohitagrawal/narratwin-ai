@@ -162,6 +162,7 @@ class MatrixCase:
     input_class: str
     input_reference: str
     input_sha256: str
+    execution_mode: str
     stage: str
     findings: tuple[Finding, ...]
     phase_verdicts: tuple[PhaseVerdict, ...]
@@ -188,6 +189,12 @@ class MatrixStimulus:
     candidate_documents: tuple[bytes, ...]
     context: EvaluationContext
     retained: RetainedEvaluation | None
+
+
+@dataclass(frozen=True)
+class MatrixStimulusParse:
+    stimulus: MatrixStimulus | None
+    findings: tuple[Finding, ...]
 
 
 @dataclass(frozen=True)
@@ -247,9 +254,9 @@ def normalized_case_catalog(
     return ()
 
 
-def parse_matrix_stimulus(fixture_bytes: bytes) -> MatrixStimulus | None:
+def parse_matrix_stimulus(fixture_bytes: bytes) -> MatrixStimulusParse:
     del fixture_bytes
-    return None
+    return MatrixStimulusParse(None, (_not_implemented("matrix-stimulus"),))
 
 
 def execute_matrix_fixture(
