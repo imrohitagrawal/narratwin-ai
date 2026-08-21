@@ -51,11 +51,33 @@
       "graph_conflict",
       "phase_verdict"
     ],
-    "phases": ["HISTORICAL", "CURRENT", "ACCEPTANCE"],
-    "verdicts": ["VALID", "INVALID", "UNAVAILABLE", "CONFLICTING"],
-    "blockerClasses": ["IMPLEMENTATION_BLOCKER", "EVIDENCE_BLOCKER"],
-    "findingFields": ["stage", "phase", "code", "location"],
-    "mutantActions": ["remove", "bypass", "reorder", "replace"]
+    "phases": [
+      "HISTORICAL",
+      "CURRENT",
+      "ACCEPTANCE"
+    ],
+    "verdicts": [
+      "VALID",
+      "INVALID",
+      "UNAVAILABLE",
+      "CONFLICTING"
+    ],
+    "blockerClasses": [
+      "IMPLEMENTATION_BLOCKER",
+      "EVIDENCE_BLOCKER"
+    ],
+    "findingFields": [
+      "stage",
+      "phase",
+      "code",
+      "location"
+    ],
+    "mutantActions": [
+      "remove",
+      "bypass",
+      "reorder",
+      "replace"
+    ]
   },
   "candidateContract": {
     "schemaVersion": "AdversarialCandidateV1",
@@ -64,8 +86,10 @@
       "candidateId",
       "phase",
       "lifecycleState",
+      "lifecycleOperation",
       "validFrom",
       "validUntil",
+      "freshUntil",
       "compromisedAt",
       "payload",
       "predecessorId",
@@ -77,8 +101,10 @@
       "candidateId",
       "phase",
       "lifecycleState",
+      "lifecycleOperation",
       "validFrom",
       "validUntil",
+      "freshUntil",
       "compromisedAt",
       "payload",
       "predecessorId",
@@ -89,10 +115,13 @@
       "schemaVersion",
       "phase",
       "payload",
+      "predecessorId",
       "priority",
       "lifecycleState",
+      "lifecycleOperation",
       "validFrom",
       "validUntil",
+      "freshUntil",
       "compromisedAt"
     ],
     "signatureFields": [
@@ -100,8 +129,10 @@
       "candidateId",
       "phase",
       "lifecycleState",
+      "lifecycleOperation",
       "validFrom",
       "validUntil",
+      "freshUntil",
       "compromisedAt",
       "payload",
       "predecessorId",
@@ -109,17 +140,34 @@
     ],
     "identityDomain": "NARRATWIN:ACP:IDENTITY:V1\u0000",
     "signatureDomain": "NARRATWIN:ACP:SIGNATURE:V1\u0000",
-    "lifecycleStates": ["ACTIVE", "RETIRED", "REVOKED", "SUPERSEDED", "TERMINAL"],
-    "independentTrustInputs": ["trusted_public_keys", "authorized_candidate_ids"],
-    "prohibitedTrustInputs": ["candidate", "matrix", "fixture", "ambient", "tofu"]
+    "lifecycleStates": [
+      "ACTIVE",
+      "RETIRED",
+      "REVOKED",
+      "SUPERSEDED",
+      "TERMINAL"
+    ],
+    "independentTrustInputs": [
+      "trusted_public_keys",
+      "authorized_candidate_ids"
+    ],
+    "prohibitedTrustInputs": [
+      "candidate",
+      "matrix",
+      "fixture",
+      "ambient",
+      "tofu"
+    ]
   },
   "limits": {
     "candidateCount": 4,
     "candidateBytes": 2048,
     "aggregateBytes": 4096,
     "jsonDepth": 4,
-    "jsonMembers": 11,
+    "jsonMembers": 13,
     "findingCount": 32,
+    "retainedMaterialCount": 4,
+    "matrixRowCount": 120,
     "matrixBytes": 65536,
     "freezeBytes": 32768
   },
@@ -128,7 +176,11 @@
     "riskThresholdPercent": 85,
     "stopThresholdPercent": 90,
     "denseCompressionProhibited": true,
-    "levels": ["per_file", "partition", "aggregate"]
+    "levels": [
+      "per_file",
+      "partition",
+      "aggregate"
+    ]
   },
   "focusedTransition": {
     "requiredStates": [
@@ -164,70 +216,120 @@
   "caseProfiles": {
     "positive": {
       "findingSuffix": null,
-      "phaseVerdicts": {"HISTORICAL": "VALID", "CURRENT": "VALID", "ACCEPTANCE": "VALID"},
+      "targetPhase": "CURRENT",
+      "phaseVerdicts": {
+        "HISTORICAL": "UNAVAILABLE",
+        "CURRENT": "VALID",
+        "ACCEPTANCE": "UNAVAILABLE"
+      },
       "eligibleForGraph": true,
       "laterStageCalls": 0,
       "graphCallCount": 1
     },
     "negative": {
       "findingSuffix": "NEGATIVE",
-      "phaseVerdicts": {"HISTORICAL": "INVALID", "CURRENT": "INVALID", "ACCEPTANCE": "INVALID"},
+      "targetPhase": "CURRENT",
+      "phaseVerdicts": {
+        "HISTORICAL": "UNAVAILABLE",
+        "CURRENT": "INVALID",
+        "ACCEPTANCE": "UNAVAILABLE"
+      },
       "eligibleForGraph": false,
       "laterStageCalls": 0,
       "graphCallCount": 0
     },
     "boundary": {
       "findingSuffix": "BOUNDARY",
-      "phaseVerdicts": {"HISTORICAL": "INVALID", "CURRENT": "INVALID", "ACCEPTANCE": "INVALID"},
+      "targetPhase": "CURRENT",
+      "phaseVerdicts": {
+        "HISTORICAL": "UNAVAILABLE",
+        "CURRENT": "INVALID",
+        "ACCEPTANCE": "UNAVAILABLE"
+      },
       "eligibleForGraph": false,
       "laterStageCalls": 0,
       "graphCallCount": 0
     },
     "malformed": {
       "findingSuffix": "MALFORMED",
-      "phaseVerdicts": {"HISTORICAL": "INVALID", "CURRENT": "INVALID", "ACCEPTANCE": "INVALID"},
+      "targetPhase": "CURRENT",
+      "phaseVerdicts": {
+        "HISTORICAL": "UNAVAILABLE",
+        "CURRENT": "INVALID",
+        "ACCEPTANCE": "UNAVAILABLE"
+      },
       "eligibleForGraph": false,
       "laterStageCalls": 0,
       "graphCallCount": 0
     },
     "deletion": {
       "findingSuffix": "DELETED",
-      "phaseVerdicts": {"HISTORICAL": "UNAVAILABLE", "CURRENT": "UNAVAILABLE", "ACCEPTANCE": "UNAVAILABLE"},
+      "targetPhase": "CURRENT",
+      "phaseVerdicts": {
+        "HISTORICAL": "UNAVAILABLE",
+        "CURRENT": "UNAVAILABLE",
+        "ACCEPTANCE": "UNAVAILABLE"
+      },
       "eligibleForGraph": false,
       "laterStageCalls": 0,
       "graphCallCount": 0
     },
     "corruption": {
       "findingSuffix": "CORRUPT",
-      "phaseVerdicts": {"HISTORICAL": "INVALID", "CURRENT": "INVALID", "ACCEPTANCE": "INVALID"},
+      "targetPhase": "CURRENT",
+      "phaseVerdicts": {
+        "HISTORICAL": "UNAVAILABLE",
+        "CURRENT": "INVALID",
+        "ACCEPTANCE": "UNAVAILABLE"
+      },
       "eligibleForGraph": false,
       "laterStageCalls": 0,
       "graphCallCount": 0
     },
     "reordering": {
       "findingSuffix": null,
-      "phaseVerdicts": {"HISTORICAL": "VALID", "CURRENT": "VALID", "ACCEPTANCE": "VALID"},
+      "targetPhase": "CURRENT",
+      "phaseVerdicts": {
+        "HISTORICAL": "UNAVAILABLE",
+        "CURRENT": "VALID",
+        "ACCEPTANCE": "UNAVAILABLE"
+      },
       "eligibleForGraph": true,
       "laterStageCalls": 0,
       "graphCallCount": 1
     },
     "duplication": {
       "findingSuffix": "DUPLICATE",
-      "phaseVerdicts": {"HISTORICAL": "INVALID", "CURRENT": "INVALID", "ACCEPTANCE": "INVALID"},
+      "targetPhase": "CURRENT",
+      "phaseVerdicts": {
+        "HISTORICAL": "UNAVAILABLE",
+        "CURRENT": "INVALID",
+        "ACCEPTANCE": "UNAVAILABLE"
+      },
       "eligibleForGraph": false,
       "laterStageCalls": 0,
       "graphCallCount": 0
     },
     "substitution": {
       "findingSuffix": "SUBSTITUTED",
-      "phaseVerdicts": {"HISTORICAL": "INVALID", "CURRENT": "INVALID", "ACCEPTANCE": "INVALID"},
+      "targetPhase": "CURRENT",
+      "phaseVerdicts": {
+        "HISTORICAL": "UNAVAILABLE",
+        "CURRENT": "INVALID",
+        "ACCEPTANCE": "UNAVAILABLE"
+      },
       "eligibleForGraph": false,
       "laterStageCalls": 0,
       "graphCallCount": 0
     },
     "maximum_cardinality": {
       "findingSuffix": null,
-      "phaseVerdicts": {"HISTORICAL": "VALID", "CURRENT": "VALID", "ACCEPTANCE": "VALID"},
+      "targetPhase": "CURRENT",
+      "phaseVerdicts": {
+        "HISTORICAL": "UNAVAILABLE",
+        "CURRENT": "VALID",
+        "ACCEPTANCE": "UNAVAILABLE"
+      },
       "eligibleForGraph": true,
       "laterStageCalls": 0,
       "graphCallCount": 1
@@ -236,7 +338,12 @@
   "caseExceptions": {
     "reconstruction_replay:reordering": {
       "findingSuffix": "REORDERED",
-      "phaseVerdicts": {"HISTORICAL": "INVALID", "CURRENT": "INVALID", "ACCEPTANCE": "INVALID"},
+      "targetPhase": "CURRENT",
+      "phaseVerdicts": {
+        "HISTORICAL": "UNAVAILABLE",
+        "CURRENT": "INVALID",
+        "ACCEPTANCE": "UNAVAILABLE"
+      },
       "eligibleForGraph": false,
       "laterStageCalls": 0,
       "graphCallCount": 0
@@ -372,11 +479,26 @@
       "predecessorStages": [],
       "lifecycleState": "CANDIDATE",
       "operation": "fail_fast_pipeline",
-      "phases": ["HISTORICAL", "CURRENT", "ACCEPTANCE"],
+      "phases": [
+        "HISTORICAL",
+        "CURRENT",
+        "ACCEPTANCE"
+      ],
       "invariant": "A rejection records one exact earliest-stage finding and every later-stage callback count is zero.",
       "trustPrecondition": "INDEPENDENT_TRUST_REQUIRED_AFTER_IDENTITY",
       "authorizationPrecondition": "AUTHORIZATION_REQUIRED_AFTER_TRUST",
-      "caseProfiles": ["positive", "negative", "boundary", "malformed", "deletion", "corruption", "reordering", "duplication", "substitution", "maximum_cardinality"],
+      "caseProfiles": [
+        "positive",
+        "negative",
+        "boundary",
+        "malformed",
+        "deletion",
+        "corruption",
+        "reordering",
+        "duplication",
+        "substitution",
+        "maximum_cardinality"
+      ],
       "findingPrefix": "ACP.ORDER",
       "blockerClass": "IMPLEMENTATION_BLOCKER",
       "mutantId": "MUT-ORDER-REORDER",
@@ -386,14 +508,32 @@
       "id": "ACP-LC-001",
       "dimension": "lifecycle_state",
       "stage": "schema",
-      "predecessorStages": ["bounds", "parse"],
+      "predecessorStages": [
+        "bounds",
+        "parse"
+      ],
       "lifecycleState": "DECLARED_CLOSED_STATE",
       "operation": "state_transition",
-      "phases": ["HISTORICAL", "CURRENT", "ACCEPTANCE"],
+      "phases": [
+        "HISTORICAL",
+        "CURRENT",
+        "ACCEPTANCE"
+      ],
       "invariant": "Only declared states and operations are eligible; stale, future, retired, revoked, superseded, missing, and terminal misuse fail exactly.",
       "trustPrecondition": "NO_TRUST_WORK_BEFORE_SCHEMA",
       "authorizationPrecondition": "NO_AUTHORIZATION_WORK_BEFORE_SCHEMA",
-      "caseProfiles": ["positive", "negative", "boundary", "malformed", "deletion", "corruption", "reordering", "duplication", "substitution", "maximum_cardinality"],
+      "caseProfiles": [
+        "positive",
+        "negative",
+        "boundary",
+        "malformed",
+        "deletion",
+        "corruption",
+        "reordering",
+        "duplication",
+        "substitution",
+        "maximum_cardinality"
+      ],
       "findingPrefix": "ACP.LIFECYCLE",
       "blockerClass": "IMPLEMENTATION_BLOCKER",
       "mutantId": "MUT-LIFECYCLE-REPLACE",
@@ -403,14 +543,32 @@
       "id": "ACP-TM-001",
       "dimension": "temporal_boundary",
       "stage": "schema",
-      "predecessorStages": ["bounds", "parse"],
+      "predecessorStages": [
+        "bounds",
+        "parse"
+      ],
       "lifecycleState": "EXPLICIT_TIME",
       "operation": "before_exact_after",
-      "phases": ["HISTORICAL", "CURRENT", "ACCEPTANCE"],
+      "phases": [
+        "HISTORICAL",
+        "CURRENT",
+        "ACCEPTANCE"
+      ],
       "invariant": "Supplied explicit time covers before, exact, after, expiry, freshness, compromise, and cross-phase boundaries without ambient clock use.",
       "trustPrecondition": "TIME_CANNOT_CREATE_TRUST",
       "authorizationPrecondition": "TIME_CANNOT_CREATE_AUTHORIZATION",
-      "caseProfiles": ["positive", "negative", "boundary", "malformed", "deletion", "corruption", "reordering", "duplication", "substitution", "maximum_cardinality"],
+      "caseProfiles": [
+        "positive",
+        "negative",
+        "boundary",
+        "malformed",
+        "deletion",
+        "corruption",
+        "reordering",
+        "duplication",
+        "substitution",
+        "maximum_cardinality"
+      ],
       "findingPrefix": "ACP.TIME",
       "blockerClass": "IMPLEMENTATION_BLOCKER",
       "mutantId": "MUT-TIME-BYPASS",
@@ -420,18 +578,41 @@
       "id": "ACP-PS-001",
       "dimension": "phase_separation",
       "stage": "phase_verdict",
-      "predecessorStages": ["bounds", "parse", "schema", "canonical_identity", "independent_trust", "authorization", "graph_conflict"],
+      "predecessorStages": [
+        "bounds",
+        "parse",
+        "schema",
+        "canonical_identity",
+        "independent_trust",
+        "authorization",
+        "graph_conflict"
+      ],
       "lifecycleState": "PHASE_BOUND",
       "operation": "historical_current_acceptance",
-      "phases": ["HISTORICAL", "CURRENT", "ACCEPTANCE"],
+      "phases": [
+        "HISTORICAL",
+        "CURRENT",
+        "ACCEPTANCE"
+      ],
       "invariant": "Historical, current, and acceptance inputs and verdicts remain exact and non-substitutable.",
       "trustPrecondition": "PHASE_SCOPED_TRUST",
       "authorizationPrecondition": "PHASE_SCOPED_AUTHORIZATION",
-      "caseProfiles": ["positive", "negative", "boundary", "malformed", "deletion", "corruption", "reordering", "duplication", "substitution", "maximum_cardinality"],
+      "caseProfiles": [
+        "positive",
+        "negative",
+        "boundary",
+        "malformed",
+        "deletion",
+        "corruption",
+        "reordering",
+        "duplication",
+        "substitution",
+        "maximum_cardinality"
+      ],
       "findingPrefix": "ACP.PHASE",
       "blockerClass": "IMPLEMENTATION_BLOCKER",
       "mutantId": "MUT-PHASE-REPLACE",
-      "killTest": "test_all_three_phases_are_exact_and_isolated"
+      "killTest": "test_phase_substitution_returns_exact_verdicts"
     },
     {
       "id": "ACP-CA-001",
@@ -440,11 +621,26 @@
       "predecessorStages": [],
       "lifecycleState": "BOUNDED_INPUT",
       "operation": "zero_n_n_plus_one",
-      "phases": ["HISTORICAL", "CURRENT", "ACCEPTANCE"],
+      "phases": [
+        "HISTORICAL",
+        "CURRENT",
+        "ACCEPTANCE"
+      ],
       "invariant": "Zero, one, N, and N+1 candidate, byte, depth, member, row, finding, and aggregate limits run before parse, hash, crypto, or graph work.",
       "trustPrecondition": "NO_TRUST_WORK_BEFORE_BOUNDS",
       "authorizationPrecondition": "NO_AUTHORIZATION_WORK_BEFORE_BOUNDS",
-      "caseProfiles": ["positive", "negative", "boundary", "malformed", "deletion", "corruption", "reordering", "duplication", "substitution", "maximum_cardinality"],
+      "caseProfiles": [
+        "positive",
+        "negative",
+        "boundary",
+        "malformed",
+        "deletion",
+        "corruption",
+        "reordering",
+        "duplication",
+        "substitution",
+        "maximum_cardinality"
+      ],
       "findingPrefix": "ACP.BOUNDS",
       "blockerClass": "IMPLEMENTATION_BLOCKER",
       "mutantId": "MUT-BOUNDS-BYPASS",
@@ -454,14 +650,31 @@
       "id": "ACP-MA-001",
       "dimension": "malformed_input",
       "stage": "parse",
-      "predecessorStages": ["bounds"],
+      "predecessorStages": [
+        "bounds"
+      ],
       "lifecycleState": "UNTRUSTED_BYTES",
       "operation": "strict_json",
-      "phases": ["HISTORICAL", "CURRENT", "ACCEPTANCE"],
+      "phases": [
+        "HISTORICAL",
+        "CURRENT",
+        "ACCEPTANCE"
+      ],
       "invariant": "Duplicate members, noncanonical data, unknown fields, wrong types, excessive depth, traversal, symlinks, binaries, and malformed encodings fail exactly.",
       "trustPrecondition": "NO_TRUST_WORK_BEFORE_PARSE",
       "authorizationPrecondition": "NO_AUTHORIZATION_WORK_BEFORE_PARSE",
-      "caseProfiles": ["positive", "negative", "boundary", "malformed", "deletion", "corruption", "reordering", "duplication", "substitution", "maximum_cardinality"],
+      "caseProfiles": [
+        "positive",
+        "negative",
+        "boundary",
+        "malformed",
+        "deletion",
+        "corruption",
+        "reordering",
+        "duplication",
+        "substitution",
+        "maximum_cardinality"
+      ],
       "findingPrefix": "ACP.PARSE",
       "blockerClass": "IMPLEMENTATION_BLOCKER",
       "mutantId": "MUT-PARSE-REPLACE",
@@ -471,99 +684,224 @@
       "id": "ACP-DC-001",
       "dimension": "deletion_corruption",
       "stage": "canonical_identity",
-      "predecessorStages": ["bounds", "parse", "schema"],
+      "predecessorStages": [
+        "bounds",
+        "parse",
+        "schema"
+      ],
       "lifecycleState": "CONTENT_BOUND",
       "operation": "missing_extra_corrupt",
-      "phases": ["HISTORICAL", "CURRENT", "ACCEPTANCE"],
+      "phases": [
+        "HISTORICAL",
+        "CURRENT",
+        "ACCEPTANCE"
+      ],
       "invariant": "Missing, extra, truncated, bit-flipped, hash-mismatched, and orphaned material cannot retain identity or eligibility.",
       "trustPrecondition": "IDENTITY_BEFORE_TRUST",
       "authorizationPrecondition": "IDENTITY_BEFORE_AUTHORIZATION",
-      "caseProfiles": ["positive", "negative", "boundary", "malformed", "deletion", "corruption", "reordering", "duplication", "substitution", "maximum_cardinality"],
+      "caseProfiles": [
+        "positive",
+        "negative",
+        "boundary",
+        "malformed",
+        "deletion",
+        "corruption",
+        "reordering",
+        "duplication",
+        "substitution",
+        "maximum_cardinality"
+      ],
       "findingPrefix": "ACP.IDENTITY",
       "blockerClass": "IMPLEMENTATION_BLOCKER",
       "mutantId": "MUT-IDENTITY-BYPASS",
-      "killTest": "test_reconstruction_rejects_missing_extra_corrupt_and_substituted_inputs"
+      "killTest": "test_identity_substitution_never_reaches_crypto"
     },
     {
       "id": "ACP-RD-001",
       "dimension": "reordering_duplication",
       "stage": "graph_conflict",
-      "predecessorStages": ["bounds", "parse", "schema", "canonical_identity", "independent_trust", "authorization"],
+      "predecessorStages": [
+        "bounds",
+        "parse",
+        "schema",
+        "canonical_identity",
+        "independent_trust",
+        "authorization"
+      ],
       "lifecycleState": "ELIGIBLE_SET",
       "operation": "permutation_and_duplicate",
-      "phases": ["HISTORICAL", "CURRENT", "ACCEPTANCE"],
+      "phases": [
+        "HISTORICAL",
+        "CURRENT",
+        "ACCEPTANCE"
+      ],
       "invariant": "Input permutations are deterministic while duplicate candidate, finding, graph, blob, and replay identities fail exactly.",
       "trustPrecondition": "ONLY_TRUSTED_MEMBERS",
       "authorizationPrecondition": "ONLY_AUTHORIZED_MEMBERS",
-      "caseProfiles": ["positive", "negative", "boundary", "malformed", "deletion", "corruption", "reordering", "duplication", "substitution", "maximum_cardinality"],
+      "caseProfiles": [
+        "positive",
+        "negative",
+        "boundary",
+        "malformed",
+        "deletion",
+        "corruption",
+        "reordering",
+        "duplication",
+        "substitution",
+        "maximum_cardinality"
+      ],
       "findingPrefix": "ACP.ORDERING",
       "blockerClass": "IMPLEMENTATION_BLOCKER",
       "mutantId": "MUT-DUPLICATE-BYPASS",
-      "killTest": "test_graph_fork_cycle_orphan_duplicate_and_permutation"
+      "killTest": "test_zero_candidates_and_duplicate_identity_fail_exactly"
     },
     {
       "id": "ACP-SU-001",
       "dimension": "substitution",
       "stage": "canonical_identity",
-      "predecessorStages": ["bounds", "parse", "schema"],
+      "predecessorStages": [
+        "bounds",
+        "parse",
+        "schema"
+      ],
       "lifecycleState": "BOUND_RECORD",
       "operation": "cross_field_substitution",
-      "phases": ["HISTORICAL", "CURRENT", "ACCEPTANCE"],
+      "phases": [
+        "HISTORICAL",
+        "CURRENT",
+        "ACCEPTANCE"
+      ],
       "invariant": "Candidate, identity, signature, phase, scope, trust, authority, graph member, blob, and source substitutions fail at the earliest applicable stage.",
       "trustPrecondition": "SUBSTITUTION_CANNOT_INHERIT_TRUST",
       "authorizationPrecondition": "SUBSTITUTION_CANNOT_INHERIT_AUTHORIZATION",
-      "caseProfiles": ["positive", "negative", "boundary", "malformed", "deletion", "corruption", "reordering", "duplication", "substitution", "maximum_cardinality"],
+      "caseProfiles": [
+        "positive",
+        "negative",
+        "boundary",
+        "malformed",
+        "deletion",
+        "corruption",
+        "reordering",
+        "duplication",
+        "substitution",
+        "maximum_cardinality"
+      ],
       "findingPrefix": "ACP.SUBSTITUTION",
       "blockerClass": "IMPLEMENTATION_BLOCKER",
       "mutantId": "MUT-SUBSTITUTION-REMOVE",
-      "killTest": "test_identity_substitution_never_reaches_crypto"
+      "killTest": "test_reconstruction_rejects_missing_extra_corrupt_and_substituted_inputs"
     },
     {
       "id": "ACP-CR-001",
       "dimension": "cryptographic_eligibility",
       "stage": "independent_trust",
-      "predecessorStages": ["bounds", "parse", "schema", "canonical_identity"],
+      "predecessorStages": [
+        "bounds",
+        "parse",
+        "schema",
+        "canonical_identity"
+      ],
       "lifecycleState": "IDENTITY_VALID",
       "operation": "external_key_signature_verification",
-      "phases": ["HISTORICAL", "CURRENT", "ACCEPTANCE"],
+      "phases": [
+        "HISTORICAL",
+        "CURRENT",
+        "ACCEPTANCE"
+      ],
       "invariant": "Only an independently supplied key may verify a bound candidate; the exact candidate, signature, order, count, phase, and result are recorded.",
       "trustPrecondition": "EXTERNAL_KEY_ONLY",
       "authorizationPrecondition": "AUTHORIZATION_AFTER_SIGNATURE",
-      "caseProfiles": ["positive", "negative", "boundary", "malformed", "deletion", "corruption", "reordering", "duplication", "substitution", "maximum_cardinality"],
+      "caseProfiles": [
+        "positive",
+        "negative",
+        "boundary",
+        "malformed",
+        "deletion",
+        "corruption",
+        "reordering",
+        "duplication",
+        "substitution",
+        "maximum_cardinality"
+      ],
       "findingPrefix": "ACP.TRUST",
       "blockerClass": "IMPLEMENTATION_BLOCKER",
       "mutantId": "MUT-SELF-TRUST-REPLACE",
-      "killTest": "test_structured_crypto_probe_mixed_results_and_exception"
+      "killTest": "test_crypto_spy_ledger_is_exact_and_self_trust_fails"
     },
     {
       "id": "ACP-GR-001",
       "dimension": "graph_conflict_precedence",
       "stage": "graph_conflict",
-      "predecessorStages": ["bounds", "parse", "schema", "canonical_identity", "independent_trust", "authorization"],
+      "predecessorStages": [
+        "bounds",
+        "parse",
+        "schema",
+        "canonical_identity",
+        "independent_trust",
+        "authorization"
+      ],
       "lifecycleState": "TRUSTED_AUTHORIZED_SET",
       "operation": "fork_cycle_precedence",
-      "phases": ["HISTORICAL", "CURRENT", "ACCEPTANCE"],
+      "phases": [
+        "HISTORICAL",
+        "CURRENT",
+        "ACCEPTANCE"
+      ],
       "invariant": "Only trusted and authorized eligible candidates enter graph work; exact forks, cycles, precedence, and conflicts are permutation invariant.",
       "trustPrecondition": "ALL_GRAPH_MEMBERS_TRUSTED",
       "authorizationPrecondition": "ALL_GRAPH_MEMBERS_AUTHORIZED",
-      "caseProfiles": ["positive", "negative", "boundary", "malformed", "deletion", "corruption", "reordering", "duplication", "substitution", "maximum_cardinality"],
+      "caseProfiles": [
+        "positive",
+        "negative",
+        "boundary",
+        "malformed",
+        "deletion",
+        "corruption",
+        "reordering",
+        "duplication",
+        "substitution",
+        "maximum_cardinality"
+      ],
       "findingPrefix": "ACP.GRAPH",
       "blockerClass": "IMPLEMENTATION_BLOCKER",
-      "mutantId": "MUT-AUTH-BYPASS",
-      "killTest": "test_graph_fork_cycle_orphan_duplicate_and_permutation"
+      "mutantId": "MUT-PRECEDENCE-REPLACE",
+      "killTest": "test_graph_result_is_permutation_invariant"
     },
     {
       "id": "ACP-RR-001",
       "dimension": "reconstruction_replay",
       "stage": "phase_verdict",
-      "predecessorStages": ["bounds", "parse", "schema", "canonical_identity", "independent_trust", "authorization", "graph_conflict"],
+      "predecessorStages": [
+        "bounds",
+        "parse",
+        "schema",
+        "canonical_identity",
+        "independent_trust",
+        "authorization",
+        "graph_conflict"
+      ],
       "lifecycleState": "RETAINED_EVIDENCE",
       "operation": "reconstruct_and_replay",
-      "phases": ["HISTORICAL", "CURRENT", "ACCEPTANCE"],
+      "phases": [
+        "HISTORICAL",
+        "CURRENT",
+        "ACCEPTANCE"
+      ],
       "invariant": "Missing, extra, corrupt, duplicate, reordered, substituted, cross-phase, and self-trust replay inputs reproduce exact identity, findings, and verdicts or fail exactly.",
       "trustPrecondition": "REPLAY_REVALIDATES_INDEPENDENT_TRUST",
       "authorizationPrecondition": "REPLAY_REVALIDATES_AUTHORIZATION",
-      "caseProfiles": ["positive", "negative", "boundary", "malformed", "deletion", "corruption", "reordering", "duplication", "substitution", "maximum_cardinality"],
+      "caseProfiles": [
+        "positive",
+        "negative",
+        "boundary",
+        "malformed",
+        "deletion",
+        "corruption",
+        "reordering",
+        "duplication",
+        "substitution",
+        "maximum_cardinality"
+      ],
       "findingPrefix": "ACP.REPLAY",
       "blockerClass": "EVIDENCE_BLOCKER",
       "mutantId": "MUT-REPLAY-SUBSET",
@@ -571,8 +909,32 @@
     }
   ],
   "freezeContract": {
-    "requiredRoles": ["architecture", "security_trust", "mutation_false_pass"],
-    "requiredFields": ["redHead", "redTree", "matrixBlobOid", "matrixSha256", "testBlobOid", "testSha256", "semanticSha256", "implementationAuthor", "reviewers", "expectedRedFailures", "reviewFindings", "activation", "authorityEffect", "completionState"],
+    "requiredRoles": [
+      "architecture",
+      "security_trust",
+      "mutation_false_pass"
+    ],
+    "requiredFields": [
+      "redHead",
+      "redTree",
+      "matrixBlobOid",
+      "matrixSha256",
+      "focusedOracleBlobs",
+      "semanticSha256",
+      "implementationAuthor",
+      "reviewers",
+      "expectedRedFailures",
+      "redBlockers",
+      "reviewBlockers",
+      "reviewFindings",
+      "activation",
+      "authorityEffect",
+      "completionState"
+    ],
+    "focusedOraclePaths": [
+      "tests/unit/test_issue435_adversarial_convergence.py",
+      "tests/unit/test_issue435_adversarial_convergence_repository.py"
+    ],
     "completionState": "PRE_GREEN_REVIEWS_COMPLETE",
     "expectedRedFailuresState": "FROZEN_AT_RED",
     "reviewFindingsState": "ZERO_BEFORE_C3",
@@ -581,18 +943,323 @@
   "mutantSourcePath": "scripts/quality/issue435_adversarial_convergence.py",
   "mutantCommandTemplate": "uv run pytest -q tests/unit/test_issue435_adversarial_convergence.py::{killTest}",
   "controlledMutants": [
-    {"id": "MUT-ORDER-REORDER", "action": "reorder", "anchor": "ACP_MUTATION_ANCHOR_PIPELINE_ORDER", "find": "ACP_MUTATION_ANCHOR_PIPELINE_ORDER = PIPELINE", "replace": "ACP_MUTATION_ANCHOR_PIPELINE_ORDER = tuple(reversed(PIPELINE))", "killTest": "test_every_early_rejection_has_zero_later_callbacks", "expectedCode": "ACP.ORDER.REORDERED"},
-    {"id": "MUT-LIFECYCLE-REPLACE", "action": "replace", "anchor": "ACP_MUTATION_ANCHOR_LIFECYCLE", "find": "ACP_MUTATION_ANCHOR_LIFECYCLE = True", "replace": "ACP_MUTATION_ANCHOR_LIFECYCLE = False", "killTest": "test_lifecycle_and_explicit_time_boundaries_are_exact", "expectedCode": "ACP.LIFECYCLE.STATE"},
-    {"id": "MUT-TIME-BYPASS", "action": "bypass", "anchor": "ACP_MUTATION_ANCHOR_EXPLICIT_TIME", "find": "ACP_MUTATION_ANCHOR_EXPLICIT_TIME = True", "replace": "ACP_MUTATION_ANCHOR_EXPLICIT_TIME = False", "killTest": "test_lifecycle_and_explicit_time_boundaries_are_exact", "expectedCode": "ACP.TIME.OUTSIDE_WINDOW"},
-    {"id": "MUT-PHASE-REPLACE", "action": "replace", "anchor": "ACP_MUTATION_ANCHOR_PHASE_EQUALITY", "find": "ACP_MUTATION_ANCHOR_PHASE_EQUALITY = True", "replace": "ACP_MUTATION_ANCHOR_PHASE_EQUALITY = False", "killTest": "test_all_three_phases_are_exact_and_isolated", "expectedCode": "ACP.SCHEMA.PHASE_MISMATCH"},
-    {"id": "MUT-BOUNDS-BYPASS", "action": "bypass", "anchor": "ACP_MUTATION_ANCHOR_BOUNDS", "find": "ACP_MUTATION_ANCHOR_BOUNDS = True", "replace": "ACP_MUTATION_ANCHOR_BOUNDS = False", "killTest": "test_all_resource_bounds_cover_exact_n_and_n_plus_one", "expectedCode": "ACP.BOUNDS.CANDIDATE_COUNT"},
-    {"id": "MUT-PARSE-REPLACE", "action": "replace", "anchor": "ACP_MUTATION_ANCHOR_DUPLICATE_JSON", "find": "ACP_MUTATION_ANCHOR_DUPLICATE_JSON = True", "replace": "ACP_MUTATION_ANCHOR_DUPLICATE_JSON = False", "killTest": "test_hostile_input_families_stop_before_later_work", "expectedCode": "ACP.PARSE.DUPLICATE_MEMBER"},
-    {"id": "MUT-IDENTITY-BYPASS", "action": "bypass", "anchor": "ACP_MUTATION_ANCHOR_IDENTITY", "find": "ACP_MUTATION_ANCHOR_IDENTITY = True", "replace": "ACP_MUTATION_ANCHOR_IDENTITY = False", "killTest": "test_identity_substitution_never_reaches_crypto", "expectedCode": "ACP.IDENTITY.MISMATCH"},
-    {"id": "MUT-DUPLICATE-BYPASS", "action": "bypass", "anchor": "ACP_MUTATION_ANCHOR_DUPLICATE_CANDIDATE", "find": "ACP_MUTATION_ANCHOR_DUPLICATE_CANDIDATE = True", "replace": "ACP_MUTATION_ANCHOR_DUPLICATE_CANDIDATE = False", "killTest": "test_zero_candidates_and_duplicate_identity_fail_exactly", "expectedCode": "ACP.IDENTITY.DUPLICATE"},
-    {"id": "MUT-SUBSTITUTION-REMOVE", "action": "remove", "anchor": "ACP_MUTATION_ANCHOR_SUBSTITUTION", "find": "ACP_MUTATION_ANCHOR_SUBSTITUTION = True", "replace": "ACP_MUTATION_ANCHOR_SUBSTITUTION = False", "killTest": "test_reconstruction_rejects_missing_extra_corrupt_and_substituted_inputs", "expectedCode": "ACP.REPLAY.IDENTITY_MISMATCH"},
-    {"id": "MUT-SELF-TRUST-REPLACE", "action": "replace", "anchor": "ACP_MUTATION_ANCHOR_EXTERNAL_TRUST", "find": "ACP_MUTATION_ANCHOR_EXTERNAL_TRUST = True", "replace": "ACP_MUTATION_ANCHOR_EXTERNAL_TRUST = False", "killTest": "test_crypto_spy_ledger_is_exact_and_self_trust_fails", "expectedCode": "ACP.TRUST.KEY_UNAVAILABLE"},
-    {"id": "MUT-AUTH-BYPASS", "action": "bypass", "anchor": "ACP_MUTATION_ANCHOR_AUTHORIZATION", "find": "ACP_MUTATION_ANCHOR_AUTHORIZATION = True", "replace": "ACP_MUTATION_ANCHOR_AUTHORIZATION = False", "killTest": "test_only_trusted_authorized_candidates_can_conflict", "expectedCode": "ACP.AUTHORIZATION.DENIED"},
-    {"id": "MUT-REPLAY-SUBSET", "action": "replace", "anchor": "ACP_MUTATION_ANCHOR_EXACT_FINDINGS", "find": "ACP_MUTATION_ANCHOR_EXACT_FINDINGS = True", "replace": "ACP_MUTATION_ANCHOR_EXACT_FINDINGS = False", "killTest": "test_reconstruction_exact_equality_kills_subset_replay", "expectedCode": "ACP.REPLAY.EXACT_MISMATCH"}
+    {
+      "id": "MUT-ORDER-REORDER",
+      "action": "reorder",
+      "anchor": "ACP_MUTATION_ANCHOR_PIPELINE_ORDER",
+      "find": "ACP_MUTATION_ANCHOR_PIPELINE_ORDER = PIPELINE",
+      "replace": "ACP_MUTATION_ANCHOR_PIPELINE_ORDER = tuple(reversed(PIPELINE))",
+      "killTest": "test_every_early_rejection_has_zero_later_callbacks",
+      "expectedCode": "ACP.ORDER.REORDERED"
+    },
+    {
+      "id": "MUT-LIFECYCLE-REPLACE",
+      "action": "replace",
+      "anchor": "ACP_MUTATION_ANCHOR_LIFECYCLE",
+      "find": "ACP_MUTATION_ANCHOR_LIFECYCLE = True",
+      "replace": "ACP_MUTATION_ANCHOR_LIFECYCLE = False",
+      "killTest": "test_lifecycle_and_explicit_time_boundaries_are_exact",
+      "expectedCode": "ACP.LIFECYCLE.STATE"
+    },
+    {
+      "id": "MUT-TIME-BYPASS",
+      "action": "bypass",
+      "anchor": "ACP_MUTATION_ANCHOR_EXPLICIT_TIME",
+      "find": "ACP_MUTATION_ANCHOR_EXPLICIT_TIME = True",
+      "replace": "ACP_MUTATION_ANCHOR_EXPLICIT_TIME = False",
+      "killTest": "test_lifecycle_and_explicit_time_boundaries_are_exact",
+      "expectedCode": "ACP.TIME.OUTSIDE_WINDOW"
+    },
+    {
+      "id": "MUT-PHASE-REPLACE",
+      "action": "replace",
+      "anchor": "ACP_MUTATION_ANCHOR_PHASE_EQUALITY",
+      "find": "ACP_MUTATION_ANCHOR_PHASE_EQUALITY = True",
+      "replace": "ACP_MUTATION_ANCHOR_PHASE_EQUALITY = False",
+      "killTest": "test_phase_substitution_returns_exact_verdicts",
+      "expectedCode": "ACP.SCHEMA.PHASE_MISMATCH"
+    },
+    {
+      "id": "MUT-BOUNDS-BYPASS",
+      "action": "bypass",
+      "anchor": "ACP_MUTATION_ANCHOR_BOUNDS",
+      "find": "ACP_MUTATION_ANCHOR_BOUNDS = True",
+      "replace": "ACP_MUTATION_ANCHOR_BOUNDS = False",
+      "killTest": "test_all_resource_bounds_cover_exact_n_and_n_plus_one",
+      "expectedCode": "ACP.BOUNDS.CANDIDATE_COUNT"
+    },
+    {
+      "id": "MUT-PARSE-REPLACE",
+      "action": "replace",
+      "anchor": "ACP_MUTATION_ANCHOR_DUPLICATE_JSON",
+      "find": "ACP_MUTATION_ANCHOR_DUPLICATE_JSON = True",
+      "replace": "ACP_MUTATION_ANCHOR_DUPLICATE_JSON = False",
+      "killTest": "test_hostile_input_families_stop_before_later_work",
+      "expectedCode": "ACP.PARSE.DUPLICATE_MEMBER"
+    },
+    {
+      "id": "MUT-IDENTITY-BYPASS",
+      "action": "bypass",
+      "anchor": "ACP_MUTATION_ANCHOR_IDENTITY",
+      "find": "ACP_MUTATION_ANCHOR_IDENTITY = True",
+      "replace": "ACP_MUTATION_ANCHOR_IDENTITY = False",
+      "killTest": "test_identity_substitution_never_reaches_crypto",
+      "expectedCode": "ACP.IDENTITY.MISMATCH"
+    },
+    {
+      "id": "MUT-DUPLICATE-BYPASS",
+      "action": "bypass",
+      "anchor": "ACP_MUTATION_ANCHOR_DUPLICATE_CANDIDATE",
+      "find": "ACP_MUTATION_ANCHOR_DUPLICATE_CANDIDATE = True",
+      "replace": "ACP_MUTATION_ANCHOR_DUPLICATE_CANDIDATE = False",
+      "killTest": "test_zero_candidates_and_duplicate_identity_fail_exactly",
+      "expectedCode": "ACP.IDENTITY.DUPLICATE"
+    },
+    {
+      "id": "MUT-SUBSTITUTION-REMOVE",
+      "action": "remove",
+      "anchor": "ACP_MUTATION_ANCHOR_SUBSTITUTION",
+      "find": "ACP_MUTATION_ANCHOR_SUBSTITUTION = True",
+      "replace": "ACP_MUTATION_ANCHOR_SUBSTITUTION = False",
+      "killTest": "test_reconstruction_rejects_missing_extra_corrupt_and_substituted_inputs",
+      "expectedCode": "ACP.REPLAY.IDENTITY_MISMATCH"
+    },
+    {
+      "id": "MUT-SELF-TRUST-REPLACE",
+      "action": "replace",
+      "anchor": "ACP_MUTATION_ANCHOR_EXTERNAL_TRUST",
+      "find": "ACP_MUTATION_ANCHOR_EXTERNAL_TRUST = True",
+      "replace": "ACP_MUTATION_ANCHOR_EXTERNAL_TRUST = False",
+      "killTest": "test_crypto_spy_ledger_is_exact_and_self_trust_fails",
+      "expectedCode": "ACP.TRUST.KEY_UNAVAILABLE"
+    },
+    {
+      "id": "MUT-AUTH-BYPASS",
+      "action": "bypass",
+      "anchor": "ACP_MUTATION_ANCHOR_AUTHORIZATION",
+      "find": "ACP_MUTATION_ANCHOR_AUTHORIZATION = True",
+      "replace": "ACP_MUTATION_ANCHOR_AUTHORIZATION = False",
+      "killTest": "test_only_trusted_authorized_candidates_can_conflict",
+      "expectedCode": "ACP.AUTHORIZATION.DENIED"
+    },
+    {
+      "id": "MUT-PRECEDENCE-REPLACE",
+      "action": "replace",
+      "anchor": "ACP_MUTATION_ANCHOR_PRECEDENCE",
+      "find": "ACP_MUTATION_ANCHOR_PRECEDENCE = True",
+      "replace": "ACP_MUTATION_ANCHOR_PRECEDENCE = False",
+      "killTest": "test_graph_result_is_permutation_invariant",
+      "expectedCode": "ACP.GRAPH.PRECEDENCE"
+    },
+    {
+      "id": "MUT-REPLAY-SUBSET",
+      "action": "replace",
+      "anchor": "ACP_MUTATION_ANCHOR_EXACT_FINDINGS",
+      "find": "ACP_MUTATION_ANCHOR_EXACT_FINDINGS = True",
+      "replace": "ACP_MUTATION_ANCHOR_EXACT_FINDINGS = False",
+      "killTest": "test_reconstruction_exact_equality_kills_subset_replay",
+      "expectedCode": "ACP.REPLAY.EXACT_MISMATCH"
+    }
+  ],
+  "mutantOutcomes": [
+    {
+      "id": "MUT-ORDER-REORDER",
+      "finding": null,
+      "phaseVerdicts": [
+        "UNAVAILABLE",
+        "VALID",
+        "UNAVAILABLE"
+      ],
+      "selectedRule": "highest_priority_then_candidate_id",
+      "assertion": "exact_stage_calls"
+    },
+    {
+      "id": "MUT-LIFECYCLE-REPLACE",
+      "finding": [
+        "schema",
+        "CURRENT",
+        "ACP.LIFECYCLE.STATE",
+        "candidate[0].lifecycleState"
+      ],
+      "phaseVerdicts": [
+        "UNAVAILABLE",
+        "INVALID",
+        "UNAVAILABLE"
+      ],
+      "selectedRule": null,
+      "assertion": "exact_finding"
+    },
+    {
+      "id": "MUT-TIME-BYPASS",
+      "finding": [
+        "schema",
+        "CURRENT",
+        "ACP.TIME.OUTSIDE_WINDOW",
+        "candidate[0].validity"
+      ],
+      "phaseVerdicts": [
+        "UNAVAILABLE",
+        "INVALID",
+        "UNAVAILABLE"
+      ],
+      "selectedRule": null,
+      "assertion": "exact_finding"
+    },
+    {
+      "id": "MUT-PHASE-REPLACE",
+      "finding": [
+        "schema",
+        "CURRENT",
+        "ACP.SCHEMA.PHASE_MISMATCH",
+        "candidate[0].phase"
+      ],
+      "phaseVerdicts": [
+        "UNAVAILABLE",
+        "INVALID",
+        "UNAVAILABLE"
+      ],
+      "selectedRule": null,
+      "assertion": "exact_finding"
+    },
+    {
+      "id": "MUT-BOUNDS-BYPASS",
+      "finding": [
+        "bounds",
+        "CURRENT",
+        "ACP.BOUNDS.CANDIDATE_COUNT",
+        "candidate-set"
+      ],
+      "phaseVerdicts": [
+        "UNAVAILABLE",
+        "INVALID",
+        "UNAVAILABLE"
+      ],
+      "selectedRule": null,
+      "assertion": "exact_finding"
+    },
+    {
+      "id": "MUT-PARSE-REPLACE",
+      "finding": [
+        "parse",
+        "CURRENT",
+        "ACP.PARSE.DUPLICATE_MEMBER",
+        "candidate[0].phase"
+      ],
+      "phaseVerdicts": [
+        "UNAVAILABLE",
+        "INVALID",
+        "UNAVAILABLE"
+      ],
+      "selectedRule": null,
+      "assertion": "exact_finding"
+    },
+    {
+      "id": "MUT-IDENTITY-BYPASS",
+      "finding": [
+        "canonical_identity",
+        "CURRENT",
+        "ACP.IDENTITY.MISMATCH",
+        "candidate[0].candidateId"
+      ],
+      "phaseVerdicts": [
+        "UNAVAILABLE",
+        "INVALID",
+        "UNAVAILABLE"
+      ],
+      "selectedRule": null,
+      "assertion": "exact_finding"
+    },
+    {
+      "id": "MUT-DUPLICATE-BYPASS",
+      "finding": [
+        "canonical_identity",
+        "CURRENT",
+        "ACP.IDENTITY.DUPLICATE",
+        "candidate[identity]"
+      ],
+      "phaseVerdicts": [
+        "UNAVAILABLE",
+        "INVALID",
+        "UNAVAILABLE"
+      ],
+      "selectedRule": null,
+      "assertion": "exact_finding"
+    },
+    {
+      "id": "MUT-SUBSTITUTION-REMOVE",
+      "finding": [
+        "canonical_identity",
+        "CURRENT",
+        "ACP.REPLAY.IDENTITY_MISMATCH",
+        "candidate[0]"
+      ],
+      "phaseVerdicts": [
+        "UNAVAILABLE",
+        "INVALID",
+        "UNAVAILABLE"
+      ],
+      "selectedRule": null,
+      "assertion": "exact_finding"
+    },
+    {
+      "id": "MUT-SELF-TRUST-REPLACE",
+      "finding": [
+        "independent_trust",
+        "CURRENT",
+        "ACP.TRUST.KEY_UNAVAILABLE",
+        "candidate[identity]"
+      ],
+      "phaseVerdicts": [
+        "UNAVAILABLE",
+        "UNAVAILABLE",
+        "UNAVAILABLE"
+      ],
+      "selectedRule": null,
+      "assertion": "exact_finding"
+    },
+    {
+      "id": "MUT-AUTH-BYPASS",
+      "finding": [
+        "authorization",
+        "CURRENT",
+        "ACP.AUTHORIZATION.DENIED",
+        "candidate[identity]"
+      ],
+      "phaseVerdicts": [
+        "UNAVAILABLE",
+        "INVALID",
+        "UNAVAILABLE"
+      ],
+      "selectedRule": null,
+      "assertion": "exact_finding"
+    },
+    {
+      "id": "MUT-PRECEDENCE-REPLACE",
+      "finding": null,
+      "phaseVerdicts": [
+        "UNAVAILABLE",
+        "VALID",
+        "UNAVAILABLE"
+      ],
+      "selectedRule": "highest_priority_then_candidate_id",
+      "assertion": "selected_candidate_id"
+    },
+    {
+      "id": "MUT-REPLAY-SUBSET",
+      "finding": [
+        "phase_verdict",
+        "CURRENT",
+        "ACP.REPLAY.EXACT_MISMATCH",
+        "findings"
+      ],
+      "phaseVerdicts": [
+        "UNAVAILABLE",
+        "INVALID",
+        "UNAVAILABLE"
+      ],
+      "selectedRule": null,
+      "assertion": "exact_finding_and_verdicts"
+    }
   ],
   "prohibitedCapabilities": [
     "accepted_authority",

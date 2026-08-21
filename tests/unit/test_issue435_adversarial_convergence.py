@@ -4,13 +4,9 @@ from __future__ import annotations
 
 import hashlib
 import json
-import sys
-from copy import deepcopy
 from dataclasses import replace
 from pathlib import Path
 from typing import Any
-
-import pytest
 
 from scripts.quality import issue435_adversarial_convergence as protocol
 
@@ -18,9 +14,11 @@ from scripts.quality import issue435_adversarial_convergence as protocol
 ROOT = Path(__file__).parents[2]
 MATRIX_PATH = ROOT / "docs/governance/adversarial-convergence-invariant-matrix-v1.json"
 FREEZE_PATH = ROOT / "docs/governance/adversarial-convergence-red-freeze-v1.json"
+REPOSITORY_TEST_PATH = ROOT / "tests/unit/test_issue435_adversarial_convergence_repository.py"
 IDENTITY_DOMAIN = b"NARRATWIN:ACP:IDENTITY:V1\x00"
 SIGNATURE_DOMAIN = b"NARRATWIN:ACP:SIGNATURE:V1\x00"
-EXPECTED_SEMANTIC_SHA256 = "fd44a261880eb255101a1fd7c76f9c0a54cf93dce52aeff5e1310d6292db89c4"
+EXPECTED_SEMANTIC_SHA256 = "5eac4780f713d3d0ffc412827e933795b7384ee422b02936f048478974908b17"
+EXPECTED_MUTANT_OUTCOMES_SHA256 = "9ecff913e07e86e5d19fbf0830f04235228dd695753b87bcc42e5ddf20d85b83"
 PIPELINE = (
     "bounds",
     "parse",
@@ -89,6 +87,7 @@ def synthetic_freeze(document: dict[str, Any]) -> bytes:
     semantic_sha = independent_semantic_sha(document)
     matrix_sha = hashlib.sha256(MATRIX_PATH.read_bytes()).hexdigest()
     test_sha = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
+    repository_test_sha = hashlib.sha256(REPOSITORY_TEST_PATH.read_bytes()).hexdigest()
     freeze = {
         "schemaVersion": "AdversarialRedFreezeV1",
         "matrixId": "issue-435-adversarial-convergence-v1",
@@ -96,8 +95,18 @@ def synthetic_freeze(document: dict[str, Any]) -> bytes:
         "redTree": "4" * 40,
         "matrixBlobOid": "2" * 40,
         "matrixSha256": matrix_sha,
-        "testBlobOid": "3" * 40,
-        "testSha256": test_sha,
+        "focusedOracleBlobs": [
+            {
+                "path": "tests/unit/test_issue435_adversarial_convergence.py",
+                "blobOid": "3" * 40,
+                "sha256": test_sha,
+            },
+            {
+                "path": "tests/unit/test_issue435_adversarial_convergence_repository.py",
+                "blobOid": "5" * 40,
+                "sha256": repository_test_sha,
+            },
+        ],
         "semanticSha256": semantic_sha,
         "implementationAuthor": "implementation-author",
         "reviewers": [
@@ -127,6 +136,8 @@ def synthetic_freeze(document: dict[str, Any]) -> bytes:
             },
         ],
         "expectedRedFailures": ["test_expected_red_failure"],
+        "redBlockers": {"IMPLEMENTATION_BLOCKER": 1, "EVIDENCE_BLOCKER": 0},
+        "reviewBlockers": {"IMPLEMENTATION_BLOCKER": 0, "EVIDENCE_BLOCKER": 0},
         "reviewFindings": [],
         "activation": "NONE",
         "authorityEffect": "NO_AUTHORITY_EFFECT",
@@ -142,8 +153,10 @@ def candidate(
     predecessor_id: str | None = None,
     priority: int = 1,
     lifecycle_state: str = "ACTIVE",
+    lifecycle_operation: str = "USE",
     valid_from: str = "2026-08-20T00:00:00Z",
     valid_until: str = "2026-08-22T00:00:00Z",
+    fresh_until: str = "2026-08-22T00:00:00Z",
     compromised_at: str | None = None,
     signature: str = "aa" * 64,
     candidate_id: str | None = None,
@@ -152,10 +165,13 @@ def candidate(
         "schemaVersion": "AdversarialCandidateV1",
         "phase": phase,
         "payload": payload,
+        "predecessorId": predecessor_id,
         "priority": priority,
         "lifecycleState": lifecycle_state,
+        "lifecycleOperation": lifecycle_operation,
         "validFrom": valid_from,
         "validUntil": valid_until,
+        "freshUntil": fresh_until,
         "compromisedAt": compromised_at,
     }
     identity_message = IDENTITY_DOMAIN + canonical(identity_fields)
@@ -168,8 +184,10 @@ def candidate(
         "predecessorId": predecessor_id,
         "priority": priority,
         "lifecycleState": lifecycle_state,
+        "lifecycleOperation": lifecycle_operation,
         "validFrom": valid_from,
         "validUntil": valid_until,
+        "freshUntil": fresh_until,
         "compromisedAt": compromised_at,
         "signature": signature,
     }
@@ -246,6 +264,68 @@ def phase_verdicts(
     )
 
 
+def pipeline_calls(
+    candidate_ids: tuple[str, ...], terminal: str = "phase_verdict"
+) -> tuple[protocol.StageCall, ...]:
+    calls: list[protocol.StageCall] = []
+    stages = PIPELINE[: PIPELINE.index(terminal) + 1]
+    for stage in stages:
+        if stage in {"graph_conflict", "phase_verdict"}:
+            calls.append(protocol.StageCall(stage, "candidate-set", 0))
+            continue
+        for ordinal, candidate_id in enumerate(candidate_ids):
+            location = (
+                f"candidate[{ordinal}]"
+                if stage in {"bounds", "parse", "schema", "canonical_identity"}
+                else candidate_id
+            )
+            calls.append(protocol.StageCall(stage, location, ordinal))
+    return tuple(calls)
+
+
+def retained_fixture(
+    documents: tuple[bytes, ...],
+    candidate_ids: tuple[str, ...],
+    messages: tuple[bytes, ...],
+    *,
+    selected: str | None,
+) -> protocol.RetainedEvaluation:
+    key = bytes.fromhex("11" * 32)
+    return protocol.RetainedEvaluation(
+        candidate_sha256s=tuple(hashlib.sha256(item).hexdigest() for item in documents),
+        evaluation_phase=protocol.Phase.CURRENT,
+        evaluation_time="2026-08-21T00:00:00Z",
+        trusted_key_sha256s=tuple(
+            (candidate_id, hashlib.sha256(key).hexdigest()) for candidate_id in candidate_ids
+        ),
+        authorized_candidate_ids=candidate_ids,
+        findings=(),
+        phase_verdicts=phase_verdicts(protocol.Phase.CURRENT, protocol.Verdict.VALID),
+        eligible_candidate_ids=tuple(sorted(candidate_ids)),
+        selected_candidate_id=selected,
+        stage_calls=pipeline_calls(candidate_ids),
+        crypto_calls=tuple(
+            protocol.CryptoCall(
+                candidate_id,
+                ("aa" * 64),
+                ordinal,
+                len(candidate_ids),
+                "CURRENT",
+                hashlib.sha256(key).hexdigest(),
+                hashlib.sha256(message).hexdigest(),
+                True,
+            )
+            for ordinal, (candidate_id, message) in enumerate(
+                zip(candidate_ids, messages, strict=True)
+            )
+        ),
+        graph_call_count=1,
+        max_candidates=4,
+        max_candidate_bytes=2048,
+        max_aggregate_bytes=4096,
+    )
+
+
 DIMENSION_CONTRACTS = (
     (
         "validation_order",
@@ -275,7 +355,7 @@ DIMENSION_CONTRACTS = (
         "phase_separation",
         "phase_verdict",
         "ACP.PHASE",
-        "test_all_three_phases_are_exact_and_isolated",
+        "test_phase_substitution_returns_exact_verdicts",
         "MUT-PHASE-REPLACE",
         protocol.BlockerClass.IMPLEMENTATION,
     ),
@@ -299,7 +379,7 @@ DIMENSION_CONTRACTS = (
         "deletion_corruption",
         "canonical_identity",
         "ACP.IDENTITY",
-        "test_reconstruction_rejects_missing_extra_corrupt_and_substituted_inputs",
+        "test_identity_substitution_never_reaches_crypto",
         "MUT-IDENTITY-BYPASS",
         protocol.BlockerClass.IMPLEMENTATION,
     ),
@@ -307,7 +387,7 @@ DIMENSION_CONTRACTS = (
         "reordering_duplication",
         "graph_conflict",
         "ACP.ORDERING",
-        "test_graph_fork_cycle_orphan_duplicate_and_permutation",
+        "test_zero_candidates_and_duplicate_identity_fail_exactly",
         "MUT-DUPLICATE-BYPASS",
         protocol.BlockerClass.IMPLEMENTATION,
     ),
@@ -315,7 +395,7 @@ DIMENSION_CONTRACTS = (
         "substitution",
         "canonical_identity",
         "ACP.SUBSTITUTION",
-        "test_identity_substitution_never_reaches_crypto",
+        "test_reconstruction_rejects_missing_extra_corrupt_and_substituted_inputs",
         "MUT-SUBSTITUTION-REMOVE",
         protocol.BlockerClass.IMPLEMENTATION,
     ),
@@ -323,7 +403,7 @@ DIMENSION_CONTRACTS = (
         "cryptographic_eligibility",
         "independent_trust",
         "ACP.TRUST",
-        "test_structured_crypto_probe_mixed_results_and_exception",
+        "test_crypto_spy_ledger_is_exact_and_self_trust_fails",
         "MUT-SELF-TRUST-REPLACE",
         protocol.BlockerClass.IMPLEMENTATION,
     ),
@@ -332,7 +412,7 @@ DIMENSION_CONTRACTS = (
         "graph_conflict",
         "ACP.GRAPH",
         "test_graph_fork_cycle_orphan_duplicate_and_permutation",
-        "MUT-AUTH-BYPASS",
+        "MUT-PRECEDENCE-REPLACE",
         protocol.BlockerClass.IMPLEMENTATION,
     ),
     (
@@ -365,6 +445,25 @@ def expected_matrix_cases() -> tuple[protocol.MatrixCase, ...]:
             case_id = f"{dimension}:{test_class}"
             if dimension == "reconstruction_replay" and test_class == "reordering":
                 suffix, verdict, eligible = "REORDERED", protocol.Verdict.INVALID, False
+            terminal_stage = "phase_verdict" if suffix is None else stage
+            stage_ledger = tuple(
+                protocol.StageCall(item, case_id, ordinal)
+                for ordinal, item in enumerate(PIPELINE[: PIPELINE.index(terminal_stage) + 1])
+            )
+            crypto_ledger = (
+                (
+                    protocol.MatrixCryptoExpectation(
+                        case_id,
+                        0,
+                        1,
+                        protocol.Phase.CURRENT,
+                        terminal_stage != "independent_trust",
+                    ),
+                )
+                if "independent_trust" in tuple(item.stage for item in stage_ledger)
+                and not (dimension == "reconstruction_replay" and test_class == "reordering")
+                else ()
+            )
             findings = (
                 ()
                 if suffix is None
@@ -372,20 +471,24 @@ def expected_matrix_cases() -> tuple[protocol.MatrixCase, ...]:
             )
             cases.append(
                 protocol.MatrixCase(
-                    case_id,
-                    dimension,
-                    test_class,
-                    f"{dimension}.{test_class}",
-                    stage,
-                    findings,
-                    tuple(protocol.PhaseVerdict(phase, verdict) for phase in protocol.Phase),
-                    0,
-                    eligible,
-                    1 if eligible else 0,
-                    test_node,
-                    mutant,
-                    blocker,
-                    "RED_EXPECTED",
+                    case_id=case_id,
+                    dimension=dimension,
+                    test_class=test_class,
+                    target_phase=protocol.Phase.CURRENT,
+                    input_class=f"{dimension}.{test_class}",
+                    input_reference=f"fixture://{case_id}",
+                    stage=stage,
+                    findings=findings,
+                    phase_verdicts=phase_verdicts(protocol.Phase.CURRENT, verdict),
+                    stage_calls=stage_ledger,
+                    crypto_expectations=crypto_ledger,
+                    graph_eligible=eligible,
+                    graph_call_count=1 if eligible else 0,
+                    selected_candidate_reference=case_id if eligible else None,
+                    test_node=test_node,
+                    mutant_id=mutant,
+                    blocker_class=blocker,
+                    evidence_state="RED_EXPECTED",
                 )
             )
     return tuple(cases)
@@ -466,24 +569,23 @@ def test_case_catalog_rejects_missing_duplicate_reordered_unknown_and_field_drif
     assert result.findings == exact_finding(
         "matrix", "CURRENT", "ACP.MATRIX.CONTRACT_FIELD_MISSING", "invariants[0].killTest"
     )
-
-
-def test_bounds_n_plus_one_stops_before_all_work() -> None:
-    documents_and_ids = [candidate(payload=f"candidate-{index}") for index in range(5)]
-    documents = tuple(item[0] for item in documents_and_ids)
-    ids = tuple(item[1] for item in documents_and_ids)
-    result = protocol.evaluate_candidates(
-        documents,
-        context=context(ids, max_candidates=4),
-        crypto_verifier=ExactCryptoSpy([]),
-    )
-    assert result.findings == exact_finding(
-        "bounds", "CURRENT", "ACP.BOUNDS.CANDIDATE_COUNT", "candidate-set"
-    )
-    assert result.current_verdict is protocol.Verdict.INVALID
-    assert result.stage_calls == (protocol.StageCall("bounds", "candidate-set", 0),)
-    assert result.crypto_calls == ()
-    assert result.graph_call_count == 0
+    for path, value in (
+        (("caseProfiles", "positive", "targetPhase"), "HISTORICAL"),
+        (("caseProfiles", "positive", "laterStageCalls"), 1),
+        (("caseProfiles", "positive", "graphCallCount"), 0),
+        (("invariants", 0, "stage"), "parse"),
+    ):
+        document = matrix_document()
+        target: Any = document
+        for segment in path[:-1]:
+            target = target[segment]
+        target[path[-1]] = value
+        result = protocol.validate_matrix_bytes(
+            canonical(document), synthetic_freeze(matrix_document())
+        )
+        assert result.findings == exact_finding(
+            "matrix", "CURRENT", "ACP.MATRIX.CASE_LEDGER_MISMATCH", ".".join(map(str, path))
+        )
 
 
 def test_zero_candidates_and_duplicate_identity_fail_exactly() -> None:
@@ -545,7 +647,10 @@ def test_every_early_rejection_has_zero_later_callbacks() -> None:
             crypto_verifier=ExactCryptoSpy([]),
         )
         assert result.findings == expected
-        assert len(result.stage_calls) == expected_stage_count
+        assert result.stage_calls == tuple(
+            protocol.StageCall(PIPELINE[index], "candidate[0]", 0)
+            for index in range(expected_stage_count)
+        )
         assert result.crypto_calls == ()
         assert result.graph_call_count == 0
 
@@ -560,6 +665,21 @@ def test_lifecycle_and_explicit_time_boundaries_are_exact() -> None:
             "schema", "CURRENT", "ACP.LIFECYCLE.STATE", "candidate[0].lifecycleState"
         )
         assert result.crypto_calls == () and result.graph_call_count == 0
+
+    raw, candidate_id, _ = candidate(lifecycle_operation="DELETE")
+    illegal = protocol.evaluate_candidates(
+        (raw,), context=context((candidate_id,)), crypto_verifier=ExactCryptoSpy([])
+    )
+    assert illegal.findings == exact_finding(
+        "schema", "CURRENT", "ACP.LIFECYCLE.OPERATION", "candidate[0].lifecycleOperation"
+    )
+    missing_state = raw.replace(b'"lifecycleState":"ACTIVE",', b"")
+    missing = protocol.evaluate_candidates(
+        (missing_state,), context=context((candidate_id,)), crypto_verifier=ExactCryptoSpy([])
+    )
+    assert missing.findings == exact_finding(
+        "schema", "CURRENT", "ACP.SCHEMA.REQUIRED", "candidate[0].lifecycleState"
+    )
 
     for evaluation_time, code in (
         ("2026-08-19T23:59:59Z", "ACP.TIME.OUTSIDE_WINDOW"),
@@ -576,6 +696,16 @@ def test_lifecycle_and_explicit_time_boundaries_are_exact() -> None:
         )
         assert result.findings == exact_finding("schema", "CURRENT", code, "candidate[0].validity")
         assert result.crypto_calls == () and result.graph_call_count == 0
+
+    stale_raw, stale_id, _ = candidate(fresh_until="2026-08-21T12:00:00Z")
+    stale = protocol.evaluate_candidates(
+        (stale_raw,),
+        context=context((stale_id,), evaluation_time="2026-08-21T12:00:01Z"),
+        crypto_verifier=ExactCryptoSpy([]),
+    )
+    assert stale.findings == exact_finding(
+        "schema", "CURRENT", "ACP.TIME.STALE", "candidate[0].freshUntil"
+    )
 
     for exact_time in ("2026-08-20T00:00:00Z", "2026-08-22T00:00:00Z"):
         raw, candidate_id, message = candidate()
@@ -601,6 +731,16 @@ def test_all_resource_bounds_cover_exact_n_and_n_plus_one() -> None:
         ),
     )
     assert exact.findings == () and exact.graph_call_count == 1
+    fifth, fifth_id, _ = candidate(payload="bounded-4", priority=4)
+    over_count = protocol.evaluate_candidates(
+        (*documents, fifth),
+        context=context((*ids, fifth_id)),
+        crypto_verifier=ExactCryptoSpy([]),
+    )
+    assert over_count.findings == exact_finding(
+        "bounds", "CURRENT", "ACP.BOUNDS.CANDIDATE_COUNT", "candidate-set"
+    )
+    assert over_count.stage_calls == (protocol.StageCall("bounds", "candidate-set", 0),)
 
     raw, candidate_id, _ = candidate()
     cases = (
@@ -623,7 +763,9 @@ def test_all_resource_bounds_cover_exact_n_and_n_plus_one() -> None:
             "candidate[0]",
         ),
         (
-            (b'{"a":1,"b":2,"c":3,"d":4,"e":5,"f":6,"g":7,"h":8,"i":9,"j":10,"k":11,"l":12}',),
+            (
+                b'{"a":1,"b":2,"c":3,"d":4,"e":5,"f":6,"g":7,"h":8,"i":9,"j":10,"k":11,"l":12,"m":13,"n":14}',
+            ),
             context((candidate_id,)),
             "ACP.BOUNDS.JSON_MEMBERS",
             "candidate[0]",
@@ -635,6 +777,29 @@ def test_all_resource_bounds_cover_exact_n_and_n_plus_one() -> None:
         )
         assert result.findings == exact_finding("bounds", "CURRENT", code, location)
         assert result.crypto_calls == () and result.graph_call_count == 0
+
+    assert (
+        protocol.artifact_bound_findings(
+            matrix_bytes=b"m" * 65536,
+            freeze_bytes=b"f" * 32768,
+            finding_count=32,
+            retained_material_count=4,
+        )
+        == ()
+    )
+    for matrix_size, freeze_size, finding_count, retained_count, code, location in (
+        (65537, 32768, 32, 4, "ACP.BOUNDS.MATRIX_BYTES", "matrix"),
+        (65536, 32769, 32, 4, "ACP.BOUNDS.FREEZE_BYTES", "freeze"),
+        (65536, 32768, 33, 4, "ACP.BOUNDS.FINDING_COUNT", "findings"),
+        (65536, 32768, 32, 5, "ACP.BOUNDS.RETAINED_COUNT", "retained-materials"),
+    ):
+        artifact_result = protocol.artifact_bound_findings(
+            matrix_bytes=b"m" * matrix_size,
+            freeze_bytes=b"f" * freeze_size,
+            finding_count=finding_count,
+            retained_material_count=retained_count,
+        )
+        assert artifact_result == exact_finding("bounds", "CURRENT", code, location)
 
 
 def test_hostile_input_families_stop_before_later_work() -> None:
@@ -681,6 +846,18 @@ def test_identity_substitution_never_reaches_crypto() -> None:
     assert result.crypto_calls == ()
     assert result.graph_call_count == 0
 
+    _, unbound_id, _ = candidate(payload="edge-bound")
+    _, rebound_id, _ = candidate(payload="edge-bound", predecessor_id="a" * 64)
+    assert unbound_id != rebound_id
+    forged, _, _ = candidate(payload="edge-bound", predecessor_id="a" * 64, candidate_id=unbound_id)
+    result = protocol.evaluate_candidates(
+        (forged,), context=context((unbound_id,)), crypto_verifier=ExactCryptoSpy([])
+    )
+    assert result.findings == exact_finding(
+        "canonical_identity", "CURRENT", "ACP.IDENTITY.MISMATCH", "candidate[0].candidateId"
+    )
+    assert result.crypto_calls == () and result.graph_call_count == 0
+
 
 def test_crypto_spy_ledger_is_exact_and_self_trust_fails() -> None:
     raw, candidate_id, message = candidate()
@@ -704,6 +881,8 @@ def test_crypto_spy_ledger_is_exact_and_self_trust_fails() -> None:
         ),
     )
     assert result.eligible_candidate_ids == (candidate_id,)
+    assert result.selected_candidate_id == candidate_id
+    assert result.stage_calls == pipeline_calls((candidate_id,))
     assert result.graph_call_count == 1
 
     untrusted = protocol.EvaluationContext(
@@ -821,10 +1000,10 @@ def test_structured_crypto_probe_mixed_results_and_exception() -> None:
 
 def test_graph_fork_cycle_orphan_duplicate_and_permutation() -> None:
     root, root_id, root_message = candidate(payload="root", priority=1)
-    _, first_id, _ = candidate(payload="first", priority=2)
-    _, second_id, _ = candidate(payload="second", priority=3)
-    first, _, first_message = candidate(payload="first", priority=2, predecessor_id=root_id)
-    second, _, second_message = candidate(payload="second", priority=3, predecessor_id=root_id)
+    first, first_id, first_message = candidate(payload="first", priority=2, predecessor_id=root_id)
+    second, second_id, second_message = candidate(
+        payload="second", priority=3, predecessor_id=root_id
+    )
     fork = protocol.evaluate_candidates(
         (root, first, second),
         context=context((root_id, first_id, second_id)),
@@ -841,25 +1020,29 @@ def test_graph_fork_cycle_orphan_duplicate_and_permutation() -> None:
     )
     assert fork.current_verdict is protocol.Verdict.CONFLICTING
 
-    cycle_first, _, cycle_first_message = candidate(
-        payload="first", priority=2, predecessor_id=second_id
+    _, unbound_first_id, _ = candidate(payload="first", priority=2)
+    _, unbound_second_id, _ = candidate(payload="second", priority=3)
+    cycle_first, _, _ = candidate(
+        payload="first",
+        priority=2,
+        predecessor_id=unbound_second_id,
+        candidate_id=unbound_first_id,
     )
-    cycle_second, _, cycle_second_message = candidate(
-        payload="second", priority=3, predecessor_id=first_id
+    cycle_second, _, _ = candidate(
+        payload="second",
+        priority=3,
+        predecessor_id=unbound_first_id,
+        candidate_id=unbound_second_id,
     )
     cycle = protocol.evaluate_candidates(
         (cycle_first, cycle_second),
-        context=context((first_id, second_id)),
-        crypto_verifier=ExactCryptoSpy(
-            [
-                expected_probe(first_id, cycle_first_message, ordinal=0, count=2),
-                expected_probe(second_id, cycle_second_message, ordinal=1, count=2),
-            ]
-        ),
+        context=context((unbound_first_id, unbound_second_id)),
+        crypto_verifier=ExactCryptoSpy([]),
     )
     assert cycle.findings == exact_finding(
-        "graph_conflict", "CURRENT", "ACP.GRAPH.CYCLE", "eligible-candidates"
+        "canonical_identity", "CURRENT", "ACP.IDENTITY.MISMATCH", "candidate[0].candidateId"
     )
+    assert cycle.crypto_calls == () and cycle.graph_call_count == 0
     orphan, orphan_id, orphan_message = candidate(predecessor_id="f" * 64)
     orphaned = protocol.evaluate_candidates(
         (orphan,),
@@ -899,16 +1082,20 @@ def test_graph_result_is_permutation_invariant() -> None:
         forward.historical_verdict,
         forward.current_verdict,
         forward.eligible_candidate_ids,
+        forward.selected_candidate_id,
         forward.graph_call_count,
     ) == (
         reverse.findings,
         reverse.historical_verdict,
         reverse.current_verdict,
         reverse.eligible_candidate_ids,
+        reverse.selected_candidate_id,
         reverse.graph_call_count,
     )
     assert forward.current_verdict is protocol.Verdict.VALID
     assert forward.eligible_candidate_ids == tuple(sorted((first_id, second_id)))
+    assert forward.selected_candidate_id == second_id
+    assert reverse.selected_candidate_id == second_id
 
 
 def test_phase_substitution_returns_exact_verdicts() -> None:
@@ -946,16 +1133,7 @@ def test_all_three_phases_are_exact_and_isolated() -> None:
 
 def test_reconstruction_exact_equality_kills_subset_replay() -> None:
     raw, candidate_id, message = candidate()
-    retained = protocol.RetainedEvaluation(
-        candidate_sha256s=(hashlib.sha256(raw).hexdigest(),),
-        findings=(),
-        phase_verdicts=phase_verdicts(protocol.Phase.CURRENT, protocol.Verdict.VALID),
-        eligible_candidate_ids=(candidate_id,),
-        graph_call_count=1,
-        max_candidates=4,
-        max_candidate_bytes=2048,
-        max_aggregate_bytes=4096,
-    )
+    retained = retained_fixture((raw,), (candidate_id,), (message,), selected=candidate_id)
     exact = protocol.reconstruct_candidates(
         (raw,),
         retained=retained,
@@ -977,33 +1155,26 @@ def test_reconstruction_exact_equality_kills_subset_replay() -> None:
 
 
 def test_reconstruction_rejects_missing_extra_corrupt_and_substituted_inputs() -> None:
-    first, first_id, _ = candidate(payload="first", priority=1)
-    second, second_id, _ = candidate(payload="second", priority=2)
-    retained = protocol.RetainedEvaluation(
-        candidate_sha256s=(hashlib.sha256(first).hexdigest(),),
-        findings=(),
-        phase_verdicts=phase_verdicts(protocol.Phase.CURRENT, protocol.Verdict.VALID),
-        eligible_candidate_ids=(first_id,),
-        graph_call_count=1,
-        max_candidates=4,
-        max_candidate_bytes=2048,
-        max_aggregate_bytes=4096,
-    )
+    first, first_id, first_message = candidate(payload="first", priority=1)
+    second, second_id, second_message = candidate(payload="second", priority=2)
+    retained = retained_fixture((first,), (first_id,), (first_message,), selected=first_id)
+    well_formed_corruption = first.replace(b'"payload":"first"', b'"payload":"firsx"')
     cases = (
-        ((), "ACP.REPLAY.MISSING", "candidate-set"),
-        ((first, second), "ACP.REPLAY.EXTRA", "candidate-set"),
-        ((first[:-1],), "ACP.REPLAY.CORRUPT", "candidate[0]"),
-        ((first, first), "ACP.REPLAY.DUPLICATE", f"candidate[{first_id}]"),
-        ((second,), "ACP.REPLAY.IDENTITY_MISMATCH", "candidate[0]"),
+        ((), "bounds", "ACP.REPLAY.MISSING", "candidate-set"),
+        ((first, second), "bounds", "ACP.REPLAY.EXTRA", "candidate-set"),
+        ((first[:-1],), "parse", "ACP.PARSE.INVALID_JSON", "candidate[0]"),
+        ((well_formed_corruption,), "canonical_identity", "ACP.REPLAY.CORRUPT", "candidate[0]"),
+        ((first, first), "canonical_identity", "ACP.REPLAY.DUPLICATE", f"candidate[{first_id}]"),
+        ((second,), "canonical_identity", "ACP.REPLAY.IDENTITY_MISMATCH", "candidate[0]"),
     )
-    for documents, code, location in cases:
+    for documents, stage, code, location in cases:
         result = protocol.reconstruct_candidates(
             documents,
             retained=retained,
             context=context((first_id, second_id)),
             crypto_verifier=ExactCryptoSpy([]),
         )
-        assert result.findings == exact_finding("canonical_identity", "CURRENT", code, location)
+        assert result.findings == exact_finding(stage, "CURRENT", code, location)
         assert result.crypto_calls == () and result.graph_call_count == 0
 
     wrong_phase, _, _ = candidate(payload="first", priority=1, phase="HISTORICAL")
@@ -1027,40 +1198,36 @@ def test_reconstruction_rejects_missing_extra_corrupt_and_substituted_inputs() -
         "independent_trust", "CURRENT", "ACP.TRUST.KEY_UNAVAILABLE", f"candidate[{first_id}]"
     )
 
-
-def test_activation_authority_and_successor_boundaries_fail_exactly() -> None:
-    for field, value, code in (
-        ("activation", "ACTIVE", "ACP.BOUNDARY.ACTIVATION"),
-        ("authorityEffect", "AUTHORITY_CREATED", "ACP.BOUNDARY.AUTHORITY_EFFECT"),
-    ):
-        document = matrix_document()
-        document[field] = value
-        result = protocol.validate_matrix_bytes(
-            canonical(document), synthetic_freeze(matrix_document())
-        )
-        assert result.findings == exact_finding("matrix", "CURRENT", code, field)
-
-    document = matrix_document()
-    document["prohibitedCapabilities"].remove("issue_432")
-    result = protocol.validate_matrix_bytes(
-        canonical(document), synthetic_freeze(matrix_document())
+    retained_pair = retained_fixture(
+        (first, second),
+        (first_id, second_id),
+        (first_message, second_message),
+        selected=second_id,
     )
-    assert result.findings == exact_finding(
-        "matrix", "CURRENT", "ACP.BOUNDARY.PROHIBITION_MISSING", "prohibitedCapabilities.issue_432"
+    reordered = protocol.reconstruct_candidates(
+        (second, first),
+        retained=retained_pair,
+        context=context((first_id, second_id)),
+        crypto_verifier=ExactCryptoSpy([]),
     )
+    assert reordered.findings == exact_finding(
+        "canonical_identity", "CURRENT", "ACP.REPLAY.REORDERED", "candidateSha256s"
+    )
+    assert reordered.crypto_calls == () and reordered.graph_call_count == 0
 
-    for capability in matrix_document()["prohibitedCapabilities"]:
-        document = matrix_document()
-        document["prohibitedCapabilities"].remove(capability)
-        result = protocol.validate_matrix_bytes(
-            canonical(document), synthetic_freeze(matrix_document())
-        )
-        assert result.findings == exact_finding(
-            "matrix",
-            "CURRENT",
-            "ACP.BOUNDARY.PROHIBITION_MISSING",
-            f"prohibitedCapabilities.{capability}",
-        )
+    wrong_verdicts = replace(
+        retained,
+        phase_verdicts=phase_verdicts(protocol.Phase.CURRENT, protocol.Verdict.INVALID),
+    )
+    mismatch = protocol.reconstruct_candidates(
+        (first,),
+        retained=wrong_verdicts,
+        context=context((first_id,)),
+        crypto_verifier=ExactCryptoSpy([expected_probe(first_id, first_message)]),
+    )
+    assert mismatch.findings == exact_finding(
+        "phase_verdict", "CURRENT", "ACP.REPLAY.EXACT_MISMATCH", "phaseVerdicts"
+    )
 
 
 def test_semantic_identity_resists_coordinated_matrix_and_freeze_mutation() -> None:
@@ -1072,75 +1239,6 @@ def test_semantic_identity_resists_coordinated_matrix_and_freeze_mutation() -> N
         "matrix", "CURRENT", "ACP.FREEZE.INDEPENDENT_SEMANTIC_MISMATCH", "semanticSha256"
     )
     assert independent_semantic_sha(document) != EXPECTED_SEMANTIC_SHA256
-
-
-def test_freeze_overlay_is_closed_exact_and_distinct() -> None:
-    document = matrix_document()
-    valid = strict_object(synthetic_freeze(document))
-    duplicate_identities = deepcopy(valid)
-    duplicate_identities["reviewers"][2]["identity"] = duplicate_identities["reviewers"][1][
-        "identity"
-    ]
-    result = protocol.validate_matrix_bytes(
-        MATRIX_PATH.read_bytes(), canonical(duplicate_identities)
-    )
-    assert result.findings == exact_finding(
-        "freeze", "CURRENT", "ACP.FREEZE.REVIEWER_NOT_DISTINCT", "reviewers[2].identity"
-    )
-    missing = protocol.validate_matrix_bytes(MATRIX_PATH.read_bytes(), None)
-    assert missing.findings == exact_finding(
-        "freeze", "CURRENT", "ACP.FREEZE.MISSING", "adversarial-convergence-red-freeze-v1.json"
-    )
-
-    expected_identity = {
-        field: valid[field]
-        for field in (
-            "redHead",
-            "redTree",
-            "matrixBlobOid",
-            "matrixSha256",
-            "testBlobOid",
-            "testSha256",
-            "semanticSha256",
-            "implementationAuthor",
-        )
-    }
-    for field, value, code in (
-        ("redHead", "9" * 40, "ACP.FREEZE.RED_HEAD_MISMATCH"),
-        ("matrixBlobOid", "9" * 40, "ACP.FREEZE.MATRIX_BLOB_MISMATCH"),
-        ("testBlobOid", "9" * 40, "ACP.FREEZE.TEST_BLOB_MISMATCH"),
-        ("semanticSha256", "9" * 64, "ACP.FREEZE.INDEPENDENT_SEMANTIC_MISMATCH"),
-        ("activation", "ACTIVE", "ACP.FREEZE.ACTIVATION"),
-        ("authorityEffect", "AUTHORITY_CREATED", "ACP.FREEZE.AUTHORITY_EFFECT"),
-        ("completionState", "GREEN", "ACP.FREEZE.COMPLETION_STATE"),
-    ):
-        changed = deepcopy(valid)
-        changed[field] = value
-        result = protocol.validate_matrix_bytes(
-            MATRIX_PATH.read_bytes(),
-            canonical(changed),
-            expected_red_identity=expected_identity,
-        )
-        assert result.findings == exact_finding("freeze", "CURRENT", code, field)
-
-    self_review = deepcopy(valid)
-    self_review["reviewers"][0]["identity"] = self_review["implementationAuthor"]
-    result = protocol.validate_matrix_bytes(MATRIX_PATH.read_bytes(), canonical(self_review))
-    assert result.findings == exact_finding(
-        "freeze", "CURRENT", "ACP.FREEZE.SELF_REVIEW", "reviewers[0].identity"
-    )
-
-    for field, value, code in (
-        ("role", "architecture-copy", "ACP.FREEZE.REVIEW_ROLE"),
-        ("disposition", "COMMENTED", "ACP.FREEZE.REVIEW_DISPOSITION"),
-        ("reviewedRedHead", "9" * 40, "ACP.FREEZE.REVIEW_HEAD_MISMATCH"),
-        ("semanticSha256", "9" * 64, "ACP.FREEZE.REVIEW_SEMANTIC_MISMATCH"),
-        ("commentUrl", "https://example.invalid/review", "ACP.FREEZE.REVIEW_URL"),
-    ):
-        changed = deepcopy(valid)
-        changed["reviewers"][0][field] = value
-        result = protocol.validate_matrix_bytes(MATRIX_PATH.read_bytes(), canonical(changed))
-        assert result.findings == exact_finding("freeze", "CURRENT", code, f"reviewers[0].{field}")
 
 
 def test_budget_thresholds_are_exact_at_85_and_90_percent() -> None:
@@ -1161,142 +1259,25 @@ def test_budget_thresholds_are_exact_at_85_and_90_percent() -> None:
     assert protocol.budget_disposition(1, 0) is protocol.BudgetDisposition.STOP_BEFORE_GREEN
 
 
-def test_sensitive_route_without_matrix_and_freeze_fails_exactly(tmp_path: Path) -> None:
-    preflight = tmp_path / "docs/governance/preflights/issue-900.json"
-    preflight.parent.mkdir(parents=True)
-    preflight.write_text(
-        json.dumps(
-            {
-                "schema_version": "GovernancePreflightV1",
-                "issue_number": 900,
-                "branch": "process-900-security-sensitive",
-                "objective": "security and replay work",
-                "status_decision": "update-minimally",
-                "scope": {
-                    "required": ["docs/STATUS.md"],
-                    "allowed_prefixes": ["docs/STATUS.md"],
-                    "forbidden": [],
-                },
-            }
-        ),
-        encoding="utf-8",
-    )
-    findings = protocol.route_findings(
-        tmp_path, changed_paths=("docs/governance/preflights/issue-900.json",)
-    )
-    assert findings == (
-        protocol.Finding(
-            "route",
-            "CURRENT",
-            "ACP.ROUTE.MATRIX_REQUIRED",
-            "docs/governance/preflights/issue-900.json",
-        ),
-        protocol.Finding(
-            "route",
-            "CURRENT",
-            "ACP.ROUTE.FREEZE_REQUIRED",
-            "docs/governance/preflights/issue-900.json",
-        ),
-    )
-
-
-def test_route_applicability_uses_paths_and_exact_issue_artifacts(tmp_path: Path) -> None:
-    preflight = tmp_path / "docs/governance/preflights/issue-900.json"
-    preflight.parent.mkdir(parents=True)
-    preflight.write_text(
-        json.dumps(
-            {
-                "schema_version": "GovernancePreflightV1",
-                "issue_number": 900,
-                "branch": "process-900-neutral",
-                "objective": "routine documentation",
-                "status_decision": "update-minimally",
-                "scope": {
-                    "required": ["docs/SECURITY_AND_PRIVACY.md"],
-                    "allowed_prefixes": ["docs/SECURITY_AND_PRIVACY.md"],
-                    "forbidden": [],
-                },
-            }
-        ),
-        encoding="utf-8",
-    )
-    assert protocol.route_findings(tmp_path) == (
-        protocol.Finding(
-            "route",
-            "CURRENT",
-            "ACP.ROUTE.MATRIX_REQUIRED",
-            preflight.relative_to(tmp_path).as_posix(),
-        ),
-        protocol.Finding(
-            "route",
-            "CURRENT",
-            "ACP.ROUTE.FREEZE_REQUIRED",
-            preflight.relative_to(tmp_path).as_posix(),
-        ),
-    )
-    matrix = tmp_path / "docs/governance/adversarial-invariant-matrix-issue-900.json"
-    freeze = tmp_path / "docs/governance/adversarial-red-freeze-issue-900.json"
-    matrix.write_bytes(MATRIX_PATH.read_bytes())
-    freeze.write_bytes(synthetic_freeze(matrix_document()))
-    assert protocol.route_findings(tmp_path) == ()
-    matrix.rename(matrix.with_name("adversarial-invariant-matrix-issue-901.json"))
-    assert protocol.route_findings(tmp_path) == exact_finding(
-        "route", "CURRENT", "ACP.ROUTE.MATRIX_REQUIRED", preflight.relative_to(tmp_path).as_posix()
-    )
-
-
-def test_validator_has_no_capability_expanding_import_or_write_surface() -> None:
-    source = (ROOT / "scripts/quality/issue435_adversarial_convergence.py").read_text()
-    forbidden = (
-        "import requests",
-        "import httpx",
-        "import socket",
-        "urlopen(",
-        "PrivateKey",
-        "generate_private_key",
-        ".sign(",
-        "write_text(",
-        "write_bytes(",
-        'open("w',
-        "open('w",
-    )
-    assert tuple(token for token in forbidden if token in source) == ()
-
-
-@pytest.mark.parametrize(
-    ("stage", "branch", "policy_only"),
-    (
-        ("8", "process-435", False),
-        ("8", "process-435", True),
-        ("8", "final-review-435", False),
-        ("8", "phase-1-closure-435", False),
-    ),
-)
-def test_dispatcher_runs_protocol_first_and_fails_fast(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-    stage: str,
-    branch: str,
-    policy_only: bool,
-) -> None:
-    from scripts.quality import check_quality_stage as dispatcher
-
-    current = tmp_path / ".stage/current"
-    current.parent.mkdir()
-    current.write_text(stage, encoding="utf-8")
-    calls: list[tuple[str, ...]] = []
-
-    def fake_call(command: list[str], *, cwd: Path) -> int:
-        del cwd
-        calls.append(tuple(command))
-        return 73 if command[-1] == "scripts/quality/issue435_adversarial_convergence.py" else 0
-
-    monkeypatch.setattr(dispatcher, "CURRENT_STAGE", current)
-    monkeypatch.setattr(dispatcher, "current_branch", lambda: branch)
-    monkeypatch.setattr("scripts.quality.check_quality_stage.subprocess.call", fake_call)
-    monkeypatch.setenv("NARRATWIN_POLICY_ONLY", "1" if policy_only else "0")
-    assert dispatcher.main() == 73
-    assert calls == [(sys.executable, "scripts/quality/issue435_adversarial_convergence.py")]
+def test_implementation_and_evidence_blockers_remain_separate_and_exact() -> None:
+    assert protocol.convergence_blockers(
+        unresolved_implementation_nodes=("behavior",),
+        unresolved_review_findings=(),
+        surviving_mutants=(),
+        focused_failures=(),
+    ) == (1, 0)
+    assert protocol.convergence_blockers(
+        unresolved_implementation_nodes=(),
+        unresolved_review_findings=("review",),
+        surviving_mutants=("mutant",),
+        focused_failures=("focused",),
+    ) == (0, 3)
+    assert protocol.convergence_blockers(
+        unresolved_implementation_nodes=(),
+        unresolved_review_findings=(),
+        surviving_mutants=(),
+        focused_failures=(),
+    ) == (0, 0)
 
 
 def test_controlled_mutation_anchors_are_executable_and_complete() -> None:
@@ -1315,6 +1296,7 @@ def test_controlled_mutation_anchors_are_executable_and_complete() -> None:
         "MUT-SUBSTITUTION-REMOVE",
         "MUT-SELF-TRUST-REPLACE",
         "MUT-AUTH-BYPASS",
+        "MUT-PRECEDENCE-REPLACE",
         "MUT-REPLAY-SUBSET",
     }
     assert {mutant["id"] for mutant in mutants} == expected
@@ -1323,6 +1305,15 @@ def test_controlled_mutation_anchors_are_executable_and_complete() -> None:
     assert all(mutant["anchor"] in mutant["find"] for mutant in mutants)
     assert all(mutant["find"] != mutant["replace"] for mutant in mutants)
     assert all(mutant["expectedCode"].startswith("ACP.") for mutant in mutants)
+    assert hashlib.sha256(canonical(document["mutantOutcomes"])).hexdigest() == (
+        EXPECTED_MUTANT_OUTCOMES_SHA256
+    )
+    assert {outcome["id"] for outcome in document["mutantOutcomes"]} == expected
+    mutants_by_id = {mutant["id"]: mutant for mutant in mutants}
+    assert all(
+        mutants_by_id[invariant["mutantId"]]["killTest"] == invariant["killTest"]
+        for invariant in document["invariants"]
+    )
     assert document["mutantCommandTemplate"] == (
         "uv run pytest -q tests/unit/test_issue435_adversarial_convergence.py::{killTest}"
     )

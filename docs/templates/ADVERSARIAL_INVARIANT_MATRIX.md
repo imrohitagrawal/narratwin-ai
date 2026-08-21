@@ -88,4 +88,3 @@ or incomplete evidence fails closed.
 Record focused tests, mutation results, blocker counts, and the next allowed
 action. Do not begin repository-wide CI or push while focused convergence is
 red. A new invariant class returns to matrix and RED review.
-

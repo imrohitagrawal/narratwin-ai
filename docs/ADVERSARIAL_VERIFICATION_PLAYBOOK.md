@@ -264,4 +264,3 @@ matrix/test blob, freeze, review, check, scanner, expiry, activation, authority
 effect, or prohibited-capability drift. Record exact head/tree/diff/charges and
 the typed blocker before correction. Preserve history: never amend, rebase,
 drop, rewrite, graft, replace refs, or force push.
-

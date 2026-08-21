@@ -109,7 +109,9 @@ class EvaluationContext:
     max_candidate_bytes: int = 2048
     max_aggregate_bytes: int = 4096
     max_json_depth: int = 4
-    max_json_members: int = 11
+    max_json_members: int = 13
+    max_findings: int = 32
+    max_retained_materials: int = 4
 
 
 @dataclass(frozen=True)
@@ -120,6 +122,7 @@ class Evaluation:
     acceptance_verdict: Verdict
     phase_verdicts: tuple[PhaseVerdict, ...]
     eligible_candidate_ids: tuple[str, ...]
+    selected_candidate_id: str | None
     stage_calls: tuple[StageCall, ...]
     crypto_calls: tuple[CryptoCall, ...]
     graph_call_count: int
@@ -132,6 +135,17 @@ class MatrixValidation:
     invariant_ids: tuple[str, ...]
     blocker_classes: tuple[BlockerClass, ...]
     normalized_case_ids: tuple[str, ...] = ()
+    implementation_blockers: int = 0
+    evidence_blockers: int = 0
+
+
+@dataclass(frozen=True)
+class MatrixCryptoExpectation:
+    candidate_reference: str
+    ordinal: int
+    candidate_count: int
+    phase: Phase
+    result: bool
 
 
 @dataclass(frozen=True)
@@ -139,13 +153,17 @@ class MatrixCase:
     case_id: str
     dimension: str
     test_class: str
+    target_phase: Phase
     input_class: str
+    input_reference: str
     stage: str
     findings: tuple[Finding, ...]
     phase_verdicts: tuple[PhaseVerdict, ...]
-    later_stage_calls: int
+    stage_calls: tuple[StageCall, ...]
+    crypto_expectations: tuple[MatrixCryptoExpectation, ...]
     graph_eligible: bool
     graph_call_count: int
+    selected_candidate_reference: str | None
     test_node: str
     mutant_id: str
     blocker_class: BlockerClass
@@ -155,9 +173,16 @@ class MatrixCase:
 @dataclass(frozen=True)
 class RetainedEvaluation:
     candidate_sha256s: tuple[str, ...]
+    evaluation_phase: Phase
+    evaluation_time: str
+    trusted_key_sha256s: tuple[tuple[str, str], ...]
+    authorized_candidate_ids: tuple[str, ...]
     findings: tuple[Finding, ...]
     phase_verdicts: tuple[PhaseVerdict, ...]
     eligible_candidate_ids: tuple[str, ...]
+    selected_candidate_id: str | None
+    stage_calls: tuple[StageCall, ...]
+    crypto_calls: tuple[CryptoCall, ...]
     graph_call_count: int
     max_candidates: int
     max_candidate_bytes: int
@@ -208,6 +233,33 @@ def budget_disposition(charged_lines: int, cap: int) -> BudgetDisposition:
     return BudgetDisposition.STOP_BEFORE_GREEN
 
 
+def artifact_bound_findings(
+    *,
+    matrix_bytes: bytes,
+    freeze_bytes: bytes,
+    finding_count: int,
+    retained_material_count: int,
+) -> tuple[Finding, ...]:
+    del matrix_bytes, freeze_bytes, finding_count, retained_material_count
+    return (_not_implemented("artifact-bounds"),)
+
+
+def convergence_blockers(
+    *,
+    unresolved_implementation_nodes: tuple[str, ...],
+    unresolved_review_findings: tuple[str, ...],
+    surviving_mutants: tuple[str, ...],
+    focused_failures: tuple[str, ...],
+) -> tuple[int, int]:
+    del (
+        unresolved_implementation_nodes,
+        unresolved_review_findings,
+        surviving_mutants,
+        focused_failures,
+    )
+    return (1, 1)
+
+
 def validate_matrix_bytes(
     matrix_bytes: bytes,
     freeze_bytes: bytes | None,
@@ -246,6 +298,7 @@ def evaluate_candidates(
             PhaseVerdict(Phase.ACCEPTANCE, Verdict.UNAVAILABLE),
         ),
         eligible_candidate_ids=(),
+        selected_candidate_id=None,
         stage_calls=(),
         crypto_calls=(),
         graph_call_count=0,
@@ -271,6 +324,7 @@ def reconstruct_candidates(
             PhaseVerdict(Phase.ACCEPTANCE, Verdict.UNAVAILABLE),
         ),
         eligible_candidate_ids=(),
+        selected_candidate_id=None,
         stage_calls=(),
         crypto_calls=(),
         graph_call_count=0,
@@ -282,6 +336,11 @@ def route_findings(
 ) -> tuple[Finding, ...]:
     del root, changed_paths
     return (_not_implemented("route"),)
+
+
+def static_boundary_findings(source: str) -> tuple[Finding, ...]:
+    del source
+    return (_not_implemented("static-boundary"),)
 
 
 def main() -> int:
