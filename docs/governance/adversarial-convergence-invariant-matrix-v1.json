@@ -159,6 +159,19 @@
       "tofu"
     ]
   },
+  "fixtureContract": {
+    "schemaVersion": "AdversarialMatrixFixtureV1",
+    "referencePrefix": "fixture://",
+    "nonceDomain": "issue435:",
+    "orderedFields": [
+      "schemaVersion",
+      "caseId",
+      "inputClass",
+      "nonce"
+    ],
+    "signatureHex": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "publicKeyHex": "1111111111111111111111111111111111111111111111111111111111111111"
+  },
   "limits": {
     "candidateCount": 4,
     "candidateBytes": 2048,
@@ -841,13 +854,13 @@
         "authorization"
       ],
       "lifecycleState": "TRUSTED_AUTHORIZED_SET",
-      "operation": "fork_cycle_precedence",
+      "operation": "fork_precedence_and_identity_bound_cycle_attempt",
       "phases": [
         "HISTORICAL",
         "CURRENT",
         "ACCEPTANCE"
       ],
-      "invariant": "Only trusted and authorized eligible candidates enter graph work; exact forks, cycles, precedence, and conflicts are permutation invariant.",
+      "invariant": "Only trusted and authorized eligible candidates enter graph work; forks, precedence, and conflicts are permutation invariant. A cyclic predecessor attempt cannot satisfy predecessor-bound content identity and fails at canonical identity before graph work.",
       "trustPrecondition": "ALL_GRAPH_MEMBERS_TRUSTED",
       "authorizationPrecondition": "ALL_GRAPH_MEMBERS_AUTHORIZED",
       "caseProfiles": [
@@ -915,6 +928,8 @@
       "mutation_false_pass"
     ],
     "requiredFields": [
+      "schemaVersion",
+      "matrixId",
       "redHead",
       "redTree",
       "matrixBlobOid",
@@ -924,6 +939,7 @@
       "implementationAuthor",
       "reviewers",
       "expectedRedFailures",
+      "redCatalogSha256",
       "redBlockers",
       "reviewBlockers",
       "reviewFindings",
@@ -950,7 +966,8 @@
       "find": "ACP_MUTATION_ANCHOR_PIPELINE_ORDER = PIPELINE",
       "replace": "ACP_MUTATION_ANCHOR_PIPELINE_ORDER = tuple(reversed(PIPELINE))",
       "killTest": "test_every_early_rejection_has_zero_later_callbacks",
-      "expectedCode": "ACP.ORDER.REORDERED"
+      "expectedCode": null,
+      "assertionId": "MUT-ORDER-REORDER::exact-stage-ledger"
     },
     {
       "id": "MUT-LIFECYCLE-REPLACE",
@@ -959,7 +976,8 @@
       "find": "ACP_MUTATION_ANCHOR_LIFECYCLE = True",
       "replace": "ACP_MUTATION_ANCHOR_LIFECYCLE = False",
       "killTest": "test_lifecycle_and_explicit_time_boundaries_are_exact",
-      "expectedCode": "ACP.LIFECYCLE.STATE"
+      "expectedCode": "ACP.LIFECYCLE.STATE",
+      "assertionId": "MUT-LIFECYCLE-REPLACE::exact-finding"
     },
     {
       "id": "MUT-TIME-BYPASS",
@@ -968,7 +986,8 @@
       "find": "ACP_MUTATION_ANCHOR_EXPLICIT_TIME = True",
       "replace": "ACP_MUTATION_ANCHOR_EXPLICIT_TIME = False",
       "killTest": "test_lifecycle_and_explicit_time_boundaries_are_exact",
-      "expectedCode": "ACP.TIME.OUTSIDE_WINDOW"
+      "expectedCode": "ACP.TIME.OUTSIDE_WINDOW",
+      "assertionId": "MUT-TIME-BYPASS::exact-finding"
     },
     {
       "id": "MUT-PHASE-REPLACE",
@@ -977,7 +996,8 @@
       "find": "ACP_MUTATION_ANCHOR_PHASE_EQUALITY = True",
       "replace": "ACP_MUTATION_ANCHOR_PHASE_EQUALITY = False",
       "killTest": "test_phase_substitution_returns_exact_verdicts",
-      "expectedCode": "ACP.SCHEMA.PHASE_MISMATCH"
+      "expectedCode": "ACP.SCHEMA.PHASE_MISMATCH",
+      "assertionId": "MUT-PHASE-REPLACE::exact-finding"
     },
     {
       "id": "MUT-BOUNDS-BYPASS",
@@ -986,7 +1006,8 @@
       "find": "ACP_MUTATION_ANCHOR_BOUNDS = True",
       "replace": "ACP_MUTATION_ANCHOR_BOUNDS = False",
       "killTest": "test_all_resource_bounds_cover_exact_n_and_n_plus_one",
-      "expectedCode": "ACP.BOUNDS.CANDIDATE_COUNT"
+      "expectedCode": "ACP.BOUNDS.CANDIDATE_COUNT",
+      "assertionId": "MUT-BOUNDS-BYPASS::exact-finding"
     },
     {
       "id": "MUT-PARSE-REPLACE",
@@ -995,7 +1016,8 @@
       "find": "ACP_MUTATION_ANCHOR_DUPLICATE_JSON = True",
       "replace": "ACP_MUTATION_ANCHOR_DUPLICATE_JSON = False",
       "killTest": "test_hostile_input_families_stop_before_later_work",
-      "expectedCode": "ACP.PARSE.DUPLICATE_MEMBER"
+      "expectedCode": "ACP.PARSE.DUPLICATE_MEMBER",
+      "assertionId": "MUT-PARSE-REPLACE::exact-finding"
     },
     {
       "id": "MUT-IDENTITY-BYPASS",
@@ -1004,7 +1026,8 @@
       "find": "ACP_MUTATION_ANCHOR_IDENTITY = True",
       "replace": "ACP_MUTATION_ANCHOR_IDENTITY = False",
       "killTest": "test_identity_substitution_never_reaches_crypto",
-      "expectedCode": "ACP.IDENTITY.MISMATCH"
+      "expectedCode": "ACP.IDENTITY.MISMATCH",
+      "assertionId": "MUT-IDENTITY-BYPASS::exact-finding"
     },
     {
       "id": "MUT-DUPLICATE-BYPASS",
@@ -1013,7 +1036,8 @@
       "find": "ACP_MUTATION_ANCHOR_DUPLICATE_CANDIDATE = True",
       "replace": "ACP_MUTATION_ANCHOR_DUPLICATE_CANDIDATE = False",
       "killTest": "test_zero_candidates_and_duplicate_identity_fail_exactly",
-      "expectedCode": "ACP.IDENTITY.DUPLICATE"
+      "expectedCode": "ACP.IDENTITY.DUPLICATE",
+      "assertionId": "MUT-DUPLICATE-BYPASS::exact-finding"
     },
     {
       "id": "MUT-SUBSTITUTION-REMOVE",
@@ -1022,7 +1046,8 @@
       "find": "ACP_MUTATION_ANCHOR_SUBSTITUTION = True",
       "replace": "ACP_MUTATION_ANCHOR_SUBSTITUTION = False",
       "killTest": "test_reconstruction_rejects_missing_extra_corrupt_and_substituted_inputs",
-      "expectedCode": "ACP.REPLAY.IDENTITY_MISMATCH"
+      "expectedCode": "ACP.REPLAY.IDENTITY_MISMATCH",
+      "assertionId": "MUT-SUBSTITUTION-REMOVE::exact-finding"
     },
     {
       "id": "MUT-SELF-TRUST-REPLACE",
@@ -1031,7 +1056,8 @@
       "find": "ACP_MUTATION_ANCHOR_EXTERNAL_TRUST = True",
       "replace": "ACP_MUTATION_ANCHOR_EXTERNAL_TRUST = False",
       "killTest": "test_crypto_spy_ledger_is_exact_and_self_trust_fails",
-      "expectedCode": "ACP.TRUST.KEY_UNAVAILABLE"
+      "expectedCode": "ACP.TRUST.KEY_UNAVAILABLE",
+      "assertionId": "MUT-SELF-TRUST-REPLACE::exact-finding"
     },
     {
       "id": "MUT-AUTH-BYPASS",
@@ -1040,7 +1066,8 @@
       "find": "ACP_MUTATION_ANCHOR_AUTHORIZATION = True",
       "replace": "ACP_MUTATION_ANCHOR_AUTHORIZATION = False",
       "killTest": "test_only_trusted_authorized_candidates_can_conflict",
-      "expectedCode": "ACP.AUTHORIZATION.DENIED"
+      "expectedCode": "ACP.AUTHORIZATION.DENIED",
+      "assertionId": "MUT-AUTH-BYPASS::exact-finding"
     },
     {
       "id": "MUT-PRECEDENCE-REPLACE",
@@ -1049,7 +1076,8 @@
       "find": "ACP_MUTATION_ANCHOR_PRECEDENCE = True",
       "replace": "ACP_MUTATION_ANCHOR_PRECEDENCE = False",
       "killTest": "test_graph_result_is_permutation_invariant",
-      "expectedCode": "ACP.GRAPH.PRECEDENCE"
+      "expectedCode": null,
+      "assertionId": "MUT-PRECEDENCE-REPLACE::exact-selection"
     },
     {
       "id": "MUT-REPLAY-SUBSET",
@@ -1058,12 +1086,14 @@
       "find": "ACP_MUTATION_ANCHOR_EXACT_FINDINGS = True",
       "replace": "ACP_MUTATION_ANCHOR_EXACT_FINDINGS = False",
       "killTest": "test_reconstruction_exact_equality_kills_subset_replay",
-      "expectedCode": "ACP.REPLAY.EXACT_MISMATCH"
+      "expectedCode": "ACP.REPLAY.EXACT_MISMATCH",
+      "assertionId": "MUT-REPLAY-SUBSET::exact-finding"
     }
   ],
   "mutantOutcomes": [
     {
       "id": "MUT-ORDER-REORDER",
+      "assertionId": "MUT-ORDER-REORDER::exact-stage-ledger",
       "finding": null,
       "phaseVerdicts": [
         "UNAVAILABLE",
@@ -1075,6 +1105,7 @@
     },
     {
       "id": "MUT-LIFECYCLE-REPLACE",
+      "assertionId": "MUT-LIFECYCLE-REPLACE::exact-finding",
       "finding": [
         "schema",
         "CURRENT",
@@ -1091,6 +1122,7 @@
     },
     {
       "id": "MUT-TIME-BYPASS",
+      "assertionId": "MUT-TIME-BYPASS::exact-finding",
       "finding": [
         "schema",
         "CURRENT",
@@ -1107,6 +1139,7 @@
     },
     {
       "id": "MUT-PHASE-REPLACE",
+      "assertionId": "MUT-PHASE-REPLACE::exact-finding",
       "finding": [
         "schema",
         "CURRENT",
@@ -1123,6 +1156,7 @@
     },
     {
       "id": "MUT-BOUNDS-BYPASS",
+      "assertionId": "MUT-BOUNDS-BYPASS::exact-finding",
       "finding": [
         "bounds",
         "CURRENT",
@@ -1139,6 +1173,7 @@
     },
     {
       "id": "MUT-PARSE-REPLACE",
+      "assertionId": "MUT-PARSE-REPLACE::exact-finding",
       "finding": [
         "parse",
         "CURRENT",
@@ -1155,6 +1190,7 @@
     },
     {
       "id": "MUT-IDENTITY-BYPASS",
+      "assertionId": "MUT-IDENTITY-BYPASS::exact-finding",
       "finding": [
         "canonical_identity",
         "CURRENT",
@@ -1171,6 +1207,7 @@
     },
     {
       "id": "MUT-DUPLICATE-BYPASS",
+      "assertionId": "MUT-DUPLICATE-BYPASS::exact-finding",
       "finding": [
         "canonical_identity",
         "CURRENT",
@@ -1187,6 +1224,7 @@
     },
     {
       "id": "MUT-SUBSTITUTION-REMOVE",
+      "assertionId": "MUT-SUBSTITUTION-REMOVE::exact-finding",
       "finding": [
         "canonical_identity",
         "CURRENT",
@@ -1203,6 +1241,7 @@
     },
     {
       "id": "MUT-SELF-TRUST-REPLACE",
+      "assertionId": "MUT-SELF-TRUST-REPLACE::exact-finding",
       "finding": [
         "independent_trust",
         "CURRENT",
@@ -1219,6 +1258,7 @@
     },
     {
       "id": "MUT-AUTH-BYPASS",
+      "assertionId": "MUT-AUTH-BYPASS::exact-finding",
       "finding": [
         "authorization",
         "CURRENT",
@@ -1235,6 +1275,7 @@
     },
     {
       "id": "MUT-PRECEDENCE-REPLACE",
+      "assertionId": "MUT-PRECEDENCE-REPLACE::exact-selection",
       "finding": null,
       "phaseVerdicts": [
         "UNAVAILABLE",
@@ -1246,6 +1287,7 @@
     },
     {
       "id": "MUT-REPLAY-SUBSET",
+      "assertionId": "MUT-REPLAY-SUBSET::exact-finding",
       "finding": [
         "phase_verdict",
         "CURRENT",

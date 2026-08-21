@@ -33,6 +33,13 @@ deletion, corruption, reordering, duplication, substitution, and maximum
 cardinality. Reference normalized profiles only when the executable validator
 expands and verifies the complete Cartesian product.
 
+Every normalized case must resolve through a closed independent fixture
+registry. Bind the fixture bytes/hash, exact assertion identity, ordered stage
+ledger, exact signature/key/message crypto ledger or explicit no-call, graph
+result/selection, three-phase verdicts, mutant, blocker class, and evidence
+state. Execute every resolved reference; label or count completeness is not
+behavioral completeness.
+
 ## Pipeline-call ledger
 
 | Case ID | Bounds | Parse | Schema | Identity | Trust/crypto | Authorization | Graph/conflict | Phase verdict | Earliest exact finding |
@@ -76,6 +83,7 @@ The immutable machine overlay, created after reviews, must bind:
 - independently frozen semantic SHA-256;
 - three distinct reviewer identities and exact review URLs;
 - architecture, security/trust, and mutation dispositions;
+- the exact ordered genuine-RED node catalog and its independent digest;
 - separate implementation/evidence blocker counts;
 - activation and authority effect; and
 - `PRE_GREEN_REVIEWS_COMPLETE` state.

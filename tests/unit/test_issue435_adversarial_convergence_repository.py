@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import ast
 import hashlib
 import json
 import subprocess
@@ -22,6 +23,7 @@ ORACLE_PATHS = (
     "tests/unit/test_issue435_adversarial_convergence.py",
     "tests/unit/test_issue435_adversarial_convergence_repository.py",
 )
+CORE_ORACLE_PATH = ROOT / ORACLE_PATHS[0]
 
 
 def canonical(value: object) -> bytes:
@@ -48,9 +50,24 @@ def file_sha(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def create_real_git_freeze(tmp_path: Path) -> tuple[Path, dict[str, Any]]:
+def frozen_red_nodes() -> tuple[str, ...]:
+    module = ast.parse(CORE_ORACLE_PATH.read_text(encoding="utf-8"))
+    for statement in module.body:
+        if isinstance(statement, ast.Assign) and any(
+            isinstance(target, ast.Name) and target.id == "EXPECTED_RED_FAILURES"
+            for target in statement.targets
+        ):
+            value = ast.literal_eval(statement.value)
+            assert isinstance(value, tuple) and all(isinstance(item, str) for item in value)
+            return value
+    raise AssertionError("EXPECTED_RED_FAILURES literal is missing")
+
+
+def create_real_git_freeze(
+    tmp_path: Path, *, extra_c3_path: bool = False
+) -> tuple[Path, dict[str, Any]]:
     root = tmp_path / "repository"
-    root.mkdir()
+    root.mkdir(parents=True)
     git(root, "init", "-q")
     git(root, "config", "user.name", "Implementation Author")
     git(root, "config", "user.email", "implementation@example.com")
@@ -68,6 +85,7 @@ def create_real_git_freeze(tmp_path: Path) -> tuple[Path, dict[str, Any]]:
     semantic_sha = hashlib.sha256(
         canonical(json.loads(matrix.read_text(encoding="utf-8")))
     ).hexdigest()
+    red_nodes = frozen_red_nodes()
     freeze: dict[str, Any] = {
         "schemaVersion": "AdversarialRedFreezeV1",
         "matrixId": "issue-435-adversarial-convergence-v1",
@@ -98,8 +116,12 @@ def create_real_git_freeze(tmp_path: Path) -> tuple[Path, dict[str, Any]]:
                 ("architecture", "security_trust", "mutation_false_pass"), start=1
             )
         ],
-        "expectedRedFailures": ["test_red_one", "test_red_two"],
-        "redBlockers": {"IMPLEMENTATION_BLOCKER": 2, "EVIDENCE_BLOCKER": 0},
+        "expectedRedFailures": list(red_nodes),
+        "redCatalogSha256": hashlib.sha256(canonical(red_nodes)).hexdigest(),
+        "redBlockers": {
+            "IMPLEMENTATION_BLOCKER": len(red_nodes),
+            "EVIDENCE_BLOCKER": 0,
+        },
         "reviewBlockers": {"IMPLEMENTATION_BLOCKER": 0, "EVIDENCE_BLOCKER": 0},
         "reviewFindings": [],
         "activation": "NONE",
@@ -109,7 +131,11 @@ def create_real_git_freeze(tmp_path: Path) -> tuple[Path, dict[str, Any]]:
     freeze_path = root / FREEZE_PATH
     freeze_path.parent.mkdir(parents=True, exist_ok=True)
     freeze_path.write_bytes(canonical(freeze) + b"\n")
+    if extra_c3_path:
+        (root / "unexpected-c3-path.txt").write_text("scope drift\n", encoding="utf-8")
     git(root, "add", FREEZE_PATH)
+    if extra_c3_path:
+        git(root, "add", "unexpected-c3-path.txt")
     git(
         root,
         "-c",
@@ -128,6 +154,11 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
     tmp_path: Path,
 ) -> None:
     root, freeze = create_real_git_freeze(tmp_path)
+    red_nodes = frozen_red_nodes()
+    assert len(red_nodes) == protocol.EXPECTED_RED_FAILURES_COUNT
+    assert hashlib.sha256(canonical(red_nodes)).hexdigest() == (
+        protocol.EXPECTED_RED_FAILURES_SHA256
+    )
     assert protocol.validate_repository_freeze(root) == ()
     freeze_path = root / FREEZE_PATH
     mutations = (
@@ -142,16 +173,74 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
         changed[field] = value
         freeze_path.write_bytes(canonical(changed) + b"\n")
         assert protocol.validate_repository_freeze(root) == finding("freeze", code, field)
+    for ordinal in range(2):
+        for field, value, code in (
+            ("path", "tests/unit/wrong.py", "ACP.FREEZE.ORACLE_PATH_MISMATCH"),
+            ("blobOid", "0" * 40, "ACP.FREEZE.ORACLE_BLOB_MISMATCH"),
+            ("sha256", "0" * 64, "ACP.FREEZE.ORACLE_SHA_MISMATCH"),
+        ):
+            changed = deepcopy(freeze)
+            changed["focusedOracleBlobs"][ordinal][field] = value
+            freeze_path.write_bytes(canonical(changed) + b"\n")
+            assert protocol.validate_repository_freeze(root) == finding(
+                "freeze", code, f"focusedOracleBlobs[{ordinal}].{field}"
+            )
+        for field in ("path", "blobOid", "sha256"):
+            changed = deepcopy(freeze)
+            del changed["focusedOracleBlobs"][ordinal][field]
+            freeze_path.write_bytes(canonical(changed) + b"\n")
+            assert protocol.validate_repository_freeze(root) == finding(
+                "freeze", "ACP.FREEZE.FIELD_MISSING", f"focusedOracleBlobs[{ordinal}].{field}"
+            )
+        changed = deepcopy(freeze)
+        changed["focusedOracleBlobs"][ordinal]["unknown"] = True
+        freeze_path.write_bytes(canonical(changed) + b"\n")
+        assert protocol.validate_repository_freeze(root) == finding(
+            "freeze", "ACP.FREEZE.UNKNOWN_FIELD", f"focusedOracleBlobs[{ordinal}].unknown"
+        )
+    for changed, code in (
+        (
+            {**freeze, "focusedOracleBlobs": freeze["focusedOracleBlobs"][::-1]},
+            "ACP.FREEZE.ORACLE_ORDER",
+        ),
+        (
+            {**freeze, "focusedOracleBlobs": freeze["focusedOracleBlobs"][:1]},
+            "ACP.FREEZE.ORACLE_COUNT",
+        ),
+        (
+            {
+                **freeze,
+                "focusedOracleBlobs": [
+                    *freeze["focusedOracleBlobs"],
+                    freeze["focusedOracleBlobs"][0],
+                ],
+            },
+            "ACP.FREEZE.ORACLE_COUNT",
+        ),
+    ):
+        freeze_path.write_bytes(canonical(changed) + b"\n")
+        assert protocol.validate_repository_freeze(root) == finding(
+            "freeze", code, "focusedOracleBlobs"
+        )
+    nonancestor = git(root, "commit-tree", freeze["redTree"], "-m", "nonancestor RED")
     changed = deepcopy(freeze)
-    changed["focusedOracleBlobs"][1]["sha256"] = "0" * 64
+    changed["redHead"] = nonancestor
+    for reviewer in changed["reviewers"]:
+        reviewer["reviewedRedHead"] = nonancestor
     freeze_path.write_bytes(canonical(changed) + b"\n")
     assert protocol.validate_repository_freeze(root) == finding(
-        "freeze", "ACP.FREEZE.ORACLE_SHA_MISMATCH", "focusedOracleBlobs[1].sha256"
+        "freeze", "ACP.FREEZE.RED_NOT_C3_PARENT", "redHead"
     )
     freeze_path.write_bytes(canonical(freeze) + b"\n")
     (root / ORACLE_PATHS[0]).write_text("post-RED mutation\n", encoding="utf-8")
     assert protocol.validate_repository_freeze(root) == finding(
         "freeze", "ACP.FREEZE.ORACLE_IMMUTABLE", ORACLE_PATHS[0]
+    )
+    scoped_root, _ = create_real_git_freeze(tmp_path / "scope", extra_c3_path=True)
+    assert protocol.validate_repository_freeze(scoped_root) == finding(
+        "freeze",
+        "ACP.FREEZE.C3_SCOPE",
+        "docs/governance/adversarial-convergence-red-freeze-v1.json",
     )
 
 
@@ -169,16 +258,84 @@ def test_freeze_schema_closes_roles_red_nodes_and_separate_blockers(tmp_path: Pa
     conflated["reviewBlockers"]["EVIDENCE_BLOCKER"] = 1
     self_review = deepcopy(freeze)
     self_review["reviewers"][0]["identity"] = freeze["implementationAuthor"]
+    wrong_schema = deepcopy(freeze)
+    wrong_schema["schemaVersion"] = "OtherV1"
+    wrong_matrix = deepcopy(freeze)
+    wrong_matrix["matrixId"] = "issue-999-adversarial-convergence-v1"
     cases: tuple[tuple[dict[str, Any], str, str], ...] = (
         (missing, "ACP.FREEZE.FIELD_MISSING", "redBlockers"),
         (unknown, "ACP.FREEZE.UNKNOWN_FIELD", "selfApproved"),
         (no_red, "ACP.FREEZE.RED_FAILURES_EMPTY", "expectedRedFailures"),
         (conflated, "ACP.FREEZE.REVIEW_BLOCKERS_NONZERO", "reviewBlockers.EVIDENCE_BLOCKER"),
         (self_review, "ACP.FREEZE.SELF_REVIEW", "reviewers[0].identity"),
+        (wrong_schema, "ACP.FREEZE.SCHEMA_VERSION", "schemaVersion"),
+        (wrong_matrix, "ACP.FREEZE.MATRIX_ID", "matrixId"),
     )
     for document, code, location in cases:
         result = protocol.validate_matrix_bytes(matrix, canonical(document))
         assert result.findings == finding("freeze", code, location)
+
+    red_nodes = frozen_red_nodes()
+    for replacement in (
+        red_nodes[:-1],
+        (*red_nodes[:-1], red_nodes[0]),
+        red_nodes[::-1],
+        (*red_nodes[:-1], "tests/unit/substituted.py::test_substituted"),
+    ):
+        changed = deepcopy(freeze)
+        changed["expectedRedFailures"] = list(replacement)
+        result = protocol.validate_matrix_bytes(matrix, canonical(changed))
+        assert result.findings == finding(
+            "freeze", "ACP.FREEZE.RED_CATALOG_MISMATCH", "expectedRedFailures"
+        )
+    changed = deepcopy(freeze)
+    changed["redCatalogSha256"] = "0" * 64
+    assert protocol.validate_matrix_bytes(matrix, canonical(changed)).findings == finding(
+        "freeze", "ACP.FREEZE.RED_CATALOG_SHA_MISMATCH", "redCatalogSha256"
+    )
+    changed = deepcopy(freeze)
+    changed["redBlockers"]["IMPLEMENTATION_BLOCKER"] -= 1
+    assert protocol.validate_matrix_bytes(matrix, canonical(changed)).findings == finding(
+        "freeze", "ACP.FREEZE.RED_BLOCKER_COUNT", "redBlockers.IMPLEMENTATION_BLOCKER"
+    )
+
+    reviewer_mutations: list[tuple[dict[str, Any], str, str]] = []
+    changed = deepcopy(freeze)
+    changed["reviewers"] = changed["reviewers"][::-1]
+    reviewer_mutations.append((changed, "ACP.FREEZE.REVIEW_ROLE_ORDER", "reviewers"))
+    for field, value, code in (
+        ("role", "wrong", "ACP.FREEZE.REVIEW_ROLE"),
+        ("disposition", "REQUEST_CHANGES", "ACP.FREEZE.REVIEW_DISPOSITION"),
+        ("reviewedRedHead", "0" * 40, "ACP.FREEZE.REVIEW_HEAD"),
+        ("semanticSha256", "0" * 64, "ACP.FREEZE.REVIEW_SEMANTIC"),
+        ("commentUrl", "https://example.invalid/review", "ACP.FREEZE.REVIEW_URL"),
+    ):
+        changed = deepcopy(freeze)
+        changed["reviewers"][0][field] = value
+        reviewer_mutations.append((changed, code, f"reviewers[0].{field}"))
+    changed = deepcopy(freeze)
+    changed["reviewers"][1]["identity"] = changed["reviewers"][0]["identity"]
+    reviewer_mutations.append(
+        (changed, "ACP.FREEZE.REVIEW_IDENTITY_DUPLICATE", "reviewers[1].identity")
+    )
+    changed = deepcopy(freeze)
+    changed["reviewers"][1]["commentUrl"] = changed["reviewers"][0]["commentUrl"]
+    reviewer_mutations.append(
+        (changed, "ACP.FREEZE.REVIEW_URL_DUPLICATE", "reviewers[1].commentUrl")
+    )
+    changed = deepcopy(freeze)
+    changed["reviewFindings"] = ["unresolved"]
+    reviewer_mutations.append((changed, "ACP.FREEZE.REVIEW_FINDINGS_NONZERO", "reviewFindings"))
+    changed = deepcopy(freeze)
+    del changed["reviewers"][0]["role"]
+    reviewer_mutations.append((changed, "ACP.FREEZE.FIELD_MISSING", "reviewers[0].role"))
+    changed = deepcopy(freeze)
+    changed["reviewers"][0]["unknown"] = True
+    reviewer_mutations.append((changed, "ACP.FREEZE.UNKNOWN_FIELD", "reviewers[0].unknown"))
+    for document, code, location in reviewer_mutations:
+        assert protocol.validate_matrix_bytes(matrix, canonical(document)).findings == finding(
+            "freeze", code, location
+        )
 
 
 def test_activation_authority_and_every_prohibition_fail_exactly(tmp_path: Path) -> None:
@@ -220,28 +377,51 @@ def test_repository_validator_is_read_only_and_static_boundary_is_ast_exact(
     assert after == before
     source = (ROOT / "scripts/quality/issue435_adversarial_convergence.py").read_text()
     assert protocol.static_boundary_findings(source) == ()
+    read_only_git = (
+        "import subprocess\n"
+        "subprocess.run(('git', 'rev-parse', 'HEAD'), cwd=root, check=True, "
+        "capture_output=True, text=True)\n"
+    )
+    assert protocol.static_boundary_findings(read_only_git) == ()
     for hostile, code in (
         ("import requests\n", "ACP.STATIC.NETWORK_IMPORT"),
+        ("from socket import socket as connect\n", "ACP.STATIC.NETWORK_IMPORT"),
+        ("import urllib.request as net\n", "ACP.STATIC.NETWORK_IMPORT"),
+        ("from httpx import get\n", "ACP.STATIC.NETWORK_IMPORT"),
+        ("import boto3\n", "ACP.STATIC.PROVIDER_IMPORT"),
         (
             "from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey\n",
             "ACP.STATIC.PRIVATE_KEY",
         ),
+        ("key = Ed25519PrivateKey.generate()\n", "ACP.STATIC.KEY_GENERATION"),
+        ("signature = key.sign(message)\n", "ACP.STATIC.SIGNING"),
         ("x = __import__('socket')\n", "ACP.STATIC.DYNAMIC_IMPORT"),
+        ("import importlib\nx = importlib.import_module(name)\n", "ACP.STATIC.DYNAMIC_IMPORT"),
+        ("eval(source)\n", "ACP.STATIC.DYNAMIC_EXECUTION"),
+        ("exec(source)\n", "ACP.STATIC.DYNAMIC_EXECUTION"),
         ("open('state', mode='w')\n", "ACP.STATIC.WRITE"),
+        ("Path('state').write_text('x')\n", "ACP.STATIC.WRITE"),
+        ("Path('state').write_bytes(b'x')\n", "ACP.STATIC.WRITE"),
+        ("os.open('state', os.O_WRONLY)\n", "ACP.STATIC.WRITE"),
+        ("shutil.copyfile('a', 'b')\n", "ACP.STATIC.PERSISTENCE"),
         ("subprocess.run(['curl', 'https://example.invalid'])\n", "ACP.STATIC.PROCESS"),
+        ("subprocess.Popen(command)\n", "ACP.STATIC.PROCESS"),
+        ("os.system(command)\n", "ACP.STATIC.PROCESS"),
+        ("subprocess.run(('git', 'commit', '-m', 'x'))\n", "ACP.STATIC.GIT_MUTATION"),
+        ("subprocess.run(('git', command, 'HEAD'))\n", "ACP.STATIC.GIT_DYNAMIC"),
     ):
         assert protocol.static_boundary_findings(hostile) == finding("static", code, "source")
 
 
-def write_preflight(root: Path, *, objective: str, required: list[str]) -> Path:
-    path = root / "docs/governance/preflights/issue-900.json"
+def write_preflight(root: Path, *, objective: str, required: list[str], issue: int = 435) -> Path:
+    path = root / f"docs/governance/preflights/issue-{issue}.json"
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
         json.dumps(
             {
                 "schema_version": "GovernancePreflightV1",
-                "issue_number": 900,
-                "branch": "process-900-neutral",
+                "issue_number": issue,
+                "branch": f"process-{issue}-neutral",
                 "objective": objective,
                 "status_decision": "update-minimally",
                 "scope": {"required": required, "allowed_prefixes": required, "forbidden": []},
@@ -253,24 +433,22 @@ def write_preflight(root: Path, *, objective: str, required: list[str]) -> Path:
 
 
 def test_sensitive_route_uses_paths_and_exact_issue_artifacts(tmp_path: Path) -> None:
+    root, freeze = create_real_git_freeze(tmp_path)
     preflight = write_preflight(
-        tmp_path, objective="routine documentation", required=["docs/SECURITY_AND_PRIVACY.md"]
+        root, objective="routine documentation", required=["docs/SECURITY_AND_PRIVACY.md"]
     )
-    location = preflight.relative_to(tmp_path).as_posix()
-    assert protocol.route_findings(tmp_path) == (
-        *finding("route", "ACP.ROUTE.MATRIX_REQUIRED", location),
-        *finding("route", "ACP.ROUTE.FREEZE_REQUIRED", location),
-    )
-    matrix = tmp_path / "docs/governance/adversarial-invariant-matrix-issue-900.json"
-    freeze = tmp_path / "docs/governance/adversarial-red-freeze-issue-900.json"
-    matrix.write_bytes(MATRIX_PATH.read_bytes())
-    freeze.write_text("{}\n", encoding="utf-8")
-    assert protocol.route_findings(tmp_path) == ()
-    matrix.rename(matrix.with_name("adversarial-invariant-matrix-issue-901.json"))
-    assert protocol.route_findings(tmp_path) == finding(
-        "route", "ACP.ROUTE.MATRIX_REQUIRED", location
-    )
-    assert protocol.route_findings(tmp_path, changed_paths=("../escape",)) == finding(
+    location = preflight.relative_to(root).as_posix()
+    assert protocol.route_findings(root) == ()
+    freeze_path = root / FREEZE_PATH
+    freeze_path.write_text("{}\n", encoding="utf-8")
+    assert protocol.route_findings(root) == finding("route", "ACP.ROUTE.FREEZE_INVALID", location)
+    freeze_path.write_bytes(canonical(freeze) + b"\n")
+    changed = deepcopy(freeze)
+    changed["matrixId"] = "issue-999-adversarial-convergence-v1"
+    freeze_path.write_bytes(canonical(changed) + b"\n")
+    assert protocol.route_findings(root) == finding("route", "ACP.ROUTE.ISSUE_MISMATCH", location)
+    freeze_path.write_bytes(canonical(freeze) + b"\n")
+    assert protocol.route_findings(root, changed_paths=("../escape",)) == finding(
         "route", "ACP.ROUTE.PATH_TRAVERSAL", "../escape"
     )
 
@@ -282,6 +460,9 @@ def test_sensitive_route_uses_paths_and_exact_issue_artifacts(tmp_path: Path) ->
         ("8", "process-435", True),
         ("8", "final-review-435", False),
         ("8", "phase-1-closure-435", False),
+        ("8", "main", False),
+        ("8", "main", True),
+        ("8", "neutral-435", False),
     ),
 )
 def test_dispatcher_runs_protocol_first_and_fails_fast(

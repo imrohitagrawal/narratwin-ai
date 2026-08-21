@@ -18,6 +18,8 @@ MATRIX_PATH = ROOT / "docs/governance/adversarial-convergence-invariant-matrix-v
 FREEZE_PATH = ROOT / "docs/governance/adversarial-convergence-red-freeze-v1.json"
 ACTIVATION = "NONE"
 AUTHORITY_EFFECT = "NO_AUTHORITY_EFFECT"
+EXPECTED_RED_FAILURES_COUNT = 36
+EXPECTED_RED_FAILURES_SHA256 = "0b808d20a985f7cf38d7403a937669bd2da5493acc90dcd698fe20dc742fe2e3"
 
 
 class Stage(str, enum.Enum):
@@ -142,9 +144,12 @@ class MatrixValidation:
 @dataclass(frozen=True)
 class MatrixCryptoExpectation:
     candidate_reference: str
+    signature_hex: str
     ordinal: int
     candidate_count: int
     phase: Phase
+    public_key_sha256: str
+    message_sha256: str
     result: bool
 
 
@@ -156,6 +161,7 @@ class MatrixCase:
     target_phase: Phase
     input_class: str
     input_reference: str
+    input_sha256: str
     stage: str
     findings: tuple[Finding, ...]
     phase_verdicts: tuple[PhaseVerdict, ...]
@@ -166,6 +172,7 @@ class MatrixCase:
     selected_candidate_reference: str | None
     test_node: str
     mutant_id: str
+    assertion_id: str
     blocker_class: BlockerClass
     evidence_state: str
 
@@ -187,6 +194,10 @@ class RetainedEvaluation:
     max_candidates: int
     max_candidate_bytes: int
     max_aggregate_bytes: int
+    max_json_depth: int
+    max_json_members: int
+    max_findings: int
+    max_retained_materials: int
 
 
 CryptoVerifier = Callable[[CryptoProbe], bool]
@@ -223,6 +234,17 @@ def normalized_case_catalog(
     return ()
 
 
+def execute_matrix_fixture(
+    matrix_case: MatrixCase,
+    fixture_bytes: bytes,
+    *,
+    context: EvaluationContext,
+    crypto_verifier: CryptoVerifier,
+) -> MatrixCase | None:
+    del matrix_case, fixture_bytes, context, crypto_verifier
+    return None
+
+
 def verify_ed25519(public_key: bytes, message: bytes, signature: bytes) -> bool:
     del public_key, message, signature
     return False
@@ -239,8 +261,9 @@ def artifact_bound_findings(
     freeze_bytes: bytes,
     finding_count: int,
     retained_material_count: int,
+    matrix_row_count: int,
 ) -> tuple[Finding, ...]:
-    del matrix_bytes, freeze_bytes, finding_count, retained_material_count
+    del matrix_bytes, freeze_bytes, finding_count, retained_material_count, matrix_row_count
     return (_not_implemented("artifact-bounds"),)
 
 
@@ -329,6 +352,13 @@ def reconstruct_candidates(
         crypto_calls=(),
         graph_call_count=0,
     )
+
+
+def retained_equality_findings(
+    observed: RetainedEvaluation, expected: RetainedEvaluation
+) -> tuple[Finding, ...]:
+    del observed, expected
+    return (_not_implemented("retained-equality"),)
 
 
 def route_findings(

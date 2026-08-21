@@ -37,10 +37,17 @@ Adopt a repository-binding adversarial convergence protocol with:
     Phase 1 Closure modes.
 
 The reference machine matrix is semantic and immutable after RED. A separate
-closed overlay created after review freezes its exact RED head, matrix/test
+closed overlay created after review freezes its exact RED head, matrix/two-test
 blobs, semantic digest, reviewer identities, dispositions, blocker counts, and
-nonactivation. The fixed test blob is the independent oracle that prevents a
-coordinated matrix/validator edit from self-approving.
+nonactivation. The two fixed test blobs are independent oracles that prevent a
+coordinated matrix/validator edit from self-approving. Their closed fixture
+registry resolves and executes every matrix reference, while the freeze binds
+the actual ordered RED-node catalog rather than a caller-supplied count.
+
+`predecessorId` participates in canonical candidate identity. A cyclic
+predecessor construction therefore cannot remain identity-valid; it is rejected
+at canonical identity before trust, authorization, or graph work. The protocol
+does not add a separately mutable or authorization-detached graph-edge identity.
 
 ## Rejected alternatives
 

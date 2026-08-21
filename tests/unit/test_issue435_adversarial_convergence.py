@@ -17,8 +17,11 @@ FREEZE_PATH = ROOT / "docs/governance/adversarial-convergence-red-freeze-v1.json
 REPOSITORY_TEST_PATH = ROOT / "tests/unit/test_issue435_adversarial_convergence_repository.py"
 IDENTITY_DOMAIN = b"NARRATWIN:ACP:IDENTITY:V1\x00"
 SIGNATURE_DOMAIN = b"NARRATWIN:ACP:SIGNATURE:V1\x00"
-EXPECTED_SEMANTIC_SHA256 = "5eac4780f713d3d0ffc412827e933795b7384ee422b02936f048478974908b17"
-EXPECTED_MUTANT_OUTCOMES_SHA256 = "9ecff913e07e86e5d19fbf0830f04235228dd695753b87bcc42e5ddf20d85b83"
+EXPECTED_SEMANTIC_SHA256 = "4d4fc71da21f77c63861634519eb1e760e5bc8dc30890c686c3254ac64a56ece"
+EXPECTED_MUTANT_OUTCOMES_SHA256 = "596aa226805f393c8f2cdb84e44c59fe5be43cbae1013d340449b9b310483fbd"
+EXPECTED_FIXTURE_REGISTRY_SHA256 = (
+    "b3d96ee7d0338cb8b9b11f8628929b05f6b6aa512704872821579280425eac37"
+)
 PIPELINE = (
     "bounds",
     "parse",
@@ -54,6 +57,44 @@ TEST_CLASSES = (
     "duplication",
     "substitution",
     "maximum_cardinality",
+)
+EXPECTED_RED_FAILURES = (
+    "tests/unit/test_issue435_adversarial_convergence.py::test_matrix_cross_product_and_exact_outcomes_are_closed",
+    "tests/unit/test_issue435_adversarial_convergence.py::test_closed_universe_shrink_fails_exactly",
+    "tests/unit/test_issue435_adversarial_convergence.py::test_case_catalog_rejects_missing_duplicate_reordered_unknown_and_field_drift",
+    "tests/unit/test_issue435_adversarial_convergence.py::test_zero_candidates_and_duplicate_identity_fail_exactly",
+    "tests/unit/test_issue435_adversarial_convergence.py::test_every_early_rejection_has_zero_later_callbacks",
+    "tests/unit/test_issue435_adversarial_convergence.py::test_lifecycle_and_explicit_time_boundaries_are_exact",
+    "tests/unit/test_issue435_adversarial_convergence.py::test_all_resource_bounds_cover_exact_n_and_n_plus_one",
+    "tests/unit/test_issue435_adversarial_convergence.py::test_hostile_input_families_stop_before_later_work",
+    "tests/unit/test_issue435_adversarial_convergence.py::test_identity_substitution_never_reaches_crypto",
+    "tests/unit/test_issue435_adversarial_convergence.py::test_crypto_spy_ledger_is_exact_and_self_trust_fails",
+    "tests/unit/test_issue435_adversarial_convergence.py::test_real_rfc8032_vector_and_mutation",
+    "tests/unit/test_issue435_adversarial_convergence.py::test_only_trusted_authorized_candidates_can_conflict",
+    "tests/unit/test_issue435_adversarial_convergence.py::test_structured_crypto_probe_mixed_results_and_exception",
+    "tests/unit/test_issue435_adversarial_convergence.py::test_graph_fork_cycle_orphan_duplicate_and_permutation",
+    "tests/unit/test_issue435_adversarial_convergence.py::test_graph_result_is_permutation_invariant",
+    "tests/unit/test_issue435_adversarial_convergence.py::test_phase_substitution_returns_exact_verdicts",
+    "tests/unit/test_issue435_adversarial_convergence.py::test_all_three_phases_are_exact_and_isolated",
+    "tests/unit/test_issue435_adversarial_convergence.py::test_reconstruction_exact_equality_kills_subset_replay",
+    "tests/unit/test_issue435_adversarial_convergence.py::test_reconstruction_rejects_missing_extra_corrupt_and_substituted_inputs",
+    "tests/unit/test_issue435_adversarial_convergence.py::test_semantic_identity_resists_coordinated_matrix_and_freeze_mutation",
+    "tests/unit/test_issue435_adversarial_convergence.py::test_budget_thresholds_are_exact_at_85_and_90_percent",
+    "tests/unit/test_issue435_adversarial_convergence.py::test_implementation_and_evidence_blockers_remain_separate_and_exact",
+    "tests/unit/test_issue435_adversarial_convergence.py::test_controlled_mutation_anchors_are_executable_and_complete",
+    "tests/unit/test_issue435_adversarial_convergence.py::test_repository_artifacts_join_only_after_c3_freeze",
+    "tests/unit/test_issue435_adversarial_convergence_repository.py::test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability",
+    "tests/unit/test_issue435_adversarial_convergence_repository.py::test_freeze_schema_closes_roles_red_nodes_and_separate_blockers",
+    "tests/unit/test_issue435_adversarial_convergence_repository.py::test_activation_authority_and_every_prohibition_fail_exactly",
+    "tests/unit/test_issue435_adversarial_convergence_repository.py::test_repository_validator_is_read_only_and_static_boundary_is_ast_exact",
+    "tests/unit/test_issue435_adversarial_convergence_repository.py::test_sensitive_route_uses_paths_and_exact_issue_artifacts",
+    "tests/unit/test_issue435_adversarial_convergence_repository.py::test_dispatcher_runs_protocol_first_and_fails_fast[8-process-435-False]",
+    "tests/unit/test_issue435_adversarial_convergence_repository.py::test_dispatcher_runs_protocol_first_and_fails_fast[8-process-435-True]",
+    "tests/unit/test_issue435_adversarial_convergence_repository.py::test_dispatcher_runs_protocol_first_and_fails_fast[8-final-review-435-False]",
+    "tests/unit/test_issue435_adversarial_convergence_repository.py::test_dispatcher_runs_protocol_first_and_fails_fast[8-phase-1-closure-435-False]",
+    "tests/unit/test_issue435_adversarial_convergence_repository.py::test_dispatcher_runs_protocol_first_and_fails_fast[8-main-False]",
+    "tests/unit/test_issue435_adversarial_convergence_repository.py::test_dispatcher_runs_protocol_first_and_fails_fast[8-main-True]",
+    "tests/unit/test_issue435_adversarial_convergence_repository.py::test_dispatcher_runs_protocol_first_and_fails_fast[8-neutral-435-False]",
 )
 
 
@@ -135,8 +176,12 @@ def synthetic_freeze(document: dict[str, Any]) -> bytes:
                 "semanticSha256": semantic_sha,
             },
         ],
-        "expectedRedFailures": ["test_expected_red_failure"],
-        "redBlockers": {"IMPLEMENTATION_BLOCKER": 1, "EVIDENCE_BLOCKER": 0},
+        "expectedRedFailures": list(EXPECTED_RED_FAILURES),
+        "redCatalogSha256": hashlib.sha256(canonical(EXPECTED_RED_FAILURES)).hexdigest(),
+        "redBlockers": {
+            "IMPLEMENTATION_BLOCKER": len(EXPECTED_RED_FAILURES),
+            "EVIDENCE_BLOCKER": 0,
+        },
         "reviewBlockers": {"IMPLEMENTATION_BLOCKER": 0, "EVIDENCE_BLOCKER": 0},
         "reviewFindings": [],
         "activation": "NONE",
@@ -232,6 +277,31 @@ def expected_probe(
     )
 
 
+def expected_crypto_calls(
+    candidate_ids: tuple[str, ...],
+    messages: tuple[bytes, ...],
+    results: tuple[bool, ...],
+    *,
+    phase: protocol.Phase = protocol.Phase.CURRENT,
+) -> tuple[protocol.CryptoCall, ...]:
+    key_sha = hashlib.sha256(bytes.fromhex("11" * 32)).hexdigest()
+    return tuple(
+        protocol.CryptoCall(
+            candidate_id,
+            "aa" * 64,
+            ordinal,
+            len(candidate_ids),
+            phase.value,
+            key_sha,
+            hashlib.sha256(message).hexdigest(),
+            result,
+        )
+        for ordinal, (candidate_id, message, result) in enumerate(
+            zip(candidate_ids, messages, results, strict=True)
+        )
+    )
+
+
 def context(
     candidate_ids: tuple[str, ...],
     *,
@@ -323,6 +393,10 @@ def retained_fixture(
         max_candidates=4,
         max_candidate_bytes=2048,
         max_aggregate_bytes=4096,
+        max_json_depth=4,
+        max_json_members=13,
+        max_findings=32,
+        max_retained_materials=4,
     )
 
 
@@ -438,6 +512,27 @@ CLASS_CONTRACTS = (
 )
 
 
+def matrix_fixture_bytes(case_id: str, input_class: str) -> bytes:
+    return canonical(
+        {
+            "schemaVersion": "AdversarialMatrixFixtureV1",
+            "caseId": case_id,
+            "inputClass": input_class,
+            "nonce": hashlib.sha256(f"issue435:{case_id}".encode()).hexdigest(),
+        }
+    )
+
+
+def matrix_fixture_registry() -> dict[str, bytes]:
+    return {
+        f"fixture://{dimension}:{test_class}": matrix_fixture_bytes(
+            f"{dimension}:{test_class}", f"{dimension}.{test_class}"
+        )
+        for dimension in DIMENSIONS
+        for test_class in TEST_CLASSES
+    }
+
+
 def expected_matrix_cases() -> tuple[protocol.MatrixCase, ...]:
     cases: list[protocol.MatrixCase] = []
     for dimension, stage, prefix, test_node, mutant, blocker in DIMENSION_CONTRACTS:
@@ -445,6 +540,8 @@ def expected_matrix_cases() -> tuple[protocol.MatrixCase, ...]:
             case_id = f"{dimension}:{test_class}"
             if dimension == "reconstruction_replay" and test_class == "reordering":
                 suffix, verdict, eligible = "REORDERED", protocol.Verdict.INVALID, False
+            input_class = f"{dimension}.{test_class}"
+            fixture_bytes = matrix_fixture_bytes(case_id, input_class)
             terminal_stage = "phase_verdict" if suffix is None else stage
             stage_ledger = tuple(
                 protocol.StageCall(item, case_id, ordinal)
@@ -454,9 +551,12 @@ def expected_matrix_cases() -> tuple[protocol.MatrixCase, ...]:
                 (
                     protocol.MatrixCryptoExpectation(
                         case_id,
+                        "aa" * 64,
                         0,
                         1,
                         protocol.Phase.CURRENT,
+                        hashlib.sha256(bytes.fromhex("11" * 32)).hexdigest(),
+                        hashlib.sha256(fixture_bytes).hexdigest(),
                         terminal_stage != "independent_trust",
                     ),
                 )
@@ -475,8 +575,9 @@ def expected_matrix_cases() -> tuple[protocol.MatrixCase, ...]:
                     dimension=dimension,
                     test_class=test_class,
                     target_phase=protocol.Phase.CURRENT,
-                    input_class=f"{dimension}.{test_class}",
+                    input_class=input_class,
                     input_reference=f"fixture://{case_id}",
+                    input_sha256=hashlib.sha256(fixture_bytes).hexdigest(),
                     stage=stage,
                     findings=findings,
                     phase_verdicts=phase_verdicts(protocol.Phase.CURRENT, verdict),
@@ -487,6 +588,7 @@ def expected_matrix_cases() -> tuple[protocol.MatrixCase, ...]:
                     selected_candidate_reference=case_id if eligible else None,
                     test_node=test_node,
                     mutant_id=mutant,
+                    assertion_id=f"{test_node}::{case_id}::exact-outcome",
                     blocker_class=blocker,
                     evidence_state="RED_EXPECTED",
                 )
@@ -516,8 +618,35 @@ def test_matrix_cross_product_and_exact_outcomes_are_closed() -> None:
         == 120
     )
     expected = expected_matrix_cases()
+    registry = matrix_fixture_registry()
+    registry_identity = hashlib.sha256(
+        canonical([(reference, payload.hex()) for reference, payload in registry.items()])
+    ).hexdigest()
+    assert registry_identity == EXPECTED_FIXTURE_REGISTRY_SHA256
     assert tuple(document["caseIndex"]) == tuple(case.case_id for case in expected)
+    assert tuple(registry) == tuple(case.input_reference for case in expected)
     assert protocol.normalized_case_catalog(document) == expected
+    for case in expected:
+        fixture = registry[case.input_reference]
+        assert hashlib.sha256(fixture).hexdigest() == case.input_sha256
+        probes = [
+            expected_probe(
+                expectation.candidate_reference,
+                fixture,
+                ordinal=expectation.ordinal,
+                count=expectation.candidate_count,
+                phase=expectation.phase,
+                result=expectation.result,
+            )
+            for expectation in case.crypto_expectations
+        ]
+        observed = protocol.execute_matrix_fixture(
+            case,
+            fixture,
+            context=context((case.case_id,)),
+            crypto_verifier=ExactCryptoSpy(probes),
+        )
+        assert observed == case
     result = protocol.validate_matrix_bytes(MATRIX_PATH.read_bytes(), synthetic_freeze(document))
     assert result.findings == ()
     assert result.semantic_sha256 == EXPECTED_SEMANTIC_SHA256
@@ -573,6 +702,11 @@ def test_case_catalog_rejects_missing_duplicate_reordered_unknown_and_field_drif
         (("caseProfiles", "positive", "targetPhase"), "HISTORICAL"),
         (("caseProfiles", "positive", "laterStageCalls"), 1),
         (("caseProfiles", "positive", "graphCallCount"), 0),
+        (("fixtureContract", "nonceDomain"), "other:"),
+        (("fixtureContract", "signatureHex"), "bb" * 64),
+        (("fixtureContract", "publicKeyHex"), "22" * 32),
+        (("controlledMutants", 0, "assertionId"), "wrong-assertion"),
+        (("mutantOutcomes", 0, "assertionId"), "wrong-assertion"),
         (("invariants", 0, "stage"), "parse"),
     ):
         document = matrix_document()
@@ -742,7 +876,33 @@ def test_all_resource_bounds_cover_exact_n_and_n_plus_one() -> None:
     )
     assert over_count.stage_calls == (protocol.StageCall("bounds", "candidate-set", 0),)
 
-    raw, candidate_id, _ = candidate()
+    raw, candidate_id, message = candidate()
+    for bounded_context in (
+        replace(context((candidate_id,)), max_candidate_bytes=len(raw)),
+        replace(context((candidate_id,)), max_json_depth=1),
+        replace(context((candidate_id,)), max_json_members=13),
+    ):
+        at_limit = protocol.evaluate_candidates(
+            (raw,),
+            context=bounded_context,
+            crypto_verifier=ExactCryptoSpy([expected_probe(candidate_id, message)]),
+        )
+        assert at_limit.findings == () and at_limit.graph_call_count == 1
+    second_raw, second_id, second_message = candidate(payload="aggregate-second")
+    aggregate_limit = protocol.evaluate_candidates(
+        (raw, second_raw),
+        context=replace(
+            context((candidate_id, second_id)),
+            max_aggregate_bytes=len(raw) + len(second_raw),
+        ),
+        crypto_verifier=ExactCryptoSpy(
+            [
+                expected_probe(candidate_id, message, ordinal=0, count=2),
+                expected_probe(second_id, second_message, ordinal=1, count=2),
+            ]
+        ),
+    )
+    assert aggregate_limit.findings == () and aggregate_limit.graph_call_count == 1
     cases = (
         (
             (raw + b" ",),
@@ -784,20 +944,23 @@ def test_all_resource_bounds_cover_exact_n_and_n_plus_one() -> None:
             freeze_bytes=b"f" * 32768,
             finding_count=32,
             retained_material_count=4,
+            matrix_row_count=120,
         )
         == ()
     )
-    for matrix_size, freeze_size, finding_count, retained_count, code, location in (
-        (65537, 32768, 32, 4, "ACP.BOUNDS.MATRIX_BYTES", "matrix"),
-        (65536, 32769, 32, 4, "ACP.BOUNDS.FREEZE_BYTES", "freeze"),
-        (65536, 32768, 33, 4, "ACP.BOUNDS.FINDING_COUNT", "findings"),
-        (65536, 32768, 32, 5, "ACP.BOUNDS.RETAINED_COUNT", "retained-materials"),
+    for matrix_size, freeze_size, finding_count, retained_count, row_count, code, location in (
+        (65537, 32768, 32, 4, 120, "ACP.BOUNDS.MATRIX_BYTES", "matrix"),
+        (65536, 32769, 32, 4, 120, "ACP.BOUNDS.FREEZE_BYTES", "freeze"),
+        (65536, 32768, 33, 4, 120, "ACP.BOUNDS.FINDING_COUNT", "findings"),
+        (65536, 32768, 32, 5, 120, "ACP.BOUNDS.RETAINED_COUNT", "retained-materials"),
+        (65536, 32768, 32, 4, 121, "ACP.BOUNDS.MATRIX_ROWS", "caseIndex"),
     ):
         artifact_result = protocol.artifact_bound_findings(
             matrix_bytes=b"m" * matrix_size,
             freeze_bytes=b"f" * freeze_size,
             finding_count=finding_count,
             retained_material_count=retained_count,
+            matrix_row_count=row_count,
         )
         assert artifact_result == exact_finding("bounds", "CURRENT", code, location)
 
@@ -931,6 +1094,10 @@ def test_only_trusted_authorized_candidates_can_conflict() -> None:
     )
     assert result.current_verdict is protocol.Verdict.CONFLICTING
     assert result.eligible_candidate_ids == tuple(sorted((first_id, second_id)))
+    assert result.stage_calls == pipeline_calls((first_id, second_id))
+    assert result.crypto_calls == expected_crypto_calls(
+        (first_id, second_id), (first_message, second_message), (True, True)
+    )
     assert result.graph_call_count == 1
 
     unauthorized = protocol.evaluate_candidates(
@@ -947,7 +1114,12 @@ def test_only_trusted_authorized_candidates_can_conflict() -> None:
         "authorization", "CURRENT", "ACP.AUTHORIZATION.DENIED", f"candidate[{second_id}]"
     )
     assert unauthorized.current_verdict is protocol.Verdict.INVALID
-    assert len(unauthorized.crypto_calls) == 2
+    assert unauthorized.stage_calls == pipeline_calls(
+        (first_id, second_id), terminal="authorization"
+    )
+    assert unauthorized.crypto_calls == expected_crypto_calls(
+        (first_id, second_id), (first_message, second_message), (True, True)
+    )
     assert unauthorized.graph_call_count == 0
 
 
@@ -967,7 +1139,11 @@ def test_structured_crypto_probe_mixed_results_and_exception() -> None:
     assert mixed.findings == exact_finding(
         "independent_trust", "CURRENT", "ACP.TRUST.SIGNATURE_INVALID", f"candidate[{second_id}]"
     )
-    assert len(mixed.crypto_calls) == 2 and mixed.graph_call_count == 0
+    assert mixed.stage_calls == pipeline_calls((first_id, second_id), terminal="independent_trust")
+    assert mixed.crypto_calls == expected_crypto_calls(
+        (first_id, second_id), (first_message, second_message), (True, False)
+    )
+    assert mixed.graph_call_count == 0
 
     def raising_verifier(probe: protocol.CryptoProbe) -> bool:
         assert probe == expected_probe(first_id, first_message)[0]
@@ -979,6 +1155,8 @@ def test_structured_crypto_probe_mixed_results_and_exception() -> None:
     assert contained.findings == exact_finding(
         "independent_trust", "CURRENT", "ACP.TRUST.VERIFIER_ERROR", f"candidate[{first_id}]"
     )
+    assert contained.stage_calls == pipeline_calls((first_id,), terminal="independent_trust")
+    assert contained.crypto_calls == expected_crypto_calls((first_id,), (first_message,), (False,))
     assert contained.graph_call_count == 0
 
     malformed_key = protocol.evaluate_candidates(
@@ -1017,6 +1195,12 @@ def test_graph_fork_cycle_orphan_duplicate_and_permutation() -> None:
     )
     assert fork.findings == exact_finding(
         "graph_conflict", "CURRENT", "ACP.GRAPH.FORK", f"predecessor[{root_id}]"
+    )
+    assert fork.stage_calls == pipeline_calls((root_id, first_id, second_id))
+    assert fork.crypto_calls == expected_crypto_calls(
+        (root_id, first_id, second_id),
+        (root_message, first_message, second_message),
+        (True, True, True),
     )
     assert fork.current_verdict is protocol.Verdict.CONFLICTING
 
@@ -1096,6 +1280,14 @@ def test_graph_result_is_permutation_invariant() -> None:
     assert forward.eligible_candidate_ids == tuple(sorted((first_id, second_id)))
     assert forward.selected_candidate_id == second_id
     assert reverse.selected_candidate_id == second_id
+    assert forward.stage_calls == pipeline_calls((first_id, second_id))
+    assert reverse.stage_calls == pipeline_calls((second_id, first_id))
+    assert forward.crypto_calls == expected_crypto_calls(
+        (first_id, second_id), (first_message, second_message), (True, True)
+    )
+    assert reverse.crypto_calls == expected_crypto_calls(
+        (second_id, first_id), (second_message, first_message), (True, True)
+    )
 
 
 def test_phase_substitution_returns_exact_verdicts() -> None:
@@ -1129,6 +1321,18 @@ def test_all_three_phases_are_exact_and_isolated() -> None:
             result.current_verdict,
             result.acceptance_verdict,
         ) == tuple(item.verdict for item in result.phase_verdicts)
+        for evaluation_time in ("2026-08-19T23:59:59Z", "2026-08-22T00:00:01Z"):
+            outside = protocol.evaluate_candidates(
+                (raw,),
+                context=context((candidate_id,), phase=phase, evaluation_time=evaluation_time),
+                crypto_verifier=ExactCryptoSpy([]),
+            )
+            assert outside.findings == exact_finding(
+                "schema", phase.value, "ACP.TIME.OUTSIDE_WINDOW", "candidate[0].validity"
+            )
+            assert outside.phase_verdicts == phase_verdicts(phase, protocol.Verdict.INVALID)
+            assert outside.stage_calls == pipeline_calls((candidate_id,), terminal="schema")
+            assert outside.crypto_calls == () and outside.graph_call_count == 0
 
 
 def test_reconstruction_exact_equality_kills_subset_replay() -> None:
@@ -1142,6 +1346,51 @@ def test_reconstruction_exact_equality_kills_subset_replay() -> None:
     )
     assert exact.findings == ()
     assert exact.phase_verdicts == retained.phase_verdicts
+
+    second, second_id, second_message = candidate(payload="replay-second", priority=2)
+    rich = replace(
+        retained_fixture(
+            (raw, second),
+            (candidate_id, second_id),
+            (message, second_message),
+            selected=second_id,
+        ),
+        findings=(
+            protocol.Finding("schema", "CURRENT", "ACP.TEST.FIRST", "candidate[0]"),
+            protocol.Finding("authorization", "CURRENT", "ACP.TEST.SECOND", "candidate[1]"),
+        ),
+    )
+    assert protocol.retained_equality_findings(rich, rich) == ()
+    retained_mutations = (
+        (replace(rich, candidate_sha256s=rich.candidate_sha256s[::-1]), "candidateSha256s"),
+        (replace(rich, evaluation_phase=protocol.Phase.HISTORICAL), "evaluationPhase"),
+        (replace(rich, evaluation_time="2026-08-21T00:00:01Z"), "evaluationTime"),
+        (replace(rich, trusted_key_sha256s=rich.trusted_key_sha256s[::-1]), "trustedKeys"),
+        (
+            replace(rich, authorized_candidate_ids=rich.authorized_candidate_ids[::-1]),
+            "authorizedIds",
+        ),
+        (replace(rich, findings=rich.findings[::-1]), "findings"),
+        (replace(rich, findings=rich.findings[:1]), "findings"),
+        (replace(rich, findings=(*rich.findings, rich.findings[0])), "findings"),
+        (replace(rich, phase_verdicts=rich.phase_verdicts[::-1]), "phaseVerdicts"),
+        (replace(rich, eligible_candidate_ids=rich.eligible_candidate_ids[::-1]), "eligibleIds"),
+        (replace(rich, selected_candidate_id=candidate_id), "selectedId"),
+        (replace(rich, stage_calls=rich.stage_calls[::-1]), "stageCalls"),
+        (replace(rich, crypto_calls=rich.crypto_calls[::-1]), "cryptoCalls"),
+        (replace(rich, graph_call_count=0), "graphCallCount"),
+        (replace(rich, max_candidates=3), "maxCandidates"),
+        (replace(rich, max_candidate_bytes=2047), "maxCandidateBytes"),
+        (replace(rich, max_aggregate_bytes=4095), "maxAggregateBytes"),
+        (replace(rich, max_json_depth=3), "maxJsonDepth"),
+        (replace(rich, max_json_members=12), "maxJsonMembers"),
+        (replace(rich, max_findings=31), "maxFindings"),
+        (replace(rich, max_retained_materials=3), "maxRetainedMaterials"),
+    )
+    for observed, location in retained_mutations:
+        assert protocol.retained_equality_findings(observed, rich) == exact_finding(
+            "phase_verdict", "CURRENT", "ACP.REPLAY.EXACT_MISMATCH", location
+        )
 
     mismatch = protocol.reconstruct_candidates(
         (raw,),
@@ -1304,12 +1553,27 @@ def test_controlled_mutation_anchors_are_executable_and_complete() -> None:
     assert len({mutant["find"] for mutant in mutants}) == len(mutants)
     assert all(mutant["anchor"] in mutant["find"] for mutant in mutants)
     assert all(mutant["find"] != mutant["replace"] for mutant in mutants)
-    assert all(mutant["expectedCode"].startswith("ACP.") for mutant in mutants)
+    assert all(
+        mutant["expectedCode"] is None or mutant["expectedCode"].startswith("ACP.")
+        for mutant in mutants
+    )
     assert hashlib.sha256(canonical(document["mutantOutcomes"])).hexdigest() == (
         EXPECTED_MUTANT_OUTCOMES_SHA256
     )
     assert {outcome["id"] for outcome in document["mutantOutcomes"]} == expected
     mutants_by_id = {mutant["id"]: mutant for mutant in mutants}
+    outcomes_by_id = {outcome["id"]: outcome for outcome in document["mutantOutcomes"]}
+    assert len({mutant["assertionId"] for mutant in mutants}) == len(mutants)
+    assert all(
+        mutant["assertionId"] == outcomes_by_id[mutant_id]["assertionId"]
+        and mutant["expectedCode"]
+        == (
+            outcomes_by_id[mutant_id]["finding"][2]
+            if outcomes_by_id[mutant_id]["finding"] is not None
+            else None
+        )
+        for mutant_id, mutant in mutants_by_id.items()
+    )
     assert all(
         mutants_by_id[invariant["mutantId"]]["killTest"] == invariant["killTest"]
         for invariant in document["invariants"]
