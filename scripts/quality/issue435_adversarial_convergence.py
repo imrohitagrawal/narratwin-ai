@@ -152,6 +152,86 @@ STATIC_GIT_METADATA_TARGETS = (
     "objects/info/alternates",
     "objects/info/http-alternates",
 )
+STATIC_GIT_METADATA_ROLES = (
+    ("root", "root"),
+    ("dot_git", ".git"),
+    ("linked_git_dir", ".git.gitdir"),
+    ("backlink", "git-dir/gitdir"),
+    ("commondir", "git-dir/commondir"),
+    ("common_dir", "common-dir"),
+    ("grafts", "info/grafts"),
+    ("shallow", "shallow"),
+    ("alternates", "objects/info/alternates"),
+    ("http_alternates", "objects/info/http-alternates"),
+)
+STATIC_GIT_METADATA_RECORD_CAPS = (
+    ("dot_git", 4096),
+    ("backlink", 4096),
+    ("commondir", 4096),
+)
+STATIC_GIT_METADATA_FINDINGS = (
+    ("missing", "ACP.GIT_METADATA.MISSING"),
+    ("ancestor_symlink", "ACP.GIT_METADATA.ANCESTOR_SYMLINK"),
+    ("target_symlink", "ACP.GIT_METADATA.TARGET_SYMLINK"),
+    ("wrong_type", "ACP.GIT_METADATA.WRONG_TYPE"),
+    ("byte_cap", "ACP.GIT_METADATA.BYTE_CAP"),
+    ("io_error", "ACP.GIT_METADATA.IO_ERROR"),
+    ("invalid_utf8", "ACP.GIT_METADATA.INVALID_UTF8"),
+    ("line_count", "ACP.GIT_METADATA.LINE_COUNT"),
+    ("record_shape", "ACP.GIT_METADATA.RECORD_SHAPE"),
+    ("read_type", "ACP.GIT_METADATA.READ_TYPE"),
+    ("nonabsolute_path", "ACP.GIT_METADATA.NONABSOLUTE"),
+    ("containment", "ACP.GIT_METADATA.CONTAINMENT"),
+    ("layout", "ACP.GIT_METADATA.LAYOUT"),
+    ("backlink_mismatch", "ACP.GIT_METADATA.BACKLINK_MISMATCH"),
+    ("commondir_mismatch", "ACP.GIT_METADATA.COMMONDIR_MISMATCH"),
+    ("inode_or_identity_changed", "ACP.GIT_METADATA.IDENTITY_CHANGED"),
+    ("prohibited_target_present", "ACP.GIT_METADATA.PROHIBITED"),
+)
+STATIC_GIT_METADATA_READER_STEPS = (
+    "validate-absolute-root-and-exact-path-provenance",
+    "open-root-and-hold-parent-directory-descriptors",
+    "lstat-each-component-relative-to-held-parent",
+    "open-each-directory-with-O_DIRECTORY-and-O_NOFOLLOW-relative-to-parent",
+    "fstat-and-bind-every-directory-device-inode-type",
+    "open-final-record-with-O_NOFOLLOW-relative-to-held-parent",
+    "fstat-and-bind-final-device-inode-type",
+    "bounded-read-through-cap-plus-one",
+    "post-read-relative-lstat-device-inode-type-identity",
+    "close-every-descriptor-once-in-reverse-order-in-finally",
+    "return-typed-record-or-first-exact-finding",
+)
+STATIC_GIT_METADATA_DISCOVERY_STEPS = (
+    "bind-lexically-normalized-absolute-root",
+    "read-root-dot-git-before-any-process",
+    "accept-only-conventional-directory-or-strict-absolute-linked-record",
+    "derive-linked-git-dir-from-dot-git-record-not-git-output",
+    "require-linked-git-dir-under-common-dir-worktrees-single-name",
+    "read-and-bind-exact-backlink-and-commondir",
+    "derive-common-dir-independently",
+    "reject-four-prohibited-common-dir-inodes-no-follow",
+    "return-exact-binding-or-first-finding-by-identity",
+    "start-no-git-process-until-discovery-complete",
+)
+STATIC_GIT_METADATA_FAILURE_PRECEDENCE = (
+    "missing",
+    "ancestor_symlink",
+    "target_symlink",
+    "wrong_type",
+    "byte_cap",
+    "io_error",
+    "identity_changed",
+    "read_type",
+    "invalid_utf8",
+    "line_count",
+    "record_shape",
+    "nonabsolute",
+    "containment",
+    "layout",
+    "backlink_mismatch",
+    "commondir_mismatch",
+    "prohibited",
+)
 STATIC_ALLOWED_GIT_FORMS = (
     ("{git-prefix}", "rev-parse", "--show-object-format"),
     (
@@ -275,6 +355,22 @@ STATIC_GIT_FAILURE_PRECEDENCE = (
     "author_binding",
     "c3_immutability",
 )
+STATIC_GIT_RETURN_CODES = (
+    ("object_format", (0,), ()),
+    ("object_integrity", (0,), ()),
+    ("head", (0,), ()),
+    ("red_type", (0,), (1,)),
+    ("red_size", (0,), ()),
+    ("red_ancestor", (0,), (1,)),
+    ("merge_scan", (0,), ()),
+    ("ancestry_chain", (0,), ()),
+    ("c3_other_scope", (0,), (1,)),
+    ("c3_freeze_change", (1,), (0,)),
+    ("red_objects", (0,), ()),
+    ("c3_freeze_size", (0,), ()),
+    ("c3_freeze_payload", (0,), ()),
+    ("red_author", (0,), ()),
+)
 
 
 class Stage(str, enum.Enum):
@@ -337,6 +433,33 @@ class GitRepositoryBinding:
 class GitDiscoveryResult:
     binding: GitRepositoryBinding | None
     findings: tuple[Finding, ...]
+
+
+@dataclass(frozen=True)
+class GitMetadataRecord:
+    path: Path
+    payload: bytes | None
+    mode: int
+    device: int
+    inode: int
+
+
+@dataclass(frozen=True)
+class GitMetadataReadResult:
+    record: GitMetadataRecord | None
+    findings: tuple[Finding, ...]
+
+
+@dataclass(frozen=True)
+class MetadataIO:
+    lstat: Callable[..., os.stat_result]
+    open: Callable[..., int]
+    fstat: Callable[[int], os.stat_result]
+    read: Callable[[int, int], bytes]
+    close: Callable[[int], None]
+
+
+SYSTEM_METADATA_IO = MetadataIO(os.lstat, os.open, os.fstat, os.read, os.close)
 
 
 @dataclass(frozen=True)
@@ -609,6 +732,19 @@ def validate_repository_freeze(root: Path = ROOT) -> tuple[Finding, ...]:
 def discover_git_repository(root: Path) -> GitDiscoveryResult:
     del root
     return GitDiscoveryResult(None, (_not_implemented("git-metadata"),))
+
+
+def _read_git_metadata_nofollow(
+    root: Path,
+    path: Path,
+    *,
+    max_bytes: int,
+    expected_kind: str,
+    location: str,
+    io: MetadataIO,
+) -> GitMetadataReadResult:
+    del root, path, max_bytes, expected_kind, io
+    return GitMetadataReadResult(None, (_not_implemented(location),))
 
 
 def _read_governed_bytes(root: Path, relative: str) -> GovernedReadResult:

@@ -95,8 +95,12 @@ transcript; and preserves the exact returned `Evaluation` object.
 
 Repository freeze evidence must remain valid after later linear GREEN commits.
 Independently bind `.git` directory or strict linked-worktree discovery metadata
-with no-follow bounded reads, exact backlink/commondir/layout checks, and absent
-graft, shallow, local-alternate, and HTTP-alternate inodes. Use freshly created
+with descriptor-relative held-directory traversal, lstat/open/fstat identity,
+bounded repeated reads, post-read identity, reverse close, exact backlink/
+commondir/layout checks, and absent graft, shallow, local-alternate, and HTTP-
+alternate inodes. Freeze a closed role/cap/step/finding/location table and run
+every target/ancestor/type/encoding/record/relationship/race case through the
+public validator before any Git call. Use freshly created
 direct environment literals to bind the derived Git dir/common dir/worktree for
 every absolute-Git call. Require SHA-1 plus full strict primary object fsck before
 HEAD and RED evidence. Freeze fourteen exact forms and their result, stream,
@@ -107,6 +111,13 @@ include-submodules checks must prove only the freeze changed. Positionally bind
 the four RED objects, reported C3 size to raw bytes, and bounded ASCII author.
 Fake gitfiles, corrupt objects, grafts, alternates, local config, legacy forms,
 permissive trimming, mutable environment constants, and generic errors must fail.
+The oracle must bind all supported and unsupported return codes, exact result/
+bytes subclasses, composed failure precedence, every chain invariant, all
+positional object swaps/substitutions, full hostile ambient/config markers,
+fresh-environment mutation isolation, and single-coordinate argv/keyword/env
+mutations. Boundary exclusions must name live trust producers, workflow
+capability, dependency mutation/activation, SLA claims, and commercial-readiness
+claims in addition to the existing nonactivation universe.
 
 ## Pipeline-call ledger
 

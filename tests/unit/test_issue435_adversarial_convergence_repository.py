@@ -28,6 +28,7 @@ ORACLE_PATHS = (
 CORE_ORACLE_PATH = ROOT / ORACLE_PATHS[0]
 REAL_SUBPROCESS_RUN = subprocess.run
 PROTOCOL_SUBPROCESS: Any = getattr(protocol, "subprocess")
+PROTOCOL_METADATA_READER: Any = getattr(protocol, "_read_git_metadata_nofollow")
 GIT_PREFIX = (
     "/usr/bin/git",
     "--no-pager",
@@ -52,6 +53,16 @@ GIT_ENV_FIXED = (
     ("GIT_OPTIONAL_LOCKS", "0"),
     ("GIT_TERMINAL_PROMPT", "0"),
 )
+
+
+class CompletedProcessSubclass(subprocess.CompletedProcess[bytes]):
+    """Exact-type negative for the Git result boundary."""
+
+
+class BytesSubclass(bytes):
+    """Exact-type negative for the Git stdout boundary."""
+
+
 GOVERNED_READER_SOURCE = """def _read_governed_bytes(root: Path, relative: str) -> GovernedReadResult:
     if relative not in STATIC_ALLOWED_GOVERNED_READ_PATHS:
         return GovernedReadResult(None, (Finding("file", "CURRENT", "ACP.FILE.PATH_NOT_ALLOWED", relative),))
@@ -104,11 +115,19 @@ def file_sha(path: Path) -> str:
 
 
 def expected_git_environment(root: Path) -> dict[str, str]:
-    git_dir = (root / ".git").resolve()
+    dot_git = root / ".git"
+    if dot_git.is_file():
+        record = dot_git.read_text(encoding="utf-8")
+        assert record.startswith("gitdir: ") and record.endswith("\n")
+        git_dir = Path(record.removeprefix("gitdir: ").removesuffix("\n"))
+        common_dir = (git_dir / "../..").resolve()
+    else:
+        git_dir = dot_git.resolve()
+        common_dir = git_dir
     return {
         **dict(GIT_ENV_FIXED),
         "GIT_DIR": git_dir.as_posix(),
-        "GIT_COMMON_DIR": git_dir.as_posix(),
+        "GIT_COMMON_DIR": common_dir.as_posix(),
         "GIT_WORK_TREE": root.resolve().as_posix(),
     }
 
@@ -195,12 +214,38 @@ def assert_exact_git_transcript(
     environment_ids: list[int] = []
 
     def record(argv: tuple[str, ...], **kwargs: Any) -> subprocess.CompletedProcess[bytes]:
-        calls.append((argv, kwargs.copy()))
+        recorded = {**kwargs, "env": kwargs["env"].copy()}
+        calls.append((argv, recorded))
         environment_ids.append(id(kwargs["env"]))
-        return REAL_SUBPROCESS_RUN(argv, **kwargs)
+        result = REAL_SUBPROCESS_RUN(argv, **kwargs)
+        if len(calls) == 1:
+            kwargs["env"]["GIT_DIR"] = "/mutated-after-first-call"
+        return result
 
     with monkeypatch.context() as process_patch:
-        for key in ("PATH", "HOME", "GIT_DIR", "GIT_WORK_TREE", "GIT_OBJECT_DIRECTORY"):
+        for key in (
+            "PATH",
+            "HOME",
+            "GIT_DIR",
+            "GIT_COMMON_DIR",
+            "GIT_WORK_TREE",
+            "GIT_OBJECT_DIRECTORY",
+            "GIT_ALTERNATE_OBJECT_DIRECTORIES",
+            "GIT_REPLACE_REF_BASE",
+            "GIT_CONFIG_SYSTEM",
+            "GIT_CONFIG_GLOBAL",
+            "GIT_CONFIG_COUNT",
+            "GIT_CONFIG_KEY_0",
+            "GIT_CONFIG_VALUE_0",
+            "GIT_ASKPASS",
+            "SSH_ASKPASS",
+            "GIT_TERMINAL_PROMPT",
+            "GIT_PAGER",
+            "PAGER",
+            "GIT_EXTERNAL_DIFF",
+            "GIT_NO_LAZY_FETCH",
+            "GIT_PROTOCOL_FROM_USER",
+        ):
             process_patch.setenv(key, "/hostile/ambient/value")
         process_patch.setattr(PROTOCOL_SUBPROCESS, "run", record)
         assert protocol.validate_repository_freeze(root) == ()
@@ -271,6 +316,37 @@ def assert_scripted_git_failure(
     assert tuple(calls) == expected[:stopped_after]
 
 
+def assert_metadata_failure(
+    root: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    expected_finding: tuple[protocol.Finding, ...],
+) -> None:
+    calls: list[tuple[str, ...]] = []
+
+    def reject_git(argv: tuple[str, ...], **kwargs: Any) -> subprocess.CompletedProcess[bytes]:
+        del kwargs
+        calls.append(argv)
+        raise AssertionError("metadata failure must stop before Git")
+
+    with monkeypatch.context() as metadata_patch:
+        metadata_patch.setattr(PROTOCOL_SUBPROCESS, "run", reject_git)
+        assert protocol.validate_repository_freeze(root) == expected_finding
+    assert calls == []
+
+
+def create_linked_git_freeze(
+    tmp_path: Path, *, descendant_commits: int = 0
+) -> tuple[Path, dict[str, Any], Path, Path]:
+    source, freeze = create_real_git_freeze(
+        tmp_path / "source", descendant_commits=descendant_commits
+    )
+    linked = tmp_path / "linked"
+    git(source, "worktree", "add", "--detach", linked.as_posix(), "HEAD")
+    git_dir = Path(git(linked, "rev-parse", "--path-format=absolute", "--git-dir"))
+    common_dir = Path(git(linked, "rev-parse", "--path-format=absolute", "--git-common-dir"))
+    return linked, freeze, git_dir, common_dir
+
+
 def frozen_red_nodes() -> tuple[str, ...]:
     module = ast.parse(CORE_ORACLE_PATH.read_text(encoding="utf-8"))
     for statement in module.body:
@@ -292,6 +368,8 @@ def create_real_git_freeze(
     merge_after_c3: bool = False,
     dual_red_children: bool = False,
     unchanged_c3: bool = False,
+    gitlink_c3: bool = False,
+    rename_c3: bool = False,
     omit_c3: bool = False,
     descendant_commits: int = 0,
 ) -> tuple[Path, dict[str, Any]]:
@@ -307,7 +385,12 @@ def create_real_git_freeze(
         path = root / relative
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(f"frozen oracle {ordinal}\n", encoding="utf-8")
+    if rename_c3:
+        (root / "rename-source.txt").write_text("renamed scope\n", encoding="utf-8")
     git(root, "add", ".")
+    if gitlink_c3:
+        initial_link = git(root, "commit-tree", git(root, "write-tree"), "-m", "initial gitlink")
+        git(root, "update-index", "--add", "--cacheinfo", f"160000,{initial_link},nonfreeze-link")
     git(root, "commit", "-q", "-m", "genuine RED")
     red_head = git(root, "rev-parse", "HEAD")
     red_tree = git(root, "rev-parse", "HEAD^{tree}")
@@ -360,6 +443,16 @@ def create_real_git_freeze(
     freeze_path = root / FREEZE_PATH
     freeze_path.parent.mkdir(parents=True, exist_ok=True)
     freeze_path.write_bytes(canonical(freeze) + b"\n")
+    if gitlink_c3:
+        replacement_link = git(root, "commit-tree", red_tree, "-m", "replacement gitlink")
+        git(
+            root,
+            "update-index",
+            "--cacheinfo",
+            f"160000,{replacement_link},nonfreeze-link",
+        )
+    if rename_c3:
+        git(root, "mv", "rename-source.txt", "rename-target.txt")
     if extra_c3_path:
         (root / "unexpected-c3-path.txt").write_text("scope drift\n", encoding="utf-8")
     git(root, "add", FREEZE_PATH)
@@ -495,6 +588,16 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
             object(),
             finding("git", "ACP.GIT.RESULT_TYPE", role),
         )
+        assert_injected_git_failure(
+            root,
+            freeze,
+            monkeypatch,
+            ordinal,
+            lambda result: CompletedProcessSubclass(
+                result.args, result.returncode, result.stdout, result.stderr
+            ),
+            finding("git", "ACP.GIT.RESULT_TYPE", role),
+        )
         for transform, code in (
             (
                 lambda result: subprocess.CompletedProcess(
@@ -523,10 +626,74 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
                 ),
                 "ACP.GIT.STDOUT_TYPE",
             ),
+            (
+                lambda result: subprocess.CompletedProcess(
+                    result.args,
+                    result.returncode,
+                    result.stdout if ordinal == 1 else BytesSubclass(result.stdout),
+                    result.stderr,
+                ),
+                "ACP.GIT.STDOUT_TYPE",
+            ),
+            (
+                lambda result: subprocess.CompletedProcess(
+                    result.args, 0.0, result.stdout, result.stderr
+                ),
+                "ACP.GIT.RETURNCODE_TYPE",
+            ),
         ):
             assert_injected_git_failure(
                 root, freeze, monkeypatch, ordinal, transform, finding("git", code, role)
             )
+        assert_injected_git_failure(
+            root,
+            freeze,
+            monkeypatch,
+            ordinal,
+            lambda result: subprocess.CompletedProcess(
+                result.args, 2, result.stdout, result.stderr
+            ),
+            finding(
+                "freeze" if ordinal == 1 else "git",
+                "ACP.FREEZE.OBJECT_DB_INTEGRITY" if ordinal == 1 else "ACP.GIT.RETURN_CODE",
+                "object-db" if ordinal == 1 else role,
+            ),
+        )
+    precedence_argv = expected_git_argv(root, freeze)[2]
+    for transform, code in (
+        (
+            lambda result: CompletedProcessSubclass(("wrong",), True, "wrong", b"wrong"),
+            "ACP.GIT.RESULT_TYPE",
+        ),
+        (
+            lambda result: subprocess.CompletedProcess(("wrong",), True, "wrong", b"wrong"),
+            "ACP.GIT.ARGS_MISMATCH",
+        ),
+        (
+            lambda result: subprocess.CompletedProcess(precedence_argv, True, "wrong", b"wrong"),
+            "ACP.GIT.STDOUT_TYPE",
+        ),
+        (
+            lambda result: subprocess.CompletedProcess(
+                precedence_argv, True, result.stdout, b"wrong"
+            ),
+            "ACP.GIT.STDERR_TYPE",
+        ),
+        (
+            lambda result: subprocess.CompletedProcess(
+                precedence_argv, True, result.stdout, result.stderr
+            ),
+            "ACP.GIT.RETURNCODE_TYPE",
+        ),
+    ):
+        assert_injected_git_failure(
+            root,
+            freeze,
+            monkeypatch,
+            2,
+            transform,
+            finding("git", code, "head"),
+        )
     output_caps = (5, None, 41, 7, 6, 0, 41, 5330, 0, 0, 164, 6, 32768, 320)
     for ordinal, cap in enumerate(output_caps):
         if cap is None:
@@ -547,6 +714,79 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
             transform,
             finding("git", "ACP.GIT.STDOUT_BYTES", roles[ordinal]),
         )
+    head = git(root, "rev-parse", "HEAD")
+    red_head = freeze["redHead"]
+    c3_head = git(root, "rev-list", "--reverse", f"{red_head}..{head}").splitlines()[0]
+    boundary_rows = [f"{c3_head} {red_head}\n".encode()]
+    prior = c3_head
+    for value in range(2, 65):
+        child = head if value == 64 else f"{value:040x}"
+        boundary_rows.append(f"{child} {prior}\n".encode())
+        prior = child
+    exact_cap_payloads = (
+        (0, b"sha1\n", None),
+        (2, head.encode() + b"\n", None),
+        (3, b"commit\n", None),
+        (4, b"65536\n", None),
+        (6, b"f" * 40 + b"\n", ("freeze", "ACP.FREEZE.HISTORY_MERGE", "HEAD")),
+        (7, b"".join(boundary_rows), None),
+        (
+            10,
+            b"f" * 40 + b"\n" + b"e" * 40 + b"\n" + b"d" * 40 + b"\n" + b"c" * 40 + b"\n",
+            ("freeze", "ACP.FREEZE.RED_TREE_MISMATCH", "redTree"),
+        ),
+        (
+            13,
+            (b"a" * 316) + b"@b\n",
+            ("freeze", "ACP.FREEZE.AUTHOR_MISMATCH", "implementationAuthor"),
+        ),
+    )
+    for ordinal, payload, terminal in exact_cap_payloads:
+        expected_terminal = () if terminal is None else finding(*terminal)
+
+        def transform(
+            result: subprocess.CompletedProcess[bytes], payload: bytes = payload
+        ) -> subprocess.CompletedProcess[bytes]:
+            return subprocess.CompletedProcess(
+                result.args, result.returncode, payload, result.stderr
+            )
+
+        if terminal is None:
+            assert_scripted_git_failure(
+                root,
+                freeze,
+                monkeypatch,
+                {
+                    ordinal: transform,
+                    13: lambda result: subprocess.CompletedProcess(
+                        result.args,
+                        result.returncode,
+                        b"implementation@example.com\n",
+                        result.stderr,
+                    ),
+                },
+                14,
+                (),
+            )
+        else:
+            assert_injected_git_failure(
+                root, freeze, monkeypatch, ordinal, transform, expected_terminal
+            )
+    assert_scripted_git_failure(
+        root,
+        freeze,
+        monkeypatch,
+        {
+            11: lambda result: subprocess.CompletedProcess(
+                result.args, result.returncode, b"32768\n", result.stderr
+            ),
+            12: lambda result: subprocess.CompletedProcess(
+                result.args, result.returncode, b"x" * 32768, result.stderr
+            ),
+        },
+        14,
+        finding("freeze", "ACP.FREEZE.C3_IMMUTABLE", FREEZE_PATH),
+    )
     for ordinal in (0, 2, 3, 4, 6, 7, 10, 11, 13):
 
         def transform(
@@ -588,6 +828,31 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
         assert_injected_git_failure(
             root, freeze, monkeypatch, ordinal, transform, finding("git", code, location)
         )
+    for payload, code in (
+        (b"implementation@example.com", "ACP.GIT.OUTPUT_LINES"),
+        (b"implementation@example.com\r\n", "ACP.GIT.OUTPUT_TOKEN"),
+        (b" implementation@example.com\n", "ACP.GIT.OUTPUT_TOKEN"),
+        (b"implementation@example.com \n", "ACP.GIT.OUTPUT_TOKEN"),
+        (b"implementation\x00@example.com\n", "ACP.GIT.OUTPUT_TOKEN"),
+        (b"implementation\t@example.com\n", "ACP.GIT.OUTPUT_TOKEN"),
+        ("implementation\u00a0@example.com\n".encode(), "ACP.GIT.OUTPUT_TOKEN"),
+        ("implémentation@example.com\n".encode(), "ACP.GIT.OUTPUT_TOKEN"),
+        (b"implementation.example.com\n", "ACP.GIT.OUTPUT_TOKEN"),
+        (b"implementation@@example.com\n", "ACP.GIT.OUTPUT_TOKEN"),
+        (b"@example.com\n", "ACP.GIT.OUTPUT_TOKEN"),
+        (b"implementation@\n", "ACP.GIT.OUTPUT_TOKEN"),
+        (b"implementation@example.com\nextra\n", "ACP.GIT.OUTPUT_LINES"),
+    ):
+        assert_injected_git_failure(
+            root,
+            freeze,
+            monkeypatch,
+            13,
+            lambda result, payload=payload: subprocess.CompletedProcess(
+                result.args, result.returncode, payload, result.stderr
+            ),
+            finding("git", code, "red_author"),
+        )
     ancestry_rows: list[bytes] = []
     parent = freeze["redHead"]
     for value in range(1, 66):
@@ -604,6 +869,32 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
         ),
         finding("freeze", "ACP.FREEZE.HISTORY_LIMIT", "redHead..HEAD"),
     )
+    valid_chain = [
+        f"{c3_head} {red_head}\n".encode(),
+        f"{head} {c3_head}\n".encode(),
+    ]
+    ancestry_mutations = (
+        ([f"{c3_head} {'f' * 40}\n".encode(), valid_chain[1]], "ancestry[0].parent"),
+        ([valid_chain[0], f"{head} {'e' * 40}\n".encode()], "ancestry[1].parent"),
+        ([valid_chain[0], valid_chain[0]], "ancestry[1].child"),
+        ([valid_chain[1], valid_chain[0]], "ancestry[0].parent"),
+        ([valid_chain[0], f"{c3_head} {c3_head}\n".encode()], "ancestry[1].child"),
+        ([f"{c3_head} {red_head} {'d' * 40}\n".encode()], "ancestry[0]"),
+        ([valid_chain[0], f"{'c' * 40} {c3_head}\n".encode()], "HEAD"),
+        ([f"{c3_head}  {red_head}\n".encode()], "ancestry[0]"),
+        ([f"{c3_head} {red_head}\r\n".encode()], "ancestry[0]"),
+    )
+    for rows, location in ancestry_mutations:
+        assert_injected_git_failure(
+            root,
+            freeze,
+            monkeypatch,
+            7,
+            lambda result, rows=rows: subprocess.CompletedProcess(
+                result.args, result.returncode, b"".join(rows), result.stderr
+            ),
+            finding("freeze", "ACP.FREEZE.HISTORY_CHAIN", location),
+        )
     for ordinal, returncode, code, location in (
         (8, 1, "ACP.FREEZE.C3_SCOPE", FREEZE_PATH),
         (9, 0, "ACP.FREEZE.C3_FREEZE_UNCHANGED", FREEZE_PATH),
@@ -632,6 +923,84 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
         ),
         finding("freeze", "ACP.FREEZE.RED_TREE_MISMATCH", "redTree"),
     )
+    bundle = tuple(
+        line + b"\n"
+        for line in REAL_SUBPROCESS_RUN(
+            expected_git_argv(root, freeze)[10],
+            cwd=root,
+            check=False,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            text=False,
+            timeout=5,
+            env=expected_git_environment(root),
+        ).stdout.split(b"\n")[:-1]
+    )
+    for count in (0, 1, 3, 5):
+        payload = b"".join(bundle[:count]) + (b"0" * 40 + b"\n") * max(0, count - 4)
+        assert_injected_git_failure(
+            root,
+            freeze,
+            monkeypatch,
+            10,
+            lambda result, payload=payload: subprocess.CompletedProcess(
+                result.args, result.returncode, payload, result.stderr
+            ),
+            finding("git", "ACP.GIT.OUTPUT_LINES", "red_objects"),
+        )
+    bundle_locations = (
+        "redTree",
+        "matrixBlobOid",
+        "focusedOracleBlobs[0].blobOid",
+        "focusedOracleBlobs[1].blobOid",
+    )
+    for first in range(4):
+        substituted = list(bundle)
+        substituted[first] = (f"{first + 10:040x}\n").encode()
+        assert_injected_git_failure(
+            root,
+            freeze,
+            monkeypatch,
+            10,
+            lambda result, substituted=substituted: subprocess.CompletedProcess(
+                result.args, result.returncode, b"".join(substituted), result.stderr
+            ),
+            finding(
+                "freeze",
+                (
+                    "ACP.FREEZE.RED_TREE_MISMATCH"
+                    if first == 0
+                    else "ACP.FREEZE.MATRIX_BLOB_MISMATCH"
+                    if first == 1
+                    else "ACP.FREEZE.ORACLE_BLOB_MISMATCH"
+                ),
+                bundle_locations[first],
+            ),
+        )
+    for first in range(4):
+        for second in range(first + 1, 4):
+            swapped = list(bundle)
+            swapped[first], swapped[second] = swapped[second], swapped[first]
+            assert_injected_git_failure(
+                root,
+                freeze,
+                monkeypatch,
+                10,
+                lambda result, swapped=swapped: subprocess.CompletedProcess(
+                    result.args, result.returncode, b"".join(swapped), result.stderr
+                ),
+                finding(
+                    "freeze",
+                    (
+                        "ACP.FREEZE.RED_TREE_MISMATCH"
+                        if first == 0
+                        else "ACP.FREEZE.MATRIX_BLOB_MISMATCH"
+                        if first == 1
+                        else "ACP.FREEZE.ORACLE_BLOB_MISMATCH"
+                    ),
+                    bundle_locations[first],
+                ),
+            )
     assert_scripted_git_failure(
         root,
         freeze,
@@ -693,6 +1062,11 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
         (),
     )
     assert protocol.validate_repository_freeze(linked_root) == ()
+    assert_exact_git_transcript(linked_root, freeze, monkeypatch)
+    linked_descendant_root, linked_descendant_freeze, _, _ = create_linked_git_freeze(
+        tmp_path / "linked-descendants", descendant_commits=2
+    )
+    assert_exact_git_transcript(linked_descendant_root, linked_descendant_freeze, monkeypatch)
     redirected = tmp_path / "redirected-root"
     redirected.mkdir()
     alternate, _ = create_real_git_freeze(tmp_path / "alternate-repository")
@@ -702,6 +1076,406 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
     assert protocol.discover_git_repository(redirected).findings == finding(
         "git-metadata", "ACP.GIT_METADATA.LAYOUT", ".git"
     )
+    dot_git_cases = (
+        ("missing", "missing", None, "ACP.GIT_METADATA.MISSING", ".git"),
+        ("target-symlink", "symlink", None, "ACP.GIT_METADATA.TARGET_SYMLINK", ".git"),
+        ("fifo", "fifo", None, "ACP.GIT_METADATA.WRONG_TYPE", ".git"),
+        ("cap-n", "bytes", (b"x" * 4095) + b"\n", "ACP.GIT_METADATA.RECORD_SHAPE", ".git"),
+        ("cap-n-plus-one", "bytes", b"x" * 4097, "ACP.GIT_METADATA.BYTE_CAP", ".git"),
+        ("utf8", "bytes", b"gitdir: \xff\n", "ACP.GIT_METADATA.INVALID_UTF8", ".git"),
+        ("missing-lf", "bytes", b"gitdir: /absolute", "ACP.GIT_METADATA.LINE_COUNT", ".git"),
+        ("crlf", "bytes", b"gitdir: /absolute\r\n", "ACP.GIT_METADATA.RECORD_SHAPE", ".git"),
+        ("extra-lf", "bytes", b"gitdir: /absolute\n\n", "ACP.GIT_METADATA.LINE_COUNT", ".git"),
+        (
+            "extra-record",
+            "bytes",
+            b"gitdir: /one\ngitdir: /two\n",
+            "ACP.GIT_METADATA.LINE_COUNT",
+            ".git",
+        ),
+        ("relative", "bytes", b"gitdir: relative\n", "ACP.GIT_METADATA.NONABSOLUTE", ".git.gitdir"),
+    )
+    for name, mode, payload, code, location in dot_git_cases:
+        metadata_root, _ = create_real_git_freeze(tmp_path / f"dot-git-{name}")
+        dot_git = metadata_root / ".git"
+        preserved_git = metadata_root / ".git-preserved"
+        dot_git.rename(preserved_git)
+        if mode == "symlink":
+            dot_git.symlink_to(preserved_git, target_is_directory=True)
+        elif mode == "fifo":
+            os.mkfifo(dot_git)
+        elif mode == "bytes":
+            assert payload is not None
+            dot_git.write_bytes(payload)
+        assert_metadata_failure(
+            metadata_root,
+            monkeypatch,
+            finding("git-metadata", code, location),
+        )
+    linked_record_cases = (
+        ("backlink", "gitdir", "ACP.GIT_METADATA.BACKLINK_MISMATCH"),
+        ("commondir", "commondir", "ACP.GIT_METADATA.COMMONDIR_MISMATCH"),
+    )
+    for role, filename, mismatch_code in linked_record_cases:
+        for mutation, payload, code in (
+            ("missing", None, "ACP.GIT_METADATA.MISSING"),
+            ("directory", None, "ACP.GIT_METADATA.WRONG_TYPE"),
+            ("fifo", None, "ACP.GIT_METADATA.WRONG_TYPE"),
+            ("symlink", None, "ACP.GIT_METADATA.TARGET_SYMLINK"),
+            ("cap-n", (b"x" * 4095) + b"\n", "ACP.GIT_METADATA.RECORD_SHAPE"),
+            ("cap-n-plus-one", b"x" * 4097, "ACP.GIT_METADATA.BYTE_CAP"),
+            ("utf8", b"\xff\n", "ACP.GIT_METADATA.INVALID_UTF8"),
+            ("missing-lf", b"wrong", "ACP.GIT_METADATA.LINE_COUNT"),
+            ("extra-lf", b"wrong\n\n", "ACP.GIT_METADATA.LINE_COUNT"),
+            ("wrong", b"wrong\n", mismatch_code),
+        ):
+            linked_root, _, linked_git_dir, _ = create_linked_git_freeze(
+                tmp_path / f"linked-{role}-{mutation}"
+            )
+            record_path = linked_git_dir / filename
+            if mutation == "missing":
+                record_path.unlink()
+            elif mutation == "directory":
+                record_path.unlink()
+                record_path.mkdir()
+            elif mutation == "fifo":
+                record_path.unlink()
+                os.mkfifo(record_path)
+            elif mutation == "symlink":
+                original = record_path.with_name(f"{filename}-original")
+                record_path.rename(original)
+                record_path.symlink_to(original)
+            else:
+                assert payload is not None
+                record_path.write_bytes(payload)
+            assert_metadata_failure(
+                linked_root,
+                monkeypatch,
+                finding("git-metadata", code, f"git-dir/{filename}"),
+            )
+    for relative in protocol.STATIC_GIT_METADATA_TARGETS:
+        for inode_kind, code in (
+            ("file", "ACP.GIT_METADATA.PROHIBITED"),
+            ("directory", "ACP.GIT_METADATA.PROHIBITED"),
+            ("fifo", "ACP.GIT_METADATA.PROHIBITED"),
+            ("live-symlink", "ACP.GIT_METADATA.TARGET_SYMLINK"),
+            ("broken-symlink", "ACP.GIT_METADATA.TARGET_SYMLINK"),
+        ):
+            prohibited_root, _ = create_real_git_freeze(
+                tmp_path / f"prohibited-{relative.replace('/', '-')}-{inode_kind}"
+            )
+            target = prohibited_root / ".git" / relative
+            target.parent.mkdir(parents=True, exist_ok=True)
+            if inode_kind == "file":
+                target.write_bytes(b"forbidden")
+            elif inode_kind == "directory":
+                target.mkdir()
+            elif inode_kind == "fifo":
+                os.mkfifo(target)
+            else:
+                link_target = target.with_name(
+                    "live-target" if inode_kind == "live-symlink" else "missing-target"
+                )
+                if inode_kind == "live-symlink":
+                    link_target.write_bytes(b"target")
+                target.symlink_to(link_target)
+            assert_metadata_failure(
+                prohibited_root,
+                monkeypatch,
+                finding("git-metadata", code, relative),
+            )
+        ancestor_root, _ = create_real_git_freeze(
+            tmp_path / f"prohibited-ancestor-{relative.replace('/', '-')}"
+        )
+        ancestor = ancestor_root / ".git" / Path(relative).parent
+        preserved_ancestor = ancestor.with_name(f"{ancestor.name}-preserved")
+        ancestor.rename(preserved_ancestor)
+        ancestor.symlink_to(preserved_ancestor, target_is_directory=True)
+        assert_metadata_failure(
+            ancestor_root,
+            monkeypatch,
+            finding(
+                "git-metadata",
+                "ACP.GIT_METADATA.ANCESTOR_SYMLINK",
+                Path(relative).parent.as_posix(),
+            ),
+        )
+    linked_symlink_root, _, linked_symlink_git_dir, _ = create_linked_git_freeze(
+        tmp_path / "linked-git-dir-symlink"
+    )
+    preserved_linked_git_dir = linked_symlink_git_dir.with_name(
+        f"{linked_symlink_git_dir.name}-preserved"
+    )
+    linked_symlink_git_dir.rename(preserved_linked_git_dir)
+    linked_symlink_git_dir.symlink_to(preserved_linked_git_dir, target_is_directory=True)
+    assert_metadata_failure(
+        linked_symlink_root,
+        monkeypatch,
+        finding("git-metadata", "ACP.GIT_METADATA.TARGET_SYMLINK", ".git.gitdir"),
+    )
+    sentinel_findings = finding("git-metadata", "ACP.GIT_METADATA.IDENTITY_CHANGED", ".git")
+    metadata_calls: list[tuple[Path, Path, int, str, str, protocol.MetadataIO]] = []
+
+    def first_metadata_failure(
+        called_root: Path,
+        path: Path,
+        *,
+        max_bytes: int,
+        expected_kind: str,
+        location: str,
+        io: protocol.MetadataIO,
+    ) -> protocol.GitMetadataReadResult:
+        metadata_calls.append((called_root, path, max_bytes, expected_kind, location, io))
+        return protocol.GitMetadataReadResult(None, sentinel_findings)
+
+    composition_root, _ = create_real_git_freeze(tmp_path / "metadata-composition")
+    with monkeypatch.context() as composition_patch:
+        composition_patch.setattr(protocol, "_read_git_metadata_nofollow", first_metadata_failure)
+        composition_patch.setattr(
+            PROTOCOL_SUBPROCESS,
+            "run",
+            lambda *args, **kwargs: (_ for _ in ()).throw(
+                AssertionError("Git must not run after metadata failure")
+            ),
+        )
+        discovery = protocol.discover_git_repository(composition_root)
+        assert discovery.findings is sentinel_findings
+        validation_findings = protocol.validate_repository_freeze(composition_root)
+        assert validation_findings is sentinel_findings
+    assert metadata_calls == [
+        (
+            composition_root.resolve(),
+            composition_root / ".git",
+            4096,
+            "directory_or_regular_record",
+            ".git",
+            protocol.SYSTEM_METADATA_IO,
+        ),
+        (
+            composition_root.resolve(),
+            composition_root / ".git",
+            4096,
+            "directory_or_regular_record",
+            ".git",
+            protocol.SYSTEM_METADATA_IO,
+        ),
+    ]
+    io_root = tmp_path / "metadata-io"
+    io_root.mkdir()
+    io_record = io_root / "record"
+    io_payload = b"gitdir: /absolute/path\n"
+    io_record.write_bytes(io_payload)
+    real_io = protocol.SYSTEM_METADATA_IO
+    opened_fds: list[int] = []
+    closed_fds: list[int] = []
+
+    def tracked_open(path: str, flags: int, *, dir_fd: int | None = None) -> int:
+        descriptor = real_io.open(path, flags, dir_fd=dir_fd)
+        opened_fds.append(descriptor)
+        return descriptor
+
+    def read_one_byte(file_descriptor: int, count: int) -> bytes:
+        return real_io.read(file_descriptor, min(count, 1))
+
+    def record_close(file_descriptor: int) -> None:
+        closed_fds.append(file_descriptor)
+        real_io.close(file_descriptor)
+
+    chunked_io = protocol.MetadataIO(
+        real_io.lstat,
+        tracked_open,
+        real_io.fstat,
+        read_one_byte,
+        record_close,
+    )
+    identity = io_record.lstat()
+    assert PROTOCOL_METADATA_READER(
+        io_root.resolve(),
+        io_record,
+        max_bytes=len(io_payload),
+        expected_kind="regular_record",
+        location="record",
+        io=chunked_io,
+    ) == protocol.GitMetadataReadResult(
+        protocol.GitMetadataRecord(
+            io_record,
+            io_payload,
+            identity.st_mode,
+            identity.st_dev,
+            identity.st_ino,
+        ),
+        (),
+    )
+    assert closed_fds == opened_fds[::-1]
+    assert PROTOCOL_METADATA_READER(
+        io_root.resolve(),
+        io_record,
+        max_bytes=len(io_payload) - 1,
+        expected_kind="regular_record",
+        location="record",
+        io=chunked_io,
+    ).findings == finding("git-metadata", "ACP.GIT_METADATA.BYTE_CAP", "record")
+    close_after_error: list[int] = []
+
+    def failing_read(file_descriptor: int, count: int) -> bytes:
+        del file_descriptor, count
+        raise OSError("contained metadata read failure")
+
+    def close_after_read_error(file_descriptor: int) -> None:
+        close_after_error.append(file_descriptor)
+        real_io.close(file_descriptor)
+
+    failing_io = protocol.MetadataIO(
+        real_io.lstat,
+        real_io.open,
+        real_io.fstat,
+        failing_read,
+        close_after_read_error,
+    )
+    assert PROTOCOL_METADATA_READER(
+        io_root.resolve(),
+        io_record,
+        max_bytes=4096,
+        expected_kind="regular_record",
+        location="record",
+        io=failing_io,
+    ).findings == finding("git-metadata", "ACP.GIT_METADATA.IO_ERROR", "record")
+    assert close_after_error
+    original_stat = io_record.lstat()
+
+    def mismatched_fstat(file_descriptor: int) -> os.stat_result:
+        values = list(real_io.fstat(file_descriptor))
+        values[1] = original_stat.st_ino + 1
+        return os.stat_result(values)
+
+    mismatched_io = protocol.MetadataIO(
+        real_io.lstat,
+        real_io.open,
+        mismatched_fstat,
+        real_io.read,
+        real_io.close,
+    )
+    assert PROTOCOL_METADATA_READER(
+        io_root.resolve(),
+        io_record,
+        max_bytes=4096,
+        expected_kind="regular_record",
+        location="record",
+        io=mismatched_io,
+    ).findings == finding("git-metadata", "ACP.GIT_METADATA.IDENTITY_CHANGED", "record")
+    for io_variant, code in (
+        (
+            protocol.MetadataIO(
+                real_io.lstat,
+                real_io.open,
+                lambda descriptor: os.stat_result(
+                    [
+                        stat_value if index else 0
+                        for index, stat_value in enumerate(real_io.fstat(descriptor))
+                    ]
+                ),
+                real_io.read,
+                real_io.close,
+            ),
+            "ACP.GIT_METADATA.WRONG_TYPE",
+        ),
+        (
+            protocol.MetadataIO(
+                real_io.lstat,
+                real_io.open,
+                real_io.fstat,
+                lambda descriptor, count: "not-bytes",  # type: ignore[arg-type,return-value]
+                real_io.close,
+            ),
+            "ACP.GIT_METADATA.READ_TYPE",
+        ),
+        (
+            protocol.MetadataIO(
+                real_io.lstat,
+                lambda path, flags, **kwargs: (_ for _ in ()).throw(OSError("open race")),
+                real_io.fstat,
+                real_io.read,
+                real_io.close,
+            ),
+            "ACP.GIT_METADATA.IO_ERROR",
+        ),
+        (
+            protocol.MetadataIO(
+                real_io.lstat,
+                real_io.open,
+                real_io.fstat,
+                real_io.read,
+                lambda descriptor: (_ for _ in ()).throw(OSError("close failure")),
+            ),
+            "ACP.GIT_METADATA.IO_ERROR",
+        ),
+    ):
+        assert PROTOCOL_METADATA_READER(
+            io_root.resolve(),
+            io_record,
+            max_bytes=4096,
+            expected_kind="regular_record",
+            location="record",
+            io=io_variant,
+        ).findings == finding("git-metadata", code, "record")
+    post_lstat_calls = 0
+
+    def changed_after_read(path: str, *, dir_fd: int | None = None) -> os.stat_result:
+        nonlocal post_lstat_calls
+        result = real_io.lstat(path, dir_fd=dir_fd)
+        if path == "record":
+            post_lstat_calls += 1
+            if post_lstat_calls > 1:
+                values = list(result)
+                values[1] += 1
+                return os.stat_result(values)
+        return result
+
+    assert PROTOCOL_METADATA_READER(
+        io_root.resolve(),
+        io_record,
+        max_bytes=4096,
+        expected_kind="regular_record",
+        location="record",
+        io=protocol.MetadataIO(
+            changed_after_read,
+            real_io.open,
+            real_io.fstat,
+            real_io.read,
+            real_io.close,
+        ),
+    ).findings == finding("git-metadata", "ACP.GIT_METADATA.IDENTITY_CHANGED", "record")
+    race_root = tmp_path / "metadata-ancestor-race"
+    race_parent = race_root / "parent"
+    race_parent.mkdir(parents=True)
+    race_record = race_parent / "record"
+    race_record.write_bytes(io_payload)
+    replaced_parent = race_root / "parent-original"
+    replaced = False
+
+    def replace_ancestor_after_lstat(path: str, *, dir_fd: int | None = None) -> os.stat_result:
+        nonlocal replaced
+        result = real_io.lstat(path, dir_fd=dir_fd)
+        if path == "parent" and not replaced:
+            race_parent.rename(replaced_parent)
+            race_parent.symlink_to(replaced_parent, target_is_directory=True)
+            replaced = True
+        return result
+
+    assert PROTOCOL_METADATA_READER(
+        race_root.resolve(),
+        race_record,
+        max_bytes=4096,
+        expected_kind="regular_record",
+        location="record",
+        io=protocol.MetadataIO(
+            replace_ancestor_after_lstat,
+            real_io.open,
+            real_io.fstat,
+            real_io.read,
+            real_io.close,
+        ),
+    ).findings == finding("git-metadata", "ACP.GIT_METADATA.ANCESTOR_SYMLINK", "parent")
     freeze_path = root / FREEZE_PATH
     mutations = (
         ("redHead", "0" * 40, "ACP.FREEZE.RED_HEAD_MISSING"),
@@ -805,11 +1579,47 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
         "freeze", "ACP.FREEZE.ORACLE_IMMUTABLE", ORACLE_PATHS[0]
     )
     scoped_root, _ = create_real_git_freeze(tmp_path / "scope", extra_c3_path=True)
+    git(scoped_root, "config", "diff.renames", "copies")
     assert protocol.validate_repository_freeze(scoped_root) == finding(
         "freeze",
         "ACP.FREEZE.C3_SCOPE",
         "docs/governance/adversarial-convergence-red-freeze-v1.json",
     )
+    gitlink_root, _ = create_real_git_freeze(tmp_path / "gitlink-scope", gitlink_c3=True)
+    git(gitlink_root, "config", "diff.ignoreSubmodules", "all")
+    assert protocol.validate_repository_freeze(gitlink_root) == finding(
+        "freeze", "ACP.FREEZE.C3_SCOPE", FREEZE_PATH
+    )
+    rename_root, _ = create_real_git_freeze(tmp_path / "rename-scope", rename_c3=True)
+    git(rename_root, "config", "diff.renames", "true")
+    git(rename_root, "config", "diff.renameLimit", "1")
+    assert protocol.validate_repository_freeze(rename_root) == finding(
+        "freeze", "ACP.FREEZE.C3_SCOPE", FREEZE_PATH
+    )
+    configured_root, configured_freeze = create_real_git_freeze(tmp_path / "hostile-config")
+    marker = configured_root / "forbidden-marker"
+    marker_program = configured_root / "marker-program"
+    marker_program.write_text(f"#!/bin/sh\ntouch {marker.as_posix()}\nexit 97\n", encoding="utf-8")
+    marker_program.chmod(0o700)
+    git(
+        configured_root,
+        "notes",
+        "add",
+        "-m",
+        "forbidden author contamination",
+        configured_freeze["redHead"],
+    )
+    for key, value in (
+        ("notes.displayRef", "refs/notes/*"),
+        ("log.showSignature", "true"),
+        ("gpg.program", marker_program.as_posix()),
+        ("core.pager", marker_program.as_posix()),
+        ("pager.show", "true"),
+        ("diff.external", marker_program.as_posix()),
+    ):
+        git(configured_root, "config", key, value)
+    assert protocol.validate_repository_freeze(configured_root) == ()
+    assert not marker.exists()
     merge_root, _ = create_real_git_freeze(tmp_path / "merge", merge_c3=True)
     assert protocol.validate_repository_freeze(merge_root) == finding(
         "freeze", "ACP.FREEZE.HISTORY_MERGE", "HEAD"
@@ -992,6 +1802,32 @@ def test_activation_authority_and_every_prohibition_fail_exactly(tmp_path: Path)
     root, freeze = create_real_git_freeze(tmp_path)
     matrix_path = root / protocol.MATRIX_PATH.relative_to(protocol.ROOT)
     matrix = json.loads(matrix_path.read_text(encoding="utf-8"))
+    expected_prohibitions = (
+        "accepted_authority",
+        "active_route",
+        "live_trust_root",
+        "live_trust_producer",
+        "private_or_signing_key",
+        "credential",
+        "network_or_egress",
+        "spend",
+        "persistence",
+        "product_runtime",
+        "provider",
+        "workflow_capability",
+        "dependency_mutation_or_activation",
+        "media_generation",
+        "deployment",
+        "publication",
+        "release",
+        "public_availability",
+        "sla_claim",
+        "commercial_readiness_claim",
+        "production_readiness",
+        "issue_432",
+        "child_c_through_f",
+    )
+    assert tuple(matrix["prohibitedCapabilities"]) == expected_prohibitions
     for field, value, code in (
         ("activation", "ACTIVE", "ACP.BOUNDARY.ACTIVATION"),
         ("authorityEffect", "AUTHORITY_CREATED", "ACP.BOUNDARY.AUTHORITY_EFFECT"),
@@ -1218,6 +2054,31 @@ def test_repository_validator_is_read_only_and_static_boundary_is_ast_exact(
             "objects/info/http-alternates",
         )
         == protocol.STATIC_GIT_METADATA_TARGETS
+    )
+    assert tuple(tuple(item) for item in git_contract["metadata"]["roles"]) == (
+        protocol.STATIC_GIT_METADATA_ROLES
+    )
+    assert tuple(tuple(item) for item in git_contract["metadata"]["recordCaps"]) == (
+        protocol.STATIC_GIT_METADATA_RECORD_CAPS
+    )
+    assert tuple(git_contract["metadata"]["findingContracts"]) == tuple(
+        list(item) for item in protocol.STATIC_GIT_METADATA_FINDINGS
+    )
+    assert tuple(git_contract["metadata"]["readerSteps"]) == (
+        protocol.STATIC_GIT_METADATA_READER_STEPS
+    )
+    assert tuple(git_contract["metadata"]["discoverySteps"]) == (
+        protocol.STATIC_GIT_METADATA_DISCOVERY_STEPS
+    )
+    assert tuple(git_contract["metadataFindingPrecedence"]) == (
+        protocol.STATIC_GIT_METADATA_FAILURE_PRECEDENCE
+    )
+    assert (
+        tuple(
+            (item[0], tuple(item[1]), tuple(item[2]))
+            for item in git_contract["returnCodeContracts"]
+        )
+        == protocol.STATIC_GIT_RETURN_CODES
     )
     assert (
         tuple(item[0] for item in git_contract["outputContracts"])
@@ -1678,6 +2539,32 @@ def test_repository_validator_is_read_only_and_static_boundary_is_ast_exact(
             assert protocol.static_boundary_findings(changed_source) == finding(
                 "static", code, "source"
             )
+        prefix_items = list(GIT_PREFIX)
+        for prefix_index in range(len(prefix_items)):
+            changed_items = prefix_items.copy()
+            changed_items[prefix_index] = f"wrong-prefix-{prefix_index}"
+            changed_prefix = ", ".join(repr(item) for item in changed_items)
+            changed_expression = expression.replace(prefix, changed_prefix, 1)
+            assert protocol.static_boundary_findings(
+                allowed_git_source(changed_expression, fsck)
+            ) == finding("static", "ACP.STATIC.GIT_FORBIDDEN", "source")
+            omitted_items = prefix_items[:prefix_index] + prefix_items[prefix_index + 1 :]
+            omitted_prefix = ", ".join(repr(item) for item in omitted_items)
+            omitted_expression = expression.replace(prefix, omitted_prefix, 1)
+            assert protocol.static_boundary_findings(
+                allowed_git_source(omitted_expression, fsck)
+            ) == finding("static", "ACP.STATIC.GIT_FORBIDDEN", "source")
+        for left in range(len(prefix_items) - 1):
+            reordered_items = prefix_items.copy()
+            reordered_items[left], reordered_items[left + 1] = (
+                reordered_items[left + 1],
+                reordered_items[left],
+            )
+            reordered_prefix = ", ".join(repr(item) for item in reordered_items)
+            reordered_expression = expression.replace(prefix, reordered_prefix, 1)
+            assert protocol.static_boundary_findings(
+                allowed_git_source(reordered_expression, fsck)
+            ) == finding("static", "ACP.STATIC.GIT_FORBIDDEN", "source")
         for env_key, _ in (
             *GIT_ENV_FIXED,
             ("GIT_DIR", ""),
@@ -1686,6 +2573,46 @@ def test_repository_validator_is_read_only_and_static_boundary_is_ast_exact(
         ):
             changed_environment = environment.replace(f"'{env_key}':", f"'{env_key}_WRONG':", 1)
             changed_source = allowed_source.replace(environment, changed_environment, 1)
+            assert protocol.static_boundary_findings(changed_source) == finding(
+                "static", "ACP.STATIC.GIT_DYNAMIC", "source"
+            )
+            value_anchor = (
+                f"'{env_key}': '{dict(GIT_ENV_FIXED)[env_key]}'"
+                if env_key in dict(GIT_ENV_FIXED)
+                else f"'{env_key}': "
+            )
+            if env_key in dict(GIT_ENV_FIXED):
+                wrong_value = environment.replace(value_anchor, f"'{env_key}': 'WRONG'", 1)
+            else:
+                start = environment.index(value_anchor)
+                value_start = start + len(value_anchor)
+                value_end = environment.find(",", value_start)
+                if value_end < 0:
+                    value_end = environment.find("}", value_start)
+                wrong_value = environment[:value_start] + "wrong_value" + environment[value_end:]
+            assert protocol.static_boundary_findings(
+                allowed_source.replace(environment, wrong_value, 1)
+            ) == finding("static", "ACP.STATIC.GIT_DYNAMIC", "source")
+        assert protocol.static_boundary_findings(
+            allowed_source.replace(environment, environment[:-1] + ", 'PATH': '/bin'}", 1)
+        ) == finding("static", "ACP.STATIC.GIT_DYNAMIC", "source")
+        first_env = "'LC_ALL': 'C'"
+        second_env = "'GIT_CONFIG_NOSYSTEM': '1'"
+        reordered_environment = (
+            environment.replace(first_env, "ENV-FIRST", 1)
+            .replace(second_env, first_env, 1)
+            .replace("ENV-FIRST", second_env, 1)
+        )
+        assert protocol.static_boundary_findings(
+            allowed_source.replace(environment, reordered_environment, 1)
+        ) == finding("static", "ACP.STATIC.GIT_DYNAMIC", "source")
+        stdout = "subprocess.DEVNULL" if fsck else "subprocess.PIPE"
+        for changed_source in (
+            allowed_source.replace(f"stdout={stdout}, ", "", 1),
+            allowed_source.replace(f"stdout={stdout}", "stdout=None", 1),
+            allowed_source.replace("stderr=subprocess.DEVNULL, ", "", 1),
+            allowed_source.replace("stderr=subprocess.DEVNULL", "stderr=subprocess.PIPE", 1),
+        ):
             assert protocol.static_boundary_findings(changed_source) == finding(
                 "static", "ACP.STATIC.GIT_DYNAMIC", "source"
             )
@@ -1734,6 +2661,19 @@ def test_repository_validator_is_read_only_and_static_boundary_is_ast_exact(
         allowed_expressions[11][0].replace("c3_head", "other_c3_head"),
         allowed_expressions[12][0].replace(FREEZE_PATH, "docs/governance/{freeze_name}"),
         allowed_expressions[13][0].replace("red_head", "other_head"),
+        allowed_expressions[8][0].replace("'-r', ", "", 1),
+        allowed_expressions[8][0].replace("'--no-ext-diff', ", "", 1),
+        allowed_expressions[8][0].replace("'--no-renames', ", "", 1),
+        allowed_expressions[8][0].replace("'--ignore-submodules=none', ", "", 1),
+        allowed_expressions[8][0].replace("'-r', '--no-ext-diff'", "'--no-ext-diff', '-r'", 1),
+        allowed_expressions[9][0].replace("'--ignore-submodules=none', ", "", 1),
+        allowed_expressions[13][0].replace("'--no-notes', ", "", 1),
+        allowed_expressions[13][0].replace("'--no-show-signature', ", "", 1),
+        allowed_expressions[13][0].replace(
+            "'--no-notes', '--no-show-signature'",
+            "'--no-show-signature', '--no-notes'",
+            1,
+        ),
     )
     for changed_expression in targeted_expression_mutations:
         assert protocol.static_boundary_findings(

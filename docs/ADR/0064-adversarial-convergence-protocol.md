@@ -73,9 +73,15 @@ call, the complete pipeline, and an extra retained finding so it discriminates
 exact equality without contradicting fail-fast trust handling.
 
 Repository evidence first binds the repository without trusting Git discovery:
-no-follow bounded reads accept only a direct `.git` directory or an exact linked
-worktree gitfile/backlink/commondir layout, then reject graft, shallow, local-
-alternate, HTTP-alternate, and symlink metadata. Fourteen closed forms use an
+descriptor-relative no-follow traversal holds every directory descriptor from
+the filesystem root through the target, compares lstat/open/fstat identities,
+loops bounded reads through EOF, rechecks identity, and closes in reverse order.
+It accepts only a direct `.git` directory or an exact linked-worktree
+gitfile/backlink/commondir layout, then rejects graft, shallow, local-alternate,
+HTTP-alternate, and symlink metadata. Missing, ancestor/target symlink, inode
+type, byte cap, I/O, identity, read type, UTF-8, line, record, absolute-path,
+containment, layout, backlink, commondir, and prohibited-inode failures have
+distinct findings before any process starts. Fourteen closed forms use an
 absolute executable, immutable argv policy, and fresh direct environment
 literals with explicit derived Git dir/common dir/worktree values. SHA-1 object
 format and full strict primary object fsck precede HEAD and RED evidence. RED
@@ -87,6 +93,12 @@ extraction follow. Result identity, args, streams, return types, output grammar,
 call prefixes, and every failure code/location are exact and fail-fast. Ambient
 `HEAD^`, dynamic discovery, mutable environments, corrupt objects, local config,
 legacy forms, permissive trimming, and generic exceptions are rejected.
+Every process form is exercised across exact result/args/stream/return-code
+types, supported and unsupported statuses, N/N+1 outputs, malformed tokens,
+call-prefix stopping, and fresh-environment mutation isolation. Parent chains,
+all four positional RED-object roles, linked and conventional layouts, hostile
+ambient/config values, changed gitlinks, notes/signature executables, and every
+single-coordinate argv/keyword/environment mutation are executable cases.
 
 Nested parser
 members and every configured limit are closed over exact types, enums, hashes,
@@ -149,6 +161,8 @@ No accepted decision, active route, trust root, private/signing key, credential,
 network, egress, spend, persistence, product/runtime/provider behavior, media,
 deployment, publication, release, public availability, SLA, commercial, or
 production-readiness capability or claim results from this ADR.
+Live trust producers, workflow capability, dependency mutation or activation,
+and SLA or commercial-readiness claims are explicitly excluded as well.
 
 ## Reset rule
 

@@ -77,8 +77,15 @@ Git evidence is bound to independently inspected repository metadata before any
 Git subprocess. Accept only a non-symlink `.git` directory or a strict bounded
 linked-worktree gitfile whose absolute Git dir, backlink, `../..` commondir, and
 common-dir layout agree. No graft, shallow, local alternate, HTTP alternate,
-target inode, or symlink component may exist. Metadata reads use lstat,
-no-follow open, fstat, bounded reads, and post-read identity checks.
+target inode, or symlink component may exist. Metadata reads walk descriptor-
+relatively from a held root descriptor, keep every verified directory
+descriptor open, use relative lstat and no-follow open, compare fstat identity/
+type, loop through bounded short reads, repeat the relative identity check, and
+close once in reverse order. Exercise every missing, target/ancestor symlink,
+inode type, cap, I/O, read type, UTF-8, line, record, absolute-path,
+containment, layout, backlink, commondir, identity-race, and prohibited-inode
+case through the public validator with zero Git calls and the matrix-owned exact
+finding/location.
 
 Fourteen fixed read-only forms then use absolute `/usr/bin/git`, no pager,
 replacement objects, locks, lazy fetch, external diff, renames, ignored
@@ -94,7 +101,11 @@ binding, size-before-payload, and bounded strict author extraction follow.
 
 Freeze exact argv, direct environments, streams, timeouts, result/args/stdout/
 stderr/return-code types, byte/line/token grammars, field precedence, and call
-prefixes. Inject fake gitfiles, corrupt objects, grafts/alternates/shallow files,
+prefixes. Exercise every form's supported, semantic, and unsupported return
+codes; exact-type subclasses; composed failure precedence; N/N+1 byte and line
+limits; complete linear-chain mutations; all four-object swaps/substitutions;
+and a mutated first-call environment followed by fresh exact environments.
+Inject fake gitfiles, corrupt objects, grafts/alternates/shallow files,
 hostile ambient/local config, N/N+1 output, malformed bytes, role swaps, legacy
 forms, and C3 plus two-descendant histories. Generic exceptions, trimming,
 self-derived expectations, or post-hoc caps are not evidence.
