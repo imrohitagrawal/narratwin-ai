@@ -110,7 +110,9 @@ as integers, invalid enums, path traversal, symlinks, nonregular files, and
 binary input. Every nested tuple member and limit has an exact type/domain/range
 and cross-field cardinality case. Stage-sensitive references cover every pipeline
 stage; crypto ledgers bind exact 64-byte signatures, configured and actual
-candidate counts, row count, and ordered unique ordinals. JSON syntax failures return typed findings rather than leaking decoder
+candidate counts, row count, row candidate identity, and ordered unique
+ordinals. Prove each relation orthogonally with valid one- and two-candidate
+fixtures so one check cannot mask another. JSON syntax failures return typed findings rather than leaking decoder
 exceptions. JSON is strict and duplicate-free; a semantically equal alternate
 serialization is still noncanonical when the contract binds storage bytes.
 Before read, prove the target and every ancestor are non-symlinks, the resolved
@@ -122,12 +124,14 @@ bytes or an exact typed finding; the public validator calls it once and
 propagates the result without rescanning. Hash the exact safe `ast.dump` of its
 single top-level `FunctionDef` so allowed operations cannot be laundered through
 rebinding, ignored guards, unsafe ordering, a different read receiver, a shadow
-helper, an assignment, an alias, or a lambda.
+helper or another applicable top-level binding/delete form. Parameterize every
+governed-path failure ordinal and require the exact typed findings tuple by
+identity, one read per prefix path, and no retry or later read.
 Exercise every ancestor below the validated root for every governed target with
 within-root symlinks and read traps. Treat a second JSON token in matrix, freeze,
 evaluate stimulus, or reconstruct stimulus as malformed, not as ignorable
 remainder; prove one parse attempt and zero engine/crypto calls. Close retained
-stage-reference domains and ordinals across all eight stages, crypto signature/
+stage-reference domains, member types, and ordinals across all eight stages, crypto signature/
 count/row/order relations, and graph-call relationships as exact parser cases.
 
 ### Canonical identity

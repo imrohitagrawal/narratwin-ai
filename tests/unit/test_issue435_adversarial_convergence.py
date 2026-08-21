@@ -20,7 +20,7 @@ FREEZE_PATH = ROOT / "docs/governance/adversarial-convergence-red-freeze-v1.json
 REPOSITORY_TEST_PATH = ROOT / "tests/unit/test_issue435_adversarial_convergence_repository.py"
 IDENTITY_DOMAIN = b"NARRATWIN:ACP:IDENTITY:V1\x00"
 SIGNATURE_DOMAIN = b"NARRATWIN:ACP:SIGNATURE:V1\x00"
-EXPECTED_SEMANTIC_SHA256 = "83b20d4f0855fdd81227e9ad004aae7f6c658fbadfe2649072011df8f8434bb8"
+EXPECTED_SEMANTIC_SHA256 = "d47484b5de2a852cb1708ac0c4878bbfa534814a952c5f6d6126a200fcbadf9e"
 EXPECTED_MUTANT_OUTCOMES_SHA256 = "67b7a36a4cc09fe3a2e092361ada276715ce273aa3b10259a2b4ea92987d1b03"
 EXPECTED_FIXTURE_REGISTRY_SHA256 = (
     "1407395b3714f9a56aee5ac9f1da0f78e0d116f2431016c0bf8cbc17c746e6b1"
@@ -1210,6 +1210,12 @@ def test_matrix_cross_product_and_exact_outcomes_are_closed(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     document = matrix_document()
+    assert document["fixtureContract"]["cryptoLedgerContract"]["validationPrecedence"] == [
+        "actual_candidate_count",
+        "ledger_row_count",
+        "ordered_unique_ordinals",
+        "row_candidate_identity",
+    ]
     assert tuple(document["pipeline"]) == PIPELINE
     assert document["candidateContract"]["identityDomain"].encode() == IDENTITY_DOMAIN
     assert document["candidateContract"]["signatureDomain"].encode() == SIGNATURE_DOMAIN
@@ -1545,6 +1551,19 @@ def test_matrix_cross_product_and_exact_outcomes_are_closed(
     monkeypatch.undo()
     valid_document = strict_object(registry["fixture://validation_order:positive"])
     retained_document = strict_object(registry["fixture://reconstruction_replay:positive"])
+    first_raw, first_id, first_message = candidate(payload="nested-count-first", priority=1)
+    second_raw, second_id, second_message = candidate(payload="nested-count-second", priority=2)
+    two_stimulus = protocol.MatrixStimulus(
+        (first_raw, second_raw),
+        context((first_id, second_id)),
+        retained_fixture(
+            (first_raw, second_raw),
+            (first_id, second_id),
+            (first_message, second_message),
+            selected=second_id,
+        ),
+    )
+    two_document = strict_object(matrix_stimulus_bytes(two_stimulus))
     hostile_stimuli: list[tuple[bytes, str, str, str]] = [
         (b"\xff", "parse", "ACP.STIMULUS.INVALID_UTF8", "fixture"),
         (b"{", "parse", "ACP.STIMULUS.INVALID_JSON", "fixture"),
@@ -2046,6 +2065,38 @@ def test_matrix_cross_product_and_exact_outcomes_are_closed(
             "ACP.STIMULUS.RANGE",
             "retainedEvaluation.stageCalls[0][2]",
         )
+    stage_references = {
+        **{stage: "candidate[0]" for stage in per_candidate_stages},
+        **{stage: retained_candidate_id for stage in identity_stages},
+        **{stage: "candidate-set" for stage in set_stages},
+    }
+    for stage, reference in stage_references.items():
+        for row, location in (
+            ([stage, 1, 0], "retainedEvaluation.stageCalls[0][1]"),
+            ([stage, reference, True], "retainedEvaluation.stageCalls[0][2]"),
+            ([stage, reference, "0"], "retainedEvaluation.stageCalls[0][2]"),
+        ):
+            changed_case(
+                retained_document,
+                ("retainedEvaluation", "stageCalls"),
+                [row],
+                "ACP.STIMULUS.TYPE",
+                location,
+            )
+    changed_case(
+        retained_document,
+        ("retainedEvaluation", "stageCalls"),
+        [[True, "candidate[0]", 0]],
+        "ACP.STIMULUS.TYPE",
+        "retainedEvaluation.stageCalls[0][0]",
+    )
+    changed_case(
+        valid_document,
+        ("evaluationContext", "trustedPublicKeys", trusted_id),
+        1,
+        "ACP.STIMULUS.TYPE",
+        f"evaluationContext.trustedPublicKeys.{trusted_id}",
+    )
 
     exact_signature = cast(str, crypto_row[1])
     assert len(bytes.fromhex(exact_signature)) == 64
@@ -2061,6 +2112,30 @@ def test_matrix_cross_product_and_exact_outcomes_are_closed(
             [["CURRENT", True]],
             "ACP.STIMULUS.TYPE",
             "retainedEvaluation.phaseVerdicts[0][1]",
+        ),
+        (
+            ("retainedEvaluation", "candidateSha256s"),
+            [1],
+            "ACP.STIMULUS.TYPE",
+            "retainedEvaluation.candidateSha256s[0]",
+        ),
+        (
+            ("retainedEvaluation", "authorizedCandidateIds"),
+            [1],
+            "ACP.STIMULUS.TYPE",
+            "retainedEvaluation.authorizedCandidateIds[0]",
+        ),
+        (
+            ("retainedEvaluation", "eligibleCandidateIds"),
+            [1],
+            "ACP.STIMULUS.TYPE",
+            "retainedEvaluation.eligibleCandidateIds[0]",
+        ),
+        (
+            ("retainedEvaluation", "findings"),
+            [["schema", True, "ACP.SENTINEL", "candidate[0]"]],
+            "ACP.STIMULUS.TYPE",
+            "retainedEvaluation.findings[0][1]",
         ),
         (
             ("retainedEvaluation", "trustedKeySha256s"),
@@ -2126,19 +2201,45 @@ def test_matrix_cross_product_and_exact_outcomes_are_closed(
             nested_location,
         )
 
-    first_crypto = [*crypto_row[:3], 2, *crypto_row[4:]]
-    duplicate_ordinal = [*crypto_row[:2], 0, 2, *crypto_row[4:]]
-    out_of_order = [*crypto_row[:2], 1, 2, *crypto_row[4:]]
+    two_crypto_rows = cast(list[list[object]], two_document["retainedEvaluation"]["cryptoCalls"])
+    assert len(two_crypto_rows) == 2
+    one_actual_two_rows = json.loads(json.dumps(retained_document))
+    one_actual_two_rows["retainedEvaluation"]["cryptoCalls"] = two_crypto_rows
+    hostile_stimuli.append(
+        (
+            canonical(one_actual_two_rows),
+            "schema",
+            "ACP.STIMULUS.COUNT",
+            "retainedEvaluation.cryptoCalls[0][3]",
+        )
+    )
+    changed_case(
+        two_document,
+        ("retainedEvaluation", "cryptoCalls"),
+        [two_crypto_rows[0]],
+        "ACP.STIMULUS.COUNT",
+        "retainedEvaluation.cryptoCalls",
+    )
+    duplicate_ordinal = json.loads(json.dumps(two_crypto_rows))
+    duplicate_ordinal[1][2] = 0
+    out_of_order = json.loads(json.dumps(two_crypto_rows))[::-1]
+    wrong_identity = json.loads(json.dumps(two_crypto_rows))
+    wrong_identity[0][0] = second_id
     for rows, code, location in (
         (
-            [first_crypto, duplicate_ordinal],
+            duplicate_ordinal,
             "ACP.STIMULUS.ORDER",
             "retainedEvaluation.cryptoCalls[1][2]",
         ),
         (
-            [out_of_order, first_crypto],
+            out_of_order,
             "ACP.STIMULUS.ORDER",
             "retainedEvaluation.cryptoCalls[0][2]",
+        ),
+        (
+            wrong_identity,
+            "ACP.STIMULUS.CRYPTO_IDENTITY",
+            "retainedEvaluation.cryptoCalls[0][0]",
         ),
     ):
         changed_case(
@@ -2244,6 +2345,8 @@ def test_matrix_cross_product_and_exact_outcomes_are_closed(
         ]
         assert unexpected_engines == []
         assert unexpected_crypto == []
+
+    assert original_parse(canonical(two_document)) == protocol.MatrixStimulusParse(two_stimulus, ())
 
     valid_raw = canonical(valid_document)
     at_cap = valid_raw[:-1] + (b" " * (stimulus_cap - len(valid_raw))) + b"}"

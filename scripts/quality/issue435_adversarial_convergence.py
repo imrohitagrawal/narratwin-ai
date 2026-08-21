@@ -72,7 +72,24 @@ STATIC_ALLOWED_GOVERNED_READ_PATHS = (
 STATIC_GOVERNED_READER_AST_SHA256 = (
     "c3736cb8403e1ffd63d808cabf0f7289055c3b1691f39164bfe48c475c21724d"
 )
-STATIC_GOVERNED_READER_BINDING = "one_top_level_functiondef_no_other_store_or_rebinding"
+STATIC_GOVERNED_READER_BINDING = "one_top_level_functiondef_no_other_binding_or_delete"
+STATIC_GOVERNED_READER_FORBIDDEN_BINDINGS = (
+    "duplicate_functiondef",
+    "async_functiondef",
+    "classdef",
+    "assign",
+    "annotated_assign",
+    "lambda_assign",
+    "for_target",
+    "with_alias",
+    "named_expression",
+    "import_alias",
+    "except_handler",
+    "destructuring_store",
+    "augmented_assign",
+    "match_capture",
+    "delete",
+)
 STATIC_GOVERNED_READ_RESULT_FIELDS = ("payload", "findings")
 STATIC_GOVERNED_READER_STEPS = (
     "signature(root:Path,relative:str)->GovernedReadResult",

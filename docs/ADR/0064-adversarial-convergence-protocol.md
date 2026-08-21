@@ -84,11 +84,15 @@ AST is independently dumped with exact safe options and hashed so its typed
 payload-or-finding result, signature, allowed-relative guard, path provenance,
 all-ancestor loop, containment/missing/nonregular checks, read order/receiver,
 binary check, and return flow cannot be laundered through allowed call names,
-shadow definitions, assignments, aliases, or lambdas. The public validator must
-call it once and propagate its exact typed finding without rescanning.
+shadow definitions or any other applicable Python binding/delete form. The
+public validator must call it once per ordered governed path, stop at each
+possible failure ordinal, and propagate that exact typed finding tuple by
+identity without retry, later reads, or rescanning.
 Implementation constants must equal that contract. Retained ledgers bind
 stage-sensitive candidate references for every stage, ordinals/count relations,
-exact 64-byte signatures, candidate/ledger cardinality, and graph-call ranges;
+exact 64-byte signatures, independently isolated actual-candidate and ledger-row
+cardinality, per-ordinal candidate identity, ordered unique ordinals, and
+graph-call ranges; nested member types apply uniformly across every stage;
 matrix, freeze, evaluate-stimulus, and reconstruct-stimulus raw decoders reject
 a second JSON token before later work.
 

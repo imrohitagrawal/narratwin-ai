@@ -465,24 +465,25 @@ def test_repository_validator_is_read_only_and_static_boundary_is_ast_exact(
         successful_patch.setattr(protocol, "_read_governed_bytes", successful_reader)
         assert protocol.validate_repository_freeze(root) == ()
         assert successful_calls == [(root, relative) for relative in governed_paths]
-    typed_failure = protocol.GovernedReadResult(
-        None,
-        finding(
-            "file",
-            "ACP.FILE.ANCESTOR_SYMLINK",
-            "docs/governance",
-        ),
-    )
-    typed_calls: list[tuple[Path, str]] = []
+    for failure_ordinal, failure_path in enumerate(governed_paths):
+        typed_failure = protocol.GovernedReadResult(
+            None,
+            finding("file", "ACP.FILE.ANCESTOR_SYMLINK", failure_path),
+        )
+        typed_calls: list[tuple[Path, str]] = []
 
-    def typed_reader(called_root: Path, relative: str) -> protocol.GovernedReadResult:
-        typed_calls.append((called_root, relative))
-        return typed_failure
+        def typed_reader(called_root: Path, relative: str) -> protocol.GovernedReadResult:
+            typed_calls.append((called_root, relative))
+            if relative == failure_path:
+                return typed_failure
+            return protocol.GovernedReadResult((called_root / relative).read_bytes(), ())
 
-    with monkeypatch.context() as typed_patch:
-        typed_patch.setattr(protocol, "_read_governed_bytes", typed_reader)
-        assert protocol.validate_repository_freeze(root) is typed_failure.findings
-        assert typed_calls == [(root, protocol.MATRIX_PATH.relative_to(protocol.ROOT).as_posix())]
+        with monkeypatch.context() as typed_patch:
+            typed_patch.setattr(protocol, "_read_governed_bytes", typed_reader)
+            assert protocol.validate_repository_freeze(root) is typed_failure.findings
+            assert typed_calls == [
+                (root, relative) for relative in governed_paths[: failure_ordinal + 1]
+            ]
     before = {
         path.relative_to(root).as_posix(): file_sha(path)
         for path in root.rglob("*")
@@ -597,6 +598,9 @@ def test_repository_validator_is_read_only_and_static_boundary_is_ast_exact(
     )
     assert governed_reader_ast_sha256 == protocol.STATIC_GOVERNED_READER_AST_SHA256
     assert protocol.STATIC_GOVERNED_READER_BINDING == static_contract["governedReaderBinding"]
+    assert protocol.STATIC_GOVERNED_READER_FORBIDDEN_BINDINGS == tuple(
+        static_contract["governedReaderForbiddenBindings"]
+    )
     assert protocol.STATIC_GOVERNED_READ_RESULT_FIELDS == tuple(
         static_contract["governedReadResultFields"]
     )
@@ -611,6 +615,7 @@ def test_repository_validator_is_read_only_and_static_boundary_is_ast_exact(
     for attribute in (
         "STATIC_GOVERNED_READER_AST_SHA256",
         "STATIC_GOVERNED_READER_BINDING",
+        "STATIC_GOVERNED_READER_FORBIDDEN_BINDINGS",
         "STATIC_GOVERNED_READ_RESULT_FIELDS",
         "STATIC_GOVERNED_READER_STEPS",
     ):
@@ -620,11 +625,38 @@ def test_repository_validator_is_read_only_and_static_boundary_is_ast_exact(
                 attribute,
                 "0" * 64
                 if attribute.endswith("SHA256")
-                else (() if attribute.endswith("FIELDS") or attribute.endswith("STEPS") else ""),
+                else (() if attribute.endswith(("BINDINGS", "FIELDS", "STEPS")) else ""),
             )
             assert protocol.static_boundary_findings(GOVERNED_READER_SOURCE) == finding(
                 "static", "ACP.STATIC.NOT_ALLOWLISTED", "source"
             )
+    binding_reader_sources = {
+        "duplicate_functiondef": GOVERNED_READER_SOURCE + "\n" + GOVERNED_READER_SOURCE,
+        "async_functiondef": GOVERNED_READER_SOURCE
+        + "\nasync def _read_governed_bytes(root, relative):\n    return None\n",
+        "classdef": GOVERNED_READER_SOURCE + "\nclass _read_governed_bytes:\n    pass\n",
+        "assign": GOVERNED_READER_SOURCE + "\n_read_governed_bytes = governed_reader_alias\n",
+        "annotated_assign": GOVERNED_READER_SOURCE
+        + "\n_read_governed_bytes: object = governed_reader_alias\n",
+        "lambda_assign": GOVERNED_READER_SOURCE
+        + "\n_read_governed_bytes = lambda root, relative: governed_reader_result\n",
+        "for_target": GOVERNED_READER_SOURCE + "\nfor _read_governed_bytes in ():\n    pass\n",
+        "with_alias": GOVERNED_READER_SOURCE
+        + "\nwith governed_reader_context as _read_governed_bytes:\n    pass\n",
+        "named_expression": GOVERNED_READER_SOURCE
+        + "\n(_read_governed_bytes := governed_reader_alias)\n",
+        "import_alias": GOVERNED_READER_SOURCE + "\nimport ast as _read_governed_bytes\n",
+        "except_handler": GOVERNED_READER_SOURCE
+        + "\ntry:\n    pass\nexcept Exception as _read_governed_bytes:\n    pass\n",
+        "destructuring_store": GOVERNED_READER_SOURCE
+        + "\n_read_governed_bytes, other = governed_reader_alias, other\n",
+        "augmented_assign": GOVERNED_READER_SOURCE
+        + "\n_read_governed_bytes += governed_reader_alias\n",
+        "match_capture": GOVERNED_READER_SOURCE
+        + "\nmatch governed_reader_alias:\n    case _read_governed_bytes:\n        pass\n",
+        "delete": GOVERNED_READER_SOURCE + "\ndel _read_governed_bytes\n",
+    }
+    assert tuple(binding_reader_sources) == protocol.STATIC_GOVERNED_READER_FORBIDDEN_BINDINGS
     hostile_reader_sources = (
         GOVERNED_READER_SOURCE.replace(
             "def _read_governed_bytes(root: Path, relative: str) -> GovernedReadResult:",
@@ -671,11 +703,7 @@ def test_repository_validator_is_read_only_and_static_boundary_is_ast_exact(
             "    payload = governed_path.read_bytes()",
             "    payload = root.read_bytes()",
         ),
-        GOVERNED_READER_SOURCE + "\n" + GOVERNED_READER_SOURCE,
-        GOVERNED_READER_SOURCE + "\n_read_governed_bytes = governed_reader_alias\n",
-        GOVERNED_READER_SOURCE + "\n_read_governed_bytes: object = governed_reader_alias\n",
-        GOVERNED_READER_SOURCE
-        + "\n_read_governed_bytes = lambda root, relative: governed_reader_result\n",
+        *binding_reader_sources.values(),
     )
     assert len(set(hostile_reader_sources)) == len(hostile_reader_sources)
     for hostile_reader in hostile_reader_sources:

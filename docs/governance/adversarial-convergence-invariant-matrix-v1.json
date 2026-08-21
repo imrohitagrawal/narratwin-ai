@@ -1,7 +1,7 @@
 {
   "schemaVersion": "AdversarialInvariantMatrixV1",
   "matrixId": "issue-435-adversarial-convergence-v1",
-  "contractVersion": "1.0.5",
+  "contractVersion": "1.0.6",
   "activation": "NONE",
   "authorityEffect": "NO_AUTHORITY_EFFECT",
   "pipeline": [
@@ -208,7 +208,13 @@
       "signatureBytes": 64,
       "candidateCount": "equals_actual_candidates_and_rows_and_not_above_configured_maximum",
       "ordinals": "ordered_unique_zero_through_count_minus_one",
-      "nestedMembers": "exact_types_identifiers_hashes_phase_and_result"
+      "nestedMembers": "exact_types_identifiers_hashes_phase_and_result",
+      "validationPrecedence": [
+        "actual_candidate_count",
+        "ledger_row_count",
+        "ordered_unique_ordinals",
+        "row_candidate_identity"
+      ]
     }
   },
   "staticBoundaryContract": {
@@ -262,7 +268,24 @@
       "tests/unit/test_issue435_adversarial_convergence_repository.py"
     ],
     "governedReaderAstSha256": "c3736cb8403e1ffd63d808cabf0f7289055c3b1691f39164bfe48c475c21724d",
-    "governedReaderBinding": "one_top_level_functiondef_no_other_store_or_rebinding",
+    "governedReaderBinding": "one_top_level_functiondef_no_other_binding_or_delete",
+    "governedReaderForbiddenBindings": [
+      "duplicate_functiondef",
+      "async_functiondef",
+      "classdef",
+      "assign",
+      "annotated_assign",
+      "lambda_assign",
+      "for_target",
+      "with_alias",
+      "named_expression",
+      "import_alias",
+      "except_handler",
+      "destructuring_store",
+      "augmented_assign",
+      "match_capture",
+      "delete"
+    ],
     "governedReadResultFields": [
       "payload",
       "findings"
