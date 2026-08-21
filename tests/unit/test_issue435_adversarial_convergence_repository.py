@@ -410,6 +410,8 @@ def test_repository_validator_is_read_only_and_static_boundary_is_ast_exact(
     assert protocol.static_boundary_findings(read_only_git) == ()
     for hostile, code in (
         ("import requests\n", "ACP.STATIC.NETWORK_IMPORT"),
+        ("import aiohttp\n", "ACP.STATIC.NETWORK_IMPORT"),
+        ("import urllib3\n", "ACP.STATIC.NETWORK_IMPORT"),
         ("from socket import socket as connect\n", "ACP.STATIC.NETWORK_IMPORT"),
         ("import urllib.request as net\n", "ACP.STATIC.NETWORK_IMPORT"),
         ("from httpx import get\n", "ACP.STATIC.NETWORK_IMPORT"),
@@ -426,6 +428,7 @@ def test_repository_validator_is_read_only_and_static_boundary_is_ast_exact(
         ("eval(source)\n", "ACP.STATIC.DYNAMIC_EXECUTION"),
         ("exec(source)\n", "ACP.STATIC.DYNAMIC_EXECUTION"),
         ("open('state', mode='w')\n", "ACP.STATIC.WRITE"),
+        ("import io\nio.open('state', mode='w')\n", "ACP.STATIC.WRITE"),
         ("from builtins import open as persist\npersist('state', 'w')\n", "ACP.STATIC.WRITE"),
         ("Path('state').write_text('x')\n", "ACP.STATIC.WRITE"),
         ("Path('state').write_bytes(b'x')\n", "ACP.STATIC.WRITE"),
@@ -435,6 +438,9 @@ def test_repository_validator_is_read_only_and_static_boundary_is_ast_exact(
         ("Path('state').replace('other')\n", "ACP.STATIC.WRITE"),
         ("Path('state').unlink()\n", "ACP.STATIC.WRITE"),
         ("os.open('state', os.O_WRONLY)\n", "ACP.STATIC.WRITE"),
+        ("os.write(fd, b'x')\n", "ACP.STATIC.WRITE"),
+        ("tempfile.NamedTemporaryFile()\n", "ACP.STATIC.PERSISTENCE"),
+        ("os.getenv('TOKEN')\n", "ACP.STATIC.CREDENTIAL_ACCESS"),
         ("shutil.copyfile('a', 'b')\n", "ACP.STATIC.PERSISTENCE"),
         ("sqlite3.connect('state.db')\n", "ACP.STATIC.PERSISTENCE"),
         ("subprocess.run(['curl', 'https://example.invalid'])\n", "ACP.STATIC.PROCESS"),
@@ -527,18 +533,40 @@ def test_repository_validator_is_read_only_and_static_boundary_is_ast_exact(
         ("('git', 'cat-file', '-e', red_head)", True),
     )
     for expression, check in allowed_expressions:
-        for changed_kwarg, code in (
-            ("env=environment", "ACP.STATIC.GIT_DYNAMIC"),
-            ("shell=True", "ACP.STATIC.PROCESS"),
-            ("cwd=dynamic_root", "ACP.STATIC.GIT_DYNAMIC"),
+        exact = f"cwd=root, check={check!r}, capture_output=True, text=True"
+        for kwargs, code in (
+            ("cwd=root, capture_output=True, text=True", "ACP.STATIC.GIT_DYNAMIC"),
+            (
+                f"cwd=root, check={(not check)!r}, capture_output=True, text=True",
+                "ACP.STATIC.GIT_FORBIDDEN",
+            ),
+            (f"cwd=root, check={check!r}, text=True", "ACP.STATIC.GIT_DYNAMIC"),
+            (
+                f"cwd=root, check={check!r}, capture_output=False, text=True",
+                "ACP.STATIC.GIT_DYNAMIC",
+            ),
+            (f"cwd=root, check={check!r}, capture_output=True", "ACP.STATIC.GIT_DYNAMIC"),
+            (
+                f"cwd=root, check={check!r}, capture_output=True, text=False",
+                "ACP.STATIC.GIT_DYNAMIC",
+            ),
+            (f"{exact}, timeout=1", "ACP.STATIC.GIT_DYNAMIC"),
+            (f"{exact}, env=environment", "ACP.STATIC.GIT_DYNAMIC"),
+            (f"{exact}, shell=True", "ACP.STATIC.PROCESS"),
+            (
+                f"check={check!r}, capture_output=True, text=True, cwd=dynamic_root",
+                "ACP.STATIC.GIT_DYNAMIC",
+            ),
         ):
-            cwd = "" if changed_kwarg.startswith("cwd=") else "cwd=root, "
-            source = (
-                "import subprocess\n"
-                f"subprocess.run({expression}, {cwd}check={check!r}, capture_output=True, "
-                f"text=True, {changed_kwarg})\n"
-            )
+            source = f"import subprocess\nsubprocess.run({expression}, {kwargs})\n"
             assert protocol.static_boundary_findings(source) == finding("static", code, "source")
+        for source in (
+            f"import subprocess\nargv = {expression}\nsubprocess.run(argv, {exact})\n",
+            f"import subprocess\nrunner = subprocess.run\nrunner({expression}, {exact})\n",
+        ):
+            assert protocol.static_boundary_findings(source) == finding(
+                "static", "ACP.STATIC.GIT_DYNAMIC", "source"
+            )
     for aliased_source, code in (
         (
             "from pathlib import Path as P\nP('state').write_text('x')\n",
@@ -559,6 +587,15 @@ def test_repository_validator_is_read_only_and_static_boundary_is_ast_exact(
     ):
         assert protocol.static_boundary_findings(aliased_source) == finding(
             "static", code, "source"
+        )
+    for unknown_source in (
+        "import math\n",
+        "mystery_call()\n",
+        "client.send(payload)\n",
+        "getattr(client, method)(payload)\n",
+    ):
+        assert protocol.static_boundary_findings(unknown_source) == finding(
+            "static", "ACP.STATIC.NOT_ALLOWLISTED", "source"
         )
 
 

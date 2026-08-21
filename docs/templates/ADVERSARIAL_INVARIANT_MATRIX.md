@@ -44,14 +44,17 @@ retained reconstruction material. Outside that retained historical transcript,
 case, dimension, class, mutation recipe, finding, verdict, assertion, mutant,
 and expected-outcome labels are forbidden; retained values are observations,
 never instructions for the current result.
-Opaque content must not be derived from those public labels. The strict parser
+Use a shared neutral content source that is not derived from public labels,
+ordinals, hashes, expected outcomes, or registry position. The strict parser
 must return an exact typed rejection for duplicate, unknown, forbidden, missing,
 wrongly typed, malformed-hex, invalid-enum, malformed-context, malformed-retained,
-or oversized stimulus input.
+or oversized stimulus input. The executor must propagate that rejection with
+zero evaluator, reconstructor, or crypto calls.
 Bind the fixture bytes/hash, exact assertion identity, ordered stage ledger, exact
 signature/key/message crypto ledger or explicit no-call, graph result/selection,
 three-phase verdicts, mutant, blocker class, and evidence state. The executor
-accepts only the stimulus, calls exactly one canonical evaluator or
+accepts only the fixture bytes, calls the strict parser exactly once, passes the
+identity-distinct parser result to exactly one canonical evaluator or
 reconstructor selected by the frozen per-cell mode, and wraps the exact returned
 object with the stimulus digest. Observe that delegation for every resolved
 reference, assert complete crypto-spy consumption, compare evaluation transcripts
@@ -85,7 +88,9 @@ negative vectors without private/signing material.
 
 Run only in disposable copies. An import failure or unrelated assertion does
 not kill the intended mutant. Bind each assertion identity to its matrix-owned
-exact code, location, three-phase verdict, stage ledger, and selection rule.
+exact findings, three-phase verdict, stage and crypto ledgers, eligibility,
+graph count, and selection, including empty values. Caller-supplied expectations
+are prohibited.
 
 ## Budget feasibility
 

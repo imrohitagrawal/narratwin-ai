@@ -56,13 +56,17 @@ The reference dimensions are:
 - graph/conflict eligibility and precedence; and
 - reconstruction and replay.
 
-Every Cartesian cell resolves to an independently frozen execution mode and an
-opaque serialized operational stimulus. Payload content must not encode the
-dimension or test-class label. The parser is a closed typed boundary: unknown,
+Every Cartesian cell resolves to an independently frozen execution mode and a
+serialized operational stimulus. Shared neutral payload content must not encode
+the dimension, class, ordinal, expected outcome, digest, or registry position.
+The parser is a closed typed boundary: unknown,
 duplicate, forbidden, missing, wrongly typed, malformed, or oversized fields
-produce an exact finding. The executor delegates every real fixture to exactly
-one canonical evaluator or reconstructor and returns that engine's object; a
-sentinel-only composition test is insufficient. Negative and boundary cases
+produce an exact finding. Observe one exact-byte parser call for every real
+fixture and require the canonical engine to receive the exact objects returned
+by that call. Parser rejection propagates through the executor with zero engine
+and crypto calls. The executor delegates valid fixtures to exactly one canonical
+evaluator or reconstructor and returns that engine's object; a sentinel-only
+composition test is insufficient. Negative and boundary cases
 must differ in operational input and observed enforcement for every dimension.
 
 The reference test classes are positive, negative, boundary, malformed,
@@ -175,9 +179,11 @@ Every important enforcement claim names one mutation action and one kill test.
 Allowed actions are remove, bypass, reorder, and replace. A mutation row is not
 evidence by itself.
 
-The named assertion identity owns the exact matrix finding code and location,
-three-phase verdict, stage ledger, and selection claim. An adjacent ID-bearing
-equality or metadata-to-metadata comparison is not evidence.
+The named assertion identity owns the exact matrix findings, three-phase verdict,
+stage and crypto ledgers, eligible candidates, graph count, and selection,
+including exact empty tuples and nulls. The assertion derives these values only
+from the frozen matrix. An adjacent ID-bearing equality, caller-supplied ledger,
+or metadata-to-metadata comparison is not evidence.
 
 Execute mutants in a disposable copy or clone. Never mutate the governed branch.
 For each mutant record:

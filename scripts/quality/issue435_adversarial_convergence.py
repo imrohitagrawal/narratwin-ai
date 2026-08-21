@@ -198,6 +198,12 @@ class MatrixStimulusParse:
 
 
 @dataclass(frozen=True)
+class MatrixFixtureExecution:
+    observation: MatrixObservation | None
+    findings: tuple[Finding, ...]
+
+
+@dataclass(frozen=True)
 class RetainedEvaluation:
     candidate_sha256s: tuple[str, ...]
     evaluation_phase: Phase
@@ -263,9 +269,9 @@ def execute_matrix_fixture(
     fixture_bytes: bytes,
     *,
     crypto_verifier: CryptoVerifier,
-) -> MatrixObservation | None:
+) -> MatrixFixtureExecution:
     del fixture_bytes, crypto_verifier
-    return None
+    return MatrixFixtureExecution(None, (_not_implemented("matrix-fixture"),))
 
 
 def verify_ed25519(public_key: bytes, message: bytes, signature: bytes) -> bool:

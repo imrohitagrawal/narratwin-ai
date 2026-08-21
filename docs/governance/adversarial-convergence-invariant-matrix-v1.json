@@ -1,7 +1,7 @@
 {
   "schemaVersion": "AdversarialInvariantMatrixV1",
   "matrixId": "issue-435-adversarial-convergence-v1",
-  "contractVersion": "1.0.0",
+  "contractVersion": "1.0.1",
   "activation": "NONE",
   "authorityEffect": "NO_AUTHORITY_EFFECT",
   "pipeline": [
@@ -163,6 +163,17 @@
   "fixtureContract": {
     "schemaVersion": "AdversarialMatrixStimulusV1",
     "referencePrefix": "fixture://",
+    "contentPolicy": "shared_neutral_not_label_ordinal_hash_outcome_or_position_derived",
+    "executorComposition": "exact_bytes_to_one_strict_parse_then_identity_returned_objects_to_one_bound_engine",
+    "rejectionContract": "exact_parser_finding_and_zero_engine_crypto_calls",
+    "byteUniquenessRequired": false,
+    "closedObjectPaths": [
+      "$",
+      "evaluationContext",
+      "evaluationContext.limits",
+      "retainedEvaluation",
+      "retainedEvaluation.limits"
+    ],
     "orderedFields": [
       "schemaVersion",
       "candidateDocumentsHex",
@@ -1287,20 +1298,186 @@
   },
   "mutantSourcePath": "scripts/quality/issue435_adversarial_convergence.py",
   "mutantCommandTemplate": "uv run pytest -q tests/unit/test_issue435_adversarial_convergence.py::{killTest}",
-  "mutantStageLedgerClaims": {
-    "MUT-ORDER-REORDER": "bounds_only",
-    "MUT-LIFECYCLE-REPLACE": "through_schema_single_candidate",
-    "MUT-TIME-BYPASS": "through_schema_single_candidate",
-    "MUT-PHASE-REPLACE": "through_schema_single_candidate",
-    "MUT-BOUNDS-BYPASS": "bounds_candidate_set_only",
-    "MUT-PARSE-REPLACE": "through_parse_single_candidate",
-    "MUT-IDENTITY-BYPASS": "through_identity_single_candidate",
-    "MUT-DUPLICATE-BYPASS": "through_identity_two_duplicate_records",
-    "MUT-SUBSTITUTION-REMOVE": "through_identity_single_replay_record",
-    "MUT-SELF-TRUST-REPLACE": "through_trust_single_candidate",
-    "MUT-AUTH-BYPASS": "through_authorization_two_candidates",
-    "MUT-PRECEDENCE-REPLACE": "full_pipeline_two_candidates_input_order",
-    "MUT-REPLAY-SUBSET": "full_pipeline_single_candidate"
+  "mutantExecutionClaims": {
+    "MUT-ORDER-REORDER": {
+      "stageCalls": [["bounds", "candidate[0]", 0]],
+      "cryptoCalls": [],
+      "eligibleCandidateIds": [],
+      "selectedCandidateId": null,
+      "graphCallCount": 0
+    },
+    "MUT-LIFECYCLE-REPLACE": {
+      "stageCalls": [
+        ["bounds", "candidate[0]", 0],
+        ["parse", "candidate[0]", 0],
+        ["schema", "candidate[0]", 0]
+      ],
+      "cryptoCalls": [],
+      "eligibleCandidateIds": [],
+      "selectedCandidateId": null,
+      "graphCallCount": 0
+    },
+    "MUT-TIME-BYPASS": {
+      "stageCalls": [
+        ["bounds", "candidate[0]", 0],
+        ["parse", "candidate[0]", 0],
+        ["schema", "candidate[0]", 0]
+      ],
+      "cryptoCalls": [],
+      "eligibleCandidateIds": [],
+      "selectedCandidateId": null,
+      "graphCallCount": 0
+    },
+    "MUT-PHASE-REPLACE": {
+      "stageCalls": [
+        ["bounds", "candidate[0]", 0],
+        ["parse", "candidate[0]", 0],
+        ["schema", "candidate[0]", 0]
+      ],
+      "cryptoCalls": [],
+      "eligibleCandidateIds": [],
+      "selectedCandidateId": null,
+      "graphCallCount": 0
+    },
+    "MUT-BOUNDS-BYPASS": {
+      "stageCalls": [["bounds", "candidate-set", 0]],
+      "cryptoCalls": [],
+      "eligibleCandidateIds": [],
+      "selectedCandidateId": null,
+      "graphCallCount": 0
+    },
+    "MUT-PARSE-REPLACE": {
+      "stageCalls": [
+        ["bounds", "candidate[0]", 0],
+        ["parse", "candidate[0]", 0]
+      ],
+      "cryptoCalls": [],
+      "eligibleCandidateIds": [],
+      "selectedCandidateId": null,
+      "graphCallCount": 0
+    },
+    "MUT-IDENTITY-BYPASS": {
+      "stageCalls": [
+        ["bounds", "candidate[0]", 0],
+        ["parse", "candidate[0]", 0],
+        ["schema", "candidate[0]", 0],
+        ["canonical_identity", "candidate[0]", 0]
+      ],
+      "cryptoCalls": [],
+      "eligibleCandidateIds": [],
+      "selectedCandidateId": null,
+      "graphCallCount": 0
+    },
+    "MUT-DUPLICATE-BYPASS": {
+      "stageCalls": [
+        ["bounds", "candidate[0]", 0],
+        ["bounds", "candidate[1]", 1],
+        ["parse", "candidate[0]", 0],
+        ["parse", "candidate[1]", 1],
+        ["schema", "candidate[0]", 0],
+        ["schema", "candidate[1]", 1],
+        ["canonical_identity", "candidate[0]", 0],
+        ["canonical_identity", "candidate[1]", 1]
+      ],
+      "cryptoCalls": [],
+      "eligibleCandidateIds": [],
+      "selectedCandidateId": null,
+      "graphCallCount": 0
+    },
+    "MUT-SUBSTITUTION-REMOVE": {
+      "stageCalls": [
+        ["bounds", "candidate[0]", 0],
+        ["parse", "candidate[0]", 0],
+        ["schema", "candidate[0]", 0],
+        ["canonical_identity", "candidate[0]", 0]
+      ],
+      "cryptoCalls": [],
+      "eligibleCandidateIds": [],
+      "selectedCandidateId": null,
+      "graphCallCount": 0
+    },
+    "MUT-SELF-TRUST-REPLACE": {
+      "stageCalls": [
+        ["bounds", "candidate[0]", 0],
+        ["parse", "candidate[0]", 0],
+        ["schema", "candidate[0]", 0],
+        ["canonical_identity", "candidate[0]", 0],
+        ["independent_trust", "3251ead6bbec6deddcb98b1b184350799d6fadaa890e8929944b9c524f90d59c", 0]
+      ],
+      "cryptoCalls": [],
+      "eligibleCandidateIds": [],
+      "selectedCandidateId": null,
+      "graphCallCount": 0
+    },
+    "MUT-AUTH-BYPASS": {
+      "stageCalls": [
+        ["bounds", "candidate[0]", 0],
+        ["bounds", "candidate[1]", 1],
+        ["parse", "candidate[0]", 0],
+        ["parse", "candidate[1]", 1],
+        ["schema", "candidate[0]", 0],
+        ["schema", "candidate[1]", 1],
+        ["canonical_identity", "candidate[0]", 0],
+        ["canonical_identity", "candidate[1]", 1],
+        ["independent_trust", "f16391d5a411752214208387a19384ec5cfc123358ed13ba3d87e649eedbe182", 0],
+        ["independent_trust", "5445e9041648a88c72cd1434e28b0d5b2c54bf66de121600032313b3f1b62924", 1],
+        ["authorization", "f16391d5a411752214208387a19384ec5cfc123358ed13ba3d87e649eedbe182", 0],
+        ["authorization", "5445e9041648a88c72cd1434e28b0d5b2c54bf66de121600032313b3f1b62924", 1]
+      ],
+      "cryptoCalls": [
+        ["f16391d5a411752214208387a19384ec5cfc123358ed13ba3d87e649eedbe182", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", 0, 2, "CURRENT", "02d449a31fbb267c8f352e9968a79e3e5fc95c1bbeaa502fd6454ebde5a4bedc", "959b218f26f44b41b1ed3cd08047abb24fb18f8b1e772c2ce6259b70ca8f0f51", true],
+        ["5445e9041648a88c72cd1434e28b0d5b2c54bf66de121600032313b3f1b62924", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", 1, 2, "CURRENT", "02d449a31fbb267c8f352e9968a79e3e5fc95c1bbeaa502fd6454ebde5a4bedc", "d78f524f4ab4f46f537a8c415435da5e56665cba5bb528f3bb684b52da2253e5", true]
+      ],
+      "eligibleCandidateIds": [],
+      "selectedCandidateId": null,
+      "graphCallCount": 0
+    },
+    "MUT-PRECEDENCE-REPLACE": {
+      "stageCalls": [
+        ["bounds", "candidate[0]", 0],
+        ["bounds", "candidate[1]", 1],
+        ["parse", "candidate[0]", 0],
+        ["parse", "candidate[1]", 1],
+        ["schema", "candidate[0]", 0],
+        ["schema", "candidate[1]", 1],
+        ["canonical_identity", "candidate[0]", 0],
+        ["canonical_identity", "candidate[1]", 1],
+        ["independent_trust", "6d0ab592cf57ac282a1e4dca81668dd31f3898269a4aaa9cb949aa85f8c6d7f5", 0],
+        ["independent_trust", "24ba6a64bbda602bb74b1c0ca7b03ad78a4a28304be36921a5a162d31cb2d3f8", 1],
+        ["authorization", "6d0ab592cf57ac282a1e4dca81668dd31f3898269a4aaa9cb949aa85f8c6d7f5", 0],
+        ["authorization", "24ba6a64bbda602bb74b1c0ca7b03ad78a4a28304be36921a5a162d31cb2d3f8", 1],
+        ["graph_conflict", "candidate-set", 0],
+        ["phase_verdict", "candidate-set", 0]
+      ],
+      "cryptoCalls": [
+        ["6d0ab592cf57ac282a1e4dca81668dd31f3898269a4aaa9cb949aa85f8c6d7f5", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", 0, 2, "CURRENT", "02d449a31fbb267c8f352e9968a79e3e5fc95c1bbeaa502fd6454ebde5a4bedc", "f3dff7a571b91a039b442e56c02f399b8f9a173245eba05a83dce048f8debf89", true],
+        ["24ba6a64bbda602bb74b1c0ca7b03ad78a4a28304be36921a5a162d31cb2d3f8", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", 1, 2, "CURRENT", "02d449a31fbb267c8f352e9968a79e3e5fc95c1bbeaa502fd6454ebde5a4bedc", "71d77519a06568e68299c3cd24a121176b4bf061154cfa7c0b0a5331ab2dc988", true]
+      ],
+      "eligibleCandidateIds": [
+        "24ba6a64bbda602bb74b1c0ca7b03ad78a4a28304be36921a5a162d31cb2d3f8",
+        "6d0ab592cf57ac282a1e4dca81668dd31f3898269a4aaa9cb949aa85f8c6d7f5"
+      ],
+      "selectedCandidateId": "24ba6a64bbda602bb74b1c0ca7b03ad78a4a28304be36921a5a162d31cb2d3f8",
+      "graphCallCount": 1
+    },
+    "MUT-REPLAY-SUBSET": {
+      "stageCalls": [
+        ["bounds", "candidate[0]", 0],
+        ["parse", "candidate[0]", 0],
+        ["schema", "candidate[0]", 0],
+        ["canonical_identity", "candidate[0]", 0],
+        ["independent_trust", "3251ead6bbec6deddcb98b1b184350799d6fadaa890e8929944b9c524f90d59c", 0],
+        ["authorization", "3251ead6bbec6deddcb98b1b184350799d6fadaa890e8929944b9c524f90d59c", 0],
+        ["graph_conflict", "candidate-set", 0],
+        ["phase_verdict", "candidate-set", 0]
+      ],
+      "cryptoCalls": [
+        ["3251ead6bbec6deddcb98b1b184350799d6fadaa890e8929944b9c524f90d59c", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", 0, 1, "CURRENT", "02d449a31fbb267c8f352e9968a79e3e5fc95c1bbeaa502fd6454ebde5a4bedc", "0efc5c1c8a3ccb0b6e08b348896a73fe9479f770084c16f73c8a15a5ad580855", false]
+      ],
+      "eligibleCandidateIds": [],
+      "selectedCandidateId": null,
+      "graphCallCount": 0
+    }
   },
   "controlledMutants": [
     {

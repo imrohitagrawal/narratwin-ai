@@ -44,11 +44,16 @@ nonactivation. The two fixed test blobs are independent oracles that prevent a
 coordinated matrix/validator edit from self-approving. Their closed fixture
 registry resolves each already-mutated, unlabeled operational stimulus and
 executes it without being given case identity or the expected outcome. A thin
-executor strictly parses a typed closed stimulus, rejects unknown, duplicate,
-missing, malformed, wrongly typed, or outcome-bearing fields, calls the exact
-matrix-bound canonical evaluator or reconstructor for every real fixture, and
-wraps that engine's returned object with the stimulus digest. Fixture content is
-opaque and independent of case labels. Each dimension has a behaviorally
+executor is observed calling the strict parser once with the exact bytes. It
+must pass the identity-distinct objects returned by that call to the canonical
+engine, rather than reconstructing or looking up an equivalent input. It rejects
+unknown, duplicate, missing, malformed, wrongly typed, or outcome-bearing fields,
+calls the exact matrix-bound canonical evaluator or reconstructor for every real
+fixture, and wraps that engine's returned object with the stimulus digest.
+Rejection returns
+the parser's exact typed finding with zero engine or crypto calls. Fixture
+content uses a shared neutral source independent of labels, ordinals, hashes,
+expected outcomes, or registry position. Each dimension has a behaviorally
 distinct negative and boundary stimulus. Direct evaluation derangements,
 per-fixture delegation observation, and exact crypto-spy exhaustion prevent an
 echo oracle, while the freeze binds the actual
@@ -56,8 +61,11 @@ ordered RED-node catalog rather than a caller-supplied count. Reconstruction is
 required to call the same independently tested complete retained-equality
 comparison used by the standalone oracle; the public validator and route gate
 must likewise compose matrix/freeze byte, finding, retained-material, and row
-N/N+1 checks. Controlled mutant identities bind the exact finding, three-phase
-verdict, stage ledger, and selection claim, not an adjacent string.
+N/N+1 checks. Controlled mutant identities bind matrix-owned exact findings,
+three-phase verdicts, stage and crypto ledgers, eligibility, graph count, and
+selection, including empty values, not an adjacent string or caller input. The
+static boundary is a closed positive import/call grammar, including only the
+seven exact read-only Git command forms needed by freeze validation.
 
 `predecessorId` participates in canonical candidate identity. A cyclic
 predecessor construction therefore cannot remain identity-valid; it is rejected
