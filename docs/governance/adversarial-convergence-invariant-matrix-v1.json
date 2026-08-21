@@ -161,21 +161,212 @@
     ]
   },
   "fixtureContract": {
-    "schemaVersion": "AdversarialMatrixFixtureV1",
+    "schemaVersion": "AdversarialMatrixStimulusV1",
     "referencePrefix": "fixture://",
-    "nonceDomain": "issue435:",
     "orderedFields": [
       "schemaVersion",
-      "caseId",
-      "inputClass",
-      "nonce",
       "candidateDocumentsHex",
       "evaluationContext",
-      "cryptoInputs",
-      "hostileMutation"
+      "retainedEvaluation"
     ],
-    "signatureHex": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-    "publicKeyHex": "1111111111111111111111111111111111111111111111111111111111111111"
+    "forbiddenRecursiveFields": [
+      "caseId",
+      "dimension",
+      "testClass",
+      "inputClass",
+      "hostileMutation",
+      "expectedFindings",
+      "mutantId"
+    ]
+  },
+  "materializedOutcomeContracts": {
+    "successClasses": [
+      "positive",
+      "reordering",
+      "maximum_cardinality"
+    ],
+    "failureClasses": [
+      "negative",
+      "boundary",
+      "malformed",
+      "deletion",
+      "corruption",
+      "duplication",
+      "substitution"
+    ],
+    "exceptions": {
+      "deletion_corruption:reordering": [
+        "reconstruct",
+        "canonical_identity",
+        "ACP.REPLAY.REORDERED",
+        "candidateSha256s",
+        "INVALID"
+      ],
+      "reconstruction_replay:reordering": [
+        "reconstruct",
+        "canonical_identity",
+        "ACP.REPLAY.REORDERED",
+        "candidateSha256s",
+        "INVALID"
+      ]
+    },
+    "classPrecedence": {
+      "malformed": [
+        "evaluate",
+        "parse",
+        "ACP.PARSE.INVALID_JSON",
+        "candidate[0]",
+        "INVALID"
+      ],
+      "deletion": {
+        "evaluate": [
+          "bounds",
+          "ACP.BOUNDS.CANDIDATE_COUNT",
+          "candidate-set",
+          "UNAVAILABLE"
+        ],
+        "reconstruct": [
+          "bounds",
+          "ACP.REPLAY.MISSING",
+          "candidate-set",
+          "UNAVAILABLE"
+        ]
+      },
+      "corruption": [
+        "evaluate",
+        "canonical_identity",
+        "ACP.IDENTITY.MISMATCH",
+        "candidate[0].candidateId",
+        "INVALID"
+      ],
+      "duplication": [
+        "evaluate",
+        "canonical_identity",
+        "ACP.IDENTITY.DUPLICATE",
+        "candidate[exact-id]",
+        "INVALID"
+      ],
+      "substitution": [
+        "evaluate",
+        "canonical_identity",
+        "ACP.IDENTITY.MISMATCH",
+        "candidate[0].candidateId",
+        "INVALID"
+      ]
+    },
+    "reconstructionClassOverrides": {
+      "corruption": [
+        "canonical_identity",
+        "ACP.REPLAY.CORRUPT",
+        "candidate[0]",
+        "INVALID"
+      ],
+      "duplication": [
+        "canonical_identity",
+        "ACP.REPLAY.DUPLICATE",
+        "candidate[exact-id]",
+        "INVALID"
+      ],
+      "substitution": [
+        "canonical_identity",
+        "ACP.REPLAY.IDENTITY_MISMATCH",
+        "candidate[0]",
+        "INVALID"
+      ]
+    },
+    "dimensions": {
+      "validation_order": [
+        "evaluate",
+        "bounds",
+        "ACP.BOUNDS.CANDIDATE_COUNT",
+        "candidate-set",
+        "UNAVAILABLE"
+      ],
+      "lifecycle_state": [
+        "evaluate",
+        "schema",
+        "ACP.LIFECYCLE.STATE",
+        "candidate[0].lifecycleState",
+        "INVALID"
+      ],
+      "temporal_boundary": [
+        "evaluate",
+        "schema",
+        "ACP.TIME.OUTSIDE_WINDOW",
+        "candidate[0].validity",
+        "INVALID"
+      ],
+      "phase_separation": [
+        "evaluate",
+        "schema",
+        "ACP.SCHEMA.PHASE_MISMATCH",
+        "candidate[0].phase",
+        "INVALID"
+      ],
+      "cardinality_limit": [
+        "evaluate",
+        "bounds",
+        "ACP.BOUNDS.CANDIDATE_COUNT",
+        "candidate-set",
+        "UNAVAILABLE"
+      ],
+      "malformed_input": [
+        "evaluate",
+        "parse",
+        "ACP.PARSE.INVALID_JSON",
+        "candidate[0]",
+        "INVALID"
+      ],
+      "deletion_corruption": [
+        "reconstruct",
+        "bounds",
+        "ACP.REPLAY.MISSING",
+        "candidate-set",
+        "UNAVAILABLE"
+      ],
+      "reordering_duplication": [
+        "evaluate",
+        "canonical_identity",
+        "ACP.IDENTITY.DUPLICATE",
+        "candidate[exact-id]",
+        "INVALID"
+      ],
+      "substitution": [
+        "evaluate",
+        "canonical_identity",
+        "ACP.IDENTITY.MISMATCH",
+        "candidate[0].candidateId",
+        "INVALID"
+      ],
+      "cryptographic_eligibility": [
+        "evaluate",
+        "independent_trust",
+        "ACP.TRUST.SIGNATURE_INVALID",
+        "candidate[exact-id]",
+        "INVALID"
+      ],
+      "authorization_eligibility": [
+        "evaluate",
+        "authorization",
+        "ACP.AUTHORIZATION.DENIED",
+        "candidate[exact-id]",
+        "INVALID"
+      ],
+      "graph_conflict_precedence": [
+        "evaluate",
+        "graph_conflict",
+        "ACP.GRAPH.ORPHAN",
+        "candidate[exact-id]",
+        "INVALID"
+      ],
+      "reconstruction_replay": [
+        "reconstruct",
+        "phase_verdict",
+        "ACP.REPLAY.EXACT_MISMATCH",
+        "phaseVerdicts",
+        "INVALID"
+      ]
+    }
   },
   "limits": {
     "candidateCount": 4,
@@ -354,6 +545,18 @@
     }
   },
   "caseExceptions": {
+    "deletion_corruption:reordering": {
+      "findingSuffix": "REORDERED",
+      "targetPhase": "CURRENT",
+      "phaseVerdicts": {
+        "HISTORICAL": "UNAVAILABLE",
+        "CURRENT": "INVALID",
+        "ACCEPTANCE": "UNAVAILABLE"
+      },
+      "eligibleForGraph": false,
+      "laterStageCalls": 0,
+      "graphCallCount": 0
+    },
     "reconstruction_replay:reordering": {
       "findingSuffix": "REORDERED",
       "targetPhase": "CURRENT",

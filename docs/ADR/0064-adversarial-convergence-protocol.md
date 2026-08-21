@@ -42,9 +42,12 @@ closed overlay created after review freezes its exact RED head, matrix/two-test
 blobs, semantic digest, reviewer identities, dispositions, blocker counts, and
 nonactivation. The two fixed test blobs are independent oracles that prevent a
 coordinated matrix/validator edit from self-approving. Their closed fixture
-registry resolves each actual untrusted stimulus and executes it without being
-given the expected outcome. A distinct observed transcript and exact
-crypto-spy exhaustion prevent an echo oracle, while the freeze binds the actual
+registry resolves each already-mutated, unlabeled operational stimulus and
+executes it without being given case identity or the expected outcome. A thin
+executor calls exactly one canonical evaluator or reconstructor and wraps its
+returned evaluation with the stimulus digest. A distinct observed transcript,
+payload cross-swaps, and exact crypto-spy exhaustion prevent an echo oracle,
+while the freeze binds the actual
 ordered RED-node catalog rather than a caller-supplied count. Reconstruction is
 required to call the same independently tested complete retained-equality
 comparison used by the standalone oracle; the public validator and route gate

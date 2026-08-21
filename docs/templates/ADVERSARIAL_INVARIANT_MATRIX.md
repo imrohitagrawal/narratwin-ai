@@ -32,17 +32,24 @@ Each major invariant must cover positive, negative, boundary, malformed,
 deletion, corruption, reordering, duplication, substitution, and maximum
 cardinality. Reference normalized profiles only when the executable validator
 expands and verifies the complete Cartesian product.
+The machine contract must define exact class-precedence and reconstruction
+overrides so a malformed, deleted, corrupted, duplicated, substituted, or
+reordered input resolves to the real earliest pipeline finding rather than an
+invariant-label-derived finding.
 
 Every normalized case must resolve through a closed independent fixture
-registry. Each fixture carries the actual untrusted candidate bytes, evaluation
-context, independent trust and authorization inputs, graph/replay stimulus, and
-hostile mutation; it must not carry the expected outcome. Bind the fixture
-bytes/hash, exact assertion identity, ordered stage ledger, exact
+registry. Each fixture carries only already-mutated untrusted candidate bytes,
+evaluation context, independent trust and authorization inputs, and optional
+retained reconstruction material. Case, dimension, class, mutation recipe,
+finding, verdict, assertion, mutant, and expected-outcome labels are forbidden.
+Bind the fixture bytes/hash, exact assertion identity, ordered stage ledger, exact
 signature/key/message crypto ledger or explicit no-call, graph result/selection,
 three-phase verdicts, mutant, blocker class, and evidence state. The executor
-accepts only the stimulus and returns a distinct observed transcript. Execute
-every resolved reference, assert complete crypto-spy consumption, and perturb
-the stimulus independently; label, count, or echo completeness is not
+accepts only the stimulus, calls exactly one canonical evaluator or
+reconstructor, and wraps its returned evaluation with the stimulus digest.
+Execute every resolved reference, assert complete crypto-spy consumption,
+cross-swap payloads against external expectations, and perturb the operational
+stimulus independently; label, count, recipe, or echo completeness is not
 behavioral completeness.
 
 ## Pipeline-call ledger

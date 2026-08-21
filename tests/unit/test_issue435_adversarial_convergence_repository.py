@@ -444,6 +444,20 @@ def test_repository_validator_is_read_only_and_static_boundary_is_ast_exact(
         ("subprocess.Popen(command)\n", "ACP.STATIC.PROCESS"),
         ("getattr(subprocess, 'Popen')(command)\n", "ACP.STATIC.PROCESS"),
         ("os.system(command)\n", "ACP.STATIC.PROCESS"),
+        ("from os import system as execute\nexecute(command)\n", "ACP.STATIC.PROCESS"),
+        ("asyncio.create_subprocess_exec('git', 'status')\n", "ACP.STATIC.PROCESS"),
+        ("Path('state').mkdir()\n", "ACP.STATIC.WRITE"),
+        ("Path('state').rmdir()\n", "ACP.STATIC.WRITE"),
+        ("Path('state').chmod(0o600)\n", "ACP.STATIC.WRITE"),
+        ("Path('state').symlink_to('target')\n", "ACP.STATIC.WRITE"),
+        ("os.unlink('state')\n", "ACP.STATIC.WRITE"),
+        ("os.remove('state')\n", "ACP.STATIC.WRITE"),
+        ("os.rename('state', 'other')\n", "ACP.STATIC.WRITE"),
+        ("os.replace('state', 'other')\n", "ACP.STATIC.WRITE"),
+        ("os.mkdir('state')\n", "ACP.STATIC.WRITE"),
+        ("shutil.move('a', 'b')\n", "ACP.STATIC.PERSISTENCE"),
+        ("shutil.rmtree('a')\n", "ACP.STATIC.PERSISTENCE"),
+        ("shutil.copytree('a', 'b')\n", "ACP.STATIC.PERSISTENCE"),
         ("subprocess.run(('git', 'commit', '-m', 'x'))\n", "ACP.STATIC.GIT_MUTATION"),
         ("subprocess.run(('git', 'reset', '--hard', 'HEAD'))\n", "ACP.STATIC.GIT_MUTATION"),
         ("subprocess.run(('git', 'clean', '-fdx'))\n", "ACP.STATIC.GIT_MUTATION"),
@@ -453,6 +467,22 @@ def test_repository_validator_is_read_only_and_static_boundary_is_ast_exact(
         ("subprocess.run(('git', 'add', '.'))\n", "ACP.STATIC.GIT_MUTATION"),
         ("subprocess.run(('git', 'config', 'x', 'y'))\n", "ACP.STATIC.GIT_MUTATION"),
         ("subprocess.run(('git', 'hash-object', '-w', 'x'))\n", "ACP.STATIC.GIT_MUTATION"),
+        ("subprocess.run(('git', 'ls-remote', 'origin'))\n", "ACP.STATIC.GIT_FORBIDDEN"),
+        ("subprocess.run(('git', 'fetch', 'origin'))\n", "ACP.STATIC.GIT_FORBIDDEN"),
+        ("subprocess.run(('git', 'pull'))\n", "ACP.STATIC.GIT_FORBIDDEN"),
+        ("subprocess.run(('git', 'push'))\n", "ACP.STATIC.GIT_FORBIDDEN"),
+        ("subprocess.run(('git', 'clone', 'remote'))\n", "ACP.STATIC.GIT_FORBIDDEN"),
+        ("subprocess.run(('git', 'show', '--output=state', 'HEAD'))\n", "ACP.STATIC.GIT_FORBIDDEN"),
+        ("subprocess.run(('git', 'rev-parse', '--verify', 'HEAD'))\n", "ACP.STATIC.GIT_FORBIDDEN"),
+        ("subprocess.run(('git', 'cat-file', '-p', 'HEAD'))\n", "ACP.STATIC.GIT_FORBIDDEN"),
+        (
+            "subprocess.run(('git', 'diff-tree', '-r', '--name-only', 'HEAD'))\n",
+            "ACP.STATIC.GIT_FORBIDDEN",
+        ),
+        (
+            "subprocess.run(('git', 'rev-parse', 'HEAD'), env=environment)\n",
+            "ACP.STATIC.GIT_DYNAMIC",
+        ),
         ("subprocess.run(('git', 'rev-parse', 'HEAD'), shell=True)\n", "ACP.STATIC.PROCESS"),
         (
             "subprocess.run(('git', 'rev-parse', 'HEAD'), cwd=dynamic_root)\n",
@@ -521,6 +551,17 @@ def test_sensitive_route_uses_paths_and_exact_issue_artifacts(tmp_path: Path) ->
     )
     freeze_path.write_bytes(canonical(freeze) + b" " * 32768)
     assert protocol.route_findings(root) == finding("bounds", "ACP.BOUNDS.FREEZE_BYTES", "freeze")
+    matrix_path = root / protocol.MATRIX_PATH.relative_to(protocol.ROOT)
+    matrix = json.loads(matrix_path.read_text(encoding="utf-8"))
+    for field, limit_value, code, finding_location in (
+        ("findingCount", 33, "ACP.BOUNDS.FINDING_COUNT", "findings"),
+        ("retainedMaterialCount", 5, "ACP.BOUNDS.RETAINED_COUNT", "retained-materials"),
+    ):
+        changed_matrix = deepcopy(matrix)
+        changed_matrix["limits"][field] = limit_value
+        matrix_path.write_bytes(canonical(changed_matrix) + b"\n")
+        assert protocol.route_findings(root) == finding("bounds", code, finding_location)
+    matrix_path.write_bytes(canonical(matrix) + b"\n")
     freeze_path.write_bytes(canonical(freeze) + b"\n")
     assert protocol.route_findings(root, changed_paths=("../escape",)) == finding(
         "route", "ACP.ROUTE.PATH_TRAVERSAL", "../escape"

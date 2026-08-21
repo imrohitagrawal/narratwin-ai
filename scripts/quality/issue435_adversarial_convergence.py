@@ -179,16 +179,15 @@ class MatrixCase:
 
 @dataclass(frozen=True)
 class MatrixObservation:
-    case_id: str
-    input_class: str
-    input_sha256: str
-    findings: tuple[Finding, ...]
-    phase_verdicts: tuple[PhaseVerdict, ...]
-    stage_calls: tuple[StageCall, ...]
-    crypto_calls: tuple[CryptoCall, ...]
-    graph_eligible: bool
-    graph_call_count: int
-    selected_candidate_reference: str | None
+    stimulus_sha256: str
+    evaluation: Evaluation
+
+
+@dataclass(frozen=True)
+class MatrixStimulus:
+    candidate_documents: tuple[bytes, ...]
+    context: EvaluationContext
+    retained: RetainedEvaluation | None
 
 
 @dataclass(frozen=True)
@@ -248,13 +247,17 @@ def normalized_case_catalog(
     return ()
 
 
+def parse_matrix_stimulus(fixture_bytes: bytes) -> MatrixStimulus | None:
+    del fixture_bytes
+    return None
+
+
 def execute_matrix_fixture(
     fixture_bytes: bytes,
     *,
-    context: EvaluationContext,
     crypto_verifier: CryptoVerifier,
 ) -> MatrixObservation | None:
-    del fixture_bytes, context, crypto_verifier
+    del fixture_bytes, crypto_verifier
     return None
 
 
