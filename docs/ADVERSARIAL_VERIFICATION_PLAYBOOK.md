@@ -86,6 +86,10 @@ inode type, cap, I/O, read type, UTF-8, line, record, absolute-path,
 containment, layout, backlink, commondir, identity-race, and prohibited-inode
 case through the public validator with zero Git calls and the matrix-owned exact
 finding/location.
+Derive every target, cap, expected kind, and location from a closed role and the
+exact first-read `.git` record; never accept those as caller authority. Validate
+the backlink result and exact payload before starting the `commondir` read, and
+consume every independently frozen operational case ID exactly once.
 Freeze the exact reader and discovery AST identities plus their sole top-level
 bindings. The operation oracle records every relative lstat/open/fstat/read/
 post-lstat/close call, flags, `dir_fd`, identity, count, and reverse close; it
@@ -108,9 +112,12 @@ binding, size-before-payload, and bounded strict author extraction follow.
 Freeze exact argv, direct environments, streams, timeouts, result/args/stdout/
 stderr/return-code types, byte/line/token grammars, field precedence, and call
 prefixes. Exercise every form's supported, semantic, and unsupported return
-codes; exact-type subclasses; composed failure precedence; N/N+1 byte and line
+codes, including `-1`, `2`, and `127`; exact-type subclasses; composed failure
+precedence; N/N+1 byte and line
 limits; complete linear-chain mutations; all four-object swaps/substitutions;
 and a mutated first-call environment followed by fresh exact environments.
+Script RED object size 320 before the exact 320/321-byte author boundary, and
+also prove a smaller object-derived author limit.
 Inject fake gitfiles, corrupt objects, grafts/alternates/shallow files,
 hostile ambient/local config, N/N+1 output, malformed bytes, role swaps, legacy
 forms, and C3 plus two-descendant histories. Generic exceptions, trimming,

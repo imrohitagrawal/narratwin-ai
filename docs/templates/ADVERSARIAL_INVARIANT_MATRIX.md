@@ -122,9 +122,14 @@ The metadata section must enumerate one closed
 `mode/case/role/stimulus/code/location` row per operational case and hash the
 exact reader and discovery top-level ASTs. Preserve lexical absolute root bytes;
 do not resolve root or pre-root components before held-descriptor traversal.
+The reader must derive its target, cap, expected inode kind, and location from a
+closed role and the exact first-read `.git` record. The executor must consume
+every case ID once, and linked discovery must validate backlink findings and
+payload before any `commondir` read.
 Freeze fsck status 1 as object-integrity failure, missing-object type status 128
-as missing RED, and every other unsupported integer as the generic process
-finding before byte/decode/line/token semantics.
+as missing RED, and `-1`, `2`, and `127` for every form as the generic process
+finding before byte/decode/line/token semantics. Script the RED-size input for
+exact 320/321-byte author evidence and separately test a smaller dynamic cap.
 
 ## Pipeline-call ledger
 

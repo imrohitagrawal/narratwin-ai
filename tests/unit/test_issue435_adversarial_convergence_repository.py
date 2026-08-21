@@ -53,53 +53,716 @@ GIT_ENV_FIXED = (
     ("GIT_OPTIONAL_LOCKS", "0"),
     ("GIT_TERMINAL_PROMPT", "0"),
 )
-EXPECTED_METADATA_CASE_IDS = (
-    "conventional-positive",
-    "dot-git-missing",
-    "dot-git-target-symlink",
-    "dot-git-fifo",
-    "dot-git-cap-n-malformed",
-    "dot-git-cap-n-plus-one",
-    "dot-git-invalid-utf8",
-    "dot-git-missing-lf",
-    "dot-git-crlf",
-    "dot-git-extra-record",
-    "dot-git-relative",
-    "linked-layout-outside",
-    "backlink-missing",
-    "backlink-wrong-type",
-    "backlink-symlink",
-    "backlink-cap",
-    "backlink-record",
-    "backlink-mismatch",
-    "commondir-missing",
-    "commondir-wrong-type",
-    "commondir-symlink",
-    "commondir-cap",
-    "commondir-record",
-    "commondir-mismatch",
-    "root-ancestor-symlink",
-    "root-ancestor-replacement",
-    "leaf-replacement",
-    "fstat-identity",
-    "fstat-type",
-    "post-read-identity",
-    "short-read",
-    "read-type",
-    "io-error",
-    "reverse-close",
-    "grafts-present",
-    "grafts-target-symlink",
-    "grafts-ancestor-symlink",
-    "shallow-present",
-    "shallow-target-symlink",
-    "alternates-present",
-    "alternates-target-symlink",
-    "alternates-ancestor-symlink",
-    "http-alternates-present",
-    "http-alternates-target-symlink",
-    "http-alternates-ancestor-symlink",
+EXPECTED_METADATA_CASES = (
+    ("conventional-positive", "public", "conventional", "dot_git", "directory", None, ".git"),
+    ("linked-positive", "public", "linked", "linked_git_dir", "registered", None, ".git.gitdir"),
+    (
+        "root-nonabsolute",
+        "public",
+        "both",
+        "dot_git",
+        "relative-root",
+        "ACP.GIT_METADATA.NONABSOLUTE",
+        "root",
+    ),
+    (
+        "root-dotdot",
+        "public",
+        "both",
+        "dot_git",
+        "root-dotdot",
+        "ACP.GIT_METADATA.NONABSOLUTE",
+        "root",
+    ),
+    (
+        "dot-git-missing",
+        "public",
+        "conventional",
+        "dot_git",
+        "missing",
+        "ACP.GIT_METADATA.MISSING",
+        ".git",
+    ),
+    (
+        "dot-git-target-symlink",
+        "public",
+        "conventional",
+        "dot_git",
+        "symlink",
+        "ACP.GIT_METADATA.TARGET_SYMLINK",
+        ".git",
+    ),
+    (
+        "dot-git-fifo",
+        "public",
+        "conventional",
+        "dot_git",
+        "fifo",
+        "ACP.GIT_METADATA.WRONG_TYPE",
+        ".git",
+    ),
+    (
+        "dot-git-cap-n-malformed",
+        "public",
+        "linked",
+        "dot_git",
+        "4096-bytes",
+        "ACP.GIT_METADATA.RECORD_SHAPE",
+        ".git",
+    ),
+    (
+        "dot-git-cap-n-plus-one",
+        "public",
+        "linked",
+        "dot_git",
+        "4097-bytes",
+        "ACP.GIT_METADATA.BYTE_CAP",
+        ".git",
+    ),
+    (
+        "dot-git-invalid-utf8",
+        "public",
+        "linked",
+        "dot_git",
+        "invalid-utf8",
+        "ACP.GIT_METADATA.INVALID_UTF8",
+        ".git",
+    ),
+    (
+        "dot-git-missing-lf",
+        "public",
+        "linked",
+        "dot_git",
+        "missing-lf",
+        "ACP.GIT_METADATA.LINE_COUNT",
+        ".git",
+    ),
+    (
+        "dot-git-crlf",
+        "public",
+        "linked",
+        "dot_git",
+        "crlf",
+        "ACP.GIT_METADATA.RECORD_SHAPE",
+        ".git",
+    ),
+    (
+        "dot-git-extra-lf",
+        "public",
+        "linked",
+        "dot_git",
+        "extra-lf",
+        "ACP.GIT_METADATA.LINE_COUNT",
+        ".git",
+    ),
+    (
+        "dot-git-extra-record",
+        "public",
+        "linked",
+        "dot_git",
+        "extra-record",
+        "ACP.GIT_METADATA.LINE_COUNT",
+        ".git",
+    ),
+    (
+        "dot-git-relative",
+        "public",
+        "linked",
+        "dot_git",
+        "relative-gitdir",
+        "ACP.GIT_METADATA.NONABSOLUTE",
+        ".git.gitdir",
+    ),
+    (
+        "dot-git-dot-component",
+        "public",
+        "linked",
+        "dot_git",
+        "dot-component",
+        "ACP.GIT_METADATA.CONTAINMENT",
+        ".git.gitdir",
+    ),
+    (
+        "dot-git-dotdot-component",
+        "public",
+        "linked",
+        "dot_git",
+        "dotdot-component",
+        "ACP.GIT_METADATA.CONTAINMENT",
+        ".git.gitdir",
+    ),
+    (
+        "dot-git-empty-component",
+        "public",
+        "linked",
+        "dot_git",
+        "double-slash",
+        "ACP.GIT_METADATA.CONTAINMENT",
+        ".git.gitdir",
+    ),
+    (
+        "dot-git-nul",
+        "public",
+        "linked",
+        "dot_git",
+        "nul",
+        "ACP.GIT_METADATA.CONTAINMENT",
+        ".git.gitdir",
+    ),
+    (
+        "linked-layout-outside",
+        "public",
+        "linked",
+        "linked_git_dir",
+        "outside-worktrees",
+        "ACP.GIT_METADATA.LAYOUT",
+        ".git.gitdir",
+    ),
+    (
+        "linked-git-dir-target-symlink",
+        "public",
+        "linked",
+        "linked_git_dir",
+        "symlink",
+        "ACP.GIT_METADATA.TARGET_SYMLINK",
+        ".git.gitdir",
+    ),
+    (
+        "backlink-missing",
+        "public",
+        "linked",
+        "backlink",
+        "missing",
+        "ACP.GIT_METADATA.MISSING",
+        "git-dir/gitdir",
+    ),
+    (
+        "backlink-directory",
+        "public",
+        "linked",
+        "backlink",
+        "directory",
+        "ACP.GIT_METADATA.WRONG_TYPE",
+        "git-dir/gitdir",
+    ),
+    (
+        "backlink-fifo",
+        "public",
+        "linked",
+        "backlink",
+        "fifo",
+        "ACP.GIT_METADATA.WRONG_TYPE",
+        "git-dir/gitdir",
+    ),
+    (
+        "backlink-symlink",
+        "public",
+        "linked",
+        "backlink",
+        "symlink",
+        "ACP.GIT_METADATA.TARGET_SYMLINK",
+        "git-dir/gitdir",
+    ),
+    (
+        "backlink-cap-n-malformed",
+        "public",
+        "linked",
+        "backlink",
+        "4096-bytes",
+        "ACP.GIT_METADATA.RECORD_SHAPE",
+        "git-dir/gitdir",
+    ),
+    (
+        "backlink-cap-n-plus-one",
+        "public",
+        "linked",
+        "backlink",
+        "4097-bytes",
+        "ACP.GIT_METADATA.BYTE_CAP",
+        "git-dir/gitdir",
+    ),
+    (
+        "backlink-invalid-utf8",
+        "public",
+        "linked",
+        "backlink",
+        "invalid-utf8",
+        "ACP.GIT_METADATA.INVALID_UTF8",
+        "git-dir/gitdir",
+    ),
+    (
+        "backlink-missing-lf",
+        "public",
+        "linked",
+        "backlink",
+        "missing-lf",
+        "ACP.GIT_METADATA.LINE_COUNT",
+        "git-dir/gitdir",
+    ),
+    (
+        "backlink-extra-lf",
+        "public",
+        "linked",
+        "backlink",
+        "extra-lf",
+        "ACP.GIT_METADATA.LINE_COUNT",
+        "git-dir/gitdir",
+    ),
+    (
+        "backlink-mismatch",
+        "public",
+        "linked",
+        "backlink",
+        "wrong-root",
+        "ACP.GIT_METADATA.BACKLINK_MISMATCH",
+        "git-dir/gitdir",
+    ),
+    (
+        "commondir-missing",
+        "public",
+        "linked",
+        "commondir",
+        "missing",
+        "ACP.GIT_METADATA.MISSING",
+        "git-dir/commondir",
+    ),
+    (
+        "commondir-directory",
+        "public",
+        "linked",
+        "commondir",
+        "directory",
+        "ACP.GIT_METADATA.WRONG_TYPE",
+        "git-dir/commondir",
+    ),
+    (
+        "commondir-fifo",
+        "public",
+        "linked",
+        "commondir",
+        "fifo",
+        "ACP.GIT_METADATA.WRONG_TYPE",
+        "git-dir/commondir",
+    ),
+    (
+        "commondir-symlink",
+        "public",
+        "linked",
+        "commondir",
+        "symlink",
+        "ACP.GIT_METADATA.TARGET_SYMLINK",
+        "git-dir/commondir",
+    ),
+    (
+        "commondir-cap-n-malformed",
+        "public",
+        "linked",
+        "commondir",
+        "4096-bytes",
+        "ACP.GIT_METADATA.RECORD_SHAPE",
+        "git-dir/commondir",
+    ),
+    (
+        "commondir-cap-n-plus-one",
+        "public",
+        "linked",
+        "commondir",
+        "4097-bytes",
+        "ACP.GIT_METADATA.BYTE_CAP",
+        "git-dir/commondir",
+    ),
+    (
+        "commondir-invalid-utf8",
+        "public",
+        "linked",
+        "commondir",
+        "invalid-utf8",
+        "ACP.GIT_METADATA.INVALID_UTF8",
+        "git-dir/commondir",
+    ),
+    (
+        "commondir-missing-lf",
+        "public",
+        "linked",
+        "commondir",
+        "missing-lf",
+        "ACP.GIT_METADATA.LINE_COUNT",
+        "git-dir/commondir",
+    ),
+    (
+        "commondir-extra-lf",
+        "public",
+        "linked",
+        "commondir",
+        "extra-lf",
+        "ACP.GIT_METADATA.LINE_COUNT",
+        "git-dir/commondir",
+    ),
+    (
+        "commondir-mismatch",
+        "public",
+        "linked",
+        "commondir",
+        "wrong-relative",
+        "ACP.GIT_METADATA.COMMONDIR_MISMATCH",
+        "git-dir/commondir",
+    ),
+    (
+        "root-symlink",
+        "public",
+        "both",
+        "dot_git",
+        "root-symlink",
+        "ACP.GIT_METADATA.ANCESTOR_SYMLINK",
+        "root",
+    ),
+    (
+        "pre-root-symlink",
+        "public",
+        "both",
+        "dot_git",
+        "pre-root-symlink",
+        "ACP.GIT_METADATA.ANCESTOR_SYMLINK",
+        "root",
+    ),
+    (
+        "root-replacement",
+        "public",
+        "both",
+        "dot_git",
+        "root-lstat-open-race",
+        "ACP.GIT_METADATA.IDENTITY_CHANGED",
+        "root",
+    ),
+    (
+        "pre-root-replacement",
+        "public",
+        "both",
+        "dot_git",
+        "pre-root-lstat-open-race",
+        "ACP.GIT_METADATA.IDENTITY_CHANGED",
+        "root",
+    ),
+    (
+        "ancestor-replacement",
+        "public",
+        "both",
+        "prohibited_grafts",
+        "ancestor-lstat-open-race",
+        "ACP.GIT_METADATA.IDENTITY_CHANGED",
+        "info",
+    ),
+    (
+        "leaf-replacement",
+        "public",
+        "both",
+        "dot_git",
+        "leaf-lstat-open-race",
+        "ACP.GIT_METADATA.IDENTITY_CHANGED",
+        ".git",
+    ),
+    (
+        "fstat-device",
+        "public",
+        "both",
+        "dot_git",
+        "device-drift",
+        "ACP.GIT_METADATA.IDENTITY_CHANGED",
+        ".git",
+    ),
+    (
+        "fstat-inode",
+        "public",
+        "both",
+        "dot_git",
+        "inode-drift",
+        "ACP.GIT_METADATA.IDENTITY_CHANGED",
+        ".git",
+    ),
+    (
+        "fstat-type",
+        "public",
+        "both",
+        "dot_git",
+        "type-drift",
+        "ACP.GIT_METADATA.WRONG_TYPE",
+        ".git",
+    ),
+    (
+        "post-read-type",
+        "public",
+        "linked",
+        "dot_git",
+        "post-type-drift",
+        "ACP.GIT_METADATA.WRONG_TYPE",
+        ".git",
+    ),
+    (
+        "post-read-device",
+        "public",
+        "linked",
+        "dot_git",
+        "post-device-drift",
+        "ACP.GIT_METADATA.IDENTITY_CHANGED",
+        ".git",
+    ),
+    (
+        "post-read-inode",
+        "public",
+        "linked",
+        "dot_git",
+        "post-inode-drift",
+        "ACP.GIT_METADATA.IDENTITY_CHANGED",
+        ".git",
+    ),
+    ("short-read", "direct", "linked", "dot_git", "one-byte-to-eof", None, ".git"),
+    ("read-type", "public", "linked", "dot_git", "non-bytes", "ACP.GIT_METADATA.READ_TYPE", ".git"),
+    (
+        "lstat-error",
+        "public",
+        "both",
+        "dot_git",
+        "lstat-oserror",
+        "ACP.GIT_METADATA.IO_ERROR",
+        ".git",
+    ),
+    (
+        "open-error",
+        "public",
+        "both",
+        "dot_git",
+        "open-oserror",
+        "ACP.GIT_METADATA.IO_ERROR",
+        ".git",
+    ),
+    (
+        "read-error",
+        "public",
+        "linked",
+        "dot_git",
+        "read-oserror",
+        "ACP.GIT_METADATA.IO_ERROR",
+        ".git",
+    ),
+    (
+        "close-error",
+        "public",
+        "both",
+        "dot_git",
+        "close-oserror",
+        "ACP.GIT_METADATA.IO_ERROR",
+        ".git",
+    ),
+    ("reverse-close", "direct", "linked", "dot_git", "reverse-once", None, ".git"),
+    (
+        "grafts-file",
+        "public",
+        "both",
+        "prohibited_grafts",
+        "file",
+        "ACP.GIT_METADATA.PROHIBITED",
+        "info/grafts",
+    ),
+    (
+        "grafts-directory",
+        "public",
+        "both",
+        "prohibited_grafts",
+        "directory",
+        "ACP.GIT_METADATA.PROHIBITED",
+        "info/grafts",
+    ),
+    (
+        "grafts-fifo",
+        "public",
+        "both",
+        "prohibited_grafts",
+        "fifo",
+        "ACP.GIT_METADATA.PROHIBITED",
+        "info/grafts",
+    ),
+    (
+        "grafts-live-symlink",
+        "public",
+        "both",
+        "prohibited_grafts",
+        "live-symlink",
+        "ACP.GIT_METADATA.TARGET_SYMLINK",
+        "info/grafts",
+    ),
+    (
+        "grafts-broken-symlink",
+        "public",
+        "both",
+        "prohibited_grafts",
+        "broken-symlink",
+        "ACP.GIT_METADATA.TARGET_SYMLINK",
+        "info/grafts",
+    ),
+    (
+        "grafts-ancestor-symlink",
+        "public",
+        "both",
+        "prohibited_grafts",
+        "info-symlink",
+        "ACP.GIT_METADATA.ANCESTOR_SYMLINK",
+        "info",
+    ),
+    (
+        "shallow-file",
+        "public",
+        "both",
+        "prohibited_shallow",
+        "file",
+        "ACP.GIT_METADATA.PROHIBITED",
+        "shallow",
+    ),
+    (
+        "shallow-directory",
+        "public",
+        "both",
+        "prohibited_shallow",
+        "directory",
+        "ACP.GIT_METADATA.PROHIBITED",
+        "shallow",
+    ),
+    (
+        "shallow-fifo",
+        "public",
+        "both",
+        "prohibited_shallow",
+        "fifo",
+        "ACP.GIT_METADATA.PROHIBITED",
+        "shallow",
+    ),
+    (
+        "shallow-live-symlink",
+        "public",
+        "both",
+        "prohibited_shallow",
+        "live-symlink",
+        "ACP.GIT_METADATA.TARGET_SYMLINK",
+        "shallow",
+    ),
+    (
+        "shallow-broken-symlink",
+        "public",
+        "both",
+        "prohibited_shallow",
+        "broken-symlink",
+        "ACP.GIT_METADATA.TARGET_SYMLINK",
+        "shallow",
+    ),
+    (
+        "alternates-file",
+        "public",
+        "both",
+        "prohibited_alternates",
+        "file",
+        "ACP.GIT_METADATA.PROHIBITED",
+        "objects/info/alternates",
+    ),
+    (
+        "alternates-directory",
+        "public",
+        "both",
+        "prohibited_alternates",
+        "directory",
+        "ACP.GIT_METADATA.PROHIBITED",
+        "objects/info/alternates",
+    ),
+    (
+        "alternates-fifo",
+        "public",
+        "both",
+        "prohibited_alternates",
+        "fifo",
+        "ACP.GIT_METADATA.PROHIBITED",
+        "objects/info/alternates",
+    ),
+    (
+        "alternates-live-symlink",
+        "public",
+        "both",
+        "prohibited_alternates",
+        "live-symlink",
+        "ACP.GIT_METADATA.TARGET_SYMLINK",
+        "objects/info/alternates",
+    ),
+    (
+        "alternates-broken-symlink",
+        "public",
+        "both",
+        "prohibited_alternates",
+        "broken-symlink",
+        "ACP.GIT_METADATA.TARGET_SYMLINK",
+        "objects/info/alternates",
+    ),
+    (
+        "alternates-ancestor-symlink",
+        "public",
+        "both",
+        "prohibited_alternates",
+        "objects-info-symlink",
+        "ACP.GIT_METADATA.ANCESTOR_SYMLINK",
+        "objects/info",
+    ),
+    (
+        "http-alternates-file",
+        "public",
+        "both",
+        "prohibited_http_alternates",
+        "file",
+        "ACP.GIT_METADATA.PROHIBITED",
+        "objects/info/http-alternates",
+    ),
+    (
+        "http-alternates-directory",
+        "public",
+        "both",
+        "prohibited_http_alternates",
+        "directory",
+        "ACP.GIT_METADATA.PROHIBITED",
+        "objects/info/http-alternates",
+    ),
+    (
+        "http-alternates-fifo",
+        "public",
+        "both",
+        "prohibited_http_alternates",
+        "fifo",
+        "ACP.GIT_METADATA.PROHIBITED",
+        "objects/info/http-alternates",
+    ),
+    (
+        "http-alternates-live-symlink",
+        "public",
+        "both",
+        "prohibited_http_alternates",
+        "live-symlink",
+        "ACP.GIT_METADATA.TARGET_SYMLINK",
+        "objects/info/http-alternates",
+    ),
+    (
+        "http-alternates-broken-symlink",
+        "public",
+        "both",
+        "prohibited_http_alternates",
+        "broken-symlink",
+        "ACP.GIT_METADATA.TARGET_SYMLINK",
+        "objects/info/http-alternates",
+    ),
+    (
+        "http-alternates-ancestor-symlink",
+        "public",
+        "both",
+        "prohibited_http_alternates",
+        "objects-info-symlink",
+        "ACP.GIT_METADATA.ANCESTOR_SYMLINK",
+        "objects/info",
+    ),
 )
+EXPECTED_METADATA_CASE_IDS = tuple(item[0] for item in EXPECTED_METADATA_CASES)
 
 
 class CompletedProcessSubclass(subprocess.CompletedProcess[bytes]):
@@ -138,14 +801,14 @@ GOVERNED_READER_SOURCE = """def _read_governed_bytes(root: Path, relative: str) 
 
 METADATA_READER_SOURCE = """def _read_git_metadata_nofollow(
     root: Path,
-    path: Path,
     *,
-    max_bytes: int,
-    expected_kind: str,
-    location: str,
+    provenance: GitMetadataProvenance,
     io: MetadataIO,
 ) -> GitMetadataReadResult:
     descriptors: list[int] = []
+    role_specs = {item[0]: item[1:] for item in STATIC_GIT_METADATA_ROLE_SPECS}
+    role_spec = role_specs.get(provenance.role)
+    location = role_spec[2] if role_spec is not None else "provenance"
 
     def result(
         record: GitMetadataRecord | None,
@@ -158,21 +821,103 @@ METADATA_READER_SOURCE = """def _read_git_metadata_nofollow(
             except OSError:
                 close_failed = True
         descriptors.clear()
-        if close_failed:
+        if close_failed and not findings:
             return GitMetadataReadResult(
                 None,
                 (Finding("git-metadata", "CURRENT", "ACP.GIT_METADATA.IO_ERROR", location),),
             )
         return GitMetadataReadResult(record, findings)
 
-    if not root.is_absolute() or not path.is_absolute():
+    if not root.is_absolute() or ".." in root.parts:
         return result(
             None,
-            (Finding("git-metadata", "CURRENT", "ACP.GIT_METADATA.NONABSOLUTE", location),),
+            (Finding("git-metadata", "CURRENT", "ACP.GIT_METADATA.NONABSOLUTE", "root"),),
+        )
+    if role_spec is None:
+        return result(
+            None,
+            (Finding("git-metadata", "CURRENT", "ACP.GIT_METADATA.CONTAINMENT", location),),
+        )
+    expected_kind = str(role_spec[0])
+    max_bytes = int(role_spec[1])
+    record = provenance.dot_git_record
+    if provenance.role == "dot_git":
+        path = root / ".git"
+    elif record is None or record.path != root / ".git":
+        return result(
+            None,
+            (Finding("git-metadata", "CURRENT", "ACP.GIT_METADATA.CONTAINMENT", location),),
+        )
+    else:
+        if record.payload is None:
+            common_dir = root / ".git"
+            linked = None
+        else:
+            try:
+                record_text = record.payload.decode("utf-8")
+            except UnicodeDecodeError:
+                return result(
+                    None,
+                    (Finding("git-metadata", "CURRENT", "ACP.GIT_METADATA.CONTAINMENT", location),),
+                )
+            if not record_text.startswith("gitdir: /") or not record_text.endswith("\\n"):
+                return result(
+                    None,
+                    (Finding("git-metadata", "CURRENT", "ACP.GIT_METADATA.CONTAINMENT", location),),
+                )
+            raw_linked = record_text[8:-1]
+            raw_parts = raw_linked.split("/")[1:]
+            if not raw_parts or any(part in {"", ".", ".."} for part in raw_parts):
+                return result(
+                    None,
+                    (Finding("git-metadata", "CURRENT", "ACP.GIT_METADATA.CONTAINMENT", location),),
+                )
+            linked = Path(raw_linked)
+            if linked.parent.name != "worktrees" or not linked.name:
+                return result(
+                    None,
+                    (Finding("git-metadata", "CURRENT", "ACP.GIT_METADATA.CONTAINMENT", location),),
+                )
+            common_dir = linked.parent.parent
+        if provenance.role == "linked_git_dir" and linked is not None:
+            path = linked
+        elif provenance.role == "backlink" and linked is not None:
+            path = linked / "gitdir"
+        elif provenance.role == "commondir" and linked is not None:
+            path = linked / "commondir"
+        elif provenance.role == "common_dir":
+            path = common_dir
+        elif provenance.role.startswith("prohibited_"):
+            prohibited_relatives = {
+                "prohibited_grafts": "info/grafts",
+                "prohibited_shallow": "shallow",
+                "prohibited_alternates": "objects/info/alternates",
+                "prohibited_http_alternates": "objects/info/http-alternates",
+            }
+            if provenance.role not in prohibited_relatives:
+                return result(
+                    None,
+                    (Finding("git-metadata", "CURRENT", "ACP.GIT_METADATA.CONTAINMENT", location),),
+                )
+            path = common_dir / prohibited_relatives[provenance.role]
+        else:
+            return result(
+                None,
+                (Finding("git-metadata", "CURRENT", "ACP.GIT_METADATA.CONTAINMENT", location),),
+            )
+    if not path.is_absolute() or ".." in path.parts:
+        return result(
+            None,
+            (Finding("git-metadata", "CURRENT", "ACP.GIT_METADATA.CONTAINMENT", location),),
         )
     root_components = root.parts[1:]
     components = path.parts[1:]
     within_root = components[: len(root_components)] == root_components
+    if not within_root and provenance.role == "dot_git":
+        return result(
+            None,
+            (Finding("git-metadata", "CURRENT", "ACP.GIT_METADATA.CONTAINMENT", location),),
+        )
     relative_parts = components[len(root_components) :] if within_root else ()
     root_component_count = len(root.parts) - 1
     try:
@@ -183,17 +928,17 @@ METADATA_READER_SOURCE = """def _read_git_metadata_nofollow(
         for ordinal, component in enumerate(components):
             final = ordinal == len(components) - 1
             before = io.lstat(component, dir_fd=parent_fd)
-            if not within_root:
+            if final:
+                component_location = location
+            elif not within_root:
                 component_location = location
             elif ordinal < root_component_count:
                 component_location = "root"
             else:
-                location_parts = Path(location).parts
-                remaining = len(components) - ordinal - 1
-                visible = max(0, len(location_parts) - remaining)
-                component_location = (
-                    Path(*location_parts[:visible]).as_posix() if visible else "."
-                )
+                traversed = relative_parts[: ordinal - root_component_count + 1]
+                if traversed and traversed[0] == ".git" and location != ".git":
+                    traversed = traversed[1:]
+                component_location = Path(*traversed).as_posix() if traversed else "root"
             if stat.S_ISLNK(before.st_mode):
                 code = (
                     "ACP.GIT_METADATA.TARGET_SYMLINK"
@@ -224,18 +969,24 @@ METADATA_READER_SOURCE = """def _read_git_metadata_nofollow(
             flags = os.O_RDONLY | os.O_NOFOLLOW | (os.O_DIRECTORY if directory else 0)
             try:
                 child_fd = io.open(component, flags, dir_fd=parent_fd)
-            except OSError:
+            except OSError as error:
+                code = (
+                    "ACP.GIT_METADATA.IDENTITY_CHANGED"
+                    if error.errno in {errno.ENOENT, errno.ELOOP}
+                    else "ACP.GIT_METADATA.IO_ERROR"
+                )
                 return result(
                     None,
-                    (Finding("git-metadata", "CURRENT", "ACP.GIT_METADATA.IDENTITY_CHANGED", component_location),),
+                    (Finding("git-metadata", "CURRENT", code, component_location),),
                 )
             descriptors.append(child_fd)
             after = io.fstat(child_fd)
-            if (
-                before.st_dev,
-                before.st_ino,
-                stat.S_IFMT(before.st_mode),
-            ) != (after.st_dev, after.st_ino, stat.S_IFMT(after.st_mode)):
+            if stat.S_IFMT(before.st_mode) != stat.S_IFMT(after.st_mode):
+                return result(
+                    None,
+                    (Finding("git-metadata", "CURRENT", "ACP.GIT_METADATA.WRONG_TYPE", location),),
+                )
+            if (before.st_dev, before.st_ino) != (after.st_dev, after.st_ino):
                 return result(
                     None,
                     (Finding("git-metadata", "CURRENT", "ACP.GIT_METADATA.IDENTITY_CHANGED", location),),
@@ -264,11 +1015,12 @@ METADATA_READER_SOURCE = """def _read_git_metadata_nofollow(
                 if chunk == b"":
                     break
             post = io.lstat(component, dir_fd=parent_fd)
-            if (after.st_dev, after.st_ino, stat.S_IFMT(after.st_mode)) != (
-                post.st_dev,
-                post.st_ino,
-                stat.S_IFMT(post.st_mode),
-            ):
+            if stat.S_IFMT(after.st_mode) != stat.S_IFMT(post.st_mode):
+                return result(
+                    None,
+                    (Finding("git-metadata", "CURRENT", "ACP.GIT_METADATA.WRONG_TYPE", location),),
+                )
+            if (after.st_dev, after.st_ino) != (post.st_dev, post.st_ino):
                 return result(
                     None,
                     (Finding("git-metadata", "CURRENT", "ACP.GIT_METADATA.IDENTITY_CHANGED", location),),
@@ -289,15 +1041,16 @@ METADATA_READER_SOURCE = """def _read_git_metadata_nofollow(
             None,
             (Finding("git-metadata", "CURRENT", "ACP.GIT_METADATA.IO_ERROR", location),),
         )
+    return result(
+        None,
+        (Finding("git-metadata", "CURRENT", "ACP.GIT_METADATA.IO_ERROR", location),),
+    )
 """
 
 METADATA_DISCOVERY_SOURCE = """def discover_git_repository(root: Path) -> GitDiscoveryResult:
     dot_git = _read_git_metadata_nofollow(
         root,
-        root / ".git",
-        max_bytes=4096,
-        expected_kind="directory_or_regular_record",
-        location=".git",
+        provenance=GitMetadataProvenance("dot_git", None),
         io=SYSTEM_METADATA_IO,
     )
     if dot_git.findings:
@@ -327,56 +1080,75 @@ METADATA_DISCOVERY_SOURCE = """def discover_git_repository(root: Path) -> GitDis
                 None,
                 (Finding("git-metadata", "CURRENT", "ACP.GIT_METADATA.RECORD_SHAPE", ".git"),),
             )
-        git_dir = Path(text[8:-1])
-        if not git_dir.is_absolute():
+        raw_git_dir = text[8:-1]
+        if not raw_git_dir.startswith("/"):
             return GitDiscoveryResult(
                 None,
                 (Finding("git-metadata", "CURRENT", "ACP.GIT_METADATA.NONABSOLUTE", ".git.gitdir"),),
             )
+        raw_parts = raw_git_dir.split("/")[1:]
+        if (
+            "\\x00" in raw_git_dir
+            or not raw_parts
+            or any(part in {"", ".", ".."} for part in raw_parts)
+        ):
+            return GitDiscoveryResult(
+                None,
+                (Finding("git-metadata", "CURRENT", "ACP.GIT_METADATA.CONTAINMENT", ".git.gitdir"),),
+            )
+        git_dir = Path(raw_git_dir)
         common_dir = git_dir.parent.parent
         if git_dir.parent.name != "worktrees" or git_dir.parent.parent == git_dir.parent:
             return GitDiscoveryResult(
                 None,
                 (Finding("git-metadata", "CURRENT", "ACP.GIT_METADATA.LAYOUT", ".git.gitdir"),),
             )
+        linked_provenance = GitMetadataProvenance("linked_git_dir", dot_git.record)
         linked_directory = _read_git_metadata_nofollow(
-            root, git_dir, max_bytes=4096, expected_kind="directory",
-            location=".git.gitdir", io=SYSTEM_METADATA_IO,
+            root, provenance=linked_provenance, io=SYSTEM_METADATA_IO,
         )
         if linked_directory.findings:
             return GitDiscoveryResult(None, linked_directory.findings)
         backlink = _read_git_metadata_nofollow(
-            root, git_dir / "gitdir", max_bytes=4096, expected_kind="regular_record",
-            location="git-dir/gitdir", io=SYSTEM_METADATA_IO,
-        )
-        commondir = _read_git_metadata_nofollow(
-            root, git_dir / "commondir", max_bytes=4096, expected_kind="regular_record",
-            location="git-dir/commondir", io=SYSTEM_METADATA_IO,
+            root,
+            provenance=GitMetadataProvenance("backlink", dot_git.record),
+            io=SYSTEM_METADATA_IO,
         )
         if backlink.findings:
             return GitDiscoveryResult(None, backlink.findings)
-        if commondir.findings:
-            return GitDiscoveryResult(None, commondir.findings)
         if backlink.record is None or backlink.record.payload != f"{root / '.git'}\\n".encode():
             return GitDiscoveryResult(
                 None,
                 (Finding("git-metadata", "CURRENT", "ACP.GIT_METADATA.BACKLINK_MISMATCH", "git-dir/gitdir"),),
             )
+        commondir = _read_git_metadata_nofollow(
+            root,
+            provenance=GitMetadataProvenance("commondir", dot_git.record),
+            io=SYSTEM_METADATA_IO,
+        )
+        if commondir.findings:
+            return GitDiscoveryResult(None, commondir.findings)
         if commondir.record is None or commondir.record.payload != b"../..\\n":
             return GitDiscoveryResult(
                 None,
                 (Finding("git-metadata", "CURRENT", "ACP.GIT_METADATA.COMMONDIR_MISMATCH", "git-dir/commondir"),),
             )
+    common_provenance = GitMetadataProvenance("common_dir", dot_git.record)
     common = _read_git_metadata_nofollow(
-        root, common_dir, max_bytes=4096, expected_kind="directory",
-        location="common-dir", io=SYSTEM_METADATA_IO,
+        root, provenance=common_provenance, io=SYSTEM_METADATA_IO,
     )
     if common.findings:
         return GitDiscoveryResult(None, common.findings)
     for relative in STATIC_GIT_METADATA_TARGETS:
+        prohibited_role = {
+            "info/grafts": "prohibited_grafts",
+            "shallow": "prohibited_shallow",
+            "objects/info/alternates": "prohibited_alternates",
+            "objects/info/http-alternates": "prohibited_http_alternates",
+        }[relative]
+        prohibited_provenance = GitMetadataProvenance(prohibited_role, dot_git.record)
         prohibited = _read_git_metadata_nofollow(
-            root, common_dir / relative, max_bytes=0, expected_kind="prohibited_absent",
-            location=relative, io=SYSTEM_METADATA_IO,
+            root, provenance=prohibited_provenance, io=SYSTEM_METADATA_IO,
         )
         if prohibited.findings:
             return GitDiscoveryResult(None, prohibited.findings)
@@ -932,6 +1704,38 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     root, freeze = create_real_git_freeze(tmp_path)
+    metadata_execution_ids: list[str] = []
+
+    def execute_metadata_case(
+        case_id: str,
+        case_root: Path,
+        expected_finding: tuple[protocol.Finding, ...],
+    ) -> None:
+        assert case_id in EXPECTED_METADATA_CASE_IDS
+        assert case_id not in metadata_execution_ids
+        assert_metadata_failure(case_root, monkeypatch, expected_finding)
+        metadata_execution_ids.append(case_id)
+
+    def execute_metadata_io_case(
+        case_id: str,
+        case_root: Path,
+        metadata_io: protocol.MetadataIO,
+        expected_finding: tuple[protocol.Finding, ...],
+    ) -> None:
+        assert case_id in EXPECTED_METADATA_CASE_IDS
+        assert case_id not in metadata_execution_ids
+        git_calls: list[tuple[str, ...]] = []
+        with monkeypatch.context() as io_patch:
+            io_patch.setattr(protocol, "SYSTEM_METADATA_IO", metadata_io)
+            io_patch.setattr(
+                PROTOCOL_SUBPROCESS,
+                "run",
+                lambda argv, **kwargs: git_calls.append(argv),
+            )
+            assert protocol.validate_repository_freeze(case_root) == expected_finding
+        assert git_calls == []
+        metadata_execution_ids.append(case_id)
+
     red_nodes = frozen_red_nodes()
     assert len(red_nodes) == protocol.EXPECTED_RED_FAILURES_COUNT
     assert hashlib.sha256(canonical(red_nodes)).hexdigest() == (
@@ -941,6 +1745,7 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
         protocol.GitRepositoryBinding(root, root / ".git", root / ".git"),
         (),
     )
+    metadata_execution_ids.append("conventional-positive")
     assert_exact_git_transcript(root, freeze, monkeypatch)
     roles = (
         "object_format",
@@ -1041,16 +1846,19 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
             assert_injected_git_failure(
                 root, freeze, monkeypatch, ordinal, transform, finding("git", code, role)
             )
-        assert_injected_git_failure(
-            root,
-            freeze,
-            monkeypatch,
-            ordinal,
-            lambda result: subprocess.CompletedProcess(
-                result.args, 2, result.stdout, result.stderr
-            ),
-            finding("git", "ACP.GIT.RETURN_CODE", role),
-        )
+        for unsupported_returncode in (-1, 2, 127):
+            assert_injected_git_failure(
+                root,
+                freeze,
+                monkeypatch,
+                ordinal,
+                lambda result, unsupported_returncode=unsupported_returncode: (
+                    subprocess.CompletedProcess(
+                        result.args, unsupported_returncode, result.stdout, result.stderr
+                    )
+                ),
+                finding("git", "ACP.GIT.RETURN_CODE", role),
+            )
     assert_injected_git_failure(
         root,
         freeze,
@@ -1067,41 +1875,44 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
         lambda result: subprocess.CompletedProcess(result.args, 128, b"", None),
         finding("freeze", "ACP.FREEZE.RED_HEAD_MISSING", "redHead"),
     )
-    precedence_argv = expected_git_argv(root, freeze)[2]
-    for transform, code in (
-        (
-            lambda result: CompletedProcessSubclass(("wrong",), True, b"wrong", b"wrong"),
-            "ACP.GIT.RESULT_TYPE",
-        ),
-        (
-            lambda result: subprocess.CompletedProcess(("wrong",), True, "wrong", b"wrong"),
-            "ACP.GIT.ARGS_MISMATCH",
-        ),
-        (
-            lambda result: subprocess.CompletedProcess(precedence_argv, True, "wrong", b"wrong"),
-            "ACP.GIT.STDOUT_TYPE",
-        ),
-        (
-            lambda result: subprocess.CompletedProcess(
-                precedence_argv, True, result.stdout, b"wrong"
+    for ordinal, role in enumerate(roles):
+        precedence_argv = expected_git_argv(root, freeze)[ordinal]
+        for transform, code in (
+            (
+                lambda result: CompletedProcessSubclass(("wrong",), True, b"wrong", b"wrong"),
+                "ACP.GIT.RESULT_TYPE",
             ),
-            "ACP.GIT.STDERR_TYPE",
-        ),
-        (
-            lambda result: subprocess.CompletedProcess(
-                precedence_argv, True, result.stdout, result.stderr
+            (
+                lambda result: subprocess.CompletedProcess(("wrong",), True, "wrong", b"wrong"),
+                "ACP.GIT.ARGS_MISMATCH",
             ),
-            "ACP.GIT.RETURNCODE_TYPE",
-        ),
-    ):
-        assert_injected_git_failure(
-            root,
-            freeze,
-            monkeypatch,
-            2,
-            transform,
-            finding("git", code, "head"),
-        )
+            (
+                lambda result, argv=precedence_argv: subprocess.CompletedProcess(
+                    argv, True, "wrong", b"wrong"
+                ),
+                "ACP.GIT.STDOUT_TYPE",
+            ),
+            (
+                lambda result, argv=precedence_argv: subprocess.CompletedProcess(
+                    argv, True, result.stdout, b"wrong"
+                ),
+                "ACP.GIT.STDERR_TYPE",
+            ),
+            (
+                lambda result, argv=precedence_argv: subprocess.CompletedProcess(
+                    argv, True, result.stdout, result.stderr
+                ),
+                "ACP.GIT.RETURNCODE_TYPE",
+            ),
+        ):
+            assert_injected_git_failure(
+                root,
+                freeze,
+                monkeypatch,
+                ordinal,
+                transform,
+                finding("git", code, role),
+            )
     output_caps = (5, None, 41, 7, 6, 0, 41, 5330, 0, 0, 164, 6, 32768, 320)
     for ordinal, cap in enumerate(output_caps):
         if cap is None:
@@ -1175,11 +1986,6 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
             b"f" * 40 + b"\n" + b"e" * 40 + b"\n" + b"d" * 40 + b"\n" + b"c" * 40 + b"\n",
             ("freeze", "ACP.FREEZE.RED_TREE_MISMATCH", "redTree"),
         ),
-        (
-            13,
-            (b"a" * 317) + b"@b\n",
-            ("freeze", "ACP.FREEZE.AUTHOR_MISMATCH", "implementationAuthor"),
-        ),
     )
     for ordinal, payload, terminal in exact_cap_payloads:
         expected_terminal = () if terminal is None else finding(*terminal)
@@ -1212,6 +2018,28 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
             assert_injected_git_failure(
                 root, freeze, monkeypatch, ordinal, transform, expected_terminal
             )
+    for author_payload, expected in (
+        (
+            (b"a" * 317) + b"@b\n",
+            finding("freeze", "ACP.FREEZE.AUTHOR_MISMATCH", "implementationAuthor"),
+        ),
+        (b"a" * 318 + b"@b\n", finding("git", "ACP.GIT.STDOUT_BYTES", "red_author")),
+    ):
+        assert_scripted_git_failure(
+            root,
+            freeze,
+            monkeypatch,
+            {
+                4: lambda result: subprocess.CompletedProcess(
+                    result.args, result.returncode, b"320\n", result.stderr
+                ),
+                13: lambda result, author_payload=author_payload: subprocess.CompletedProcess(
+                    result.args, result.returncode, author_payload, result.stderr
+                ),
+            },
+            14,
+            expected,
+        )
     assert_scripted_git_failure(
         root,
         freeze,
@@ -1245,9 +2073,9 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
             finding("git", "ACP.GIT.UTF8", roles[ordinal]),
         )
     malformed_outputs = (
-        (0, b"sha256\n", "ACP.FREEZE.OBJECT_FORMAT", "objectFormat"),
+        (0, b"sha2\n", "ACP.FREEZE.OBJECT_FORMAT", "objectFormat"),
         (2, b"A" * 40 + b"\n", "ACP.GIT.OUTPUT_TOKEN", "head"),
-        (2, b"0" * 40 + b"\r\n", "ACP.GIT.OUTPUT_TOKEN", "head"),
+        (2, b"0" * 39 + b"\r\n", "ACP.GIT.OUTPUT_TOKEN", "head"),
         (3, b"blob\n", "ACP.FREEZE.RED_HEAD_NOT_COMMIT", "redHead"),
         (4, b"01\n", "ACP.GIT.OUTPUT_TOKEN", "red_size"),
         (6, b"0" * 40 + b"\n", "ACP.FREEZE.HISTORY_MERGE", "HEAD"),
@@ -1542,6 +2370,7 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
         protocol.GitRepositoryBinding(linked_root, linked_git_dir, linked_common_dir),
         (),
     )
+    metadata_execution_ids.append("linked-positive")
     assert protocol.validate_repository_freeze(linked_root) == ()
     assert_exact_git_transcript(linked_root, linked_freeze, monkeypatch)
     linked_descendant_root, linked_descendant_freeze, _, _ = create_linked_git_freeze(
@@ -1555,14 +2384,25 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
         f"gitdir: {(alternate / '.git').as_posix()}\n", encoding="utf-8"
     )
     assert protocol.discover_git_repository(redirected).findings == finding(
-        "git-metadata", "ACP.GIT_METADATA.LAYOUT", ".git"
+        "git-metadata", "ACP.GIT_METADATA.LAYOUT", ".git.gitdir"
+    )
+    metadata_execution_ids.append("linked-layout-outside")
+    execute_metadata_case(
+        "root-nonabsolute",
+        Path("relative-repository-root"),
+        finding("git-metadata", "ACP.GIT_METADATA.NONABSOLUTE", "root"),
+    )
+    execute_metadata_case(
+        "root-dotdot",
+        tmp_path / ".." / tmp_path.name,
+        finding("git-metadata", "ACP.GIT_METADATA.NONABSOLUTE", "root"),
     )
     physical_root, _ = create_real_git_freeze(tmp_path / "root-symlink-physical")
     lexical_root = tmp_path / "root-symlink"
     lexical_root.symlink_to(physical_root, target_is_directory=True)
-    assert_metadata_failure(
+    execute_metadata_case(
+        "root-symlink",
         lexical_root,
-        monkeypatch,
         finding("git-metadata", "ACP.GIT_METADATA.ANCESTOR_SYMLINK", "root"),
     )
     physical_container = tmp_path / "pre-root-physical"
@@ -1570,16 +2410,117 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
     lexical_container = tmp_path / "pre-root-symlink"
     lexical_container.symlink_to(physical_container, target_is_directory=True)
     lexical_nested_root = lexical_container / nested_root.relative_to(physical_container)
-    assert_metadata_failure(
+    execute_metadata_case(
+        "pre-root-symlink",
         lexical_nested_root,
-        monkeypatch,
         finding("git-metadata", "ACP.GIT_METADATA.ANCESTOR_SYMLINK", "root"),
+    )
+    replacement_io = protocol.SYSTEM_METADATA_IO
+    replacement_root, _ = create_real_git_freeze(tmp_path / "root-replacement-repository")
+    replacement_shadow = replacement_root.with_name(f"{replacement_root.name}-original")
+    replacement_done = False
+
+    def replace_root_after_lstat(
+        path: str,
+        *,
+        dir_fd: int | None = None,
+    ) -> os.stat_result:
+        nonlocal replacement_done
+        before = replacement_io.lstat(path, dir_fd=dir_fd)
+        if path == replacement_root.name and not replacement_done:
+            replacement_root.rename(replacement_shadow)
+            replacement_root.symlink_to(replacement_shadow, target_is_directory=True)
+            replacement_done = True
+        return before
+
+    execute_metadata_io_case(
+        "root-replacement",
+        replacement_root,
+        protocol.MetadataIO(
+            replace_root_after_lstat,
+            replacement_io.open,
+            replacement_io.fstat,
+            replacement_io.read,
+            replacement_io.close,
+        ),
+        finding("git-metadata", "ACP.GIT_METADATA.IDENTITY_CHANGED", "root"),
+    )
+    pre_replacement_container = tmp_path / "pre-root-replacement-container"
+    pre_replacement_root, _ = create_real_git_freeze(pre_replacement_container / "repository")
+    pre_replacement_shadow = pre_replacement_container.with_name(
+        f"{pre_replacement_container.name}-original"
+    )
+    pre_replacement_done = False
+
+    def replace_pre_root_after_lstat(
+        path: str,
+        *,
+        dir_fd: int | None = None,
+    ) -> os.stat_result:
+        nonlocal pre_replacement_done
+        before = replacement_io.lstat(path, dir_fd=dir_fd)
+        if path == pre_replacement_container.name and not pre_replacement_done:
+            pre_replacement_container.rename(pre_replacement_shadow)
+            pre_replacement_container.symlink_to(pre_replacement_shadow, target_is_directory=True)
+            pre_replacement_done = True
+        return before
+
+    execute_metadata_io_case(
+        "pre-root-replacement",
+        pre_replacement_root,
+        protocol.MetadataIO(
+            replace_pre_root_after_lstat,
+            replacement_io.open,
+            replacement_io.fstat,
+            replacement_io.read,
+            replacement_io.close,
+        ),
+        finding("git-metadata", "ACP.GIT_METADATA.IDENTITY_CHANGED", "root"),
+    )
+    ancestor_replacement_root, _ = create_real_git_freeze(
+        tmp_path / "ancestor-replacement-repository"
+    )
+    ancestor_info = ancestor_replacement_root / ".git/info"
+    ancestor_info.mkdir(exist_ok=True)
+    ancestor_shadow = ancestor_info.with_name("info-original")
+    ancestor_replacement_done = False
+
+    def replace_ancestor_after_public_lstat(
+        path: str,
+        *,
+        dir_fd: int | None = None,
+    ) -> os.stat_result:
+        nonlocal ancestor_replacement_done
+        before = replacement_io.lstat(path, dir_fd=dir_fd)
+        if path == "info" and not ancestor_replacement_done:
+            ancestor_info.rename(ancestor_shadow)
+            ancestor_info.symlink_to(ancestor_shadow, target_is_directory=True)
+            ancestor_replacement_done = True
+        return before
+
+    execute_metadata_io_case(
+        "ancestor-replacement",
+        ancestor_replacement_root,
+        protocol.MetadataIO(
+            replace_ancestor_after_public_lstat,
+            replacement_io.open,
+            replacement_io.fstat,
+            replacement_io.read,
+            replacement_io.close,
+        ),
+        finding("git-metadata", "ACP.GIT_METADATA.IDENTITY_CHANGED", "info"),
     )
     dot_git_cases: tuple[tuple[str, str, bytes | None, str, str], ...] = (
         ("missing", "missing", None, "ACP.GIT_METADATA.MISSING", ".git"),
         ("target-symlink", "symlink", None, "ACP.GIT_METADATA.TARGET_SYMLINK", ".git"),
         ("fifo", "fifo", None, "ACP.GIT_METADATA.WRONG_TYPE", ".git"),
-        ("cap-n", "bytes", (b"x" * 4095) + b"\n", "ACP.GIT_METADATA.RECORD_SHAPE", ".git"),
+        (
+            "cap-n-malformed",
+            "bytes",
+            (b"x" * 4095) + b"\n",
+            "ACP.GIT_METADATA.RECORD_SHAPE",
+            ".git",
+        ),
         ("cap-n-plus-one", "bytes", b"x" * 4097, "ACP.GIT_METADATA.BYTE_CAP", ".git"),
         ("utf8", "bytes", b"gitdir: \xff\n", "ACP.GIT_METADATA.INVALID_UTF8", ".git"),
         ("missing-lf", "bytes", b"gitdir: /absolute", "ACP.GIT_METADATA.LINE_COUNT", ".git"),
@@ -1593,6 +2534,34 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
             ".git",
         ),
         ("relative", "bytes", b"gitdir: relative\n", "ACP.GIT_METADATA.NONABSOLUTE", ".git.gitdir"),
+        (
+            "dot-component",
+            "bytes",
+            b"gitdir: /repo/./worktrees/name\n",
+            "ACP.GIT_METADATA.CONTAINMENT",
+            ".git.gitdir",
+        ),
+        (
+            "dotdot-component",
+            "bytes",
+            b"gitdir: /repo/../worktrees/name\n",
+            "ACP.GIT_METADATA.CONTAINMENT",
+            ".git.gitdir",
+        ),
+        (
+            "empty-component",
+            "bytes",
+            b"gitdir: /repo//worktrees/name\n",
+            "ACP.GIT_METADATA.CONTAINMENT",
+            ".git.gitdir",
+        ),
+        (
+            "nul",
+            "bytes",
+            b"gitdir: /repo/worktrees/na\x00me\n",
+            "ACP.GIT_METADATA.CONTAINMENT",
+            ".git.gitdir",
+        ),
     )
     for name, mode, metadata_payload, code, location in dot_git_cases:
         metadata_root, _ = create_real_git_freeze(tmp_path / f"dot-git-{name}")
@@ -1606,9 +2575,9 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
         elif mode == "bytes":
             assert metadata_payload is not None
             dot_git.write_bytes(metadata_payload)
-        assert_metadata_failure(
+        execute_metadata_case(
+            f"dot-git-{name}",
             metadata_root,
-            monkeypatch,
             finding("git-metadata", code, location),
         )
     public_race_root, _ = create_real_git_freeze(tmp_path / "public-leaf-race")
@@ -1648,6 +2617,177 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
         assert protocol.validate_repository_freeze(public_race_root) == finding(
             "git-metadata", "ACP.GIT_METADATA.IDENTITY_CHANGED", ".git"
         )
+    metadata_execution_ids.append("leaf-replacement")
+    for case_id, stat_index, stat_value, expected_code in (
+        ("fstat-device", 2, -1, "ACP.GIT_METADATA.IDENTITY_CHANGED"),
+        ("fstat-inode", 1, -1, "ACP.GIT_METADATA.IDENTITY_CHANGED"),
+        ("fstat-type", 0, 0, "ACP.GIT_METADATA.WRONG_TYPE"),
+    ):
+        fstat_root, _ = create_real_git_freeze(tmp_path / f"public-{case_id}")
+        final_descriptors: set[int] = set()
+
+        def fstat_open(
+            path: str,
+            flags: int,
+            *,
+            dir_fd: int | None = None,
+        ) -> int:
+            descriptor = system_io.open(path, flags, dir_fd=dir_fd)
+            if path == ".git":
+                final_descriptors.add(descriptor)
+            return descriptor
+
+        def changed_fstat(descriptor: int) -> os.stat_result:
+            result = system_io.fstat(descriptor)
+            if descriptor not in final_descriptors:
+                return result
+            values = list(result)
+            values[stat_index] = stat_value
+            return os.stat_result(values)
+
+        execute_metadata_io_case(
+            case_id,
+            fstat_root,
+            protocol.MetadataIO(
+                system_io.lstat,
+                fstat_open,
+                changed_fstat,
+                system_io.read,
+                system_io.close,
+            ),
+            finding("git-metadata", expected_code, ".git"),
+        )
+    for case_id, stat_index, stat_value, expected_code in (
+        ("post-read-device", 2, -1, "ACP.GIT_METADATA.IDENTITY_CHANGED"),
+        ("post-read-inode", 1, -1, "ACP.GIT_METADATA.IDENTITY_CHANGED"),
+        ("post-read-type", 0, 0, "ACP.GIT_METADATA.WRONG_TYPE"),
+    ):
+        post_root, _, _, _ = create_linked_git_freeze(tmp_path / f"public-{case_id}")
+        dot_git_lstats = 0
+
+        def changed_post_lstat(
+            path: str,
+            *,
+            dir_fd: int | None = None,
+        ) -> os.stat_result:
+            nonlocal dot_git_lstats
+            result = system_io.lstat(path, dir_fd=dir_fd)
+            if path != ".git":
+                return result
+            dot_git_lstats += 1
+            if dot_git_lstats == 1:
+                return result
+            values = list(result)
+            values[stat_index] = stat_value
+            return os.stat_result(values)
+
+        execute_metadata_io_case(
+            case_id,
+            post_root,
+            protocol.MetadataIO(
+                changed_post_lstat,
+                system_io.open,
+                system_io.fstat,
+                system_io.read,
+                system_io.close,
+            ),
+            finding("git-metadata", expected_code, ".git"),
+        )
+    read_type_root, _, _, _ = create_linked_git_freeze(tmp_path / "public-read-type")
+    execute_metadata_io_case(
+        "read-type",
+        read_type_root,
+        protocol.MetadataIO(
+            system_io.lstat,
+            system_io.open,
+            system_io.fstat,
+            lambda descriptor, count: "not-bytes",  # type: ignore[arg-type,return-value]
+            system_io.close,
+        ),
+        finding("git-metadata", "ACP.GIT_METADATA.READ_TYPE", ".git"),
+    )
+    read_error_root, _, _, _ = create_linked_git_freeze(tmp_path / "public-read-error")
+    execute_metadata_io_case(
+        "read-error",
+        read_error_root,
+        protocol.MetadataIO(
+            system_io.lstat,
+            system_io.open,
+            system_io.fstat,
+            lambda descriptor, count: (_ for _ in ()).throw(OSError("read error")),
+            system_io.close,
+        ),
+        finding("git-metadata", "ACP.GIT_METADATA.IO_ERROR", ".git"),
+    )
+    lstat_error_root, _ = create_real_git_freeze(tmp_path / "public-lstat-error")
+
+    def public_lstat_error(path: str, *, dir_fd: int | None = None) -> os.stat_result:
+        if path == ".git":
+            raise OSError("lstat error")
+        return system_io.lstat(path, dir_fd=dir_fd)
+
+    execute_metadata_io_case(
+        "lstat-error",
+        lstat_error_root,
+        protocol.MetadataIO(
+            public_lstat_error,
+            system_io.open,
+            system_io.fstat,
+            system_io.read,
+            system_io.close,
+        ),
+        finding("git-metadata", "ACP.GIT_METADATA.IO_ERROR", ".git"),
+    )
+    open_error_root, _ = create_real_git_freeze(tmp_path / "public-open-error")
+
+    def public_open_error(
+        path: str,
+        flags: int,
+        *,
+        dir_fd: int | None = None,
+    ) -> int:
+        if path == ".git":
+            raise OSError("open error")
+        return system_io.open(path, flags, dir_fd=dir_fd)
+
+    execute_metadata_io_case(
+        "open-error",
+        open_error_root,
+        protocol.MetadataIO(
+            system_io.lstat,
+            public_open_error,
+            system_io.fstat,
+            system_io.read,
+            system_io.close,
+        ),
+        finding("git-metadata", "ACP.GIT_METADATA.IO_ERROR", ".git"),
+    )
+    close_error_root, _ = create_real_git_freeze(tmp_path / "public-close-error")
+    close_error_seen = False
+    failed_close_descriptor: int | None = None
+
+    def public_close_error(descriptor: int) -> None:
+        nonlocal close_error_seen, failed_close_descriptor
+        if not close_error_seen:
+            close_error_seen = True
+            failed_close_descriptor = descriptor
+            raise OSError("close error")
+        system_io.close(descriptor)
+
+    execute_metadata_io_case(
+        "close-error",
+        close_error_root,
+        protocol.MetadataIO(
+            system_io.lstat,
+            system_io.open,
+            system_io.fstat,
+            system_io.read,
+            public_close_error,
+        ),
+        finding("git-metadata", "ACP.GIT_METADATA.IO_ERROR", ".git"),
+    )
+    assert failed_close_descriptor is not None
+    system_io.close(failed_close_descriptor)
     linked_record_cases = (
         ("backlink", "gitdir", "ACP.GIT_METADATA.BACKLINK_MISMATCH"),
         ("commondir", "commondir", "ACP.GIT_METADATA.COMMONDIR_MISMATCH"),
@@ -1658,12 +2798,12 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
             ("directory", None, "ACP.GIT_METADATA.WRONG_TYPE"),
             ("fifo", None, "ACP.GIT_METADATA.WRONG_TYPE"),
             ("symlink", None, "ACP.GIT_METADATA.TARGET_SYMLINK"),
-            ("cap-n", (b"x" * 4095) + b"\n", "ACP.GIT_METADATA.RECORD_SHAPE"),
+            ("cap-n-malformed", (b"x" * 4095) + b"\n", "ACP.GIT_METADATA.RECORD_SHAPE"),
             ("cap-n-plus-one", b"x" * 4097, "ACP.GIT_METADATA.BYTE_CAP"),
-            ("utf8", b"\xff\n", "ACP.GIT_METADATA.INVALID_UTF8"),
+            ("invalid-utf8", b"\xff\n", "ACP.GIT_METADATA.INVALID_UTF8"),
             ("missing-lf", b"wrong", "ACP.GIT_METADATA.LINE_COUNT"),
             ("extra-lf", b"wrong\n\n", "ACP.GIT_METADATA.LINE_COUNT"),
-            ("wrong", b"wrong\n", mismatch_code),
+            ("mismatch", b"wrong\n", mismatch_code),
         )
         for mutation, linked_payload, code in linked_mutations:
             linked_root, _, linked_git_dir, _ = create_linked_git_freeze(
@@ -1685,12 +2825,18 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
             else:
                 assert linked_payload is not None
                 record_path.write_bytes(linked_payload)
-            assert_metadata_failure(
+            execute_metadata_case(
+                f"{role}-{mutation}",
                 linked_root,
-                monkeypatch,
                 finding("git-metadata", code, f"git-dir/{filename}"),
             )
     for relative in protocol.STATIC_GIT_METADATA_TARGETS:
+        case_prefix = {
+            "info/grafts": "grafts",
+            "shallow": "shallow",
+            "objects/info/alternates": "alternates",
+            "objects/info/http-alternates": "http-alternates",
+        }[relative]
         for inode_kind, code in (
             ("file", "ACP.GIT_METADATA.PROHIBITED"),
             ("directory", "ACP.GIT_METADATA.PROHIBITED"),
@@ -1716,9 +2862,9 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
                 if inode_kind == "live-symlink":
                     link_target.write_bytes(b"target")
                 target.symlink_to(link_target)
-            assert_metadata_failure(
+            execute_metadata_case(
+                f"{case_prefix}-{inode_kind}",
                 prohibited_root,
-                monkeypatch,
                 finding("git-metadata", code, relative),
             )
         if Path(relative).parent != Path("."):
@@ -1729,9 +2875,9 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
             preserved_ancestor = ancestor.with_name(f"{ancestor.name}-preserved")
             ancestor.rename(preserved_ancestor)
             ancestor.symlink_to(preserved_ancestor, target_is_directory=True)
-            assert_metadata_failure(
+            execute_metadata_case(
+                f"{case_prefix}-ancestor-symlink",
                 ancestor_root,
-                monkeypatch,
                 finding(
                     "git-metadata",
                     "ACP.GIT_METADATA.ANCESTOR_SYMLINK",
@@ -1746,24 +2892,21 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
     )
     linked_symlink_git_dir.rename(preserved_linked_git_dir)
     linked_symlink_git_dir.symlink_to(preserved_linked_git_dir, target_is_directory=True)
-    assert_metadata_failure(
+    execute_metadata_case(
+        "linked-git-dir-target-symlink",
         linked_symlink_root,
-        monkeypatch,
         finding("git-metadata", "ACP.GIT_METADATA.TARGET_SYMLINK", ".git.gitdir"),
     )
     sentinel_findings = finding("git-metadata", "ACP.GIT_METADATA.IDENTITY_CHANGED", ".git")
-    metadata_calls: list[tuple[Path, Path, int, str, str, protocol.MetadataIO]] = []
+    metadata_calls: list[tuple[Path, protocol.GitMetadataProvenance, protocol.MetadataIO]] = []
 
     def first_metadata_failure(
         called_root: Path,
-        path: Path,
         *,
-        max_bytes: int,
-        expected_kind: str,
-        location: str,
+        provenance: protocol.GitMetadataProvenance,
         io: protocol.MetadataIO,
     ) -> protocol.GitMetadataReadResult:
-        metadata_calls.append((called_root, path, max_bytes, expected_kind, location, io))
+        metadata_calls.append((called_root, provenance, io))
         return protocol.GitMetadataReadResult(None, sentinel_findings)
 
     composition_root, _ = create_real_git_freeze(tmp_path / "metadata-composition")
@@ -1783,24 +2926,18 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
     assert metadata_calls == [
         (
             composition_root,
-            composition_root / ".git",
-            4096,
-            "directory_or_regular_record",
-            ".git",
+            protocol.GitMetadataProvenance("dot_git", None),
             protocol.SYSTEM_METADATA_IO,
         ),
         (
             composition_root,
-            composition_root / ".git",
-            4096,
-            "directory_or_regular_record",
-            ".git",
+            protocol.GitMetadataProvenance("dot_git", None),
             protocol.SYSTEM_METADATA_IO,
         ),
     ]
     io_root = tmp_path / "metadata-io"
     io_root.mkdir()
-    io_record = io_root / "record"
+    io_record = io_root / ".git"
     io_payload = b"gitdir: /absolute/path\n"
     io_record.write_bytes(io_payload)
     real_io = protocol.SYSTEM_METADATA_IO
@@ -1842,10 +2979,7 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
     identity = io_record.lstat()
     assert PROTOCOL_METADATA_READER(
         io_root,
-        io_record,
-        max_bytes=len(io_payload),
-        expected_kind="regular_record",
-        location="record",
+        provenance=protocol.GitMetadataProvenance("dot_git", None),
         io=chunked_io,
     ) == protocol.GitMetadataReadResult(
         protocol.GitMetadataRecord(
@@ -1875,20 +3009,18 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
         else:
             assert not operation[2] & os.O_DIRECTORY
     assert [item[1] for item in metadata_operations if item[0] == "close"] == (opened_fds[::-1])
-    final_component_lstats = [
-        item for item in metadata_operations if item[:2] == ("lstat", "record")
-    ]
+    final_component_lstats = [item for item in metadata_operations if item[:2] == ("lstat", ".git")]
     assert len(final_component_lstats) == 2
     assert final_component_lstats[0][2] == final_component_lstats[1][2]
     assert len([item for item in metadata_operations if item[0] == "read"]) == (len(io_payload) + 1)
+    metadata_execution_ids.extend(("short-read", "reverse-close"))
+    io_record.write_bytes(b"x" * 4097)
     assert PROTOCOL_METADATA_READER(
         io_root,
-        io_record,
-        max_bytes=len(io_payload) - 1,
-        expected_kind="regular_record",
-        location="record",
+        provenance=protocol.GitMetadataProvenance("dot_git", None),
         io=chunked_io,
-    ).findings == finding("git-metadata", "ACP.GIT_METADATA.BYTE_CAP", "record")
+    ).findings == finding("git-metadata", "ACP.GIT_METADATA.BYTE_CAP", ".git")
+    io_record.write_bytes(io_payload)
     close_after_error: list[int] = []
 
     def failing_read(file_descriptor: int, count: int) -> bytes:
@@ -1908,12 +3040,9 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
     )
     assert PROTOCOL_METADATA_READER(
         io_root,
-        io_record,
-        max_bytes=4096,
-        expected_kind="regular_record",
-        location="record",
+        provenance=protocol.GitMetadataProvenance("dot_git", None),
         io=failing_io,
-    ).findings == finding("git-metadata", "ACP.GIT_METADATA.IO_ERROR", "record")
+    ).findings == finding("git-metadata", "ACP.GIT_METADATA.IO_ERROR", ".git")
     assert close_after_error
     original_stat = io_record.lstat()
 
@@ -1931,12 +3060,9 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
     )
     assert PROTOCOL_METADATA_READER(
         io_root,
-        io_record,
-        max_bytes=4096,
-        expected_kind="regular_record",
-        location="record",
+        provenance=protocol.GitMetadataProvenance("dot_git", None),
         io=mismatched_io,
-    ).findings == finding("git-metadata", "ACP.GIT_METADATA.IDENTITY_CHANGED", "record")
+    ).findings == finding("git-metadata", "ACP.GIT_METADATA.IDENTITY_CHANGED", ".git")
     for io_variant, code in (
         (
             protocol.MetadataIO(
@@ -1986,18 +3112,15 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
     ):
         assert PROTOCOL_METADATA_READER(
             io_root,
-            io_record,
-            max_bytes=4096,
-            expected_kind="regular_record",
-            location="record",
+            provenance=protocol.GitMetadataProvenance("dot_git", None),
             io=io_variant,
-        ).findings == finding("git-metadata", code, "record")
+        ).findings == finding("git-metadata", code, ".git")
     post_lstat_calls = 0
 
     def changed_after_read(path: str, *, dir_fd: int | None = None) -> os.stat_result:
         nonlocal post_lstat_calls
         result = real_io.lstat(path, dir_fd=dir_fd)
-        if path == "record":
+        if path == ".git":
             post_lstat_calls += 1
             if post_lstat_calls > 1:
                 values = list(result)
@@ -2007,10 +3130,7 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
 
     assert PROTOCOL_METADATA_READER(
         io_root,
-        io_record,
-        max_bytes=4096,
-        expected_kind="regular_record",
-        location="record",
+        provenance=protocol.GitMetadataProvenance("dot_git", None),
         io=protocol.MetadataIO(
             changed_after_read,
             real_io.open,
@@ -2018,19 +3138,28 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
             real_io.read,
             real_io.close,
         ),
-    ).findings == finding("git-metadata", "ACP.GIT_METADATA.IDENTITY_CHANGED", "record")
+    ).findings == finding("git-metadata", "ACP.GIT_METADATA.IDENTITY_CHANGED", ".git")
     race_root = tmp_path / "metadata-ancestor-race"
-    race_parent = race_root / "parent"
+    race_git_dir = race_root / ".git"
+    race_parent = race_git_dir / "info"
     race_parent.mkdir(parents=True)
-    race_record = race_parent / "record"
+    race_record = race_parent / "grafts"
     race_record.write_bytes(io_payload)
-    replaced_parent = race_root / "parent-original"
+    race_git_identity = race_git_dir.lstat()
+    race_dot_git_record = protocol.GitMetadataRecord(
+        race_git_dir,
+        None,
+        race_git_identity.st_mode,
+        race_git_identity.st_dev,
+        race_git_identity.st_ino,
+    )
+    replaced_parent = race_git_dir / "info-original"
     replaced = False
 
     def replace_ancestor_after_lstat(path: str, *, dir_fd: int | None = None) -> os.stat_result:
         nonlocal replaced
         result = real_io.lstat(path, dir_fd=dir_fd)
-        if path == "parent" and not replaced:
+        if path == "info" and not replaced:
             race_parent.rename(replaced_parent)
             race_parent.symlink_to(replaced_parent, target_is_directory=True)
             replaced = True
@@ -2038,10 +3167,7 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
 
     assert PROTOCOL_METADATA_READER(
         race_root,
-        race_record,
-        max_bytes=4096,
-        expected_kind="regular_record",
-        location="record",
+        provenance=protocol.GitMetadataProvenance("prohibited_grafts", race_dot_git_record),
         io=protocol.MetadataIO(
             replace_ancestor_after_lstat,
             real_io.open,
@@ -2049,7 +3175,7 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
             real_io.read,
             real_io.close,
         ),
-    ).findings == finding("git-metadata", "ACP.GIT_METADATA.IDENTITY_CHANGED", "parent")
+    ).findings == finding("git-metadata", "ACP.GIT_METADATA.IDENTITY_CHANGED", "info")
     close_failure_opened: list[int] = []
     close_failure_attempts: list[int] = []
 
@@ -2066,10 +3192,7 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
 
     assert PROTOCOL_METADATA_READER(
         io_root,
-        io_record,
-        max_bytes=4096,
-        expected_kind="regular_record",
-        location="record",
+        provenance=protocol.GitMetadataProvenance("dot_git", None),
         io=protocol.MetadataIO(
             real_io.lstat,
             close_failure_open,
@@ -2077,20 +3200,20 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
             real_io.read,
             fail_first_close,
         ),
-    ).findings == finding("git-metadata", "ACP.GIT_METADATA.IO_ERROR", "record")
+    ).findings == finding("git-metadata", "ACP.GIT_METADATA.IO_ERROR", ".git")
     assert close_failure_attempts == close_failure_opened[::-1]
     real_io.close(close_failure_attempts[0])
     leaf_race_root = tmp_path / "metadata-leaf-race"
     leaf_race_root.mkdir()
-    leaf_race_record = leaf_race_root / "record"
+    leaf_race_record = leaf_race_root / ".git"
     leaf_race_record.write_bytes(io_payload)
-    leaf_original = leaf_race_root / "record-original"
+    leaf_original = leaf_race_root / ".git-original"
     leaf_replaced = False
 
     def replace_leaf_after_lstat(path: str, *, dir_fd: int | None = None) -> os.stat_result:
         nonlocal leaf_replaced
         before = real_io.lstat(path, dir_fd=dir_fd)
-        if path == "record" and not leaf_replaced:
+        if path == ".git" and not leaf_replaced:
             leaf_race_record.rename(leaf_original)
             leaf_race_record.symlink_to(leaf_original)
             leaf_replaced = True
@@ -2098,10 +3221,7 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
 
     assert PROTOCOL_METADATA_READER(
         leaf_race_root,
-        leaf_race_record,
-        max_bytes=4096,
-        expected_kind="regular_record",
-        location="record",
+        provenance=protocol.GitMetadataProvenance("dot_git", None),
         io=protocol.MetadataIO(
             replace_leaf_after_lstat,
             real_io.open,
@@ -2109,7 +3229,10 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
             real_io.read,
             real_io.close,
         ),
-    ).findings == finding("git-metadata", "ACP.GIT_METADATA.IDENTITY_CHANGED", "record")
+    ).findings == finding("git-metadata", "ACP.GIT_METADATA.IDENTITY_CHANGED", ".git")
+    assert len(metadata_execution_ids) == len(EXPECTED_METADATA_CASE_IDS)
+    assert len(set(metadata_execution_ids)) == len(metadata_execution_ids)
+    assert set(metadata_execution_ids) == set(EXPECTED_METADATA_CASE_IDS)
     freeze_path = root / FREEZE_PATH
     mutations = (
         ("redHead", "0" * 40, "ACP.FREEZE.RED_HEAD_MISSING"),
@@ -2708,11 +3831,8 @@ def test_repository_validator_is_read_only_and_static_boundary_is_ast_exact(
         )
         == protocol.STATIC_GIT_METADATA_TARGETS
     )
-    assert tuple(tuple(item) for item in git_contract["metadata"]["roles"]) == (
-        protocol.STATIC_GIT_METADATA_ROLES
-    )
-    assert tuple(tuple(item) for item in git_contract["metadata"]["recordCaps"]) == (
-        protocol.STATIC_GIT_METADATA_RECORD_CAPS
+    assert tuple(tuple(item) for item in git_contract["metadata"]["roleSpecs"]) == (
+        protocol.STATIC_GIT_METADATA_ROLE_SPECS
     )
     assert tuple(git_contract["metadata"]["findingContracts"]) == tuple(
         list(item) for item in protocol.STATIC_GIT_METADATA_FINDINGS
@@ -2724,9 +3844,24 @@ def test_repository_validator_is_read_only_and_static_boundary_is_ast_exact(
         protocol.STATIC_GIT_METADATA_DISCOVERY_STEPS
     )
     metadata_cases = tuple(tuple(item) for item in git_contract["metadata"]["caseUniverse"])
-    assert metadata_cases == protocol.STATIC_GIT_METADATA_CASES
+    assert metadata_cases == EXPECTED_METADATA_CASES == protocol.STATIC_GIT_METADATA_CASES
     assert tuple(item[0] for item in metadata_cases) == EXPECTED_METADATA_CASE_IDS
     assert len(set(EXPECTED_METADATA_CASE_IDS)) == len(EXPECTED_METADATA_CASE_IDS)
+    metadata_case_sha = hashlib.sha256(canonical(EXPECTED_METADATA_CASES)).hexdigest()
+    assert (
+        len(EXPECTED_METADATA_CASES)
+        == git_contract["metadata"]["caseCount"]
+        == protocol.STATIC_GIT_METADATA_CASE_COUNT
+    )
+    assert (
+        metadata_case_sha
+        == git_contract["metadata"]["caseSha256"]
+        == protocol.STATIC_GIT_METADATA_CASE_SHA256
+    )
+    assert tuple(protocol.GitMetadataProvenance.__dataclass_fields__) == (
+        "role",
+        "dot_git_record",
+    )
     assert git_contract["metadata"]["binding"] == protocol.STATIC_GIT_METADATA_BINDING
     protocol_module = ast.parse(source)
     for function_name, expected_source, matrix_field, expected_hash in (
@@ -2772,7 +3907,7 @@ def test_repository_validator_is_read_only_and_static_boundary_is_ast_exact(
     )
     assert (
         tuple(
-            (item[0], tuple(item[1]), tuple(item[2]))
+            (item[0], tuple(item[1]), tuple(item[2]), tuple(item[3]))
             for item in git_contract["returnCodeContracts"]
         )
         == protocol.STATIC_GIT_RETURN_CODES
@@ -2966,6 +4101,7 @@ def test_repository_validator_is_read_only_and_static_boundary_is_ast_exact(
         ),
         "dataclasses.dataclass": "from dataclasses import dataclass\n",
         "enum": "import enum\n",
+        "errno": "import errno\n",
         "hashlib": "import hashlib\n",
         "json": "import json\n",
         "os": "import os\n",
