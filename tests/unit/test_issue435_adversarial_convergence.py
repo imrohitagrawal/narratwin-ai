@@ -4,9 +4,12 @@ from __future__ import annotations
 
 import hashlib
 import json
+from copy import deepcopy
 from dataclasses import replace
 from pathlib import Path
 from typing import Any
+
+import pytest
 
 from scripts.quality import issue435_adversarial_convergence as protocol
 
@@ -17,10 +20,10 @@ FREEZE_PATH = ROOT / "docs/governance/adversarial-convergence-red-freeze-v1.json
 REPOSITORY_TEST_PATH = ROOT / "tests/unit/test_issue435_adversarial_convergence_repository.py"
 IDENTITY_DOMAIN = b"NARRATWIN:ACP:IDENTITY:V1\x00"
 SIGNATURE_DOMAIN = b"NARRATWIN:ACP:SIGNATURE:V1\x00"
-EXPECTED_SEMANTIC_SHA256 = "4d4fc71da21f77c63861634519eb1e760e5bc8dc30890c686c3254ac64a56ece"
-EXPECTED_MUTANT_OUTCOMES_SHA256 = "596aa226805f393c8f2cdb84e44c59fe5be43cbae1013d340449b9b310483fbd"
+EXPECTED_SEMANTIC_SHA256 = "93988fea30aa8a01a7ce43125f97f089a2d6ed320090aec5d73e57702d0f4bba"
+EXPECTED_MUTANT_OUTCOMES_SHA256 = "82827fdb52e95398c0e0afe3ff79b9f46dede3abe814cb816bcc5b1bc270cd1c"
 EXPECTED_FIXTURE_REGISTRY_SHA256 = (
-    "b3d96ee7d0338cb8b9b11f8628929b05f6b6aa512704872821579280425eac37"
+    "a79c0cced07dd4ccfd953d94036fa01e90e4c7117f76cc43b20a3707e44eee33"
 )
 PIPELINE = (
     "bounds",
@@ -43,6 +46,7 @@ DIMENSIONS = (
     "reordering_duplication",
     "substitution",
     "cryptographic_eligibility",
+    "authorization_eligibility",
     "graph_conflict_precedence",
     "reconstruction_replay",
 )
@@ -96,6 +100,21 @@ EXPECTED_RED_FAILURES = (
     "tests/unit/test_issue435_adversarial_convergence_repository.py::test_dispatcher_runs_protocol_first_and_fails_fast[8-main-True]",
     "tests/unit/test_issue435_adversarial_convergence_repository.py::test_dispatcher_runs_protocol_first_and_fails_fast[8-neutral-435-False]",
 )
+MUTANT_ASSERTION_IDS = {
+    "MUT-ORDER-REORDER": "MUT-ORDER-REORDER::exact-stage-ledger",
+    "MUT-LIFECYCLE-REPLACE": "MUT-LIFECYCLE-REPLACE::exact-finding",
+    "MUT-TIME-BYPASS": "MUT-TIME-BYPASS::exact-finding",
+    "MUT-PHASE-REPLACE": "MUT-PHASE-REPLACE::exact-finding",
+    "MUT-BOUNDS-BYPASS": "MUT-BOUNDS-BYPASS::exact-finding",
+    "MUT-PARSE-REPLACE": "MUT-PARSE-REPLACE::exact-finding",
+    "MUT-IDENTITY-BYPASS": "MUT-IDENTITY-BYPASS::exact-finding",
+    "MUT-DUPLICATE-BYPASS": "MUT-DUPLICATE-BYPASS::exact-finding",
+    "MUT-SUBSTITUTION-REMOVE": "MUT-SUBSTITUTION-REMOVE::exact-finding",
+    "MUT-SELF-TRUST-REPLACE": "MUT-SELF-TRUST-REPLACE::exact-finding",
+    "MUT-AUTH-BYPASS": "MUT-AUTH-BYPASS::exact-finding",
+    "MUT-PRECEDENCE-REPLACE": "MUT-PRECEDENCE-REPLACE::exact-selection",
+    "MUT-REPLAY-SUBSET": "MUT-REPLAY-SUBSET::exact-finding",
+}
 
 
 def canonical(value: object) -> bytes:
@@ -248,6 +267,7 @@ class ExactCryptoSpy:
 
     def __call__(self, probe: protocol.CryptoProbe) -> bool:
         ordinal = len(self.calls)
+        assert ordinal < len(self.expected), f"unexpected crypto probe {probe!r}"
         expected_probe, result = self.expected[ordinal]
         assert probe == expected_probe
         self.calls.append(probe)
@@ -482,6 +502,14 @@ DIMENSION_CONTRACTS = (
         protocol.BlockerClass.IMPLEMENTATION,
     ),
     (
+        "authorization_eligibility",
+        "authorization",
+        "ACP.AUTHORIZATION",
+        "test_only_trusted_authorized_candidates_can_conflict",
+        "MUT-AUTH-BYPASS",
+        protocol.BlockerClass.IMPLEMENTATION,
+    ),
+    (
         "graph_conflict_precedence",
         "graph_conflict",
         "ACP.GRAPH",
@@ -513,12 +541,30 @@ CLASS_CONTRACTS = (
 
 
 def matrix_fixture_bytes(case_id: str, input_class: str) -> bytes:
+    dimension, test_class = case_id.split(":", 1)
+    raw, candidate_id, message = candidate(payload=case_id)
     return canonical(
         {
             "schemaVersion": "AdversarialMatrixFixtureV1",
             "caseId": case_id,
             "inputClass": input_class,
             "nonce": hashlib.sha256(f"issue435:{case_id}".encode()).hexdigest(),
+            "candidateDocumentsHex": [raw.hex()],
+            "evaluationContext": {
+                "expectedPhase": "CURRENT",
+                "evaluationTime": "2026-08-21T00:00:00Z",
+                "trustedPublicKeys": {candidate_id: "11" * 32},
+                "authorizedCandidateIds": [candidate_id],
+            },
+            "cryptoInputs": [
+                {
+                    "candidateId": candidate_id,
+                    "signatureHex": "aa" * 64,
+                    "publicKeyHex": "11" * 32,
+                    "messageHex": message.hex(),
+                }
+            ],
+            "hostileMutation": {"dimension": dimension, "testClass": test_class},
         }
     )
 
@@ -542,21 +588,21 @@ def expected_matrix_cases() -> tuple[protocol.MatrixCase, ...]:
                 suffix, verdict, eligible = "REORDERED", protocol.Verdict.INVALID, False
             input_class = f"{dimension}.{test_class}"
             fixture_bytes = matrix_fixture_bytes(case_id, input_class)
+            fixture = strict_object(fixture_bytes)
+            candidate_id = fixture["cryptoInputs"][0]["candidateId"]
+            message = bytes.fromhex(fixture["cryptoInputs"][0]["messageHex"])
             terminal_stage = "phase_verdict" if suffix is None else stage
-            stage_ledger = tuple(
-                protocol.StageCall(item, case_id, ordinal)
-                for ordinal, item in enumerate(PIPELINE[: PIPELINE.index(terminal_stage) + 1])
-            )
+            stage_ledger = pipeline_calls((candidate_id,), terminal_stage)
             crypto_ledger = (
                 (
                     protocol.MatrixCryptoExpectation(
-                        case_id,
+                        candidate_id,
                         "aa" * 64,
                         0,
                         1,
                         protocol.Phase.CURRENT,
                         hashlib.sha256(bytes.fromhex("11" * 32)).hexdigest(),
-                        hashlib.sha256(fixture_bytes).hexdigest(),
+                        hashlib.sha256(message).hexdigest(),
                         terminal_stage != "independent_trust",
                     ),
                 )
@@ -585,7 +631,7 @@ def expected_matrix_cases() -> tuple[protocol.MatrixCase, ...]:
                     crypto_expectations=crypto_ledger,
                     graph_eligible=eligible,
                     graph_call_count=1 if eligible else 0,
-                    selected_candidate_reference=case_id if eligible else None,
+                    selected_candidate_reference=candidate_id if eligible else None,
                     test_node=test_node,
                     mutant_id=mutant,
                     assertion_id=f"{test_node}::{case_id}::exact-outcome",
@@ -594,6 +640,33 @@ def expected_matrix_cases() -> tuple[protocol.MatrixCase, ...]:
                 )
             )
     return tuple(cases)
+
+
+def expected_matrix_observation(case: protocol.MatrixCase) -> protocol.MatrixObservation:
+    return protocol.MatrixObservation(
+        case_id=case.case_id,
+        input_class=case.input_class,
+        input_sha256=case.input_sha256,
+        findings=case.findings,
+        phase_verdicts=case.phase_verdicts,
+        stage_calls=case.stage_calls,
+        crypto_calls=tuple(
+            protocol.CryptoCall(
+                item.candidate_reference,
+                item.signature_hex,
+                item.ordinal,
+                item.candidate_count,
+                item.phase.value,
+                item.public_key_sha256,
+                item.message_sha256,
+                item.result,
+            )
+            for item in case.crypto_expectations
+        ),
+        graph_eligible=case.graph_eligible,
+        graph_call_count=case.graph_call_count,
+        selected_candidate_reference=case.selected_candidate_reference,
+    )
 
 
 def test_matrix_cross_product_and_exact_outcomes_are_closed() -> None:
@@ -615,7 +688,7 @@ def test_matrix_cross_product_and_exact_outcomes_are_closed() -> None:
                 for case in invariant["caseProfiles"]
             }
         )
-        == 120
+        == 130
     )
     expected = expected_matrix_cases()
     registry = matrix_fixture_registry()
@@ -640,13 +713,76 @@ def test_matrix_cross_product_and_exact_outcomes_are_closed() -> None:
             )
             for expectation in case.crypto_expectations
         ]
+        spy = ExactCryptoSpy(probes)
+        candidate_ids = tuple(item.candidate_reference for item in case.crypto_expectations)
+        if not candidate_ids:
+            candidate_ids = (strict_object(fixture)["cryptoInputs"][0]["candidateId"],)
         observed = protocol.execute_matrix_fixture(
-            case,
             fixture,
-            context=context((case.case_id,)),
-            crypto_verifier=ExactCryptoSpy(probes),
+            context=context(candidate_ids),
+            crypto_verifier=spy,
         )
-        assert observed == case
+        assert observed == expected_matrix_observation(case)
+        assert spy.calls == [probe for probe, _ in probes]
+
+    positive = expected[0]
+    stimulus = strict_object(registry[positive.input_reference])
+    stimulus_id = stimulus["cryptoInputs"][0]["candidateId"]
+    perturbations: list[tuple[dict[str, Any], str, str]] = []
+    for field, value, code, location in (
+        ("nonce", "0" * 64, "ACP.FIXTURE.NONCE", "nonce"),
+        ("candidateDocumentsHex", ["00"], "ACP.PARSE.INVALID_JSON", "candidate[0]"),
+        ("cryptoInputs", [], "ACP.FIXTURE.CRYPTO_INPUT", "cryptoInputs"),
+    ):
+        changed = deepcopy(stimulus)
+        changed[field] = value
+        perturbations.append((changed, code, location))
+    for field, value, code in (
+        ("signatureHex", "bb" * 64, "ACP.FIXTURE.SIGNATURE_MISMATCH"),
+        ("publicKeyHex", "22" * 32, "ACP.FIXTURE.KEY_MISMATCH"),
+        ("messageHex", "00", "ACP.FIXTURE.MESSAGE_MISMATCH"),
+    ):
+        changed = deepcopy(stimulus)
+        changed["cryptoInputs"][0][field] = value
+        perturbations.append((changed, code, f"cryptoInputs[0].{field}"))
+    changed = deepcopy(stimulus)
+    changed["evaluationContext"]["authorizedCandidateIds"] = []
+    perturbations.append(
+        (changed, "ACP.FIXTURE.AUTHORIZATION_MISMATCH", "evaluationContext.authorizedCandidateIds")
+    )
+    for changed, code, location in perturbations:
+        observed = protocol.execute_matrix_fixture(
+            canonical(changed),
+            context=context((stimulus_id,)),
+            crypto_verifier=ExactCryptoSpy([]),
+        )
+        assert observed is not None
+        assert observed.findings == exact_finding("matrix", "CURRENT", code, location)
+    changed_context = context((stimulus_id,), evaluation_time="2026-08-21T00:00:01Z")
+    observed = protocol.execute_matrix_fixture(
+        canonical(stimulus), context=changed_context, crypto_verifier=ExactCryptoSpy([])
+    )
+    assert observed is not None
+    assert observed.findings == exact_finding(
+        "matrix", "CURRENT", "ACP.FIXTURE.CONTEXT_MISMATCH", "evaluationContext"
+    )
+    result_spy = ExactCryptoSpy(
+        [
+            expected_probe(
+                stimulus_id,
+                bytes.fromhex(stimulus["cryptoInputs"][0]["messageHex"]),
+                result=False,
+            )
+        ]
+    )
+    observed = protocol.execute_matrix_fixture(
+        canonical(stimulus), context=context((stimulus_id,)), crypto_verifier=result_spy
+    )
+    assert observed is not None
+    assert observed.findings == exact_finding(
+        "independent_trust", "CURRENT", "ACP.TRUST.SIGNATURE_INVALID", f"candidate[{stimulus_id}]"
+    )
+    assert result_spy.calls == [item for item, _ in result_spy.expected]
     result = protocol.validate_matrix_bytes(MATRIX_PATH.read_bytes(), synthetic_freeze(document))
     assert result.findings == ()
     assert result.semantic_sha256 == EXPECTED_SEMANTIC_SHA256
@@ -851,7 +987,9 @@ def test_lifecycle_and_explicit_time_boundaries_are_exact() -> None:
         assert result.findings == ()
 
 
-def test_all_resource_bounds_cover_exact_n_and_n_plus_one() -> None:
+def test_all_resource_bounds_cover_exact_n_and_n_plus_one(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     items = tuple(candidate(payload=f"bounded-{index}", priority=index) for index in range(4))
     documents, ids, messages = tuple(zip(*items, strict=True))
     exact = protocol.evaluate_candidates(
@@ -944,16 +1082,16 @@ def test_all_resource_bounds_cover_exact_n_and_n_plus_one() -> None:
             freeze_bytes=b"f" * 32768,
             finding_count=32,
             retained_material_count=4,
-            matrix_row_count=120,
+            matrix_row_count=130,
         )
         == ()
     )
     for matrix_size, freeze_size, finding_count, retained_count, row_count, code, location in (
-        (65537, 32768, 32, 4, 120, "ACP.BOUNDS.MATRIX_BYTES", "matrix"),
-        (65536, 32769, 32, 4, 120, "ACP.BOUNDS.FREEZE_BYTES", "freeze"),
-        (65536, 32768, 33, 4, 120, "ACP.BOUNDS.FINDING_COUNT", "findings"),
-        (65536, 32768, 32, 5, 120, "ACP.BOUNDS.RETAINED_COUNT", "retained-materials"),
-        (65536, 32768, 32, 4, 121, "ACP.BOUNDS.MATRIX_ROWS", "caseIndex"),
+        (65537, 32768, 32, 4, 130, "ACP.BOUNDS.MATRIX_BYTES", "matrix"),
+        (65536, 32769, 32, 4, 130, "ACP.BOUNDS.FREEZE_BYTES", "freeze"),
+        (65536, 32768, 33, 4, 130, "ACP.BOUNDS.FINDING_COUNT", "findings"),
+        (65536, 32768, 32, 5, 130, "ACP.BOUNDS.RETAINED_COUNT", "retained-materials"),
+        (65536, 32768, 32, 4, 131, "ACP.BOUNDS.MATRIX_ROWS", "caseIndex"),
     ):
         artifact_result = protocol.artifact_bound_findings(
             matrix_bytes=b"m" * matrix_size,
@@ -963,6 +1101,23 @@ def test_all_resource_bounds_cover_exact_n_and_n_plus_one() -> None:
             matrix_row_count=row_count,
         )
         assert artifact_result == exact_finding("bounds", "CURRENT", code, location)
+
+    matrix = MATRIX_PATH.read_bytes()
+    freeze = synthetic_freeze(matrix_document())
+    calls: list[dict[str, object]] = []
+    sentinel = exact_finding("bounds", "CURRENT", "ACP.BOUNDS.COMPOSED", "validator")
+
+    def composed_bounds(**values: object) -> tuple[protocol.Finding, ...]:
+        calls.append(values)
+        return sentinel
+
+    monkeypatch.setattr(protocol, "artifact_bound_findings", composed_bounds)
+    matrix_result = protocol.validate_matrix_bytes(matrix, freeze)
+    assert matrix_result.findings == sentinel
+    assert len(calls) == 1
+    assert calls[0]["matrix_bytes"] == matrix
+    assert calls[0]["freeze_bytes"] == freeze
+    assert calls[0]["matrix_row_count"] == 130
 
 
 def test_hostile_input_families_stop_before_later_work() -> None:
@@ -1335,7 +1490,9 @@ def test_all_three_phases_are_exact_and_isolated() -> None:
             assert outside.crypto_calls == () and outside.graph_call_count == 0
 
 
-def test_reconstruction_exact_equality_kills_subset_replay() -> None:
+def test_reconstruction_exact_equality_kills_subset_replay(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     raw, candidate_id, message = candidate()
     retained = retained_fixture((raw,), (candidate_id,), (message,), selected=candidate_id)
     exact = protocol.reconstruct_candidates(
@@ -1391,6 +1548,73 @@ def test_reconstruction_exact_equality_kills_subset_replay() -> None:
         assert protocol.retained_equality_findings(observed, rich) == exact_finding(
             "phase_verdict", "CURRENT", "ACP.REPLAY.EXACT_MISMATCH", location
         )
+
+    replay_expected = retained_fixture(
+        (raw, second),
+        (candidate_id, second_id),
+        (message, second_message),
+        selected=second_id,
+    )
+    replay_mutations = tuple(
+        (replace(replay_expected, **{field: getattr(observed, field)}), location)
+        for (observed, location), field in zip(
+            retained_mutations,
+            (
+                "candidate_sha256s",
+                "evaluation_phase",
+                "evaluation_time",
+                "trusted_key_sha256s",
+                "authorized_candidate_ids",
+                "findings",
+                "findings",
+                "findings",
+                "phase_verdicts",
+                "eligible_candidate_ids",
+                "selected_candidate_id",
+                "stage_calls",
+                "crypto_calls",
+                "graph_call_count",
+                "max_candidates",
+                "max_candidate_bytes",
+                "max_aggregate_bytes",
+                "max_json_depth",
+                "max_json_members",
+                "max_findings",
+                "max_retained_materials",
+            ),
+            strict=True,
+        )
+    )
+    comparator = protocol.retained_equality_findings
+    comparisons: list[tuple[protocol.RetainedEvaluation, protocol.RetainedEvaluation]] = []
+
+    def observed_comparator(
+        observed: protocol.RetainedEvaluation, expected: protocol.RetainedEvaluation
+    ) -> tuple[protocol.Finding, ...]:
+        comparisons.append((observed, expected))
+        return comparator(observed, expected)
+
+    monkeypatch.setattr(protocol, "retained_equality_findings", observed_comparator)
+    for changed, location in replay_mutations:
+        comparisons.clear()
+        spy = ExactCryptoSpy(
+            [
+                expected_probe(candidate_id, message, ordinal=0, count=2),
+                expected_probe(second_id, second_message, ordinal=1, count=2),
+            ]
+        )
+        result = protocol.reconstruct_candidates(
+            (raw, second),
+            retained=changed,
+            context=context((candidate_id, second_id)),
+            crypto_verifier=spy,
+        )
+        assert result.findings == exact_finding(
+            "phase_verdict", "CURRENT", "ACP.REPLAY.EXACT_MISMATCH", location
+        )
+        assert len(comparisons) == 1
+        assert comparisons[0][1] is changed
+        assert spy.calls == [item for item, _ in spy.expected]
 
     mismatch = protocol.reconstruct_candidates(
         (raw,),
@@ -1564,6 +1788,7 @@ def test_controlled_mutation_anchors_are_executable_and_complete() -> None:
     mutants_by_id = {mutant["id"]: mutant for mutant in mutants}
     outcomes_by_id = {outcome["id"]: outcome for outcome in document["mutantOutcomes"]}
     assert len({mutant["assertionId"] for mutant in mutants}) == len(mutants)
+    assert {item["id"]: item["assertionId"] for item in mutants} == MUTANT_ASSERTION_IDS
     assert all(
         mutant["assertionId"] == outcomes_by_id[mutant_id]["assertionId"]
         and mutant["expectedCode"]
@@ -1575,9 +1800,16 @@ def test_controlled_mutation_anchors_are_executable_and_complete() -> None:
         for mutant_id, mutant in mutants_by_id.items()
     )
     assert all(
+        outcome["finding"] is None or "identity" not in outcome["finding"][3]
+        for outcome in document["mutantOutcomes"]
+    )
+    assert all(
         mutants_by_id[invariant["mutantId"]]["killTest"] == invariant["killTest"]
         for invariant in document["invariants"]
     )
+    invariant_mutants = tuple(invariant["mutantId"] for invariant in document["invariants"])
+    assert set(invariant_mutants) == expected
+    assert len(set(invariant_mutants)) == len(invariant_mutants)
     assert document["mutantCommandTemplate"] == (
         "uv run pytest -q tests/unit/test_issue435_adversarial_convergence.py::{killTest}"
     )

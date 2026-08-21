@@ -26,6 +26,7 @@
       "reordering_duplication",
       "substitution",
       "cryptographic_eligibility",
+      "authorization_eligibility",
       "graph_conflict_precedence",
       "reconstruction_replay"
     ],
@@ -167,7 +168,11 @@
       "schemaVersion",
       "caseId",
       "inputClass",
-      "nonce"
+      "nonce",
+      "candidateDocumentsHex",
+      "evaluationContext",
+      "cryptoInputs",
+      "hostileMutation"
     ],
     "signatureHex": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
     "publicKeyHex": "1111111111111111111111111111111111111111111111111111111111111111"
@@ -180,7 +185,7 @@
     "jsonMembers": 13,
     "findingCount": 32,
     "retainedMaterialCount": 4,
-    "matrixRowCount": 120,
+    "matrixRowCount": 130,
     "matrixBytes": 65536,
     "freezeBytes": 32768
   },
@@ -463,6 +468,16 @@
     "cryptographic_eligibility:duplication",
     "cryptographic_eligibility:substitution",
     "cryptographic_eligibility:maximum_cardinality",
+    "authorization_eligibility:positive",
+    "authorization_eligibility:negative",
+    "authorization_eligibility:boundary",
+    "authorization_eligibility:malformed",
+    "authorization_eligibility:deletion",
+    "authorization_eligibility:corruption",
+    "authorization_eligibility:reordering",
+    "authorization_eligibility:duplication",
+    "authorization_eligibility:substitution",
+    "authorization_eligibility:maximum_cardinality",
     "graph_conflict_precedence:positive",
     "graph_conflict_precedence:negative",
     "graph_conflict_precedence:boundary",
@@ -842,6 +857,44 @@
       "killTest": "test_crypto_spy_ledger_is_exact_and_self_trust_fails"
     },
     {
+      "id": "ACP-AU-001",
+      "dimension": "authorization_eligibility",
+      "stage": "authorization",
+      "predecessorStages": [
+        "bounds",
+        "parse",
+        "schema",
+        "canonical_identity",
+        "independent_trust"
+      ],
+      "lifecycleState": "INDEPENDENTLY_TRUSTED",
+      "operation": "external_authorization_eligibility",
+      "phases": [
+        "HISTORICAL",
+        "CURRENT",
+        "ACCEPTANCE"
+      ],
+      "invariant": "Only an independently trusted candidate whose canonical identity appears in the external authorization set may reach graph/conflict processing.",
+      "trustPrecondition": "INDEPENDENT_SIGNATURE_VALID",
+      "authorizationPrecondition": "EXTERNAL_CANONICAL_ID_MEMBERSHIP",
+      "caseProfiles": [
+        "positive",
+        "negative",
+        "boundary",
+        "malformed",
+        "deletion",
+        "corruption",
+        "reordering",
+        "duplication",
+        "substitution",
+        "maximum_cardinality"
+      ],
+      "findingPrefix": "ACP.AUTHORIZATION",
+      "blockerClass": "IMPLEMENTATION_BLOCKER",
+      "mutantId": "MUT-AUTH-BYPASS",
+      "killTest": "test_only_trusted_authorized_candidates_can_conflict"
+    },
+    {
       "id": "ACP-GR-001",
       "dimension": "graph_conflict_precedence",
       "stage": "graph_conflict",
@@ -1212,7 +1265,7 @@
         "canonical_identity",
         "CURRENT",
         "ACP.IDENTITY.DUPLICATE",
-        "candidate[identity]"
+        "candidate[3251ead6bbec6deddcb98b1b184350799d6fadaa890e8929944b9c524f90d59c]"
       ],
       "phaseVerdicts": [
         "UNAVAILABLE",
@@ -1246,7 +1299,7 @@
         "independent_trust",
         "CURRENT",
         "ACP.TRUST.KEY_UNAVAILABLE",
-        "candidate[identity]"
+        "candidate[3251ead6bbec6deddcb98b1b184350799d6fadaa890e8929944b9c524f90d59c]"
       ],
       "phaseVerdicts": [
         "UNAVAILABLE",
@@ -1263,7 +1316,7 @@
         "authorization",
         "CURRENT",
         "ACP.AUTHORIZATION.DENIED",
-        "candidate[identity]"
+        "candidate[5445e9041648a88c72cd1434e28b0d5b2c54bf66de121600032313b3f1b62924]"
       ],
       "phaseVerdicts": [
         "UNAVAILABLE",

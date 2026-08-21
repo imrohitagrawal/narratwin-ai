@@ -26,7 +26,8 @@ Adopt a repository-binding adversarial convergence protocol with:
 3. exact ordered typed findings and exact historical/current verdicts;
 4. external independent trust, narrow cryptographic spies, and real public
    vectors;
-5. graph/conflict participation only after trust and authorization;
+5. separately enumerated trust and authorization eligibility, with
+   graph/conflict participation only after both pass;
 6. genuine RED plus three distinct pre-GREEN specialist reviews;
 7. an immutable RED-freeze overlay independent of mutable implementation;
 8. executed remove/bypass/reorder/replace mutants with named kill tests;
@@ -41,8 +42,13 @@ closed overlay created after review freezes its exact RED head, matrix/two-test
 blobs, semantic digest, reviewer identities, dispositions, blocker counts, and
 nonactivation. The two fixed test blobs are independent oracles that prevent a
 coordinated matrix/validator edit from self-approving. Their closed fixture
-registry resolves and executes every matrix reference, while the freeze binds
-the actual ordered RED-node catalog rather than a caller-supplied count.
+registry resolves each actual untrusted stimulus and executes it without being
+given the expected outcome. A distinct observed transcript and exact
+crypto-spy exhaustion prevent an echo oracle, while the freeze binds the actual
+ordered RED-node catalog rather than a caller-supplied count. Reconstruction is
+required to call the same independently tested complete retained-equality
+comparison used by the standalone oracle; the public validator and route gate
+must likewise compose the bounded matrix/freeze checks.
 
 `predecessorId` participates in canonical candidate identity. A cyclic
 predecessor construction therefore cannot remain identity-valid; it is rejected

@@ -64,7 +64,7 @@ def frozen_red_nodes() -> tuple[str, ...]:
 
 
 def create_real_git_freeze(
-    tmp_path: Path, *, extra_c3_path: bool = False
+    tmp_path: Path, *, extra_c3_path: bool = False, merge_c3: bool = False
 ) -> tuple[Path, dict[str, Any]]:
     root = tmp_path / "repository"
     root.mkdir(parents=True)
@@ -136,17 +136,33 @@ def create_real_git_freeze(
     git(root, "add", FREEZE_PATH)
     if extra_c3_path:
         git(root, "add", "unexpected-c3-path.txt")
-    git(
-        root,
-        "-c",
-        "user.name=Freeze Owner",
-        "-c",
-        "user.email=owner@example.com",
-        "commit",
-        "-q",
-        "-m",
-        "C3 freeze",
-    )
+    if merge_c3:
+        unrelated = git(root, "commit-tree", red_tree, "-m", "unrelated parent")
+        c3_tree = git(root, "write-tree")
+        c3_head = git(
+            root,
+            "commit-tree",
+            c3_tree,
+            "-p",
+            red_head,
+            "-p",
+            unrelated,
+            "-m",
+            "C3 merge freeze",
+        )
+        git(root, "update-ref", "HEAD", c3_head)
+    else:
+        git(
+            root,
+            "-c",
+            "user.name=Freeze Owner",
+            "-c",
+            "user.email=owner@example.com",
+            "commit",
+            "-q",
+            "-m",
+            "C3 freeze",
+        )
     return root, freeze
 
 
@@ -241,6 +257,10 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
         "freeze",
         "ACP.FREEZE.C3_SCOPE",
         "docs/governance/adversarial-convergence-red-freeze-v1.json",
+    )
+    merge_root, _ = create_real_git_freeze(tmp_path / "merge", merge_c3=True)
+    assert protocol.validate_repository_freeze(merge_root) == finding(
+        "freeze", "ACP.FREEZE.C3_PARENT_COUNT", "HEAD"
     )
 
 
@@ -379,8 +399,13 @@ def test_repository_validator_is_read_only_and_static_boundary_is_ast_exact(
     assert protocol.static_boundary_findings(source) == ()
     read_only_git = (
         "import subprocess\n"
-        "subprocess.run(('git', 'rev-parse', 'HEAD'), cwd=root, check=True, "
-        "capture_output=True, text=True)\n"
+        "subprocess.run(('git', 'rev-parse', 'HEAD'), cwd=root, check=True, capture_output=True, text=True)\n"
+        "subprocess.run(('git', 'rev-parse', 'HEAD^'), cwd=root, check=True, capture_output=True, text=True)\n"
+        "subprocess.run(('git', 'rev-parse', f'{red_head}:docs/freeze.json'), cwd=root, check=True, capture_output=True, text=True)\n"
+        "subprocess.run(('git', 'merge-base', '--is-ancestor', red_head, 'HEAD'), cwd=root, check=False, capture_output=True, text=True)\n"
+        "subprocess.run(('git', 'diff-tree', '--no-commit-id', '--name-only', '-r', 'HEAD'), cwd=root, check=True, capture_output=True, text=True)\n"
+        "subprocess.run(('git', 'show', '-s', '--format=%ae', red_head), cwd=root, check=True, capture_output=True, text=True)\n"
+        "subprocess.run(('git', 'cat-file', '-e', red_head), cwd=root, check=True, capture_output=True, text=True)\n"
     )
     assert protocol.static_boundary_findings(read_only_git) == ()
     for hostile, code in (
@@ -389,6 +414,7 @@ def test_repository_validator_is_read_only_and_static_boundary_is_ast_exact(
         ("import urllib.request as net\n", "ACP.STATIC.NETWORK_IMPORT"),
         ("from httpx import get\n", "ACP.STATIC.NETWORK_IMPORT"),
         ("import boto3\n", "ACP.STATIC.PROVIDER_IMPORT"),
+        ("from google.cloud import storage\n", "ACP.STATIC.PROVIDER_IMPORT"),
         (
             "from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey\n",
             "ACP.STATIC.PRIVATE_KEY",
@@ -400,14 +426,38 @@ def test_repository_validator_is_read_only_and_static_boundary_is_ast_exact(
         ("eval(source)\n", "ACP.STATIC.DYNAMIC_EXECUTION"),
         ("exec(source)\n", "ACP.STATIC.DYNAMIC_EXECUTION"),
         ("open('state', mode='w')\n", "ACP.STATIC.WRITE"),
+        ("from builtins import open as persist\npersist('state', 'w')\n", "ACP.STATIC.WRITE"),
         ("Path('state').write_text('x')\n", "ACP.STATIC.WRITE"),
         ("Path('state').write_bytes(b'x')\n", "ACP.STATIC.WRITE"),
+        ("Path('state').open(mode='w')\n", "ACP.STATIC.WRITE"),
+        ("Path('state').touch()\n", "ACP.STATIC.WRITE"),
+        ("Path('state').rename('other')\n", "ACP.STATIC.WRITE"),
+        ("Path('state').replace('other')\n", "ACP.STATIC.WRITE"),
+        ("Path('state').unlink()\n", "ACP.STATIC.WRITE"),
         ("os.open('state', os.O_WRONLY)\n", "ACP.STATIC.WRITE"),
         ("shutil.copyfile('a', 'b')\n", "ACP.STATIC.PERSISTENCE"),
+        ("sqlite3.connect('state.db')\n", "ACP.STATIC.PERSISTENCE"),
         ("subprocess.run(['curl', 'https://example.invalid'])\n", "ACP.STATIC.PROCESS"),
+        ("from subprocess import run as execute\nexecute(command)\n", "ACP.STATIC.PROCESS"),
+        ("subprocess.call(command)\n", "ACP.STATIC.PROCESS"),
+        ("subprocess.check_output(command)\n", "ACP.STATIC.PROCESS"),
         ("subprocess.Popen(command)\n", "ACP.STATIC.PROCESS"),
+        ("getattr(subprocess, 'Popen')(command)\n", "ACP.STATIC.PROCESS"),
         ("os.system(command)\n", "ACP.STATIC.PROCESS"),
         ("subprocess.run(('git', 'commit', '-m', 'x'))\n", "ACP.STATIC.GIT_MUTATION"),
+        ("subprocess.run(('git', 'reset', '--hard', 'HEAD'))\n", "ACP.STATIC.GIT_MUTATION"),
+        ("subprocess.run(('git', 'clean', '-fdx'))\n", "ACP.STATIC.GIT_MUTATION"),
+        ("subprocess.run(('git', 'checkout', 'other'))\n", "ACP.STATIC.GIT_MUTATION"),
+        ("subprocess.run(('git', 'update-ref', 'HEAD', value))\n", "ACP.STATIC.GIT_MUTATION"),
+        ("subprocess.run(('git', 'apply', 'patch'))\n", "ACP.STATIC.GIT_MUTATION"),
+        ("subprocess.run(('git', 'add', '.'))\n", "ACP.STATIC.GIT_MUTATION"),
+        ("subprocess.run(('git', 'config', 'x', 'y'))\n", "ACP.STATIC.GIT_MUTATION"),
+        ("subprocess.run(('git', 'hash-object', '-w', 'x'))\n", "ACP.STATIC.GIT_MUTATION"),
+        ("subprocess.run(('git', 'rev-parse', 'HEAD'), shell=True)\n", "ACP.STATIC.PROCESS"),
+        (
+            "subprocess.run(('git', 'rev-parse', 'HEAD'), cwd=dynamic_root)\n",
+            "ACP.STATIC.GIT_DYNAMIC",
+        ),
         ("subprocess.run(('git', command, 'HEAD'))\n", "ACP.STATIC.GIT_DYNAMIC"),
     ):
         assert protocol.static_boundary_findings(hostile) == finding("static", code, "source")
@@ -447,6 +497,30 @@ def test_sensitive_route_uses_paths_and_exact_issue_artifacts(tmp_path: Path) ->
     changed["matrixId"] = "issue-999-adversarial-convergence-v1"
     freeze_path.write_bytes(canonical(changed) + b"\n")
     assert protocol.route_findings(root) == finding("route", "ACP.ROUTE.ISSUE_MISMATCH", location)
+    route_mutations = (
+        ("semanticSha256", "0" * 64, "ACP.FREEZE.INDEPENDENT_SEMANTIC_MISMATCH", "semanticSha256"),
+        ("reviewFindings", ["unresolved"], "ACP.FREEZE.REVIEW_FINDINGS_NONZERO", "reviewFindings"),
+        ("completionState", "RED_RECORDED", "ACP.FREEZE.COMPLETION_STATE", "completionState"),
+    )
+    for field, value, code, finding_location in route_mutations:
+        changed = deepcopy(freeze)
+        changed[field] = value
+        freeze_path.write_bytes(canonical(changed) + b"\n")
+        assert protocol.route_findings(root) == finding("freeze", code, finding_location)
+    changed = deepcopy(freeze)
+    changed["focusedOracleBlobs"][0]["sha256"] = "0" * 64
+    freeze_path.write_bytes(canonical(changed) + b"\n")
+    assert protocol.route_findings(root) == finding(
+        "freeze", "ACP.FREEZE.ORACLE_SHA_MISMATCH", "focusedOracleBlobs[0].sha256"
+    )
+    changed = deepcopy(freeze)
+    changed["reviewers"][0]["disposition"] = "REQUEST_CHANGES"
+    freeze_path.write_bytes(canonical(changed) + b"\n")
+    assert protocol.route_findings(root) == finding(
+        "freeze", "ACP.FREEZE.REVIEW_DISPOSITION", "reviewers[0].disposition"
+    )
+    freeze_path.write_bytes(canonical(freeze) + b" " * 32768)
+    assert protocol.route_findings(root) == finding("bounds", "ACP.BOUNDS.FREEZE_BYTES", "freeze")
     freeze_path.write_bytes(canonical(freeze) + b"\n")
     assert protocol.route_findings(root, changed_paths=("../escape",)) == finding(
         "route", "ACP.ROUTE.PATH_TRAVERSAL", "../escape"

@@ -34,10 +34,15 @@ cardinality. Reference normalized profiles only when the executable validator
 expands and verifies the complete Cartesian product.
 
 Every normalized case must resolve through a closed independent fixture
-registry. Bind the fixture bytes/hash, exact assertion identity, ordered stage
-ledger, exact signature/key/message crypto ledger or explicit no-call, graph
-result/selection, three-phase verdicts, mutant, blocker class, and evidence
-state. Execute every resolved reference; label or count completeness is not
+registry. Each fixture carries the actual untrusted candidate bytes, evaluation
+context, independent trust and authorization inputs, graph/replay stimulus, and
+hostile mutation; it must not carry the expected outcome. Bind the fixture
+bytes/hash, exact assertion identity, ordered stage ledger, exact
+signature/key/message crypto ledger or explicit no-call, graph result/selection,
+three-phase verdicts, mutant, blocker class, and evidence state. The executor
+accepts only the stimulus and returns a distinct observed transcript. Execute
+every resolved reference, assert complete crypto-spy consumption, and perturb
+the stimulus independently; label, count, or echo completeness is not
 behavioral completeness.
 
 ## Pipeline-call ledger
