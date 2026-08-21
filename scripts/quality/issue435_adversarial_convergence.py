@@ -8,6 +8,9 @@ the fixed tests fail on absent behavior rather than imports or exceptions.
 from __future__ import annotations
 
 import enum
+import os  # noqa: F401 - frozen RED import surface for repository discovery.
+import stat  # noqa: F401 - frozen RED import surface for no-follow type checks.
+import subprocess  # noqa: F401 - frozen RED process boundary for exact Git evidence.
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from pathlib import Path
@@ -31,7 +34,9 @@ STATIC_ALLOWED_IMPORTS = (
     "enum",
     "hashlib",
     "json",
+    "os",
     "pathlib.Path",
+    "stat",
     "subprocess",
     "typing.Any",
 )
@@ -60,8 +65,10 @@ STATIC_ALLOWED_CALL_SHAPES = (
     "bytes.hex()",
     "hashlib.sha256(bytes)",
     "json.loads(text,object_pairs_hook=closed)",
+    "Path.as_posix()",
     "str.encode(utf-8)",
-    "subprocess.run(exact_read_only_git,cwd=root,check=exact,capture_output=True,text=True)",
+    "git-metadata:no-follow-lstat-open-fstat-bounded-read",
+    "subprocess.run(exact_read_only_git,cwd=root,check=False,exact-streams,text=False,exact-timeout,direct-literal-env)",
 )
 STATIC_ALLOWED_GOVERNED_READ_PATHS = (
     "docs/governance/adversarial-convergence-invariant-matrix-v1.json",
@@ -112,23 +119,161 @@ STATIC_GOVERNED_READER_STEPS = (
     "return-exact-binary-finding",
     "return-typed-payload",
 )
+STATIC_GIT_PREFIX = (
+    "/usr/bin/git",
+    "--no-pager",
+    "--no-replace-objects",
+    "--no-optional-locks",
+    "--no-lazy-fetch",
+    "-c",
+    "protocol.allow=never",
+    "-c",
+    "core.commitGraph=false",
+    "-c",
+    "log.showSignature=false",
+    "-c",
+    "fsck.skipList=/dev/null",
+)
+STATIC_GIT_ENV_CONTRACT = (
+    ("LC_ALL", "C"),
+    ("GIT_CONFIG_NOSYSTEM", "1"),
+    ("GIT_CONFIG_GLOBAL", "/dev/null"),
+    ("GIT_NO_LAZY_FETCH", "1"),
+    ("GIT_NO_REPLACE_OBJECTS", "1"),
+    ("GIT_OPTIONAL_LOCKS", "0"),
+    ("GIT_TERMINAL_PROMPT", "0"),
+    ("GIT_DIR", "derived_git_dir"),
+    ("GIT_COMMON_DIR", "derived_common_dir"),
+    ("GIT_WORK_TREE", "derived_root"),
+)
+STATIC_GIT_METADATA_TARGETS = (
+    "info/grafts",
+    "shallow",
+    "objects/info/alternates",
+    "objects/info/http-alternates",
+)
 STATIC_ALLOWED_GIT_FORMS = (
-    ("git", "rev-parse", "HEAD"),
-    ("git", "rev-list", "--ancestry-path", "--reverse", "{red_head}..HEAD"),
-    ("git", "rev-list", "--parents", "-n", "1", "{c3_head}"),
-    ("git", "diff-tree", "--no-commit-id", "--name-only", "-r", "{c3_head}"),
+    ("{git-prefix}", "rev-parse", "--show-object-format"),
     (
-        "git",
+        "{git-prefix}",
+        "fsck",
+        "--full",
+        "--strict",
+        "--no-dangling",
+        "--no-reflogs",
+        "--no-progress",
+    ),
+    ("{git-prefix}", "rev-parse", "HEAD^{commit}"),
+    ("{git-prefix}", "cat-file", "-t", "{red_head}"),
+    ("{git-prefix}", "cat-file", "-s", "{red_head}"),
+    ("{git-prefix}", "merge-base", "--is-ancestor", "{red_head}", "{head}"),
+    ("{git-prefix}", "rev-list", "--min-parents=2", "--max-count=1", "{red_head}..{head}"),
+    (
+        "{git-prefix}",
+        "rev-list",
+        "--parents",
+        "--ancestry-path",
+        "--reverse",
+        "--max-count=65",
+        "{red_head}..{head}",
+    ),
+    (
+        "{git-prefix}",
+        "diff-tree",
+        "-r",
+        "--no-ext-diff",
+        "--no-renames",
+        "--ignore-submodules=none",
+        "--quiet",
+        "{red_head}",
+        "{c3_head}",
+        "--",
+        ".",
+        ":(exclude)docs/governance/adversarial-convergence-red-freeze-v1.json",
+    ),
+    (
+        "{git-prefix}",
+        "diff-tree",
+        "-r",
+        "--no-ext-diff",
+        "--no-renames",
+        "--ignore-submodules=none",
+        "--quiet",
+        "{red_head}",
+        "{c3_head}",
+        "--",
+        "docs/governance/adversarial-convergence-red-freeze-v1.json",
+    ),
+    (
+        "{git-prefix}",
         "rev-parse",
         "{red_head}^{tree}",
         "{red_head}:docs/governance/adversarial-convergence-invariant-matrix-v1.json",
         "{red_head}:tests/unit/test_issue435_adversarial_convergence.py",
-        "{red_head}:tests/unit/test_issue435_adversarial-convergence_repository.py",
+        "{red_head}:tests/unit/test_issue435_adversarial_convergence_repository.py",
     ),
-    ("git", "show", "{c3_head}:docs/governance/adversarial-convergence-red-freeze-v1.json"),
-    ("git", "merge-base", "--is-ancestor", "{red_head}", "HEAD"),
-    ("git", "show", "-s", "--format=%ae", "{red_head}"),
-    ("git", "cat-file", "-e", "{red_head}"),
+    (
+        "{git-prefix}",
+        "cat-file",
+        "-s",
+        "{c3_head}:docs/governance/adversarial-convergence-red-freeze-v1.json",
+    ),
+    (
+        "{git-prefix}",
+        "show",
+        "{c3_head}:docs/governance/adversarial-convergence-red-freeze-v1.json",
+    ),
+    (
+        "{git-prefix}",
+        "show",
+        "--no-notes",
+        "--no-show-signature",
+        "-s",
+        "--format=%ae",
+        "{red_head}",
+    ),
+)
+STATIC_GIT_FORM_IDS = (
+    "object_format",
+    "object_integrity",
+    "head",
+    "red_type",
+    "red_size",
+    "red_ancestor",
+    "merge_scan",
+    "ancestry_chain",
+    "c3_other_scope",
+    "c3_freeze_change",
+    "red_objects",
+    "c3_freeze_size",
+    "c3_freeze_payload",
+    "red_author",
+)
+STATIC_GIT_OBJECT_BINDINGS = (
+    ("red_tree", "redTree"),
+    ("matrix_blob", "matrixBlobOid"),
+    ("core_oracle_blob", "focusedOracleBlobs[0].blobOid"),
+    ("repository_oracle_blob", "focusedOracleBlobs[1].blobOid"),
+)
+STATIC_GIT_FAILURE_PRECEDENCE = (
+    "governed_schema",
+    "metadata",
+    "timeout",
+    "os_error",
+    "result_type",
+    "args",
+    "stdout_type",
+    "stderr_type",
+    "returncode_type",
+    "return_code",
+    "stdout_bytes",
+    "strict_decode",
+    "line_count",
+    "token_shape",
+    "topology_or_size",
+    "field_binding",
+    "author_binding",
+    "c3_immutability",
 )
 
 
@@ -178,6 +323,19 @@ class Finding:
 @dataclass(frozen=True)
 class GovernedReadResult:
     payload: bytes | None
+    findings: tuple[Finding, ...]
+
+
+@dataclass(frozen=True)
+class GitRepositoryBinding:
+    root: Path
+    git_dir: Path
+    common_dir: Path
+
+
+@dataclass(frozen=True)
+class GitDiscoveryResult:
+    binding: GitRepositoryBinding | None
     findings: tuple[Finding, ...]
 
 
@@ -446,6 +604,11 @@ def validate_matrix_bytes(
 def validate_repository_freeze(root: Path = ROOT) -> tuple[Finding, ...]:
     del root
     return (_not_implemented("repository-freeze"),)
+
+
+def discover_git_repository(root: Path) -> GitDiscoveryResult:
+    del root
+    return GitDiscoveryResult(None, (_not_implemented("git-metadata"),))
 
 
 def _read_governed_bytes(root: Path, relative: str) -> GovernedReadResult:

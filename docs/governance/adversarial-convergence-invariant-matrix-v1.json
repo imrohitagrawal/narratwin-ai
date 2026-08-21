@@ -1,7 +1,7 @@
 {
   "schemaVersion": "AdversarialInvariantMatrixV1",
   "matrixId": "issue-435-adversarial-convergence-v1",
-  "contractVersion": "1.0.9",
+  "contractVersion": "1.0.10",
   "activation": "NONE",
   "authorityEffect": "NO_AUTHORITY_EFFECT",
   "pipeline": [
@@ -230,7 +230,9 @@
       "enum",
       "hashlib",
       "json",
+      "os",
       "pathlib.Path",
+      "stat",
       "subprocess",
       "typing.Any"
     ],
@@ -259,8 +261,10 @@
       "bytes.hex()",
       "hashlib.sha256(bytes)",
       "json.loads(text,object_pairs_hook=closed)",
+      "Path.as_posix()",
       "str.encode(utf-8)",
-      "subprocess.run(exact_read_only_git,cwd=root,check=exact,capture_output=True,text=True)"
+      "git-metadata:no-follow-lstat-open-fstat-bounded-read",
+      "subprocess.run(exact_read_only_git,cwd=root,check=False,exact-streams,text=False,exact-timeout,direct-literal-env)"
     ],
     "allowedGovernedReadPaths": [
       "docs/governance/adversarial-convergence-invariant-matrix-v1.json",
@@ -313,24 +317,57 @@
       "return-typed-payload"
     ],
     "allowedGitForms": [
-      ["git", "rev-parse", "HEAD"],
-      ["git", "rev-list", "--ancestry-path", "--reverse", "{red_head}..HEAD"],
-      ["git", "rev-list", "--parents", "-n", "1", "{c3_head}"],
-      ["git", "diff-tree", "--no-commit-id", "--name-only", "-r", "{c3_head}"],
-      ["git", "rev-parse", "{red_head}^{tree}", "{red_head}:docs/governance/adversarial-convergence-invariant-matrix-v1.json", "{red_head}:tests/unit/test_issue435_adversarial_convergence.py", "{red_head}:tests/unit/test_issue435_adversarial_convergence_repository.py"],
-      ["git", "show", "{c3_head}:docs/governance/adversarial-convergence-red-freeze-v1.json"],
-      ["git", "merge-base", "--is-ancestor", "{red_head}", "HEAD"],
-      ["git", "show", "-s", "--format=%ae", "{red_head}"],
-      ["git", "cat-file", "-e", "{red_head}"]
+      ["{git-prefix}", "rev-parse", "--show-object-format"],
+      ["{git-prefix}", "fsck", "--full", "--strict", "--no-dangling", "--no-reflogs", "--no-progress"],
+      ["{git-prefix}", "rev-parse", "HEAD^{commit}"],
+      ["{git-prefix}", "cat-file", "-t", "{red_head}"],
+      ["{git-prefix}", "cat-file", "-s", "{red_head}"],
+      ["{git-prefix}", "merge-base", "--is-ancestor", "{red_head}", "{head}"],
+      ["{git-prefix}", "rev-list", "--min-parents=2", "--max-count=1", "{red_head}..{head}"],
+      ["{git-prefix}", "rev-list", "--parents", "--ancestry-path", "--reverse", "--max-count=65", "{red_head}..{head}"],
+      ["{git-prefix}", "diff-tree", "-r", "--no-ext-diff", "--no-renames", "--ignore-submodules=none", "--quiet", "{red_head}", "{c3_head}", "--", ".", ":(exclude)docs/governance/adversarial-convergence-red-freeze-v1.json"],
+      ["{git-prefix}", "diff-tree", "-r", "--no-ext-diff", "--no-renames", "--ignore-submodules=none", "--quiet", "{red_head}", "{c3_head}", "--", "docs/governance/adversarial-convergence-red-freeze-v1.json"],
+      ["{git-prefix}", "rev-parse", "{red_head}^{tree}", "{red_head}:docs/governance/adversarial-convergence-invariant-matrix-v1.json", "{red_head}:tests/unit/test_issue435_adversarial_convergence.py", "{red_head}:tests/unit/test_issue435_adversarial_convergence_repository.py"],
+      ["{git-prefix}", "cat-file", "-s", "{c3_head}:docs/governance/adversarial-convergence-red-freeze-v1.json"],
+      ["{git-prefix}", "show", "{c3_head}:docs/governance/adversarial-convergence-red-freeze-v1.json"],
+      ["{git-prefix}", "show", "--no-notes", "--no-show-signature", "-s", "--format=%ae", "{red_head}"]
     ],
     "gitEvidenceContract": {
-      "c3Selection": "first_ordered_descendant_of_red_head",
-      "c3Parent": "exactly_one_parent_equal_red_head",
-      "c3ChangedPaths": ["docs/governance/adversarial-convergence-red-freeze-v1.json"],
-      "redObjectOutputOrder": ["red_tree", "matrix_blob", "core_oracle_blob", "repository_oracle_blob"],
-      "redObjectOutputCount": 4,
-      "c3FreezePayload": "current_governed_freeze_bytes_equal_exact_c3_committed_payload",
-      "laterDescendants": "validation_is_head_independent_after_c3"
+      "gitPrefix": ["/usr/bin/git", "--no-pager", "--no-replace-objects", "--no-optional-locks", "--no-lazy-fetch", "-c", "protocol.allow=never", "-c", "core.commitGraph=false", "-c", "log.showSignature=false", "-c", "fsck.skipList=/dev/null"],
+      "directEnvironment": [["LC_ALL", "C"], ["GIT_CONFIG_NOSYSTEM", "1"], ["GIT_CONFIG_GLOBAL", "/dev/null"], ["GIT_NO_LAZY_FETCH", "1"], ["GIT_NO_REPLACE_OBJECTS", "1"], ["GIT_OPTIONAL_LOCKS", "0"], ["GIT_TERMINAL_PROMPT", "0"], ["GIT_DIR", "derived_git_dir"], ["GIT_COMMON_DIR", "derived_common_dir"], ["GIT_WORK_TREE", "derived_root"]],
+      "metadata": {
+        "gitFileMaxBytes": 4096,
+        "modes": ["non_symlink_dot_git_directory", "strict_absolute_linked_worktree_gitfile"],
+        "linkedWorktreeRecords": ["gitdir: <absolute-path> LF", "gitdir-backlink: <absolute-root/.git> LF", "commondir: ../.. LF"],
+        "prohibitedCommonDirTargets": ["info/grafts", "shallow", "objects/info/alternates", "objects/info/http-alternates"],
+        "readPrimitive": "lstat_open_nofollow_fstat_bounded_read_post_identity"
+      },
+      "outputContracts": [
+        ["object_format", 5, 1, [0], "literal_sha1_lf"],
+        ["object_integrity", 0, 0, [0], "stdout_and_stderr_devnull_timeout_30"],
+        ["head", 41, 1, [0], "lower_hex40_lf"],
+        ["red_type", 7, 1, [0], "literal_commit_lf"],
+        ["red_size", 6, 1, [0], "canonical_decimal_1_to_65536_lf"],
+        ["red_ancestor", 0, 0, [0, 1], "empty"],
+        ["merge_scan", 41, 1, [0], "empty_or_lower_hex40_lf"],
+        ["ancestry_chain", 5330, 65, [0], "parse_zero_to_sixty_five_then_accept_one_to_sixty_four_linear_rows"],
+        ["c3_other_scope", 0, 0, [0, 1], "empty"],
+        ["c3_freeze_change", 0, 0, [0, 1], "empty"],
+        ["red_objects", 164, 4, [0], "four_ordered_lower_hex40_lf"],
+        ["c3_freeze_size", 6, 1, [0], "canonical_decimal_1_to_32768_lf"],
+        ["c3_freeze_payload", 32768, 0, [0], "raw_exact_reported_size"],
+        ["red_author", 320, 1, [0], "strict_ascii_email_lf_and_max_red_size"]
+      ],
+      "resultContract": ["type_is_CompletedProcess", "args_equal_exact_argv", "stderr_is_None", "returncode_exact_int_not_bool", "non_fsck_stdout_exact_bytes", "fsck_stdout_is_None", "fresh_direct_environment_each_call"],
+      "c3Selection": "first_row_of_complete_linear_ancestry_chain",
+      "c3Parent": "first_has_sole_red_parent_and_each_later_row_has_sole_previous_parent",
+      "c3Scope": "recursive_no_external_diff_no_renames_include_submodules_only_freeze_changed",
+      "maxAncestryCommits": 64,
+      "redObjectBindings": [["red_tree", "redTree"], ["matrix_blob", "matrixBlobOid"], ["core_oracle_blob", "focusedOracleBlobs[0].blobOid"], ["repository_oracle_blob", "focusedOracleBlobs[1].blobOid"]],
+      "c3FreezePayload": "size_bound_then_current_governed_bytes_equal_exact_c3_committed_payload",
+      "laterDescendants": "complete_chain_is_linear_through_exact_head",
+      "findingPrecedence": ["governed_schema", "metadata", "timeout", "os_error", "result_type", "args", "stdout_type", "stderr_type", "returncode_type", "return_code", "stdout_bytes", "strict_decode", "line_count", "token_shape", "topology_or_size", "field_binding", "author_binding", "c3_immutability"],
+      "findingCodes": [["metadata", "ACP.GIT_METADATA.EXACT_FAILURE"], ["timeout", "ACP.GIT.TIMEOUT"], ["os_error", "ACP.GIT.OS_ERROR"], ["result_type", "ACP.GIT.RESULT_TYPE"], ["args", "ACP.GIT.ARGS_MISMATCH"], ["stdout_type", "ACP.GIT.STDOUT_TYPE"], ["stderr_type", "ACP.GIT.STDERR_TYPE"], ["returncode_type", "ACP.GIT.RETURNCODE_TYPE"], ["return_code", "ACP.GIT.RETURN_CODE"], ["stdout_bytes", "ACP.GIT.STDOUT_BYTES"], ["strict_decode", "ACP.GIT.UTF8"], ["line_count", "ACP.GIT.OUTPUT_LINES"], ["token_shape", "ACP.GIT.OUTPUT_TOKEN"], ["size", "ACP.GIT.SIZE_MISMATCH"], ["object_format", "ACP.FREEZE.OBJECT_FORMAT"], ["object_integrity", "ACP.FREEZE.OBJECT_DB_INTEGRITY"], ["red_missing", "ACP.FREEZE.RED_HEAD_MISSING"], ["red_not_commit", "ACP.FREEZE.RED_HEAD_NOT_COMMIT"], ["red_not_ancestor", "ACP.FREEZE.RED_NOT_C3_PARENT"], ["merge", "ACP.FREEZE.HISTORY_MERGE"], ["c3_missing", "ACP.FREEZE.C3_MISSING"], ["history_limit", "ACP.FREEZE.HISTORY_LIMIT"], ["history_chain", "ACP.FREEZE.HISTORY_CHAIN"], ["c3_scope", "ACP.FREEZE.C3_SCOPE"], ["freeze_unchanged", "ACP.FREEZE.C3_FREEZE_UNCHANGED"], ["c3_immutable", "ACP.FREEZE.C3_IMMUTABLE"]]
     }
   },
   "materializedOutcomeContracts": {

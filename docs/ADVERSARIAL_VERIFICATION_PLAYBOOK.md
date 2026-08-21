@@ -73,13 +73,31 @@ binds parser-returned argument identities, two ordered exact crypto probes and
 their exhaustion, the complete observed transcript, and returned-object
 identity; a fabricated one-candidate observer result is not evidence.
 
-Git evidence is bound to the frozen RED and C3 commits, not ambient `HEAD^`.
-From any later linear descendant, identify the first RED descendant as C3;
-verify its sole RED parent and freeze-only diff; retrieve the RED tree and the
-matrix plus both oracle blobs in one ordered read-only lookup; and require the
-current governed freeze bytes to equal C3's committed payload. Freeze the exact
-argv, kwargs, output arity/order, paths, and interpolation positions, with
-dynamic, network, mutation, wrong-ref, and wrong-path near misses.
+Git evidence is bound to independently inspected repository metadata before any
+Git subprocess. Accept only a non-symlink `.git` directory or a strict bounded
+linked-worktree gitfile whose absolute Git dir, backlink, `../..` commondir, and
+common-dir layout agree. No graft, shallow, local alternate, HTTP alternate,
+target inode, or symlink component may exist. Metadata reads use lstat,
+no-follow open, fstat, bounded reads, and post-read identity checks.
+
+Fourteen fixed read-only forms then use absolute `/usr/bin/git`, no pager,
+replacement objects, locks, lazy fetch, external diff, renames, ignored
+submodules, signatures, or notes; command config disables transport, commit
+graphs, signature display, and fsck skip lists. Each call receives a fresh direct
+literal replacement environment containing only the independently derived Git
+dir/common dir/worktree and seven fixed safety values. Object format must be
+SHA-1 and full strict fsck must pass with both streams discarded before HEAD or
+RED evidence is consumed. RED existence/type/size/ancestry precede topology; a
+complete one-to-sixty-four-row parent chain is linear through exact HEAD with no
+merge. Recursive quiet diffs prove only the freeze changed. Positional object
+binding, size-before-payload, and bounded strict author extraction follow.
+
+Freeze exact argv, direct environments, streams, timeouts, result/args/stdout/
+stderr/return-code types, byte/line/token grammars, field precedence, and call
+prefixes. Inject fake gitfiles, corrupt objects, grafts/alternates/shallow files,
+hostile ambient/local config, N/N+1 output, malformed bytes, role swaps, legacy
+forms, and C3 plus two-descendant histories. Generic exceptions, trimming,
+self-derived expectations, or post-hoc caps are not evidence.
 
 The reference test classes are positive, negative, boundary, malformed,
 deletion, corruption, reordering, duplication, substitution, and maximum

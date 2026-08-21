@@ -94,11 +94,19 @@ asserts the complete stage, crypto, eligibility, precedence, graph, and phase
 transcript; and preserves the exact returned `Evaluation` object.
 
 Repository freeze evidence must remain valid after later linear GREEN commits.
-Select C3 as the first ordered descendant of the frozen RED head, prove its sole
-parent and freeze-only diff, resolve the RED tree plus all three governed RED
-blobs in one exact ordered read-only Git call, and compare current freeze bytes
-with the exact payload committed by C3. `HEAD^`, `diff-tree HEAD`, dynamic
-paths, and an unrelated synthetic `redHead:path` are not substitutes.
+Independently bind `.git` directory or strict linked-worktree discovery metadata
+with no-follow bounded reads, exact backlink/commondir/layout checks, and absent
+graft, shallow, local-alternate, and HTTP-alternate inodes. Use freshly created
+direct environment literals to bind the derived Git dir/common dir/worktree for
+every absolute-Git call. Require SHA-1 plus full strict primary object fsck before
+HEAD and RED evidence. Freeze fourteen exact forms and their result, stream,
+timeout, return, byte, line, decode, token, role, path, ref, and precedence
+contracts. RED type/size/ancestry must precede topology; the complete capped
+parent chain must be linear with no merge; recursive no-external-diff/no-renames/
+include-submodules checks must prove only the freeze changed. Positionally bind
+the four RED objects, reported C3 size to raw bytes, and bounded ASCII author.
+Fake gitfiles, corrupt objects, grafts, alternates, local config, legacy forms,
+permissive trimming, mutable environment constants, and generic errors must fail.
 
 ## Pipeline-call ledger
 

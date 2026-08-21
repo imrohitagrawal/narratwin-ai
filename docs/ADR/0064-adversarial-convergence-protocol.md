@@ -72,12 +72,21 @@ replay-subset mutant uses a trust-valid candidate, a successful exact crypto
 call, the complete pipeline, and an extra retained finding so it discriminates
 exact equality without contradicting fail-fast trust handling.
 
-Repository evidence uses a closed, read-only Git grammar that remains valid
-after later GREEN descendants. It finds C3 as the first ordered descendant of
-the RED head, verifies its sole RED parent and freeze-only scope, resolves the
-RED tree and three governed RED blobs in one ordered lookup, and compares the
-current freeze bytes to C3's exact committed payload. Ambient `HEAD^`,
-`diff-tree HEAD`, unrelated paths, and dynamic Git arguments are rejected.
+Repository evidence first binds the repository without trusting Git discovery:
+no-follow bounded reads accept only a direct `.git` directory or an exact linked
+worktree gitfile/backlink/commondir layout, then reject graft, shallow, local-
+alternate, HTTP-alternate, and symlink metadata. Fourteen closed forms use an
+absolute executable, immutable argv policy, and fresh direct environment
+literals with explicit derived Git dir/common dir/worktree values. SHA-1 object
+format and full strict primary object fsck precede HEAD and RED evidence. RED
+existence, commit type, size, and ancestry precede topology. A complete capped
+parent chain must be linear with no merge. Recursive no-external-diff/no-renames/
+include-submodules quiet comparisons prove C3 changed the freeze only. Ordered
+RED object resolution, C3 size-to-payload binding, and strict bounded author
+extraction follow. Result identity, args, streams, return types, output grammar,
+call prefixes, and every failure code/location are exact and fail-fast. Ambient
+`HEAD^`, dynamic discovery, mutable environments, corrupt objects, local config,
+legacy forms, permissive trimming, and generic exceptions are rejected.
 
 Nested parser
 members and every configured limit are closed over exact types, enums, hashes,
@@ -90,7 +99,7 @@ malformed JSON, non-object roots, duplicate members, and semantically equivalent
 noncanonical encodings. The static boundary is an independently frozen closed
 positive import/call grammar. Its only local reads name the exact matrix,
 freeze, and two focused-oracle paths beneath the validated root; every allowed
-import, call, read target, and one of the seven exact read-only Git command forms
+import, call, read target, and one of the fourteen exact read-only Git forms
 is independently removable. The single top-level governed-reader `FunctionDef`
 AST is independently dumped with exact safe options and hashed so its typed
 payload-or-finding result, signature, allowed-relative guard, path provenance,
