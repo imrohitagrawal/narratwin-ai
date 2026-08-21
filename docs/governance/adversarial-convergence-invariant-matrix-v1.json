@@ -63,6 +63,10 @@
       "schemaVersion",
       "candidateId",
       "phase",
+      "lifecycleState",
+      "validFrom",
+      "validUntil",
+      "compromisedAt",
       "payload",
       "predecessorId",
       "priority",
@@ -72,6 +76,10 @@
       "schemaVersion",
       "candidateId",
       "phase",
+      "lifecycleState",
+      "validFrom",
+      "validUntil",
+      "compromisedAt",
       "payload",
       "predecessorId",
       "priority",
@@ -81,10 +89,27 @@
       "schemaVersion",
       "phase",
       "payload",
+      "priority",
+      "lifecycleState",
+      "validFrom",
+      "validUntil",
+      "compromisedAt"
+    ],
+    "signatureFields": [
+      "schemaVersion",
+      "candidateId",
+      "phase",
+      "lifecycleState",
+      "validFrom",
+      "validUntil",
+      "compromisedAt",
+      "payload",
       "predecessorId",
       "priority"
     ],
-    "identityDomain": "NARRATWIN:ACP:CANDIDATE:V1\\u0000",
+    "identityDomain": "NARRATWIN:ACP:IDENTITY:V1\u0000",
+    "signatureDomain": "NARRATWIN:ACP:SIGNATURE:V1\u0000",
+    "lifecycleStates": ["ACTIVE", "RETIRED", "REVOKED", "SUPERSEDED", "TERMINAL"],
     "independentTrustInputs": ["trusted_public_keys", "authorized_candidate_ids"],
     "prohibitedTrustInputs": ["candidate", "matrix", "fixture", "ambient", "tofu"]
   },
@@ -93,7 +118,7 @@
     "candidateBytes": 2048,
     "aggregateBytes": 4096,
     "jsonDepth": 4,
-    "jsonMembers": 7,
+    "jsonMembers": 11,
     "findingCount": 32,
     "matrixBytes": 65536,
     "freezeBytes": 32768
@@ -139,55 +164,206 @@
   "caseProfiles": {
     "positive": {
       "findingSuffix": null,
-      "verdict": "VALID",
-      "eligibleForGraph": true
+      "phaseVerdicts": {"HISTORICAL": "VALID", "CURRENT": "VALID", "ACCEPTANCE": "VALID"},
+      "eligibleForGraph": true,
+      "laterStageCalls": 0,
+      "graphCallCount": 1
     },
     "negative": {
       "findingSuffix": "NEGATIVE",
-      "verdict": "INVALID",
-      "eligibleForGraph": false
+      "phaseVerdicts": {"HISTORICAL": "INVALID", "CURRENT": "INVALID", "ACCEPTANCE": "INVALID"},
+      "eligibleForGraph": false,
+      "laterStageCalls": 0,
+      "graphCallCount": 0
     },
     "boundary": {
       "findingSuffix": "BOUNDARY",
-      "verdict": "INVALID",
-      "eligibleForGraph": false
+      "phaseVerdicts": {"HISTORICAL": "INVALID", "CURRENT": "INVALID", "ACCEPTANCE": "INVALID"},
+      "eligibleForGraph": false,
+      "laterStageCalls": 0,
+      "graphCallCount": 0
     },
     "malformed": {
       "findingSuffix": "MALFORMED",
-      "verdict": "INVALID",
-      "eligibleForGraph": false
+      "phaseVerdicts": {"HISTORICAL": "INVALID", "CURRENT": "INVALID", "ACCEPTANCE": "INVALID"},
+      "eligibleForGraph": false,
+      "laterStageCalls": 0,
+      "graphCallCount": 0
     },
     "deletion": {
       "findingSuffix": "DELETED",
-      "verdict": "UNAVAILABLE",
-      "eligibleForGraph": false
+      "phaseVerdicts": {"HISTORICAL": "UNAVAILABLE", "CURRENT": "UNAVAILABLE", "ACCEPTANCE": "UNAVAILABLE"},
+      "eligibleForGraph": false,
+      "laterStageCalls": 0,
+      "graphCallCount": 0
     },
     "corruption": {
       "findingSuffix": "CORRUPT",
-      "verdict": "INVALID",
-      "eligibleForGraph": false
+      "phaseVerdicts": {"HISTORICAL": "INVALID", "CURRENT": "INVALID", "ACCEPTANCE": "INVALID"},
+      "eligibleForGraph": false,
+      "laterStageCalls": 0,
+      "graphCallCount": 0
     },
     "reordering": {
       "findingSuffix": null,
-      "verdict": "VALID",
-      "eligibleForGraph": true
+      "phaseVerdicts": {"HISTORICAL": "VALID", "CURRENT": "VALID", "ACCEPTANCE": "VALID"},
+      "eligibleForGraph": true,
+      "laterStageCalls": 0,
+      "graphCallCount": 1
     },
     "duplication": {
       "findingSuffix": "DUPLICATE",
-      "verdict": "INVALID",
-      "eligibleForGraph": false
+      "phaseVerdicts": {"HISTORICAL": "INVALID", "CURRENT": "INVALID", "ACCEPTANCE": "INVALID"},
+      "eligibleForGraph": false,
+      "laterStageCalls": 0,
+      "graphCallCount": 0
     },
     "substitution": {
       "findingSuffix": "SUBSTITUTED",
-      "verdict": "INVALID",
-      "eligibleForGraph": false
+      "phaseVerdicts": {"HISTORICAL": "INVALID", "CURRENT": "INVALID", "ACCEPTANCE": "INVALID"},
+      "eligibleForGraph": false,
+      "laterStageCalls": 0,
+      "graphCallCount": 0
     },
     "maximum_cardinality": {
       "findingSuffix": null,
-      "verdict": "VALID",
-      "eligibleForGraph": true
+      "phaseVerdicts": {"HISTORICAL": "VALID", "CURRENT": "VALID", "ACCEPTANCE": "VALID"},
+      "eligibleForGraph": true,
+      "laterStageCalls": 0,
+      "graphCallCount": 1
     }
   },
+  "caseExceptions": {
+    "reconstruction_replay:reordering": {
+      "findingSuffix": "REORDERED",
+      "phaseVerdicts": {"HISTORICAL": "INVALID", "CURRENT": "INVALID", "ACCEPTANCE": "INVALID"},
+      "eligibleForGraph": false,
+      "laterStageCalls": 0,
+      "graphCallCount": 0
+    }
+  },
+  "caseIndex": [
+    "validation_order:positive",
+    "validation_order:negative",
+    "validation_order:boundary",
+    "validation_order:malformed",
+    "validation_order:deletion",
+    "validation_order:corruption",
+    "validation_order:reordering",
+    "validation_order:duplication",
+    "validation_order:substitution",
+    "validation_order:maximum_cardinality",
+    "lifecycle_state:positive",
+    "lifecycle_state:negative",
+    "lifecycle_state:boundary",
+    "lifecycle_state:malformed",
+    "lifecycle_state:deletion",
+    "lifecycle_state:corruption",
+    "lifecycle_state:reordering",
+    "lifecycle_state:duplication",
+    "lifecycle_state:substitution",
+    "lifecycle_state:maximum_cardinality",
+    "temporal_boundary:positive",
+    "temporal_boundary:negative",
+    "temporal_boundary:boundary",
+    "temporal_boundary:malformed",
+    "temporal_boundary:deletion",
+    "temporal_boundary:corruption",
+    "temporal_boundary:reordering",
+    "temporal_boundary:duplication",
+    "temporal_boundary:substitution",
+    "temporal_boundary:maximum_cardinality",
+    "phase_separation:positive",
+    "phase_separation:negative",
+    "phase_separation:boundary",
+    "phase_separation:malformed",
+    "phase_separation:deletion",
+    "phase_separation:corruption",
+    "phase_separation:reordering",
+    "phase_separation:duplication",
+    "phase_separation:substitution",
+    "phase_separation:maximum_cardinality",
+    "cardinality_limit:positive",
+    "cardinality_limit:negative",
+    "cardinality_limit:boundary",
+    "cardinality_limit:malformed",
+    "cardinality_limit:deletion",
+    "cardinality_limit:corruption",
+    "cardinality_limit:reordering",
+    "cardinality_limit:duplication",
+    "cardinality_limit:substitution",
+    "cardinality_limit:maximum_cardinality",
+    "malformed_input:positive",
+    "malformed_input:negative",
+    "malformed_input:boundary",
+    "malformed_input:malformed",
+    "malformed_input:deletion",
+    "malformed_input:corruption",
+    "malformed_input:reordering",
+    "malformed_input:duplication",
+    "malformed_input:substitution",
+    "malformed_input:maximum_cardinality",
+    "deletion_corruption:positive",
+    "deletion_corruption:negative",
+    "deletion_corruption:boundary",
+    "deletion_corruption:malformed",
+    "deletion_corruption:deletion",
+    "deletion_corruption:corruption",
+    "deletion_corruption:reordering",
+    "deletion_corruption:duplication",
+    "deletion_corruption:substitution",
+    "deletion_corruption:maximum_cardinality",
+    "reordering_duplication:positive",
+    "reordering_duplication:negative",
+    "reordering_duplication:boundary",
+    "reordering_duplication:malformed",
+    "reordering_duplication:deletion",
+    "reordering_duplication:corruption",
+    "reordering_duplication:reordering",
+    "reordering_duplication:duplication",
+    "reordering_duplication:substitution",
+    "reordering_duplication:maximum_cardinality",
+    "substitution:positive",
+    "substitution:negative",
+    "substitution:boundary",
+    "substitution:malformed",
+    "substitution:deletion",
+    "substitution:corruption",
+    "substitution:reordering",
+    "substitution:duplication",
+    "substitution:substitution",
+    "substitution:maximum_cardinality",
+    "cryptographic_eligibility:positive",
+    "cryptographic_eligibility:negative",
+    "cryptographic_eligibility:boundary",
+    "cryptographic_eligibility:malformed",
+    "cryptographic_eligibility:deletion",
+    "cryptographic_eligibility:corruption",
+    "cryptographic_eligibility:reordering",
+    "cryptographic_eligibility:duplication",
+    "cryptographic_eligibility:substitution",
+    "cryptographic_eligibility:maximum_cardinality",
+    "graph_conflict_precedence:positive",
+    "graph_conflict_precedence:negative",
+    "graph_conflict_precedence:boundary",
+    "graph_conflict_precedence:malformed",
+    "graph_conflict_precedence:deletion",
+    "graph_conflict_precedence:corruption",
+    "graph_conflict_precedence:reordering",
+    "graph_conflict_precedence:duplication",
+    "graph_conflict_precedence:substitution",
+    "graph_conflict_precedence:maximum_cardinality",
+    "reconstruction_replay:positive",
+    "reconstruction_replay:negative",
+    "reconstruction_replay:boundary",
+    "reconstruction_replay:malformed",
+    "reconstruction_replay:deletion",
+    "reconstruction_replay:corruption",
+    "reconstruction_replay:reordering",
+    "reconstruction_replay:duplication",
+    "reconstruction_replay:substitution",
+    "reconstruction_replay:maximum_cardinality"
+  ],
   "invariants": [
     {
       "id": "ACP-VO-001",
@@ -221,7 +397,7 @@
       "findingPrefix": "ACP.LIFECYCLE",
       "blockerClass": "IMPLEMENTATION_BLOCKER",
       "mutantId": "MUT-LIFECYCLE-REPLACE",
-      "killTest": "test_matrix_cross_product_and_exact_outcomes_are_closed"
+      "killTest": "test_lifecycle_and_explicit_time_boundaries_are_exact"
     },
     {
       "id": "ACP-TM-001",
@@ -238,7 +414,7 @@
       "findingPrefix": "ACP.TIME",
       "blockerClass": "IMPLEMENTATION_BLOCKER",
       "mutantId": "MUT-TIME-BYPASS",
-      "killTest": "test_matrix_cross_product_and_exact_outcomes_are_closed"
+      "killTest": "test_lifecycle_and_explicit_time_boundaries_are_exact"
     },
     {
       "id": "ACP-PS-001",
@@ -255,7 +431,7 @@
       "findingPrefix": "ACP.PHASE",
       "blockerClass": "IMPLEMENTATION_BLOCKER",
       "mutantId": "MUT-PHASE-REPLACE",
-      "killTest": "test_phase_substitution_returns_exact_verdicts"
+      "killTest": "test_all_three_phases_are_exact_and_isolated"
     },
     {
       "id": "ACP-CA-001",
@@ -272,7 +448,7 @@
       "findingPrefix": "ACP.BOUNDS",
       "blockerClass": "IMPLEMENTATION_BLOCKER",
       "mutantId": "MUT-BOUNDS-BYPASS",
-      "killTest": "test_bounds_n_plus_one_stops_before_all_work"
+      "killTest": "test_all_resource_bounds_cover_exact_n_and_n_plus_one"
     },
     {
       "id": "ACP-MA-001",
@@ -289,7 +465,7 @@
       "findingPrefix": "ACP.PARSE",
       "blockerClass": "IMPLEMENTATION_BLOCKER",
       "mutantId": "MUT-PARSE-REPLACE",
-      "killTest": "test_duplicate_json_member_fails_before_identity"
+      "killTest": "test_hostile_input_families_stop_before_later_work"
     },
     {
       "id": "ACP-DC-001",
@@ -306,7 +482,7 @@
       "findingPrefix": "ACP.IDENTITY",
       "blockerClass": "IMPLEMENTATION_BLOCKER",
       "mutantId": "MUT-IDENTITY-BYPASS",
-      "killTest": "test_identity_substitution_never_reaches_crypto"
+      "killTest": "test_reconstruction_rejects_missing_extra_corrupt_and_substituted_inputs"
     },
     {
       "id": "ACP-RD-001",
@@ -323,7 +499,7 @@
       "findingPrefix": "ACP.ORDERING",
       "blockerClass": "IMPLEMENTATION_BLOCKER",
       "mutantId": "MUT-DUPLICATE-BYPASS",
-      "killTest": "test_graph_result_is_permutation_invariant"
+      "killTest": "test_graph_fork_cycle_orphan_duplicate_and_permutation"
     },
     {
       "id": "ACP-SU-001",
@@ -357,7 +533,7 @@
       "findingPrefix": "ACP.TRUST",
       "blockerClass": "IMPLEMENTATION_BLOCKER",
       "mutantId": "MUT-SELF-TRUST-REPLACE",
-      "killTest": "test_crypto_spy_ledger_is_exact_and_self_trust_fails"
+      "killTest": "test_structured_crypto_probe_mixed_results_and_exception"
     },
     {
       "id": "ACP-GR-001",
@@ -374,7 +550,7 @@
       "findingPrefix": "ACP.GRAPH",
       "blockerClass": "IMPLEMENTATION_BLOCKER",
       "mutantId": "MUT-AUTH-BYPASS",
-      "killTest": "test_only_trusted_authorized_candidates_can_conflict"
+      "killTest": "test_graph_fork_cycle_orphan_duplicate_and_permutation"
     },
     {
       "id": "ACP-RR-001",
@@ -391,22 +567,32 @@
       "findingPrefix": "ACP.REPLAY",
       "blockerClass": "EVIDENCE_BLOCKER",
       "mutantId": "MUT-REPLAY-SUBSET",
-      "killTest": "test_exact_findings_and_historical_current_verdicts_are_equal"
+      "killTest": "test_reconstruction_exact_equality_kills_subset_replay"
     }
   ],
+  "freezeContract": {
+    "requiredRoles": ["architecture", "security_trust", "mutation_false_pass"],
+    "requiredFields": ["redHead", "redTree", "matrixBlobOid", "matrixSha256", "testBlobOid", "testSha256", "semanticSha256", "implementationAuthor", "reviewers", "expectedRedFailures", "reviewFindings", "activation", "authorityEffect", "completionState"],
+    "completionState": "PRE_GREEN_REVIEWS_COMPLETE",
+    "expectedRedFailuresState": "FROZEN_AT_RED",
+    "reviewFindingsState": "ZERO_BEFORE_C3",
+    "postGreenBlockersState": "COMPUTED_NOT_STORED_IN_FREEZE"
+  },
+  "mutantSourcePath": "scripts/quality/issue435_adversarial_convergence.py",
+  "mutantCommandTemplate": "uv run pytest -q tests/unit/test_issue435_adversarial_convergence.py::{killTest}",
   "controlledMutants": [
-    {"id": "MUT-ORDER-REORDER", "action": "reorder", "anchor": "ACP_MUTATION_ANCHOR_PIPELINE_ORDER", "killTest": "test_every_early_rejection_has_zero_later_callbacks"},
-    {"id": "MUT-LIFECYCLE-REPLACE", "action": "replace", "anchor": "ACP_MUTATION_ANCHOR_CLOSED_UNIVERSE", "killTest": "test_matrix_cross_product_and_exact_outcomes_are_closed"},
-    {"id": "MUT-TIME-BYPASS", "action": "bypass", "anchor": "ACP_MUTATION_ANCHOR_EXPLICIT_TIME", "killTest": "test_matrix_cross_product_and_exact_outcomes_are_closed"},
-    {"id": "MUT-PHASE-REPLACE", "action": "replace", "anchor": "ACP_MUTATION_ANCHOR_PHASE_EQUALITY", "killTest": "test_phase_substitution_returns_exact_verdicts"},
-    {"id": "MUT-BOUNDS-BYPASS", "action": "bypass", "anchor": "ACP_MUTATION_ANCHOR_BOUNDS", "killTest": "test_bounds_n_plus_one_stops_before_all_work"},
-    {"id": "MUT-PARSE-REPLACE", "action": "replace", "anchor": "ACP_MUTATION_ANCHOR_DUPLICATE_JSON", "killTest": "test_duplicate_json_member_fails_before_identity"},
-    {"id": "MUT-IDENTITY-BYPASS", "action": "bypass", "anchor": "ACP_MUTATION_ANCHOR_IDENTITY", "killTest": "test_identity_substitution_never_reaches_crypto"},
-    {"id": "MUT-DUPLICATE-BYPASS", "action": "bypass", "anchor": "ACP_MUTATION_ANCHOR_DUPLICATE_CANDIDATE", "killTest": "test_graph_result_is_permutation_invariant"},
-    {"id": "MUT-SUBSTITUTION-REMOVE", "action": "remove", "anchor": "ACP_MUTATION_ANCHOR_IDENTITY", "killTest": "test_identity_substitution_never_reaches_crypto"},
-    {"id": "MUT-SELF-TRUST-REPLACE", "action": "replace", "anchor": "ACP_MUTATION_ANCHOR_EXTERNAL_TRUST", "killTest": "test_crypto_spy_ledger_is_exact_and_self_trust_fails"},
-    {"id": "MUT-AUTH-BYPASS", "action": "bypass", "anchor": "ACP_MUTATION_ANCHOR_AUTHORIZATION", "killTest": "test_only_trusted_authorized_candidates_can_conflict"},
-    {"id": "MUT-REPLAY-SUBSET", "action": "replace", "anchor": "ACP_MUTATION_ANCHOR_EXACT_FINDINGS", "killTest": "test_exact_findings_and_historical_current_verdicts_are_equal"}
+    {"id": "MUT-ORDER-REORDER", "action": "reorder", "anchor": "ACP_MUTATION_ANCHOR_PIPELINE_ORDER", "find": "ACP_MUTATION_ANCHOR_PIPELINE_ORDER = PIPELINE", "replace": "ACP_MUTATION_ANCHOR_PIPELINE_ORDER = tuple(reversed(PIPELINE))", "killTest": "test_every_early_rejection_has_zero_later_callbacks", "expectedCode": "ACP.ORDER.REORDERED"},
+    {"id": "MUT-LIFECYCLE-REPLACE", "action": "replace", "anchor": "ACP_MUTATION_ANCHOR_LIFECYCLE", "find": "ACP_MUTATION_ANCHOR_LIFECYCLE = True", "replace": "ACP_MUTATION_ANCHOR_LIFECYCLE = False", "killTest": "test_lifecycle_and_explicit_time_boundaries_are_exact", "expectedCode": "ACP.LIFECYCLE.STATE"},
+    {"id": "MUT-TIME-BYPASS", "action": "bypass", "anchor": "ACP_MUTATION_ANCHOR_EXPLICIT_TIME", "find": "ACP_MUTATION_ANCHOR_EXPLICIT_TIME = True", "replace": "ACP_MUTATION_ANCHOR_EXPLICIT_TIME = False", "killTest": "test_lifecycle_and_explicit_time_boundaries_are_exact", "expectedCode": "ACP.TIME.OUTSIDE_WINDOW"},
+    {"id": "MUT-PHASE-REPLACE", "action": "replace", "anchor": "ACP_MUTATION_ANCHOR_PHASE_EQUALITY", "find": "ACP_MUTATION_ANCHOR_PHASE_EQUALITY = True", "replace": "ACP_MUTATION_ANCHOR_PHASE_EQUALITY = False", "killTest": "test_all_three_phases_are_exact_and_isolated", "expectedCode": "ACP.SCHEMA.PHASE_MISMATCH"},
+    {"id": "MUT-BOUNDS-BYPASS", "action": "bypass", "anchor": "ACP_MUTATION_ANCHOR_BOUNDS", "find": "ACP_MUTATION_ANCHOR_BOUNDS = True", "replace": "ACP_MUTATION_ANCHOR_BOUNDS = False", "killTest": "test_all_resource_bounds_cover_exact_n_and_n_plus_one", "expectedCode": "ACP.BOUNDS.CANDIDATE_COUNT"},
+    {"id": "MUT-PARSE-REPLACE", "action": "replace", "anchor": "ACP_MUTATION_ANCHOR_DUPLICATE_JSON", "find": "ACP_MUTATION_ANCHOR_DUPLICATE_JSON = True", "replace": "ACP_MUTATION_ANCHOR_DUPLICATE_JSON = False", "killTest": "test_hostile_input_families_stop_before_later_work", "expectedCode": "ACP.PARSE.DUPLICATE_MEMBER"},
+    {"id": "MUT-IDENTITY-BYPASS", "action": "bypass", "anchor": "ACP_MUTATION_ANCHOR_IDENTITY", "find": "ACP_MUTATION_ANCHOR_IDENTITY = True", "replace": "ACP_MUTATION_ANCHOR_IDENTITY = False", "killTest": "test_identity_substitution_never_reaches_crypto", "expectedCode": "ACP.IDENTITY.MISMATCH"},
+    {"id": "MUT-DUPLICATE-BYPASS", "action": "bypass", "anchor": "ACP_MUTATION_ANCHOR_DUPLICATE_CANDIDATE", "find": "ACP_MUTATION_ANCHOR_DUPLICATE_CANDIDATE = True", "replace": "ACP_MUTATION_ANCHOR_DUPLICATE_CANDIDATE = False", "killTest": "test_zero_candidates_and_duplicate_identity_fail_exactly", "expectedCode": "ACP.IDENTITY.DUPLICATE"},
+    {"id": "MUT-SUBSTITUTION-REMOVE", "action": "remove", "anchor": "ACP_MUTATION_ANCHOR_SUBSTITUTION", "find": "ACP_MUTATION_ANCHOR_SUBSTITUTION = True", "replace": "ACP_MUTATION_ANCHOR_SUBSTITUTION = False", "killTest": "test_reconstruction_rejects_missing_extra_corrupt_and_substituted_inputs", "expectedCode": "ACP.REPLAY.IDENTITY_MISMATCH"},
+    {"id": "MUT-SELF-TRUST-REPLACE", "action": "replace", "anchor": "ACP_MUTATION_ANCHOR_EXTERNAL_TRUST", "find": "ACP_MUTATION_ANCHOR_EXTERNAL_TRUST = True", "replace": "ACP_MUTATION_ANCHOR_EXTERNAL_TRUST = False", "killTest": "test_crypto_spy_ledger_is_exact_and_self_trust_fails", "expectedCode": "ACP.TRUST.KEY_UNAVAILABLE"},
+    {"id": "MUT-AUTH-BYPASS", "action": "bypass", "anchor": "ACP_MUTATION_ANCHOR_AUTHORIZATION", "find": "ACP_MUTATION_ANCHOR_AUTHORIZATION = True", "replace": "ACP_MUTATION_ANCHOR_AUTHORIZATION = False", "killTest": "test_only_trusted_authorized_candidates_can_conflict", "expectedCode": "ACP.AUTHORIZATION.DENIED"},
+    {"id": "MUT-REPLAY-SUBSET", "action": "replace", "anchor": "ACP_MUTATION_ANCHOR_EXACT_FINDINGS", "find": "ACP_MUTATION_ANCHOR_EXACT_FINDINGS = True", "replace": "ACP_MUTATION_ANCHOR_EXACT_FINDINGS = False", "killTest": "test_reconstruction_exact_equality_kills_subset_replay", "expectedCode": "ACP.REPLAY.EXACT_MISMATCH"}
   ],
   "prohibitedCapabilities": [
     "accepted_authority",

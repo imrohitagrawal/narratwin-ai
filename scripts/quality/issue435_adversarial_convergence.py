@@ -77,7 +77,26 @@ class CryptoCall:
     ordinal: int
     candidate_count: int
     phase: str
+    public_key_sha256: str
+    message_sha256: str
     result: bool
+
+
+@dataclass(frozen=True)
+class CryptoProbe:
+    candidate_id: str
+    signature: bytes
+    ordinal: int
+    candidate_count: int
+    phase: Phase
+    public_key: bytes
+    message: bytes
+
+
+@dataclass(frozen=True, order=True)
+class PhaseVerdict:
+    phase: Phase
+    verdict: Verdict
 
 
 @dataclass(frozen=True)
@@ -90,7 +109,7 @@ class EvaluationContext:
     max_candidate_bytes: int = 2048
     max_aggregate_bytes: int = 4096
     max_json_depth: int = 4
-    max_json_members: int = 7
+    max_json_members: int = 11
 
 
 @dataclass(frozen=True)
@@ -98,6 +117,8 @@ class Evaluation:
     findings: tuple[Finding, ...]
     historical_verdict: Verdict
     current_verdict: Verdict
+    acceptance_verdict: Verdict
+    phase_verdicts: tuple[PhaseVerdict, ...]
     eligible_candidate_ids: tuple[str, ...]
     stage_calls: tuple[StageCall, ...]
     crypto_calls: tuple[CryptoCall, ...]
@@ -110,9 +131,40 @@ class MatrixValidation:
     semantic_sha256: str
     invariant_ids: tuple[str, ...]
     blocker_classes: tuple[BlockerClass, ...]
+    normalized_case_ids: tuple[str, ...] = ()
 
 
-CryptoVerifier = Callable[[bytes, bytes, bytes], bool]
+@dataclass(frozen=True)
+class MatrixCase:
+    case_id: str
+    dimension: str
+    test_class: str
+    input_class: str
+    stage: str
+    findings: tuple[Finding, ...]
+    phase_verdicts: tuple[PhaseVerdict, ...]
+    later_stage_calls: int
+    graph_eligible: bool
+    graph_call_count: int
+    test_node: str
+    mutant_id: str
+    blocker_class: BlockerClass
+    evidence_state: str
+
+
+@dataclass(frozen=True)
+class RetainedEvaluation:
+    candidate_sha256s: tuple[str, ...]
+    findings: tuple[Finding, ...]
+    phase_verdicts: tuple[PhaseVerdict, ...]
+    eligible_candidate_ids: tuple[str, ...]
+    graph_call_count: int
+    max_candidates: int
+    max_candidate_bytes: int
+    max_aggregate_bytes: int
+
+
+CryptoVerifier = Callable[[CryptoProbe], bool]
 
 
 def _not_implemented(location: str, phase: Phase = Phase.CURRENT) -> Finding:
@@ -139,6 +191,13 @@ def semantic_sha256(matrix_document: Mapping[str, object]) -> str:
     return "0" * 64
 
 
+def normalized_case_catalog(
+    matrix_document: Mapping[str, object],
+) -> tuple[MatrixCase, ...]:
+    del matrix_document
+    return ()
+
+
 def verify_ed25519(public_key: bytes, message: bytes, signature: bytes) -> bool:
     del public_key, message, signature
     return False
@@ -149,14 +208,24 @@ def budget_disposition(charged_lines: int, cap: int) -> BudgetDisposition:
     return BudgetDisposition.STOP_BEFORE_GREEN
 
 
-def validate_matrix_bytes(matrix_bytes: bytes, freeze_bytes: bytes | None) -> MatrixValidation:
-    del matrix_bytes, freeze_bytes
+def validate_matrix_bytes(
+    matrix_bytes: bytes,
+    freeze_bytes: bytes | None,
+    *,
+    expected_red_identity: Mapping[str, object] | None = None,
+) -> MatrixValidation:
+    del matrix_bytes, freeze_bytes, expected_red_identity
     return MatrixValidation(
         findings=(_not_implemented("matrix"),),
         semantic_sha256="0" * 64,
         invariant_ids=(),
         blocker_classes=(BlockerClass.IMPLEMENTATION,),
     )
+
+
+def validate_repository_freeze(root: Path = ROOT) -> tuple[Finding, ...]:
+    del root
+    return (_not_implemented("repository-freeze"),)
 
 
 def evaluate_candidates(
@@ -170,6 +239,37 @@ def evaluate_candidates(
         findings=(_not_implemented("candidate-set", context.expected_phase),),
         historical_verdict=Verdict.UNAVAILABLE,
         current_verdict=Verdict.UNAVAILABLE,
+        acceptance_verdict=Verdict.UNAVAILABLE,
+        phase_verdicts=(
+            PhaseVerdict(Phase.HISTORICAL, Verdict.UNAVAILABLE),
+            PhaseVerdict(Phase.CURRENT, Verdict.UNAVAILABLE),
+            PhaseVerdict(Phase.ACCEPTANCE, Verdict.UNAVAILABLE),
+        ),
+        eligible_candidate_ids=(),
+        stage_calls=(),
+        crypto_calls=(),
+        graph_call_count=0,
+    )
+
+
+def reconstruct_candidates(
+    candidate_documents: tuple[bytes, ...],
+    *,
+    retained: RetainedEvaluation,
+    context: EvaluationContext,
+    crypto_verifier: CryptoVerifier,
+) -> Evaluation:
+    del candidate_documents, retained, crypto_verifier
+    return Evaluation(
+        findings=(_not_implemented("retained-evaluation", context.expected_phase),),
+        historical_verdict=Verdict.UNAVAILABLE,
+        current_verdict=Verdict.UNAVAILABLE,
+        acceptance_verdict=Verdict.UNAVAILABLE,
+        phase_verdicts=(
+            PhaseVerdict(Phase.HISTORICAL, Verdict.UNAVAILABLE),
+            PhaseVerdict(Phase.CURRENT, Verdict.UNAVAILABLE),
+            PhaseVerdict(Phase.ACCEPTANCE, Verdict.UNAVAILABLE),
+        ),
         eligible_candidate_ids=(),
         stage_calls=(),
         crypto_calls=(),
