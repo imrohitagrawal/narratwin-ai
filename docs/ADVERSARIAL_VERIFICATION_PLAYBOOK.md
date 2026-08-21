@@ -86,6 +86,12 @@ inode type, cap, I/O, read type, UTF-8, line, record, absolute-path,
 containment, layout, backlink, commondir, identity-race, and prohibited-inode
 case through the public validator with zero Git calls and the matrix-owned exact
 finding/location.
+Freeze the exact reader and discovery AST identities plus their sole top-level
+bindings. The operation oracle records every relative lstat/open/fstat/read/
+post-lstat/close call, flags, `dir_fd`, identity, count, and reverse close; it
+must kill lexical-root and pre-root symlinks, leaf and ancestor replacements,
+wrong flags or descriptors, premature/missing/double closes, and a close error
+that prevents attempts on remaining descriptors.
 
 Fourteen fixed read-only forms then use absolute `/usr/bin/git`, no pager,
 replacement objects, locks, lazy fetch, external diff, renames, ignored
@@ -109,6 +115,10 @@ Inject fake gitfiles, corrupt objects, grafts/alternates/shallow files,
 hostile ambient/local config, N/N+1 output, malformed bytes, role swaps, legacy
 forms, and C3 plus two-descendant histories. Generic exceptions, trimming,
 self-derived expectations, or post-hoc caps are not evidence.
+Treat fsck status 1 and missing-object type lookup status 128 as the only
+corresponding semantic failures; unlisted statuses stop with the generic process
+finding. The immutable protocol and both focused oracles must pass strict mypy
+before RED identity is accepted.
 
 The reference test classes are positive, negative, boundary, malformed,
 deletion, corruption, reordering, duplication, substitution, and maximum

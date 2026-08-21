@@ -99,6 +99,13 @@ call-prefix stopping, and fresh-environment mutation isolation. Parent chains,
 all four positional RED-object roles, linked and conventional layouts, hostile
 ambient/config values, changed gitlinks, notes/signature executables, and every
 single-coordinate argv/keyword/environment mutation are executable cases.
+The metadata matrix owns the complete mode/case/role/stimulus/code/location
+universe and independently freezes the exact reader and discovery `FunctionDef`
+ASTs. Lexical absolute root identity is preserved; neither the root nor any
+pre-root component is resolved before held-descriptor validation. The Git
+status table treats fsck status 1 as object-integrity failure and missing-object
+`cat-file -t` status 128 as missing RED; every other unlisted exact integer is a
+generic process failure before output interpretation.
 
 Nested parser
 members and every configured limit are closed over exact types, enums, hashes,

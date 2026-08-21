@@ -118,6 +118,13 @@ fresh-environment mutation isolation, and single-coordinate argv/keyword/env
 mutations. Boundary exclusions must name live trust producers, workflow
 capability, dependency mutation/activation, SLA claims, and commercial-readiness
 claims in addition to the existing nonactivation universe.
+The metadata section must enumerate one closed
+`mode/case/role/stimulus/code/location` row per operational case and hash the
+exact reader and discovery top-level ASTs. Preserve lexical absolute root bytes;
+do not resolve root or pre-root components before held-descriptor traversal.
+Freeze fsck status 1 as object-integrity failure, missing-object type status 128
+as missing RED, and every other unsupported integer as the generic process
+finding before byte/decode/line/token semantics.
 
 ## Pipeline-call ledger
 
