@@ -20,7 +20,7 @@ FREEZE_PATH = ROOT / "docs/governance/adversarial-convergence-red-freeze-v1.json
 REPOSITORY_TEST_PATH = ROOT / "tests/unit/test_issue435_adversarial_convergence_repository.py"
 IDENTITY_DOMAIN = b"NARRATWIN:ACP:IDENTITY:V1\x00"
 SIGNATURE_DOMAIN = b"NARRATWIN:ACP:SIGNATURE:V1\x00"
-EXPECTED_SEMANTIC_SHA256 = "095b745581800ad245a8fde28d32c7c3182189256518df7181dade0abc0ef0fa"
+EXPECTED_SEMANTIC_SHA256 = "7d6ecd11d44c40b63b98ac76eeed35209d7d0efa4d9b6e16ca0a03381f50bcaa"
 EXPECTED_MUTANT_OUTCOMES_SHA256 = "67b7a36a4cc09fe3a2e092361ada276715ce273aa3b10259a2b4ea92987d1b03"
 EXPECTED_FIXTURE_REGISTRY_SHA256 = (
     "1407395b3714f9a56aee5ac9f1da0f78e0d116f2431016c0bf8cbc17c746e6b1"
@@ -1679,6 +1679,7 @@ def test_matrix_cross_product_and_exact_outcomes_are_closed(
 
     retained = retained_document["retainedEvaluation"]
     crypto_row = list(retained["cryptoCalls"][0])
+    retained_candidate_id = cast(str, retained["authorizedCandidateIds"][0])
     nested_mutations: tuple[tuple[dict[str, Any], tuple[str, ...], object, str, str], ...] = (
         (
             valid_document,
@@ -1767,8 +1768,78 @@ def test_matrix_cross_product_and_exact_outcomes_are_closed(
         (
             retained_document,
             ("retainedEvaluation", "stageCalls"),
+            [["bounds", "wrong-target", 0]],
+            "ACP.STIMULUS.STAGE_REFERENCE",
+            "retainedEvaluation.stageCalls[0][1]",
+        ),
+        (
+            retained_document,
+            ("retainedEvaluation", "stageCalls"),
+            [["bounds", retained_candidate_id, 0]],
+            "ACP.STIMULUS.STAGE_REFERENCE",
+            "retainedEvaluation.stageCalls[0][1]",
+        ),
+        (
+            retained_document,
+            ("retainedEvaluation", "stageCalls"),
+            [["bounds", "candidate[1]", 0]],
+            "ACP.STIMULUS.STAGE_REFERENCE",
+            "retainedEvaluation.stageCalls[0][1]",
+        ),
+        (
+            retained_document,
+            ("retainedEvaluation", "stageCalls"),
+            [["independent_trust", "candidate[0]", 0]],
+            "ACP.STIMULUS.STAGE_REFERENCE",
+            "retainedEvaluation.stageCalls[0][1]",
+        ),
+        (
+            retained_document,
+            ("retainedEvaluation", "stageCalls"),
+            [["independent_trust", "f" * 64, 0]],
+            "ACP.STIMULUS.STAGE_REFERENCE",
+            "retainedEvaluation.stageCalls[0][1]",
+        ),
+        (
+            retained_document,
+            ("retainedEvaluation", "stageCalls"),
+            [["graph_conflict", "candidate[0]", 0]],
+            "ACP.STIMULUS.STAGE_REFERENCE",
+            "retainedEvaluation.stageCalls[0][1]",
+        ),
+        (
+            retained_document,
+            ("retainedEvaluation", "stageCalls"),
             [["bounds", "candidate[0]", True]],
             "ACP.STIMULUS.TYPE",
+            "retainedEvaluation.stageCalls[0][2]",
+        ),
+        (
+            retained_document,
+            ("retainedEvaluation", "stageCalls"),
+            [["independent_trust", retained_candidate_id, 1]],
+            "ACP.STIMULUS.RANGE",
+            "retainedEvaluation.stageCalls[0][2]",
+        ),
+        (
+            retained_document,
+            ("retainedEvaluation", "stageCalls"),
+            [["graph_conflict", "candidate-set", 1]],
+            "ACP.STIMULUS.RANGE",
+            "retainedEvaluation.stageCalls[0][2]",
+        ),
+        (
+            retained_document,
+            ("retainedEvaluation", "stageCalls"),
+            [["bounds", "candidate[0]", -1]],
+            "ACP.STIMULUS.RANGE",
+            "retainedEvaluation.stageCalls[0][2]",
+        ),
+        (
+            retained_document,
+            ("retainedEvaluation", "stageCalls"),
+            [["bounds", "candidate[0]", 1]],
+            "ACP.STIMULUS.RANGE",
             "retainedEvaluation.stageCalls[0][2]",
         ),
         (
@@ -1830,8 +1901,36 @@ def test_matrix_cross_product_and_exact_outcomes_are_closed(
         (
             retained_document,
             ("retainedEvaluation", "cryptoCalls"),
+            [[crypto_row[0], "aa", *crypto_row[2:]]],
+            "ACP.STIMULUS.SIGNATURE",
+            "retainedEvaluation.cryptoCalls[0][1]",
+        ),
+        (
+            retained_document,
+            ("retainedEvaluation", "cryptoCalls"),
+            [[crypto_row[0], 1, *crypto_row[2:]]],
+            "ACP.STIMULUS.TYPE",
+            "retainedEvaluation.cryptoCalls[0][1]",
+        ),
+        (
+            retained_document,
+            ("retainedEvaluation", "cryptoCalls"),
             [[*crypto_row[:2], True, *crypto_row[3:]]],
             "ACP.STIMULUS.TYPE",
+            "retainedEvaluation.cryptoCalls[0][2]",
+        ),
+        (
+            retained_document,
+            ("retainedEvaluation", "cryptoCalls"),
+            [[*crypto_row[:2], -1, *crypto_row[3:]]],
+            "ACP.STIMULUS.RANGE",
+            "retainedEvaluation.cryptoCalls[0][2]",
+        ),
+        (
+            retained_document,
+            ("retainedEvaluation", "cryptoCalls"),
+            [[*crypto_row[:2], 1, 1, *crypto_row[4:]]],
+            "ACP.STIMULUS.RANGE",
             "retainedEvaluation.cryptoCalls[0][2]",
         ),
         (
@@ -1844,8 +1943,22 @@ def test_matrix_cross_product_and_exact_outcomes_are_closed(
         (
             retained_document,
             ("retainedEvaluation", "cryptoCalls"),
+            [[*crypto_row[:3], 0, *crypto_row[4:]]],
+            "ACP.STIMULUS.RANGE",
+            "retainedEvaluation.cryptoCalls[0][3]",
+        ),
+        (
+            retained_document,
+            ("retainedEvaluation", "cryptoCalls"),
             [[*crypto_row[:4], "OTHER", *crypto_row[5:]]],
             "ACP.STIMULUS.ENUM",
+            "retainedEvaluation.cryptoCalls[0][4]",
+        ),
+        (
+            retained_document,
+            ("retainedEvaluation", "cryptoCalls"),
+            [[*crypto_row[:4], True, *crypto_row[5:]]],
+            "ACP.STIMULUS.TYPE",
             "retainedEvaluation.cryptoCalls[0][4]",
         ),
         (
@@ -1872,6 +1985,13 @@ def test_matrix_cross_product_and_exact_outcomes_are_closed(
     )
     for source_document, path, nested_value, code, location in nested_mutations:
         changed_case(source_document, path, nested_value, code, location)
+    for graph_call_count in (-1, 2):
+        changed_case(
+            retained_document,
+            ("retainedEvaluation", "graphCallCount"),
+            graph_call_count,
+            "ACP.STIMULUS.RANGE",
+        )
 
     limit_names = {
         "candidates": "candidateCount",

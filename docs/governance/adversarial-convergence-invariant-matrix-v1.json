@@ -1,7 +1,7 @@
 {
   "schemaVersion": "AdversarialInvariantMatrixV1",
   "matrixId": "issue-435-adversarial-convergence-v1",
-  "contractVersion": "1.0.3",
+  "contractVersion": "1.0.4",
   "activation": "NONE",
   "authorityEffect": "NO_AUTHORITY_EFFECT",
   "pipeline": [
@@ -234,6 +234,22 @@
       "docs/governance/adversarial-convergence-red-freeze-v1.json",
       "tests/unit/test_issue435_adversarial_convergence.py",
       "tests/unit/test_issue435_adversarial_convergence_repository.py"
+    ],
+    "governedReaderAstSha256": "5d0888b3dca1162cab12007f61db831cdf03c41ac5ff910c117c4eaa6125ff41",
+    "governedReaderSteps": [
+      "signature(root:Path,relative:str)->bytes|None",
+      "guard-relative-in-exact-allowlist",
+      "derive-governed-path-from-root-and-relative",
+      "resolve-validated-root",
+      "iterate-every-non-root-ancestor",
+      "reject-ancestor-symlink",
+      "reject-target-symlink",
+      "resolve-governed-path",
+      "reject-outside-root",
+      "reject-nonregular",
+      "read-derived-governed-path",
+      "reject-binary",
+      "return-exact-payload"
     ],
     "allowedGitForms": [
       ["git", "rev-parse", "HEAD"],

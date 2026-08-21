@@ -64,6 +64,24 @@ STATIC_ALLOWED_GOVERNED_READ_PATHS = (
     "tests/unit/test_issue435_adversarial_convergence.py",
     "tests/unit/test_issue435_adversarial_convergence_repository.py",
 )
+STATIC_GOVERNED_READER_AST_SHA256 = (
+    "5d0888b3dca1162cab12007f61db831cdf03c41ac5ff910c117c4eaa6125ff41"
+)
+STATIC_GOVERNED_READER_STEPS = (
+    "signature(root:Path,relative:str)->bytes|None",
+    "guard-relative-in-exact-allowlist",
+    "derive-governed-path-from-root-and-relative",
+    "resolve-validated-root",
+    "iterate-every-non-root-ancestor",
+    "reject-ancestor-symlink",
+    "reject-target-symlink",
+    "resolve-governed-path",
+    "reject-outside-root",
+    "reject-nonregular",
+    "read-derived-governed-path",
+    "reject-binary",
+    "return-exact-payload",
+)
 STATIC_ALLOWED_GIT_FORMS = (
     ("git", "rev-parse", "HEAD"),
     ("git", "rev-parse", "HEAD^"),

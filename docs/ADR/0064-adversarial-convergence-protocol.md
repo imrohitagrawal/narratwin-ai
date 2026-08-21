@@ -78,7 +78,13 @@ noncanonical encodings. The static boundary is an independently frozen closed
 positive import/call grammar. Its only local reads name the exact matrix,
 freeze, and two focused-oracle paths beneath the validated root; every allowed
 import, call, read target, and one of the seven exact read-only Git command forms
-is independently removable. Implementation constants must equal that contract.
+is independently removable. The complete governed-reader function AST is
+independently hashed so its signature, allowed-relative guard, path provenance,
+all-ancestor loop, containment/nonregular checks, read order/receiver, binary
+check, and return flow cannot be laundered through allowed call names.
+Implementation constants must equal that contract. Retained ledgers bind
+stage-sensitive candidate references, ordinals/count relations, signature
+length, and graph-call ranges; raw decoders reject a second JSON token.
 
 `predecessorId` participates in canonical candidate identity. A cyclic
 predecessor construction therefore cannot remain identity-valid; it is rejected

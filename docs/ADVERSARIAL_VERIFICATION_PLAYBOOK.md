@@ -115,7 +115,13 @@ Before read, prove the target and every ancestor are non-symlinks, the resolved
 path stays beneath the validated root, and the target is a regular text file;
 include a socket or FIFO negative, not only a directory. Static local-read
 allowlists name exact governed paths and independently bind every allowed
-import, call, target, and command form.
+import, call, target, and command form. Hash and validate the complete governed
+reader's AST so allowed operations cannot be laundered through rebinding,
+ignored guards, unsafe ordering, a different read receiver, or a shadow helper.
+Exercise every ancestor below the validated root for every governed target with
+within-root symlinks and read traps. Treat a second JSON token as malformed, not
+as ignorable remainder. Close retained stage-reference domains and ordinal,
+crypto count/signature, and graph-call relationships as exact parser cases.
 
 ### Canonical identity
 

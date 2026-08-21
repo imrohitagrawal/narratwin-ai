@@ -56,8 +56,13 @@ invalid UTF-8, malformed JSON, non-object documents, duplicate members, and
 semantically equivalent alternate serialization before trusting content. Freeze
 an exact positive static grammar whose local-read entries name only those
 governed paths, and independently remove/test every import, call, read target,
-and command form. The executor must propagate parser rejection with zero
-evaluator, reconstructor, or crypto calls.
+and command form. Freeze the complete governed-reader AST and test rebinding,
+ignored guards, reordered reads, unsafe relatives, and shadow definitions.
+Exercise every non-root ancestor for every target with within-root symlinks and
+pre-read traps. Retained stage references are stage-sensitive and ordinal-bound;
+crypto ordinals/counts/signature length and graph-call ranges are exact. Reject
+a second JSON token rather than ignoring decoder remainder. The executor must
+propagate parser rejection with zero evaluator, reconstructor, or crypto calls.
 Bind the fixture bytes/hash, exact assertion identity, ordered stage ledger, exact
 signature/key/message crypto ledger or explicit no-call, graph result/selection,
 three-phase verdicts, mutant, blocker class, and evidence state. The executor

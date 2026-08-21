@@ -25,6 +25,28 @@ ORACLE_PATHS = (
     "tests/unit/test_issue435_adversarial_convergence_repository.py",
 )
 CORE_ORACLE_PATH = ROOT / ORACLE_PATHS[0]
+GOVERNED_READER_SOURCE = """def _read_governed_bytes(root: Path, relative: str) -> bytes | None:
+    if relative not in STATIC_ALLOWED_GOVERNED_READ_PATHS:
+        return None
+    governed_path = root / relative
+    root_resolved = root.resolve()
+    for ancestor in governed_path.parents:
+        if ancestor == root:
+            break
+        if ancestor.is_symlink():
+            return None
+    if governed_path.is_symlink():
+        return None
+    resolved = governed_path.resolve()
+    if not resolved.is_relative_to(root_resolved):
+        return None
+    if not governed_path.is_file():
+        return None
+    payload = governed_path.read_bytes()
+    if b"\\x00" in payload:
+        return None
+    return payload
+"""
 
 
 def canonical(value: object) -> bytes:
@@ -369,6 +391,7 @@ def test_freeze_schema_closes_roles_red_nodes_and_separate_blockers(tmp_path: Pa
         (b"\xff", freeze_bytes, "matrix", "ACP.MATRIX.INVALID_UTF8", "matrix"),
         (b"{", freeze_bytes, "matrix", "ACP.MATRIX.INVALID_JSON", "matrix"),
         (b"", freeze_bytes, "matrix", "ACP.MATRIX.INVALID_JSON", "matrix"),
+        (matrix + b"{}", freeze_bytes, "matrix", "ACP.MATRIX.INVALID_JSON", "matrix"),
         (b"[]", freeze_bytes, "matrix", "ACP.MATRIX.NON_OBJECT", "matrix"),
         (
             matrix.replace(matrix_schema, matrix_schema + matrix_schema, 1),
@@ -382,6 +405,7 @@ def test_freeze_schema_closes_roles_red_nodes_and_separate_blockers(tmp_path: Pa
         (matrix, b"\xff", "freeze", "ACP.FREEZE.INVALID_UTF8", "freeze"),
         (matrix, b"{", "freeze", "ACP.FREEZE.INVALID_JSON", "freeze"),
         (matrix, b"", "freeze", "ACP.FREEZE.INVALID_JSON", "freeze"),
+        (matrix, freeze_bytes + b"{}", "freeze", "ACP.FREEZE.INVALID_JSON", "freeze"),
         (matrix, b"[]", "freeze", "ACP.FREEZE.NON_OBJECT", "freeze"),
         (
             matrix,
@@ -461,16 +485,32 @@ def test_repository_validator_is_read_only_and_static_boundary_is_ast_exact(
             assert protocol.validate_repository_freeze(governed_root) == finding(
                 "file", code, relative
             )
-    for ordinal, relative in enumerate(governed_paths):
-        ancestor_root, _ = create_real_git_freeze(tmp_path / f"ancestor-symlink-{ordinal}")
-        governed_parent = (ancestor_root / relative).parent
-        parent_relative = governed_parent.relative_to(ancestor_root).as_posix()
-        external_parent = tmp_path / f"external-governed-parent-{ordinal}"
-        governed_parent.rename(external_parent)
-        governed_parent.symlink_to(external_parent, target_is_directory=True)
-        assert protocol.validate_repository_freeze(ancestor_root) == finding(
-            "file", "ACP.FILE.ANCESTOR_SYMLINK", parent_relative
-        )
+    for path_ordinal, relative in enumerate(governed_paths):
+        parent_parts = Path(relative).parent.parts
+        for depth in range(1, len(parent_parts) + 1):
+            ancestor_relative = Path(*parent_parts[:depth])
+            ancestor_root, _ = create_real_git_freeze(
+                tmp_path / f"ancestor-symlink-{path_ordinal}-{depth}"
+            )
+            governed_target = ancestor_root / relative
+            governed_ancestor = ancestor_root / ancestor_relative
+            within_root_shadow = ancestor_root / f".governed-shadow-{path_ordinal}-{depth}"
+            governed_ancestor.rename(within_root_shadow)
+            governed_ancestor.symlink_to(within_root_shadow, target_is_directory=True)
+            original_ancestor_read = Path.read_bytes
+
+            def reject_ancestor_read(path: Path) -> bytes:
+                if path == governed_target:
+                    raise AssertionError("ancestor symlink must be rejected before read")
+                return original_ancestor_read(path)
+
+            with monkeypatch.context() as ancestor_patch:
+                ancestor_patch.setattr(Path, "read_bytes", reject_ancestor_read)
+                assert protocol.validate_repository_freeze(ancestor_root) == finding(
+                    "file",
+                    "ACP.FILE.ANCESTOR_SYMLINK",
+                    ancestor_relative.as_posix(),
+                )
     fifo_root, _ = create_real_git_freeze(tmp_path / "fifo-nonregular")
     fifo_path = fifo_root / FREEZE_PATH
     fifo_path.unlink()
@@ -506,9 +546,85 @@ def test_repository_validator_is_read_only_and_static_boundary_is_ast_exact(
     assert protocol.STATIC_ALLOWED_GOVERNED_READ_PATHS == tuple(
         static_contract["allowedGovernedReadPaths"]
     )
+    governed_reader_ast_sha256 = hashlib.sha256(
+        ast.dump(
+            ast.parse(GOVERNED_READER_SOURCE),
+            annotate_fields=True,
+            include_attributes=False,
+        ).encode()
+    ).hexdigest()
+    assert (
+        protocol.STATIC_GOVERNED_READER_AST_SHA256 == (static_contract["governedReaderAstSha256"])
+    )
+    assert governed_reader_ast_sha256 == protocol.STATIC_GOVERNED_READER_AST_SHA256
+    assert protocol.STATIC_GOVERNED_READER_STEPS == tuple(static_contract["governedReaderSteps"])
     assert protocol.STATIC_ALLOWED_GIT_FORMS == tuple(
         tuple(item) for item in static_contract["allowedGitForms"]
     )
+    assert protocol.static_boundary_findings(GOVERNED_READER_SOURCE) == ()
+    for attribute in (
+        "STATIC_GOVERNED_READER_AST_SHA256",
+        "STATIC_GOVERNED_READER_STEPS",
+    ):
+        with monkeypatch.context() as policy_patch:
+            policy_patch.setattr(
+                protocol,
+                attribute,
+                "0" * 64 if attribute.endswith("SHA256") else (),
+            )
+            assert protocol.static_boundary_findings(GOVERNED_READER_SOURCE) == finding(
+                "static", "ACP.STATIC.NOT_ALLOWLISTED", "source"
+            )
+    hostile_reader_sources = (
+        GOVERNED_READER_SOURCE.replace(
+            "def _read_governed_bytes(root: Path, relative: str) -> bytes | None:",
+            "def _read_governed_bytes(other_root: Path, relative: str) -> bytes | None:",
+        ),
+        GOVERNED_READER_SOURCE.replace(
+            "    if relative not in STATIC_ALLOWED_GOVERNED_READ_PATHS:\n        return None\n",
+            "",
+        ),
+        GOVERNED_READER_SOURCE.replace(
+            "    governed_path = root / relative",
+            "    governed_path = root / '../secret'",
+        ),
+        GOVERNED_READER_SOURCE.replace(
+            "    root_resolved = root.resolve()",
+            "    root = root / 'shadow'\n    root_resolved = root.resolve()",
+        ),
+        GOVERNED_READER_SOURCE.replace(
+            "    if not resolved.is_relative_to(root_resolved):\n        return None",
+            "    resolved.is_relative_to(root_resolved)",
+        ),
+        GOVERNED_READER_SOURCE.replace(
+            "        if ancestor.is_symlink():\n            return None",
+            "        ancestor.is_symlink()",
+        ),
+        GOVERNED_READER_SOURCE.replace(
+            "    if governed_path.is_symlink():\n        return None",
+            "    governed_path.is_symlink()",
+        ),
+        GOVERNED_READER_SOURCE.replace(
+            "    if not governed_path.is_file():\n"
+            "        return None\n"
+            "    payload = governed_path.read_bytes()",
+            "    payload = governed_path.read_bytes()\n"
+            "    if not governed_path.is_file():\n"
+            "        return None",
+        ),
+        GOVERNED_READER_SOURCE.replace(
+            "    payload = governed_path.read_bytes()",
+            "    payload = root.read_bytes()",
+        ),
+        GOVERNED_READER_SOURCE
+        + "\ndef _read_governed_bytes(root: Path, relative: str) -> bytes | None:\n"
+        "    return (root / relative).read_bytes()\n",
+    )
+    assert len(set(hostile_reader_sources)) == len(hostile_reader_sources)
+    for hostile_reader in hostile_reader_sources:
+        assert protocol.static_boundary_findings(hostile_reader) == finding(
+            "static", "ACP.STATIC.NOT_ALLOWLISTED", "source"
+        )
     allowed_import_sources = {
         "__future__.annotations": "from __future__ import annotations\n",
         "ast": "import ast\n",
@@ -554,27 +670,13 @@ def test_repository_validator_is_read_only_and_static_boundary_is_ast_exact(
             )
             for relative in protocol.STATIC_ALLOWED_GOVERNED_READ_PATHS
         },
-        "_read_governed_bytes:ancestor.is_symlink()": (
-            "def _read_governed_bytes():\n    return ancestor.is_symlink()\n"
-        ),
-        "_read_governed_bytes:governed_path.is_symlink()": (
-            "def _read_governed_bytes():\n    return governed_path.is_symlink()\n"
-        ),
-        "_read_governed_bytes:governed_path.is_file()": (
-            "def _read_governed_bytes():\n    return governed_path.is_file()\n"
-        ),
-        "_read_governed_bytes:governed_path.resolve()": (
-            "def _read_governed_bytes():\n    return governed_path.resolve()\n"
-        ),
-        "_read_governed_bytes:root.resolve()": (
-            "def _read_governed_bytes():\n    return root.resolve()\n"
-        ),
-        "_read_governed_bytes:resolved.is_relative_to(root_resolved)": (
-            "def _read_governed_bytes():\n    return resolved.is_relative_to(root_resolved)\n"
-        ),
-        "_read_governed_bytes:governed_path.read_bytes()": (
-            "def _read_governed_bytes():\n    return governed_path.read_bytes()\n"
-        ),
+        "_read_governed_bytes:ancestor.is_symlink()": GOVERNED_READER_SOURCE,
+        "_read_governed_bytes:governed_path.is_symlink()": GOVERNED_READER_SOURCE,
+        "_read_governed_bytes:governed_path.is_file()": GOVERNED_READER_SOURCE,
+        "_read_governed_bytes:governed_path.resolve()": GOVERNED_READER_SOURCE,
+        "_read_governed_bytes:root.resolve()": GOVERNED_READER_SOURCE,
+        "_read_governed_bytes:resolved.is_relative_to(root_resolved)": (GOVERNED_READER_SOURCE),
+        "_read_governed_bytes:governed_path.read_bytes()": GOVERNED_READER_SOURCE,
         "ast.parse(source)": "import ast\nast.parse(source)\n",
         "bytes.decode(utf-8)": "payload.decode('utf-8')\n",
         "bytes.fromhex(hex)": "bytes.fromhex(value)\n",
