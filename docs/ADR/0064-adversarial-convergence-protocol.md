@@ -69,7 +69,8 @@ replay-subset mutant uses a trust-valid candidate, a successful exact crypto
 call, the complete pipeline, and an extra retained finding so it discriminates
 exact equality without contradicting fail-fast trust handling. Nested parser
 members and every configured limit are closed over exact types, enums, hashes,
-identifiers, ranges, and maximums. Governed artifacts are rejected before read
+identifiers, ranges, cardinality relationships, ordered unique ordinals, and
+maximums across every pipeline stage. Governed artifacts are rejected before read
 when their target or any ancestor is a symlink, they resolve outside the
 validated root, they are non-regular (including sockets), or they are binary.
 Raw matrix/freeze documents return exact typed findings for invalid UTF-8,
@@ -78,13 +79,18 @@ noncanonical encodings. The static boundary is an independently frozen closed
 positive import/call grammar. Its only local reads name the exact matrix,
 freeze, and two focused-oracle paths beneath the validated root; every allowed
 import, call, read target, and one of the seven exact read-only Git command forms
-is independently removable. The complete governed-reader function AST is
-independently hashed so its signature, allowed-relative guard, path provenance,
-all-ancestor loop, containment/nonregular checks, read order/receiver, binary
-check, and return flow cannot be laundered through allowed call names.
+is independently removable. The single top-level governed-reader `FunctionDef`
+AST is independently dumped with exact safe options and hashed so its typed
+payload-or-finding result, signature, allowed-relative guard, path provenance,
+all-ancestor loop, containment/missing/nonregular checks, read order/receiver,
+binary check, and return flow cannot be laundered through allowed call names,
+shadow definitions, assignments, aliases, or lambdas. The public validator must
+call it once and propagate its exact typed finding without rescanning.
 Implementation constants must equal that contract. Retained ledgers bind
-stage-sensitive candidate references, ordinals/count relations, signature
-length, and graph-call ranges; raw decoders reject a second JSON token.
+stage-sensitive candidate references for every stage, ordinals/count relations,
+exact 64-byte signatures, candidate/ledger cardinality, and graph-call ranges;
+matrix, freeze, evaluate-stimulus, and reconstruct-stimulus raw decoders reject
+a second JSON token before later work.
 
 `predecessorId` participates in canonical candidate identity. A cyclic
 predecessor construction therefore cannot remain identity-valid; it is rejected

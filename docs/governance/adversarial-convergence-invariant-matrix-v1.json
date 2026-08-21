@@ -1,7 +1,7 @@
 {
   "schemaVersion": "AdversarialInvariantMatrixV1",
   "matrixId": "issue-435-adversarial-convergence-v1",
-  "contractVersion": "1.0.4",
+  "contractVersion": "1.0.5",
   "activation": "NONE",
   "authorityEffect": "NO_AUTHORITY_EFFECT",
   "pipeline": [
@@ -166,6 +166,10 @@
     "contentPolicy": "shared_neutral_not_label_ordinal_hash_outcome_or_position_derived",
     "executorComposition": "exact_bytes_to_one_strict_parse_then_identity_returned_objects_to_one_bound_engine",
     "rejectionContract": "exact_parser_finding_and_zero_engine_crypto_calls",
+    "trailingTokenModes": [
+      "evaluate",
+      "reconstruct"
+    ],
     "byteUniquenessRequired": false,
     "closedObjectPaths": [
       "$",
@@ -188,7 +192,24 @@
       "hostileMutation",
       "expectedFindings",
       "mutantId"
-    ]
+    ],
+    "stageReferenceDomains": {
+      "bounds": "candidate[n]",
+      "parse": "candidate[n]",
+      "schema": "candidate[n]",
+      "canonical_identity": "candidate[n]",
+      "independent_trust": "canonical-64-hex-id",
+      "authorization": "canonical-64-hex-id",
+      "graph_conflict": "candidate-set",
+      "phase_verdict": "candidate-set"
+    },
+    "stageOrdinalContract": "integer_non_boolean_in_actual_candidate_range_and_stage_reference_consistent",
+    "cryptoLedgerContract": {
+      "signatureBytes": 64,
+      "candidateCount": "equals_actual_candidates_and_rows_and_not_above_configured_maximum",
+      "ordinals": "ordered_unique_zero_through_count_minus_one",
+      "nestedMembers": "exact_types_identifiers_hashes_phase_and_result"
+    }
   },
   "staticBoundaryContract": {
     "allowedImports": [
@@ -215,12 +236,17 @@
       "_read_governed_bytes(root,'tests/unit/test_issue435_adversarial_convergence_repository.py')",
       "_read_governed_bytes:ancestor.is_symlink()",
       "_read_governed_bytes:governed_path.is_symlink()",
+      "_read_governed_bytes:governed_path.exists()",
       "_read_governed_bytes:governed_path.is_file()",
       "_read_governed_bytes:governed_path.resolve()",
       "_read_governed_bytes:root.resolve()",
       "_read_governed_bytes:resolved.is_relative_to(root_resolved)",
+      "_read_governed_bytes:ancestor.relative_to(root).as_posix()",
       "_read_governed_bytes:governed_path.read_bytes()",
+      "_read_governed_bytes:Finding(file,CURRENT,exact-code,exact-location)",
+      "_read_governed_bytes:GovernedReadResult(payload,findings)",
       "ast.parse(source)",
+      "ast.dump(node,annotate_fields=True,include_attributes=False)",
       "bytes.decode(utf-8)",
       "bytes.fromhex(hex)",
       "bytes.hex()",
@@ -235,21 +261,27 @@
       "tests/unit/test_issue435_adversarial_convergence.py",
       "tests/unit/test_issue435_adversarial_convergence_repository.py"
     ],
-    "governedReaderAstSha256": "5d0888b3dca1162cab12007f61db831cdf03c41ac5ff910c117c4eaa6125ff41",
+    "governedReaderAstSha256": "c3736cb8403e1ffd63d808cabf0f7289055c3b1691f39164bfe48c475c21724d",
+    "governedReaderBinding": "one_top_level_functiondef_no_other_store_or_rebinding",
+    "governedReadResultFields": [
+      "payload",
+      "findings"
+    ],
     "governedReaderSteps": [
-      "signature(root:Path,relative:str)->bytes|None",
+      "signature(root:Path,relative:str)->GovernedReadResult",
       "guard-relative-in-exact-allowlist",
       "derive-governed-path-from-root-and-relative",
       "resolve-validated-root",
       "iterate-every-non-root-ancestor",
-      "reject-ancestor-symlink",
-      "reject-target-symlink",
+      "return-exact-ancestor-symlink-finding",
+      "return-exact-target-symlink-finding",
       "resolve-governed-path",
-      "reject-outside-root",
-      "reject-nonregular",
+      "return-exact-outside-root-finding",
+      "return-exact-missing-finding",
+      "return-exact-nonregular-finding",
       "read-derived-governed-path",
-      "reject-binary",
-      "return-exact-payload"
+      "return-exact-binary-finding",
+      "return-typed-payload"
     ],
     "allowedGitForms": [
       ["git", "rev-parse", "HEAD"],

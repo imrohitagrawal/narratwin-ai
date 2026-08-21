@@ -49,19 +49,24 @@ ordinals, hashes, expected outcomes, or registry position. The strict parser
 must return an exact typed rejection for duplicate, unknown, forbidden, missing,
 wrongly typed, malformed-hex, invalid-enum, malformed-context, malformed-retained,
 or oversized stimulus input. Close every nested member over exact identifier,
-hash, enum, primitive, range, and maximum constraints. Governed matrix, freeze,
+hash, enum, primitive, range, maximum, cross-field cardinality, and ordered-
+ordinal constraints across every pipeline stage. Governed matrix, freeze,
 and oracle paths must remain beneath the validated root with no symlink target
 or ancestor. Reject directories, sockets, other non-regular files, binary data,
 invalid UTF-8, malformed JSON, non-object documents, duplicate members, and
 semantically equivalent alternate serialization before trusting content. Freeze
 an exact positive static grammar whose local-read entries name only those
 governed paths, and independently remove/test every import, call, read target,
-and command form. Freeze the complete governed-reader AST and test rebinding,
-ignored guards, reordered reads, unsafe relatives, and shadow definitions.
+and command form. Freeze the safe exact AST dump of the single top-level
+governed-reader `FunctionDef`; make it return bytes or an exact typed finding;
+prove one-call public-validator propagation; and test rebinding, ignored guards,
+reordered reads, unsafe relatives, shadow definitions, assignments, aliases,
+and lambdas.
 Exercise every non-root ancestor for every target with within-root symlinks and
 pre-read traps. Retained stage references are stage-sensitive and ordinal-bound;
-crypto ordinals/counts/signature length and graph-call ranges are exact. Reject
-a second JSON token rather than ignoring decoder remainder. The executor must
+crypto ordinals/counts/exact 64-byte signature, actual/max cardinality, ledger
+row/order, and graph-call ranges are exact. Reject a second JSON token in both
+evaluate and reconstruct stimuli rather than ignoring decoder remainder. The executor must
 propagate parser rejection with zero evaluator, reconstructor, or crypto calls.
 Bind the fixture bytes/hash, exact assertion identity, ordered stage ledger, exact
 signature/key/message crypto ledger or explicit no-call, graph result/selection,

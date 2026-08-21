@@ -44,12 +44,17 @@ STATIC_ALLOWED_CALL_SHAPES = (
     "_read_governed_bytes(root,'tests/unit/test_issue435_adversarial_convergence_repository.py')",
     "_read_governed_bytes:ancestor.is_symlink()",
     "_read_governed_bytes:governed_path.is_symlink()",
+    "_read_governed_bytes:governed_path.exists()",
     "_read_governed_bytes:governed_path.is_file()",
     "_read_governed_bytes:governed_path.resolve()",
     "_read_governed_bytes:root.resolve()",
     "_read_governed_bytes:resolved.is_relative_to(root_resolved)",
+    "_read_governed_bytes:ancestor.relative_to(root).as_posix()",
     "_read_governed_bytes:governed_path.read_bytes()",
+    "_read_governed_bytes:Finding(file,CURRENT,exact-code,exact-location)",
+    "_read_governed_bytes:GovernedReadResult(payload,findings)",
     "ast.parse(source)",
+    "ast.dump(node,annotate_fields=True,include_attributes=False)",
     "bytes.decode(utf-8)",
     "bytes.fromhex(hex)",
     "bytes.hex()",
@@ -65,22 +70,25 @@ STATIC_ALLOWED_GOVERNED_READ_PATHS = (
     "tests/unit/test_issue435_adversarial_convergence_repository.py",
 )
 STATIC_GOVERNED_READER_AST_SHA256 = (
-    "5d0888b3dca1162cab12007f61db831cdf03c41ac5ff910c117c4eaa6125ff41"
+    "c3736cb8403e1ffd63d808cabf0f7289055c3b1691f39164bfe48c475c21724d"
 )
+STATIC_GOVERNED_READER_BINDING = "one_top_level_functiondef_no_other_store_or_rebinding"
+STATIC_GOVERNED_READ_RESULT_FIELDS = ("payload", "findings")
 STATIC_GOVERNED_READER_STEPS = (
-    "signature(root:Path,relative:str)->bytes|None",
+    "signature(root:Path,relative:str)->GovernedReadResult",
     "guard-relative-in-exact-allowlist",
     "derive-governed-path-from-root-and-relative",
     "resolve-validated-root",
     "iterate-every-non-root-ancestor",
-    "reject-ancestor-symlink",
-    "reject-target-symlink",
+    "return-exact-ancestor-symlink-finding",
+    "return-exact-target-symlink-finding",
     "resolve-governed-path",
-    "reject-outside-root",
-    "reject-nonregular",
+    "return-exact-outside-root-finding",
+    "return-exact-missing-finding",
+    "return-exact-nonregular-finding",
     "read-derived-governed-path",
-    "reject-binary",
-    "return-exact-payload",
+    "return-exact-binary-finding",
+    "return-typed-payload",
 )
 STATIC_ALLOWED_GIT_FORMS = (
     ("git", "rev-parse", "HEAD"),
@@ -134,6 +142,12 @@ class Finding:
     phase: str
     code: str
     location: str
+
+
+@dataclass(frozen=True)
+class GovernedReadResult:
+    payload: bytes | None
+    findings: tuple[Finding, ...]
 
 
 @dataclass(frozen=True)
@@ -401,6 +415,11 @@ def validate_matrix_bytes(
 def validate_repository_freeze(root: Path = ROOT) -> tuple[Finding, ...]:
     del root
     return (_not_implemented("repository-freeze"),)
+
+
+def _read_governed_bytes(root: Path, relative: str) -> GovernedReadResult:
+    del root
+    return GovernedReadResult(None, (_not_implemented(relative),))
 
 
 def evaluate_candidates(

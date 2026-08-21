@@ -108,20 +108,27 @@ Reject duplicate JSON members, invalid UTF-8, non-object roots, excessive
 depth, unknown fields, missing fields, extra fields, wrong types, booleans used
 as integers, invalid enums, path traversal, symlinks, nonregular files, and
 binary input. Every nested tuple member and limit has an exact type/domain/range
-case. JSON syntax failures return typed findings rather than leaking decoder
+and cross-field cardinality case. Stage-sensitive references cover every pipeline
+stage; crypto ledgers bind exact 64-byte signatures, configured and actual
+candidate counts, row count, and ordered unique ordinals. JSON syntax failures return typed findings rather than leaking decoder
 exceptions. JSON is strict and duplicate-free; a semantically equal alternate
 serialization is still noncanonical when the contract binds storage bytes.
 Before read, prove the target and every ancestor are non-symlinks, the resolved
 path stays beneath the validated root, and the target is a regular text file;
 include a socket or FIFO negative, not only a directory. Static local-read
 allowlists name exact governed paths and independently bind every allowed
-import, call, target, and command form. Hash and validate the complete governed
-reader's AST so allowed operations cannot be laundered through rebinding,
-ignored guards, unsafe ordering, a different read receiver, or a shadow helper.
+import, call, target, and command form. The governed reader returns either exact
+bytes or an exact typed finding; the public validator calls it once and
+propagates the result without rescanning. Hash the exact safe `ast.dump` of its
+single top-level `FunctionDef` so allowed operations cannot be laundered through
+rebinding, ignored guards, unsafe ordering, a different read receiver, a shadow
+helper, an assignment, an alias, or a lambda.
 Exercise every ancestor below the validated root for every governed target with
-within-root symlinks and read traps. Treat a second JSON token as malformed, not
-as ignorable remainder. Close retained stage-reference domains and ordinal,
-crypto count/signature, and graph-call relationships as exact parser cases.
+within-root symlinks and read traps. Treat a second JSON token in matrix, freeze,
+evaluate stimulus, or reconstruct stimulus as malformed, not as ignorable
+remainder; prove one parse attempt and zero engine/crypto calls. Close retained
+stage-reference domains and ordinals across all eight stages, crypto signature/
+count/row/order relations, and graph-call relationships as exact parser cases.
 
 ### Canonical identity
 

@@ -20,7 +20,7 @@ FREEZE_PATH = ROOT / "docs/governance/adversarial-convergence-red-freeze-v1.json
 REPOSITORY_TEST_PATH = ROOT / "tests/unit/test_issue435_adversarial_convergence_repository.py"
 IDENTITY_DOMAIN = b"NARRATWIN:ACP:IDENTITY:V1\x00"
 SIGNATURE_DOMAIN = b"NARRATWIN:ACP:SIGNATURE:V1\x00"
-EXPECTED_SEMANTIC_SHA256 = "7d6ecd11d44c40b63b98ac76eeed35209d7d0efa4d9b6e16ca0a03381f50bcaa"
+EXPECTED_SEMANTIC_SHA256 = "83b20d4f0855fdd81227e9ad004aae7f6c658fbadfe2649072011df8f8434bb8"
 EXPECTED_MUTANT_OUTCOMES_SHA256 = "67b7a36a4cc09fe3a2e092361ada276715ce273aa3b10259a2b4ea92987d1b03"
 EXPECTED_FIXTURE_REGISTRY_SHA256 = (
     "1407395b3714f9a56aee5ac9f1da0f78e0d116f2431016c0bf8cbc17c746e6b1"
@@ -1549,6 +1549,18 @@ def test_matrix_cross_product_and_exact_outcomes_are_closed(
         (b"\xff", "parse", "ACP.STIMULUS.INVALID_UTF8", "fixture"),
         (b"{", "parse", "ACP.STIMULUS.INVALID_JSON", "fixture"),
         (b"[]", "schema", "ACP.STIMULUS.OBJECT_REQUIRED", "fixture"),
+        (
+            canonical(valid_document) + b"{}",
+            "parse",
+            "ACP.STIMULUS.INVALID_JSON",
+            "fixture",
+        ),
+        (
+            canonical(retained_document) + b"{}",
+            "parse",
+            "ACP.STIMULUS.INVALID_JSON",
+            "fixture",
+        ),
     ]
 
     def changed_case(
@@ -1985,6 +1997,157 @@ def test_matrix_cross_product_and_exact_outcomes_are_closed(
     )
     for source_document, path, nested_value, code, location in nested_mutations:
         changed_case(source_document, path, nested_value, code, location)
+
+    per_candidate_stages = ("bounds", "parse", "schema", "canonical_identity")
+    identity_stages = ("independent_trust", "authorization")
+    set_stages = ("graph_conflict", "phase_verdict")
+    for stage in per_candidate_stages:
+        changed_case(
+            retained_document,
+            ("retainedEvaluation", "stageCalls"),
+            [[stage, retained_candidate_id, 0]],
+            "ACP.STIMULUS.STAGE_REFERENCE",
+            "retainedEvaluation.stageCalls[0][1]",
+        )
+        changed_case(
+            retained_document,
+            ("retainedEvaluation", "stageCalls"),
+            [[stage, "candidate[1]", 1]],
+            "ACP.STIMULUS.RANGE",
+            "retainedEvaluation.stageCalls[0][1]",
+        )
+    for stage in identity_stages:
+        changed_case(
+            retained_document,
+            ("retainedEvaluation", "stageCalls"),
+            [[stage, "candidate[0]", 0]],
+            "ACP.STIMULUS.STAGE_REFERENCE",
+            "retainedEvaluation.stageCalls[0][1]",
+        )
+        changed_case(
+            retained_document,
+            ("retainedEvaluation", "stageCalls"),
+            [[stage, retained_candidate_id, 1]],
+            "ACP.STIMULUS.RANGE",
+            "retainedEvaluation.stageCalls[0][2]",
+        )
+    for stage in set_stages:
+        changed_case(
+            retained_document,
+            ("retainedEvaluation", "stageCalls"),
+            [[stage, "candidate[0]", 0]],
+            "ACP.STIMULUS.STAGE_REFERENCE",
+            "retainedEvaluation.stageCalls[0][1]",
+        )
+        changed_case(
+            retained_document,
+            ("retainedEvaluation", "stageCalls"),
+            [[stage, "candidate-set", 1]],
+            "ACP.STIMULUS.RANGE",
+            "retainedEvaluation.stageCalls[0][2]",
+        )
+
+    exact_signature = cast(str, crypto_row[1])
+    assert len(bytes.fromhex(exact_signature)) == 64
+    nested_closure_cases: tuple[tuple[tuple[str, ...], object, str, str], ...] = (
+        (
+            ("retainedEvaluation", "phaseVerdicts"),
+            [[True, "VALID"]],
+            "ACP.STIMULUS.TYPE",
+            "retainedEvaluation.phaseVerdicts[0][0]",
+        ),
+        (
+            ("retainedEvaluation", "phaseVerdicts"),
+            [["CURRENT", True]],
+            "ACP.STIMULUS.TYPE",
+            "retainedEvaluation.phaseVerdicts[0][1]",
+        ),
+        (
+            ("retainedEvaluation", "trustedKeySha256s"),
+            [[1, "0" * 64]],
+            "ACP.STIMULUS.TYPE",
+            "retainedEvaluation.trustedKeySha256s[0][0]",
+        ),
+        (
+            ("retainedEvaluation", "trustedKeySha256s"),
+            [["0" * 64, 1]],
+            "ACP.STIMULUS.TYPE",
+            "retainedEvaluation.trustedKeySha256s[0][1]",
+        ),
+        (
+            ("retainedEvaluation", "cryptoCalls"),
+            [[1, *crypto_row[1:]]],
+            "ACP.STIMULUS.TYPE",
+            "retainedEvaluation.cryptoCalls[0][0]",
+        ),
+        (
+            ("retainedEvaluation", "cryptoCalls"),
+            [[crypto_row[0], "aa" * 63, *crypto_row[2:]]],
+            "ACP.STIMULUS.SIGNATURE",
+            "retainedEvaluation.cryptoCalls[0][1]",
+        ),
+        (
+            ("retainedEvaluation", "cryptoCalls"),
+            [[crypto_row[0], "aa" * 65, *crypto_row[2:]]],
+            "ACP.STIMULUS.SIGNATURE",
+            "retainedEvaluation.cryptoCalls[0][1]",
+        ),
+        (
+            ("retainedEvaluation", "cryptoCalls"),
+            [[*crypto_row[:3], 2, *crypto_row[4:]]],
+            "ACP.STIMULUS.COUNT",
+            "retainedEvaluation.cryptoCalls[0][3]",
+        ),
+        (
+            ("retainedEvaluation", "cryptoCalls"),
+            [[*crypto_row[:3], 5, *crypto_row[4:]]],
+            "ACP.STIMULUS.RANGE",
+            "retainedEvaluation.cryptoCalls[0][3]",
+        ),
+        (
+            ("retainedEvaluation", "cryptoCalls"),
+            [[*crypto_row[:5], 1, *crypto_row[6:]]],
+            "ACP.STIMULUS.TYPE",
+            "retainedEvaluation.cryptoCalls[0][5]",
+        ),
+        (
+            ("retainedEvaluation", "cryptoCalls"),
+            [[*crypto_row[:6], 1, crypto_row[7]]],
+            "ACP.STIMULUS.TYPE",
+            "retainedEvaluation.cryptoCalls[0][6]",
+        ),
+    )
+    for nested_path, nested_value, nested_code, nested_location in nested_closure_cases:
+        changed_case(
+            retained_document,
+            nested_path,
+            nested_value,
+            nested_code,
+            nested_location,
+        )
+
+    first_crypto = [*crypto_row[:3], 2, *crypto_row[4:]]
+    duplicate_ordinal = [*crypto_row[:2], 0, 2, *crypto_row[4:]]
+    out_of_order = [*crypto_row[:2], 1, 2, *crypto_row[4:]]
+    for rows, code, location in (
+        (
+            [first_crypto, duplicate_ordinal],
+            "ACP.STIMULUS.ORDER",
+            "retainedEvaluation.cryptoCalls[1][2]",
+        ),
+        (
+            [out_of_order, first_crypto],
+            "ACP.STIMULUS.ORDER",
+            "retainedEvaluation.cryptoCalls[0][2]",
+        ),
+    ):
+        changed_case(
+            retained_document,
+            ("retainedEvaluation", "cryptoCalls"),
+            rows,
+            code,
+            location,
+        )
     for graph_call_count in (-1, 2):
         changed_case(
             retained_document,
