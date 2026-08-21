@@ -1,7 +1,7 @@
 {
   "schemaVersion": "AdversarialInvariantMatrixV1",
   "matrixId": "issue-435-adversarial-convergence-v1",
-  "contractVersion": "1.0.6",
+  "contractVersion": "1.0.7",
   "activation": "NONE",
   "authorityEffect": "NO_AUTHORITY_EFFECT",
   "pipeline": [
@@ -284,6 +284,11 @@
       "destructuring_store",
       "augmented_assign",
       "match_capture",
+      "type_alias",
+      "async_for_global",
+      "async_with_global",
+      "nested_global_assign",
+      "nested_global_delete",
       "delete"
     ],
     "governedReadResultFields": [

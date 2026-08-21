@@ -88,6 +88,11 @@ STATIC_GOVERNED_READER_FORBIDDEN_BINDINGS = (
     "destructuring_store",
     "augmented_assign",
     "match_capture",
+    "type_alias",
+    "async_for_global",
+    "async_with_global",
+    "nested_global_assign",
+    "nested_global_delete",
     "delete",
 )
 STATIC_GOVERNED_READ_RESULT_FIELDS = ("payload", "findings")

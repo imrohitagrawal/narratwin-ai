@@ -20,7 +20,7 @@ FREEZE_PATH = ROOT / "docs/governance/adversarial-convergence-red-freeze-v1.json
 REPOSITORY_TEST_PATH = ROOT / "tests/unit/test_issue435_adversarial_convergence_repository.py"
 IDENTITY_DOMAIN = b"NARRATWIN:ACP:IDENTITY:V1\x00"
 SIGNATURE_DOMAIN = b"NARRATWIN:ACP:SIGNATURE:V1\x00"
-EXPECTED_SEMANTIC_SHA256 = "d47484b5de2a852cb1708ac0c4878bbfa534814a952c5f6d6126a200fcbadf9e"
+EXPECTED_SEMANTIC_SHA256 = "a34a5b98fb39e0f8d43d09ba5d3a9c824dd5ed1697da391fcd636b6047838a75"
 EXPECTED_MUTANT_OUTCOMES_SHA256 = "67b7a36a4cc09fe3a2e092361ada276715ce273aa3b10259a2b4ea92987d1b03"
 EXPECTED_FIXTURE_REGISTRY_SHA256 = (
     "1407395b3714f9a56aee5ac9f1da0f78e0d116f2431016c0bf8cbc17c746e6b1"
@@ -2035,6 +2035,13 @@ def test_matrix_cross_product_and_exact_outcomes_are_closed(
             "ACP.STIMULUS.RANGE",
             "retainedEvaluation.stageCalls[0][1]",
         )
+        changed_case(
+            retained_document,
+            ("retainedEvaluation", "stageCalls"),
+            [[stage, "candidate[0]", 1]],
+            "ACP.STIMULUS.RANGE",
+            "retainedEvaluation.stageCalls[0][2]",
+        )
     for stage in identity_stages:
         changed_case(
             retained_document,
@@ -2075,6 +2082,7 @@ def test_matrix_cross_product_and_exact_outcomes_are_closed(
             ([stage, 1, 0], "retainedEvaluation.stageCalls[0][1]"),
             ([stage, reference, True], "retainedEvaluation.stageCalls[0][2]"),
             ([stage, reference, "0"], "retainedEvaluation.stageCalls[0][2]"),
+            ([stage, reference, 0.0], "retainedEvaluation.stageCalls[0][2]"),
         ):
             changed_case(
                 retained_document,
@@ -2243,7 +2251,7 @@ def test_matrix_cross_product_and_exact_outcomes_are_closed(
         ),
     ):
         changed_case(
-            retained_document,
+            two_document,
             ("retainedEvaluation", "cryptoCalls"),
             rows,
             code,
@@ -2327,13 +2335,18 @@ def test_matrix_cross_product_and_exact_outcomes_are_closed(
         unexpected_engines.append("evaluate")
         return DIMENSION_MATERIALIZERS["validation_order"]("positive").evaluation
 
+    def unexpected_reconstruct(*args: object, **kwargs: object) -> protocol.Evaluation:
+        del args, kwargs
+        unexpected_engines.append("reconstruct")
+        return DIMENSION_MATERIALIZERS["validation_order"]("positive").evaluation
+
     def observe_unexpected_crypto(probe: protocol.CryptoProbe) -> bool:
         unexpected_crypto.append(probe)
         return True
 
     monkeypatch.setattr(protocol, "parse_matrix_stimulus", observe_rejection_parse)
     monkeypatch.setattr(protocol, "evaluate_candidates", unexpected_evaluate)
-    monkeypatch.setattr(protocol, "reconstruct_candidates", unexpected_evaluate)
+    monkeypatch.setattr(protocol, "reconstruct_candidates", unexpected_reconstruct)
     for raw, stage, code, location in hostile_stimuli:
         expected_findings = exact_finding(stage, "CURRENT", code, location)
         assert original_parse(raw) == protocol.MatrixStimulusParse(None, expected_findings)
@@ -2346,7 +2359,20 @@ def test_matrix_cross_product_and_exact_outcomes_are_closed(
         assert unexpected_engines == []
         assert unexpected_crypto == []
 
-    assert original_parse(canonical(two_document)) == protocol.MatrixStimulusParse(two_stimulus, ())
+    two_raw = canonical(two_document)
+    assert original_parse(two_raw) == protocol.MatrixStimulusParse(two_stimulus, ())
+    prior_parses = len(parse_calls)
+    prior_engines = len(unexpected_engines)
+    two_execution = protocol.execute_matrix_fixture(two_raw, crypto_verifier=ExactCryptoSpy([]))
+    assert parse_calls[prior_parses:] == [(two_raw, protocol.MatrixStimulusParse(two_stimulus, ()))]
+    assert unexpected_engines[prior_engines:] == ["reconstruct"]
+    assert two_execution == protocol.MatrixFixtureExecution(
+        protocol.MatrixObservation(
+            hashlib.sha256(two_raw).hexdigest(),
+            DIMENSION_MATERIALIZERS["validation_order"]("positive").evaluation,
+        ),
+        (),
+    )
 
     valid_raw = canonical(valid_document)
     at_cap = valid_raw[:-1] + (b" " * (stimulus_cap - len(valid_raw))) + b"}"
@@ -2358,7 +2384,7 @@ def test_matrix_cross_product_and_exact_outcomes_are_closed(
     prior_parses = len(parse_calls)
     at_cap_execution = protocol.execute_matrix_fixture(at_cap, crypto_verifier=ExactCryptoSpy([]))
     assert parse_calls[prior_parses:][0][0] == at_cap
-    assert unexpected_engines == ["evaluate"]
+    assert unexpected_engines[-1:] == ["evaluate"]
     assert at_cap_execution == protocol.MatrixFixtureExecution(
         protocol.MatrixObservation(
             hashlib.sha256(at_cap).hexdigest(),

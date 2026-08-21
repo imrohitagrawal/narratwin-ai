@@ -62,13 +62,14 @@ governed-reader `FunctionDef`; make it return bytes or an exact typed finding;
 prove exact per-path failure tuple identity without retry/later reads; and test
 rebinding, ignored guards, reordered reads, unsafe relatives, and the closed
 universe of applicable function/class/assignment/loop/context/import/exception/
-pattern/delete binding forms.
+pattern/Python-3.13-type-alias/async/nested-global/delete binding forms.
 Exercise every non-root ancestor for every target with within-root symlinks and
 pre-read traps. Retained stage references are stage-sensitive and ordinal-bound;
 crypto ordinals/counts/exact 64-byte signature, actual/max cardinality, ledger
 row/order/identity, and graph-call ranges are exact and orthogonally isolated
 with valid one- and two-candidate bases. Member-type checks cover all eight
-stages. Reject a second JSON token in both
+stages; float ordinals fail exact integer typing and valid-reference N+1 rows
+isolate range enforcement. Reject a second JSON token in both
 evaluate and reconstruct stimuli rather than ignoring decoder remainder. The executor must
 propagate parser rejection with zero evaluator, reconstructor, or crypto calls.
 Bind the fixture bytes/hash, exact assertion identity, ordered stage ledger, exact

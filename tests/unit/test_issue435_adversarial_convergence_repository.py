@@ -654,6 +654,21 @@ def test_repository_validator_is_read_only_and_static_boundary_is_ast_exact(
         + "\n_read_governed_bytes += governed_reader_alias\n",
         "match_capture": GOVERNED_READER_SOURCE
         + "\nmatch governed_reader_alias:\n    case _read_governed_bytes:\n        pass\n",
+        "type_alias": GOVERNED_READER_SOURCE + "\ntype _read_governed_bytes = bytes\n",
+        "async_for_global": GOVERNED_READER_SOURCE + "\nasync def binding_attack(stream):\n"
+        "    global _read_governed_bytes\n"
+        "    async for _read_governed_bytes in stream:\n"
+        "        pass\n",
+        "async_with_global": GOVERNED_READER_SOURCE + "\nasync def binding_attack(context):\n"
+        "    global _read_governed_bytes\n"
+        "    async with context as _read_governed_bytes:\n"
+        "        pass\n",
+        "nested_global_assign": GOVERNED_READER_SOURCE + "\ndef binding_attack():\n"
+        "    global _read_governed_bytes\n"
+        "    _read_governed_bytes = governed_reader_alias\n",
+        "nested_global_delete": GOVERNED_READER_SOURCE + "\ndef binding_attack():\n"
+        "    global _read_governed_bytes\n"
+        "    del _read_governed_bytes\n",
         "delete": GOVERNED_READER_SOURCE + "\ndel _read_governed_bytes\n",
     }
     assert tuple(binding_reader_sources) == protocol.STATIC_GOVERNED_READER_FORBIDDEN_BINDINGS
