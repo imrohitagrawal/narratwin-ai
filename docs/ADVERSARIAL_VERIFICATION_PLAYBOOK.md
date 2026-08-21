@@ -88,8 +88,12 @@ case through the public validator with zero Git calls and the matrix-owned exact
 finding/location.
 Derive every target, cap, expected kind, and location from a closed role and the
 exact first-read `.git` record; never accept those as caller authority. Validate
-the backlink result and exact payload before starting the `commondir` read, and
-consume every independently frozen operational case ID exactly once.
+the backlink and `commondir` UTF-8, line, record shape, and relationship in
+fail-fast order. Carry the observed parent-directory type/device/inode into
+every dependent read and revalidate all repository bindings before process use.
+Consume the independently frozen execution ledger in exact order, expanding
+every dual-layout case into conventional and linked operational executions.
+The Issue #435 RED exemplar owns 94 case rows and 129 ordered executions.
 Freeze the exact reader and discovery AST identities plus their sole top-level
 bindings. The operation oracle records every relative lstat/open/fstat/read/
 post-lstat/close call, flags, `dir_fd`, identity, count, and reverse close; it

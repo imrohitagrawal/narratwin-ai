@@ -124,8 +124,14 @@ exact reader and discovery top-level ASTs. Preserve lexical absolute root bytes;
 do not resolve root or pre-root components before held-descriptor traversal.
 The reader must derive its target, cap, expected inode kind, and location from a
 closed role and the exact first-read `.git` record. The executor must consume
-every case ID once, and linked discovery must validate backlink findings and
-payload before any `commondir` read.
+every frozen operational execution ID in exact order. Cases declared for both
+layouts must run once conventionally and once through a real linked worktree.
+The Issue #435 RED exemplar owns 94 case rows and 129 ordered executions.
+Linked discovery must strictly parse backlink and `commondir` UTF-8, line, and
+record shape before relationship comparison or later work. Each dependent read
+must compare the previously observed parent-directory type/device/inode, and
+discovery must revalidate the `.git`, linked Git directory, and common directory
+bindings immediately before process evidence begins.
 Freeze fsck status 1 as object-integrity failure, missing-object type status 128
 as missing RED, and `-1`, `2`, and `127` for every form as the generic process
 finding before byte/decode/line/token semantics. Script the RED-size input for

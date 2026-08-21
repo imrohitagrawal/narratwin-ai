@@ -177,11 +177,19 @@ STATIC_GIT_METADATA_ROLE_SPECS = (
         "common_dir/objects/info/http-alternates",
     ),
 )
+STATIC_GIT_METADATA_RECORD_FIELDS = (
+    "path",
+    "payload",
+    "mode",
+    "device",
+    "inode",
+    "ancestor_records",
+)
 STATIC_GIT_METADATA_READER_AST_SHA256 = (
-    "1f90afa841bfd980070f9cba9868755595edcd82c05413e32cb7eac92d45ebfd"
+    "863b27de1ca08e6c3eed30cfea241234d30ddf61cdf51452b91529cca654d2ee"
 )
 STATIC_GIT_METADATA_DISCOVERY_AST_SHA256 = (
-    "834120f2787bba24a4c916a9a45ef5e208bf8cf13bdcf57f154a2fc323708f5a"
+    "3971ba54da0ad93e2f48842bf07fbb0fa26cf265e60494a319b2ee66e79f2913"
 )
 STATIC_GIT_METADATA_BINDING = "one_top_level_sync_function_each_no_alias_rebind_or_delete"
 STATIC_GIT_METADATA_FINDINGS = (
@@ -209,7 +217,7 @@ STATIC_GIT_METADATA_CASES = (
     (
         "root-nonabsolute",
         "public",
-        "both",
+        "root",
         "dot_git",
         "relative-root",
         "ACP.GIT_METADATA.NONABSOLUTE",
@@ -218,9 +226,28 @@ STATIC_GIT_METADATA_CASES = (
     (
         "root-dotdot",
         "public",
-        "both",
+        "root",
         "dot_git",
         "root-dotdot",
+        "ACP.GIT_METADATA.NONABSOLUTE",
+        "root",
+    ),
+    ("root-dot", "public", "root", "dot_git", "root-dot", "ACP.GIT_METADATA.NONABSOLUTE", "root"),
+    (
+        "root-repeated-separator",
+        "public",
+        "root",
+        "dot_git",
+        "root-repeated-separator",
+        "ACP.GIT_METADATA.NONABSOLUTE",
+        "root",
+    ),
+    (
+        "root-trailing-separator",
+        "public",
+        "root",
+        "dot_git",
+        "root-trailing-separator",
         "ACP.GIT_METADATA.NONABSOLUTE",
         "root",
     ),
@@ -360,10 +387,19 @@ STATIC_GIT_METADATA_CASES = (
         ".git.gitdir",
     ),
     (
+        "dot-git-degenerate-common-root",
+        "public",
+        "linked",
+        "dot_git",
+        "filesystem-root-common-dir",
+        "ACP.GIT_METADATA.LAYOUT",
+        ".git.gitdir",
+    ),
+    (
         "linked-layout-outside",
         "public",
         "linked",
-        "linked_git_dir",
+        "dot_git",
         "outside-worktrees",
         "ACP.GIT_METADATA.LAYOUT",
         ".git.gitdir",
@@ -601,6 +637,51 @@ STATIC_GIT_METADATA_CASES = (
         "ancestor-lstat-open-race",
         "ACP.GIT_METADATA.IDENTITY_CHANGED",
         "info",
+    ),
+    (
+        "between-read-conventional-dot-git",
+        "public",
+        "conventional",
+        "common_dir",
+        "replace-dot-git-before-common-read",
+        "ACP.GIT_METADATA.IDENTITY_CHANGED",
+        ".git",
+    ),
+    (
+        "between-read-linked-directory",
+        "public",
+        "linked",
+        "backlink",
+        "replace-linked-dir-before-backlink",
+        "ACP.GIT_METADATA.IDENTITY_CHANGED",
+        ".git.gitdir",
+    ),
+    (
+        "between-read-common-directory",
+        "public",
+        "linked",
+        "prohibited_grafts",
+        "replace-common-dir-before-prohibited-read",
+        "ACP.GIT_METADATA.IDENTITY_CHANGED",
+        "common-dir",
+    ),
+    (
+        "between-read-linked-common-directory",
+        "public",
+        "linked",
+        "common_dir",
+        "replace-common-dir-before-common-read",
+        "ACP.GIT_METADATA.IDENTITY_CHANGED",
+        "common-dir",
+    ),
+    (
+        "final-binding-revalidation",
+        "public",
+        "conventional",
+        "dot_git",
+        "replace-dot-git-before-final-revalidation",
+        "ACP.GIT_METADATA.IDENTITY_CHANGED",
+        ".git",
     ),
     (
         "leaf-replacement",
@@ -911,16 +992,171 @@ STATIC_GIT_METADATA_CASES = (
         "ACP.GIT_METADATA.ANCESTOR_SYMLINK",
         "objects/info",
     ),
+    (
+        "linked-external-ancestor-symlink",
+        "public",
+        "linked",
+        "prohibited_alternates",
+        "external-objects-info-symlink",
+        "ACP.GIT_METADATA.ANCESTOR_SYMLINK",
+        "objects/info",
+    ),
+    (
+        "linked-external-ancestor-replacement",
+        "public",
+        "linked",
+        "prohibited_alternates",
+        "external-objects-info-lstat-open-race",
+        "ACP.GIT_METADATA.IDENTITY_CHANGED",
+        "objects/info",
+    ),
 )
-STATIC_GIT_METADATA_CASE_COUNT = 83
-STATIC_GIT_METADATA_CASE_SHA256 = "5b4c71946bd9e3616a12b86a124d268d6c539f728e0ca181d8d17dda43d9f0c8"
+STATIC_GIT_METADATA_CASE_COUNT = 94
+STATIC_GIT_METADATA_CASE_SHA256 = "9da07ee4ae676313a8b267ae7374bad049781025d969e99201aba9e45a4ca3e9"
+STATIC_GIT_METADATA_EXECUTION_IDS = (
+    "conventional-positive@conventional",
+    "linked-positive@linked",
+    "linked-layout-outside@linked",
+    "root-nonabsolute@root",
+    "root-dotdot@root",
+    "root-dot@root",
+    "root-repeated-separator@root",
+    "root-trailing-separator@root",
+    "root-symlink@conventional",
+    "root-symlink@linked",
+    "pre-root-symlink@conventional",
+    "pre-root-symlink@linked",
+    "root-replacement@conventional",
+    "root-replacement@linked",
+    "pre-root-replacement@conventional",
+    "pre-root-replacement@linked",
+    "ancestor-replacement@conventional",
+    "ancestor-replacement@linked",
+    "between-read-conventional-dot-git@conventional",
+    "between-read-linked-directory@linked",
+    "between-read-linked-common-directory@linked",
+    "between-read-common-directory@linked",
+    "final-binding-revalidation@conventional",
+    "dot-git-missing@conventional",
+    "dot-git-target-symlink@conventional",
+    "dot-git-fifo@conventional",
+    "dot-git-cap-n-malformed@linked",
+    "dot-git-cap-n-plus-one@linked",
+    "dot-git-invalid-utf8@linked",
+    "dot-git-missing-lf@linked",
+    "dot-git-crlf@linked",
+    "dot-git-extra-lf@linked",
+    "dot-git-extra-record@linked",
+    "dot-git-relative@linked",
+    "dot-git-dot-component@linked",
+    "dot-git-dotdot-component@linked",
+    "dot-git-empty-component@linked",
+    "dot-git-nul@linked",
+    "dot-git-degenerate-common-root@linked",
+    "leaf-replacement@conventional",
+    "leaf-replacement@linked",
+    "fstat-device@conventional",
+    "fstat-inode@conventional",
+    "fstat-type@conventional",
+    "fstat-device@linked",
+    "fstat-inode@linked",
+    "fstat-type@linked",
+    "post-read-device@linked",
+    "post-read-inode@linked",
+    "post-read-type@linked",
+    "read-type@linked",
+    "read-error@linked",
+    "lstat-error@conventional",
+    "lstat-error@linked",
+    "open-error@conventional",
+    "open-error@linked",
+    "close-error@conventional",
+    "close-error@linked",
+    "backlink-missing@linked",
+    "backlink-directory@linked",
+    "backlink-fifo@linked",
+    "backlink-symlink@linked",
+    "backlink-cap-n-malformed@linked",
+    "backlink-cap-n-plus-one@linked",
+    "backlink-invalid-utf8@linked",
+    "backlink-missing-lf@linked",
+    "backlink-extra-lf@linked",
+    "backlink-mismatch@linked",
+    "commondir-missing@linked",
+    "commondir-directory@linked",
+    "commondir-fifo@linked",
+    "commondir-symlink@linked",
+    "commondir-cap-n-malformed@linked",
+    "commondir-cap-n-plus-one@linked",
+    "commondir-invalid-utf8@linked",
+    "commondir-missing-lf@linked",
+    "commondir-extra-lf@linked",
+    "commondir-mismatch@linked",
+    "grafts-file@conventional",
+    "grafts-directory@conventional",
+    "grafts-fifo@conventional",
+    "grafts-live-symlink@conventional",
+    "grafts-broken-symlink@conventional",
+    "grafts-ancestor-symlink@conventional",
+    "grafts-file@linked",
+    "grafts-directory@linked",
+    "grafts-fifo@linked",
+    "grafts-live-symlink@linked",
+    "grafts-broken-symlink@linked",
+    "grafts-ancestor-symlink@linked",
+    "shallow-file@conventional",
+    "shallow-directory@conventional",
+    "shallow-fifo@conventional",
+    "shallow-live-symlink@conventional",
+    "shallow-broken-symlink@conventional",
+    "shallow-file@linked",
+    "shallow-directory@linked",
+    "shallow-fifo@linked",
+    "shallow-live-symlink@linked",
+    "shallow-broken-symlink@linked",
+    "alternates-file@conventional",
+    "alternates-directory@conventional",
+    "alternates-fifo@conventional",
+    "alternates-live-symlink@conventional",
+    "alternates-broken-symlink@conventional",
+    "alternates-ancestor-symlink@conventional",
+    "alternates-file@linked",
+    "alternates-directory@linked",
+    "alternates-fifo@linked",
+    "alternates-live-symlink@linked",
+    "alternates-broken-symlink@linked",
+    "alternates-ancestor-symlink@linked",
+    "http-alternates-file@conventional",
+    "http-alternates-directory@conventional",
+    "http-alternates-fifo@conventional",
+    "http-alternates-live-symlink@conventional",
+    "http-alternates-broken-symlink@conventional",
+    "http-alternates-ancestor-symlink@conventional",
+    "http-alternates-file@linked",
+    "http-alternates-directory@linked",
+    "http-alternates-fifo@linked",
+    "http-alternates-live-symlink@linked",
+    "http-alternates-broken-symlink@linked",
+    "http-alternates-ancestor-symlink@linked",
+    "linked-external-ancestor-symlink@linked",
+    "linked-external-ancestor-replacement@linked",
+    "linked-git-dir-target-symlink@linked",
+    "short-read@linked",
+    "reverse-close@linked",
+)
+STATIC_GIT_METADATA_EXECUTION_COUNT = 129
+STATIC_GIT_METADATA_EXECUTION_SHA256 = (
+    "dc206260cb4f4c2d1217ba9a6cf274279c2fdbe6c98f5c4c0db21d133558e91b"
+)
 STATIC_GIT_METADATA_READER_STEPS = (
+    "reject-noncanonical-raw-root-before-Path-construction",
     "derive-kind-cap-location-and-target-from-closed-role-and-dot-git-record",
     "reject-nonabsolute-dot-dotdot-or-unauthorized-provenance-before-io",
     "open-root-and-hold-parent-directory-descriptors",
     "lstat-each-component-relative-to-held-parent",
     "open-each-directory-with-O_DIRECTORY-and-O_NOFOLLOW-relative-to-parent",
     "fstat-type-before-device-inode-identity",
+    "compare-every-reopened-parent-record-type-device-and-inode",
     "open-final-record-with-O_NOFOLLOW-relative-to-held-parent",
     "bounded-read-through-cap-plus-one",
     "post-read-type-before-device-inode-identity",
@@ -935,11 +1171,15 @@ STATIC_GIT_METADATA_DISCOVERY_STEPS = (
     "require-linked-git-dir-under-common-dir-worktrees-single-name",
     "read-linked-directory",
     "read-backlink",
-    "stop-on-backlink-finding-or-mismatch-before-commondir",
+    "strictly-parse-backlink-utf8-line-shape-before-relationship-mismatch",
+    "stop-on-backlink-finding-parse-or-mismatch-before-commondir",
     "read-commondir",
-    "stop-on-commondir-finding-or-mismatch-before-common-dir",
+    "strictly-parse-commondir-utf8-line-shape-before-relationship-mismatch",
+    "stop-on-commondir-finding-parse-or-mismatch-before-common-dir",
     "derive-common-dir-independently",
+    "bind-directory-records-into-every-dependent-read",
     "reject-four-prohibited-common-dir-inodes-no-follow",
+    "revalidate-dot-git-linked-and-common-bindings-before-process",
     "return-exact-binding-or-first-finding-by-identity",
     "start-no-git-process-until-discovery-complete",
 )
@@ -1066,8 +1306,8 @@ STATIC_GIT_OBJECT_BINDINGS = (
     ("repository_oracle_blob", "focusedOracleBlobs[1].blobOid"),
 )
 STATIC_GIT_FAILURE_PRECEDENCE = (
-    "governed_schema",
     "metadata",
+    "governed_schema",
     "timeout",
     "os_error",
     "result_type",
@@ -1172,12 +1412,14 @@ class GitMetadataRecord:
     mode: int
     device: int
     inode: int
+    ancestor_records: tuple[GitMetadataRecord, ...] = ()
 
 
 @dataclass(frozen=True)
 class GitMetadataProvenance:
     role: str
     dot_git_record: GitMetadataRecord | None
+    parent_records: tuple[tuple[str, GitMetadataRecord], ...] = ()
 
 
 @dataclass(frozen=True)
@@ -1460,18 +1702,18 @@ def validate_matrix_bytes(
     )
 
 
-def validate_repository_freeze(root: Path = ROOT) -> tuple[Finding, ...]:
+def validate_repository_freeze(root: str | Path = ROOT) -> tuple[Finding, ...]:
     del root
     return (_not_implemented("repository-freeze"),)
 
 
-def discover_git_repository(root: Path) -> GitDiscoveryResult:
+def discover_git_repository(root: str | Path) -> GitDiscoveryResult:
     del root
     return GitDiscoveryResult(None, (_not_implemented("git-metadata"),))
 
 
 def _read_git_metadata_nofollow(
-    root: Path,
+    root: str | Path,
     *,
     provenance: GitMetadataProvenance,
     io: MetadataIO,

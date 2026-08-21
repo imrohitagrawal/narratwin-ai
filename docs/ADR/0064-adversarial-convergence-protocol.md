@@ -106,8 +106,12 @@ pre-root component is resolved before held-descriptor validation. The Git
 metadata reader derives kind, cap, target, and finding location from a closed
 role plus the exact first-read `.git` record; callers cannot authorize an
 absolute path, reporting location, cap, or inode kind. Linked discovery validates
-the backlink finding and exact payload before reading `commondir`. Every catalog
-row is consumed once by executable public or direct evidence. The Git
+backlink and `commondir` encoding, line cardinality, record shape, and
+relationship before later reads. Parent-directory records remain identity-bound
+across role reads, and `.git`, linked-directory, and common-directory bindings
+are revalidated before Git. Every dual-layout catalog row executes once in each
+layout; 94 case rows produce 129 operational executions consumed in frozen
+order. The Git
 status table treats fsck status 1 as object-integrity failure and missing-object
 `cat-file -t` status 128 as missing RED; every other unlisted exact integer is a
 generic process failure before output interpretation, with `-1`, `2`, and `127`
