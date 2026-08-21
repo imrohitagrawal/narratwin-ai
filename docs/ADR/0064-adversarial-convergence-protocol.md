@@ -111,12 +111,29 @@ relationship before later reads. Parent-directory records remain identity-bound
 across role reads, and `.git`, linked-directory, and common-directory bindings
 are revalidated before Git. Every dual-layout catalog row executes once in each
 layout; 94 case rows produce 129 operational executions consumed in frozen
-order. The Git
+order. Each execution binds its complete catalog row, observed stimulus
+identity, exact role prefix, and normalized per-role I/O/cleanup transcript;
+case IDs alone are not evidence. The Git
 status table treats fsck status 1 as object-integrity failure and missing-object
 `cat-file -t` status 128 as missing RED; every other unlisted exact integer is a
 generic process failure before output interpretation, with `-1`, `2`, and `127`
 frozen for every form. Author bounds separately prove a scripted RED size of 320
 bytes at exact N/N+1 and a smaller dynamic RED-object cap.
+
+### Filesystem snapshot boundary
+
+Repository evidence assumes one stable local filesystem metadata and Git-object
+snapshot for the full validator invocation. Descriptor-relative no-follow reads,
+reader-local inode continuity, prohibited-metadata checks, and the final `.git`,
+linked-Git-directory, and common-directory revalidation are fail-closed controls
+and defense in depth within that snapshot. The absolute `/usr/bin/git` process
+still reopens `GIT_DIR`, `GIT_COMMON_DIR`, and `GIT_WORK_TREE` by path; it is not
+descriptor-bound. Concurrent out-of-process mutation after a validated
+descriptor closes or while Git reopens those paths is outside this validator's
+threat model. The protocol therefore makes no race-free, atomic check-to-use,
+descriptor-bound subprocess, or detect-all-concurrent-mutation claim. Any such
+stronger claim is an `EVIDENCE_BLOCKER` requiring new authority, architecture,
+and executable proof.
 
 Nested parser
 members and every configured limit are closed over exact types, enums, hashes,

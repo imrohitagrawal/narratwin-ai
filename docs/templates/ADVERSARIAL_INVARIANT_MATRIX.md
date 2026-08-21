@@ -124,18 +124,34 @@ exact reader and discovery top-level ASTs. Preserve lexical absolute root bytes;
 do not resolve root or pre-root components before held-descriptor traversal.
 The reader must derive its target, cap, expected inode kind, and location from a
 closed role and the exact first-read `.git` record. The executor must consume
-every frozen operational execution ID in exact order. Cases declared for both
-layouts must run once conventionally and once through a real linked worktree.
+every frozen full execution contract in exact order, including the complete
+catalog row, observed stimulus identity, role prefix, and normalized per-role
+I/O/cleanup transcript. Cases declared for both layouts must run once
+conventionally and once through a real linked worktree.
 The Issue #435 RED exemplar owns 94 case rows and 129 ordered executions.
 Linked discovery must strictly parse backlink and `commondir` UTF-8, line, and
 record shape before relationship comparison or later work. Each dependent read
 must compare the previously observed parent-directory type/device/inode, and
 discovery must revalidate the `.git`, linked Git directory, and common directory
 bindings immediately before process evidence begins.
+
+Every repository matrix must also freeze a filesystem threat-model object with
+the exact scope, proofs, defense-in-depth controls, Git process-binding model,
+excluded threat, claims not made, and disposition for stronger claims. The
+Issue #435 exemplar assumes one stable local filesystem metadata and object
+snapshot for the full invocation. Its Git process is path-based, not
+descriptor-bound; concurrent out-of-process mutation after descriptor close or
+during reopen is excluded. Reader-local race detection and final revalidation
+must not be promoted into race-free, atomic, or all-concurrent-mutation claims.
+Any stronger claim is an `EVIDENCE_BLOCKER` pending new authority and proof.
 Freeze fsck status 1 as object-integrity failure, missing-object type status 128
 as missing RED, and `-1`, `2`, and `127` for every form as the generic process
 finding before byte/decode/line/token semantics. Script the RED-size input for
 exact 320/321-byte author evidence and separately test a smaller dynamic cap.
+Enumerate all fourteen Git roles against remove-LF, CRLF, extra-line,
+corrupt-token, and valid-semantic transformations. Mark non-text roles
+explicitly inapplicable; for fixed-cap roles preserve the canonical token and
+accept byte-cap precedence rather than introducing a second defect.
 
 ## Pipeline-call ledger
 

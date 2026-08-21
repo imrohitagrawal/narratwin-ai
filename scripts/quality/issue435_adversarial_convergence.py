@@ -148,6 +148,41 @@ STATIC_GIT_ENV_CONTRACT = (
     ("GIT_COMMON_DIR", "derived_common_dir"),
     ("GIT_WORK_TREE", "derived_root"),
 )
+STATIC_GIT_FILESYSTEM_THREAT_MODEL = (
+    ("scope", "stable_local_filesystem_metadata_and_object_snapshot_for_full_validator_invocation"),
+    (
+        "proofs",
+        (
+            "fail_closed_parsing",
+            "descriptor_relative_no_follow_traversal",
+            "reader_local_inode_continuity",
+            "prohibited_metadata_absence_at_validated_read_points",
+            "exact_path_based_git_object_evidence_under_snapshot_assumption",
+        ),
+    ),
+    (
+        "defenseInDepth",
+        (
+            "reader_local_lstat_open_fstat_postread_replacement_detection",
+            "final_dot_git_linked_git_dir_common_dir_revalidation",
+        ),
+    ),
+    ("gitProcessBinding", "path_based_absolute_git_with_explicit_git_dir_common_dir_work_tree"),
+    (
+        "excludedThreat",
+        "concurrent_out_of_process_mutation_after_validated_descriptor_close_before_or_during_path_based_git_reopen",
+    ),
+    (
+        "claimsNotMade",
+        (
+            "race_free_validation",
+            "atomic_check_to_use",
+            "descriptor_bound_git_subprocess",
+            "detection_or_prevention_of_concurrent_repository_mutation",
+        ),
+    ),
+    ("strongerClaimDisposition", "EVIDENCE_BLOCKER"),
+)
 STATIC_GIT_METADATA_TARGETS = (
     "info/grafts",
     "shallow",
@@ -1013,6 +1048,13 @@ STATIC_GIT_METADATA_CASES = (
 )
 STATIC_GIT_METADATA_CASE_COUNT = 94
 STATIC_GIT_METADATA_CASE_SHA256 = "9da07ee4ae676313a8b267ae7374bad049781025d969e99201aba9e45a4ca3e9"
+STATIC_GIT_METADATA_EXECUTION_CONTRACT_FIELDS = (
+    "caseRow",
+    "operationalMode",
+    "observedStimulusIdentity",
+    "rolePrefix",
+    "normalizedIoCleanupPrefix",
+)
 STATIC_GIT_METADATA_EXECUTION_IDS = (
     "conventional-positive@conventional",
     "linked-positive@linked",
@@ -1147,6 +1189,13 @@ STATIC_GIT_METADATA_EXECUTION_IDS = (
 STATIC_GIT_METADATA_EXECUTION_COUNT = 129
 STATIC_GIT_METADATA_EXECUTION_SHA256 = (
     "dc206260cb4f4c2d1217ba9a6cf274279c2fdbe6c98f5c4c0db21d133558e91b"
+)
+STATIC_GIT_METADATA_FULL_EXECUTION_SHA256 = (
+    "88a2ce093e0e937cff3922ae790eb5fddfb0fcf7758e92c4cfe0abf597f2ab5b"
+)
+STATIC_GIT_METADATA_PAYLOAD_FINGERPRINT_COUNT = 25
+STATIC_GIT_METADATA_PAYLOAD_FINGERPRINT_SHA256 = (
+    "77fa92e04dc499feca8c37b78fb9d119858d7f0ac8df7c148019c89bf49b77d4"
 )
 STATIC_GIT_METADATA_READER_STEPS = (
     "reject-noncanonical-raw-root-before-Path-construction",
@@ -1299,6 +1348,97 @@ STATIC_GIT_FORM_IDS = (
     "c3_freeze_payload",
     "red_author",
 )
+STATIC_GIT_TEXTUAL_TRANSFORMATIONS = (
+    ("object_format", "missing_lf", True, "git", "ACP.GIT.OUTPUT_LINES", "object_format"),
+    ("object_format", "crlf", True, "git", "ACP.GIT.STDOUT_BYTES", "object_format"),
+    ("object_format", "extra_line", True, "git", "ACP.GIT.STDOUT_BYTES", "object_format"),
+    ("object_format", "corrupt_token", True, "git", "ACP.GIT.OUTPUT_TOKEN", "object_format"),
+    ("object_format", "valid_token", True, "freeze", "ACP.FREEZE.OBJECT_FORMAT", "objectFormat"),
+    ("object_integrity", "missing_lf", False, None, None, None),
+    ("object_integrity", "crlf", False, None, None, None),
+    ("object_integrity", "extra_line", False, None, None, None),
+    ("object_integrity", "corrupt_token", False, None, None, None),
+    ("object_integrity", "valid_token", False, None, None, None),
+    ("head", "missing_lf", True, "git", "ACP.GIT.OUTPUT_LINES", "head"),
+    ("head", "crlf", True, "git", "ACP.GIT.STDOUT_BYTES", "head"),
+    ("head", "extra_line", True, "git", "ACP.GIT.STDOUT_BYTES", "head"),
+    ("head", "corrupt_token", True, "git", "ACP.GIT.OUTPUT_TOKEN", "head"),
+    ("head", "valid_token", True, "freeze", "ACP.FREEZE.C3_MISSING", "redHead"),
+    ("red_type", "missing_lf", True, "git", "ACP.GIT.OUTPUT_LINES", "red_type"),
+    ("red_type", "crlf", True, "git", "ACP.GIT.STDOUT_BYTES", "red_type"),
+    ("red_type", "extra_line", True, "git", "ACP.GIT.STDOUT_BYTES", "red_type"),
+    ("red_type", "corrupt_token", True, "git", "ACP.GIT.OUTPUT_TOKEN", "red_type"),
+    ("red_type", "valid_token", True, "freeze", "ACP.FREEZE.RED_HEAD_NOT_COMMIT", "redHead"),
+    ("red_size", "missing_lf", True, "git", "ACP.GIT.OUTPUT_LINES", "red_size"),
+    ("red_size", "crlf", True, "git", "ACP.GIT.STDOUT_BYTES", "red_size"),
+    ("red_size", "extra_line", True, "git", "ACP.GIT.STDOUT_BYTES", "red_size"),
+    ("red_size", "corrupt_token", True, "git", "ACP.GIT.OUTPUT_TOKEN", "red_size"),
+    ("red_size", "valid_token", True, "git", "ACP.GIT.SIZE_MISMATCH", "red_size"),
+    ("red_ancestor", "missing_lf", False, None, None, None),
+    ("red_ancestor", "crlf", False, None, None, None),
+    ("red_ancestor", "extra_line", False, None, None, None),
+    ("red_ancestor", "corrupt_token", False, None, None, None),
+    ("red_ancestor", "valid_token", False, None, None, None),
+    ("merge_scan", "missing_lf", True, "git", "ACP.GIT.OUTPUT_LINES", "merge_scan"),
+    ("merge_scan", "crlf", True, "git", "ACP.GIT.STDOUT_BYTES", "merge_scan"),
+    ("merge_scan", "extra_line", True, "git", "ACP.GIT.STDOUT_BYTES", "merge_scan"),
+    ("merge_scan", "corrupt_token", True, "git", "ACP.GIT.OUTPUT_TOKEN", "merge_scan"),
+    ("merge_scan", "valid_token", True, "freeze", "ACP.FREEZE.HISTORY_MERGE", "HEAD"),
+    ("ancestry_chain", "missing_lf", True, "git", "ACP.GIT.OUTPUT_LINES", "ancestry_chain"),
+    ("ancestry_chain", "crlf", True, "git", "ACP.GIT.OUTPUT_TOKEN", "ancestry_chain"),
+    ("ancestry_chain", "extra_line", True, "git", "ACP.GIT.OUTPUT_TOKEN", "ancestry_chain"),
+    ("ancestry_chain", "corrupt_token", True, "git", "ACP.GIT.OUTPUT_TOKEN", "ancestry_chain"),
+    (
+        "ancestry_chain",
+        "valid_token",
+        True,
+        "freeze",
+        "ACP.FREEZE.HISTORY_CHAIN",
+        "ancestry[0].parent",
+    ),
+    ("c3_other_scope", "missing_lf", False, None, None, None),
+    ("c3_other_scope", "crlf", False, None, None, None),
+    ("c3_other_scope", "extra_line", False, None, None, None),
+    ("c3_other_scope", "corrupt_token", False, None, None, None),
+    ("c3_other_scope", "valid_token", False, None, None, None),
+    ("c3_freeze_change", "missing_lf", False, None, None, None),
+    ("c3_freeze_change", "crlf", False, None, None, None),
+    ("c3_freeze_change", "extra_line", False, None, None, None),
+    ("c3_freeze_change", "corrupt_token", False, None, None, None),
+    ("c3_freeze_change", "valid_token", False, None, None, None),
+    ("red_objects", "missing_lf", True, "git", "ACP.GIT.OUTPUT_LINES", "red_objects"),
+    ("red_objects", "crlf", True, "git", "ACP.GIT.STDOUT_BYTES", "red_objects"),
+    ("red_objects", "extra_line", True, "git", "ACP.GIT.STDOUT_BYTES", "red_objects"),
+    ("red_objects", "corrupt_token", True, "git", "ACP.GIT.OUTPUT_TOKEN", "red_objects"),
+    ("red_objects", "valid_token", True, "freeze", "ACP.FREEZE.RED_TREE_MISMATCH", "redTree"),
+    ("c3_freeze_size", "missing_lf", True, "git", "ACP.GIT.OUTPUT_LINES", "c3_freeze_size"),
+    ("c3_freeze_size", "crlf", True, "git", "ACP.GIT.STDOUT_BYTES", "c3_freeze_size"),
+    ("c3_freeze_size", "extra_line", True, "git", "ACP.GIT.STDOUT_BYTES", "c3_freeze_size"),
+    ("c3_freeze_size", "corrupt_token", True, "git", "ACP.GIT.OUTPUT_TOKEN", "c3_freeze_size"),
+    ("c3_freeze_size", "valid_token", True, "git", "ACP.GIT.SIZE_MISMATCH", "c3_freeze_size"),
+    ("c3_freeze_payload", "missing_lf", False, None, None, None),
+    ("c3_freeze_payload", "crlf", False, None, None, None),
+    ("c3_freeze_payload", "extra_line", False, None, None, None),
+    ("c3_freeze_payload", "corrupt_token", False, None, None, None),
+    ("c3_freeze_payload", "valid_token", False, None, None, None),
+    ("red_author", "missing_lf", True, "git", "ACP.GIT.OUTPUT_LINES", "red_author"),
+    ("red_author", "crlf", True, "git", "ACP.GIT.OUTPUT_TOKEN", "red_author"),
+    ("red_author", "extra_line", True, "git", "ACP.GIT.OUTPUT_LINES", "red_author"),
+    ("red_author", "corrupt_token", True, "git", "ACP.GIT.OUTPUT_TOKEN", "red_author"),
+    (
+        "red_author",
+        "valid_token",
+        True,
+        "freeze",
+        "ACP.FREEZE.AUTHOR_MISMATCH",
+        "implementationAuthor",
+    ),
+)
+STATIC_GIT_TEXTUAL_TRANSFORMATION_COUNT = 70
+STATIC_GIT_TEXTUAL_TRANSFORMATION_APPLICABLE_COUNT = 45
+STATIC_GIT_TEXTUAL_TRANSFORMATION_SHA256 = (
+    "707138d773ab4c86dfd8422048a5807c3f5e32bf5a3284dac28bf6d49650e217"
+)
 STATIC_GIT_OBJECT_BINDINGS = (
     ("red_tree", "redTree"),
     ("matrix_blob", "matrixBlobOid"),
@@ -1324,6 +1464,25 @@ STATIC_GIT_FAILURE_PRECEDENCE = (
     "field_binding",
     "author_binding",
     "c3_immutability",
+)
+STATIC_GIT_METADATA_GOVERNED_PRECEDENCE_CASES = (
+    (
+        "metadata-target-symlink-plus-matrix-schema",
+        "validate_repository_freeze",
+        "dot-git-target-symlink",
+        "matrix-schema-version-wrong",
+        "git-metadata",
+        "CURRENT",
+        "ACP.GIT_METADATA.TARGET_SYMLINK",
+        ".git",
+        "identity",
+        0,
+        0,
+    ),
+)
+STATIC_GIT_METADATA_GOVERNED_PRECEDENCE_COUNT = 1
+STATIC_GIT_METADATA_GOVERNED_PRECEDENCE_SHA256 = (
+    "881ebe4a28d10cfe7c8ccfd9a1f2bd4677ff6f2f1bcc642514031b282042f971"
 )
 STATIC_GIT_RETURN_CODES = (
     ("object_format", (0,), (), (-1, 2, 127)),

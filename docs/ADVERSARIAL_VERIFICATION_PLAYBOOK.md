@@ -91,15 +91,31 @@ exact first-read `.git` record; never accept those as caller authority. Validate
 the backlink and `commondir` UTF-8, line, record shape, and relationship in
 fail-fast order. Carry the observed parent-directory type/device/inode into
 every dependent read and revalidate all repository bindings before process use.
-Consume the independently frozen execution ledger in exact order, expanding
-every dual-layout case into conventional and linked operational executions.
-The Issue #435 RED exemplar owns 94 case rows and 129 ordered executions.
+Consume the independently frozen full execution contract in exact order,
+expanding every dual-layout case into conventional and linked operational
+executions. Each entry binds the complete catalog row, fixture-observed stimulus
+identity, exact role prefix, and normalized per-role I/O/cleanup transcript.
+The Issue #435 RED exemplar owns 94 case rows and 129 ordered executions; an ID
+or final-role-only ledger is insufficient.
 Freeze the exact reader and discovery AST identities plus their sole top-level
 bindings. The operation oracle records every relative lstat/open/fstat/read/
 post-lstat/close call, flags, `dir_fd`, identity, count, and reverse close; it
 must kill lexical-root and pre-root symlinks, leaf and ancestor replacements,
 wrong flags or descriptors, premature/missing/double closes, and a close error
 that prevents attempts on remaining descriptors.
+
+### Stable filesystem snapshot boundary
+
+State explicitly that repository validation assumes stable local filesystem
+metadata and Git objects for the full invocation. No-follow traversal,
+reader-local inode checks, prohibited-target scans, and final binding
+revalidation prove exact behavior at their validated read points and remain
+defense in depth. Path-based `/usr/bin/git` reopens the repository and is not a
+descriptor-bound process view. Concurrent out-of-process mutation after close
+or during reopen is excluded. Never describe this design as race-free, atomic,
+descriptor-bound, or able to detect or prevent every concurrent mutation. A
+stronger claim is an `EVIDENCE_BLOCKER` and requires a new authorized design and
+executable evidence.
 
 Fourteen fixed read-only forms then use absolute `/usr/bin/git`, no pager,
 replacement objects, locks, lazy fetch, external diff, renames, ignored
@@ -120,6 +136,10 @@ codes, including `-1`, `2`, and `127`; exact-type subclasses; composed failure
 precedence; N/N+1 byte and line
 limits; complete linear-chain mutations; all four-object swaps/substitutions;
 and a mutated first-call environment followed by fresh exact environments.
+For every Git role, freeze all five textual transformations and explicit
+applicability. Fixed-cap CRLF or extra-line transforms that exceed the cap must
+fail at the byte boundary; never truncate another token to manufacture a later
+finding.
 Script RED object size 320 before the exact 320/321-byte author boundary, and
 also prove a smaller object-derived author limit.
 Inject fake gitfiles, corrupt objects, grafts/alternates/shallow files,
