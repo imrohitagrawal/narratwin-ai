@@ -50,13 +50,15 @@ engine, rather than reconstructing or looking up an equivalent input. It rejects
 unknown, duplicate, missing, malformed, wrongly typed, or outcome-bearing fields,
 calls the exact matrix-bound canonical evaluator or reconstructor for every real
 fixture, and wraps that engine's returned object with the stimulus digest.
-Rejection returns
-the parser's exact typed finding with zero engine or crypto calls. Fixture
+Rejection returns the parser's exact typed finding with zero engine or crypto
+calls. Fixture
 content uses a shared neutral source independent of labels, ordinals, hashes,
 expected outcomes, or registry position. Each dimension has a behaviorally
-distinct negative and boundary stimulus. Direct evaluation derangements,
-per-fixture delegation observation, and exact crypto-spy exhaustion prevent an
-echo oracle, while the freeze binds the actual
+distinct negative and boundary stimulus. A fixed expected-only bijection,
+executed unseen evaluate and reconstruct stimuli, and opposite-mode parser
+returns require dispatch to follow the parsed typed stimulus rather than raw
+bytes or a fixture lookup. Per-fixture delegation observation and exact
+crypto-spy exhaustion prevent an echo oracle, while the freeze binds the actual
 ordered RED-node catalog rather than a caller-supplied count. Reconstruction is
 required to call the same independently tested complete retained-equality
 comparison used by the standalone oracle; the public validator and route gate
@@ -64,8 +66,16 @@ must likewise compose matrix/freeze byte, finding, retained-material, and row
 N/N+1 checks. Controlled mutant identities bind matrix-owned exact findings,
 three-phase verdicts, stage and crypto ledgers, eligibility, graph count, and
 selection, including empty values, not an adjacent string or caller input. The
-static boundary is a closed positive import/call grammar, including only the
-seven exact read-only Git command forms needed by freeze validation.
+replay-subset mutant uses a trust-valid candidate, a successful exact crypto
+call, the complete pipeline, and an extra retained finding so it discriminates
+exact equality without contradicting fail-fast trust handling. Nested parser
+members and every configured limit are closed over exact types, enums, hashes,
+identifiers, ranges, and maximums. Governed artifacts are rejected before read
+when they are symlinks, non-regular files, or binary, and raw matrix/freeze
+documents reject invalid UTF-8, non-object, duplicate-member, and noncanonical
+encodings. The static boundary is an independently frozen closed positive
+import/call grammar, including only the seven exact read-only Git command forms
+needed by freeze validation; implementation constants must equal that contract.
 
 `predecessorId` participates in canonical candidate identity. A cyclic
 predecessor construction therefore cannot remain identity-valid; it is rejected

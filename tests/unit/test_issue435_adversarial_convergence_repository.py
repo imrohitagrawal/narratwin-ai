@@ -357,6 +357,35 @@ def test_freeze_schema_closes_roles_red_nodes_and_separate_blockers(tmp_path: Pa
             "freeze", code, location
         )
 
+    matrix_schema = b'"schemaVersion": "AdversarialInvariantMatrixV1",'
+    freeze_bytes = canonical(freeze)
+    freeze_schema = b'"schemaVersion":"AdversarialRedFreezeV1",'
+    for matrix_bytes, raw_freeze, stage, code, location in (
+        (b"\xff", freeze_bytes, "matrix", "ACP.MATRIX.INVALID_UTF8", "matrix"),
+        (b"[]", freeze_bytes, "matrix", "ACP.MATRIX.NON_OBJECT", "matrix"),
+        (
+            matrix.replace(matrix_schema, matrix_schema + matrix_schema, 1),
+            freeze_bytes,
+            "matrix",
+            "ACP.MATRIX.DUPLICATE_MEMBER",
+            "schemaVersion",
+        ),
+        (matrix + b" ", freeze_bytes, "matrix", "ACP.MATRIX.NONCANONICAL", "matrix"),
+        (matrix, b"\xff", "freeze", "ACP.FREEZE.INVALID_UTF8", "freeze"),
+        (matrix, b"[]", "freeze", "ACP.FREEZE.NON_OBJECT", "freeze"),
+        (
+            matrix,
+            freeze_bytes.replace(freeze_schema, freeze_schema + freeze_schema, 1),
+            "freeze",
+            "ACP.FREEZE.DUPLICATE_MEMBER",
+            "schemaVersion",
+        ),
+        (matrix, freeze_bytes + b" ", "freeze", "ACP.FREEZE.NONCANONICAL", "freeze"),
+    ):
+        assert protocol.validate_matrix_bytes(matrix_bytes, raw_freeze).findings == finding(
+            stage, code, location
+        )
+
 
 def test_activation_authority_and_every_prohibition_fail_exactly(tmp_path: Path) -> None:
     root, freeze = create_real_git_freeze(tmp_path)
@@ -380,7 +409,7 @@ def test_activation_authority_and_every_prohibition_fail_exactly(tmp_path: Path)
 
 
 def test_repository_validator_is_read_only_and_static_boundary_is_ast_exact(
-    tmp_path: Path,
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     root, _ = create_real_git_freeze(tmp_path)
     before = {
@@ -395,6 +424,32 @@ def test_repository_validator_is_read_only_and_static_boundary_is_ast_exact(
         if path.is_file()
     }
     assert after == before
+    governed_paths = (
+        protocol.MATRIX_PATH.relative_to(protocol.ROOT).as_posix(),
+        FREEZE_PATH,
+        *ORACLE_PATHS,
+    )
+    for ordinal, relative in enumerate(governed_paths):
+        for kind, code in (
+            ("symlink", "ACP.FILE.SYMLINK"),
+            ("directory", "ACP.FILE.NONREGULAR"),
+            ("binary", "ACP.FILE.BINARY"),
+        ):
+            governed_root, _ = create_real_git_freeze(tmp_path / f"governed-{ordinal}-{kind}")
+            governed = governed_root / relative
+            if kind == "symlink":
+                payload = governed_root / f"payload-{ordinal}"
+                payload.write_bytes(governed.read_bytes())
+                governed.unlink()
+                governed.symlink_to(payload)
+            elif kind == "directory":
+                governed.unlink()
+                governed.mkdir()
+            else:
+                governed.write_bytes(b"\x00binary")
+            assert protocol.validate_repository_freeze(governed_root) == finding(
+                "file", code, relative
+            )
     source = (ROOT / "scripts/quality/issue435_adversarial_convergence.py").read_text()
     assert protocol.static_boundary_findings(source) == ()
     read_only_git = (
@@ -408,6 +463,27 @@ def test_repository_validator_is_read_only_and_static_boundary_is_ast_exact(
         "subprocess.run(('git', 'cat-file', '-e', red_head), cwd=root, check=True, capture_output=True, text=True)\n"
     )
     assert protocol.static_boundary_findings(read_only_git) == ()
+    static_contract = json.loads(MATRIX_PATH.read_text(encoding="utf-8"))["staticBoundaryContract"]
+    assert protocol.STATIC_ALLOWED_IMPORTS == tuple(static_contract["allowedImports"])
+    assert protocol.STATIC_ALLOWED_CALL_SHAPES == tuple(static_contract["allowedCallShapes"])
+    assert protocol.STATIC_ALLOWED_GIT_FORMS == tuple(
+        tuple(item) for item in static_contract["allowedGitForms"]
+    )
+    for attribute, allowed_source in (
+        ("STATIC_ALLOWED_IMPORTS", "import enum\n"),
+        ("STATIC_ALLOWED_CALL_SHAPES", "import hashlib\nhashlib.sha256(b'x')\n"),
+        (
+            "STATIC_ALLOWED_GIT_FORMS",
+            "import subprocess\nsubprocess.run(('git', 'rev-parse', 'HEAD'), "
+            "cwd=root, check=True, capture_output=True, text=True)\n",
+        ),
+    ):
+        assert protocol.static_boundary_findings(allowed_source) == ()
+        with monkeypatch.context() as policy_patch:
+            policy_patch.setattr(protocol, attribute, ())
+            assert protocol.static_boundary_findings(allowed_source) == finding(
+                "static", "ACP.STATIC.NOT_ALLOWLISTED", "source"
+            )
     for hostile, code in (
         ("import requests\n", "ACP.STATIC.NETWORK_IMPORT"),
         ("import aiohttp\n", "ACP.STATIC.NETWORK_IMPORT"),
@@ -445,6 +521,14 @@ def test_repository_validator_is_read_only_and_static_boundary_is_ast_exact(
         ("sqlite3.connect('state.db')\n", "ACP.STATIC.PERSISTENCE"),
         ("subprocess.run(['curl', 'https://example.invalid'])\n", "ACP.STATIC.PROCESS"),
         ("from subprocess import run as execute\nexecute(command)\n", "ACP.STATIC.PROCESS"),
+        (
+            "import subprocess as sp\nsp.run(('git', 'rev-parse', 'HEAD'))\n",
+            "ACP.STATIC.PROCESS",
+        ),
+        (
+            "import subprocess\ngetattr(subprocess, 'run')(('git', 'rev-parse', 'HEAD'))\n",
+            "ACP.STATIC.PROCESS",
+        ),
         ("subprocess.call(command)\n", "ACP.STATIC.PROCESS"),
         ("subprocess.check_output(command)\n", "ACP.STATIC.PROCESS"),
         ("subprocess.Popen(command)\n", "ACP.STATIC.PROCESS"),
@@ -563,10 +647,25 @@ def test_repository_validator_is_read_only_and_static_boundary_is_ast_exact(
         for source in (
             f"import subprocess\nargv = {expression}\nsubprocess.run(argv, {exact})\n",
             f"import subprocess\nrunner = subprocess.run\nrunner({expression}, {exact})\n",
+            f"import subprocess\nsubprocess.run(args={expression}, {exact})\n",
+            f"import subprocess\nsubprocess.run((*{expression},), {exact})\n",
         ):
             assert protocol.static_boundary_findings(source) == finding(
                 "static", "ACP.STATIC.GIT_DYNAMIC", "source"
             )
+    for changed_expression in (
+        "('git', 'rev-parse', f'{other_head}:docs/freeze.json')",
+        "('git', 'rev-parse', f'{red_head}:docs/{freeze_name}')",
+        "('git', 'rev-parse', f'{red_head!s}:docs/freeze.json')",
+    ):
+        source = (
+            "import subprocess\n"
+            f"subprocess.run({changed_expression}, cwd=root, check=True, "
+            "capture_output=True, text=True)\n"
+        )
+        assert protocol.static_boundary_findings(source) == finding(
+            "static", "ACP.STATIC.GIT_DYNAMIC", "source"
+        )
     for aliased_source, code in (
         (
             "from pathlib import Path as P\nP('state').write_text('x')\n",

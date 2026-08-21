@@ -20,8 +20,8 @@ FREEZE_PATH = ROOT / "docs/governance/adversarial-convergence-red-freeze-v1.json
 REPOSITORY_TEST_PATH = ROOT / "tests/unit/test_issue435_adversarial_convergence_repository.py"
 IDENTITY_DOMAIN = b"NARRATWIN:ACP:IDENTITY:V1\x00"
 SIGNATURE_DOMAIN = b"NARRATWIN:ACP:SIGNATURE:V1\x00"
-EXPECTED_SEMANTIC_SHA256 = "1d9c159e270a633e87eb1906acfe46efd51ac5873f21e909d982ba5a7abd4267"
-EXPECTED_MUTANT_OUTCOMES_SHA256 = "2afd329343e566e79e507450ad9c10a1b44de4e5941dd17b0d0769da546ab5d9"
+EXPECTED_SEMANTIC_SHA256 = "27c536b6c9287e40d08944771103f6d50948882bbc82dfe350bf776f3ac9048f"
+EXPECTED_MUTANT_OUTCOMES_SHA256 = "67b7a36a4cc09fe3a2e092361ada276715ce273aa3b10259a2b4ea92987d1b03"
 EXPECTED_FIXTURE_REGISTRY_SHA256 = (
     "1407395b3714f9a56aee5ac9f1da0f78e0d116f2431016c0bf8cbc17c746e6b1"
 )
@@ -63,6 +63,18 @@ TEST_CLASSES = (
     "substitution",
     "maximum_cardinality",
 )
+DERANGEMENT_CLASS = {
+    "positive": "negative",
+    "negative": "positive",
+    "boundary": "malformed",
+    "malformed": "boundary",
+    "deletion": "corruption",
+    "corruption": "deletion",
+    "reordering": "duplication",
+    "duplication": "reordering",
+    "substitution": "maximum_cardinality",
+    "maximum_cardinality": "substitution",
+}
 SHARED_STIMULUS_CONTENT = "neutral-stimulus-content"
 EXPECTED_RED_FAILURES = (
     "tests/unit/test_issue435_adversarial_convergence.py::test_matrix_cross_product_and_exact_outcomes_are_closed",
@@ -1070,8 +1082,7 @@ def retained_wire(retained: protocol.RetainedEvaluation | None) -> object:
     }
 
 
-def matrix_fixture_bytes(dimension: str, test_class: str) -> bytes:
-    stimulus = DIMENSION_MATERIALIZERS[dimension](test_class).stimulus
+def matrix_stimulus_bytes(stimulus: protocol.MatrixStimulus) -> bytes:
     return canonical(
         {
             "schemaVersion": "AdversarialMatrixStimulusV1",
@@ -1096,6 +1107,10 @@ def matrix_fixture_bytes(dimension: str, test_class: str) -> bytes:
             "retainedEvaluation": retained_wire(stimulus.retained),
         }
     )
+
+
+def matrix_fixture_bytes(dimension: str, test_class: str) -> bytes:
+    return matrix_stimulus_bytes(DIMENSION_MATERIALIZERS[dimension](test_class).stimulus)
 
 
 def matrix_fixture_registry() -> dict[str, bytes]:
@@ -1408,21 +1423,91 @@ def test_matrix_cross_product_and_exact_outcomes_are_closed(
         )
         observations[case.case_id] = execution.observation
 
-    for index, source in enumerate(expected):
-        target = next(
-            candidate_case
-            for offset in range(1, len(expected))
-            if (candidate_case := expected[(index + offset) % len(expected)]).case_id
-            != source.case_id
-            and DIMENSION_MATERIALIZERS[candidate_case.dimension](
-                candidate_case.test_class
-            ).evaluation
-            != observations[source.case_id].evaluation
+    assert set(DERANGEMENT_CLASS) == set(TEST_CLASSES)
+    assert set(DERANGEMENT_CLASS.values()) == set(TEST_CLASSES)
+    for source in expected:
+        source_expected = DIMENSION_MATERIALIZERS[source.dimension](source.test_class).evaluation
+        target_expected = DIMENSION_MATERIALIZERS[source.dimension](
+            DERANGEMENT_CLASS[source.test_class]
+        ).evaluation
+        assert source_expected != target_expected
+        assert observations[source.case_id].evaluation == source_expected
+        assert observations[source.case_id].evaluation != target_expected
+
+    unseen_vectors = (
+        ("evaluate", positive_matrix_vector("unseen-evaluate-content", "positive")),
+        ("reconstruct", positive_replay_vector("unseen-reconstruct-content", "positive")),
+    )
+    for expected_mode, vector in unseen_vectors:
+        unseen_raw = matrix_stimulus_bytes(vector.stimulus)
+        assert unseen_raw not in registry.values()
+        spy = ExactCryptoSpy(list(vector.probes))
+        prior_parses = len(parser_calls)
+        prior_engines = len(engine_calls)
+        execution = protocol.execute_matrix_fixture(unseen_raw, crypto_verifier=spy)
+        assert execution == protocol.MatrixFixtureExecution(
+            protocol.MatrixObservation(hashlib.sha256(unseen_raw).hexdigest(), vector.evaluation),
+            (),
         )
-        assert (
-            observations[source.case_id].evaluation
-            != DIMENSION_MATERIALIZERS[target.dimension](target.test_class).evaluation
+        assert len(parser_calls) == prior_parses + 1
+        assert len(engine_calls) == prior_engines + 1
+        parsed = parser_calls[-1][1]
+        assert parsed.stimulus is not None
+        called_mode, called_arguments, delegated_result = engine_calls[-1]
+        called = cast(tuple[object, object, object, object], called_arguments)
+        assert called_mode == expected_mode
+        assert called[0] is parsed.stimulus.candidate_documents
+        assert called[1] is parsed.stimulus.context
+        assert called[2] is parsed.stimulus.retained
+        assert execution.observation is not None
+        assert execution.observation.evaluation is delegated_result
+        spy.assert_exhausted()
+
+    opposite_modes = (
+        (
+            registry["fixture://validation_order:positive"],
+            positive_replay_vector("opposite-reconstruct-content", "positive"),
+            "reconstruct",
+        ),
+        (
+            registry["fixture://reconstruction_replay:positive"],
+            positive_matrix_vector("opposite-evaluate-content", "positive"),
+            "evaluate",
+        ),
+    )
+    for known_raw, vector, expected_mode in opposite_modes:
+        original_stimulus = vector.stimulus
+        sentinel_stimulus = protocol.MatrixStimulus(
+            tuple(list(original_stimulus.candidate_documents)),
+            replace(original_stimulus.context),
+            None if original_stimulus.retained is None else replace(original_stimulus.retained),
         )
+
+        def opposite_parse(raw: bytes) -> protocol.MatrixStimulusParse:
+            assert raw == known_raw
+            result = protocol.MatrixStimulusParse(sentinel_stimulus, ())
+            parser_calls.append((raw, result))
+            execution_events.append("parse")
+            return result
+
+        monkeypatch.setattr(protocol, "parse_matrix_stimulus", opposite_parse)
+        spy = ExactCryptoSpy(list(vector.probes))
+        prior_engines = len(engine_calls)
+        execution = protocol.execute_matrix_fixture(known_raw, crypto_verifier=spy)
+        assert len(engine_calls) == prior_engines + 1
+        called_mode, called_arguments, delegated_result = engine_calls[-1]
+        called = cast(tuple[object, object, object, object], called_arguments)
+        assert called_mode == expected_mode
+        assert called[0] is sentinel_stimulus.candidate_documents
+        assert called[1] is sentinel_stimulus.context
+        assert called[2] is sentinel_stimulus.retained
+        assert execution == protocol.MatrixFixtureExecution(
+            protocol.MatrixObservation(hashlib.sha256(known_raw).hexdigest(), vector.evaluation),
+            (),
+        )
+        assert execution.observation is not None
+        assert execution.observation.evaluation is delegated_result
+        spy.assert_exhausted()
 
     for dimension in DIMENSIONS:
         negative = observations[f"{dimension}:negative"].evaluation
@@ -1467,14 +1552,18 @@ def test_matrix_cross_product_and_exact_outcomes_are_closed(
     ]
 
     def changed_case(
-        source: dict[str, Any], path: tuple[str, ...], value: object, code: str
+        source: dict[str, Any],
+        path: tuple[str, ...],
+        value: object,
+        code: str,
+        location: str | None = None,
     ) -> None:
         changed = json.loads(json.dumps(source))
         target = changed
         for segment in path[:-1]:
             target = target[segment]
         target[path[-1]] = value
-        hostile_stimuli.append((canonical(changed), "schema", code, ".".join(path)))
+        hostile_stimuli.append((canonical(changed), "schema", code, location or ".".join(path)))
 
     def missing_case(source: dict[str, Any], path: tuple[str, ...]) -> None:
         changed = json.loads(json.dumps(source))
@@ -1588,6 +1677,176 @@ def test_matrix_cross_product_and_exact_outcomes_are_closed(
     ):
         changed_case(source_document, path, value, code)
 
+    retained = retained_document["retainedEvaluation"]
+    crypto_row = list(retained["cryptoCalls"][0])
+    nested_mutations: tuple[tuple[dict[str, Any], tuple[str, ...], object, str, str], ...] = (
+        (
+            valid_document,
+            ("evaluationContext", "authorizedCandidateIds"),
+            ["short"],
+            "ACP.STIMULUS.ID",
+            "evaluationContext.authorizedCandidateIds[0]",
+        ),
+        (
+            retained_document,
+            ("retainedEvaluation", "authorizedCandidateIds"),
+            ["short"],
+            "ACP.STIMULUS.ID",
+            "retainedEvaluation.authorizedCandidateIds[0]",
+        ),
+        (
+            retained_document,
+            ("retainedEvaluation", "eligibleCandidateIds"),
+            ["short"],
+            "ACP.STIMULUS.ID",
+            "retainedEvaluation.eligibleCandidateIds[0]",
+        ),
+        (
+            retained_document,
+            ("retainedEvaluation", "selectedCandidateId"),
+            "short",
+            "ACP.STIMULUS.ID",
+            "retainedEvaluation.selectedCandidateId",
+        ),
+        (
+            retained_document,
+            ("retainedEvaluation", "trustedKeySha256s"),
+            [["short", "0" * 64]],
+            "ACP.STIMULUS.ID",
+            "retainedEvaluation.trustedKeySha256s[0][0]",
+        ),
+        (
+            retained_document,
+            ("retainedEvaluation", "trustedKeySha256s"),
+            [["0" * 64, "short"]],
+            "ACP.STIMULUS.SHA256",
+            "retainedEvaluation.trustedKeySha256s[0][1]",
+        ),
+        (
+            retained_document,
+            ("retainedEvaluation", "phaseVerdicts"),
+            [["OTHER", "VALID"]],
+            "ACP.STIMULUS.ENUM",
+            "retainedEvaluation.phaseVerdicts[0][0]",
+        ),
+        (
+            retained_document,
+            ("retainedEvaluation", "phaseVerdicts"),
+            [["CURRENT", "OTHER"]],
+            "ACP.STIMULUS.ENUM",
+            "retainedEvaluation.phaseVerdicts[0][1]",
+        ),
+        (
+            retained_document,
+            ("retainedEvaluation", "stageCalls"),
+            [["OTHER", "candidate[0]", 0]],
+            "ACP.STIMULUS.ENUM",
+            "retainedEvaluation.stageCalls[0][0]",
+        ),
+        (
+            retained_document,
+            ("retainedEvaluation", "stageCalls"),
+            [["bounds", "candidate[0]", True]],
+            "ACP.STIMULUS.TYPE",
+            "retainedEvaluation.stageCalls[0][2]",
+        ),
+        (
+            retained_document,
+            ("retainedEvaluation", "findings"),
+            [["schema", "OTHER", "ACP.SENTINEL", "candidate[0]"]],
+            "ACP.STIMULUS.ENUM",
+            "retainedEvaluation.findings[0][1]",
+        ),
+        (
+            retained_document,
+            ("retainedEvaluation", "findings"),
+            [["schema", "CURRENT", "ACP.SENTINEL", 1]],
+            "ACP.STIMULUS.TYPE",
+            "retainedEvaluation.findings[0][3]",
+        ),
+        (
+            retained_document,
+            ("retainedEvaluation", "cryptoCalls"),
+            [["short", *crypto_row[1:]]],
+            "ACP.STIMULUS.ID",
+            "retainedEvaluation.cryptoCalls[0][0]",
+        ),
+        (
+            retained_document,
+            ("retainedEvaluation", "cryptoCalls"),
+            [[crypto_row[0], "zz", *crypto_row[2:]]],
+            "ACP.STIMULUS.HEX",
+            "retainedEvaluation.cryptoCalls[0][1]",
+        ),
+        (
+            retained_document,
+            ("retainedEvaluation", "cryptoCalls"),
+            [[*crypto_row[:2], True, *crypto_row[3:]]],
+            "ACP.STIMULUS.TYPE",
+            "retainedEvaluation.cryptoCalls[0][2]",
+        ),
+        (
+            retained_document,
+            ("retainedEvaluation", "cryptoCalls"),
+            [[*crypto_row[:3], True, *crypto_row[4:]]],
+            "ACP.STIMULUS.TYPE",
+            "retainedEvaluation.cryptoCalls[0][3]",
+        ),
+        (
+            retained_document,
+            ("retainedEvaluation", "cryptoCalls"),
+            [[*crypto_row[:4], "OTHER", *crypto_row[5:]]],
+            "ACP.STIMULUS.ENUM",
+            "retainedEvaluation.cryptoCalls[0][4]",
+        ),
+        (
+            retained_document,
+            ("retainedEvaluation", "cryptoCalls"),
+            [[*crypto_row[:5], "short", *crypto_row[6:]]],
+            "ACP.STIMULUS.SHA256",
+            "retainedEvaluation.cryptoCalls[0][5]",
+        ),
+        (
+            retained_document,
+            ("retainedEvaluation", "cryptoCalls"),
+            [[*crypto_row[:6], "short", crypto_row[7]]],
+            "ACP.STIMULUS.SHA256",
+            "retainedEvaluation.cryptoCalls[0][6]",
+        ),
+        (
+            retained_document,
+            ("retainedEvaluation", "cryptoCalls"),
+            [[*crypto_row[:-1], 1]],
+            "ACP.STIMULUS.TYPE",
+            "retainedEvaluation.cryptoCalls[0][7]",
+        ),
+    )
+    for source_document, path, nested_value, code, location in nested_mutations:
+        changed_case(source_document, path, nested_value, code, location)
+
+    limit_names = {
+        "candidates": "candidateCount",
+        "candidateBytes": "candidateBytes",
+        "aggregateBytes": "aggregateBytes",
+        "jsonDepth": "jsonDepth",
+        "jsonMembers": "jsonMembers",
+        "findings": "findingCount",
+        "retainedMaterials": "retainedMaterialCount",
+    }
+    for source_document, prefix in (
+        (valid_document, ("evaluationContext", "limits")),
+        (retained_document, ("retainedEvaluation", "limits")),
+    ):
+        for wire_name, matrix_name in limit_names.items():
+            maximum = cast(int, document["limits"][matrix_name])
+            assert source_document[prefix[0]][prefix[1]][wire_name] == maximum
+            for limit_value, code in (
+                (0, "ACP.STIMULUS.RANGE"),
+                (-1, "ACP.STIMULUS.RANGE"),
+                (maximum + 1, "ACP.STIMULUS.LIMIT_EXCEEDED"),
+            ):
+                changed_case(source_document, (*prefix, wire_name), limit_value, code)
+
     def duplicated(source: dict[str, Any], path: tuple[str, ...]) -> bytes:
         target: Any = source
         for segment in path[:-1]:
@@ -1600,6 +1859,7 @@ def test_matrix_cross_product_and_exact_outcomes_are_closed(
         (valid_document, ("evaluationContext", "expectedPhase")),
         (valid_document, ("evaluationContext", "limits", "candidates")),
         (retained_document, ("retainedEvaluation", "evaluationPhase")),
+        (retained_document, ("retainedEvaluation", "limits", "candidates")),
     )
     for source_document, path in duplicate_objects:
         hostile_stimuli.append(
@@ -2600,11 +2860,17 @@ def test_reconstruction_exact_equality_kills_subset_replay(
         assert comparisons[0][1] is changed
         spy.assert_exhausted()
 
+    subset_trap = replace(
+        retained,
+        findings=exact_finding(
+            "schema", "CURRENT", "ACP.REPLAY.RETAINED_EXTRA_SENTINEL", "retained.findings"
+        ),
+    )
     mismatch = reconstruct_with_spy(
         (raw,),
-        retained,
+        subset_trap,
         context((candidate_id,)),
-        [expected_probe(candidate_id, message, result=False)],
+        [expected_probe(candidate_id, message)],
     )
     assert_mutant(
         "MUT-REPLAY-SUBSET::exact-finding",

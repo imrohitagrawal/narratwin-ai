@@ -48,8 +48,13 @@ Use a shared neutral content source that is not derived from public labels,
 ordinals, hashes, expected outcomes, or registry position. The strict parser
 must return an exact typed rejection for duplicate, unknown, forbidden, missing,
 wrongly typed, malformed-hex, invalid-enum, malformed-context, malformed-retained,
-or oversized stimulus input. The executor must propagate that rejection with
-zero evaluator, reconstructor, or crypto calls.
+or oversized stimulus input. Close every nested member over exact identifier,
+hash, enum, primitive, range, and maximum constraints. Governed matrix, freeze,
+and oracle paths must be regular non-symlink text files; reject symlinks,
+non-regular files, binary data, invalid UTF-8, non-object documents, duplicate
+members, and noncanonical serialization before trusting content. The executor
+must propagate parser rejection with zero evaluator, reconstructor, or crypto
+calls.
 Bind the fixture bytes/hash, exact assertion identity, ordered stage ledger, exact
 signature/key/message crypto ledger or explicit no-call, graph result/selection,
 three-phase verdicts, mutant, blocker class, and evidence state. The executor
@@ -57,8 +62,10 @@ accepts only the fixture bytes, calls the strict parser exactly once, passes the
 identity-distinct parser result to exactly one canonical evaluator or
 reconstructor selected by the frozen per-cell mode, and wraps the exact returned
 object with the stimulus digest. Observe that delegation for every resolved
-reference, assert complete crypto-spy consumption, compare evaluation transcripts
-under outcome-distinct derangements, and perturb phase, time, trust,
+reference, assert complete crypto-spy consumption, compare evaluation
+transcripts under a fixed expected-only outcome-distinct bijection, execute
+unseen evaluate and reconstruct stimuli, and force opposite-mode parser returns
+to prove dispatch follows the parsed object. Perturb phase, time, trust,
 authorization, crypto, graph, and replay inputs independently. Every dimension's
 negative and boundary cases must differ operationally; label, digest, count,
 recipe, or echo completeness is not behavioral completeness.
@@ -90,7 +97,9 @@ Run only in disposable copies. An import failure or unrelated assertion does
 not kill the intended mutant. Bind each assertion identity to its matrix-owned
 exact findings, three-phase verdict, stage and crypto ledgers, eligibility,
 graph count, and selection, including empty values. Caller-supplied expectations
-are prohibited.
+are prohibited. A replay-subset mutant must use successful independent trust and
+the complete pipeline, then introduce an extra retained finding so subset
+comparison is killed without fabricating work after a failed crypto check.
 
 ## Budget feasibility
 

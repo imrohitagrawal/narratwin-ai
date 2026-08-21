@@ -20,6 +20,46 @@ ACTIVATION = "NONE"
 AUTHORITY_EFFECT = "NO_AUTHORITY_EFFECT"
 EXPECTED_RED_FAILURES_COUNT = 36
 EXPECTED_RED_FAILURES_SHA256 = "0b808d20a985f7cf38d7403a937669bd2da5493acc90dcd698fe20dc742fe2e3"
+STATIC_ALLOWED_IMPORTS = (
+    "__future__.annotations",
+    "ast",
+    "collections.abc.Callable",
+    "collections.abc.Mapping",
+    "cryptography.exceptions.InvalidSignature",
+    "cryptography.hazmat.primitives.asymmetric.ed25519.Ed25519PublicKey",
+    "dataclasses.dataclass",
+    "enum",
+    "hashlib",
+    "json",
+    "pathlib.Path",
+    "subprocess",
+    "typing.Any",
+)
+STATIC_ALLOWED_CALL_SHAPES = (
+    "Ed25519PublicKey.from_public_bytes(public_key).verify(signature,message)",
+    "Path.is_file()",
+    "Path.lstat()",
+    "Path.read_bytes()",
+    "Path.relative_to(root)",
+    "Path.resolve()",
+    "ast.parse(source)",
+    "bytes.decode(utf-8)",
+    "bytes.fromhex(hex)",
+    "bytes.hex()",
+    "hashlib.sha256(bytes)",
+    "json.loads(text,object_pairs_hook=closed)",
+    "str.encode(utf-8)",
+    "subprocess.run(exact_read_only_git,cwd=root,check=exact,capture_output=True,text=True)",
+)
+STATIC_ALLOWED_GIT_FORMS = (
+    ("git", "rev-parse", "HEAD"),
+    ("git", "rev-parse", "HEAD^"),
+    ("git", "rev-parse", "{red_head}:docs/freeze.json"),
+    ("git", "merge-base", "--is-ancestor", "{red_head}", "HEAD"),
+    ("git", "diff-tree", "--no-commit-id", "--name-only", "-r", "HEAD"),
+    ("git", "show", "-s", "--format=%ae", "{red_head}"),
+    ("git", "cat-file", "-e", "{red_head}"),
+)
 
 
 class Stage(str, enum.Enum):

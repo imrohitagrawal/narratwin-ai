@@ -1,7 +1,7 @@
 {
   "schemaVersion": "AdversarialInvariantMatrixV1",
   "matrixId": "issue-435-adversarial-convergence-v1",
-  "contractVersion": "1.0.1",
+  "contractVersion": "1.0.2",
   "activation": "NONE",
   "authorityEffect": "NO_AUTHORITY_EFFECT",
   "pipeline": [
@@ -188,6 +188,48 @@
       "hostileMutation",
       "expectedFindings",
       "mutantId"
+    ]
+  },
+  "staticBoundaryContract": {
+    "allowedImports": [
+      "__future__.annotations",
+      "ast",
+      "collections.abc.Callable",
+      "collections.abc.Mapping",
+      "cryptography.exceptions.InvalidSignature",
+      "cryptography.hazmat.primitives.asymmetric.ed25519.Ed25519PublicKey",
+      "dataclasses.dataclass",
+      "enum",
+      "hashlib",
+      "json",
+      "pathlib.Path",
+      "subprocess",
+      "typing.Any"
+    ],
+    "allowedCallShapes": [
+      "Ed25519PublicKey.from_public_bytes(public_key).verify(signature,message)",
+      "Path.is_file()",
+      "Path.lstat()",
+      "Path.read_bytes()",
+      "Path.relative_to(root)",
+      "Path.resolve()",
+      "ast.parse(source)",
+      "bytes.decode(utf-8)",
+      "bytes.fromhex(hex)",
+      "bytes.hex()",
+      "hashlib.sha256(bytes)",
+      "json.loads(text,object_pairs_hook=closed)",
+      "str.encode(utf-8)",
+      "subprocess.run(exact_read_only_git,cwd=root,check=exact,capture_output=True,text=True)"
+    ],
+    "allowedGitForms": [
+      ["git", "rev-parse", "HEAD"],
+      ["git", "rev-parse", "HEAD^"],
+      ["git", "rev-parse", "{red_head}:docs/freeze.json"],
+      ["git", "merge-base", "--is-ancestor", "{red_head}", "HEAD"],
+      ["git", "diff-tree", "--no-commit-id", "--name-only", "-r", "HEAD"],
+      ["git", "show", "-s", "--format=%ae", "{red_head}"],
+      ["git", "cat-file", "-e", "{red_head}"]
     ]
   },
   "materializedOutcomeContracts": {
@@ -1472,11 +1514,13 @@
         ["phase_verdict", "candidate-set", 0]
       ],
       "cryptoCalls": [
-        ["3251ead6bbec6deddcb98b1b184350799d6fadaa890e8929944b9c524f90d59c", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", 0, 1, "CURRENT", "02d449a31fbb267c8f352e9968a79e3e5fc95c1bbeaa502fd6454ebde5a4bedc", "0efc5c1c8a3ccb0b6e08b348896a73fe9479f770084c16f73c8a15a5ad580855", false]
+        ["3251ead6bbec6deddcb98b1b184350799d6fadaa890e8929944b9c524f90d59c", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", 0, 1, "CURRENT", "02d449a31fbb267c8f352e9968a79e3e5fc95c1bbeaa502fd6454ebde5a4bedc", "0efc5c1c8a3ccb0b6e08b348896a73fe9479f770084c16f73c8a15a5ad580855", true]
       ],
-      "eligibleCandidateIds": [],
-      "selectedCandidateId": null,
-      "graphCallCount": 0
+      "eligibleCandidateIds": [
+        "3251ead6bbec6deddcb98b1b184350799d6fadaa890e8929944b9c524f90d59c"
+      ],
+      "selectedCandidateId": "3251ead6bbec6deddcb98b1b184350799d6fadaa890e8929944b9c524f90d59c",
+      "graphCallCount": 1
     }
   },
   "controlledMutants": [
@@ -1825,7 +1869,7 @@
         "INVALID",
         "UNAVAILABLE"
       ],
-      "selectedRule": null,
+      "selectedRule": "retained_exact_candidate",
       "assertion": "exact_finding_and_verdicts"
     }
   ],

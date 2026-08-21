@@ -366,6 +366,37 @@ Required rule:
   pass/fail criteria, and residual-risk owner, so human review is repeatable
   without private implementer context.
 
+For an adversarial executable matrix, use already-mutated operational stimuli
+whose serialized form contains no case, class, dimension, recipe, or expected
+outcome labels. A thin executor must strictly parse the exact bytes once and
+delegate the identity-distinct parsed objects to exactly one canonical engine.
+Prove this for every frozen fixture, for unseen evaluate and reconstruct inputs,
+and when a known byte string's parser result changes mode. Use a fixed
+expected-only outcome-distinct bijection for cross-case checks; never choose a
+target from the observed result. A parser rejection must return its exact typed
+finding with zero evaluator, reconstructor, or crypto calls.
+
+Bind the pipeline in this exact order:
+
+```text
+bounds -> parse -> schema -> canonical identity -> independent trust
+-> authorization -> graph/conflict -> phase verdict
+```
+
+Every stage after the earliest rejection records zero calls. A replay-subset
+mutation must keep trust and crypto valid, execute the full eligible pipeline,
+and add an extra retained finding; a false crypto result must instead terminate
+at independent trust and cannot be used as replay-equality evidence.
+
+Close every untrusted nested object over exact fields, primitive types, enum
+domains, identifier/hash shapes, ranges, and N/N+1 limits. Before reading a
+governed matrix, freeze, or oracle artifact, reject symlinks, non-regular files,
+and binary content. Raw documents must reject invalid UTF-8, non-object values,
+duplicate members, and noncanonical serialization. Freeze security-sensitive
+static analysis as an independent positive allowlist of imports, call shapes,
+and complete read-only command argv/keyword forms; source-derived or denylist
+contracts are not sufficient.
+
 ## Gate 3A: Contract Freeze Before Code
 
 For high-risk work, the invariant matrix is not advisory. It is the entry
