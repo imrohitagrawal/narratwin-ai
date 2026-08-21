@@ -1,7 +1,7 @@
 {
   "schemaVersion": "AdversarialInvariantMatrixV1",
   "matrixId": "issue-435-adversarial-convergence-v1",
-  "contractVersion": "1.0.7",
+  "contractVersion": "1.0.8",
   "activation": "NONE",
   "authorityEffect": "NO_AUTHORITY_EFFECT",
   "pipeline": [
@@ -165,6 +165,7 @@
     "referencePrefix": "fixture://",
     "contentPolicy": "shared_neutral_not_label_ordinal_hash_outcome_or_position_derived",
     "executorComposition": "exact_bytes_to_one_strict_parse_then_identity_returned_objects_to_one_bound_engine",
+    "twoCandidateReconstructionBaseline": "saved_real_reconstructor_with_parser_returned_object_identities_two_ordered_exact_probes_complete_transcript_and_returned_evaluation_identity",
     "rejectionContract": "exact_parser_finding_and_zero_engine_crypto_calls",
     "trailingTokenModes": [
       "evaluate",

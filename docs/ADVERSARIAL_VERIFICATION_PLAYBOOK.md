@@ -68,6 +68,10 @@ and crypto calls. The executor delegates valid fixtures to exactly one canonical
 evaluator or reconstructor and returns that engine's object; a sentinel-only
 composition test is insufficient. Negative and boundary cases
 must differ in operational input and observed enforcement for every dimension.
+The valid two-candidate reconstruction control wraps the saved real engine and
+binds parser-returned argument identities, two ordered exact crypto probes and
+their exhaustion, the complete observed transcript, and returned-object
+identity; a fabricated one-candidate observer result is not evidence.
 
 The reference test classes are positive, negative, boundary, malformed,
 deletion, corruption, reordering, duplication, substitution, and maximum

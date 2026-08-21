@@ -87,6 +87,12 @@ authorization, crypto, graph, and replay inputs independently. Every dimension's
 negative and boundary cases must differ operationally; label, digest, count,
 recipe, or echo completeness is not behavioral completeness.
 
+The valid two-candidate reconstruction baseline must wrap the saved real
+reconstructor. It delegates parser-returned documents, context, retained
+evidence, and the verifier by identity; consumes two ordered exact probes;
+asserts the complete stage, crypto, eligibility, precedence, graph, and phase
+transcript; and preserves the exact returned `Evaluation` object.
+
 ## Pipeline-call ledger
 
 | Case ID | Bounds | Parse | Schema | Identity | Trust/crypto | Authorization | Graph/conflict | Phase verdict | Earliest exact finding |

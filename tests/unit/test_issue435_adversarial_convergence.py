@@ -20,7 +20,7 @@ FREEZE_PATH = ROOT / "docs/governance/adversarial-convergence-red-freeze-v1.json
 REPOSITORY_TEST_PATH = ROOT / "tests/unit/test_issue435_adversarial_convergence_repository.py"
 IDENTITY_DOMAIN = b"NARRATWIN:ACP:IDENTITY:V1\x00"
 SIGNATURE_DOMAIN = b"NARRATWIN:ACP:SIGNATURE:V1\x00"
-EXPECTED_SEMANTIC_SHA256 = "a34a5b98fb39e0f8d43d09ba5d3a9c824dd5ed1697da391fcd636b6047838a75"
+EXPECTED_SEMANTIC_SHA256 = "31aefd510dce98db6e1cb273aa2641060951c17f884b65b6f73648ebc3fc4a86"
 EXPECTED_MUTANT_OUTCOMES_SHA256 = "67b7a36a4cc09fe3a2e092361ada276715ce273aa3b10259a2b4ea92987d1b03"
 EXPECTED_FIXTURE_REGISTRY_SHA256 = (
     "1407395b3714f9a56aee5ac9f1da0f78e0d116f2431016c0bf8cbc17c746e6b1"
@@ -2324,21 +2324,46 @@ def test_matrix_cross_product_and_exact_outcomes_are_closed(
     parse_calls: list[tuple[bytes, protocol.MatrixStimulusParse]] = []
     unexpected_engines: list[str] = []
     unexpected_crypto: list[protocol.CryptoProbe] = []
+    delegation_events: list[str] = []
+    reconstruction_calls: list[
+        tuple[
+            tuple[bytes, ...],
+            protocol.RetainedEvaluation,
+            protocol.EvaluationContext,
+            protocol.CryptoVerifier,
+            protocol.Evaluation,
+        ]
+    ] = []
 
     def observe_rejection_parse(raw: bytes) -> protocol.MatrixStimulusParse:
         result = original_parse(raw)
         parse_calls.append((raw, result))
+        delegation_events.append("parse")
         return result
 
     def unexpected_evaluate(*args: object, **kwargs: object) -> protocol.Evaluation:
         del args, kwargs
         unexpected_engines.append("evaluate")
+        delegation_events.append("evaluate")
         return DIMENSION_MATERIALIZERS["validation_order"]("positive").evaluation
 
-    def unexpected_reconstruct(*args: object, **kwargs: object) -> protocol.Evaluation:
-        del args, kwargs
+    def observe_exact_reconstruct(
+        documents: tuple[bytes, ...],
+        *,
+        retained: protocol.RetainedEvaluation,
+        context: protocol.EvaluationContext,
+        crypto_verifier: protocol.CryptoVerifier,
+    ) -> protocol.Evaluation:
         unexpected_engines.append("reconstruct")
-        return DIMENSION_MATERIALIZERS["validation_order"]("positive").evaluation
+        delegation_events.append("reconstruct")
+        result = original_reconstruct(
+            documents,
+            retained=retained,
+            context=context,
+            crypto_verifier=crypto_verifier,
+        )
+        reconstruction_calls.append((documents, retained, context, crypto_verifier, result))
+        return result
 
     def observe_unexpected_crypto(probe: protocol.CryptoProbe) -> bool:
         unexpected_crypto.append(probe)
@@ -2346,7 +2371,7 @@ def test_matrix_cross_product_and_exact_outcomes_are_closed(
 
     monkeypatch.setattr(protocol, "parse_matrix_stimulus", observe_rejection_parse)
     monkeypatch.setattr(protocol, "evaluate_candidates", unexpected_evaluate)
-    monkeypatch.setattr(protocol, "reconstruct_candidates", unexpected_reconstruct)
+    monkeypatch.setattr(protocol, "reconstruct_candidates", observe_exact_reconstruct)
     for raw, stage, code, location in hostile_stimuli:
         expected_findings = exact_finding(stage, "CURRENT", code, location)
         assert original_parse(raw) == protocol.MatrixStimulusParse(None, expected_findings)
@@ -2361,18 +2386,51 @@ def test_matrix_cross_product_and_exact_outcomes_are_closed(
 
     two_raw = canonical(two_document)
     assert original_parse(two_raw) == protocol.MatrixStimulusParse(two_stimulus, ())
+    two_probes = [
+        expected_probe(first_id, first_message, ordinal=0, count=2),
+        expected_probe(second_id, second_message, ordinal=1, count=2),
+    ]
+    two_spy = ExactCryptoSpy(two_probes)
+    expected_two_evaluation = expected_evaluation(
+        (),
+        protocol.Verdict.VALID,
+        (first_id, second_id),
+        pipeline_calls((first_id, second_id)),
+        expected_crypto_calls(
+            (first_id, second_id),
+            (first_message, second_message),
+            (True, True),
+        ),
+        selected=second_id,
+        graph_calls=1,
+    )
     prior_parses = len(parse_calls)
     prior_engines = len(unexpected_engines)
-    two_execution = protocol.execute_matrix_fixture(two_raw, crypto_verifier=ExactCryptoSpy([]))
+    prior_events = len(delegation_events)
+    prior_reconstructions = len(reconstruction_calls)
+    two_execution = protocol.execute_matrix_fixture(two_raw, crypto_verifier=two_spy)
     assert parse_calls[prior_parses:] == [(two_raw, protocol.MatrixStimulusParse(two_stimulus, ()))]
     assert unexpected_engines[prior_engines:] == ["reconstruct"]
+    assert delegation_events[prior_events:] == ["parse", "reconstruct"]
+    assert len(reconstruction_calls) == prior_reconstructions + 1
+    parsed_two = parse_calls[-1][1]
+    assert parsed_two.stimulus is not None
+    documents, retained, called_context, verifier, delegated_result = reconstruction_calls[-1]
+    assert documents is parsed_two.stimulus.candidate_documents
+    assert retained is parsed_two.stimulus.retained
+    assert called_context is parsed_two.stimulus.context
+    assert verifier is two_spy
+    assert delegated_result == expected_two_evaluation
     assert two_execution == protocol.MatrixFixtureExecution(
         protocol.MatrixObservation(
             hashlib.sha256(two_raw).hexdigest(),
-            DIMENSION_MATERIALIZERS["validation_order"]("positive").evaluation,
+            expected_two_evaluation,
         ),
         (),
     )
+    assert two_execution.observation is not None
+    assert two_execution.observation.evaluation is delegated_result
+    two_spy.assert_exhausted()
 
     valid_raw = canonical(valid_document)
     at_cap = valid_raw[:-1] + (b" " * (stimulus_cap - len(valid_raw))) + b"}"

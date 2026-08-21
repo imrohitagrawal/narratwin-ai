@@ -58,8 +58,11 @@ bijection, executed unseen evaluate and reconstruct stimuli, and opposite-mode p
 returns require dispatch to follow the parsed typed stimulus rather than raw
 bytes or a fixture lookup. Per-fixture delegation observation and exact
 crypto-spy exhaustion prevent an echo oracle, while the freeze binds the actual
-ordered RED-node catalog rather than a caller-supplied count. Reconstruction is
-required to call the same independently tested complete retained-equality
+ordered RED-node catalog rather than a caller-supplied count. A valid
+two-candidate control wraps the saved real reconstructor, preserves
+parser-returned argument and returned-result identity, and consumes the exact
+ordered two-probe transcript. Reconstruction is required to call the same
+independently tested complete retained-equality
 comparison used by the standalone oracle; the public validator and route gate
 must likewise compose matrix/freeze byte, finding, retained-material, and row
 N/N+1 checks. Controlled mutant identities bind matrix-owned exact findings,
