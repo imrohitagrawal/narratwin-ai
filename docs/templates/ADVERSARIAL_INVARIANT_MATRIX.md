@@ -50,11 +50,14 @@ must return an exact typed rejection for duplicate, unknown, forbidden, missing,
 wrongly typed, malformed-hex, invalid-enum, malformed-context, malformed-retained,
 or oversized stimulus input. Close every nested member over exact identifier,
 hash, enum, primitive, range, and maximum constraints. Governed matrix, freeze,
-and oracle paths must be regular non-symlink text files; reject symlinks,
-non-regular files, binary data, invalid UTF-8, non-object documents, duplicate
-members, and noncanonical serialization before trusting content. The executor
-must propagate parser rejection with zero evaluator, reconstructor, or crypto
-calls.
+and oracle paths must remain beneath the validated root with no symlink target
+or ancestor. Reject directories, sockets, other non-regular files, binary data,
+invalid UTF-8, malformed JSON, non-object documents, duplicate members, and
+semantically equivalent alternate serialization before trusting content. Freeze
+an exact positive static grammar whose local-read entries name only those
+governed paths, and independently remove/test every import, call, read target,
+and command form. The executor must propagate parser rejection with zero
+evaluator, reconstructor, or crypto calls.
 Bind the fixture bytes/hash, exact assertion identity, ordered stage ledger, exact
 signature/key/message crypto ledger or explicit no-call, graph result/selection,
 three-phase verdicts, mutant, blocker class, and evidence state. The executor

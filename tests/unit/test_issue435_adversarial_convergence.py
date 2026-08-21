@@ -20,7 +20,7 @@ FREEZE_PATH = ROOT / "docs/governance/adversarial-convergence-red-freeze-v1.json
 REPOSITORY_TEST_PATH = ROOT / "tests/unit/test_issue435_adversarial_convergence_repository.py"
 IDENTITY_DOMAIN = b"NARRATWIN:ACP:IDENTITY:V1\x00"
 SIGNATURE_DOMAIN = b"NARRATWIN:ACP:SIGNATURE:V1\x00"
-EXPECTED_SEMANTIC_SHA256 = "27c536b6c9287e40d08944771103f6d50948882bbc82dfe350bf776f3ac9048f"
+EXPECTED_SEMANTIC_SHA256 = "095b745581800ad245a8fde28d32c7c3182189256518df7181dade0abc0ef0fa"
 EXPECTED_MUTANT_OUTCOMES_SHA256 = "67b7a36a4cc09fe3a2e092361ada276715ce273aa3b10259a2b4ea92987d1b03"
 EXPECTED_FIXTURE_REGISTRY_SHA256 = (
     "1407395b3714f9a56aee5ac9f1da0f78e0d116f2431016c0bf8cbc17c746e6b1"
@@ -1738,10 +1738,31 @@ def test_matrix_cross_product_and_exact_outcomes_are_closed(
         ),
         (
             retained_document,
+            ("retainedEvaluation", "evaluationPhase"),
+            "OTHER",
+            "ACP.STIMULUS.ENUM",
+            "retainedEvaluation.evaluationPhase",
+        ),
+        (
+            retained_document,
+            ("retainedEvaluation", "evaluationPhase"),
+            True,
+            "ACP.STIMULUS.TYPE",
+            "retainedEvaluation.evaluationPhase",
+        ),
+        (
+            retained_document,
             ("retainedEvaluation", "stageCalls"),
             [["OTHER", "candidate[0]", 0]],
             "ACP.STIMULUS.ENUM",
             "retainedEvaluation.stageCalls[0][0]",
+        ),
+        (
+            retained_document,
+            ("retainedEvaluation", "stageCalls"),
+            [["bounds", 1, 0]],
+            "ACP.STIMULUS.TYPE",
+            "retainedEvaluation.stageCalls[0][1]",
         ),
         (
             retained_document,
@@ -1753,9 +1774,37 @@ def test_matrix_cross_product_and_exact_outcomes_are_closed(
         (
             retained_document,
             ("retainedEvaluation", "findings"),
+            [["OTHER", "CURRENT", "ACP.SENTINEL", "candidate[0]"]],
+            "ACP.STIMULUS.ENUM",
+            "retainedEvaluation.findings[0][0]",
+        ),
+        (
+            retained_document,
+            ("retainedEvaluation", "findings"),
+            [[True, "CURRENT", "ACP.SENTINEL", "candidate[0]"]],
+            "ACP.STIMULUS.TYPE",
+            "retainedEvaluation.findings[0][0]",
+        ),
+        (
+            retained_document,
+            ("retainedEvaluation", "findings"),
             [["schema", "OTHER", "ACP.SENTINEL", "candidate[0]"]],
             "ACP.STIMULUS.ENUM",
             "retainedEvaluation.findings[0][1]",
+        ),
+        (
+            retained_document,
+            ("retainedEvaluation", "findings"),
+            [["schema", "CURRENT", 1, "candidate[0]"]],
+            "ACP.STIMULUS.TYPE",
+            "retainedEvaluation.findings[0][2]",
+        ),
+        (
+            retained_document,
+            ("retainedEvaluation", "findings"),
+            [["schema", "CURRENT", "NOT_ACP", "candidate[0]"]],
+            "ACP.STIMULUS.CODE",
+            "retainedEvaluation.findings[0][2]",
         ),
         (
             retained_document,

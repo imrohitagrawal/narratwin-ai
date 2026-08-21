@@ -37,11 +37,18 @@ STATIC_ALLOWED_IMPORTS = (
 )
 STATIC_ALLOWED_CALL_SHAPES = (
     "Ed25519PublicKey.from_public_bytes(public_key).verify(signature,message)",
-    "Path.is_file()",
-    "Path.lstat()",
-    "Path.read_bytes()",
-    "Path.relative_to(root)",
-    "Path.resolve()",
+    "module:Path(__file__).resolve()",
+    "_read_governed_bytes(root,'docs/governance/adversarial-convergence-invariant-matrix-v1.json')",
+    "_read_governed_bytes(root,'docs/governance/adversarial-convergence-red-freeze-v1.json')",
+    "_read_governed_bytes(root,'tests/unit/test_issue435_adversarial_convergence.py')",
+    "_read_governed_bytes(root,'tests/unit/test_issue435_adversarial_convergence_repository.py')",
+    "_read_governed_bytes:ancestor.is_symlink()",
+    "_read_governed_bytes:governed_path.is_symlink()",
+    "_read_governed_bytes:governed_path.is_file()",
+    "_read_governed_bytes:governed_path.resolve()",
+    "_read_governed_bytes:root.resolve()",
+    "_read_governed_bytes:resolved.is_relative_to(root_resolved)",
+    "_read_governed_bytes:governed_path.read_bytes()",
     "ast.parse(source)",
     "bytes.decode(utf-8)",
     "bytes.fromhex(hex)",
@@ -50,6 +57,12 @@ STATIC_ALLOWED_CALL_SHAPES = (
     "json.loads(text,object_pairs_hook=closed)",
     "str.encode(utf-8)",
     "subprocess.run(exact_read_only_git,cwd=root,check=exact,capture_output=True,text=True)",
+)
+STATIC_ALLOWED_GOVERNED_READ_PATHS = (
+    "docs/governance/adversarial-convergence-invariant-matrix-v1.json",
+    "docs/governance/adversarial-convergence-red-freeze-v1.json",
+    "tests/unit/test_issue435_adversarial_convergence.py",
+    "tests/unit/test_issue435_adversarial_convergence_repository.py",
 )
 STATIC_ALLOWED_GIT_FORMS = (
     ("git", "rev-parse", "HEAD"),

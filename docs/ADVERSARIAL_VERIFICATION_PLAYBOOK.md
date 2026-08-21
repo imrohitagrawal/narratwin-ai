@@ -107,8 +107,15 @@ route gate; helper-only evidence is insufficient.
 Reject duplicate JSON members, invalid UTF-8, non-object roots, excessive
 depth, unknown fields, missing fields, extra fields, wrong types, booleans used
 as integers, invalid enums, path traversal, symlinks, nonregular files, and
-binary input. JSON is strict and duplicate-free. Accepted bytes must be
-canonical when the contract requires canonical storage.
+binary input. Every nested tuple member and limit has an exact type/domain/range
+case. JSON syntax failures return typed findings rather than leaking decoder
+exceptions. JSON is strict and duplicate-free; a semantically equal alternate
+serialization is still noncanonical when the contract binds storage bytes.
+Before read, prove the target and every ancestor are non-symlinks, the resolved
+path stays beneath the validated root, and the target is a regular text file;
+include a socket or FIFO negative, not only a directory. Static local-read
+allowlists name exact governed paths and independently bind every allowed
+import, call, target, and command form.
 
 ### Canonical identity
 

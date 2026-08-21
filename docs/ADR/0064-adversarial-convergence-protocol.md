@@ -51,11 +51,10 @@ unknown, duplicate, missing, malformed, wrongly typed, or outcome-bearing fields
 calls the exact matrix-bound canonical evaluator or reconstructor for every real
 fixture, and wraps that engine's returned object with the stimulus digest.
 Rejection returns the parser's exact typed finding with zero engine or crypto
-calls. Fixture
-content uses a shared neutral source independent of labels, ordinals, hashes,
-expected outcomes, or registry position. Each dimension has a behaviorally
-distinct negative and boundary stimulus. A fixed expected-only bijection,
-executed unseen evaluate and reconstruct stimuli, and opposite-mode parser
+calls. Fixture content uses a shared neutral source independent of labels,
+ordinals, hashes, expected outcomes, or registry position. Each dimension has a
+behaviorally distinct negative and boundary stimulus. A fixed expected-only
+bijection, executed unseen evaluate and reconstruct stimuli, and opposite-mode parser
 returns require dispatch to follow the parsed typed stimulus rather than raw
 bytes or a fixture lookup. Per-fixture delegation observation and exact
 crypto-spy exhaustion prevent an echo oracle, while the freeze binds the actual
@@ -71,11 +70,15 @@ call, the complete pipeline, and an extra retained finding so it discriminates
 exact equality without contradicting fail-fast trust handling. Nested parser
 members and every configured limit are closed over exact types, enums, hashes,
 identifiers, ranges, and maximums. Governed artifacts are rejected before read
-when they are symlinks, non-regular files, or binary, and raw matrix/freeze
-documents reject invalid UTF-8, non-object, duplicate-member, and noncanonical
-encodings. The static boundary is an independently frozen closed positive
-import/call grammar, including only the seven exact read-only Git command forms
-needed by freeze validation; implementation constants must equal that contract.
+when their target or any ancestor is a symlink, they resolve outside the
+validated root, they are non-regular (including sockets), or they are binary.
+Raw matrix/freeze documents return exact typed findings for invalid UTF-8,
+malformed JSON, non-object roots, duplicate members, and semantically equivalent
+noncanonical encodings. The static boundary is an independently frozen closed
+positive import/call grammar. Its only local reads name the exact matrix,
+freeze, and two focused-oracle paths beneath the validated root; every allowed
+import, call, read target, and one of the seven exact read-only Git command forms
+is independently removable. Implementation constants must equal that contract.
 
 `predecessorId` participates in canonical candidate identity. A cyclic
 predecessor construction therefore cannot remain identity-valid; it is rejected

@@ -5,6 +5,7 @@ from __future__ import annotations
 import ast
 import hashlib
 import json
+import os
 import subprocess
 import sys
 from copy import deepcopy
@@ -360,8 +361,14 @@ def test_freeze_schema_closes_roles_red_nodes_and_separate_blockers(tmp_path: Pa
     matrix_schema = b'"schemaVersion": "AdversarialInvariantMatrixV1",'
     freeze_bytes = canonical(freeze)
     freeze_schema = b'"schemaVersion":"AdversarialRedFreezeV1",'
+    alternate_matrix = canonical(json.loads(matrix))
+    alternate_freeze = json.dumps(freeze, sort_keys=True, indent=2).encode()
+    assert alternate_matrix != matrix and json.loads(alternate_matrix) == json.loads(matrix)
+    assert alternate_freeze != freeze_bytes and json.loads(alternate_freeze) == freeze
     for matrix_bytes, raw_freeze, stage, code, location in (
         (b"\xff", freeze_bytes, "matrix", "ACP.MATRIX.INVALID_UTF8", "matrix"),
+        (b"{", freeze_bytes, "matrix", "ACP.MATRIX.INVALID_JSON", "matrix"),
+        (b"", freeze_bytes, "matrix", "ACP.MATRIX.INVALID_JSON", "matrix"),
         (b"[]", freeze_bytes, "matrix", "ACP.MATRIX.NON_OBJECT", "matrix"),
         (
             matrix.replace(matrix_schema, matrix_schema + matrix_schema, 1),
@@ -371,7 +378,10 @@ def test_freeze_schema_closes_roles_red_nodes_and_separate_blockers(tmp_path: Pa
             "schemaVersion",
         ),
         (matrix + b" ", freeze_bytes, "matrix", "ACP.MATRIX.NONCANONICAL", "matrix"),
+        (alternate_matrix, freeze_bytes, "matrix", "ACP.MATRIX.NONCANONICAL", "matrix"),
         (matrix, b"\xff", "freeze", "ACP.FREEZE.INVALID_UTF8", "freeze"),
+        (matrix, b"{", "freeze", "ACP.FREEZE.INVALID_JSON", "freeze"),
+        (matrix, b"", "freeze", "ACP.FREEZE.INVALID_JSON", "freeze"),
         (matrix, b"[]", "freeze", "ACP.FREEZE.NON_OBJECT", "freeze"),
         (
             matrix,
@@ -381,6 +391,7 @@ def test_freeze_schema_closes_roles_red_nodes_and_separate_blockers(tmp_path: Pa
             "schemaVersion",
         ),
         (matrix, freeze_bytes + b" ", "freeze", "ACP.FREEZE.NONCANONICAL", "freeze"),
+        (matrix, alternate_freeze, "freeze", "ACP.FREEZE.NONCANONICAL", "freeze"),
     ):
         assert protocol.validate_matrix_bytes(matrix_bytes, raw_freeze).findings == finding(
             stage, code, location
@@ -450,6 +461,32 @@ def test_repository_validator_is_read_only_and_static_boundary_is_ast_exact(
             assert protocol.validate_repository_freeze(governed_root) == finding(
                 "file", code, relative
             )
+    for ordinal, relative in enumerate(governed_paths):
+        ancestor_root, _ = create_real_git_freeze(tmp_path / f"ancestor-symlink-{ordinal}")
+        governed_parent = (ancestor_root / relative).parent
+        parent_relative = governed_parent.relative_to(ancestor_root).as_posix()
+        external_parent = tmp_path / f"external-governed-parent-{ordinal}"
+        governed_parent.rename(external_parent)
+        governed_parent.symlink_to(external_parent, target_is_directory=True)
+        assert protocol.validate_repository_freeze(ancestor_root) == finding(
+            "file", "ACP.FILE.ANCESTOR_SYMLINK", parent_relative
+        )
+    fifo_root, _ = create_real_git_freeze(tmp_path / "fifo-nonregular")
+    fifo_path = fifo_root / FREEZE_PATH
+    fifo_path.unlink()
+    os.mkfifo(fifo_path)
+    original_read_bytes = Path.read_bytes
+
+    def reject_fifo_read(path: Path) -> bytes:
+        if path == fifo_path:
+            raise AssertionError("FIFO must be rejected before read")
+        return original_read_bytes(path)
+
+    with monkeypatch.context() as fifo_patch:
+        fifo_patch.setattr(Path, "read_bytes", reject_fifo_read)
+        assert protocol.validate_repository_freeze(fifo_root) == finding(
+            "file", "ACP.FILE.NONREGULAR", FREEZE_PATH
+        )
     source = (ROOT / "scripts/quality/issue435_adversarial_convergence.py").read_text()
     assert protocol.static_boundary_findings(source) == ()
     read_only_git = (
@@ -466,24 +503,122 @@ def test_repository_validator_is_read_only_and_static_boundary_is_ast_exact(
     static_contract = json.loads(MATRIX_PATH.read_text(encoding="utf-8"))["staticBoundaryContract"]
     assert protocol.STATIC_ALLOWED_IMPORTS == tuple(static_contract["allowedImports"])
     assert protocol.STATIC_ALLOWED_CALL_SHAPES == tuple(static_contract["allowedCallShapes"])
+    assert protocol.STATIC_ALLOWED_GOVERNED_READ_PATHS == tuple(
+        static_contract["allowedGovernedReadPaths"]
+    )
     assert protocol.STATIC_ALLOWED_GIT_FORMS == tuple(
         tuple(item) for item in static_contract["allowedGitForms"]
     )
-    for attribute, allowed_source in (
-        ("STATIC_ALLOWED_IMPORTS", "import enum\n"),
-        ("STATIC_ALLOWED_CALL_SHAPES", "import hashlib\nhashlib.sha256(b'x')\n"),
-        (
-            "STATIC_ALLOWED_GIT_FORMS",
-            "import subprocess\nsubprocess.run(('git', 'rev-parse', 'HEAD'), "
-            "cwd=root, check=True, capture_output=True, text=True)\n",
+    allowed_import_sources = {
+        "__future__.annotations": "from __future__ import annotations\n",
+        "ast": "import ast\n",
+        "collections.abc.Callable": "from collections.abc import Callable\n",
+        "collections.abc.Mapping": "from collections.abc import Mapping\n",
+        "cryptography.exceptions.InvalidSignature": (
+            "from cryptography.exceptions import InvalidSignature\n"
         ),
-    ):
+        "cryptography.hazmat.primitives.asymmetric.ed25519.Ed25519PublicKey": (
+            "from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey\n"
+        ),
+        "dataclasses.dataclass": "from dataclasses import dataclass\n",
+        "enum": "import enum\n",
+        "hashlib": "import hashlib\n",
+        "json": "import json\n",
+        "pathlib.Path": "from pathlib import Path\n",
+        "subprocess": "import subprocess\n",
+        "typing.Any": "from typing import Any\n",
+    }
+    assert tuple(allowed_import_sources) == protocol.STATIC_ALLOWED_IMPORTS
+    for member, allowed_source in allowed_import_sources.items():
         assert protocol.static_boundary_findings(allowed_source) == ()
         with monkeypatch.context() as policy_patch:
-            policy_patch.setattr(protocol, attribute, ())
+            policy_patch.setattr(
+                protocol,
+                "STATIC_ALLOWED_IMPORTS",
+                tuple(item for item in protocol.STATIC_ALLOWED_IMPORTS if item != member),
+            )
             assert protocol.static_boundary_findings(allowed_source) == finding(
                 "static", "ACP.STATIC.NOT_ALLOWLISTED", "source"
             )
+    allowed_call_sources = {
+        "Ed25519PublicKey.from_public_bytes(public_key).verify(signature,message)": (
+            "from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey\n"
+            "Ed25519PublicKey.from_public_bytes(public_key).verify(signature, message)\n"
+        ),
+        "module:Path(__file__).resolve()": (
+            "from pathlib import Path\nROOT = Path(__file__).resolve()\n"
+        ),
+        **{
+            f"_read_governed_bytes(root,{relative!r})": (
+                f"_read_governed_bytes(root, {relative!r})\n"
+            )
+            for relative in protocol.STATIC_ALLOWED_GOVERNED_READ_PATHS
+        },
+        "_read_governed_bytes:ancestor.is_symlink()": (
+            "def _read_governed_bytes():\n    return ancestor.is_symlink()\n"
+        ),
+        "_read_governed_bytes:governed_path.is_symlink()": (
+            "def _read_governed_bytes():\n    return governed_path.is_symlink()\n"
+        ),
+        "_read_governed_bytes:governed_path.is_file()": (
+            "def _read_governed_bytes():\n    return governed_path.is_file()\n"
+        ),
+        "_read_governed_bytes:governed_path.resolve()": (
+            "def _read_governed_bytes():\n    return governed_path.resolve()\n"
+        ),
+        "_read_governed_bytes:root.resolve()": (
+            "def _read_governed_bytes():\n    return root.resolve()\n"
+        ),
+        "_read_governed_bytes:resolved.is_relative_to(root_resolved)": (
+            "def _read_governed_bytes():\n    return resolved.is_relative_to(root_resolved)\n"
+        ),
+        "_read_governed_bytes:governed_path.read_bytes()": (
+            "def _read_governed_bytes():\n    return governed_path.read_bytes()\n"
+        ),
+        "ast.parse(source)": "import ast\nast.parse(source)\n",
+        "bytes.decode(utf-8)": "payload.decode('utf-8')\n",
+        "bytes.fromhex(hex)": "bytes.fromhex(value)\n",
+        "bytes.hex()": "payload.hex()\n",
+        "hashlib.sha256(bytes)": "import hashlib\nhashlib.sha256(payload)\n",
+        "json.loads(text,object_pairs_hook=closed)": (
+            "import json\njson.loads(text, object_pairs_hook=closed)\n"
+        ),
+        "str.encode(utf-8)": "value.encode('utf-8')\n",
+        "subprocess.run(exact_read_only_git,cwd=root,check=exact,capture_output=True,text=True)": (
+            "import subprocess\nsubprocess.run(('git', 'rev-parse', 'HEAD'), "
+            "cwd=root, check=True, capture_output=True, text=True)\n"
+        ),
+    }
+    assert tuple(allowed_call_sources) == protocol.STATIC_ALLOWED_CALL_SHAPES
+    for member, allowed_source in allowed_call_sources.items():
+        assert protocol.static_boundary_findings(allowed_source) == ()
+        with monkeypatch.context() as policy_patch:
+            policy_patch.setattr(
+                protocol,
+                "STATIC_ALLOWED_CALL_SHAPES",
+                tuple(item for item in protocol.STATIC_ALLOWED_CALL_SHAPES if item != member),
+            )
+            assert protocol.static_boundary_findings(allowed_source) == finding(
+                "static", "ACP.STATIC.NOT_ALLOWLISTED", "source"
+            )
+    for relative in protocol.STATIC_ALLOWED_GOVERNED_READ_PATHS:
+        allowed_source = f"_read_governed_bytes(root, {relative!r})\n"
+        with monkeypatch.context() as policy_patch:
+            policy_patch.setattr(
+                protocol,
+                "STATIC_ALLOWED_GOVERNED_READ_PATHS",
+                tuple(
+                    item for item in protocol.STATIC_ALLOWED_GOVERNED_READ_PATHS if item != relative
+                ),
+            )
+            assert protocol.static_boundary_findings(allowed_source) == finding(
+                "static", "ACP.STATIC.NOT_ALLOWLISTED", "source"
+            )
+    with monkeypatch.context() as policy_patch:
+        policy_patch.setattr(protocol, "STATIC_ALLOWED_GIT_FORMS", ())
+        assert protocol.static_boundary_findings(read_only_git.splitlines()[1] + "\n") == finding(
+            "static", "ACP.STATIC.NOT_ALLOWLISTED", "source"
+        )
     for hostile, code in (
         ("import requests\n", "ACP.STATIC.NETWORK_IMPORT"),
         ("import aiohttp\n", "ACP.STATIC.NETWORK_IMPORT"),
@@ -504,6 +639,20 @@ def test_repository_validator_is_read_only_and_static_boundary_is_ast_exact(
         ("eval(source)\n", "ACP.STATIC.DYNAMIC_EXECUTION"),
         ("exec(source)\n", "ACP.STATIC.DYNAMIC_EXECUTION"),
         ("open('state', mode='w')\n", "ACP.STATIC.WRITE"),
+        ("Path('/etc/passwd').read_bytes()\n", "ACP.STATIC.CREDENTIAL_ACCESS"),
+        (
+            "_read_governed_bytes(root, '../../.ssh/id_ed25519')\n",
+            "ACP.STATIC.CREDENTIAL_ACCESS",
+        ),
+        ("_read_governed_bytes(root, relative)\n", "ACP.STATIC.NOT_ALLOWLISTED"),
+        (
+            "_read_governed_bytes(other_root, "
+            "'docs/governance/adversarial-convergence-invariant-matrix-v1.json')\n",
+            "ACP.STATIC.NOT_ALLOWLISTED",
+        ),
+        ("(root / '../secret').read_bytes()\n", "ACP.STATIC.NOT_ALLOWLISTED"),
+        ("(root / relative).read_bytes()\n", "ACP.STATIC.NOT_ALLOWLISTED"),
+        ("governed_path.read_bytes()\n", "ACP.STATIC.NOT_ALLOWLISTED"),
         ("import io\nio.open('state', mode='w')\n", "ACP.STATIC.WRITE"),
         ("from builtins import open as persist\npersist('state', 'w')\n", "ACP.STATIC.WRITE"),
         ("Path('state').write_text('x')\n", "ACP.STATIC.WRITE"),
@@ -616,8 +765,23 @@ def test_repository_validator_is_read_only_and_static_boundary_is_ast_exact(
         ("('git', 'show', '-s', '--format=%ae', red_head)", True),
         ("('git', 'cat-file', '-e', red_head)", True),
     )
-    for expression, check in allowed_expressions:
+    for form_index, (expression, check) in enumerate(allowed_expressions):
         exact = f"cwd=root, check={check!r}, capture_output=True, text=True"
+        allowed_source = f"import subprocess\nsubprocess.run({expression}, {exact})\n"
+        assert protocol.static_boundary_findings(allowed_source) == ()
+        with monkeypatch.context() as policy_patch:
+            policy_patch.setattr(
+                protocol,
+                "STATIC_ALLOWED_GIT_FORMS",
+                tuple(
+                    item
+                    for index, item in enumerate(protocol.STATIC_ALLOWED_GIT_FORMS)
+                    if index != form_index
+                ),
+            )
+            assert protocol.static_boundary_findings(allowed_source) == finding(
+                "static", "ACP.STATIC.NOT_ALLOWLISTED", "source"
+            )
         for kwargs, code in (
             ("cwd=root, capture_output=True, text=True", "ACP.STATIC.GIT_DYNAMIC"),
             (
