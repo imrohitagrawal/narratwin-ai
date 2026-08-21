@@ -1,11 +1,10 @@
-# ruff: noqa: E302, E305, E701, E702, E731
-import hashlib; import importlib.util; import json; import subprocess as sp
-from pathlib import Path; from types import ModuleType; from typing import Any
+# ruff: noqa: E302, E305, E401, E701, E702, E731
+import hashlib,importlib.util,json,subprocess as sp,unittest.mock as um;from pathlib import Path;from typing import Any
 import pytest; from scripts.guardrails_check import canonical_stage_issue
 from scripts.quality import stage8_a23b as a23b, stage8_cut1_routes as cut1_routes, issue427_architecture_reset as i
 from scripts.quality.check_stage8_docs import (CUT1_REAL_MEDIA_TRANSITION_BRANCH as CUT1_REAL_MEDIA_TRANSITION,
     CUT1_REAL_MEDIA_TRANSITION_FILES as CUT1_REAL_MEDIA_TRANSITION_SCOPE,
-    CITATION_PARITY_BRANCH as CP, CITATION_PARITY_FILES as CP_SCOPE,
+    CITATION_PARITY_BRANCH as CP, CITATION_PARITY_FILES as CP_SCOPE, ISSUE434_BRANCH as B, ISSUE434_FILES as F,
     QUIET_PRESENCE_BRANCH as QP, QUIET_PRESENCE_FILES as QP_SCOPE)
 TRANSITION = "cut1-process-346-governance-transition"; A2_1 = "cut1-335-r0c-a2-1-stage4-rag-v1-lineage"
 A2_2 = "cut1-349-r0c-a2-2-machine-contract-parity"; C1 = CUT1_REAL_MEDIA_TRANSITION
@@ -22,12 +21,11 @@ SCOPES = {TRANSITION: set("docs/governance/preflights/issue-346.json scripts/qua
     A2_2: set("""docs/governance/preflights/issue-349.json docs/STAGE2_ARCHITECTURE_CONTRACT.json docs/STATUS.md
         scripts/quality/check_stage2_docs.py tests/unit/test_stage8_quality_gate.py docs/STAGE_ISSUE_PLAN.md
         scripts/quality/check_stage8_docs.py docs/ADR/0002-rag-storage.md docs/QUALITY_GATES.md""".split()),
-    QP:QP_SCOPE,CP:CP_SCOPE,C1:CUT1_REAL_MEDIA_TRANSITION_SCOPE,i.BRANCH:set(i.PATHS),**a23b.A23_ROUTES}
-def load(relative: str, name: str) -> ModuleType:
+    QP:QP_SCOPE,CP:CP_SCOPE,C1:CUT1_REAL_MEDIA_TRANSITION_SCOPE,i.BRANCH:set(i.PATHS),B:F,**a23b.A23_ROUTES}
+def load(relative: str, name: str) -> Any:
     spec=importlib.util.spec_from_file_location(name,Path(__file__).parents[2]/relative);assert spec and spec.loader
     module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module);return module
 stage8=load("scripts/quality/check_stage8_docs.py","s8"); stage2=load("scripts/quality/check_stage2_docs.py","s2")
-b=stage8.backend_security
 def git(r:Path,*a:str)->str:return sp.run(["git",*a],cwd=r,text=True,capture_output=True,check=True).stdout.strip()
 def put(r:Path,p:str,v:str)->None:t=r/p;t.parent.mkdir(parents=True,exist_ok=True);t.write_text(v)
 def route(m:Any,b:str,c:list[str])->list[str]:
@@ -36,7 +34,7 @@ def route(m:Any,b:str,c:list[str])->list[str]:
     if b==CUT1_REAL_MEDIA_TRANSITION:m.setattr(s,"cut1_digest",lambda:s.C1_DOC_SHA)
     s.check_stage_marker_and_branch(f);s.check_stage_scope(f);m.setattr(s,"cut1_digest",digest);return f
 def test_cut1_routes_are_exact_stage8_and_not_preflight_owned(monkeypatch: Any, tmp_path: Path) -> None:
-    for x, s in (SCOPES | b.ISSUE436_ROUTES).items():
+    for x,s in (SCOPES|(b:=stage8.backend_security).ISSUE436_ROUTES).items():
         m=monkeypatch;m.setattr(stage8,"cut1_transition_charges",lambda:(0,{}))
         m.setattr(stage8,"citation_parity_charge",lambda:1200);assert route(m,x,sorted(s))==[]
         assert route(m,x,[e:="forbidden/outside.txt"])==[f"Stage 8 changed file outside the allowlist: {e}"]
@@ -50,14 +48,11 @@ def test_cut1_routes_are_exact_stage8_and_not_preflight_owned(monkeypatch: Any, 
                          (366,CUT1_REAL_MEDIA_TRANSITION),(372,CP),(436,b.ISSUE436_BRANCH)):
         artifact = json.loads((Path(__file__).parents[2]/f"docs/governance/preflights/issue-{issue}.json").read_text())
         assert artifact["branch"]==branch and set(artifact["scope"]["required"])==SCOPES.get(branch,b.ISSUE436_FILES)
-    m.setattr(Path, "read_text", lambda path, *a, **kw: (_ for _ in ()).throw(AssertionError())
-                        if path.name in {"issue-346.json", "issue-335.json", "issue-349.json", "issue-351.json",
-                                         "issue-358.json", "issue-372.json"}
-                        else ORIGINAL_READ(path, *a, **kw))
+    m.setattr(Path,"read_text",lambda path,*a,**kw:(_ for _ in ()).throw(AssertionError()) if path.name in
+        {f"issue-{n}.json" for n in (346,335,349,351,358,372)} else ORIGINAL_READ(path,*a,**kw))
     policy = load("scripts/quality/check_stage8_docs.py", "reloaded").PROCESS_BRANCH_ALLOWED_FILES
-    assert {branch: policy[branch] for branch in SCOPES} == SCOPES;r=cut1_routes
-    registered = {getattr(r, f"ISSUE{i}_BRANCH") for i in (150, 396, 401, 403, 413, 428)}
-    registered.add("cut1-process-431-authority-core-schemas-state-matrices")
+    assert {b:policy[b] for b in SCOPES}==SCOPES;r=cut1_routes;c=stage8.issue431_authority_core.BRANCH
+    registered={getattr(r,f"ISSUE{i}_BRANCH") for i in (150,396,401,403,413,428)}|{c}
     assert {b for b in policy if b[:5] == "cut1-"} - set(SCOPES) == registered
     dispatcher:Any=load("scripts/quality/check_quality_stage.py","dispatcher");stage_file=tmp_path/"stage"
     status_file=tmp_path/"status";mode="| SSV1-MODE | repo-mode | Phase 1 Closure | phase1-closure | phase1-closure |\n"
@@ -70,27 +65,32 @@ def test_cut1_routes_are_exact_stage8_and_not_preflight_owned(monkeypatch: Any, 
         assert (dispatcher.main(), calls) == (0, [["make", "stage8-quality"]])
         assert branch in (a23b.A23B_BRANCH,b.ISSUE436_BRANCH) or canonical_stage_issue(branch) is None
 def test_issue366_contract_rejects_partial_scope_and_content_mutations(monkeypatch: Any) -> None:
-    m=monkeypatch; raises=pytest.raises; full=sorted(CUT1_REAL_MEDIA_TRANSITION_SCOPE)
-    fn=stage8.cut1_transition_charges;sc:Any=lambda v:m.setattr(stage8,"cut1_transition_charges",lambda:v);sc((0,{}))
+    m=monkeypatch;z=m.setattr;raises=pytest.raises;full=sorted(CUT1_REAL_MEDIA_TRANSITION_SCOPE);d=sp.CompletedProcess
+    s=stage8;fn=s.cut1_transition_charges;sc:Any=lambda v:m.setattr(s,"cut1_transition_charges",lambda:v);sc((0,{}))
     assert route(m,CUT1_REAL_MEDIA_TRANSITION,full[1:])==[f"Issue #366 route is missing required path: {full[0]}"]
     limits=[(901,{},"Issue #366 charge 901 exceeds 900."),*((n+1,{p:n+1},
         f"Issue #366 charge for {p} exceeds {n}.") for p,n in stage8.C1_FILE_LIMITS.items())]
     for total,files,want in limits: sc((total,files)); assert route(m,CUT1_REAL_MEDIA_TRANSITION,full)==[want]
-    sc(fn);d=sp.CompletedProcess;out=iter((d([],0,stdout=stage8.C1_BASE+"\n"),
-        d([],0,stdout="351\t0\t"+next(iter(stage8.C1_FILE_LIMITS))),d([],0,
-        stdout="300\t0\tscripts/quality/check_stage8_docs.py\n100\t0\ttests/unit/test_stage8_quality_gate.py")))
+    sc(fn);p=next(iter(s.C1_FILE_LIMITS));out=iter((d([],0,stdout=s.C1_BASE+"\n"),d([],0,stdout="351\t0\t"+p),
+        d([],0,stdout="300\t0\tscripts/quality/check_stage8_docs.py\n100\t0\ttests/unit/test_stage8_quality_gate.py")))
     m.setattr(stage8,"run",lambda _:next(out)); assert fn()==(
         400,{"scripts/quality/check_stage8_docs.py":351,"tests/unit/test_stage8_quality_gate.py":100})
-    for code,text in ((1,stage8.C1_BASE+"\n"),(0,"malformed")):
-        m.setattr(stage8,"run",lambda _,c=code,t=text:d([],c,t,""));raises(RuntimeError,fn)
+    for c,t in ((1,s.C1_BASE+"\n"),(0,"bad")):m.setattr(s,"run",lambda _,c=c,t=t:d([],c,t,""));raises(RuntimeError,fn)
     docs={p:(REPO/p).read_text()for p in stage8.C1_BOUND};originals=docs.copy();docs[".stage/current"]="8"
     m.setattr(stage8,"read",docs.__getitem__);baseline=stage8.cut1_digest()
-    docs[stage8.C1_BOUND[0]]+="drift";assert stage8.cut1_digest()!=baseline
-    docs[stage8.C1_BOUND[0]]=originals[stage8.C1_BOUND[0]]
+    p=stage8.C1_BOUND[0];docs[p]+="drift";assert stage8.cut1_digest()!=baseline;docs[p]=originals[p]
     plan="docs/STAGE_ISSUE_PLAN.md"; quality="docs/QUALITY_GATES.md"; line,rest=docs[plan].split("\n",1)
     docs[plan]=rest;docs[quality]+="\n"+line;assert stage8.cut1_digest()!=baseline
     docs.update(originals);docs["docs/STATUS.md"]+="\nIssue #383 required status reconciliation.\n"
     assert stage8.cut1_digest()!=baseline;sc((0,{}));assert route(m,CUT1_REAL_MEDIA_TRANSITION,full)==[]
+    p=s.R434;q=s.check_issue434_verifier;v={**s.LIMITS434,p[11]:100,p[12]:100};k="NARRATWIN_POLICY_ONLY"
+    cases:Any=((5601,{}),(1201,{p[9]:1201}),(0,v),(201,{p[11]:101,p[12]:100}));m.delenv("GITHUB_EVENT_NAME",False)
+    r=sp.run(["python3","-S",p[11]]).returncode;b=sorted(F);A=s.A434;g=["git"];x:Any=d(g,0);w=um.Mock()
+    z(s,"issue434_charges",lambda:(0,{}));assert route(m,B,b[1:])and all(s.issue434_budget_findings(*x)for x in cases)
+    a={x:(REPO/x).read_bytes()for x in A};f=s.issue434_artifact_findings;assert not f(a)and f(a|{A[0]:b"x"})and f({})
+    z(s,"run",w);m.setenv(k,"1");q([]);m.delenv(k);z(s,f.__name__,um.Mock(side_effect=(["x"],[])));q([]);q([])
+    assert hashlib.shake_256(str((w.mock_calls,r)).encode()).hexdigest(20)=="c0be82aafcc30a7904d3618d5f4ed1731eaaa3a8"
+    m.undo();z(s,"run",w);w.side_effect=(d(g,0,s.B434+"\n"),d(g,1),x,x);raises(RuntimeError,s.issue434_charges)
 def test_scope_collection_covers_exact_layers_and_forbidden_sources(monkeypatch: Any, tmp_path: Path) -> None:
     g:Any=lambda *a:git(tmp_path,*a); g("init","-b","main"); g("config","user.name","Scope Test")
     g("config","user.email","scope@example.invalid")
@@ -156,7 +156,7 @@ def test_scope_parser_flags_and_command_failures(monkeypatch: Any, tmp_path: Pat
             assert "failed" in str(pytest.raises(RuntimeError,stage8.changed_files_for_stage_scope).value)
             if failed=="explicit-base": assert [a[2] for a in calls if a[:2]==["git","merge-base"]]==[base]
         else:
-            assert stage8.changed_files_for_stage_scope()==[]; diffs=[a for a in calls if a[:2]==["git","diff"]]
+            assert stage8.changed_files_for_stage_scope()==[];diffs=[a for a in calls if a[:2]==["git","diff"]]
             assert ["git","merge-base","origin/main","head"] in calls; assert len(diffs)==3
             flags={"--name-status","-z","--find-renames","--find-copies","--find-copies-harder"}
             for args in diffs: assert flags<=set(args)

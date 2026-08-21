@@ -1428,3 +1428,22 @@ A green gate means documentation-quality structural enforcement only. It does
 not create an accepted decision, current manifest, active route, runtime
 service, provider call, credential use, egress, spend, media, deployment,
 publication, release, SLA, commercial-readiness, or production claim.
+
+## Issue #434 Child B authority-evidence and trust gate
+
+Child A Issue `#431` / PR `#433` completed at merge `87b8504` with 18 paths and
+4,107/4,128 charged lines. Issue `#434` is the current nonactivating Child B
+route. Its focused verifier closes envelope, root, producer-key, pin, explicit
+time, freshness, reconstruction, replay, taxonomy and historical/current trust
+boundaries with activation `NONE` and `NO_AUTHORITY_EFFECT`.
+
+The Stage 8 wrapper registers the exact governed branch scope and invokes the
+Child B verifier only as `uv run python
+scripts/quality/issue434_authority_evidence_trust.py`; system Python never
+imports its dev-only `cryptography==50.0.0` dependency. Missing `uv`, a missing
+frozen environment, or a nonzero verifier exit fails closed. The required local
+and hosted commands are those frozen in Issue `#434`; green execution creates
+no trust root, signer, authority, runtime, release, or production claim.
+
+Issue `#432` remains unmerged source authority outside this gate. Child C is
+next unless parent `#426` is separately amended after Child B closeout.

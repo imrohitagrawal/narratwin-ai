@@ -1,0 +1,33 @@
+{
+  "schemaDocumentVersion": "NarraTwinClosedSchemaDocumentV1",
+  "contractVersion": "AuthorityEvidenceEnvelopeV1",
+  "canonicalProfile": "NarraTwinAuthorityCanonicalJsonV1",
+  "closed": true,
+  "activation": "NONE",
+  "$defs": {
+    "subject": {"type":"object","closed":true,"required":["contentHash","objectId","operation","revision","schemaVersion","sourceState","targetState","transitionRowId"],"properties":{"contentHash":{"type":"sha256"},"objectId":{"type":"string","minLength":3,"maxLength":160},"operation":{"type":"string","pattern":"[A-Z][A-Z0-9_]{1,63}"},"revision":{"type":"integer","minimum":1},"schemaVersion":{"type":"string","enum":["ActiveProgramRouteV1","Cut1AuthorityManifestV1","MasterProgramAuthorityDecisionV1"]},"sourceState":{"type":"string","pattern":"[A-Z][A-Z0-9_]{1,63}"},"targetState":{"type":"string","pattern":"[A-Z][A-Z0-9_]{1,63}"},"transitionRowId":{"type":"string","pattern":"[DR][0-9]{2}"}}}
+  },
+  "root": {
+    "type": "object", "closed": true,
+    "required": ["canonicalSignatureProfile","capturedAt","collectionMethod","contentHash","evidenceId","evidenceRole","expiresAt","fixtureOnly","freshnessClass","generationId","issuingKeyObjectId","issuingKeyRecordContentHash","issuingKeyRevision","limitations","notBefore","observedAt","payloadByteLength","payloadClass","payloadMediaType","payloadSha256","predecessorContentHash","producerId","producerTrustClass","programId","repository","revision","rootContentHash","rootId","schemaVersion","signature","signatureAlgorithm","signingKeyId","sourceClass","subject","typedReferenceType"],
+    "properties": {
+      "schemaVersion":{"type":"string","const":"AuthorityEvidenceEnvelopeV1"}, "repository":{"type":"string","minLength":3,"maxLength":512},
+      "programId":{"type":"string","minLength":3,"maxLength":128}, "generationId":{"type":"string","minLength":3,"maxLength":128},
+      "evidenceId":{"type":"string","pattern":"evidence:[a-z0-9][a-z0-9.-]{0,127}"}, "revision":{"type":"integer","minimum":1},
+      "predecessorContentHash":{"type":"nullable","item":{"type":"sha256"}}, "contentHash":{"type":"sha256"}, "subject":{"$ref":"subject"},
+      "typedReferenceType":{"type":"string","pattern":"[A-Z][A-Z0-9_]{1,63}"}, "evidenceRole":{"type":"string","enum":["IMPLEMENTATION","TECHNICAL_VERIFICATION","INDEPENDENT_REVIEW","HUMAN_AUTHORITY","MERGE_FACT","MERGED_MAIN_CHECK","STATUS_DISPOSITION","TIME_OBSERVATION","REVOCATION","PREDECESSOR_VERIFICATION","OPERATING_EFFECTIVENESS","ADMINISTRATIVE_CLOSEOUT"]},
+      "producerId":{"type":"string","minLength":3,"maxLength":128}, "producerTrustClass":{"type":"string","pattern":"[A-Z][A-Z0-9_]{1,63}"},
+      "rootId":{"type":"string","minLength":3,"maxLength":128}, "rootContentHash":{"type":"sha256"}, "signingKeyId":{"type":"sha256"},
+      "issuingKeyObjectId":{"type":"string","minLength":3,"maxLength":128}, "issuingKeyRevision":{"type":"integer","minimum":1}, "issuingKeyRecordContentHash":{"type":"sha256"},
+      "signatureAlgorithm":{"type":"string","const":"Ed25519"}, "canonicalSignatureProfile":{"type":"string","const":"NarraTwinAuthorityEvidenceSignatureV1"},
+      "payloadMediaType":{"type":"string","enum":["application/vnd.narratwin.authority.boundary-set-v1+json","application/vnd.narratwin.authority.check-set-v1+json","application/vnd.narratwin.authority.closeout-receipt-v1+json","application/vnd.narratwin.authority.content-reference-v1+json","application/vnd.narratwin.authority.issue-status-v1+json","application/vnd.narratwin.authority.linkage-set-v1+json","application/vnd.narratwin.authority.merge-receipt-v1+json","application/vnd.narratwin.authority.negative-assertion-v1+json","application/vnd.narratwin.authority.owner-decision-v1+json","application/vnd.narratwin.authority.reason-v1+json","application/vnd.narratwin.authority.review-attestation-v1+json","application/vnd.narratwin.authority.time-assertion-v1+json"]}, "payloadClass":{"type":"string","enum":["BOUNDARY_SET","CHECK_SET","CLOSEOUT_RECEIPT","CONTENT_REFERENCE","ISSUE_STATUS","LINKAGE_SET","MERGE_RECEIPT","NEGATIVE_ASSERTION","OWNER_DECISION","REASON","REVIEW_ATTESTATION","TIME_ASSERTION"]},
+      "payloadSha256":{"type":"sha256"}, "payloadByteLength":{"type":"integer","minimum":0,"maximum":131072},
+      "observedAt":{"type":"timestamp"}, "capturedAt":{"type":"timestamp"}, "notBefore":{"type":"timestamp"}, "expiresAt":{"type":"timestamp"},
+      "freshnessClass":{"type":"string","enum":["IMMUTABLE","TRANSITION_WINDOW","EVALUATION_INSTANT","EXECUTION_WINDOW","CLOSEOUT_WINDOW"]},
+      "sourceClass":{"type":"string","pattern":"[A-Z][A-Z0-9_]{1,63}"}, "collectionMethod":{"type":"string","pattern":"[A-Z][A-Z0-9_]{1,63}"},
+      "limitations":{"type":"array","minItems":1,"maxItems":64,"unique":true,"order":"LEXICOGRAPHIC_ASCENDING","items":{"type":"string","minLength":1,"maxLength":2048}},
+      "fixtureOnly":{"type":"boolean"}, "signature":{"type":"string","pattern":"[0-9a-f]{128}"}
+    },
+    "conditions": ["revision=1 iff predecessorContentHash=null", "observedAt<=capturedAt", "notBefore<expiresAt", "payloadClass has exactly the media-type bijection frozen in AuthorityEvidenceTrustStateMatricesV1"]
+  }
+}

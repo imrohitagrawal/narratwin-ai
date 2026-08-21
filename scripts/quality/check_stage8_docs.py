@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Executable Stage 8 quality gate for hardening and release readiness."""
+"""Stage 8 quality gate for hardening and release readiness."""
 from __future__ import annotations
 # ruff: noqa: E302, E305, E401, E701, E702
 import hashlib, json, os, re, subprocess, sys
@@ -23,6 +23,17 @@ ISSUE346_TRANSITION_BRANCH = "cut1-process-346-governance-transition"
 ISSUE335_A2_1_BRANCH = "cut1-335-r0c-a2-1-stage4-rag-v1-lineage"
 ISSUE349_A2_2_BRANCH = "cut1-349-r0c-a2-2-machine-contract-parity"
 CITATION_PARITY_BRANCH = "cut1-372-citation-index-parity-post380"
+ISSUE434_BRANCH = "cut1-process-434-authority-evidence-trust"
+_I434=json.loads((ROOT/"docs/governance/preflights/issue-434.json").read_text());R434=tuple(_I434["scope"]["required"])
+ISSUE434_FILES=set(R434);H434=hashlib.sha256(json.dumps(sorted(R434),separators=(",",":")).encode()).hexdigest()
+if H434 != "c3414778d2ee1c9326d1c81537d5dfe9f528b22f12ec98394e0ac4270f7cab90": ISSUE434_FILES=set()
+else: ISSUE434_FILES |= {"scripts/quality/issue434_authority_evidence_reconstruction.py",
+    "tests/unit/test_issue434_authority_evidence_reconstruction.py", "tests/unit/test_dependency_security_contract.py"}
+B434="87b8504ca8d5e094394343aeaa4ef5bad46133d5";A434=R434[:9]+R434[13:14]
+D434="3ccf1eb51a359c734a0a3da7e66df6e4ed79843c8d05273b823636b788fb8a28"
+G434=((450,{R434[0],R434[2]}),(850,{R434[1],R434[13],R434[18]}),(1350,set(R434[3:9])),
+    (4300,set(R434[9:13])|set(ISSUE434_FILES)-set(R434)),(250,{R434[i] for i in (14,15,16,17,19,20,21)}))
+LIMITS434=dict(zip((R434[9],R434[10],*sorted(ISSUE434_FILES-set(R434))),(1200,1300,900,30,700),strict=True))
 CP_BASE, CP_LIMIT = "372fb78245b8890157ffe54f48b90e523017bc43", 1200
 CITATION_PARITY_FILES = {"docs/governance/preflights/issue-372.json", "backend/app/stage4.py",
     "tests/acceptance/test_checkpoint3_output_correctness.py", "tests/unit/test_local_durability.py",
@@ -66,6 +77,7 @@ REQUIRED_FILES = [
 ]; STAGE8_ALLOWED_FILES = set(REQUIRED_FILES) | {"tests/api/test_health_api.py", "tests/unit/test_health_contract.py"}
 PROCESS_BRANCH_ALLOWED_FILES = {issue427_reset.BRANCH: set(issue427_reset.PATHS),
     issue431_authority_core.BRANCH: set(issue431_authority_core.PATHS),
+    ISSUE434_BRANCH: ISSUE434_FILES,
     node_security.ISSUE374_SECURITY_BRANCH: node_security.ISSUE374_SECURITY_FILES,
     ISSUE346_TRANSITION_BRANCH: {
         "docs/governance/preflights/issue-346.json", "scripts/quality/check_stage8_docs.py",
@@ -111,6 +123,19 @@ PROCESS_BRANCH_ALLOWED_FILES.update(
 EFFECTIVE_STAGE8_ROUTES = PROCESS_BRANCH_ALLOWED_FILES | brace_security.BRACE_EXPANSION_ROUTES \
     | node_security.I389_ROUTES | node_security.I376_ROUTES | backend_security.ISSUE436_ROUTES | cut1_routes.ROUTES
 def run(a:list[str])->subprocess.CompletedProcess[str]:return subprocess.run(a,cwd=ROOT,text=True,capture_output=True)
+def issue434_artifact_findings(a:dict[str,bytes])->list[str]:
+    if set(a)!=set(A434)or any(not isinstance(v,bytes)for v in a.values()):return["I434 set."]
+    s=hashlib.sha256;j=json.dumps;h={p:s(a[p]).hexdigest()for p in A434}
+    d=s(j(h,sort_keys=True,separators=(",",":")).encode()).hexdigest();return[]if d==D434 else["I434 bytes."]
+def check_issue434_verifier(f:list[str])->None:
+    if os.getenv("NARRATWIN_POLICY_ONLY")=="1":return
+    try:
+        a={p:(ROOT/p).read_bytes()for p in A434};q=issue434_artifact_findings(a)
+        if q:f.extend(q);return
+        t=["uv","run","python"];r=run(t+["scripts/quality/issue434_authority_evidence_trust.py"])
+        s=run(t+["-m","scripts.quality.issue434_authority_evidence_reconstruction"])
+    except OSError:fail("I434 unavailable.",f);return
+    f.extend(q+([]if not(r.returncode or s.returncode)else["I434 verify."]))
 def read(path:str)->str: return (ROOT/path).read_text(encoding="utf-8")
 def fail(message:str,failures:list[str])->None: failures.append(message)
 def changed_files_for_stage_scope() -> list[str]:
@@ -174,6 +199,23 @@ def citation_parity_charge() -> int:
     if bad:raise RuntimeError("Issue #372 base diff unavailable.")
     try:return max(sum(int(a)+int(x) for a,x,_ in map(lambda line:line.split("\t"),d.stdout.splitlines())) for d in ds)
     except ValueError as error: raise RuntimeError("Issue #372 malformed or binary numstat.") from error
+def issue434_charges()->tuple[int,dict[str,int]]:
+    b=run(["git","merge-base",B434,"HEAD"])
+    m=run(["git","merge-base","--is-ancestor","origin/main","HEAD"])
+    rs=tuple(run(["git",*kind,"--numstat","origin/main","--"]) for kind in (("diff","--cached"),("diff",)))
+    if b.returncode or b.stdout.strip()!=B434 or m.returncode or any(x.returncode for x in rs):raise RuntimeError
+    lines=[result.stdout.splitlines() for result in rs]
+    try:maps=[{p:int(a)+int(d) for a,d,p in map(lambda line:line.split("\t"),rows)} for rows in lines]
+    except ValueError as e:raise RuntimeError("I434 num.") from e
+    if any(len(m)!=len(r) for m,r in zip(maps,lines,strict=True)):raise RuntimeError("I434 dup.")
+    c={p:max(row.get(p,0) for row in maps) for p in set().union(*maps)}
+    return sum(c.values()),c
+def issue434_budget_findings(n:int,c:dict[str,int])->list[str]:
+    f=[] if n<=5600 else [f"I434 total {n}>5600."]
+    f += [f"I434 partition>{n}." for n,ps in G434 if sum(c.get(p,0) for p in ps)>n]
+    f += [f"I434 {p}>{n}." for p,n in LIMITS434.items() if c.get(p,0)>n]
+    if sum(c.get(p,0) for p in R434[11:13])>200:f.append("I434 Stage8>200.")
+    return f
 def cut1_transition_charges() -> tuple[int, dict[str, int]]:
     return cut1_routes.cut1_transition_charges(run, C1_BASE, CUT1_REAL_MEDIA_TRANSITION_FILES)
 def cut1_digest() -> str:
@@ -192,17 +234,13 @@ def parse_name_status_z(output: str) -> list[str]:
     while index < len(fields):
         status = fields[index]
         index += 1
-        if status in {"A", "B", "D", "M", "T", "U"}:
-            arity = 1
-        elif re.fullmatch(r"[RC]\d{1,3}", status) and int(status[1:]) <= 100:
-            arity = 2
-        else:
-            raise RuntimeError(f"Malformed Git name-status record: {status!r}")
+        if status in {"A","B","D","M","T","U"}:arity=1
+        elif re.fullmatch(r"[RC]\d{1,3}",status) and int(status[1:])<=100:arity=2
+        else:raise RuntimeError(f"Malformed Git name-status record: {status!r}")
         record_paths = fields[index : index + arity]
         if len(record_paths) != arity:
             raise RuntimeError(f"Incomplete Git name-status record: {status!r}")
-        paths.extend(record_paths)
-        index += arity
+        paths.extend(record_paths);index+=arity
     return paths
 def check_required_files(failures: list[str]) -> None:
     for path in REQUIRED_FILES:
@@ -266,6 +304,9 @@ def check_stage_scope(failures: list[str]) -> None:
     if not outside: cut1_routes.check_exact_route(ROOT, run, branch, changed_files, failures)
     for path in sorted(outside):
         fail(f"Stage 8 changed file outside the allowlist: {path}", failures)
+    if branch==ISSUE434_BRANCH and not outside:
+        failures.extend(f"Issue #434 route is missing required path: {p}" for p in sorted(allowed_files-changed_files))
+        total,charges=issue434_charges();failures.extend(issue434_budget_findings(total,charges))
     if branch == CITATION_PARITY_BRANCH and not outside:
         failures.extend(f"Issue #372 missing required path: {path}" for path in sorted(allowed_files-changed_files))
         charge=citation_parity_charge()
@@ -286,33 +327,22 @@ def check_backend_and_tests(failures: list[str]) -> None:
     stage6_api_tests = read("tests/api/test_stage6_multilingual_api.py")
     stage6_unit_tests = read("tests/unit/test_stage6_multilingual.py")
     for marker in (
-        'stage="8"',
-        "MAX_STAGE8_WRITE_REQUESTS_PER_MINUTE",
-        "Stage8WriteRateLimiter",
-        "RATE_LIMIT_EXCEEDED",
-        "REQUEST_TOO_LARGE",
-        "CONTENT_LENGTH_REQUIRED",
-        "MAX_STAGE8_RATE_LIMIT_KEYS",
-        "rate_limit_key_from_scope",
-        "actual_bytes",
-        "Stage8RequestSizeLimitMiddleware",
-        "stage8_write_rate_limiter.reset",
+        'stage="8"', "MAX_STAGE8_WRITE_REQUESTS_PER_MINUTE",
+        "Stage8WriteRateLimiter", "RATE_LIMIT_EXCEEDED",
+        "REQUEST_TOO_LARGE", "CONTENT_LENGTH_REQUIRED",
+        "MAX_STAGE8_RATE_LIMIT_KEYS", "rate_limit_key_from_scope",
+        "actual_bytes", "Stage8RequestSizeLimitMiddleware", "stage8_write_rate_limiter.reset",
     ):
         if marker not in main_text:
             fail(f"Stage 8 API hardening must include {marker}.", failures)
     if "MAX_API_REQUEST_BYTES" not in stage4_text:
         fail("Stage 8 must define a general API request size limit.", failures)
     for marker in (
-        "health_reports_stage8_with_local_latency_budget",
-        "write_rate_limit_rejects_excess_requests",
-        "write_rate_limit_uses_client_ip_and_bounds_retained_keys",
-        "json_request_size_limit_is_enforced",
+        "health_reports_stage8_with_local_latency_budget", "write_rate_limit_rejects_excess_requests",
+        "write_rate_limit_uses_client_ip_and_bounds_retained_keys", "json_request_size_limit_is_enforced",
         "json_request_size_limit_rejects_missing_content_length",
-        "json_request_size_limit_rejects_underreported_content_length",
-        "upload_mime_validation_rejects_octet_stream",
-        "mocked_script_generation_path_stays_under_two_seconds",
-        "latency_ms < 200",
-        "latency_ms < 2_000",
+        "json_request_size_limit_rejects_underreported_content_length", "upload_mime_validation_rejects_octet_stream",
+        "mocked_script_generation_path_stays_under_two_seconds", "latency_ms < 200", "latency_ms < 2_000",
     ):
         if marker not in tests:
             fail(f"Stage 8 tests must cover {marker}.", failures)
@@ -425,49 +455,16 @@ def check_docs(failures: list[str]) -> None:
     }
     combined = "\n".join(docs.values())
     for marker in (
-        "Stage 8",
-        "Performance, security hardening, release readiness",
-        "health endpoint < 200 ms local",
-        "script generation mocked path < 2 sec",
-        "upload limit enforced",
-        "no critical/high dependency vulnerabilities",
-        "no critical/high container vulnerabilities",
-        "rate limiting",
-        "request size limits",
-        "Content-Length is required",
-        "actual ASGI body",
-        "SECRET_LIKE_CONTENT",
-        "Voice provider artifacts must be JSON manifests",
-        "top-level or nested fields fail",
-        "upload MIME validation",
-        "Lighthouse",
-        "p95",
-        "Trivy",
-        "Docker Scout",
-        "release checklist",
-        "rollback",
-        "runbook",
-        "demo seed data",
-        "Controlled Local Demo",
-        "LRN-001",
-        "LRN-002",
-        "Review Rigor Retrospective",
-        "Project Governance Learnings",
-        "PROJECT_LEARNINGS_TRACKER.md",
-        "REVIEW_RIGOR_RETROSPECTIVE.md",
-        "invariant, exploit-matrix, and contract/gate review",
-        "branch protection",
-        "Required status checks",
-        "stage8 / performance lighthouse",
-        "RR-029",
-        "RR-030",
-        "RR-031",
-        "RR-032",
-        "RR-033",
-        "RR-034",
-        "RR-035",
-        "multi-worker deployment blocked",
-        "source-run based avatar export",
+        "Stage 8", "Performance, security hardening, release readiness", "health endpoint < 200 ms local",
+        "script generation mocked path < 2 sec", "upload limit enforced", "no critical/high dependency vulnerabilities",
+        "no critical/high container vulnerabilities","rate limiting","request size limits","Content-Length is required",
+        "actual ASGI body", "SECRET_LIKE_CONTENT", "Voice provider artifacts must be JSON manifests",
+        "top-level or nested fields fail", "upload MIME validation", "Lighthouse", "p95", "Trivy", "Docker Scout",
+        "release checklist", "rollback", "runbook", "demo seed data", "Controlled Local Demo", "LRN-001", "LRN-002",
+        "Review Rigor Retrospective", "Project Governance Learnings", "PROJECT_LEARNINGS_TRACKER.md",
+        "REVIEW_RIGOR_RETROSPECTIVE.md", "invariant, exploit-matrix, and contract/gate review", "branch protection",
+        "Required status checks", "stage8 / performance lighthouse", "RR-029", "RR-030", "RR-031", "RR-032",
+        "RR-033", "RR-034", "RR-035", "multi-worker deployment blocked", "source-run based avatar export",
     ):
         if marker not in combined:
             fail(f"Stage 8 docs must include {marker}.", failures)
@@ -488,6 +485,7 @@ def main() -> int:
         cache_pruning.check_exact_route(ROOT, run, failures, current_branch() == cache_pruning.BRANCH)
         issue427_reset.check(ROOT, failures, current_branch() == issue427_reset.BRANCH)
         failures.extend(issue431_authority_core.repository_findings(ROOT))
+        if current_branch() in {ISSUE434_BRANCH,"main"}: check_issue434_verifier(failures)
         check_backend_and_tests(failures)
         check_dependencies_and_scripts(failures)
         check_docs(failures)
