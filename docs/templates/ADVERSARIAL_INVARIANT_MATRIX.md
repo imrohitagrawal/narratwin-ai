@@ -93,6 +93,13 @@ evidence, and the verifier by identity; consumes two ordered exact probes;
 asserts the complete stage, crypto, eligibility, precedence, graph, and phase
 transcript; and preserves the exact returned `Evaluation` object.
 
+Repository freeze evidence must remain valid after later linear GREEN commits.
+Select C3 as the first ordered descendant of the frozen RED head, prove its sole
+parent and freeze-only diff, resolve the RED tree plus all three governed RED
+blobs in one exact ordered read-only Git call, and compare current freeze bytes
+with the exact payload committed by C3. `HEAD^`, `diff-tree HEAD`, dynamic
+paths, and an unrelated synthetic `redHead:path` are not substitutes.
+
 ## Pipeline-call ledger
 
 | Case ID | Bounds | Parse | Schema | Identity | Trust/crypto | Authorization | Graph/conflict | Phase verdict | Earliest exact finding |

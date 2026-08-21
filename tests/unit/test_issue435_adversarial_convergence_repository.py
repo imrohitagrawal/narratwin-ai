@@ -90,7 +90,12 @@ def frozen_red_nodes() -> tuple[str, ...]:
 
 
 def create_real_git_freeze(
-    tmp_path: Path, *, extra_c3_path: bool = False, merge_c3: bool = False
+    tmp_path: Path,
+    *,
+    extra_c3_path: bool = False,
+    merge_c3: bool = False,
+    omit_c3: bool = False,
+    descendant_commits: int = 0,
 ) -> tuple[Path, dict[str, Any]]:
     root = tmp_path / "repository"
     root.mkdir(parents=True)
@@ -162,7 +167,9 @@ def create_real_git_freeze(
     git(root, "add", FREEZE_PATH)
     if extra_c3_path:
         git(root, "add", "unexpected-c3-path.txt")
-    if merge_c3:
+    if omit_c3:
+        pass
+    elif merge_c3:
         unrelated = git(root, "commit-tree", red_tree, "-m", "unrelated parent")
         c3_tree = git(root, "write-tree")
         c3_head = git(
@@ -189,6 +196,11 @@ def create_real_git_freeze(
             "-m",
             "C3 freeze",
         )
+    for ordinal in range(descendant_commits):
+        descendant = root / f"post-c3-{ordinal}.txt"
+        descendant.write_text(f"post C3 {ordinal}\n", encoding="utf-8")
+        git(root, "add", descendant.name)
+        git(root, "commit", "-q", "-m", f"post C3 {ordinal}")
     return root, freeze
 
 
@@ -287,6 +299,23 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
     merge_root, _ = create_real_git_freeze(tmp_path / "merge", merge_c3=True)
     assert protocol.validate_repository_freeze(merge_root) == finding(
         "freeze", "ACP.FREEZE.C3_PARENT_COUNT", "HEAD"
+    )
+    missing_c3_root, _ = create_real_git_freeze(tmp_path / "missing-c3", omit_c3=True)
+    assert protocol.validate_repository_freeze(missing_c3_root) == finding(
+        "freeze", "ACP.FREEZE.C3_MISSING", "redHead"
+    )
+    descendant_root, _ = create_real_git_freeze(tmp_path / "descendants", descendant_commits=2)
+    assert protocol.validate_repository_freeze(descendant_root) == ()
+    descendant_freeze = descendant_root / FREEZE_PATH
+    changed = json.loads(descendant_freeze.read_text(encoding="utf-8"))
+    changed["reviewers"][0]["commentUrl"] = (
+        "https://github.com/imrohitagrawal/narratwin-ai/issues/435#issuecomment-99"
+    )
+    descendant_freeze.write_bytes(canonical(changed) + b"\n")
+    git(descendant_root, "add", FREEZE_PATH)
+    git(descendant_root, "commit", "-q", "-m", "mutate frozen C3 payload")
+    assert protocol.validate_repository_freeze(descendant_root) == finding(
+        "freeze", "ACP.FREEZE.C3_IMMUTABLE", FREEZE_PATH
     )
 
 
@@ -564,15 +593,31 @@ def test_repository_validator_is_read_only_and_static_boundary_is_ast_exact(
     read_only_git = (
         "import subprocess\n"
         "subprocess.run(('git', 'rev-parse', 'HEAD'), cwd=root, check=True, capture_output=True, text=True)\n"
-        "subprocess.run(('git', 'rev-parse', 'HEAD^'), cwd=root, check=True, capture_output=True, text=True)\n"
-        "subprocess.run(('git', 'rev-parse', f'{red_head}:docs/freeze.json'), cwd=root, check=True, capture_output=True, text=True)\n"
+        "subprocess.run(('git', 'rev-list', '--ancestry-path', '--reverse', f'{red_head}..HEAD'), cwd=root, check=True, capture_output=True, text=True)\n"
+        "subprocess.run(('git', 'rev-list', '--parents', '-n', '1', c3_head), cwd=root, check=True, capture_output=True, text=True)\n"
+        "subprocess.run(('git', 'diff-tree', '--no-commit-id', '--name-only', '-r', c3_head), cwd=root, check=True, capture_output=True, text=True)\n"
+        "subprocess.run(('git', 'rev-parse', f'{red_head}^{{tree}}', f'{red_head}:docs/governance/adversarial-convergence-invariant-matrix-v1.json', f'{red_head}:tests/unit/test_issue435_adversarial_convergence.py', f'{red_head}:tests/unit/test_issue435_adversarial_convergence_repository.py'), cwd=root, check=True, capture_output=True, text=True)\n"
+        "subprocess.run(('git', 'show', f'{c3_head}:docs/governance/adversarial-convergence-red-freeze-v1.json'), cwd=root, check=True, capture_output=True, text=True)\n"
         "subprocess.run(('git', 'merge-base', '--is-ancestor', red_head, 'HEAD'), cwd=root, check=False, capture_output=True, text=True)\n"
-        "subprocess.run(('git', 'diff-tree', '--no-commit-id', '--name-only', '-r', 'HEAD'), cwd=root, check=True, capture_output=True, text=True)\n"
         "subprocess.run(('git', 'show', '-s', '--format=%ae', red_head), cwd=root, check=True, capture_output=True, text=True)\n"
         "subprocess.run(('git', 'cat-file', '-e', red_head), cwd=root, check=True, capture_output=True, text=True)\n"
     )
     assert protocol.static_boundary_findings(read_only_git) == ()
     static_contract = json.loads(MATRIX_PATH.read_text(encoding="utf-8"))["staticBoundaryContract"]
+    assert static_contract["gitEvidenceContract"] == {
+        "c3Selection": "first_ordered_descendant_of_red_head",
+        "c3Parent": "exactly_one_parent_equal_red_head",
+        "c3ChangedPaths": [FREEZE_PATH],
+        "redObjectOutputOrder": [
+            "red_tree",
+            "matrix_blob",
+            "core_oracle_blob",
+            "repository_oracle_blob",
+        ],
+        "redObjectOutputCount": 4,
+        "c3FreezePayload": "current_governed_freeze_bytes_equal_exact_c3_committed_payload",
+        "laterDescendants": "validation_is_head_independent_after_c3",
+    }
     assert protocol.STATIC_ALLOWED_IMPORTS == tuple(static_contract["allowedImports"])
     assert protocol.STATIC_ALLOWED_CALL_SHAPES == tuple(static_contract["allowedCallShapes"])
     assert protocol.STATIC_ALLOWED_GOVERNED_READ_PATHS == tuple(
@@ -953,10 +998,23 @@ def test_repository_validator_is_read_only_and_static_boundary_is_ast_exact(
 
     allowed_argv = (
         ("git", "rev-parse", "HEAD"),
-        ("git", "rev-parse", "HEAD^"),
-        ("git", "rev-parse", "red-head:docs/freeze.json"),
+        ("git", "rev-list", "--ancestry-path", "--reverse", "red-head..HEAD"),
+        ("git", "rev-list", "--parents", "-n", "1", "c3-head"),
+        ("git", "diff-tree", "--no-commit-id", "--name-only", "-r", "c3-head"),
+        (
+            "git",
+            "rev-parse",
+            "red-head^{tree}",
+            "red-head:docs/governance/adversarial-convergence-invariant-matrix-v1.json",
+            "red-head:tests/unit/test_issue435_adversarial_convergence.py",
+            "red-head:tests/unit/test_issue435_adversarial_convergence_repository.py",
+        ),
+        (
+            "git",
+            "show",
+            "c3-head:docs/governance/adversarial-convergence-red-freeze-v1.json",
+        ),
         ("git", "merge-base", "--is-ancestor", "red-head", "HEAD"),
-        ("git", "diff-tree", "--no-commit-id", "--name-only", "-r", "HEAD"),
         ("git", "show", "-s", "--format=%ae", "red-head"),
         ("git", "cat-file", "-e", "red-head"),
     )
@@ -978,10 +1036,22 @@ def test_repository_validator_is_read_only_and_static_boundary_is_ast_exact(
             )
     allowed_expressions = (
         ("('git', 'rev-parse', 'HEAD')", True),
-        ("('git', 'rev-parse', 'HEAD^')", True),
-        ("('git', 'rev-parse', f'{red_head}:docs/freeze.json')", True),
+        ("('git', 'rev-list', '--ancestry-path', '--reverse', f'{red_head}..HEAD')", True),
+        ("('git', 'rev-list', '--parents', '-n', '1', c3_head)", True),
+        ("('git', 'diff-tree', '--no-commit-id', '--name-only', '-r', c3_head)", True),
+        (
+            "('git', 'rev-parse', f'{red_head}^{{tree}}', "
+            "f'{red_head}:docs/governance/adversarial-convergence-invariant-matrix-v1.json', "
+            "f'{red_head}:tests/unit/test_issue435_adversarial_convergence.py', "
+            "f'{red_head}:tests/unit/test_issue435_adversarial_convergence_repository.py')",
+            True,
+        ),
+        (
+            "('git', 'show', "
+            "f'{c3_head}:docs/governance/adversarial-convergence-red-freeze-v1.json')",
+            True,
+        ),
         ("('git', 'merge-base', '--is-ancestor', red_head, 'HEAD')", False),
-        ("('git', 'diff-tree', '--no-commit-id', '--name-only', '-r', 'HEAD')", True),
         ("('git', 'show', '-s', '--format=%ae', red_head)", True),
         ("('git', 'cat-file', '-e', red_head)", True),
     )
@@ -1038,9 +1108,15 @@ def test_repository_validator_is_read_only_and_static_boundary_is_ast_exact(
                 "static", "ACP.STATIC.GIT_DYNAMIC", "source"
             )
     for changed_expression in (
-        "('git', 'rev-parse', f'{other_head}:docs/freeze.json')",
-        "('git', 'rev-parse', f'{red_head}:docs/{freeze_name}')",
-        "('git', 'rev-parse', f'{red_head!s}:docs/freeze.json')",
+        "('git', 'rev-list', '--ancestry-path', '--reverse', f'{other_head}..HEAD')",
+        "('git', 'rev-list', '--ancestry-path', '--reverse', f'{red_head!s}..HEAD')",
+        "('git', 'rev-list', '--parents', '-n', '1', other_c3_head)",
+        "('git', 'diff-tree', '--no-commit-id', '--name-only', '-r', other_c3_head)",
+        "('git', 'rev-parse', f'{red_head}^{commit}', f'{red_head}:docs/governance/adversarial-convergence-invariant-matrix-v1.json', f'{red_head}:tests/unit/test_issue435_adversarial_convergence.py', f'{red_head}:tests/unit/test_issue435_adversarial-convergence_repository.py')",
+        "('git', 'rev-parse', f'{red_head}^{tree}', f'{other_head}:docs/governance/adversarial-convergence-invariant-matrix-v1.json', f'{red_head}:tests/unit/test_issue435_adversarial-convergence.py', f'{red_head}:tests/unit/test_issue435_adversarial-convergence_repository.py')",
+        "('git', 'rev-parse', f'{red_head}^{tree}', f'{red_head}:docs/{matrix_name}', f'{red_head}:tests/unit/test_issue435_adversarial_convergence.py', f'{red_head}:tests/unit/test_issue435_adversarial_convergence_repository.py')",
+        "('git', 'show', f'{other_c3_head}:docs/governance/adversarial-convergence-red-freeze-v1.json')",
+        "('git', 'show', f'{c3_head}:docs/governance/{freeze_name}')",
     ):
         source = (
             "import subprocess\n"

@@ -114,10 +114,19 @@ STATIC_GOVERNED_READER_STEPS = (
 )
 STATIC_ALLOWED_GIT_FORMS = (
     ("git", "rev-parse", "HEAD"),
-    ("git", "rev-parse", "HEAD^"),
-    ("git", "rev-parse", "{red_head}:docs/freeze.json"),
+    ("git", "rev-list", "--ancestry-path", "--reverse", "{red_head}..HEAD"),
+    ("git", "rev-list", "--parents", "-n", "1", "{c3_head}"),
+    ("git", "diff-tree", "--no-commit-id", "--name-only", "-r", "{c3_head}"),
+    (
+        "git",
+        "rev-parse",
+        "{red_head}^{tree}",
+        "{red_head}:docs/governance/adversarial-convergence-invariant-matrix-v1.json",
+        "{red_head}:tests/unit/test_issue435_adversarial_convergence.py",
+        "{red_head}:tests/unit/test_issue435_adversarial-convergence_repository.py",
+    ),
+    ("git", "show", "{c3_head}:docs/governance/adversarial-convergence-red-freeze-v1.json"),
     ("git", "merge-base", "--is-ancestor", "{red_head}", "HEAD"),
-    ("git", "diff-tree", "--no-commit-id", "--name-only", "-r", "HEAD"),
     ("git", "show", "-s", "--format=%ae", "{red_head}"),
     ("git", "cat-file", "-e", "{red_head}"),
 )

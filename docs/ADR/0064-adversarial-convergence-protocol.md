@@ -70,7 +70,16 @@ three-phase verdicts, stage and crypto ledgers, eligibility, graph count, and
 selection, including empty values, not an adjacent string or caller input. The
 replay-subset mutant uses a trust-valid candidate, a successful exact crypto
 call, the complete pipeline, and an extra retained finding so it discriminates
-exact equality without contradicting fail-fast trust handling. Nested parser
+exact equality without contradicting fail-fast trust handling.
+
+Repository evidence uses a closed, read-only Git grammar that remains valid
+after later GREEN descendants. It finds C3 as the first ordered descendant of
+the RED head, verifies its sole RED parent and freeze-only scope, resolves the
+RED tree and three governed RED blobs in one ordered lookup, and compares the
+current freeze bytes to C3's exact committed payload. Ambient `HEAD^`,
+`diff-tree HEAD`, unrelated paths, and dynamic Git arguments are rejected.
+
+Nested parser
 members and every configured limit are closed over exact types, enums, hashes,
 identifiers, ranges, cardinality relationships, ordered unique ordinals, and
 maximums across every pipeline stage. Governed artifacts are rejected before read

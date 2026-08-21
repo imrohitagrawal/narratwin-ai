@@ -73,6 +73,14 @@ binds parser-returned argument identities, two ordered exact crypto probes and
 their exhaustion, the complete observed transcript, and returned-object
 identity; a fabricated one-candidate observer result is not evidence.
 
+Git evidence is bound to the frozen RED and C3 commits, not ambient `HEAD^`.
+From any later linear descendant, identify the first RED descendant as C3;
+verify its sole RED parent and freeze-only diff; retrieve the RED tree and the
+matrix plus both oracle blobs in one ordered read-only lookup; and require the
+current governed freeze bytes to equal C3's committed payload. Freeze the exact
+argv, kwargs, output arity/order, paths, and interpolation positions, with
+dynamic, network, mutation, wrong-ref, and wrong-path near misses.
+
 The reference test classes are positive, negative, boundary, malformed,
 deletion, corruption, reordering, duplication, substitution, and maximum
 cardinality. A new applicable class returns the work to RED review.
