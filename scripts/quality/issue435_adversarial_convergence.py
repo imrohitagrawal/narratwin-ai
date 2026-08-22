@@ -229,15 +229,15 @@ STATIC_GIT_DOCUMENTATION_CLAIM_CONTRACT = (
         (
             (
                 "docs/ADR/0064-adversarial-convergence-protocol.md",
-                "0ee62de4bb552ec6445a5b5849882d4e430064036cdeb9a1e05be686b6d6ca46",
+                "292fc0b0b11fb95dabe20e6c88867b73be1e6a11199f9a5bea3b9ccdf413237b",
             ),
             (
                 "docs/ADVERSARIAL_VERIFICATION_PLAYBOOK.md",
-                "ae61f545f27e67f250165a3b0b6a3bb97d21475714773b8685a93d44b03ed10e",
+                "2c790199d2d08db74dff625bf917028c614ba1e1acd36b634800220061259041",
             ),
             (
                 "docs/templates/ADVERSARIAL_INVARIANT_MATRIX.md",
-                "14503534278577e7e29cd745f8a356d6e0e8b427cbd3e01291cf874e5c2684cd",
+                "415bb191406233d29214d394ee04ae3b6c1db0ebe3203de1d9917f08cfccd5a3",
             ),
         ),
     ),
@@ -259,7 +259,18 @@ STATIC_GIT_DOCUMENTATION_CLAIM_CONTRACT = (
             "strip-leading-and-trailing-space",
         ),
     ),
-    ("variantAxes", ("case", "whitespace", "hyphen", "markdown", "bounded-synonym")),
+    (
+        "variantAxes",
+        (
+            "case",
+            "whitespace",
+            "hyphen",
+            "markdown",
+            "bounded-synonym",
+            "case+markdown+hyphen",
+            "bounded-synonym+markdown+hyphen",
+        ),
+    ),
     (
         "prohibitedFamilyGrammar",
         (
@@ -290,8 +301,8 @@ STATIC_GIT_DOCUMENTATION_CLAIM_CONTRACT = (
             ),
         ),
     ),
-    ("variantCount", 20),
-    ("variantSha256", "a4666fdafd5443efaf7b5ea46073718d02d841f6dc4e088b4c7513620c14491b"),
+    ("variantCount", 28),
+    ("variantSha256", "c474a3508850ee6bf9c4bfd8296416e723d134ae2b52c3390a802fd65ed65b7a"),
     (
         "findingContracts",
         (
@@ -1171,7 +1182,7 @@ STATIC_GIT_METADATA_EXECUTION_CONTRACT_FIELDS = (
     "operationalMode",
     "configuredStimulusFacts",
     "configuredStimulusIdentity",
-    "normalizedIoCleanupIdentity",
+    "observedExecutionEvidenceIdentity",
     "rolePrefix",
     "normalizedIoCleanupPrefix",
 )
@@ -1181,16 +1192,32 @@ STATIC_GIT_METADATA_TRIGGER_RECEIPT_FIELDS = (
     "lstatVector",
     "openVector",
     "fstatVector",
-    "readRequestVector",
-    "readChunkLengthVector",
+    "rawReadRequestVector",
+    "rawReadChunkLengthVector",
+    "rawReadCountVector",
     "readTypeVector",
+    "normalizedReadPayloadIdentityVector",
     "postLstatVector",
-    "closeAttemptOrderVector",
+    "rawCloseAttemptOrderVector",
     "closeResultVector",
+)
+STATIC_GIT_METADATA_FIXTURE_PARENT_ABSOLUTE_LENGTH = 700
+STATIC_GIT_METADATA_FIXTURE_PARENT_LEXICAL_DEPTH = 16
+STATIC_GIT_METADATA_FIXTURE_ROOT_REPLAY_LENGTHS = (27, 108)
+STATIC_GIT_METADATA_TRIGGER_RECEIPT_SCHEDULE_CONTRACT = (
+    "fixture-parent-fsencoded-length-exactly-700",
+    "fixture-parent-lexical-depth-exactly-16",
+    "fixed-width-neutral-child-slots-before-two-variable-final-components",
+    "raw-read-requests-equal-cap-minus-consumed",
+    "raw-read-chunks-concatenate-to-observed-payload",
+    "raw-read-request-chunk-count-and-type-vectors-exact",
+    "raw-close-attempt-result-and-order-vectors-exact",
+    "path-content-normalized-only-for-portable-payload-identity",
+    "replay-original-root-lengths-27-and-108-depths-4-and-10-with-identical-execution-stimulus-receipt",
 )
 STATIC_GIT_METADATA_TRIGGER_RECEIPT_COUNT = 129
 STATIC_GIT_METADATA_TRIGGER_RECEIPT_SHA256 = (
-    "b7859e833216ef647dffbf6f246c69747895943a308f5f24cb327c1b3933c1f6"
+    "0c61c46db77fcd5a5f2ee21d2839fce9d02edf5fdacf4641410c53aad4ec95a6"
 )
 STATIC_GIT_METADATA_FORMER_COLLISION_GROUPS = (
     (
@@ -1246,65 +1273,94 @@ STATIC_GIT_METADATA_FORMER_COLLISION_GROUPS = (
         "linked-external-ordinary-ancestor-symlink",
         ("linked-external-ancestor-symlink@linked", "alternates-ancestor-symlink@linked"),
     ),
-    ("configured-removed-linked-pre-root-fstat", ("pre-root-symlink@linked", "fstat-type@linked")),
-    ("configured-removed-linked-pre-root-open", ("pre-root-symlink@linked", "open-error@linked")),
     (
-        "configured-removed-conventional-ancestor",
-        ("root-replacement@conventional", "ancestor-replacement@conventional"),
+        "configured-removed-linked-pre-root-class",
+        ("pre-root-symlink@linked", "fstat-type@linked", "open-error@linked"),
     ),
     (
-        "configured-removed-conventional-between",
-        ("root-replacement@conventional", "between-read-conventional-dot-git@conventional"),
+        "configured-removed-conventional-race-and-io-class",
+        (
+            "root-replacement@conventional",
+            "ancestor-replacement@conventional",
+            "between-read-conventional-dot-git@conventional",
+            "final-binding-revalidation@conventional",
+            "leaf-replacement@conventional",
+            "fstat-device@conventional",
+            "fstat-inode@conventional",
+            "fstat-type@conventional",
+            "lstat-error@conventional",
+            "open-error@conventional",
+            "close-error@conventional",
+        ),
     ),
     (
-        "configured-removed-conventional-final",
-        ("root-replacement@conventional", "final-binding-revalidation@conventional"),
+        "configured-removed-linked-root-class",
+        ("root-replacement@linked", "leaf-replacement@linked", "post-read-device@linked"),
     ),
     (
-        "configured-removed-conventional-leaf",
-        ("root-replacement@conventional", "leaf-replacement@conventional"),
-    ),
-    (
-        "configured-removed-conventional-fstat-device",
-        ("root-replacement@conventional", "fstat-device@conventional"),
-    ),
-    (
-        "configured-removed-conventional-fstat-inode",
-        ("root-replacement@conventional", "fstat-inode@conventional"),
-    ),
-    (
-        "configured-removed-conventional-fstat-type",
-        ("root-replacement@conventional", "fstat-type@conventional"),
-    ),
-    (
-        "configured-removed-conventional-lstat",
-        ("root-replacement@conventional", "lstat-error@conventional"),
-    ),
-    (
-        "configured-removed-conventional-open",
-        ("root-replacement@conventional", "open-error@conventional"),
-    ),
-    (
-        "configured-removed-conventional-close",
-        ("root-replacement@conventional", "close-error@conventional"),
-    ),
-    ("configured-removed-linked-root-leaf", ("root-replacement@linked", "leaf-replacement@linked")),
-    (
-        "configured-removed-linked-root-postread",
-        ("root-replacement@linked", "post-read-device@linked"),
-    ),
-    (
-        "configured-removed-linked-between-read",
+        "configured-removed-linked-between-read-class",
         ("between-read-linked-directory@linked", "between-read-common-directory@linked"),
     ),
-    ("configured-removed-linked-fstat-lstat", ("fstat-inode@linked", "lstat-error@linked")),
-    ("configured-removed-linked-fstat-close", ("fstat-inode@linked", "close-error@linked")),
+    (
+        "configured-removed-linked-fstat-io-class",
+        ("fstat-inode@linked", "lstat-error@linked", "close-error@linked"),
+    ),
 )
-STATIC_GIT_METADATA_FORMER_COLLISION_GROUP_COUNT = 31
+STATIC_GIT_METADATA_FORMER_COLLISION_GROUP_COUNT = 19
 STATIC_GIT_METADATA_FORMER_COLLISION_GROUP_SHA256 = (
-    "977619f813077f29dd87070f760e2fffc2eee6281cdfc168cb7942f5cd45fc0b"
+    "3d6ec3f35db4037153555ae3e3fd4332f70b5812e8413923399b1fa805753185"
 )
-STATIC_GIT_METADATA_CONFIGURED_REMOVED_COLLISION_COUNT = 17
+STATIC_GIT_METADATA_CONFIGURED_REMOVED_COLLISION_COUNT = 5
+STATIC_GIT_METADATA_CONFIGURED_PLAN_IDENTITY_CONTRACT = (
+    "non-label",
+    "non-terminal",
+    "derived-from-configured-callback-target-phase-effect",
+    "included-in-every-valid-execution-binding",
+)
+STATIC_GIT_METADATA_CONFIGURED_PLAN_FIELDS = (
+    "executionId",
+    "callback",
+    "target",
+    "phase",
+    "effect",
+)
+STATIC_GIT_METADATA_CONFIGURED_PLAN_COUNT = 22
+STATIC_GIT_METADATA_CONFIGURED_PLAN_SHA256 = (
+    "be232294b50b2ab84f96df800d6b495ace266077218bd6fb2c716353622015e8"
+)
+STATIC_GIT_METADATA_VALID_EXECUTION_BINDING_FIELDS = (
+    "configuredStimulusIdentity",
+    "configuredPlanIdentity",
+    "actualReceiptIdentity",
+)
+STATIC_GIT_METADATA_CONFIGURED_REMOVED_EQUIVALENCE_CLASS_FIELDS = (
+    "groupName",
+    "completeExecutionIds",
+    "strippedFactsIdentity",
+    "declaredCollision",
+)
+STATIC_GIT_METADATA_CONFIGURED_REMOVED_EQUIVALENCE_CLASS_COUNT = 5
+STATIC_GIT_METADATA_CONFIGURED_REMOVED_EQUIVALENCE_CLASS_SHA256 = (
+    "b71385899ad0186538de9ade027e0b1b768af8fe30cd19ac8d8e026e6b2dc60a"
+)
+STATIC_GIT_METADATA_RECEIPT_HYBRID_CONTRACT_FIELDS = (
+    "groupName",
+    "sourceExecutionId",
+    "swappedReceiptExecutionId",
+    "strippedFactsIdentity",
+    "configuredPlanIdentity",
+    "actualReceiptIdentity",
+    "hybridBindingIdentity",
+    "validSetMembership",
+)
+STATIC_GIT_METADATA_RECEIPT_HYBRID_COUNT = 130
+STATIC_GIT_METADATA_RECEIPT_HYBRID_SHA256 = (
+    "bd26f841084c593d62f16c8fba27731be0c101b20a20332f48ed348caa6d32e0"
+)
+STATIC_GIT_METADATA_CONSTANT_RECEIPT_SURVIVOR_CONTRACT = (
+    "replace-all-actual-receipts-with-one-constant",
+    "at-least-one-hybrid-binding-must-be-absent-from-exact-valid-set",
+)
 STATIC_GIT_METADATA_EXECUTION_IDS = (
     "conventional-positive@conventional",
     "linked-positive@linked",
@@ -1441,11 +1497,11 @@ STATIC_GIT_METADATA_EXECUTION_SHA256 = (
     "dc206260cb4f4c2d1217ba9a6cf274279c2fdbe6c98f5c4c0db21d133558e91b"
 )
 STATIC_GIT_METADATA_FULL_EXECUTION_SHA256 = (
-    "d57645ae195a559e1d88f3053385a900e723c9eb638f69cec66056765b24cdc0"
+    "74c0225e39f7fc6c170a1922246133daf07f458ee5040a1d581272602573190c"
 )
 STATIC_GIT_METADATA_STIMULUS_COUNT = 129
 STATIC_GIT_METADATA_STIMULUS_SHA256 = (
-    "ebaffa1950528196ef5f408707f945ec71a5fbb7c8f6643bcef5b1b0cb21fbb9"
+    "d93d3a44c3a3b18a9bd46edec8fe7f981790f6e0dd55da96ce1be3a18eab498d"
 )
 STATIC_GIT_METADATA_PAYLOAD_FINGERPRINT_COUNT = 25
 STATIC_GIT_METADATA_PAYLOAD_FINGERPRINT_SHA256 = (
@@ -1714,6 +1770,60 @@ STATIC_GIT_TEXTUAL_TRANSFORMATION_BUILDERS = (
 STATIC_GIT_TEXTUAL_TRANSFORMATION_INPUT_CONTRACT_SHA256 = (
     "d94fc0a49bf78e072ac44997785e40e073c19e9d14f0a19ab5a9415d88e60456"
 )
+STATIC_GIT_TEXTUAL_TRANSFORMATION_BYTE_IDENTITY_FIELDS = (
+    "role",
+    "transformation",
+    "identityMode",
+    "tokenMapShape",
+    "normalizedBaseLength",
+    "normalizedBaseSha256",
+    "normalizedTransformedLength",
+    "normalizedTransformedSha256",
+)
+STATIC_GIT_TEXTUAL_TRANSFORMATION_BYTE_IDENTITY_COUNT = 44
+STATIC_GIT_TEXTUAL_TRANSFORMATION_BYTE_IDENTITY_SHA256 = (
+    "cfbaae8676192cadee829806cc82d9b64e86a3b3460b3cfa65dcd3cdb5bec9ac"
+)
+STATIC_GIT_TEXTUAL_TRANSFORMATION_BYTE_NORMALIZATION = (
+    (
+        "dynamicOidRoles",
+        (
+            ("head", ("HEAD_OID",)),
+            ("merge_scan", ("MERGE_OID",)),
+            ("ancestry_chain", ("ANCESTRY_OID_00_THROUGH_64",)),
+            (
+                "red_objects",
+                (
+                    "RED_TREE_OID",
+                    "MATRIX_BLOB_OID",
+                    "CORE_ORACLE_BLOB_OID",
+                    "REPOSITORY_ORACLE_BLOB_OID",
+                ),
+            ),
+        ),
+    ),
+    ("tokenEncoding", "angle-bracketed-uppercase-name-preserving-lf-and-row-order"),
+    (
+        "selfReferenceRule",
+        "normalize-independently-verified-dynamic-object-ids-before-length-and-sha256",
+    ),
+    ("nonOidBytes", "must-remain-byte-exact"),
+)
+STATIC_GIT_MERGE_SCAN_EMPTY_TRANSFORMATION_RELATIONS = (
+    ("missing_lf", "inapplicable-empty-base"),
+    ("crlf", "empty-base-to-single-crlf"),
+    ("extra_line", "empty-base-to-two-ordered-oid-lines"),
+    ("corrupt_token", "empty-base-to-one-uppercase-oid-line"),
+    ("valid_token", "empty-base-to-one-lowercase-oid-line"),
+)
+STATIC_GIT_DETERMINISTIC_FIXTURE_COMMIT_METADATA = (
+    ("GIT_AUTHOR_NAME", "Issue 435 Fixture"),
+    ("GIT_AUTHOR_EMAIL", "issue435-fixture@example.invalid"),
+    ("GIT_AUTHOR_DATE", "1704067200 +0000"),
+    ("GIT_COMMITTER_NAME", "Issue 435 Fixture"),
+    ("GIT_COMMITTER_EMAIL", "issue435-fixture@example.invalid"),
+    ("GIT_COMMITTER_DATE", "1704067200 +0000"),
+)
 STATIC_GIT_OBJECT_BINDINGS = (
     ("red_tree", "redTree"),
     ("matrix_blob", "matrixBlobOid"),
@@ -1759,6 +1869,30 @@ STATIC_GIT_METADATA_GOVERNED_PRECEDENCE_CASES = (
 STATIC_GIT_METADATA_GOVERNED_PRECEDENCE_COUNT = 1
 STATIC_GIT_METADATA_GOVERNED_PRECEDENCE_SHA256 = (
     "5f25c0757507c7061d70cd885aae48c3341163d8957f018a20db6649bbf207e2"
+)
+STATIC_GIT_METADATA_GOVERNED_PRECEDENCE_MUTANT_FIELDS = (
+    "mutantId",
+    "filesystemRereadHelper",
+    "hostileDecoy",
+    "substitution",
+    "requiredDescriptor",
+    "requiredSchemaIdentity",
+    "expectedDisposition",
+)
+STATIC_GIT_METADATA_GOVERNED_PRECEDENCE_MUTANTS = (
+    (
+        "MUT-METADATA-GOVERNED-REREAD-SUBSTITUTE-DECOY",
+        "reread-matrix-with-controlled-decoy",
+        "correct-schema-decoy-bytes",
+        "replace-filesystem-reread-with-hostile-decoy",
+        "matrix-schema-version-wrong",
+        "74459b011344be2e067eb5bba03760fecd87ff5895e694a116943a6b5a6f5e6d",
+        "exact-observed-schema-assertion-fails-before-credit",
+    ),
+)
+STATIC_GIT_METADATA_GOVERNED_PRECEDENCE_MUTANT_COUNT = 1
+STATIC_GIT_METADATA_GOVERNED_PRECEDENCE_MUTANT_SHA256 = (
+    "ddaf256a0bdf6c063ab8fd0e5a8eeb74ec97b4c78a58d380f17ed8a93453093e"
 )
 STATIC_GIT_RETURN_CODES = (
     ("object_format", (0,), (), (-1, 2, 127)),

@@ -137,6 +137,8 @@ stronger claim is an `EVIDENCE_BLOCKER` requiring new authority, architecture,
 and executable proof. The governed-document validator case-folds and normalizes
 whitespace, hyphens, and Markdown emphasis, then rejects the frozen bounded
 synonym grammar for each of those four prohibited stronger-claim families.
+Simple variants and the composed case-plus-Markdown-plus-hyphen and
+synonym-plus-Markdown-plus-hyphen axes are mandatory executable negatives.
 <!-- issue-435-filesystem-snapshot-boundary:end -->
 
 Nested parser

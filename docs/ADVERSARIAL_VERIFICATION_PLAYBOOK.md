@@ -118,7 +118,9 @@ descriptor-bound, or able to detect or prevent every concurrent mutation. A
 stronger claim is an `EVIDENCE_BLOCKER` and requires a new authorized design and
 executable evidence. Review the case-folded, whitespace-, hyphen-, and
 Markdown-normalized document against the frozen bounded synonym grammar for all
-four prohibited stronger-claim families.
+four prohibited stronger-claim families. Execute both composed axes—case plus
+Markdown plus hyphen, and bounded synonym plus Markdown plus hyphen—in every
+governed document as well as each simple variant.
 <!-- issue-435-filesystem-snapshot-boundary:end -->
 
 Fourteen fixed read-only forms then use absolute `/usr/bin/git`, no pager,
