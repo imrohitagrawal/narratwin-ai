@@ -97,22 +97,29 @@ executions. Each entry binds the complete catalog row, fixture-observed stimulus
 identity, exact role prefix, and normalized per-role I/O/cleanup transcript.
 The Issue #435 RED exemplar owns 94 case rows and 129 ordered executions; an ID
 or final-role-only ledger is insufficient. Run the entire collector separately
-beneath cleanup-bound original roots measured at exactly `(27 bytes, depth 4)`
-and `(108 bytes, depth 10)`, pad both to the same 700-byte/depth-16 governed
-parent, and freeze separate execution, stimulus, trigger-receipt, raw-read,
+beneath equal-width A/B slots in one cleanup-owned platform temporary base. Add
+an 81-filesystem-byte/six-lexical-component suffix only to B, pad both relative
+roots to one 700-byte/depth-18 governed shape, and freeze separate execution,
+stimulus, trigger-receipt, raw-read,
 close-order, and normalized-payload catalogs. Require exact cross-root row and
 digest equality plus exact configured-plan-receipt equality, then prove that
 changing one schedule or normalized coordinate is rejected. Merely constructing
-a second padded root is not replay evidence.
+a second padded root is not replay evidence. Prove resolved-base inode ownership
+and `8*n <= remaining component bytes <= 255*n` before descendant creation; an
+infeasible synthetic platform model must fail without filesystem mutation.
 
-Bind each configured plan to a separately observed receipt containing the
-actual callback, target/path/role, phase/order, and effect. Hash exactly its
-callback, metadata, stat, and exception event fields—and nothing else—as the
-raw-evidence identity before projection. Mutate each of those four semantic
-coordinates independently and reject it, then retain receipt-swap,
+Bind each configured plan to a separately observed, ordered raw receipt carrying
+callback arguments, normalized target path/role/ordinal, close outcomes,
+inter-role before/after effect, complete stat/exception evidence, argument
+type/count, event ordinal, and live-descriptor/open-event ordinal. Project
+without reading the plan, case, expected finding, or terminal result. Bind with
+exact typed callback, target, phase, effect, no-op, close-result, inter-role, and
+plan-copy findings and mutants, then retain receipt-swap,
 hybrid, and constant-receipt killers. Describe the collision topology precisely:
 17 historical configured-removal pair groups collapse into five complete
-non-singleton configured-removed equivalence classes.
+non-singleton configured-removed equivalence classes. Every historical pair must
+belong wholly and uniquely to one observed class; a cross-class pair mutant must
+return the exact typed finding at the derived pair index.
 Freeze the exact reader and discovery AST identities plus their sole top-level
 bindings. The operation oracle records every relative lstat/open/fstat/read/
 post-lstat/close call, flags, `dir_fd`, identity, count, and reverse close; it
@@ -167,10 +174,13 @@ applicability. Fixed-cap CRLF or extra-line transforms that exceed the cap must
 fail at the byte boundary; never truncate another token to manufacture a later
 finding.
 Strictly parse every saved real output before tokenization and build a complete,
-ordered, unique role/position mapping to contemporaneous fixture and freeze
-objects. Replace only tokens proven equal to those mappings. Uppercase, corrupt,
-injected-valid-but-wrong, reordered, missing, and extra OIDs must remain raw or
-use explicit hostile tokens and stay distinct in the 44 normalized rows.
+ordered, unique seven-entry role/row/column mapping to contemporaneous fixture
+and freeze objects. Replace only tokens at those exact coordinates after exact
+equality. Exercise real-validator reordered, missing, duplicate, extra, swapped,
+uppercase, and valid-but-wrong injections with exact stopped prefixes; unmapped
+or wrong-coordinate known OIDs remain raw or use explicit hostile tokens and
+stay distinct in the
+normalized rows.
 Preserve explicit role-specific relations for an empty merge scan.
 Script RED object size 320 before the exact 320/321-byte author boundary, and
 also prove a smaller object-derived author limit.
@@ -366,11 +376,16 @@ aggregate before implementation. Deletions grant no credit. Record each ratio.
 Dense one-line code, collapsed assertions, broad helpers that hide outcomes,
 and semantic compression used only to fit a cap are prohibited.
 
-For Reset31, freeze exact caps: matrix 4,200; protocol 4,200; core oracle 4,200;
+For Reset32, freeze exact caps: matrix 4,200; protocol 4,200; core oracle 4,200;
 repository oracle 14,500; template 600; ADR 550; route 5,800;
 architecture/security 2,200; validator 28,000; seven-semantic-path aggregate
 34,000; binaries zero. The 85 percent review and 90 percent pre-C3/GREEN stop
-apply independently at every file, partition, and aggregate level.
+apply independently at every file, partition, and aggregate level. Record the
+core oracle at 3,694/4,200 (87.95 percent) as readability-risk PASS: only the
+explicit semantic literal changes, no compression is introduced, and usage is
+below 90 percent. Record protocol 3,709/4,200 (88.31 percent) as
+readability-risk PASS: every case remains explicit, named immutable prefix
+tuples only remove duplicate literals, and usage stays below 90 percent.
 
 ## Focused-to-full transition
 

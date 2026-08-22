@@ -1217,6 +1217,7 @@ STATIC_GIT_METADATA_EXECUTION_CONTRACT_FIELDS = (
 )
 STATIC_GIT_METADATA_TRIGGER_RECEIPT_FIELDS = (
     "role",
+    "callbackArgumentVector",
     "callbackVector",
     "lstatVector",
     "openVector",
@@ -1230,25 +1231,57 @@ STATIC_GIT_METADATA_TRIGGER_RECEIPT_FIELDS = (
     "rawCloseAttemptOrderVector",
     "closeResultVector",
 )
+STATIC_GIT_METADATA_INTER_ROLE_TRIGGER_RECEIPT_FIELDS = (
+    "role",
+    "afterRole",
+    "path",
+    "beforeType",
+    "afterType",
+    "identityChanged",
+    "triggered",
+)
 STATIC_GIT_METADATA_FIXTURE_PARENT_ABSOLUTE_LENGTH = 700
-STATIC_GIT_METADATA_FIXTURE_PARENT_LEXICAL_DEPTH = 16
-STATIC_GIT_METADATA_FIXTURE_ROOT_REPLAY_SHAPES = ((27, 4), (108, 10))
+STATIC_GIT_METADATA_FIXTURE_PARENT_LEXICAL_DEPTH = 18
+STATIC_GIT_METADATA_FIXTURE_ROOT_RELATION_FIELDS = (
+    "slot",
+    "relativeFilesystemByteDelta",
+    "relativeLexicalDepthDelta",
+)
+STATIC_GIT_METADATA_FIXTURE_ROOT_RELATIONS = (("A", 0, 0), ("B", 81, 6))
+STATIC_GIT_METADATA_FIXTURE_ROOT_CHILD_COMPONENT_BYTES = (12, 12, 12, 12, 12, 15)
+STATIC_GIT_METADATA_FIXTURE_PORTABLE_OWNER_MODELS = (("darwin", 27, 4), ("linux", 17, 3))
+STATIC_GIT_METADATA_FIXTURE_ROOT_RELATION_SHA256 = (
+    "9fd9494f55f68a5a611dd9be45bdc325f09045f264d42e44cb6ecd834829f019"
+)
+STATIC_GIT_METADATA_FIXTURE_OWNERSHIP_CONTRACT = (
+    "one-cleanup-owned-platform-temporary-base",
+    "equal-width-A-B-slot-components",
+    "B-only-six-component-relative-suffix",
+    "resolved-base-inode-owned-and-stable",
+    "feasibility-plan-proved-before-creation",
+    "infeasible-model-fails-before-filesystem-mutation",
+    "no-hardcoded-private-tmp",
+)
 STATIC_GIT_METADATA_TRIGGER_RECEIPT_SCHEDULE_CONTRACT = (
     "fixture-parent-fsencoded-length-exactly-700",
-    "fixture-parent-lexical-depth-exactly-16",
+    "fixture-parent-lexical-depth-exactly-18",
+    "one-cleanup-owned-platform-temporary-base",
+    "equal-width-A-B-slots",
+    "B-relative-delta-exactly-81-filesystem-bytes-and-6-lexical-components",
+    "resolved-base-inode-stable-through-both-collectors",
+    "feasible-final-components-each-8-through-255-bytes-before-creation",
     "fixed-width-neutral-child-slots-before-two-variable-final-components",
     "raw-read-requests-equal-cap-minus-consumed",
     "raw-read-chunks-concatenate-to-observed-payload",
     "raw-read-request-chunk-count-and-type-vectors-exact",
     "raw-close-attempt-result-and-order-vectors-exact",
     "path-content-normalized-only-for-portable-payload-identity",
-    "measure-original-root-shapes-27-bytes-depth-4-and-108-bytes-depth-10",
     "run-complete-129-case-collector-independently-under-each-root",
     "separate-execution-stimulus-trigger-receipt-raw-read-close-order-normalized-payload-catalogs-row-and-digest-equal",
 )
 STATIC_GIT_METADATA_TRIGGER_RECEIPT_COUNT = 129
 STATIC_GIT_METADATA_TRIGGER_RECEIPT_SHA256 = (
-    "0c61c46db77fcd5a5f2ee21d2839fce9d02edf5fdacf4641410c53aad4ec95a6"
+    "a7891e4113c89b48be4dedcc3f260d5211d622853ec16f52b5f4f9e355015d0e"
 )
 STATIC_GIT_METADATA_COLLECTION_FIELDS = (
     "fullExecutions",
@@ -1282,7 +1315,7 @@ STATIC_GIT_METADATA_CLOSE_ORDER_CATALOG_FIELDS = (
 )
 STATIC_GIT_METADATA_CLOSE_ORDER_CATALOG_COUNT = 466
 STATIC_GIT_METADATA_CLOSE_ORDER_CATALOG_SHA256 = (
-    "3c97f0952634e4ff610bef7f61565e90ccaadda0fe36b25263b3e453499246a3"
+    "1072b8834f65136320bf419d760eae50cf916fc8b411a90362f2c100a6fdcf73"
 )
 STATIC_GIT_METADATA_NORMALIZED_PAYLOAD_CATALOG_FIELDS = (
     "executionId",
@@ -1295,7 +1328,8 @@ STATIC_GIT_METADATA_NORMALIZED_PAYLOAD_CATALOG_SHA256 = (
     "9f328cbc155b9b57047f4ab53d78720842fbeb02cae54c5a7e03090ab001bda1"
 )
 STATIC_GIT_METADATA_ROOT_REPLAY_ENVELOPE_FIELDS = (
-    "rootShape",
+    "slot",
+    "relativeRootShape",
     "governedParentShape",
     "finalComponentLengths",
     "evidenceIdentity",
@@ -1308,27 +1342,15 @@ STATIC_GIT_METADATA_ROOT_REPLAY_EVIDENCE_FIELDS = (
     "closeOrderCatalog",
     "normalizedPayloadCatalog",
 )
-STATIC_GIT_METADATA_ROOT_REPLAY_FINAL_COMPONENT_LENGTHS = ((90, 91), (197, 197))
-STATIC_GIT_METADATA_ROOT_REPLAY_ENVELOPES = (
-    (
-        (27, 4),
-        (700, 16),
-        (90, 91),
-        "4a436fa2d1433aa757c3823d81d1903cd6fcff124af30e083210d9d651968bec",
-    ),
-    (
-        (108, 10),
-        (700, 16),
-        (197, 197),
-        "4a436fa2d1433aa757c3823d81d1903cd6fcff124af30e083210d9d651968bec",
-    ),
-)
 STATIC_GIT_METADATA_ROOT_REPLAY_ENVELOPE_COUNT = 2
-STATIC_GIT_METADATA_ROOT_REPLAY_ENVELOPE_SHA256 = (
-    "9d4ea90d35d429c1b1018fb3ad9af8f0b59bd0b4592d0bea1c933120ddc1024a"
+STATIC_GIT_METADATA_ROOT_REPLAY_RUNTIME_CONTRACT = (
+    "derive-runtime-envelope-from-owned-base-and-relative-relation",
+    "final-components-each-8-through-255-filesystem-bytes",
+    "governed-parent-exactly-700-bytes-depth-18",
+    "both-evidence-identities-exact-and-equal",
 )
 STATIC_GIT_METADATA_ROOT_REPLAY_EVIDENCE_IDENTITY_SHA256 = (
-    "4a436fa2d1433aa757c3823d81d1903cd6fcff124af30e083210d9d651968bec"
+    "d47f7eb94ac3ad3e841ba4e99741e2a346683f059bb493fc120b03c5d40eeeee"
 )
 STATIC_GIT_METADATA_ROOT_REPLAY_CONFIGURED_PLAN_RECEIPT_EQUALITY = (
     "capture-under-each-root",
@@ -1557,6 +1579,119 @@ STATIC_GIT_METADATA_CONFIGURED_REMOVED_HISTORICAL_PAIR_GROUP_SOURCE = (
 STATIC_GIT_METADATA_CONFIGURED_REMOVED_HISTORICAL_PAIR_GROUP_SOURCE_BLOB = (
     "472efe3987d419213c705b72b88e7a2bad7f3c3e"
 )
+STATIC_GIT_METADATA_HISTORICAL_PAIR_CONTAINMENT_FIELDS = (
+    "historicalGroupName",
+    "executionPair",
+    "uniqueCompleteClass",
+)
+STATIC_GIT_METADATA_HISTORICAL_PAIR_CONTAINMENTS = (
+    (
+        "configured-removed-linked-pre-root-fstat",
+        ("pre-root-symlink@linked", "fstat-type@linked"),
+        "configured-removed-linked-pre-root-class",
+    ),
+    (
+        "configured-removed-linked-pre-root-open",
+        ("pre-root-symlink@linked", "open-error@linked"),
+        "configured-removed-linked-pre-root-class",
+    ),
+    (
+        "configured-removed-conventional-ancestor",
+        ("root-replacement@conventional", "ancestor-replacement@conventional"),
+        "configured-removed-conventional-race-and-io-class",
+    ),
+    (
+        "configured-removed-conventional-between",
+        (
+            "root-replacement@conventional",
+            "between-read-conventional-dot-git@conventional",
+        ),
+        "configured-removed-conventional-race-and-io-class",
+    ),
+    (
+        "configured-removed-conventional-final",
+        ("root-replacement@conventional", "final-binding-revalidation@conventional"),
+        "configured-removed-conventional-race-and-io-class",
+    ),
+    (
+        "configured-removed-conventional-leaf",
+        ("root-replacement@conventional", "leaf-replacement@conventional"),
+        "configured-removed-conventional-race-and-io-class",
+    ),
+    (
+        "configured-removed-conventional-fstat-device",
+        ("root-replacement@conventional", "fstat-device@conventional"),
+        "configured-removed-conventional-race-and-io-class",
+    ),
+    (
+        "configured-removed-conventional-fstat-inode",
+        ("root-replacement@conventional", "fstat-inode@conventional"),
+        "configured-removed-conventional-race-and-io-class",
+    ),
+    (
+        "configured-removed-conventional-fstat-type",
+        ("root-replacement@conventional", "fstat-type@conventional"),
+        "configured-removed-conventional-race-and-io-class",
+    ),
+    (
+        "configured-removed-conventional-lstat",
+        ("root-replacement@conventional", "lstat-error@conventional"),
+        "configured-removed-conventional-race-and-io-class",
+    ),
+    (
+        "configured-removed-conventional-open",
+        ("root-replacement@conventional", "open-error@conventional"),
+        "configured-removed-conventional-race-and-io-class",
+    ),
+    (
+        "configured-removed-conventional-close",
+        ("root-replacement@conventional", "close-error@conventional"),
+        "configured-removed-conventional-race-and-io-class",
+    ),
+    (
+        "configured-removed-linked-root-leaf",
+        ("root-replacement@linked", "leaf-replacement@linked"),
+        "configured-removed-linked-root-class",
+    ),
+    (
+        "configured-removed-linked-root-postread",
+        ("root-replacement@linked", "post-read-device@linked"),
+        "configured-removed-linked-root-class",
+    ),
+    (
+        "configured-removed-linked-between-read",
+        (
+            "between-read-linked-directory@linked",
+            "between-read-common-directory@linked",
+        ),
+        "configured-removed-linked-between-read-class",
+    ),
+    (
+        "configured-removed-linked-fstat-lstat",
+        ("fstat-inode@linked", "lstat-error@linked"),
+        "configured-removed-linked-fstat-io-class",
+    ),
+    (
+        "configured-removed-linked-fstat-close",
+        ("fstat-inode@linked", "close-error@linked"),
+        "configured-removed-linked-fstat-io-class",
+    ),
+)
+STATIC_GIT_METADATA_HISTORICAL_PAIR_CONTAINMENT_COUNT = 17
+STATIC_GIT_METADATA_HISTORICAL_PAIR_CONTAINMENT_SHA256 = (
+    "c89bc0e10ccc1cb720014aba723f9a4ecda4c75a5973311d97029e9bc4a33e8e"
+)
+STATIC_GIT_METADATA_HISTORICAL_CROSS_CLASS_MUTANT = (
+    "MUT-HISTORICAL-PAIR-CROSS-CLASS",
+    ("pre-root-symlink@linked", "root-replacement@conventional"),
+    "configuredRemovedHistoricalPairs[17]",
+)
+STATIC_GIT_METADATA_HISTORICAL_CROSS_CLASS_FINDING = (
+    "evidence",
+    "CURRENT",
+    "ACP.EVIDENCE.HISTORICAL_PAIR_RELATION",
+    "configuredRemovedHistoricalPairs[17]",
+)
 STATIC_GIT_METADATA_CONFIGURED_PLAN_IDENTITY_CONTRACT = (
     "non-label",
     "non-terminal",
@@ -1576,25 +1711,33 @@ STATIC_GIT_METADATA_CONFIGURED_PLAN_SHA256 = (
 )
 STATIC_GIT_METADATA_CONFIGURED_PLAN_RECEIPT_FIELDS = (
     "executionId",
-    "observedCallback",
-    "observedTarget",
+    "callbackArguments",
+    "callbackEvents",
+    "roleEvents",
+    "metadataEvents",
+    "statEvents",
+    "exceptionEvents",
+    "closeEffects",
+    "interRoleEvidence",
+    "rawEvidenceIdentity",
+    "projectedCallback",
+    "projectedTarget",
+    "projectedPhase",
+    "projectedEffect",
     "observedTargetRole",
     "observedTargetPath",
-    "observedPhase",
     "observedRoleOrdinal",
     "observedCallbackOrdinal",
-    "observedEffect",
-    "callbackEvents",
-    "metadataEvents",
-    "statEvents",
-    "exceptionEvents",
-    "rawEvidenceIdentity",
 )
 STATIC_GIT_METADATA_CONFIGURED_PLAN_RAW_EVIDENCE_FIELDS = (
+    "callbackArguments",
     "callbackEvents",
+    "roleEvents",
     "metadataEvents",
     "statEvents",
     "exceptionEvents",
+    "closeEffects",
+    "interRoleEvidence",
 )
 STATIC_GIT_METADATA_CONFIGURED_PLAN_RECEIPT_PROJECTION_FIELDS = (
     "callback",
@@ -1603,55 +1746,131 @@ STATIC_GIT_METADATA_CONFIGURED_PLAN_RECEIPT_PROJECTION_FIELDS = (
     "effect",
 )
 STATIC_GIT_METADATA_CONFIGURED_PLAN_RECEIPT_IDENTITY_CONTRACT = (
-    "derive-raw-evidence-identity-from-actual-callback-metadata-stat-and-exception-events-before-semantic-projection",
-    "derive-semantic-fields-only-from-raw-evidence",
+    "capture-root-relative-or-descriptor-role-ordinal-actual-callback-arguments-with-argument-type-and-event-ordinal",
+    "derive-raw-evidence-identity-from-callback-role-metadata-stat-exception-close-and-inter-role-events-before-semantic-projection",
+    "pure-projector-accepts-only-raw-receipt-and-derives-semantic-fields",
     "must-not-read-configured-plan-case-row-expected-finding-or-terminal-result",
-    "project-callback-target-phase-effect-and-require-exact-declared-plan-equality-before-binding",
+    "separate-binder-validates-raw-integrity-and-exact-callback-target-phase-effect-against-declared-plan",
+)
+STATIC_GIT_METADATA_CONFIGURED_PLAN_RECEIPT_FINDING_FIELDS = (
+    "stage",
+    "phase",
+    "code",
+    "locationTemplate",
+    "indexSource",
+)
+STATIC_GIT_METADATA_CONFIGURED_PLAN_RECEIPT_FINDING = (
+    "evidence",
+    "CURRENT",
+    "ACP.EVIDENCE.CONFIGURED_PLAN_MISMATCH",
+    "configuredPlanReceipts[{index}].{coordinate}",
+    "derive-index-from-executionId-in-frozen-receipt-order",
+)
+STATIC_GIT_METADATA_CONFIGURED_PLAN_RECEIPT_BINDER_CONTRACT = (
+    "projector-input-raw-receipt-only",
+    "binder-input-raw-receipt-projection-declared-plan-derived-index",
+    "close-result-and-inter-role-are-raw-integrity-relations-before-four-field-plan-equality",
+    "first-exact-raw-or-plan-coordinate-mismatch-only",
 )
 STATIC_GIT_METADATA_CONFIGURED_PLAN_RECEIPT_COUNT = 22
 STATIC_GIT_METADATA_CONFIGURED_PLAN_RECEIPT_SHA256 = (
-    "44e55951513a7f7ab555765007a17335198681f09a0fbb8b7cf907b243335ad5"
+    "6aeb777713725dcb8e59704ba4bf93f011770e1584e8a9d8c5ca9d75bc49191a"
 )
 STATIC_GIT_METADATA_CONFIGURED_PLAN_RECEIPT_MUTANT_FIELDS = (
     "mutantId",
     "executionId",
-    "coordinate",
-    "mutation",
-    "expectedDisposition",
+    "expectedCoordinate",
+    "mutationLayer",
+    "rawCoordinate",
+    "operation",
+    "findingLocation",
 )
 STATIC_GIT_METADATA_CONFIGURED_PLAN_RECEIPT_MUTANTS = (
     (
         "MUT-CONFIGURED-PLAN-RECEIPT-CALLBACK",
         "fstat-type@linked",
         "callback",
-        "replace-with-different-closed-callback",
-        "exact-plan-receipt-binding-fails",
+        "raw",
+        "callback",
+        "replace-custom-callback-with-other-closed-callback",
+        "configuredPlanReceipts[14].callback",
     ),
     (
         "MUT-CONFIGURED-PLAN-RECEIPT-TARGET",
         "fstat-type@linked",
         "target",
-        "replace-with-different-role-path-target",
-        "exact-plan-receipt-binding-fails",
+        "raw",
+        "target",
+        "replace-callback-target-argument",
+        "configuredPlanReceipts[14].target",
     ),
     (
         "MUT-CONFIGURED-PLAN-RECEIPT-PHASE",
         "fstat-type@linked",
         "phase",
-        "replace-with-different-closed-phase-order",
-        "exact-plan-receipt-binding-fails",
+        "raw",
+        "phase",
+        "replace-callback-event-ordinal",
+        "configuredPlanReceipts[14].phase",
     ),
     (
         "MUT-CONFIGURED-PLAN-RECEIPT-EFFECT",
         "fstat-type@linked",
         "effect",
-        "replace-with-different-closed-effect",
-        "exact-plan-receipt-binding-fails",
+        "raw",
+        "effect",
+        "replace-stat-effect-evidence",
+        "configuredPlanReceipts[14].effect",
+    ),
+    (
+        "MUT-CONFIGURED-PLAN-RECEIPT-NOOP",
+        "fstat-type@linked",
+        "rawReceipt",
+        "raw",
+        "callbackEvents",
+        "remove-custom-callback-trigger",
+        "configuredPlanReceipts[14].rawReceipt",
+    ),
+    (
+        "MUT-CONFIGURED-PLAN-RECEIPT-CLOSE-RESULT",
+        "close-error@linked",
+        "closeEffects",
+        "raw",
+        "closeEffects",
+        "replace-observed-close-error-with-ok",
+        "configuredPlanReceipts[21].closeEffects",
+    ),
+    (
+        "MUT-CONFIGURED-PLAN-RECEIPT-INTER-ROLE",
+        "between-read-linked-directory@linked",
+        "interRoleEvidence",
+        "raw",
+        "interRoleEvidence",
+        "replace-triggered-before-after-observation-with-unchanged",
+        "configuredPlanReceipts[5].interRoleEvidence",
+    ),
+    (
+        "MUT-CONFIGURED-PLAN-DECLARED-DECOY",
+        "fstat-type@linked",
+        "effect",
+        "declared",
+        "declaredPlan.effect",
+        "replace-declared-plan-after-raw-projection",
+        "configuredPlanReceipts[14].effect",
+    ),
+    (
+        "MUT-CONFIGURED-PLAN-COPY",
+        "fstat-type@linked",
+        "effect",
+        "projection",
+        "declaredPlan",
+        "copy-declared-decoy-instead-of-projecting-raw-receipt",
+        "configuredPlanReceipts[14].effect",
     ),
 )
-STATIC_GIT_METADATA_CONFIGURED_PLAN_RECEIPT_MUTANT_COUNT = 4
+STATIC_GIT_METADATA_CONFIGURED_PLAN_RECEIPT_MUTANT_COUNT = 9
 STATIC_GIT_METADATA_CONFIGURED_PLAN_RECEIPT_MUTANT_SHA256 = (
-    "82edf76324128f8a05909768c9aae0c2e801f2e105f053549b00a8c5ce28ddf3"
+    "ee07a38c65f452cc3b2c743b869bf6e6f5e131afd8a0f28f31c9b6e08851081f"
 )
 STATIC_GIT_METADATA_VALID_EXECUTION_BINDING_FIELDS = (
     "configuredStimulusIdentity",
@@ -2194,8 +2413,8 @@ STATIC_GIT_TEXTUAL_TRANSFORMATION_BYTE_IDENTITIES = (
         (("C3_HEAD_OID",), ()),
         14,
         "3c84561a66be097818466a1745b2d0c9ab2e1b8830e21f87aada75d6f51fa84d",
-        41,
-        "e10ef6c0d91b1551fb41f2043ef6efdf5dd161775b4a6abc328ef5a6ae89332d",
+        39,
+        "56be674446a5f3e666c502bb1bc223d9b3070a5b69822b7eb6b23723896d3b6b",
     ),
     (
         "head",
@@ -2204,8 +2423,8 @@ STATIC_GIT_TEXTUAL_TRANSFORMATION_BYTE_IDENTITIES = (
         (("C3_HEAD_OID",), ()),
         14,
         "3c84561a66be097818466a1745b2d0c9ab2e1b8830e21f87aada75d6f51fa84d",
-        41,
-        "e3f3d59b587fc7a5beaef3ee3cc8fa1b7bfd482d5ce2a5604cb9a0743cf462a5",
+        29,
+        "52178e3a08325482127aad6b4347767bd08f83adc21d5c734bf39943469abf20",
     ),
     (
         "red_type",
@@ -2384,8 +2603,8 @@ STATIC_GIT_TEXTUAL_TRANSFORMATION_BYTE_IDENTITIES = (
         (("C3_HEAD_OID", "RED_HEAD_OID"), ("RED_HEAD_OID",)),
         29,
         "48411b289a7ead58c64ec84b9f691e168c0bc489a6acd839d23b41e94722141c",
-        56,
-        "6da4ee90c1c770273fb5b7f45140b51b3a7f2bf4cc2661b6158617a0a13aa286",
+        54,
+        "461d6a211f2b7bb4a2c72f1c771878119f90c7d77ce397323bd44f3c0241d6db",
     ),
     (
         "ancestry_chain",
@@ -2481,8 +2700,8 @@ STATIC_GIT_TEXTUAL_TRANSFORMATION_BYTE_IDENTITIES = (
         ),
         85,
         "5a592f86d5603a45567ce109c8dd7d10ddebd7b205fc5bebb4b0a130d57bdce1",
-        111,
-        "0e3cc7be02467c2d6fc06bb2a1f803d78428917f9c18c2295d3453397f01b06c",
+        110,
+        "26257b226bbf240aa4b163fcc4114b410bf3d5043654f845ab366a6886b4ae25",
     ),
     (
         "red_objects",
@@ -2605,7 +2824,109 @@ STATIC_GIT_TEXTUAL_TRANSFORMATION_BYTE_IDENTITIES = (
 )
 STATIC_GIT_TEXTUAL_TRANSFORMATION_BYTE_IDENTITY_COUNT = 44
 STATIC_GIT_TEXTUAL_TRANSFORMATION_BYTE_IDENTITY_SHA256 = (
-    "59d4077c8ab7ae0ac9f72181b62dc0e628921c60b86797919d8d96af1dcbcab2"
+    "29938b5b3c6533e7e97c852f7dfb95b606763bdbe18e81d1a14e02535483e492"
+)
+STATIC_GIT_POSITION_BOUND_CASE_FIELDS = (
+    "caseId",
+    "role",
+    "mutation",
+    "stage",
+    "code",
+    "location",
+    "exactStoppedRolePrefix",
+)
+_STATIC_GIT_POSITION_PREFIX_HEAD = ("object_format", "object_integrity", "head")
+_STATIC_GIT_POSITION_PREFIX_ANCESTRY = (
+    *_STATIC_GIT_POSITION_PREFIX_HEAD,
+    "red_type",
+    "red_size",
+    "red_ancestor",
+    "merge_scan",
+    "ancestry_chain",
+)
+_STATIC_GIT_POSITION_PREFIX_RED_OBJECTS = (
+    *_STATIC_GIT_POSITION_PREFIX_ANCESTRY,
+    "c3_other_scope",
+    "c3_freeze_change",
+    "red_objects",
+)
+STATIC_GIT_POSITION_BOUND_CASES = (
+    (
+        "ancestry-reversed",
+        "ancestry_chain",
+        "reverse-two-required-oids",
+        "freeze",
+        "ACP.FREEZE.HISTORY_CHAIN",
+        "redHead..HEAD",
+        _STATIC_GIT_POSITION_PREFIX_ANCESTRY,
+    ),
+    (
+        "ancestry-missing-token",
+        "ancestry_chain",
+        "remove-red-head-token",
+        "git",
+        "ACP.GIT.OUTPUT_TOKEN",
+        "ancestry_chain",
+        _STATIC_GIT_POSITION_PREFIX_ANCESTRY,
+    ),
+    (
+        "ancestry-duplicate-token",
+        "ancestry_chain",
+        "duplicate-red-head-token",
+        "git",
+        "ACP.GIT.OUTPUT_TOKEN",
+        "ancestry_chain",
+        _STATIC_GIT_POSITION_PREFIX_ANCESTRY,
+    ),
+    (
+        "ancestry-known-oid-wrong-column",
+        "ancestry_chain",
+        "append-c3-head-at-column-two",
+        "git",
+        "ACP.GIT.OUTPUT_TOKEN",
+        "ancestry_chain",
+        _STATIC_GIT_POSITION_PREFIX_ANCESTRY,
+    ),
+    (
+        "red-objects-missing-row",
+        "red_objects",
+        "remove-repository-oracle-row",
+        "git",
+        "ACP.GIT.OUTPUT_LINES",
+        "red_objects",
+        _STATIC_GIT_POSITION_PREFIX_RED_OBJECTS,
+    ),
+    (
+        "red-objects-swapped-rows",
+        "red_objects",
+        "swap-red-tree-and-matrix-blob-rows",
+        "freeze",
+        "ACP.FREEZE.RED_TREE_MISMATCH",
+        "redTree",
+        _STATIC_GIT_POSITION_PREFIX_RED_OBJECTS,
+    ),
+    (
+        "head-corrupt-uppercase",
+        "head",
+        "uppercase-first-hex-character",
+        "git",
+        "ACP.GIT.OUTPUT_TOKEN",
+        "head",
+        _STATIC_GIT_POSITION_PREFIX_HEAD,
+    ),
+    (
+        "head-valid-but-wrong",
+        "head",
+        "replace-c3-head-with-red-head",
+        "freeze",
+        "ACP.FREEZE.C3_MISSING",
+        "redHead",
+        _STATIC_GIT_POSITION_PREFIX_ANCESTRY,
+    ),
+)
+STATIC_GIT_POSITION_BOUND_CASE_COUNT = 8
+STATIC_GIT_POSITION_BOUND_CASE_SHA256 = (
+    "4604114cb67d2eeacc65351c14bd65040526c8f14e54dcbcf016d5810c723f20"
 )
 STATIC_GIT_TEXTUAL_TRANSFORMATION_BYTE_NORMALIZATION = (
     (
@@ -2703,16 +3024,16 @@ STATIC_GIT_TEXTUAL_TRANSFORMATION_BYTE_NORMALIZATION = (
             (
                 "head",
                 "corrupt_token",
-                ("CORRUPT_UPPERCASE_PREFIX:C3_HEAD_OID",),
+                ("CORRUPT_UPPERCASE_PREFIX:C3_HEAD_OID", "MISSING:C3_HEAD_OID@0:0"),
                 (),
-                "e10ef6c0d91b1551fb41f2043ef6efdf5dd161775b4a6abc328ef5a6ae89332d",
+                "56be674446a5f3e666c502bb1bc223d9b3070a5b69822b7eb6b23723896d3b6b",
             ),
             (
                 "head",
                 "valid_token",
-                ("ROLE_INELIGIBLE:RED_HEAD_OID",),
+                ("MISPLACED:RED_HEAD_OID@0:0", "MISSING:C3_HEAD_OID@0:0"),
                 (),
-                "e3f3d59b587fc7a5beaef3ee3cc8fa1b7bfd482d5ce2a5604cb9a0743cf462a5",
+                "52178e3a08325482127aad6b4347767bd08f83adc21d5c734bf39943469abf20",
             ),
             (
                 "merge_scan",
@@ -2738,32 +3059,32 @@ STATIC_GIT_TEXTUAL_TRANSFORMATION_BYTE_NORMALIZATION = (
             (
                 "ancestry_chain",
                 "corrupt_token",
-                ("CORRUPT_UPPERCASE_PREFIX:C3_HEAD_OID",),
+                ("CORRUPT_UPPERCASE_PREFIX:C3_HEAD_OID", "MISSING:C3_HEAD_OID@0:0"),
                 ("RED_HEAD_OID",),
-                "6da4ee90c1c770273fb5b7f45140b51b3a7f2bf4cc2661b6158617a0a13aa286",
+                "461d6a211f2b7bb4a2c72f1c771878119f90c7d77ce397323bd44f3c0241d6db",
             ),
             (
                 "ancestry_chain",
                 "valid_token",
-                ("f" * 40,),
+                ("f" * 40, "MISSING:C3_HEAD_OID@0:0"),
                 ("RED_HEAD_OID",),
                 "5871e0cebd48e4f83aeeeb25ed5d0b3a68b1b1b09fc0e7943335c70b29db5fa4",
             ),
             (
                 "red_objects",
                 "corrupt_token",
-                ("CORRUPT_UPPERCASE_PREFIX:RED_TREE_OID",),
+                ("CORRUPT_UPPERCASE_PREFIX:RED_TREE_OID", "MISSING:RED_TREE_OID@0:0"),
                 (
                     "MATRIX_BLOB_OID",
                     "CORE_ORACLE_BLOB_OID",
                     "REPOSITORY_ORACLE_BLOB_OID",
                 ),
-                "0e3cc7be02467c2d6fc06bb2a1f803d78428917f9c18c2295d3453397f01b06c",
+                "26257b226bbf240aa4b163fcc4114b410bf3d5043654f845ab366a6886b4ae25",
             ),
             (
                 "red_objects",
                 "valid_token",
-                ("f" * 40,),
+                ("f" * 40, "MISSING:RED_TREE_OID@0:0"),
                 (
                     "MATRIX_BLOB_OID",
                     "CORE_ORACLE_BLOB_OID",
@@ -2776,7 +3097,7 @@ STATIC_GIT_TEXTUAL_TRANSFORMATION_BYTE_NORMALIZATION = (
     ("hostileOidEvidenceCount", 9),
     (
         "hostileOidEvidenceSha256",
-        "9857553f7bfefc345c64de7a5d0f8168d7d3a0a431f11a936e2ec0b3f8061502",
+        "0997c929375f6e5216ed9d0d8ace2ccb366a5bf1e2f43632abc6e330efffbbca",
     ),
     (
         "hostileOidInequalityContract",
@@ -2872,7 +3193,7 @@ STATIC_GIT_METADATA_GOVERNED_PRECEDENCE_MUTANT_COUNT = 1
 STATIC_GIT_METADATA_GOVERNED_PRECEDENCE_MUTANT_SHA256 = (
     "ddaf256a0bdf6c063ab8fd0e5a8eeb74ec97b4c78a58d380f17ed8a93453093e"
 )
-STATIC_RESET31_BUDGET_CAPS = (
+STATIC_RESET32_BUDGET_CAPS = (
     (
         "perFile",
         (
@@ -2888,8 +3209,10 @@ STATIC_RESET31_BUDGET_CAPS = (
     ("aggregate", ("sevenSemanticPaths", 34000)),
     ("binary", 0),
 )
-STATIC_RESET31_READABILITY_DISPOSITION = (
+STATIC_RESET32_READABILITY_DISPOSITION = (
     "actual-at-or-above-85-percent-requires-recorded-readability-and-convergence-risk-review",
+    "core-oracle-3694-of-4200-87.95-percent-risk-pass-explicit-semantic-literal-only-no-compression-below-90-percent",
+    "protocol-3709-of-4200-88.31-percent-risk-pass-all-cases-explicit-named-immutable-prefix-tuples-only-deduplicate-literals-below-90-percent",
     "actual-at-or-above-90-percent-stops-before-C3-and-GREEN-for-decomposition",
     "semantic-compression-to-fit-cap-prohibited",
 )

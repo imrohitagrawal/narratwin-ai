@@ -71,8 +71,11 @@ DETERMINISTIC_GIT_METADATA = {
     "GIT_COMMITTER_DATE": "1704067200 +0000",
 }
 GOVERNED_FIXTURE_PARENT_BYTES = 700
-GOVERNED_FIXTURE_PARENT_DEPTH = 16
+GOVERNED_FIXTURE_PARENT_DEPTH = 18
 GOVERNED_FIXTURE_SLOT_BYTES = 48
+PORTABLE_ROOT_SLOT_NAMES = ("r32-a0", "r32-b0")
+PORTABLE_ROOT_CHILD_COMPONENT_BYTES = (12, 12, 12, 12, 12, 15)
+PORTABLE_ROOT_RELATIVE_DELTA = (81, 6)
 MetadataCaseRow = tuple[str, str, str, str, str, str | None, str]
 NormalizedMetadataIo = tuple[str, ...]
 MetadataRoleTrace = tuple[str, NormalizedMetadataIo]
@@ -104,6 +107,12 @@ class MetadataCollection:
     close_orders: tuple[MetadataCloseOrderRow, ...]
     normalized_payloads: tuple[MetadataNormalizedPayloadRow, ...]
     configured_plan_receipts: tuple[ConfiguredPlanReceipt, ...]
+
+
+@dataclass(frozen=True)
+class ConfiguredProjectionResult:
+    projection: tuple[str, str, str, str] | None
+    findings: tuple[protocol.Finding, ...]
 
 
 TextualTransformation = tuple[str, str, bool, str | None, str | None, str | None]
@@ -962,6 +971,7 @@ EXPECTED_METADATA_EXECUTION_CONTRACT_FIELDS = (
 )
 EXPECTED_METADATA_TRIGGER_RECEIPT_FIELDS = (
     "role",
+    "callbackArgumentVector",
     "callbackVector",
     "lstatVector",
     "openVector",
@@ -975,26 +985,52 @@ EXPECTED_METADATA_TRIGGER_RECEIPT_FIELDS = (
     "rawCloseAttemptOrderVector",
     "closeResultVector",
 )
+EXPECTED_METADATA_INTER_ROLE_TRIGGER_RECEIPT_FIELDS = (
+    "role",
+    "afterRole",
+    "path",
+    "beforeType",
+    "afterType",
+    "identityChanged",
+    "triggered",
+)
 EXPECTED_METADATA_TRIGGER_RECEIPT_COUNT = 129
 EXPECTED_METADATA_TRIGGER_RECEIPT_SHA256 = (
-    "0c61c46db77fcd5a5f2ee21d2839fce9d02edf5fdacf4641410c53aad4ec95a6"
+    "a7891e4113c89b48be4dedcc3f260d5211d622853ec16f52b5f4f9e355015d0e"
 )
 EXPECTED_METADATA_TRIGGER_RECEIPT_SCHEDULE_CONTRACT = (
     "fixture-parent-fsencoded-length-exactly-700",
-    "fixture-parent-lexical-depth-exactly-16",
+    "fixture-parent-lexical-depth-exactly-18",
+    "one-cleanup-owned-platform-temporary-base",
+    "equal-width-A-B-slots",
+    "B-relative-delta-exactly-81-filesystem-bytes-and-6-lexical-components",
+    "resolved-base-inode-stable-through-both-collectors",
+    "feasible-final-components-each-8-through-255-bytes-before-creation",
     "fixed-width-neutral-child-slots-before-two-variable-final-components",
     "raw-read-requests-equal-cap-minus-consumed",
     "raw-read-chunks-concatenate-to-observed-payload",
     "raw-read-request-chunk-count-and-type-vectors-exact",
     "raw-close-attempt-result-and-order-vectors-exact",
     "path-content-normalized-only-for-portable-payload-identity",
-    "measure-original-root-shapes-27-bytes-depth-4-and-108-bytes-depth-10",
     "run-complete-129-case-collector-independently-under-each-root",
     "separate-execution-stimulus-trigger-receipt-raw-read-close-order-normalized-payload-catalogs-row-and-digest-equal",
 )
-EXPECTED_METADATA_FIXTURE_ROOT_REPLAY_LENGTHS = (27, 108)
-EXPECTED_METADATA_FIXTURE_ROOT_REPLAY_DEPTHS = (4, 10)
-EXPECTED_METADATA_FIXTURE_FINAL_COMPONENT_BYTES = ((90, 91), (197, 197))
+EXPECTED_METADATA_FIXTURE_ROOT_RELATION_FIELDS = (
+    "slot",
+    "relativeFilesystemByteDelta",
+    "relativeLexicalDepthDelta",
+)
+EXPECTED_METADATA_FIXTURE_ROOT_RELATIONS = (("A", 0, 0), ("B", 81, 6))
+EXPECTED_METADATA_FIXTURE_PORTABLE_OWNER_MODELS = (("darwin", 27, 4), ("linux", 17, 3))
+EXPECTED_METADATA_FIXTURE_OWNERSHIP_CONTRACT = (
+    "one-cleanup-owned-platform-temporary-base",
+    "equal-width-A-B-slot-components",
+    "B-only-six-component-relative-suffix",
+    "resolved-base-inode-owned-and-stable",
+    "feasibility-plan-proved-before-creation",
+    "infeasible-model-fails-before-filesystem-mutation",
+    "no-hardcoded-private-tmp",
+)
 EXPECTED_METADATA_COLLECTION_FIELDS = (
     "fullExecutions",
     "stimuli",
@@ -1005,7 +1041,8 @@ EXPECTED_METADATA_COLLECTION_FIELDS = (
     "configuredPlanReceipts",
 )
 EXPECTED_METADATA_ROOT_REPLAY_ENVELOPE_FIELDS = (
-    "rootShape",
+    "slot",
+    "relativeRootShape",
     "governedParentShape",
     "finalComponentLengths",
     "evidenceIdentity",
@@ -1019,15 +1056,22 @@ EXPECTED_METADATA_ROOT_REPLAY_EVIDENCE_FIELDS = (
     "normalizedPayloadCatalog",
 )
 EXPECTED_METADATA_ROOT_REPLAY_EVIDENCE_IDENTITY_SHA256 = (
-    "4a436fa2d1433aa757c3823d81d1903cd6fcff124af30e083210d9d651968bec"
-)
-EXPECTED_METADATA_ROOT_REPLAY_ENVELOPES = (
-    ((27, 4), (700, 16), (90, 91), EXPECTED_METADATA_ROOT_REPLAY_EVIDENCE_IDENTITY_SHA256),
-    ((108, 10), (700, 16), (197, 197), EXPECTED_METADATA_ROOT_REPLAY_EVIDENCE_IDENTITY_SHA256),
+    "d47f7eb94ac3ad3e841ba4e99741e2a346683f059bb493fc120b03c5d40eeeee"
 )
 EXPECTED_METADATA_ROOT_REPLAY_ENVELOPE_COUNT = 2
-EXPECTED_METADATA_ROOT_REPLAY_ENVELOPE_SHA256 = (
-    "9d4ea90d35d429c1b1018fb3ad9af8f0b59bd0b4592d0bea1c933120ddc1024a"
+EXPECTED_METADATA_ROOT_REPLAY_RELATION_SHA256 = (
+    "9fd9494f55f68a5a611dd9be45bdc325f09045f264d42e44cb6ecd834829f019"
+)
+EXPECTED_METADATA_ROOT_REPLAY_RUNTIME_CONTRACT = (
+    "derive-runtime-envelope-from-owned-base-and-relative-relation",
+    "final-components-each-8-through-255-filesystem-bytes",
+    "governed-parent-exactly-700-bytes-depth-18",
+    "both-evidence-identities-exact-and-equal",
+)
+EXPECTED_METADATA_ROOT_REPLAY_CONFIGURED_PLAN_RECEIPT_EQUALITY = (
+    "capture-under-each-root",
+    "exact-row-equality",
+    "exact-digest-equality-before-portability-credit",
 )
 EXPECTED_METADATA_RAW_READ_FIELDS = (
     "executionId",
@@ -1052,7 +1096,7 @@ EXPECTED_METADATA_CLOSE_ORDER_FIELDS = (
 )
 EXPECTED_METADATA_CLOSE_ORDER_COUNT = 466
 EXPECTED_METADATA_CLOSE_ORDER_SHA256 = (
-    "3c97f0952634e4ff610bef7f61565e90ccaadda0fe36b25263b3e453499246a3"
+    "1072b8834f65136320bf419d760eae50cf916fc8b411a90362f2c100a6fdcf73"
 )
 EXPECTED_METADATA_NORMALIZED_PAYLOAD_FIELDS = (
     "executionId",
@@ -1164,6 +1208,113 @@ EXPECTED_METADATA_CONFIGURED_REMOVED_HISTORICAL_PAIR_SHA256 = (
 EXPECTED_METADATA_CONFIGURED_REMOVED_HISTORICAL_SOURCE_IDENTITY = (
     "Reset29:be4aba72a9b808569091ed5c69471f7c747eca6e:"
     "EXPECTED_METADATA_FORMER_COLLISION_GROUPS[-17:]"
+)
+EXPECTED_METADATA_HISTORICAL_PAIR_CONTAINMENT_FIELDS = (
+    "historicalGroupName",
+    "executionPair",
+    "uniqueCompleteClass",
+)
+EXPECTED_METADATA_HISTORICAL_PAIR_CONTAINMENTS: tuple[tuple[object, ...], ...] = (
+    (
+        "configured-removed-linked-pre-root-fstat",
+        ("pre-root-symlink@linked", "fstat-type@linked"),
+        "configured-removed-linked-pre-root-class",
+    ),
+    (
+        "configured-removed-linked-pre-root-open",
+        ("pre-root-symlink@linked", "open-error@linked"),
+        "configured-removed-linked-pre-root-class",
+    ),
+    (
+        "configured-removed-conventional-ancestor",
+        ("root-replacement@conventional", "ancestor-replacement@conventional"),
+        "configured-removed-conventional-race-and-io-class",
+    ),
+    (
+        "configured-removed-conventional-between",
+        (
+            "root-replacement@conventional",
+            "between-read-conventional-dot-git@conventional",
+        ),
+        "configured-removed-conventional-race-and-io-class",
+    ),
+    (
+        "configured-removed-conventional-final",
+        ("root-replacement@conventional", "final-binding-revalidation@conventional"),
+        "configured-removed-conventional-race-and-io-class",
+    ),
+    (
+        "configured-removed-conventional-leaf",
+        ("root-replacement@conventional", "leaf-replacement@conventional"),
+        "configured-removed-conventional-race-and-io-class",
+    ),
+    (
+        "configured-removed-conventional-fstat-device",
+        ("root-replacement@conventional", "fstat-device@conventional"),
+        "configured-removed-conventional-race-and-io-class",
+    ),
+    (
+        "configured-removed-conventional-fstat-inode",
+        ("root-replacement@conventional", "fstat-inode@conventional"),
+        "configured-removed-conventional-race-and-io-class",
+    ),
+    (
+        "configured-removed-conventional-fstat-type",
+        ("root-replacement@conventional", "fstat-type@conventional"),
+        "configured-removed-conventional-race-and-io-class",
+    ),
+    (
+        "configured-removed-conventional-lstat",
+        ("root-replacement@conventional", "lstat-error@conventional"),
+        "configured-removed-conventional-race-and-io-class",
+    ),
+    (
+        "configured-removed-conventional-open",
+        ("root-replacement@conventional", "open-error@conventional"),
+        "configured-removed-conventional-race-and-io-class",
+    ),
+    (
+        "configured-removed-conventional-close",
+        ("root-replacement@conventional", "close-error@conventional"),
+        "configured-removed-conventional-race-and-io-class",
+    ),
+    (
+        "configured-removed-linked-root-leaf",
+        ("root-replacement@linked", "leaf-replacement@linked"),
+        "configured-removed-linked-root-class",
+    ),
+    (
+        "configured-removed-linked-root-postread",
+        ("root-replacement@linked", "post-read-device@linked"),
+        "configured-removed-linked-root-class",
+    ),
+    (
+        "configured-removed-linked-between-read",
+        (
+            "between-read-linked-directory@linked",
+            "between-read-common-directory@linked",
+        ),
+        "configured-removed-linked-between-read-class",
+    ),
+    (
+        "configured-removed-linked-fstat-lstat",
+        ("fstat-inode@linked", "lstat-error@linked"),
+        "configured-removed-linked-fstat-io-class",
+    ),
+    (
+        "configured-removed-linked-fstat-close",
+        ("fstat-inode@linked", "close-error@linked"),
+        "configured-removed-linked-fstat-io-class",
+    ),
+)
+EXPECTED_METADATA_HISTORICAL_PAIR_CONTAINMENT_COUNT = 17
+EXPECTED_METADATA_HISTORICAL_PAIR_CONTAINMENT_SHA256 = (
+    "c89bc0e10ccc1cb720014aba723f9a4ecda4c75a5973311d97029e9bc4a33e8e"
+)
+EXPECTED_METADATA_HISTORICAL_CROSS_CLASS_MUTANT = (
+    "MUT-HISTORICAL-PAIR-CROSS-CLASS",
+    ("pre-root-symlink@linked", "root-replacement@conventional"),
+    "configuredRemovedHistoricalPairs[17]",
 )
 EXPECTED_METADATA_FORMER_COLLISION_GROUPS = (
     (
@@ -1329,25 +1480,33 @@ EXPECTED_METADATA_CONFIGURED_PLAN_SHA256 = (
 )
 EXPECTED_METADATA_CONFIGURED_PLAN_RECEIPT_FIELDS = (
     "executionId",
-    "observedCallback",
-    "observedTarget",
+    "callbackArguments",
+    "callbackEvents",
+    "roleEvents",
+    "metadataEvents",
+    "statEvents",
+    "exceptionEvents",
+    "closeEffects",
+    "interRoleEvidence",
+    "rawEvidenceIdentity",
+    "projectedCallback",
+    "projectedTarget",
+    "projectedPhase",
+    "projectedEffect",
     "observedTargetRole",
     "observedTargetPath",
-    "observedPhase",
     "observedRoleOrdinal",
     "observedCallbackOrdinal",
-    "observedEffect",
-    "callbackEvents",
-    "metadataEvents",
-    "statEvents",
-    "exceptionEvents",
-    "rawEvidenceIdentity",
 )
 EXPECTED_METADATA_CONFIGURED_PLAN_RAW_EVIDENCE_FIELDS = (
+    "callbackArguments",
     "callbackEvents",
+    "roleEvents",
     "metadataEvents",
     "statEvents",
     "exceptionEvents",
+    "closeEffects",
+    "interRoleEvidence",
 )
 EXPECTED_METADATA_CONFIGURED_PLAN_RECEIPT_PROJECTION_FIELDS = (
     "callback",
@@ -1356,47 +1515,110 @@ EXPECTED_METADATA_CONFIGURED_PLAN_RECEIPT_PROJECTION_FIELDS = (
     "effect",
 )
 EXPECTED_METADATA_CONFIGURED_PLAN_RECEIPT_IDENTITY_CONTRACT = (
-    "derive-raw-evidence-identity-from-actual-callback-metadata-stat-and-exception-events-before-semantic-projection",
-    "derive-semantic-fields-only-from-raw-evidence",
+    "capture-root-relative-or-descriptor-role-ordinal-actual-callback-arguments-with-argument-type-and-event-ordinal",
+    "derive-raw-evidence-identity-from-callback-role-metadata-stat-exception-close-and-inter-role-events-before-semantic-projection",
+    "pure-projector-accepts-only-raw-receipt-and-derives-semantic-fields",
     "must-not-read-configured-plan-case-row-expected-finding-or-terminal-result",
-    "project-callback-target-phase-effect-and-require-exact-declared-plan-equality-before-binding",
+    "separate-binder-validates-raw-integrity-and-exact-callback-target-phase-effect-against-declared-plan",
 )
 EXPECTED_METADATA_CONFIGURED_PLAN_RECEIPT_COUNT = 22
 EXPECTED_METADATA_CONFIGURED_PLAN_RECEIPT_SHA256 = (
-    "44e55951513a7f7ab555765007a17335198681f09a0fbb8b7cf907b243335ad5"
+    "6aeb777713725dcb8e59704ba4bf93f011770e1584e8a9d8c5ca9d75bc49191a"
 )
 EXPECTED_METADATA_CONFIGURED_PLAN_MUTANTS = (
     (
         "MUT-CONFIGURED-PLAN-RECEIPT-CALLBACK",
         "fstat-type@linked",
         "callback",
-        "replace-with-different-closed-callback",
-        "exact-plan-receipt-binding-fails",
+        "raw",
+        "callback",
+        "replace-custom-callback-with-other-closed-callback",
+        "configuredPlanReceipts[14].callback",
     ),
     (
         "MUT-CONFIGURED-PLAN-RECEIPT-TARGET",
         "fstat-type@linked",
         "target",
-        "replace-with-different-role-path-target",
-        "exact-plan-receipt-binding-fails",
+        "raw",
+        "target",
+        "replace-callback-target-argument",
+        "configuredPlanReceipts[14].target",
     ),
     (
         "MUT-CONFIGURED-PLAN-RECEIPT-PHASE",
         "fstat-type@linked",
         "phase",
-        "replace-with-different-closed-phase-order",
-        "exact-plan-receipt-binding-fails",
+        "raw",
+        "phase",
+        "replace-callback-event-ordinal",
+        "configuredPlanReceipts[14].phase",
     ),
     (
         "MUT-CONFIGURED-PLAN-RECEIPT-EFFECT",
         "fstat-type@linked",
         "effect",
-        "replace-with-different-closed-effect",
-        "exact-plan-receipt-binding-fails",
+        "raw",
+        "effect",
+        "replace-stat-effect-evidence",
+        "configuredPlanReceipts[14].effect",
+    ),
+    (
+        "MUT-CONFIGURED-PLAN-RECEIPT-NOOP",
+        "fstat-type@linked",
+        "rawReceipt",
+        "raw",
+        "callbackEvents",
+        "remove-custom-callback-trigger",
+        "configuredPlanReceipts[14].rawReceipt",
+    ),
+    (
+        "MUT-CONFIGURED-PLAN-RECEIPT-CLOSE-RESULT",
+        "close-error@linked",
+        "closeEffects",
+        "raw",
+        "closeEffects",
+        "replace-observed-close-error-with-ok",
+        "configuredPlanReceipts[21].closeEffects",
+    ),
+    (
+        "MUT-CONFIGURED-PLAN-RECEIPT-INTER-ROLE",
+        "between-read-linked-directory@linked",
+        "interRoleEvidence",
+        "raw",
+        "interRoleEvidence",
+        "replace-triggered-before-after-observation-with-unchanged",
+        "configuredPlanReceipts[5].interRoleEvidence",
+    ),
+    (
+        "MUT-CONFIGURED-PLAN-DECLARED-DECOY",
+        "fstat-type@linked",
+        "effect",
+        "declared",
+        "declaredPlan.effect",
+        "replace-declared-plan-after-raw-projection",
+        "configuredPlanReceipts[14].effect",
+    ),
+    (
+        "MUT-CONFIGURED-PLAN-COPY",
+        "fstat-type@linked",
+        "effect",
+        "projection",
+        "declaredPlan",
+        "copy-declared-decoy-instead-of-projecting-raw-receipt",
+        "configuredPlanReceipts[14].effect",
     ),
 )
+EXPECTED_METADATA_CONFIGURED_PLAN_MUTANT_FIELDS = (
+    "mutantId",
+    "executionId",
+    "expectedCoordinate",
+    "mutationLayer",
+    "rawCoordinate",
+    "operation",
+    "findingLocation",
+)
 EXPECTED_METADATA_CONFIGURED_PLAN_MUTANT_SHA256 = (
-    "82edf76324128f8a05909768c9aae0c2e801f2e105f053549b00a8c5ce28ddf3"
+    "ee07a38c65f452cc3b2c743b869bf6e6f5e131afd8a0f28f31c9b6e08851081f"
 )
 EXPECTED_METADATA_CONFIGURED_EQUIVALENCE_FIELDS = (
     "groupName",
@@ -3393,6 +3615,93 @@ EXPECTED_VERIFIED_GIT_OID_MAPPING_COUNT = 7
 EXPECTED_VERIFIED_GIT_OID_MAPPING_SHA256 = (
     "9f0817328f5e411f2b39ca4bfdc4300cc48884e065d251e929b7569328da028f"
 )
+EXPECTED_POSITION_BOUND_GIT_CASE_FIELDS = (
+    "caseId",
+    "role",
+    "mutation",
+    "stage",
+    "code",
+    "location",
+    "exactStoppedRolePrefix",
+)
+EXPECTED_POSITION_BOUND_GIT_CASES = (
+    (
+        "ancestry-reversed",
+        "ancestry_chain",
+        "reverse-two-required-oids",
+        "freeze",
+        "ACP.FREEZE.HISTORY_CHAIN",
+        "redHead..HEAD",
+        ("object_format", "object_integrity", "head", "red_type", "red_size", "red_ancestor", "merge_scan", "ancestry_chain"),
+    ),
+    (
+        "ancestry-missing-token",
+        "ancestry_chain",
+        "remove-red-head-token",
+        "git",
+        "ACP.GIT.OUTPUT_TOKEN",
+        "ancestry_chain",
+        ("object_format", "object_integrity", "head", "red_type", "red_size", "red_ancestor", "merge_scan", "ancestry_chain"),
+    ),
+    (
+        "ancestry-duplicate-token",
+        "ancestry_chain",
+        "duplicate-red-head-token",
+        "git",
+        "ACP.GIT.OUTPUT_TOKEN",
+        "ancestry_chain",
+        ("object_format", "object_integrity", "head", "red_type", "red_size", "red_ancestor", "merge_scan", "ancestry_chain"),
+    ),
+    (
+        "ancestry-known-oid-wrong-column",
+        "ancestry_chain",
+        "append-c3-head-at-column-two",
+        "git",
+        "ACP.GIT.OUTPUT_TOKEN",
+        "ancestry_chain",
+        ("object_format", "object_integrity", "head", "red_type", "red_size", "red_ancestor", "merge_scan", "ancestry_chain"),
+    ),
+    (
+        "red-objects-missing-row",
+        "red_objects",
+        "remove-repository-oracle-row",
+        "git",
+        "ACP.GIT.OUTPUT_LINES",
+        "red_objects",
+        ("object_format", "object_integrity", "head", "red_type", "red_size", "red_ancestor", "merge_scan", "ancestry_chain", "c3_other_scope", "c3_freeze_change", "red_objects"),
+    ),
+    (
+        "red-objects-swapped-rows",
+        "red_objects",
+        "swap-red-tree-and-matrix-blob-rows",
+        "freeze",
+        "ACP.FREEZE.RED_TREE_MISMATCH",
+        "redTree",
+        ("object_format", "object_integrity", "head", "red_type", "red_size", "red_ancestor", "merge_scan", "ancestry_chain", "c3_other_scope", "c3_freeze_change", "red_objects"),
+    ),
+    (
+        "head-corrupt-uppercase",
+        "head",
+        "uppercase-first-hex-character",
+        "git",
+        "ACP.GIT.OUTPUT_TOKEN",
+        "head",
+        ("object_format", "object_integrity", "head"),
+    ),
+    (
+        "head-valid-but-wrong",
+        "head",
+        "replace-c3-head-with-red-head",
+        "freeze",
+        "ACP.FREEZE.C3_MISSING",
+        "redHead",
+        ("object_format", "object_integrity", "head", "red_type", "red_size", "red_ancestor", "merge_scan", "ancestry_chain"),
+    ),
+)
+EXPECTED_POSITION_BOUND_GIT_CASE_COUNT = 8
+EXPECTED_POSITION_BOUND_GIT_CASE_SHA256 = (
+    "4604114cb67d2eeacc65351c14bd65040526c8f14e54dcbcf016d5810c723f20"
+)
 EXPECTED_HOSTILE_GIT_OID_EVIDENCE_FIELDS = (
     "role",
     "transform",
@@ -3401,19 +3710,19 @@ EXPECTED_HOSTILE_GIT_OID_EVIDENCE_FIELDS = (
     "normalizedTransformedSha256",
 )
 EXPECTED_HOSTILE_GIT_OID_EVIDENCE = (
-    ("head", "corrupt_token", ("CORRUPT_UPPERCASE_PREFIX:C3_HEAD_OID",), (), "e10ef6c0d91b1551fb41f2043ef6efdf5dd161775b4a6abc328ef5a6ae89332d"),
-    ("head", "valid_token", ("ROLE_INELIGIBLE:RED_HEAD_OID",), (), "e3f3d59b587fc7a5beaef3ee3cc8fa1b7bfd482d5ce2a5604cb9a0743cf462a5"),
+    ("head", "corrupt_token", ("CORRUPT_UPPERCASE_PREFIX:C3_HEAD_OID", "MISSING:C3_HEAD_OID@0:0"), (), "56be674446a5f3e666c502bb1bc223d9b3070a5b69822b7eb6b23723896d3b6b"),
+    ("head", "valid_token", ("MISPLACED:RED_HEAD_OID@0:0", "MISSING:C3_HEAD_OID@0:0"), (), "52178e3a08325482127aad6b4347767bd08f83adc21d5c734bf39943469abf20"),
     ("merge_scan", "extra_line", ("e" * 40, "f" * 40), (), "278589e204c8f682c4f8ee88e7452f4ac13fbee299fd5ff8c1e4bee7645900f5"),
     ("merge_scan", "corrupt_token", ("F" * 40,), (), "fd29d675a24e1b3bd4d0538d35610ceaa70214dba8148e0633d956592d5f8e71"),
     ("merge_scan", "valid_token", ("f" * 40,), (), "bba1b0a81a5ad83dd7905145aabfc1cde9e5ac32efcf5f8833ea2995baf8be11"),
-    ("ancestry_chain", "corrupt_token", ("CORRUPT_UPPERCASE_PREFIX:C3_HEAD_OID",), ("RED_HEAD_OID",), "6da4ee90c1c770273fb5b7f45140b51b3a7f2bf4cc2661b6158617a0a13aa286"),
-    ("ancestry_chain", "valid_token", ("f" * 40,), ("RED_HEAD_OID",), "5871e0cebd48e4f83aeeeb25ed5d0b3a68b1b1b09fc0e7943335c70b29db5fa4"),
-    ("red_objects", "corrupt_token", ("CORRUPT_UPPERCASE_PREFIX:RED_TREE_OID",), ("MATRIX_BLOB_OID", "CORE_ORACLE_BLOB_OID", "REPOSITORY_ORACLE_BLOB_OID"), "0e3cc7be02467c2d6fc06bb2a1f803d78428917f9c18c2295d3453397f01b06c"),
-    ("red_objects", "valid_token", ("f" * 40,), ("MATRIX_BLOB_OID", "CORE_ORACLE_BLOB_OID", "REPOSITORY_ORACLE_BLOB_OID"), "6c5c6b52a7f076558deda90c7d5e54bba392b4ad79e991d7750bfaed98d08417"),
+    ("ancestry_chain", "corrupt_token", ("CORRUPT_UPPERCASE_PREFIX:C3_HEAD_OID", "MISSING:C3_HEAD_OID@0:0"), ("RED_HEAD_OID",), "461d6a211f2b7bb4a2c72f1c771878119f90c7d77ce397323bd44f3c0241d6db"),
+    ("ancestry_chain", "valid_token", ("f" * 40, "MISSING:C3_HEAD_OID@0:0"), ("RED_HEAD_OID",), "5871e0cebd48e4f83aeeeb25ed5d0b3a68b1b1b09fc0e7943335c70b29db5fa4"),
+    ("red_objects", "corrupt_token", ("CORRUPT_UPPERCASE_PREFIX:RED_TREE_OID", "MISSING:RED_TREE_OID@0:0"), ("MATRIX_BLOB_OID", "CORE_ORACLE_BLOB_OID", "REPOSITORY_ORACLE_BLOB_OID"), "26257b226bbf240aa4b163fcc4114b410bf3d5043654f845ab366a6886b4ae25"),
+    ("red_objects", "valid_token", ("f" * 40, "MISSING:RED_TREE_OID@0:0"), ("MATRIX_BLOB_OID", "CORE_ORACLE_BLOB_OID", "REPOSITORY_ORACLE_BLOB_OID"), "6c5c6b52a7f076558deda90c7d5e54bba392b4ad79e991d7750bfaed98d08417"),
 )
 EXPECTED_HOSTILE_GIT_OID_EVIDENCE_COUNT = 9
 EXPECTED_HOSTILE_GIT_OID_EVIDENCE_SHA256 = (
-    "9857553f7bfefc345c64de7a5d0f8168d7d3a0a431f11a936e2ec0b3f8061502"
+    "0997c929375f6e5216ed9d0d8ace2ccb366a5bf1e2f43632abc6e330efffbbca"
 )
 EXPECTED_NORMALIZED_GIT_BYTE_IDENTITIES: tuple[NormalizedGitByteIdentity, ...] = (
     ('object_format', 'missing_lf', 'raw-non-oid-bytes', ((), ()), 5, '335277ee77cfc8d51d6602e4137232cf6041aac2bc663777e384b90d5ae74d51', 4, 'b1565820a5cdac40e0520d23f9d0b1497f240ddc51d72eac6423d97d952d444f'),
@@ -3424,8 +3733,8 @@ EXPECTED_NORMALIZED_GIT_BYTE_IDENTITIES: tuple[NormalizedGitByteIdentity, ...] =
     ('head', 'missing_lf', 'named-dynamic-oid-token', (('C3_HEAD_OID',), ('C3_HEAD_OID',)), 14, '3c84561a66be097818466a1745b2d0c9ab2e1b8830e21f87aada75d6f51fa84d', 13, 'cc8ab54fac22c0bdc74773629fccc7f3c46ee854f11f86f892216ea7d8552f29'),
     ('head', 'crlf', 'named-dynamic-oid-token', (('C3_HEAD_OID',), ('C3_HEAD_OID',)), 14, '3c84561a66be097818466a1745b2d0c9ab2e1b8830e21f87aada75d6f51fa84d', 15, 'b3bfaa2d1852e196ca2786988a21d24a9f0e9102317b2286563699e9a6c5a962'),
     ('head', 'extra_line', 'named-dynamic-oid-token', (('C3_HEAD_OID',), ('C3_HEAD_OID',)), 14, '3c84561a66be097818466a1745b2d0c9ab2e1b8830e21f87aada75d6f51fa84d', 16, '365489169dcc9a5c779e1f09a39eaa99584476559001a6222cddd7571834256c'),
-    ('head', 'corrupt_token', 'named-dynamic-oid-token', (('C3_HEAD_OID',), ()), 14, '3c84561a66be097818466a1745b2d0c9ab2e1b8830e21f87aada75d6f51fa84d', 41, 'e10ef6c0d91b1551fb41f2043ef6efdf5dd161775b4a6abc328ef5a6ae89332d'),
-    ('head', 'valid_token', 'named-dynamic-oid-token', (('C3_HEAD_OID',), ()), 14, '3c84561a66be097818466a1745b2d0c9ab2e1b8830e21f87aada75d6f51fa84d', 41, 'e3f3d59b587fc7a5beaef3ee3cc8fa1b7bfd482d5ce2a5604cb9a0743cf462a5'),
+    ('head', 'corrupt_token', 'named-dynamic-oid-token', (('C3_HEAD_OID',), ()), 14, '3c84561a66be097818466a1745b2d0c9ab2e1b8830e21f87aada75d6f51fa84d', 39, '56be674446a5f3e666c502bb1bc223d9b3070a5b69822b7eb6b23723896d3b6b'),
+    ('head', 'valid_token', 'named-dynamic-oid-token', (('C3_HEAD_OID',), ()), 14, '3c84561a66be097818466a1745b2d0c9ab2e1b8830e21f87aada75d6f51fa84d', 29, '52178e3a08325482127aad6b4347767bd08f83adc21d5c734bf39943469abf20'),
     ('red_type', 'missing_lf', 'raw-non-oid-bytes', ((), ()), 7, '50836eee574ecff79dea3b4fd40673d7d000f7a5f177d8a6a3000b59c78383b8', 6, '9505cacb7c710ed17125fcc6cb3669e8ddca6c8cd8af6a31f6b3cd64604c3098'),
     ('red_type', 'crlf', 'raw-non-oid-bytes', ((), ()), 7, '50836eee574ecff79dea3b4fd40673d7d000f7a5f177d8a6a3000b59c78383b8', 8, '03c247f0017db08a67be3cc39595c0c94c04e2808fad0767305c64525479aa85'),
     ('red_type', 'extra_line', 'raw-non-oid-bytes', ((), ()), 7, '50836eee574ecff79dea3b4fd40673d7d000f7a5f177d8a6a3000b59c78383b8', 9, '808ed7f5e3b3532ca1da6db79faf4c7793a428e53c302d2ffbc3b3a782cb52ee'),
@@ -3443,12 +3752,12 @@ EXPECTED_NORMALIZED_GIT_BYTE_IDENTITIES: tuple[NormalizedGitByteIdentity, ...] =
     ('ancestry_chain', 'missing_lf', 'named-dynamic-oid-token', (('C3_HEAD_OID', 'RED_HEAD_OID'), ('C3_HEAD_OID', 'RED_HEAD_OID')), 29, '48411b289a7ead58c64ec84b9f691e168c0bc489a6acd839d23b41e94722141c', 28, 'a216b9b5d810d11aff2979d83c7f0be194ae6bba85ea84e019a6f73a336547a3'),
     ('ancestry_chain', 'crlf', 'named-dynamic-oid-token', (('C3_HEAD_OID', 'RED_HEAD_OID'), ('C3_HEAD_OID', 'RED_HEAD_OID')), 29, '48411b289a7ead58c64ec84b9f691e168c0bc489a6acd839d23b41e94722141c', 30, '589d9c5a372f7168a45ab7b5c8be8b0fe4e018b7694fd6f06b9b0a362c4caef0'),
     ('ancestry_chain', 'extra_line', 'named-dynamic-oid-token', (('C3_HEAD_OID', 'RED_HEAD_OID'), ('C3_HEAD_OID', 'RED_HEAD_OID')), 29, '48411b289a7ead58c64ec84b9f691e168c0bc489a6acd839d23b41e94722141c', 31, 'bc019c0ff28831dd05921ab843784fa7ab2c36e2b2a75257c19e29f81bbb309e'),
-    ('ancestry_chain', 'corrupt_token', 'named-dynamic-oid-token', (('C3_HEAD_OID', 'RED_HEAD_OID'), ('RED_HEAD_OID',)), 29, '48411b289a7ead58c64ec84b9f691e168c0bc489a6acd839d23b41e94722141c', 56, '6da4ee90c1c770273fb5b7f45140b51b3a7f2bf4cc2661b6158617a0a13aa286'),
+    ('ancestry_chain', 'corrupt_token', 'named-dynamic-oid-token', (('C3_HEAD_OID', 'RED_HEAD_OID'), ('RED_HEAD_OID',)), 29, '48411b289a7ead58c64ec84b9f691e168c0bc489a6acd839d23b41e94722141c', 54, '461d6a211f2b7bb4a2c72f1c771878119f90c7d77ce397323bd44f3c0241d6db'),
     ('ancestry_chain', 'valid_token', 'named-dynamic-oid-token', (('C3_HEAD_OID', 'RED_HEAD_OID'), ('RED_HEAD_OID',)), 29, '48411b289a7ead58c64ec84b9f691e168c0bc489a6acd839d23b41e94722141c', 56, '5871e0cebd48e4f83aeeeb25ed5d0b3a68b1b1b09fc0e7943335c70b29db5fa4'),
     ('red_objects', 'missing_lf', 'named-dynamic-oid-token', (('RED_TREE_OID', 'MATRIX_BLOB_OID', 'CORE_ORACLE_BLOB_OID', 'REPOSITORY_ORACLE_BLOB_OID'), ('RED_TREE_OID', 'MATRIX_BLOB_OID', 'CORE_ORACLE_BLOB_OID', 'REPOSITORY_ORACLE_BLOB_OID')), 85, '5a592f86d5603a45567ce109c8dd7d10ddebd7b205fc5bebb4b0a130d57bdce1', 84, '4d98becc0211e1b3e42aafa80a69bf909e3fc0a505039ecfe26f8be81b4bd35a'),
     ('red_objects', 'crlf', 'named-dynamic-oid-token', (('RED_TREE_OID', 'MATRIX_BLOB_OID', 'CORE_ORACLE_BLOB_OID', 'REPOSITORY_ORACLE_BLOB_OID'), ('RED_TREE_OID', 'MATRIX_BLOB_OID', 'CORE_ORACLE_BLOB_OID', 'REPOSITORY_ORACLE_BLOB_OID')), 85, '5a592f86d5603a45567ce109c8dd7d10ddebd7b205fc5bebb4b0a130d57bdce1', 89, '9e22e268ab6916ada22760d160a1928d0b492ba65c6b1cea1da348918fcaebbc'),
     ('red_objects', 'extra_line', 'named-dynamic-oid-token', (('RED_TREE_OID', 'MATRIX_BLOB_OID', 'CORE_ORACLE_BLOB_OID', 'REPOSITORY_ORACLE_BLOB_OID'), ('RED_TREE_OID', 'MATRIX_BLOB_OID', 'CORE_ORACLE_BLOB_OID', 'REPOSITORY_ORACLE_BLOB_OID')), 85, '5a592f86d5603a45567ce109c8dd7d10ddebd7b205fc5bebb4b0a130d57bdce1', 87, 'a2124722752c9f7221f04523fb7a69e56116989b08355d3be23b8cd00755828a'),
-    ('red_objects', 'corrupt_token', 'named-dynamic-oid-token', (('RED_TREE_OID', 'MATRIX_BLOB_OID', 'CORE_ORACLE_BLOB_OID', 'REPOSITORY_ORACLE_BLOB_OID'), ('MATRIX_BLOB_OID', 'CORE_ORACLE_BLOB_OID', 'REPOSITORY_ORACLE_BLOB_OID')), 85, '5a592f86d5603a45567ce109c8dd7d10ddebd7b205fc5bebb4b0a130d57bdce1', 111, '0e3cc7be02467c2d6fc06bb2a1f803d78428917f9c18c2295d3453397f01b06c'),
+    ('red_objects', 'corrupt_token', 'named-dynamic-oid-token', (('RED_TREE_OID', 'MATRIX_BLOB_OID', 'CORE_ORACLE_BLOB_OID', 'REPOSITORY_ORACLE_BLOB_OID'), ('MATRIX_BLOB_OID', 'CORE_ORACLE_BLOB_OID', 'REPOSITORY_ORACLE_BLOB_OID')), 85, '5a592f86d5603a45567ce109c8dd7d10ddebd7b205fc5bebb4b0a130d57bdce1', 110, '26257b226bbf240aa4b163fcc4114b410bf3d5043654f845ab366a6886b4ae25'),
     ('red_objects', 'valid_token', 'named-dynamic-oid-token', (('RED_TREE_OID', 'MATRIX_BLOB_OID', 'CORE_ORACLE_BLOB_OID', 'REPOSITORY_ORACLE_BLOB_OID'), ('MATRIX_BLOB_OID', 'CORE_ORACLE_BLOB_OID', 'REPOSITORY_ORACLE_BLOB_OID')), 85, '5a592f86d5603a45567ce109c8dd7d10ddebd7b205fc5bebb4b0a130d57bdce1', 111, '6c5c6b52a7f076558deda90c7d5e54bba392b4ad79e991d7750bfaed98d08417'),
     ('c3_freeze_size', 'missing_lf', 'raw-non-oid-bytes', ((), ()), 5, 'dc23d3655da416802f01fd3cffd7de986615051f4dd4fc4ff8933b954b9502f3', 4, '8e0c19142ee61342e1f8b09a6fccbcf5867db1542444474ed37ad11bd08eb062'),
     ('c3_freeze_size', 'crlf', 'raw-non-oid-bytes', ((), ()), 5, 'dc23d3655da416802f01fd3cffd7de986615051f4dd4fc4ff8933b954b9502f3', 6, '9477f52ece818433b8980ceb2a3704dd67e7ad11975e00c3c3d30c01c3528201'),
@@ -3463,7 +3772,7 @@ EXPECTED_NORMALIZED_GIT_BYTE_IDENTITIES: tuple[NormalizedGitByteIdentity, ...] =
 )
 EXPECTED_NORMALIZED_GIT_BYTE_IDENTITY_COUNT = 44
 EXPECTED_NORMALIZED_GIT_BYTE_IDENTITY_SHA256 = (
-    "59d4077c8ab7ae0ac9f72181b62dc0e628921c60b86797919d8d96af1dcbcab2"
+    "29938b5b3c6533e7e97c852f7dfb95b606763bdbe18e81d1a14e02535483e492"
 )
 
 
@@ -4084,6 +4393,208 @@ def canonical(value: object) -> bytes:
     return json.dumps(value, sort_keys=True, separators=(",", ":")).encode()
 
 
+def configured_receipt_finding(index: int, coordinate: str) -> tuple[protocol.Finding, ...]:
+    return (
+        protocol.Finding(
+            "evidence",
+            "CURRENT",
+            "ACP.EVIDENCE.CONFIGURED_PLAN_MISMATCH",
+            f"configuredPlanReceipts[{index}].{coordinate}",
+        ),
+    )
+
+
+def project_configured_raw_receipt(
+    raw_receipt: tuple[tuple[str, ...], ...], index: int
+) -> ConfiguredProjectionResult:
+    """Project callback, target, phase, and effect without plan or case data."""
+    (
+        callback_arguments,
+        callback_events,
+        role_events,
+        metadata_events,
+        stat_events,
+        exception_events,
+        close_effects,
+        inter_role_evidence,
+    ) = raw_receipt
+    if not callback_arguments or not role_events:
+        return ConfiguredProjectionResult(None, configured_receipt_finding(index, "rawReceipt"))
+    if any("outside-root:" in event for event in callback_arguments):
+        governed_outside = all("$TMP/$CASE/" in event for event in callback_arguments if "outside-root:" in event)
+        if not governed_outside:
+            return ConfiguredProjectionResult(
+                None, configured_receipt_finding(index, "callbackArguments")
+            )
+    custom_events = tuple(event for event in callback_events if event.endswith(":custom"))
+    if inter_role_evidence:
+        evidence = dict(item.split("=", 1) for item in inter_role_evidence)
+        if evidence.get("triggered") != "true" or evidence.get("identityChanged") != "true":
+            return ConfiguredProjectionResult(
+                None, configured_receipt_finding(index, "interRoleEvidence")
+            )
+        after_role = evidence["afterRole"]
+        inter_projection = {
+            "dot_git": ("dot-git", "after-dot-git-read", "dot-git-replacement"),
+            "prohibited_http_alternates": (
+                "dot-git",
+                "after-prohibited-http-alternates-read",
+                "identity-replacement",
+            ),
+            "linked_git_dir": (
+                "linked-git-dir",
+                "after-linked-git-dir-read",
+                "linked-dir-replacement",
+            ),
+            "common_dir": ("common-dir", "after-common-dir-read", "common-dir-replacement"),
+        }
+        target, phase, effect = inter_projection[after_role]
+        return ConfiguredProjectionResult(("inter-role", target, phase, effect), ())
+    if not custom_events:
+        if "lstat:ok:symlink" not in stat_events:
+            return ConfiguredProjectionResult(
+                None, configured_receipt_finding(index, "rawReceipt")
+            )
+        return ConfiguredProjectionResult(
+            ("filesystem-state", "root-ancestor", "before-discovery", "symlink"), ()
+        )
+    drift_event = next(
+        (event for event in stat_events if event.startswith("fstat:") and "-drift:" in event),
+        None,
+    )
+    callback = custom_events[-1].removesuffix(":custom").rsplit(":", 1)[-1]
+    custom_prefixes = tuple(
+        event.removesuffix(":custom")
+        for event in custom_events
+        if event.removesuffix(":custom").endswith(f":{callback}")
+    )
+    matching_arguments = tuple(
+        event
+        for event in callback_arguments
+        if any(event.startswith(prefix + ":") for prefix in custom_prefixes)
+        and f"roleOrdinal-{len(role_events) - 1}:" in event
+    ) or tuple(
+        event
+        for event in callback_arguments
+        if any(event.startswith(prefix + ":") for prefix in custom_prefixes)
+    )
+    callback_argument = next(
+        (
+            event
+            for event in reversed(matching_arguments)
+            if "$ROOT/.git/info" in event
+        ),
+        next(
+            (
+                event
+                for event in reversed(matching_arguments)
+                if event.endswith("path-$ROOT/.git") or "path-$ROOT/.git:" in event
+            ),
+            next(
+                (
+                    event
+                    for event in reversed(matching_arguments)
+                    if event.endswith("path-$ROOT") or "path-$ROOT:" in event
+                ),
+                matching_arguments[-1] if matching_arguments else "",
+            ),
+        ),
+    )
+    if not callback_argument:
+        return ConfiguredProjectionResult(None, configured_receipt_finding(index, "callback"))
+    if callback == "lstat" and any(
+        "$ROOT/.git/info" in event for event in matching_arguments
+    ):
+        target, phase, effect = "info-ancestor", "after-lstat", "identity-replacement"
+    elif callback == "lstat" and "post-lstat:device-drift:regular" in stat_events:
+        target, phase, effect = "dot-git", "after-read", "device-drift"
+    elif callback == "lstat" and exception_events:
+        if any(event.startswith("lstat:error:") for event in exception_events):
+            target, phase, effect = "dot-git", "initial-lstat", "os-error"
+        else:
+            target = (
+                "root"
+                if callback_argument.endswith("path-$ROOT")
+                or "path-$ROOT:" in callback_argument
+                else "dot-git"
+            )
+            phase, effect = "after-lstat", "identity-replacement"
+    elif callback == "lstat":
+        target, phase, effect = "dot-git", "after-lstat", "identity-replacement"
+    elif callback == "open":
+        target, phase, effect = "dot-git", "initial-open", "os-error"
+    elif callback == "close":
+        if not close_effects or not any("error-" in event for event in close_effects):
+            return ConfiguredProjectionResult(
+                None, configured_receipt_finding(index, "closeEffects")
+            )
+        target, phase, effect = "dot-git", "cleanup", "os-error"
+    else:
+        if callback != "fstat" or drift_event is None:
+            return ConfiguredProjectionResult(None, configured_receipt_finding(index, "effect"))
+        drift = drift_event.split(":", 2)[1].removesuffix("-drift")
+        target = "info-ancestor" if ":role-info_ancestor:" in callback_argument else "dot-git"
+        event_ordinal = int(callback_argument.split(":", 1)[0].removeprefix("event-"))
+        open_ordinals = tuple(
+            int(event.split(":", 1)[0].removeprefix("event-"))
+            for event in callback_arguments
+            if ":open:" in event
+        )
+        phase = "after-open" if open_ordinals and event_ordinal > max(open_ordinals) else "initial-open"
+        effect = f"{drift}-drift"
+    return ConfiguredProjectionResult((callback, target, phase, effect), ())
+
+
+def bind_configured_plan(
+    raw_receipt: tuple[tuple[str, ...], ...],
+    claimed_projection: tuple[str, str, str, str],
+    declared_plan: tuple[str, ...],
+    index: int,
+) -> tuple[protocol.Finding, ...]:
+    projected = project_configured_raw_receipt(raw_receipt, index)
+    if projected.findings:
+        return projected.findings
+    assert projected.projection is not None
+    for coordinate, claimed, observed in zip(
+        EXPECTED_METADATA_CONFIGURED_PLAN_RECEIPT_PROJECTION_FIELDS,
+        claimed_projection,
+        projected.projection,
+        strict=True,
+    ):
+        if claimed != observed:
+            return configured_receipt_finding(index, coordinate)
+    for coordinate, actual, declared in zip(
+        EXPECTED_METADATA_CONFIGURED_PLAN_RECEIPT_PROJECTION_FIELDS,
+        claimed_projection,
+        declared_plan,
+        strict=True,
+    ):
+        if actual != declared:
+            return configured_receipt_finding(index, coordinate)
+    return ()
+
+
+def historical_pair_containment(
+    pair: tuple[str, str],
+    classes: tuple[tuple[str, tuple[str, ...]], ...],
+    index: int,
+) -> tuple[str | None, tuple[protocol.Finding, ...]]:
+    containing = tuple(name for name, members in classes if set(pair) <= set(members))
+    if len(containing) != 1:
+        return (
+            None,
+            (
+                protocol.Finding(
+                    "evidence",
+                    "CURRENT",
+                    "ACP.EVIDENCE.HISTORICAL_PAIR_RELATION",
+                    f"configuredRemovedHistoricalPairs[{index}]",
+                ),
+            ),
+        )
+    return containing[0], ()
+
+
 def reread_matrix_with_controlled_decoy(
     path: Path,
     decoy: bytes,
@@ -4232,37 +4743,81 @@ def normalized_git_text_bytes(
     payload: bytes,
     expected_oid_values: dict[str, bytes],
 ) -> tuple[bytes, tuple[str, ...]]:
-    """Replace only independently verified, role-eligible OIDs by semantic names."""
-    role_semantics = {
-        "head": ("C3_HEAD_OID",),
-        "ancestry_chain": ("C3_HEAD_OID", "RED_HEAD_OID"),
-        "red_objects": (
-            "RED_TREE_OID",
-            "MATRIX_BLOB_OID",
-            "CORE_ORACLE_BLOB_OID",
-            "REPOSITORY_ORACLE_BLOB_OID",
-        ),
-    }
-    if role not in role_semantics:
-        return payload, ()
-    replacements = {
-        expected_oid_values[semantic]: semantic for semantic in role_semantics[role]
-    }
-    observed_names: list[str] = []
-
-    def replace_verified(match: re.Match[bytes]) -> bytes:
-        semantic = replacements.get(match.group())
-        if semantic is None:
-            return match.group()
-        observed_names.append(semantic)
-        return f"<{semantic}>".encode()
-
-    normalized = re.sub(
-        rb"(?<![0-9A-Za-z])[0-9A-Fa-f]{40}(?![0-9A-Za-z])",
-        replace_verified,
-        payload,
+    """Replace only exact OIDs at the seven independently frozen coordinates."""
+    normalized, observed_names, _ = position_bound_git_tokens(
+        role, payload, expected_oid_values
     )
-    return normalized, tuple(observed_names)
+    return normalized, observed_names
+
+
+def position_bound_git_tokens(
+    role: str,
+    payload: bytes,
+    expected_oid_values: dict[str, bytes],
+) -> tuple[bytes, tuple[str, ...], tuple[str, ...]]:
+    mappings = tuple(row for row in EXPECTED_VERIFIED_GIT_OID_MAPPINGS if row[0] == role)
+    if not mappings:
+        raw_hostile = tuple(
+            token.decode("ascii")
+            for token in re.findall(
+                rb"(?<![0-9A-Za-z])[0-9A-Fa-f]{40}(?![0-9A-Za-z])", payload
+            )
+        )
+        return payload, (), raw_hostile
+    coordinate_map = {(row, column): semantic for _, row, column, semantic, _ in mappings}
+    assert len(coordinate_map) == len(mappings)
+    rows = payload.splitlines(keepends=True)
+    normalized_rows: list[bytes] = []
+    observed: list[str] = []
+    hostile_tokens: list[str] = []
+    seen_coordinates: set[tuple[int, int]] = set()
+    known_by_value = {value: name for name, value in expected_oid_values.items()}
+    for row_ordinal, row in enumerate(rows):
+        tokens = tuple(re.finditer(rb"\S+", row.rstrip(b"\r\n")))
+        cursor = 0
+        rebuilt = bytearray()
+        for column_ordinal, match in enumerate(tokens):
+            rebuilt.extend(row[cursor : match.start()])
+            token = match.group()
+            coordinate = (row_ordinal, column_ordinal)
+            semantic = coordinate_map.get(coordinate)
+            if semantic is not None and token == expected_oid_values[semantic]:
+                rebuilt.extend(f"<{semantic}>".encode())
+                observed.append(semantic)
+                seen_coordinates.add(coordinate)
+            else:
+                if re.fullmatch(rb"[0-9A-Fa-f]{40}", token):
+                    exact_semantic = known_by_value.get(token)
+                    corrupt_semantic = next(
+                        (
+                            name
+                            for value, name in known_by_value.items()
+                            if token[:1] == b"A" and token[1:] == value[1:]
+                        ),
+                        None,
+                    )
+                    if exact_semantic is not None:
+                        marker = (
+                            f"MISPLACED:{exact_semantic}@{row_ordinal}:{column_ordinal}"
+                        )
+                        hostile_tokens.append(marker)
+                        rebuilt.extend(f"<{marker}>".encode())
+                    elif corrupt_semantic is not None:
+                        marker = f"CORRUPT_UPPERCASE_PREFIX:{corrupt_semantic}"
+                        hostile_tokens.append(marker)
+                        rebuilt.extend(f"<{marker}>".encode())
+                    else:
+                        hostile_tokens.append(token.decode("ascii"))
+                        rebuilt.extend(token)
+                else:
+                    rebuilt.extend(token)
+            cursor = match.end()
+        rebuilt.extend(row[cursor:])
+        normalized_rows.append(bytes(rebuilt))
+    for coordinate, semantic in coordinate_map.items():
+        if coordinate not in seen_coordinates:
+            hostile_tokens.append(f"MISSING:{semantic}@{coordinate[0]}:{coordinate[1]}")
+    return b"".join(normalized_rows), tuple(observed), tuple(hostile_tokens)
 
 
 def assert_independent_textual_relation(
@@ -4684,18 +5239,27 @@ def frozen_red_nodes() -> tuple[str, ...]:
     raise AssertionError("EXPECTED_RED_FAILURES literal is missing")
 
 
+def portable_governed_parent_plan(root_bytes: int, root_depth: int) -> tuple[int, int, int]:
+    """Return filler count and two feasible final component byte lengths."""
+    filler_count = GOVERNED_FIXTURE_PARENT_DEPTH - 2 - root_depth
+    assert filler_count >= 0
+    bytes_before_finals = root_bytes + filler_count * (GOVERNED_FIXTURE_SLOT_BYTES + 1)
+    final_budget = GOVERNED_FIXTURE_PARENT_BYTES - bytes_before_finals - 2
+    assert 8 * 2 <= final_budget <= 255 * 2
+    first_final = final_budget // 2
+    return filler_count, first_final, final_budget - first_final
+
+
 def governed_fixture_parent(original_root: Path) -> Path:
     """Pad distinct pytest roots to one exact filesystem-byte length."""
     parent = original_root
-    slot_ordinal = 0
-    while len(parent.parts) < GOVERNED_FIXTURE_PARENT_DEPTH - 2:
+    filler_count, first_final_bytes, second_final_bytes = portable_governed_parent_plan(
+        len(os.fsencode(original_root)), len(original_root.parts)
+    )
+    for slot_ordinal in range(filler_count):
         slot_prefix = f"slot-{slot_ordinal:02d}-"
         parent /= slot_prefix + ("p" * (GOVERNED_FIXTURE_SLOT_BYTES - len(slot_prefix)))
-        slot_ordinal += 1
     assert len(parent.parts) == GOVERNED_FIXTURE_PARENT_DEPTH - 2
-    final_bytes = GOVERNED_FIXTURE_PARENT_BYTES - len(os.fsencode(parent)) - 2
-    first_final_bytes = final_bytes // 2
-    second_final_bytes = final_bytes - first_final_bytes
     assert 8 <= first_final_bytes <= 255
     assert 8 <= second_final_bytes <= 255
     parent /= "f" * first_final_bytes
@@ -4898,18 +5462,12 @@ def create_real_git_freeze(
 def _collect_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
     original_tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
-) -> MetadataCollection:
+) -> tuple[MetadataCollection, tuple[int, int], tuple[int, int]]:
     tmp_path = governed_fixture_parent(original_tmp_path)
     assert len(os.fsencode(original_tmp_path)) < len(os.fsencode(tmp_path))
-    replay_index = EXPECTED_METADATA_FIXTURE_ROOT_REPLAY_LENGTHS.index(
-        len(os.fsencode(original_tmp_path))
-    )
-    assert len(original_tmp_path.parts) == EXPECTED_METADATA_FIXTURE_ROOT_REPLAY_DEPTHS[
-        replay_index
-    ]
-    assert tuple(len(os.fsencode(part)) for part in tmp_path.parts[-2:]) == (
-        EXPECTED_METADATA_FIXTURE_FINAL_COMPONENT_BYTES[replay_index]
-    )
+    final_components = tuple(len(os.fsencode(part)) for part in tmp_path.parts[-2:])
+    assert len(final_components) == 2
+    assert all(8 <= length <= 255 for length in final_components)
     root, freeze = create_real_git_freeze(tmp_path)
     metadata_execution_rows: list[MetadataExecution] = []
     metadata_stimulus_rows: list[tuple[MetadataStimulusFacts, str]] = []
@@ -5099,11 +5657,15 @@ def _collect_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability
         observed_lstats: list[os.stat_result] = []
         observed_fstats: list[os.stat_result] = []
         callback_events: list[str] = []
+        callback_argument_events: list[str] = []
         read_requests: list[int] = []
         read_chunk_lengths: list[int] = []
         read_chunks: list[bytes] = []
         read_types: list[str] = []
         close_results: list[str] = []
+        descriptor_open_ordinals: dict[int, int] = {}
+        descriptor_paths: dict[int, Path] = {}
+        closed_descriptors: set[int] = set()
 
         raw_root = os.fspath(called_root)
         if not os.path.isabs(raw_root):
@@ -5128,9 +5690,46 @@ def _collect_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability
                 return "regular"
             return "other"
 
+        def callback_path(path: str, dir_fd: int | None) -> str:
+            assert type(path) is str
+            if dir_fd is not None:
+                assert dir_fd in descriptor_open_ordinals
+                assert dir_fd in descriptor_paths
+                assert dir_fd not in closed_descriptors
+                assert not os.path.isabs(path)
+                candidate = descriptor_paths[dir_fd] / path
+            else:
+                candidate = Path(path)
+            root_path = Path(os.path.normpath(os.fspath(called_root)))
+            candidate_path = Path(os.path.normpath(os.fspath(candidate)))
+            if candidate_path == root_path:
+                return "$ROOT"
+            try:
+                relative = candidate_path.relative_to(root_path).as_posix()
+            except ValueError:
+                try:
+                    distance = len(root_path.relative_to(candidate_path).parts)
+                except ValueError:
+                    normalized = normalized_observed_path(os.fspath(candidate_path))
+                    assert normalized.startswith("$TMP/$CASE")
+                    return "fixture-relative:" + normalized
+                return f"root-ancestor-distance-{distance}"
+            return "$ROOT" if relative == "." else "$ROOT/" + relative
+
+        def callback_prefix(callback: str) -> str:
+            return (
+                f"event-{len(callback_argument_events)}:role-{provenance.role}:"
+                f"roleOrdinal-{len(role_calls) - 1}:{callback}"
+            )
+
         def observed_lstat(path: str, *, dir_fd: int | None = None) -> os.stat_result:
+            event_prefix = callback_prefix("lstat")
+            callback_argument_events.append(
+                f"{event_prefix}:argType-str:path-{callback_path(path, dir_fd)}"
+            )
             callback_events.append(
-                "lstat:" + ("system" if io.lstat is baseline_metadata_io.lstat else "custom")
+                f"{event_prefix}:"
+                + ("system" if io.lstat is baseline_metadata_io.lstat else "custom")
             )
             try:
                 observed = io.lstat(path, dir_fd=dir_fd)
@@ -5162,18 +5761,37 @@ def _collect_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability
             *,
             dir_fd: int | None = None,
         ) -> int:
+            event_prefix = callback_prefix("open")
+            argument_path = callback_path(path, dir_fd)
+            descriptor_candidate = (
+                descriptor_paths[dir_fd] / path if dir_fd is not None else Path(path)
+            )
+            descriptor_candidate = Path(os.path.normpath(os.fspath(descriptor_candidate)))
             callback_events.append(
-                "open:" + ("system" if io.open is baseline_metadata_io.open else "custom")
+                f"{event_prefix}:"
+                + ("system" if io.open is baseline_metadata_io.open else "custom")
             )
             try:
                 descriptor = io.open(path, flags, dir_fd=dir_fd)
             except OSError as error:
+                callback_argument_events.append(
+                    f"{event_prefix}:argTypes-str,int:path-{argument_path}:"
+                    f"flags-{flags}:result-error-{type(error).__name__}"
+                )
                 operations.append(
                     f"open:error:{type(error).__name__}:"
                     + ("errno" if error.errno is not None else "no-errno")
                 )
                 raise
             opened.append(descriptor)
+            assert descriptor not in descriptor_open_ordinals or descriptor in closed_descriptors
+            descriptor_open_ordinals[descriptor] = len(opened) - 1
+            descriptor_paths[descriptor] = descriptor_candidate
+            closed_descriptors.discard(descriptor)
+            callback_argument_events.append(
+                f"{event_prefix}:argTypes-str,int:path-{argument_path}:"
+                f"flags-{flags}:result-openOrdinal-{descriptor_open_ordinals[descriptor]}"
+            )
             operations.append(
                 "open:ok:"
                 + ("directory" if flags & os.O_DIRECTORY else "regular")
@@ -5182,8 +5800,15 @@ def _collect_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability
             return descriptor
 
         def observed_fstat(descriptor: int) -> os.stat_result:
+            event_prefix = callback_prefix("fstat")
+            callback_argument_events.append(
+                f"{event_prefix}:argType-int:descriptorOpenOrdinal-"
+                f"{descriptor_open_ordinals[descriptor]}"
+            )
+            assert descriptor not in closed_descriptors
             callback_events.append(
-                "fstat:" + ("system" if io.fstat is baseline_metadata_io.fstat else "custom")
+                f"{event_prefix}:"
+                + ("system" if io.fstat is baseline_metadata_io.fstat else "custom")
             )
             try:
                 observed = io.fstat(descriptor)
@@ -5207,8 +5832,15 @@ def _collect_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability
             return observed
 
         def observed_read(descriptor: int, count: int) -> bytes:
+            event_prefix = callback_prefix("read")
+            callback_argument_events.append(
+                f"{event_prefix}:argTypes-int,int:descriptorOpenOrdinal-"
+                f"{descriptor_open_ordinals[descriptor]}:count-{count}"
+            )
+            assert descriptor not in closed_descriptors
             callback_events.append(
-                "read:" + ("system" if io.read is baseline_metadata_io.read else "custom")
+                f"{event_prefix}:"
+                + ("system" if io.read is baseline_metadata_io.read else "custom")
             )
             read_requests.append(count)
             try:
@@ -5231,13 +5863,20 @@ def _collect_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability
             return observed
 
         def observed_close(descriptor: int) -> None:
+            event_prefix = callback_prefix("close")
             callback_events.append(
-                "close:" + ("system" if io.close is baseline_metadata_io.close else "custom")
+                f"{event_prefix}:"
+                + ("system" if io.close is baseline_metadata_io.close else "custom")
             )
             close_attempts.append(descriptor)
             try:
                 io.close(descriptor)
             except OSError as error:
+                callback_argument_events.append(
+                    f"{event_prefix}:argType-int:descriptorOpenOrdinal-"
+                    f"{descriptor_open_ordinals[descriptor]}:result-error-{type(error).__name__}"
+                )
+                closed_descriptors.add(descriptor)
                 close_results.append(
                     f"error:{type(error).__name__}:"
                     + ("errno" if error.errno is not None else "no-errno")
@@ -5248,6 +5887,11 @@ def _collect_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability
                 )
                 raise
             close_results.append("ok")
+            callback_argument_events.append(
+                f"{event_prefix}:argType-int:descriptorOpenOrdinal-"
+                f"{descriptor_open_ordinals[descriptor]}:result-ok"
+            )
+            closed_descriptors.add(descriptor)
             operations.append("close:ok")
 
         observed = cast(
@@ -5383,6 +6027,7 @@ def _collect_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability
             (
                 provenance.role,
                 (
+                    "callback-args=" + ";".join(callback_argument_events),
                     "callbacks=" + ",".join(callback_events),
                     "lstats=" + ",".join(item for item in operations if item.startswith("lstat:")),
                     "opens=" + ",".join(item for item in operations if item.startswith("open:")),
@@ -5485,133 +6130,82 @@ def _collect_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability
                     receipt_values["normalized-read-payload-sha256"],
                 )
             )
+        raw_role_receipts = tuple(
+            (
+                role,
+                {item.split("=", 1)[0]: item.split("=", 1)[1] for item in values},
+            )
+            for role, values in frozen_trigger_receipt
+            if role != "inter-role-mutation"
+        )
+        callback_arguments = tuple(
+            item
+            for _, values in raw_role_receipts
+            for item in values["callback-args"].split(";")
+            if item
+        )
+        callback_events = tuple(
+            item
+            for _, values in raw_role_receipts
+            for item in values["callbacks"].split(",")
+            if item
+        )
+        role_events = tuple(
+            f"{ordinal}:{role}" for ordinal, (role, _) in enumerate(raw_role_receipts)
+        )
+        metadata_events = tuple(
+            item
+            for _, values in raw_role_receipts
+            for key in ("lstats", "opens", "fstats", "post-lstats")
+            for item in values[key].split(",")
+            if item
+        )
+        stat_events = tuple(
+            item
+            for item in metadata_events
+            if item.startswith(("lstat:", "fstat:", "post-lstat:"))
+        )
+        exception_events = tuple(item for item in metadata_events if ":error:" in item)
+        close_effects = tuple(
+            item
+            for item in callback_arguments
+            if ":close:" in item
+        )
+        inter_role_evidence = next(
+            (values for role, values in frozen_trigger_receipt if role == "inter-role-mutation"),
+            (),
+        )
+        raw_evidence = (
+            callback_arguments,
+            callback_events,
+            role_events,
+            metadata_events,
+            stat_events,
+            exception_events,
+            close_effects,
+            inter_role_evidence,
+        )
         plan_rows = tuple(
             plan for plan in EXPECTED_METADATA_CONFIGURED_PLANS if plan[0] == execution_id
         )
         if plan_rows:
             assert len(plan_rows) == 1
             declared_plan = plan_rows[0][1:]
-            role_ordinal = max(
-                ordinal
-                for ordinal, (role, _) in enumerate(frozen_trigger_receipt)
-                if role != "inter-role-mutation"
+            receipt_index = len(metadata_configured_plan_receipts)
+            projection_result = project_configured_raw_receipt(raw_evidence, receipt_index)
+            assert projection_result.findings == ()
+            assert projection_result.projection is not None
+            projection = projection_result.projection
+            assert bind_configured_plan(
+                raw_evidence, projection, declared_plan, receipt_index
+            ) == (), (
+                execution_id,
+                projection,
+                declared_plan,
+                tuple(event for event in callback_arguments if "info" in event),
             )
-            raw_role_receipts = tuple(
-                (role, values)
-                for role, values in frozen_trigger_receipt
-                if role != "inter-role-mutation"
-            )
-            callback_events = tuple(
-                item
-                for _, values in raw_role_receipts
-                for item in values[0].removeprefix("callbacks=").split(",")
-                if item
-            )
-            metadata_events = tuple(
-                item
-                for _, values in raw_role_receipts
-                for value in (*values[1:4], values[9])
-                for item in value.split("=", 1)[1].split(",")
-                if item
-            )
-            stat_events = tuple(
-                item
-                for item in metadata_events
-                if item.startswith(("lstat:", "fstat:", "post-lstat:"))
-            )
-            exception_events = tuple(item for item in metadata_events if ":error:" in item)
-            inter_role = next(
-                (values for role, values in frozen_trigger_receipt if role == "inter-role-mutation"),
-                None,
-            )
-            custom_callbacks = tuple(
-                dict.fromkeys(
-                    item.split(":", 1)[0]
-                    for item in callback_events
-                    if item.endswith(":custom")
-                )
-            )
-            if inter_role is not None:
-                callback = "inter-role"
-                after_role = inter_role[0].removeprefix("after-role=")
-                inter_projection = {
-                    "dot_git": (
-                        "dot-git",
-                        "after-dot-git-read",
-                        "dot-git-replacement",
-                    ),
-                    "prohibited_http_alternates": (
-                        "dot-git",
-                        "after-prohibited-http-alternates-read",
-                        "identity-replacement",
-                    ),
-                    "linked_git_dir": (
-                        "linked-git-dir",
-                        "after-linked-git-dir-read",
-                        "linked-dir-replacement",
-                    ),
-                    "common_dir": (
-                        "common-dir",
-                        "after-common-dir-read",
-                        "common-dir-replacement",
-                    ),
-                }
-                target, phase, effect = inter_projection[after_role]
-            elif not custom_callbacks:
-                assert any(item == "lstat:ok:symlink" for item in stat_events)
-                callback, target, phase, effect = (
-                    "filesystem-state",
-                    "root-ancestor",
-                    "before-discovery",
-                    "symlink",
-                )
-            else:
-                drift_event = next(
-                    (
-                        item
-                        for item in stat_events
-                        if item.startswith("fstat:") and "-drift:" in item
-                    ),
-                    None,
-                )
-                callback = "fstat" if drift_event is not None else custom_callbacks[-1]
-                if callback == "lstat" and role_ordinal > 0:
-                    target, phase, effect = (
-                        "info-ancestor",
-                        "after-lstat",
-                        "identity-replacement",
-                    )
-                elif callback == "lstat" and any(
-                    item == "post-lstat:device-drift:regular" for item in stat_events
-                ):
-                    target, phase, effect = "dot-git", "after-read", "device-drift"
-                elif callback == "lstat" and exception_events:
-                    if any(item.startswith("lstat:error:") for item in exception_events):
-                        target, phase, effect = "dot-git", "initial-lstat", "os-error"
-                    else:
-                        lstat_count = sum(item.startswith("lstat:") for item in stat_events)
-                        target = "root" if lstat_count == 17 else "dot-git"
-                        target, phase, effect = (
-                            target,
-                            "after-lstat",
-                            "identity-replacement",
-                        )
-                elif callback == "lstat":
-                    target, phase, effect = (
-                        "dot-git",
-                        "after-lstat",
-                        "identity-replacement",
-                    )
-                elif callback == "open":
-                    target, phase, effect = "dot-git", "initial-open", "os-error"
-                elif callback == "close":
-                    target, phase, effect = "dot-git", "cleanup", "os-error"
-                else:
-                    assert callback == "fstat"
-                    assert drift_event is not None
-                    drift = drift_event.split(":", 2)[1].removesuffix("-drift")
-                    target, phase, effect = "dot-git", "after-open", f"{drift}-drift"
-            assert (callback, target, phase, effect) == declared_plan
+            callback, target, phase, effect = projection
+            role_ordinal = len(raw_role_receipts) - 1
             target_role = target.replace("-", "_")
             target_path = {
                 "root": "$ROOT",
@@ -5621,36 +6215,27 @@ def _collect_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability
                 "linked-git-dir": "$LINKED_GIT_DIR",
                 "common-dir": "$COMMON",
             }[target]
-            raw_evidence = (
-                callback_events,
-                metadata_events,
-                stat_events,
-                exception_events,
-            )
             callback_ordinal = next(
                 (
                     ordinal
                     for ordinal, item in enumerate(callback_events)
-                    if item == f"{callback}:custom"
+                    if item.endswith(f":{callback}:custom")
                 ),
                 -1 if callback in {"filesystem-state", "inter-role"} else 0,
             )
             metadata_configured_plan_receipts.append(
                 (
                     execution_id,
+                    *raw_evidence,
+                    hashlib.sha256(canonical(raw_evidence)).hexdigest(),
                     callback,
                     target,
+                    phase,
+                    effect,
                     target_role,
                     target_path,
-                    phase,
                     role_ordinal,
                     callback_ordinal,
-                    effect,
-                    callback_events,
-                    metadata_events,
-                    stat_events,
-                    exception_events,
-                    hashlib.sha256(canonical(raw_evidence)).hexdigest(),
                 )
             )
         execution: MetadataExecution = (
@@ -5831,6 +6416,7 @@ def _collect_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability
         role_traces: list[MetadataRoleTrace] = []
         trigger_receipts: list[tuple[str, tuple[str, ...]]] = []
         mutated = False
+        inter_role_observation: tuple[str, ...] | None = None
         git_calls: list[tuple[str, ...]] = []
 
         def mutate_between_roles(
@@ -5839,7 +6425,7 @@ def _collect_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability
             provenance: protocol.GitMetadataProvenance,
             io: protocol.MetadataIO,
         ) -> protocol.GitMetadataReadResult:
-            nonlocal mutated
+            nonlocal inter_role_observation, mutated
             result = traced_metadata_reader(
                 called_root,
                 provenance=provenance,
@@ -5849,8 +6435,31 @@ def _collect_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability
                 trigger_receipts=trigger_receipts,
             )
             if provenance.role == after_role and not result.findings and not mutated:
+                before_record = result.record
+                if before_record is None and after_role == "prohibited_http_alternates":
+                    before_record = provenance.dot_git_record
+                assert before_record is not None
                 mutate()
                 mutated = True
+                try:
+                    after_status = before_record.path.lstat()
+                except OSError as error:
+                    after_type = f"absent:{type(error).__name__}"
+                    identity_changed = True
+                else:
+                    after_type = str(stat.S_IFMT(after_status.st_mode))
+                    identity_changed = (before_record.device, before_record.inode) != (
+                        after_status.st_dev,
+                        after_status.st_ino,
+                    )
+                inter_role_observation = (
+                    f"afterRole={after_role}",
+                    f"path={normalized_observed_path(os.fspath(before_record.path))}",
+                    f"beforeType={stat.S_IFMT(before_record.mode)}",
+                    f"afterType={after_type}",
+                    "identityChanged=" + str(identity_changed).lower(),
+                    "triggered=true",
+                )
             return result
 
         with monkeypatch.context() as between_patch:
@@ -5867,8 +6476,9 @@ def _collect_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability
         assert git_calls == []
         assert role_calls[-1] == row[3]
         assert mutated
+        assert inter_role_observation is not None
         trigger_receipts.append(
-            ("inter-role-mutation", (f"after-role={after_role}", "triggered=true"))
+            ("inter-role-mutation", inter_role_observation)
         )
         finish_metadata_execution(
             case_id,
@@ -5949,6 +6559,15 @@ def _collect_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability
             "REPOSITORY_ORACLE_BLOB_OID",
         )
     )
+    baseline_position_tokens = tuple(
+        (role, *position_bound_git_tokens(role, successful_by_role[role].stdout, verified_oid_values))
+        for role in ("head", "ancestry_chain", "red_objects")
+    )
+    assert sum(len(row[2]) for row in baseline_position_tokens) == 7
+    assert all(row[3] == () for row in baseline_position_tokens)
+    assert tuple(name for row in baseline_position_tokens for name in row[2]) == tuple(
+        mapping[3] for mapping in EXPECTED_VERIFIED_GIT_OID_MAPPINGS
+    )
     output_caps = (5, None, 41, 7, 6, 0, 41, 5330, 0, 0, 164, 6, 32768, 320)
     assert len(EXPECTED_TEXTUAL_TRANSFORMATIONS) == TEXTUAL_TRANSFORMATION_COUNT
     assert sum(row[2] for row in EXPECTED_TEXTUAL_TRANSFORMATIONS) == (
@@ -6017,43 +6636,11 @@ def _collect_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability
         normalized_transformed, transformed_token_shape = normalized_git_text_bytes(
             role, transformed_payload, verified_oid_values
         )
-        role_eligible_semantics = {
-            "head": {"C3_HEAD_OID"},
-            "ancestry_chain": {"C3_HEAD_OID", "RED_HEAD_OID"},
-            "red_objects": {
-                "RED_TREE_OID",
-                "MATRIX_BLOB_OID",
-                "CORE_ORACLE_BLOB_OID",
-                "REPOSITORY_ORACLE_BLOB_OID",
-            },
-            "merge_scan": set(),
-        }.get(role)
-        if role_eligible_semantics is not None:
-            hostile_tokens: list[str] = []
-            for token in re.findall(
-                rb"(?<![0-9A-Za-z])[0-9A-Fa-f]{40}(?![0-9A-Za-z])",
-                transformed_payload,
-            ):
-                exact_semantic = next(
-                    (name for name, value in verified_oid_values.items() if token == value),
-                    None,
-                )
-                if exact_semantic in role_eligible_semantics:
-                    continue
-                corrupt_semantic = next(
-                    (
-                        name
-                        for name, value in verified_oid_values.items()
-                        if token[:1] == b"A" and token[1:] == value[1:]
-                    ),
-                    None,
-                )
-                if corrupt_semantic is not None:
-                    hostile_tokens.append(f"CORRUPT_UPPERCASE_PREFIX:{corrupt_semantic}")
-                elif exact_semantic is not None:
-                    hostile_tokens.append(f"ROLE_INELIGIBLE:{exact_semantic}")
-                else:
-                    hostile_tokens.append(token.decode("ascii"))
+        if role in {"head", "ancestry_chain", "red_objects", "merge_scan"}:
+            _, independently_verified_names, hostile_tokens = position_bound_git_tokens(
+                role, transformed_payload, verified_oid_values
+            )
+            assert independently_verified_names == transformed_token_shape
             if hostile_tokens:
                 observed_hostile_oid_evidence.append(
                     (
@@ -6094,13 +6681,13 @@ def _collect_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability
                 location,
             )
         )
-        calls: list[tuple[str, ...]] = []
+        transform_calls: list[tuple[str, ...]] = []
 
         def inject_textual_transform(
             argv: tuple[str, ...], **kwargs: Any
         ) -> subprocess.CompletedProcess[bytes]:
-            call_ordinal = len(calls)
-            calls.append(argv)
+            call_ordinal = len(transform_calls)
+            transform_calls.append(argv)
             result = REAL_SUBPROCESS_RUN(argv, **kwargs)
             if call_ordinal != ordinal:
                 return result
@@ -6119,7 +6706,7 @@ def _collect_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability
         with monkeypatch.context() as textual_patch:
             textual_patch.setattr(PROTOCOL_SUBPROCESS, "run", inject_textual_transform)
             assert protocol.validate_repository_freeze(root) == finding(stage, code, location)
-        assert tuple(calls) == expected_git_argv(root, freeze)[: ordinal + 1]
+        assert tuple(transform_calls) == expected_git_argv(root, freeze)[: ordinal + 1]
     assert len(observed_transform_contract) == TEXTUAL_TRANSFORMATION_COUNT
     assert tuple(item[:3] + item[6:] for item in observed_transform_contract) == (
         EXPECTED_TEXTUAL_TRANSFORMATIONS
@@ -6143,6 +6730,78 @@ def _collect_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability
     )[("merge_scan", "corrupt_token")] != dict(
         (row[0:2], row[2]) for row in observed_hostile_oid_evidence
     )[("merge_scan", "valid_token")]
+    assert len(EXPECTED_POSITION_BOUND_GIT_CASES) == EXPECTED_POSITION_BOUND_GIT_CASE_COUNT
+    assert hashlib.sha256(canonical(EXPECTED_POSITION_BOUND_GIT_CASES)).hexdigest() == (
+        EXPECTED_POSITION_BOUND_GIT_CASE_SHA256
+    )
+    position_payloads = {
+        "ancestry-reversed": verified_oid_values["RED_HEAD_OID"]
+        + b" "
+        + verified_oid_values["C3_HEAD_OID"]
+        + b"\n",
+        "ancestry-missing-token": verified_oid_values["C3_HEAD_OID"] + b"\n",
+        "ancestry-duplicate-token": successful_by_role["ancestry_chain"].stdout.rstrip(b"\n")
+        + b" "
+        + verified_oid_values["RED_HEAD_OID"]
+        + b"\n",
+        "ancestry-known-oid-wrong-column": successful_by_role[
+            "ancestry_chain"
+        ].stdout.rstrip(b"\n")
+        + b" "
+        + verified_oid_values["C3_HEAD_OID"]
+        + b"\n",
+        "red-objects-missing-row": b"".join(
+            verified_oid_values[name] + b"\n"
+            for name in ("RED_TREE_OID", "MATRIX_BLOB_OID", "CORE_ORACLE_BLOB_OID")
+        ),
+        "red-objects-swapped-rows": b"".join(
+            verified_oid_values[name] + b"\n"
+            for name in (
+                "MATRIX_BLOB_OID",
+                "RED_TREE_OID",
+                "CORE_ORACLE_BLOB_OID",
+                "REPOSITORY_ORACLE_BLOB_OID",
+            )
+        ),
+        "head-corrupt-uppercase": b"A" + verified_oid_values["C3_HEAD_OID"][1:] + b"\n",
+        "head-valid-but-wrong": verified_oid_values["RED_HEAD_OID"] + b"\n",
+    }
+    for case_id, role, _, stage, code, location, stopped_role_prefix in (
+        EXPECTED_POSITION_BOUND_GIT_CASES
+    ):
+        payload = position_payloads[case_id]
+        _, semantic_vector, hostile_vector = position_bound_git_tokens(
+            role, payload, verified_oid_values
+        )
+        assert hostile_vector, case_id
+        assert len(semantic_vector) < len(
+            tuple(mapping for mapping in EXPECTED_VERIFIED_GIT_OID_MAPPINGS if mapping[0] == role)
+        ) or case_id in {"ancestry-duplicate-token", "ancestry-known-oid-wrong-column"}
+        target_ordinal = roles.index(role)
+        position_case_calls: list[tuple[str, ...]] = []
+
+        def inject_position_case(
+            argv: tuple[str, ...], **kwargs: Any
+        ) -> subprocess.CompletedProcess[bytes]:
+            call_ordinal = len(position_case_calls)
+            position_case_calls.append(argv)
+            result = REAL_SUBPROCESS_RUN(argv, **kwargs)
+            if call_ordinal != target_ordinal:
+                return result
+            saved = successful_git_results[target_ordinal]
+            assert result.args == saved.args
+            assert result.returncode == saved.returncode
+            assert result.stdout == saved.stdout
+            assert result.stderr == saved.stderr
+            return subprocess.CompletedProcess(result.args, result.returncode, payload, result.stderr)
+
+        with monkeypatch.context() as position_patch:
+            position_patch.setattr(PROTOCOL_SUBPROCESS, "run", inject_position_case)
+            assert protocol.validate_repository_freeze(root) == finding(stage, code, location)
+        assert tuple(roles[: len(position_case_calls)]) == stopped_role_prefix
+        assert tuple(position_case_calls) == expected_git_argv(root, freeze)[
+            : len(position_case_calls)
+        ]
     for ordinal, role in enumerate(roles):
         argv = expected_git_argv(root, freeze)[ordinal]
         assert_injected_git_failure(
@@ -7718,9 +8377,11 @@ def _collect_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability
     )
     composition_root, _ = create_real_git_freeze(tmp_path / "metadata-composition")
     composition_matrix = composition_root / MATRIX_PATH.relative_to(ROOT)
-    correct_matrix_bytes = composition_matrix.read_bytes()
-    correct_matrix = json.loads(correct_matrix_bytes.decode("utf-8", errors="strict"))
+    source_matrix_bytes = composition_matrix.read_bytes()
+    correct_matrix = json.loads(source_matrix_bytes.decode("utf-8", errors="strict"))
     assert type(correct_matrix) is dict
+    correct_matrix_bytes = canonical(correct_matrix) + b"\n"
+    composition_matrix.write_bytes(correct_matrix_bytes)
     assert canonical(correct_matrix) + b"\n" == correct_matrix_bytes
     correct_schema = correct_matrix["schemaVersion"]
     assert type(correct_schema) is str
@@ -8223,11 +8884,15 @@ def _collect_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability
         EXPECTED_METADATA_FULL_EXECUTION_SHA256
     )
     assert len(metadata_trigger_rows) == EXPECTED_METADATA_TRIGGER_RECEIPT_COUNT
-    assert all(
-        len(values) + 1 == len(EXPECTED_METADATA_TRIGGER_RECEIPT_FIELDS)
-        for receipt in metadata_trigger_rows
-        for _, values in receipt
-    )
+    for receipt in metadata_trigger_rows:
+        for role, values in receipt:
+            if role == "inter-role-mutation":
+                assert (
+                    "role",
+                    *(value.split("=", 1)[0] for value in values),
+                ) == EXPECTED_METADATA_INTER_ROLE_TRIGGER_RECEIPT_FIELDS
+            else:
+                assert len(values) + 1 == len(EXPECTED_METADATA_TRIGGER_RECEIPT_FIELDS)
     assert hashlib.sha256(canonical(metadata_trigger_rows)).hexdigest() == (
         EXPECTED_METADATA_TRIGGER_RECEIPT_SHA256
     )
@@ -8256,25 +8921,97 @@ def _collect_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability
         cast(str, receipt[0]): ordinal
         for ordinal, receipt in enumerate(metadata_configured_plan_receipts)
     }
-    target_receipt_ordinal = receipt_index["fstat-type@linked"]
-    coordinate_indexes = {"callback": 1, "target": 2, "phase": 5, "effect": 8}
-    for mutant_id, execution_id, coordinate, mutation, disposition in (
+    assert receipt_index["fstat-type@linked"] == 14
+    assert receipt_index["between-read-linked-directory@linked"] == 5
+    assert receipt_index["close-error@linked"] == 21
+    for (
+        mutant_id,
+        execution_id,
+        expected_coordinate,
+        mutation_layer,
+        raw_coordinate,
+        mutant_operation,
+        expected_location,
+    ) in (
         EXPECTED_METADATA_CONFIGURED_PLAN_MUTANTS
     ):
-        assert execution_id == "fstat-type@linked"
-        assert mutation.startswith("replace-with-different-")
-        assert disposition == "exact-plan-receipt-binding-fails"
-        changed_receipts = list(metadata_configured_plan_receipts)
-        changed_receipt = list(changed_receipts[target_receipt_ordinal])
-        changed_receipt[coordinate_indexes[coordinate]] = f"mutated-{coordinate}"
-        changed_receipts[target_receipt_ordinal] = tuple(changed_receipt)
-        assert tuple(changed_receipts) != tuple(metadata_configured_plan_receipts), mutant_id
-        assert hashlib.sha256(canonical(changed_receipts)).hexdigest() != (
-            EXPECTED_METADATA_CONFIGURED_PLAN_RECEIPT_SHA256
+        index = receipt_index[execution_id]
+        assert expected_location == f"configuredPlanReceipts[{index}].{expected_coordinate}"
+        configured_receipt = metadata_configured_plan_receipts[index]
+        raw = [cast(tuple[str, ...], value) for value in configured_receipt[1:9]]
+        claimed = cast(tuple[str, str, str, str], configured_receipt[10:14])
+        declared = cast(
+            tuple[str, ...],
+            next(row[1:] for row in EXPECTED_METADATA_CONFIGURED_PLANS if row[0] == execution_id),
         )
-    constant_receipt = metadata_configured_plan_receipts[0][13]
+        if mutant_operation == "replace-custom-callback-with-other-closed-callback":
+            raw[1] = tuple(
+                value.replace(":fstat:custom", ":open:custom") for value in raw[1]
+            )
+        elif mutant_operation == "replace-callback-target-argument":
+            raw[0] = tuple(
+                value.replace(":role-dot_git:", ":role-info_ancestor:")
+                if ":fstat:" in value
+                else value
+                for value in raw[0]
+            )
+            raw[1] = tuple(
+                value.replace(":role-dot_git:", ":role-info_ancestor:")
+                if value.endswith(":fstat:custom")
+                else value
+                for value in raw[1]
+            )
+        elif mutant_operation == "replace-callback-event-ordinal":
+            last_fstat_event = next(
+                value
+                for value in reversed(raw[1])
+                if value.endswith(":fstat:custom")
+            )
+            last_fstat_prefix = last_fstat_event.removesuffix(":custom")
+            replacement_prefix = re.sub(r"^event-\d+", "event-0", last_fstat_prefix)
+            raw[0] = tuple(
+                value.replace(last_fstat_prefix, replacement_prefix, 1)
+                if value.startswith(last_fstat_prefix + ":")
+                else value
+                for value in raw[0]
+            )
+            raw[1] = tuple(
+                replacement_prefix + ":custom"
+                if value == last_fstat_event
+                else value
+                for value in raw[1]
+            )
+        elif mutant_operation == "replace-stat-effect-evidence":
+            raw[4] = tuple(value.replace("type-drift", "inode-drift") for value in raw[4])
+        elif mutant_operation == "remove-custom-callback-trigger":
+            raw[1] = tuple(value.replace(":custom", ":system") for value in raw[1])
+        elif mutant_operation == "replace-observed-close-error-with-ok":
+            raw[6] = tuple(re.sub(r"result-error-[^:]+$", "result-ok", value) for value in raw[6])
+        elif mutant_operation == "replace-triggered-before-after-observation-with-unchanged":
+            raw[7] = tuple(
+                "identityChanged=false" if value == "identityChanged=true" else value
+                for value in raw[7]
+            )
+        elif mutant_operation == "replace-declared-plan-after-raw-projection":
+            declared = (*declared[:3], "inode-drift")
+        else:
+            assert mutant_operation == "copy-declared-decoy-instead-of-projecting-raw-receipt"
+            declared = (*declared[:3], "inode-drift")
+            claimed = cast(tuple[str, str, str, str], declared)
+        assert mutation_layer in {"raw", "declared", "projection"}
+        assert raw_coordinate
+        assert bind_configured_plan(tuple(raw), claimed, declared, index) == (
+            protocol.Finding(
+                "evidence",
+                "CURRENT",
+                "ACP.EVIDENCE.CONFIGURED_PLAN_MISMATCH",
+                expected_location,
+            ),
+        ), mutant_id
+    constant_receipt = metadata_configured_plan_receipts[0][9]
     constant_receipts = tuple(
-        (*receipt[:13], constant_receipt) for receipt in metadata_configured_plan_receipts
+        (*receipt[:9], constant_receipt, *receipt[10:])
+        for receipt in metadata_configured_plan_receipts
     )
     assert constant_receipts != tuple(metadata_configured_plan_receipts)
     assert hashlib.sha256(canonical(constant_receipts)).hexdigest() != (
@@ -8309,10 +9046,47 @@ def _collect_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability
         if name.startswith("configured-removed-")
         for member in members
     }
-    for historical_name, pair in EXPECTED_METADATA_CONFIGURED_REMOVED_HISTORICAL_PAIRS:
+    complete_configured_classes = tuple(
+        (name, tuple(members))
+        for name, members in EXPECTED_METADATA_FORMER_COLLISION_GROUPS
+        if name.startswith("configured-removed-")
+    )
+    observed_historical_containments: list[tuple[object, ...]] = []
+    for historical_index, (historical_name, pair) in enumerate(
+        EXPECTED_METADATA_CONFIGURED_REMOVED_HISTORICAL_PAIRS
+    ):
         assert historical_name.startswith("configured-removed-")
         assert len(pair) == len(set(pair)) == 2
         assert set(pair) <= configured_class_members
+        class_name, relation_findings = historical_pair_containment(
+            pair, complete_configured_classes, historical_index
+        )
+        assert relation_findings == ()
+        assert class_name is not None
+        observed_historical_containments.append((historical_name, pair, class_name))
+    assert tuple(observed_historical_containments) == (
+        EXPECTED_METADATA_HISTORICAL_PAIR_CONTAINMENTS
+    )
+    assert len(observed_historical_containments) == (
+        EXPECTED_METADATA_HISTORICAL_PAIR_CONTAINMENT_COUNT
+    )
+    assert hashlib.sha256(canonical(observed_historical_containments)).hexdigest() == (
+        EXPECTED_METADATA_HISTORICAL_PAIR_CONTAINMENT_SHA256
+    )
+    cross_mutant_id, cross_pair, cross_location = EXPECTED_METADATA_HISTORICAL_CROSS_CLASS_MUTANT
+    assert historical_pair_containment(
+        cross_pair, complete_configured_classes, EXPECTED_METADATA_HISTORICAL_PAIR_CONTAINMENT_COUNT
+    ) == (
+        None,
+        (
+            protocol.Finding(
+                "evidence",
+                "CURRENT",
+                "ACP.EVIDENCE.HISTORICAL_PAIR_RELATION",
+                cross_location,
+            ),
+        ),
+    ), cross_mutant_id
     for _, group_execution_ids in EXPECTED_METADATA_FORMER_COLLISION_GROUPS:
         assert len(group_execution_ids) >= 2
         assert len(group_execution_ids) == len(set(group_execution_ids))
@@ -8359,11 +9133,7 @@ def _collect_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability
     observed_non_singleton_classes = {
         tuple(members) for members in stripped_classes.values() if len(members) > 1
     }
-    expected_configured_classes = tuple(
-        (name, tuple(members))
-        for name, members in EXPECTED_METADATA_FORMER_COLLISION_GROUPS
-        if name.startswith("configured-removed-")
-    )
+    expected_configured_classes = complete_configured_classes
     assert observed_non_singleton_classes == {
         members for _, members in expected_configured_classes
     }
@@ -8715,37 +9485,87 @@ def _collect_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability
     assert protocol.validate_repository_freeze(descendant_root) == finding(
         "freeze", "ACP.FREEZE.C3_IMMUTABLE", FREEZE_PATH
     )
-    return MetadataCollection(
-        tuple(metadata_execution_rows),
-        tuple(metadata_stimulus_rows),
-        tuple(metadata_trigger_rows),
-        tuple(metadata_raw_read_rows),
-        tuple(metadata_close_order_rows),
-        tuple(metadata_normalized_payload_rows),
-        tuple(metadata_configured_plan_receipts),
+    return (
+        MetadataCollection(
+            tuple(metadata_execution_rows),
+            tuple(metadata_stimulus_rows),
+            tuple(metadata_trigger_rows),
+            tuple(metadata_raw_read_rows),
+            tuple(metadata_close_order_rows),
+            tuple(metadata_normalized_payload_rows),
+            tuple(metadata_configured_plan_receipts),
+        ),
+        (len(os.fsencode(original_tmp_path)), len(original_tmp_path.parts)),
+        (final_components[0], final_components[1]),
     )
 
 
 def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    with TemporaryDirectory(prefix="r31-a-", dir="/private/tmp") as first_root_text:
-        with TemporaryDirectory(prefix="r31-b-", dir="/private/tmp") as second_base_text:
-            first_root = Path(first_root_text)
-            second_root = Path(second_base_text)
-            for ordinal, component_bytes in enumerate((12, 12, 12, 12, 12, 15)):
-                prefix = f"r{ordinal}-"
-                second_root /= prefix + ("s" * (component_bytes - len(prefix)))
-            assert tuple(
-                (len(os.fsencode(root)), len(root.parts))
-                for root in (first_root, second_root)
-            ) == ((27, 4), (108, 10))
-            first = _collect_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
+    portable_plans: list[tuple[object, ...]] = []
+    for model, owner_bytes, owner_depth in EXPECTED_METADATA_FIXTURE_PORTABLE_OWNER_MODELS:
+        first_shape = (owner_bytes + 1 + len(PORTABLE_ROOT_SLOT_NAMES[0]), owner_depth + 1)
+        second_shape = (
+            first_shape[0] + PORTABLE_ROOT_RELATIVE_DELTA[0],
+            first_shape[1] + PORTABLE_ROOT_RELATIVE_DELTA[1],
+        )
+        portable_plans.append(
+            (
+                model,
+                (owner_bytes, owner_depth),
+                first_shape,
+                portable_governed_parent_plan(*first_shape),
+                second_shape,
+                portable_governed_parent_plan(*second_shape),
+            )
+        )
+    with pytest.raises(AssertionError):
+        portable_governed_parent_plan(699, GOVERNED_FIXTURE_PARENT_DEPTH - 1)
+    root_relation_evidence = (
+        EXPECTED_METADATA_FIXTURE_ROOT_RELATIONS,
+        EXPECTED_METADATA_FIXTURE_PORTABLE_OWNER_MODELS,
+        tuple(portable_plans),
+    )
+    assert hashlib.sha256(canonical(root_relation_evidence)).hexdigest() == (
+        EXPECTED_METADATA_ROOT_REPLAY_RELATION_SHA256
+    )
+    owner_path: Path
+    with TemporaryDirectory(prefix="r32-owner-") as owner_text:
+        owner_path = Path(owner_text)
+        owner_status = owner_path.lstat()
+        owner_resolved = owner_path.resolve(strict=True)
+        first_root = owner_resolved / PORTABLE_ROOT_SLOT_NAMES[0]
+        second_root = owner_resolved / PORTABLE_ROOT_SLOT_NAMES[1]
+        first_root.mkdir()
+        second_root.mkdir()
+        for ordinal, component_bytes in enumerate(PORTABLE_ROOT_CHILD_COMPONENT_BYTES):
+            prefix = f"r{ordinal}-"
+            second_root /= prefix + ("s" * (component_bytes - len(prefix)))
+        first_shape = (len(os.fsencode(first_root)), len(first_root.parts))
+        second_shape = (len(os.fsencode(second_root)), len(second_root.parts))
+        assert (
+            second_shape[0] - first_shape[0],
+            second_shape[1] - first_shape[1],
+        ) == PORTABLE_ROOT_RELATIVE_DELTA
+        first, first_observed_shape, first_finals = (
+            _collect_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
                 first_root, monkeypatch
             )
-            second = _collect_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
+        )
+        second, second_observed_shape, second_finals = (
+            _collect_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
                 second_root, monkeypatch
             )
+        )
+        assert owner_path.resolve(strict=True) == owner_resolved
+        assert (owner_path.lstat().st_dev, owner_path.lstat().st_ino) == (
+            owner_status.st_dev,
+            owner_status.st_ino,
+        )
+    assert not owner_path.exists()
+    with pytest.raises(FileNotFoundError):
+        owner_path.lstat()
     assert first == second
     assert first.configured_plan_receipts == second.configured_plan_receipts
     evidence_identities = tuple(
@@ -8769,29 +9589,26 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
     assert evidence_identities == (
         EXPECTED_METADATA_ROOT_REPLAY_EVIDENCE_IDENTITY_SHA256,
     ) * 2
-    replay_envelopes = tuple(
+    replay_envelopes = (
         (
-            root_shape,
+            "A",
+            (0, 0),
             (GOVERNED_FIXTURE_PARENT_BYTES, GOVERNED_FIXTURE_PARENT_DEPTH),
-            final_components,
-            evidence_identity,
-        )
-        for root_shape, final_components, evidence_identity in zip(
-            zip(
-                EXPECTED_METADATA_FIXTURE_ROOT_REPLAY_LENGTHS,
-                EXPECTED_METADATA_FIXTURE_ROOT_REPLAY_DEPTHS,
-                strict=True,
-            ),
-            EXPECTED_METADATA_FIXTURE_FINAL_COMPONENT_BYTES,
-            evidence_identities,
-            strict=True,
-        )
+            first_finals,
+            evidence_identities[0],
+        ),
+        (
+            "B",
+            PORTABLE_ROOT_RELATIVE_DELTA,
+            (GOVERNED_FIXTURE_PARENT_BYTES, GOVERNED_FIXTURE_PARENT_DEPTH),
+            second_finals,
+            evidence_identities[1],
+        ),
     )
-    assert replay_envelopes == EXPECTED_METADATA_ROOT_REPLAY_ENVELOPES
+    assert first_observed_shape == first_shape
+    assert second_observed_shape == second_shape
+    assert all(8 <= length <= 255 for row in replay_envelopes for length in row[3])
     assert len(replay_envelopes) == EXPECTED_METADATA_ROOT_REPLAY_ENVELOPE_COUNT
-    assert hashlib.sha256(canonical(replay_envelopes)).hexdigest() == (
-        EXPECTED_METADATA_ROOT_REPLAY_ENVELOPE_SHA256
-    )
 
     def replay_findings(
         expected: MetadataCollection, observed: MetadataCollection
@@ -9494,6 +10311,11 @@ def test_repository_validator_is_read_only_and_static_boundary_is_ast_exact(
     assert cast(object, tuple(git_contract["metadata"]["triggerReceiptFields"])) == cast(
         object, EXPECTED_METADATA_TRIGGER_RECEIPT_FIELDS
     ) == cast(object, protocol.STATIC_GIT_METADATA_TRIGGER_RECEIPT_FIELDS)
+    assert cast(
+        object, tuple(git_contract["metadata"]["interRoleTriggerReceiptFields"])
+    ) == cast(object, EXPECTED_METADATA_INTER_ROLE_TRIGGER_RECEIPT_FIELDS) == cast(
+        object, protocol.STATIC_GIT_METADATA_INTER_ROLE_TRIGGER_RECEIPT_FIELDS
+    )
     assert (
         git_contract["metadata"]["triggerReceiptCount"]
         == EXPECTED_METADATA_TRIGGER_RECEIPT_COUNT
@@ -9510,13 +10332,24 @@ def test_repository_validator_is_read_only_and_static_boundary_is_ast_exact(
     assert git_contract["metadata"]["fixtureParentLexicalDepth"] == (
         GOVERNED_FIXTURE_PARENT_DEPTH
     ) == protocol.STATIC_GIT_METADATA_FIXTURE_PARENT_LEXICAL_DEPTH
-    assert tuple(
-        zip(
-            EXPECTED_METADATA_FIXTURE_ROOT_REPLAY_LENGTHS,
-            EXPECTED_METADATA_FIXTURE_ROOT_REPLAY_DEPTHS,
-            strict=True,
-        )
-    ) == protocol.STATIC_GIT_METADATA_FIXTURE_ROOT_REPLAY_SHAPES
+    assert tuple(git_contract["metadata"]["fixtureRootRelationFields"]) == (
+        EXPECTED_METADATA_FIXTURE_ROOT_RELATION_FIELDS
+    ) == protocol.STATIC_GIT_METADATA_FIXTURE_ROOT_RELATION_FIELDS
+    assert tuple(tuple(row) for row in git_contract["metadata"]["fixtureRootRelations"]) == (
+        EXPECTED_METADATA_FIXTURE_ROOT_RELATIONS
+    ) == protocol.STATIC_GIT_METADATA_FIXTURE_ROOT_RELATIONS
+    assert tuple(git_contract["metadata"]["fixtureRootChildComponentBytes"]) == (
+        PORTABLE_ROOT_CHILD_COMPONENT_BYTES
+    ) == protocol.STATIC_GIT_METADATA_FIXTURE_ROOT_CHILD_COMPONENT_BYTES
+    assert tuple(tuple(row) for row in git_contract["metadata"]["fixturePortableOwnerModels"]) == (
+        EXPECTED_METADATA_FIXTURE_PORTABLE_OWNER_MODELS
+    ) == protocol.STATIC_GIT_METADATA_FIXTURE_PORTABLE_OWNER_MODELS
+    assert git_contract["metadata"]["fixtureRootRelationSha256"] == (
+        EXPECTED_METADATA_ROOT_REPLAY_RELATION_SHA256
+    ) == protocol.STATIC_GIT_METADATA_FIXTURE_ROOT_RELATION_SHA256
+    assert tuple(git_contract["metadata"]["fixtureOwnershipContract"]) == (
+        EXPECTED_METADATA_FIXTURE_OWNERSHIP_CONTRACT
+    ) == protocol.STATIC_GIT_METADATA_FIXTURE_OWNERSHIP_CONTRACT
     assert tuple(git_contract["metadata"]["metadataCollectionFields"]) == (
         EXPECTED_METADATA_COLLECTION_FIELDS
     ) == protocol.STATIC_GIT_METADATA_COLLECTION_FIELDS
@@ -9553,23 +10386,18 @@ def test_repository_validator_is_read_only_and_static_boundary_is_ast_exact(
     assert tuple(git_contract["metadata"]["rootReplayEvidenceFields"]) == (
         EXPECTED_METADATA_ROOT_REPLAY_EVIDENCE_FIELDS
     ) == protocol.STATIC_GIT_METADATA_ROOT_REPLAY_EVIDENCE_FIELDS
-    matrix_replay_envelopes = tuple(
-        (tuple(row[0]), tuple(row[1]), tuple(row[2]), row[3])
-        for row in git_contract["metadata"]["rootReplayEnvelopes"]
-    )
-    assert matrix_replay_envelopes == EXPECTED_METADATA_ROOT_REPLAY_ENVELOPES
-    assert cast(object, matrix_replay_envelopes) == cast(
-        object, protocol.STATIC_GIT_METADATA_ROOT_REPLAY_ENVELOPES
-    )
     assert git_contract["metadata"]["rootReplayEnvelopeCount"] == (
         EXPECTED_METADATA_ROOT_REPLAY_ENVELOPE_COUNT
     ) == protocol.STATIC_GIT_METADATA_ROOT_REPLAY_ENVELOPE_COUNT
-    assert git_contract["metadata"]["rootReplayEnvelopeSha256"] == (
-        EXPECTED_METADATA_ROOT_REPLAY_ENVELOPE_SHA256
-    ) == protocol.STATIC_GIT_METADATA_ROOT_REPLAY_ENVELOPE_SHA256
+    assert tuple(git_contract["metadata"]["rootReplayRuntimeContract"]) == (
+        EXPECTED_METADATA_ROOT_REPLAY_RUNTIME_CONTRACT
+    ) == protocol.STATIC_GIT_METADATA_ROOT_REPLAY_RUNTIME_CONTRACT
     assert git_contract["metadata"]["rootReplayEvidenceIdentitySha256"] == (
         EXPECTED_METADATA_ROOT_REPLAY_EVIDENCE_IDENTITY_SHA256
     ) == protocol.STATIC_GIT_METADATA_ROOT_REPLAY_EVIDENCE_IDENTITY_SHA256
+    assert tuple(git_contract["metadata"]["rootReplayConfiguredPlanReceiptEquality"]) == (
+        EXPECTED_METADATA_ROOT_REPLAY_CONFIGURED_PLAN_RECEIPT_EQUALITY
+    ) == protocol.STATIC_GIT_METADATA_ROOT_REPLAY_CONFIGURED_PLAN_RECEIPT_EQUALITY
     assert tuple(git_contract["metadata"]["crossRootDivergenceMutantFields"]) == (
         EXPECTED_METADATA_REPLAY_DIVERGENCE_MUTANT_FIELDS
     ) == protocol.STATIC_GIT_METADATA_CROSS_ROOT_DIVERGENCE_MUTANT_FIELDS

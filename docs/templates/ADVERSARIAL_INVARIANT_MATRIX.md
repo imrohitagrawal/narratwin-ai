@@ -165,25 +165,36 @@ explicitly inapplicable; for fixed-cap roles preserve the canonical token and
 accept byte-cap precedence rather than introducing a second defect.
 
 For every dynamic-OID role, strictly parse saved real output and freeze a
-complete, ordered, unique role/position-to-contemporaneous-object mapping before
-normalization. Replace only exactly verified OIDs. Uppercase, corrupt,
-injected-valid-but-wrong, reordered, missing, and extra values remain raw or use
-explicit hostile tokens and remain distinct across all 44 normalized rows;
-merge-empty relations stay role-specific.
+complete, ordered, unique seven-entry
+role/row/column-to-contemporaneous-object mapping before normalization. Replace
+only exactly verified OIDs at those coordinates. Real-validator reordered,
+missing, duplicate, extra, swapped, uppercase, and valid-but-wrong injections
+must stop at exact prefixes. Unmapped or wrong-coordinate known values remain
+raw or use explicit hostile
+tokens and remain distinct across the normalized rows; merge-empty relations
+stay role-specific.
 
-Run the full 129-case metadata collector under cleanup-bound original roots
-measured at `(27 filesystem bytes, depth 4)` and `(108 filesystem bytes, depth
-10)`, padded independently to one 700-byte/depth-16 governed parent shape.
+Run the full 129-case metadata collector beneath equal-width A/B slots in one
+cleanup-owned platform temporary base. Add an 81-filesystem-byte/six-component
+relative suffix only to B and pad both independently to one
+700-byte/depth-18 governed parent shape. Prove resolved-base inode ownership and
+the exact component feasibility inequality before creating descendants; an
+infeasible synthetic platform model must stop before filesystem mutation.
 Freeze separate execution, stimulus, trigger-receipt, raw-read, close-order, and
 normalized-payload catalogs; exact cross-root rows and digests plus
 configured-plan receipts must match, and a single-coordinate divergence mutant
 must fail. Every configured plan also owns
-an observed callback, target/path/role, phase/order, and effect receipt whose
-raw-evidence identity hashes exactly the callback, metadata, stat, and exception
-event fields and nothing else, with four single-coordinate mutants. Record that
+an ordered raw receipt with callback arguments, normalized target
+path/role/ordinal, close outcomes, inter-role before/after effect, and complete
+stat/exception evidence. Include argument type/count, event ordinal, and the
+live-descriptor/open-event ordinal. Project without plan, case, expected-finding, or
+terminal-result inputs; bind exact typed callback, target, phase, effect, no-op,
+close-result, inter-role, and plan-copy mutants. Record that
 17 historical configured-removal pair groups collapse into five complete
-non-singleton configured-removed equivalence classes; do not call both counts
-classes.
+non-singleton configured-removed equivalence classes; require every pair to be
+wholly and uniquely contained by one observed class, and kill a cross-class
+mutant with an exact typed finding at the derived pair index. Do not call both
+counts classes.
 
 ## Pipeline-call ledger
 
@@ -224,11 +235,16 @@ comparison is killed without fabricating work after a failed crypto check.
 
 Never compress semantics to fit a cap.
 
-For the Issue #435 Reset31 exemplar, record matrix 4,200, protocol 4,200, core
+For the Issue #435 Reset32 exemplar, record matrix 4,200, protocol 4,200, core
 oracle 4,200, repository oracle 14,500, template 600, ADR 550, route 5,800,
 architecture/security 2,200, validator 28,000, seven-path aggregate 34,000, and
 zero binaries. At or above 85 percent, record a readability/convergence review;
-at or above 90 percent stop before C3/GREEN and decompose.
+at or above 90 percent stop before C3/GREEN and decompose. The core oracle's
+3,694/4,200 (87.95 percent) usage is readability-risk PASS because only the
+explicit semantic literal changes, no compression is introduced, and usage
+remains below 90 percent. Protocol 3,709/4,200 (88.31 percent) is also
+readability-risk PASS because all cases remain explicit and named immutable
+prefix tuples only eliminate duplicate literals.
 
 ## Pre-GREEN review overlay
 

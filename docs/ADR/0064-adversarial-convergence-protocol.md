@@ -114,9 +114,13 @@ layout; 94 case rows produce 129 operational executions consumed in frozen
 order. Each execution binds its complete catalog row, observed stimulus
 identity, exact role prefix, and normalized per-role I/O/cleanup transcript;
 case IDs alone are not evidence. The complete collector runs independently
-beneath cleanup-bound original roots whose measured filesystem-byte length and
-lexical depth are exactly `(27, 4)` and `(108, 10)`. Both roots are padded to
-the same 700-byte, depth-16 governed parent. Separate execution, stimulus,
+beneath equal-width A/B slots in one cleanup-owned platform temporary base. A
+B-only relative suffix adds exactly 81 filesystem bytes and six lexical
+components; both relative roots are then padded to the same 700-byte, depth-18
+governed parent. Calibration proves resolved-base inode ownership and the
+component feasibility inequality before descendant creation, and rejects an
+infeasible synthetic platform model without filesystem mutation. Separate
+execution, stimulus,
 trigger-receipt, raw-read, close-order, and normalized-payload catalogs must be
 row-for-row and digest-identical, and configured-plan receipts must also match
 exactly across roots. A controlled one-coordinate cross-root
@@ -125,12 +129,17 @@ schedule or normalized-payload divergence must fail before portability credit.
 The 17 historical configured-removal pair groups collapse into five complete
 non-singleton configured-removed equivalence classes; the pair-group count and
 equivalence-class count are different measures and must not both be described
-as classes. Every configured plan is bound to an independently observed
-operational receipt containing its actual callback, target/path/role,
-phase/order, and effect. Its raw-evidence identity hashes exactly the callback,
-metadata, stat, and exception event fields and nothing else. Single-coordinate
-callback, target, phase, and effect mutants, receipt swaps, receipt hybrids, and
-the constant-receipt survivor must
+as classes. The relation checker derives each pair's unique class from observed
+members and reports an indexed typed finding for a cross-class pair. Every
+configured plan is bound to an independently observed
+operational receipt containing ordered callback arguments, normalized target
+path/role/ordinal, argument type/count, event and live-descriptor/open ordinals,
+close outcomes, inter-role before/after effect, and complete stat/exception
+evidence. A plan-blind projector may consume only that raw
+receipt—not plan, case, expected finding, or terminal result—and the binder
+returns exact typed findings for callback, target, phase, effect, no-op,
+close-result, inter-role, or plan-copy drift. Receipt swaps, hybrids, and the
+constant-receipt survivor must
 all be rejected against the exact valid binding set. The Git
 status table treats fsck status 1 as object-integrity failure and missing-object
 `cat-file -t` status 128 as missing RED; every other unlisted exact integer is a
@@ -138,13 +147,18 @@ generic process failure before output interpretation, with `-1`, `2`, and `127`
 frozen for every form. Author bounds separately prove a scripted RED size of 320
 bytes at exact N/N+1 and a smaller dynamic RED-object cap.
 
-Reset31 caps are matrix 4,200, protocol 4,200, core oracle 4,200, repository
+Reset32 caps are matrix 4,200, protocol 4,200, core oracle 4,200, repository
 oracle 14,500, template 600, ADR 550, route partition 5,800,
 architecture/security partition 2,200, validator partition 28,000, seven-path
 aggregate 34,000, and zero binary bytes. Actual use at or above 85 percent
 requires an explicit readability/convergence review; use at or above 90 percent
 stops before C3 and GREEN for decomposition. Semantic compression cannot satisfy
-a cap.
+a cap. The core oracle's 3,694/4,200 (87.95 percent) usage receives a
+readability-risk PASS because Reset32 changes only its explicit semantic literal,
+introduces no compression, and remains below 90 percent. The protocol's
+3,709/4,200 (88.31 percent) usage is also readability-risk PASS: every case
+remains explicit, named immutable prefix tuples only remove duplicate literals,
+and usage remains below 90 percent.
 
 ### Filesystem snapshot boundary
 
@@ -194,12 +208,15 @@ possible failure ordinal, and propagate that exact typed finding tuple by
 identity without retry, later reads, or rescanning.
 
 Saved real Git output is tokenized only after strict role-specific parsing. Each
-replaceable OID position must equal its contemporaneous fixture or freeze object
-binding, and the verified role/position mapping must be complete, ordered, and
-unique. Uppercase, corrupt, injected-valid-but-wrong, reordered, missing, and
-extra OIDs remain raw or receive explicit hostile tokens, remain semantically
-distinct, and cannot inherit a trusted dynamic token. The 44 normalized byte
-rows freeze that verified mapping; merge-empty relations remain role-specific.
+of the seven replaceable role/row/column positions must equal its
+contemporaneous fixture or freeze object binding, and the mapping must be
+complete, ordered, and unique. Real-validator reordered, missing, duplicate,
+extra, swapped, uppercase, and valid-but-wrong injections stop at their exact
+prefix. A known OID in the wrong row or column remains hostile. Unmapped OIDs
+remain raw or receive explicit hostile tokens, remain
+semantically distinct, and cannot inherit a trusted dynamic token. The
+normalized byte rows freeze that verified mapping; merge-empty relations remain
+role-specific.
 Implementation constants must equal that contract. Retained ledgers bind
 stage-sensitive candidate references for every stage, ordinals/count relations,
 exact 64-byte signatures, independently isolated actual-candidate and ledger-row
