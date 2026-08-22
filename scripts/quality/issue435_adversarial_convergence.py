@@ -183,6 +183,82 @@ STATIC_GIT_FILESYSTEM_THREAT_MODEL = (
     ),
     ("strongerClaimDisposition", "EVIDENCE_BLOCKER"),
 )
+STATIC_GIT_FILESYSTEM_THREAT_MODEL_FINDINGS = (
+    (
+        "scope",
+        "ACP.MATRIX.FILESYSTEM_THREAT_MODEL_MISMATCH",
+        "staticBoundaryContract.gitEvidenceContract.filesystemThreatModel.scope",
+    ),
+    (
+        "proofs",
+        "ACP.MATRIX.FILESYSTEM_THREAT_MODEL_MISMATCH",
+        "staticBoundaryContract.gitEvidenceContract.filesystemThreatModel.proofs",
+    ),
+    (
+        "defenseInDepth",
+        "ACP.MATRIX.FILESYSTEM_THREAT_MODEL_MISMATCH",
+        "staticBoundaryContract.gitEvidenceContract.filesystemThreatModel.defenseInDepth",
+    ),
+    (
+        "gitProcessBinding",
+        "ACP.MATRIX.FILESYSTEM_THREAT_MODEL_MISMATCH",
+        "staticBoundaryContract.gitEvidenceContract.filesystemThreatModel.gitProcessBinding",
+    ),
+    (
+        "excludedThreat",
+        "ACP.MATRIX.FILESYSTEM_THREAT_MODEL_MISMATCH",
+        "staticBoundaryContract.gitEvidenceContract.filesystemThreatModel.excludedThreat",
+    ),
+    (
+        "claimsNotMade",
+        "ACP.MATRIX.FILESYSTEM_THREAT_MODEL_MISMATCH",
+        "staticBoundaryContract.gitEvidenceContract.filesystemThreatModel.claimsNotMade",
+    ),
+    (
+        "strongerClaimDisposition",
+        "ACP.MATRIX.FILESYSTEM_THREAT_MODEL_MISMATCH",
+        "staticBoundaryContract.gitEvidenceContract.filesystemThreatModel.strongerClaimDisposition",
+    ),
+)
+STATIC_GIT_DOCUMENTATION_CLAIM_CONTRACT = (
+    ("validator", "filesystem_threat_document_findings"),
+    ("blockStart", "<!-- issue-435-filesystem-snapshot-boundary:start -->"),
+    ("blockEnd", "<!-- issue-435-filesystem-snapshot-boundary:end -->"),
+    (
+        "approvedBlockSha256",
+        (
+            (
+                "docs/ADR/0064-adversarial-convergence-protocol.md",
+                "9dd347f0a3e8a53fe91969370b2caf8e7727b6d174e511f5132fae016cf2c471",
+            ),
+            (
+                "docs/ADVERSARIAL_VERIFICATION_PLAYBOOK.md",
+                "1840af97aeb2664a257488058260d8002e224cadd922d4c2e4e70c3a2224abc9",
+            ),
+            (
+                "docs/templates/ADVERSARIAL_INVARIANT_MATRIX.md",
+                "adc2d06e02992db52c1eaa5b667faf9031aba737506eab7ff71ad1b7db2139a3",
+            ),
+        ),
+    ),
+    (
+        "prohibitedClaimFamilies",
+        (
+            "race_free_validation",
+            "atomic_check_to_use",
+            "descriptor_bound_git_subprocess",
+            "detection_or_prevention_of_all_concurrent_repository_mutation",
+        ),
+    ),
+    (
+        "findingContracts",
+        (
+            ("block", "ACP.DOC.THREAT_MODEL_BLOCK"),
+            ("overclaim", "ACP.DOC.THREAT_MODEL_OVERCLAIM"),
+        ),
+    ),
+    ("location", "governed-document-path"),
+)
 STATIC_GIT_METADATA_TARGETS = (
     "info/grafts",
     "shallow",
@@ -1051,7 +1127,9 @@ STATIC_GIT_METADATA_CASE_SHA256 = "9da07ee4ae676313a8b267ae7374bad049781025d969e
 STATIC_GIT_METADATA_EXECUTION_CONTRACT_FIELDS = (
     "caseRow",
     "operationalMode",
-    "observedStimulusIdentity",
+    "observedPreExecutionStimulusFacts",
+    "observedPreExecutionStimulusIdentity",
+    "observedExecutionEvidenceIdentity",
     "rolePrefix",
     "normalizedIoCleanupPrefix",
 )
@@ -1191,7 +1269,11 @@ STATIC_GIT_METADATA_EXECUTION_SHA256 = (
     "dc206260cb4f4c2d1217ba9a6cf274279c2fdbe6c98f5c4c0db21d133558e91b"
 )
 STATIC_GIT_METADATA_FULL_EXECUTION_SHA256 = (
-    "88a2ce093e0e937cff3922ae790eb5fddfb0fcf7758e92c4cfe0abf597f2ab5b"
+    "d57645ae195a559e1d88f3053385a900e723c9eb638f69cec66056765b24cdc0"
+)
+STATIC_GIT_METADATA_STIMULUS_COUNT = 129
+STATIC_GIT_METADATA_STIMULUS_SHA256 = (
+    "ebaffa1950528196ef5f408707f945ec71a5fbb7c8f6643bcef5b1b0cb21fbb9"
 )
 STATIC_GIT_METADATA_PAYLOAD_FINGERPRINT_COUNT = 25
 STATIC_GIT_METADATA_PAYLOAD_FINGERPRINT_SHA256 = (
@@ -1379,8 +1461,8 @@ STATIC_GIT_TEXTUAL_TRANSFORMATIONS = (
     ("red_ancestor", "extra_line", False, None, None, None),
     ("red_ancestor", "corrupt_token", False, None, None, None),
     ("red_ancestor", "valid_token", False, None, None, None),
-    ("merge_scan", "missing_lf", True, "git", "ACP.GIT.OUTPUT_LINES", "merge_scan"),
-    ("merge_scan", "crlf", True, "git", "ACP.GIT.STDOUT_BYTES", "merge_scan"),
+    ("merge_scan", "missing_lf", False, None, None, None),
+    ("merge_scan", "crlf", True, "git", "ACP.GIT.OUTPUT_TOKEN", "merge_scan"),
     ("merge_scan", "extra_line", True, "git", "ACP.GIT.STDOUT_BYTES", "merge_scan"),
     ("merge_scan", "corrupt_token", True, "git", "ACP.GIT.OUTPUT_TOKEN", "merge_scan"),
     ("merge_scan", "valid_token", True, "freeze", "ACP.FREEZE.HISTORY_MERGE", "HEAD"),
@@ -1435,9 +1517,30 @@ STATIC_GIT_TEXTUAL_TRANSFORMATIONS = (
     ),
 )
 STATIC_GIT_TEXTUAL_TRANSFORMATION_COUNT = 70
-STATIC_GIT_TEXTUAL_TRANSFORMATION_APPLICABLE_COUNT = 45
+STATIC_GIT_TEXTUAL_TRANSFORMATION_APPLICABLE_COUNT = 44
 STATIC_GIT_TEXTUAL_TRANSFORMATION_SHA256 = (
-    "707138d773ab4c86dfd8422048a5807c3f5e32bf5a3284dac28bf6d49650e217"
+    "7e4e4eded6736f4894747e012cfb3b5727a073a0c9950b38712684a0c1e2b6d2"
+)
+STATIC_GIT_TEXTUAL_TRANSFORMATION_INPUT_CONTRACT_FIELDS = (
+    "role",
+    "transformation",
+    "applicable",
+    "baseSource",
+    "builder",
+    "byteRelation",
+    "expectedStage",
+    "expectedCode",
+    "expectedLocation",
+)
+STATIC_GIT_TEXTUAL_TRANSFORMATION_BUILDERS = (
+    ("missing_lf", "remove-one-terminal-lf", "base[:-1]"),
+    ("crlf", "replace-lf-with-crlf", "base.replace(LF,CRLF)"),
+    ("extra_line", "role-specific-extra-line", "extra(base,role)"),
+    ("corrupt_token", "role-specific-corrupt-token", "corrupt(base,role)"),
+    ("valid_token", "role-specific-valid-semantic", "valid(base,role,freeze)"),
+)
+STATIC_GIT_TEXTUAL_TRANSFORMATION_INPUT_CONTRACT_SHA256 = (
+    "d94fc0a49bf78e072ac44997785e40e073c19e9d14f0a19ab5a9415d88e60456"
 )
 STATIC_GIT_OBJECT_BINDINGS = (
     ("red_tree", "redTree"),
@@ -1844,6 +1947,13 @@ def convergence_blockers(
         focused_failures,
     )
     return (1, 1)
+
+
+def filesystem_threat_document_findings(
+    documents: tuple[tuple[str, str], ...],
+) -> tuple[Finding, ...]:
+    del documents
+    return (_not_implemented("filesystem-threat-documents"),)
 
 
 def validate_matrix_bytes(

@@ -135,6 +135,9 @@ must compare the previously observed parent-directory type/device/inode, and
 discovery must revalidate the `.git`, linked Git directory, and common directory
 bindings immediately before process evidence begins.
 
+### Filesystem snapshot boundary
+
+<!-- issue-435-filesystem-snapshot-boundary:start -->
 Every repository matrix must also freeze a filesystem threat-model object with
 the exact scope, proofs, defense-in-depth controls, Git process-binding model,
 excluded threat, claims not made, and disposition for stronger claims. The
@@ -144,6 +147,7 @@ descriptor-bound; concurrent out-of-process mutation after descriptor close or
 during reopen is excluded. Reader-local race detection and final revalidation
 must not be promoted into race-free, atomic, or all-concurrent-mutation claims.
 Any stronger claim is an `EVIDENCE_BLOCKER` pending new authority and proof.
+<!-- issue-435-filesystem-snapshot-boundary:end -->
 Freeze fsck status 1 as object-integrity failure, missing-object type status 128
 as missing RED, and `-1`, `2`, and `127` for every form as the generic process
 finding before byte/decode/line/token semantics. Script the RED-size input for

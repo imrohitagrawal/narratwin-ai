@@ -122,6 +122,7 @@ bytes at exact N/N+1 and a smaller dynamic RED-object cap.
 
 ### Filesystem snapshot boundary
 
+<!-- issue-435-filesystem-snapshot-boundary:start -->
 Repository evidence assumes one stable local filesystem metadata and Git-object
 snapshot for the full validator invocation. Descriptor-relative no-follow reads,
 reader-local inode continuity, prohibited-metadata checks, and the final `.git`,
@@ -134,6 +135,7 @@ threat model. The protocol therefore makes no race-free, atomic check-to-use,
 descriptor-bound subprocess, or detect-all-concurrent-mutation claim. Any such
 stronger claim is an `EVIDENCE_BLOCKER` requiring new authority, architecture,
 and executable proof.
+<!-- issue-435-filesystem-snapshot-boundary:end -->
 
 Nested parser
 members and every configured limit are closed over exact types, enums, hashes,

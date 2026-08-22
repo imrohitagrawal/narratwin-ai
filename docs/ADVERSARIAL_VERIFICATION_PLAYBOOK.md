@@ -106,6 +106,7 @@ that prevents attempts on remaining descriptors.
 
 ### Stable filesystem snapshot boundary
 
+<!-- issue-435-filesystem-snapshot-boundary:start -->
 State explicitly that repository validation assumes stable local filesystem
 metadata and Git objects for the full invocation. No-follow traversal,
 reader-local inode checks, prohibited-target scans, and final binding
@@ -116,6 +117,7 @@ or during reopen is excluded. Never describe this design as race-free, atomic,
 descriptor-bound, or able to detect or prevent every concurrent mutation. A
 stronger claim is an `EVIDENCE_BLOCKER` and requires a new authorized design and
 executable evidence.
+<!-- issue-435-filesystem-snapshot-boundary:end -->
 
 Fourteen fixed read-only forms then use absolute `/usr/bin/git`, no pager,
 replacement objects, locks, lazy fetch, external diff, renames, ignored
