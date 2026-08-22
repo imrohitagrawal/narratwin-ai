@@ -73,7 +73,7 @@ DETERMINISTIC_GIT_METADATA = {
 GOVERNED_FIXTURE_PARENT_BYTES = 700
 GOVERNED_FIXTURE_PARENT_DEPTH = 18
 GOVERNED_FIXTURE_SLOT_BYTES = 48
-PORTABLE_ROOT_SLOT_NAMES = ("r32-a0", "r32-b0")
+PORTABLE_ROOT_SLOT_NAMES = ("slot-a00", "slot-b00")
 PORTABLE_ROOT_CHILD_COMPONENT_BYTES = (12, 12, 12, 12, 12, 15)
 PORTABLE_ROOT_RELATIVE_DELTA = (81, 6)
 MetadataCaseRow = tuple[str, str, str, str, str, str | None, str]
@@ -99,6 +99,32 @@ MetadataExecution = tuple[
 
 
 @dataclass(frozen=True)
+class PortableRootPlan:
+    label: str
+    owner_path: str
+    owner_mode: int
+    owner_device: int
+    owner_inode: int
+    candidate_components: tuple[str, ...]
+    candidate_component_bytes: tuple[int, ...]
+    candidate_bytes: int
+    candidate_depth: int
+    filler_components: tuple[str, ...]
+    final_components: tuple[str, str]
+    governed_path: str
+    governed_bytes: int
+    governed_depth: int
+
+
+@dataclass(frozen=True)
+class PortableConstructionResult:
+    plans: tuple[PortableRootPlan, PortableRootPlan]
+    planning_transcript: tuple[tuple[str, str], ...]
+    filesystem_receipts: tuple[tuple[int, str, str, int, int, int, int], ...]
+    governed_roots: tuple[Path, Path]
+
+
+@dataclass(frozen=True)
 class MetadataCollection:
     full_executions: tuple[MetadataExecution, ...]
     stimuli: tuple[tuple[MetadataStimulusFacts, str], ...]
@@ -112,6 +138,21 @@ class MetadataCollection:
 @dataclass(frozen=True)
 class ConfiguredProjectionResult:
     projection: tuple[str, str, str, str] | None
+    findings: tuple[protocol.Finding, ...]
+
+
+@dataclass(frozen=True)
+class ParsedConfiguredRawReceipt:
+    raw_receipt: tuple[tuple[str, ...], ...]
+    callback_prefixes: tuple[str, ...]
+    successful_opens: tuple[tuple[int, int, int, str, str], ...]
+    projection: tuple[str, str, str, str]
+    observed: tuple[str, str, int, int]
+
+
+@dataclass(frozen=True)
+class ConfiguredRawIntegrityResult:
+    parsed: ParsedConfiguredRawReceipt | None
     findings: tuple[protocol.Finding, ...]
 
 
@@ -973,6 +1014,7 @@ EXPECTED_METADATA_TRIGGER_RECEIPT_FIELDS = (
     "role",
     "callbackArgumentVector",
     "callbackVector",
+    "callbackResultVector",
     "lstatVector",
     "openVector",
     "fstatVector",
@@ -1060,7 +1102,7 @@ EXPECTED_METADATA_ROOT_REPLAY_EVIDENCE_IDENTITY_SHA256 = (
 )
 EXPECTED_METADATA_ROOT_REPLAY_ENVELOPE_COUNT = 2
 EXPECTED_METADATA_ROOT_REPLAY_RELATION_SHA256 = (
-    "9fd9494f55f68a5a611dd9be45bdc325f09045f264d42e44cb6ecd834829f019"
+    "555b222414c70aeea1e4bb2bbfd57f26d0117e957f63635fb8d5a3ce83d48903"
 )
 EXPECTED_METADATA_ROOT_REPLAY_RUNTIME_CONTRACT = (
     "derive-runtime-envelope-from-owned-base-and-relative-relation",
@@ -1497,6 +1539,7 @@ EXPECTED_METADATA_CONFIGURED_PLAN_RECEIPT_FIELDS = (
     "observedTargetPath",
     "observedRoleOrdinal",
     "observedCallbackOrdinal",
+    "executionEvidenceIdentity",
 )
 EXPECTED_METADATA_CONFIGURED_PLAN_RAW_EVIDENCE_FIELDS = (
     "callbackArguments",
@@ -1521,46 +1564,487 @@ EXPECTED_METADATA_CONFIGURED_PLAN_RECEIPT_IDENTITY_CONTRACT = (
     "must-not-read-configured-plan-case-row-expected-finding-or-terminal-result",
     "separate-binder-validates-raw-integrity-and-exact-callback-target-phase-effect-against-declared-plan",
 )
+EXPECTED_METADATA_CONFIGURED_RAW_FIELD_CAPS = (
+    ("callbackArguments", 1024),
+    ("callbackEvents", 1024),
+    ("roleEvents", 16),
+    ("metadataEvents", 1024),
+    ("statEvents", 768),
+    ("exceptionEvents", 32),
+    ("closeEffects", 512),
+    ("interRoleEvidence", 7),
+)
+EXPECTED_METADATA_CONFIGURED_RAW_ITEM_BYTE_CAP = 4096
+EXPECTED_METADATA_CONFIGURED_EXCEPTION_TYPES = (
+    "FileNotFoundError",
+    "NotADirectoryError",
+    "OSError",
+)
+EXPECTED_METADATA_CONFIGURED_CLOSED_ROLES = (
+    "discovery",
+    "dot_git",
+    "linked_git_dir",
+    "backlink",
+    "commondir",
+    "common_dir",
+    "prohibited_grafts",
+    "prohibited_shallow",
+    "prohibited_alternates",
+    "prohibited_http_alternates",
+)
+EXPECTED_METADATA_CONFIGURED_INTER_ROLE_RELATION_FIELDS = (
+    "role",
+    "afterRole",
+    "path",
+    "beforeType",
+    "afterType",
+    "identityChanged",
+    "triggered",
+    "target",
+    "phase",
+    "effect",
+)
+EXPECTED_METADATA_CONFIGURED_INTER_ROLE_RELATIONS = (
+    (
+        "role=inter-role-mutation",
+        "dot_git",
+        "$TMP/$CASE/repository/.git",
+        "16384",
+        "16384",
+        "true",
+        "true",
+        "dot-git",
+        "after-dot-git-read",
+        "dot-git-replacement",
+    ),
+    (
+        "role=inter-role-mutation",
+        "prohibited_http_alternates",
+        "$TMP/$CASE/repository/.git",
+        "16384",
+        "16384",
+        "true",
+        "true",
+        "dot-git",
+        "after-prohibited-http-alternates-read",
+        "identity-replacement",
+    ),
+    (
+        "role=inter-role-mutation",
+        "linked_git_dir",
+        "$TMP/$CASE/source/repository/.git/worktrees/linked",
+        "16384",
+        "16384",
+        "true",
+        "true",
+        "linked-git-dir",
+        "after-linked-git-dir-read",
+        "linked-dir-replacement",
+    ),
+    (
+        "role=inter-role-mutation",
+        "common_dir",
+        "$TMP/$CASE/source/repository/.git",
+        "16384",
+        "16384",
+        "true",
+        "true",
+        "common-dir",
+        "after-common-dir-read",
+        "common-dir-replacement",
+    ),
+)
+EXPECTED_METADATA_CONFIGURED_INTER_ROLE_SCHEDULE_FIELDS = (
+    "afterRole",
+    "roleSchedule",
+    "targetRoleOrdinal",
+    "triggerRoleOrdinal",
+    "terminalRoleOrdinal",
+    "benignExceptionLedger",
+)
+EXPECTED_METADATA_CONFIGURED_INTER_ROLE_SCHEDULES = (
+    ("dot_git", ("discovery", "dot_git", "common_dir"), 1, 1, 2, ()),
+    (
+        "linked_git_dir",
+        ("discovery", "dot_git", "linked_git_dir", "backlink"),
+        2,
+        2,
+        3,
+        (),
+    ),
+    (
+        "common_dir",
+        (
+            "discovery",
+            "dot_git",
+            "linked_git_dir",
+            "backlink",
+            "commondir",
+            "common_dir",
+            "prohibited_grafts",
+        ),
+        5,
+        5,
+        6,
+        (),
+    ),
+    (
+        "prohibited_http_alternates",
+        (
+            "discovery",
+            "dot_git",
+            "common_dir",
+            "prohibited_grafts",
+            "prohibited_shallow",
+            "prohibited_alternates",
+            "prohibited_http_alternates",
+            "dot_git",
+        ),
+        1,
+        6,
+        7,
+        (
+            "event-64:role-prohibited_grafts:roleOrdinal-3:lstat:lstat:error:FileNotFoundError:errno",
+            "event-61:role-prohibited_shallow:roleOrdinal-4:lstat:lstat:error:FileNotFoundError:errno",
+            "event-67:role-prohibited_alternates:roleOrdinal-5:lstat:lstat:error:FileNotFoundError:errno",
+            "event-67:role-prohibited_http_alternates:roleOrdinal-6:lstat:lstat:error:FileNotFoundError:errno",
+        ),
+    ),
+)
+EXPECTED_METADATA_CONFIGURED_ALLOWED_ROLE_SCHEDULES = (
+    ("discovery",),
+    ("discovery", "dot_git"),
+    ("discovery", "dot_git", "common_dir"),
+    ("discovery", "dot_git", "common_dir", "prohibited_grafts"),
+    ("discovery", "dot_git", "linked_git_dir", "backlink"),
+    (
+        "discovery",
+        "dot_git",
+        "linked_git_dir",
+        "backlink",
+        "commondir",
+        "common_dir",
+        "prohibited_grafts",
+    ),
+    (
+        "discovery",
+        "dot_git",
+        "common_dir",
+        "prohibited_grafts",
+        "prohibited_shallow",
+        "prohibited_alternates",
+        "prohibited_http_alternates",
+        "dot_git",
+    ),
+)
+EXPECTED_METADATA_CONFIGURED_NON_INTER_ALLOWED_ROLE_SCHEDULES = (
+    ("discovery",),
+    ("discovery", "dot_git"),
+    ("discovery", "dot_git", "common_dir", "prohibited_grafts"),
+)
+EXPECTED_METADATA_CONFIGURED_INTER_ORDINAL_MUTANTS = (
+    (
+        "MUT-INTER-TARGET-ORDINAL-NEGATIVE",
+        -1,
+        "interRoleSchedule.targetRoleOrdinal",
+        "configuredPlanReceipts[5].interRoleEvidence",
+    ),
+    (
+        "MUT-INTER-TARGET-ORDINAL-COUNT",
+        4,
+        "interRoleSchedule.targetRoleOrdinal",
+        "configuredPlanReceipts[5].interRoleEvidence",
+    ),
+)
+EXPECTED_METADATA_CONFIGURED_INTER_ORDINAL_MUTANT_FIELDS = (
+    "mutantId",
+    "targetRoleOrdinal",
+    "changedFieldSet",
+    "findingLocation",
+)
+EXPECTED_METADATA_CONFIGURED_INTER_ORDINAL_MUTANT_COUNT = 2
+EXPECTED_METADATA_CONFIGURED_INTER_ORDINAL_MUTANT_SHA256 = (
+    "b9e02deec92e8005bad764079147f07a5f871b146028356cacd6b1bdd64eefe4"
+)
+EXPECTED_METADATA_CONFIGURED_COMPOSED_PRECEDENCE = (
+    (
+        "MUT-COMPOSED-INDEX-RAW",
+        "invalid-index+raw-list",
+        "index+rawReceipt",
+        "receiptIndex",
+        "configuredPlanReceipts[0].receiptIndex",
+    ),
+    (
+        "MUT-COMPOSED-RAW-SHA",
+        "raw-list+stale-sha",
+        "rawReceipt+rawEvidenceIdentity",
+        "rawReceipt",
+        "configuredPlanReceipts[14].rawReceipt",
+    ),
+    (
+        "MUT-COMPOSED-COUNT-ENCODING",
+        "count-over+invalid-encoding",
+        "callbackArguments+callbackEvents",
+        "callbackArguments.countLimit",
+        "configuredPlanReceipts[14].callbackArguments.countLimit",
+    ),
+    (
+        "MUT-COMPOSED-SHA-ROLE",
+        "stale-sha+empty-roles",
+        "rawEvidenceIdentity+roleEvents",
+        "rawEvidenceIdentity",
+        "configuredPlanReceipts[14].rawEvidenceIdentity",
+    ),
+    (
+        "MUT-COMPOSED-ARG-EVENT",
+        "argument-and-event-gap",
+        "callbackArguments+callbackEvents",
+        "callbackArguments.eventOrdinal",
+        "configuredPlanReceipts[14].callbackArguments.eventOrdinal",
+    ),
+    (
+        "MUT-COMPOSED-METADATA-DERIVED",
+        "metadata-and-derived-empty",
+        "metadataEvents+statEvents+exceptionEvents+closeEffects",
+        "metadataEvents",
+        "configuredPlanReceipts[14].metadataEvents",
+    ),
+    (
+        "MUT-COMPOSED-OBSERVATION-PROJECTION-PLAN",
+        "observation+projection+plan",
+        "observed+projection+declared",
+        "observedTargetRole",
+        "configuredPlanReceipts[14].observedTargetRole",
+    ),
+    (
+        "MUT-COMPOSED-PROJECTION-PLAN",
+        "projection+plan",
+        "projection+declared",
+        "callback",
+        "configuredPlanReceipts[14].callback",
+    ),
+)
+EXPECTED_METADATA_CONFIGURED_COMPOSED_PRECEDENCE_FIELDS = (
+    "mutantId",
+    "operation",
+    "changedFieldSet",
+    "expectedCoordinate",
+    "findingLocation",
+)
+EXPECTED_METADATA_CONFIGURED_COMPOSED_PRECEDENCE_COUNT = 8
+EXPECTED_METADATA_CONFIGURED_COMPOSED_PRECEDENCE_SHA256 = (
+    "bd5d97eeb27e0f55867812f4dff7c412ee494010f97ff05181224e6589566d75"
+)
 EXPECTED_METADATA_CONFIGURED_PLAN_RECEIPT_COUNT = 22
 EXPECTED_METADATA_CONFIGURED_PLAN_RECEIPT_SHA256 = (
-    "6aeb777713725dcb8e59704ba4bf93f011770e1584e8a9d8c5ca9d75bc49191a"
+    "a35b10c41378c50b01ab03110481bc068667454fd3927b77f7162d34a5ce6d02"
+)
+EXPECTED_METADATA_CONFIGURED_RECEIPT_BINDING_FIELDS = (
+    "executionEvidenceIdentity",
+    "rawEvidenceIdentity",
+    "observed",
+    "projection",
+)
+EXPECTED_METADATA_CONFIGURED_RECEIPT_BINDINGS = (
+    (
+        "a3a1b0be111f71753bcf20517e1943aaa7d27614bba652b8177d4a7c57937565",
+        "73742ccabcee1a95e44f26adeab4a86bb0a15c75e58cf2260a03b94f1fbbd78c",
+        ("discovery", "root-ancestor-distance-1", 0, 52),
+        ("filesystem-state", "root-ancestor", "before-discovery", "symlink"),
+    ),
+    (
+        "593c6bd0b8f186ca3b1ae13dcff3d296b14b18fa3a7bd9398aec2f4aa1dd0aeb",
+        "71bb2fc736c30997de7b43f2fcae5f9a6f2ea912ff537ed1fd57b7224863b24a",
+        ("discovery", "$ROOT", 0, 55),
+        ("lstat", "root", "after-lstat", "identity-replacement"),
+    ),
+    (
+        "b0074bd70c20d90f671e24140810c1755cc7fb22e1b7f92547ea12831997b5c9",
+        "71bb2fc736c30997de7b43f2fcae5f9a6f2ea912ff537ed1fd57b7224863b24a",
+        ("discovery", "$ROOT", 0, 55),
+        ("lstat", "root", "after-lstat", "identity-replacement"),
+    ),
+    (
+        "8ceeaac02f96030748d13501bed95810e1a8fb8b01f1ceb365b6ec5d8ca59364",
+        "4b99de7464f2e4bc4aec212291c5013ca9f13612feca0978bb1b9374483db3bc",
+        ("prohibited_grafts", "$ROOT/.git/info", 3, 61),
+        ("lstat", "info-ancestor", "after-lstat", "identity-replacement"),
+    ),
+    (
+        "2f5ce9685bd567414dc7fc54eae3fbeccb9f1e84fc1a8d8782792286c77484b5",
+        "3848496cb0c10fb9f06f1161f4673536b4a8d61320f97e7ac32d4b8f61602ae6",
+        ("dot_git", "$ROOT/.git", 1, 59),
+        ("inter-role", "dot-git", "after-dot-git-read", "dot-git-replacement"),
+    ),
+    (
+        "2458c5284cd964554257c0dc3553d4a4482b396e644fe56254b2b382473b9ab3",
+        "9f7c95014930ad1f4b76bc02aa5d0f1560fa224749fb7a23975df93665d7357d",
+        (
+            "linked_git_dir",
+            "fixture-relative:$TMP/$CASE/source/repository/.git/worktrees/linked",
+            2,
+            68,
+        ),
+        ("inter-role", "linked-git-dir", "after-linked-git-dir-read", "linked-dir-replacement"),
+    ),
+    (
+        "f5376ec16aabb783e133a85c0952fe646371dc48d98991a1964b7beb45fbe6a7",
+        "129ca143dc58e348666403d645702420923e0656a10ec7176465c2b7474c495a",
+        ("common_dir", "fixture-relative:$TMP/$CASE/source/repository/.git", 5, 62),
+        ("inter-role", "common-dir", "after-common-dir-read", "common-dir-replacement"),
+    ),
+    (
+        "77f4eacc2f969545adaa64d380a609af884544f0dabddd090d5cf9c703640093",
+        "40d9a589d51bb33742f095ea22f70e40758d8bc50b3bb66ce142a3706b3770e3",
+        ("dot_git", "$ROOT/.git", 1, 59),
+        ("inter-role", "dot-git", "after-prohibited-http-alternates-read", "identity-replacement"),
+    ),
+    (
+        "80ee55baf4e860ae355d4bf0097a6208258fe62d9f161d616c8bd5e6e91ad634",
+        "10e2457ce2ff455d76a4bd032b69b39649b96ce8230ef879806c3540437c9550",
+        ("dot_git", "$ROOT/.git", 1, 58),
+        ("lstat", "dot-git", "after-lstat", "identity-replacement"),
+    ),
+    (
+        "d18e1b0aa5115adb0c0ab5a3ea38876e5da5487b59f8aa24936f71ca4f3c23f9",
+        "6069fba60169d85fb013993f04b83c0970302df4154839a5e619116394a71c94",
+        ("dot_git", "$ROOT/.git", 1, 58),
+        ("lstat", "dot-git", "after-lstat", "identity-replacement"),
+    ),
+    (
+        "4bcaa272c38e7cbead4c3728795d53292adfd430e9b7821ff1f67f787a6d5548",
+        "6a4d3106293bc80fff7a5c1939ca389a7898c199a12be6b455126ccafacd314c",
+        ("dot_git", "$ROOT/.git", 1, 60),
+        ("fstat", "dot-git", "after-open", "device-drift"),
+    ),
+    (
+        "2177f34d530a49af140b3ed532b270bbd5dc4f18c113d81ebdcfc111a068adda",
+        "149b9079e402b6dac79419127cc790b93044ab6fd454389cea278c31dd38cd13",
+        ("dot_git", "$ROOT/.git", 1, 60),
+        ("fstat", "dot-git", "after-open", "inode-drift"),
+    ),
+    (
+        "73393605285472cad58f94e0afbecf96435e9200f7ae3267dfc0262693757af9",
+        "c4beb067c5b37d7725527c3282ed2e72b9920fbeb64d93228d28aba3d39ab363",
+        ("dot_git", "$ROOT/.git", 1, 60),
+        ("fstat", "dot-git", "after-open", "type-drift"),
+    ),
+    (
+        "5c3904d883801b4353e2040407940a803aa1e03f540973c6f4e1ddba7e0e6361",
+        "e24e12f6d49dcf941eaa4fa36c898b801c30e6255eb67d97f88bde0374cc83cb",
+        ("dot_git", "$ROOT/.git", 1, 60),
+        ("fstat", "dot-git", "after-open", "inode-drift"),
+    ),
+    (
+        "8b62454071d06776f92132cca76ec8d50a3202a7e27a6bae5d1c1a2942f61adb",
+        "653a6676aff1ec2ad79793df8ad9a5163f1dcd3ab84284ab7d65c325b5e36bf4",
+        ("dot_git", "$ROOT/.git", 1, 60),
+        ("fstat", "dot-git", "after-open", "type-drift"),
+    ),
+    (
+        "2fc1e6382961df21711097f86494a0b0436bf228091c4dbb689717b0a5cb2cb0",
+        "eb0d762b7f2587bd18d1fdf53bf74078d72dcf5aee7940caa1d9c48432a13c87",
+        ("dot_git", "$ROOT/.git", 1, 63),
+        ("lstat", "dot-git", "after-read", "device-drift"),
+    ),
+    (
+        "eadb03d7cdd0b703abf12f4dd4a6124eef28f4cda210881791c385f652c7aedc",
+        "1641d9fdbd42f9ff91753f6245c7d105eefc451f6968d78d35eb4ad39364ca00",
+        ("dot_git", "$ROOT/.git", 1, 58),
+        ("lstat", "dot-git", "initial-lstat", "os-error"),
+    ),
+    (
+        "a34fff95d184999579124d3dab38a4d8195136f03f160c44a8f0b7b494094b88",
+        "1641d9fdbd42f9ff91753f6245c7d105eefc451f6968d78d35eb4ad39364ca00",
+        ("dot_git", "$ROOT/.git", 1, 58),
+        ("lstat", "dot-git", "initial-lstat", "os-error"),
+    ),
+    (
+        "fc45bc1ea087390aab635144d4bd531478f0814d5c19242a5719d5817d5ef6be",
+        "6be94f7538b5eecb254ae969ba137363373ae337d8a7715c99460a2382315822",
+        ("dot_git", "$ROOT/.git", 1, 59),
+        ("open", "dot-git", "initial-open", "os-error"),
+    ),
+    (
+        "f2055033dbade8565eb27b08c333497d00a0b354f7125366bf1f44a27dd300bb",
+        "20a68bb53ebe4a5f9d04cb8af5baf01d58fc83a25d9fed2a639ac0015d962de1",
+        ("dot_git", "$ROOT/.git", 1, 59),
+        ("open", "dot-git", "initial-open", "os-error"),
+    ),
+    (
+        "9b3d4cc0138560fb60bd26a5a9931d72537e1a63c3482a085dbc8a275d2d9349",
+        "65a32b7ec483ffd4eed61eb01176403a49a2665fdf72237aa559b27d55c90963",
+        ("discovery", "$ROOT", 0, 58),
+        ("close", "root", "cleanup", "os-error"),
+    ),
+    (
+        "b0f885b816bb37b59f48e7647e0f2b391f113d5213c96395d06e3d6bce357f2a",
+        "65a32b7ec483ffd4eed61eb01176403a49a2665fdf72237aa559b27d55c90963",
+        ("discovery", "$ROOT", 0, 58),
+        ("close", "root", "cleanup", "os-error"),
+    ),
+)
+EXPECTED_METADATA_CONFIGURED_SAME_PLAN_SWAPS = (
+    (1, 2),
+    (8, 9),
+    (11, 13),
+    (12, 14),
+    (16, 17),
+    (18, 19),
+    (20, 21),
+)
+EXPECTED_METADATA_CONFIGURED_SAME_PLAN_SWAP_FIELDS = (
+    "donorReceiptIndex",
+    "recipientReceiptIndex",
+)
+EXPECTED_METADATA_CONFIGURED_RECEIPT_BINDING_COUNT = 22
+EXPECTED_METADATA_CONFIGURED_RECEIPT_BINDING_SHA256 = (
+    "9aed869589d56316ac76e8b6b7cd005da51a5edcc17cb926a6444468f84809d3"
+)
+EXPECTED_METADATA_CONFIGURED_SAME_PLAN_SWAP_COUNT = 7
+EXPECTED_METADATA_CONFIGURED_SAME_PLAN_SWAP_SHA256 = (
+    "421384f1402ffdad681b6062288eb0bcfba55834ef2f9e28f630b50a74ed4c49"
 )
 EXPECTED_METADATA_CONFIGURED_PLAN_MUTANTS = (
     (
         "MUT-CONFIGURED-PLAN-RECEIPT-CALLBACK",
         "fstat-type@linked",
-        "callback",
+        "callbackEvents",
         "raw",
-        "callback",
+        "callbackEvents",
         "replace-custom-callback-with-other-closed-callback",
-        "configuredPlanReceipts[14].callback",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[14].callbackEvents",
     ),
     (
         "MUT-CONFIGURED-PLAN-RECEIPT-TARGET",
         "fstat-type@linked",
-        "target",
+        "callbackArguments.path",
         "raw",
-        "target",
+        "callbackArguments",
         "replace-callback-target-argument",
-        "configuredPlanReceipts[14].target",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[14].callbackArguments.path",
     ),
     (
         "MUT-CONFIGURED-PLAN-RECEIPT-PHASE",
         "fstat-type@linked",
-        "phase",
+        "callbackArguments.eventOrdinal",
         "raw",
-        "phase",
+        "callbackArguments",
         "replace-callback-event-ordinal",
-        "configuredPlanReceipts[14].phase",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[14].callbackArguments.eventOrdinal",
     ),
     (
         "MUT-CONFIGURED-PLAN-RECEIPT-EFFECT",
         "fstat-type@linked",
-        "effect",
+        "statEvents",
         "raw",
-        "effect",
+        "statEvents",
         "replace-stat-effect-evidence",
-        "configuredPlanReceipts[14].effect",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[14].statEvents",
     ),
     (
         "MUT-CONFIGURED-PLAN-RECEIPT-NOOP",
@@ -1569,6 +2053,7 @@ EXPECTED_METADATA_CONFIGURED_PLAN_MUTANTS = (
         "raw",
         "callbackEvents",
         "remove-custom-callback-trigger",
+        "recompute-after-mutation",
         "configuredPlanReceipts[14].rawReceipt",
     ),
     (
@@ -1578,6 +2063,7 @@ EXPECTED_METADATA_CONFIGURED_PLAN_MUTANTS = (
         "raw",
         "closeEffects",
         "replace-observed-close-error-with-ok",
+        "recompute-after-mutation",
         "configuredPlanReceipts[21].closeEffects",
     ),
     (
@@ -1587,6 +2073,7 @@ EXPECTED_METADATA_CONFIGURED_PLAN_MUTANTS = (
         "raw",
         "interRoleEvidence",
         "replace-triggered-before-after-observation-with-unchanged",
+        "recompute-after-mutation",
         "configuredPlanReceipts[5].interRoleEvidence",
     ),
     (
@@ -1594,8 +2081,9 @@ EXPECTED_METADATA_CONFIGURED_PLAN_MUTANTS = (
         "fstat-type@linked",
         "effect",
         "declared",
-        "declaredPlan.effect",
+        "declared",
         "replace-declared-plan-after-raw-projection",
+        "recompute-after-mutation",
         "configuredPlanReceipts[14].effect",
     ),
     (
@@ -1603,8 +2091,959 @@ EXPECTED_METADATA_CONFIGURED_PLAN_MUTANTS = (
         "fstat-type@linked",
         "effect",
         "projection",
-        "declaredPlan",
+        "projection+declared",
         "copy-declared-decoy-instead-of-projecting-raw-receipt",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[14].effect",
+    ),
+    (
+        "MUT-INDEX-BOOL",
+        "fstat-type@linked",
+        "receiptIndex",
+        "index",
+        "index",
+        "index-bool",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[0].receiptIndex",
+    ),
+    (
+        "MUT-INDEX-STRING",
+        "fstat-type@linked",
+        "receiptIndex",
+        "index",
+        "index",
+        "index-string",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[0].receiptIndex",
+    ),
+    (
+        "MUT-INDEX-NEGATIVE",
+        "fstat-type@linked",
+        "receiptIndex",
+        "index",
+        "index",
+        "index-negative",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[0].receiptIndex",
+    ),
+    (
+        "MUT-INDEX-N",
+        "fstat-type@linked",
+        "receiptIndex",
+        "index",
+        "index",
+        "index-count",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[0].receiptIndex",
+    ),
+    (
+        "MUT-INDEX-NPLUS1",
+        "fstat-type@linked",
+        "receiptIndex",
+        "index",
+        "index",
+        "index-count-plus-one",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[0].receiptIndex",
+    ),
+    (
+        "MUT-RAW-LIST",
+        "fstat-type@linked",
+        "rawReceipt",
+        "raw",
+        "rawReceipt",
+        "raw-list",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[14].rawReceipt",
+    ),
+    (
+        "MUT-RAW-SHORT",
+        "fstat-type@linked",
+        "rawReceipt",
+        "raw",
+        "rawReceipt",
+        "raw-short",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[14].rawReceipt",
+    ),
+    (
+        "MUT-RAW-LONG",
+        "fstat-type@linked",
+        "rawReceipt",
+        "raw",
+        "rawReceipt",
+        "raw-long",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[14].rawReceipt",
+    ),
+    (
+        "MUT-FIELD-TYPE-CALLBACKARGUMENTS",
+        "fstat-type@linked",
+        "callbackArguments",
+        "raw",
+        "callbackArguments",
+        "field-list-0",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[14].callbackArguments",
+    ),
+    (
+        "MUT-FIELD-TYPE-CALLBACKEVENTS",
+        "fstat-type@linked",
+        "callbackEvents",
+        "raw",
+        "callbackEvents",
+        "field-list-1",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[14].callbackEvents",
+    ),
+    (
+        "MUT-FIELD-TYPE-ROLEEVENTS",
+        "fstat-type@linked",
+        "roleEvents",
+        "raw",
+        "roleEvents",
+        "field-list-2",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[14].roleEvents",
+    ),
+    (
+        "MUT-FIELD-TYPE-METADATAEVENTS",
+        "fstat-type@linked",
+        "metadataEvents",
+        "raw",
+        "metadataEvents",
+        "field-list-3",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[14].metadataEvents",
+    ),
+    (
+        "MUT-FIELD-TYPE-STATEVENTS",
+        "fstat-type@linked",
+        "statEvents",
+        "raw",
+        "statEvents",
+        "field-list-4",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[14].statEvents",
+    ),
+    (
+        "MUT-FIELD-TYPE-EXCEPTIONEVENTS",
+        "fstat-type@linked",
+        "exceptionEvents",
+        "raw",
+        "exceptionEvents",
+        "field-list-5",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[14].exceptionEvents",
+    ),
+    (
+        "MUT-FIELD-TYPE-CLOSEEFFECTS",
+        "fstat-type@linked",
+        "closeEffects",
+        "raw",
+        "closeEffects",
+        "field-list-6",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[14].closeEffects",
+    ),
+    (
+        "MUT-FIELD-TYPE-INTERROLEEVIDENCE",
+        "fstat-type@linked",
+        "interRoleEvidence",
+        "raw",
+        "interRoleEvidence",
+        "field-list-7",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[14].interRoleEvidence",
+    ),
+    (
+        "MUT-FIELD-CAP-CALLBACKARGUMENTS",
+        "fstat-type@linked",
+        "callbackArguments.countLimit",
+        "raw",
+        "callbackArguments",
+        "field-over-cap-0",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[14].callbackArguments.countLimit",
+    ),
+    (
+        "MUT-FIELD-CAP-CALLBACKEVENTS",
+        "fstat-type@linked",
+        "callbackEvents.countLimit",
+        "raw",
+        "callbackEvents",
+        "field-over-cap-1",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[14].callbackEvents.countLimit",
+    ),
+    (
+        "MUT-FIELD-CAP-ROLEEVENTS",
+        "fstat-type@linked",
+        "roleEvents.countLimit",
+        "raw",
+        "roleEvents",
+        "field-over-cap-2",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[14].roleEvents.countLimit",
+    ),
+    (
+        "MUT-FIELD-CAP-METADATAEVENTS",
+        "fstat-type@linked",
+        "metadataEvents.countLimit",
+        "raw",
+        "metadataEvents",
+        "field-over-cap-3",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[14].metadataEvents.countLimit",
+    ),
+    (
+        "MUT-FIELD-CAP-STATEVENTS",
+        "fstat-type@linked",
+        "statEvents.countLimit",
+        "raw",
+        "statEvents",
+        "field-over-cap-4",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[14].statEvents.countLimit",
+    ),
+    (
+        "MUT-FIELD-CAP-EXCEPTIONEVENTS",
+        "fstat-type@linked",
+        "exceptionEvents.countLimit",
+        "raw",
+        "exceptionEvents",
+        "field-over-cap-5",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[14].exceptionEvents.countLimit",
+    ),
+    (
+        "MUT-FIELD-CAP-CLOSEEFFECTS",
+        "fstat-type@linked",
+        "closeEffects.countLimit",
+        "raw",
+        "closeEffects",
+        "field-over-cap-6",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[14].closeEffects.countLimit",
+    ),
+    (
+        "MUT-FIELD-CAP-INTERROLEEVIDENCE",
+        "fstat-type@linked",
+        "interRoleEvidence.countLimit",
+        "raw",
+        "interRoleEvidence",
+        "field-over-cap-7",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[14].interRoleEvidence.countLimit",
+    ),
+    (
+        "MUT-FIELD-ITEM-CALLBACKARGUMENTS",
+        "fstat-type@linked",
+        "callbackArguments",
+        "raw",
+        "callbackArguments",
+        "field-item-type-0",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[14].callbackArguments",
+    ),
+    (
+        "MUT-FIELD-ITEM-CALLBACKEVENTS",
+        "fstat-type@linked",
+        "callbackEvents",
+        "raw",
+        "callbackEvents",
+        "field-item-type-1",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[14].callbackEvents",
+    ),
+    (
+        "MUT-FIELD-ITEM-ROLEEVENTS",
+        "fstat-type@linked",
+        "roleEvents",
+        "raw",
+        "roleEvents",
+        "field-item-type-2",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[14].roleEvents",
+    ),
+    (
+        "MUT-FIELD-ITEM-METADATAEVENTS",
+        "fstat-type@linked",
+        "metadataEvents",
+        "raw",
+        "metadataEvents",
+        "field-item-type-3",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[14].metadataEvents",
+    ),
+    (
+        "MUT-FIELD-ITEM-STATEVENTS",
+        "fstat-type@linked",
+        "statEvents",
+        "raw",
+        "statEvents",
+        "field-item-type-4",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[14].statEvents",
+    ),
+    (
+        "MUT-FIELD-ITEM-EXCEPTIONEVENTS",
+        "fstat-type@linked",
+        "exceptionEvents",
+        "raw",
+        "exceptionEvents",
+        "field-item-type-5",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[14].exceptionEvents",
+    ),
+    (
+        "MUT-FIELD-ITEM-CLOSEEFFECTS",
+        "fstat-type@linked",
+        "closeEffects",
+        "raw",
+        "closeEffects",
+        "field-item-type-6",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[14].closeEffects",
+    ),
+    (
+        "MUT-FIELD-ITEM-INTERROLEEVIDENCE",
+        "fstat-type@linked",
+        "interRoleEvidence",
+        "raw",
+        "interRoleEvidence",
+        "field-item-type-7",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[14].interRoleEvidence",
+    ),
+    (
+        "MUT-FIELD-INVALID-UTF8",
+        "fstat-type@linked",
+        "callbackArguments.itemEncoding",
+        "raw",
+        "callbackArguments",
+        "field-invalid-utf8",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[14].callbackArguments.itemEncoding",
+    ),
+    (
+        "MUT-RAW-IDENTITY-STALE",
+        "fstat-type@linked",
+        "rawEvidenceIdentity",
+        "raw",
+        "statEvents",
+        "preserve-stale-identity",
+        "preserve-stale",
+        "configuredPlanReceipts[14].rawEvidenceIdentity",
+    ),
+    (
+        "MUT-ROLE-EMPTY",
+        "fstat-type@linked",
+        "roleEvents",
+        "raw",
+        "roleEvents",
+        "role-empty",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[14].roleEvents",
+    ),
+    (
+        "MUT-ROLE-FIRST",
+        "fstat-type@linked",
+        "roleEvents",
+        "raw",
+        "roleEvents",
+        "role-first-not-discovery",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[14].roleEvents",
+    ),
+    (
+        "MUT-ROLE-ORDINAL",
+        "fstat-type@linked",
+        "roleEvents",
+        "raw",
+        "roleEvents",
+        "role-ordinal-duplicate",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[14].roleEvents",
+    ),
+    (
+        "MUT-ROLE-REENTER",
+        "fstat-type@linked",
+        "roleEvents",
+        "raw",
+        "roleEvents",
+        "role-reentered",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[14].roleEvents",
+    ),
+    (
+        "MUT-CALLBACK-REORDER",
+        "fstat-type@linked",
+        "callbackEvents",
+        "raw",
+        "callbackEvents",
+        "callback-reorder",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[14].callbackEvents",
+    ),
+    (
+        "MUT-CALLBACK-EVENT-GAP",
+        "fstat-type@linked",
+        "callbackArguments.eventOrdinal",
+        "raw",
+        "callbackArguments",
+        "callback-event-gap",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[14].callbackArguments.eventOrdinal",
+    ),
+    (
+        "MUT-CUSTOM-ADD",
+        "fstat-type@linked",
+        "callbackEvents.source",
+        "raw",
+        "callbackEvents",
+        "custom-add-operation",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[14].callbackEvents.source",
+    ),
+    (
+        "MUT-CUSTOM-REMOVE",
+        "fstat-type@linked",
+        "callbackEvents.source",
+        "raw",
+        "callbackEvents",
+        "custom-remove-operation",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[14].callbackEvents.source",
+    ),
+    (
+        "MUT-PATH-PREFIX",
+        "fstat-type@linked",
+        "callbackArguments.path",
+        "raw",
+        "callbackArguments",
+        "path-root-prefix",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[14].callbackArguments.path",
+    ),
+    (
+        "MUT-PATH-DOTDOT",
+        "fstat-type@linked",
+        "callbackArguments.path",
+        "raw",
+        "callbackArguments",
+        "path-dotdot",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[14].callbackArguments.path",
+    ),
+    (
+        "MUT-PATH-CROSS-ROLE",
+        "fstat-type@linked",
+        "callbackArguments.path",
+        "raw",
+        "callbackArguments",
+        "path-cross-role",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[14].callbackArguments.path",
+    ),
+    (
+        "MUT-ROOT-ANCHOR-REBASE",
+        "fstat-type@linked",
+        "callbackArguments.rootAnchor",
+        "raw",
+        "callbackArguments",
+        "root-anchor-rebase",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[14].callbackArguments.rootAnchor",
+    ),
+    (
+        "MUT-STAT-OMIT",
+        "fstat-type@linked",
+        "statEvents",
+        "raw",
+        "statEvents",
+        "stat-omit",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[14].statEvents",
+    ),
+    (
+        "MUT-EXCEPTION-ADD",
+        "fstat-type@linked",
+        "exceptionEvents",
+        "raw",
+        "exceptionEvents",
+        "exception-add",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[14].exceptionEvents",
+    ),
+    (
+        "MUT-CLOSE-REORDER",
+        "close-error@linked",
+        "closeEffects",
+        "raw",
+        "closeEffects",
+        "close-reorder",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[21].closeEffects",
+    ),
+    (
+        "MUT-CLOSE-RESULT",
+        "close-error@linked",
+        "closeEffects",
+        "raw",
+        "closeEffects",
+        "close-result-mismatch",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[21].closeEffects",
+    ),
+    (
+        "MUT-READ-COUNT-ZERO",
+        "post-read-device@linked",
+        "callbackArguments.read",
+        "raw",
+        "callbackArguments",
+        "read-count-zero",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[15].callbackArguments.read",
+    ),
+    (
+        "MUT-READ-COUNT-WRONG",
+        "post-read-device@linked",
+        "callbackArguments.read",
+        "raw",
+        "callbackArguments",
+        "read-count-wrong",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[15].callbackArguments.read",
+    ),
+    (
+        "MUT-READ-CHUNK-OVERSIZE",
+        "post-read-device@linked",
+        "metadataEvents.read",
+        "raw",
+        "metadataEvents",
+        "read-chunk-oversize",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[15].metadataEvents.read",
+    ),
+    (
+        "MUT-READ-EOF-OMIT",
+        "post-read-device@linked",
+        "metadataEvents.postLstat",
+        "raw",
+        "callbackArguments+callbackEvents+metadataEvents+statEvents+closeEffects",
+        "read-eof-omit",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[15].metadataEvents.postLstat",
+    ),
+    (
+        "MUT-READ-ZERO-FIRST",
+        "post-read-device@linked",
+        "metadataEvents.read",
+        "raw",
+        "metadataEvents",
+        "read-zero-first",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[15].metadataEvents.read",
+    ),
+    (
+        "MUT-READ-WORK-AFTER-POST",
+        "post-read-device@linked",
+        "metadataEvents.postLstat",
+        "raw",
+        "callbackArguments+callbackEvents+metadataEvents+statEvents+closeEffects",
+        "read-work-after-post",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[15].metadataEvents.postLstat",
+    ),
+    (
+        "MUT-FSTAT-DUPLICATE",
+        "fstat-type@linked",
+        "metadataEvents.fstat",
+        "raw",
+        "callbackArguments+callbackEvents+metadataEvents+statEvents+closeEffects",
+        "fstat-duplicate",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[14].metadataEvents.fstat",
+    ),
+    (
+        "MUT-METADATA-REORDER",
+        "fstat-type@linked",
+        "metadataEvents",
+        "raw",
+        "metadataEvents",
+        "metadata-reorder",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[14].metadataEvents",
+    ),
+    (
+        "MUT-INTER-LEADING",
+        "between-read-linked-directory@linked",
+        "interRoleEvidence",
+        "raw",
+        "interRoleEvidence",
+        "inter-leading-key",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[5].interRoleEvidence",
+    ),
+    (
+        "MUT-INTER-AFTERROLE",
+        "between-read-linked-directory@linked",
+        "interRoleEvidence",
+        "raw",
+        "interRoleEvidence",
+        "inter-after-role",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[5].interRoleEvidence",
+    ),
+    (
+        "MUT-INTER-PATH",
+        "between-read-linked-directory@linked",
+        "interRoleEvidence",
+        "raw",
+        "interRoleEvidence",
+        "inter-path",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[5].interRoleEvidence",
+    ),
+    (
+        "MUT-INTER-BEFORETYPE",
+        "between-read-linked-directory@linked",
+        "interRoleEvidence",
+        "raw",
+        "interRoleEvidence",
+        "inter-before-type",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[5].interRoleEvidence",
+    ),
+    (
+        "MUT-INTER-AFTERTYPE",
+        "between-read-linked-directory@linked",
+        "interRoleEvidence",
+        "raw",
+        "interRoleEvidence",
+        "inter-after-type",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[5].interRoleEvidence",
+    ),
+    (
+        "MUT-INTER-IDENTITY",
+        "between-read-linked-directory@linked",
+        "interRoleEvidence",
+        "raw",
+        "interRoleEvidence",
+        "inter-identity",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[5].interRoleEvidence",
+    ),
+    (
+        "MUT-INTER-TRIGGERED",
+        "between-read-linked-directory@linked",
+        "interRoleEvidence",
+        "raw",
+        "interRoleEvidence",
+        "inter-triggered",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[5].interRoleEvidence",
+    ),
+    (
+        "MUT-INTER-TERMINAL-SUCCESS",
+        "between-read-linked-directory@linked",
+        "interRoleEvidence.terminalRelation",
+        "raw",
+        "metadataEvents+statEvents",
+        "inter-terminal-success",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[5].interRoleEvidence.terminalRelation",
+    ),
+    (
+        "MUT-INTER-PARENT-ROLE",
+        "between-read-linked-directory@linked",
+        "interRoleEvidence.terminalRelation",
+        "raw",
+        "metadataEvents+statEvents",
+        "inter-parent-role",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[5].interRoleEvidence.terminalRelation",
+    ),
+    (
+        "MUT-INTER-TARGET-PROVENANCE",
+        "between-read-linked-directory@linked",
+        "interRoleEvidence.targetProvenance",
+        "raw",
+        "callbackArguments+callbackEvents+metadataEvents+statEvents+closeEffects",
+        "inter-target-provenance",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[5].interRoleEvidence.targetProvenance",
+    ),
+    (
+        "MUT-INTER-MARKER-BEFORE",
+        "between-read-linked-directory@linked",
+        "interRoleEvidence.triggerOrdinal",
+        "raw",
+        "roleEvents",
+        "inter-marker-before",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[5].interRoleEvidence.triggerOrdinal",
+    ),
+    (
+        "MUT-INTER-MARKER-AFTER",
+        "between-read-linked-directory@linked",
+        "interRoleEvidence.triggerOrdinal",
+        "raw",
+        "roleEvents",
+        "inter-marker-after",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[5].interRoleEvidence.triggerOrdinal",
+    ),
+    (
+        "MUT-INTER-MARKER-PHYSICAL-REORDER",
+        "between-read-linked-directory@linked",
+        "interRoleEvidence.triggerOrdinal",
+        "raw",
+        "roleEvents",
+        "inter-marker-physical-reorder",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[5].interRoleEvidence.triggerOrdinal",
+    ),
+    (
+        "MUT-INTER-ARM-MISSING",
+        "between-read-linked-directory@linked",
+        "interRoleEvidence",
+        "raw",
+        "interRoleEvidence",
+        "inter-arm-missing",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[5].interRoleEvidence",
+    ),
+    (
+        "MUT-INTER-ARM-EXTRA",
+        "between-read-linked-directory@linked",
+        "interRoleEvidence.countLimit",
+        "raw",
+        "interRoleEvidence",
+        "inter-arm-extra",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[5].interRoleEvidence.countLimit",
+    ),
+    (
+        "MUT-INTER-ARM-REORDER",
+        "between-read-linked-directory@linked",
+        "interRoleEvidence",
+        "raw",
+        "interRoleEvidence",
+        "inter-arm-reorder",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[5].interRoleEvidence",
+    ),
+    (
+        "MUT-INTER-OBSERVED-PATH",
+        "between-read-linked-directory@linked",
+        "observedTargetPath",
+        "observed",
+        "observed",
+        "observed-coordinate-1",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[5].observedTargetPath",
+    ),
+    (
+        "MUT-INTER-OBSERVED-CALLBACK",
+        "between-read-linked-directory@linked",
+        "observedCallbackOrdinal",
+        "observed",
+        "observed",
+        "observed-coordinate-3",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[5].observedCallbackOrdinal",
+    ),
+    (
+        "MUT-ANCHOR-DIRFD",
+        "fstat-type@linked",
+        "callbackArguments.dirfd",
+        "raw",
+        "callbackArguments",
+        "anchor-dirfd",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[14].callbackArguments.dirfd",
+    ),
+    (
+        "MUT-ANCHOR-FLAGS",
+        "fstat-type@linked",
+        "callbackArguments.rootAnchor",
+        "raw",
+        "callbackArguments",
+        "anchor-flags",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[14].callbackArguments.rootAnchor",
+    ),
+    (
+        "MUT-ANCHOR-RESULT",
+        "fstat-type@linked",
+        "callbackArguments.rootAnchor",
+        "raw",
+        "callbackArguments",
+        "anchor-result",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[14].callbackArguments.rootAnchor",
+    ),
+    (
+        "MUT-ANCHOR-FINAL-CLOSE",
+        "fstat-type@linked",
+        "closeEffects",
+        "raw",
+        "callbackArguments+callbackEvents+metadataEvents+closeEffects",
+        "anchor-final-close-omit",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[14].closeEffects",
+    ),
+    (
+        "MUT-NONINTER-LATER-ROLE",
+        "fstat-type@linked",
+        "metadataEvents.failFast",
+        "raw",
+        "callbackArguments+callbackEvents+roleEvents+metadataEvents+statEvents+closeEffects",
+        "later-role-after-terminal",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[14].metadataEvents.failFast",
+    ),
+    (
+        "MUT-DESCRIPTOR-UNKNOWN",
+        "fstat-type@linked",
+        "callbackArguments.descriptor",
+        "raw",
+        "callbackArguments",
+        "descriptor-unknown",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[14].callbackArguments.descriptor",
+    ),
+    (
+        "MUT-DESCRIPTOR-REUSE",
+        "fstat-type@linked",
+        "callbackArguments.openOrdinal",
+        "raw",
+        "callbackArguments",
+        "descriptor-reuse",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[14].callbackArguments.openOrdinal",
+    ),
+    (
+        "MUT-OBSERVED-OBSERVEDTARGETROLE",
+        "fstat-type@linked",
+        "observedTargetRole",
+        "observed",
+        "observed",
+        "observed-coordinate-0",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[14].observedTargetRole",
+    ),
+    (
+        "MUT-OBSERVED-OBSERVEDTARGETPATH",
+        "fstat-type@linked",
+        "observedTargetPath",
+        "observed",
+        "observed",
+        "observed-coordinate-1",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[14].observedTargetPath",
+    ),
+    (
+        "MUT-OBSERVED-OBSERVEDROLEORDINAL",
+        "fstat-type@linked",
+        "observedRoleOrdinal",
+        "observed",
+        "observed",
+        "observed-coordinate-2",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[14].observedRoleOrdinal",
+    ),
+    (
+        "MUT-OBSERVED-OBSERVEDCALLBACKORDINAL",
+        "fstat-type@linked",
+        "observedCallbackOrdinal",
+        "observed",
+        "observed",
+        "observed-coordinate-3",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[14].observedCallbackOrdinal",
+    ),
+    (
+        "MUT-PROJECTION-CALLBACK",
+        "fstat-type@linked",
+        "callback",
+        "projection",
+        "projection",
+        "projection-coordinate-0",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[14].callback",
+    ),
+    (
+        "MUT-PROJECTION-TARGET",
+        "fstat-type@linked",
+        "target",
+        "projection",
+        "projection",
+        "projection-coordinate-1",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[14].target",
+    ),
+    (
+        "MUT-PROJECTION-PHASE",
+        "fstat-type@linked",
+        "phase",
+        "projection",
+        "projection",
+        "projection-coordinate-2",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[14].phase",
+    ),
+    (
+        "MUT-PROJECTION-EFFECT",
+        "fstat-type@linked",
+        "effect",
+        "projection",
+        "projection",
+        "projection-coordinate-3",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[14].effect",
+    ),
+    (
+        "MUT-DECLARED-CALLBACK",
+        "fstat-type@linked",
+        "callback",
+        "declared",
+        "declared",
+        "declared-coordinate-0",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[14].callback",
+    ),
+    (
+        "MUT-DECLARED-TARGET",
+        "fstat-type@linked",
+        "target",
+        "declared",
+        "declared",
+        "declared-coordinate-1",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[14].target",
+    ),
+    (
+        "MUT-DECLARED-PHASE",
+        "fstat-type@linked",
+        "phase",
+        "declared",
+        "declared",
+        "declared-coordinate-2",
+        "recompute-after-mutation",
+        "configuredPlanReceipts[14].phase",
+    ),
+    (
+        "MUT-DECLARED-EFFECT",
+        "fstat-type@linked",
+        "effect",
+        "declared",
+        "declared",
+        "declared-coordinate-3",
+        "recompute-after-mutation",
         "configuredPlanReceipts[14].effect",
     ),
 )
@@ -1613,12 +3052,201 @@ EXPECTED_METADATA_CONFIGURED_PLAN_MUTANT_FIELDS = (
     "executionId",
     "expectedCoordinate",
     "mutationLayer",
-    "rawCoordinate",
+    "changedFieldSet",
     "operation",
+    "rawIdentityAction",
     "findingLocation",
 )
+EXPECTED_METADATA_CONFIGURED_PLAN_MUTANT_COUNT = 104
 EXPECTED_METADATA_CONFIGURED_PLAN_MUTANT_SHA256 = (
-    "ee07a38c65f452cc3b2c743b869bf6e6f5e131afd8a0f28f31c9b6e08851081f"
+    "7ebcf4b63a1d5bd109aaa3308ede26aa5db3bf0dbe26feea9f306976e1c1e837"
+)
+EXPECTED_METADATA_DISCOVERY_HANDOFF_MUTANT_FIELDS = (
+    "mutantId",
+    "operation",
+    "expectedCode",
+    "expectedLocation",
+    "filesystemBoundary",
+)
+EXPECTED_METADATA_DISCOVERY_HANDOFF_MUTANTS = (
+    (
+        "MUT-HANDOFF-MISSING-PARENT",
+        "remove-parent-record",
+        "ACP.GIT_METADATA.CONTAINMENT",
+        "root",
+        "zero-reader-callbacks",
+    ),
+    (
+        "MUT-HANDOFF-WRONG-ROLE",
+        "replace-discovery-role",
+        "ACP.GIT_METADATA.CONTAINMENT",
+        "root",
+        "zero-reader-callbacks",
+    ),
+    (
+        "MUT-HANDOFF-WRONG-PATH",
+        "replace-root-path",
+        "ACP.GIT_METADATA.CONTAINMENT",
+        "root",
+        "zero-reader-callbacks",
+    ),
+    (
+        "MUT-HANDOFF-WRONG-PATH-AND-TYPE",
+        "replace-root-path-and-type",
+        "ACP.GIT_METADATA.CONTAINMENT",
+        "root",
+        "zero-reader-callbacks",
+    ),
+    (
+        "MUT-HANDOFF-WRONG-TYPE",
+        "replace-root-type",
+        "ACP.GIT_METADATA.WRONG_TYPE",
+        "root",
+        "zero-reader-callbacks",
+    ),
+    (
+        "MUT-HANDOFF-WRONG-TYPE-AND-DEVICE",
+        "replace-root-type-and-device",
+        "ACP.GIT_METADATA.WRONG_TYPE",
+        "root",
+        "zero-reader-callbacks",
+    ),
+    (
+        "MUT-HANDOFF-WRONG-DEVICE",
+        "replace-root-device",
+        "ACP.GIT_METADATA.IDENTITY_CHANGED",
+        "root",
+        "zero-dot-git-component-callbacks",
+    ),
+    (
+        "MUT-HANDOFF-WRONG-INODE",
+        "replace-root-inode",
+        "ACP.GIT_METADATA.IDENTITY_CHANGED",
+        "root",
+        "zero-dot-git-component-callbacks",
+    ),
+    (
+        "MUT-HANDOFF-COPIED-RECORD",
+        "copy-discovery-record-at-call-site",
+        "ACP.GIT_METADATA.CONTAINMENT",
+        "root",
+        "zero-dot-git-reader-calls",
+    ),
+)
+EXPECTED_METADATA_DISCOVERY_HANDOFF_MUTANT_COUNT = 9
+EXPECTED_METADATA_DISCOVERY_HANDOFF_MUTANT_SHA256 = (
+    "f8a2204b6cddcf2f324124945bba87629d862c76377bcfbc2cf4d6c01bbaa7c0"
+)
+EXPECTED_PORTABLE_CONSTRUCTION_MUTANT_FIELDS = (
+    "mutantId",
+    "operation",
+    "expectedLocation",
+    "expectedSeamCalls",
+)
+EXPECTED_PORTABLE_ROOT_PLAN_FIELDS = (
+    "label",
+    "owner_path",
+    "owner_mode",
+    "owner_device",
+    "owner_inode",
+    "candidate_components",
+    "candidate_component_bytes",
+    "candidate_bytes",
+    "candidate_depth",
+    "filler_components",
+    "final_components",
+    "governed_path",
+    "governed_bytes",
+    "governed_depth",
+)
+EXPECTED_PORTABLE_ROOT_PLAN_FIELD_COUNT = 14
+EXPECTED_PORTABLE_ROOT_PLAN_FIELD_SHA256 = (
+    "7d979d7ec622de838582a8fa021d0adf1b95e13f2fcab32de23960f92fc76d7c"
+)
+EXPECTED_PORTABLE_CONSTRUCTION_MUTANTS = (
+    ("MUT-CONSTRUCT-COMPONENT-7", "component-7", "componentBytes", 0),
+    ("MUT-CONSTRUCT-COMPONENT-8", "component-8", "valid", 0),
+    ("MUT-CONSTRUCT-COMPONENT-255", "component-255", "valid", 0),
+    ("MUT-CONSTRUCT-COMPONENT-256", "component-256", "componentBytes", 0),
+    ("MUT-CONSTRUCT-INFEASIBLE", "infeasible", "componentBytes", 0),
+    ("MUT-CONSTRUCT-EARLY-A", "early-a", "seam.A[0].mkdir", 1),
+    ("MUT-CONSTRUCT-EARLY-B", "early-b", "seam.B[0].mkdir", "first-plan-descendants+1"),
+    ("MUT-CONSTRUCT-ROOTS-ZERO", "plans-zero", "plans", 0),
+    ("MUT-CONSTRUCT-ROOTS-ONE", "plans-one", "plans", 0),
+    ("MUT-CONSTRUCT-ROOTS-THREE", "plans-three", "plans", 0),
+    ("MUT-CONSTRUCT-WRONG-DELTA", "delta", "plans[1].candidate_bytes", 0),
+    (
+        "MUT-CONSTRUCT-DUPLICATE",
+        "receipt-duplicate",
+        "filesystemReceipts[1].ordinal",
+        "all-planned-descendants",
+    ),
+    (
+        "MUT-CONSTRUCT-MISSING",
+        "receipt-missing",
+        "filesystemReceipts[0].ordinal",
+        "all-planned-descendants",
+    ),
+    (
+        "MUT-CONSTRUCT-REORDERED",
+        "receipt-reordered",
+        "filesystemReceipts[0].ordinal",
+        "all-planned-descendants",
+    ),
+    ("MUT-CONSTRUCT-NOOP", "seam-noop", "seam.A[0].mkdir", 1),
+    ("MUT-CONSTRUCT-WRONG-PATH", "seam-wrong-path", "seam.A[0].mkdir", 1),
+    ("MUT-CONSTRUCT-SEAM-ERROR", "seam-error", "seam.A[1].mkdir", 2),
+    ("MUT-CONSTRUCT-TRANSCRIPT", "transcript", "planningTranscript", "all-planned-descendants"),
+    ("MUT-CONSTRUCT-ENVELOPE", "envelope", "governedRoots", "all-planned-descendants"),
+    ("MUT-CONSTRUCT-OWNER-ALIAS", "owner-alias", "owner.identity", 0),
+    ("MUT-CONSTRUCT-OWNER-SYMLINK", "owner-symlink", "owner.identity", 0),
+    ("MUT-CONSTRUCT-OWNER-INODE", "owner-inode", "plans[0].owner_inode", 0),
+    (
+        "MUT-CONSTRUCT-RECEIPT-ORDINAL",
+        "receipt-ordinal",
+        "filesystemReceipts[0].ordinal",
+        "all-planned-descendants",
+    ),
+    (
+        "MUT-CONSTRUCT-RECEIPT-PATH",
+        "receipt-path",
+        "filesystemReceipts[0].relativePath",
+        "all-planned-descendants",
+    ),
+    (
+        "MUT-CONSTRUCT-RECEIPT-PARENT",
+        "receipt-parent",
+        "filesystemReceipts[0].parentRelativePath",
+        "all-planned-descendants",
+    ),
+    (
+        "MUT-CONSTRUCT-RECEIPT-BYTES",
+        "receipt-bytes",
+        "filesystemReceipts[0].componentBytes",
+        "all-planned-descendants",
+    ),
+    (
+        "MUT-CONSTRUCT-RECEIPT-TYPE",
+        "receipt-type",
+        "filesystemReceipts[0].observedMode",
+        "all-planned-descendants",
+    ),
+    (
+        "MUT-CONSTRUCT-RECEIPT-DEVICE",
+        "receipt-device",
+        "filesystemReceipts[0].device",
+        "all-planned-descendants",
+    ),
+    (
+        "MUT-CONSTRUCT-RECEIPT-INODE",
+        "receipt-inode",
+        "filesystemReceipts[0].inode",
+        "all-planned-descendants",
+    ),
+)
+EXPECTED_PORTABLE_CONSTRUCTION_MUTANT_COUNT = 29
+EXPECTED_PORTABLE_CONSTRUCTION_MUTANT_SHA256 = (
+    "18f988577e4eb104238c25489f8f29e56a88161f25bf212ba3eba9590f347361"
 )
 EXPECTED_METADATA_CONFIGURED_EQUIVALENCE_FIELDS = (
     "groupName",
@@ -3819,6 +5447,7 @@ METADATA_READER_SOURCE = """def _read_git_metadata_nofollow(
     descriptors: list[int] = []
     directory_records: list[GitMetadataRecord] = []
     role_specs = {item[0]: item[1:] for item in STATIC_GIT_METADATA_ROLE_SPECS}
+    role_specs["discovery"] = ("directory", 0, "root", "root")
     role_spec = role_specs.get(provenance.role)
     location = role_spec[2] if role_spec is not None else "provenance"
 
@@ -3862,7 +5491,37 @@ METADATA_READER_SOURCE = """def _read_git_metadata_nofollow(
     expected_kind = str(role_spec[0])
     max_bytes = int(role_spec[1])
     record = provenance.dot_git_record
-    if provenance.role == "dot_git":
+    if provenance.role == "discovery":
+        if provenance.dot_git_record is not None or provenance.parent_records:
+            return result(
+                None,
+                (Finding("git-metadata", "CURRENT", "ACP.GIT_METADATA.CONTAINMENT", location),),
+            )
+        path = root_path
+    elif provenance.role == "dot_git":
+        if (
+            provenance.dot_git_record is not None
+            or len(provenance.parent_records) not in {1, 2}
+            or provenance.parent_records[0][0] != "discovery"
+            or provenance.parent_records[0][1].path != root_path
+            or provenance.parent_records[0][1].payload is not None
+            or (
+                len(provenance.parent_records) == 2
+                and (
+                    provenance.parent_records[1][0] != "dot_git"
+                    or provenance.parent_records[1][1].path != root_path / ".git"
+                )
+            )
+        ):
+            return result(
+                None,
+                (Finding("git-metadata", "CURRENT", "ACP.GIT_METADATA.CONTAINMENT", "root"),),
+            )
+        if not stat.S_ISDIR(provenance.parent_records[0][1].mode):
+            return result(
+                None,
+                (Finding("git-metadata", "CURRENT", "ACP.GIT_METADATA.WRONG_TYPE", "root"),),
+            )
         path = root_path / ".git"
     elif record is None or record.path != root_path / ".git":
         return result(
@@ -4160,6 +5819,19 @@ METADATA_DISCOVERY_SOURCE = """def discover_git_repository(root: str | Path) -> 
     raw_root = os.fspath(root)
     root_path = Path(raw_root)
 
+    discovery = _read_git_metadata_nofollow(
+        root,
+        provenance=GitMetadataProvenance("discovery", None),
+        io=SYSTEM_METADATA_IO,
+    )
+    if discovery.findings:
+        return GitDiscoveryResult(None, discovery.findings)
+    if discovery.record is None:
+        return GitDiscoveryResult(
+            None,
+            (Finding("git-metadata", "CURRENT", "ACP.GIT_METADATA.MISSING", "root"),),
+        )
+
     def parsed_record(
         read_result: GitMetadataReadResult,
         *,
@@ -4198,9 +5870,17 @@ METADATA_DISCOVERY_SOURCE = """def discover_git_repository(root: str | Path) -> 
             )
         return value, ()
 
+    dot_git_provenance = GitMetadataProvenance(
+        "dot_git", None, (("discovery", discovery.record),)
+    )
+    if dot_git_provenance.parent_records[0][1] is not discovery.record:
+        return GitDiscoveryResult(
+            None,
+            (Finding("git-metadata", "CURRENT", "ACP.GIT_METADATA.CONTAINMENT", "root"),),
+        )
     dot_git = _read_git_metadata_nofollow(
         root,
-        provenance=GitMetadataProvenance("dot_git", None),
+        provenance=dot_git_provenance,
         io=SYSTEM_METADATA_IO,
     )
     if dot_git.findings:
@@ -4358,7 +6038,9 @@ METADATA_DISCOVERY_SOURCE = """def discover_git_repository(root: str | Path) -> 
     dot_git_revalidation = _read_git_metadata_nofollow(
         root,
         provenance=GitMetadataProvenance(
-            "dot_git", None, (("dot_git", dot_git.record),),
+            "dot_git",
+            None,
+            (("discovery", discovery.record), ("dot_git", dot_git.record)),
         ),
         io=SYSTEM_METADATA_IO,
     )
@@ -4404,174 +6086,1549 @@ def configured_receipt_finding(index: int, coordinate: str) -> tuple[protocol.Fi
     )
 
 
-def project_configured_raw_receipt(
-    raw_receipt: tuple[tuple[str, ...], ...], index: int
-) -> ConfiguredProjectionResult:
-    """Project callback, target, phase, and effect without plan or case data."""
-    (
-        callback_arguments,
-        callback_events,
-        role_events,
-        metadata_events,
-        stat_events,
-        exception_events,
-        close_effects,
-        inter_role_evidence,
-    ) = raw_receipt
-    if not callback_arguments or not role_events:
-        return ConfiguredProjectionResult(None, configured_receipt_finding(index, "rawReceipt"))
-    if any("outside-root:" in event for event in callback_arguments):
-        governed_outside = all("$TMP/$CASE/" in event for event in callback_arguments if "outside-root:" in event)
-        if not governed_outside:
-            return ConfiguredProjectionResult(
-                None, configured_receipt_finding(index, "callbackArguments")
-            )
-    custom_events = tuple(event for event in callback_events if event.endswith(":custom"))
-    if inter_role_evidence:
-        evidence = dict(item.split("=", 1) for item in inter_role_evidence)
-        if evidence.get("triggered") != "true" or evidence.get("identityChanged") != "true":
-            return ConfiguredProjectionResult(
-                None, configured_receipt_finding(index, "interRoleEvidence")
-            )
-        after_role = evidence["afterRole"]
-        inter_projection = {
-            "dot_git": ("dot-git", "after-dot-git-read", "dot-git-replacement"),
-            "prohibited_http_alternates": (
-                "dot-git",
-                "after-prohibited-http-alternates-read",
-                "identity-replacement",
-            ),
-            "linked_git_dir": (
-                "linked-git-dir",
-                "after-linked-git-dir-read",
-                "linked-dir-replacement",
-            ),
-            "common_dir": ("common-dir", "after-common-dir-read", "common-dir-replacement"),
-        }
-        target, phase, effect = inter_projection[after_role]
-        return ConfiguredProjectionResult(("inter-role", target, phase, effect), ())
-    if not custom_events:
-        if "lstat:ok:symlink" not in stat_events:
-            return ConfiguredProjectionResult(
-                None, configured_receipt_finding(index, "rawReceipt")
-            )
-        return ConfiguredProjectionResult(
-            ("filesystem-state", "root-ancestor", "before-discovery", "symlink"), ()
-        )
-    drift_event = next(
-        (event for event in stat_events if event.startswith("fstat:") and "-drift:" in event),
-        None,
+def _configured_finding(index: int, coordinate: str) -> ConfiguredRawIntegrityResult:
+    return ConfiguredRawIntegrityResult(None, configured_receipt_finding(index, coordinate))
+
+
+def _configured_path(value: str) -> bool:
+    ancestor = re.fullmatch(r"root-ancestor-distance-([1-9]|[1-5][0-9]|6[0-4])", value)
+    if ancestor is not None:
+        return True
+    match = re.fullmatch(
+        r"(\$ROOT|\$COMMON|\$LINKED_GIT_DIR|fixture-relative:\$TMP/\$CASE)((?:/[A-Za-z0-9._-]+)*)",
+        value,
     )
-    callback = custom_events[-1].removesuffix(":custom").rsplit(":", 1)[-1]
-    custom_prefixes = tuple(
-        event.removesuffix(":custom")
-        for event in custom_events
-        if event.removesuffix(":custom").endswith(f":{callback}")
+    if match is None:
+        return False
+    components = tuple(part for part in match.group(2).split("/") if part)
+    return len(components) <= 64 and all(
+        part not in {".", ".."} and len(part.encode("utf-8")) <= 255
+        for part in components
     )
-    matching_arguments = tuple(
-        event
-        for event in callback_arguments
-        if any(event.startswith(prefix + ":") for prefix in custom_prefixes)
-        and f"roleOrdinal-{len(role_events) - 1}:" in event
-    ) or tuple(
-        event
-        for event in callback_arguments
-        if any(event.startswith(prefix + ":") for prefix in custom_prefixes)
+
+
+def _configured_argument_path(detail: str) -> str | None:
+    if "path-" not in detail:
+        return None
+    path_tail = detail.split("path-", 1)[1]
+    return (
+        path_tail.split(":dirfd", 1)[0]
+        if path_tail.startswith("fixture-relative:")
+        else path_tail.split(":", 1)[0]
     )
-    callback_argument = next(
-        (
-            event
-            for event in reversed(matching_arguments)
-            if "$ROOT/.git/info" in event
-        ),
-        next(
-            (
-                event
-                for event in reversed(matching_arguments)
-                if event.endswith("path-$ROOT/.git") or "path-$ROOT/.git:" in event
-            ),
-            next(
-                (
-                    event
-                    for event in reversed(matching_arguments)
-                    if event.endswith("path-$ROOT") or "path-$ROOT:" in event
-                ),
-                matching_arguments[-1] if matching_arguments else "",
-            ),
-        ),
-    )
-    if not callback_argument:
-        return ConfiguredProjectionResult(None, configured_receipt_finding(index, "callback"))
-    if callback == "lstat" and any(
-        "$ROOT/.git/info" in event for event in matching_arguments
+
+
+def _configured_child_path(parent: str, child: str) -> bool:
+    parent_ancestor = re.fullmatch(r"root-ancestor-distance-([1-9]|[1-5][0-9]|6[0-4])", parent)
+    child_ancestor = re.fullmatch(r"root-ancestor-distance-([1-9]|[1-5][0-9]|6[0-4])", child)
+    if parent_ancestor is not None:
+        distance = int(parent_ancestor.group(1))
+        if distance == 1:
+            return child == "$ROOT" or re.fullmatch(
+                r"fixture-relative:\$TMP/\$CASE/[A-Za-z0-9._-]+", child
+            ) is not None
+        return child_ancestor is not None and int(child_ancestor.group(1)) == distance - 1
+    for base in ("$ROOT", "$COMMON", "$LINKED_GIT_DIR", "fixture-relative:$TMP/$CASE"):
+        if parent == base:
+            return child.startswith(base + "/") and "/" not in child[len(base) + 1 :]
+        if parent.startswith(base + "/"):
+            prefix = parent + "/"
+            return child.startswith(prefix) and "/" not in child[len(prefix) :]
+    return False
+
+
+def _configured_role_path(role: str, path: str) -> bool:
+    """Bind every lexical callback path to one closed reader-role domain."""
+    if re.fullmatch(
+        r"root-ancestor-distance-(?:[1-9]|[1-5][0-9]|6[0-4])", path
     ):
-        target, phase, effect = "info-ancestor", "after-lstat", "identity-replacement"
-    elif callback == "lstat" and "post-lstat:device-drift:regular" in stat_events:
-        target, phase, effect = "dot-git", "after-read", "device-drift"
-    elif callback == "lstat" and exception_events:
-        if any(event.startswith("lstat:error:") for event in exception_events):
-            target, phase, effect = "dot-git", "initial-lstat", "os-error"
-        else:
-            target = (
-                "root"
-                if callback_argument.endswith("path-$ROOT")
-                or "path-$ROOT:" in callback_argument
-                else "dot-git"
-            )
-            phase, effect = "after-lstat", "identity-replacement"
-    elif callback == "lstat":
-        target, phase, effect = "dot-git", "after-lstat", "identity-replacement"
-    elif callback == "open":
-        target, phase, effect = "dot-git", "initial-open", "os-error"
-    elif callback == "close":
-        if not close_effects or not any("error-" in event for event in close_effects):
-            return ConfiguredProjectionResult(
-                None, configured_receipt_finding(index, "closeEffects")
-            )
-        target, phase, effect = "dot-git", "cleanup", "os-error"
-    else:
-        if callback != "fstat" or drift_event is None:
-            return ConfiguredProjectionResult(None, configured_receipt_finding(index, "effect"))
-        drift = drift_event.split(":", 2)[1].removesuffix("-drift")
-        target = "info-ancestor" if ":role-info_ancestor:" in callback_argument else "dot-git"
-        event_ordinal = int(callback_argument.split(":", 1)[0].removeprefix("event-"))
-        open_ordinals = tuple(
-            int(event.split(":", 1)[0].removeprefix("event-"))
-            for event in callback_arguments
-            if ":open:" in event
+        return True
+    external_git = "fixture-relative:$TMP/$CASE/source/repository/.git"
+    external_prefixes = {
+        "fixture-relative:$TMP/$CASE/source",
+        "fixture-relative:$TMP/$CASE/source/repository",
+        external_git,
+    }
+    role_paths = {
+        "discovery": {"$ROOT"},
+        "dot_git": {"$ROOT", "$ROOT/.git"},
+        "linked_git_dir": external_prefixes
+        | {
+            external_git + "/worktrees",
+            external_git + "/worktrees/linked",
+        },
+        "backlink": external_prefixes
+        | {
+            external_git + "/worktrees",
+            external_git + "/worktrees/linked",
+            external_git + "/worktrees/linked/gitdir",
+        },
+        "commondir": external_prefixes
+        | {
+            external_git + "/worktrees",
+            external_git + "/worktrees/linked",
+            external_git + "/worktrees/linked/commondir",
+        },
+        "common_dir": {"$ROOT", "$ROOT/.git"} | external_prefixes,
+        "prohibited_grafts": {
+            "$ROOT",
+            "$ROOT/.git",
+            "$ROOT/.git/info",
+            "$ROOT/.git/info/grafts",
+            *external_prefixes,
+            external_git + "/info",
+            external_git + "/info/grafts",
+        },
+        "prohibited_shallow": {
+            "$ROOT",
+            "$ROOT/.git",
+            "$ROOT/.git/shallow",
+            *external_prefixes,
+            external_git + "/shallow",
+        },
+        "prohibited_alternates": {
+            "$ROOT",
+            "$ROOT/.git",
+            "$ROOT/.git/objects",
+            "$ROOT/.git/objects/info",
+            "$ROOT/.git/objects/info/alternates",
+            *external_prefixes,
+            external_git + "/objects",
+            external_git + "/objects/info",
+            external_git + "/objects/info/alternates",
+        },
+        "prohibited_http_alternates": {
+            "$ROOT",
+            "$ROOT/.git",
+            "$ROOT/.git/objects",
+            "$ROOT/.git/objects/info",
+            "$ROOT/.git/objects/info/http-alternates",
+            *external_prefixes,
+            external_git + "/objects",
+            external_git + "/objects/info",
+            external_git + "/objects/info/http-alternates",
+        },
+    }
+    return path in role_paths.get(role, set())
+
+
+def configured_raw_bounds_findings(
+    raw_receipt: tuple[object, ...], index: int
+) -> tuple[protocol.Finding, ...]:
+    """Apply field-count and encoded-item limits before receipt grammar."""
+    caps = dict(EXPECTED_METADATA_CONFIGURED_RAW_FIELD_CAPS)
+    for coordinate, value in zip(
+        EXPECTED_METADATA_CONFIGURED_PLAN_RAW_EVIDENCE_FIELDS, raw_receipt, strict=True
+    ):
+        if type(value) is not tuple:
+            return configured_receipt_finding(index, coordinate)
+        if len(value) > caps[coordinate]:
+            return configured_receipt_finding(index, f"{coordinate}.countLimit")
+        if any(type(item) is not str for item in value):
+            return configured_receipt_finding(index, coordinate)
+        try:
+            if any(
+                len(item.encode("utf-8"))
+                > EXPECTED_METADATA_CONFIGURED_RAW_ITEM_BYTE_CAP
+                for item in value
+            ):
+                return configured_receipt_finding(index, f"{coordinate}.itemByteLimit")
+        except UnicodeEncodeError:
+            return configured_receipt_finding(index, f"{coordinate}.itemEncoding")
+    return ()
+
+
+def validate_configured_raw_receipt(
+    raw_receipt: object, stored_identity: object, index: object
+) -> ConfiguredRawIntegrityResult:
+    """Strictly validate the closed raw receipt before semantic projection."""
+    if type(index) is not int or index < 0 or index >= EXPECTED_METADATA_CONFIGURED_PLAN_COUNT:
+        return _configured_finding(0, "receiptIndex")
+    if type(raw_receipt) is not tuple or len(raw_receipt) != 8:
+        return _configured_finding(index, "rawReceipt")
+
+    bounds_findings = configured_raw_bounds_findings(raw_receipt, index)
+    if bounds_findings:
+        return ConfiguredRawIntegrityResult(None, bounds_findings)
+    fields = cast(tuple[tuple[str, ...], ...], raw_receipt)
+    receipt = cast(tuple[tuple[str, ...], ...], tuple(fields))
+    if type(stored_identity) is not str or stored_identity != hashlib.sha256(canonical(receipt)).hexdigest():
+        return _configured_finding(index, "rawEvidenceIdentity")
+    arguments, events, roles, metadata, stats, exceptions, closes, inter = receipt
+    inter_markers = tuple(
+        item for item in roles if item.startswith("interReceiptOrdinal-")
+    )
+    reader_roles = tuple(
+        item for item in roles if not item.startswith("interReceiptOrdinal-")
+    )
+    if not inter and inter_markers:
+        return _configured_finding(index, "roleEvents")
+    parsed_roles: list[tuple[int, str]] = []
+    for expected_ordinal, item in enumerate(reader_roles):
+        match = re.fullmatch(r"(0|[1-9][0-9]*):([a-z_]+)", item)
+        if match is None or int(match.group(1)) != expected_ordinal or match.group(2) not in EXPECTED_METADATA_CONFIGURED_CLOSED_ROLES:
+            return _configured_finding(index, "roleEvents")
+        parsed_roles.append((expected_ordinal, match.group(2)))
+    if not parsed_roles or parsed_roles[0] != (0, "discovery"):
+        return _configured_finding(index, "roleEvents")
+    prefixes: list[str] = []
+    role_event_counts = [0] * len(parsed_roles)
+    last_role = -1
+    callback_rows: list[tuple[int, int, str, str, str, str | None]] = []
+    for item in arguments:
+        match = re.fullmatch(
+            r"event-(0|[1-9][0-9]*):role-([a-z_]+):roleOrdinal-(0|[1-9][0-9]*):(lstat|open|fstat|read|close):(.+)",
+            item,
         )
-        phase = "after-open" if open_ordinals and event_ordinal > max(open_ordinals) else "initial-open"
-        effect = f"{drift}-drift"
-    return ConfiguredProjectionResult((callback, target, phase, effect), ())
+        if match is None:
+            return _configured_finding(index, "callbackArguments")
+        event_ordinal, role, role_ordinal, operation, detail = match.groups()
+        ordinal = int(role_ordinal)
+        if ordinal >= len(parsed_roles) or parsed_roles[ordinal][1] != role or ordinal < last_role:
+            return _configured_finding(index, "callbackArguments")
+        if int(event_ordinal) != role_event_counts[ordinal]:
+            return _configured_finding(index, "callbackArguments.eventOrdinal")
+        path_value = _configured_argument_path(detail)
+        if path_value is not None:
+            if not _configured_path(path_value):
+                return _configured_finding(index, "callbackArguments.path")
+            if not _configured_role_path(role, path_value):
+                return _configured_finding(index, "callbackArguments.path")
+            if path_value.startswith("fixture-relative:") and role in {
+                "discovery",
+                "dot_git",
+            }:
+                return _configured_finding(index, "callbackArguments.path")
+        if operation == "lstat":
+            if path_value is None or re.fullmatch(
+                rf"argType-str:path-{re.escape(path_value)}:(dirfd-none|dirfdOpenOrdinal-(0|[1-9][0-9]*))",
+                detail,
+            ) is None:
+                return _configured_finding(index, "callbackArguments.lstat")
+        elif operation == "open":
+            if path_value is None or re.fullmatch(
+                rf"argTypes-str,int:path-{re.escape(path_value)}:"
+                r"(dirfd-none|dirfdOpenOrdinal-(0|[1-9][0-9]*)):"
+                r"flags-(RDONLY\|NOFOLLOW(?:\|DIRECTORY)?):"
+                r"(result-openOrdinal-(0|[1-9][0-9]*)|result-error-([A-Za-z]+))",
+                detail,
+            ) is None:
+                return _configured_finding(index, "callbackArguments.open")
+        elif operation == "fstat":
+            if re.fullmatch(
+                r"argType-int:descriptorOpenOrdinal-(0|[1-9][0-9]*)", detail
+            ) is None:
+                return _configured_finding(index, "callbackArguments.fstat")
+        elif operation == "read":
+            read_match = re.fullmatch(
+                r"argTypes-int,int:descriptorOpenOrdinal-(0|[1-9][0-9]*):"
+                r"count-(0|[1-9][0-9]*)",
+                detail,
+            )
+            if read_match is None or int(read_match.group(2)) > 4097:
+                return _configured_finding(index, "callbackArguments.read")
+        elif re.fullmatch(
+            r"argType-int:descriptorOpenOrdinal-(0|[1-9][0-9]*):"
+            r"(result-ok|result-error-([A-Za-z]+))",
+            detail,
+        ) is None:
+            return _configured_finding(index, "callbackArguments.close")
+        last_role = ordinal
+        role_event_counts[ordinal] += 1
+        prefix = ":".join(item.split(":")[:4])
+        prefixes.append(prefix)
+        callback_rows.append(
+            (int(event_ordinal), ordinal, role, operation, detail, path_value)
+        )
+    if any(count == 0 for count in role_event_counts):
+        return _configured_finding(index, "roleEvents")
+    anchor_distances = tuple(
+        int(rows[0][5].rsplit("-", 1)[1])
+        for role_ordinal in range(len(parsed_roles))
+        if (rows := tuple(row for row in callback_rows if row[1] == role_ordinal))
+        and rows[0][3] == "open"
+        and rows[0][5] is not None
+        and rows[0][5].startswith("root-ancestor-distance-")
+    )
+    if len(anchor_distances) != len(parsed_roles) or len(set(anchor_distances)) != 1:
+        return _configured_finding(index, "callbackArguments.rootAnchor")
+    shared_anchor_distance = anchor_distances[0]
+    for role_ordinal in range(len(parsed_roles)):
+        ancestor_distances = tuple(
+            int(row[5].rsplit("-", 1)[1])
+            for row in callback_rows
+            if row[1] == role_ordinal
+            and row[3] == "lstat"
+            and row[5] is not None
+            and row[5].startswith("root-ancestor-distance-")
+        )
+        if ancestor_distances and ancestor_distances != tuple(
+            range(
+                shared_anchor_distance - 1,
+                shared_anchor_distance - len(ancestor_distances) - 1,
+                -1,
+            )
+        ):
+            return _configured_finding(index, "callbackArguments.rootAnchor")
+    live_by_role: dict[int, list[int]] = {}
+    open_paths_by_role: dict[tuple[int, int], str] = {}
+    next_open_by_role: dict[int, int] = {}
+    last_lstat_path_by_role: dict[int, str] = {}
+    previous_callback_by_role: dict[int, tuple[str, str | None]] = {}
+    root_anchor_by_role: dict[int, int] = {}
+    for event_ordinal, ordinal, _, operation, detail, path_value in callback_rows:
+        live = live_by_role.setdefault(ordinal, [])
+        next_open = next_open_by_role.setdefault(ordinal, 0)
+        if operation in {"lstat", "open"}:
+            dirfd = re.search(r":(dirfd-none|dirfdOpenOrdinal-([0-9]+))(?:[:]|$)", detail)
+            if dirfd is None:
+                return _configured_finding(index, "callbackArguments.dirfd")
+            if dirfd.group(2) is not None and int(dirfd.group(2)) not in live:
+                return _configured_finding(index, "callbackArguments.dirfd")
+            if dirfd.group(2) is not None:
+                assert path_value is not None
+                parent_path = open_paths_by_role[(ordinal, int(dirfd.group(2)))]
+                if not _configured_child_path(parent_path, path_value):
+                    return _configured_finding(index, "callbackArguments.path")
+            elif path_value is None or not path_value.startswith(
+                "root-ancestor-distance-"
+            ):
+                return _configured_finding(index, "callbackArguments.dirfd")
+            if operation == "lstat":
+                assert path_value is not None
+                last_lstat_path_by_role[ordinal] = path_value
+        if operation == "open":
+            opened = re.search(r":result-openOrdinal-([0-9]+)$", detail)
+            error = re.search(r":result-error-([^:]+)$", detail)
+            if opened is None and error is None:
+                return _configured_finding(index, "callbackArguments.result")
+            root_anchor = (
+                event_ordinal == 0
+                and opened is not None
+                and opened.group(1) == "0"
+                and path_value is not None
+                and path_value.startswith("root-ancestor-distance-")
+                and ":dirfd-none:flags-RDONLY|NOFOLLOW|DIRECTORY:" in detail
+            )
+            if event_ordinal == 0 and not root_anchor:
+                return _configured_finding(index, "callbackArguments.rootAnchor")
+            if root_anchor:
+                if ordinal in root_anchor_by_role:
+                    return _configured_finding(index, "callbackArguments.rootAnchor")
+                root_anchor_by_role[ordinal] = 0
+            elif path_value is None or previous_callback_by_role.get(ordinal) != (
+                "lstat",
+                path_value,
+            ):
+                return _configured_finding(index, "callbackArguments.path")
+            if opened is not None:
+                opened_ordinal = int(opened.group(1))
+                if opened_ordinal != next_open:
+                    return _configured_finding(index, "callbackArguments.openOrdinal")
+                assert path_value is not None
+                assert dirfd is not None
+                live.append(opened_ordinal)
+                open_paths_by_role[(ordinal, opened_ordinal)] = path_value
+                next_open_by_role[ordinal] += 1
+        elif operation in {"fstat", "read", "close"}:
+            descriptor = re.search(r"descriptorOpenOrdinal-([0-9]+)", detail)
+            if descriptor is None or int(descriptor.group(1)) not in live:
+                return _configured_finding(index, "callbackArguments.descriptor")
+            descriptor_ordinal = int(descriptor.group(1))
+            if operation == "close":
+                if descriptor_ordinal != live[-1]:
+                    return _configured_finding(index, "closeEffects")
+                live.pop()
+        previous_callback_by_role[ordinal] = (operation, path_value)
+    if any(live for live in live_by_role.values()):
+        return _configured_finding(index, "closeEffects")
+    if set(root_anchor_by_role) != set(range(len(parsed_roles))):
+        return _configured_finding(index, "callbackArguments.rootAnchor")
+    event_prefixes: list[str] = []
+    callback_sources: list[str] = []
+    custom_rows: list[tuple[int, int, str, str, str, str | None]] = []
+    for item in events:
+        if not item.endswith((":system", ":custom")):
+            return _configured_finding(index, "callbackEvents")
+        prefix, source = item.rsplit(":", 1)
+        event_prefixes.append(prefix)
+        callback_sources.append(source)
+        matched = next((row for row, arg in zip(callback_rows, arguments, strict=True) if arg.startswith(prefix + ":")), None)
+        if matched is None:
+            return _configured_finding(index, "callbackEvents")
+        if source == "custom":
+            custom_rows.append(matched)
+    if tuple(event_prefixes) != tuple(prefixes):
+        return _configured_finding(index, "callbackEvents")
+    custom_operations = frozenset(
+        row[3]
+        for row, source in zip(callback_rows, callback_sources, strict=True)
+        if source == "custom"
+    )
+    if custom_operations not in {
+        frozenset(),
+        frozenset({"lstat"}),
+        frozenset({"open"}),
+        frozenset({"open", "fstat"}),
+        frozenset({"read"}),
+        frozenset({"close"}),
+    }:
+        return _configured_finding(index, "callbackEvents.source")
+    if tuple(callback_sources) != tuple(
+        "custom" if row[3] in custom_operations else "system"
+        for row in callback_rows
+    ):
+        return _configured_finding(index, "callbackEvents.source")
+    # Every result is tied to an actual callback prefix and uses a closed result grammar.
+    metadata_prefixes: list[str] = []
+    metadata_results: list[str] = []
+    for item in metadata:
+        parts = item.split(":")
+        if len(parts) < 6 or not re.fullmatch(r"event-(0|[1-9][0-9]*)", parts[0]):
+            return _configured_finding(index, "metadataEvents")
+        prefix = ":".join(parts[:4])
+        if prefix not in event_prefixes:
+            return _configured_finding(index, "metadataEvents")
+        operation = parts[3]
+        if parts[4] not in {operation, "post-lstat"}:
+            return _configured_finding(index, "metadataEvents")
+        result_value = ":".join(parts[4:])
+        closed_result = {
+            "lstat": (
+                r"lstat:(?:ok:(?:symlink|directory|regular|other)|"
+                r"error:(?:FileNotFoundError|NotADirectoryError|OSError):(errno|no-errno))|"
+                r"post-lstat:(?:identity|type-drift|device-drift|inode-drift):"
+                r"(?:symlink|directory|regular|other)"
+            ),
+            "open": (
+                r"open:(?:ok:(?:directory|regular):nofollow|"
+                r"error:(?:FileNotFoundError|NotADirectoryError|OSError):(errno|no-errno))"
+            ),
+            "fstat": (
+                r"fstat:(?:(?:identity|type-drift|device-drift|inode-drift|"
+                r"stored-parent-(?:dot_git|linked_git_dir|common_dir)-type-drift|"
+                r"stored-parent-(?:dot_git|linked_git_dir|common_dir)-device-drift|"
+                r"stored-parent-(?:dot_git|linked_git_dir|common_dir)-inode-drift):"
+                r"(?:symlink|directory|regular|other)|"
+                r"error:(?:FileNotFoundError|NotADirectoryError|OSError):(errno|no-errno))"
+            ),
+            "read": (
+                r"read:(?:bytes:(?:0|[1-9][0-9]*)|type:[A-Za-z]+|"
+                r"error:(?:FileNotFoundError|NotADirectoryError|OSError):(errno|no-errno))"
+            ),
+            "close": (
+                r"close:(?:ok|error:(?:FileNotFoundError|NotADirectoryError|OSError):"
+                r"(errno|no-errno))"
+            ),
+        }[operation]
+        if re.fullmatch(closed_result, result_value) is None:
+            return _configured_finding(index, "metadataEvents")
+        if ":error:" in item:
+            error_match = re.search(r":error:([^:]+):(errno|no-errno)$", item)
+            if error_match is None or error_match.group(1) not in EXPECTED_METADATA_CONFIGURED_EXCEPTION_TYPES:
+                return _configured_finding(index, "metadataEvents")
+        metadata_prefixes.append(prefix)
+        metadata_results.append(result_value)
+    if tuple(metadata_prefixes) != tuple(event_prefixes):
+        return _configured_finding(index, "metadataEvents")
+    expected_stats = tuple(
+        item
+        for item, result_value in zip(metadata, metadata_results, strict=True)
+        if result_value.startswith(("lstat:", "fstat:", "post-lstat:"))
+    )
+    if stats != expected_stats:
+        return _configured_finding(index, "statEvents")
+    if exceptions != tuple(item for item in metadata if ":error:" in item):
+        return _configured_finding(index, "exceptionEvents")
+    expected_closes = tuple(
+        item for item in arguments if ":close:" in item
+    )
+    if closes != expected_closes:
+        return _configured_finding(index, "closeEffects")
+    semantic_live: dict[int, list[int]] = {}
+    eligible_reads: set[tuple[int, int]] = set()
+    read_consumed: dict[tuple[int, int], int] = {}
+    read_eof: set[tuple[int, int]] = set()
+    last_read_path: dict[int, str] = {}
+    terminal_roles: set[int] = set()
+    global_terminal_role: int | None = None
+    lstat_kind_by_role: dict[int, tuple[str, str]] = {}
+    open_kind_by_descriptor: dict[tuple[int, int], str] = {}
+    post_read_validated: set[tuple[int, int]] = set()
+    read_failed: set[tuple[int, int]] = set()
+    identity_validated: set[tuple[int, int]] = set()
+    fstat_attempted: set[tuple[int, int]] = set()
+    pending_post_lstat: dict[int, tuple[int, int]] = {}
+    post_read_complete: set[int] = set()
+    successful_opens: list[tuple[int, int, int, str, str]] = []
+    for callback, result_value in zip(callback_rows, metadata_results, strict=True):
+        event_ordinal, role_ordinal, role, operation, detail, path_value = callback
+        live = semantic_live.setdefault(role_ordinal, [])
+        if role_ordinal in pending_post_lstat and operation != "lstat":
+            return _configured_finding(index, "metadataEvents.postLstat")
+        if role_ordinal in post_read_complete and operation != "close":
+            return _configured_finding(index, "metadataEvents.postLstat")
+        if global_terminal_role is not None and (
+            role_ordinal != global_terminal_role or operation != "close"
+        ):
+            return _configured_finding(index, "metadataEvents.failFast")
+        if role_ordinal in terminal_roles and operation != "close":
+            return _configured_finding(index, "metadataEvents.failFast")
+        if operation in {"lstat", "open"}:
+            dirfd_match = re.search(r":dirfdOpenOrdinal-([0-9]+)(?::|$)", detail)
+            if dirfd_match is not None and (
+                role_ordinal,
+                int(dirfd_match.group(1)),
+            ) not in identity_validated and root_anchor_by_role.get(
+                role_ordinal
+            ) != int(dirfd_match.group(1)):
+                return _configured_finding(index, "metadataEvents.fstat")
+        if operation == "lstat" and role_ordinal in lstat_kind_by_role:
+            return _configured_finding(index, "metadataEvents.lstat")
+        if operation == "open":
+            opened = re.search(r":result-openOrdinal-([0-9]+)$", detail)
+            error = re.search(r":result-error-([A-Za-z]+)$", detail)
+            flags = re.search(r":flags-([^:]+):", detail)
+            assert flags is not None
+            expected_lstat = lstat_kind_by_role.pop(role_ordinal, None)
+            expected_kind = (
+                "directory" if flags.group(1).endswith("|DIRECTORY") else "regular"
+            )
+            root_anchor = root_anchor_by_role.get(role_ordinal) == 0 and opened is not None and opened.group(1) == "0"
+            if not root_anchor and expected_lstat != (path_value, expected_kind):
+                return _configured_finding(index, "metadataEvents.open")
+            if opened is not None:
+                opened_ordinal = int(opened.group(1))
+                if result_value != f"open:ok:{expected_kind}:nofollow":
+                    return _configured_finding(index, "metadataEvents.open")
+                assert path_value is not None
+                live.append(opened_ordinal)
+                open_kind_by_descriptor[(role_ordinal, opened_ordinal)] = expected_kind
+                successful_opens.append(
+                    (role_ordinal, event_ordinal, opened_ordinal, role, path_value)
+                )
+            else:
+                assert error is not None
+                if error.group(1) not in EXPECTED_METADATA_CONFIGURED_EXCEPTION_TYPES:
+                    return _configured_finding(index, "callbackArguments.open")
+                if not result_value.startswith(f"open:error:{error.group(1)}:"):
+                    return _configured_finding(index, "metadataEvents.open")
+                terminal_roles.add(role_ordinal)
+                global_terminal_role = role_ordinal
+        elif operation == "lstat":
+            if result_value.startswith("lstat:error:"):
+                terminal_roles.add(role_ordinal)
+                if not (
+                    role.startswith("prohibited_")
+                    and result_value.startswith("lstat:error:FileNotFoundError:")
+                ):
+                    global_terminal_role = role_ordinal
+            elif result_value == "lstat:ok:symlink":
+                terminal_roles.add(role_ordinal)
+                global_terminal_role = role_ordinal
+            elif result_value.startswith("post-lstat:"):
+                if path_value is None or last_read_path.get(role_ordinal) != path_value:
+                    return _configured_finding(index, "metadataEvents.postLstat")
+                descriptor_key = next(
+                    (
+                        (role_ordinal, descriptor)
+                        for descriptor in reversed(live)
+                        if open_paths_by_role[(role_ordinal, descriptor)] == path_value
+                        and (role_ordinal, descriptor) in read_eof
+                        and (role_ordinal, descriptor) not in post_read_validated
+                    ),
+                    None,
+                )
+                if descriptor_key is None or descriptor_key not in read_eof:
+                    return _configured_finding(index, "metadataEvents.postLstat")
+                if pending_post_lstat.pop(role_ordinal, None) != descriptor_key:
+                    return _configured_finding(index, "metadataEvents.postLstat")
+                post_read_validated.add(descriptor_key)
+                post_read_complete.add(role_ordinal)
+                if result_value != "post-lstat:identity:regular":
+                    terminal_roles.add(role_ordinal)
+                    global_terminal_role = role_ordinal
+            else:
+                assert path_value is not None
+                if role_ordinal in lstat_kind_by_role:
+                    return _configured_finding(index, "metadataEvents.lstat")
+                lstat_kind_by_role[role_ordinal] = (
+                    path_value,
+                    result_value.removeprefix("lstat:ok:"),
+                )
+        elif operation in {"fstat", "read", "close"}:
+            descriptor_match = re.search(r"descriptorOpenOrdinal-([0-9]+)", detail)
+            assert descriptor_match is not None
+            semantic_descriptor = int(descriptor_match.group(1))
+            descriptor_key = (role_ordinal, semantic_descriptor)
+            if operation == "fstat":
+                if descriptor_key in fstat_attempted:
+                    return _configured_finding(index, "metadataEvents.fstat")
+                fstat_attempted.add(descriptor_key)
+                opened_kind = open_kind_by_descriptor.get(descriptor_key)
+                if result_value == f"fstat:identity:{opened_kind}":
+                    identity_validated.add(descriptor_key)
+                    if opened_kind == "regular":
+                        eligible_reads.add(descriptor_key)
+                elif result_value.startswith("fstat:error:") or "-drift:" in result_value:
+                    terminal_roles.add(role_ordinal)
+                    global_terminal_role = role_ordinal
+                    read_failed.add(descriptor_key)
+                else:
+                    return _configured_finding(index, "metadataEvents.fstat")
+            elif operation == "read":
+                if descriptor_key not in eligible_reads or descriptor_key in read_eof:
+                    return _configured_finding(index, "metadataEvents.read")
+                count_match = re.search(r":count-([0-9]+)$", detail)
+                assert count_match is not None
+                consumed = read_consumed.get(descriptor_key, 0)
+                count = int(count_match.group(1))
+                if count <= 0 or count != 4097 - consumed:
+                    return _configured_finding(index, "callbackArguments.read")
+                chunk_match = re.fullmatch(r"read:bytes:([0-9]+)", result_value)
+                if chunk_match is None:
+                    terminal_roles.add(role_ordinal)
+                    global_terminal_role = role_ordinal
+                    read_failed.add(descriptor_key)
+                else:
+                    chunk = int(chunk_match.group(1))
+                    if chunk > count:
+                        return _configured_finding(index, "metadataEvents.read")
+                    read_consumed[descriptor_key] = consumed + chunk
+                    last_read_path[role_ordinal] = open_paths_by_role[descriptor_key]
+                    if chunk == 0:
+                        if consumed == 0:
+                            return _configured_finding(index, "metadataEvents.read")
+                        read_eof.add(descriptor_key)
+                        pending_post_lstat[role_ordinal] = descriptor_key
+            else:
+                argument_error = re.search(r":result-error-([A-Za-z]+)$", detail)
+                if argument_error is None:
+                    if result_value != "close:ok":
+                        return _configured_finding(index, "metadataEvents.close")
+                else:
+                    if argument_error.group(1) not in EXPECTED_METADATA_CONFIGURED_EXCEPTION_TYPES:
+                        return _configured_finding(index, "callbackArguments.close")
+                    if not result_value.startswith(
+                        f"close:error:{argument_error.group(1)}:"
+                    ):
+                        return _configured_finding(index, "metadataEvents.close")
+                    terminal_roles.add(role_ordinal)
+                    global_terminal_role = role_ordinal
+                if not live or live[-1] != semantic_descriptor:
+                    return _configured_finding(index, "closeEffects")
+                if descriptor_key not in fstat_attempted and root_anchor_by_role.get(
+                    role_ordinal
+                ) != semantic_descriptor:
+                    return _configured_finding(index, "metadataEvents.fstat")
+                if (
+                    open_kind_by_descriptor.get(descriptor_key) == "regular"
+                    and descriptor_key not in read_failed
+                    and descriptor_key not in post_read_validated
+                ):
+                    return _configured_finding(index, "metadataEvents.read")
+                live.pop()
+    if any(live for live in semantic_live.values()):
+        return _configured_finding(index, "closeEffects")
+    if lstat_kind_by_role:
+        return _configured_finding(index, "metadataEvents.lstat")
+    if pending_post_lstat:
+        return _configured_finding(index, "metadataEvents.postLstat")
+    projection: tuple[str, str, str, str]
+    observed: tuple[str, str, int, int]
+    if inter:
+        if len(inter) != 7 or inter[0] != "role=inter-role-mutation":
+            return _configured_finding(index, "interRoleEvidence")
+        keys = ("afterRole", "path", "beforeType", "afterType", "identityChanged", "triggered")
+        values: list[str] = []
+        for inter_key, item in zip(keys, inter[1:], strict=True):
+            if not item.startswith(inter_key + "="):
+                return _configured_finding(index, "interRoleEvidence")
+            values.append(item.split("=", 1)[1])
+        if len(inter_markers) != 1 or roles != (*reader_roles, inter_markers[0]):
+            return _configured_finding(index, "interRoleEvidence.triggerOrdinal")
+        relation = next((row for row in EXPECTED_METADATA_CONFIGURED_INTER_ROLE_RELATIONS if row[1:7] == tuple(values)), None)
+        if relation is None:
+            return _configured_finding(index, "interRoleEvidence")
+        schedule = next(row for row in EXPECTED_METADATA_CONFIGURED_INTER_ROLE_SCHEDULES if row[0] == values[0])
+        expected_marker = (
+            f"interReceiptOrdinal-{schedule[3] + 1}:afterRole-{values[0]}"
+        )
+        if inter_markers != (expected_marker,):
+            return _configured_finding(index, "interRoleEvidence.triggerOrdinal")
+        if tuple(role for _, role in parsed_roles) != schedule[1] or tuple(exceptions) != schedule[5]:
+            return _configured_finding(index, "roleEvents")
+        if custom_operations:
+            return _configured_finding(index, "callbackEvents.source")
+        projection = ("inter-role", relation[7], relation[8], relation[9])
+        target_ordinal = schedule[2]
+        trigger_ordinal = schedule[3]
+        terminal_ordinal = schedule[4]
+        if not all(
+            type(ordinal) is int and 0 <= ordinal < len(parsed_roles)
+            for ordinal in (target_ordinal, trigger_ordinal, terminal_ordinal)
+        ):
+            return _configured_finding(index, "interRoleEvidence")
+        target_role = parsed_roles[target_ordinal][1]
+        if (
+            target_role
+            != {
+                "dot-git": "dot_git",
+                "linked-git-dir": "linked_git_dir",
+                "common-dir": "common_dir",
+            }[relation[7]]
+            or parsed_roles[trigger_ordinal][1] != values[0]
+            or terminal_ordinal != len(parsed_roles) - 1
+        ):
+            return _configured_finding(index, "interRoleEvidence")
+        terminal_relations = tuple(
+            (callback, result_value)
+            for callback, result_value in zip(
+                callback_rows, metadata_results, strict=True
+            )
+            if callback[1] == terminal_ordinal
+            and result_value.startswith("fstat:stored-parent-")
+        )
+        if len(terminal_relations) != 1:
+            return _configured_finding(index, "interRoleEvidence.terminalRelation")
+        terminal_callback, terminal_result = terminal_relations[0]
+        terminal_descriptor = re.search(
+            r"descriptorOpenOrdinal-([0-9]+)", terminal_callback[4]
+        )
+        expected_target_path = {
+            "dot-git": "$ROOT/.git",
+            "linked-git-dir": (
+                "fixture-relative:$TMP/$CASE/source/repository/.git/worktrees/linked"
+            ),
+            "common-dir": "fixture-relative:$TMP/$CASE/source/repository/.git",
+        }[relation[7]]
+        expected_parent_role = {
+            "dot-git": "dot_git",
+            "linked-git-dir": "linked_git_dir",
+            "common-dir": "common_dir",
+        }[relation[7]]
+        target_open_rows = tuple(
+            row
+            for row in successful_opens
+            if row[0] == target_ordinal and row[4] == expected_target_path
+        )
+        if (
+            len(target_open_rows) != 1
+            or (
+                target_ordinal,
+                target_open_rows[0][2],
+            )
+            not in identity_validated
+        ):
+            return _configured_finding(
+                index, "interRoleEvidence.targetProvenance"
+            )
+        if (
+            terminal_descriptor is None
+            or open_paths_by_role.get(
+                (terminal_ordinal, int(terminal_descriptor.group(1)))
+            )
+            != expected_target_path
+            or values[2] != values[3]
+            or terminal_result
+            not in {
+                f"fstat:stored-parent-{expected_parent_role}-device-drift:directory",
+                f"fstat:stored-parent-{expected_parent_role}-inode-drift:directory",
+            }
+        ):
+            return _configured_finding(index, "interRoleEvidence.terminalRelation")
+        target_open = target_open_rows[0]
+        observed = (
+            target_open[3],
+            target_open[4],
+            target_open[0],
+            target_open[1],
+        )
+    else:
+        if inter_markers:
+            return _configured_finding(index, "roleEvents")
+        actual_role_schedule = tuple(role for _, role in parsed_roles)
+        if (
+            actual_role_schedule
+            not in EXPECTED_METADATA_CONFIGURED_NON_INTER_ALLOWED_ROLE_SCHEDULES
+        ):
+            return _configured_finding(index, "roleEvents")
+        if not custom_rows:
+            symlink_rows = tuple(
+                row
+                for row, result_value in zip(
+                    callback_rows, metadata_results, strict=True
+                )
+                if result_value == "lstat:ok:symlink"
+            )
+            if len(symlink_rows) != 1:
+                return _configured_finding(index, "rawReceipt")
+            symlink_row = symlink_rows[0]
+            if (
+                symlink_row[2] != "discovery"
+                or symlink_row[5] is None
+                or re.fullmatch(
+                    r"root-ancestor-distance-(?:[1-9]|[1-5][0-9]|6[0-4])",
+                    symlink_row[5],
+                )
+                is None
+                or symlink_row[1] != len(parsed_roles) - 1
+            ):
+                return _configured_finding(index, "callbackArguments.path")
+            projection = ("filesystem-state", "root-ancestor", "before-discovery", "symlink")
+            observed = (
+                symlink_row[2],
+                symlink_row[5],
+                symlink_row[1],
+                symlink_row[0],
+            )
+        else:
+            operations = {row[3] for row in custom_rows}
+            if operations not in ({"lstat"}, {"open"}, {"open", "fstat"}, {"read"}, {"close"}):
+                return _configured_finding(index, "callbackEvents")
+            custom_candidates = tuple(
+                (row, result_value, ordinal)
+                for ordinal, (row, result_value, source) in enumerate(
+                    zip(callback_rows, metadata_results, callback_sources, strict=True)
+                )
+                if source == "custom"
+            )
+            decisive_candidates = tuple(
+                row
+                for row, result_value, ordinal in custom_candidates
+                if (
+                    row[3] == "close"
+                    and result_value.startswith("close:error:")
+                )
+                or (
+                    row[3] == "open" and result_value.startswith("open:error:")
+                )
+                or (
+                    row[3] == "fstat" and "-drift:" in result_value
+                )
+                or (
+                    row[3] == "lstat"
+                    and (
+                        result_value == "lstat:ok:symlink"
+                        or
+                        result_value.startswith("lstat:error:")
+                        or result_value.startswith("post-lstat:")
+                        and "-drift:" in result_value
+                        or (
+                            ordinal + 1 < len(metadata_results)
+                            and callback_rows[ordinal + 1][1] == row[1]
+                            and callback_rows[ordinal + 1][3] == "open"
+                            and metadata_results[ordinal + 1].startswith("open:error:")
+                        )
+                    )
+                )
+            )
+            if len(decisive_candidates) != 1:
+                return _configured_finding(index, "metadataEvents.decisive")
+            decisive = decisive_candidates[0]
+            event_ordinal, role_ordinal, role, operation, detail, decisive_path = decisive
+            if operation in {"fstat", "read", "close"}:
+                descriptor_match = re.search(
+                    r"descriptorOpenOrdinal-([0-9]+)", detail
+                )
+                if descriptor_match is None:
+                    return _configured_finding(index, "callbackArguments.descriptor")
+                decisive_path = open_paths_by_role.get(
+                    (role_ordinal, int(descriptor_match.group(1)))
+                )
+            if decisive_path is None:
+                return _configured_finding(index, "callbackArguments.path")
+            if role == "discovery" and decisive_path == "$ROOT":
+                target, path = "root", decisive_path
+            elif role == "dot_git" and decisive_path == "$ROOT/.git":
+                target, path = "dot-git", decisive_path
+            elif role == "prohibited_grafts" and decisive_path.endswith("/info"):
+                target, path = "info-ancestor", decisive_path
+            else:
+                return _configured_finding(index, "callbackArguments.path")
+            if role_ordinal != len(parsed_roles) - 1:
+                return _configured_finding(index, "roleEvents")
+            if operation == "lstat":
+                decisive_result = metadata_results[callback_rows.index(decisive)]
+                if decisive_result.startswith("post-lstat:"):
+                    phase = "after-read"
+                    effect = decisive_result.split(":", 1)[1].split(":", 1)[0]
+                elif decisive_result.startswith("lstat:error:"):
+                    phase, effect = "initial-lstat", "os-error"
+                else:
+                    phase, effect = "after-lstat", "identity-replacement"
+            elif operation == "open":
+                phase, effect = "initial-open", "os-error"
+            elif operation == "close":
+                if not any("error-" in row for row in closes):
+                    return _configured_finding(index, "closeEffects")
+                phase, effect = "cleanup", "os-error"
+            elif operation == "fstat":
+                decisive_result = metadata_results[callback_rows.index(decisive)]
+                if "-drift:" not in decisive_result:
+                    return _configured_finding(index, "statEvents")
+                phase = "after-open"
+                effect = decisive_result.split(":", 1)[1].split(":", 1)[0]
+            else:
+                phase, effect = "after-read", "device-drift"
+            projection = (operation, target, phase, effect)
+            observed = (role, path, role_ordinal, event_ordinal)
+    return ConfiguredRawIntegrityResult(
+        ParsedConfiguredRawReceipt(receipt, tuple(prefixes), tuple(successful_opens), projection, observed),
+        (),
+    )
+
+
+def project_configured_raw_receipt(parsed: ParsedConfiguredRawReceipt) -> ConfiguredProjectionResult:
+    """Project only an already validated receipt."""
+    if type(parsed) is not ParsedConfiguredRawReceipt:
+        return ConfiguredProjectionResult(None, configured_receipt_finding(0, "rawReceipt"))
+    return ConfiguredProjectionResult(parsed.projection, ())
 
 
 def bind_configured_plan(
-    raw_receipt: tuple[tuple[str, ...], ...],
-    claimed_projection: tuple[str, str, str, str],
-    declared_plan: tuple[str, ...],
-    index: int,
+    raw_receipt: object,
+    stored_identity: object,
+    stored_observation: object,
+    claimed_projection: object,
+    declared_plan: object,
+    index: object,
 ) -> tuple[protocol.Finding, ...]:
-    projected = project_configured_raw_receipt(raw_receipt, index)
-    if projected.findings:
-        return projected.findings
-    assert projected.projection is not None
+    validated = validate_configured_raw_receipt(raw_receipt, stored_identity, index)
+    if validated.findings:
+        return validated.findings
+    assert validated.parsed is not None
+    safe_index = cast(int, index)
+    if type(stored_observation) is not tuple or len(stored_observation) != 4:
+        return configured_receipt_finding(safe_index, "observedTargetRole")
+    if any(type(value) is not expected for value, expected in zip(stored_observation, (str, str, int, int), strict=True)):
+        return configured_receipt_finding(safe_index, "observedTargetRole")
+    if stored_observation != validated.parsed.observed:
+        for coordinate, actual, expected in zip(
+            ("observedTargetRole", "observedTargetPath", "observedRoleOrdinal", "observedCallbackOrdinal"),
+            cast(tuple[object, ...], stored_observation),
+            validated.parsed.observed,
+            strict=True,
+        ):
+            if actual != expected:
+                return configured_receipt_finding(safe_index, coordinate)
+    for value, coordinate in ((claimed_projection, "callback"), (declared_plan, "callback")):
+        if type(value) is not tuple or len(value) != 4 or any(type(item) is not str for item in value):
+            return configured_receipt_finding(safe_index, coordinate)
     for coordinate, claimed, observed in zip(
         EXPECTED_METADATA_CONFIGURED_PLAN_RECEIPT_PROJECTION_FIELDS,
-        claimed_projection,
-        projected.projection,
+        cast(tuple[str, ...], claimed_projection),
+        validated.parsed.projection,
         strict=True,
     ):
         if claimed != observed:
-            return configured_receipt_finding(index, coordinate)
+            return configured_receipt_finding(safe_index, coordinate)
     for coordinate, actual, declared in zip(
         EXPECTED_METADATA_CONFIGURED_PLAN_RECEIPT_PROJECTION_FIELDS,
-        claimed_projection,
-        declared_plan,
+        cast(tuple[str, ...], claimed_projection),
+        cast(tuple[str, ...], declared_plan),
         strict=True,
     ):
         if actual != declared:
-            return configured_receipt_finding(index, coordinate)
+            return configured_receipt_finding(safe_index, coordinate)
     return ()
+
+
+def bind_configured_receipt_schedule(
+    execution_evidence_identity: object,
+    raw_identity: object,
+    observed: object,
+    projection: object,
+    index: object,
+) -> tuple[protocol.Finding, ...]:
+    """Bind a parsed receipt to its independently frozen execution slot."""
+    if type(index) is not int or not 0 <= index < len(
+        EXPECTED_METADATA_CONFIGURED_RECEIPT_BINDINGS
+    ):
+        return configured_receipt_finding(0, "receiptIndex")
+    safe_index = index
+    expected = EXPECTED_METADATA_CONFIGURED_RECEIPT_BINDINGS[safe_index]
+    if (
+        type(execution_evidence_identity) is not str
+        or execution_evidence_identity != expected[0]
+    ):
+        return configured_receipt_finding(safe_index, "executionEvidenceIdentity")
+    if type(raw_identity) is not str or raw_identity != expected[1]:
+        return configured_receipt_finding(safe_index, "rawEvidenceIdentity")
+    for value, required, coordinate in (
+        (observed, expected[2], "observedTargetRole"),
+        (projection, expected[3], "callback"),
+    ):
+        if type(value) is not tuple or value != required:
+            return configured_receipt_finding(safe_index, coordinate)
+    return ()
+
+
+def execute_discovery_handoff_mutant(
+    reader: Callable[..., protocol.GitMetadataReadResult],
+    root: Path,
+    operation: str,
+) -> tuple[tuple[protocol.Finding, ...], tuple[tuple[str, str], ...]]:
+    """Execute one exact malformed discovery-to-dot-git provenance handoff."""
+    root_status = root.lstat()
+    parent_role = "discovery"
+    if operation == "remove-parent-record":
+        parents: tuple[tuple[str, protocol.GitMetadataRecord], ...] = ()
+    else:
+        if operation == "replace-discovery-role":
+            parent_role = "common_dir"
+        path = root.parent if "path" in operation else root
+        mode = (
+            stat.S_IFREG | 0o600
+            if "type" in operation
+            else root_status.st_mode
+        )
+        device = root_status.st_dev + (1 if "device" in operation else 0)
+        inode = root_status.st_ino + (1 if operation == "replace-root-inode" else 0)
+        parents = (
+            (
+                parent_role,
+                protocol.GitMetadataRecord(path, None, mode, device, inode),
+            ),
+        )
+    callbacks: list[tuple[str, str]] = []
+    descriptor_paths: dict[int, str] = {}
+    system_io = protocol.SYSTEM_METADATA_IO
+
+    def observed_lstat(path: str, *, dir_fd: int | None = None) -> os.stat_result:
+        callbacks.append(("lstat", path))
+        return system_io.lstat(path, dir_fd=dir_fd)
+
+    def observed_open(path: str, flags: int, *, dir_fd: int | None = None) -> int:
+        callbacks.append(("open", path))
+        descriptor = system_io.open(path, flags, dir_fd=dir_fd)
+        descriptor_paths[descriptor] = path
+        return descriptor
+
+    def observed_fstat(descriptor: int) -> os.stat_result:
+        callbacks.append(("fstat", descriptor_paths[descriptor]))
+        return system_io.fstat(descriptor)
+
+    def observed_read(descriptor: int, count: int) -> bytes:
+        callbacks.append(("read", f"{descriptor_paths[descriptor]}:{count}"))
+        return system_io.read(descriptor, count)
+
+    def observed_close(descriptor: int) -> None:
+        callbacks.append(("close", descriptor_paths[descriptor]))
+        system_io.close(descriptor)
+
+    observed = reader(
+        root,
+        provenance=protocol.GitMetadataProvenance("dot_git", None, parents),
+        io=protocol.MetadataIO(
+            observed_lstat,
+            observed_open,
+            observed_fstat,
+            observed_read,
+            observed_close,
+        ),
+    )
+    return observed.findings, tuple(callbacks)
+
+
+def apply_configured_receipt_mutant(
+    receipt: ConfiguredPlanReceipt,
+    declared_plan: tuple[str, ...],
+    receipt_index: int,
+    operation: str,
+    raw_identity_action: str,
+) -> tuple[object, object, object, object, object, object]:
+    """Apply one catalogued single-coordinate mutation to a frozen receipt."""
+    raw: list[object] = list(receipt[1:9])
+    identity: object = receipt[9]
+    observed: object = tuple(receipt[14:18])
+    projection: object = tuple(receipt[10:14])
+    declared: object = declared_plan
+    index: object = receipt_index
+
+    def shift_role_events(role_ordinal: int, first_event: int, delta: int) -> None:
+        marker = f":roleOrdinal-{role_ordinal}:"
+        for field_ordinal in range(7):
+            shifted: list[str] = []
+            for value in cast(tuple[str, ...], raw[field_ordinal]):
+                event = re.match(r"event-([0-9]+):", value)
+                if event is not None and marker in value and int(event.group(1)) >= first_event:
+                    value = re.sub(
+                        r"^event-[0-9]+:",
+                        f"event-{int(event.group(1)) + delta}:",
+                        value,
+                    )
+                shifted.append(value)
+            raw[field_ordinal] = tuple(shifted)
+    if operation == "index-bool":
+        index = True
+    elif operation == "index-string":
+        index = "14"
+    elif operation == "index-negative":
+        index = -1
+    elif operation == "index-count":
+        index = EXPECTED_METADATA_CONFIGURED_PLAN_COUNT
+    elif operation == "index-count-plus-one":
+        index = EXPECTED_METADATA_CONFIGURED_PLAN_COUNT + 1
+    elif operation == "raw-list":
+        raw = list(raw)
+    elif operation == "raw-short":
+        raw = raw[:-1]
+    elif operation == "raw-long":
+        raw.append(())
+    elif match := re.fullmatch(r"field-list-([0-7])", operation):
+        field_ordinal = int(match.group(1))
+        raw[field_ordinal] = list(cast(tuple[object, ...], raw[field_ordinal]))
+    elif match := re.fullmatch(r"field-over-cap-([0-7])", operation):
+        field_ordinal = int(match.group(1))
+        field_name = EXPECTED_METADATA_CONFIGURED_PLAN_RAW_EVIDENCE_FIELDS[
+            field_ordinal
+        ]
+        raw[field_ordinal] = ("x",) * (
+            dict(EXPECTED_METADATA_CONFIGURED_RAW_FIELD_CAPS)[field_name] + 1
+        )
+    elif match := re.fullmatch(r"field-item-type-([0-7])", operation):
+        field_ordinal = int(match.group(1))
+        raw[field_ordinal] = (1,)
+    elif operation == "field-invalid-utf8":
+        raw[0] = ("\ud800",)
+    elif operation == "preserve-stale-identity":
+        raw[4] = cast(tuple[object, ...], raw[4])[:-1]
+    elif operation == "role-empty":
+        raw[2] = ()
+    elif operation == "role-first-not-discovery":
+        roles = list(cast(tuple[str, ...], raw[2]))
+        roles[0] = roles[0].replace(":discovery", ":dot_git")
+        raw[2] = tuple(roles)
+    elif operation == "role-ordinal-duplicate":
+        roles = list(cast(tuple[str, ...], raw[2]))
+        roles[1] = re.sub(r"^[0-9]+:", "0:", roles[1])
+        raw[2] = tuple(roles)
+    elif operation == "role-reentered":
+        role_tuple = cast(tuple[str, ...], raw[2])
+        raw[2] = (*role_tuple, f"{len(role_tuple)}:discovery")
+    elif operation == "callback-reorder":
+        events = list(cast(tuple[str, ...], raw[1]))
+        events[0], events[1] = events[1], events[0]
+        raw[1] = tuple(events)
+    elif operation == "callback-event-gap":
+        arguments = list(cast(tuple[str, ...], raw[0]))
+        arguments[1] = re.sub(r"^event-[0-9]+", "event-99", arguments[1])
+        raw[0] = tuple(arguments)
+    elif operation == "custom-add-operation":
+        events = list(cast(tuple[str, ...], raw[1]))
+        system_ordinal = next(
+            ordinal for ordinal, value in enumerate(events) if value.endswith(":system")
+        )
+        events[system_ordinal] = events[system_ordinal].removesuffix(
+            ":system"
+        ) + ":custom"
+        raw[1] = tuple(events)
+    elif operation == "custom-remove-operation":
+        events = list(cast(tuple[str, ...], raw[1]))
+        custom_ordinal = next(
+            ordinal for ordinal, value in enumerate(events) if value.endswith(":custom")
+        )
+        events[custom_ordinal] = events[custom_ordinal].removesuffix(
+            ":custom"
+        ) + ":system"
+        raw[1] = tuple(events)
+    elif operation in {"path-root-prefix", "path-dotdot", "path-cross-role"}:
+        arguments = list(cast(tuple[str, ...], raw[0]))
+        if operation == "path-root-prefix":
+            arguments[0] = re.sub(
+                r"root-ancestor-distance-[0-9]+", "$ROOTevil", arguments[0]
+            )
+        elif operation == "path-dotdot":
+            target_ordinal = next(
+                ordinal for ordinal, value in enumerate(arguments) if "$ROOT/.git" in value
+            )
+            arguments[target_ordinal] = arguments[target_ordinal].replace(
+                "$ROOT/.git", "$ROOT/../evil"
+            )
+        else:
+            target_ordinal = next(
+                ordinal for ordinal, value in enumerate(arguments) if "$ROOT/.git" in value
+            )
+            arguments[target_ordinal] = arguments[target_ordinal].replace(
+                "$ROOT/.git", "$COMMON"
+            )
+        raw[0] = tuple(arguments)
+    elif operation == "root-anchor-rebase":
+        arguments = list(cast(tuple[str, ...], raw[0]))
+        match = re.search(r"root-ancestor-distance-([0-9]+)", arguments[0])
+        assert match is not None and int(match.group(1)) > 1
+        arguments[0] = arguments[0].replace(
+            match.group(0), f"root-ancestor-distance-{int(match.group(1)) - 1}"
+        )
+        raw[0] = tuple(arguments)
+    elif operation in {"anchor-dirfd", "anchor-flags", "anchor-result"}:
+        arguments = list(cast(tuple[str, ...], raw[0]))
+        anchor_ordinal = next(
+            ordinal
+            for ordinal, value in enumerate(arguments)
+            if ":open:" in value and ":dirfd-none:" in value
+        )
+        replacements = {
+            "anchor-dirfd": (":dirfd-none:", ":dirfdOpenOrdinal-0:"),
+            "anchor-flags": (
+                ":flags-RDONLY|NOFOLLOW|DIRECTORY:",
+                ":flags-RDONLY|NOFOLLOW:",
+            ),
+            "anchor-result": (":result-openOrdinal-0", ":result-error-OSError"),
+        }
+        before, after = replacements[operation]
+        arguments[anchor_ordinal] = arguments[anchor_ordinal].replace(before, after)
+        raw[0] = tuple(arguments)
+    elif operation == "anchor-final-close-omit":
+        argument_tuple = cast(tuple[str, ...], raw[0])
+        close_ordinal = next(
+            ordinal
+            for ordinal in range(len(argument_tuple) - 1, -1, -1)
+            if ":close:" in argument_tuple[ordinal]
+            and ":descriptorOpenOrdinal-0:" in argument_tuple[ordinal]
+        )
+        close_prefix = ":".join(argument_tuple[close_ordinal].split(":")[:4])
+        for field_ordinal in (0, 1, 3, 6):
+            raw[field_ordinal] = tuple(
+                value
+                for value in cast(tuple[str, ...], raw[field_ordinal])
+                if not value.startswith(close_prefix + ":")
+            )
+    elif operation == "later-role-after-terminal":
+        for field_ordinal in (0, 1, 3, 4, 6):
+            source_rows = tuple(
+                value
+                for value in cast(tuple[str, ...], raw[field_ordinal])
+                if ":roleOrdinal-0:" in value
+            )
+            raw[field_ordinal] = (
+                *cast(tuple[str, ...], raw[field_ordinal]),
+                *(
+                    value.replace(":role-discovery:", ":role-common_dir:").replace(
+                        ":roleOrdinal-0:", ":roleOrdinal-2:"
+                    )
+                    for value in source_rows
+                ),
+            )
+        raw[2] = (*cast(tuple[str, ...], raw[2]), "2:common_dir")
+    elif operation == "descriptor-unknown":
+        arguments = list(cast(tuple[str, ...], raw[0]))
+        descriptor_ordinal = next(
+            ordinal for ordinal, value in enumerate(arguments) if ":fstat:" in value
+        )
+        arguments[descriptor_ordinal] = re.sub(
+            r"descriptorOpenOrdinal-[0-9]+$",
+            "descriptorOpenOrdinal-99",
+            arguments[descriptor_ordinal],
+        )
+        raw[0] = tuple(arguments)
+    elif operation == "descriptor-reuse":
+        arguments = list(cast(tuple[str, ...], raw[0]))
+        open_ordinals = [
+            ordinal for ordinal, value in enumerate(arguments) if ":open:" in value
+        ]
+        arguments[open_ordinals[1]] = re.sub(
+            r"result-openOrdinal-[0-9]+$",
+            "result-openOrdinal-0",
+            arguments[open_ordinals[1]],
+        )
+        raw[0] = tuple(arguments)
+    elif operation == "stat-omit":
+        raw[4] = cast(tuple[str, ...], raw[4])[:-1]
+    elif operation == "exception-add":
+        raw[5] = (
+            *cast(tuple[str, ...], raw[5]),
+            "event-0:role-discovery:roleOrdinal-0:lstat:lstat:error:OSError:no-errno",
+        )
+    elif operation == "close-reorder":
+        raw[6] = tuple(reversed(cast(tuple[str, ...], raw[6])))
+    elif operation == "close-result-mismatch":
+        raw[6] = tuple(
+            re.sub(r"result-error-[A-Za-z]+$", "result-ok", value)
+            for value in cast(tuple[str, ...], raw[6])
+        )
+    elif operation in {"read-count-zero", "read-count-wrong"}:
+        arguments = list(cast(tuple[str, ...], raw[0]))
+        read_ordinal = next(
+            ordinal for ordinal, value in enumerate(arguments) if ":read:" in value
+        )
+        count_match = re.search(r":count-([0-9]+)$", arguments[read_ordinal])
+        assert count_match is not None
+        replacement = 0 if operation == "read-count-zero" else int(count_match.group(1)) - 1
+        arguments[read_ordinal] = re.sub(
+            r":count-[0-9]+$", f":count-{replacement}", arguments[read_ordinal]
+        )
+        raw[0] = tuple(arguments)
+    elif operation in {"read-chunk-oversize", "read-zero-first"}:
+        metadata = list(cast(tuple[str, ...], raw[3]))
+        read_ordinal = next(
+            ordinal for ordinal, value in enumerate(metadata) if ":read:read:bytes:" in value
+        )
+        chunk_replacement = "9999" if operation == "read-chunk-oversize" else "0"
+        metadata[read_ordinal] = re.sub(
+            r"read:bytes:[0-9]+$",
+            f"read:bytes:{chunk_replacement}",
+            metadata[read_ordinal],
+        )
+        raw[3] = tuple(metadata)
+    elif operation == "read-eof-omit":
+        metadata_tuple = cast(tuple[str, ...], raw[3])
+        remove_ordinal = next(
+            ordinal
+            for ordinal, value in enumerate(metadata_tuple)
+            if value.endswith("read:bytes:0")
+        )
+        removed = metadata_tuple[remove_ordinal]
+        event_ordinal = int(removed.split(":", 1)[0].removeprefix("event-"))
+        role_match = re.search(r":roleOrdinal-([0-9]+):", removed)
+        assert role_match is not None
+        role_ordinal = int(role_match.group(1))
+        for field_ordinal in (0, 1, 3):
+            values = list(cast(tuple[str, ...], raw[field_ordinal]))
+            values.pop(remove_ordinal)
+            raw[field_ordinal] = tuple(values)
+        shift_role_events(role_ordinal, event_ordinal + 1, -1)
+    elif operation == "read-work-after-post":
+        metadata_tuple = cast(tuple[str, ...], raw[3])
+        post_ordinal = next(
+            ordinal
+            for ordinal, value in enumerate(metadata_tuple)
+            if ":post-lstat:" in value
+        )
+        post = metadata_tuple[post_ordinal]
+        role_match = re.search(r":roleOrdinal-([0-9]+):", post)
+        assert role_match is not None
+        role_ordinal = int(role_match.group(1))
+        event_ordinal = int(post.split(":", 1)[0].removeprefix("event-")) + 1
+        prior_lstat_ordinal = next(
+            ordinal
+            for ordinal in range(post_ordinal - 1, -1, -1)
+            if f":roleOrdinal-{role_ordinal}:lstat:" in cast(
+                tuple[str, ...], raw[0]
+            )[ordinal]
+        )
+        first_lstat = cast(tuple[str, ...], raw[0])[prior_lstat_ordinal]
+        first_result = metadata_tuple[prior_lstat_ordinal]
+        shift_role_events(role_ordinal, event_ordinal, 1)
+        prefix = f"event-{event_ordinal}:role-{post.split(':role-', 1)[1].split(':', 1)[0]}:roleOrdinal-{role_ordinal}:lstat"
+        argument = prefix + ":" + first_lstat.split(":lstat:", 1)[1]
+        result = prefix + ":" + first_result.split(":lstat:", 1)[1]
+        for field_ordinal, value in ((0, argument), (1, prefix + ":custom"), (3, result), (4, result)):
+            values = list(cast(tuple[str, ...], raw[field_ordinal]))
+            insert_at = post_ordinal + 1 if field_ordinal != 4 else len(values)
+            values.insert(insert_at, value)
+            raw[field_ordinal] = tuple(values)
+    elif operation == "fstat-duplicate":
+        metadata_tuple = cast(tuple[str, ...], raw[3])
+        fstat_ordinal = next(
+            ordinal
+            for ordinal, value in enumerate(metadata_tuple)
+            if ":fstat:fstat:" in value
+        )
+        original = metadata_tuple[fstat_ordinal]
+        role_match = re.search(r":roleOrdinal-([0-9]+):", original)
+        assert role_match is not None
+        role_ordinal = int(role_match.group(1))
+        event_ordinal = int(original.split(":", 1)[0].removeprefix("event-")) + 1
+        shift_role_events(role_ordinal, event_ordinal, 1)
+        for field_ordinal in (0, 1, 3):
+            values = list(cast(tuple[str, ...], raw[field_ordinal]))
+            copied = values[fstat_ordinal]
+            copied = re.sub(r"^event-[0-9]+:", f"event-{event_ordinal}:", copied)
+            values.insert(fstat_ordinal + 1, copied)
+            raw[field_ordinal] = tuple(values)
+        stats = list(cast(tuple[str, ...], raw[4]))
+        stat_ordinal = next(
+            ordinal for ordinal, value in enumerate(stats) if value == original
+        )
+        copied_stat = re.sub(r"^event-[0-9]+:", f"event-{event_ordinal}:", original)
+        stats.insert(stat_ordinal + 1, copied_stat)
+        raw[4] = tuple(stats)
+    elif operation == "metadata-reorder":
+        metadata = list(cast(tuple[str, ...], raw[3]))
+        metadata[0], metadata[1] = metadata[1], metadata[0]
+        raw[3] = tuple(metadata)
+    elif operation.startswith("inter-"):
+        inter_values = list(cast(tuple[str, ...], raw[7]))
+        inter_operations = {
+            "inter-leading-key": (0, "role=other"),
+            "inter-after-role": (1, "afterRole=dot_git"),
+            "inter-path": (2, "path=$TMP/$CASE/repository/.git"),
+            "inter-before-type": (3, "beforeType=32768"),
+            "inter-after-type": (4, "afterType=32768"),
+            "inter-identity": (5, "identityChanged=false"),
+            "inter-triggered": (6, "triggered=false"),
+        }
+        if operation in inter_operations:
+            inter_ordinal, inter_replacement = inter_operations[operation]
+            inter_values[inter_ordinal] = inter_replacement
+            raw[7] = tuple(inter_values)
+        elif operation in {"inter-marker-before", "inter-marker-after"}:
+            roles = list(cast(tuple[str, ...], raw[2]))
+            marker_ordinal = next(
+                ordinal
+                for ordinal, value in enumerate(roles)
+                if value.startswith("interReceiptOrdinal-")
+            )
+            observed_marker = re.match(
+                r"interReceiptOrdinal-([0-9]+)", roles[marker_ordinal]
+            )
+            assert observed_marker is not None
+            delta = -1 if operation.endswith("before") else 1
+            roles[marker_ordinal] = re.sub(
+                r"interReceiptOrdinal-[0-9]+",
+                f"interReceiptOrdinal-{int(observed_marker.group(1)) + delta}",
+                roles[marker_ordinal],
+            )
+            raw[2] = tuple(roles)
+        elif operation == "inter-marker-physical-reorder":
+            roles = list(cast(tuple[str, ...], raw[2]))
+            marker = roles.pop()
+            roles.insert(1, marker)
+            raw[2] = tuple(roles)
+        elif operation == "inter-arm-missing":
+            raw[7] = tuple(inter_values[:-1])
+        elif operation == "inter-arm-extra":
+            raw[7] = (*inter_values, "extra=true")
+        elif operation == "inter-arm-reorder":
+            inter_values[1], inter_values[2] = inter_values[2], inter_values[1]
+            raw[7] = tuple(inter_values)
+        elif operation == "inter-terminal-success":
+            raw[3] = tuple(
+                re.sub(
+                    r"fstat:stored-parent-[a-z_]+-(?:device|inode)-drift:directory$",
+                    "fstat:identity:directory",
+                    value,
+                )
+                for value in cast(tuple[str, ...], raw[3])
+            )
+            raw[4] = tuple(
+                re.sub(
+                    r"fstat:stored-parent-[a-z_]+-(?:device|inode)-drift:directory$",
+                    "fstat:identity:directory",
+                    value,
+                )
+                for value in cast(tuple[str, ...], raw[4])
+            )
+        elif operation == "inter-parent-role":
+            raw[3] = tuple(
+                value.replace("stored-parent-linked_git_dir", "stored-parent-common_dir")
+                for value in cast(tuple[str, ...], raw[3])
+            )
+            raw[4] = tuple(
+                value.replace("stored-parent-linked_git_dir", "stored-parent-common_dir")
+                for value in cast(tuple[str, ...], raw[4])
+            )
+        elif operation == "inter-target-provenance":
+            target_path = (
+                "fixture-relative:$TMP/$CASE/source/repository/.git/worktrees/linked"
+            )
+            removed_prefixes = {
+                ":".join(value.split(":")[:4])
+                for value in cast(tuple[str, ...], raw[0])
+                if ":role-linked_git_dir:" in value
+                and (
+                    f":path-{target_path}:" in value
+                    or re.search(r":descriptorOpenOrdinal-23(?::|$)", value)
+                    is not None
+                )
+            }
+            kept_arguments = tuple(
+                value
+                for value in cast(tuple[str, ...], raw[0])
+                if ":".join(value.split(":")[:4]) not in removed_prefixes
+            )
+            prefix_map: dict[str, str] = {}
+            next_event = 0
+            for value in kept_arguments:
+                old_prefix = ":".join(value.split(":")[:4])
+                if ":role-linked_git_dir:" in value:
+                    prefix_map[old_prefix] = re.sub(
+                        r"^event-[0-9]+", f"event-{next_event}", old_prefix
+                    )
+                    next_event += 1
+            for field_ordinal in range(7):
+                rewritten: list[str] = []
+                for value in cast(tuple[str, ...], raw[field_ordinal]):
+                    old_prefix = ":".join(value.split(":")[:4])
+                    if old_prefix in removed_prefixes:
+                        continue
+                    if old_prefix in prefix_map:
+                        value = prefix_map[old_prefix] + value[len(old_prefix) :]
+                    rewritten.append(value)
+                raw[field_ordinal] = tuple(rewritten)
+        else:
+            raise AssertionError(operation)
+    elif match := re.fullmatch(r"observed-coordinate-([0-3])", operation):
+        mutated_values = list(cast(tuple[object, ...], observed))
+        ordinal = int(match.group(1))
+        mutated_values[ordinal] = -1 if ordinal >= 2 else "decoy"
+        observed = tuple(mutated_values)
+    elif match := re.fullmatch(r"projection-coordinate-([0-3])", operation):
+        mutated_values = list(cast(tuple[object, ...], projection))
+        mutated_values[int(match.group(1))] = "decoy"
+        projection = tuple(mutated_values)
+    elif match := re.fullmatch(r"declared-coordinate-([0-3])", operation):
+        mutated_values = list(cast(tuple[object, ...], declared))
+        mutated_values[int(match.group(1))] = "decoy"
+        declared = tuple(mutated_values)
+    elif operation == "replace-custom-callback-with-other-closed-callback":
+        raw[1] = tuple(
+            value.replace(":fstat:custom", ":open:custom")
+            for value in cast(tuple[str, ...], raw[1])
+        )
+    elif operation == "replace-callback-target-argument":
+        raw[0] = tuple(
+            value.replace("$ROOT/.git", "$COMMON")
+            for value in cast(tuple[str, ...], raw[0])
+        )
+    elif operation == "replace-callback-event-ordinal":
+        raw[0] = tuple(
+            re.sub(r"^event-[0-9]+", "event-99", value)
+            if ":fstat:" in value
+            else value
+            for value in cast(tuple[str, ...], raw[0])
+        )
+    elif operation == "replace-stat-effect-evidence":
+        raw[4] = tuple(
+            value.replace("type-drift", "inode-drift")
+            for value in cast(tuple[str, ...], raw[4])
+        )
+    elif operation == "remove-custom-callback-trigger":
+        raw[1] = tuple(
+            value.replace(":custom", ":system")
+            for value in cast(tuple[str, ...], raw[1])
+        )
+    elif operation == "replace-observed-close-error-with-ok":
+        raw[6] = tuple(
+            re.sub(r"result-error-[^:]+$", "result-ok", value)
+            for value in cast(tuple[str, ...], raw[6])
+        )
+    elif operation == "replace-triggered-before-after-observation-with-unchanged":
+        raw[7] = tuple(
+            "identityChanged=false" if value == "identityChanged=true" else value
+            for value in cast(tuple[str, ...], raw[7])
+        )
+    elif operation == "replace-declared-plan-after-raw-projection":
+        mutated_values = list(cast(tuple[object, ...], declared))
+        mutated_values[3] = "decoy"
+        declared = tuple(mutated_values)
+    elif operation == "copy-declared-decoy-instead-of-projecting-raw-receipt":
+        mutated_values = list(cast(tuple[object, ...], declared))
+        mutated_values[3] = "decoy"
+        declared = tuple(mutated_values)
+        projection = declared
+    else:
+        raise AssertionError(operation)
+    raw_object: object = tuple(raw)
+    if operation == "raw-list":
+        raw_object = raw
+    if raw_identity_action == "recompute-after-mutation":
+        identity = hashlib.sha256(canonical(raw_object)).hexdigest()
+    else:
+        assert raw_identity_action == "preserve-stale"
+    return raw_object, identity, observed, projection, declared, index
 
 
 def historical_pair_containment(
@@ -5250,24 +8307,469 @@ def portable_governed_parent_plan(root_bytes: int, root_depth: int) -> tuple[int
     return filler_count, first_final, final_budget - first_final
 
 
-def governed_fixture_parent(original_root: Path) -> Path:
-    """Pad distinct pytest roots to one exact filesystem-byte length."""
-    parent = original_root
-    filler_count, first_final_bytes, second_final_bytes = portable_governed_parent_plan(
-        len(os.fsencode(original_root)), len(original_root.parts)
+def _portable_root_plan(
+    owner: Path,
+    owner_status: os.stat_result,
+    label: str,
+    candidate_components: tuple[str, ...],
+) -> PortableRootPlan:
+    candidate = owner.joinpath(*candidate_components)
+    candidate_bytes = len(os.fsencode(candidate))
+    candidate_depth = len(candidate.parts)
+    filler_count, first_final_bytes, second_final_bytes = (
+        portable_governed_parent_plan(candidate_bytes, candidate_depth)
     )
-    for slot_ordinal in range(filler_count):
-        slot_prefix = f"slot-{slot_ordinal:02d}-"
-        parent /= slot_prefix + ("p" * (GOVERNED_FIXTURE_SLOT_BYTES - len(slot_prefix)))
-    assert len(parent.parts) == GOVERNED_FIXTURE_PARENT_DEPTH - 2
-    assert 8 <= first_final_bytes <= 255
-    assert 8 <= second_final_bytes <= 255
-    parent /= "f" * first_final_bytes
-    parent /= "g" * second_final_bytes
-    parent.mkdir(parents=True)
-    assert len(os.fsencode(parent)) == GOVERNED_FIXTURE_PARENT_BYTES
-    assert len(parent.parts) == GOVERNED_FIXTURE_PARENT_DEPTH
-    return parent
+    filler_components = tuple(
+        (prefix := f"slot-{ordinal:02d}-")
+        + ("p" * (GOVERNED_FIXTURE_SLOT_BYTES - len(prefix)))
+        for ordinal in range(filler_count)
+    )
+    final_components = ("f" * first_final_bytes, "g" * second_final_bytes)
+    governed = candidate.joinpath(*filler_components, *final_components)
+    return PortableRootPlan(
+        label,
+        owner.as_posix(),
+        stat.S_IFMT(owner_status.st_mode),
+        owner_status.st_dev,
+        owner_status.st_ino,
+        candidate_components,
+        tuple(len(os.fsencode(item)) for item in candidate_components),
+        candidate_bytes,
+        candidate_depth,
+        filler_components,
+        final_components,
+        governed.as_posix(),
+        len(os.fsencode(governed)),
+        len(governed.parts),
+    )
+
+
+def plan_portable_fixture_roots(owner: Path) -> tuple[PortableRootPlan, PortableRootPlan]:
+    """Plan both governed roots completely before any descendant mutation."""
+    owner_status = owner.lstat()
+    owner_resolved = owner.resolve(strict=True)
+    assert owner == owner_resolved
+    assert stat.S_ISDIR(owner_status.st_mode) and not owner.is_symlink()
+    child_components = tuple(
+        (prefix := f"r{ordinal}-") + ("s" * (size - len(prefix)))
+        for ordinal, size in enumerate(PORTABLE_ROOT_CHILD_COMPONENT_BYTES)
+    )
+    plans = (
+        _portable_root_plan(owner, owner_status, "A", (PORTABLE_ROOT_SLOT_NAMES[0],)),
+        _portable_root_plan(
+            owner,
+            owner_status,
+            "B",
+            (PORTABLE_ROOT_SLOT_NAMES[1], *child_components),
+        ),
+    )
+    assert tuple(len(os.fsencode(item)) for item in PORTABLE_ROOT_SLOT_NAMES) == (8, 8)
+    assert (
+        plans[1].candidate_bytes - plans[0].candidate_bytes,
+        plans[1].candidate_depth - plans[0].candidate_depth,
+    ) == PORTABLE_ROOT_RELATIVE_DELTA
+    for plan in plans:
+        assert plan.governed_bytes == GOVERNED_FIXTURE_PARENT_BYTES
+        assert plan.governed_depth == GOVERNED_FIXTURE_PARENT_DEPTH
+        assert all(
+            8 <= len(os.fsencode(item)) <= 255
+            for item in (*plan.filler_components, *plan.final_components)
+        )
+    return plans
+
+
+def portable_construction_finding(coordinate: str) -> tuple[protocol.Finding, ...]:
+    return (
+        protocol.Finding(
+            "evidence",
+            "CURRENT",
+            "ACP.EVIDENCE.PORTABLE_CONSTRUCTION",
+            f"portableConstruction.{coordinate}",
+        ),
+    )
+
+
+def validate_portable_fixture_plans(
+    owner: Path, plans: object
+) -> tuple[protocol.Finding, ...]:
+    """Validate every frozen plan coordinate without creating descendants."""
+    if type(plans) is not tuple or len(plans) != 2:
+        return portable_construction_finding("plans")
+    if any(type(plan) is not PortableRootPlan for plan in plans):
+        return portable_construction_finding("plans.type")
+    try:
+        owner_status = owner.lstat()
+        owner_resolved = owner.resolve(strict=True)
+    except OSError:
+        return portable_construction_finding("owner")
+    if (
+        owner != owner_resolved
+        or owner.is_symlink()
+        or not stat.S_ISDIR(owner_status.st_mode)
+    ):
+        return portable_construction_finding("owner.identity")
+    expected = plan_portable_fixture_roots(owner)
+    for ordinal, (actual, required) in enumerate(
+        zip(cast(tuple[PortableRootPlan, PortableRootPlan], plans), expected, strict=True)
+    ):
+        for field in PortableRootPlan.__dataclass_fields__:
+            if getattr(actual, field) != getattr(required, field):
+                return portable_construction_finding(f"plans[{ordinal}].{field}")
+    return ()
+
+
+def construct_portable_fixture_roots(
+    owner: Path,
+    plans: object,
+    *,
+    mkdir_seam: Callable[[Path], None] | None = None,
+) -> tuple[PortableConstructionResult | None, tuple[protocol.Finding, ...]]:
+    """Consume two prevalidated plans, then create descendants through one seam."""
+    findings = validate_portable_fixture_plans(owner, plans)
+    if findings:
+        return None, findings
+    typed_plans = cast(tuple[PortableRootPlan, PortableRootPlan], plans)
+    owner_status = owner.lstat()
+    planning_transcript = (
+        ("plan-complete", "A"),
+        ("plan-complete", "B"),
+        ("relation-validated", "+81-bytes/+6-depth"),
+    )
+    seam = mkdir_seam or (lambda path: path.mkdir())
+    receipts: list[tuple[int, str, str, int, int, int, int]] = []
+    observed_nodes: dict[Path, tuple[int, int, int]] = {}
+    for plan in typed_plans:
+        current = owner
+        components = (
+            *plan.candidate_components,
+            *plan.filler_components,
+            *plan.final_components,
+        )
+        for component_ordinal, component in enumerate(components):
+            target = current / component
+            if target.exists() or target.is_symlink():
+                return None, portable_construction_finding(
+                    f"filesystemReceipts[{len(receipts)}].preAbsent"
+                )
+            try:
+                current_owner = owner.lstat()
+            except OSError:
+                return None, portable_construction_finding("owner.identity")
+            if (
+                stat.S_IFMT(current_owner.st_mode),
+                current_owner.st_dev,
+                current_owner.st_ino,
+            ) != (
+                stat.S_IFMT(owner_status.st_mode),
+                owner_status.st_dev,
+                owner_status.st_ino,
+            ):
+                return None, portable_construction_finding("owner.identity")
+            for prior_path, identity in observed_nodes.items():
+                try:
+                    prior = prior_path.lstat()
+                except OSError:
+                    return None, portable_construction_finding(
+                        f"filesystemReceipts[{len(receipts)}].parentIdentity"
+                    )
+                if (
+                    stat.S_IFMT(prior.st_mode),
+                    prior.st_dev,
+                    prior.st_ino,
+                ) != identity or prior_path.is_symlink():
+                    return None, portable_construction_finding(
+                        f"filesystemReceipts[{len(receipts)}].parentIdentity"
+                    )
+            try:
+                seam(target)
+                observed = target.lstat()
+            except OSError:
+                return None, portable_construction_finding(
+                    f"seam.{plan.label}[{component_ordinal}].mkdir"
+                )
+            if not stat.S_ISDIR(observed.st_mode) or target.is_symlink():
+                return None, portable_construction_finding(
+                    f"filesystemReceipts[{len(receipts)}].observedType"
+                )
+            observed_nodes[target] = (
+                stat.S_IFMT(observed.st_mode),
+                observed.st_dev,
+                observed.st_ino,
+            )
+            receipts.append(
+                (
+                    len(receipts),
+                    target.relative_to(owner).as_posix(),
+                    "." if current == owner else current.relative_to(owner).as_posix(),
+                    len(os.fsencode(component)),
+                    stat.S_IFMT(observed.st_mode),
+                    observed.st_dev,
+                    observed.st_ino,
+                )
+            )
+            current = target
+        if current.as_posix() != plan.governed_path:
+            return None, portable_construction_finding(f"plans[{plan.label}].governedPath")
+    try:
+        final_owner = owner.lstat()
+    except OSError:
+        return None, portable_construction_finding("owner.identity")
+    if (
+        stat.S_IFMT(final_owner.st_mode),
+        final_owner.st_dev,
+        final_owner.st_ino,
+    ) != (
+        stat.S_IFMT(owner_status.st_mode),
+        owner_status.st_dev,
+        owner_status.st_ino,
+    ):
+        return None, portable_construction_finding("owner.identity")
+    for prior_path, identity in observed_nodes.items():
+        try:
+            prior = prior_path.lstat()
+        except OSError:
+            return None, portable_construction_finding("filesystemReceipts.finalIdentity")
+        if (stat.S_IFMT(prior.st_mode), prior.st_dev, prior.st_ino) != identity:
+            return None, portable_construction_finding("filesystemReceipts.finalIdentity")
+    governed_roots = tuple(Path(plan.governed_path) for plan in typed_plans)
+    if not all(
+        len(os.fsencode(path)) == GOVERNED_FIXTURE_PARENT_BYTES
+        and len(path.parts) == GOVERNED_FIXTURE_PARENT_DEPTH
+        for path in governed_roots
+    ):
+        return None, portable_construction_finding("governedRoots")
+    return (
+        PortableConstructionResult(
+            typed_plans,
+            planning_transcript,
+            tuple(receipts),
+            cast(tuple[Path, Path], governed_roots),
+        ),
+        (),
+    )
+
+
+def validate_portable_construction_result(
+    owner: Path, result: object
+) -> tuple[protocol.Finding, ...]:
+    """Revalidate the immutable plan, transcript, and every filesystem receipt."""
+    if type(result) is not PortableConstructionResult:
+        return portable_construction_finding("result.type")
+    typed = result
+    plan_findings = validate_portable_fixture_plans(owner, typed.plans)
+    if plan_findings:
+        return plan_findings
+    if typed.planning_transcript != (
+        ("plan-complete", "A"),
+        ("plan-complete", "B"),
+        ("relation-validated", "+81-bytes/+6-depth"),
+    ):
+        return portable_construction_finding("planningTranscript")
+    if type(typed.filesystem_receipts) is not tuple:
+        return portable_construction_finding("filesystemReceipts")
+    expected_receipts: list[tuple[int, str, str, int, int, int, int]] = []
+    try:
+        for plan in typed.plans:
+            current = owner
+            for component in (
+                *plan.candidate_components,
+                *plan.filler_components,
+                *plan.final_components,
+            ):
+                target = current / component
+                observed = target.lstat()
+                if not stat.S_ISDIR(observed.st_mode) or target.is_symlink():
+                    return portable_construction_finding(
+                        f"filesystemReceipts[{len(expected_receipts)}].observedType"
+                    )
+                expected_receipts.append(
+                    (
+                        len(expected_receipts),
+                        target.relative_to(owner).as_posix(),
+                        "." if current == owner else current.relative_to(owner).as_posix(),
+                        len(os.fsencode(component)),
+                        stat.S_IFMT(observed.st_mode),
+                        observed.st_dev,
+                        observed.st_ino,
+                    )
+                )
+                current = target
+    except (OSError, ValueError):
+        return portable_construction_finding("filesystemReceipts")
+    receipt_fields = (
+        "ordinal",
+        "relativePath",
+        "parentRelativePath",
+        "componentBytes",
+        "observedMode",
+        "device",
+        "inode",
+    )
+    for ordinal, actual in enumerate(typed.filesystem_receipts):
+        if type(actual) is not tuple or len(actual) != len(receipt_fields):
+            return portable_construction_finding(f"filesystemReceipts[{ordinal}]")
+        if ordinal >= len(expected_receipts):
+            return portable_construction_finding(
+                f"filesystemReceipts[{ordinal}].ordinal"
+            )
+        expected = expected_receipts[ordinal]
+        for coordinate, (actual_value, expected_value) in enumerate(
+            zip(actual, expected, strict=True)
+        ):
+            if type(actual_value) is not type(expected_value) or actual_value != expected_value:
+                return portable_construction_finding(
+                    f"filesystemReceipts[{ordinal}].{receipt_fields[coordinate]}"
+                )
+    if len(typed.filesystem_receipts) < len(expected_receipts):
+        return portable_construction_finding(
+            f"filesystemReceipts[{len(typed.filesystem_receipts)}].ordinal"
+        )
+    expected_roots = tuple(Path(plan.governed_path) for plan in typed.plans)
+    if typed.governed_roots != expected_roots:
+        return portable_construction_finding("governedRoots")
+    return ()
+
+
+def portable_component_boundary_findings(
+    root_bytes: int, root_depth: int
+) -> tuple[protocol.Finding, ...]:
+    try:
+        _, first_final, second_final = portable_governed_parent_plan(
+            root_bytes, root_depth
+        )
+    except AssertionError:
+        return portable_construction_finding("componentBytes")
+    if not all(8 <= value <= 255 for value in (first_final, second_final)):
+        return portable_construction_finding("componentBytes")
+    return ()
+
+
+def execute_portable_construction_mutant(
+    operation: str,
+) -> tuple[tuple[protocol.Finding, ...], int]:
+    """Execute one named plan, seam, boundary, or result mutation."""
+    boundaries = {
+        "component-7": (684, 16),
+        "component-8": (682, 16),
+        "component-255": (188, 16),
+        "component-256": (186, 16),
+    }
+    if operation in boundaries:
+        return portable_component_boundary_findings(*boundaries[operation]), 0
+    if operation == "infeasible":
+        return portable_component_boundary_findings(699, 17), 0
+    with TemporaryDirectory(prefix="r-") as base_text:
+        base = Path(base_text).resolve(strict=True)
+        owner = base / ("o" * 30)
+        owner.mkdir()
+        plans: object = plan_portable_fixture_roots(owner)
+        typed = cast(tuple[PortableRootPlan, PortableRootPlan], plans)
+        if operation == "plans-zero":
+            plans = ()
+        elif operation == "plans-one":
+            plans = typed[:1]
+        elif operation == "plans-three":
+            plans = (*typed, typed[0])
+        elif operation == "owner-alias":
+            alias = owner / ".." / owner.name
+            return validate_portable_fixture_plans(alias, plans), 0
+        elif operation == "owner-symlink":
+            alias = base / "s"
+            alias.symlink_to(owner, target_is_directory=True)
+            return validate_portable_fixture_plans(alias, plans), 0
+        elif operation == "owner-inode":
+            owner.rename(base / "shadow")
+            owner.mkdir()
+        elif operation == "delta":
+            plans = (typed[0], replace(typed[1], candidate_bytes=typed[1].candidate_bytes + 1))
+        if operation not in {
+            "seam-error",
+            "early-a",
+            "early-b",
+            "seam-noop",
+            "seam-wrong-path",
+            "transcript",
+            "receipt-duplicate",
+            "receipt-missing",
+            "receipt-reordered",
+            "receipt-ordinal",
+            "receipt-path",
+            "receipt-parent",
+            "receipt-bytes",
+            "receipt-type",
+            "receipt-device",
+            "receipt-inode",
+            "envelope",
+        }:
+            return validate_portable_fixture_plans(owner, plans), 0
+        seam_calls: list[Path] = []
+
+        def seam(path: Path) -> None:
+            seam_calls.append(path)
+            first_plan_count = len(
+                (
+                    *typed[0].candidate_components,
+                    *typed[0].filler_components,
+                    *typed[0].final_components,
+                )
+            )
+            if operation == "early-a" or (
+                operation == "early-b" and len(seam_calls) == first_plan_count + 1
+            ) or (
+                operation == "seam-error" and len(seam_calls) == 2
+            ):
+                raise OSError("controlled")
+            if operation == "seam-noop":
+                return
+            if operation == "seam-wrong-path":
+                path.with_name(path.name + "-wrong").mkdir()
+                return
+            path.mkdir()
+
+        result, findings = construct_portable_fixture_roots(owner, plans, mkdir_seam=seam)
+        if findings:
+            if operation == "seam-noop":
+                assert not seam_calls[0].exists()
+            elif operation == "seam-wrong-path":
+                assert not seam_calls[0].exists()
+                assert seam_calls[0].with_name(seam_calls[0].name + "-wrong").is_dir()
+            return findings, len(seam_calls)
+        assert result is not None
+        if operation == "transcript":
+            result = replace(result, planning_transcript=result.planning_transcript[::-1])
+        elif operation.startswith("receipt-"):
+            first = result.filesystem_receipts[0]
+            receipts = result.filesystem_receipts
+            if operation == "receipt-duplicate":
+                receipts = (first, *receipts)
+            elif operation == "receipt-missing":
+                receipts = receipts[1:]
+            elif operation == "receipt-reordered":
+                receipts = (receipts[1], receipts[0], *receipts[2:])
+            else:
+                coordinate = {
+                    "receipt-ordinal": 0,
+                    "receipt-path": 1,
+                    "receipt-parent": 2,
+                    "receipt-bytes": 3,
+                    "receipt-type": 4,
+                    "receipt-device": 5,
+                    "receipt-inode": 6,
+                }[operation]
+                values = list(first)
+                values[coordinate] = (
+                    cast(int, values[coordinate]) + 1
+                    if type(values[coordinate]) is int
+                    else str(values[coordinate]) + "-mutant"
+                )
+                receipts = (
+                    cast(tuple[int, str, str, int, int, int, int], tuple(values)),
+                    *receipts[1:],
+                )
+            result = replace(result, filesystem_receipts=receipts)
+        elif operation == "envelope":
+            result = replace(result, governed_roots=result.governed_roots[::-1])
+        return validate_portable_construction_result(owner, result), len(seam_calls)
 
 
 def create_real_git_freeze(
@@ -5463,8 +8965,9 @@ def _collect_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability
     original_tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> tuple[MetadataCollection, tuple[int, int], tuple[int, int]]:
-    tmp_path = governed_fixture_parent(original_tmp_path)
-    assert len(os.fsencode(original_tmp_path)) < len(os.fsencode(tmp_path))
+    tmp_path = original_tmp_path
+    assert len(os.fsencode(tmp_path)) == GOVERNED_FIXTURE_PARENT_BYTES
+    assert len(tmp_path.parts) == GOVERNED_FIXTURE_PARENT_DEPTH
     final_components = tuple(len(os.fsencode(part)) for part in tmp_path.parts[-2:])
     assert len(final_components) == 2
     assert all(8 <= length <= 255 for length in final_components)
@@ -5724,8 +9227,13 @@ def _collect_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability
 
         def observed_lstat(path: str, *, dir_fd: int | None = None) -> os.stat_result:
             event_prefix = callback_prefix("lstat")
+            dirfd_token = (
+                "dirfd-none"
+                if dir_fd is None
+                else f"dirfdOpenOrdinal-{descriptor_open_ordinals[dir_fd]}"
+            )
             callback_argument_events.append(
-                f"{event_prefix}:argType-str:path-{callback_path(path, dir_fd)}"
+                f"{event_prefix}:argType-str:path-{callback_path(path, dir_fd)}:{dirfd_token}"
             )
             callback_events.append(
                 f"{event_prefix}:"
@@ -5767,6 +9275,16 @@ def _collect_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability
                 descriptor_paths[dir_fd] / path if dir_fd is not None else Path(path)
             )
             descriptor_candidate = Path(os.path.normpath(os.fspath(descriptor_candidate)))
+            symbolic_flags = "RDONLY|NOFOLLOW" + (
+                "|DIRECTORY" if flags & os.O_DIRECTORY else ""
+            )
+            dirfd_token = (
+                "dirfd-none"
+                if dir_fd is None
+                else f"dirfdOpenOrdinal-{descriptor_open_ordinals[dir_fd]}"
+            )
+            assert flags & os.O_NOFOLLOW
+            assert flags & os.O_ACCMODE == os.O_RDONLY
             callback_events.append(
                 f"{event_prefix}:"
                 + ("system" if io.open is baseline_metadata_io.open else "custom")
@@ -5776,7 +9294,7 @@ def _collect_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability
             except OSError as error:
                 callback_argument_events.append(
                     f"{event_prefix}:argTypes-str,int:path-{argument_path}:"
-                    f"flags-{flags}:result-error-{type(error).__name__}"
+                    f"{dirfd_token}:flags-{symbolic_flags}:result-error-{type(error).__name__}"
                 )
                 operations.append(
                     f"open:error:{type(error).__name__}:"
@@ -5790,7 +9308,8 @@ def _collect_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability
             closed_descriptors.discard(descriptor)
             callback_argument_events.append(
                 f"{event_prefix}:argTypes-str,int:path-{argument_path}:"
-                f"flags-{flags}:result-openOrdinal-{descriptor_open_ordinals[descriptor]}"
+                f"{dirfd_token}:flags-{symbolic_flags}:"
+                f"result-openOrdinal-{descriptor_open_ordinals[descriptor]}"
             )
             operations.append(
                 "open:ok:"
@@ -5820,7 +9339,30 @@ def _collect_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability
                 raise
             observed_fstats.append(observed)
             prior = observed_lstats[-1]
-            if kind(observed.st_mode) != kind(prior.st_mode):
+            stored_parent_entry = next(
+                (
+                    (parent_role, record)
+                    for parent_role, record in provenance.parent_records
+                    if Path(os.path.normpath(os.fspath(record.path)))
+                    == descriptor_paths[descriptor]
+                ),
+                None,
+            )
+            stored_parent_role = (
+                stored_parent_entry[0] if stored_parent_entry is not None else None
+            )
+            stored_parent = (
+                stored_parent_entry[1] if stored_parent_entry is not None else None
+            )
+            if stored_parent is not None and kind(observed.st_mode) != kind(
+                stored_parent.mode
+            ):
+                relation = f"stored-parent-{stored_parent_role}-type-drift"
+            elif stored_parent is not None and observed.st_dev != stored_parent.device:
+                relation = f"stored-parent-{stored_parent_role}-device-drift"
+            elif stored_parent is not None and observed.st_ino != stored_parent.inode:
+                relation = f"stored-parent-{stored_parent_role}-inode-drift"
+            elif kind(observed.st_mode) != kind(prior.st_mode):
                 relation = "type-drift"
             elif observed.st_dev != prior.st_dev:
                 relation = "device-drift"
@@ -5855,7 +9397,7 @@ def _collect_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability
                 read_chunk_lengths.append(len(observed))
                 read_chunks.append(observed)
                 read_types.append("bytes")
-                operations.append("read:bytes:empty" if observed == b"" else "read:bytes:nonempty")
+                operations.append(f"read:bytes:{len(observed)}")
             else:
                 read_chunk_lengths.append(-1)
                 read_types.append(type(observed).__name__)
@@ -6029,6 +9571,7 @@ def _collect_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability
                 (
                     "callback-args=" + ";".join(callback_argument_events),
                     "callbacks=" + ",".join(callback_events),
+                    "results=" + ",".join(operations),
                     "lstats=" + ",".join(item for item in operations if item.startswith("lstat:")),
                     "opens=" + ",".join(item for item in operations if item.startswith("open:")),
                     "fstats=" + ",".join(item for item in operations if item.startswith("fstat:")),
@@ -6153,17 +9696,36 @@ def _collect_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability
         role_events = tuple(
             f"{ordinal}:{role}" for ordinal, (role, _) in enumerate(raw_role_receipts)
         )
+        inter_receipt_rows = tuple(
+            (ordinal, values)
+            for ordinal, (role, values) in enumerate(frozen_trigger_receipt)
+            if role == "inter-role-mutation"
+        )
+        if inter_receipt_rows:
+            assert len(inter_receipt_rows) == 1
+            inter_ordinal, inter_values = inter_receipt_rows[0]
+            after_role_value = next(
+                value.split("=", 1)[1]
+                for value in inter_values
+                if value.startswith("afterRole=")
+            )
+            role_events = (
+                *role_events,
+                f"interReceiptOrdinal-{inter_ordinal}:afterRole-{after_role_value}",
+            )
         metadata_events = tuple(
-            item
+            callback.rsplit(":", 1)[0] + ":" + result
             for _, values in raw_role_receipts
-            for key in ("lstats", "opens", "fstats", "post-lstats")
-            for item in values[key].split(",")
-            if item
+            for callback, result in zip(
+                tuple(item for item in values["callbacks"].split(",") if item),
+                tuple(item for item in values["results"].split(",") if item),
+                strict=True,
+            )
         )
         stat_events = tuple(
             item
             for item in metadata_events
-            if item.startswith(("lstat:", "fstat:", "post-lstat:"))
+            if ":lstat:" in item or ":fstat:" in item or ":post-lstat:" in item
         )
         exception_events = tuple(item for item in metadata_events if ":error:" in item)
         close_effects = tuple(
@@ -6171,9 +9733,14 @@ def _collect_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability
             for item in callback_arguments
             if ":close:" in item
         )
-        inter_role_evidence = next(
+        inter_role_values = next(
             (values for role, values in frozen_trigger_receipt if role == "inter-role-mutation"),
             (),
+        )
+        inter_role_evidence = (
+            ("role=inter-role-mutation", *inter_role_values)
+            if inter_role_values
+            else ()
         )
         raw_evidence = (
             callback_arguments,
@@ -6192,42 +9759,45 @@ def _collect_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability
             assert len(plan_rows) == 1
             declared_plan = plan_rows[0][1:]
             receipt_index = len(metadata_configured_plan_receipts)
-            projection_result = project_configured_raw_receipt(raw_evidence, receipt_index)
+            raw_identity = hashlib.sha256(canonical(raw_evidence)).hexdigest()
+            integrity = validate_configured_raw_receipt(
+                raw_evidence, raw_identity, receipt_index
+            )
+            assert integrity.findings == ()
+            assert integrity.parsed is not None
+            projection_result = project_configured_raw_receipt(integrity.parsed)
             assert projection_result.findings == ()
             assert projection_result.projection is not None
             projection = projection_result.projection
             assert bind_configured_plan(
-                raw_evidence, projection, declared_plan, receipt_index
+                raw_evidence,
+                raw_identity,
+                integrity.parsed.observed,
+                projection,
+                declared_plan,
+                receipt_index,
             ) == (), (
                 execution_id,
                 projection,
                 declared_plan,
                 tuple(event for event in callback_arguments if "info" in event),
             )
+            assert bind_configured_receipt_schedule(
+                execution_evidence_identity,
+                raw_identity,
+                integrity.parsed.observed,
+                projection,
+                receipt_index,
+            ) == ()
             callback, target, phase, effect = projection
-            role_ordinal = len(raw_role_receipts) - 1
-            target_role = target.replace("-", "_")
-            target_path = {
-                "root": "$ROOT",
-                "root-ancestor": "$ROOT/..",
-                "dot-git": "$ROOT/.git",
-                "info-ancestor": "$COMMON/info",
-                "linked-git-dir": "$LINKED_GIT_DIR",
-                "common-dir": "$COMMON",
-            }[target]
-            callback_ordinal = next(
-                (
-                    ordinal
-                    for ordinal, item in enumerate(callback_events)
-                    if item.endswith(f":{callback}:custom")
-                ),
-                -1 if callback in {"filesystem-state", "inter-role"} else 0,
+            target_role, target_path, role_ordinal, callback_ordinal = (
+                integrity.parsed.observed
             )
             metadata_configured_plan_receipts.append(
                 (
                     execution_id,
                     *raw_evidence,
-                    hashlib.sha256(canonical(raw_evidence)).hexdigest(),
+                    raw_identity,
                     callback,
                     target,
                     phase,
@@ -6236,6 +9806,7 @@ def _collect_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability
                     target_path,
                     role_ordinal,
                     callback_ordinal,
+                    execution_evidence_identity,
                 )
             )
         execution: MetadataExecution = (
@@ -6263,6 +9834,7 @@ def _collect_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability
         role_calls: list[str] = []
         role_traces: list[MetadataRoleTrace] = []
         trigger_receipts: list[tuple[str, tuple[str, ...]]] = []
+        discovery_records: list[protocol.GitMetadataRecord] = []
 
         def observed_reader(
             called_root: str | Path,
@@ -6270,7 +9842,7 @@ def _collect_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability
             provenance: protocol.GitMetadataProvenance,
             io: protocol.MetadataIO,
         ) -> protocol.GitMetadataReadResult:
-            return traced_metadata_reader(
+            observed = traced_metadata_reader(
                 called_root,
                 provenance=provenance,
                 io=io,
@@ -6278,6 +9850,12 @@ def _collect_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability
                 role_traces=role_traces,
                 trigger_receipts=trigger_receipts,
             )
+            if provenance.role == "discovery" and observed.record is not None:
+                discovery_records.append(observed.record)
+            elif provenance.role == "dot_git":
+                assert discovery_records
+                assert provenance.parent_records[0][1] is discovery_records[-1]
+            return observed
 
         with monkeypatch.context() as success_patch:
             success_patch.setattr(protocol, "_read_git_metadata_nofollow", observed_reader)
@@ -6302,6 +9880,7 @@ def _collect_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability
         role_calls: list[str] = []
         role_traces: list[MetadataRoleTrace] = []
         trigger_receipts: list[tuple[str, tuple[str, ...]]] = []
+        discovery_records: list[protocol.GitMetadataRecord] = []
 
         def observed_reader(
             called_root: str | Path,
@@ -6309,7 +9888,7 @@ def _collect_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability
             provenance: protocol.GitMetadataProvenance,
             io: protocol.MetadataIO,
         ) -> protocol.GitMetadataReadResult:
-            return traced_metadata_reader(
+            observed = traced_metadata_reader(
                 called_root,
                 provenance=provenance,
                 io=io,
@@ -6317,6 +9896,12 @@ def _collect_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability
                 role_traces=role_traces,
                 trigger_receipts=trigger_receipts,
             )
+            if provenance.role == "discovery" and observed.record is not None:
+                discovery_records.append(observed.record)
+            elif provenance.role == "dot_git":
+                assert discovery_records
+                assert provenance.parent_records[0][1] is discovery_records[-1]
+            return observed
 
         with monkeypatch.context() as reader_patch:
             reader_patch.setattr(protocol, "_read_git_metadata_nofollow", observed_reader)
@@ -6361,6 +9946,7 @@ def _collect_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability
         role_calls: list[str] = []
         role_traces: list[MetadataRoleTrace] = []
         trigger_receipts: list[tuple[str, tuple[str, ...]]] = []
+        discovery_records: list[protocol.GitMetadataRecord] = []
 
         def observed_reader(
             called_root: str | Path,
@@ -6368,7 +9954,7 @@ def _collect_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability
             provenance: protocol.GitMetadataProvenance,
             io: protocol.MetadataIO,
         ) -> protocol.GitMetadataReadResult:
-            return traced_metadata_reader(
+            observed = traced_metadata_reader(
                 called_root,
                 provenance=provenance,
                 io=io,
@@ -6376,6 +9962,12 @@ def _collect_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability
                 role_traces=role_traces,
                 trigger_receipts=trigger_receipts,
             )
+            if provenance.role == "discovery" and observed.record is not None:
+                discovery_records.append(observed.record)
+            elif provenance.role == "dot_git":
+                assert discovery_records
+                assert provenance.parent_records[0][1] is discovery_records[-1]
+            return observed
 
         with monkeypatch.context() as io_patch:
             io_patch.setattr(protocol, "SYSTEM_METADATA_IO", metadata_io)
@@ -6417,6 +10009,7 @@ def _collect_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability
         trigger_receipts: list[tuple[str, tuple[str, ...]]] = []
         mutated = False
         inter_role_observation: tuple[str, ...] | None = None
+        inter_role_receipt_ordinal: int | None = None
         git_calls: list[tuple[str, ...]] = []
 
         def mutate_between_roles(
@@ -6425,7 +10018,7 @@ def _collect_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability
             provenance: protocol.GitMetadataProvenance,
             io: protocol.MetadataIO,
         ) -> protocol.GitMetadataReadResult:
-            nonlocal inter_role_observation, mutated
+            nonlocal inter_role_observation, inter_role_receipt_ordinal, mutated
             result = traced_metadata_reader(
                 called_root,
                 provenance=provenance,
@@ -6460,6 +10053,7 @@ def _collect_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability
                     "identityChanged=" + str(identity_changed).lower(),
                     "triggered=true",
                 )
+                inter_role_receipt_ordinal = len(trigger_receipts)
             return result
 
         with monkeypatch.context() as between_patch:
@@ -6477,7 +10071,9 @@ def _collect_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability
         assert role_calls[-1] == row[3]
         assert mutated
         assert inter_role_observation is not None
-        trigger_receipts.append(
+        assert inter_role_receipt_ordinal is not None
+        trigger_receipts.insert(
+            inter_role_receipt_ordinal,
             ("inter-role-mutation", inter_role_observation)
         )
         finish_metadata_execution(
@@ -8914,6 +12510,210 @@ def _collect_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability
     assert hashlib.sha256(canonical(metadata_configured_plan_receipts)).hexdigest() == (
         EXPECTED_METADATA_CONFIGURED_PLAN_RECEIPT_SHA256
     )
+    configured_bindings = tuple(
+        (receipt[18], receipt[9], tuple(receipt[14:18]), tuple(receipt[10:14]))
+        for receipt in metadata_configured_plan_receipts
+    )
+    assert configured_bindings == EXPECTED_METADATA_CONFIGURED_RECEIPT_BINDINGS
+    assert len(EXPECTED_METADATA_CONFIGURED_RECEIPT_BINDING_FIELDS) == 4
+    assert len(configured_bindings) == EXPECTED_METADATA_CONFIGURED_RECEIPT_BINDING_COUNT
+    assert hashlib.sha256(canonical(configured_bindings)).hexdigest() == (
+        EXPECTED_METADATA_CONFIGURED_RECEIPT_BINDING_SHA256
+    )
+    assert len(EXPECTED_METADATA_CONFIGURED_SAME_PLAN_SWAPS) == (
+        EXPECTED_METADATA_CONFIGURED_SAME_PLAN_SWAP_COUNT
+    )
+    assert len(EXPECTED_METADATA_CONFIGURED_SAME_PLAN_SWAP_FIELDS) == 2
+    assert hashlib.sha256(
+        canonical(EXPECTED_METADATA_CONFIGURED_SAME_PLAN_SWAPS)
+    ).hexdigest() == EXPECTED_METADATA_CONFIGURED_SAME_PLAN_SWAP_SHA256
+    inter_receipt = metadata_configured_plan_receipts[5]
+    assert len(EXPECTED_METADATA_CONFIGURED_INTER_ORDINAL_MUTANT_FIELDS) == 4
+    assert len(EXPECTED_METADATA_CONFIGURED_INTER_ORDINAL_MUTANTS) == (
+        EXPECTED_METADATA_CONFIGURED_INTER_ORDINAL_MUTANT_COUNT
+    )
+    assert hashlib.sha256(
+        canonical(EXPECTED_METADATA_CONFIGURED_INTER_ORDINAL_MUTANTS)
+    ).hexdigest() == EXPECTED_METADATA_CONFIGURED_INTER_ORDINAL_MUTANT_SHA256
+    for mutant_id, hostile_target_ordinal, changed_field_set, finding_location in (
+        EXPECTED_METADATA_CONFIGURED_INTER_ORDINAL_MUTANTS
+    ):
+        assert changed_field_set == "interRoleSchedule.targetRoleOrdinal"
+        assert finding_location == "configuredPlanReceipts[5].interRoleEvidence"
+        hostile_schedules = tuple(
+            (*row[:2], hostile_target_ordinal, *row[3:])
+            if row[0] == "linked_git_dir"
+            else row
+            for row in EXPECTED_METADATA_CONFIGURED_INTER_ROLE_SCHEDULES
+        )
+        with monkeypatch.context() as ordinal_patch:
+            ordinal_patch.setattr(
+                sys.modules[__name__],
+                "EXPECTED_METADATA_CONFIGURED_INTER_ROLE_SCHEDULES",
+                hostile_schedules,
+            )
+            assert validate_configured_raw_receipt(
+                tuple(inter_receipt[1:9]), inter_receipt[9], 5
+            ) == _configured_finding(5, "interRoleEvidence"), mutant_id
+    empty_raw_fields: list[tuple[str, ...]] = [()] * 8
+    for field_ordinal, (field_name, field_cap) in enumerate(
+        EXPECTED_METADATA_CONFIGURED_RAW_FIELD_CAPS
+    ):
+        at_count_cap = list(empty_raw_fields)
+        at_count_cap[field_ordinal] = ("x",) * field_cap
+        assert configured_raw_bounds_findings(tuple(at_count_cap), 14) == ()
+        over_count_cap = list(at_count_cap)
+        over_count_cap[field_ordinal] = (*over_count_cap[field_ordinal], "x")
+        assert configured_raw_bounds_findings(
+            tuple(over_count_cap), 14
+        ) == configured_receipt_finding(14, f"{field_name}.countLimit")
+        at_item_cap = list(empty_raw_fields)
+        at_item_cap[field_ordinal] = (
+            "x" * EXPECTED_METADATA_CONFIGURED_RAW_ITEM_BYTE_CAP,
+        )
+        assert configured_raw_bounds_findings(tuple(at_item_cap), 14) == ()
+        over_item_cap = list(empty_raw_fields)
+        over_item_cap[field_ordinal] = (
+            "x" * (EXPECTED_METADATA_CONFIGURED_RAW_ITEM_BYTE_CAP + 1),
+        )
+        assert configured_raw_bounds_findings(
+            tuple(over_item_cap), 14
+        ) == configured_receipt_finding(14, f"{field_name}.itemByteLimit")
+        with monkeypatch.context() as count_cap_patch:
+            count_cap_patch.setattr(
+                sys.modules[__name__],
+                "EXPECTED_METADATA_CONFIGURED_RAW_FIELD_CAPS",
+                tuple(
+                    (name, cap + (name == field_name))
+                    for name, cap in EXPECTED_METADATA_CONFIGURED_RAW_FIELD_CAPS
+                ),
+            )
+            assert configured_raw_bounds_findings(tuple(over_count_cap), 14) == ()
+        with monkeypatch.context() as item_cap_patch:
+            item_cap_patch.setattr(
+                sys.modules[__name__],
+                "EXPECTED_METADATA_CONFIGURED_RAW_ITEM_BYTE_CAP",
+                EXPECTED_METADATA_CONFIGURED_RAW_ITEM_BYTE_CAP + 1,
+            )
+            assert configured_raw_bounds_findings(tuple(over_item_cap), 14) == ()
+    precedence_receipt = metadata_configured_plan_receipts[14]
+    precedence_raw = tuple(precedence_receipt[1:9])
+    precedence_observed = tuple(precedence_receipt[14:18])
+    precedence_projection = tuple(precedence_receipt[10:14])
+    precedence_plan = EXPECTED_METADATA_CONFIGURED_PLANS[14][1:]
+    over_count_and_encoding = list(precedence_raw)
+    over_count_and_encoding[0] = ("x",) * (
+        dict(EXPECTED_METADATA_CONFIGURED_RAW_FIELD_CAPS)["callbackArguments"] + 1
+    )
+    over_count_and_encoding[1] = ("\ud800",)
+    stale_role_raw = list(precedence_raw)
+    stale_role_raw[2] = ()
+    argument_event_raw = list(precedence_raw)
+    changed_arguments = list(cast(tuple[str, ...], argument_event_raw[0]))
+    old_prefix = ":".join(changed_arguments[0].split(":")[:4])
+    changed_arguments[0] = changed_arguments[0].replace("event-0:", "event-99:", 1)
+    new_prefix = ":".join(changed_arguments[0].split(":")[:4])
+    changed_events = list(cast(tuple[str, ...], argument_event_raw[1]))
+    matching_event = next(
+        ordinal
+        for ordinal, value in enumerate(changed_events)
+        if value.startswith(old_prefix + ":")
+    )
+    changed_events[matching_event] = changed_events[matching_event].replace(
+        old_prefix, new_prefix, 1
+    )
+    argument_event_raw[0] = tuple(changed_arguments)
+    argument_event_raw[1] = tuple(changed_events)
+    metadata_derived_raw = list(precedence_raw)
+    for field_ordinal in (3, 4, 5, 6):
+        metadata_derived_raw[field_ordinal] = ()
+    composed_findings = (
+        bind_configured_plan([], "stale", None, None, None, True),
+        bind_configured_plan(
+            list(precedence_raw), "stale", precedence_observed,
+            precedence_projection, precedence_plan, 14,
+        ),
+        bind_configured_plan(
+            tuple(over_count_and_encoding),
+            hashlib.sha256(canonical(tuple(over_count_and_encoding))).hexdigest(),
+            precedence_observed, precedence_projection, precedence_plan, 14,
+        ),
+        bind_configured_plan(
+            tuple(stale_role_raw), precedence_receipt[9], precedence_observed,
+            precedence_projection, precedence_plan, 14,
+        ),
+        bind_configured_plan(
+            tuple(argument_event_raw),
+            hashlib.sha256(canonical(tuple(argument_event_raw))).hexdigest(),
+            precedence_observed, precedence_projection, precedence_plan, 14,
+        ),
+        bind_configured_plan(
+            tuple(metadata_derived_raw),
+            hashlib.sha256(canonical(tuple(metadata_derived_raw))).hexdigest(),
+            precedence_observed, precedence_projection, precedence_plan, 14,
+        ),
+        bind_configured_plan(
+            precedence_raw, precedence_receipt[9], None,
+            ("bad", *precedence_projection[1:]),
+            ("worse", *precedence_plan[1:]), 14,
+        ),
+        bind_configured_plan(
+            precedence_raw, precedence_receipt[9], precedence_observed,
+            ("bad", *precedence_projection[1:]),
+            ("worse", *precedence_plan[1:]), 14,
+        ),
+    )
+    for (
+        mutant_id,
+        _,
+        changed_field_set,
+        coordinate,
+        finding_location,
+    ), actual in zip(
+        EXPECTED_METADATA_CONFIGURED_COMPOSED_PRECEDENCE,
+        composed_findings,
+        strict=True,
+    ):
+        assert changed_field_set
+        expected = configured_receipt_finding(
+            0 if coordinate == "receiptIndex" else 14, coordinate
+        )
+        assert expected[0].location == finding_location
+        assert actual == expected, mutant_id
+    assert len(EXPECTED_METADATA_CONFIGURED_COMPOSED_PRECEDENCE_FIELDS) == 5
+    assert len(EXPECTED_METADATA_CONFIGURED_COMPOSED_PRECEDENCE) == (
+        EXPECTED_METADATA_CONFIGURED_COMPOSED_PRECEDENCE_COUNT
+    )
+    assert hashlib.sha256(
+        canonical(EXPECTED_METADATA_CONFIGURED_COMPOSED_PRECEDENCE)
+    ).hexdigest() == EXPECTED_METADATA_CONFIGURED_COMPOSED_PRECEDENCE_SHA256
+    for donor_index, recipient_index in EXPECTED_METADATA_CONFIGURED_SAME_PLAN_SWAPS:
+        donor = configured_bindings[donor_index]
+        assert EXPECTED_METADATA_CONFIGURED_PLANS[donor_index][1:] == (
+            EXPECTED_METADATA_CONFIGURED_PLANS[recipient_index][1:]
+        )
+        assert bind_configured_receipt_schedule(
+            *donor,
+            recipient_index,
+        ) == configured_receipt_finding(
+            recipient_index, "executionEvidenceIdentity"
+        )
+        recipient = configured_bindings[recipient_index]
+        if donor[1] != recipient[1]:
+            assert bind_configured_receipt_schedule(
+                recipient[0], donor[1], donor[2], donor[3], recipient_index
+            ) == configured_receipt_finding(
+                recipient_index, "rawEvidenceIdentity"
+            )
+        else:
+            assert donor[1:] == recipient[1:]
+    assert len(EXPECTED_METADATA_CONFIGURED_PLAN_MUTANTS) == (
+        EXPECTED_METADATA_CONFIGURED_PLAN_MUTANT_COUNT
+    )
+    configured_mutant_ids = tuple(
+        row[0] for row in EXPECTED_METADATA_CONFIGURED_PLAN_MUTANTS
+    )
+    assert len(configured_mutant_ids) == len(set(configured_mutant_ids))
     assert hashlib.sha256(canonical(EXPECTED_METADATA_CONFIGURED_PLAN_MUTANTS)).hexdigest() == (
         EXPECTED_METADATA_CONFIGURED_PLAN_MUTANT_SHA256
     )
@@ -8929,78 +12729,89 @@ def _collect_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability
         execution_id,
         expected_coordinate,
         mutation_layer,
-        raw_coordinate,
+        changed_field_set,
         mutant_operation,
+        raw_identity_action,
         expected_location,
     ) in (
         EXPECTED_METADATA_CONFIGURED_PLAN_MUTANTS
     ):
         index = receipt_index[execution_id]
-        assert expected_location == f"configuredPlanReceipts[{index}].{expected_coordinate}"
-        configured_receipt = metadata_configured_plan_receipts[index]
-        raw = [cast(tuple[str, ...], value) for value in configured_receipt[1:9]]
-        claimed = cast(tuple[str, str, str, str], configured_receipt[10:14])
-        declared = cast(
-            tuple[str, ...],
-            next(row[1:] for row in EXPECTED_METADATA_CONFIGURED_PLANS if row[0] == execution_id),
+        finding_index = 0 if mutation_layer == "index" else index
+        assert expected_location == (
+            f"configuredPlanReceipts[{finding_index}].{expected_coordinate}"
         )
-        if mutant_operation == "replace-custom-callback-with-other-closed-callback":
-            raw[1] = tuple(
-                value.replace(":fstat:custom", ":open:custom") for value in raw[1]
-            )
-        elif mutant_operation == "replace-callback-target-argument":
-            raw[0] = tuple(
-                value.replace(":role-dot_git:", ":role-info_ancestor:")
-                if ":fstat:" in value
-                else value
-                for value in raw[0]
-            )
-            raw[1] = tuple(
-                value.replace(":role-dot_git:", ":role-info_ancestor:")
-                if value.endswith(":fstat:custom")
-                else value
-                for value in raw[1]
-            )
-        elif mutant_operation == "replace-callback-event-ordinal":
-            last_fstat_event = next(
-                value
-                for value in reversed(raw[1])
-                if value.endswith(":fstat:custom")
-            )
-            last_fstat_prefix = last_fstat_event.removesuffix(":custom")
-            replacement_prefix = re.sub(r"^event-\d+", "event-0", last_fstat_prefix)
-            raw[0] = tuple(
-                value.replace(last_fstat_prefix, replacement_prefix, 1)
-                if value.startswith(last_fstat_prefix + ":")
-                else value
-                for value in raw[0]
-            )
-            raw[1] = tuple(
-                replacement_prefix + ":custom"
-                if value == last_fstat_event
-                else value
-                for value in raw[1]
-            )
-        elif mutant_operation == "replace-stat-effect-evidence":
-            raw[4] = tuple(value.replace("type-drift", "inode-drift") for value in raw[4])
-        elif mutant_operation == "remove-custom-callback-trigger":
-            raw[1] = tuple(value.replace(":custom", ":system") for value in raw[1])
-        elif mutant_operation == "replace-observed-close-error-with-ok":
-            raw[6] = tuple(re.sub(r"result-error-[^:]+$", "result-ok", value) for value in raw[6])
-        elif mutant_operation == "replace-triggered-before-after-observation-with-unchanged":
-            raw[7] = tuple(
-                "identityChanged=false" if value == "identityChanged=true" else value
-                for value in raw[7]
-            )
-        elif mutant_operation == "replace-declared-plan-after-raw-projection":
-            declared = (*declared[:3], "inode-drift")
+        configured_receipt = metadata_configured_plan_receipts[index]
+        declared_plan = cast(
+            tuple[str, ...],
+            next(
+                row[1:]
+                for row in EXPECTED_METADATA_CONFIGURED_PLANS
+                if row[0] == execution_id
+            ),
+        )
+        (
+            mutated_raw_object,
+            mutated_identity_object,
+            mutated_observation_object,
+            mutated_projection_object,
+            mutated_declared_object,
+            mutated_index_object,
+        ) = apply_configured_receipt_mutant(
+            configured_receipt,
+            declared_plan,
+            index,
+            mutant_operation,
+            raw_identity_action,
+        )
+        assert mutation_layer in {
+            "index",
+            "raw",
+            "observed",
+            "projection",
+            "declared",
+        }
+        changed_fields: list[str] = []
+        original_raw = tuple(configured_receipt[1:9])
+        if mutated_raw_object != original_raw:
+            if type(mutated_raw_object) is not tuple or len(mutated_raw_object) != 8:
+                changed_fields.append("rawReceipt")
+            else:
+                changed_fields.extend(
+                    field
+                    for field, before, after in zip(
+                        EXPECTED_METADATA_CONFIGURED_PLAN_RAW_EVIDENCE_FIELDS,
+                        original_raw,
+                        cast(tuple[object, ...], mutated_raw_object),
+                        strict=True,
+                    )
+                    if before != after
+                )
+        for field, before, after in (
+            ("observed", tuple(configured_receipt[14:18]), mutated_observation_object),
+            ("projection", tuple(configured_receipt[10:14]), mutated_projection_object),
+            ("declared", declared_plan, mutated_declared_object),
+            ("index", index, mutated_index_object),
+        ):
+            if before != after:
+                changed_fields.append(field)
+        assert "+".join(changed_fields) == changed_field_set, mutant_id
+        assert changed_fields
+        if raw_identity_action == "recompute-after-mutation":
+            assert mutated_identity_object == hashlib.sha256(
+                canonical(mutated_raw_object)
+            ).hexdigest()
         else:
-            assert mutant_operation == "copy-declared-decoy-instead-of-projecting-raw-receipt"
-            declared = (*declared[:3], "inode-drift")
-            claimed = cast(tuple[str, str, str, str], declared)
-        assert mutation_layer in {"raw", "declared", "projection"}
-        assert raw_coordinate
-        assert bind_configured_plan(tuple(raw), claimed, declared, index) == (
+            assert raw_identity_action == "preserve-stale"
+            assert mutated_identity_object == configured_receipt[9]
+        assert bind_configured_plan(
+            mutated_raw_object,
+            mutated_identity_object,
+            mutated_observation_object,
+            mutated_projection_object,
+            mutated_declared_object,
+            mutated_index_object,
+        ) == (
             protocol.Finding(
                 "evidence",
                 "CURRENT",
@@ -9008,15 +12819,64 @@ def _collect_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability
                 expected_location,
             ),
         ), mutant_id
-    constant_receipt = metadata_configured_plan_receipts[0][9]
-    constant_receipts = tuple(
-        (*receipt[:9], constant_receipt, *receipt[10:])
-        for receipt in metadata_configured_plan_receipts
+    donor_receipt = metadata_configured_plan_receipts[0]
+    donor_raw = tuple(donor_receipt[1:9])
+    donor_identity = donor_receipt[9]
+    donor_projection = cast(tuple[str, ...], tuple(donor_receipt[10:14]))
+    donor_observation = tuple(donor_receipt[14:18])
+    donor_plan = cast(tuple[str, ...], EXPECTED_METADATA_CONFIGURED_PLANS[0][1:])
+    assert bind_configured_plan(
+        donor_raw,
+        donor_identity,
+        donor_observation,
+        donor_projection,
+        donor_plan,
+        0,
+    ) == ()
+    donor_parsed = validate_configured_raw_receipt(donor_raw, donor_identity, 0)
+    permuted_plans = (
+        *EXPECTED_METADATA_CONFIGURED_PLANS[1:],
+        EXPECTED_METADATA_CONFIGURED_PLANS[0],
     )
-    assert constant_receipts != tuple(metadata_configured_plan_receipts)
-    assert hashlib.sha256(canonical(constant_receipts)).hexdigest() != (
-        EXPECTED_METADATA_CONFIGURED_PLAN_RECEIPT_SHA256
-    )
+    with monkeypatch.context() as plan_table_patch:
+        plan_table_patch.setattr(
+            sys.modules[__name__],
+            "EXPECTED_METADATA_CONFIGURED_PLANS",
+            permuted_plans,
+        )
+        assert validate_configured_raw_receipt(
+            donor_raw, donor_identity, 0
+        ) == donor_parsed
+        assert bind_configured_plan(
+            donor_raw,
+            donor_identity,
+            donor_observation,
+            donor_projection,
+            cast(tuple[str, ...], permuted_plans[0][1:]),
+            0,
+        ) != ()
+    for recipient_index, recipient_plan_row in enumerate(
+        EXPECTED_METADATA_CONFIGURED_PLANS[1:], start=1
+    ):
+        recipient_plan = cast(tuple[str, ...], recipient_plan_row[1:])
+        mismatch_coordinate = next(
+            coordinate
+            for coordinate, donor_value, recipient_value in zip(
+                EXPECTED_METADATA_CONFIGURED_PLAN_RECEIPT_PROJECTION_FIELDS,
+                donor_projection,
+                recipient_plan,
+                strict=True,
+            )
+            if donor_value != recipient_value
+        )
+        assert bind_configured_plan(
+            donor_raw,
+            donor_identity,
+            donor_observation,
+            donor_projection,
+            recipient_plan,
+            recipient_index,
+        ) == configured_receipt_finding(recipient_index, mismatch_coordinate)
     metadata_execution_ids = tuple(
         f"{execution[0][0]}@{execution[1]}" for execution in metadata_execution_rows
     )
@@ -9503,6 +13363,82 @@ def _collect_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability
 def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    assert len(EXPECTED_PORTABLE_CONSTRUCTION_MUTANT_FIELDS) == 4
+    assert len(EXPECTED_PORTABLE_CONSTRUCTION_MUTANTS) == (
+        EXPECTED_PORTABLE_CONSTRUCTION_MUTANT_COUNT
+    )
+    assert len({row[0] for row in EXPECTED_PORTABLE_CONSTRUCTION_MUTANTS}) == (
+        EXPECTED_PORTABLE_CONSTRUCTION_MUTANT_COUNT
+    )
+    assert hashlib.sha256(
+        canonical(EXPECTED_PORTABLE_CONSTRUCTION_MUTANTS)
+    ).hexdigest() == EXPECTED_PORTABLE_CONSTRUCTION_MUTANT_SHA256
+    with TemporaryDirectory(prefix="r-") as count_text:
+        count_owner = Path(count_text).resolve(strict=True) / ("o" * 30)
+        count_owner.mkdir()
+        count_plans = plan_portable_fixture_roots(count_owner)
+        first_plan_descendants = len(
+            (
+                *count_plans[0].candidate_components,
+                *count_plans[0].filler_components,
+                *count_plans[0].final_components,
+            )
+        )
+        all_planned_descendants = sum(
+            len((*plan.candidate_components, *plan.filler_components, *plan.final_components))
+            for plan in count_plans
+        )
+        assert validate_portable_fixture_plans(
+            count_owner, (object(), count_plans[1])
+        ) == portable_construction_finding("plans.type")
+        assert tuple(PortableRootPlan.__dataclass_fields__) == (
+            EXPECTED_PORTABLE_ROOT_PLAN_FIELDS
+        )
+        assert len(EXPECTED_PORTABLE_ROOT_PLAN_FIELDS) == (
+            EXPECTED_PORTABLE_ROOT_PLAN_FIELD_COUNT
+        )
+        assert hashlib.sha256(
+            canonical(EXPECTED_PORTABLE_ROOT_PLAN_FIELDS)
+        ).hexdigest() == EXPECTED_PORTABLE_ROOT_PLAN_FIELD_SHA256
+        for plan_ordinal in range(2):
+            for plan_field in EXPECTED_PORTABLE_ROOT_PLAN_FIELDS:
+                original_value = getattr(count_plans[plan_ordinal], plan_field)
+                changed_value = (
+                    original_value + 1
+                    if type(original_value) is int
+                    else original_value + "-mutant"
+                    if type(original_value) is str
+                    else (*original_value, "mutant")
+                )
+                changed_plan = cast(PortableRootPlan, cast(Any, replace)(
+                    count_plans[plan_ordinal], **{plan_field: changed_value}
+                ))
+                changed_plans = list(count_plans)
+                changed_plans[plan_ordinal] = changed_plan
+                assert validate_portable_fixture_plans(
+                    count_owner, tuple(changed_plans)
+                ) == portable_construction_finding(
+                    f"plans[{plan_ordinal}].{plan_field}"
+                )
+    for _, operation, expected_location, expected_calls in (
+        EXPECTED_PORTABLE_CONSTRUCTION_MUTANTS
+    ):
+        actual_findings, actual_calls = execute_portable_construction_mutant(operation)
+        assert actual_findings == (
+            ()
+            if expected_location == "valid"
+            else portable_construction_finding(expected_location)
+        )
+        symbolic_calls = {
+            "first-plan-descendants+1": first_plan_descendants + 1,
+            "all-planned-descendants": all_planned_descendants,
+        }
+        required_calls = (
+            expected_calls
+            if type(expected_calls) is int
+            else symbolic_calls[cast(str, expected_calls)]
+        )
+        assert actual_calls == required_calls
     portable_plans: list[tuple[object, ...]] = []
     for model, owner_bytes, owner_depth in EXPECTED_METADATA_FIXTURE_PORTABLE_OWNER_MODELS:
         first_shape = (owner_bytes + 1 + len(PORTABLE_ROOT_SLOT_NAMES[0]), owner_depth + 1)
@@ -9533,17 +13469,32 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
     owner_path: Path
     with TemporaryDirectory(prefix="r32-owner-") as owner_text:
         owner_path = Path(owner_text)
-        owner_status = owner_path.lstat()
         owner_resolved = owner_path.resolve(strict=True)
-        first_root = owner_resolved / PORTABLE_ROOT_SLOT_NAMES[0]
-        second_root = owner_resolved / PORTABLE_ROOT_SLOT_NAMES[1]
-        first_root.mkdir()
-        second_root.mkdir()
-        for ordinal, component_bytes in enumerate(PORTABLE_ROOT_CHILD_COMPONENT_BYTES):
-            prefix = f"r{ordinal}-"
-            second_root /= prefix + ("s" * (component_bytes - len(prefix)))
-        first_shape = (len(os.fsencode(first_root)), len(first_root.parts))
-        second_shape = (len(os.fsencode(second_root)), len(second_root.parts))
+        owner_status = owner_resolved.lstat()
+        portable_root_plans = plan_portable_fixture_roots(owner_resolved)
+        construction, construction_findings = construct_portable_fixture_roots(
+            owner_resolved, portable_root_plans
+        )
+        assert construction_findings == ()
+        assert construction is not None
+        assert validate_portable_construction_result(owner_resolved, construction) == ()
+        first_root, second_root = construction.governed_roots
+        assert construction.planning_transcript == (
+            ("plan-complete", "A"),
+            ("plan-complete", "B"),
+            ("relation-validated", "+81-bytes/+6-depth"),
+        )
+        assert tuple(row[0] for row in construction.filesystem_receipts) == tuple(
+            range(len(construction.filesystem_receipts))
+        )
+        first_shape = (
+            construction.plans[0].candidate_bytes,
+            construction.plans[0].candidate_depth,
+        )
+        second_shape = (
+            construction.plans[1].candidate_bytes,
+            construction.plans[1].candidate_depth,
+        )
         assert (
             second_shape[0] - first_shape[0],
             second_shape[1] - first_shape[1],
@@ -9605,8 +13556,11 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
             evidence_identities[1],
         ),
     )
-    assert first_observed_shape == first_shape
-    assert second_observed_shape == second_shape
+    assert first_observed_shape == (
+        GOVERNED_FIXTURE_PARENT_BYTES,
+        GOVERNED_FIXTURE_PARENT_DEPTH,
+    )
+    assert second_observed_shape == first_observed_shape
     assert all(8 <= length <= 255 for row in replay_envelopes for length in row[3])
     assert len(replay_envelopes) == EXPECTED_METADATA_ROOT_REPLAY_ENVELOPE_COUNT
 
@@ -10494,6 +14448,9 @@ def test_repository_validator_is_read_only_and_static_boundary_is_ast_exact(
     configured_receipt_mutants = tuple(
         tuple(row) for row in git_contract["metadata"]["configuredPlanReceiptMutants"]
     )
+    assert tuple(git_contract["metadata"]["configuredPlanReceiptMutantFields"]) == (
+        EXPECTED_METADATA_CONFIGURED_PLAN_MUTANT_FIELDS
+    ) == protocol.STATIC_GIT_METADATA_CONFIGURED_PLAN_RECEIPT_MUTANT_FIELDS
     assert configured_receipt_mutants == EXPECTED_METADATA_CONFIGURED_PLAN_MUTANTS
     assert cast(object, configured_receipt_mutants) == cast(
         object, protocol.STATIC_GIT_METADATA_CONFIGURED_PLAN_RECEIPT_MUTANTS
@@ -10504,6 +14461,102 @@ def test_repository_validator_is_read_only_and_static_boundary_is_ast_exact(
     assert git_contract["metadata"]["configuredPlanReceiptMutantSha256"] == (
         EXPECTED_METADATA_CONFIGURED_PLAN_MUTANT_SHA256
     ) == protocol.STATIC_GIT_METADATA_CONFIGURED_PLAN_RECEIPT_MUTANT_SHA256
+
+    def assert_metadata_catalog_cross_copy(
+        stem: str,
+        rows_key: str,
+        fields: tuple[str, ...],
+        rows: tuple[object, ...],
+        count: int,
+        identity: str,
+        protocol_fields: tuple[str, ...],
+        protocol_rows: tuple[object, ...],
+        protocol_count: int,
+        protocol_identity: str,
+    ) -> None:
+        metadata_contract = git_contract["metadata"]
+        assert tuple(metadata_contract[f"{stem}Fields"]) == fields == protocol_fields
+        assert canonical(metadata_contract[rows_key]) == canonical(rows) == canonical(
+            protocol_rows
+        )
+        assert metadata_contract[f"{stem}Count"] == count == protocol_count
+        assert metadata_contract[f"{stem}Sha256"] == identity == protocol_identity
+
+    assert_metadata_catalog_cross_copy(
+        "configuredReceiptBinding", "configuredReceiptBindings",
+        EXPECTED_METADATA_CONFIGURED_RECEIPT_BINDING_FIELDS,
+        EXPECTED_METADATA_CONFIGURED_RECEIPT_BINDINGS,
+        EXPECTED_METADATA_CONFIGURED_RECEIPT_BINDING_COUNT,
+        EXPECTED_METADATA_CONFIGURED_RECEIPT_BINDING_SHA256,
+        protocol.STATIC_GIT_METADATA_CONFIGURED_RECEIPT_BINDING_FIELDS,
+        protocol.STATIC_GIT_METADATA_CONFIGURED_RECEIPT_BINDINGS,
+        protocol.STATIC_GIT_METADATA_CONFIGURED_RECEIPT_BINDING_COUNT,
+        protocol.STATIC_GIT_METADATA_CONFIGURED_RECEIPT_BINDING_SHA256,
+    )
+    assert_metadata_catalog_cross_copy(
+        "configuredSamePlanSwap", "configuredSamePlanSwaps",
+        EXPECTED_METADATA_CONFIGURED_SAME_PLAN_SWAP_FIELDS,
+        EXPECTED_METADATA_CONFIGURED_SAME_PLAN_SWAPS,
+        EXPECTED_METADATA_CONFIGURED_SAME_PLAN_SWAP_COUNT,
+        EXPECTED_METADATA_CONFIGURED_SAME_PLAN_SWAP_SHA256,
+        protocol.STATIC_GIT_METADATA_CONFIGURED_SAME_PLAN_SWAP_FIELDS,
+        protocol.STATIC_GIT_METADATA_CONFIGURED_SAME_PLAN_SWAPS,
+        protocol.STATIC_GIT_METADATA_CONFIGURED_SAME_PLAN_SWAP_COUNT,
+        protocol.STATIC_GIT_METADATA_CONFIGURED_SAME_PLAN_SWAP_SHA256,
+    )
+    assert_metadata_catalog_cross_copy(
+        "configuredInterOrdinalMutant", "configuredInterOrdinalMutants",
+        EXPECTED_METADATA_CONFIGURED_INTER_ORDINAL_MUTANT_FIELDS,
+        EXPECTED_METADATA_CONFIGURED_INTER_ORDINAL_MUTANTS,
+        EXPECTED_METADATA_CONFIGURED_INTER_ORDINAL_MUTANT_COUNT,
+        EXPECTED_METADATA_CONFIGURED_INTER_ORDINAL_MUTANT_SHA256,
+        protocol.STATIC_GIT_METADATA_CONFIGURED_INTER_ORDINAL_MUTANT_FIELDS,
+        protocol.STATIC_GIT_METADATA_CONFIGURED_INTER_ORDINAL_MUTANTS,
+        protocol.STATIC_GIT_METADATA_CONFIGURED_INTER_ORDINAL_MUTANT_COUNT,
+        protocol.STATIC_GIT_METADATA_CONFIGURED_INTER_ORDINAL_MUTANT_SHA256,
+    )
+    assert_metadata_catalog_cross_copy(
+        "configuredComposedPrecedence", "configuredComposedPrecedence",
+        EXPECTED_METADATA_CONFIGURED_COMPOSED_PRECEDENCE_FIELDS,
+        EXPECTED_METADATA_CONFIGURED_COMPOSED_PRECEDENCE,
+        EXPECTED_METADATA_CONFIGURED_COMPOSED_PRECEDENCE_COUNT,
+        EXPECTED_METADATA_CONFIGURED_COMPOSED_PRECEDENCE_SHA256,
+        protocol.STATIC_GIT_METADATA_CONFIGURED_COMPOSED_PRECEDENCE_FIELDS,
+        protocol.STATIC_GIT_METADATA_CONFIGURED_COMPOSED_PRECEDENCE,
+        protocol.STATIC_GIT_METADATA_CONFIGURED_COMPOSED_PRECEDENCE_COUNT,
+        protocol.STATIC_GIT_METADATA_CONFIGURED_COMPOSED_PRECEDENCE_SHA256,
+    )
+    assert_metadata_catalog_cross_copy(
+        "discoveryHandoffMutant", "discoveryHandoffMutants",
+        EXPECTED_METADATA_DISCOVERY_HANDOFF_MUTANT_FIELDS,
+        EXPECTED_METADATA_DISCOVERY_HANDOFF_MUTANTS,
+        EXPECTED_METADATA_DISCOVERY_HANDOFF_MUTANT_COUNT,
+        EXPECTED_METADATA_DISCOVERY_HANDOFF_MUTANT_SHA256,
+        protocol.STATIC_GIT_METADATA_DISCOVERY_HANDOFF_MUTANT_FIELDS,
+        protocol.STATIC_GIT_METADATA_DISCOVERY_HANDOFF_MUTANTS,
+        protocol.STATIC_GIT_METADATA_DISCOVERY_HANDOFF_MUTANT_COUNT,
+        protocol.STATIC_GIT_METADATA_DISCOVERY_HANDOFF_MUTANT_SHA256,
+    )
+    assert_metadata_catalog_cross_copy(
+        "portableConstructionMutant", "portableConstructionMutants",
+        EXPECTED_PORTABLE_CONSTRUCTION_MUTANT_FIELDS,
+        EXPECTED_PORTABLE_CONSTRUCTION_MUTANTS,
+        EXPECTED_PORTABLE_CONSTRUCTION_MUTANT_COUNT,
+        EXPECTED_PORTABLE_CONSTRUCTION_MUTANT_SHA256,
+        protocol.STATIC_GIT_METADATA_PORTABLE_CONSTRUCTION_MUTANT_FIELDS,
+        protocol.STATIC_GIT_METADATA_PORTABLE_CONSTRUCTION_MUTANTS,
+        protocol.STATIC_GIT_METADATA_PORTABLE_CONSTRUCTION_MUTANT_COUNT,
+        protocol.STATIC_GIT_METADATA_PORTABLE_CONSTRUCTION_MUTANT_SHA256,
+    )
+    assert tuple(git_contract["metadata"]["portableRootPlanFields"]) == (
+        EXPECTED_PORTABLE_ROOT_PLAN_FIELDS
+    ) == protocol.STATIC_GIT_METADATA_PORTABLE_ROOT_PLAN_FIELDS
+    assert git_contract["metadata"]["portableRootPlanFieldCount"] == (
+        EXPECTED_PORTABLE_ROOT_PLAN_FIELD_COUNT
+    ) == protocol.STATIC_GIT_METADATA_PORTABLE_ROOT_PLAN_FIELD_COUNT
+    assert git_contract["metadata"]["portableRootPlanFieldSha256"] == (
+        EXPECTED_PORTABLE_ROOT_PLAN_FIELD_SHA256
+    ) == protocol.STATIC_GIT_METADATA_PORTABLE_ROOT_PLAN_FIELD_SHA256
     assert tuple(git_contract["metadata"]["configuredRemovedEquivalenceClassFields"]) == (
         EXPECTED_METADATA_CONFIGURED_EQUIVALENCE_FIELDS
     ) == protocol.STATIC_GIT_METADATA_CONFIGURED_REMOVED_EQUIVALENCE_CLASS_FIELDS
@@ -10639,6 +14692,111 @@ def test_repository_validator_is_read_only_and_static_boundary_is_ast_exact(
             assert protocol.static_boundary_findings(source + hostile_binding) == finding(
                 "static", "ACP.STATIC.NOT_ALLOWLISTED", "source"
             )
+    handoff_reader_namespace = dict(vars(protocol))
+    exec(METADATA_READER_SOURCE, handoff_reader_namespace)
+    handoff_reader = cast(
+        Callable[..., protocol.GitMetadataReadResult],
+        handoff_reader_namespace["_read_git_metadata_nofollow"],
+    )
+    assert len(EXPECTED_METADATA_DISCOVERY_HANDOFF_MUTANTS) == (
+        EXPECTED_METADATA_DISCOVERY_HANDOFF_MUTANT_COUNT
+    )
+    assert len(EXPECTED_METADATA_DISCOVERY_HANDOFF_MUTANT_FIELDS) == 5
+    assert len({row[0] for row in EXPECTED_METADATA_DISCOVERY_HANDOFF_MUTANTS}) == (
+        EXPECTED_METADATA_DISCOVERY_HANDOFF_MUTANT_COUNT
+    )
+    assert hashlib.sha256(
+        canonical(EXPECTED_METADATA_DISCOVERY_HANDOFF_MUTANTS)
+    ).hexdigest() == EXPECTED_METADATA_DISCOVERY_HANDOFF_MUTANT_SHA256
+    with TemporaryDirectory(prefix="issue435-handoff-") as handoff_text:
+        handoff_root = Path(handoff_text).resolve(strict=True) / "repository"
+        (handoff_root / ".git").mkdir(parents=True)
+        for _, operation, code, location, boundary in (
+            EXPECTED_METADATA_DISCOVERY_HANDOFF_MUTANTS[:-1]
+        ):
+            findings, callbacks = execute_discovery_handoff_mutant(
+                handoff_reader, handoff_root, operation
+            )
+            assert findings == finding("git-metadata", code, location)
+            if boundary == "zero-reader-callbacks":
+                assert callbacks == ()
+            else:
+                assert callbacks
+                assert all(operation != "read" for operation, _ in callbacks)
+                assert all(path != ".git" for _, path in callbacks)
+                opened_paths = tuple(
+                    path for operation, path in callbacks if operation == "open"
+                )
+                expected_components = tuple(handoff_root.parts[1:])
+                assert tuple(
+                    path for operation, path in callbacks if operation == "lstat"
+                ) == expected_components
+                assert opened_paths == ("/", *expected_components)
+                assert tuple(
+                    path for operation, path in callbacks if operation == "fstat"
+                ) == expected_components
+                assert tuple(
+                    path for operation, path in callbacks if operation == "close"
+                ) == opened_paths[::-1]
+        handoff_status = handoff_root.lstat()
+        handoff_record = protocol.GitMetadataRecord(
+            handoff_root,
+            None,
+            handoff_status.st_mode,
+            handoff_status.st_dev,
+            handoff_status.st_ino,
+        )
+
+        def run_handoff_source(
+            discovery_source: str,
+        ) -> tuple[tuple[str, ...], tuple[protocol.Finding, ...]]:
+            observed_roles: list[str] = []
+
+            def handoff_spy(
+                called_root: str | Path,
+                *,
+                provenance: protocol.GitMetadataProvenance,
+                io: protocol.MetadataIO,
+            ) -> protocol.GitMetadataReadResult:
+                del called_root, io
+                observed_roles.append(provenance.role)
+                if provenance.role == "discovery":
+                    return protocol.GitMetadataReadResult(handoff_record, ())
+                assert provenance.parent_records[0][1] is handoff_record
+                return protocol.GitMetadataReadResult(
+                    None,
+                    finding("git-metadata", "ACP.GIT_METADATA.IO_ERROR", ".git"),
+                )
+
+            handoff_namespace = dict(vars(protocol))
+            handoff_namespace["_read_git_metadata_nofollow"] = handoff_spy
+            exec(discovery_source, handoff_namespace)
+            discover = cast(
+                Callable[[Path], protocol.GitDiscoveryResult],
+                handoff_namespace["discover_git_repository"],
+            )
+            result = discover(handoff_root)
+            return tuple(observed_roles), result.findings
+
+        assert run_handoff_source(METADATA_DISCOVERY_SOURCE) == (
+            ("discovery", "dot_git"),
+            finding("git-metadata", "ACP.GIT_METADATA.IO_ERROR", ".git"),
+        )
+        copied_record_expression = (
+            "((\"discovery\", GitMetadataRecord(discovery.record.path, "
+            "discovery.record.payload, discovery.record.mode, "
+            "discovery.record.device, discovery.record.inode, "
+            "discovery.record.ancestor_records)),)"
+        )
+        copied_source = METADATA_DISCOVERY_SOURCE.replace(
+            "((\"discovery\", discovery.record),)",
+            copied_record_expression,
+        )
+        assert copied_source != METADATA_DISCOVERY_SOURCE
+        assert run_handoff_source(copied_source) == (
+            ("discovery",),
+            finding("git-metadata", "ACP.GIT_METADATA.CONTAINMENT", "root"),
+        )
     assert tuple(git_contract["metadataFindingPrecedence"]) == (
         protocol.STATIC_GIT_METADATA_FAILURE_PRECEDENCE
     )

@@ -98,24 +98,115 @@ identity, exact role prefix, and normalized per-role I/O/cleanup transcript.
 The Issue #435 RED exemplar owns 94 case rows and 129 ordered executions; an ID
 or final-role-only ledger is insufficient. Run the entire collector separately
 beneath equal-width A/B slots in one cleanup-owned platform temporary base. Add
-an 81-filesystem-byte/six-lexical-component suffix only to B, pad both relative
-roots to one 700-byte/depth-18 governed shape, and freeze separate execution,
-stimulus, trigger-receipt, raw-read,
-close-order, and normalized-payload catalogs. Require exact cross-root row and
-digest equality plus exact configured-plan-receipt equality, then prove that
-changing one schedule or normalized coordinate is rejected. Merely constructing
-a second padded root is not replay evidence. Prove resolved-base inode ownership
-and `8*n <= remaining component bytes <= 255*n` before descendant creation; an
-infeasible synthetic platform model must fail without filesystem mutation.
+an 81-filesystem-byte/six-lexical-component suffix only to B. Before any
+descendant mutation, derive both complete OWNER-relative construction plans from
+the stored cleanup-owner path/type/device/inode. Bind every component and byte
+length, filler/final split, candidate bytes/depth, governed path, exact
+700-byte/depth-18 shape, and the relation between slots. Prove
+`8*n <= remaining component bytes <= 255*n` before a single post-gate seam runs.
+Freeze every real seam call in a model-specific or complete nested transcript
+and filesystem receipt with contiguous ordinals. Exercise 7/8/255/256,
+infeasible, early-A/B, zero/one/three-root, plan-shape/type, wrong-delta,
+duplicate/missing/reordered/no-op/wrong-path/error, transcript, envelope,
+owner-alias/symlink/inode, and receipt-coordinate mutants through the same
+validator. Then independently collect both already-constructed roots. Freeze
+separate execution, stimulus, trigger-receipt, raw-read, close-order,
+normalized-payload, and configured-plan-receipt catalogs. Require exact
+cross-root rows and digests, then reject one schedule or normalized-coordinate
+divergence. Constructing a second padded root alone is not replay evidence.
 
 Bind each configured plan to a separately observed, ordered raw receipt carrying
 callback arguments, normalized target path/role/ordinal, close outcomes,
 inter-role before/after effect, complete stat/exception evidence, argument
-type/count, event ordinal, and live-descriptor/open-event ordinal. Project
-without reading the plan, case, expected finding, or terminal result. Bind with
-exact typed callback, target, phase, effect, no-op, close-result, inter-role, and
-plan-copy findings and mutants, then retain receipt-swap,
-hybrid, and constant-receipt killers. Describe the collision topology precisely:
+type/count, event ordinal, and live-descriptor/open-event ordinal. Instrument
+discovery-level and reader-local operations. A discovery role exists only for
+actual work; bind its exact custom/system source and retain discovery as a
+distinct operation graph. Prove ancestor-descriptor ownership, reader use, and
+reverse cleanup across discovery→reader→discovery without same-role relabeling.
+Require `dot_git` handoff provenance to contain the exact prior discovery-root
+path/type/device/inode, and run missing and wrong-role/path/type/device/inode
+mutants that stop before `.git` component, Git-object, or process work. A
+wrong-device/wrong-inode check may traverse and re-stat the root record first.
+At the call site assert
+`parent_record is discovery.record` and kill a source-copy mutant; do not claim
+the reader distinguishes a value-identical copy or add an opaque token.
+Require `ACP.GIT_METADATA.CONTAINMENT/root` for missing/wrong-role/wrong-path,
+`ACP.GIT_METADATA.WRONG_TYPE/root` for wrong-type, and
+`ACP.GIT_METADATA.IDENTITY_CHANGED/root` for wrong-device/wrong-inode.
+The source-copy call-site failure is `ACP.GIT_METADATA.CONTAINMENT/root`.
+Observe lstat/open/fstat/read/close explicitly and require zero `.git` callbacks
+on every rejection. A wrong-type+wrong-device composition must return
+`ACP.GIT_METADATA.WRONG_TYPE/root` before identity drift.
+
+Strictly parse eight raw fields plus stored identity/index with exact types and
+caps, closed role/path grammar, role-local event identity, callback-specific
+argument/result grammar and bijection, and
+`dirfd-none|dirfdOpenOrdinal-N` prior live descriptor provenance. Check portable
+flags, bounded reads, causal metadata/stat/error pairing, derived fields, reverse
+cleanup, guarded conversions, and first indexed precedence. Allow exactly one
+initial filesystem-root anchor open per role: first event, `dirfd-none`,
+normalized outer ancestor, directory/no-follow flags, directory result, no prior
+lstat/fstat, and final reverse close. Require same-path lstat/fstat identity for
+every later open/use, kind/flags/fstat consistency, positive reads→zero
+EOF→post-lstat→reverse close, and exact event source/count/order. Bind the inter
+target to the actual successful-open row's role/path/roleOrdinal/eventOrdinal,
+never a relation-table path or `-1`. Bind trigger/terminal to their actual raw
+ordinals/paths with no later work after terminal. Derive non-inter
+observed target/path and ordinals only from the decisive raw row, never a
+hardcoded role or globally selected ledger entry. Require the exact
+ordered seven-key inter-role arm and one closed relation before projection. Keep
+`afterRole` in the discovery-phase namespace (`linked_git_dir`/`common_dir`),
+`roleEvents` in the reader namespace (`backlink`/`commondir`), and projected
+target separate.
+For inter receipts only, require exactly one trailing auxiliary `roleEvents`
+marker `interReceiptOrdinal-N:afterRole-X`. Parse it separately and never count
+it as a reader role; all preceding entries remain `ordinal:reader_role`. Execute
+missing/duplicate/nonterminal/wrong-ordinal/wrong-afterRole/reader-reclassification
+mutants.
+Require the actual raw terminal row—not the seam assertion or schedule—to carry
+a label-free stored-parent identity/type mismatch bound to that target role/path.
+Kill terminal-success and terminal-path-swap mutants without reading a case,
+expected finding, or declared terminal outcome.
+Bind the raw-observed parent role as well as path/type/device/inode; kill a
+wrong-parent-role/same-path mutant rather than deriving role from the schedule.
+Use the receipt index only for the exact finding location and closed caps. The
+parser must not map it to execution ID, configured case, expected custom
+operation, plan, or per-case schedule; derive observations through one generic
+closed label-free grammar.
+
+Parsed output owns the actual observed role/path/role ordinal/callback ordinal
+and projection. Project only validated output; never read plan, case, expected
+finding, or terminal result. Bind by reparse, raw identity, stored observations,
+stored projection, then declared plan. Independently freeze the binder-only
+index→expected actual `executionEvidenceIdentity` SHA-256 of
+`(mode,payload_sha,role_traces)` and exact role/terminal schedule
+plus raw-evidence identity, observed-four tuple, and projection (or a combined
+canonical binding identity); use it to reject same-plan conventional/linked
+cross-swaps. Seven complete donor bindings at recipient indexes fail
+`executionEvidenceIdentity`. Only raw-distinct hybrids 8→9, 11→13, 12→14, and 18→19 feed donor
+raw+SHA+observed4+projection with recipient execution evidence/index and fail
+`rawEvidenceIdentity`. Pairs 1/2, 16/17, and 20/21 are evidence-equivalent below
+execution identity; do not claim raw-identity separation. The parser
+must never read this table. Reject global selection, fallback, and
+synthesis. Execute readable single and composed mutants for every authorized
+raw/discovery/callback/event/role/schedule/path/descriptor/handoff,
+metadata/stat/error/source/count/order/read/EOF/post-lstat/reverse-cleanup,
+anchor-missing/duplicate/reorder/path/dirfd/flags/result/prior-fstat/final-close,
+kind/flags/fstat/inter-terminal/no-later-work/decisive-row,
+stored-observation/projection/plan
+coordinate. Only the stale-identity mutant preserves a stale SHA. Bind each row
+to its exact typed location through the same parser/binder. Freeze configured
+fields for `mutantId`, `executionId`, exact first coordinate/location, complete
+changed-binder-layer set, complete changed-raw-field set, operation, and
+`rawIdentityAction`; do not collapse coherent multi-field changes into one
+nominal coordinate. Treat `executionId` in a mutant table only as a
+non-authoritative external test-catalog label, never binder input. Freeze 22 actual binding hashes and prove
+case-label/order non-influence with permutation mutants. Keep schedule ordinal and composed mutants in separate
+explicit catalogs with independent counts/digests. Freeze a fixed-raw
+permutation killer: changing execution order and per-case expectations preserves
+the parse result, then fails only at the exact binder comparison. Retain receipt
+swaps, seven complete-binding execution-evidence-identity rows, four raw-distinct recipient-ID
+hybrids, and constant-receipt killers. Describe the collision topology precisely:
 17 historical configured-removal pair groups collapse into five complete
 non-singleton configured-removed equivalence classes. Every historical pair must
 belong wholly and uniquely to one observed class; a cross-class pair mutant must
@@ -376,16 +467,19 @@ aggregate before implementation. Deletions grant no credit. Record each ratio.
 Dense one-line code, collapsed assertions, broad helpers that hide outcomes,
 and semantic compression used only to fit a cap are prohibited.
 
-For Reset32, freeze exact caps: matrix 4,200; protocol 4,200; core oracle 4,200;
-repository oracle 14,500; template 600; ADR 550; route 5,800;
+For Reset37, freeze exact caps: matrix 5,500; protocol 7,000; core oracle 4,200;
+repository oracle 18,000; template 600; ADR 550; route 5,800;
 architecture/security 2,200; validator 28,000; seven-semantic-path aggregate
-34,000; binaries zero. The 85 percent review and 90 percent pre-C3/GREEN stop
-apply independently at every file, partition, and aggregate level. Record the
-core oracle at 3,694/4,200 (87.95 percent) as readability-risk PASS: only the
-explicit semantic literal changes, no compression is introduced, and usage is
-below 90 percent. Record protocol 3,709/4,200 (88.31 percent) as
-readability-risk PASS: every case remains explicit, named immutable prefix
-tuples only remove duplicate literals, and usage stays below 90 percent.
+34,000; binaries zero. Exact use: matrix 4,453 (80.96%); protocol 5,270 (75.29%);
+core 3,694 (87.95%); repository 15,706 (87.26%); template 365 (60.83%); ADR 374
+(68.00%); playbook 542; validator 24,670/28,000 (88.11%);
+architecture/security 1,281/2,200 (58.23%); route 4,453/5,800 (76.78%); and
+seven-path aggregate 30,404/34,000 (89.42%). Core, repository, validator, and
+aggregate readability/convergence reviews are PASS: semantic-literal-only core,
+named independent helpers, one semantic case per row, readable explicit docs,
+Ruff, and strict mypy remain intact. All governed levels are below 90 percent.
+No semantic compression and no further Reset37 growth are permitted.
+
 
 ## Focused-to-full transition
 
