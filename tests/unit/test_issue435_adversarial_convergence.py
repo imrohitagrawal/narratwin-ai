@@ -20,7 +20,55 @@ FREEZE_PATH = ROOT / "docs/governance/adversarial-convergence-red-freeze-v1.json
 REPOSITORY_TEST_PATH = ROOT / "tests/unit/test_issue435_adversarial_convergence_repository.py"
 IDENTITY_DOMAIN = b"NARRATWIN:ACP:IDENTITY:V1\x00"
 SIGNATURE_DOMAIN = b"NARRATWIN:ACP:SIGNATURE:V1\x00"
-EXPECTED_SEMANTIC_SHA256 = "519b9dbf1ba9d8a847499fda622d74b58796f574a7a6627e9ab42c1d7c8e8824"
+EXPECTED_SEMANTIC_SHA256 = "1918f7cb9d277633da0bbbebf5485ee7a80b30141b6b2fcdae213ba98566ac4f"
+EXPECTED_RESET39_BUDGET_CAP_FIELDS = ("scope", "name", "limit")
+EXPECTED_RESET39_BUDGET_CAPS = (
+    ("perFile", "matrix", 5500),
+    ("perFile", "protocol", 7000),
+    ("perFile", "coreOracle", 4200),
+    ("perFile", "repositoryOracle", 18000),
+    ("perFile", "template", 600),
+    ("perFile", "adr0064", 550),
+    ("partitions", "route", 5800),
+    ("partitions", "architectureSecurity", 2200),
+    ("partitions", "validator", 28000),
+    ("aggregate", "sevenSemanticPaths", 35000),
+    ("binary", "binary", 0),
+)
+EXPECTED_RESET39_BUDGET_CAP_COUNT = 11
+EXPECTED_RESET39_BUDGET_CAP_SHA256 = (
+    "9990330707b60eedab6337886133a14182b0290beab14511d1b9c220b03c9a12"
+)
+EXPECTED_RESET39_READABILITY_DISPOSITION_FIELDS = ("disposition",)
+EXPECTED_RESET39_READABILITY_DISPOSITION = (
+    ("actual-at-or-above-85-percent-requires-recorded-readability-and-convergence-risk-review",),
+    (
+        "core-oracle-3770-of-4200-89.76-percent-risk-pass-semantic-literal-only-readable-no-compression-below-90-no-further-growth",
+    ),
+    (
+        "repository-oracle-16037-of-18000-89.09-percent-risk-pass-named-helpers-one-semantic-row-each-ruff-mypy-readable-no-compression-below-90-no-further-growth",
+    ),
+    (
+        "validator-25100-of-28000-89.64-percent-risk-pass-explicit-independent-oracles-readable-no-compression-below-90-no-further-growth",
+    ),
+    (
+        "seven-semantic-paths-30867-of-35000-88.19-percent-risk-pass-explicit-rows-docs-readable-no-compression-below-90-no-further-growth",
+    ),
+    ("matrix-4486-of-5500-81.56-percent-normal",),
+    ("protocol-5293-of-7000-75.61-percent-normal",),
+    ("template-365-of-600-60.83-percent-normal",),
+    ("adr0064-374-of-550-68.00-percent-normal",),
+    ("playbook-542-lines",),
+    ("architecture-security-1281-of-2200-58.23-percent-normal",),
+    ("route-4486-of-5800-77.34-percent-normal",),
+    ("binary-zero",),
+    ("all-caps-below-90-percent-stop",),
+    ("semantic-compression-prohibited",),
+)
+EXPECTED_RESET39_READABILITY_DISPOSITION_COUNT = 15
+EXPECTED_RESET39_READABILITY_DISPOSITION_SHA256 = (
+    "0b175d298b3ea52f7e2de5d247b910303d934bb399bd4a654cc8a0bbfdfcf88d"
+)
 EXPECTED_MUTANT_OUTCOMES_SHA256 = "67b7a36a4cc09fe3a2e092361ada276715ce273aa3b10259a2b4ea92987d1b03"
 EXPECTED_FIXTURE_REGISTRY_SHA256 = (
     "1407395b3714f9a56aee5ac9f1da0f78e0d116f2431016c0bf8cbc17c746e6b1"
@@ -3535,8 +3583,36 @@ def test_budget_thresholds_are_exact_at_85_and_90_percent() -> None:
         "riskThresholdPercent": 85,
         "stopThresholdPercent": 90,
         "denseCompressionProhibited": True,
+        "reset39Caps": {
+            "fields": list(EXPECTED_RESET39_BUDGET_CAP_FIELDS),
+            "rows": [list(row) for row in EXPECTED_RESET39_BUDGET_CAPS],
+            "count": EXPECTED_RESET39_BUDGET_CAP_COUNT,
+            "sha256": EXPECTED_RESET39_BUDGET_CAP_SHA256,
+        },
+        "readabilityDisposition": {
+            "fields": list(EXPECTED_RESET39_READABILITY_DISPOSITION_FIELDS),
+            "rows": [list(row) for row in EXPECTED_RESET39_READABILITY_DISPOSITION],
+            "count": EXPECTED_RESET39_READABILITY_DISPOSITION_COUNT,
+            "sha256": EXPECTED_RESET39_READABILITY_DISPOSITION_SHA256,
+        },
         "levels": ["per_file", "partition", "aggregate"],
     }
+    assert EXPECTED_RESET39_BUDGET_CAP_FIELDS == protocol.STATIC_RESET39_BUDGET_CAP_FIELDS
+    assert EXPECTED_RESET39_BUDGET_CAPS == protocol.STATIC_RESET39_BUDGET_CAPS
+    assert EXPECTED_RESET39_BUDGET_CAP_COUNT == protocol.STATIC_RESET39_BUDGET_CAP_COUNT
+    assert EXPECTED_RESET39_BUDGET_CAP_SHA256 == protocol.STATIC_RESET39_BUDGET_CAP_SHA256
+    assert EXPECTED_RESET39_READABILITY_DISPOSITION_FIELDS == (
+        protocol.STATIC_RESET39_READABILITY_DISPOSITION_FIELDS
+    )
+    assert EXPECTED_RESET39_READABILITY_DISPOSITION == (
+        protocol.STATIC_RESET39_READABILITY_DISPOSITION
+    )
+    assert EXPECTED_RESET39_READABILITY_DISPOSITION_COUNT == (
+        protocol.STATIC_RESET39_READABILITY_DISPOSITION_COUNT
+    )
+    assert EXPECTED_RESET39_READABILITY_DISPOSITION_SHA256 == (
+        protocol.STATIC_RESET39_READABILITY_DISPOSITION_SHA256
+    )
     result = protocol.validate_matrix_bytes(MATRIX_PATH.read_bytes(), synthetic_freeze(document))
     assert result.findings == ()
     assert protocol.budget_disposition(84, 100) is protocol.BudgetDisposition.NORMAL

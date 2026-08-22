@@ -3060,13 +3060,46 @@
     "riskThresholdPercent": 85,
     "stopThresholdPercent": 90,
     "denseCompressionProhibited": true,
-    "reset37Caps": {
-      "perFile": [["matrix",5500],["protocol",7000],["coreOracle",4200],["repositoryOracle",18000],["template",600],["adr0064",550]],
-      "partitions": [["route",5800],["architectureSecurity",2200],["validator",28000]],
-      "aggregate": ["sevenSemanticPaths",34000],
-      "binary": 0
+    "reset39Caps": {
+      "fields": ["scope","name","limit"],
+      "rows": [
+        ["perFile","matrix",5500],
+        ["perFile","protocol",7000],
+        ["perFile","coreOracle",4200],
+        ["perFile","repositoryOracle",18000],
+        ["perFile","template",600],
+        ["perFile","adr0064",550],
+        ["partitions","route",5800],
+        ["partitions","architectureSecurity",2200],
+        ["partitions","validator",28000],
+        ["aggregate","sevenSemanticPaths",35000],
+        ["binary","binary",0]
+      ],
+      "count": 11,
+      "sha256": "9990330707b60eedab6337886133a14182b0290beab14511d1b9c220b03c9a12"
     },
-    "readabilityDisposition": ["actual-at-or-above-85-percent-requires-recorded-readability-and-convergence-risk-review","core-oracle-3694-of-4200-87.95-percent-risk-pass-semantic-literal-only-readable-no-compression-below-90-no-further-growth","repository-oracle-15706-of-18000-87.26-percent-risk-pass-named-helpers-one-semantic-row-each-ruff-mypy-readable-no-compression-below-90-no-further-growth","validator-24670-of-28000-88.11-percent-risk-pass-explicit-independent-oracles-readable-no-compression-below-90-no-further-growth","seven-semantic-paths-30404-of-34000-89.42-percent-risk-pass-explicit-rows-docs-readable-no-compression-below-90-no-further-growth","matrix-4453-of-5500-80.96-percent-normal","protocol-5270-of-7000-75.29-percent-normal","template-365-of-600-60.83-percent-normal","adr0064-374-of-550-68.00-percent-normal","playbook-542-lines","architecture-security-1281-of-2200-58.23-percent-normal","route-4453-of-5800-76.78-percent-normal","binary-zero","all-caps-below-90-percent-stop","semantic-compression-prohibited"],
+    "readabilityDisposition": {
+      "fields": ["disposition"],
+      "rows": [
+        ["actual-at-or-above-85-percent-requires-recorded-readability-and-convergence-risk-review"],
+        ["core-oracle-3770-of-4200-89.76-percent-risk-pass-semantic-literal-only-readable-no-compression-below-90-no-further-growth"],
+        ["repository-oracle-16037-of-18000-89.09-percent-risk-pass-named-helpers-one-semantic-row-each-ruff-mypy-readable-no-compression-below-90-no-further-growth"],
+        ["validator-25100-of-28000-89.64-percent-risk-pass-explicit-independent-oracles-readable-no-compression-below-90-no-further-growth"],
+        ["seven-semantic-paths-30867-of-35000-88.19-percent-risk-pass-explicit-rows-docs-readable-no-compression-below-90-no-further-growth"],
+        ["matrix-4486-of-5500-81.56-percent-normal"],
+        ["protocol-5293-of-7000-75.61-percent-normal"],
+        ["template-365-of-600-60.83-percent-normal"],
+        ["adr0064-374-of-550-68.00-percent-normal"],
+        ["playbook-542-lines"],
+        ["architecture-security-1281-of-2200-58.23-percent-normal"],
+        ["route-4486-of-5800-77.34-percent-normal"],
+        ["binary-zero"],
+        ["all-caps-below-90-percent-stop"],
+        ["semantic-compression-prohibited"]
+      ],
+      "count": 15,
+      "sha256": "0b175d298b3ea52f7e2de5d247b910303d934bb399bd4a654cc8a0bbfdfcf88d"
+    },
     "levels": [
       "per_file",
       "partition",

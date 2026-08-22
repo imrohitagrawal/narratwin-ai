@@ -4752,30 +4752,53 @@ STATIC_GIT_METADATA_GOVERNED_PRECEDENCE_MUTANT_COUNT = 1
 STATIC_GIT_METADATA_GOVERNED_PRECEDENCE_MUTANT_SHA256 = (
     "ddaf256a0bdf6c063ab8fd0e5a8eeb74ec97b4c78a58d380f17ed8a93453093e"
 )
-STATIC_RESET37_BUDGET_CAPS = (
-    (
-        "perFile",
-        (
-            ("matrix", 5500),
-            ("protocol", 7000),
-            ("coreOracle", 4200),
-            ("repositoryOracle", 18000),
-            ("template", 600),
-            ("adr0064", 550),
-        ),
-    ),
-    ("partitions", (("route", 5800), ("architectureSecurity", 2200), ("validator", 28000))),
-    ("aggregate", ("sevenSemanticPaths", 34000)),
-    ("binary", 0),
+STATIC_RESET39_BUDGET_CAP_FIELDS = ("scope", "name", "limit")
+STATIC_RESET39_BUDGET_CAPS = (
+    ("perFile", "matrix", 5500),
+    ("perFile", "protocol", 7000),
+    ("perFile", "coreOracle", 4200),
+    ("perFile", "repositoryOracle", 18000),
+    ("perFile", "template", 600),
+    ("perFile", "adr0064", 550),
+    ("partitions", "route", 5800),
+    ("partitions", "architectureSecurity", 2200),
+    ("partitions", "validator", 28000),
+    ("aggregate", "sevenSemanticPaths", 35000),
+    ("binary", "binary", 0),
 )
-STATIC_RESET37_READABILITY_DISPOSITION = (
-    "actual-at-or-above-85-percent-requires-recorded-readability-and-convergence-risk-review",
-    "core-oracle-3694-of-4200-87.95-percent-risk-pass-semantic-literal-only-readable-no-compression-below-90-no-further-growth",
-    "repository-oracle-15706-of-18000-87.26-percent-risk-pass-named-helpers-one-semantic-row-each-ruff-mypy-readable-no-compression-below-90-no-further-growth",
-    "validator-24670-of-28000-88.11-percent-risk-pass-explicit-independent-oracles-readable-no-compression-below-90-no-further-growth",
-    "seven-semantic-paths-30404-of-34000-89.42-percent-risk-pass-explicit-rows-docs-readable-no-compression-below-90-no-further-growth",
-    "matrix-4453-of-5500-80.96-normal;protocol-5270-of-7000-75.29-normal;template-365-of-600-60.83-normal;adr0064-374-of-550-68.00-normal;playbook-542-lines",
-    "architecture-security-1281-of-2200-58.23-normal;route-4453-of-5800-76.78-normal;binary-zero;all-below-90;semantic-compression-prohibited",
+STATIC_RESET39_BUDGET_CAP_COUNT = 11
+STATIC_RESET39_BUDGET_CAP_SHA256 = (
+    "9990330707b60eedab6337886133a14182b0290beab14511d1b9c220b03c9a12"
+)
+STATIC_RESET39_READABILITY_DISPOSITION_FIELDS = ("disposition",)
+STATIC_RESET39_READABILITY_DISPOSITION = (
+    ("actual-at-or-above-85-percent-requires-recorded-readability-and-convergence-risk-review",),
+    (
+        "core-oracle-3770-of-4200-89.76-percent-risk-pass-semantic-literal-only-readable-no-compression-below-90-no-further-growth",
+    ),
+    (
+        "repository-oracle-16037-of-18000-89.09-percent-risk-pass-named-helpers-one-semantic-row-each-ruff-mypy-readable-no-compression-below-90-no-further-growth",
+    ),
+    (
+        "validator-25100-of-28000-89.64-percent-risk-pass-explicit-independent-oracles-readable-no-compression-below-90-no-further-growth",
+    ),
+    (
+        "seven-semantic-paths-30867-of-35000-88.19-percent-risk-pass-explicit-rows-docs-readable-no-compression-below-90-no-further-growth",
+    ),
+    ("matrix-4486-of-5500-81.56-percent-normal",),
+    ("protocol-5293-of-7000-75.61-percent-normal",),
+    ("template-365-of-600-60.83-percent-normal",),
+    ("adr0064-374-of-550-68.00-percent-normal",),
+    ("playbook-542-lines",),
+    ("architecture-security-1281-of-2200-58.23-percent-normal",),
+    ("route-4486-of-5800-77.34-percent-normal",),
+    ("binary-zero",),
+    ("all-caps-below-90-percent-stop",),
+    ("semantic-compression-prohibited",),
+)
+STATIC_RESET39_READABILITY_DISPOSITION_COUNT = 15
+STATIC_RESET39_READABILITY_DISPOSITION_SHA256 = (
+    "0b175d298b3ea52f7e2de5d247b910303d934bb399bd4a654cc8a0bbfdfcf88d"
 )
 STATIC_GIT_RETURN_CODES = (
     ("object_format", (0,), (), (-1, 2, 127)),

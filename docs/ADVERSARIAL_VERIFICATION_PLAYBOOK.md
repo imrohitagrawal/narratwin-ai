@@ -467,18 +467,18 @@ aggregate before implementation. Deletions grant no credit. Record each ratio.
 Dense one-line code, collapsed assertions, broad helpers that hide outcomes,
 and semantic compression used only to fit a cap are prohibited.
 
-For Reset37, freeze exact caps: matrix 5,500; protocol 7,000; core oracle 4,200;
+For Reset39, freeze exact caps: matrix 5,500; protocol 7,000; core oracle 4,200;
 repository oracle 18,000; template 600; ADR 550; route 5,800;
 architecture/security 2,200; validator 28,000; seven-semantic-path aggregate
-34,000; binaries zero. Exact use: matrix 4,453 (80.96%); protocol 5,270 (75.29%);
-core 3,694 (87.95%); repository 15,706 (87.26%); template 365 (60.83%); ADR 374
-(68.00%); playbook 542; validator 24,670/28,000 (88.11%);
-architecture/security 1,281/2,200 (58.23%); route 4,453/5,800 (76.78%); and
-seven-path aggregate 30,404/34,000 (89.42%). Core, repository, validator, and
+35,000; binaries zero. Exact use: matrix 4,486 (81.56%); protocol 5,293 (75.61%);
+core 3,770 (89.76%); repository 16,031 (89.06%); template 365 (60.83%); ADR 374
+(68.00%); playbook 542; validator 25,094/28,000 (89.62%);
+architecture/security 1,281/2,200 (58.23%); route 4,486/5,800 (77.34%); and
+seven-path aggregate 30,861/35,000 (88.17%). Core, repository, validator, and
 aggregate readability/convergence reviews are PASS: semantic-literal-only core,
 named independent helpers, one semantic case per row, readable explicit docs,
 Ruff, and strict mypy remain intact. All governed levels are below 90 percent.
-No semantic compression and no further Reset37 growth are permitted.
+No semantic compression and no further Reset39 growth are permitted.
 
 
 ## Focused-to-full transition

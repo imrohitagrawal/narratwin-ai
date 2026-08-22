@@ -250,21 +250,21 @@ generic process failure before output interpretation, with `-1`, `2`, and `127`
 frozen for every form. Author bounds separately prove a scripted RED size of 320
 bytes at exact N/N+1 and a smaller dynamic RED-object cap.
 
-Reset37 caps are matrix 5,500, protocol 7,000, core oracle 4,200, repository
+Reset39 caps are matrix 5,500, protocol 7,000, core oracle 4,200, repository
 oracle 18,000, template 600, ADR 550, route partition 5,800,
 architecture/security partition 2,200, validator partition 28,000, seven-path
-aggregate 34,000, and zero binaries. Exact file use is matrix 4,453/5,500
-(80.96%), protocol 5,270/7,000 (75.29%), core 3,694/4,200 (87.95%), repository
-15,706/18,000 (87.26%), template 365/600 (60.83%), ADR 374/550 (68.00%), and
-playbook 542 lines. Exact partitions are validator 24,670/28,000 (88.11%),
-architecture/security 1,281/2,200 (58.23%), and route 4,453/5,800 (76.78%);
-the seven-path aggregate is 30,404/34,000 (89.42%). Readability/convergence is
+aggregate 35,000, and zero binaries. Exact file use is matrix 4,486/5,500
+(81.56%), protocol 5,293/7,000 (75.61%), core 3,770/4,200 (89.76%), repository
+16,031/18,000 (89.06%), template 365/600 (60.83%), ADR 374/550 (68.00%), and
+playbook 542 lines. Exact partitions are validator 25,094/28,000 (89.62%),
+architecture/security 1,281/2,200 (58.23%), and route 4,486/5,800 (77.34%);
+the seven-path aggregate is 30,861/35,000 (88.17%). Readability/convergence is
 PASS for core, repository, validator, and aggregate: the core changes only one
 semantic literal; independent named parser/binder/constructor/validator/mutator
 helpers and one-semantic-case rows remain explicit; Ruff and strict mypy pass;
 the prose and tables remain readable. Every file, partition, and aggregate is
 below the 90% pre-C3/GREEN stop. No semantic compression and no further growth
-are permitted on these frozen Reset37 surfaces.
+are permitted on these frozen Reset39 surfaces.
 
 
 ### Filesystem snapshot boundary

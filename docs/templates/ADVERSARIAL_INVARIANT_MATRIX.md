@@ -326,18 +326,18 @@ comparison is killed without fabricating work after a failed crypto check.
 
 Never compress semantics to fit a cap.
 
-For the Issue #435 Reset37 exemplar, record matrix 5,500, protocol 7,000, core
+For the Issue #435 Reset39 exemplar, record matrix 5,500, protocol 7,000, core
 oracle 4,200, repository oracle 18,000, template 600, ADR 550, route 5,800,
-architecture/security 2,200, validator 28,000, seven-path aggregate 34,000, and
-zero binaries. Exact use is matrix 4,453/5,500 (80.96%); protocol 5,270/7,000
-(75.29%); core 3,694/4,200 (87.95%); repository 15,706/18,000 (87.26%);
+architecture/security 2,200, validator 28,000, seven-path aggregate 35,000, and
+zero binaries. Exact use is matrix 4,486/5,500 (81.56%); protocol 5,293/7,000
+(75.61%); core 3,770/4,200 (89.76%); repository 16,031/18,000 (89.06%);
 template 365/600 (60.83%); ADR 374/550 (68.00%); playbook 542; validator
-24,670/28,000 (88.11%); architecture/security 1,281/2,200 (58.23%); route
-4,453/5,800 (76.78%); and seven-path aggregate 30,404/34,000 (89.42%). Core,
+25,094/28,000 (89.62%); architecture/security 1,281/2,200 (58.23%); route
+4,486/5,800 (77.34%); and seven-path aggregate 30,861/35,000 (88.17%). Core,
 repository, validator, and aggregate reviews are PASS: semantic-literal-only
 core, named independent helpers, one semantic case per row, readable explicit
 documents, Ruff, and strict mypy remain intact. All levels are below the 90%
-pre-C3/GREEN stop; no semantic compression or further Reset37 growth is allowed.
+pre-C3/GREEN stop; no semantic compression or further Reset39 growth is allowed.
 
 
 
