@@ -326,18 +326,23 @@ comparison is killed without fabricating work after a failed crypto check.
 
 Never compress semantics to fit a cap.
 
-For the Issue #435 Reset39 exemplar, record matrix 5,500, protocol 7,000, core
-oracle 4,200, repository oracle 18,000, template 600, ADR 550, route 5,800,
-architecture/security 2,200, validator 28,000, seven-path aggregate 35,000, and
-zero binaries. Exact use is matrix 4,486/5,500 (81.56%); protocol 5,293/7,000
-(75.61%); core 3,770/4,200 (89.76%); repository 16,031/18,000 (89.06%);
-template 365/600 (60.83%); ADR 374/550 (68.00%); playbook 542; validator
-25,094/28,000 (89.62%); architecture/security 1,281/2,200 (58.23%); route
-4,486/5,800 (77.34%); and seven-path aggregate 30,861/35,000 (88.17%). Core,
-repository, validator, and aggregate reviews are PASS: semantic-literal-only
-core, named independent helpers, one semantic case per row, readable explicit
-documents, Ruff, and strict mypy remain intact. All levels are below the 90%
-pre-C3/GREEN stop; no semantic compression or further Reset39 growth is allowed.
+<!-- issue-435-reset44-prose-use:sha256=bc493eed07206948bac026a2323cded6ec8447d3b2813b5896b230064b2f71ae -->
+For the Issue #435 Reset44 exemplar, record matrix 5,500, protocol 7,000, core
+oracle 4,500, repository oracle 19,000, template 600, ADR 550, route 5,800,
+architecture/security 2,200, validator 30,000, seven-path aggregate 35,200, and
+zero binaries. Exact use is matrix 4,496/5,500 (81.75%); protocol 5,335/7,000
+(76.21%); core 3,824/4,500 (84.98%); repository 16,620/19,000 (87.47%);
+template 370/600 (61.67%); ADR 380/550 (69.09%); playbook 547; validator
+25,779/30,000 (85.93%); architecture/security 1,297/2,200 (58.95%); route
+4,496/5,800 (77.52%); and seven-path aggregate 31,572/35,200 (89.69%). Core,
+repository, validator, and aggregate reviews PASS only when core
+changes use independent semantic literals and catalog assertions, named helpers
+and one semantic case per row remain explicit, documents remain readable, and
+Ruff and strict mypy pass. Every level must remain below the exact 90%
+pre-C3/GREEN stop. No semantic compression or further Reset44 growth is allowed.
+The whole-line start marker encodes SHA-256 of raw UTF-8/LF bytes strictly between
+the marker lines, including exactly one terminal LF and excluding both markers.
+<!-- issue-435-reset44-prose-use:end -->
 
 
 

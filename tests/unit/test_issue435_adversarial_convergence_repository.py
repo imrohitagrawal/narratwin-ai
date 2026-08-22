@@ -81,49 +81,93 @@ EXPECTED_RESET39_BUDGET_CAP_FIELDS = ("scope", "name", "limit")
 EXPECTED_RESET39_BUDGET_CAPS = (
     ("perFile", "matrix", 5500),
     ("perFile", "protocol", 7000),
-    ("perFile", "coreOracle", 4200),
-    ("perFile", "repositoryOracle", 18000),
+    ("perFile", "coreOracle", 4500),
+    ("perFile", "repositoryOracle", 19000),
     ("perFile", "template", 600),
     ("perFile", "adr0064", 550),
     ("partitions", "route", 5800),
     ("partitions", "architectureSecurity", 2200),
-    ("partitions", "validator", 28000),
-    ("aggregate", "sevenSemanticPaths", 35000),
+    ("partitions", "validator", 30000),
+    ("aggregate", "sevenSemanticPaths", 35200),
     ("binary", "binary", 0),
 )
 EXPECTED_RESET39_BUDGET_CAP_COUNT = 11
 EXPECTED_RESET39_BUDGET_CAP_SHA256 = (
-    "9990330707b60eedab6337886133a14182b0290beab14511d1b9c220b03c9a12"
+    "4d7a35b2b66a610224afaf7418c83bc9d147d26babdd1c508eaadc0cadcef41a"
 )
 EXPECTED_RESET39_READABILITY_DISPOSITION_FIELDS = ("disposition",)
 EXPECTED_RESET39_READABILITY_DISPOSITION = (
     ("actual-at-or-above-85-percent-requires-recorded-readability-and-convergence-risk-review",),
+    ("core-oracle-3824-of-4500-84.98-percent-normal",),
     (
-        "core-oracle-3770-of-4200-89.76-percent-risk-pass-semantic-literal-only-readable-no-compression-below-90-no-further-growth",
+        "repository-oracle-16620-of-19000-87.47-percent-risk-pass-named-helpers-one-semantic-row-each-ruff-mypy-readable-no-compression-below-90-no-further-growth",
     ),
     (
-        "repository-oracle-16037-of-18000-89.09-percent-risk-pass-named-helpers-one-semantic-row-each-ruff-mypy-readable-no-compression-below-90-no-further-growth",
+        "validator-25779-of-30000-85.93-percent-risk-pass-explicit-independent-oracles-readable-no-compression-below-90-no-further-growth",
     ),
     (
-        "validator-25100-of-28000-89.64-percent-risk-pass-explicit-independent-oracles-readable-no-compression-below-90-no-further-growth",
+        "seven-semantic-paths-31572-of-35200-89.69-percent-risk-pass-explicit-rows-docs-readable-no-compression-below-90-no-further-growth",
     ),
-    (
-        "seven-semantic-paths-30867-of-35000-88.19-percent-risk-pass-explicit-rows-docs-readable-no-compression-below-90-no-further-growth",
-    ),
-    ("matrix-4486-of-5500-81.56-percent-normal",),
-    ("protocol-5293-of-7000-75.61-percent-normal",),
-    ("template-365-of-600-60.83-percent-normal",),
-    ("adr0064-374-of-550-68.00-percent-normal",),
-    ("playbook-542-lines",),
-    ("architecture-security-1281-of-2200-58.23-percent-normal",),
-    ("route-4486-of-5800-77.34-percent-normal",),
+    ("matrix-4496-of-5500-81.75-percent-normal",),
+    ("protocol-5335-of-7000-76.21-percent-normal",),
+    ("template-370-of-600-61.67-percent-normal",),
+    ("adr0064-380-of-550-69.09-percent-normal",),
+    ("playbook-547-lines",),
+    ("architecture-security-1297-of-2200-58.95-percent-normal",),
+    ("route-4496-of-5800-77.52-percent-normal",),
     ("binary-zero",),
     ("all-caps-below-90-percent-stop",),
     ("semantic-compression-prohibited",),
 )
 EXPECTED_RESET39_READABILITY_DISPOSITION_COUNT = 15
 EXPECTED_RESET39_READABILITY_DISPOSITION_SHA256 = (
-    "0b175d298b3ea52f7e2de5d247b910303d934bb399bd4a654cc8a0bbfdfcf88d"
+    "6a1c8bc391246dd4012ffa03853341c8317f7f51a6348486138ebdda353185f6"
+)
+EXPECTED_RESET44_PROSE_USE_FIELDS = (
+    "path",
+    "marker",
+    "repositoryUse",
+    "validatorUse",
+    "aggregateUse",
+    "repositoryPercent",
+    "validatorPercent",
+    "aggregatePercent",
+)
+EXPECTED_RESET44_PROSE_USE_ROWS = (
+    (
+        "docs/ADR/0064-adversarial-convergence-protocol.md",
+        "<!-- issue-435-reset44-prose-use:sha256=071fb29a3d38c635c5ea51bcf588ef6fbc2b6754d1c2da09bc8f7c9c40d83dd6 -->",
+        16620,
+        25779,
+        31572,
+        "87.47",
+        "85.93",
+        "89.69",
+    ),
+    (
+        "docs/ADVERSARIAL_VERIFICATION_PLAYBOOK.md",
+        "<!-- issue-435-reset44-prose-use:sha256=c4545018358305f40c40a7b2354078ad5ad9a7d5b4ae553e668046f430482cee -->",
+        16620,
+        25779,
+        31572,
+        "87.47",
+        "85.93",
+        "89.69",
+    ),
+    (
+        "docs/templates/ADVERSARIAL_INVARIANT_MATRIX.md",
+        "<!-- issue-435-reset44-prose-use:sha256=bc493eed07206948bac026a2323cded6ec8447d3b2813b5896b230064b2f71ae -->",
+        16620,
+        25779,
+        31572,
+        "87.47",
+        "85.93",
+        "89.69",
+    ),
+)
+EXPECTED_RESET44_PROSE_USE_COUNT = 3
+EXPECTED_RESET44_PROSE_USE_SHA256 = (
+    "076ea55709be59e087f98f0c0746ba814e6b8645df276d68f8ce4154f203d6d1"
 )
 MetadataCaseRow = tuple[str, str, str, str, str, str | None, str]
 NormalizedMetadataIo = tuple[str, ...]
@@ -6217,6 +6261,285 @@ def validate_reset39_budget_contract(policy: object) -> tuple[protocol.Finding, 
         ):
             return reset39_budget_contract_finding(f"{name}.sha256")
     return ()
+
+
+def reset44_prose_finding(coordinate: str) -> tuple[protocol.Finding, ...]:
+    return (
+        protocol.Finding(
+            "evidence",
+            "CURRENT",
+            "ACP.EVIDENCE.RESET44_PROSE_USE_MISMATCH",
+            f"budgetPolicy.reset44ProseUse.{coordinate}",
+        ),
+    )
+
+
+def validate_reset44_prose_catalog(catalog: object) -> tuple[protocol.Finding, ...]:
+    if type(catalog) is not dict:
+        return reset44_prose_finding("catalog.type")
+    typed_catalog = cast(dict[str, object], catalog)
+    if set(typed_catalog) != {"fields", "rows", "count", "sha256"}:
+        return reset44_prose_finding("catalog.type")
+    fields = typed_catalog["fields"]
+    if type(fields) is not list or tuple(fields) != EXPECTED_RESET44_PROSE_USE_FIELDS:
+        return reset44_prose_finding("catalog.fields")
+    rows = typed_catalog["rows"]
+    if type(rows) is not list:
+        return reset44_prose_finding("catalog.rows")
+    if len(rows) < EXPECTED_RESET44_PROSE_USE_COUNT:
+        return reset44_prose_finding("catalog.rows.missing")
+    if len(rows) > EXPECTED_RESET44_PROSE_USE_COUNT:
+        return reset44_prose_finding("catalog.rows.cardinality")
+    if any(type(row) is not list or len(row) != 8 for row in rows):
+        return reset44_prose_finding("catalog.rows")
+    expected_types = (str, str, int, int, int, str, str, str)
+    if any(tuple(type(value) for value in cast(list[object], row)) != expected_types for row in rows):
+        return reset44_prose_finding("catalog.rows.type")
+    normalized_rows = tuple(tuple(cast(list[object], row)) for row in rows)
+    if len({canonical(row) for row in normalized_rows}) != len(normalized_rows):
+        return reset44_prose_finding("catalog.rows.duplicate")
+    if normalized_rows != EXPECTED_RESET44_PROSE_USE_ROWS:
+        if set(normalized_rows) == set(EXPECTED_RESET44_PROSE_USE_ROWS):
+            return reset44_prose_finding("catalog.rows.order")
+        if any(row[2:8] != expected[2:8] for row, expected in zip(
+            normalized_rows, EXPECTED_RESET44_PROSE_USE_ROWS, strict=True
+        )):
+            return reset44_prose_finding("catalog.values")
+        return reset44_prose_finding("catalog.rows")
+    if type(typed_catalog["count"]) is not int or (
+        typed_catalog["count"] != EXPECTED_RESET44_PROSE_USE_COUNT
+    ):
+        return reset44_prose_finding("catalog.count")
+    expected_sha = hashlib.sha256(canonical(rows)).hexdigest()
+    if type(typed_catalog["sha256"]) is not str or (
+        typed_catalog["sha256"] != EXPECTED_RESET44_PROSE_USE_SHA256
+        or expected_sha != EXPECTED_RESET44_PROSE_USE_SHA256
+    ):
+        return reset44_prose_finding("catalog.sha256")
+    return ()
+
+
+def reset44_expected_use_sentence(path: str, tokens: tuple[str, ...]) -> str:
+    if path.endswith("0064-adversarial-convergence-protocol.md"):
+        return (
+            f"Exact file use is {', '.join(tokens[:6])}, and {tokens[6]} lines. "
+            f"Exact partitions are {tokens[7]}, {tokens[8]}, and {tokens[9]}; "
+            f"the {tokens[10]}."
+        )
+    if path.endswith("ADVERSARIAL_VERIFICATION_PLAYBOOK.md"):
+        return f"Exact use: {'; '.join(tokens[:10])}; and {tokens[10]}."
+    return f"Exact use is {'; '.join(tokens[:10])}; and {tokens[10]}."
+
+
+def validate_reset44_prose_documents(
+    rows: object,
+    documents: object,
+    uses: dict[str, int],
+    caps: dict[str, int],
+) -> tuple[protocol.Finding, ...]:
+    if type(rows) is not tuple or type(documents) is not dict:
+        return reset44_prose_finding("documents.type")
+    expected_paths = tuple(row[0] for row in EXPECTED_RESET44_PROSE_USE_ROWS)
+    if len(rows) != EXPECTED_RESET44_PROSE_USE_COUNT:
+        return reset44_prose_finding("documents.rows")
+    if set(cast(dict[object, object], documents)) != set(expected_paths):
+        return reset44_prose_finding("documents.path")
+    start_prefix = b"<!-- issue-435-reset44-prose-use:sha256="
+    end_prefix = b"<!-- issue-435-reset44-prose-use:end"
+    end_line = b"<!-- issue-435-reset44-prose-use:end -->\n"
+    marker_pattern = re.compile(
+        rb"(?m)^<!-- issue-435-reset44-prose-use:sha256=([0-9a-f]{64}) -->\n"
+    )
+    names = (
+        "matrix",
+        "protocol",
+        "coreOracle",
+        "repositoryOracle",
+        "template",
+        "adr0064",
+        "playbook",
+        "validator",
+        "architectureSecurity",
+        "route",
+        "sevenSemanticPaths",
+    )
+    labels = (
+        "matrix",
+        "protocol",
+        "core",
+        "repository",
+        "template",
+        "ADR",
+        "playbook",
+        "validator",
+        "architecture/security",
+        "route",
+        "seven-path aggregate",
+    )
+    for ordinal, untyped_row in enumerate(cast(tuple[object, ...], rows)):
+        if type(untyped_row) is not tuple or len(untyped_row) != 8:
+            return reset44_prose_finding("documents.rows")
+        row = cast(tuple[object, ...], untyped_row)
+        expected_types = (str, str, int, int, int, str, str, str)
+        if tuple(type(value) for value in row) != expected_types:
+            return reset44_prose_finding("documents.rows.type")
+        path, marker = cast(str, row[0]), cast(str, row[1])
+        if path != expected_paths[ordinal]:
+            return reset44_prose_finding("documents.path")
+        values = (uses["repositoryOracle"], uses["validator"], uses["sevenSemanticPaths"])
+        percents = (
+            f"{values[0] * 100 / caps['repositoryOracle']:.2f}",
+            f"{values[1] * 100 / caps['validator']:.2f}",
+            f"{values[2] * 100 / caps['sevenSemanticPaths']:.2f}",
+        )
+        if row[2:5] != values or row[5:8] != percents:
+            return reset44_prose_finding("documents.values")
+        payload = cast(dict[str, object], documents)[path]
+        if type(payload) is not bytes:
+            return reset44_prose_finding("documents.blocks.type")
+        lines = payload.splitlines(keepends=True)
+        start_candidates = tuple(line for line in lines if start_prefix in line)
+        end_candidates = tuple(line for line in lines if end_prefix in line)
+        if not start_candidates or not end_candidates:
+            return reset44_prose_finding("documents.blocks.missing")
+        exact_starts = tuple(marker_pattern.finditer(payload))
+        exact_ends = sum(line == end_line for line in lines)
+        if len(exact_starts) > 1 and exact_ends > 1:
+            return reset44_prose_finding("documents.blocks.duplicate")
+        if len(start_candidates) > 1 or len(end_candidates) > 1:
+            return reset44_prose_finding("documents.blocks.nested")
+        if len(exact_starts) != 1 or exact_ends != 1:
+            return reset44_prose_finding("documents.marker.wholeLine")
+        start_match = exact_starts[0]
+        end = payload.find(end_line)
+        if start_match.start() >= end:
+            return reset44_prose_finding("documents.blocks.pairing")
+        if b"\0" in payload:
+            return reset44_prose_finding("documents.text.nul")
+        if b"\r" in payload:
+            return reset44_prose_finding("documents.text.crlf")
+        try:
+            payload.decode("utf-8")
+        except UnicodeDecodeError:
+            return reset44_prose_finding("documents.text.encoding")
+        actual_marker = payload[start_match.start():start_match.end() - 1].decode("ascii")
+        if marker != actual_marker:
+            return reset44_prose_finding("documents.marker.substitution")
+        interior = payload[start_match.end():end]
+        if not interior.endswith(b"\n"):
+            return reset44_prose_finding("documents.text.trailing")
+        text = " ".join(interior.decode("utf-8").split())
+        tokens: list[str] = []
+        positions: list[int] = []
+        for name, label in zip(names, labels, strict=True):
+            if ordinal == 0 and name == "sevenSemanticPaths":
+                label = "seven-path aggregate is"
+            percent_required = name != "playbook"
+            pattern = re.compile(
+                rf"(?<![\w/]){re.escape(label)} ([0-9][0-9,]*)(?:/([0-9][0-9,]*))?"
+                + (r" \(([0-9]+\.[0-9]{2})%\)" if percent_required else "")
+            )
+            matches = tuple(pattern.finditer(text))
+            if not matches:
+                coordinate = {
+                    "repositoryOracle": "documents.repositoryUse",
+                    "validator": "documents.validatorUse",
+                    "sevenSemanticPaths": "documents.aggregateUse",
+                }.get(name, "documents.tokens")
+                return reset44_prose_finding(coordinate)
+            if len(matches) > 1:
+                groups = {match.groups() for match in matches}
+                coordinate = (
+                    "documents.tokens.duplicate"
+                    if len(groups) == 1
+                    else "documents.tokens.contradictory"
+                )
+                return reset44_prose_finding(coordinate)
+            match = matches[0]
+            use_text, cap_text = match.group(1), match.group(2)
+            use = int(use_text.replace(",", ""))
+            observed_cap = int(cap_text.replace(",", "")) if cap_text else None
+            expected_cap = None if path == expected_paths[1] and name in names[:7] else caps.get(name)
+            if use != uses[name] or observed_cap != expected_cap:
+                coordinate = {
+                    "repositoryOracle": "documents.repositoryUse",
+                    "validator": "documents.validatorUse",
+                    "sevenSemanticPaths": "documents.aggregateUse",
+                }.get(name, "documents.tokens")
+                return reset44_prose_finding(coordinate)
+            if use_text != f"{uses[name]:,}" or (
+                cap_text is not None and cap_text != f"{cast(int, expected_cap):,}"
+            ):
+                return reset44_prose_finding("documents.tokens.number")
+            if percent_required:
+                expected_percent = f"{uses[name] * 100 / caps[name]:.2f}"
+                if match.group(3) != expected_percent:
+                    coordinate = {
+                        "repositoryOracle": "documents.repositoryPercent",
+                        "validator": "documents.validatorPercent",
+                        "sevenSemanticPaths": "documents.aggregatePercent",
+                    }.get(name, "documents.percentage")
+                    return reset44_prose_finding(coordinate)
+            tokens.append(match.group(0))
+            positions.append(match.start())
+        if positions != sorted(positions):
+            return reset44_prose_finding("documents.tokens.order")
+        if reset44_expected_use_sentence(path, tuple(tokens)) not in text:
+            return reset44_prose_finding("documents.tokens.grammar")
+        required = (
+            "core, repository, validator, and aggregate",
+            (
+                "Readability/convergence PASS",
+                "aggregate readability and convergence reviews PASS",
+                "repository, validator, and aggregate reviews PASS",
+            )[ordinal],
+            "independent semantic literals and catalog assertions",
+            "below",
+            "90",
+            "no semantic compression",
+            "further",
+            "growth",
+        )
+        if any(fragment.lower() not in text.lower() for fragment in required):
+            return reset44_prose_finding("documents.tokens.clauses")
+        marker_contract = (
+            (
+                "The whole-line start marker encodes SHA-256 of the raw UTF-8/LF bytes strictly "
+                "between the newline after this marker and the byte before the end marker, "
+                "including exactly one terminal LF and excluding both marker lines."
+            ),
+            (
+                "The whole-line start marker encodes SHA-256 of raw UTF-8/LF bytes strictly "
+                "between the marker lines, including exactly one terminal LF."
+            ),
+            (
+                "The whole-line start marker encodes SHA-256 of raw UTF-8/LF bytes strictly "
+                "between the marker lines, including exactly one terminal LF and excluding both markers."
+            ),
+        )[ordinal]
+        if not text.endswith(marker_contract):
+            return reset44_prose_finding("documents.text.trailing")
+        if hashlib.sha256(interior).hexdigest() != start_match.group(1).decode("ascii"):
+            return reset44_prose_finding("documents.blockHash")
+    return ()
+
+
+def validate_reset44_prose_contract(
+    catalog: object,
+    load_documents: Callable[[tuple[str, ...]], object],
+    uses: dict[str, int],
+    caps: dict[str, int],
+) -> tuple[protocol.Finding, ...]:
+    catalog_findings = validate_reset44_prose_catalog(catalog)
+    if catalog_findings:
+        return catalog_findings
+    rows = tuple(
+        tuple(row)
+        for row in cast(list[list[object]], cast(dict[str, object], catalog)["rows"])
+    )
+    paths = tuple(cast(str, row[0]) for row in rows)
+    documents = load_documents(paths)
+    return validate_reset44_prose_documents(rows, documents, uses, caps)
 
 
 def configured_receipt_finding(index: int, coordinate: str) -> tuple[protocol.Finding, ...]:
@@ -13579,7 +13902,7 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
         if cap and line_uses[name] * 100 >= cap * 85
     }
     assert reviewed_scopes == {
-        "coreOracle", "repositoryOracle", "validator", "sevenSemanticPaths"
+        "repositoryOracle", "validator", "sevenSemanticPaths"
     }
     assert 89 * 10 < 100 * 9 and not 90 * 10 < 100 * 9
 
@@ -13588,7 +13911,7 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
 
     derived_readability_rows = (
         ("actual-at-or-above-85-percent-requires-recorded-readability-and-convergence-risk-review",),
-        (f"core-oracle-{line_use('coreOracle')}-percent-risk-pass-semantic-literal-only-readable-no-compression-below-90-no-further-growth",),
+        (f"core-oracle-{line_use('coreOracle')}-percent-normal",),
         (f"repository-oracle-{line_use('repositoryOracle')}-percent-risk-pass-named-helpers-one-semantic-row-each-ruff-mypy-readable-no-compression-below-90-no-further-growth",),
         (f"validator-{line_use('validator')}-percent-risk-pass-explicit-independent-oracles-readable-no-compression-below-90-no-further-growth",),
         (f"seven-semantic-paths-{line_use('sevenSemanticPaths')}-percent-risk-pass-explicit-rows-docs-readable-no-compression-below-90-no-further-growth",),
@@ -13671,7 +13994,7 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
     )
     hostile_budget_policy, catalog, mutant_rows = hostile_catalog("readabilityDisposition")
     cast(list[str], mutant_rows[1])[0] = cast(list[str], mutant_rows[1])[0].replace(
-        "risk-pass", "risk-fail"
+        "percent-normal", "percent-risk-fail"
     )
     budget_mutants.append(
         ("review-drift", hostile_budget_policy, "readabilityDisposition.review")
@@ -13693,6 +14016,266 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
         assert validate_reset39_budget_contract(hostile_policy) == (
             reset39_budget_contract_finding(coordinate)
         ), mutant_id
+
+    prose_catalog = cast(dict[str, object], budget_policy["reset44ProseUse"])
+    prose_rows = tuple(
+        tuple(row) for row in cast(list[list[object]], prose_catalog["rows"])
+    )
+    assert tuple(cast(list[str], prose_catalog["fields"])) == (
+        EXPECTED_RESET44_PROSE_USE_FIELDS
+    ) == protocol.STATIC_RESET44_PROSE_USE_FIELDS
+    assert prose_rows == EXPECTED_RESET44_PROSE_USE_ROWS
+    assert cast(object, prose_rows) == cast(object, protocol.STATIC_RESET44_PROSE_USE_ROWS)
+    assert prose_catalog["count"] == (
+        EXPECTED_RESET44_PROSE_USE_COUNT
+    ) == protocol.STATIC_RESET44_PROSE_USE_COUNT
+    assert prose_catalog["sha256"] == (
+        EXPECTED_RESET44_PROSE_USE_SHA256
+    ) == protocol.STATIC_RESET44_PROSE_USE_SHA256
+    assert hashlib.sha256(canonical(prose_rows)).hexdigest() == (
+        EXPECTED_RESET44_PROSE_USE_SHA256
+    )
+    assert validate_reset44_prose_catalog(prose_catalog) == ()
+
+    expected_prose_paths = tuple(row[0] for row in prose_rows)
+    document_load_calls: list[tuple[str, ...]] = []
+
+    def load_prose_documents(paths: tuple[str, ...]) -> object:
+        document_load_calls.append(paths)
+        return {path: (ROOT / path).read_bytes() for path in paths}
+
+    assert validate_reset44_prose_contract(
+        prose_catalog, load_prose_documents, line_uses, caps
+    ) == ()
+    assert document_load_calls == [expected_prose_paths]
+    prose_documents = cast(dict[str, object], load_prose_documents(expected_prose_paths))
+    document_load_calls.clear()
+
+    def hostile_prose_catalog() -> tuple[dict[str, object], list[object]]:
+        changed = deepcopy(prose_catalog)
+        return changed, cast(list[object], changed["rows"])
+
+    catalog_mutants: list[tuple[str, object, str]] = [
+        ("non-dict", (), "catalog.type"),
+    ]
+    changed_catalog, changed_rows = hostile_prose_catalog()
+    changed_catalog["unknown"] = "value"
+    catalog_mutants.append(("unknown-key", changed_catalog, "catalog.type"))
+    changed_catalog, changed_rows = hostile_prose_catalog()
+    changed_rows.pop()
+    catalog_mutants.append(("missing", changed_catalog, "catalog.rows.missing"))
+    changed_catalog, changed_rows = hostile_prose_catalog()
+    changed_rows.append(deepcopy(changed_rows[0]))
+    catalog_mutants.append(("extra", changed_catalog, "catalog.rows.cardinality"))
+    changed_catalog, changed_rows = hostile_prose_catalog()
+    changed_rows[-1] = deepcopy(changed_rows[-2])
+    catalog_mutants.append(("duplicate", changed_catalog, "catalog.rows.duplicate"))
+    changed_catalog, changed_rows = hostile_prose_catalog()
+    changed_rows[0], changed_rows[1] = changed_rows[1], changed_rows[0]
+    catalog_mutants.append(("reorder", changed_catalog, "catalog.rows.order"))
+    changed_catalog, changed_rows = hostile_prose_catalog()
+    cast(list[object], changed_rows[0])[2] = line_uses["repositoryOracle"] + 1
+    catalog_mutants.append(("value", changed_catalog, "catalog.values"))
+    changed_catalog, changed_rows = hostile_prose_catalog()
+    changed_catalog["fields"] = ["marker", *EXPECTED_RESET44_PROSE_USE_FIELDS[1:]]
+    catalog_mutants.append(("fields", changed_catalog, "catalog.fields"))
+    changed_catalog, changed_rows = hostile_prose_catalog()
+    changed_catalog["count"] = EXPECTED_RESET44_PROSE_USE_COUNT + 1
+    catalog_mutants.append(("count", changed_catalog, "catalog.count"))
+    changed_catalog, changed_rows = hostile_prose_catalog()
+    changed_catalog["sha256"] = "0" * 64
+    catalog_mutants.append(("sha", changed_catalog, "catalog.sha256"))
+    for mutant_id, field, value in (
+        ("nested-list", 0, ["path"]),
+        ("nested-dict", 1, {"marker": "value"}),
+        ("bool", 2, True),
+        ("wrong-percent-type", 5, 0),
+    ):
+        changed_catalog, changed_rows = hostile_prose_catalog()
+        cast(list[object], changed_rows[0])[field] = value
+        catalog_mutants.append((mutant_id, changed_catalog, "catalog.rows.type"))
+
+    for mutant_id, mutant_catalog, coordinate in catalog_mutants:
+        forbidden_calls: list[tuple[str, ...]] = []
+
+        def forbidden_document_loader(paths: tuple[str, ...]) -> object:
+            forbidden_calls.append(paths)
+            return {"docs/unlisted.md": "dual document fault"}
+
+        assert validate_reset44_prose_contract(
+            mutant_catalog, forbidden_document_loader, line_uses, caps
+        ) == reset44_prose_finding(coordinate), mutant_id
+        assert forbidden_calls == [], mutant_id
+
+    def run_document_mutant(documents: object) -> tuple[protocol.Finding, ...]:
+        calls: list[tuple[str, ...]] = []
+
+        def hostile_document_loader(paths: tuple[str, ...]) -> object:
+            calls.append(paths)
+            return documents
+
+        findings = validate_reset44_prose_contract(
+            prose_catalog, hostile_document_loader, line_uses, caps
+        )
+        assert calls == [expected_prose_paths]
+        return findings
+
+    missing_documents = dict(prose_documents)
+    missing_documents.pop(expected_prose_paths[0])
+    extra_documents = {**prose_documents, "docs/unlisted.md": b"extra"}
+    substituted_documents = {
+        **missing_documents,
+        "docs/unlisted.md": prose_documents[expected_prose_paths[0]],
+    }
+    for mutant_id, documents in (
+        ("mapping-missing", missing_documents),
+        ("mapping-extra", extra_documents),
+        ("mapping-substitution", substituted_documents),
+    ):
+        assert run_document_mutant(documents) == reset44_prose_finding(
+            "documents.path"
+        ), mutant_id
+
+    governed_path = expected_prose_paths[0]
+    governed_payload = prose_documents[governed_path]
+    assert type(governed_payload) is bytes
+    governed_marker = prose_rows[0][1]
+    start_line = governed_marker.encode("ascii") + b"\n"
+    end_line = b"<!-- issue-435-reset44-prose-use:end -->\n"
+    start = governed_payload.index(start_line)
+    content_start = start + len(start_line)
+    end = governed_payload.index(end_line, content_start)
+    interior = governed_payload[content_start:end]
+
+    def changed_document(old: bytes, new: bytes) -> dict[str, object]:
+        assert old in governed_payload and old != new
+        changed = dict(prose_documents)
+        changed[governed_path] = governed_payload.replace(old, new, 1)
+        return changed
+
+    paired_payload = (
+        governed_payload[:start]
+        + end_line
+        + start_line
+        + interior
+        + governed_payload[end + len(end_line):]
+    )
+    duplicate_payload = (
+        governed_payload[:end + len(end_line)]
+        + start_line
+        + interior
+        + end_line
+        + governed_payload[end + len(end_line):]
+    )
+    payload_marker_drift = re.sub(rb"[0-9a-f]{64}", b"e" * 64, start_line)
+    raw_document_mutants = (
+        ("non-bytes", {**prose_documents, governed_path: "text"}, "documents.blocks.type"),
+        ("missing", changed_document(start_line, b""), "documents.blocks.missing"),
+        ("duplicate", {**prose_documents, governed_path: duplicate_payload}, "documents.blocks.duplicate"),
+        ("nested", changed_document(end_line, start_line + end_line), "documents.blocks.nested"),
+        ("pairing", {**prose_documents, governed_path: paired_payload}, "documents.blocks.pairing"),
+        ("start-prefix-junk", changed_document(start_line, b"> " + start_line), "documents.marker.wholeLine"),
+        ("start-suffix-junk", changed_document(start_line, start_line[:-1] + b" junk\n"), "documents.marker.wholeLine"),
+        ("end-prefix-junk", changed_document(end_line, b"> " + end_line), "documents.marker.wholeLine"),
+        ("end-suffix-junk", changed_document(end_line, end_line[:-1] + b" junk\n"), "documents.marker.wholeLine"),
+        ("crlf", changed_document(interior, interior.replace(b"\n", b"\r\n", 1)), "documents.text.crlf"),
+        ("nul", changed_document(interior, b"\0" + interior), "documents.text.nul"),
+        ("encoding", changed_document(interior, b"\xff" + interior), "documents.text.encoding"),
+        ("payload-marker", changed_document(start_line, payload_marker_drift), "documents.marker.substitution"),
+    )
+    for mutant_id, documents, coordinate in raw_document_mutants:
+        assert run_document_mutant(documents) == reset44_prose_finding(coordinate), mutant_id
+
+    for path_ordinal, governed_row in enumerate(prose_rows):
+        branch_path = governed_row[0]
+        payload = prose_documents[branch_path]
+        assert type(payload) is bytes
+        marker = governed_row[1]
+        repository_use = f"{line_uses['repositoryOracle']:,}".encode()
+        repository_percent = (
+            f"{line_uses['repositoryOracle'] * 100 / caps['repositoryOracle']:.2f}"
+        ).encode()
+        cap_text = b"" if path_ordinal == 1 else f"/{caps['repositoryOracle']:,}".encode()
+        duplicate_token = (
+            b"repository " + repository_use + cap_text + b" (" + repository_percent + b"%)"
+        )
+        contradictory_token = b"repository 1" + cap_text + b" (0.01%)"
+        grammar_phrase = (b"Exact file use is", b"Exact use:", b"Exact use is")[path_ordinal]
+        review_phrase = (
+            b"Readability/convergence PASS",
+            b"aggregate readability and convergence reviews PASS",
+            b"repository, validator, and aggregate reviews PASS",
+        )[path_ordinal]
+
+        def branch_document(old: bytes, new: bytes) -> dict[str, object]:
+            branch_start_line = marker.encode("ascii") + b"\n"
+            branch_start = payload.index(branch_start_line) + len(branch_start_line)
+            branch_end = payload.index(end_line, branch_start)
+            branch_interior = payload[branch_start:branch_end]
+            if old == end_line:
+                assert branch_interior.endswith(b"\n") and new.endswith(end_line)
+                changed_interior = branch_interior[:-1] + new.removesuffix(end_line)
+            else:
+                assert old in branch_interior and old != new
+                changed_interior = branch_interior.replace(old, new, 1)
+            changed_payload = payload[:branch_start] + changed_interior + payload[branch_end:]
+            return {**prose_documents, branch_path: changed_payload}
+
+        payload_marker = re.sub(rb"[0-9a-f]{64}", b"f" * 64, marker.encode())
+        branch_mutants = (
+            ("type", {**prose_documents, branch_path: "text"}, "documents.blocks.type"),
+            ("marker", {**prose_documents, branch_path: payload.replace(marker.encode(), payload_marker, 1)}, "documents.marker.substitution"),
+            ("hash", branch_document(b"helpers", b"helpers "), "documents.blockHash"),
+            ("use", branch_document(repository_use, f"{line_uses['repositoryOracle'] + 1:,}".encode()), "documents.repositoryUse"),
+            ("percent", branch_document(repository_percent, f"{float(repository_percent) + 0.01:.2f}".encode()), "documents.repositoryPercent"),
+            ("duplicate", branch_document(end_line, duplicate_token + b"\n" + end_line), "documents.tokens.duplicate"),
+            ("contradictory", branch_document(end_line, contradictory_token + b"\n" + end_line), "documents.tokens.contradictory"),
+            ("grammar", branch_document(grammar_phrase, b"Inexact" + grammar_phrase[5:]), "documents.tokens.grammar"),
+            ("clause", branch_document(review_phrase, review_phrase.replace(b"PASS", b"FAIL")), "documents.tokens.clauses"),
+            ("trailing", branch_document(end_line, b"trailing junk\n" + end_line), "documents.text.trailing"),
+        )
+        for mutant_id, documents, coordinate in branch_mutants:
+            assert run_document_mutant(documents) == reset44_prose_finding(
+                coordinate
+            ), f"path-{path_ordinal}-{mutant_id}"
+
+    first_payload = prose_documents[expected_prose_paths[0]]
+    assert type(first_payload) is bytes
+    validator_token = (
+        f"validator {line_uses['validator']:,}/{caps['validator']:,} "
+        f"({line_uses['validator'] * 100 / caps['validator']:.2f}%)"
+    ).encode()
+    aggregate_token = (
+        f"the seven-path aggregate is {line_uses['sevenSemanticPaths']:,}/"
+        f"{caps['sevenSemanticPaths']:,} "
+        f"({line_uses['sevenSemanticPaths'] * 100 / caps['sevenSemanticPaths']:.2f}%)"
+    ).encode()
+    matrix_token = (
+        f"matrix {line_uses['matrix']:,}/{caps['matrix']:,}"
+        f"\n({line_uses['matrix'] * 100 / caps['matrix']:.2f}%)"
+    ).encode()
+    protocol_token = (
+        f"protocol {line_uses['protocol']:,}/{caps['protocol']:,} "
+        f"({line_uses['protocol'] * 100 / caps['protocol']:.2f}%)"
+    ).encode()
+
+    def first_interior_mutant(old: bytes, new: bytes) -> dict[str, object]:
+        first_interior = first_payload[content_start:end]
+        assert old in first_interior and old != new
+        changed_interior = first_interior.replace(old, new, 1)
+        changed_payload = first_payload[:content_start] + changed_interior + first_payload[end:]
+        return {**prose_documents, expected_prose_paths[0]: changed_payload}
+
+    semantic_document_mutants = (
+        ("validator-use", first_interior_mutant(validator_token, validator_token.replace(f"{line_uses['validator']:,}".encode(), f"{line_uses['validator'] + 1:,}".encode())), "documents.validatorUse"),
+        ("aggregate-use", first_interior_mutant(aggregate_token, aggregate_token.replace(f"{line_uses['sevenSemanticPaths']:,}".encode(), f"{line_uses['sevenSemanticPaths'] + 1:,}".encode())), "documents.aggregateUse"),
+        ("validator-percent", first_interior_mutant(validator_token, validator_token.replace(f"{line_uses['validator'] * 100 / caps['validator']:.2f}".encode(), f"{line_uses['validator'] * 100 / caps['validator'] + 0.01:.2f}".encode())), "documents.validatorPercent"),
+        ("aggregate-percent", first_interior_mutant(aggregate_token, aggregate_token.replace(f"{line_uses['sevenSemanticPaths'] * 100 / caps['sevenSemanticPaths']:.2f}".encode(), f"{line_uses['sevenSemanticPaths'] * 100 / caps['sevenSemanticPaths'] + 0.01:.2f}".encode())), "documents.aggregatePercent"),
+        ("order", first_interior_mutant(matrix_token + b", " + protocol_token, protocol_token + b", " + matrix_token), "documents.tokens.order"),
+        ("number", first_interior_mutant(matrix_token, matrix_token.replace(f"{line_uses['matrix']:,}".encode(), f"0{line_uses['matrix']:,}".encode())), "documents.tokens.number"),
+    )
+    for mutant_id, documents, coordinate in semantic_document_mutants:
+        assert run_document_mutant(documents) == reset44_prose_finding(coordinate), mutant_id
 
     assert len(EXPECTED_PORTABLE_CONSTRUCTION_MUTANT_FIELDS) == 4
     assert len(EXPECTED_PORTABLE_CONSTRUCTION_MUTANTS) == (

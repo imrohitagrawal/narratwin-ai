@@ -250,21 +250,27 @@ generic process failure before output interpretation, with `-1`, `2`, and `127`
 frozen for every form. Author bounds separately prove a scripted RED size of 320
 bytes at exact N/N+1 and a smaller dynamic RED-object cap.
 
-Reset39 caps are matrix 5,500, protocol 7,000, core oracle 4,200, repository
-oracle 18,000, template 600, ADR 550, route partition 5,800,
-architecture/security partition 2,200, validator partition 28,000, seven-path
-aggregate 35,000, and zero binaries. Exact file use is matrix 4,486/5,500
-(81.56%), protocol 5,293/7,000 (75.61%), core 3,770/4,200 (89.76%), repository
-16,031/18,000 (89.06%), template 365/600 (60.83%), ADR 374/550 (68.00%), and
-playbook 542 lines. Exact partitions are validator 25,094/28,000 (89.62%),
-architecture/security 1,281/2,200 (58.23%), and route 4,486/5,800 (77.34%);
-the seven-path aggregate is 30,861/35,000 (88.17%). Readability/convergence is
-PASS for core, repository, validator, and aggregate: the core changes only one
-semantic literal; independent named parser/binder/constructor/validator/mutator
+<!-- issue-435-reset44-prose-use:sha256=071fb29a3d38c635c5ea51bcf588ef6fbc2b6754d1c2da09bc8f7c9c40d83dd6 -->
+Reset44 caps are matrix 5,500, protocol 7,000, core oracle 4,500, repository
+oracle 19,000, template 600, ADR 550, route partition 5,800,
+architecture/security partition 2,200, validator partition 30,000, seven-path
+aggregate 35,200, and zero binaries. Exact file use is matrix 4,496/5,500
+(81.75%), protocol 5,335/7,000 (76.21%), core 3,824/4,500 (84.98%), repository
+16,620/19,000 (87.47%), template 370/600 (61.67%), ADR 380/550 (69.09%), and
+playbook 547 lines. Exact partitions are validator 25,779/30,000 (85.93%),
+architecture/security 1,297/2,200 (58.95%), and route 4,496/5,800 (77.52%);
+the seven-path aggregate is 31,572/35,200 (89.69%). Readability/convergence PASS
+for core, repository, validator, and aggregate only when each at-risk surface
+has an explicit review: core changes use independent semantic literals and
+catalog assertions; named parser, binder, constructor, validator, and mutator
 helpers and one-semantic-case rows remain explicit; Ruff and strict mypy pass;
-the prose and tables remain readable. Every file, partition, and aggregate is
-below the 90% pre-C3/GREEN stop. No semantic compression and no further growth
-are permitted on these frozen Reset39 surfaces.
+prose and tables remain readable. Every
+file, partition, and aggregate must be below the exact 90% pre-C3/GREEN stop.
+No semantic compression or further growth is permitted on frozen Reset44
+surfaces. The whole-line start marker encodes SHA-256 of the raw UTF-8/LF bytes
+strictly between the newline after this marker and the byte before the end
+marker, including exactly one terminal LF and excluding both marker lines.
+<!-- issue-435-reset44-prose-use:end -->
 
 
 ### Filesystem snapshot boundary

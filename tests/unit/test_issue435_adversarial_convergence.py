@@ -20,54 +20,98 @@ FREEZE_PATH = ROOT / "docs/governance/adversarial-convergence-red-freeze-v1.json
 REPOSITORY_TEST_PATH = ROOT / "tests/unit/test_issue435_adversarial_convergence_repository.py"
 IDENTITY_DOMAIN = b"NARRATWIN:ACP:IDENTITY:V1\x00"
 SIGNATURE_DOMAIN = b"NARRATWIN:ACP:SIGNATURE:V1\x00"
-EXPECTED_SEMANTIC_SHA256 = "1918f7cb9d277633da0bbbebf5485ee7a80b30141b6b2fcdae213ba98566ac4f"
+EXPECTED_SEMANTIC_SHA256 = "ec34c649f4df4eb09cd48c0c6bd78e626dcf400559baf1055759dfc1db57fc62"
 EXPECTED_RESET39_BUDGET_CAP_FIELDS = ("scope", "name", "limit")
 EXPECTED_RESET39_BUDGET_CAPS = (
     ("perFile", "matrix", 5500),
     ("perFile", "protocol", 7000),
-    ("perFile", "coreOracle", 4200),
-    ("perFile", "repositoryOracle", 18000),
+    ("perFile", "coreOracle", 4500),
+    ("perFile", "repositoryOracle", 19000),
     ("perFile", "template", 600),
     ("perFile", "adr0064", 550),
     ("partitions", "route", 5800),
     ("partitions", "architectureSecurity", 2200),
-    ("partitions", "validator", 28000),
-    ("aggregate", "sevenSemanticPaths", 35000),
+    ("partitions", "validator", 30000),
+    ("aggregate", "sevenSemanticPaths", 35200),
     ("binary", "binary", 0),
 )
 EXPECTED_RESET39_BUDGET_CAP_COUNT = 11
 EXPECTED_RESET39_BUDGET_CAP_SHA256 = (
-    "9990330707b60eedab6337886133a14182b0290beab14511d1b9c220b03c9a12"
+    "4d7a35b2b66a610224afaf7418c83bc9d147d26babdd1c508eaadc0cadcef41a"
 )
 EXPECTED_RESET39_READABILITY_DISPOSITION_FIELDS = ("disposition",)
 EXPECTED_RESET39_READABILITY_DISPOSITION = (
     ("actual-at-or-above-85-percent-requires-recorded-readability-and-convergence-risk-review",),
+    ("core-oracle-3824-of-4500-84.98-percent-normal",),
     (
-        "core-oracle-3770-of-4200-89.76-percent-risk-pass-semantic-literal-only-readable-no-compression-below-90-no-further-growth",
+        "repository-oracle-16620-of-19000-87.47-percent-risk-pass-named-helpers-one-semantic-row-each-ruff-mypy-readable-no-compression-below-90-no-further-growth",
     ),
     (
-        "repository-oracle-16037-of-18000-89.09-percent-risk-pass-named-helpers-one-semantic-row-each-ruff-mypy-readable-no-compression-below-90-no-further-growth",
+        "validator-25779-of-30000-85.93-percent-risk-pass-explicit-independent-oracles-readable-no-compression-below-90-no-further-growth",
     ),
     (
-        "validator-25100-of-28000-89.64-percent-risk-pass-explicit-independent-oracles-readable-no-compression-below-90-no-further-growth",
+        "seven-semantic-paths-31572-of-35200-89.69-percent-risk-pass-explicit-rows-docs-readable-no-compression-below-90-no-further-growth",
     ),
-    (
-        "seven-semantic-paths-30867-of-35000-88.19-percent-risk-pass-explicit-rows-docs-readable-no-compression-below-90-no-further-growth",
-    ),
-    ("matrix-4486-of-5500-81.56-percent-normal",),
-    ("protocol-5293-of-7000-75.61-percent-normal",),
-    ("template-365-of-600-60.83-percent-normal",),
-    ("adr0064-374-of-550-68.00-percent-normal",),
-    ("playbook-542-lines",),
-    ("architecture-security-1281-of-2200-58.23-percent-normal",),
-    ("route-4486-of-5800-77.34-percent-normal",),
+    ("matrix-4496-of-5500-81.75-percent-normal",),
+    ("protocol-5335-of-7000-76.21-percent-normal",),
+    ("template-370-of-600-61.67-percent-normal",),
+    ("adr0064-380-of-550-69.09-percent-normal",),
+    ("playbook-547-lines",),
+    ("architecture-security-1297-of-2200-58.95-percent-normal",),
+    ("route-4496-of-5800-77.52-percent-normal",),
     ("binary-zero",),
     ("all-caps-below-90-percent-stop",),
     ("semantic-compression-prohibited",),
 )
 EXPECTED_RESET39_READABILITY_DISPOSITION_COUNT = 15
 EXPECTED_RESET39_READABILITY_DISPOSITION_SHA256 = (
-    "0b175d298b3ea52f7e2de5d247b910303d934bb399bd4a654cc8a0bbfdfcf88d"
+    "6a1c8bc391246dd4012ffa03853341c8317f7f51a6348486138ebdda353185f6"
+)
+EXPECTED_RESET44_PROSE_USE_FIELDS = (
+    "path",
+    "marker",
+    "repositoryUse",
+    "validatorUse",
+    "aggregateUse",
+    "repositoryPercent",
+    "validatorPercent",
+    "aggregatePercent",
+)
+EXPECTED_RESET44_PROSE_USE_ROWS = (
+    (
+        "docs/ADR/0064-adversarial-convergence-protocol.md",
+        "<!-- issue-435-reset44-prose-use:sha256=071fb29a3d38c635c5ea51bcf588ef6fbc2b6754d1c2da09bc8f7c9c40d83dd6 -->",
+        16620,
+        25779,
+        31572,
+        "87.47",
+        "85.93",
+        "89.69",
+    ),
+    (
+        "docs/ADVERSARIAL_VERIFICATION_PLAYBOOK.md",
+        "<!-- issue-435-reset44-prose-use:sha256=c4545018358305f40c40a7b2354078ad5ad9a7d5b4ae553e668046f430482cee -->",
+        16620,
+        25779,
+        31572,
+        "87.47",
+        "85.93",
+        "89.69",
+    ),
+    (
+        "docs/templates/ADVERSARIAL_INVARIANT_MATRIX.md",
+        "<!-- issue-435-reset44-prose-use:sha256=bc493eed07206948bac026a2323cded6ec8447d3b2813b5896b230064b2f71ae -->",
+        16620,
+        25779,
+        31572,
+        "87.47",
+        "85.93",
+        "89.69",
+    ),
+)
+EXPECTED_RESET44_PROSE_USE_COUNT = 3
+EXPECTED_RESET44_PROSE_USE_SHA256 = (
+    "076ea55709be59e087f98f0c0746ba814e6b8645df276d68f8ce4154f203d6d1"
 )
 EXPECTED_MUTANT_OUTCOMES_SHA256 = "67b7a36a4cc09fe3a2e092361ada276715ce273aa3b10259a2b4ea92987d1b03"
 EXPECTED_FIXTURE_REGISTRY_SHA256 = (
@@ -3595,6 +3639,12 @@ def test_budget_thresholds_are_exact_at_85_and_90_percent() -> None:
             "count": EXPECTED_RESET39_READABILITY_DISPOSITION_COUNT,
             "sha256": EXPECTED_RESET39_READABILITY_DISPOSITION_SHA256,
         },
+        "reset44ProseUse": {
+            "fields": list(EXPECTED_RESET44_PROSE_USE_FIELDS),
+            "rows": [list(row) for row in EXPECTED_RESET44_PROSE_USE_ROWS],
+            "count": EXPECTED_RESET44_PROSE_USE_COUNT,
+            "sha256": EXPECTED_RESET44_PROSE_USE_SHA256,
+        },
         "levels": ["per_file", "partition", "aggregate"],
     }
     assert EXPECTED_RESET39_BUDGET_CAP_FIELDS == protocol.STATIC_RESET39_BUDGET_CAP_FIELDS
@@ -3613,6 +3663,10 @@ def test_budget_thresholds_are_exact_at_85_and_90_percent() -> None:
     assert EXPECTED_RESET39_READABILITY_DISPOSITION_SHA256 == (
         protocol.STATIC_RESET39_READABILITY_DISPOSITION_SHA256
     )
+    assert EXPECTED_RESET44_PROSE_USE_FIELDS == protocol.STATIC_RESET44_PROSE_USE_FIELDS
+    assert EXPECTED_RESET44_PROSE_USE_ROWS == protocol.STATIC_RESET44_PROSE_USE_ROWS
+    assert EXPECTED_RESET44_PROSE_USE_COUNT == protocol.STATIC_RESET44_PROSE_USE_COUNT
+    assert EXPECTED_RESET44_PROSE_USE_SHA256 == protocol.STATIC_RESET44_PROSE_USE_SHA256
     result = protocol.validate_matrix_bytes(MATRIX_PATH.read_bytes(), synthetic_freeze(document))
     assert result.findings == ()
     assert protocol.budget_disposition(84, 100) is protocol.BudgetDisposition.NORMAL
