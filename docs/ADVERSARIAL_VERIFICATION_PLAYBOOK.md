@@ -116,7 +116,9 @@ descriptor-bound process view. Concurrent out-of-process mutation after close
 or during reopen is excluded. Never describe this design as race-free, atomic,
 descriptor-bound, or able to detect or prevent every concurrent mutation. A
 stronger claim is an `EVIDENCE_BLOCKER` and requires a new authorized design and
-executable evidence.
+executable evidence. Review the case-folded, whitespace-, hyphen-, and
+Markdown-normalized document against the frozen bounded synonym grammar for all
+four prohibited stronger-claim families.
 <!-- issue-435-filesystem-snapshot-boundary:end -->
 
 Fourteen fixed read-only forms then use absolute `/usr/bin/git`, no pager,

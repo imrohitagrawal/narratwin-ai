@@ -229,15 +229,15 @@ STATIC_GIT_DOCUMENTATION_CLAIM_CONTRACT = (
         (
             (
                 "docs/ADR/0064-adversarial-convergence-protocol.md",
-                "9dd347f0a3e8a53fe91969370b2caf8e7727b6d174e511f5132fae016cf2c471",
+                "0ee62de4bb552ec6445a5b5849882d4e430064036cdeb9a1e05be686b6d6ca46",
             ),
             (
                 "docs/ADVERSARIAL_VERIFICATION_PLAYBOOK.md",
-                "1840af97aeb2664a257488058260d8002e224cadd922d4c2e4e70c3a2224abc9",
+                "ae61f545f27e67f250165a3b0b6a3bb97d21475714773b8685a93d44b03ed10e",
             ),
             (
                 "docs/templates/ADVERSARIAL_INVARIANT_MATRIX.md",
-                "adc2d06e02992db52c1eaa5b667faf9031aba737506eab7ff71ad1b7db2139a3",
+                "14503534278577e7e29cd745f8a356d6e0e8b427cbd3e01291cf874e5c2684cd",
             ),
         ),
     ),
@@ -250,6 +250,48 @@ STATIC_GIT_DOCUMENTATION_CLAIM_CONTRACT = (
             "detection_or_prevention_of_all_concurrent_repository_mutation",
         ),
     ),
+    (
+        "normalization",
+        (
+            "ascii-lowercase",
+            "remove-markdown-emphasis-asterisk-underscore-backtick",
+            "collapse-whitespace-and-hyphen-runs-to-space",
+            "strip-leading-and-trailing-space",
+        ),
+    ),
+    ("variantAxes", ("case", "whitespace", "hyphen", "markdown", "bounded-synonym")),
+    (
+        "prohibitedFamilyGrammar",
+        (
+            (
+                "race_free_validation",
+                ("repository validation is race free", "validator is free of races"),
+            ),
+            (
+                "atomic_check_to_use",
+                (
+                    "repository validation is an atomic check to use operation",
+                    "validation is atomic between check and use",
+                ),
+            ),
+            (
+                "descriptor_bound_git_subprocess",
+                (
+                    "git subprocess evidence is descriptor bound",
+                    "git process evidence is bound to descriptors",
+                ),
+            ),
+            (
+                "detection_or_prevention_of_all_concurrent_repository_mutation",
+                (
+                    "validator detects and prevents all concurrent repository mutation",
+                    "all concurrent repository changes are detected and prevented",
+                ),
+            ),
+        ),
+    ),
+    ("variantCount", 20),
+    ("variantSha256", "a4666fdafd5443efaf7b5ea46073718d02d841f6dc4e088b4c7513620c14491b"),
     (
         "findingContracts",
         (
@@ -1127,12 +1169,142 @@ STATIC_GIT_METADATA_CASE_SHA256 = "9da07ee4ae676313a8b267ae7374bad049781025d969e
 STATIC_GIT_METADATA_EXECUTION_CONTRACT_FIELDS = (
     "caseRow",
     "operationalMode",
-    "observedPreExecutionStimulusFacts",
-    "observedPreExecutionStimulusIdentity",
-    "observedExecutionEvidenceIdentity",
+    "configuredStimulusFacts",
+    "configuredStimulusIdentity",
+    "normalizedIoCleanupIdentity",
     "rolePrefix",
     "normalizedIoCleanupPrefix",
 )
+STATIC_GIT_METADATA_TRIGGER_RECEIPT_FIELDS = (
+    "role",
+    "callbackVector",
+    "lstatVector",
+    "openVector",
+    "fstatVector",
+    "readRequestVector",
+    "readChunkLengthVector",
+    "readTypeVector",
+    "postLstatVector",
+    "closeAttemptOrderVector",
+    "closeResultVector",
+)
+STATIC_GIT_METADATA_TRIGGER_RECEIPT_COUNT = 129
+STATIC_GIT_METADATA_TRIGGER_RECEIPT_SHA256 = (
+    "b7859e833216ef647dffbf6f246c69747895943a308f5f24cb327c1b3933c1f6"
+)
+STATIC_GIT_METADATA_FORMER_COLLISION_GROUPS = (
+    (
+        "root-pre-root-symlink-conventional",
+        ("root-symlink@conventional", "pre-root-symlink@conventional"),
+    ),
+    ("root-pre-root-symlink-linked", ("root-symlink@linked", "pre-root-symlink@linked")),
+    (
+        "root-pre-root-replacement-conventional",
+        ("root-replacement@conventional", "pre-root-replacement@conventional"),
+    ),
+    (
+        "root-pre-root-replacement-linked",
+        ("root-replacement@linked", "pre-root-replacement@linked"),
+    ),
+    (
+        "grafts-live-broken-conventional",
+        ("grafts-live-symlink@conventional", "grafts-broken-symlink@conventional"),
+    ),
+    ("grafts-live-broken-linked", ("grafts-live-symlink@linked", "grafts-broken-symlink@linked")),
+    (
+        "shallow-live-broken-conventional",
+        ("shallow-live-symlink@conventional", "shallow-broken-symlink@conventional"),
+    ),
+    (
+        "shallow-live-broken-linked",
+        ("shallow-live-symlink@linked", "shallow-broken-symlink@linked"),
+    ),
+    (
+        "alternates-live-broken-conventional",
+        ("alternates-live-symlink@conventional", "alternates-broken-symlink@conventional"),
+    ),
+    (
+        "alternates-live-broken-linked",
+        ("alternates-live-symlink@linked", "alternates-broken-symlink@linked"),
+    ),
+    (
+        "http-alternates-live-broken-conventional",
+        (
+            "http-alternates-live-symlink@conventional",
+            "http-alternates-broken-symlink@conventional",
+        ),
+    ),
+    (
+        "http-alternates-live-broken-linked",
+        ("http-alternates-live-symlink@linked", "http-alternates-broken-symlink@linked"),
+    ),
+    (
+        "linked-layout-short-read-reverse-close",
+        ("linked-layout-outside@linked", "short-read@linked", "reverse-close@linked"),
+    ),
+    (
+        "linked-external-ordinary-ancestor-symlink",
+        ("linked-external-ancestor-symlink@linked", "alternates-ancestor-symlink@linked"),
+    ),
+    ("configured-removed-linked-pre-root-fstat", ("pre-root-symlink@linked", "fstat-type@linked")),
+    ("configured-removed-linked-pre-root-open", ("pre-root-symlink@linked", "open-error@linked")),
+    (
+        "configured-removed-conventional-ancestor",
+        ("root-replacement@conventional", "ancestor-replacement@conventional"),
+    ),
+    (
+        "configured-removed-conventional-between",
+        ("root-replacement@conventional", "between-read-conventional-dot-git@conventional"),
+    ),
+    (
+        "configured-removed-conventional-final",
+        ("root-replacement@conventional", "final-binding-revalidation@conventional"),
+    ),
+    (
+        "configured-removed-conventional-leaf",
+        ("root-replacement@conventional", "leaf-replacement@conventional"),
+    ),
+    (
+        "configured-removed-conventional-fstat-device",
+        ("root-replacement@conventional", "fstat-device@conventional"),
+    ),
+    (
+        "configured-removed-conventional-fstat-inode",
+        ("root-replacement@conventional", "fstat-inode@conventional"),
+    ),
+    (
+        "configured-removed-conventional-fstat-type",
+        ("root-replacement@conventional", "fstat-type@conventional"),
+    ),
+    (
+        "configured-removed-conventional-lstat",
+        ("root-replacement@conventional", "lstat-error@conventional"),
+    ),
+    (
+        "configured-removed-conventional-open",
+        ("root-replacement@conventional", "open-error@conventional"),
+    ),
+    (
+        "configured-removed-conventional-close",
+        ("root-replacement@conventional", "close-error@conventional"),
+    ),
+    ("configured-removed-linked-root-leaf", ("root-replacement@linked", "leaf-replacement@linked")),
+    (
+        "configured-removed-linked-root-postread",
+        ("root-replacement@linked", "post-read-device@linked"),
+    ),
+    (
+        "configured-removed-linked-between-read",
+        ("between-read-linked-directory@linked", "between-read-common-directory@linked"),
+    ),
+    ("configured-removed-linked-fstat-lstat", ("fstat-inode@linked", "lstat-error@linked")),
+    ("configured-removed-linked-fstat-close", ("fstat-inode@linked", "close-error@linked")),
+)
+STATIC_GIT_METADATA_FORMER_COLLISION_GROUP_COUNT = 31
+STATIC_GIT_METADATA_FORMER_COLLISION_GROUP_SHA256 = (
+    "977619f813077f29dd87070f760e2fffc2eee6281cdfc168cb7942f5cd45fc0b"
+)
+STATIC_GIT_METADATA_CONFIGURED_REMOVED_COLLISION_COUNT = 17
 STATIC_GIT_METADATA_EXECUTION_IDS = (
     "conventional-positive@conventional",
     "linked-positive@linked",
@@ -1574,6 +1746,7 @@ STATIC_GIT_METADATA_GOVERNED_PRECEDENCE_CASES = (
         "validate_repository_freeze",
         "dot-git-target-symlink",
         "matrix-schema-version-wrong",
+        "74459b011344be2e067eb5bba03760fecd87ff5895e694a116943a6b5a6f5e6d",
         "git-metadata",
         "CURRENT",
         "ACP.GIT_METADATA.TARGET_SYMLINK",
@@ -1585,7 +1758,7 @@ STATIC_GIT_METADATA_GOVERNED_PRECEDENCE_CASES = (
 )
 STATIC_GIT_METADATA_GOVERNED_PRECEDENCE_COUNT = 1
 STATIC_GIT_METADATA_GOVERNED_PRECEDENCE_SHA256 = (
-    "881ebe4a28d10cfe7c8ccfd9a1f2bd4677ff6f2f1bcc642514031b282042f971"
+    "5f25c0757507c7061d70cd885aae48c3341163d8957f018a20db6649bbf207e2"
 )
 STATIC_GIT_RETURN_CODES = (
     ("object_format", (0,), (), (-1, 2, 127)),

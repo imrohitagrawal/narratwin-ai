@@ -134,7 +134,9 @@ descriptor closes or while Git reopens those paths is outside this validator's
 threat model. The protocol therefore makes no race-free, atomic check-to-use,
 descriptor-bound subprocess, or detect-all-concurrent-mutation claim. Any such
 stronger claim is an `EVIDENCE_BLOCKER` requiring new authority, architecture,
-and executable proof.
+and executable proof. The governed-document validator case-folds and normalizes
+whitespace, hyphens, and Markdown emphasis, then rejects the frozen bounded
+synonym grammar for each of those four prohibited stronger-claim families.
 <!-- issue-435-filesystem-snapshot-boundary:end -->
 
 Nested parser

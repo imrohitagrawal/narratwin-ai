@@ -147,6 +147,8 @@ descriptor-bound; concurrent out-of-process mutation after descriptor close or
 during reopen is excluded. Reader-local race detection and final revalidation
 must not be promoted into race-free, atomic, or all-concurrent-mutation claims.
 Any stronger claim is an `EVIDENCE_BLOCKER` pending new authority and proof.
+Freeze a bounded synonym grammar and reject its case, whitespace, hyphen, and
+Markdown-normalized variants across every governed claim document.
 <!-- issue-435-filesystem-snapshot-boundary:end -->
 Freeze fsck status 1 as object-integrity failure, missing-object type status 128
 as missing RED, and `-1`, `2`, and `127` for every form as the generic process

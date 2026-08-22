@@ -64,6 +64,7 @@ MetadataCaseRow = tuple[str, str, str, str, str, str | None, str]
 NormalizedMetadataIo = tuple[str, ...]
 MetadataRoleTrace = tuple[str, NormalizedMetadataIo]
 MetadataStimulusFacts = tuple[tuple[str, str], ...]
+MetadataTriggerReceipt = tuple[tuple[str, tuple[str, ...]], ...]
 MetadataExecution = tuple[
     MetadataCaseRow,
     str,
@@ -919,11 +920,141 @@ EXPECTED_METADATA_PAYLOAD_FINGERPRINT_SHA256 = (
 EXPECTED_METADATA_EXECUTION_CONTRACT_FIELDS = (
     "caseRow",
     "operationalMode",
-    "observedPreExecutionStimulusFacts",
-    "observedPreExecutionStimulusIdentity",
+    "configuredStimulusFacts",
+    "configuredStimulusIdentity",
     "observedExecutionEvidenceIdentity",
     "rolePrefix",
     "normalizedIoCleanupPrefix",
+)
+EXPECTED_METADATA_TRIGGER_RECEIPT_FIELDS = (
+    "role",
+    "callbackVector",
+    "lstatVector",
+    "openVector",
+    "fstatVector",
+    "readRequestVector",
+    "readChunkLengthVector",
+    "readTypeVector",
+    "postLstatVector",
+    "closeAttemptOrderVector",
+    "closeResultVector",
+)
+EXPECTED_METADATA_TRIGGER_RECEIPT_COUNT = 129
+EXPECTED_METADATA_TRIGGER_RECEIPT_SHA256 = (
+    "b7859e833216ef647dffbf6f246c69747895943a308f5f24cb327c1b3933c1f6"
+)
+EXPECTED_METADATA_REMOVED_CONFIG_COLLISION_COUNT = 17
+EXPECTED_METADATA_FORMER_COLLISION_GROUPS = (
+    (
+        "root-pre-root-symlink-conventional",
+        ("root-symlink@conventional", "pre-root-symlink@conventional"),
+    ),
+    ("root-pre-root-symlink-linked", ("root-symlink@linked", "pre-root-symlink@linked")),
+    (
+        "root-pre-root-replacement-conventional",
+        ("root-replacement@conventional", "pre-root-replacement@conventional"),
+    ),
+    (
+        "root-pre-root-replacement-linked",
+        ("root-replacement@linked", "pre-root-replacement@linked"),
+    ),
+    (
+        "grafts-live-broken-conventional",
+        ("grafts-live-symlink@conventional", "grafts-broken-symlink@conventional"),
+    ),
+    ("grafts-live-broken-linked", ("grafts-live-symlink@linked", "grafts-broken-symlink@linked")),
+    (
+        "shallow-live-broken-conventional",
+        ("shallow-live-symlink@conventional", "shallow-broken-symlink@conventional"),
+    ),
+    (
+        "shallow-live-broken-linked",
+        ("shallow-live-symlink@linked", "shallow-broken-symlink@linked"),
+    ),
+    (
+        "alternates-live-broken-conventional",
+        ("alternates-live-symlink@conventional", "alternates-broken-symlink@conventional"),
+    ),
+    (
+        "alternates-live-broken-linked",
+        ("alternates-live-symlink@linked", "alternates-broken-symlink@linked"),
+    ),
+    (
+        "http-alternates-live-broken-conventional",
+        (
+            "http-alternates-live-symlink@conventional",
+            "http-alternates-broken-symlink@conventional",
+        ),
+    ),
+    (
+        "http-alternates-live-broken-linked",
+        ("http-alternates-live-symlink@linked", "http-alternates-broken-symlink@linked"),
+    ),
+    (
+        "linked-layout-short-read-reverse-close",
+        ("linked-layout-outside@linked", "short-read@linked", "reverse-close@linked"),
+    ),
+    (
+        "linked-external-ordinary-ancestor-symlink",
+        ("linked-external-ancestor-symlink@linked", "alternates-ancestor-symlink@linked"),
+    ),
+    ("configured-removed-linked-pre-root-fstat", ("pre-root-symlink@linked", "fstat-type@linked")),
+    ("configured-removed-linked-pre-root-open", ("pre-root-symlink@linked", "open-error@linked")),
+    (
+        "configured-removed-conventional-ancestor",
+        ("root-replacement@conventional", "ancestor-replacement@conventional"),
+    ),
+    (
+        "configured-removed-conventional-between",
+        ("root-replacement@conventional", "between-read-conventional-dot-git@conventional"),
+    ),
+    (
+        "configured-removed-conventional-final",
+        ("root-replacement@conventional", "final-binding-revalidation@conventional"),
+    ),
+    (
+        "configured-removed-conventional-leaf",
+        ("root-replacement@conventional", "leaf-replacement@conventional"),
+    ),
+    (
+        "configured-removed-conventional-fstat-device",
+        ("root-replacement@conventional", "fstat-device@conventional"),
+    ),
+    (
+        "configured-removed-conventional-fstat-inode",
+        ("root-replacement@conventional", "fstat-inode@conventional"),
+    ),
+    (
+        "configured-removed-conventional-fstat-type",
+        ("root-replacement@conventional", "fstat-type@conventional"),
+    ),
+    (
+        "configured-removed-conventional-lstat",
+        ("root-replacement@conventional", "lstat-error@conventional"),
+    ),
+    (
+        "configured-removed-conventional-open",
+        ("root-replacement@conventional", "open-error@conventional"),
+    ),
+    (
+        "configured-removed-conventional-close",
+        ("root-replacement@conventional", "close-error@conventional"),
+    ),
+    ("configured-removed-linked-root-leaf", ("root-replacement@linked", "leaf-replacement@linked")),
+    (
+        "configured-removed-linked-root-postread",
+        ("root-replacement@linked", "post-read-device@linked"),
+    ),
+    (
+        "configured-removed-linked-between-read",
+        ("between-read-linked-directory@linked", "between-read-common-directory@linked"),
+    ),
+    ("configured-removed-linked-fstat-lstat", ("fstat-inode@linked", "lstat-error@linked")),
+    ("configured-removed-linked-fstat-close", ("fstat-inode@linked", "close-error@linked")),
+)
+EXPECTED_METADATA_FORMER_COLLISION_GROUP_COUNT = 31
+EXPECTED_METADATA_FORMER_COLLISION_GROUP_SHA256 = (
+    "977619f813077f29dd87070f760e2fffc2eee6281cdfc168cb7942f5cd45fc0b"
 )
 EXPECTED_METADATA_GOVERNED_PRECEDENCE_CASES = (
     (
@@ -931,6 +1062,7 @@ EXPECTED_METADATA_GOVERNED_PRECEDENCE_CASES = (
         "validate_repository_freeze",
         "dot-git-target-symlink",
         "matrix-schema-version-wrong",
+        "74459b011344be2e067eb5bba03760fecd87ff5895e694a116943a6b5a6f5e6d",
         "git-metadata",
         "CURRENT",
         "ACP.GIT_METADATA.TARGET_SYMLINK",
@@ -941,7 +1073,7 @@ EXPECTED_METADATA_GOVERNED_PRECEDENCE_CASES = (
     ),
 )
 EXPECTED_METADATA_GOVERNED_PRECEDENCE_SHA256 = (
-    "881ebe4a28d10cfe7c8ccfd9a1f2bd4677ff6f2f1bcc642514031b282042f971"
+    "5f25c0757507c7061d70cd885aae48c3341163d8957f018a20db6649bbf207e2"
 )
 EXPECTED_GIT_FILESYSTEM_THREAT_MODEL = {
     "scope": "stable_local_filesystem_metadata_and_object_snapshot_for_full_validator_invocation",
@@ -1006,6 +1138,50 @@ EXPECTED_GIT_FILESYSTEM_THREAT_MODEL_FINDINGS = (
         "staticBoundaryContract.gitEvidenceContract.filesystemThreatModel.strongerClaimDisposition",
     ),
 )
+EXPECTED_DOCUMENT_OVERCLAIM_NORMALIZATION = (
+    "ascii-lowercase",
+    "remove-markdown-emphasis-asterisk-underscore-backtick",
+    "collapse-whitespace-and-hyphen-runs-to-space",
+    "strip-leading-and-trailing-space",
+)
+EXPECTED_DOCUMENT_OVERCLAIM_VARIANT_AXES = (
+    "case",
+    "whitespace",
+    "hyphen",
+    "markdown",
+    "bounded-synonym",
+)
+EXPECTED_DOCUMENT_PROHIBITED_FAMILY_GRAMMAR = (
+    (
+        "race_free_validation",
+        ("repository validation is race free", "validator is free of races"),
+    ),
+    (
+        "atomic_check_to_use",
+        (
+            "repository validation is an atomic check to use operation",
+            "validation is atomic between check and use",
+        ),
+    ),
+    (
+        "descriptor_bound_git_subprocess",
+        (
+            "git subprocess evidence is descriptor bound",
+            "git process evidence is bound to descriptors",
+        ),
+    ),
+    (
+        "detection_or_prevention_of_all_concurrent_repository_mutation",
+        (
+            "validator detects and prevents all concurrent repository mutation",
+            "all concurrent repository changes are detected and prevented",
+        ),
+    ),
+)
+EXPECTED_DOCUMENT_OVERCLAIM_VARIANT_COUNT = 20
+EXPECTED_DOCUMENT_OVERCLAIM_VARIANT_SHA256 = (
+    "a4666fdafd5443efaf7b5ea46073718d02d841f6dc4e088b4c7513620c14491b"
+)
 EXPECTED_GIT_DOCUMENTATION_CLAIM_CONTRACT = {
     "validator": "filesystem_threat_document_findings",
     "blockStart": "<!-- issue-435-filesystem-snapshot-boundary:start -->",
@@ -1013,15 +1189,15 @@ EXPECTED_GIT_DOCUMENTATION_CLAIM_CONTRACT = {
     "approvedBlockSha256": [
         [
             "docs/ADR/0064-adversarial-convergence-protocol.md",
-            "9dd347f0a3e8a53fe91969370b2caf8e7727b6d174e511f5132fae016cf2c471",
+            "0ee62de4bb552ec6445a5b5849882d4e430064036cdeb9a1e05be686b6d6ca46",
         ],
         [
             "docs/ADVERSARIAL_VERIFICATION_PLAYBOOK.md",
-            "1840af97aeb2664a257488058260d8002e224cadd922d4c2e4e70c3a2224abc9",
+            "ae61f545f27e67f250165a3b0b6a3bb97d21475714773b8685a93d44b03ed10e",
         ],
         [
             "docs/templates/ADVERSARIAL_INVARIANT_MATRIX.md",
-            "adc2d06e02992db52c1eaa5b667faf9031aba737506eab7ff71ad1b7db2139a3",
+            "14503534278577e7e29cd745f8a356d6e0e8b427cbd3e01291cf874e5c2684cd",
         ],
     ],
     "prohibitedClaimFamilies": [
@@ -1029,6 +1205,11 @@ EXPECTED_GIT_DOCUMENTATION_CLAIM_CONTRACT = {
         "atomic_check_to_use",
         "descriptor_bound_git_subprocess",
         "detection_or_prevention_of_all_concurrent_repository_mutation",
+    ],
+    "normalization": list(EXPECTED_DOCUMENT_OVERCLAIM_NORMALIZATION),
+    "variantAxes": list(EXPECTED_DOCUMENT_OVERCLAIM_VARIANT_AXES),
+    "prohibitedFamilyGrammar": [
+        [family, list(phrases)] for family, phrases in EXPECTED_DOCUMENT_PROHIBITED_FAMILY_GRAMMAR
     ],
     "findingContracts": [
         ["block", "ACP.DOC.THREAT_MODEL_BLOCK"],
@@ -1423,6 +1604,14 @@ TEXTUAL_TRANSFORMATION_BUILDERS = (
 )
 TEXTUAL_TRANSFORMATION_INPUT_CONTRACT_SHA256 = (
     "d94fc0a49bf78e072ac44997785e40e073c19e9d14f0a19ab5a9415d88e60456"
+)
+TEXTUAL_TRANSFORMATION_BYTE_IDENTITY_FIELDS = (
+    "role",
+    "transformation",
+    "baseBytes",
+    "baseSha256",
+    "transformedBytes",
+    "transformedSha256",
 )
 
 
@@ -2043,6 +2232,34 @@ def canonical(value: object) -> bytes:
     return json.dumps(value, sort_keys=True, separators=(",", ":")).encode()
 
 
+def normalize_document_overclaim(value: str) -> str:
+    """Apply the frozen bounded ASCII/Markdown/spacing normalization."""
+    ascii_lowered = "".join(
+        chr(ord(character) + 32) if "A" <= character <= "Z" else character for character in value
+    )
+    emphasis_removed = re.sub(r"[*_`]", "", ascii_lowered)
+    return re.sub(r"[\s-]+", " ", emphasis_removed).strip()
+
+
+def document_overclaim_variants() -> tuple[tuple[str, str, str, str], ...]:
+    rows: list[tuple[str, str, str, str]] = []
+    for family, phrases in EXPECTED_DOCUMENT_PROHIBITED_FAMILY_GRAMMAR:
+        canonical_phrase, synonym = phrases
+        variants = (
+            ("case", canonical_phrase.upper()),
+            ("whitespace", " \t\n ".join(canonical_phrase.split(" "))),
+            ("hyphen", "-".join(canonical_phrase.split(" "))),
+            ("markdown", " ".join(f"**{word}**" for word in canonical_phrase.split(" "))),
+            ("bounded-synonym", synonym),
+        )
+        for axis, variant in variants:
+            normalized = normalize_document_overclaim(variant)
+            expected_normalized = canonical_phrase if axis != "bounded-synonym" else synonym
+            assert normalized == expected_normalized
+            rows.append((family, axis, variant, normalized))
+    return tuple(rows)
+
+
 def finding(stage: str, code: str, location: str) -> tuple[protocol.Finding, ...]:
     return (protocol.Finding(stage, "CURRENT", code, location),)
 
@@ -2102,6 +2319,71 @@ def apply_textual_transform(
     }
     assert transform == "corrupt_token"
     return corruptions[role]
+
+
+def assert_independent_textual_relation(
+    role: str,
+    transform: str,
+    freeze: dict[str, Any],
+    base: bytes,
+    transformed: bytes,
+) -> None:
+    """Check one frozen byte transformation without calling its builder."""
+    if transform == "missing_lf":
+        assert role != "merge_scan"
+        assert base.endswith(b"\n")
+        assert transformed == base[:-1]
+        return
+    if transform == "crlf":
+        expected = b"\r\n" if role == "merge_scan" else base.replace(b"\n", b"\r\n")
+        assert transformed == expected
+        return
+    if transform == "extra_line":
+        expected = (
+            (b"e" * 40) + b"\n" + (b"f" * 40) + b"\n" if role == "merge_scan" else base + b"x\n"
+        )
+        assert transformed == expected
+        return
+    if transform == "valid_token":
+        if role == "head":
+            red_head = freeze["redHead"]
+            assert type(red_head) is str
+            expected = red_head.encode() + b"\n"
+        elif role == "red_type":
+            expected = b"blob\n"
+        elif role in {"red_size", "c3_freeze_size"}:
+            expected = str(int(base[:-1]) + 1).encode() + b"\n"
+        elif role == "merge_scan":
+            expected = (b"f" * 40) + b"\n"
+        elif role == "ancestry_chain":
+            first, second = base.split(b" ", 1)
+            replacement = (b"f" * 40) if first != (b"f" * 40) else (b"e" * 40)
+            expected = replacement + b" " + second
+        elif role == "red_objects":
+            first, *remaining = base.splitlines(keepends=True)
+            replacement = (b"f" * 40) + b"\n"
+            if first == replacement:
+                replacement = (b"e" * 40) + b"\n"
+            expected = replacement + b"".join(remaining)
+        elif role == "red_author":
+            expected = b"other@example.com\n"
+        else:
+            expected = b"sha2\n"
+        assert transformed == expected
+        return
+    independent_corruptions = {
+        "object_format": b"Sha2\n",
+        "head": b"A" + base[1:],
+        "red_type": b"Commit\n",
+        "red_size": base[:-2] + b"x\n",
+        "merge_scan": (b"F" * 40) + b"\n",
+        "ancestry_chain": b"A" + base[1:],
+        "red_objects": b"A" + base[1:],
+        "c3_freeze_size": base[:-2] + b"x\n",
+        "red_author": b"other.example.com\n",
+    }
+    assert transform == "corrupt_token"
+    assert transformed == independent_corruptions[role]
 
 
 def git(root: Path, *arguments: str, env: dict[str, str] | None = None) -> str:
@@ -2649,6 +2931,8 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
     root, freeze = create_real_git_freeze(tmp_path)
     metadata_execution_rows: list[MetadataExecution] = []
     metadata_stimulus_rows: list[tuple[MetadataStimulusFacts, str]] = []
+    metadata_trigger_rows: list[MetadataTriggerReceipt] = []
+    baseline_metadata_io = protocol.SYSTEM_METADATA_IO
 
     def normalized_observed_path(raw_path: str) -> str:
         raw_temporary = os.fspath(tmp_path)
@@ -2820,6 +3104,7 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
         io: protocol.MetadataIO,
         role_calls: list[str],
         role_traces: list[MetadataRoleTrace],
+        trigger_receipts: list[tuple[str, tuple[str, ...]]],
     ) -> protocol.GitMetadataReadResult:
         role_calls.append(provenance.role)
         operations: list[str] = []
@@ -2827,6 +3112,12 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
         close_attempts: list[int] = []
         observed_lstats: list[os.stat_result] = []
         observed_fstats: list[os.stat_result] = []
+        callback_events: list[str] = []
+        read_requests: list[int] = []
+        read_chunk_lengths: list[int] = []
+        read_chunks: list[bytes] = []
+        read_types: list[str] = []
+        close_results: list[str] = []
 
         raw_root = os.fspath(called_root)
         if not os.path.isabs(raw_root):
@@ -2852,6 +3143,9 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
             return "other"
 
         def observed_lstat(path: str, *, dir_fd: int | None = None) -> os.stat_result:
+            callback_events.append(
+                "lstat:" + ("system" if io.lstat is baseline_metadata_io.lstat else "custom")
+            )
             try:
                 observed = io.lstat(path, dir_fd=dir_fd)
             except OSError as error:
@@ -2882,6 +3176,9 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
             *,
             dir_fd: int | None = None,
         ) -> int:
+            callback_events.append(
+                "open:" + ("system" if io.open is baseline_metadata_io.open else "custom")
+            )
             try:
                 descriptor = io.open(path, flags, dir_fd=dir_fd)
             except OSError as error:
@@ -2899,6 +3196,9 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
             return descriptor
 
         def observed_fstat(descriptor: int) -> os.stat_result:
+            callback_events.append(
+                "fstat:" + ("system" if io.fstat is baseline_metadata_io.fstat else "custom")
+            )
             try:
                 observed = io.fstat(descriptor)
             except OSError as error:
@@ -2921,6 +3221,10 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
             return observed
 
         def observed_read(descriptor: int, count: int) -> bytes:
+            callback_events.append(
+                "read:" + ("system" if io.read is baseline_metadata_io.read else "custom")
+            )
+            read_requests.append(count)
             try:
                 observed = io.read(descriptor, count)
             except OSError as error:
@@ -2930,21 +3234,34 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
                 )
                 raise
             if type(observed) is bytes:
+                read_chunk_lengths.append(len(observed))
+                read_chunks.append(observed)
+                read_types.append("bytes")
                 operations.append("read:bytes:empty" if observed == b"" else "read:bytes:nonempty")
             else:
+                read_chunk_lengths.append(-1)
+                read_types.append(type(observed).__name__)
                 operations.append(f"read:type:{type(observed).__name__}")
             return observed
 
         def observed_close(descriptor: int) -> None:
+            callback_events.append(
+                "close:" + ("system" if io.close is baseline_metadata_io.close else "custom")
+            )
             close_attempts.append(descriptor)
             try:
                 io.close(descriptor)
             except OSError as error:
+                close_results.append(
+                    f"error:{type(error).__name__}:"
+                    + ("errno" if error.errno is not None else "no-errno")
+                )
                 operations.append(
                     f"close:error:{type(error).__name__}:"
                     + ("errno" if error.errno is not None else "no-errno")
                 )
                 raise
+            close_results.append("ok")
             operations.append("close:ok")
 
         observed = cast(
@@ -3061,6 +3378,50 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
                 ),
             )
         )
+        frozen_read_requests = ",".join(str(item) for item in read_requests)
+        frozen_read_chunks = ",".join(str(item) for item in read_chunk_lengths)
+        if read_chunks:
+            observed_read_bytes = b"".join(read_chunks)
+            assert len(read_requests) == len(read_chunks) == len(read_chunk_lengths)
+            assert sum(read_chunk_lengths) == len(observed_read_bytes)
+            assert tuple(read_requests) == tuple(
+                4097 - sum(read_chunk_lengths[:ordinal])
+                for ordinal in range(len(read_chunk_lengths))
+            )
+            if observed.record is not None and observed.record.payload is not None:
+                assert observed_read_bytes == observed.record.payload
+            normalized_chunks = tuple(normalized_observed_payload(item) for item in read_chunks)
+            if normalized_chunks != tuple(read_chunks):
+                assert b"".join(normalized_chunks) == normalized_observed_payload(
+                    observed_read_bytes
+                )
+                normalized_chunk_lengths = tuple(len(item) for item in normalized_chunks)
+                frozen_read_requests = "path-record:" + ",".join(
+                    str(4097 - sum(normalized_chunk_lengths[:ordinal]))
+                    for ordinal in range(len(normalized_chunk_lengths))
+                )
+                frozen_read_chunks = "path-record:" + ",".join(
+                    str(item) for item in normalized_chunk_lengths
+                )
+        trigger_receipts.append(
+            (
+                provenance.role,
+                (
+                    "callbacks=" + ",".join(callback_events),
+                    "lstats=" + ",".join(item for item in operations if item.startswith("lstat:")),
+                    "opens=" + ",".join(item for item in operations if item.startswith("open:")),
+                    "fstats=" + ",".join(item for item in operations if item.startswith("fstat:")),
+                    "read-requests=" + frozen_read_requests,
+                    "read-chunks=" + frozen_read_chunks,
+                    "readTypes=" + ",".join(read_types),
+                    "post-lstats="
+                    + ",".join(item for item in operations if item.startswith("post-lstat:")),
+                    "close-attempt-order="
+                    + ",".join(str(opened.index(item)) for item in close_attempts),
+                    "close-results=" + ",".join(close_results),
+                ),
+            )
+        )
         return observed
 
     def finish_metadata_execution(
@@ -3068,6 +3429,7 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
         role_calls: list[str],
         role_traces: list[MetadataRoleTrace],
         pre_execution_facts: MetadataStimulusFacts,
+        trigger_receipts: list[tuple[str, tuple[str, ...]]],
         operational_mode: str | None = None,
         observed_payload_sha: str | None = None,
     ) -> MetadataCaseRow:
@@ -3084,6 +3446,16 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
         assert all("result:" not in value for _, value in pre_execution_facts)
         assert pre_execution_identity not in {identity for _, identity in metadata_stimulus_rows}
         metadata_stimulus_rows.append((pre_execution_facts, pre_execution_identity))
+        frozen_trigger_receipt = tuple(trigger_receipts)
+        assert all(case_id not in value for _, values in frozen_trigger_receipt for value in values)
+        assert all(
+            "finding:" not in value for _, values in frozen_trigger_receipt for value in values
+        )
+        assert all(
+            "result:" not in value for _, values in frozen_trigger_receipt for value in values
+        )
+        assert all("ACP." not in value for _, values in frozen_trigger_receipt for value in values)
+        metadata_trigger_rows.append(frozen_trigger_receipt)
         execution: MetadataExecution = (
             row,
             mode,
@@ -3108,6 +3480,7 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
         pre_execution_facts = observe_pre_execution_stimulus(case_root, mode, "system-reader")
         role_calls: list[str] = []
         role_traces: list[MetadataRoleTrace] = []
+        trigger_receipts: list[tuple[str, tuple[str, ...]]] = []
 
         def observed_reader(
             called_root: str | Path,
@@ -3121,12 +3494,15 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
                 io=io,
                 role_calls=role_calls,
                 role_traces=role_traces,
+                trigger_receipts=trigger_receipts,
             )
 
         with monkeypatch.context() as success_patch:
             success_patch.setattr(protocol, "_read_git_metadata_nofollow", observed_reader)
             assert protocol.discover_git_repository(case_root) == expected
-        finish_metadata_execution(case_id, role_calls, role_traces, pre_execution_facts)
+        finish_metadata_execution(
+            case_id, role_calls, role_traces, pre_execution_facts, trigger_receipts
+        )
 
     def execute_metadata_case(
         case_id: str,
@@ -3143,6 +3519,7 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
         assert expected_finding == finding("git-metadata", row[5], row[6])
         role_calls: list[str] = []
         role_traces: list[MetadataRoleTrace] = []
+        trigger_receipts: list[tuple[str, tuple[str, ...]]] = []
 
         def observed_reader(
             called_root: str | Path,
@@ -3156,6 +3533,7 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
                 io=io,
                 role_calls=role_calls,
                 role_traces=role_traces,
+                trigger_receipts=trigger_receipts,
             )
 
         with monkeypatch.context() as reader_patch:
@@ -3168,6 +3546,7 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
             role_calls,
             role_traces,
             pre_execution_facts,
+            trigger_receipts,
             operational_mode,
             payload_sha,
         )
@@ -3199,6 +3578,7 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
         git_calls: list[tuple[str, ...]] = []
         role_calls: list[str] = []
         role_traces: list[MetadataRoleTrace] = []
+        trigger_receipts: list[tuple[str, tuple[str, ...]]] = []
 
         def observed_reader(
             called_root: str | Path,
@@ -3212,6 +3592,7 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
                 io=io,
                 role_calls=role_calls,
                 role_traces=role_traces,
+                trigger_receipts=trigger_receipts,
             )
 
         with monkeypatch.context() as io_patch:
@@ -3227,7 +3608,12 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
         assert role_calls
         assert role_calls[-1] == row[3]
         finish_metadata_execution(
-            case_id, role_calls, role_traces, pre_execution_facts, operational_mode
+            case_id,
+            role_calls,
+            role_traces,
+            pre_execution_facts,
+            trigger_receipts,
+            operational_mode,
         )
 
     def execute_between_read_case(
@@ -3246,6 +3632,7 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
         assert row[5] is not None
         role_calls: list[str] = []
         role_traces: list[MetadataRoleTrace] = []
+        trigger_receipts: list[tuple[str, tuple[str, ...]]] = []
         mutated = False
         git_calls: list[tuple[str, ...]] = []
 
@@ -3262,6 +3649,7 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
                 io=io,
                 role_calls=role_calls,
                 role_traces=role_traces,
+                trigger_receipts=trigger_receipts,
             )
             if provenance.role == after_role and not result.findings and not mutated:
                 mutate()
@@ -3282,8 +3670,16 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
         assert git_calls == []
         assert role_calls[-1] == row[3]
         assert mutated
+        trigger_receipts.append(
+            ("inter-role-mutation", (f"after-role={after_role}", "triggered=true"))
+        )
         finish_metadata_execution(
-            case_id, role_calls, role_traces, pre_execution_facts, operational_mode
+            case_id,
+            role_calls,
+            role_traces,
+            pre_execution_facts,
+            trigger_receipts,
+            operational_mode,
         )
 
     red_nodes = frozen_red_nodes()
@@ -3335,6 +3731,7 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
     )
     assert tuple(builder_contract) == TEXTUAL_TRANSFORMS
     observed_transform_contract: list[tuple[object, ...]] = []
+    observed_byte_identities: list[tuple[object, ...]] = []
     for role, transform_name, applicable, stage, code, location in EXPECTED_TEXTUAL_TRANSFORMATIONS:
         builder, relation = builder_contract[transform_name]
         base_source = "saved-real-success-stdout"
@@ -3373,6 +3770,19 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
         saved_stdout = saved_result.stdout
         transformed_payload = apply_textual_transform(role, transform_name, freeze, saved_stdout)
         assert transformed_payload != saved_stdout
+        assert_independent_textual_relation(
+            role, transform_name, freeze, saved_stdout, transformed_payload
+        )
+        byte_identity = (
+            role,
+            transform_name,
+            len(saved_stdout),
+            hashlib.sha256(saved_stdout).hexdigest(),
+            len(transformed_payload),
+            hashlib.sha256(transformed_payload).hexdigest(),
+        )
+        assert len(byte_identity) == len(TEXTUAL_TRANSFORMATION_BYTE_IDENTITY_FIELDS)
+        observed_byte_identities.append(byte_identity)
         observed_transform_contract.append(
             (
                 role,
@@ -3396,6 +3806,11 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
             result = REAL_SUBPROCESS_RUN(argv, **kwargs)
             if call_ordinal != ordinal:
                 return result
+            assert type(result) is subprocess.CompletedProcess
+            assert result.args == saved_result.args
+            assert result.returncode == saved_result.returncode
+            assert result.stdout == saved_result.stdout
+            assert result.stderr == saved_result.stderr
             return subprocess.CompletedProcess(
                 result.args,
                 result.returncode,
@@ -3414,6 +3829,8 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
     assert hashlib.sha256(canonical(observed_transform_contract)).hexdigest() == (
         TEXTUAL_TRANSFORMATION_INPUT_CONTRACT_SHA256
     )
+    assert len(observed_byte_identities) == TEXTUAL_TRANSFORMATION_APPLICABLE_COUNT
+    assert len(set(observed_byte_identities)) == len(observed_byte_identities)
     for ordinal, role in enumerate(roles):
         argv = expected_git_argv(root, freeze)[ordinal]
         assert_injected_git_failure(
@@ -4989,9 +5406,43 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
     )
     composition_root, _ = create_real_git_freeze(tmp_path / "metadata-composition")
     composition_matrix = composition_root / MATRIX_PATH.relative_to(ROOT)
-    wrong_matrix = json.loads(composition_matrix.read_text(encoding="utf-8"))
+    correct_matrix_bytes = composition_matrix.read_bytes()
+    correct_matrix = json.loads(correct_matrix_bytes.decode("utf-8", errors="strict"))
+    assert type(correct_matrix) is dict
+    assert canonical(correct_matrix) + b"\n" == correct_matrix_bytes
+    correct_schema = correct_matrix["schemaVersion"]
+    assert type(correct_schema) is str
+    wrong_matrix = deepcopy(correct_matrix)
     wrong_matrix["schemaVersion"] = "WrongMatrixV1"
-    composition_matrix.write_bytes(canonical(wrong_matrix) + b"\n")
+    expected_wrong_matrix_bytes = canonical(wrong_matrix) + b"\n"
+    composition_matrix.write_bytes(expected_wrong_matrix_bytes)
+    observed_wrong_matrix_bytes = composition_matrix.read_bytes()
+    assert observed_wrong_matrix_bytes == expected_wrong_matrix_bytes
+    assert observed_wrong_matrix_bytes != correct_matrix_bytes
+    observed_wrong_matrix = json.loads(observed_wrong_matrix_bytes.decode("utf-8", errors="strict"))
+    assert type(observed_wrong_matrix) is dict
+    assert canonical(observed_wrong_matrix) + b"\n" == observed_wrong_matrix_bytes
+    observed_wrong_schema = observed_wrong_matrix["schemaVersion"]
+    assert observed_wrong_schema == "WrongMatrixV1"
+    observed_schema_identity = hashlib.sha256(
+        canonical({"schemaVersion": observed_wrong_schema})
+    ).hexdigest()
+    observed_schema_descriptor = (
+        "matrix-schema-version-wrong"
+        if observed_wrong_schema != correct_schema
+        else "matrix-schema-version-current"
+    )
+    control_schema_descriptor = (
+        "matrix-schema-version-wrong"
+        if correct_matrix["schemaVersion"] != correct_schema
+        else "matrix-schema-version-current"
+    )
+    assert observed_schema_descriptor == "matrix-schema-version-wrong"
+    assert control_schema_descriptor == "matrix-schema-version-current"
+    assert observed_schema_descriptor != control_schema_descriptor
+    assert observed_schema_identity == (
+        "74459b011344be2e067eb5bba03760fecd87ff5895e694a116943a6b5a6f5e6d"
+    )
     composition_git = composition_root / ".git"
     preserved_composition_git = composition_root / ".git-preserved"
     composition_git.rename(preserved_composition_git)
@@ -5033,7 +5484,8 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
         "metadata-target-symlink-plus-matrix-schema",
         "validate_repository_freeze",
         "dot-git-target-symlink",
-        "matrix-schema-version-wrong",
+        observed_schema_descriptor,
+        observed_schema_identity,
         validation_findings[0].stage,
         validation_findings[0].phase,
         validation_findings[0].code,
@@ -5101,6 +5553,7 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
         )
     short_roles: list[str] = []
     short_traces: list[MetadataRoleTrace] = []
+    short_trigger_receipts: list[tuple[str, tuple[str, ...]]] = []
     short_stimulus = observe_pre_execution_stimulus(io_root, "linked", "one-byte-reads")
     short_stimulus = (
         *short_stimulus,
@@ -5114,6 +5567,7 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
         io=chunked_io,
         role_calls=short_roles,
         role_traces=short_traces,
+        trigger_receipts=short_trigger_receipts,
     ) == protocol.GitMetadataReadResult(
         protocol.GitMetadataRecord(
             io_record,
@@ -5149,7 +5603,9 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
     assert len([item for item in metadata_operations if item[0] == "read"]) == (len(io_payload) + 1)
     short_read_sizes = tuple(len(item[3]) for item in metadata_operations if item[0] == "read")
     assert short_read_sizes == (*((1,) * len(io_payload)), 0)
-    finish_metadata_execution("short-read", short_roles, short_traces, short_stimulus)
+    finish_metadata_execution(
+        "short-read", short_roles, short_traces, short_stimulus, short_trigger_receipts
+    )
     reverse_opened: list[int] = []
     reverse_closed: list[int] = []
 
@@ -5164,6 +5620,7 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
 
     reverse_roles: list[str] = []
     reverse_traces: list[MetadataRoleTrace] = []
+    reverse_trigger_receipts: list[tuple[str, tuple[str, ...]]] = []
     reverse_stimulus = observe_pre_execution_stimulus(
         io_root, "linked", "system-read-callback+reverse-descriptor-cleanup"
     )
@@ -5185,10 +5642,13 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
         ),
         role_calls=reverse_roles,
         role_traces=reverse_traces,
+        trigger_receipts=reverse_trigger_receipts,
     )
     assert reverse_result.findings == ()
     assert reverse_closed == reverse_opened[::-1]
-    finish_metadata_execution("reverse-close", reverse_roles, reverse_traces, reverse_stimulus)
+    finish_metadata_execution(
+        "reverse-close", reverse_roles, reverse_traces, reverse_stimulus, reverse_trigger_receipts
+    )
     io_record.write_bytes(b"x" * 4097)
     assert PROTOCOL_METADATA_READER(
         io_root,
@@ -5441,6 +5901,15 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
     assert hashlib.sha256(canonical(metadata_execution_rows)).hexdigest() == (
         EXPECTED_METADATA_FULL_EXECUTION_SHA256
     )
+    assert len(metadata_trigger_rows) == EXPECTED_METADATA_TRIGGER_RECEIPT_COUNT
+    assert all(
+        len(values) + 1 == len(EXPECTED_METADATA_TRIGGER_RECEIPT_FIELDS)
+        for receipt in metadata_trigger_rows
+        for _, values in receipt
+    )
+    assert hashlib.sha256(canonical(metadata_trigger_rows)).hexdigest() == (
+        EXPECTED_METADATA_TRIGGER_RECEIPT_SHA256
+    )
     metadata_execution_ids = tuple(
         f"{execution[0][0]}@{execution[1]}" for execution in metadata_execution_rows
     )
@@ -5449,6 +5918,39 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
     assert hashlib.sha256(canonical(metadata_execution_ids)).hexdigest() == (
         EXPECTED_METADATA_EXECUTION_SHA256
     )
+    execution_index = {
+        execution_id: ordinal for ordinal, execution_id in enumerate(metadata_execution_ids)
+    }
+    assert len(execution_index) == EXPECTED_METADATA_EXECUTION_COUNT
+    group_names = tuple(name for name, _ in EXPECTED_METADATA_FORMER_COLLISION_GROUPS)
+    assert len(group_names) == len(set(group_names))
+    assert sum(name.startswith("configured-removed-") for name in group_names) == (
+        EXPECTED_METADATA_REMOVED_CONFIG_COLLISION_COUNT
+    )
+    for _, group_execution_ids in EXPECTED_METADATA_FORMER_COLLISION_GROUPS:
+        assert len(group_execution_ids) >= 2
+        assert len(group_execution_ids) == len(set(group_execution_ids))
+        for source_id in group_execution_ids:
+            source_ordinal = execution_index[source_id]
+            source_execution = EXPECTED_METADATA_EXECUTIONS[source_ordinal]
+            source_binding = (
+                source_execution[2],
+                source_execution[3],
+                metadata_trigger_rows[source_ordinal],
+            )
+            source_identity = hashlib.sha256(canonical(source_binding)).hexdigest()
+            for swapped_id in group_execution_ids:
+                if swapped_id == source_id:
+                    continue
+                swapped_ordinal = execution_index[swapped_id]
+                swapped_execution = EXPECTED_METADATA_EXECUTIONS[swapped_ordinal]
+                swapped_binding = (
+                    swapped_execution[2],
+                    swapped_execution[3],
+                    metadata_trigger_rows[swapped_ordinal],
+                )
+                assert swapped_binding != source_binding
+                assert hashlib.sha256(canonical(swapped_binding)).hexdigest() != source_identity
     freeze_path = root / FREEZE_PATH
     mutations = (
         ("redHead", "0" * 40, "ACP.FREEZE.RED_HEAD_MISSING"),
@@ -6051,6 +6553,22 @@ def test_repository_validator_is_read_only_and_static_boundary_is_ast_exact(
         == EXPECTED_GIT_DOCUMENTATION_CLAIM_CONTRACT
         == protocol_documentation_contract
     )
+    documentation_contract = git_contract["documentationClaimContract"]
+    assert tuple(documentation_contract["normalization"]) == (
+        EXPECTED_DOCUMENT_OVERCLAIM_NORMALIZATION
+    )
+    assert tuple(documentation_contract["variantAxes"]) == (
+        EXPECTED_DOCUMENT_OVERCLAIM_VARIANT_AXES
+    )
+    assert (
+        tuple(
+            (family, tuple(phrases))
+            for family, phrases in documentation_contract["prohibitedFamilyGrammar"]
+        )
+        == EXPECTED_DOCUMENT_PROHIBITED_FAMILY_GRAMMAR
+    )
+    assert documentation_contract["variantCount"] == EXPECTED_DOCUMENT_OVERCLAIM_VARIANT_COUNT
+    assert documentation_contract["variantSha256"] == EXPECTED_DOCUMENT_OVERCLAIM_VARIANT_SHA256
     threat_mutations: tuple[tuple[str, object], ...] = (
         ("scope", "concurrent_mutation_safe"),
         ("proofs", ["atomic_check_to_use"]),
@@ -6099,11 +6617,16 @@ def test_repository_validator_is_read_only_and_static_boundary_is_ast_exact(
     assert PROTOCOL_DOCUMENTATION_VALIDATOR(documents) == ()
     block_start = "<!-- issue-435-filesystem-snapshot-boundary:start -->"
     block_end = "<!-- issue-435-filesystem-snapshot-boundary:end -->"
-    overclaims = (
-        "Repository validation is race-free.",
-        "Repository validation is an atomic check-to-use operation.",
-        "Git subprocess evidence is descriptor-bound.",
-        "The validator detects and prevents all concurrent repository mutation.",
+    overclaim_variants = document_overclaim_variants()
+    assert len(overclaim_variants) == EXPECTED_DOCUMENT_OVERCLAIM_VARIANT_COUNT
+    assert hashlib.sha256(canonical(overclaim_variants)).hexdigest() == (
+        EXPECTED_DOCUMENT_OVERCLAIM_VARIANT_SHA256
+    )
+    assert tuple(dict.fromkeys(row[0] for row in overclaim_variants)) == tuple(
+        EXPECTED_GIT_DOCUMENTATION_CLAIM_CONTRACT["prohibitedClaimFamilies"]
+    )
+    assert tuple(dict.fromkeys(row[1] for row in overclaim_variants)) == (
+        EXPECTED_DOCUMENT_OVERCLAIM_VARIANT_AXES
     )
     for path, required_claim in required_document_claims:
         document = dict(documents)[path]
@@ -6125,8 +6648,11 @@ def test_repository_validator_is_read_only_and_static_boundary_is_ast_exact(
         assert PROTOCOL_DOCUMENTATION_VALIDATOR(((path, without_block),)) == finding(
             "documentation", "ACP.DOC.THREAT_MODEL_BLOCK", path
         )
-        for overclaim in overclaims:
-            injected = document + "\n" + overclaim + "\n"
+        for family, axis, overclaim, normalized in overclaim_variants:
+            assert family in EXPECTED_GIT_DOCUMENTATION_CLAIM_CONTRACT["prohibitedClaimFamilies"]
+            assert axis in EXPECTED_DOCUMENT_OVERCLAIM_VARIANT_AXES
+            assert normalized in dict(EXPECTED_DOCUMENT_PROHIBITED_FAMILY_GRAMMAR)[family]
+            injected = document + "\n" + overclaim + ".\n"
             assert PROTOCOL_DOCUMENTATION_VALIDATOR(((path, injected),)) == finding(
                 "documentation", "ACP.DOC.THREAT_MODEL_OVERCLAIM", path
             )
@@ -6217,6 +6743,45 @@ def test_repository_validator_is_read_only_and_static_boundary_is_ast_exact(
         == EXPECTED_METADATA_STIMULUS_SHA256
         == protocol.STATIC_GIT_METADATA_STIMULUS_SHA256
     )
+    assert (
+        tuple(git_contract["metadata"]["triggerReceiptFields"])
+        == EXPECTED_METADATA_TRIGGER_RECEIPT_FIELDS
+        == protocol.STATIC_GIT_METADATA_TRIGGER_RECEIPT_FIELDS
+    )
+    assert (
+        git_contract["metadata"]["triggerReceiptCount"]
+        == EXPECTED_METADATA_TRIGGER_RECEIPT_COUNT
+        == protocol.STATIC_GIT_METADATA_TRIGGER_RECEIPT_COUNT
+    )
+    assert (
+        git_contract["metadata"]["triggerReceiptSha256"]
+        == EXPECTED_METADATA_TRIGGER_RECEIPT_SHA256
+        == protocol.STATIC_GIT_METADATA_TRIGGER_RECEIPT_SHA256
+    )
+    former_collision_groups = tuple(
+        (name, tuple(execution_ids))
+        for name, execution_ids in git_contract["metadata"]["formerCollisionGroups"]
+    )
+    assert former_collision_groups == EXPECTED_METADATA_FORMER_COLLISION_GROUPS
+    assert cast(object, former_collision_groups) == cast(
+        object, protocol.STATIC_GIT_METADATA_FORMER_COLLISION_GROUPS
+    )
+    assert (
+        git_contract["metadata"]["formerCollisionGroupCount"]
+        == EXPECTED_METADATA_FORMER_COLLISION_GROUP_COUNT
+        == protocol.STATIC_GIT_METADATA_FORMER_COLLISION_GROUP_COUNT
+    )
+    assert (
+        hashlib.sha256(canonical(former_collision_groups)).hexdigest()
+        == git_contract["metadata"]["formerCollisionGroupSha256"]
+        == EXPECTED_METADATA_FORMER_COLLISION_GROUP_SHA256
+        == protocol.STATIC_GIT_METADATA_FORMER_COLLISION_GROUP_SHA256
+    )
+    assert (
+        git_contract["metadata"]["configuredRemovedCollisionCount"]
+        == EXPECTED_METADATA_REMOVED_CONFIG_COLLISION_COUNT
+        == protocol.STATIC_GIT_METADATA_CONFIGURED_REMOVED_COLLISION_COUNT
+    )
     payload_fingerprint_sha = hashlib.sha256(
         canonical(EXPECTED_METADATA_PAYLOAD_SHA256)
     ).hexdigest()
@@ -6238,10 +6803,9 @@ def test_repository_validator_is_read_only_and_static_boundary_is_ast_exact(
     governed_precedence_sha = hashlib.sha256(
         canonical(EXPECTED_METADATA_GOVERNED_PRECEDENCE_CASES)
     ).hexdigest()
-    assert (
-        governed_precedence_cases
-        == EXPECTED_METADATA_GOVERNED_PRECEDENCE_CASES
-        == protocol.STATIC_GIT_METADATA_GOVERNED_PRECEDENCE_CASES
+    assert governed_precedence_cases == EXPECTED_METADATA_GOVERNED_PRECEDENCE_CASES
+    assert cast(object, EXPECTED_METADATA_GOVERNED_PRECEDENCE_CASES) == cast(
+        object, protocol.STATIC_GIT_METADATA_GOVERNED_PRECEDENCE_CASES
     )
     assert (
         len(governed_precedence_cases)
@@ -6370,10 +6934,11 @@ def test_repository_validator_is_read_only_and_static_boundary_is_ast_exact(
         == git_contract["textualTransformationSha256"]
         == protocol.STATIC_GIT_TEXTUAL_TRANSFORMATION_SHA256
     )
-    assert (
-        tuple(git_contract["textualTransformationInputContractFields"])
-        == TEXTUAL_TRANSFORMATION_INPUT_CONTRACT_FIELDS
-        == protocol.STATIC_GIT_TEXTUAL_TRANSFORMATION_INPUT_CONTRACT_FIELDS
+    assert tuple(git_contract["textualTransformationInputContractFields"]) == (
+        TEXTUAL_TRANSFORMATION_INPUT_CONTRACT_FIELDS
+    )
+    assert cast(object, TEXTUAL_TRANSFORMATION_INPUT_CONTRACT_FIELDS) == cast(
+        object, protocol.STATIC_GIT_TEXTUAL_TRANSFORMATION_INPUT_CONTRACT_FIELDS
     )
     assert (
         tuple(tuple(item) for item in git_contract["textualTransformationBuilders"])
