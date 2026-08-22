@@ -96,7 +96,23 @@ expanding every dual-layout case into conventional and linked operational
 executions. Each entry binds the complete catalog row, fixture-observed stimulus
 identity, exact role prefix, and normalized per-role I/O/cleanup transcript.
 The Issue #435 RED exemplar owns 94 case rows and 129 ordered executions; an ID
-or final-role-only ledger is insufficient.
+or final-role-only ledger is insufficient. Run the entire collector separately
+beneath cleanup-bound original roots measured at exactly `(27 bytes, depth 4)`
+and `(108 bytes, depth 10)`, pad both to the same 700-byte/depth-16 governed
+parent, and freeze separate execution, stimulus, trigger-receipt, raw-read,
+close-order, and normalized-payload catalogs. Require exact cross-root row and
+digest equality plus exact configured-plan-receipt equality, then prove that
+changing one schedule or normalized coordinate is rejected. Merely constructing
+a second padded root is not replay evidence.
+
+Bind each configured plan to a separately observed receipt containing the
+actual callback, target/path/role, phase/order, and effect. Hash exactly its
+callback, metadata, stat, and exception event fields—and nothing else—as the
+raw-evidence identity before projection. Mutate each of those four semantic
+coordinates independently and reject it, then retain receipt-swap,
+hybrid, and constant-receipt killers. Describe the collision topology precisely:
+17 historical configured-removal pair groups collapse into five complete
+non-singleton configured-removed equivalence classes.
 Freeze the exact reader and discovery AST identities plus their sole top-level
 bindings. The operation oracle records every relative lstat/open/fstat/read/
 post-lstat/close call, flags, `dir_fd`, identity, count, and reverse close; it
@@ -118,9 +134,13 @@ descriptor-bound, or able to detect or prevent every concurrent mutation. A
 stronger claim is an `EVIDENCE_BLOCKER` and requires a new authorized design and
 executable evidence. Review the case-folded, whitespace-, hyphen-, and
 Markdown-normalized document against the frozen bounded synonym grammar for all
-four prohibited stronger-claim families. Execute both composed axes—case plus
-Markdown plus hyphen, and bounded synonym plus Markdown plus hyphen—in every
-governed document as well as each simple variant.
+four prohibited stronger-claim families. Execute backtick-only and
+leading/trailing-whitespace-only variants plus exact
+case-plus-Markdown-plus-hyphen-plus-backtick-plus-edge-whitespace and
+bounded-synonym-plus-Markdown-plus-hyphen-plus-backtick-plus-edge-whitespace
+compositions, using actual Markdown markers and hyphens, in every governed
+document. A normalizer mutant omitting backtick removal or final edge stripping
+must fail.
 <!-- issue-435-filesystem-snapshot-boundary:end -->
 
 Fourteen fixed read-only forms then use absolute `/usr/bin/git`, no pager,
@@ -146,6 +166,12 @@ For every Git role, freeze all five textual transformations and explicit
 applicability. Fixed-cap CRLF or extra-line transforms that exceed the cap must
 fail at the byte boundary; never truncate another token to manufacture a later
 finding.
+Strictly parse every saved real output before tokenization and build a complete,
+ordered, unique role/position mapping to contemporaneous fixture and freeze
+objects. Replace only tokens proven equal to those mappings. Uppercase, corrupt,
+injected-valid-but-wrong, reordered, missing, and extra OIDs must remain raw or
+use explicit hostile tokens and stay distinct in the 44 normalized rows.
+Preserve explicit role-specific relations for an empty merge scan.
 Script RED object size 320 before the exact 320/321-byte author boundary, and
 also prove a smaller object-derived author limit.
 Inject fake gitfiles, corrupt objects, grafts/alternates/shallow files,
@@ -339,6 +365,12 @@ aggregate before implementation. Deletions grant no credit. Record each ratio.
 
 Dense one-line code, collapsed assertions, broad helpers that hide outcomes,
 and semantic compression used only to fit a cap are prohibited.
+
+For Reset31, freeze exact caps: matrix 4,200; protocol 4,200; core oracle 4,200;
+repository oracle 14,500; template 600; ADR 550; route 5,800;
+architecture/security 2,200; validator 28,000; seven-semantic-path aggregate
+34,000; binaries zero. The 85 percent review and 90 percent pre-C3/GREEN stop
+apply independently at every file, partition, and aggregate level.
 
 ## Focused-to-full transition
 

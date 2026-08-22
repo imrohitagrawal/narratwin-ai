@@ -148,9 +148,12 @@ during reopen is excluded. Reader-local race detection and final revalidation
 must not be promoted into race-free, atomic, or all-concurrent-mutation claims.
 Any stronger claim is an `EVIDENCE_BLOCKER` pending new authority and proof.
 Freeze a bounded synonym grammar and reject its case, whitespace, hyphen, and
-Markdown-normalized variants across every governed claim document. Include
-composed case-plus-Markdown-plus-hyphen and
-synonym-plus-Markdown-plus-hyphen variants for every prohibited family.
+Markdown-normalized variants across every governed claim document. Add
+backtick-only and leading/trailing-whitespace-only variants, plus bounded
+case-plus-Markdown-plus-hyphen-plus-backtick-plus-edge-whitespace and
+bounded-synonym-plus-Markdown-plus-hyphen-plus-backtick-plus-edge-whitespace
+compositions with actual Markdown markers and hyphens for every prohibited
+family. Mutants omitting backtick removal or final strip must fail.
 <!-- issue-435-filesystem-snapshot-boundary:end -->
 Freeze fsck status 1 as object-integrity failure, missing-object type status 128
 as missing RED, and `-1`, `2`, and `127` for every form as the generic process
@@ -160,6 +163,27 @@ Enumerate all fourteen Git roles against remove-LF, CRLF, extra-line,
 corrupt-token, and valid-semantic transformations. Mark non-text roles
 explicitly inapplicable; for fixed-cap roles preserve the canonical token and
 accept byte-cap precedence rather than introducing a second defect.
+
+For every dynamic-OID role, strictly parse saved real output and freeze a
+complete, ordered, unique role/position-to-contemporaneous-object mapping before
+normalization. Replace only exactly verified OIDs. Uppercase, corrupt,
+injected-valid-but-wrong, reordered, missing, and extra values remain raw or use
+explicit hostile tokens and remain distinct across all 44 normalized rows;
+merge-empty relations stay role-specific.
+
+Run the full 129-case metadata collector under cleanup-bound original roots
+measured at `(27 filesystem bytes, depth 4)` and `(108 filesystem bytes, depth
+10)`, padded independently to one 700-byte/depth-16 governed parent shape.
+Freeze separate execution, stimulus, trigger-receipt, raw-read, close-order, and
+normalized-payload catalogs; exact cross-root rows and digests plus
+configured-plan receipts must match, and a single-coordinate divergence mutant
+must fail. Every configured plan also owns
+an observed callback, target/path/role, phase/order, and effect receipt whose
+raw-evidence identity hashes exactly the callback, metadata, stat, and exception
+event fields and nothing else, with four single-coordinate mutants. Record that
+17 historical configured-removal pair groups collapse into five complete
+non-singleton configured-removed equivalence classes; do not call both counts
+classes.
 
 ## Pipeline-call ledger
 
@@ -199,6 +223,12 @@ comparison is killed without fabricating work after a failed crypto check.
 | per-file/partition/aggregate | exact name | number | number | percent | number | normal / >=85% review / >=90% stop |
 
 Never compress semantics to fit a cap.
+
+For the Issue #435 Reset31 exemplar, record matrix 4,200, protocol 4,200, core
+oracle 4,200, repository oracle 14,500, template 600, ADR 550, route 5,800,
+architecture/security 2,200, validator 28,000, seven-path aggregate 34,000, and
+zero binaries. At or above 85 percent, record a readability/convergence review;
+at or above 90 percent stop before C3/GREEN and decompose.
 
 ## Pre-GREEN review overlay
 

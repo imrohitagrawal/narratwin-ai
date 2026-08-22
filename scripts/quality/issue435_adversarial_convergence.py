@@ -229,15 +229,15 @@ STATIC_GIT_DOCUMENTATION_CLAIM_CONTRACT = (
         (
             (
                 "docs/ADR/0064-adversarial-convergence-protocol.md",
-                "292fc0b0b11fb95dabe20e6c88867b73be1e6a11199f9a5bea3b9ccdf413237b",
+                "1e9c8e1ef77f7583da58edd6263d1bec851517206daa25edefd3ba55d935579e",
             ),
             (
                 "docs/ADVERSARIAL_VERIFICATION_PLAYBOOK.md",
-                "2c790199d2d08db74dff625bf917028c614ba1e1acd36b634800220061259041",
+                "4d2661cac412e05b3e051d34a2e95f7f42d4c9de27792325dcceabbb397ae208",
             ),
             (
                 "docs/templates/ADVERSARIAL_INVARIANT_MATRIX.md",
-                "415bb191406233d29214d394ee04ae3b6c1db0ebe3203de1d9917f08cfccd5a3",
+                "cd8d7b6c24e43689f8aff316f7f9fe4f04e9409b231ecd526cf0eea9b62ebc8f",
             ),
         ),
     ),
@@ -269,6 +269,10 @@ STATIC_GIT_DOCUMENTATION_CLAIM_CONTRACT = (
             "bounded-synonym",
             "case+markdown+hyphen",
             "bounded-synonym+markdown+hyphen",
+            "backtick-only",
+            "edge-whitespace-only",
+            "case+markdown+hyphen+backtick+edge-whitespace",
+            "bounded-synonym+markdown+hyphen+backtick+edge-whitespace",
         ),
     ),
     (
@@ -301,8 +305,33 @@ STATIC_GIT_DOCUMENTATION_CLAIM_CONTRACT = (
             ),
         ),
     ),
-    ("variantCount", 28),
-    ("variantSha256", "c474a3508850ee6bf9c4bfd8296416e723d134ae2b52c3390a802fd65ed65b7a"),
+    ("variantCount", 44),
+    (
+        "variantSha256",
+        "9a6f83544ddc8e595861d2cd3d7b0a8d24fac7b75e5d61024868e222d561f3b8",
+    ),
+    (
+        "normalizerMutantFields",
+        ("mutantId", "hostileAxis"),
+    ),
+    (
+        "normalizerMutants",
+        (
+            (
+                "omit-backtick-removal",
+                "backtick-only",
+            ),
+            (
+                "omit-final-strip",
+                "edge-whitespace-only",
+            ),
+        ),
+    ),
+    ("normalizerMutantCount", 2),
+    (
+        "normalizerMutantSha256",
+        "b365ac98f1bcdf8501259e4a39c5441ab60cb24a8a0f66c21d921ee28fbbec96",
+    ),
     (
         "findingContracts",
         (
@@ -1203,7 +1232,7 @@ STATIC_GIT_METADATA_TRIGGER_RECEIPT_FIELDS = (
 )
 STATIC_GIT_METADATA_FIXTURE_PARENT_ABSOLUTE_LENGTH = 700
 STATIC_GIT_METADATA_FIXTURE_PARENT_LEXICAL_DEPTH = 16
-STATIC_GIT_METADATA_FIXTURE_ROOT_REPLAY_LENGTHS = (27, 108)
+STATIC_GIT_METADATA_FIXTURE_ROOT_REPLAY_SHAPES = ((27, 4), (108, 10))
 STATIC_GIT_METADATA_TRIGGER_RECEIPT_SCHEDULE_CONTRACT = (
     "fixture-parent-fsencoded-length-exactly-700",
     "fixture-parent-lexical-depth-exactly-16",
@@ -1213,11 +1242,137 @@ STATIC_GIT_METADATA_TRIGGER_RECEIPT_SCHEDULE_CONTRACT = (
     "raw-read-request-chunk-count-and-type-vectors-exact",
     "raw-close-attempt-result-and-order-vectors-exact",
     "path-content-normalized-only-for-portable-payload-identity",
-    "replay-original-root-lengths-27-and-108-depths-4-and-10-with-identical-execution-stimulus-receipt",
+    "measure-original-root-shapes-27-bytes-depth-4-and-108-bytes-depth-10",
+    "run-complete-129-case-collector-independently-under-each-root",
+    "separate-execution-stimulus-trigger-receipt-raw-read-close-order-normalized-payload-catalogs-row-and-digest-equal",
 )
 STATIC_GIT_METADATA_TRIGGER_RECEIPT_COUNT = 129
 STATIC_GIT_METADATA_TRIGGER_RECEIPT_SHA256 = (
     "0c61c46db77fcd5a5f2ee21d2839fce9d02edf5fdacf4641410c53aad4ec95a6"
+)
+STATIC_GIT_METADATA_COLLECTION_FIELDS = (
+    "fullExecutions",
+    "stimuli",
+    "triggerReceipts",
+    "rawReadCatalog",
+    "closeOrderCatalog",
+    "normalizedPayloadCatalog",
+    "configuredPlanReceipts",
+)
+STATIC_GIT_METADATA_RAW_READ_CATALOG_FIELDS = (
+    "executionId",
+    "roleOrdinal",
+    "role",
+    "rawReadRequestVector",
+    "rawReadChunkLengthVector",
+    "rawReadRequestCount",
+    "rawReadChunkCount",
+    "readTypeVector",
+)
+STATIC_GIT_METADATA_RAW_READ_CATALOG_COUNT = 466
+STATIC_GIT_METADATA_RAW_READ_CATALOG_SHA256 = (
+    "83e4d288ea34bda6765e3b3fe4ed0b39d4f6d794f7ddda521ded6038bfb23955"
+)
+STATIC_GIT_METADATA_CLOSE_ORDER_CATALOG_FIELDS = (
+    "executionId",
+    "roleOrdinal",
+    "role",
+    "rawCloseAttemptOrderVector",
+    "closeResultVector",
+)
+STATIC_GIT_METADATA_CLOSE_ORDER_CATALOG_COUNT = 466
+STATIC_GIT_METADATA_CLOSE_ORDER_CATALOG_SHA256 = (
+    "3c97f0952634e4ff610bef7f61565e90ccaadda0fe36b25263b3e453499246a3"
+)
+STATIC_GIT_METADATA_NORMALIZED_PAYLOAD_CATALOG_FIELDS = (
+    "executionId",
+    "roleOrdinal",
+    "role",
+    "normalizedPayloadSha256",
+)
+STATIC_GIT_METADATA_NORMALIZED_PAYLOAD_CATALOG_COUNT = 466
+STATIC_GIT_METADATA_NORMALIZED_PAYLOAD_CATALOG_SHA256 = (
+    "9f328cbc155b9b57047f4ab53d78720842fbeb02cae54c5a7e03090ab001bda1"
+)
+STATIC_GIT_METADATA_ROOT_REPLAY_ENVELOPE_FIELDS = (
+    "rootShape",
+    "governedParentShape",
+    "finalComponentLengths",
+    "evidenceIdentity",
+)
+STATIC_GIT_METADATA_ROOT_REPLAY_EVIDENCE_FIELDS = (
+    "fullExecutions",
+    "stimuli",
+    "triggerReceipts",
+    "rawReadCatalog",
+    "closeOrderCatalog",
+    "normalizedPayloadCatalog",
+)
+STATIC_GIT_METADATA_ROOT_REPLAY_FINAL_COMPONENT_LENGTHS = ((90, 91), (197, 197))
+STATIC_GIT_METADATA_ROOT_REPLAY_ENVELOPES = (
+    (
+        (27, 4),
+        (700, 16),
+        (90, 91),
+        "4a436fa2d1433aa757c3823d81d1903cd6fcff124af30e083210d9d651968bec",
+    ),
+    (
+        (108, 10),
+        (700, 16),
+        (197, 197),
+        "4a436fa2d1433aa757c3823d81d1903cd6fcff124af30e083210d9d651968bec",
+    ),
+)
+STATIC_GIT_METADATA_ROOT_REPLAY_ENVELOPE_COUNT = 2
+STATIC_GIT_METADATA_ROOT_REPLAY_ENVELOPE_SHA256 = (
+    "9d4ea90d35d429c1b1018fb3ad9af8f0b59bd0b4592d0bea1c933120ddc1024a"
+)
+STATIC_GIT_METADATA_ROOT_REPLAY_EVIDENCE_IDENTITY_SHA256 = (
+    "4a436fa2d1433aa757c3823d81d1903cd6fcff124af30e083210d9d651968bec"
+)
+STATIC_GIT_METADATA_ROOT_REPLAY_CONFIGURED_PLAN_RECEIPT_EQUALITY = (
+    "capture-under-each-root",
+    "exact-row-equality",
+    "exact-digest-equality-before-portability-credit",
+)
+STATIC_GIT_METADATA_CROSS_ROOT_REPLAY_FINDING = (
+    "evidence",
+    "CURRENT",
+    "ACP.EVIDENCE.CROSS_ROOT_REPLAY_MISMATCH",
+    "rootReplay.evidenceIdentity",
+)
+STATIC_GIT_METADATA_CROSS_ROOT_DIVERGENCE_MUTANT_FIELDS = (
+    "mutantId",
+    "catalog",
+    "executionId",
+    "roleOrdinal",
+    "coordinate",
+    "mutation",
+    "findingLocation",
+)
+STATIC_GIT_METADATA_CROSS_ROOT_DIVERGENCE_MUTANTS = (
+    (
+        "raw-read-coordinate",
+        "raw_reads",
+        "linked-positive@linked",
+        0,
+        "rawReadRequestVector[0]",
+        "increment-first-request",
+        "metadataReplay.rawReads[linked-positive@linked][0].rawReadRequestVector[0]",
+    ),
+    (
+        "normalized-payload-coordinate",
+        "normalized_payloads",
+        "conventional-positive@conventional",
+        0,
+        "normalizedPayloadSha256",
+        "replace-first-payload-identity",
+        "metadataReplay.normalizedPayloads[conventional-positive@conventional][0].normalizedPayloadSha256",
+    ),
+)
+STATIC_GIT_METADATA_CROSS_ROOT_DIVERGENCE_MUTANT_COUNT = 2
+STATIC_GIT_METADATA_CROSS_ROOT_DIVERGENCE_MUTANT_SHA256 = (
+    "6d399932abf4cc9a2a4b7324b70f2f63cad5b53ca37636cb9d123fbd214e0c64"
 )
 STATIC_GIT_METADATA_FORMER_COLLISION_GROUPS = (
     (
@@ -1311,6 +1466,97 @@ STATIC_GIT_METADATA_FORMER_COLLISION_GROUP_SHA256 = (
     "3d6ec3f35db4037153555ae3e3fd4332f70b5812e8413923399b1fa805753185"
 )
 STATIC_GIT_METADATA_CONFIGURED_REMOVED_COLLISION_COUNT = 5
+STATIC_GIT_METADATA_CONFIGURED_REMOVED_HISTORICAL_PAIR_GROUP_FIELDS = (
+    "historicalGroupName",
+    "executionPair",
+)
+STATIC_GIT_METADATA_CONFIGURED_REMOVED_HISTORICAL_PAIR_GROUPS = (
+    (
+        "configured-removed-linked-pre-root-fstat",
+        ("pre-root-symlink@linked", "fstat-type@linked"),
+    ),
+    (
+        "configured-removed-linked-pre-root-open",
+        ("pre-root-symlink@linked", "open-error@linked"),
+    ),
+    (
+        "configured-removed-conventional-ancestor",
+        ("root-replacement@conventional", "ancestor-replacement@conventional"),
+    ),
+    (
+        "configured-removed-conventional-between",
+        (
+            "root-replacement@conventional",
+            "between-read-conventional-dot-git@conventional",
+        ),
+    ),
+    (
+        "configured-removed-conventional-final",
+        (
+            "root-replacement@conventional",
+            "final-binding-revalidation@conventional",
+        ),
+    ),
+    (
+        "configured-removed-conventional-leaf",
+        ("root-replacement@conventional", "leaf-replacement@conventional"),
+    ),
+    (
+        "configured-removed-conventional-fstat-device",
+        ("root-replacement@conventional", "fstat-device@conventional"),
+    ),
+    (
+        "configured-removed-conventional-fstat-inode",
+        ("root-replacement@conventional", "fstat-inode@conventional"),
+    ),
+    (
+        "configured-removed-conventional-fstat-type",
+        ("root-replacement@conventional", "fstat-type@conventional"),
+    ),
+    (
+        "configured-removed-conventional-lstat",
+        ("root-replacement@conventional", "lstat-error@conventional"),
+    ),
+    (
+        "configured-removed-conventional-open",
+        ("root-replacement@conventional", "open-error@conventional"),
+    ),
+    (
+        "configured-removed-conventional-close",
+        ("root-replacement@conventional", "close-error@conventional"),
+    ),
+    (
+        "configured-removed-linked-root-leaf",
+        ("root-replacement@linked", "leaf-replacement@linked"),
+    ),
+    (
+        "configured-removed-linked-root-postread",
+        ("root-replacement@linked", "post-read-device@linked"),
+    ),
+    (
+        "configured-removed-linked-between-read",
+        ("between-read-linked-directory@linked", "between-read-common-directory@linked"),
+    ),
+    (
+        "configured-removed-linked-fstat-lstat",
+        ("fstat-inode@linked", "lstat-error@linked"),
+    ),
+    (
+        "configured-removed-linked-fstat-close",
+        ("fstat-inode@linked", "close-error@linked"),
+    ),
+)
+STATIC_GIT_METADATA_CONFIGURED_REMOVED_HISTORICAL_PAIR_GROUP_COUNT = 17
+STATIC_GIT_METADATA_CONFIGURED_REMOVED_HISTORICAL_PAIR_GROUP_SHA256 = (
+    "aa41b6ec402fa9bedc1fb441baf6532011bb7b2f2dc813f360c387edb35da13d"
+)
+STATIC_GIT_METADATA_CONFIGURED_REMOVED_HISTORICAL_PAIR_GROUP_SOURCE = (
+    "Reset29:be4aba72a9b808569091ed5c69471f7c747eca6e:"
+    "EXPECTED_METADATA_FORMER_COLLISION_GROUPS[-17:]"
+)
+STATIC_GIT_METADATA_CONFIGURED_REMOVED_HISTORICAL_PAIR_GROUP_SOURCE_BLOB = (
+    "472efe3987d419213c705b72b88e7a2bad7f3c3e"
+)
 STATIC_GIT_METADATA_CONFIGURED_PLAN_IDENTITY_CONTRACT = (
     "non-label",
     "non-terminal",
@@ -1328,9 +1574,89 @@ STATIC_GIT_METADATA_CONFIGURED_PLAN_COUNT = 22
 STATIC_GIT_METADATA_CONFIGURED_PLAN_SHA256 = (
     "be232294b50b2ab84f96df800d6b495ace266077218bd6fb2c716353622015e8"
 )
+STATIC_GIT_METADATA_CONFIGURED_PLAN_RECEIPT_FIELDS = (
+    "executionId",
+    "observedCallback",
+    "observedTarget",
+    "observedTargetRole",
+    "observedTargetPath",
+    "observedPhase",
+    "observedRoleOrdinal",
+    "observedCallbackOrdinal",
+    "observedEffect",
+    "callbackEvents",
+    "metadataEvents",
+    "statEvents",
+    "exceptionEvents",
+    "rawEvidenceIdentity",
+)
+STATIC_GIT_METADATA_CONFIGURED_PLAN_RAW_EVIDENCE_FIELDS = (
+    "callbackEvents",
+    "metadataEvents",
+    "statEvents",
+    "exceptionEvents",
+)
+STATIC_GIT_METADATA_CONFIGURED_PLAN_RECEIPT_PROJECTION_FIELDS = (
+    "callback",
+    "target",
+    "phase",
+    "effect",
+)
+STATIC_GIT_METADATA_CONFIGURED_PLAN_RECEIPT_IDENTITY_CONTRACT = (
+    "derive-raw-evidence-identity-from-actual-callback-metadata-stat-and-exception-events-before-semantic-projection",
+    "derive-semantic-fields-only-from-raw-evidence",
+    "must-not-read-configured-plan-case-row-expected-finding-or-terminal-result",
+    "project-callback-target-phase-effect-and-require-exact-declared-plan-equality-before-binding",
+)
+STATIC_GIT_METADATA_CONFIGURED_PLAN_RECEIPT_COUNT = 22
+STATIC_GIT_METADATA_CONFIGURED_PLAN_RECEIPT_SHA256 = (
+    "44e55951513a7f7ab555765007a17335198681f09a0fbb8b7cf907b243335ad5"
+)
+STATIC_GIT_METADATA_CONFIGURED_PLAN_RECEIPT_MUTANT_FIELDS = (
+    "mutantId",
+    "executionId",
+    "coordinate",
+    "mutation",
+    "expectedDisposition",
+)
+STATIC_GIT_METADATA_CONFIGURED_PLAN_RECEIPT_MUTANTS = (
+    (
+        "MUT-CONFIGURED-PLAN-RECEIPT-CALLBACK",
+        "fstat-type@linked",
+        "callback",
+        "replace-with-different-closed-callback",
+        "exact-plan-receipt-binding-fails",
+    ),
+    (
+        "MUT-CONFIGURED-PLAN-RECEIPT-TARGET",
+        "fstat-type@linked",
+        "target",
+        "replace-with-different-role-path-target",
+        "exact-plan-receipt-binding-fails",
+    ),
+    (
+        "MUT-CONFIGURED-PLAN-RECEIPT-PHASE",
+        "fstat-type@linked",
+        "phase",
+        "replace-with-different-closed-phase-order",
+        "exact-plan-receipt-binding-fails",
+    ),
+    (
+        "MUT-CONFIGURED-PLAN-RECEIPT-EFFECT",
+        "fstat-type@linked",
+        "effect",
+        "replace-with-different-closed-effect",
+        "exact-plan-receipt-binding-fails",
+    ),
+)
+STATIC_GIT_METADATA_CONFIGURED_PLAN_RECEIPT_MUTANT_COUNT = 4
+STATIC_GIT_METADATA_CONFIGURED_PLAN_RECEIPT_MUTANT_SHA256 = (
+    "82edf76324128f8a05909768c9aae0c2e801f2e105f053549b00a8c5ce28ddf3"
+)
 STATIC_GIT_METADATA_VALID_EXECUTION_BINDING_FIELDS = (
     "configuredStimulusIdentity",
     "configuredPlanIdentity",
+    "configuredPlanReceiptIdentity",
     "actualReceiptIdentity",
 )
 STATIC_GIT_METADATA_CONFIGURED_REMOVED_EQUIVALENCE_CLASS_FIELDS = (
@@ -1780,17 +2106,514 @@ STATIC_GIT_TEXTUAL_TRANSFORMATION_BYTE_IDENTITY_FIELDS = (
     "normalizedTransformedLength",
     "normalizedTransformedSha256",
 )
+STATIC_GIT_TEXTUAL_TRANSFORMATION_BYTE_IDENTITIES = (
+    (
+        "object_format",
+        "missing_lf",
+        "raw-non-oid-bytes",
+        ((), ()),
+        5,
+        "335277ee77cfc8d51d6602e4137232cf6041aac2bc663777e384b90d5ae74d51",
+        4,
+        "b1565820a5cdac40e0520d23f9d0b1497f240ddc51d72eac6423d97d952d444f",
+    ),
+    (
+        "object_format",
+        "crlf",
+        "raw-non-oid-bytes",
+        ((), ()),
+        5,
+        "335277ee77cfc8d51d6602e4137232cf6041aac2bc663777e384b90d5ae74d51",
+        6,
+        "e221f895b353e3205971a3fa214f947de76223ac08f37409b19181ac05274ae7",
+    ),
+    (
+        "object_format",
+        "extra_line",
+        "raw-non-oid-bytes",
+        ((), ()),
+        5,
+        "335277ee77cfc8d51d6602e4137232cf6041aac2bc663777e384b90d5ae74d51",
+        7,
+        "860830f48fd532a6070337f8ae768a52bae254d4784eed3f3e34ef307b44359f",
+    ),
+    (
+        "object_format",
+        "corrupt_token",
+        "raw-non-oid-bytes",
+        ((), ()),
+        5,
+        "335277ee77cfc8d51d6602e4137232cf6041aac2bc663777e384b90d5ae74d51",
+        5,
+        "d7bb01a3fc06a6887fd52d385d0e7d0e33361af272b68d9696f8efcc71090ca8",
+    ),
+    (
+        "object_format",
+        "valid_token",
+        "raw-non-oid-bytes",
+        ((), ()),
+        5,
+        "335277ee77cfc8d51d6602e4137232cf6041aac2bc663777e384b90d5ae74d51",
+        5,
+        "0353d3653787940d227569c94e1065eebadbb750a8ca70f6bd673388a1837e46",
+    ),
+    (
+        "head",
+        "missing_lf",
+        "named-dynamic-oid-token",
+        (("C3_HEAD_OID",), ("C3_HEAD_OID",)),
+        14,
+        "3c84561a66be097818466a1745b2d0c9ab2e1b8830e21f87aada75d6f51fa84d",
+        13,
+        "cc8ab54fac22c0bdc74773629fccc7f3c46ee854f11f86f892216ea7d8552f29",
+    ),
+    (
+        "head",
+        "crlf",
+        "named-dynamic-oid-token",
+        (("C3_HEAD_OID",), ("C3_HEAD_OID",)),
+        14,
+        "3c84561a66be097818466a1745b2d0c9ab2e1b8830e21f87aada75d6f51fa84d",
+        15,
+        "b3bfaa2d1852e196ca2786988a21d24a9f0e9102317b2286563699e9a6c5a962",
+    ),
+    (
+        "head",
+        "extra_line",
+        "named-dynamic-oid-token",
+        (("C3_HEAD_OID",), ("C3_HEAD_OID",)),
+        14,
+        "3c84561a66be097818466a1745b2d0c9ab2e1b8830e21f87aada75d6f51fa84d",
+        16,
+        "365489169dcc9a5c779e1f09a39eaa99584476559001a6222cddd7571834256c",
+    ),
+    (
+        "head",
+        "corrupt_token",
+        "named-dynamic-oid-token",
+        (("C3_HEAD_OID",), ()),
+        14,
+        "3c84561a66be097818466a1745b2d0c9ab2e1b8830e21f87aada75d6f51fa84d",
+        41,
+        "e10ef6c0d91b1551fb41f2043ef6efdf5dd161775b4a6abc328ef5a6ae89332d",
+    ),
+    (
+        "head",
+        "valid_token",
+        "named-dynamic-oid-token",
+        (("C3_HEAD_OID",), ()),
+        14,
+        "3c84561a66be097818466a1745b2d0c9ab2e1b8830e21f87aada75d6f51fa84d",
+        41,
+        "e3f3d59b587fc7a5beaef3ee3cc8fa1b7bfd482d5ce2a5604cb9a0743cf462a5",
+    ),
+    (
+        "red_type",
+        "missing_lf",
+        "raw-non-oid-bytes",
+        ((), ()),
+        7,
+        "50836eee574ecff79dea3b4fd40673d7d000f7a5f177d8a6a3000b59c78383b8",
+        6,
+        "9505cacb7c710ed17125fcc6cb3669e8ddca6c8cd8af6a31f6b3cd64604c3098",
+    ),
+    (
+        "red_type",
+        "crlf",
+        "raw-non-oid-bytes",
+        ((), ()),
+        7,
+        "50836eee574ecff79dea3b4fd40673d7d000f7a5f177d8a6a3000b59c78383b8",
+        8,
+        "03c247f0017db08a67be3cc39595c0c94c04e2808fad0767305c64525479aa85",
+    ),
+    (
+        "red_type",
+        "extra_line",
+        "raw-non-oid-bytes",
+        ((), ()),
+        7,
+        "50836eee574ecff79dea3b4fd40673d7d000f7a5f177d8a6a3000b59c78383b8",
+        9,
+        "808ed7f5e3b3532ca1da6db79faf4c7793a428e53c302d2ffbc3b3a782cb52ee",
+    ),
+    (
+        "red_type",
+        "corrupt_token",
+        "raw-non-oid-bytes",
+        ((), ()),
+        7,
+        "50836eee574ecff79dea3b4fd40673d7d000f7a5f177d8a6a3000b59c78383b8",
+        7,
+        "45cb38bf01adb9c1963546de581f121df11e73b1c4cbe1522c226de8869b53a4",
+    ),
+    (
+        "red_type",
+        "valid_token",
+        "raw-non-oid-bytes",
+        ((), ()),
+        7,
+        "50836eee574ecff79dea3b4fd40673d7d000f7a5f177d8a6a3000b59c78383b8",
+        5,
+        "bc103b4a84971ef6459b294a2b98568a2bfb72cded09d4acd1e16366a401f95b",
+    ),
+    (
+        "red_size",
+        "missing_lf",
+        "raw-non-oid-bytes",
+        ((), ()),
+        4,
+        "e595be81bf15aa95763adb4fc0ba525bbed1971cf5fccdf3a946cd37025fb2c9",
+        3,
+        "0f4121d0ef1df4c86854c7ebb47ae1c93de8aec8f944035eeaa6495dd71a0678",
+    ),
+    (
+        "red_size",
+        "crlf",
+        "raw-non-oid-bytes",
+        ((), ()),
+        4,
+        "e595be81bf15aa95763adb4fc0ba525bbed1971cf5fccdf3a946cd37025fb2c9",
+        5,
+        "fe15ccd797eb272fc2c2d29e28a3380456402a670081f8d83a1fba7183a4ccb0",
+    ),
+    (
+        "red_size",
+        "extra_line",
+        "raw-non-oid-bytes",
+        ((), ()),
+        4,
+        "e595be81bf15aa95763adb4fc0ba525bbed1971cf5fccdf3a946cd37025fb2c9",
+        6,
+        "85244fec5aa1bf11a30556a6182b39e324d1460a16f834e142e3a2cb0aa12886",
+    ),
+    (
+        "red_size",
+        "corrupt_token",
+        "raw-non-oid-bytes",
+        ((), ()),
+        4,
+        "e595be81bf15aa95763adb4fc0ba525bbed1971cf5fccdf3a946cd37025fb2c9",
+        4,
+        "faca203908d4e36a81479e252f005ce30b6e8f7ee4dee874b8dbf7b4ae7f0f05",
+    ),
+    (
+        "red_size",
+        "valid_token",
+        "raw-non-oid-bytes",
+        ((), ()),
+        4,
+        "e595be81bf15aa95763adb4fc0ba525bbed1971cf5fccdf3a946cd37025fb2c9",
+        4,
+        "2fa7660fa51eaa80d3212ae92ef3e870b6d246404eb81efabda68d5319c7d07b",
+    ),
+    (
+        "merge_scan",
+        "crlf",
+        "raw-non-oid-bytes",
+        ((), ()),
+        0,
+        "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        2,
+        "7eb70257593da06f682a3ddda54a9d260d4fc514f645237f5ca74b08f8da61a6",
+    ),
+    (
+        "merge_scan",
+        "extra_line",
+        "raw-non-oid-bytes",
+        ((), ()),
+        0,
+        "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        82,
+        "278589e204c8f682c4f8ee88e7452f4ac13fbee299fd5ff8c1e4bee7645900f5",
+    ),
+    (
+        "merge_scan",
+        "corrupt_token",
+        "raw-non-oid-bytes",
+        ((), ()),
+        0,
+        "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        41,
+        "fd29d675a24e1b3bd4d0538d35610ceaa70214dba8148e0633d956592d5f8e71",
+    ),
+    (
+        "merge_scan",
+        "valid_token",
+        "raw-non-oid-bytes",
+        ((), ()),
+        0,
+        "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        41,
+        "bba1b0a81a5ad83dd7905145aabfc1cde9e5ac32efcf5f8833ea2995baf8be11",
+    ),
+    (
+        "ancestry_chain",
+        "missing_lf",
+        "named-dynamic-oid-token",
+        (("C3_HEAD_OID", "RED_HEAD_OID"), ("C3_HEAD_OID", "RED_HEAD_OID")),
+        29,
+        "48411b289a7ead58c64ec84b9f691e168c0bc489a6acd839d23b41e94722141c",
+        28,
+        "a216b9b5d810d11aff2979d83c7f0be194ae6bba85ea84e019a6f73a336547a3",
+    ),
+    (
+        "ancestry_chain",
+        "crlf",
+        "named-dynamic-oid-token",
+        (("C3_HEAD_OID", "RED_HEAD_OID"), ("C3_HEAD_OID", "RED_HEAD_OID")),
+        29,
+        "48411b289a7ead58c64ec84b9f691e168c0bc489a6acd839d23b41e94722141c",
+        30,
+        "589d9c5a372f7168a45ab7b5c8be8b0fe4e018b7694fd6f06b9b0a362c4caef0",
+    ),
+    (
+        "ancestry_chain",
+        "extra_line",
+        "named-dynamic-oid-token",
+        (("C3_HEAD_OID", "RED_HEAD_OID"), ("C3_HEAD_OID", "RED_HEAD_OID")),
+        29,
+        "48411b289a7ead58c64ec84b9f691e168c0bc489a6acd839d23b41e94722141c",
+        31,
+        "bc019c0ff28831dd05921ab843784fa7ab2c36e2b2a75257c19e29f81bbb309e",
+    ),
+    (
+        "ancestry_chain",
+        "corrupt_token",
+        "named-dynamic-oid-token",
+        (("C3_HEAD_OID", "RED_HEAD_OID"), ("RED_HEAD_OID",)),
+        29,
+        "48411b289a7ead58c64ec84b9f691e168c0bc489a6acd839d23b41e94722141c",
+        56,
+        "6da4ee90c1c770273fb5b7f45140b51b3a7f2bf4cc2661b6158617a0a13aa286",
+    ),
+    (
+        "ancestry_chain",
+        "valid_token",
+        "named-dynamic-oid-token",
+        (("C3_HEAD_OID", "RED_HEAD_OID"), ("RED_HEAD_OID",)),
+        29,
+        "48411b289a7ead58c64ec84b9f691e168c0bc489a6acd839d23b41e94722141c",
+        56,
+        "5871e0cebd48e4f83aeeeb25ed5d0b3a68b1b1b09fc0e7943335c70b29db5fa4",
+    ),
+    (
+        "red_objects",
+        "missing_lf",
+        "named-dynamic-oid-token",
+        (
+            (
+                "RED_TREE_OID",
+                "MATRIX_BLOB_OID",
+                "CORE_ORACLE_BLOB_OID",
+                "REPOSITORY_ORACLE_BLOB_OID",
+            ),
+            (
+                "RED_TREE_OID",
+                "MATRIX_BLOB_OID",
+                "CORE_ORACLE_BLOB_OID",
+                "REPOSITORY_ORACLE_BLOB_OID",
+            ),
+        ),
+        85,
+        "5a592f86d5603a45567ce109c8dd7d10ddebd7b205fc5bebb4b0a130d57bdce1",
+        84,
+        "4d98becc0211e1b3e42aafa80a69bf909e3fc0a505039ecfe26f8be81b4bd35a",
+    ),
+    (
+        "red_objects",
+        "crlf",
+        "named-dynamic-oid-token",
+        (
+            (
+                "RED_TREE_OID",
+                "MATRIX_BLOB_OID",
+                "CORE_ORACLE_BLOB_OID",
+                "REPOSITORY_ORACLE_BLOB_OID",
+            ),
+            (
+                "RED_TREE_OID",
+                "MATRIX_BLOB_OID",
+                "CORE_ORACLE_BLOB_OID",
+                "REPOSITORY_ORACLE_BLOB_OID",
+            ),
+        ),
+        85,
+        "5a592f86d5603a45567ce109c8dd7d10ddebd7b205fc5bebb4b0a130d57bdce1",
+        89,
+        "9e22e268ab6916ada22760d160a1928d0b492ba65c6b1cea1da348918fcaebbc",
+    ),
+    (
+        "red_objects",
+        "extra_line",
+        "named-dynamic-oid-token",
+        (
+            (
+                "RED_TREE_OID",
+                "MATRIX_BLOB_OID",
+                "CORE_ORACLE_BLOB_OID",
+                "REPOSITORY_ORACLE_BLOB_OID",
+            ),
+            (
+                "RED_TREE_OID",
+                "MATRIX_BLOB_OID",
+                "CORE_ORACLE_BLOB_OID",
+                "REPOSITORY_ORACLE_BLOB_OID",
+            ),
+        ),
+        85,
+        "5a592f86d5603a45567ce109c8dd7d10ddebd7b205fc5bebb4b0a130d57bdce1",
+        87,
+        "a2124722752c9f7221f04523fb7a69e56116989b08355d3be23b8cd00755828a",
+    ),
+    (
+        "red_objects",
+        "corrupt_token",
+        "named-dynamic-oid-token",
+        (
+            (
+                "RED_TREE_OID",
+                "MATRIX_BLOB_OID",
+                "CORE_ORACLE_BLOB_OID",
+                "REPOSITORY_ORACLE_BLOB_OID",
+            ),
+            ("MATRIX_BLOB_OID", "CORE_ORACLE_BLOB_OID", "REPOSITORY_ORACLE_BLOB_OID"),
+        ),
+        85,
+        "5a592f86d5603a45567ce109c8dd7d10ddebd7b205fc5bebb4b0a130d57bdce1",
+        111,
+        "0e3cc7be02467c2d6fc06bb2a1f803d78428917f9c18c2295d3453397f01b06c",
+    ),
+    (
+        "red_objects",
+        "valid_token",
+        "named-dynamic-oid-token",
+        (
+            (
+                "RED_TREE_OID",
+                "MATRIX_BLOB_OID",
+                "CORE_ORACLE_BLOB_OID",
+                "REPOSITORY_ORACLE_BLOB_OID",
+            ),
+            ("MATRIX_BLOB_OID", "CORE_ORACLE_BLOB_OID", "REPOSITORY_ORACLE_BLOB_OID"),
+        ),
+        85,
+        "5a592f86d5603a45567ce109c8dd7d10ddebd7b205fc5bebb4b0a130d57bdce1",
+        111,
+        "6c5c6b52a7f076558deda90c7d5e54bba392b4ad79e991d7750bfaed98d08417",
+    ),
+    (
+        "c3_freeze_size",
+        "missing_lf",
+        "raw-non-oid-bytes",
+        ((), ()),
+        5,
+        "dc23d3655da416802f01fd3cffd7de986615051f4dd4fc4ff8933b954b9502f3",
+        4,
+        "8e0c19142ee61342e1f8b09a6fccbcf5867db1542444474ed37ad11bd08eb062",
+    ),
+    (
+        "c3_freeze_size",
+        "crlf",
+        "raw-non-oid-bytes",
+        ((), ()),
+        5,
+        "dc23d3655da416802f01fd3cffd7de986615051f4dd4fc4ff8933b954b9502f3",
+        6,
+        "9477f52ece818433b8980ceb2a3704dd67e7ad11975e00c3c3d30c01c3528201",
+    ),
+    (
+        "c3_freeze_size",
+        "extra_line",
+        "raw-non-oid-bytes",
+        ((), ()),
+        5,
+        "dc23d3655da416802f01fd3cffd7de986615051f4dd4fc4ff8933b954b9502f3",
+        7,
+        "732159d94c2281ad07501e8ac605244577332800a4e39990101c3827973702e5",
+    ),
+    (
+        "c3_freeze_size",
+        "corrupt_token",
+        "raw-non-oid-bytes",
+        ((), ()),
+        5,
+        "dc23d3655da416802f01fd3cffd7de986615051f4dd4fc4ff8933b954b9502f3",
+        5,
+        "05718f1e7f59f10c0338e536fe099e1bf3d9ba8395e69930dbce21bd4a88edb1",
+    ),
+    (
+        "c3_freeze_size",
+        "valid_token",
+        "raw-non-oid-bytes",
+        ((), ()),
+        5,
+        "dc23d3655da416802f01fd3cffd7de986615051f4dd4fc4ff8933b954b9502f3",
+        5,
+        "fe4e3bab9fb4bab90dd1607f94319043a1b6dbb6bdd7fe670420291b89263098",
+    ),
+    (
+        "red_author",
+        "missing_lf",
+        "raw-non-oid-bytes",
+        ((), ()),
+        33,
+        "89dcf64642139c5a8309e8c5ec9b251b66ec749d799aafdee30017b50019ad83",
+        32,
+        "51eaf37165c21c1dabf8e2a3fa45eed56a431b7f2f0ce1abb16b4b363e5250f9",
+    ),
+    (
+        "red_author",
+        "crlf",
+        "raw-non-oid-bytes",
+        ((), ()),
+        33,
+        "89dcf64642139c5a8309e8c5ec9b251b66ec749d799aafdee30017b50019ad83",
+        34,
+        "8270b75b46228a52971060f320b595477f5390488c5771d3ff6f0c6cce740b4f",
+    ),
+    (
+        "red_author",
+        "extra_line",
+        "raw-non-oid-bytes",
+        ((), ()),
+        33,
+        "89dcf64642139c5a8309e8c5ec9b251b66ec749d799aafdee30017b50019ad83",
+        35,
+        "7141c203a08f6d938311e7403f069d5852839f26bb327240cc7b0f3385bfda5b",
+    ),
+    (
+        "red_author",
+        "corrupt_token",
+        "raw-non-oid-bytes",
+        ((), ()),
+        33,
+        "89dcf64642139c5a8309e8c5ec9b251b66ec749d799aafdee30017b50019ad83",
+        18,
+        "da4eb6a5e26bdce6563408c932d7feb2a8af5490800be249ba6701364bd15533",
+    ),
+    (
+        "red_author",
+        "valid_token",
+        "raw-non-oid-bytes",
+        ((), ()),
+        33,
+        "89dcf64642139c5a8309e8c5ec9b251b66ec749d799aafdee30017b50019ad83",
+        18,
+        "f601bb0f05a9f3039ad86243cbd9318906b2663db30ac9e2615a7720c6d2cd43",
+    ),
+)
 STATIC_GIT_TEXTUAL_TRANSFORMATION_BYTE_IDENTITY_COUNT = 44
 STATIC_GIT_TEXTUAL_TRANSFORMATION_BYTE_IDENTITY_SHA256 = (
-    "cfbaae8676192cadee829806cc82d9b64e86a3b3460b3cfa65dcd3cdb5bec9ac"
+    "59d4077c8ab7ae0ac9f72181b62dc0e628921c60b86797919d8d96af1dcbcab2"
 )
 STATIC_GIT_TEXTUAL_TRANSFORMATION_BYTE_NORMALIZATION = (
     (
         "dynamicOidRoles",
         (
-            ("head", ("HEAD_OID",)),
-            ("merge_scan", ("MERGE_OID",)),
-            ("ancestry_chain", ("ANCESTRY_OID_00_THROUGH_64",)),
+            ("head", ("C3_HEAD_OID",)),
+            ("merge_scan", ()),
+            ("ancestry_chain", ("C3_HEAD_OID", "RED_HEAD_OID")),
             (
                 "red_objects",
                 (
@@ -1805,9 +2628,164 @@ STATIC_GIT_TEXTUAL_TRANSFORMATION_BYTE_NORMALIZATION = (
     ("tokenEncoding", "angle-bracketed-uppercase-name-preserving-lf-and-row-order"),
     (
         "selfReferenceRule",
-        "normalize-independently-verified-dynamic-object-ids-before-length-and-sha256",
+        "strictly-parse-role-output-then-normalize-only-position-bound-oids-proven-equal-to-contemporaneous-fixture-or-freeze-objects-before-length-and-sha256",
     ),
     ("nonOidBytes", "must-remain-byte-exact"),
+    (
+        "oidRoleMappingFields",
+        (
+            "role",
+            "rowOrdinal",
+            "columnOrdinal",
+            "semanticName",
+            "identitySource",
+        ),
+    ),
+    (
+        "oidRoleMappings",
+        (
+            ("head", 0, 0, "C3_HEAD_OID", "repository-HEAD"),
+            ("ancestry_chain", 0, 0, "C3_HEAD_OID", "repository-HEAD"),
+            ("ancestry_chain", 0, 1, "RED_HEAD_OID", "redHead"),
+            ("red_objects", 0, 0, "RED_TREE_OID", "redTree"),
+            ("red_objects", 1, 0, "MATRIX_BLOB_OID", "matrixBlobOid"),
+            (
+                "red_objects",
+                2,
+                0,
+                "CORE_ORACLE_BLOB_OID",
+                "focusedOracleBlobs[0].blobOid",
+            ),
+            (
+                "red_objects",
+                3,
+                0,
+                "REPOSITORY_ORACLE_BLOB_OID",
+                "focusedOracleBlobs[1].blobOid",
+            ),
+        ),
+    ),
+    ("oidRoleMappingCount", 7),
+    (
+        "oidRoleMappingSha256",
+        "9f0817328f5e411f2b39ca4bfdc4300cc48884e065d251e929b7569328da028f",
+    ),
+    (
+        "completenessContract",
+        (
+            "every-parsed-base-oid-position-has-exactly-one-mapping",
+            "mapping-order-equals-role-output-order",
+            "token-names-and-output-positions-unique-within-role",
+            "no-unverified-oid-is-replaced",
+        ),
+    ),
+    (
+        "hostileOidSemanticClasses",
+        ("uppercase", "corrupt", "injected-valid-but-wrong", "reordered", "missing", "extra"),
+    ),
+    (
+        "hostileOidDisposition",
+        "fixed-f-e-F-and-every-other-wrong-oid-remain-raw-or-receive-explicit-hostile-token-only-after-exact-hostile-proof-and-stay-distinct-from-every-verified-dynamic-token",
+    ),
+    (
+        "hostileOidEvidenceFields",
+        (
+            "role",
+            "transform",
+            "hostileOidTokenVector",
+            "verifiedSemanticVector",
+            "normalizedTransformedSha256",
+        ),
+    ),
+    (
+        "hostileOidEvidence",
+        (
+            (
+                "head",
+                "corrupt_token",
+                ("CORRUPT_UPPERCASE_PREFIX:C3_HEAD_OID",),
+                (),
+                "e10ef6c0d91b1551fb41f2043ef6efdf5dd161775b4a6abc328ef5a6ae89332d",
+            ),
+            (
+                "head",
+                "valid_token",
+                ("ROLE_INELIGIBLE:RED_HEAD_OID",),
+                (),
+                "e3f3d59b587fc7a5beaef3ee3cc8fa1b7bfd482d5ce2a5604cb9a0743cf462a5",
+            ),
+            (
+                "merge_scan",
+                "extra_line",
+                ("e" * 40, "f" * 40),
+                (),
+                "278589e204c8f682c4f8ee88e7452f4ac13fbee299fd5ff8c1e4bee7645900f5",
+            ),
+            (
+                "merge_scan",
+                "corrupt_token",
+                ("F" * 40,),
+                (),
+                "fd29d675a24e1b3bd4d0538d35610ceaa70214dba8148e0633d956592d5f8e71",
+            ),
+            (
+                "merge_scan",
+                "valid_token",
+                ("f" * 40,),
+                (),
+                "bba1b0a81a5ad83dd7905145aabfc1cde9e5ac32efcf5f8833ea2995baf8be11",
+            ),
+            (
+                "ancestry_chain",
+                "corrupt_token",
+                ("CORRUPT_UPPERCASE_PREFIX:C3_HEAD_OID",),
+                ("RED_HEAD_OID",),
+                "6da4ee90c1c770273fb5b7f45140b51b3a7f2bf4cc2661b6158617a0a13aa286",
+            ),
+            (
+                "ancestry_chain",
+                "valid_token",
+                ("f" * 40,),
+                ("RED_HEAD_OID",),
+                "5871e0cebd48e4f83aeeeb25ed5d0b3a68b1b1b09fc0e7943335c70b29db5fa4",
+            ),
+            (
+                "red_objects",
+                "corrupt_token",
+                ("CORRUPT_UPPERCASE_PREFIX:RED_TREE_OID",),
+                (
+                    "MATRIX_BLOB_OID",
+                    "CORE_ORACLE_BLOB_OID",
+                    "REPOSITORY_ORACLE_BLOB_OID",
+                ),
+                "0e3cc7be02467c2d6fc06bb2a1f803d78428917f9c18c2295d3453397f01b06c",
+            ),
+            (
+                "red_objects",
+                "valid_token",
+                ("f" * 40,),
+                (
+                    "MATRIX_BLOB_OID",
+                    "CORE_ORACLE_BLOB_OID",
+                    "REPOSITORY_ORACLE_BLOB_OID",
+                ),
+                "6c5c6b52a7f076558deda90c7d5e54bba392b4ad79e991d7750bfaed98d08417",
+            ),
+        ),
+    ),
+    ("hostileOidEvidenceCount", 9),
+    (
+        "hostileOidEvidenceSha256",
+        "9857553f7bfefc345c64de7a5d0f8168d7d3a0a431f11a936e2ec0b3f8061502",
+    ),
+    (
+        "hostileOidInequalityContract",
+        (
+            "corrupt-normalized-bytes-not-equal-valid-normalized-bytes",
+            "injected-valid-but-wrong-not-equal-trusted-semantic-token",
+            "reordered-missing-extra-token-shapes-remain-distinct",
+        ),
+    ),
 )
 STATIC_GIT_MERGE_SCAN_EMPTY_TRANSFORMATION_RELATIONS = (
     ("missing_lf", "inapplicable-empty-base"),
@@ -1893,6 +2871,27 @@ STATIC_GIT_METADATA_GOVERNED_PRECEDENCE_MUTANTS = (
 STATIC_GIT_METADATA_GOVERNED_PRECEDENCE_MUTANT_COUNT = 1
 STATIC_GIT_METADATA_GOVERNED_PRECEDENCE_MUTANT_SHA256 = (
     "ddaf256a0bdf6c063ab8fd0e5a8eeb74ec97b4c78a58d380f17ed8a93453093e"
+)
+STATIC_RESET31_BUDGET_CAPS = (
+    (
+        "perFile",
+        (
+            ("matrix", 4200),
+            ("protocol", 4200),
+            ("coreOracle", 4200),
+            ("repositoryOracle", 14500),
+            ("template", 600),
+            ("adr0064", 550),
+        ),
+    ),
+    ("partitions", (("route", 5800), ("architectureSecurity", 2200), ("validator", 28000))),
+    ("aggregate", ("sevenSemanticPaths", 34000)),
+    ("binary", 0),
+)
+STATIC_RESET31_READABILITY_DISPOSITION = (
+    "actual-at-or-above-85-percent-requires-recorded-readability-and-convergence-risk-review",
+    "actual-at-or-above-90-percent-stops-before-C3-and-GREEN-for-decomposition",
+    "semantic-compression-to-fit-cap-prohibited",
 )
 STATIC_GIT_RETURN_CODES = (
     ("object_format", (0,), (), (-1, 2, 127)),

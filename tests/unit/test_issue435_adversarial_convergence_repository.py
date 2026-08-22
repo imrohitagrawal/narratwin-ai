@@ -12,7 +12,9 @@ import subprocess
 import sys
 import zlib
 from copy import deepcopy
+from dataclasses import dataclass, replace
 from pathlib import Path
+from tempfile import TemporaryDirectory
 from typing import Any, Callable, cast
 
 import pytest
@@ -76,6 +78,12 @@ NormalizedMetadataIo = tuple[str, ...]
 MetadataRoleTrace = tuple[str, NormalizedMetadataIo]
 MetadataStimulusFacts = tuple[tuple[str, str], ...]
 MetadataTriggerReceipt = tuple[tuple[str, tuple[str, ...]], ...]
+MetadataRawReadRow = tuple[
+    str, int, str, tuple[int, ...], tuple[int, ...], int, int, tuple[str, ...]
+]
+MetadataCloseOrderRow = tuple[str, int, str, tuple[int, ...], tuple[str, ...]]
+MetadataNormalizedPayloadRow = tuple[str, int, str, str]
+ConfiguredPlanReceipt = tuple[object, ...]
 MetadataExecution = tuple[
     MetadataCaseRow,
     str,
@@ -85,8 +93,22 @@ MetadataExecution = tuple[
     tuple[str, ...],
     tuple[MetadataRoleTrace, ...],
 ]
+
+
+@dataclass(frozen=True)
+class MetadataCollection:
+    full_executions: tuple[MetadataExecution, ...]
+    stimuli: tuple[tuple[MetadataStimulusFacts, str], ...]
+    trigger_receipts: tuple[MetadataTriggerReceipt, ...]
+    raw_reads: tuple[MetadataRawReadRow, ...]
+    close_orders: tuple[MetadataCloseOrderRow, ...]
+    normalized_payloads: tuple[MetadataNormalizedPayloadRow, ...]
+    configured_plan_receipts: tuple[ConfiguredPlanReceipt, ...]
+
+
 TextualTransformation = tuple[str, str, bool, str | None, str | None, str | None]
 NormalizedGitByteIdentity = tuple[object, ...]
+VerifiedGitOidMapping = tuple[str, int, int, str, str]
 EXPECTED_METADATA_CASES: tuple[MetadataCaseRow, ...] = (
     ("conventional-positive", "public", "conventional", "dot_git", "directory", None, ".git"),
     ("linked-positive", "public", "linked", "linked_git_dir", "registered", None, ".git.gitdir"),
@@ -966,10 +988,183 @@ EXPECTED_METADATA_TRIGGER_RECEIPT_SCHEDULE_CONTRACT = (
     "raw-read-request-chunk-count-and-type-vectors-exact",
     "raw-close-attempt-result-and-order-vectors-exact",
     "path-content-normalized-only-for-portable-payload-identity",
-    "replay-original-root-lengths-27-and-108-depths-4-and-10-with-identical-execution-stimulus-receipt",
+    "measure-original-root-shapes-27-bytes-depth-4-and-108-bytes-depth-10",
+    "run-complete-129-case-collector-independently-under-each-root",
+    "separate-execution-stimulus-trigger-receipt-raw-read-close-order-normalized-payload-catalogs-row-and-digest-equal",
 )
 EXPECTED_METADATA_FIXTURE_ROOT_REPLAY_LENGTHS = (27, 108)
+EXPECTED_METADATA_FIXTURE_ROOT_REPLAY_DEPTHS = (4, 10)
+EXPECTED_METADATA_FIXTURE_FINAL_COMPONENT_BYTES = ((90, 91), (197, 197))
+EXPECTED_METADATA_COLLECTION_FIELDS = (
+    "fullExecutions",
+    "stimuli",
+    "triggerReceipts",
+    "rawReadCatalog",
+    "closeOrderCatalog",
+    "normalizedPayloadCatalog",
+    "configuredPlanReceipts",
+)
+EXPECTED_METADATA_ROOT_REPLAY_ENVELOPE_FIELDS = (
+    "rootShape",
+    "governedParentShape",
+    "finalComponentLengths",
+    "evidenceIdentity",
+)
+EXPECTED_METADATA_ROOT_REPLAY_EVIDENCE_FIELDS = (
+    "fullExecutions",
+    "stimuli",
+    "triggerReceipts",
+    "rawReadCatalog",
+    "closeOrderCatalog",
+    "normalizedPayloadCatalog",
+)
+EXPECTED_METADATA_ROOT_REPLAY_EVIDENCE_IDENTITY_SHA256 = (
+    "4a436fa2d1433aa757c3823d81d1903cd6fcff124af30e083210d9d651968bec"
+)
+EXPECTED_METADATA_ROOT_REPLAY_ENVELOPES = (
+    ((27, 4), (700, 16), (90, 91), EXPECTED_METADATA_ROOT_REPLAY_EVIDENCE_IDENTITY_SHA256),
+    ((108, 10), (700, 16), (197, 197), EXPECTED_METADATA_ROOT_REPLAY_EVIDENCE_IDENTITY_SHA256),
+)
+EXPECTED_METADATA_ROOT_REPLAY_ENVELOPE_COUNT = 2
+EXPECTED_METADATA_ROOT_REPLAY_ENVELOPE_SHA256 = (
+    "9d4ea90d35d429c1b1018fb3ad9af8f0b59bd0b4592d0bea1c933120ddc1024a"
+)
+EXPECTED_METADATA_RAW_READ_FIELDS = (
+    "executionId",
+    "roleOrdinal",
+    "role",
+    "rawReadRequestVector",
+    "rawReadChunkLengthVector",
+    "rawReadRequestCount",
+    "rawReadChunkCount",
+    "readTypeVector",
+)
+EXPECTED_METADATA_RAW_READ_COUNT = 466
+EXPECTED_METADATA_RAW_READ_SHA256 = (
+    "83e4d288ea34bda6765e3b3fe4ed0b39d4f6d794f7ddda521ded6038bfb23955"
+)
+EXPECTED_METADATA_CLOSE_ORDER_FIELDS = (
+    "executionId",
+    "roleOrdinal",
+    "role",
+    "rawCloseAttemptOrderVector",
+    "closeResultVector",
+)
+EXPECTED_METADATA_CLOSE_ORDER_COUNT = 466
+EXPECTED_METADATA_CLOSE_ORDER_SHA256 = (
+    "3c97f0952634e4ff610bef7f61565e90ccaadda0fe36b25263b3e453499246a3"
+)
+EXPECTED_METADATA_NORMALIZED_PAYLOAD_FIELDS = (
+    "executionId",
+    "roleOrdinal",
+    "role",
+    "normalizedPayloadSha256",
+)
+EXPECTED_METADATA_NORMALIZED_PAYLOAD_COUNT = 466
+EXPECTED_METADATA_NORMALIZED_PAYLOAD_SHA256 = (
+    "9f328cbc155b9b57047f4ab53d78720842fbeb02cae54c5a7e03090ab001bda1"
+)
+EXPECTED_METADATA_REPLAY_DIVERGENCE_MUTANTS = (
+    (
+        "raw-read-coordinate",
+        "raw_reads",
+        "linked-positive@linked",
+        0,
+        "rawReadRequestVector[0]",
+        "increment-first-request",
+        "metadataReplay.rawReads[linked-positive@linked][0].rawReadRequestVector[0]",
+    ),
+    (
+        "normalized-payload-coordinate",
+        "normalized_payloads",
+        "conventional-positive@conventional",
+        0,
+        "normalizedPayloadSha256",
+        "replace-first-payload-identity",
+        "metadataReplay.normalizedPayloads[conventional-positive@conventional][0]"
+        ".normalizedPayloadSha256",
+    ),
+)
+EXPECTED_METADATA_REPLAY_DIVERGENCE_MUTANT_FIELDS = (
+    "mutantId",
+    "catalog",
+    "executionId",
+    "roleOrdinal",
+    "coordinate",
+    "mutation",
+    "findingLocation",
+)
+EXPECTED_METADATA_REPLAY_DIVERGENCE_MUTANT_SHA256 = (
+    "6d399932abf4cc9a2a4b7324b70f2f63cad5b53ca37636cb9d123fbd214e0c64"
+)
 EXPECTED_METADATA_REMOVED_CONFIG_COLLISION_COUNT = 5
+EXPECTED_METADATA_CONFIGURED_REMOVED_HISTORICAL_PAIR_FIELDS = (
+    "historicalGroupName",
+    "executionPair",
+)
+EXPECTED_METADATA_CONFIGURED_REMOVED_HISTORICAL_PAIRS = (
+    ("configured-removed-linked-pre-root-fstat", ("pre-root-symlink@linked", "fstat-type@linked")),
+    ("configured-removed-linked-pre-root-open", ("pre-root-symlink@linked", "open-error@linked")),
+    (
+        "configured-removed-conventional-ancestor",
+        ("root-replacement@conventional", "ancestor-replacement@conventional"),
+    ),
+    (
+        "configured-removed-conventional-between",
+        ("root-replacement@conventional", "between-read-conventional-dot-git@conventional"),
+    ),
+    (
+        "configured-removed-conventional-final",
+        ("root-replacement@conventional", "final-binding-revalidation@conventional"),
+    ),
+    (
+        "configured-removed-conventional-leaf",
+        ("root-replacement@conventional", "leaf-replacement@conventional"),
+    ),
+    (
+        "configured-removed-conventional-fstat-device",
+        ("root-replacement@conventional", "fstat-device@conventional"),
+    ),
+    (
+        "configured-removed-conventional-fstat-inode",
+        ("root-replacement@conventional", "fstat-inode@conventional"),
+    ),
+    (
+        "configured-removed-conventional-fstat-type",
+        ("root-replacement@conventional", "fstat-type@conventional"),
+    ),
+    (
+        "configured-removed-conventional-lstat",
+        ("root-replacement@conventional", "lstat-error@conventional"),
+    ),
+    (
+        "configured-removed-conventional-open",
+        ("root-replacement@conventional", "open-error@conventional"),
+    ),
+    (
+        "configured-removed-conventional-close",
+        ("root-replacement@conventional", "close-error@conventional"),
+    ),
+    ("configured-removed-linked-root-leaf", ("root-replacement@linked", "leaf-replacement@linked")),
+    (
+        "configured-removed-linked-root-postread",
+        ("root-replacement@linked", "post-read-device@linked"),
+    ),
+    (
+        "configured-removed-linked-between-read",
+        ("between-read-linked-directory@linked", "between-read-common-directory@linked"),
+    ),
+    ("configured-removed-linked-fstat-lstat", ("fstat-inode@linked", "lstat-error@linked")),
+    ("configured-removed-linked-fstat-close", ("fstat-inode@linked", "close-error@linked")),
+)
+EXPECTED_METADATA_CONFIGURED_REMOVED_HISTORICAL_PAIR_COUNT = 17
+EXPECTED_METADATA_CONFIGURED_REMOVED_HISTORICAL_PAIR_SHA256 = (
+    "aa41b6ec402fa9bedc1fb441baf6532011bb7b2f2dc813f360c387edb35da13d"
+)
+EXPECTED_METADATA_CONFIGURED_REMOVED_HISTORICAL_SOURCE_IDENTITY = (
+    "Reset29:be4aba72a9b808569091ed5c69471f7c747eca6e:"
+    "EXPECTED_METADATA_FORMER_COLLISION_GROUPS[-17:]"
+)
 EXPECTED_METADATA_FORMER_COLLISION_GROUPS = (
     (
         "root-pre-root-symlink-conventional",
@@ -1131,6 +1326,77 @@ EXPECTED_METADATA_CONFIGURED_PLANS = (
 EXPECTED_METADATA_CONFIGURED_PLAN_COUNT = 22
 EXPECTED_METADATA_CONFIGURED_PLAN_SHA256 = (
     "be232294b50b2ab84f96df800d6b495ace266077218bd6fb2c716353622015e8"
+)
+EXPECTED_METADATA_CONFIGURED_PLAN_RECEIPT_FIELDS = (
+    "executionId",
+    "observedCallback",
+    "observedTarget",
+    "observedTargetRole",
+    "observedTargetPath",
+    "observedPhase",
+    "observedRoleOrdinal",
+    "observedCallbackOrdinal",
+    "observedEffect",
+    "callbackEvents",
+    "metadataEvents",
+    "statEvents",
+    "exceptionEvents",
+    "rawEvidenceIdentity",
+)
+EXPECTED_METADATA_CONFIGURED_PLAN_RAW_EVIDENCE_FIELDS = (
+    "callbackEvents",
+    "metadataEvents",
+    "statEvents",
+    "exceptionEvents",
+)
+EXPECTED_METADATA_CONFIGURED_PLAN_RECEIPT_PROJECTION_FIELDS = (
+    "callback",
+    "target",
+    "phase",
+    "effect",
+)
+EXPECTED_METADATA_CONFIGURED_PLAN_RECEIPT_IDENTITY_CONTRACT = (
+    "derive-raw-evidence-identity-from-actual-callback-metadata-stat-and-exception-events-before-semantic-projection",
+    "derive-semantic-fields-only-from-raw-evidence",
+    "must-not-read-configured-plan-case-row-expected-finding-or-terminal-result",
+    "project-callback-target-phase-effect-and-require-exact-declared-plan-equality-before-binding",
+)
+EXPECTED_METADATA_CONFIGURED_PLAN_RECEIPT_COUNT = 22
+EXPECTED_METADATA_CONFIGURED_PLAN_RECEIPT_SHA256 = (
+    "44e55951513a7f7ab555765007a17335198681f09a0fbb8b7cf907b243335ad5"
+)
+EXPECTED_METADATA_CONFIGURED_PLAN_MUTANTS = (
+    (
+        "MUT-CONFIGURED-PLAN-RECEIPT-CALLBACK",
+        "fstat-type@linked",
+        "callback",
+        "replace-with-different-closed-callback",
+        "exact-plan-receipt-binding-fails",
+    ),
+    (
+        "MUT-CONFIGURED-PLAN-RECEIPT-TARGET",
+        "fstat-type@linked",
+        "target",
+        "replace-with-different-role-path-target",
+        "exact-plan-receipt-binding-fails",
+    ),
+    (
+        "MUT-CONFIGURED-PLAN-RECEIPT-PHASE",
+        "fstat-type@linked",
+        "phase",
+        "replace-with-different-closed-phase-order",
+        "exact-plan-receipt-binding-fails",
+    ),
+    (
+        "MUT-CONFIGURED-PLAN-RECEIPT-EFFECT",
+        "fstat-type@linked",
+        "effect",
+        "replace-with-different-closed-effect",
+        "exact-plan-receipt-binding-fails",
+    ),
+)
+EXPECTED_METADATA_CONFIGURED_PLAN_MUTANT_SHA256 = (
+    "82edf76324128f8a05909768c9aae0c2e801f2e105f053549b00a8c5ce28ddf3"
 )
 EXPECTED_METADATA_CONFIGURED_EQUIVALENCE_FIELDS = (
     "groupName",
@@ -2621,6 +2887,10 @@ EXPECTED_DOCUMENT_OVERCLAIM_VARIANT_AXES = (
     "bounded-synonym",
     "case+markdown+hyphen",
     "bounded-synonym+markdown+hyphen",
+    "backtick-only",
+    "edge-whitespace-only",
+    "case+markdown+hyphen+backtick+edge-whitespace",
+    "bounded-synonym+markdown+hyphen+backtick+edge-whitespace",
 )
 EXPECTED_DOCUMENT_PROHIBITED_FAMILY_GRAMMAR = (
     (
@@ -2649,9 +2919,16 @@ EXPECTED_DOCUMENT_PROHIBITED_FAMILY_GRAMMAR = (
         ),
     ),
 )
-EXPECTED_DOCUMENT_OVERCLAIM_VARIANT_COUNT = 28
+EXPECTED_DOCUMENT_OVERCLAIM_VARIANT_COUNT = 44
 EXPECTED_DOCUMENT_OVERCLAIM_VARIANT_SHA256 = (
-    "c474a3508850ee6bf9c4bfd8296416e723d134ae2b52c3390a802fd65ed65b7a"
+    "9a6f83544ddc8e595861d2cd3d7b0a8d24fac7b75e5d61024868e222d561f3b8"
+)
+EXPECTED_DOCUMENT_NORMALIZATION_MUTANTS = (
+    ("omit-backtick-removal", "backtick-only"),
+    ("omit-final-strip", "edge-whitespace-only"),
+)
+EXPECTED_DOCUMENT_NORMALIZATION_MUTANT_SHA256 = (
+    "b365ac98f1bcdf8501259e4a39c5441ab60cb24a8a0f66c21d921ee28fbbec96"
 )
 EXPECTED_GIT_DOCUMENTATION_CLAIM_CONTRACT = {
     "validator": "filesystem_threat_document_findings",
@@ -2660,15 +2937,15 @@ EXPECTED_GIT_DOCUMENTATION_CLAIM_CONTRACT = {
     "approvedBlockSha256": [
         [
             "docs/ADR/0064-adversarial-convergence-protocol.md",
-            "292fc0b0b11fb95dabe20e6c88867b73be1e6a11199f9a5bea3b9ccdf413237b",
+            "1e9c8e1ef77f7583da58edd6263d1bec851517206daa25edefd3ba55d935579e",
         ],
         [
             "docs/ADVERSARIAL_VERIFICATION_PLAYBOOK.md",
-            "2c790199d2d08db74dff625bf917028c614ba1e1acd36b634800220061259041",
+            "4d2661cac412e05b3e051d34a2e95f7f42d4c9de27792325dcceabbb397ae208",
         ],
         [
             "docs/templates/ADVERSARIAL_INVARIANT_MATRIX.md",
-            "415bb191406233d29214d394ee04ae3b6c1db0ebe3203de1d9917f08cfccd5a3",
+            "cd8d7b6c24e43689f8aff316f7f9fe4f04e9409b231ecd526cf0eea9b62ebc8f",
         ],
     ],
     "prohibitedClaimFamilies": [
@@ -2684,6 +2961,10 @@ EXPECTED_GIT_DOCUMENTATION_CLAIM_CONTRACT = {
     ],
     "variantCount": EXPECTED_DOCUMENT_OVERCLAIM_VARIANT_COUNT,
     "variantSha256": EXPECTED_DOCUMENT_OVERCLAIM_VARIANT_SHA256,
+    "normalizerMutantFields": ["mutantId", "hostileAxis"],
+    "normalizerMutants": [list(row) for row in EXPECTED_DOCUMENT_NORMALIZATION_MUTANTS],
+    "normalizerMutantCount": len(EXPECTED_DOCUMENT_NORMALIZATION_MUTANTS),
+    "normalizerMutantSha256": EXPECTED_DOCUMENT_NORMALIZATION_MUTANT_SHA256,
     "findingContracts": [
         ["block", "ACP.DOC.THREAT_MODEL_BLOCK"],
         ["overclaim", "ACP.DOC.THREAT_MODEL_OVERCLAIM"],
@@ -3086,17 +3367,65 @@ TEXTUAL_TRANSFORMATION_BYTE_IDENTITY_FIELDS = (
     "normalizedTransformedLength",
     "normalizedTransformedSha256",
 )
+EXPECTED_VERIFIED_GIT_OID_MAPPING_FIELDS = (
+    "role",
+    "rowOrdinal",
+    "columnOrdinal",
+    "semanticName",
+    "identitySource",
+)
+EXPECTED_VERIFIED_GIT_OID_MAPPINGS: tuple[VerifiedGitOidMapping, ...] = (
+    ("head", 0, 0, "C3_HEAD_OID", "repository-HEAD"),
+    ("ancestry_chain", 0, 0, "C3_HEAD_OID", "repository-HEAD"),
+    ("ancestry_chain", 0, 1, "RED_HEAD_OID", "redHead"),
+    ("red_objects", 0, 0, "RED_TREE_OID", "redTree"),
+    ("red_objects", 1, 0, "MATRIX_BLOB_OID", "matrixBlobOid"),
+    ("red_objects", 2, 0, "CORE_ORACLE_BLOB_OID", "focusedOracleBlobs[0].blobOid"),
+    (
+        "red_objects",
+        3,
+        0,
+        "REPOSITORY_ORACLE_BLOB_OID",
+        "focusedOracleBlobs[1].blobOid",
+    ),
+)
+EXPECTED_VERIFIED_GIT_OID_MAPPING_COUNT = 7
+EXPECTED_VERIFIED_GIT_OID_MAPPING_SHA256 = (
+    "9f0817328f5e411f2b39ca4bfdc4300cc48884e065d251e929b7569328da028f"
+)
+EXPECTED_HOSTILE_GIT_OID_EVIDENCE_FIELDS = (
+    "role",
+    "transform",
+    "hostileOidTokenVector",
+    "verifiedSemanticVector",
+    "normalizedTransformedSha256",
+)
+EXPECTED_HOSTILE_GIT_OID_EVIDENCE = (
+    ("head", "corrupt_token", ("CORRUPT_UPPERCASE_PREFIX:C3_HEAD_OID",), (), "e10ef6c0d91b1551fb41f2043ef6efdf5dd161775b4a6abc328ef5a6ae89332d"),
+    ("head", "valid_token", ("ROLE_INELIGIBLE:RED_HEAD_OID",), (), "e3f3d59b587fc7a5beaef3ee3cc8fa1b7bfd482d5ce2a5604cb9a0743cf462a5"),
+    ("merge_scan", "extra_line", ("e" * 40, "f" * 40), (), "278589e204c8f682c4f8ee88e7452f4ac13fbee299fd5ff8c1e4bee7645900f5"),
+    ("merge_scan", "corrupt_token", ("F" * 40,), (), "fd29d675a24e1b3bd4d0538d35610ceaa70214dba8148e0633d956592d5f8e71"),
+    ("merge_scan", "valid_token", ("f" * 40,), (), "bba1b0a81a5ad83dd7905145aabfc1cde9e5ac32efcf5f8833ea2995baf8be11"),
+    ("ancestry_chain", "corrupt_token", ("CORRUPT_UPPERCASE_PREFIX:C3_HEAD_OID",), ("RED_HEAD_OID",), "6da4ee90c1c770273fb5b7f45140b51b3a7f2bf4cc2661b6158617a0a13aa286"),
+    ("ancestry_chain", "valid_token", ("f" * 40,), ("RED_HEAD_OID",), "5871e0cebd48e4f83aeeeb25ed5d0b3a68b1b1b09fc0e7943335c70b29db5fa4"),
+    ("red_objects", "corrupt_token", ("CORRUPT_UPPERCASE_PREFIX:RED_TREE_OID",), ("MATRIX_BLOB_OID", "CORE_ORACLE_BLOB_OID", "REPOSITORY_ORACLE_BLOB_OID"), "0e3cc7be02467c2d6fc06bb2a1f803d78428917f9c18c2295d3453397f01b06c"),
+    ("red_objects", "valid_token", ("f" * 40,), ("MATRIX_BLOB_OID", "CORE_ORACLE_BLOB_OID", "REPOSITORY_ORACLE_BLOB_OID"), "6c5c6b52a7f076558deda90c7d5e54bba392b4ad79e991d7750bfaed98d08417"),
+)
+EXPECTED_HOSTILE_GIT_OID_EVIDENCE_COUNT = 9
+EXPECTED_HOSTILE_GIT_OID_EVIDENCE_SHA256 = (
+    "9857553f7bfefc345c64de7a5d0f8168d7d3a0a431f11a936e2ec0b3f8061502"
+)
 EXPECTED_NORMALIZED_GIT_BYTE_IDENTITIES: tuple[NormalizedGitByteIdentity, ...] = (
     ('object_format', 'missing_lf', 'raw-non-oid-bytes', ((), ()), 5, '335277ee77cfc8d51d6602e4137232cf6041aac2bc663777e384b90d5ae74d51', 4, 'b1565820a5cdac40e0520d23f9d0b1497f240ddc51d72eac6423d97d952d444f'),
     ('object_format', 'crlf', 'raw-non-oid-bytes', ((), ()), 5, '335277ee77cfc8d51d6602e4137232cf6041aac2bc663777e384b90d5ae74d51', 6, 'e221f895b353e3205971a3fa214f947de76223ac08f37409b19181ac05274ae7'),
     ('object_format', 'extra_line', 'raw-non-oid-bytes', ((), ()), 5, '335277ee77cfc8d51d6602e4137232cf6041aac2bc663777e384b90d5ae74d51', 7, '860830f48fd532a6070337f8ae768a52bae254d4784eed3f3e34ef307b44359f'),
     ('object_format', 'corrupt_token', 'raw-non-oid-bytes', ((), ()), 5, '335277ee77cfc8d51d6602e4137232cf6041aac2bc663777e384b90d5ae74d51', 5, 'd7bb01a3fc06a6887fd52d385d0e7d0e33361af272b68d9696f8efcc71090ca8'),
     ('object_format', 'valid_token', 'raw-non-oid-bytes', ((), ()), 5, '335277ee77cfc8d51d6602e4137232cf6041aac2bc663777e384b90d5ae74d51', 5, '0353d3653787940d227569c94e1065eebadbb750a8ca70f6bd673388a1837e46'),
-    ('head', 'missing_lf', 'named-dynamic-oid-token', (('HEAD_OID',), ('HEAD_OID',)), 11, '4054bb235ed4d2b7b6ba909447c7ebd21c92e1f2d6bb72e506ca745715860493', 10, '2639c14845913f414f9cf981e00322967ad278359925eaf176c7ed70549fea63'),
-    ('head', 'crlf', 'named-dynamic-oid-token', (('HEAD_OID',), ('HEAD_OID',)), 11, '4054bb235ed4d2b7b6ba909447c7ebd21c92e1f2d6bb72e506ca745715860493', 12, '37a55e9da0196e4222c7bdb13246f963fd60b1f3a9ed5ced4b0e3c59f34bc70f'),
-    ('head', 'extra_line', 'named-dynamic-oid-token', (('HEAD_OID',), ('HEAD_OID',)), 11, '4054bb235ed4d2b7b6ba909447c7ebd21c92e1f2d6bb72e506ca745715860493', 13, '154e3c950f9c90002123ac0ef8471e53ed231db47e15eea8317540e1b776c00f'),
-    ('head', 'corrupt_token', 'named-dynamic-oid-token', (('HEAD_OID',), ('HEAD_OID',)), 11, '4054bb235ed4d2b7b6ba909447c7ebd21c92e1f2d6bb72e506ca745715860493', 11, '4054bb235ed4d2b7b6ba909447c7ebd21c92e1f2d6bb72e506ca745715860493'),
-    ('head', 'valid_token', 'named-dynamic-oid-token', (('HEAD_OID',), ('HEAD_OID',)), 11, '4054bb235ed4d2b7b6ba909447c7ebd21c92e1f2d6bb72e506ca745715860493', 11, '4054bb235ed4d2b7b6ba909447c7ebd21c92e1f2d6bb72e506ca745715860493'),
+    ('head', 'missing_lf', 'named-dynamic-oid-token', (('C3_HEAD_OID',), ('C3_HEAD_OID',)), 14, '3c84561a66be097818466a1745b2d0c9ab2e1b8830e21f87aada75d6f51fa84d', 13, 'cc8ab54fac22c0bdc74773629fccc7f3c46ee854f11f86f892216ea7d8552f29'),
+    ('head', 'crlf', 'named-dynamic-oid-token', (('C3_HEAD_OID',), ('C3_HEAD_OID',)), 14, '3c84561a66be097818466a1745b2d0c9ab2e1b8830e21f87aada75d6f51fa84d', 15, 'b3bfaa2d1852e196ca2786988a21d24a9f0e9102317b2286563699e9a6c5a962'),
+    ('head', 'extra_line', 'named-dynamic-oid-token', (('C3_HEAD_OID',), ('C3_HEAD_OID',)), 14, '3c84561a66be097818466a1745b2d0c9ab2e1b8830e21f87aada75d6f51fa84d', 16, '365489169dcc9a5c779e1f09a39eaa99584476559001a6222cddd7571834256c'),
+    ('head', 'corrupt_token', 'named-dynamic-oid-token', (('C3_HEAD_OID',), ()), 14, '3c84561a66be097818466a1745b2d0c9ab2e1b8830e21f87aada75d6f51fa84d', 41, 'e10ef6c0d91b1551fb41f2043ef6efdf5dd161775b4a6abc328ef5a6ae89332d'),
+    ('head', 'valid_token', 'named-dynamic-oid-token', (('C3_HEAD_OID',), ()), 14, '3c84561a66be097818466a1745b2d0c9ab2e1b8830e21f87aada75d6f51fa84d', 41, 'e3f3d59b587fc7a5beaef3ee3cc8fa1b7bfd482d5ce2a5604cb9a0743cf462a5'),
     ('red_type', 'missing_lf', 'raw-non-oid-bytes', ((), ()), 7, '50836eee574ecff79dea3b4fd40673d7d000f7a5f177d8a6a3000b59c78383b8', 6, '9505cacb7c710ed17125fcc6cb3669e8ddca6c8cd8af6a31f6b3cd64604c3098'),
     ('red_type', 'crlf', 'raw-non-oid-bytes', ((), ()), 7, '50836eee574ecff79dea3b4fd40673d7d000f7a5f177d8a6a3000b59c78383b8', 8, '03c247f0017db08a67be3cc39595c0c94c04e2808fad0767305c64525479aa85'),
     ('red_type', 'extra_line', 'raw-non-oid-bytes', ((), ()), 7, '50836eee574ecff79dea3b4fd40673d7d000f7a5f177d8a6a3000b59c78383b8', 9, '808ed7f5e3b3532ca1da6db79faf4c7793a428e53c302d2ffbc3b3a782cb52ee'),
@@ -3107,20 +3436,20 @@ EXPECTED_NORMALIZED_GIT_BYTE_IDENTITIES: tuple[NormalizedGitByteIdentity, ...] =
     ('red_size', 'extra_line', 'raw-non-oid-bytes', ((), ()), 4, 'e595be81bf15aa95763adb4fc0ba525bbed1971cf5fccdf3a946cd37025fb2c9', 6, '85244fec5aa1bf11a30556a6182b39e324d1460a16f834e142e3a2cb0aa12886'),
     ('red_size', 'corrupt_token', 'raw-non-oid-bytes', ((), ()), 4, 'e595be81bf15aa95763adb4fc0ba525bbed1971cf5fccdf3a946cd37025fb2c9', 4, 'faca203908d4e36a81479e252f005ce30b6e8f7ee4dee874b8dbf7b4ae7f0f05'),
     ('red_size', 'valid_token', 'raw-non-oid-bytes', ((), ()), 4, 'e595be81bf15aa95763adb4fc0ba525bbed1971cf5fccdf3a946cd37025fb2c9', 4, '2fa7660fa51eaa80d3212ae92ef3e870b6d246404eb81efabda68d5319c7d07b'),
-    ('merge_scan', 'crlf', 'named-dynamic-oid-token', ((), ()), 0, 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855', 2, '7eb70257593da06f682a3ddda54a9d260d4fc514f645237f5ca74b08f8da61a6'),
-    ('merge_scan', 'extra_line', 'named-dynamic-oid-token', ((), ('MERGE_SCAN_OID_00', 'MERGE_SCAN_OID_01')), 0, 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855', 40, '026731a7ee49c784454ad5b96c237248f66698cacf094be59b993b515554a8ab'),
-    ('merge_scan', 'corrupt_token', 'named-dynamic-oid-token', ((), ('MERGE_OID',)), 0, 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855', 12, 'e67d6073bea98e1550b91c9b38b90bea8c435083b0613d4a7b0efdd241105545'),
-    ('merge_scan', 'valid_token', 'named-dynamic-oid-token', ((), ('MERGE_OID',)), 0, 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855', 12, 'e67d6073bea98e1550b91c9b38b90bea8c435083b0613d4a7b0efdd241105545'),
-    ('ancestry_chain', 'missing_lf', 'named-dynamic-oid-token', (('ANCESTRY_OID_00', 'ANCESTRY_OID_01'), ('ANCESTRY_OID_00', 'ANCESTRY_OID_01')), 36, 'ab0e6f2a525b66a34e5ab6e0fb8afdc3873dcf4e2c3a42023ae6636b7a95658c', 35, 'aeac421e56ca6c3f90091645b463b9f54f248ecd433b84af51524a369c988222'),
-    ('ancestry_chain', 'crlf', 'named-dynamic-oid-token', (('ANCESTRY_OID_00', 'ANCESTRY_OID_01'), ('ANCESTRY_OID_00', 'ANCESTRY_OID_01')), 36, 'ab0e6f2a525b66a34e5ab6e0fb8afdc3873dcf4e2c3a42023ae6636b7a95658c', 37, 'd8d6f7655d9377167669f11b1f2706bd201728b170acb6321f41b38436dbdc63'),
-    ('ancestry_chain', 'extra_line', 'named-dynamic-oid-token', (('ANCESTRY_OID_00', 'ANCESTRY_OID_01'), ('ANCESTRY_OID_00', 'ANCESTRY_OID_01')), 36, 'ab0e6f2a525b66a34e5ab6e0fb8afdc3873dcf4e2c3a42023ae6636b7a95658c', 38, 'd5cc2abec373ae78b22193d53faef43dfbceb8328f431e3dc8ce6b8bab43aa34'),
-    ('ancestry_chain', 'corrupt_token', 'named-dynamic-oid-token', (('ANCESTRY_OID_00', 'ANCESTRY_OID_01'), ('ANCESTRY_OID_00', 'ANCESTRY_OID_01')), 36, 'ab0e6f2a525b66a34e5ab6e0fb8afdc3873dcf4e2c3a42023ae6636b7a95658c', 36, 'ab0e6f2a525b66a34e5ab6e0fb8afdc3873dcf4e2c3a42023ae6636b7a95658c'),
-    ('ancestry_chain', 'valid_token', 'named-dynamic-oid-token', (('ANCESTRY_OID_00', 'ANCESTRY_OID_01'), ('ANCESTRY_OID_00', 'ANCESTRY_OID_01')), 36, 'ab0e6f2a525b66a34e5ab6e0fb8afdc3873dcf4e2c3a42023ae6636b7a95658c', 36, 'ab0e6f2a525b66a34e5ab6e0fb8afdc3873dcf4e2c3a42023ae6636b7a95658c'),
+    ('merge_scan', 'crlf', 'raw-non-oid-bytes', ((), ()), 0, 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855', 2, '7eb70257593da06f682a3ddda54a9d260d4fc514f645237f5ca74b08f8da61a6'),
+    ('merge_scan', 'extra_line', 'raw-non-oid-bytes', ((), ()), 0, 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855', 82, '278589e204c8f682c4f8ee88e7452f4ac13fbee299fd5ff8c1e4bee7645900f5'),
+    ('merge_scan', 'corrupt_token', 'raw-non-oid-bytes', ((), ()), 0, 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855', 41, 'fd29d675a24e1b3bd4d0538d35610ceaa70214dba8148e0633d956592d5f8e71'),
+    ('merge_scan', 'valid_token', 'raw-non-oid-bytes', ((), ()), 0, 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855', 41, 'bba1b0a81a5ad83dd7905145aabfc1cde9e5ac32efcf5f8833ea2995baf8be11'),
+    ('ancestry_chain', 'missing_lf', 'named-dynamic-oid-token', (('C3_HEAD_OID', 'RED_HEAD_OID'), ('C3_HEAD_OID', 'RED_HEAD_OID')), 29, '48411b289a7ead58c64ec84b9f691e168c0bc489a6acd839d23b41e94722141c', 28, 'a216b9b5d810d11aff2979d83c7f0be194ae6bba85ea84e019a6f73a336547a3'),
+    ('ancestry_chain', 'crlf', 'named-dynamic-oid-token', (('C3_HEAD_OID', 'RED_HEAD_OID'), ('C3_HEAD_OID', 'RED_HEAD_OID')), 29, '48411b289a7ead58c64ec84b9f691e168c0bc489a6acd839d23b41e94722141c', 30, '589d9c5a372f7168a45ab7b5c8be8b0fe4e018b7694fd6f06b9b0a362c4caef0'),
+    ('ancestry_chain', 'extra_line', 'named-dynamic-oid-token', (('C3_HEAD_OID', 'RED_HEAD_OID'), ('C3_HEAD_OID', 'RED_HEAD_OID')), 29, '48411b289a7ead58c64ec84b9f691e168c0bc489a6acd839d23b41e94722141c', 31, 'bc019c0ff28831dd05921ab843784fa7ab2c36e2b2a75257c19e29f81bbb309e'),
+    ('ancestry_chain', 'corrupt_token', 'named-dynamic-oid-token', (('C3_HEAD_OID', 'RED_HEAD_OID'), ('RED_HEAD_OID',)), 29, '48411b289a7ead58c64ec84b9f691e168c0bc489a6acd839d23b41e94722141c', 56, '6da4ee90c1c770273fb5b7f45140b51b3a7f2bf4cc2661b6158617a0a13aa286'),
+    ('ancestry_chain', 'valid_token', 'named-dynamic-oid-token', (('C3_HEAD_OID', 'RED_HEAD_OID'), ('RED_HEAD_OID',)), 29, '48411b289a7ead58c64ec84b9f691e168c0bc489a6acd839d23b41e94722141c', 56, '5871e0cebd48e4f83aeeeb25ed5d0b3a68b1b1b09fc0e7943335c70b29db5fa4'),
     ('red_objects', 'missing_lf', 'named-dynamic-oid-token', (('RED_TREE_OID', 'MATRIX_BLOB_OID', 'CORE_ORACLE_BLOB_OID', 'REPOSITORY_ORACLE_BLOB_OID'), ('RED_TREE_OID', 'MATRIX_BLOB_OID', 'CORE_ORACLE_BLOB_OID', 'REPOSITORY_ORACLE_BLOB_OID')), 85, '5a592f86d5603a45567ce109c8dd7d10ddebd7b205fc5bebb4b0a130d57bdce1', 84, '4d98becc0211e1b3e42aafa80a69bf909e3fc0a505039ecfe26f8be81b4bd35a'),
     ('red_objects', 'crlf', 'named-dynamic-oid-token', (('RED_TREE_OID', 'MATRIX_BLOB_OID', 'CORE_ORACLE_BLOB_OID', 'REPOSITORY_ORACLE_BLOB_OID'), ('RED_TREE_OID', 'MATRIX_BLOB_OID', 'CORE_ORACLE_BLOB_OID', 'REPOSITORY_ORACLE_BLOB_OID')), 85, '5a592f86d5603a45567ce109c8dd7d10ddebd7b205fc5bebb4b0a130d57bdce1', 89, '9e22e268ab6916ada22760d160a1928d0b492ba65c6b1cea1da348918fcaebbc'),
     ('red_objects', 'extra_line', 'named-dynamic-oid-token', (('RED_TREE_OID', 'MATRIX_BLOB_OID', 'CORE_ORACLE_BLOB_OID', 'REPOSITORY_ORACLE_BLOB_OID'), ('RED_TREE_OID', 'MATRIX_BLOB_OID', 'CORE_ORACLE_BLOB_OID', 'REPOSITORY_ORACLE_BLOB_OID')), 85, '5a592f86d5603a45567ce109c8dd7d10ddebd7b205fc5bebb4b0a130d57bdce1', 87, 'a2124722752c9f7221f04523fb7a69e56116989b08355d3be23b8cd00755828a'),
-    ('red_objects', 'corrupt_token', 'named-dynamic-oid-token', (('RED_TREE_OID', 'MATRIX_BLOB_OID', 'CORE_ORACLE_BLOB_OID', 'REPOSITORY_ORACLE_BLOB_OID'), ('RED_TREE_OID', 'MATRIX_BLOB_OID', 'CORE_ORACLE_BLOB_OID', 'REPOSITORY_ORACLE_BLOB_OID')), 85, '5a592f86d5603a45567ce109c8dd7d10ddebd7b205fc5bebb4b0a130d57bdce1', 85, '5a592f86d5603a45567ce109c8dd7d10ddebd7b205fc5bebb4b0a130d57bdce1'),
-    ('red_objects', 'valid_token', 'named-dynamic-oid-token', (('RED_TREE_OID', 'MATRIX_BLOB_OID', 'CORE_ORACLE_BLOB_OID', 'REPOSITORY_ORACLE_BLOB_OID'), ('RED_TREE_OID', 'MATRIX_BLOB_OID', 'CORE_ORACLE_BLOB_OID', 'REPOSITORY_ORACLE_BLOB_OID')), 85, '5a592f86d5603a45567ce109c8dd7d10ddebd7b205fc5bebb4b0a130d57bdce1', 85, '5a592f86d5603a45567ce109c8dd7d10ddebd7b205fc5bebb4b0a130d57bdce1'),
+    ('red_objects', 'corrupt_token', 'named-dynamic-oid-token', (('RED_TREE_OID', 'MATRIX_BLOB_OID', 'CORE_ORACLE_BLOB_OID', 'REPOSITORY_ORACLE_BLOB_OID'), ('MATRIX_BLOB_OID', 'CORE_ORACLE_BLOB_OID', 'REPOSITORY_ORACLE_BLOB_OID')), 85, '5a592f86d5603a45567ce109c8dd7d10ddebd7b205fc5bebb4b0a130d57bdce1', 111, '0e3cc7be02467c2d6fc06bb2a1f803d78428917f9c18c2295d3453397f01b06c'),
+    ('red_objects', 'valid_token', 'named-dynamic-oid-token', (('RED_TREE_OID', 'MATRIX_BLOB_OID', 'CORE_ORACLE_BLOB_OID', 'REPOSITORY_ORACLE_BLOB_OID'), ('MATRIX_BLOB_OID', 'CORE_ORACLE_BLOB_OID', 'REPOSITORY_ORACLE_BLOB_OID')), 85, '5a592f86d5603a45567ce109c8dd7d10ddebd7b205fc5bebb4b0a130d57bdce1', 111, '6c5c6b52a7f076558deda90c7d5e54bba392b4ad79e991d7750bfaed98d08417'),
     ('c3_freeze_size', 'missing_lf', 'raw-non-oid-bytes', ((), ()), 5, 'dc23d3655da416802f01fd3cffd7de986615051f4dd4fc4ff8933b954b9502f3', 4, '8e0c19142ee61342e1f8b09a6fccbcf5867db1542444474ed37ad11bd08eb062'),
     ('c3_freeze_size', 'crlf', 'raw-non-oid-bytes', ((), ()), 5, 'dc23d3655da416802f01fd3cffd7de986615051f4dd4fc4ff8933b954b9502f3', 6, '9477f52ece818433b8980ceb2a3704dd67e7ad11975e00c3c3d30c01c3528201'),
     ('c3_freeze_size', 'extra_line', 'raw-non-oid-bytes', ((), ()), 5, 'dc23d3655da416802f01fd3cffd7de986615051f4dd4fc4ff8933b954b9502f3', 7, '732159d94c2281ad07501e8ac605244577332800a4e39990101c3827973702e5'),
@@ -3134,7 +3463,7 @@ EXPECTED_NORMALIZED_GIT_BYTE_IDENTITIES: tuple[NormalizedGitByteIdentity, ...] =
 )
 EXPECTED_NORMALIZED_GIT_BYTE_IDENTITY_COUNT = 44
 EXPECTED_NORMALIZED_GIT_BYTE_IDENTITY_SHA256 = (
-    "cfbaae8676192cadee829806cc82d9b64e86a3b3460b3cfa65dcd3cdb5bec9ac"
+    "59d4077c8ab7ae0ac9f72181b62dc0e628921c60b86797919d8d96af1dcbcab2"
 )
 
 
@@ -3808,12 +4137,28 @@ def document_overclaim_variants() -> tuple[tuple[str, str, str, str], ...]:
                 "bounded-synonym+markdown+hyphen",
                 "-".join(f"_{word}_" for word in synonym.split(" ")),
             ),
+            ("backtick-only", f"`{canonical_phrase}`"),
+            ("edge-whitespace-only", f" \t{canonical_phrase}\n "),
+            (
+                "case+markdown+hyphen+backtick+edge-whitespace",
+                " \t"
+                + "-".join(
+                    f"`**{word.upper()}**`" for word in canonical_phrase.split(" ")
+                )
+                + "\n ",
+            ),
+            (
+                "bounded-synonym+markdown+hyphen+backtick+edge-whitespace",
+                " \t"
+                + "-".join(f"`_{word}_`" for word in synonym.split(" "))
+                + "\n ",
+            ),
         )
         for axis, variant in variants:
             normalized = normalize_document_overclaim(variant)
             expected_normalized = (
                 synonym
-                if axis in {"bounded-synonym", "bounded-synonym+markdown+hyphen"}
+                if axis.startswith("bounded-synonym")
                 else canonical_phrase
             )
             assert normalized == expected_normalized
@@ -3885,37 +4230,39 @@ def apply_textual_transform(
 def normalized_git_text_bytes(
     role: str,
     payload: bytes,
+    expected_oid_values: dict[str, bytes],
 ) -> tuple[bytes, tuple[str, ...]]:
-    """Replace dynamic OIDs by first-observed semantic names, preserving other bytes."""
-    dynamic_roles = {"head", "merge_scan", "ancestry_chain", "red_objects"}
-    if role not in dynamic_roles:
-        assert re.search(rb"(?<![0-9A-Za-z])[0-9A-Fa-f]{40}(?![0-9A-Za-z])", payload) is None
-        return payload, ()
-    matches = re.findall(rb"(?<![0-9A-Za-z])[0-9A-Fa-f]{40}(?![0-9A-Za-z])", payload)
-    unique_values = tuple(dict.fromkeys(matches))
-    if role == "red_objects":
-        fixed_names = (
+    """Replace only independently verified, role-eligible OIDs by semantic names."""
+    role_semantics = {
+        "head": ("C3_HEAD_OID",),
+        "ancestry_chain": ("C3_HEAD_OID", "RED_HEAD_OID"),
+        "red_objects": (
             "RED_TREE_OID",
             "MATRIX_BLOB_OID",
             "CORE_ORACLE_BLOB_OID",
             "REPOSITORY_ORACLE_BLOB_OID",
-        )
-        assert len(unique_values) <= len(fixed_names)
-        names = fixed_names[: len(unique_values)]
-    elif role == "head" and len(unique_values) == 1:
-        names = ("HEAD_OID",)
-    elif role == "merge_scan" and len(unique_values) == 1:
-        names = ("MERGE_OID",)
-    else:
-        prefix = "ANCESTRY_OID" if role == "ancestry_chain" else role.upper() + "_OID"
-        names = tuple(f"{prefix}_{ordinal:02d}" for ordinal in range(len(unique_values)))
-    replacements = dict(zip(unique_values, names, strict=True))
+        ),
+    }
+    if role not in role_semantics:
+        return payload, ()
+    replacements = {
+        expected_oid_values[semantic]: semantic for semantic in role_semantics[role]
+    }
+    observed_names: list[str] = []
+
+    def replace_verified(match: re.Match[bytes]) -> bytes:
+        semantic = replacements.get(match.group())
+        if semantic is None:
+            return match.group()
+        observed_names.append(semantic)
+        return f"<{semantic}>".encode()
+
     normalized = re.sub(
         rb"(?<![0-9A-Za-z])[0-9A-Fa-f]{40}(?![0-9A-Za-z])",
-        lambda match: f"<{replacements[match.group()]}>".encode(),
+        replace_verified,
         payload,
     )
-    return normalized, names
+    return normalized, tuple(observed_names)
 
 
 def assert_independent_textual_relation(
@@ -4548,28 +4895,29 @@ def create_real_git_freeze(
     return root, freeze
 
 
-def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
-    tmp_path: Path,
+def _collect_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
+    original_tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    original_tmp_path = tmp_path
+) -> MetadataCollection:
     tmp_path = governed_fixture_parent(original_tmp_path)
     assert len(os.fsencode(original_tmp_path)) < len(os.fsencode(tmp_path))
-    alternate_original_root = original_tmp_path.with_name(
-        f"substantially-longer-original-root-{original_tmp_path.name}"
+    replay_index = EXPECTED_METADATA_FIXTURE_ROOT_REPLAY_LENGTHS.index(
+        len(os.fsencode(original_tmp_path))
     )
-    alternate_original_root.mkdir()
-    alternate_fixture_parent = governed_fixture_parent(alternate_original_root)
-    assert len(os.fsencode(alternate_fixture_parent)) == len(os.fsencode(tmp_path)) == (
-        GOVERNED_FIXTURE_PARENT_BYTES
-    )
-    assert len(alternate_fixture_parent.parts) == len(tmp_path.parts) == (
-        GOVERNED_FIXTURE_PARENT_DEPTH
+    assert len(original_tmp_path.parts) == EXPECTED_METADATA_FIXTURE_ROOT_REPLAY_DEPTHS[
+        replay_index
+    ]
+    assert tuple(len(os.fsencode(part)) for part in tmp_path.parts[-2:]) == (
+        EXPECTED_METADATA_FIXTURE_FINAL_COMPONENT_BYTES[replay_index]
     )
     root, freeze = create_real_git_freeze(tmp_path)
     metadata_execution_rows: list[MetadataExecution] = []
     metadata_stimulus_rows: list[tuple[MetadataStimulusFacts, str]] = []
     metadata_trigger_rows: list[MetadataTriggerReceipt] = []
+    metadata_raw_read_rows: list[MetadataRawReadRow] = []
+    metadata_close_order_rows: list[MetadataCloseOrderRow] = []
+    metadata_normalized_payload_rows: list[MetadataNormalizedPayloadRow] = []
+    metadata_configured_plan_receipts: list[ConfiguredPlanReceipt] = []
     baseline_metadata_io = protocol.SYSTEM_METADATA_IO
 
     def normalized_observed_path(raw_path: str) -> str:
@@ -5088,6 +5436,223 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
         )
         assert all("ACP." not in value for _, values in frozen_trigger_receipt for value in values)
         metadata_trigger_rows.append(frozen_trigger_receipt)
+        execution_id = f"{case_id}@{mode}"
+        for role_ordinal, (role, values) in enumerate(frozen_trigger_receipt):
+            if role == "inter-role-mutation":
+                continue
+            receipt_values = {
+                item.split("=", 1)[0]: item.split("=", 1)[1] for item in values
+            }
+            requests = tuple(
+                int(item)
+                for item in receipt_values["read-requests"].split(",")
+                if item
+            )
+            chunks = tuple(
+                int(item) for item in receipt_values["read-chunks"].split(",") if item
+            )
+            read_types = tuple(
+                item for item in receipt_values["readTypes"].split(",") if item
+            )
+            metadata_raw_read_rows.append(
+                (
+                    execution_id,
+                    role_ordinal,
+                    role,
+                    requests,
+                    chunks,
+                    len(requests),
+                    len(chunks),
+                    read_types,
+                )
+            )
+            close_order = tuple(
+                int(item)
+                for item in receipt_values["close-attempt-order"].split(",")
+                if item
+            )
+            close_results = tuple(
+                item for item in receipt_values["close-results"].split(",") if item
+            )
+            metadata_close_order_rows.append(
+                (execution_id, role_ordinal, role, close_order, close_results)
+            )
+            metadata_normalized_payload_rows.append(
+                (
+                    execution_id,
+                    role_ordinal,
+                    role,
+                    receipt_values["normalized-read-payload-sha256"],
+                )
+            )
+        plan_rows = tuple(
+            plan for plan in EXPECTED_METADATA_CONFIGURED_PLANS if plan[0] == execution_id
+        )
+        if plan_rows:
+            assert len(plan_rows) == 1
+            declared_plan = plan_rows[0][1:]
+            role_ordinal = max(
+                ordinal
+                for ordinal, (role, _) in enumerate(frozen_trigger_receipt)
+                if role != "inter-role-mutation"
+            )
+            raw_role_receipts = tuple(
+                (role, values)
+                for role, values in frozen_trigger_receipt
+                if role != "inter-role-mutation"
+            )
+            callback_events = tuple(
+                item
+                for _, values in raw_role_receipts
+                for item in values[0].removeprefix("callbacks=").split(",")
+                if item
+            )
+            metadata_events = tuple(
+                item
+                for _, values in raw_role_receipts
+                for value in (*values[1:4], values[9])
+                for item in value.split("=", 1)[1].split(",")
+                if item
+            )
+            stat_events = tuple(
+                item
+                for item in metadata_events
+                if item.startswith(("lstat:", "fstat:", "post-lstat:"))
+            )
+            exception_events = tuple(item for item in metadata_events if ":error:" in item)
+            inter_role = next(
+                (values for role, values in frozen_trigger_receipt if role == "inter-role-mutation"),
+                None,
+            )
+            custom_callbacks = tuple(
+                dict.fromkeys(
+                    item.split(":", 1)[0]
+                    for item in callback_events
+                    if item.endswith(":custom")
+                )
+            )
+            if inter_role is not None:
+                callback = "inter-role"
+                after_role = inter_role[0].removeprefix("after-role=")
+                inter_projection = {
+                    "dot_git": (
+                        "dot-git",
+                        "after-dot-git-read",
+                        "dot-git-replacement",
+                    ),
+                    "prohibited_http_alternates": (
+                        "dot-git",
+                        "after-prohibited-http-alternates-read",
+                        "identity-replacement",
+                    ),
+                    "linked_git_dir": (
+                        "linked-git-dir",
+                        "after-linked-git-dir-read",
+                        "linked-dir-replacement",
+                    ),
+                    "common_dir": (
+                        "common-dir",
+                        "after-common-dir-read",
+                        "common-dir-replacement",
+                    ),
+                }
+                target, phase, effect = inter_projection[after_role]
+            elif not custom_callbacks:
+                assert any(item == "lstat:ok:symlink" for item in stat_events)
+                callback, target, phase, effect = (
+                    "filesystem-state",
+                    "root-ancestor",
+                    "before-discovery",
+                    "symlink",
+                )
+            else:
+                drift_event = next(
+                    (
+                        item
+                        for item in stat_events
+                        if item.startswith("fstat:") and "-drift:" in item
+                    ),
+                    None,
+                )
+                callback = "fstat" if drift_event is not None else custom_callbacks[-1]
+                if callback == "lstat" and role_ordinal > 0:
+                    target, phase, effect = (
+                        "info-ancestor",
+                        "after-lstat",
+                        "identity-replacement",
+                    )
+                elif callback == "lstat" and any(
+                    item == "post-lstat:device-drift:regular" for item in stat_events
+                ):
+                    target, phase, effect = "dot-git", "after-read", "device-drift"
+                elif callback == "lstat" and exception_events:
+                    if any(item.startswith("lstat:error:") for item in exception_events):
+                        target, phase, effect = "dot-git", "initial-lstat", "os-error"
+                    else:
+                        lstat_count = sum(item.startswith("lstat:") for item in stat_events)
+                        target = "root" if lstat_count == 17 else "dot-git"
+                        target, phase, effect = (
+                            target,
+                            "after-lstat",
+                            "identity-replacement",
+                        )
+                elif callback == "lstat":
+                    target, phase, effect = (
+                        "dot-git",
+                        "after-lstat",
+                        "identity-replacement",
+                    )
+                elif callback == "open":
+                    target, phase, effect = "dot-git", "initial-open", "os-error"
+                elif callback == "close":
+                    target, phase, effect = "dot-git", "cleanup", "os-error"
+                else:
+                    assert callback == "fstat"
+                    assert drift_event is not None
+                    drift = drift_event.split(":", 2)[1].removesuffix("-drift")
+                    target, phase, effect = "dot-git", "after-open", f"{drift}-drift"
+            assert (callback, target, phase, effect) == declared_plan
+            target_role = target.replace("-", "_")
+            target_path = {
+                "root": "$ROOT",
+                "root-ancestor": "$ROOT/..",
+                "dot-git": "$ROOT/.git",
+                "info-ancestor": "$COMMON/info",
+                "linked-git-dir": "$LINKED_GIT_DIR",
+                "common-dir": "$COMMON",
+            }[target]
+            raw_evidence = (
+                callback_events,
+                metadata_events,
+                stat_events,
+                exception_events,
+            )
+            callback_ordinal = next(
+                (
+                    ordinal
+                    for ordinal, item in enumerate(callback_events)
+                    if item == f"{callback}:custom"
+                ),
+                -1 if callback in {"filesystem-state", "inter-role"} else 0,
+            )
+            metadata_configured_plan_receipts.append(
+                (
+                    execution_id,
+                    callback,
+                    target,
+                    target_role,
+                    target_path,
+                    phase,
+                    role_ordinal,
+                    callback_ordinal,
+                    effect,
+                    callback_events,
+                    metadata_events,
+                    stat_events,
+                    exception_events,
+                    hashlib.sha256(canonical(raw_evidence)).hexdigest(),
+                )
+            )
         execution: MetadataExecution = (
             row,
             mode,
@@ -5344,6 +5909,46 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
         "c3_freeze_payload",
         "red_author",
     )
+    verified_oid_values = {
+        "C3_HEAD_OID": git(root, "rev-parse", "HEAD").encode(),
+        "RED_HEAD_OID": cast(str, freeze["redHead"]).encode(),
+        "RED_TREE_OID": cast(str, freeze["redTree"]).encode(),
+        "MATRIX_BLOB_OID": cast(str, freeze["matrixBlobOid"]).encode(),
+        "CORE_ORACLE_BLOB_OID": cast(
+            str, freeze["focusedOracleBlobs"][0]["blobOid"]
+        ).encode(),
+        "REPOSITORY_ORACLE_BLOB_OID": cast(
+            str, freeze["focusedOracleBlobs"][1]["blobOid"]
+        ).encode(),
+    }
+    assert hashlib.sha256(canonical(EXPECTED_VERIFIED_GIT_OID_MAPPINGS)).hexdigest() == (
+        EXPECTED_VERIFIED_GIT_OID_MAPPING_SHA256
+    )
+    assert len(EXPECTED_VERIFIED_GIT_OID_MAPPINGS) == EXPECTED_VERIFIED_GIT_OID_MAPPING_COUNT
+    successful_by_role = dict(zip(roles, successful_git_results, strict=True))
+    for role, row_ordinal, column_ordinal, semantic_name, _ in (
+        EXPECTED_VERIFIED_GIT_OID_MAPPINGS
+    ):
+        saved_result = successful_by_role[role]
+        assert type(saved_result.stdout) is bytes
+        saved_rows = saved_result.stdout.splitlines()
+        assert saved_rows[row_ordinal].split()[column_ordinal] == verified_oid_values[semantic_name]
+    assert successful_by_role["head"].stdout == verified_oid_values["C3_HEAD_OID"] + b"\n"
+    assert successful_by_role["ancestry_chain"].stdout == (
+        verified_oid_values["C3_HEAD_OID"]
+        + b" "
+        + verified_oid_values["RED_HEAD_OID"]
+        + b"\n"
+    )
+    assert successful_by_role["red_objects"].stdout == b"".join(
+        verified_oid_values[name] + b"\n"
+        for name in (
+            "RED_TREE_OID",
+            "MATRIX_BLOB_OID",
+            "CORE_ORACLE_BLOB_OID",
+            "REPOSITORY_ORACLE_BLOB_OID",
+        )
+    )
     output_caps = (5, None, 41, 7, 6, 0, 41, 5330, 0, 0, 164, 6, 32768, 320)
     assert len(EXPECTED_TEXTUAL_TRANSFORMATIONS) == TEXTUAL_TRANSFORMATION_COUNT
     assert sum(row[2] for row in EXPECTED_TEXTUAL_TRANSFORMATIONS) == (
@@ -5364,6 +5969,7 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
     assert tuple(builder_contract) == TEXTUAL_TRANSFORMS
     observed_transform_contract: list[tuple[object, ...]] = []
     observed_byte_identities: list[tuple[object, ...]] = []
+    observed_hostile_oid_evidence: list[tuple[object, ...]] = []
     for role, transform_name, applicable, stage, code, location in EXPECTED_TEXTUAL_TRANSFORMATIONS:
         builder, relation = builder_contract[transform_name]
         base_source = "saved-real-success-stdout"
@@ -5405,13 +6011,62 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
         assert_independent_textual_relation(
             role, transform_name, freeze, saved_stdout, transformed_payload
         )
-        normalized_base, base_token_shape = normalized_git_text_bytes(role, saved_stdout)
-        normalized_transformed, transformed_token_shape = normalized_git_text_bytes(
-            role, transformed_payload
+        normalized_base, base_token_shape = normalized_git_text_bytes(
+            role, saved_stdout, verified_oid_values
         )
+        normalized_transformed, transformed_token_shape = normalized_git_text_bytes(
+            role, transformed_payload, verified_oid_values
+        )
+        role_eligible_semantics = {
+            "head": {"C3_HEAD_OID"},
+            "ancestry_chain": {"C3_HEAD_OID", "RED_HEAD_OID"},
+            "red_objects": {
+                "RED_TREE_OID",
+                "MATRIX_BLOB_OID",
+                "CORE_ORACLE_BLOB_OID",
+                "REPOSITORY_ORACLE_BLOB_OID",
+            },
+            "merge_scan": set(),
+        }.get(role)
+        if role_eligible_semantics is not None:
+            hostile_tokens: list[str] = []
+            for token in re.findall(
+                rb"(?<![0-9A-Za-z])[0-9A-Fa-f]{40}(?![0-9A-Za-z])",
+                transformed_payload,
+            ):
+                exact_semantic = next(
+                    (name for name, value in verified_oid_values.items() if token == value),
+                    None,
+                )
+                if exact_semantic in role_eligible_semantics:
+                    continue
+                corrupt_semantic = next(
+                    (
+                        name
+                        for name, value in verified_oid_values.items()
+                        if token[:1] == b"A" and token[1:] == value[1:]
+                    ),
+                    None,
+                )
+                if corrupt_semantic is not None:
+                    hostile_tokens.append(f"CORRUPT_UPPERCASE_PREFIX:{corrupt_semantic}")
+                elif exact_semantic is not None:
+                    hostile_tokens.append(f"ROLE_INELIGIBLE:{exact_semantic}")
+                else:
+                    hostile_tokens.append(token.decode("ascii"))
+            if hostile_tokens:
+                observed_hostile_oid_evidence.append(
+                    (
+                        role,
+                        transform_name,
+                        tuple(hostile_tokens),
+                        transformed_token_shape,
+                        hashlib.sha256(normalized_transformed).hexdigest(),
+                    )
+                )
         identity_mode = (
             "named-dynamic-oid-token"
-            if role in {"head", "merge_scan", "ancestry_chain", "red_objects"}
+            if role in {"head", "ancestry_chain", "red_objects"}
             else "raw-non-oid-bytes"
         )
         byte_identity: NormalizedGitByteIdentity = (
@@ -5478,6 +6133,16 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
     assert hashlib.sha256(canonical(observed_byte_identities)).hexdigest() == (
         EXPECTED_NORMALIZED_GIT_BYTE_IDENTITY_SHA256
     )
+    assert tuple(observed_hostile_oid_evidence) == EXPECTED_HOSTILE_GIT_OID_EVIDENCE
+    assert len(observed_hostile_oid_evidence) == EXPECTED_HOSTILE_GIT_OID_EVIDENCE_COUNT
+    assert hashlib.sha256(canonical(observed_hostile_oid_evidence)).hexdigest() == (
+        EXPECTED_HOSTILE_GIT_OID_EVIDENCE_SHA256
+    )
+    assert dict(
+        (row[0:2], row[2]) for row in observed_hostile_oid_evidence
+    )[("merge_scan", "corrupt_token")] != dict(
+        (row[0:2], row[2]) for row in observed_hostile_oid_evidence
+    )[("merge_scan", "valid_token")]
     for ordinal, role in enumerate(roles):
         argv = expected_git_argv(root, freeze)[ordinal]
         assert_injected_git_failure(
@@ -7566,6 +8231,55 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
     assert hashlib.sha256(canonical(metadata_trigger_rows)).hexdigest() == (
         EXPECTED_METADATA_TRIGGER_RECEIPT_SHA256
     )
+    assert len(metadata_raw_read_rows) == EXPECTED_METADATA_RAW_READ_COUNT
+    assert hashlib.sha256(canonical(metadata_raw_read_rows)).hexdigest() == (
+        EXPECTED_METADATA_RAW_READ_SHA256
+    )
+    assert len(metadata_close_order_rows) == EXPECTED_METADATA_CLOSE_ORDER_COUNT
+    assert hashlib.sha256(canonical(metadata_close_order_rows)).hexdigest() == (
+        EXPECTED_METADATA_CLOSE_ORDER_SHA256
+    )
+    assert len(metadata_normalized_payload_rows) == EXPECTED_METADATA_NORMALIZED_PAYLOAD_COUNT
+    assert hashlib.sha256(canonical(metadata_normalized_payload_rows)).hexdigest() == (
+        EXPECTED_METADATA_NORMALIZED_PAYLOAD_SHA256
+    )
+    assert len(metadata_configured_plan_receipts) == (
+        EXPECTED_METADATA_CONFIGURED_PLAN_RECEIPT_COUNT
+    )
+    assert hashlib.sha256(canonical(metadata_configured_plan_receipts)).hexdigest() == (
+        EXPECTED_METADATA_CONFIGURED_PLAN_RECEIPT_SHA256
+    )
+    assert hashlib.sha256(canonical(EXPECTED_METADATA_CONFIGURED_PLAN_MUTANTS)).hexdigest() == (
+        EXPECTED_METADATA_CONFIGURED_PLAN_MUTANT_SHA256
+    )
+    receipt_index = {
+        cast(str, receipt[0]): ordinal
+        for ordinal, receipt in enumerate(metadata_configured_plan_receipts)
+    }
+    target_receipt_ordinal = receipt_index["fstat-type@linked"]
+    coordinate_indexes = {"callback": 1, "target": 2, "phase": 5, "effect": 8}
+    for mutant_id, execution_id, coordinate, mutation, disposition in (
+        EXPECTED_METADATA_CONFIGURED_PLAN_MUTANTS
+    ):
+        assert execution_id == "fstat-type@linked"
+        assert mutation.startswith("replace-with-different-")
+        assert disposition == "exact-plan-receipt-binding-fails"
+        changed_receipts = list(metadata_configured_plan_receipts)
+        changed_receipt = list(changed_receipts[target_receipt_ordinal])
+        changed_receipt[coordinate_indexes[coordinate]] = f"mutated-{coordinate}"
+        changed_receipts[target_receipt_ordinal] = tuple(changed_receipt)
+        assert tuple(changed_receipts) != tuple(metadata_configured_plan_receipts), mutant_id
+        assert hashlib.sha256(canonical(changed_receipts)).hexdigest() != (
+            EXPECTED_METADATA_CONFIGURED_PLAN_RECEIPT_SHA256
+        )
+    constant_receipt = metadata_configured_plan_receipts[0][13]
+    constant_receipts = tuple(
+        (*receipt[:13], constant_receipt) for receipt in metadata_configured_plan_receipts
+    )
+    assert constant_receipts != tuple(metadata_configured_plan_receipts)
+    assert hashlib.sha256(canonical(constant_receipts)).hexdigest() != (
+        EXPECTED_METADATA_CONFIGURED_PLAN_RECEIPT_SHA256
+    )
     metadata_execution_ids = tuple(
         f"{execution[0][0]}@{execution[1]}" for execution in metadata_execution_rows
     )
@@ -7583,6 +8297,22 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
     assert sum(name.startswith("configured-removed-") for name in group_names) == (
         EXPECTED_METADATA_REMOVED_CONFIG_COLLISION_COUNT
     )
+    assert len(EXPECTED_METADATA_CONFIGURED_REMOVED_HISTORICAL_PAIRS) == (
+        EXPECTED_METADATA_CONFIGURED_REMOVED_HISTORICAL_PAIR_COUNT
+    )
+    assert hashlib.sha256(
+        canonical(EXPECTED_METADATA_CONFIGURED_REMOVED_HISTORICAL_PAIRS)
+    ).hexdigest() == EXPECTED_METADATA_CONFIGURED_REMOVED_HISTORICAL_PAIR_SHA256
+    configured_class_members = {
+        member
+        for name, members in EXPECTED_METADATA_FORMER_COLLISION_GROUPS
+        if name.startswith("configured-removed-")
+        for member in members
+    }
+    for historical_name, pair in EXPECTED_METADATA_CONFIGURED_REMOVED_HISTORICAL_PAIRS:
+        assert historical_name.startswith("configured-removed-")
+        assert len(pair) == len(set(pair)) == 2
+        assert set(pair) <= configured_class_members
     for _, group_execution_ids in EXPECTED_METADATA_FORMER_COLLISION_GROUPS:
         assert len(group_execution_ids) >= 2
         assert len(group_execution_ids) == len(set(group_execution_ids))
@@ -7639,6 +8369,9 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
     }
     observed_equivalence_classes: list[tuple[object, ...]] = []
     observed_receipt_hybrids: list[tuple[object, ...]] = []
+    configured_receipt_by_execution = {
+        cast(str, receipt[0]): receipt for receipt in metadata_configured_plan_receipts
+    }
     for group_name, class_execution_ids in expected_configured_classes:
         class_stripped_identities = {
             hashlib.sha256(
@@ -7685,6 +8418,41 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
                 )
             )
         assert len(valid_bindings) == len(class_execution_ids)
+        complete_receipt_bindings = {
+            (
+                hashlib.sha256(
+                    canonical(stripped_facts_by_execution[execution_id])
+                ).hexdigest(),
+                hashlib.sha256(
+                    canonical(configured_receipt_by_execution[execution_id])
+                ).hexdigest(),
+                hashlib.sha256(
+                    canonical(metadata_trigger_rows[execution_index[execution_id]])
+                ).hexdigest(),
+            )
+            for execution_id in class_execution_ids
+        }
+        assert len(complete_receipt_bindings) == len(class_execution_ids)
+        for source_id in class_execution_ids:
+            complete_source_binding = next(
+                binding
+                for binding in complete_receipt_bindings
+                if binding[1]
+                == hashlib.sha256(
+                    canonical(configured_receipt_by_execution[source_id])
+                ).hexdigest()
+            )
+            for donor_id in class_execution_ids:
+                if donor_id == source_id:
+                    continue
+                complete_hybrid = (
+                    complete_source_binding[0],
+                    hashlib.sha256(
+                        canonical(configured_receipt_by_execution[donor_id])
+                    ).hexdigest(),
+                    complete_source_binding[2],
+                )
+                assert complete_hybrid not in complete_receipt_bindings
         for source_id in class_execution_ids:
             source_ordinal = execution_index[source_id]
             source_stripped_identity = hashlib.sha256(
@@ -7947,6 +8715,165 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
     assert protocol.validate_repository_freeze(descendant_root) == finding(
         "freeze", "ACP.FREEZE.C3_IMMUTABLE", FREEZE_PATH
     )
+    return MetadataCollection(
+        tuple(metadata_execution_rows),
+        tuple(metadata_stimulus_rows),
+        tuple(metadata_trigger_rows),
+        tuple(metadata_raw_read_rows),
+        tuple(metadata_close_order_rows),
+        tuple(metadata_normalized_payload_rows),
+        tuple(metadata_configured_plan_receipts),
+    )
+
+
+def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    with TemporaryDirectory(prefix="r31-a-", dir="/private/tmp") as first_root_text:
+        with TemporaryDirectory(prefix="r31-b-", dir="/private/tmp") as second_base_text:
+            first_root = Path(first_root_text)
+            second_root = Path(second_base_text)
+            for ordinal, component_bytes in enumerate((12, 12, 12, 12, 12, 15)):
+                prefix = f"r{ordinal}-"
+                second_root /= prefix + ("s" * (component_bytes - len(prefix)))
+            assert tuple(
+                (len(os.fsencode(root)), len(root.parts))
+                for root in (first_root, second_root)
+            ) == ((27, 4), (108, 10))
+            first = _collect_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
+                first_root, monkeypatch
+            )
+            second = _collect_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
+                second_root, monkeypatch
+            )
+    assert first == second
+    assert first.configured_plan_receipts == second.configured_plan_receipts
+    evidence_identities = tuple(
+        hashlib.sha256(
+            canonical(
+                tuple(
+                    hashlib.sha256(canonical(getattr(collection, field))).hexdigest()
+                    for field in (
+                        "full_executions",
+                        "stimuli",
+                        "trigger_receipts",
+                        "raw_reads",
+                        "close_orders",
+                        "normalized_payloads",
+                    )
+                )
+            )
+        ).hexdigest()
+        for collection in (first, second)
+    )
+    assert evidence_identities == (
+        EXPECTED_METADATA_ROOT_REPLAY_EVIDENCE_IDENTITY_SHA256,
+    ) * 2
+    replay_envelopes = tuple(
+        (
+            root_shape,
+            (GOVERNED_FIXTURE_PARENT_BYTES, GOVERNED_FIXTURE_PARENT_DEPTH),
+            final_components,
+            evidence_identity,
+        )
+        for root_shape, final_components, evidence_identity in zip(
+            zip(
+                EXPECTED_METADATA_FIXTURE_ROOT_REPLAY_LENGTHS,
+                EXPECTED_METADATA_FIXTURE_ROOT_REPLAY_DEPTHS,
+                strict=True,
+            ),
+            EXPECTED_METADATA_FIXTURE_FINAL_COMPONENT_BYTES,
+            evidence_identities,
+            strict=True,
+        )
+    )
+    assert replay_envelopes == EXPECTED_METADATA_ROOT_REPLAY_ENVELOPES
+    assert len(replay_envelopes) == EXPECTED_METADATA_ROOT_REPLAY_ENVELOPE_COUNT
+    assert hashlib.sha256(canonical(replay_envelopes)).hexdigest() == (
+        EXPECTED_METADATA_ROOT_REPLAY_ENVELOPE_SHA256
+    )
+
+    def replay_findings(
+        expected: MetadataCollection, observed: MetadataCollection
+    ) -> tuple[protocol.Finding, ...]:
+        catalogs = (
+            ("raw_reads", "rawReads", EXPECTED_METADATA_RAW_READ_FIELDS),
+            (
+                "normalized_payloads",
+                "normalizedPayloads",
+                EXPECTED_METADATA_NORMALIZED_PAYLOAD_FIELDS,
+            ),
+        )
+        for attribute, location_name, fields in catalogs:
+            expected_rows = getattr(expected, attribute)
+            observed_rows = getattr(observed, attribute)
+            for expected_row, observed_row in zip(
+                expected_rows, observed_rows, strict=True
+            ):
+                if expected_row == observed_row:
+                    continue
+                execution_id, role_ordinal = expected_row[:2]
+                for field_ordinal, (expected_value, observed_value) in enumerate(
+                    zip(expected_row, observed_row, strict=True)
+                ):
+                    if expected_value == observed_value:
+                        continue
+                    field_location = fields[field_ordinal]
+                    if isinstance(expected_value, tuple) and isinstance(
+                        observed_value, tuple
+                    ):
+                        changed_ordinals = tuple(
+                            index
+                            for index, values in enumerate(
+                                zip(expected_value, observed_value, strict=True)
+                            )
+                            if values[0] != values[1]
+                        )
+                        assert len(changed_ordinals) == 1
+                        field_location += f"[{changed_ordinals[0]}]"
+                    return finding(
+                        "evidence",
+                        "ACP.EVIDENCE.CROSS_ROOT_REPLAY_MISMATCH",
+                        (
+                            f"metadataReplay.{location_name}[{execution_id}]"
+                            f"[{role_ordinal}].{field_location}"
+                        ),
+                    )
+        return ()
+
+    assert replay_findings(first, second) == ()
+    for (
+        mutant_name,
+        field_name,
+        execution_id,
+        role_ordinal,
+        coordinate,
+        operation,
+        expected_location,
+    ) in EXPECTED_METADATA_REPLAY_DIVERGENCE_MUTANTS:
+        rows = list(getattr(second, field_name))
+        matching = tuple(
+            ordinal
+            for ordinal, row in enumerate(rows)
+            if row[0] == execution_id and row[1] == role_ordinal
+        )
+        assert len(matching) == 1
+        row_index = matching[0]
+        row = list(rows[row_index])
+        if operation == "increment-first-request":
+            requests = list(row[3])
+            requests[0] += 1
+            row[3] = tuple(requests)
+        else:
+            assert operation == "replace-first-payload-identity"
+            row[3] = "0" * 64
+        rows[row_index] = tuple(row)
+        changed = replace(second, **{field_name: tuple(rows)})
+        assert replay_findings(first, changed) == finding(
+            "evidence",
+            "ACP.EVIDENCE.CROSS_ROOT_REPLAY_MISMATCH",
+            expected_location,
+        ), (mutant_name, coordinate)
 
 
 def test_freeze_schema_closes_roles_red_nodes_and_separate_blockers(tmp_path: Path) -> None:
@@ -8414,6 +9341,23 @@ def test_repository_validator_is_read_only_and_static_boundary_is_ast_exact(
     assert hashlib.sha256(canonical(overclaim_variants)).hexdigest() == (
         EXPECTED_DOCUMENT_OVERCLAIM_VARIANT_SHA256
     )
+    assert hashlib.sha256(canonical(EXPECTED_DOCUMENT_NORMALIZATION_MUTANTS)).hexdigest() == (
+        EXPECTED_DOCUMENT_NORMALIZATION_MUTANT_SHA256
+    )
+    variants_by_axis = {axis: variant for _, axis, variant, _ in overclaim_variants}
+    backtick_variant = variants_by_axis["backtick-only"]
+    lowered_without_backtick_removal = "".join(
+        chr(ord(character) + 32) if "A" <= character <= "Z" else character
+        for character in backtick_variant
+    )
+    assert re.sub(r"[\s-]+", " ", lowered_without_backtick_removal).strip().startswith("`")
+    edge_variant = variants_by_axis["edge-whitespace-only"]
+    edge_without_final_strip = re.sub(
+        r"[\s-]+",
+        " ",
+        re.sub(r"[*_`]", "", edge_variant.lower()),
+    )
+    assert edge_without_final_strip.startswith(" ") and edge_without_final_strip.endswith(" ")
     assert tuple(dict.fromkeys(row[0] for row in overclaim_variants)) == tuple(
         cast(
             list[str],
@@ -8566,9 +9510,82 @@ def test_repository_validator_is_read_only_and_static_boundary_is_ast_exact(
     assert git_contract["metadata"]["fixtureParentLexicalDepth"] == (
         GOVERNED_FIXTURE_PARENT_DEPTH
     ) == protocol.STATIC_GIT_METADATA_FIXTURE_PARENT_LEXICAL_DEPTH
-    assert tuple(git_contract["metadata"]["fixtureRootReplayLengths"]) == (
-        EXPECTED_METADATA_FIXTURE_ROOT_REPLAY_LENGTHS
-    ) == protocol.STATIC_GIT_METADATA_FIXTURE_ROOT_REPLAY_LENGTHS
+    assert tuple(
+        zip(
+            EXPECTED_METADATA_FIXTURE_ROOT_REPLAY_LENGTHS,
+            EXPECTED_METADATA_FIXTURE_ROOT_REPLAY_DEPTHS,
+            strict=True,
+        )
+    ) == protocol.STATIC_GIT_METADATA_FIXTURE_ROOT_REPLAY_SHAPES
+    assert tuple(git_contract["metadata"]["metadataCollectionFields"]) == (
+        EXPECTED_METADATA_COLLECTION_FIELDS
+    ) == protocol.STATIC_GIT_METADATA_COLLECTION_FIELDS
+    assert tuple(git_contract["metadata"]["rawReadCatalogFields"]) == (
+        EXPECTED_METADATA_RAW_READ_FIELDS
+    ) == protocol.STATIC_GIT_METADATA_RAW_READ_CATALOG_FIELDS
+    assert git_contract["metadata"]["rawReadCatalogCount"] == (
+        EXPECTED_METADATA_RAW_READ_COUNT
+    ) == protocol.STATIC_GIT_METADATA_RAW_READ_CATALOG_COUNT
+    assert git_contract["metadata"]["rawReadCatalogSha256"] == (
+        EXPECTED_METADATA_RAW_READ_SHA256
+    ) == protocol.STATIC_GIT_METADATA_RAW_READ_CATALOG_SHA256
+    assert tuple(git_contract["metadata"]["closeOrderCatalogFields"]) == (
+        EXPECTED_METADATA_CLOSE_ORDER_FIELDS
+    ) == protocol.STATIC_GIT_METADATA_CLOSE_ORDER_CATALOG_FIELDS
+    assert git_contract["metadata"]["closeOrderCatalogCount"] == (
+        EXPECTED_METADATA_CLOSE_ORDER_COUNT
+    ) == protocol.STATIC_GIT_METADATA_CLOSE_ORDER_CATALOG_COUNT
+    assert git_contract["metadata"]["closeOrderCatalogSha256"] == (
+        EXPECTED_METADATA_CLOSE_ORDER_SHA256
+    ) == protocol.STATIC_GIT_METADATA_CLOSE_ORDER_CATALOG_SHA256
+    assert tuple(git_contract["metadata"]["normalizedPayloadCatalogFields"]) == (
+        EXPECTED_METADATA_NORMALIZED_PAYLOAD_FIELDS
+    ) == protocol.STATIC_GIT_METADATA_NORMALIZED_PAYLOAD_CATALOG_FIELDS
+    assert git_contract["metadata"]["normalizedPayloadCatalogCount"] == (
+        EXPECTED_METADATA_NORMALIZED_PAYLOAD_COUNT
+    ) == protocol.STATIC_GIT_METADATA_NORMALIZED_PAYLOAD_CATALOG_COUNT
+    assert git_contract["metadata"]["normalizedPayloadCatalogSha256"] == (
+        EXPECTED_METADATA_NORMALIZED_PAYLOAD_SHA256
+    ) == protocol.STATIC_GIT_METADATA_NORMALIZED_PAYLOAD_CATALOG_SHA256
+    assert tuple(git_contract["metadata"]["rootReplayEnvelopeFields"]) == (
+        EXPECTED_METADATA_ROOT_REPLAY_ENVELOPE_FIELDS
+    ) == protocol.STATIC_GIT_METADATA_ROOT_REPLAY_ENVELOPE_FIELDS
+    assert tuple(git_contract["metadata"]["rootReplayEvidenceFields"]) == (
+        EXPECTED_METADATA_ROOT_REPLAY_EVIDENCE_FIELDS
+    ) == protocol.STATIC_GIT_METADATA_ROOT_REPLAY_EVIDENCE_FIELDS
+    matrix_replay_envelopes = tuple(
+        (tuple(row[0]), tuple(row[1]), tuple(row[2]), row[3])
+        for row in git_contract["metadata"]["rootReplayEnvelopes"]
+    )
+    assert matrix_replay_envelopes == EXPECTED_METADATA_ROOT_REPLAY_ENVELOPES
+    assert cast(object, matrix_replay_envelopes) == cast(
+        object, protocol.STATIC_GIT_METADATA_ROOT_REPLAY_ENVELOPES
+    )
+    assert git_contract["metadata"]["rootReplayEnvelopeCount"] == (
+        EXPECTED_METADATA_ROOT_REPLAY_ENVELOPE_COUNT
+    ) == protocol.STATIC_GIT_METADATA_ROOT_REPLAY_ENVELOPE_COUNT
+    assert git_contract["metadata"]["rootReplayEnvelopeSha256"] == (
+        EXPECTED_METADATA_ROOT_REPLAY_ENVELOPE_SHA256
+    ) == protocol.STATIC_GIT_METADATA_ROOT_REPLAY_ENVELOPE_SHA256
+    assert git_contract["metadata"]["rootReplayEvidenceIdentitySha256"] == (
+        EXPECTED_METADATA_ROOT_REPLAY_EVIDENCE_IDENTITY_SHA256
+    ) == protocol.STATIC_GIT_METADATA_ROOT_REPLAY_EVIDENCE_IDENTITY_SHA256
+    assert tuple(git_contract["metadata"]["crossRootDivergenceMutantFields"]) == (
+        EXPECTED_METADATA_REPLAY_DIVERGENCE_MUTANT_FIELDS
+    ) == protocol.STATIC_GIT_METADATA_CROSS_ROOT_DIVERGENCE_MUTANT_FIELDS
+    replay_mutants = tuple(
+        tuple(row) for row in git_contract["metadata"]["crossRootDivergenceMutants"]
+    )
+    assert replay_mutants == EXPECTED_METADATA_REPLAY_DIVERGENCE_MUTANTS
+    assert cast(object, replay_mutants) == cast(
+        object, protocol.STATIC_GIT_METADATA_CROSS_ROOT_DIVERGENCE_MUTANTS
+    )
+    assert git_contract["metadata"]["crossRootDivergenceMutantCount"] == len(
+        EXPECTED_METADATA_REPLAY_DIVERGENCE_MUTANTS
+    ) == protocol.STATIC_GIT_METADATA_CROSS_ROOT_DIVERGENCE_MUTANT_COUNT
+    assert git_contract["metadata"]["crossRootDivergenceMutantSha256"] == (
+        EXPECTED_METADATA_REPLAY_DIVERGENCE_MUTANT_SHA256
+    ) == protocol.STATIC_GIT_METADATA_CROSS_ROOT_DIVERGENCE_MUTANT_SHA256
     assert cast(
         object, tuple(git_contract["metadata"]["triggerReceiptScheduleContract"])
     ) == cast(object, EXPECTED_METADATA_TRIGGER_RECEIPT_SCHEDULE_CONTRACT) == cast(
@@ -8598,6 +9615,23 @@ def test_repository_validator_is_read_only_and_static_boundary_is_ast_exact(
         == EXPECTED_METADATA_REMOVED_CONFIG_COLLISION_COUNT
         == protocol.STATIC_GIT_METADATA_CONFIGURED_REMOVED_COLLISION_COUNT
     )
+    historical_pairs = tuple(
+        (name, tuple(pair))
+        for name, pair in git_contract["metadata"]["configuredRemovedHistoricalPairGroups"]
+    )
+    assert historical_pairs == EXPECTED_METADATA_CONFIGURED_REMOVED_HISTORICAL_PAIRS
+    assert cast(object, historical_pairs) == cast(
+        object, protocol.STATIC_GIT_METADATA_CONFIGURED_REMOVED_HISTORICAL_PAIR_GROUPS
+    )
+    assert git_contract["metadata"]["configuredRemovedHistoricalPairGroupCount"] == (
+        EXPECTED_METADATA_CONFIGURED_REMOVED_HISTORICAL_PAIR_COUNT
+    ) == protocol.STATIC_GIT_METADATA_CONFIGURED_REMOVED_HISTORICAL_PAIR_GROUP_COUNT
+    assert git_contract["metadata"]["configuredRemovedHistoricalPairGroupSha256"] == (
+        EXPECTED_METADATA_CONFIGURED_REMOVED_HISTORICAL_PAIR_SHA256
+    ) == protocol.STATIC_GIT_METADATA_CONFIGURED_REMOVED_HISTORICAL_PAIR_GROUP_SHA256
+    assert git_contract["metadata"]["configuredRemovedHistoricalPairGroupSource"] == (
+        EXPECTED_METADATA_CONFIGURED_REMOVED_HISTORICAL_SOURCE_IDENTITY
+    ) == protocol.STATIC_GIT_METADATA_CONFIGURED_REMOVED_HISTORICAL_PAIR_GROUP_SOURCE
     assert tuple(git_contract["metadata"]["configuredPlanIdentityContract"]) == (
         EXPECTED_METADATA_CONFIGURED_PLAN_IDENTITY_CONTRACT
     ) == protocol.STATIC_GIT_METADATA_CONFIGURED_PLAN_IDENTITY_CONTRACT
@@ -8611,6 +9645,37 @@ def test_repository_validator_is_read_only_and_static_boundary_is_ast_exact(
     assert configured_plan_sha == git_contract["metadata"]["configuredPlanSha256"] == (
         EXPECTED_METADATA_CONFIGURED_PLAN_SHA256
     ) == protocol.STATIC_GIT_METADATA_CONFIGURED_PLAN_SHA256
+    assert tuple(git_contract["metadata"]["configuredPlanReceiptFields"]) == (
+        EXPECTED_METADATA_CONFIGURED_PLAN_RECEIPT_FIELDS
+    ) == protocol.STATIC_GIT_METADATA_CONFIGURED_PLAN_RECEIPT_FIELDS
+    assert tuple(git_contract["metadata"]["configuredPlanRawEvidenceFields"]) == (
+        EXPECTED_METADATA_CONFIGURED_PLAN_RAW_EVIDENCE_FIELDS
+    ) == protocol.STATIC_GIT_METADATA_CONFIGURED_PLAN_RAW_EVIDENCE_FIELDS
+    assert tuple(git_contract["metadata"]["configuredPlanReceiptProjectionFields"]) == (
+        EXPECTED_METADATA_CONFIGURED_PLAN_RECEIPT_PROJECTION_FIELDS
+    ) == protocol.STATIC_GIT_METADATA_CONFIGURED_PLAN_RECEIPT_PROJECTION_FIELDS
+    assert tuple(git_contract["metadata"]["configuredPlanReceiptIdentityContract"]) == (
+        EXPECTED_METADATA_CONFIGURED_PLAN_RECEIPT_IDENTITY_CONTRACT
+    ) == protocol.STATIC_GIT_METADATA_CONFIGURED_PLAN_RECEIPT_IDENTITY_CONTRACT
+    assert git_contract["metadata"]["configuredPlanReceiptCount"] == (
+        EXPECTED_METADATA_CONFIGURED_PLAN_RECEIPT_COUNT
+    ) == protocol.STATIC_GIT_METADATA_CONFIGURED_PLAN_RECEIPT_COUNT
+    assert git_contract["metadata"]["configuredPlanReceiptSha256"] == (
+        EXPECTED_METADATA_CONFIGURED_PLAN_RECEIPT_SHA256
+    ) == protocol.STATIC_GIT_METADATA_CONFIGURED_PLAN_RECEIPT_SHA256
+    configured_receipt_mutants = tuple(
+        tuple(row) for row in git_contract["metadata"]["configuredPlanReceiptMutants"]
+    )
+    assert configured_receipt_mutants == EXPECTED_METADATA_CONFIGURED_PLAN_MUTANTS
+    assert cast(object, configured_receipt_mutants) == cast(
+        object, protocol.STATIC_GIT_METADATA_CONFIGURED_PLAN_RECEIPT_MUTANTS
+    )
+    assert git_contract["metadata"]["configuredPlanReceiptMutantCount"] == len(
+        EXPECTED_METADATA_CONFIGURED_PLAN_MUTANTS
+    ) == protocol.STATIC_GIT_METADATA_CONFIGURED_PLAN_RECEIPT_MUTANT_COUNT
+    assert git_contract["metadata"]["configuredPlanReceiptMutantSha256"] == (
+        EXPECTED_METADATA_CONFIGURED_PLAN_MUTANT_SHA256
+    ) == protocol.STATIC_GIT_METADATA_CONFIGURED_PLAN_RECEIPT_MUTANT_SHA256
     assert tuple(git_contract["metadata"]["configuredRemovedEquivalenceClassFields"]) == (
         EXPECTED_METADATA_CONFIGURED_EQUIVALENCE_FIELDS
     ) == protocol.STATIC_GIT_METADATA_CONFIGURED_REMOVED_EQUIVALENCE_CLASS_FIELDS
@@ -8844,6 +9909,33 @@ def test_repository_validator_is_read_only_and_static_boundary_is_ast_exact(
     assert git_contract["textualTransformationByteIdentitySha256"] == (
         EXPECTED_NORMALIZED_GIT_BYTE_IDENTITY_SHA256
     ) == protocol.STATIC_GIT_TEXTUAL_TRANSFORMATION_BYTE_IDENTITY_SHA256
+    byte_normalization = git_contract["textualTransformationByteNormalization"]
+    oid_mappings = tuple(tuple(row) for row in byte_normalization["oidRoleMappings"])
+    assert tuple(byte_normalization["oidRoleMappingFields"]) == (
+        EXPECTED_VERIFIED_GIT_OID_MAPPING_FIELDS
+    )
+    assert oid_mappings == EXPECTED_VERIFIED_GIT_OID_MAPPINGS
+    assert byte_normalization["oidRoleMappingCount"] == EXPECTED_VERIFIED_GIT_OID_MAPPING_COUNT
+    assert byte_normalization["oidRoleMappingSha256"] == (
+        EXPECTED_VERIFIED_GIT_OID_MAPPING_SHA256
+    )
+    hostile_oid_evidence = tuple(
+        (row[0], row[1], tuple(row[2]), tuple(row[3]), row[4])
+        for row in byte_normalization["hostileOidEvidence"]
+    )
+    assert tuple(byte_normalization["hostileOidEvidenceFields"]) == (
+        EXPECTED_HOSTILE_GIT_OID_EVIDENCE_FIELDS
+    )
+    assert hostile_oid_evidence == EXPECTED_HOSTILE_GIT_OID_EVIDENCE
+    assert byte_normalization["hostileOidEvidenceCount"] == (
+        EXPECTED_HOSTILE_GIT_OID_EVIDENCE_COUNT
+    )
+    assert byte_normalization["hostileOidEvidenceSha256"] == (
+        EXPECTED_HOSTILE_GIT_OID_EVIDENCE_SHA256
+    )
+    static_byte_normalization = dict(protocol.STATIC_GIT_TEXTUAL_TRANSFORMATION_BYTE_NORMALIZATION)
+    assert oid_mappings == static_byte_normalization["oidRoleMappings"]
+    assert hostile_oid_evidence == static_byte_normalization["hostileOidEvidence"]
     assert tuple(tuple(item) for item in git_contract["redObjectBindings"]) == (
         protocol.STATIC_GIT_OBJECT_BINDINGS
     )
