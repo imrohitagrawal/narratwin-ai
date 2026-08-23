@@ -185,7 +185,9 @@ Every third-party package, model, media asset, avatar tool, dataset, or generate
 - treat uploaded docs as untrusted input
 - defend against prompt injection
 - do not allow generated outputs to claim facts not present in approved project knowledge
-- add AI-generated avatar/voice disclosure
+- route any required presenter/voice disclosure through the canonical
+  legal/compliance contract; ordinary product presentation must not add an
+  "AI avatar" or "synthetic presenter" label
 - require consent for any cloned face or voice feature
 
 ## First vertical slice
