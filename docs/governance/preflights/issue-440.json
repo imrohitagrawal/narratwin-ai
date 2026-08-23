@@ -2,7 +2,7 @@
   "schema_version": "GovernancePreflightV1",
   "issue_number": 440,
   "branch": "governance-440-canonical-contracts",
-  "objective": "Create one canonical Cut 1 presenter contract, one AI quality contract, one enterprise readiness register, one Cut 1-5 roadmap/evidence matrix, and one controlled Cut 1 demo acceptance artifact; reconcile repository indexes and the linked Issue #444 agent-context manifest hashes without implementing runtime, provider, media, deployment, or release behavior.",
+  "objective": "Create one canonical Cut 1 presenter contract, one AI quality contract, one enterprise readiness register, one Cut 1-5 roadmap/evidence matrix, and one controlled Cut 1 demo acceptance artifact; reconcile repository indexes, the linked Issue #444 agent-context manifest hashes, and the linked Issues #445/#448 dependency-security remediation without implementing runtime, provider, media, deployment, or release behavior.",
   "status_decision": "update-minimally",
   "scope": {
     "required": [
@@ -22,6 +22,8 @@
       "docs/TRACEABILITY.md",
       "scripts/quality/check_stage8_docs.py",
       "docs/agent-context/context-policy-manifest-v1.json"
+      ,"uv.lock",
+      "tests/unit/test_dependency_security_contract.py"
     ],
     "allowed_prefixes": [
       "docs/governance/preflights/issue-440.json",
@@ -40,6 +42,8 @@
       "docs/TRACEABILITY.md",
       "scripts/quality/check_stage8_docs.py",
       "docs/agent-context/context-policy-manifest-v1.json"
+      ,"uv.lock",
+      "tests/unit/test_dependency_security_contract.py"
     ],
     "forbidden": [
       "backend/",
