@@ -1,19 +1,19 @@
 #!/usr/bin/env python3
 """Stage 8 quality gate for hardening and release readiness."""
 from __future__ import annotations
-# ruff: noqa: E302, E305, E401, E701, E702
+# ruff: noqa: E302, E305, E401, E402, E701, E702
 import hashlib, json, os, re, subprocess, sys
 from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT));import scripts.quality.issue427_architecture_reset as issue427_reset  # noqa: E402
-import scripts.quality.issue431_authority_core as issue431_authority_core  # noqa: E402
-from scripts.quality.branch_identity import current_branch  # noqa: E402
-from scripts.quality.check_stage2_docs import check_retrieval_strategy_v1_parity  # noqa: E402
-from scripts.quality import stage8_brace_expansion_unblock as brace_security  # noqa: E402
-from scripts.quality import stage8_cache_pruning as cache_pruning  # noqa: E402
-from scripts.quality.stage8_a23b import A23A_BRANCH, A23B_BRANCH, A23_ROUTES, check_a23b  # noqa: E402
-from scripts.quality import stage8_backend_security as backend_security, stage8_cut1_routes as cut1_routes  # noqa: E402
-from scripts.quality import stage8_node_security as node_security  # noqa: E402
+sys.path.insert(0, str(ROOT));import scripts.quality.issue427_architecture_reset as issue427_reset
+import scripts.quality.issue431_authority_core as issue431_authority_core
+from scripts.quality.branch_identity import current_branch
+from scripts.quality.check_stage2_docs import check_retrieval_strategy_v1_parity
+from scripts.quality import stage8_brace_expansion_unblock as brace_security
+from scripts.quality import stage8_cache_pruning as cache_pruning
+from scripts.quality.stage8_a23b import A23A_BRANCH, A23B_BRANCH, A23_ROUTES, check_a23b
+from scripts.quality import stage8_backend_security as backend_security, stage8_cut1_routes as cut1_routes
+from scripts.quality import stage8_node_security as node_security
 STAGE8_BRANCH_PATTERN = re.compile(r"(?ai)^stage8-(?![a-z0-9-]*366(?:-|$))(?![a-z0-9-]*cut1)[a-z0-9-]+$")
 ISSUE84_GUARDRAIL_BRANCH = "guardrail-main-merge-push-detection-84"
 ISSUE287_STAGE8_DRIFT_BRANCH = "phase-1-closure-process-287-stage8-quality-gate-drift"
@@ -29,16 +29,17 @@ ISSUE434_FILES=set(R434);H434=hashlib.sha256(json.dumps(sorted(R434),separators=
 if H434 != "c3414778d2ee1c9326d1c81537d5dfe9f528b22f12ec98394e0ac4270f7cab90": ISSUE434_FILES=set()
 else: ISSUE434_FILES |= {"scripts/quality/issue434_authority_evidence_reconstruction.py",
     "tests/unit/test_issue434_authority_evidence_reconstruction.py", "tests/unit/test_dependency_security_contract.py"}
+ISSUE440_FILES=set(json.load(open(ROOT/"docs/governance/preflights/issue-440.json"))["scope"]["required"])
 B434="87b8504ca8d5e094394343aeaa4ef5bad46133d5";A434=R434[:9]+R434[13:14]
 D434="3ccf1eb51a359c734a0a3da7e66df6e4ed79843c8d05273b823636b788fb8a28"
 G434=((450,{R434[0],R434[2]}),(850,{R434[1],R434[13],R434[18]}),(1350,set(R434[3:9])),
     (4300,set(R434[9:13])|set(ISSUE434_FILES)-set(R434)),(250,{R434[i] for i in (14,15,16,17,19,20,21)}))
 LIMITS434=dict(zip((R434[9],R434[10],*sorted(ISSUE434_FILES-set(R434))),(1200,1300,900,30,700),strict=True))
 CP_BASE, CP_LIMIT = "372fb78245b8890157ffe54f48b90e523017bc43", 1200
-CITATION_PARITY_FILES = {"docs/governance/preflights/issue-372.json", "backend/app/stage4.py",
-    "tests/acceptance/test_checkpoint3_output_correctness.py", "tests/unit/test_local_durability.py",
-    "scripts/quality/check_stage8_docs.py", "tests/unit/test_stage8_quality_gate.py", "docs/QUALITY_GATES.md",
-    "docs/STAGE_ISSUE_PLAN.md", "docs/STATUS.md", "docs/TRACEABILITY.md", "docs/ADR/0002-rag-storage.md"}
+CITATION_PARITY_FILES = {"docs/governance/preflights/issue-372.json","backend/app/stage4.py",
+    "tests/acceptance/test_checkpoint3_output_correctness.py","tests/unit/test_local_durability.py",
+    "scripts/quality/check_stage8_docs.py","tests/unit/test_stage8_quality_gate.py","docs/QUALITY_GATES.md",
+    "docs/STAGE_ISSUE_PLAN.md","docs/STATUS.md","docs/TRACEABILITY.md","docs/ADR/0002-rag-storage.md"}
 QUIET_PRESENCE_BRANCH = "cut1-358-quiet-presence-ui"
 CUT1_REAL_MEDIA_TRANSITION_BRANCH = "cut1-366-real-media-governance-transition"
 C1_BASE, C1_LIMIT = "a69903fea50c22e12926d7e13dffdc74e55dfb65", 900
@@ -46,38 +47,39 @@ C1_FILE_LIMITS = {"scripts/quality/check_stage8_docs.py":350,"tests/unit/test_st
 C1_DOCS=("docs/QUALITY_GATES.md","docs/STAGE_ISSUE_PLAN.md","docs/STATUS.md","docs/TRACEABILITY.md")
 C1_BOUND=("docs/governance/preflights/issue-366.json",*C1_DOCS)
 C1_DOC_SHA="aa97ad3ad67d65f79fa21f3c9c8d89ab91594ca70e1fa9ae01c495221b3c2fbe"
-QUIET_PRESENCE_FILES = {"docs/governance/preflights/issue-358.json", "docs/QUALITY_GATES.md",
-    "docs/STAGE_ISSUE_PLAN.md", "docs/STATUS.md", "docs/TRACEABILITY.md",
+QUIET_PRESENCE_FILES = {"docs/governance/preflights/issue-358.json","docs/QUALITY_GATES.md",
+    "docs/STAGE_ISSUE_PLAN.md","docs/STATUS.md","docs/TRACEABILITY.md",
     "docs/THIRD_PARTY_NOTICES.md", "docs/ADR/0048-quiet-presence-embedded-guide.md",
-    "scripts/quality/check_stage8_docs.py", "tests/unit/test_stage8_quality_gate.py", "frontend/src/app/demo/page.tsx",
-    "frontend/src/app/demo/page.module.css", "frontend/src/app/demo/page.test.tsx",
-    "frontend/src/app/demo/guide-client.ts", "frontend/src/app/demo/guide-client.test.ts",
-    "frontend/tests/quiet-presence.spec.ts", "frontend/public/demo/narratwin-synthetic-presenter.webp"}
+    "scripts/quality/check_stage8_docs.py","tests/unit/test_stage8_quality_gate.py","frontend/src/app/demo/page.tsx",
+    "frontend/src/app/demo/page.module.css","frontend/src/app/demo/page.test.tsx",
+    "frontend/src/app/demo/guide-client.ts","frontend/src/app/demo/guide-client.test.ts",
+    "frontend/tests/quiet-presence.spec.ts","frontend/public/demo/narratwin-synthetic-presenter.webp"}
 CUT1_REAL_MEDIA_TRANSITION_FILES=set(C1_BOUND)|{"scripts/quality/check_stage8_docs.py",
     "tests/unit/test_stage8_quality_gate.py"}
 NULL_GIT_SHA = "0" * 40
 def issue324_allowed_files() -> set[str]:
     return set(json.loads((ROOT/"docs/governance/preflights/issue-324.json").read_text())["scope"]["required"])
 REQUIRED_FILES = [
-    ".stage/current", ".github/pull_request_template.md", ".github/workflows/ci.yml", ".github/workflows/security.yml",
+    ".stage/current",".github/pull_request_template.md",".github/workflows/ci.yml",".github/workflows/security.yml",
     "Makefile", "README.md", "backend/app/main.py", "backend/app/stage4.py", "backend/app/stage6.py",
     "backend/Dockerfile",
     "frontend/Dockerfile", "frontend/package.json", "frontend/package-lock.json", "frontend/src/app/page.test.tsx",
-    "frontend/scripts/run-lighthouse.mjs", "perf/stage8_locustfile.py", "pyproject.toml", "uv.lock",
-    "scripts/ci/dependency-security.sh", "scripts/ci/docker-image-scan.sh", "scripts/ci/frontend-lighthouse.sh",
-    "scripts/ci/performance-smoke.sh", "scripts/quality/check_quality_stage.py", "scripts/quality/check_stage8_docs.py",
+    "frontend/scripts/run-lighthouse.mjs","perf/stage8_locustfile.py","pyproject.toml","uv.lock",
+    "scripts/ci/dependency-security.sh","scripts/ci/docker-image-scan.sh","scripts/ci/frontend-lighthouse.sh",
+    "scripts/ci/performance-smoke.sh","scripts/quality/check_quality_stage.py","scripts/quality/check_stage8_docs.py",
     "tests/api/test_stage4_slice_api.py", "tests/api/test_stage6_multilingual_api.py",
-    "tests/api/test_stage8_hardening_api.py", "tests/unit/test_stage6_multilingual.py", "demo/stage8_seed_project.md",
-    "docs/ADR/0006-stage8-release-hardening.md", "docs/API_CONTRACT.md", "docs/ARCHITECTURE.md",
-    "docs/QUALITY_GATES.md", "docs/PROJECT_LEARNINGS_TRACKER.md", "docs/PROJECT_GOVERNANCE_LEARNINGS.md",
-    "docs/RECOMMENDED_REVIEW_ITEMS.md", "docs/REPOSITORY_GUARDRAILS.md", "docs/RELEASE_CHECKLIST.md",
-    "docs/RELEASE_READINESS_REVIEW.md", "docs/REVIEW_RIGOR_RETROSPECTIVE.md", "docs/RUNBOOK.md",
-    "docs/SKILL_LOCK.md", "docs/STAGE_ISSUE_PLAN.md", "docs/STATUS.md", "docs/THIRD_PARTY_NOTICES.md",
-    "docs/TRACEABILITY.md", "docs/demo/CONTROLLED_LOCAL_DEMO.md",
-]; STAGE8_ALLOWED_FILES = set(REQUIRED_FILES) | {"tests/api/test_health_api.py", "tests/unit/test_health_contract.py"}
+    "tests/api/test_stage8_hardening_api.py","tests/unit/test_stage6_multilingual.py","demo/stage8_seed_project.md",
+    "docs/ADR/0006-stage8-release-hardening.md","docs/API_CONTRACT.md","docs/ARCHITECTURE.md",
+    "docs/QUALITY_GATES.md","docs/PROJECT_LEARNINGS_TRACKER.md","docs/PROJECT_GOVERNANCE_LEARNINGS.md",
+    "docs/RECOMMENDED_REVIEW_ITEMS.md","docs/REPOSITORY_GUARDRAILS.md","docs/RELEASE_CHECKLIST.md",
+    "docs/RELEASE_READINESS_REVIEW.md","docs/REVIEW_RIGOR_RETROSPECTIVE.md","docs/RUNBOOK.md",
+    "docs/SKILL_LOCK.md","docs/STAGE_ISSUE_PLAN.md","docs/STATUS.md","docs/THIRD_PARTY_NOTICES.md",
+    "docs/TRACEABILITY.md","docs/demo/CONTROLLED_LOCAL_DEMO.md",
+];STAGE8_ALLOWED_FILES = set(REQUIRED_FILES) | {"tests/api/test_health_api.py","tests/unit/test_health_contract.py"}
 PROCESS_BRANCH_ALLOWED_FILES = {issue427_reset.BRANCH: set(issue427_reset.PATHS),
     issue431_authority_core.BRANCH: set(issue431_authority_core.PATHS),
     ISSUE434_BRANCH: ISSUE434_FILES,
+    "governance-440-canonical-contracts": ISSUE440_FILES,
     node_security.ISSUE374_SECURITY_BRANCH: node_security.ISSUE374_SECURITY_FILES,
     ISSUE346_TRANSITION_BRANCH: {
         "docs/governance/preflights/issue-346.json", "scripts/quality/check_stage8_docs.py",

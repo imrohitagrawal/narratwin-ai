@@ -467,8 +467,10 @@ Required Stage 7 invariants:
   preserve concurrent successful renders;
 - source evidence metadata must remain bound to source run ID, trace ID, context
   refs, citation indexes, evaluation ID/checksum, and status;
-- consent/disclosure fields must be restored only when they match the accepted
-  synthetic-media contract.
+- consent, provenance, and compliance-metadata fields must be restored only
+  when they match the canonical presenter provenance/compliance contract; the
+  ordinary product presentation contract does not require a synthetic-media
+  label.
 
 ## Governance / CI / False-Pass
 

@@ -1,0 +1,47 @@
+{
+  "schema_version": "GovernancePreflightV1",
+  "issue_number": 440,
+  "branch": "governance-440-canonical-contracts",
+  "objective": "Create one canonical Cut 1 presenter contract, one AI quality contract, and one enterprise readiness register; reconcile repository indexes without implementing runtime, provider, media, deployment, or release behavior.",
+  "status_decision": "update-minimally",
+  "scope": {
+    "required": [
+      "docs/governance/preflights/issue-440.json",
+      "docs/ADR/0048-cut1-presenter-enterprise-readiness-contracts.md",
+      "docs/PRODUCT_CONTRACTS/CUT1_PRESENTER_CONTRACT.md",
+      "docs/AI_QUALITY_AND_EVALUATION_CONTRACT.md",
+      "docs/ENTERPRISE_READINESS_REGISTER.md",
+      "docs/AI_BUILD_BRIEF.md",
+      "docs/AI_SAFETY_AND_EVALUATION.md",
+      "docs/ENGINEERING_PROCESS_RCA.md",
+      "docs/PHASE_PLAN.md",
+      "docs/RELEASE_QUALITY_BAR.md",
+      "docs/STATUS.md",
+      "docs/TRACEABILITY.md",
+      "scripts/quality/check_stage8_docs.py"
+    ],
+    "allowed_prefixes": [
+      "docs/governance/preflights/issue-440.json",
+      "docs/ADR/0048-cut1-presenter-enterprise-readiness-contracts.md",
+      "docs/PRODUCT_CONTRACTS/CUT1_PRESENTER_CONTRACT.md",
+      "docs/AI_QUALITY_AND_EVALUATION_CONTRACT.md",
+      "docs/ENTERPRISE_READINESS_REGISTER.md",
+      "docs/AI_BUILD_BRIEF.md",
+      "docs/AI_SAFETY_AND_EVALUATION.md",
+      "docs/ENGINEERING_PROCESS_RCA.md",
+      "docs/PHASE_PLAN.md",
+      "docs/RELEASE_QUALITY_BAR.md",
+      "docs/STATUS.md",
+      "docs/TRACEABILITY.md",
+      "scripts/quality/check_stage8_docs.py"
+    ],
+    "forbidden": [
+      "backend/",
+      "frontend/",
+      ".github/workflows/",
+      "scripts/quality/issue435_adversarial_convergence.py",
+      "tests/unit/test_issue435_adversarial_convergence.py",
+      "tests/unit/test_issue435_adversarial_convergence_repository.py"
+    ]
+  }
+}

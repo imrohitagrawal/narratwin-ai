@@ -12,6 +12,31 @@ Use it to answer:
 - what is blocked or ambiguous
 - what the next approved action is
 
+## Canonical Current Product and Readiness Contract
+
+Issue `#440` is the proposed reconciliation authority for the refreshed Cut 1
+direction. It becomes active only after the dedicated PR merges and closeout
+records its merge state. The proposed normative sources are:
+
+- `docs/PRODUCT_CONTRACTS/CUT1_PRESENTER_CONTRACT.md` — Meera primary, Raj first
+  backup, Myra second backup, human-like presentation, mandatory eye contact,
+  framing and motion acceptance, provenance, and Cut 1/Cut 2 boundaries.
+- `docs/AI_QUALITY_AND_EVALUATION_CONTRACT.md` — grounding, hallucination
+  prevention, lineage, golden suites, Ragas, DeepEval/custom evaluation,
+  calibrated LLM-as-judge, human review, multilingual/media evaluation, drift,
+  observability, and rollback.
+- `docs/ENTERPRISE_READINESS_REGISTER.md` — architecture, security, SRE,
+  availability, disaster recovery, scalability, DevOps, supply chain,
+  observability, accessibility, operations, and commercial-readiness gates.
+
+Historical issue and phase tables below remain evidence and sequencing history.
+They must not be interpreted as a competing current product contract. Current
+implementation restrictions remain restrictions, not a redefinition of the
+intended end product. Issue `#435` remains a separate adversarial evidence gate;
+it validates approved contracts and does not redefine them. Until #440 merges,
+the existing merged-main authority and implementation gates remain binding; this
+branch must not be treated as product or release authorization.
+
 ## Current Baseline
 
 - Issue `#434` is the current OWNER-approved, nonactivating Child B route under

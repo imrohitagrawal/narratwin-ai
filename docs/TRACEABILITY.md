@@ -22,6 +22,24 @@ personas, core user journeys, acceptance criteria, or product behavior.
 - Every product-mode change must preserve the distinction between pre-rendered demo
   video and interactive AI avatar walkthrough.
 
+## Current Cut 1 and Readiness Authorities
+
+For the refreshed Cut 1 direction, use these canonical contracts before relying
+on historical issue prose:
+
+- `docs/PRODUCT_CONTRACTS/CUT1_PRESENTER_CONTRACT.md`
+- `docs/AI_QUALITY_AND_EVALUATION_CONTRACT.md`
+- `docs/ENTERPRISE_READINESS_REGISTER.md`
+
+`docs/STATUS.md` is the current ledger and `docs/PHASE_PLAN.md` is the sequencing
+plan. Issue `#435` is an adversarial evidence gate, not a replacement for these
+product or readiness authorities.
+
+Rows below that mention synthetic-media disclosure, local/mock checkpoints, or
+older presenter wording are historical implementation evidence unless they are
+explicitly linked to the Issue #440 contracts. They do not override the current
+Cut 1 presenter, AI-quality, or enterprise-readiness policy.
+
 ## Stage 1 Product Traceability
 
 | Artifact | Requirement coverage | Stage / issue | Status |
