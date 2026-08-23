@@ -24,6 +24,7 @@ ISSUE335_A2_1_BRANCH = "cut1-335-r0c-a2-1-stage4-rag-v1-lineage"
 ISSUE349_A2_2_BRANCH = "cut1-349-r0c-a2-2-machine-contract-parity"
 CITATION_PARITY_BRANCH = "cut1-372-citation-index-parity-post380"
 ISSUE434_BRANCH = "cut1-process-434-authority-evidence-trust"
+ISSUE440_BRANCH = "stage8-governance-440-canonical-contracts"
 _I434=json.loads((ROOT/"docs/governance/preflights/issue-434.json").read_text());R434=tuple(_I434["scope"]["required"])
 ISSUE434_FILES=set(R434);H434=hashlib.sha256(json.dumps(sorted(R434),separators=(",",":")).encode()).hexdigest()
 if H434 != "c3414778d2ee1c9326d1c81537d5dfe9f528b22f12ec98394e0ac4270f7cab90": ISSUE434_FILES=set()
@@ -78,6 +79,21 @@ REQUIRED_FILES = [
 PROCESS_BRANCH_ALLOWED_FILES = {issue427_reset.BRANCH: set(issue427_reset.PATHS),
     issue431_authority_core.BRANCH: set(issue431_authority_core.PATHS),
     ISSUE434_BRANCH: ISSUE434_FILES,
+    ISSUE440_BRANCH: {
+        "docs/governance/preflights/issue-440.json",
+        "docs/ADR/0048-cut1-presenter-enterprise-readiness-contracts.md",
+        "docs/PRODUCT_CONTRACTS/CUT1_PRESENTER_CONTRACT.md",
+        "docs/AI_QUALITY_AND_EVALUATION_CONTRACT.md",
+        "docs/ENTERPRISE_READINESS_REGISTER.md",
+        "docs/AI_BUILD_BRIEF.md",
+        "docs/AI_SAFETY_AND_EVALUATION.md",
+        "docs/ENGINEERING_PROCESS_RCA.md",
+        "docs/PHASE_PLAN.md",
+        "docs/RELEASE_QUALITY_BAR.md",
+        "docs/STATUS.md",
+        "docs/TRACEABILITY.md",
+        "scripts/quality/check_stage8_docs.py",
+    },
     node_security.ISSUE374_SECURITY_BRANCH: node_security.ISSUE374_SECURITY_FILES,
     ISSUE346_TRANSITION_BRANCH: {
         "docs/governance/preflights/issue-346.json", "scripts/quality/check_stage8_docs.py",
