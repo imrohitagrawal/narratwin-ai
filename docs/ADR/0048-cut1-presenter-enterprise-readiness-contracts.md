@@ -14,7 +14,7 @@ or legacy presenter/disclosure wording for the current product direction.
 
 ## Decision
 
-Use three linked canonical documents:
+Use three linked contracts plus two acceptance indexes:
 
 1. `docs/PRODUCT_CONTRACTS/CUT1_PRESENTER_CONTRACT.md` defines Meera, Raj, Myra,
    presenter behavior, eye contact, framing, motion, provenance, and Cut 1/Cut
@@ -25,6 +25,12 @@ Use three linked canonical documents:
    observability, and rollback.
 3. `docs/ENTERPRISE_READINESS_REGISTER.md` indexes enterprise capabilities,
    owners, statuses, evidence, phases, and release impacts.
+4. `docs/CUT_ROADMAP_AND_EVIDENCE_MATRIX.md` is the single Cut 1–5 roadmap and
+   requirement-to-evidence matrix. It fixes numeric Cut 1 thresholds, concrete
+   AI/MLOps promotion rules, tenant/data targets, enterprise targets, and later
+   decisions.
+5. `docs/demo/CUT1_ACCEPTANCE_CHECKLIST.md` is the controlled Cut 1 demo
+   acceptance artifact and records the human reviewer decision.
 
 `STATUS.md` is the current ledger and `PHASE_PLAN.md` is the sequencing plan;
 they point to these contracts instead of duplicating acceptance criteria.
@@ -35,6 +41,8 @@ the product.
 ## Consequences
 
 - Cut 1 can be expedited without losing the enterprise/SRE/AI-quality roadmap.
+- Acceptance work is measurable: every requirement has an owner, artifact,
+  threshold, and release gate rather than only a prose statement.
 - Product implementation, provider activation, public release, and commercial
   readiness remain separately gated.
 - Ragas, DeepEval, LLM-as-judge, full-body motion, HA/DR, and commercial launch
@@ -53,3 +61,6 @@ the product.
 - Put enterprise readiness inside Issue #435:
   rejected because #435 is an adversarial evidence gate, not the product
   contract or commercial-readiness authority.
+- Add separate policy documents for every concern:
+  rejected because the roadmap/evidence matrix and checklist close the gaps
+  without creating another competing source of truth.

@@ -2,7 +2,7 @@
   "schema_version": "GovernancePreflightV1",
   "issue_number": 440,
   "branch": "governance-440-canonical-contracts",
-  "objective": "Create one canonical Cut 1 presenter contract, one AI quality contract, and one enterprise readiness register; reconcile repository indexes without implementing runtime, provider, media, deployment, or release behavior.",
+  "objective": "Create one canonical Cut 1 presenter contract, one AI quality contract, one enterprise readiness register, one Cut 1-5 roadmap/evidence matrix, and one controlled Cut 1 demo acceptance artifact; reconcile repository indexes without implementing runtime, provider, media, deployment, or release behavior.",
   "status_decision": "update-minimally",
   "scope": {
     "required": [
@@ -11,6 +11,8 @@
       "docs/PRODUCT_CONTRACTS/CUT1_PRESENTER_CONTRACT.md",
       "docs/AI_QUALITY_AND_EVALUATION_CONTRACT.md",
       "docs/ENTERPRISE_READINESS_REGISTER.md",
+      "docs/CUT_ROADMAP_AND_EVIDENCE_MATRIX.md",
+      "docs/demo/CUT1_ACCEPTANCE_CHECKLIST.md",
       "docs/AI_BUILD_BRIEF.md",
       "docs/AI_SAFETY_AND_EVALUATION.md",
       "docs/ENGINEERING_PROCESS_RCA.md",
@@ -26,6 +28,8 @@
       "docs/PRODUCT_CONTRACTS/CUT1_PRESENTER_CONTRACT.md",
       "docs/AI_QUALITY_AND_EVALUATION_CONTRACT.md",
       "docs/ENTERPRISE_READINESS_REGISTER.md",
+      "docs/CUT_ROADMAP_AND_EVIDENCE_MATRIX.md",
+      "docs/demo/CUT1_ACCEPTANCE_CHECKLIST.md",
       "docs/AI_BUILD_BRIEF.md",
       "docs/AI_SAFETY_AND_EVALUATION.md",
       "docs/ENGINEERING_PROCESS_RCA.md",

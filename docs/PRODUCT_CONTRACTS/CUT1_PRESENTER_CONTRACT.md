@@ -62,6 +62,9 @@ Acceptance requires current approved script, grounded claims, captions, voice,
 eye contact, lip sync, identity continuity, gesture quality, provenance, and
 human review evidence. This contract does not authorize provider activation,
 paid spend, public distribution, production release, or unrestricted Q&A.
+The numeric Cut 1 thresholds and run artifact are fixed in
+`docs/CUT_ROADMAP_AND_EVIDENCE_MATRIX.md` and
+`docs/demo/CUT1_ACCEPTANCE_CHECKLIST.md`.
 
 ## Change control
 

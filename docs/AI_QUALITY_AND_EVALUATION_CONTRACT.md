@@ -64,3 +64,42 @@ Every evaluator and suite is `Specified`, `Designed`, `Implementing`,
 `Validated`, `Deferred`, `Blocked`, `Accepted risk`, or `Superseded`, with an
 owner, evidence artifact, threshold, and release impact in the enterprise
 readiness register.
+
+## Concrete evaluation protocol
+
+The minimum Cut 1 golden suite contains 200 cases: 100 supported happy paths,
+40 boundary/ambiguity cases, 40 prompt-injection/stale/cross-project cases, and
+20 unsupported-claim or abstention cases. Each case is versioned, checksummed,
+tenant-scoped, and labelled with expected citations and expected refusal or
+answer behavior. A future multilingual cut adds at least 50 labelled cases per
+approved language rather than silently reusing English scores.
+
+Cut 1 blocks on all of the following: material-claim citation coverage 100%;
+unsupported-claim rate 0% on the negative suite; abstention/refusal recall 100%
+on deliberately unsupported cases; exact source-ID/checksum parity 100%; all
+deterministic schema and policy checks passing; no critical privacy,
+prompt-injection, cross-tenant, or provenance failure; and two repeated runs
+with identical canonical output and manifest checksum.
+
+Ragas is permitted only after dependency and license review. Faithfulness,
+context precision, context recall, answer relevance, and citation correctness
+are reported, but no aggregate score overrides a failed safety or grounding
+gate. DeepEval or a custom evaluator is versioned with its dataset and
+thresholds. An LLM judge is supplemental: it must be calibrated against at
+least 100 human-labelled cases, achieve at least 0.85 exact pass/fail agreement
+and Cohen's kappa of at least 0.80, and be checked for judge drift each release.
+Human review remains authoritative for safety-critical, novel, media, and
+public-use decisions.
+
+## MLOps promotion and drift rules
+
+Every model, provider, prompt, retriever, evaluator, dataset, and renderer has
+an immutable version, owner, license, checksum, and approval state. A run
+manifest binds those versions to tenant/project, source snapshot, retrieval,
+output, evaluation, and media artifacts. Promotion requires deterministic
+checks, the golden suite, adversarial cases, calibrated review, and a canary
+comparison. A 5% relative quality regression, 10% distribution or latency
+shift, or any safety/privacy/provenance regression opens an investigation; two
+consecutive failing windows block promotion. The last approved bundle must be
+restorable within 15 minutes in an operational environment. No uncontrolled
+online self-training or agent-led production weight/policy changes are allowed.

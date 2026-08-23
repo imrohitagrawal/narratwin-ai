@@ -649,3 +649,15 @@ remain separate gates.
 | Exact Child A taxonomy | Executable 44-type/32-row/12-MIME equality and coordinated-mutation resistance | Child A bytes and ownership are not rewritten |
 | Delivery route | Issue `#434`, preflight, bounded OWNER resets, exact Stage 8 subprocess, 5,600-line ceiling | Eligible non-author and final OWNER approval, merge and closeout remain GitHub gates |
 | Source-authority boundary | Source-facts record and explicit `#432` ledger entries | `#432` is unmerged source authority only; no realism/media/statistical implementation |
+
+## Issue #440 Cut and enterprise contract traceability
+
+| Requirement | Canonical evidence | Acceptance artifact / boundary |
+|---|---|---|
+| Cut 1–5 scope and exclusions | `docs/CUT_ROADMAP_AND_EVIDENCE_MATRIX.md` | Cut table; no later cut is inferred from an earlier demo |
+| Numeric Cut 1 presenter gates | roadmap matrix and presenter contract | `docs/demo/CUT1_ACCEPTANCE_CHECKLIST.md`; all P0 rows must pass |
+| AI grounding/evaluation/MLOps | `docs/AI_QUALITY_AND_EVALUATION_CONTRACT.md` | versioned golden/adversarial suite, evaluator report, calibration and promotion record |
+| Tenant/data/privacy controls | roadmap matrix, `docs/DATA_MODEL.md`, `docs/SECURITY_AND_PRIVACY.md` | authorization negatives, consent/deletion/purge and redaction evidence |
+| Enterprise/SRE/DevOps targets | `docs/ENTERPRISE_READINESS_REGISTER.md` and roadmap matrix | SLO, capacity, restore/failover, supply-chain and release reports |
+| Accessibility/public-use acceptance | roadmap matrix and Cut 1 checklist | browser/accessibility report plus human legal/compliance review |
+| Single current authority | `docs/STATUS.md`, `docs/PHASE_PLAN.md`, ADR 0048 | Issue/branch/PR review and post-merge status reconciliation |

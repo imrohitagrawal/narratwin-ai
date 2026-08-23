@@ -28,6 +28,11 @@ records its merge state. The proposed normative sources are:
 - `docs/ENTERPRISE_READINESS_REGISTER.md` — architecture, security, SRE,
   availability, disaster recovery, scalability, DevOps, supply chain,
   observability, accessibility, operations, and commercial-readiness gates.
+- `docs/CUT_ROADMAP_AND_EVIDENCE_MATRIX.md` — the single Cut 1–5 roadmap,
+  numeric thresholds, AI/MLOps protocol, tenant/data targets, enterprise
+  targets, deferred decisions, and requirement-to-evidence matrix.
+- `docs/demo/CUT1_ACCEPTANCE_CHECKLIST.md` — the controlled Cut 1 demo run and
+  human acceptance record.
 
 Historical issue and phase tables below remain evidence and sequencing history.
 They must not be interpreted as a competing current product contract. Current

@@ -42,3 +42,27 @@ Specification is not implementation, validation, deployment, or launch approval.
 Paid providers remain optional and disabled by default in local/dev/test. No
 public or production claim is permitted until the relevant rows are validated
 and approved through the stage and release gates.
+
+## Concrete target baseline
+
+The detailed Cut 1–5 roadmap and requirement-to-evidence mapping are in
+`docs/CUT_ROADMAP_AND_EVIDENCE_MATRIX.md`. The following targets are the
+baseline for later evidence; they are not claims that production exists today:
+
+- Every read/write is tenant- and project-authorized; the negative suite must
+  demonstrate 100% cross-tenant denial.
+- Training reuse is disabled by default. Consent, purpose, retention, deletion,
+  export, residency, and provider-processing terms are recorded per tenant.
+- A deletion request creates an immediate tombstone and produces local purge
+  evidence within 24 hours; provider-specific timelines require legal review.
+- Internal pilot availability target is 99.5%; commercial target is 99.9%.
+- Commercial recovery target is RTO <=4 hours and RPO <=15 minutes, proven by a
+  measured restore/failover drill.
+- A 5% relative AI-quality regression, 10% distribution/latency shift, or any
+  safety/privacy/provenance regression blocks model/prompt promotion.
+- WCAG 2.2 AA, captions, keyboard access, reduced motion, and >=4.5:1 normal
+  text contrast are required for public-readiness review.
+
+The register's `Specified` status means the decision is complete. The status
+may advance to `Validated` only when the evidence artifact in the roadmap
+matrix exists, passes, and has an accountable human reviewer.
