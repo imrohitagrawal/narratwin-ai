@@ -4752,53 +4752,110 @@ STATIC_GIT_METADATA_GOVERNED_PRECEDENCE_MUTANT_COUNT = 1
 STATIC_GIT_METADATA_GOVERNED_PRECEDENCE_MUTANT_SHA256 = (
     "ddaf256a0bdf6c063ab8fd0e5a8eeb74ec97b4c78a58d380f17ed8a93453093e"
 )
-STATIC_RESET39_BUDGET_CAP_FIELDS = ("scope", "name", "limit")
-STATIC_RESET39_BUDGET_CAPS = (
-    ("perFile", "matrix", 5500),
-    ("perFile", "protocol", 7000),
-    ("perFile", "coreOracle", 4500),
-    ("perFile", "repositoryOracle", 19000),
-    ("perFile", "template", 600),
-    ("perFile", "adr0064", 550),
-    ("partitions", "route", 5800),
-    ("partitions", "architectureSecurity", 2200),
-    ("partitions", "validator", 30000),
-    ("aggregate", "sevenSemanticPaths", 35200),
-    ("binary", "binary", 0),
+STATIC_RESET47_RED_SNAPSHOT_SCHEMA_VERSION = "C2R47_RED_SNAPSHOT_ONLY_V1"
+STATIC_RESET47_RED_SNAPSHOT_FIXED_BASE = "d3d93ac5678268f861cf7af6286b48ec062c3d19"
+STATIC_RESET47_RED_SNAPSHOT_C1_HEAD = "6bfe884b175c2d03a52f608b8b8f433849236517"
+STATIC_RESET47_RED_SNAPSHOT_FIELDS = (
+    "scope",
+    "name",
+    "source",
+    "use",
+    "limit",
+    "percent",
+    "disposition",
 )
-STATIC_RESET39_BUDGET_CAP_COUNT = 11
-STATIC_RESET39_BUDGET_CAP_SHA256 = (
-    "4d7a35b2b66a610224afaf7418c83bc9d147d26babdd1c508eaadc0cadcef41a"
+STATIC_RESET47_RED_SNAPSHOT_ROWS: tuple[tuple[object, ...], ...] = ()
+STATIC_RESET47_RED_SNAPSHOT_COUNT = 0
+STATIC_RESET47_RED_SNAPSHOT_SHA256 = "PENDING_RESET47_RED_SNAPSHOT_ROWS_SHA256"
+STATIC_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_SCHEMA_VERSION = "RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_V1"
+STATIC_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_FIXED_BASE = "d3d93ac5678268f861cf7af6286b48ec062c3d19"
+STATIC_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_GIT_PREFIX = (
+    "/usr/bin/git",
+    "--no-pager",
+    "--no-replace-objects",
+    "--no-optional-locks",
+    "--no-lazy-fetch",
+    "-c",
+    "protocol.allow=never",
+    "-c",
+    "core.commitGraph=false",
+    "-c",
+    "core.fsmonitor=false",
+    "-c",
+    "log.showSignature=false",
+    "-c",
+    "fsck.skipList=/dev/null",
 )
-STATIC_RESET39_READABILITY_DISPOSITION_FIELDS = ("disposition",)
-STATIC_RESET39_READABILITY_DISPOSITION = (
-    ("actual-at-or-above-85-percent-requires-recorded-readability-and-convergence-risk-review",),
-    ("core-oracle-3824-of-4500-84.98-percent-normal",),
-    (
-        "repository-oracle-16620-of-19000-87.47-percent-risk-pass-named-helpers-one-semantic-row-each-ruff-mypy-readable-no-compression-below-90-no-further-growth",
-    ),
-    (
-        "validator-25779-of-30000-85.93-percent-risk-pass-explicit-independent-oracles-readable-no-compression-below-90-no-further-growth",
-    ),
-    (
-        "seven-semantic-paths-31572-of-35200-89.69-percent-risk-pass-explicit-rows-docs-readable-no-compression-below-90-no-further-growth",
-    ),
-    ("matrix-4496-of-5500-81.75-percent-normal",),
-    ("protocol-5335-of-7000-76.21-percent-normal",),
-    ("template-370-of-600-61.67-percent-normal",),
-    ("adr0064-380-of-550-69.09-percent-normal",),
-    ("playbook-547-lines",),
-    ("architecture-security-1297-of-2200-58.95-percent-normal",),
-    ("route-4496-of-5800-77.52-percent-normal",),
-    ("binary-zero",),
-    ("all-caps-below-90-percent-stop",),
-    ("semantic-compression-prohibited",),
+STATIC_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_GIT_DIFF_ARGUMENTS = (
+    "diff",
+    "--no-renames",
+    "--ignore-submodules=none",
+    "--no-ext-diff",
+    "--no-textconv",
+    "--diff-filter=A",
+    "--numstat",
+    "d3d93ac5678268f861cf7af6286b48ec062c3d19",
+    "HEAD",
+    "--",
+    "docs/governance/adversarial-convergence-invariant-matrix-v1.json",
+    "scripts/quality/issue435_adversarial_convergence.py",
+    "tests/unit/test_issue435_adversarial_convergence.py",
+    "tests/unit/test_issue435_adversarial_convergence_repository.py",
+    "docs/templates/ADVERSARIAL_INVARIANT_MATRIX.md",
+    "docs/ADR/0064-adversarial-convergence-protocol.md",
+    "docs/ADVERSARIAL_VERIFICATION_PLAYBOOK.md",
 )
-STATIC_RESET39_READABILITY_DISPOSITION_COUNT = 15
-STATIC_RESET39_READABILITY_DISPOSITION_SHA256 = (
-    "6a1c8bc391246dd4012ffa03853341c8317f7f51a6348486138ebdda353185f6"
+STATIC_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_ENVIRONMENT = (
+    ("LC_ALL", "C"),
+    ("GIT_CONFIG_NOSYSTEM", "1"),
+    ("GIT_CONFIG_GLOBAL", "/dev/null"),
+    ("GIT_NO_LAZY_FETCH", "1"),
+    ("GIT_NO_REPLACE_OBJECTS", "1"),
+    ("GIT_OPTIONAL_LOCKS", "0"),
+    ("GIT_TERMINAL_PROMPT", "0"),
 )
-STATIC_RESET44_PROSE_USE_FIELDS = (
+STATIC_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_RAW_CHECKOUT_PATHS = (
+    "docs/governance/adversarial-convergence-invariant-matrix-v1.json",
+    "scripts/quality/issue435_adversarial_convergence.py",
+    "tests/unit/test_issue435_adversarial_convergence.py",
+    "tests/unit/test_issue435_adversarial_convergence_repository.py",
+    "docs/templates/ADVERSARIAL_INVARIANT_MATRIX.md",
+    "docs/ADR/0064-adversarial-convergence-protocol.md",
+    "docs/ADVERSARIAL_VERIFICATION_PLAYBOOK.md",
+)
+STATIC_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_GIT_OUTPUT_PATHS = (
+    "docs/ADR/0064-adversarial-convergence-protocol.md",
+    "docs/ADVERSARIAL_VERIFICATION_PLAYBOOK.md",
+    "docs/governance/adversarial-convergence-invariant-matrix-v1.json",
+    "docs/templates/ADVERSARIAL_INVARIANT_MATRIX.md",
+    "scripts/quality/issue435_adversarial_convergence.py",
+    "tests/unit/test_issue435_adversarial_convergence.py",
+    "tests/unit/test_issue435_adversarial_convergence_repository.py",
+)
+STATIC_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_RAW_ITEM_BYTE_LIMIT = 4194304
+STATIC_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_RAW_TOTAL_BYTE_LIMIT = 16777216
+STATIC_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_MEASUREMENT_CONTRACT = (
+    "tree-to-tree-fixed-base-head",
+    "fixed-base-paths-absent",
+    "git-deletions-zero",
+    "raw-checkout-exact-allowlist-contained",
+    "raw-checkout-ancestors-and-leaf-no-symlink",
+    "raw-checkout-regular-fstat-bounded-descriptor-read",
+    "raw-checkout-utf8-lf-no-cr-no-nul",
+    "git-and-raw-derived-independently",
+    "pre-commit-both-below-stop",
+    "clean-immutable-head-git-equals-raw",
+    "risk-set-derived-for-each-measurement",
+)
+STATIC_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_RISK_THRESHOLD_PERCENT = 85
+STATIC_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_STOP_THRESHOLD_PERCENT = 90
+STATIC_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_FIELDS = ("scope", "name", "source", "limit")
+STATIC_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_ROWS: tuple[tuple[object, ...], ...] = ()
+STATIC_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_COUNT = 0
+STATIC_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_SHA256 = (
+    "PENDING_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_ROWS_SHA256"
+)
+STATIC_RESET47_RED_SNAPSHOT_PROSE_USE_FIELDS = (
     "path",
     "marker",
     "repositoryUse",
@@ -4808,40 +4865,9 @@ STATIC_RESET44_PROSE_USE_FIELDS = (
     "validatorPercent",
     "aggregatePercent",
 )
-STATIC_RESET44_PROSE_USE_ROWS = (
-    (
-        "docs/ADR/0064-adversarial-convergence-protocol.md",
-        "<!-- issue-435-reset44-prose-use:sha256=071fb29a3d38c635c5ea51bcf588ef6fbc2b6754d1c2da09bc8f7c9c40d83dd6 -->",
-        16620,
-        25779,
-        31572,
-        "87.47",
-        "85.93",
-        "89.69",
-    ),
-    (
-        "docs/ADVERSARIAL_VERIFICATION_PLAYBOOK.md",
-        "<!-- issue-435-reset44-prose-use:sha256=c4545018358305f40c40a7b2354078ad5ad9a7d5b4ae553e668046f430482cee -->",
-        16620,
-        25779,
-        31572,
-        "87.47",
-        "85.93",
-        "89.69",
-    ),
-    (
-        "docs/templates/ADVERSARIAL_INVARIANT_MATRIX.md",
-        "<!-- issue-435-reset44-prose-use:sha256=bc493eed07206948bac026a2323cded6ec8447d3b2813b5896b230064b2f71ae -->",
-        16620,
-        25779,
-        31572,
-        "87.47",
-        "85.93",
-        "89.69",
-    ),
-)
-STATIC_RESET44_PROSE_USE_COUNT = 3
-STATIC_RESET44_PROSE_USE_SHA256 = "076ea55709be59e087f98f0c0746ba814e6b8645df276d68f8ce4154f203d6d1"
+STATIC_RESET47_RED_SNAPSHOT_PROSE_USE_ROWS: tuple[tuple[object, ...], ...] = ()
+STATIC_RESET47_RED_SNAPSHOT_PROSE_USE_COUNT = 0
+STATIC_RESET47_RED_SNAPSHOT_PROSE_USE_SHA256 = "PENDING_RESET47_RED_SNAPSHOT_PROSE_USE_ROWS_SHA256"
 STATIC_GIT_RETURN_CODES = (
     ("object_format", (0,), (), (-1, 2, 127)),
     ("object_integrity", (0,), (1,), (-1, 2, 127)),

@@ -5,7 +5,12 @@ from __future__ import annotations
 import hashlib
 import json
 import ast
+import os
+import stat
+import subprocess
+from collections.abc import Callable
 from dataclasses import astuple, dataclass, replace
+from enum import Enum
 from pathlib import Path
 from typing import Any, cast
 
@@ -21,53 +26,227 @@ REPOSITORY_TEST_PATH = ROOT / "tests/unit/test_issue435_adversarial_convergence_
 IDENTITY_DOMAIN = b"NARRATWIN:ACP:IDENTITY:V1\x00"
 SIGNATURE_DOMAIN = b"NARRATWIN:ACP:SIGNATURE:V1\x00"
 EXPECTED_SEMANTIC_SHA256 = "ec34c649f4df4eb09cd48c0c6bd78e626dcf400559baf1055759dfc1db57fc62"
-EXPECTED_RESET39_BUDGET_CAP_FIELDS = ("scope", "name", "limit")
-EXPECTED_RESET39_BUDGET_CAPS = (
-    ("perFile", "matrix", 5500),
-    ("perFile", "protocol", 7000),
-    ("perFile", "coreOracle", 4500),
-    ("perFile", "repositoryOracle", 19000),
-    ("perFile", "template", 600),
-    ("perFile", "adr0064", 550),
-    ("partitions", "route", 5800),
-    ("partitions", "architectureSecurity", 2200),
-    ("partitions", "validator", 30000),
-    ("aggregate", "sevenSemanticPaths", 35200),
-    ("binary", "binary", 0),
+EXPECTED_RESET47_RED_SNAPSHOT_SCHEMA_VERSION = "C2R47_RED_SNAPSHOT_ONLY_V1"
+EXPECTED_RESET47_RED_SNAPSHOT_FIXED_BASE = "d3d93ac5678268f861cf7af6286b48ec062c3d19"
+EXPECTED_RESET47_RED_SNAPSHOT_C1_HEAD = "6bfe884b175c2d03a52f608b8b8f433849236517"
+EXPECTED_RESET47_RED_SNAPSHOT_FIELDS = (
+    "scope",
+    "name",
+    "source",
+    "use",
+    "limit",
+    "percent",
+    "disposition",
 )
-EXPECTED_RESET39_BUDGET_CAP_COUNT = 11
-EXPECTED_RESET39_BUDGET_CAP_SHA256 = (
-    "4d7a35b2b66a610224afaf7418c83bc9d147d26babdd1c508eaadc0cadcef41a"
-)
-EXPECTED_RESET39_READABILITY_DISPOSITION_FIELDS = ("disposition",)
-EXPECTED_RESET39_READABILITY_DISPOSITION = (
-    ("actual-at-or-above-85-percent-requires-recorded-readability-and-convergence-risk-review",),
-    ("core-oracle-3824-of-4500-84.98-percent-normal",),
+EXPECTED_RESET47_RED_SNAPSHOT_ROWS = (
     (
-        "repository-oracle-16620-of-19000-87.47-percent-risk-pass-named-helpers-one-semantic-row-each-ruff-mypy-readable-no-compression-below-90-no-further-growth",
+        "path",
+        "matrix",
+        "docs/governance/adversarial-convergence-invariant-matrix-v1.json",
+        0,
+        5500,
+        "0.00",
+        "normal",
     ),
     (
-        "validator-25779-of-30000-85.93-percent-risk-pass-explicit-independent-oracles-readable-no-compression-below-90-no-further-growth",
+        "path",
+        "protocol",
+        "scripts/quality/issue435_adversarial_convergence.py",
+        0,
+        12000,
+        "0.00",
+        "normal",
     ),
     (
-        "seven-semantic-paths-31572-of-35200-89.69-percent-risk-pass-explicit-rows-docs-readable-no-compression-below-90-no-further-growth",
+        "path",
+        "coreOracle",
+        "tests/unit/test_issue435_adversarial_convergence.py",
+        0,
+        5000,
+        "0.00",
+        "normal",
     ),
-    ("matrix-4496-of-5500-81.75-percent-normal",),
-    ("protocol-5335-of-7000-76.21-percent-normal",),
-    ("template-370-of-600-61.67-percent-normal",),
-    ("adr0064-380-of-550-69.09-percent-normal",),
-    ("playbook-547-lines",),
-    ("architecture-security-1297-of-2200-58.95-percent-normal",),
-    ("route-4496-of-5800-77.52-percent-normal",),
-    ("binary-zero",),
-    ("all-caps-below-90-percent-stop",),
-    ("semantic-compression-prohibited",),
+    (
+        "path",
+        "repositoryOracle",
+        "tests/unit/test_issue435_adversarial_convergence_repository.py",
+        0,
+        19000,
+        "0.00",
+        "normal",
+    ),
+    (
+        "path",
+        "template",
+        "docs/templates/ADVERSARIAL_INVARIANT_MATRIX.md",
+        0,
+        600,
+        "0.00",
+        "normal",
+    ),
+    (
+        "path",
+        "adr0064",
+        "docs/ADR/0064-adversarial-convergence-protocol.md",
+        0,
+        550,
+        "0.00",
+        "normal",
+    ),
+    (
+        "path",
+        "playbook",
+        "docs/ADVERSARIAL_VERIFICATION_PLAYBOOK.md",
+        0,
+        None,
+        "N/A",
+        "uncapped-contributor",
+    ),
+    ("partition", "route", "matrix", 0, 5800, "0.00", "normal"),
+    ("partition", "architectureSecurity", "template+adr0064+playbook", 0, 2200, "0.00", "normal"),
+    ("partition", "validator", "protocol+coreOracle+repositoryOracle", 0, 40000, "0.00", "normal"),
+    (
+        "aggregate",
+        "sevenSemanticPaths",
+        "matrix+protocol+coreOracle+repositoryOracle+template+adr0064+playbook",
+        0,
+        45000,
+        "0.00",
+        "normal",
+    ),
+    (
+        "binary",
+        "binary",
+        "matrix+protocol+coreOracle+repositoryOracle+template+adr0064+playbook",
+        0,
+        0,
+        "0.00",
+        "binary-zero",
+    ),
 )
-EXPECTED_RESET39_READABILITY_DISPOSITION_COUNT = 15
-EXPECTED_RESET39_READABILITY_DISPOSITION_SHA256 = (
-    "6a1c8bc391246dd4012ffa03853341c8317f7f51a6348486138ebdda353185f6"
+EXPECTED_RESET47_RED_SNAPSHOT_COUNT = 12
+EXPECTED_RESET47_RED_SNAPSHOT_SHA256 = (
+    "682f11112d74d5c7ca4bdbe567ffac8910b33fb16cb909ac97c7bd85496ae7b4"
 )
-EXPECTED_RESET44_PROSE_USE_FIELDS = (
+EXPECTED_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_SCHEMA_VERSION = (
+    "RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_V1"
+)
+EXPECTED_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_FIXED_BASE = "d3d93ac5678268f861cf7af6286b48ec062c3d19"
+EXPECTED_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_GIT_PREFIX = (
+    "/usr/bin/git",
+    "--no-pager",
+    "--no-replace-objects",
+    "--no-optional-locks",
+    "--no-lazy-fetch",
+    "-c",
+    "protocol.allow=never",
+    "-c",
+    "core.commitGraph=false",
+    "-c",
+    "core.fsmonitor=false",
+    "-c",
+    "log.showSignature=false",
+    "-c",
+    "fsck.skipList=/dev/null",
+)
+EXPECTED_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_GIT_DIFF_ARGUMENTS = (
+    "diff",
+    "--no-renames",
+    "--ignore-submodules=none",
+    "--no-ext-diff",
+    "--no-textconv",
+    "--diff-filter=A",
+    "--numstat",
+    "d3d93ac5678268f861cf7af6286b48ec062c3d19",
+    "HEAD",
+    "--",
+    "docs/governance/adversarial-convergence-invariant-matrix-v1.json",
+    "scripts/quality/issue435_adversarial_convergence.py",
+    "tests/unit/test_issue435_adversarial_convergence.py",
+    "tests/unit/test_issue435_adversarial_convergence_repository.py",
+    "docs/templates/ADVERSARIAL_INVARIANT_MATRIX.md",
+    "docs/ADR/0064-adversarial-convergence-protocol.md",
+    "docs/ADVERSARIAL_VERIFICATION_PLAYBOOK.md",
+)
+EXPECTED_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_ENVIRONMENT = (
+    ("LC_ALL", "C"),
+    ("GIT_CONFIG_NOSYSTEM", "1"),
+    ("GIT_CONFIG_GLOBAL", "/dev/null"),
+    ("GIT_NO_LAZY_FETCH", "1"),
+    ("GIT_NO_REPLACE_OBJECTS", "1"),
+    ("GIT_OPTIONAL_LOCKS", "0"),
+    ("GIT_TERMINAL_PROMPT", "0"),
+)
+EXPECTED_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_RAW_CHECKOUT_PATHS = (
+    "docs/governance/adversarial-convergence-invariant-matrix-v1.json",
+    "scripts/quality/issue435_adversarial_convergence.py",
+    "tests/unit/test_issue435_adversarial_convergence.py",
+    "tests/unit/test_issue435_adversarial_convergence_repository.py",
+    "docs/templates/ADVERSARIAL_INVARIANT_MATRIX.md",
+    "docs/ADR/0064-adversarial-convergence-protocol.md",
+    "docs/ADVERSARIAL_VERIFICATION_PLAYBOOK.md",
+)
+EXPECTED_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_GIT_OUTPUT_PATHS = (
+    "docs/ADR/0064-adversarial-convergence-protocol.md",
+    "docs/ADVERSARIAL_VERIFICATION_PLAYBOOK.md",
+    "docs/governance/adversarial-convergence-invariant-matrix-v1.json",
+    "docs/templates/ADVERSARIAL_INVARIANT_MATRIX.md",
+    "scripts/quality/issue435_adversarial_convergence.py",
+    "tests/unit/test_issue435_adversarial_convergence.py",
+    "tests/unit/test_issue435_adversarial_convergence_repository.py",
+)
+EXPECTED_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_RAW_ITEM_BYTE_LIMIT = 4194304
+EXPECTED_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_RAW_TOTAL_BYTE_LIMIT = 16777216
+EXPECTED_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_MEASUREMENT_CONTRACT = (
+    "tree-to-tree-fixed-base-head",
+    "fixed-base-paths-absent",
+    "git-deletions-zero",
+    "raw-checkout-exact-allowlist-contained",
+    "raw-checkout-ancestors-and-leaf-no-symlink",
+    "raw-checkout-regular-fstat-bounded-descriptor-read",
+    "raw-checkout-utf8-lf-no-cr-no-nul",
+    "git-and-raw-derived-independently",
+    "pre-commit-both-below-stop",
+    "clean-immutable-head-git-equals-raw",
+    "risk-set-derived-for-each-measurement",
+)
+EXPECTED_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_RISK_THRESHOLD_PERCENT = 85
+EXPECTED_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_STOP_THRESHOLD_PERCENT = 90
+EXPECTED_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_FIELDS = ("scope", "name", "source", "limit")
+EXPECTED_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_ROWS = (
+    ("path", "matrix", "docs/governance/adversarial-convergence-invariant-matrix-v1.json", 5500),
+    ("path", "protocol", "scripts/quality/issue435_adversarial_convergence.py", 12000),
+    ("path", "coreOracle", "tests/unit/test_issue435_adversarial_convergence.py", 5000),
+    (
+        "path",
+        "repositoryOracle",
+        "tests/unit/test_issue435_adversarial_convergence_repository.py",
+        19000,
+    ),
+    ("path", "template", "docs/templates/ADVERSARIAL_INVARIANT_MATRIX.md", 600),
+    ("path", "adr0064", "docs/ADR/0064-adversarial-convergence-protocol.md", 550),
+    ("path", "playbook", "docs/ADVERSARIAL_VERIFICATION_PLAYBOOK.md", None),
+    ("partition", "route", "matrix", 5800),
+    ("partition", "architectureSecurity", "template+adr0064+playbook", 2200),
+    ("partition", "validator", "protocol+coreOracle+repositoryOracle", 40000),
+    (
+        "aggregate",
+        "sevenSemanticPaths",
+        "matrix+protocol+coreOracle+repositoryOracle+template+adr0064+playbook",
+        45000,
+    ),
+    (
+        "binary",
+        "binary",
+        "matrix+protocol+coreOracle+repositoryOracle+template+adr0064+playbook",
+        0,
+    ),
+)
+EXPECTED_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_COUNT = 12
+EXPECTED_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_SHA256 = (
+    "8639b677175273825f7249834cc69f94bee1201bfdf0465d273b44157103d5ce"
+)
+EXPECTED_RESET47_RED_SNAPSHOT_PROSE_USE_FIELDS = (
     "path",
     "marker",
     "repositoryUse",
@@ -77,42 +256,43 @@ EXPECTED_RESET44_PROSE_USE_FIELDS = (
     "validatorPercent",
     "aggregatePercent",
 )
-EXPECTED_RESET44_PROSE_USE_ROWS = (
+EXPECTED_RESET47_RED_SNAPSHOT_PROSE_USE_ROWS = (
     (
         "docs/ADR/0064-adversarial-convergence-protocol.md",
-        "<!-- issue-435-reset44-prose-use:sha256=071fb29a3d38c635c5ea51bcf588ef6fbc2b6754d1c2da09bc8f7c9c40d83dd6 -->",
-        16620,
-        25779,
-        31572,
-        "87.47",
-        "85.93",
-        "89.69",
+        "<!-- issue-435-reset47-red-snapshot:sha256=PENDING_RESET47_ADR_BLOCK_SHA256 -->",
+        0,
+        0,
+        0,
+        "0.00",
+        "0.00",
+        "0.00",
     ),
     (
         "docs/ADVERSARIAL_VERIFICATION_PLAYBOOK.md",
-        "<!-- issue-435-reset44-prose-use:sha256=c4545018358305f40c40a7b2354078ad5ad9a7d5b4ae553e668046f430482cee -->",
-        16620,
-        25779,
-        31572,
-        "87.47",
-        "85.93",
-        "89.69",
+        "<!-- issue-435-reset47-red-snapshot:sha256=PENDING_RESET47_PLAYBOOK_BLOCK_SHA256 -->",
+        0,
+        0,
+        0,
+        "0.00",
+        "0.00",
+        "0.00",
     ),
     (
         "docs/templates/ADVERSARIAL_INVARIANT_MATRIX.md",
-        "<!-- issue-435-reset44-prose-use:sha256=bc493eed07206948bac026a2323cded6ec8447d3b2813b5896b230064b2f71ae -->",
-        16620,
-        25779,
-        31572,
-        "87.47",
-        "85.93",
-        "89.69",
+        "<!-- issue-435-reset47-red-snapshot:sha256=PENDING_RESET47_TEMPLATE_BLOCK_SHA256 -->",
+        0,
+        0,
+        0,
+        "0.00",
+        "0.00",
+        "0.00",
     ),
 )
-EXPECTED_RESET44_PROSE_USE_COUNT = 3
-EXPECTED_RESET44_PROSE_USE_SHA256 = (
-    "076ea55709be59e087f98f0c0746ba814e6b8645df276d68f8ce4154f203d6d1"
+EXPECTED_RESET47_RED_SNAPSHOT_PROSE_USE_COUNT = 3
+EXPECTED_RESET47_RED_SNAPSHOT_PROSE_USE_SHA256 = (
+    "64f7b563372c11358cbaae0e33dd65ff3bea7d27b60a12653b103af043792e9a"
 )
+RESET47_SUBPROCESS_RUN = subprocess.run
 EXPECTED_MUTANT_OUTCOMES_SHA256 = "67b7a36a4cc09fe3a2e092361ada276715ce273aa3b10259a2b4ea92987d1b03"
 EXPECTED_FIXTURE_REGISTRY_SHA256 = (
     "1407395b3714f9a56aee5ac9f1da0f78e0d116f2431016c0bf8cbc17c746e6b1"
@@ -537,6 +717,337 @@ def context(
 
 def exact_finding(stage: str, phase: str, code: str, location: str) -> tuple[protocol.Finding, ...]:
     return (protocol.Finding(stage, phase, code, location),)
+
+
+@dataclass(frozen=True)
+class Reset47BudgetEvidence:
+    state: Reset47BudgetState
+    git_uses: tuple[int, ...]
+    raw_uses: tuple[int, ...]
+    git_risk_set: tuple[str, ...]
+    raw_risk_set: tuple[str, ...]
+
+
+class Reset47BudgetState(Enum):
+    CLEAN_EQUAL = "CLEAN_EQUAL"
+    WIP_MISMATCH = "WIP_MISMATCH"
+
+
+def reset47_budget_failure(location: str) -> tuple[protocol.Finding, ...]:
+    return exact_finding("evidence", "CURRENT", "ACP.EVIDENCE.RESET47_BUDGET_MISMATCH", location)
+
+
+def expected_reset47_budget_policy() -> dict[str, object]:
+    return {
+        "chargeRule": "additions_plus_deletions_no_deletion_credit",
+        "riskThresholdPercent": 85,
+        "stopThresholdPercent": 90,
+        "denseCompressionProhibited": True,
+        "reset47RedSnapshot": {
+            "schemaVersion": EXPECTED_RESET47_RED_SNAPSHOT_SCHEMA_VERSION,
+            "fixedBase": EXPECTED_RESET47_RED_SNAPSHOT_FIXED_BASE,
+            "c1Head": EXPECTED_RESET47_RED_SNAPSHOT_C1_HEAD,
+            "fields": list(EXPECTED_RESET47_RED_SNAPSHOT_FIELDS),
+            "rows": [list(row) for row in EXPECTED_RESET47_RED_SNAPSHOT_ROWS],
+            "count": EXPECTED_RESET47_RED_SNAPSHOT_COUNT,
+            "sha256": EXPECTED_RESET47_RED_SNAPSHOT_SHA256,
+        },
+        "dynamicCurrentHeadBudgetContract": {
+            "schemaVersion": EXPECTED_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_SCHEMA_VERSION,
+            "fixedBase": EXPECTED_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_FIXED_BASE,
+            "gitPrefix": list(EXPECTED_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_GIT_PREFIX),
+            "gitDiffArguments": list(
+                EXPECTED_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_GIT_DIFF_ARGUMENTS
+            ),
+            "environment": [
+                list(row) for row in EXPECTED_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_ENVIRONMENT
+            ],
+            "rawCheckoutPaths": list(
+                EXPECTED_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_RAW_CHECKOUT_PATHS
+            ),
+            "gitOutputPaths": list(EXPECTED_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_GIT_OUTPUT_PATHS),
+            "rawItemByteLimit": EXPECTED_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_RAW_ITEM_BYTE_LIMIT,
+            "rawTotalByteLimit": EXPECTED_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_RAW_TOTAL_BYTE_LIMIT,
+            "measurementContract": list(
+                EXPECTED_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_MEASUREMENT_CONTRACT
+            ),
+            "riskThresholdPercent": (
+                EXPECTED_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_RISK_THRESHOLD_PERCENT
+            ),
+            "stopThresholdPercent": (
+                EXPECTED_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_STOP_THRESHOLD_PERCENT
+            ),
+            "fields": list(EXPECTED_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_FIELDS),
+            "rows": [list(row) for row in EXPECTED_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_ROWS],
+            "count": EXPECTED_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_COUNT,
+            "sha256": EXPECTED_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_SHA256,
+        },
+        "reset47RedSnapshotProseUse": {
+            "fields": list(EXPECTED_RESET47_RED_SNAPSHOT_PROSE_USE_FIELDS),
+            "rows": [list(row) for row in EXPECTED_RESET47_RED_SNAPSHOT_PROSE_USE_ROWS],
+            "count": EXPECTED_RESET47_RED_SNAPSHOT_PROSE_USE_COUNT,
+            "sha256": EXPECTED_RESET47_RED_SNAPSHOT_PROSE_USE_SHA256,
+        },
+        "levels": ["per_file", "partition", "aggregate"],
+    }
+
+
+def same_reset47_value(actual: object, expected: object) -> bool:
+    if type(actual) is not type(expected):
+        return False
+    if isinstance(expected, dict):
+        actual_dict = cast(dict[object, object], actual)
+        return tuple(actual_dict) == tuple(expected) and all(
+            same_reset47_value(actual_dict[key], value) for key, value in expected.items()
+        )
+    if isinstance(expected, list):
+        actual_list = cast(list[object], actual)
+        return len(actual_list) == len(expected) and all(
+            same_reset47_value(item, wanted)
+            for item, wanted in zip(actual_list, expected, strict=True)
+        )
+    return actual == expected
+
+
+def validate_reset47_catalog(
+    actual: object, expected: dict[str, object], location: str
+) -> tuple[protocol.Finding, ...]:
+    if type(actual) is not dict:
+        return reset47_budget_failure(f"{location}.type")
+    catalog = cast(dict[str, object], actual)
+    if tuple(catalog) != tuple(expected):
+        return reset47_budget_failure(f"{location}.keys")
+    rows = catalog["rows"]
+    expected_rows = cast(list[object], expected["rows"])
+    if type(rows) is not list:
+        return reset47_budget_failure(f"{location}.rows.type")
+    if len(rows) != len(expected_rows):
+        return reset47_budget_failure(f"{location}.rows.count")
+    if type(expected["count"]) is not int or expected["count"] != len(expected_rows):
+        return reset47_budget_failure(f"{location}.expectedCount")
+    for ordinal, (row, wanted) in enumerate(zip(rows, expected_rows, strict=False)):
+        if not same_reset47_value(row, wanted):
+            return reset47_budget_failure(f"{location}.rows[{ordinal}]")
+    if not same_reset47_value(catalog["count"], len(expected_rows)):
+        return reset47_budget_failure(f"{location}.count")
+    expected_sha = hashlib.sha256(canonical(expected_rows)).hexdigest()
+    if catalog["sha256"] != expected_sha or expected["sha256"] != expected_sha:
+        return reset47_budget_failure(f"{location}.sha256")
+    for key in tuple(expected)[:-3]:
+        if not same_reset47_value(catalog[key], expected[key]):
+            return reset47_budget_failure(f"{location}.{key}")
+    return ()
+
+
+def validate_reset47_budget_policy(policy: object) -> tuple[protocol.Finding, ...]:
+    expected = expected_reset47_budget_policy()
+    if type(policy) is not dict:
+        return reset47_budget_failure("budgetPolicy.type")
+    actual = cast(dict[str, object], policy)
+    if tuple(actual) != tuple(expected):
+        return reset47_budget_failure("budgetPolicy.keys")
+    for key in ("chargeRule", "riskThresholdPercent", "stopThresholdPercent"):
+        if not same_reset47_value(actual[key], expected[key]):
+            return reset47_budget_failure(f"budgetPolicy.{key}")
+    if not same_reset47_value(actual["denseCompressionProhibited"], True):
+        return reset47_budget_failure("budgetPolicy.denseCompressionProhibited")
+    for key in (
+        "reset47RedSnapshot",
+        "dynamicCurrentHeadBudgetContract",
+        "reset47RedSnapshotProseUse",
+    ):
+        findings = validate_reset47_catalog(
+            actual[key], cast(dict[str, object], expected[key]), f"budgetPolicy.{key}"
+        )
+        if findings:
+            return findings
+    if not same_reset47_value(actual["levels"], expected["levels"]):
+        return reset47_budget_failure("budgetPolicy.levels")
+    return ()
+
+
+def read_reset47_raw_checkout() -> tuple[tuple[int, ...], tuple[protocol.Finding, ...]]:
+    paths = EXPECTED_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_RAW_CHECKOUT_PATHS
+    item_limit = EXPECTED_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_RAW_ITEM_BYTE_LIMIT
+    total_limit = EXPECTED_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_RAW_TOTAL_BYTE_LIMIT
+    directory_flags = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW
+    leaf_flags = os.O_RDONLY | os.O_NONBLOCK | os.O_NOFOLLOW
+    total = 0
+    uses: list[int] = []
+    for ordinal, path in enumerate(paths):
+        remaining = total_limit - total
+        parts = path.split("/")
+        if not parts or any(part in {"", ".", ".."} for part in parts):
+            return (), reset47_budget_failure(f"rawCheckout[{ordinal}].path")
+        descriptors: list[int] = []
+        failure: tuple[protocol.Finding, ...] = ()
+        content = bytearray()
+        try:
+            descriptors.append(os.open("/", directory_flags))
+            for component in (*ROOT.parts[1:], *parts[:-1]):
+                descriptors.append(os.open(component, directory_flags, dir_fd=descriptors[-1]))
+            descriptors.append(os.open(parts[-1], leaf_flags, dir_fd=descriptors[-1]))
+            observed = os.fstat(descriptors[-1])
+            if not stat.S_ISREG(observed.st_mode) or observed.st_size > item_limit:
+                failure = reset47_budget_failure(f"rawCheckout[{ordinal}].typeOrSize")
+            elif observed.st_size > remaining:
+                failure = reset47_budget_failure("rawCheckout.totalBytes")
+            if not failure:
+                read_limit = min(item_limit, remaining)
+                while len(content) <= read_limit:
+                    chunk = os.read(descriptors[-1], min(65536, read_limit + 1 - len(content)))
+                    if not chunk:
+                        break
+                    content.extend(chunk)
+                if len(content) > read_limit or len(content) != observed.st_size:
+                    failure = reset47_budget_failure(f"rawCheckout[{ordinal}].boundedRead")
+        except OSError:
+            failure = reset47_budget_failure(f"rawCheckout[{ordinal}].io")
+        finally:
+            for descriptor in reversed(descriptors):
+                try:
+                    os.close(descriptor)
+                except OSError:
+                    failure = failure or reset47_budget_failure(f"rawCheckout[{ordinal}].close")
+        if failure:
+            return (), failure
+        raw = bytes(content)
+        total += len(raw)
+        if total > total_limit:
+            return (), reset47_budget_failure("rawCheckout.totalBytes")
+        if b"\x00" in raw or b"\r" in raw:
+            return (), reset47_budget_failure(f"rawCheckout[{ordinal}].text")
+        try:
+            raw.decode("utf-8")
+        except UnicodeDecodeError:
+            return (), reset47_budget_failure(f"rawCheckout[{ordinal}].utf8")
+        uses.append(raw.count(b"\n") + int(bool(raw) and not raw.endswith(b"\n")))
+    return tuple(uses), ()
+
+
+def derive_reset47_budget_uses(path_uses: tuple[int, ...]) -> tuple[int, ...]:
+    return (
+        *path_uses,
+        path_uses[0],
+        sum(path_uses[4:]),
+        sum(path_uses[1:4]),
+        sum(path_uses),
+        0,
+    )
+
+
+def enforce_reset47_stop(uses: tuple[int, ...], source: str) -> tuple[protocol.Finding, ...]:
+    limits = tuple(row[3] for row in EXPECTED_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_ROWS)
+    for ordinal, (use, limit) in enumerate(zip(uses, limits, strict=True)):
+        if limit == 0 and use != 0 or type(limit) is int and limit > 0 and use * 10 >= limit * 9:
+            return reset47_budget_failure(f"dynamicBudget.{source}[{ordinal}].stop")
+    return ()
+
+
+def measure_reset47_current_budget(
+    policy: object,
+    runner: Callable[..., subprocess.CompletedProcess[bytes]] = RESET47_SUBPROCESS_RUN,
+    raw_reader: Callable[
+        [], tuple[tuple[int, ...], tuple[protocol.Finding, ...]]
+    ] = read_reset47_raw_checkout,
+) -> Reset47BudgetEvidence | tuple[protocol.Finding, ...]:
+    findings = validate_reset47_budget_policy(policy)
+    if findings:
+        return findings
+    command = (
+        *EXPECTED_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_GIT_PREFIX,
+        *EXPECTED_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_GIT_DIFF_ARGUMENTS,
+    )
+    try:
+        completed = runner(
+            command,
+            cwd=ROOT,
+            env=dict(EXPECTED_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_ENVIRONMENT),
+            check=False,
+            capture_output=True,
+            text=False,
+            timeout=5,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return reset47_budget_failure("dynamicBudget.git.invocation")
+    if type(completed) is not subprocess.CompletedProcess or completed.args != command:
+        return reset47_budget_failure("dynamicBudget.git.result")
+    if type(completed.returncode) is not int or completed.returncode != 0:
+        return reset47_budget_failure("dynamicBudget.git.returncode")
+    if type(completed.stderr) is not bytes or completed.stderr != b"":
+        return reset47_budget_failure("dynamicBudget.git.stderr")
+    stdout = completed.stdout
+    total_limit = EXPECTED_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_RAW_TOTAL_BYTE_LIMIT
+    if type(stdout) is not bytes or len(stdout) > total_limit or not stdout.endswith(b"\n"):
+        return reset47_budget_failure("dynamicBudget.git.stdout")
+    rows = stdout[:-1].split(b"\n")
+    paths = EXPECTED_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_RAW_CHECKOUT_PATHS
+    output_paths = EXPECTED_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_GIT_OUTPUT_PATHS
+    if len(rows) != len(output_paths):
+        return reset47_budget_failure("dynamicBudget.git.rows")
+    git_path_uses: dict[str, int] = {}
+    for ordinal, (row, path) in enumerate(zip(rows, output_paths, strict=True)):
+        fields = row.split(b"\t")
+        if len(fields) != 3 or fields[2] != path.encode("ascii"):
+            return reset47_budget_failure(f"dynamicBudget.git.rows[{ordinal}]")
+        additions, deletions = fields[:2]
+        if any(
+            not value.isdigit() or len(value) > 9 or (len(value) > 1 and value.startswith(b"0"))
+            for value in (additions, deletions)
+        ):
+            return reset47_budget_failure(f"dynamicBudget.git.rows[{ordinal}].count")
+        if deletions != b"0":
+            return reset47_budget_failure(f"dynamicBudget.git.rows[{ordinal}].deletions")
+        git_path_uses[path] = int(additions)
+    git_uses = derive_reset47_budget_uses(tuple(git_path_uses[path] for path in paths))
+    git_stop = enforce_reset47_stop(git_uses, "gitUses")
+    if git_stop:
+        return git_stop
+    try:
+        raw_result = raw_reader()
+    except (OSError, subprocess.TimeoutExpired):
+        return reset47_budget_failure("dynamicBudget.raw.invocation")
+    if type(raw_result) is not tuple or len(raw_result) != 2:
+        return reset47_budget_failure("dynamicBudget.raw.result")
+    raw_path_uses, raw_findings = raw_result
+    if type(raw_findings) is not tuple or any(
+        type(finding) is not protocol.Finding for finding in raw_findings
+    ):
+        return reset47_budget_failure("dynamicBudget.raw.findings")
+    if raw_findings:
+        return raw_findings
+    if (
+        type(raw_path_uses) is not tuple
+        or len(raw_path_uses) != len(paths)
+        or any(type(use) is not int or use < 0 for use in raw_path_uses)
+    ):
+        return reset47_budget_failure("dynamicBudget.raw.uses")
+    raw_uses = derive_reset47_budget_uses(raw_path_uses)
+    limits = tuple(row[3] for row in EXPECTED_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_ROWS)
+    names = tuple(row[1] for row in EXPECTED_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_ROWS)
+    raw_stop = enforce_reset47_stop(raw_uses, "rawUses")
+    if raw_stop:
+        return raw_stop
+    git_risk = tuple(
+        name
+        for name, use, limit in zip(names, git_uses, limits, strict=True)
+        if isinstance(limit, int) and limit > 0 and use * 100 >= limit * 85
+    )
+    raw_risk = tuple(
+        name
+        for name, use, limit in zip(names, raw_uses, limits, strict=True)
+        if isinstance(limit, int) and limit > 0 and use * 100 >= limit * 85
+    )
+    state = (
+        Reset47BudgetState.CLEAN_EQUAL if git_uses == raw_uses else Reset47BudgetState.WIP_MISMATCH
+    )
+    return Reset47BudgetEvidence(state, git_uses, raw_uses, git_risk, raw_risk)
+
+
+def measure_reset47_current_budget_live(
+    policy: object,
+) -> Reset47BudgetEvidence | tuple[protocol.Finding, ...]:
+    return measure_reset47_current_budget(policy, RESET47_SUBPROCESS_RUN, read_reset47_raw_checkout)
 
 
 def phase_verdicts(
@@ -3621,52 +4132,70 @@ def test_semantic_identity_resists_coordinated_matrix_and_freeze_mutation() -> N
 
 
 def test_budget_thresholds_are_exact_at_85_and_90_percent() -> None:
+    expected = expected_reset47_budget_policy()
+    baseline = measure_reset47_current_budget_live(expected)
+    assert isinstance(baseline, Reset47BudgetEvidence)
+    assert baseline.state is Reset47BudgetState.CLEAN_EQUAL
+
+    calls: list[tuple[object, ...]] = []
+
+    def forbidden_runner(*args: object, **kwargs: object) -> subprocess.CompletedProcess[bytes]:
+        calls.append(args)
+        raise AssertionError(kwargs)
+
+    malformed = dict(expected)
+    malformed["riskThresholdPercent"] = True
+    assert measure_reset47_current_budget(malformed, forbidden_runner) == reset47_budget_failure(
+        "budgetPolicy.riskThresholdPercent"
+    )
+    assert calls == []
+
+    command = (
+        *EXPECTED_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_GIT_PREFIX,
+        *EXPECTED_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_GIT_DIFF_ARGUMENTS,
+    )
+
+    def completed(path_uses: tuple[int, ...]) -> subprocess.CompletedProcess[bytes]:
+        stdout = b"".join(
+            f"{use}\t0\t{path}\n".encode()
+            for path, use in sorted(
+                zip(
+                    EXPECTED_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_RAW_CHECKOUT_PATHS,
+                    path_uses,
+                    strict=True,
+                )
+            )
+        )
+        return subprocess.CompletedProcess(command, 0, stdout, b"")
+
+    def zero_git(*_args: object, **_kwargs: object) -> subprocess.CompletedProcess[bytes]:
+        return completed((0, 0, 0, 0, 0, 0, 0))
+
+    below = (0, 0, 4249, 0, 0, 0, 0)
+    boundary = (0, 0, 4250, 0, 0, 0, 0)
+    below_result = measure_reset47_current_budget(expected, zero_git, lambda: (below, ()))
+    boundary_result = measure_reset47_current_budget(expected, zero_git, lambda: (boundary, ()))
+    assert isinstance(below_result, Reset47BudgetEvidence)
+    assert isinstance(boundary_result, Reset47BudgetEvidence)
+    assert "coreOracle" not in below_result.raw_risk_set
+    assert "coreOracle" in boundary_result.raw_risk_set
+    assert boundary_result.state is Reset47BudgetState.WIP_MISMATCH
+    stopped = (0, 0, 4500, 0, 0, 0, 0)
+    assert measure_reset47_current_budget(expected, zero_git, lambda: (stopped, ())) == (
+        reset47_budget_failure("dynamicBudget.rawUses[2].stop")
+    )
+
     document = matrix_document()
-    assert document["budgetPolicy"] == {
-        "chargeRule": "additions_plus_deletions_no_deletion_credit",
-        "riskThresholdPercent": 85,
-        "stopThresholdPercent": 90,
-        "denseCompressionProhibited": True,
-        "reset39Caps": {
-            "fields": list(EXPECTED_RESET39_BUDGET_CAP_FIELDS),
-            "rows": [list(row) for row in EXPECTED_RESET39_BUDGET_CAPS],
-            "count": EXPECTED_RESET39_BUDGET_CAP_COUNT,
-            "sha256": EXPECTED_RESET39_BUDGET_CAP_SHA256,
-        },
-        "readabilityDisposition": {
-            "fields": list(EXPECTED_RESET39_READABILITY_DISPOSITION_FIELDS),
-            "rows": [list(row) for row in EXPECTED_RESET39_READABILITY_DISPOSITION],
-            "count": EXPECTED_RESET39_READABILITY_DISPOSITION_COUNT,
-            "sha256": EXPECTED_RESET39_READABILITY_DISPOSITION_SHA256,
-        },
-        "reset44ProseUse": {
-            "fields": list(EXPECTED_RESET44_PROSE_USE_FIELDS),
-            "rows": [list(row) for row in EXPECTED_RESET44_PROSE_USE_ROWS],
-            "count": EXPECTED_RESET44_PROSE_USE_COUNT,
-            "sha256": EXPECTED_RESET44_PROSE_USE_SHA256,
-        },
-        "levels": ["per_file", "partition", "aggregate"],
-    }
-    assert EXPECTED_RESET39_BUDGET_CAP_FIELDS == protocol.STATIC_RESET39_BUDGET_CAP_FIELDS
-    assert EXPECTED_RESET39_BUDGET_CAPS == protocol.STATIC_RESET39_BUDGET_CAPS
-    assert EXPECTED_RESET39_BUDGET_CAP_COUNT == protocol.STATIC_RESET39_BUDGET_CAP_COUNT
-    assert EXPECTED_RESET39_BUDGET_CAP_SHA256 == protocol.STATIC_RESET39_BUDGET_CAP_SHA256
-    assert EXPECTED_RESET39_READABILITY_DISPOSITION_FIELDS == (
-        protocol.STATIC_RESET39_READABILITY_DISPOSITION_FIELDS
+    assert document["budgetPolicy"] == expected
+    suffixes = tuple(
+        name.removeprefix("EXPECTED_RESET47_")
+        for name in globals()
+        if name.startswith("EXPECTED_RESET47_")
     )
-    assert EXPECTED_RESET39_READABILITY_DISPOSITION == (
-        protocol.STATIC_RESET39_READABILITY_DISPOSITION
-    )
-    assert EXPECTED_RESET39_READABILITY_DISPOSITION_COUNT == (
-        protocol.STATIC_RESET39_READABILITY_DISPOSITION_COUNT
-    )
-    assert EXPECTED_RESET39_READABILITY_DISPOSITION_SHA256 == (
-        protocol.STATIC_RESET39_READABILITY_DISPOSITION_SHA256
-    )
-    assert EXPECTED_RESET44_PROSE_USE_FIELDS == protocol.STATIC_RESET44_PROSE_USE_FIELDS
-    assert EXPECTED_RESET44_PROSE_USE_ROWS == protocol.STATIC_RESET44_PROSE_USE_ROWS
-    assert EXPECTED_RESET44_PROSE_USE_COUNT == protocol.STATIC_RESET44_PROSE_USE_COUNT
-    assert EXPECTED_RESET44_PROSE_USE_SHA256 == protocol.STATIC_RESET44_PROSE_USE_SHA256
+    for suffix in suffixes:
+        assert globals()[f"EXPECTED_RESET47_{suffix}"] == getattr(
+            protocol, f"STATIC_RESET47_{suffix}"
+        )
     result = protocol.validate_matrix_bytes(MATRIX_PATH.read_bytes(), synthetic_freeze(document))
     assert result.findings == ()
     assert protocol.budget_disposition(84, 100) is protocol.BudgetDisposition.NORMAL

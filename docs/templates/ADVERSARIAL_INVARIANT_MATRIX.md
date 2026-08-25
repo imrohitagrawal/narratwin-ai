@@ -326,23 +326,57 @@ comparison is killed without fabricating work after a failed crypto check.
 
 Never compress semantics to fit a cap.
 
-<!-- issue-435-reset44-prose-use:sha256=bc493eed07206948bac026a2323cded6ec8447d3b2813b5896b230064b2f71ae -->
-For the Issue #435 Reset44 exemplar, record matrix 5,500, protocol 7,000, core
-oracle 4,500, repository oracle 19,000, template 600, ADR 550, route 5,800,
-architecture/security 2,200, validator 30,000, seven-path aggregate 35,200, and
-zero binaries. Exact use is matrix 4,496/5,500 (81.75%); protocol 5,335/7,000
-(76.21%); core 3,824/4,500 (84.98%); repository 16,620/19,000 (87.47%);
-template 370/600 (61.67%); ADR 380/550 (69.09%); playbook 547; validator
-25,779/30,000 (85.93%); architecture/security 1,297/2,200 (58.95%); route
-4,496/5,800 (77.52%); and seven-path aggregate 31,572/35,200 (89.69%). Core,
-repository, validator, and aggregate reviews PASS only when core
-changes use independent semantic literals and catalog assertions, named helpers
-and one semantic case per row remain explicit, documents remain readable, and
-Ruff and strict mypy pass. Every level must remain below the exact 90%
-pre-C3/GREEN stop. No semantic compression or further Reset44 growth is allowed.
-The whole-line start marker encodes SHA-256 of raw UTF-8/LF bytes strictly between
-the marker lines, including exactly one terminal LF and excluding both markers.
-<!-- issue-435-reset44-prose-use:end -->
+<!-- issue-435-reset47-red-snapshot:sha256=PENDING_RESET47_TEMPLATE_BLOCK_SHA256 -->
+For the Issue #435 exemplar, label immutable evidence
+`C2R47_RED_SNAPSHOT_ONLY`; never present it as mutable current GREEN truth. The
+independently owned, non-self-referential snapshot catalog binds fixed base
+`d3d93ac5678268f861cf7af6286b48ec062c3d19`, exact C1R47 parent
+`6bfe884b175c2d03a52f608b8b8f433849236517`, snapshot schema/version, exact
+ordered rows, row count, and rows SHA-256. Record the actual C2 commit, tree, and
+seven blobs only in the external checkpoint and subsequent freeze.
+
+The Reset47 snapshot caps are matrix 5,500; protocol 12,000; core oracle 5,000;
+repository oracle 19,000; template 600; ADR 550; route 5,800;
+architecture/security 2,200; validator 40,000; seven-path aggregate 45,000; and
+zero binaries. The core risk threshold is 4,250 lines and its stop is 4,500.
+Record exact C2R47 RED-snapshot uses, percentages, and review
+dispositions as `PENDING_RESET47_RED_SNAPSHOT_USES`. Review every snapshot
+surface at or above 85%, stop strictly before 90%, and never compress semantics.
+
+Define a separate dynamic current-head proof that validates its frozen catalog
+before either evidence source and accepts no caller-supplied current uses.
+Tree-to-tree Git argv is
+`/usr/bin/git --no-pager --no-replace-objects --no-optional-locks
+--no-lazy-fetch -c protocol.allow=never -c core.commitGraph=false -c
+core.fsmonitor=false -c log.showSignature=false -c fsck.skipList=/dev/null diff
+--no-renames --ignore-submodules=none --no-ext-diff --no-textconv
+--diff-filter=A --numstat
+<fixed-base> HEAD -- <seven-frozen-paths>`. Its fresh environment and exact
+result bind integer-zero status, empty byte stderr, exact byte stdout, NUL-free
+ASCII, seven terminal-LF rows, three tab fields, canonical counts, fixed-base
+absence, and zero deletions. Git output paths are independently frozen in
+lexicographic order as "docs/ADR/0064-adversarial-convergence-protocol.md",
+"docs/ADVERSARIAL_VERIFICATION_PLAYBOOK.md",
+"docs/governance/adversarial-convergence-invariant-matrix-v1.json",
+"docs/templates/ADVERSARIAL_INVARIANT_MATRIX.md",
+"scripts/quality/issue435_adversarial_convergence.py",
+"tests/unit/test_issue435_adversarial_convergence.py", and
+"tests/unit/test_issue435_adversarial_convergence_repository.py".
+Independently read only the exact contained
+allowlist through no-symlink ancestors/leaves, regular fstat identity, and
+bounded descriptors: 4,194,304 bytes per item and 16,777,216 total. Reject
+FIFO/block/unbounded reads, non-bytes, NUL, invalid UTF-8, CR, or malformed line
+endings and count LF records plus a final unterminated record exactly. Each source derives seven
+uses, route/architecture/validator partitions, aggregate, binary-zero state,
+ratios, review set, and strict below-90 results. Both remain under caps before
+commit; clean immutable heads require exact equality. Catalog failure is first
+with zero Git, raw reads, or later work. Mutants kill fsmonitor or HEAD omission,
+stale/current substitution, threshold drift, hostile raw bytes, Git/raw
+mismatch, path drift, and review-set drift before intentional RED. The
+whole-line start marker encodes SHA-256 of raw
+UTF-8/LF bytes strictly between the marker lines, including exactly one terminal
+LF and excluding both markers.
+<!-- issue-435-reset47-red-snapshot:end -->
 
 
 

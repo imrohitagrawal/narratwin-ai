@@ -13,6 +13,7 @@ import sys
 import zlib
 from copy import deepcopy
 from dataclasses import dataclass, replace
+from decimal import ROUND_HALF_EVEN, Decimal
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import Any, Callable, cast
@@ -20,7 +21,10 @@ from typing import Any, Callable, cast
 import pytest
 
 from scripts.quality import issue435_adversarial_convergence as protocol
+from tests.unit import test_issue435_adversarial_convergence as core_oracle
 
+
+Reset47RawResult = tuple[tuple[int, ...], tuple[protocol.Finding, ...]]
 
 ROOT = Path(__file__).parents[2]
 MATRIX_PATH = ROOT / "docs/governance/adversarial-convergence-invariant-matrix-v1.json"
@@ -76,54 +80,227 @@ GOVERNED_FIXTURE_SLOT_BYTES = 48
 PORTABLE_ROOT_SLOT_NAMES = ("slot-a00", "slot-b00")
 PORTABLE_ROOT_CHILD_COMPONENT_BYTES = (12, 12, 12, 12, 12, 15)
 PORTABLE_ROOT_RELATIVE_DELTA = (81, 6)
-RESET39_BUDGET_BASE = "d3d93ac5678268f861cf7af6286b48ec062c3d19"
-EXPECTED_RESET39_BUDGET_CAP_FIELDS = ("scope", "name", "limit")
-EXPECTED_RESET39_BUDGET_CAPS = (
-    ("perFile", "matrix", 5500),
-    ("perFile", "protocol", 7000),
-    ("perFile", "coreOracle", 4500),
-    ("perFile", "repositoryOracle", 19000),
-    ("perFile", "template", 600),
-    ("perFile", "adr0064", 550),
-    ("partitions", "route", 5800),
-    ("partitions", "architectureSecurity", 2200),
-    ("partitions", "validator", 30000),
-    ("aggregate", "sevenSemanticPaths", 35200),
-    ("binary", "binary", 0),
+EXPECTED_RESET47_RED_SNAPSHOT_SCHEMA_VERSION = "C2R47_RED_SNAPSHOT_ONLY_V1"
+EXPECTED_RESET47_RED_SNAPSHOT_FIXED_BASE = "d3d93ac5678268f861cf7af6286b48ec062c3d19"
+EXPECTED_RESET47_RED_SNAPSHOT_C1_HEAD = "6bfe884b175c2d03a52f608b8b8f433849236517"
+EXPECTED_RESET47_RED_SNAPSHOT_FIELDS = (
+    "scope",
+    "name",
+    "source",
+    "use",
+    "limit",
+    "percent",
+    "disposition",
 )
-EXPECTED_RESET39_BUDGET_CAP_COUNT = 11
-EXPECTED_RESET39_BUDGET_CAP_SHA256 = (
-    "4d7a35b2b66a610224afaf7418c83bc9d147d26babdd1c508eaadc0cadcef41a"
-)
-EXPECTED_RESET39_READABILITY_DISPOSITION_FIELDS = ("disposition",)
-EXPECTED_RESET39_READABILITY_DISPOSITION = (
-    ("actual-at-or-above-85-percent-requires-recorded-readability-and-convergence-risk-review",),
-    ("core-oracle-3824-of-4500-84.98-percent-normal",),
+EXPECTED_RESET47_RED_SNAPSHOT_ROWS = (
     (
-        "repository-oracle-16620-of-19000-87.47-percent-risk-pass-named-helpers-one-semantic-row-each-ruff-mypy-readable-no-compression-below-90-no-further-growth",
+        "path",
+        "matrix",
+        "docs/governance/adversarial-convergence-invariant-matrix-v1.json",
+        0,
+        5500,
+        "0.00",
+        "normal",
     ),
     (
-        "validator-25779-of-30000-85.93-percent-risk-pass-explicit-independent-oracles-readable-no-compression-below-90-no-further-growth",
+        "path",
+        "protocol",
+        "scripts/quality/issue435_adversarial_convergence.py",
+        0,
+        12000,
+        "0.00",
+        "normal",
     ),
     (
-        "seven-semantic-paths-31572-of-35200-89.69-percent-risk-pass-explicit-rows-docs-readable-no-compression-below-90-no-further-growth",
+        "path",
+        "coreOracle",
+        "tests/unit/test_issue435_adversarial_convergence.py",
+        0,
+        5000,
+        "0.00",
+        "normal",
     ),
-    ("matrix-4496-of-5500-81.75-percent-normal",),
-    ("protocol-5335-of-7000-76.21-percent-normal",),
-    ("template-370-of-600-61.67-percent-normal",),
-    ("adr0064-380-of-550-69.09-percent-normal",),
-    ("playbook-547-lines",),
-    ("architecture-security-1297-of-2200-58.95-percent-normal",),
-    ("route-4496-of-5800-77.52-percent-normal",),
-    ("binary-zero",),
-    ("all-caps-below-90-percent-stop",),
-    ("semantic-compression-prohibited",),
+    (
+        "path",
+        "repositoryOracle",
+        "tests/unit/test_issue435_adversarial_convergence_repository.py",
+        0,
+        19000,
+        "0.00",
+        "normal",
+    ),
+    (
+        "path",
+        "template",
+        "docs/templates/ADVERSARIAL_INVARIANT_MATRIX.md",
+        0,
+        600,
+        "0.00",
+        "normal",
+    ),
+    (
+        "path",
+        "adr0064",
+        "docs/ADR/0064-adversarial-convergence-protocol.md",
+        0,
+        550,
+        "0.00",
+        "normal",
+    ),
+    (
+        "path",
+        "playbook",
+        "docs/ADVERSARIAL_VERIFICATION_PLAYBOOK.md",
+        0,
+        None,
+        "N/A",
+        "uncapped-contributor",
+    ),
+    ("partition", "route", "matrix", 0, 5800, "0.00", "normal"),
+    ("partition", "architectureSecurity", "template+adr0064+playbook", 0, 2200, "0.00", "normal"),
+    ("partition", "validator", "protocol+coreOracle+repositoryOracle", 0, 40000, "0.00", "normal"),
+    (
+        "aggregate",
+        "sevenSemanticPaths",
+        "matrix+protocol+coreOracle+repositoryOracle+template+adr0064+playbook",
+        0,
+        45000,
+        "0.00",
+        "normal",
+    ),
+    (
+        "binary",
+        "binary",
+        "matrix+protocol+coreOracle+repositoryOracle+template+adr0064+playbook",
+        0,
+        0,
+        "0.00",
+        "binary-zero",
+    ),
 )
-EXPECTED_RESET39_READABILITY_DISPOSITION_COUNT = 15
-EXPECTED_RESET39_READABILITY_DISPOSITION_SHA256 = (
-    "6a1c8bc391246dd4012ffa03853341c8317f7f51a6348486138ebdda353185f6"
+EXPECTED_RESET47_RED_SNAPSHOT_COUNT = 12
+EXPECTED_RESET47_RED_SNAPSHOT_SHA256 = (
+    "682f11112d74d5c7ca4bdbe567ffac8910b33fb16cb909ac97c7bd85496ae7b4"
 )
-EXPECTED_RESET44_PROSE_USE_FIELDS = (
+EXPECTED_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_SCHEMA_VERSION = (
+    "RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_V1"
+)
+EXPECTED_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_FIXED_BASE = "d3d93ac5678268f861cf7af6286b48ec062c3d19"
+EXPECTED_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_GIT_PREFIX = (
+    "/usr/bin/git",
+    "--no-pager",
+    "--no-replace-objects",
+    "--no-optional-locks",
+    "--no-lazy-fetch",
+    "-c",
+    "protocol.allow=never",
+    "-c",
+    "core.commitGraph=false",
+    "-c",
+    "core.fsmonitor=false",
+    "-c",
+    "log.showSignature=false",
+    "-c",
+    "fsck.skipList=/dev/null",
+)
+EXPECTED_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_GIT_DIFF_ARGUMENTS = (
+    "diff",
+    "--no-renames",
+    "--ignore-submodules=none",
+    "--no-ext-diff",
+    "--no-textconv",
+    "--diff-filter=A",
+    "--numstat",
+    "d3d93ac5678268f861cf7af6286b48ec062c3d19",
+    "HEAD",
+    "--",
+    "docs/governance/adversarial-convergence-invariant-matrix-v1.json",
+    "scripts/quality/issue435_adversarial_convergence.py",
+    "tests/unit/test_issue435_adversarial_convergence.py",
+    "tests/unit/test_issue435_adversarial_convergence_repository.py",
+    "docs/templates/ADVERSARIAL_INVARIANT_MATRIX.md",
+    "docs/ADR/0064-adversarial-convergence-protocol.md",
+    "docs/ADVERSARIAL_VERIFICATION_PLAYBOOK.md",
+)
+EXPECTED_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_ENVIRONMENT = (
+    ("LC_ALL", "C"),
+    ("GIT_CONFIG_NOSYSTEM", "1"),
+    ("GIT_CONFIG_GLOBAL", "/dev/null"),
+    ("GIT_NO_LAZY_FETCH", "1"),
+    ("GIT_NO_REPLACE_OBJECTS", "1"),
+    ("GIT_OPTIONAL_LOCKS", "0"),
+    ("GIT_TERMINAL_PROMPT", "0"),
+)
+EXPECTED_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_RAW_CHECKOUT_PATHS = (
+    "docs/governance/adversarial-convergence-invariant-matrix-v1.json",
+    "scripts/quality/issue435_adversarial_convergence.py",
+    "tests/unit/test_issue435_adversarial_convergence.py",
+    "tests/unit/test_issue435_adversarial_convergence_repository.py",
+    "docs/templates/ADVERSARIAL_INVARIANT_MATRIX.md",
+    "docs/ADR/0064-adversarial-convergence-protocol.md",
+    "docs/ADVERSARIAL_VERIFICATION_PLAYBOOK.md",
+)
+EXPECTED_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_GIT_OUTPUT_PATHS = (
+    "docs/ADR/0064-adversarial-convergence-protocol.md",
+    "docs/ADVERSARIAL_VERIFICATION_PLAYBOOK.md",
+    "docs/governance/adversarial-convergence-invariant-matrix-v1.json",
+    "docs/templates/ADVERSARIAL_INVARIANT_MATRIX.md",
+    "scripts/quality/issue435_adversarial_convergence.py",
+    "tests/unit/test_issue435_adversarial_convergence.py",
+    "tests/unit/test_issue435_adversarial_convergence_repository.py",
+)
+EXPECTED_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_RAW_ITEM_BYTE_LIMIT = 4194304
+EXPECTED_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_RAW_TOTAL_BYTE_LIMIT = 16777216
+EXPECTED_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_MEASUREMENT_CONTRACT = (
+    "tree-to-tree-fixed-base-head",
+    "fixed-base-paths-absent",
+    "git-deletions-zero",
+    "raw-checkout-exact-allowlist-contained",
+    "raw-checkout-ancestors-and-leaf-no-symlink",
+    "raw-checkout-regular-fstat-bounded-descriptor-read",
+    "raw-checkout-utf8-lf-no-cr-no-nul",
+    "git-and-raw-derived-independently",
+    "pre-commit-both-below-stop",
+    "clean-immutable-head-git-equals-raw",
+    "risk-set-derived-for-each-measurement",
+)
+EXPECTED_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_RISK_THRESHOLD_PERCENT = 85
+EXPECTED_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_STOP_THRESHOLD_PERCENT = 90
+EXPECTED_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_FIELDS = ("scope", "name", "source", "limit")
+EXPECTED_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_ROWS = (
+    ("path", "matrix", "docs/governance/adversarial-convergence-invariant-matrix-v1.json", 5500),
+    ("path", "protocol", "scripts/quality/issue435_adversarial_convergence.py", 12000),
+    ("path", "coreOracle", "tests/unit/test_issue435_adversarial_convergence.py", 5000),
+    (
+        "path",
+        "repositoryOracle",
+        "tests/unit/test_issue435_adversarial_convergence_repository.py",
+        19000,
+    ),
+    ("path", "template", "docs/templates/ADVERSARIAL_INVARIANT_MATRIX.md", 600),
+    ("path", "adr0064", "docs/ADR/0064-adversarial-convergence-protocol.md", 550),
+    ("path", "playbook", "docs/ADVERSARIAL_VERIFICATION_PLAYBOOK.md", None),
+    ("partition", "route", "matrix", 5800),
+    ("partition", "architectureSecurity", "template+adr0064+playbook", 2200),
+    ("partition", "validator", "protocol+coreOracle+repositoryOracle", 40000),
+    (
+        "aggregate",
+        "sevenSemanticPaths",
+        "matrix+protocol+coreOracle+repositoryOracle+template+adr0064+playbook",
+        45000,
+    ),
+    (
+        "binary",
+        "binary",
+        "matrix+protocol+coreOracle+repositoryOracle+template+adr0064+playbook",
+        0,
+    ),
+)
+EXPECTED_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_COUNT = 12
+EXPECTED_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_SHA256 = (
+    "8639b677175273825f7249834cc69f94bee1201bfdf0465d273b44157103d5ce"
+)
+EXPECTED_RESET47_RED_SNAPSHOT_PROSE_USE_FIELDS = (
     "path",
     "marker",
     "repositoryUse",
@@ -133,42 +310,43 @@ EXPECTED_RESET44_PROSE_USE_FIELDS = (
     "validatorPercent",
     "aggregatePercent",
 )
-EXPECTED_RESET44_PROSE_USE_ROWS = (
+EXPECTED_RESET47_RED_SNAPSHOT_PROSE_USE_ROWS = (
     (
         "docs/ADR/0064-adversarial-convergence-protocol.md",
-        "<!-- issue-435-reset44-prose-use:sha256=071fb29a3d38c635c5ea51bcf588ef6fbc2b6754d1c2da09bc8f7c9c40d83dd6 -->",
-        16620,
-        25779,
-        31572,
-        "87.47",
-        "85.93",
-        "89.69",
+        "<!-- issue-435-reset47-red-snapshot:sha256=PENDING_RESET47_ADR_BLOCK_SHA256 -->",
+        0,
+        0,
+        0,
+        "0.00",
+        "0.00",
+        "0.00",
     ),
     (
         "docs/ADVERSARIAL_VERIFICATION_PLAYBOOK.md",
-        "<!-- issue-435-reset44-prose-use:sha256=c4545018358305f40c40a7b2354078ad5ad9a7d5b4ae553e668046f430482cee -->",
-        16620,
-        25779,
-        31572,
-        "87.47",
-        "85.93",
-        "89.69",
+        "<!-- issue-435-reset47-red-snapshot:sha256=PENDING_RESET47_PLAYBOOK_BLOCK_SHA256 -->",
+        0,
+        0,
+        0,
+        "0.00",
+        "0.00",
+        "0.00",
     ),
     (
         "docs/templates/ADVERSARIAL_INVARIANT_MATRIX.md",
-        "<!-- issue-435-reset44-prose-use:sha256=bc493eed07206948bac026a2323cded6ec8447d3b2813b5896b230064b2f71ae -->",
-        16620,
-        25779,
-        31572,
-        "87.47",
-        "85.93",
-        "89.69",
+        "<!-- issue-435-reset47-red-snapshot:sha256=PENDING_RESET47_TEMPLATE_BLOCK_SHA256 -->",
+        0,
+        0,
+        0,
+        "0.00",
+        "0.00",
+        "0.00",
     ),
 )
-EXPECTED_RESET44_PROSE_USE_COUNT = 3
-EXPECTED_RESET44_PROSE_USE_SHA256 = (
-    "076ea55709be59e087f98f0c0746ba814e6b8645df276d68f8ce4154f203d6d1"
+EXPECTED_RESET47_RED_SNAPSHOT_PROSE_USE_COUNT = 3
+EXPECTED_RESET47_RED_SNAPSHOT_PROSE_USE_SHA256 = (
+    "64f7b563372c11358cbaae0e33dd65ff3bea7d27b60a12653b103af043792e9a"
 )
+RESET47_SUBPROCESS_RUN = subprocess.run
 MetadataCaseRow = tuple[str, str, str, str, str, str | None, str]
 NormalizedMetadataIo = tuple[str, ...]
 MetadataRoleTrace = tuple[str, NormalizedMetadataIo]
@@ -6168,158 +6346,238 @@ def canonical(value: object) -> bytes:
     return json.dumps(value, sort_keys=True, separators=(",", ":")).encode()
 
 
-def reset39_budget_contract_finding(coordinate: str) -> tuple[protocol.Finding, ...]:
+def reset47_budget_finding(coordinate: str) -> tuple[protocol.Finding, ...]:
+    location = (
+        coordinate
+        if coordinate.startswith(("dynamicBudget", "rawCheckout"))
+        else f"budgetPolicy.{coordinate}"
+    )
     return (
         protocol.Finding(
             "evidence",
             "CURRENT",
-            "ACP.EVIDENCE.RESET39_BUDGET_CONTRACT_MISMATCH",
-            f"budgetPolicy.{coordinate}",
+            "ACP.EVIDENCE.RESET47_BUDGET_MISMATCH",
+            location,
         ),
     )
 
 
-def reset39_text_line_use(
-    payload: bytes,
-) -> tuple[int | None, tuple[protocol.Finding, ...]]:
-    if b"\0" in payload:
-        return None, reset39_budget_contract_finding("binary")
-    try:
-        text = payload.decode("utf-8")
-    except UnicodeDecodeError:
-        return None, reset39_budget_contract_finding("binary")
-    return len(text.splitlines()), ()
+def expected_reset47_budget_policy() -> dict[str, object]:
+    return {
+        "chargeRule": "additions_plus_deletions_no_deletion_credit",
+        "riskThresholdPercent": 85,
+        "stopThresholdPercent": 90,
+        "denseCompressionProhibited": True,
+        "reset47RedSnapshot": {
+            "schemaVersion": EXPECTED_RESET47_RED_SNAPSHOT_SCHEMA_VERSION,
+            "fixedBase": EXPECTED_RESET47_RED_SNAPSHOT_FIXED_BASE,
+            "c1Head": EXPECTED_RESET47_RED_SNAPSHOT_C1_HEAD,
+            "fields": list(EXPECTED_RESET47_RED_SNAPSHOT_FIELDS),
+            "rows": [list(row) for row in EXPECTED_RESET47_RED_SNAPSHOT_ROWS],
+            "count": EXPECTED_RESET47_RED_SNAPSHOT_COUNT,
+            "sha256": EXPECTED_RESET47_RED_SNAPSHOT_SHA256,
+        },
+        "dynamicCurrentHeadBudgetContract": {
+            "schemaVersion": EXPECTED_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_SCHEMA_VERSION,
+            "fixedBase": EXPECTED_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_FIXED_BASE,
+            "gitPrefix": list(EXPECTED_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_GIT_PREFIX),
+            "gitDiffArguments": list(
+                EXPECTED_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_GIT_DIFF_ARGUMENTS
+            ),
+            "environment": [
+                list(row) for row in EXPECTED_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_ENVIRONMENT
+            ],
+            "rawCheckoutPaths": list(
+                EXPECTED_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_RAW_CHECKOUT_PATHS
+            ),
+            "gitOutputPaths": list(
+                EXPECTED_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_GIT_OUTPUT_PATHS
+            ),
+            "rawItemByteLimit": EXPECTED_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_RAW_ITEM_BYTE_LIMIT,
+            "rawTotalByteLimit": EXPECTED_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_RAW_TOTAL_BYTE_LIMIT,
+            "measurementContract": list(
+                EXPECTED_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_MEASUREMENT_CONTRACT
+            ),
+            "riskThresholdPercent": (
+                EXPECTED_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_RISK_THRESHOLD_PERCENT
+            ),
+            "stopThresholdPercent": (
+                EXPECTED_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_STOP_THRESHOLD_PERCENT
+            ),
+            "fields": list(EXPECTED_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_FIELDS),
+            "rows": [list(row) for row in EXPECTED_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_ROWS],
+            "count": EXPECTED_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_COUNT,
+            "sha256": EXPECTED_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_SHA256,
+        },
+        "reset47RedSnapshotProseUse": {
+            "fields": list(EXPECTED_RESET47_RED_SNAPSHOT_PROSE_USE_FIELDS),
+            "rows": [list(row) for row in EXPECTED_RESET47_RED_SNAPSHOT_PROSE_USE_ROWS],
+            "count": EXPECTED_RESET47_RED_SNAPSHOT_PROSE_USE_COUNT,
+            "sha256": EXPECTED_RESET47_RED_SNAPSHOT_PROSE_USE_SHA256,
+        },
+        "levels": ["per_file", "partition", "aggregate"],
+    }
 
 
-def validate_reset39_budget_contract(policy: object) -> tuple[protocol.Finding, ...]:
-    if type(policy) is not dict:
-        return reset39_budget_contract_finding("type")
-    catalogs: tuple[
-        tuple[str, tuple[str, ...], tuple[tuple[object, ...], ...], int, str], ...
-    ] = (
-        (
-            "reset39Caps", EXPECTED_RESET39_BUDGET_CAP_FIELDS,
-            EXPECTED_RESET39_BUDGET_CAPS, EXPECTED_RESET39_BUDGET_CAP_COUNT,
-            EXPECTED_RESET39_BUDGET_CAP_SHA256,
-        ),
-        (
-            "readabilityDisposition", EXPECTED_RESET39_READABILITY_DISPOSITION_FIELDS,
-            EXPECTED_RESET39_READABILITY_DISPOSITION,
-            EXPECTED_RESET39_READABILITY_DISPOSITION_COUNT,
-            EXPECTED_RESET39_READABILITY_DISPOSITION_SHA256,
-        ),
-    )
-    typed_policy = cast(dict[str, object], policy)
-    for name, expected_fields, expected_rows, expected_count, expected_sha in catalogs:
-        catalog = typed_policy.get(name)
-        if type(catalog) is not dict:
-            return reset39_budget_contract_finding(name)
-        typed_catalog = cast(dict[str, object], catalog)
-        if set(typed_catalog) != {"fields", "rows", "count", "sha256"}:
-            return reset39_budget_contract_finding(name)
-        fields = typed_catalog["fields"]
-        if type(fields) is not list or tuple(fields) != expected_fields:
-            return reset39_budget_contract_finding(f"{name}.fields")
-        rows = typed_catalog["rows"]
-        if type(rows) is not list:
-            return reset39_budget_contract_finding(f"{name}.rows")
-        if len(rows) < expected_count:
-            return reset39_budget_contract_finding(f"{name}.rows.missing")
-        if len(rows) > expected_count:
-            return reset39_budget_contract_finding(f"{name}.rows.cardinality")
-        normalized_rows: list[tuple[object, ...]] = []
-        for ordinal, row in enumerate(rows):
-            if type(row) is not list:
-                return reset39_budget_contract_finding(f"{name}.rows[{ordinal}]")
-            normalized_rows.append(tuple(row))
-        if len({canonical(row) for row in normalized_rows}) != expected_count:
-            return reset39_budget_contract_finding(f"{name}.rows.duplicate")
-        if tuple(normalized_rows) != expected_rows:
-            if sorted(normalized_rows, key=canonical) == sorted(expected_rows, key=canonical):
-                return reset39_budget_contract_finding(f"{name}.rows.order")
-            if name == "reset39Caps":
-                return reset39_budget_contract_finding(f"{name}.cap")
-            if any(";" in cast(str, row[0]) for row in normalized_rows):
-                return reset39_budget_contract_finding(f"{name}.rows.compressed")
-            first_drift = next(
-                ordinal
-                for ordinal, (row, expected) in enumerate(
-                    zip(normalized_rows, expected_rows, strict=True)
-                )
-                if row != expected
-            )
-            semantic_coordinate = {1: "review", 2: "use"}.get(
-                first_drift, f"rows[{first_drift}]"
-            )
-            return reset39_budget_contract_finding(f"{name}.{semantic_coordinate}")
-        if type(typed_catalog["count"]) is not int or typed_catalog["count"] != expected_count:
-            return reset39_budget_contract_finding(f"{name}.count")
-        if (
-            type(typed_catalog["sha256"]) is not str
-            or typed_catalog["sha256"] != expected_sha
-            or hashlib.sha256(canonical(rows)).hexdigest() != expected_sha
+def same_reset47_value(actual: object, expected: object) -> bool:
+    if type(actual) is not type(expected):
+        return False
+    if isinstance(expected, dict):
+        actual_dict = cast(dict[object, object], actual)
+        return tuple(actual_dict) == tuple(expected) and all(
+            same_reset47_value(actual_dict[key], value) for key, value in expected.items()
+        )
+    if isinstance(expected, list):
+        actual_list = cast(list[object], actual)
+        return len(actual_list) == len(expected) and all(
+            same_reset47_value(item, wanted)
+            for item, wanted in zip(actual_list, expected, strict=True)
+        )
+    return actual == expected
+
+
+def validate_reset47_catalog(
+    actual: object, expected: dict[str, object], location: str
+) -> tuple[protocol.Finding, ...]:
+    if type(actual) is not dict:
+        return reset47_budget_finding(f"{location}.type")
+    catalog = cast(dict[str, object], actual)
+    if tuple(catalog) != tuple(expected):
+        return reset47_budget_finding(f"{location}.keys")
+    rows = catalog["rows"]
+    expected_rows = cast(list[object], expected["rows"])
+    if type(rows) is not list:
+        return reset47_budget_finding(f"{location}.rows.type")
+    if len(rows) != len(expected_rows):
+        return reset47_budget_finding(f"{location}.rows.count")
+    if type(expected["count"]) is not int or expected["count"] != len(expected_rows):
+        return reset47_budget_finding(f"{location}.expectedCount")
+    normalized: list[tuple[object, ...]] = []
+    for ordinal, (row, wanted) in enumerate(zip(rows, expected_rows, strict=True)):
+        if type(row) is not list or len(row) != len(cast(list[object], wanted)):
+            return reset47_budget_finding(f"{location}.rows[{ordinal}].type")
+        if any(
+            type(value) is not type(expected_value)
+            for value, expected_value in zip(row, cast(list[object], wanted), strict=True)
         ):
-            return reset39_budget_contract_finding(f"{name}.sha256")
+            return reset47_budget_finding(f"{location}.rows[{ordinal}].type")
+        normalized.append(tuple(row))
+    expected_normalized = tuple(tuple(cast(list[object], row)) for row in expected_rows)
+    if len({canonical(row) for row in normalized}) != len(normalized):
+        return reset47_budget_finding(f"{location}.rows.duplicate")
+    if tuple(normalized) != expected_normalized:
+        if sorted(normalized, key=canonical) == sorted(expected_normalized, key=canonical):
+            return reset47_budget_finding(f"{location}.rows.order")
+        return reset47_budget_finding(f"{location}.rows.value")
+    if not same_reset47_value(catalog["count"], len(expected_rows)):
+        return reset47_budget_finding(f"{location}.count")
+    expected_sha = hashlib.sha256(canonical(expected_rows)).hexdigest()
+    if catalog["sha256"] != expected_sha or expected["sha256"] != expected_sha:
+        return reset47_budget_finding(f"{location}.sha256")
+    for key in tuple(expected)[:-3]:
+        if not same_reset47_value(catalog[key], expected[key]):
+            return reset47_budget_finding(f"{location}.{key}")
     return ()
 
 
-def reset44_prose_finding(coordinate: str) -> tuple[protocol.Finding, ...]:
+def validate_reset47_budget_policy(policy: object) -> tuple[protocol.Finding, ...]:
+    expected = expected_reset47_budget_policy()
+    if type(policy) is not dict:
+        return reset47_budget_finding("type")
+    actual = cast(dict[str, object], policy)
+    if tuple(actual) != tuple(expected):
+        return reset47_budget_finding("keys")
+    for key in ("chargeRule", "riskThresholdPercent", "stopThresholdPercent"):
+        if not same_reset47_value(actual[key], expected[key]):
+            return reset47_budget_finding(key)
+    if not same_reset47_value(actual["denseCompressionProhibited"], True):
+        return reset47_budget_finding("denseCompressionProhibited")
+    for key in (
+        "reset47RedSnapshot",
+        "dynamicCurrentHeadBudgetContract",
+        "reset47RedSnapshotProseUse",
+    ):
+        findings = validate_reset47_catalog(
+            actual[key], cast(dict[str, object], expected[key]), key
+        )
+        if findings:
+            return findings
+    if not same_reset47_value(actual["levels"], expected["levels"]):
+        return reset47_budget_finding("levels")
+    return ()
+
+
+def reset47_budget_percentages(uses: tuple[int, ...]) -> tuple[str, ...]:
+    percentages: list[str] = []
+    for use, row in zip(uses, EXPECTED_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_ROWS, strict=True):
+        limit = row[3]
+        if limit is None:
+            percentages.append("N/A")
+        elif limit == 0:
+            percentages.append("0.00")
+        else:
+            ratio = Decimal(use) * Decimal(100) / Decimal(limit)
+            percentages.append(format(ratio.quantize(Decimal("0.01"), ROUND_HALF_EVEN), ".2f"))
+    return tuple(percentages)
+
+
+def reset47_prose_finding(coordinate: str) -> tuple[protocol.Finding, ...]:
     return (
         protocol.Finding(
             "evidence",
             "CURRENT",
-            "ACP.EVIDENCE.RESET44_PROSE_USE_MISMATCH",
-            f"budgetPolicy.reset44ProseUse.{coordinate}",
+            "ACP.EVIDENCE.RESET47_RED_SNAPSHOT_PROSE_USE_MISMATCH",
+            f"budgetPolicy.reset47RedSnapshotProseUse.{coordinate}",
         ),
     )
 
 
-def validate_reset44_prose_catalog(catalog: object) -> tuple[protocol.Finding, ...]:
+def validate_reset47_prose_catalog(catalog: object) -> tuple[protocol.Finding, ...]:
     if type(catalog) is not dict:
-        return reset44_prose_finding("catalog.type")
+        return reset47_prose_finding("catalog.type")
     typed_catalog = cast(dict[str, object], catalog)
     if set(typed_catalog) != {"fields", "rows", "count", "sha256"}:
-        return reset44_prose_finding("catalog.type")
+        return reset47_prose_finding("catalog.type")
     fields = typed_catalog["fields"]
-    if type(fields) is not list or tuple(fields) != EXPECTED_RESET44_PROSE_USE_FIELDS:
-        return reset44_prose_finding("catalog.fields")
+    if type(fields) is not list or tuple(fields) != EXPECTED_RESET47_RED_SNAPSHOT_PROSE_USE_FIELDS:
+        return reset47_prose_finding("catalog.fields")
     rows = typed_catalog["rows"]
     if type(rows) is not list:
-        return reset44_prose_finding("catalog.rows")
-    if len(rows) < EXPECTED_RESET44_PROSE_USE_COUNT:
-        return reset44_prose_finding("catalog.rows.missing")
-    if len(rows) > EXPECTED_RESET44_PROSE_USE_COUNT:
-        return reset44_prose_finding("catalog.rows.cardinality")
+        return reset47_prose_finding("catalog.rows")
+    if len(rows) < EXPECTED_RESET47_RED_SNAPSHOT_PROSE_USE_COUNT:
+        return reset47_prose_finding("catalog.rows.missing")
+    if len(rows) > EXPECTED_RESET47_RED_SNAPSHOT_PROSE_USE_COUNT:
+        return reset47_prose_finding("catalog.rows.cardinality")
     if any(type(row) is not list or len(row) != 8 for row in rows):
-        return reset44_prose_finding("catalog.rows")
+        return reset47_prose_finding("catalog.rows")
     expected_types = (str, str, int, int, int, str, str, str)
     if any(tuple(type(value) for value in cast(list[object], row)) != expected_types for row in rows):
-        return reset44_prose_finding("catalog.rows.type")
+        return reset47_prose_finding("catalog.rows.type")
     normalized_rows = tuple(tuple(cast(list[object], row)) for row in rows)
     if len({canonical(row) for row in normalized_rows}) != len(normalized_rows):
-        return reset44_prose_finding("catalog.rows.duplicate")
-    if normalized_rows != EXPECTED_RESET44_PROSE_USE_ROWS:
-        if set(normalized_rows) == set(EXPECTED_RESET44_PROSE_USE_ROWS):
-            return reset44_prose_finding("catalog.rows.order")
+        return reset47_prose_finding("catalog.rows.duplicate")
+    if normalized_rows != EXPECTED_RESET47_RED_SNAPSHOT_PROSE_USE_ROWS:
+        if set(normalized_rows) == set(EXPECTED_RESET47_RED_SNAPSHOT_PROSE_USE_ROWS):
+            return reset47_prose_finding("catalog.rows.order")
         if any(row[2:8] != expected[2:8] for row, expected in zip(
-            normalized_rows, EXPECTED_RESET44_PROSE_USE_ROWS, strict=True
+            normalized_rows, EXPECTED_RESET47_RED_SNAPSHOT_PROSE_USE_ROWS, strict=True
         )):
-            return reset44_prose_finding("catalog.values")
-        return reset44_prose_finding("catalog.rows")
+            return reset47_prose_finding("catalog.values")
+        return reset47_prose_finding("catalog.rows")
     if type(typed_catalog["count"]) is not int or (
-        typed_catalog["count"] != EXPECTED_RESET44_PROSE_USE_COUNT
+        typed_catalog["count"] != EXPECTED_RESET47_RED_SNAPSHOT_PROSE_USE_COUNT
     ):
-        return reset44_prose_finding("catalog.count")
+        return reset47_prose_finding("catalog.count")
     expected_sha = hashlib.sha256(canonical(rows)).hexdigest()
     if type(typed_catalog["sha256"]) is not str or (
-        typed_catalog["sha256"] != EXPECTED_RESET44_PROSE_USE_SHA256
-        or expected_sha != EXPECTED_RESET44_PROSE_USE_SHA256
+        typed_catalog["sha256"] != EXPECTED_RESET47_RED_SNAPSHOT_PROSE_USE_SHA256
+        or expected_sha != EXPECTED_RESET47_RED_SNAPSHOT_PROSE_USE_SHA256
     ):
-        return reset44_prose_finding("catalog.sha256")
+        return reset47_prose_finding("catalog.sha256")
     return ()
 
 
-def reset44_expected_use_sentence(path: str, tokens: tuple[str, ...]) -> str:
+def reset47_expected_use_sentence(path: str, tokens: tuple[str, ...]) -> str:
     if path.endswith("0064-adversarial-convergence-protocol.md"):
         return (
             f"Exact file use is {', '.join(tokens[:6])}, and {tokens[6]} lines. "
@@ -6331,24 +6589,24 @@ def reset44_expected_use_sentence(path: str, tokens: tuple[str, ...]) -> str:
     return f"Exact use is {'; '.join(tokens[:10])}; and {tokens[10]}."
 
 
-def validate_reset44_prose_documents(
+def validate_reset47_prose_documents(
     rows: object,
     documents: object,
     uses: dict[str, int],
     caps: dict[str, int],
 ) -> tuple[protocol.Finding, ...]:
     if type(rows) is not tuple or type(documents) is not dict:
-        return reset44_prose_finding("documents.type")
-    expected_paths = tuple(row[0] for row in EXPECTED_RESET44_PROSE_USE_ROWS)
-    if len(rows) != EXPECTED_RESET44_PROSE_USE_COUNT:
-        return reset44_prose_finding("documents.rows")
+        return reset47_prose_finding("documents.type")
+    expected_paths = tuple(row[0] for row in EXPECTED_RESET47_RED_SNAPSHOT_PROSE_USE_ROWS)
+    if len(rows) != EXPECTED_RESET47_RED_SNAPSHOT_PROSE_USE_COUNT:
+        return reset47_prose_finding("documents.rows")
     if set(cast(dict[object, object], documents)) != set(expected_paths):
-        return reset44_prose_finding("documents.path")
-    start_prefix = b"<!-- issue-435-reset44-prose-use:sha256="
-    end_prefix = b"<!-- issue-435-reset44-prose-use:end"
-    end_line = b"<!-- issue-435-reset44-prose-use:end -->\n"
+        return reset47_prose_finding("documents.path")
+    start_prefix = b"<!-- issue-435-reset47-red-snapshot:sha256="
+    end_prefix = b"<!-- issue-435-reset47-red-snapshot:end"
+    end_line = b"<!-- issue-435-reset47-red-snapshot:end -->\n"
     marker_pattern = re.compile(
-        rb"(?m)^<!-- issue-435-reset44-prose-use:sha256=([0-9a-f]{64}) -->\n"
+        rb"(?m)^<!-- issue-435-reset47-red-snapshot:sha256=([0-9a-f]{64}) -->\n"
     )
     names = (
         "matrix",
@@ -6378,14 +6636,14 @@ def validate_reset44_prose_documents(
     )
     for ordinal, untyped_row in enumerate(cast(tuple[object, ...], rows)):
         if type(untyped_row) is not tuple or len(untyped_row) != 8:
-            return reset44_prose_finding("documents.rows")
+            return reset47_prose_finding("documents.rows")
         row = cast(tuple[object, ...], untyped_row)
         expected_types = (str, str, int, int, int, str, str, str)
         if tuple(type(value) for value in row) != expected_types:
-            return reset44_prose_finding("documents.rows.type")
+            return reset47_prose_finding("documents.rows.type")
         path, marker = cast(str, row[0]), cast(str, row[1])
         if path != expected_paths[ordinal]:
-            return reset44_prose_finding("documents.path")
+            return reset47_prose_finding("documents.path")
         values = (uses["repositoryOracle"], uses["validator"], uses["sevenSemanticPaths"])
         percents = (
             f"{values[0] * 100 / caps['repositoryOracle']:.2f}",
@@ -6393,41 +6651,41 @@ def validate_reset44_prose_documents(
             f"{values[2] * 100 / caps['sevenSemanticPaths']:.2f}",
         )
         if row[2:5] != values or row[5:8] != percents:
-            return reset44_prose_finding("documents.values")
+            return reset47_prose_finding("documents.values")
         payload = cast(dict[str, object], documents)[path]
         if type(payload) is not bytes:
-            return reset44_prose_finding("documents.blocks.type")
+            return reset47_prose_finding("documents.blocks.type")
         lines = payload.splitlines(keepends=True)
         start_candidates = tuple(line for line in lines if start_prefix in line)
         end_candidates = tuple(line for line in lines if end_prefix in line)
         if not start_candidates or not end_candidates:
-            return reset44_prose_finding("documents.blocks.missing")
+            return reset47_prose_finding("documents.blocks.missing")
         exact_starts = tuple(marker_pattern.finditer(payload))
         exact_ends = sum(line == end_line for line in lines)
         if len(exact_starts) > 1 and exact_ends > 1:
-            return reset44_prose_finding("documents.blocks.duplicate")
+            return reset47_prose_finding("documents.blocks.duplicate")
         if len(start_candidates) > 1 or len(end_candidates) > 1:
-            return reset44_prose_finding("documents.blocks.nested")
+            return reset47_prose_finding("documents.blocks.nested")
         if len(exact_starts) != 1 or exact_ends != 1:
-            return reset44_prose_finding("documents.marker.wholeLine")
+            return reset47_prose_finding("documents.marker.wholeLine")
         start_match = exact_starts[0]
         end = payload.find(end_line)
         if start_match.start() >= end:
-            return reset44_prose_finding("documents.blocks.pairing")
+            return reset47_prose_finding("documents.blocks.pairing")
         if b"\0" in payload:
-            return reset44_prose_finding("documents.text.nul")
+            return reset47_prose_finding("documents.text.nul")
         if b"\r" in payload:
-            return reset44_prose_finding("documents.text.crlf")
+            return reset47_prose_finding("documents.text.crlf")
         try:
             payload.decode("utf-8")
         except UnicodeDecodeError:
-            return reset44_prose_finding("documents.text.encoding")
+            return reset47_prose_finding("documents.text.encoding")
         actual_marker = payload[start_match.start():start_match.end() - 1].decode("ascii")
         if marker != actual_marker:
-            return reset44_prose_finding("documents.marker.substitution")
+            return reset47_prose_finding("documents.marker.substitution")
         interior = payload[start_match.end():end]
         if not interior.endswith(b"\n"):
-            return reset44_prose_finding("documents.text.trailing")
+            return reset47_prose_finding("documents.text.trailing")
         text = " ".join(interior.decode("utf-8").split())
         tokens: list[str] = []
         positions: list[int] = []
@@ -6446,7 +6704,7 @@ def validate_reset44_prose_documents(
                     "validator": "documents.validatorUse",
                     "sevenSemanticPaths": "documents.aggregateUse",
                 }.get(name, "documents.tokens")
-                return reset44_prose_finding(coordinate)
+                return reset47_prose_finding(coordinate)
             if len(matches) > 1:
                 groups = {match.groups() for match in matches}
                 coordinate = (
@@ -6454,7 +6712,7 @@ def validate_reset44_prose_documents(
                     if len(groups) == 1
                     else "documents.tokens.contradictory"
                 )
-                return reset44_prose_finding(coordinate)
+                return reset47_prose_finding(coordinate)
             match = matches[0]
             use_text, cap_text = match.group(1), match.group(2)
             use = int(use_text.replace(",", ""))
@@ -6466,11 +6724,11 @@ def validate_reset44_prose_documents(
                     "validator": "documents.validatorUse",
                     "sevenSemanticPaths": "documents.aggregateUse",
                 }.get(name, "documents.tokens")
-                return reset44_prose_finding(coordinate)
+                return reset47_prose_finding(coordinate)
             if use_text != f"{uses[name]:,}" or (
                 cap_text is not None and cap_text != f"{cast(int, expected_cap):,}"
             ):
-                return reset44_prose_finding("documents.tokens.number")
+                return reset47_prose_finding("documents.tokens.number")
             if percent_required:
                 expected_percent = f"{uses[name] * 100 / caps[name]:.2f}"
                 if match.group(3) != expected_percent:
@@ -6479,13 +6737,13 @@ def validate_reset44_prose_documents(
                         "validator": "documents.validatorPercent",
                         "sevenSemanticPaths": "documents.aggregatePercent",
                     }.get(name, "documents.percentage")
-                    return reset44_prose_finding(coordinate)
+                    return reset47_prose_finding(coordinate)
             tokens.append(match.group(0))
             positions.append(match.start())
         if positions != sorted(positions):
-            return reset44_prose_finding("documents.tokens.order")
-        if reset44_expected_use_sentence(path, tuple(tokens)) not in text:
-            return reset44_prose_finding("documents.tokens.grammar")
+            return reset47_prose_finding("documents.tokens.order")
+        if reset47_expected_use_sentence(path, tuple(tokens)) not in text:
+            return reset47_prose_finding("documents.tokens.grammar")
         required = (
             "core, repository, validator, and aggregate",
             (
@@ -6501,7 +6759,7 @@ def validate_reset44_prose_documents(
             "growth",
         )
         if any(fragment.lower() not in text.lower() for fragment in required):
-            return reset44_prose_finding("documents.tokens.clauses")
+            return reset47_prose_finding("documents.tokens.clauses")
         marker_contract = (
             (
                 "The whole-line start marker encodes SHA-256 of the raw UTF-8/LF bytes strictly "
@@ -6518,19 +6776,19 @@ def validate_reset44_prose_documents(
             ),
         )[ordinal]
         if not text.endswith(marker_contract):
-            return reset44_prose_finding("documents.text.trailing")
+            return reset47_prose_finding("documents.text.trailing")
         if hashlib.sha256(interior).hexdigest() != start_match.group(1).decode("ascii"):
-            return reset44_prose_finding("documents.blockHash")
+            return reset47_prose_finding("documents.blockHash")
     return ()
 
 
-def validate_reset44_prose_contract(
+def validate_reset47_prose_contract(
     catalog: object,
     load_documents: Callable[[tuple[str, ...]], object],
     uses: dict[str, int],
     caps: dict[str, int],
 ) -> tuple[protocol.Finding, ...]:
-    catalog_findings = validate_reset44_prose_catalog(catalog)
+    catalog_findings = validate_reset47_prose_catalog(catalog)
     if catalog_findings:
         return catalog_findings
     rows = tuple(
@@ -6539,7 +6797,7 @@ def validate_reset44_prose_contract(
     )
     paths = tuple(cast(str, row[0]) for row in rows)
     documents = load_documents(paths)
-    return validate_reset44_prose_documents(rows, documents, uses, caps)
+    return validate_reset47_prose_documents(rows, documents, uses, caps)
 
 
 def configured_receipt_finding(index: int, coordinate: str) -> tuple[protocol.Finding, ...]:
@@ -13830,212 +14088,313 @@ def _collect_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability
 def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    source = Path(__file__).read_text(encoding="utf-8")
+    syntax = ast.parse(source)
+    repository_tests = tuple(
+        node.name
+        for node in syntax.body
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+        and node.name.startswith("test_")
+    )
+    core_syntax = ast.parse(CORE_ORACLE_PATH.read_text(encoding="utf-8"))
+    core_tests = tuple(
+        node.name
+        for node in core_syntax.body
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+        and node.name.startswith("test_")
+    )
+    assert repository_tests.count(
+        "test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability"
+    ) == 1
+    assert repository_tests[0] == (
+        "test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability"
+    )
+    assert core_tests.count("test_budget_thresholds_are_exact_at_85_and_90_percent") == 1
+    assert core_tests[0] == "test_budget_thresholds_are_exact_at_85_and_90_percent"
+
+    expected_policy = expected_reset47_budget_policy()
+    assert validate_reset47_budget_policy(expected_policy) == ()
+    catalog_mutants: list[tuple[str, object, str]] = [("non-dict", (), "type")]
+
+    def add_catalog_mutant(mutant_id: str, changed: object, coordinate: str) -> None:
+        catalog_mutants.append((mutant_id, changed, coordinate))
+
+    changed = deepcopy(expected_policy)
+    changed.pop("levels")
+    add_catalog_mutant("policy-missing", changed, "keys")
+    changed = {"unexpected": False, **deepcopy(expected_policy)}
+    add_catalog_mutant("policy-extra", changed, "keys")
+    changed = deepcopy(expected_policy)
+    changed["riskThresholdPercent"] = True
+    add_catalog_mutant("threshold-bool", changed, "riskThresholdPercent")
+    changed = deepcopy(expected_policy)
+    changed["stopThresholdPercent"] = 89
+    add_catalog_mutant("stop-threshold", changed, "stopThresholdPercent")
+
+    catalog_name = "dynamicCurrentHeadBudgetContract"
+
+    def changed_catalog() -> tuple[dict[str, object], dict[str, object], list[object]]:
+        changed_policy = deepcopy(expected_policy)
+        catalog = cast(dict[str, object], changed_policy[catalog_name])
+        return changed_policy, catalog, cast(list[object], catalog["rows"])
+
+    changed = deepcopy(expected_policy)
+    changed[catalog_name] = ()
+    add_catalog_mutant("catalog-non-dict", changed, f"{catalog_name}.type")
+    changed, catalog, rows = changed_catalog()
+    catalog["unexpected"] = False
+    add_catalog_mutant("catalog-extra-key", changed, f"{catalog_name}.keys")
+    changed, catalog, rows = changed_catalog()
+    catalog["fields"] = ["name", "scope", "source", "limit"]
+    add_catalog_mutant("fields", changed, f"{catalog_name}.fields")
+    changed, catalog, rows = changed_catalog()
+    catalog["rows"] = ()
+    add_catalog_mutant("rows-non-list", changed, f"{catalog_name}.rows.type")
+    changed, catalog, rows = changed_catalog()
+    rows.pop()
+    add_catalog_mutant("rows-missing", changed, f"{catalog_name}.rows.count")
+    changed, catalog, rows = changed_catalog()
+    rows.append(deepcopy(rows[-1]))
+    add_catalog_mutant("rows-extra", changed, f"{catalog_name}.rows.count")
+    changed, catalog, rows = changed_catalog()
+    rows[-1] = deepcopy(rows[-2])
+    add_catalog_mutant("rows-duplicate", changed, f"{catalog_name}.rows.duplicate")
+    changed, catalog, rows = changed_catalog()
+    rows[0], rows[1] = rows[1], rows[0]
+    add_catalog_mutant("rows-order", changed, f"{catalog_name}.rows.order")
+    changed, catalog, rows = changed_catalog()
+    cast(list[object], rows[0])[3] = True
+    add_catalog_mutant("row-bool", changed, f"{catalog_name}.rows[0].type")
+    changed, catalog, rows = changed_catalog()
+    cast(list[object], rows[0])[1] = "changed"
+    add_catalog_mutant("row-value", changed, f"{catalog_name}.rows.value")
+    changed, catalog, rows = changed_catalog()
+    catalog["count"] = 13
+    add_catalog_mutant("count", changed, f"{catalog_name}.count")
+    changed, catalog, rows = changed_catalog()
+    catalog["sha256"] = "0" * 64
+    add_catalog_mutant("sha", changed, f"{catalog_name}.sha256")
+    for key, value in (
+        ("schemaVersion", "WRONG"),
+        ("gitPrefix", ["git"]),
+        ("gitDiffArguments", ["diff", "HEAD"]),
+        ("environment", [["LC_ALL", "hostile"]]),
+        ("gitOutputPaths", ["docs/unlisted"]),
+    ):
+        changed, catalog, rows = changed_catalog()
+        catalog[key] = value
+        add_catalog_mutant(f"identity-{key}", changed, f"{catalog_name}.{key}")
+
+    runner_calls: list[object] = []
+
+    def forbidden_runner(*args: object, **kwargs: object) -> subprocess.CompletedProcess[bytes]:
+        runner_calls.append((args, kwargs))
+        raise AssertionError("catalog fault reached Git")
+
+    def raising_raw(error: BaseException) -> Callable[[], Reset47RawResult]:
+        def callback() -> Reset47RawResult:
+            raise error
+
+        return callback
+
+    for mutant_id, mutant_policy, coordinate in catalog_mutants:
+        assert validate_reset47_budget_policy(mutant_policy) == reset47_budget_finding(
+            coordinate
+        ), mutant_id
+        assert core_oracle.measure_reset47_current_budget(
+            mutant_policy, forbidden_runner, raising_raw(AssertionError())
+        )
+        assert runner_calls == []
+
+    command = (
+        *EXPECTED_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_GIT_PREFIX,
+        *EXPECTED_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_GIT_DIFF_ARGUMENTS,
+    )
+
+    def git_stdout(path_uses: tuple[int, ...]) -> bytes:
+        by_path = dict(
+            zip(
+                EXPECTED_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_RAW_CHECKOUT_PATHS,
+                path_uses,
+                strict=True,
+            )
+        )
+        return b"".join(
+            f"{by_path[path]}\t0\t{path}\n".encode()
+            for path in EXPECTED_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_GIT_OUTPUT_PATHS
+        )
+
+    safe_path_uses = (1, 1, 1, 1, 1, 1, 1)
+    valid_process = subprocess.CompletedProcess(command, 0, git_stdout(safe_path_uses), b"")
+    observed_calls: list[tuple[object, dict[str, object]]] = []
+
+    def result_runner(
+        *args: object, result: object = valid_process, **kwargs: object
+    ) -> subprocess.CompletedProcess[bytes]:
+        observed_calls.append((args[0], kwargs))
+        return cast(subprocess.CompletedProcess[bytes], result)
+
+    clean = core_oracle.measure_reset47_current_budget(
+        expected_policy,
+        result_runner,
+        lambda: (safe_path_uses, ()),
+    )
+    assert isinstance(clean, core_oracle.Reset47BudgetEvidence)
+    assert clean.state is core_oracle.Reset47BudgetState.CLEAN_EQUAL
+    assert observed_calls == [
+        (
+            command,
+            {
+                "cwd": ROOT,
+                "env": dict(EXPECTED_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_ENVIRONMENT),
+                "check": False,
+                "capture_output": True,
+                "text": False,
+                "timeout": 5,
+            },
+        )
+    ]
+
+    raw_calls: list[str] = []
+
+    def observed_raw(value: object) -> Callable[[], Reset47RawResult]:
+        def callback() -> Reset47RawResult:
+            raw_calls.append("raw")
+            return cast(Reset47RawResult, value)
+
+        return callback
+
+    git_mutants = (
+        ("result-type", object(), "dynamicBudget.git.result"),
+        ("bool-return", subprocess.CompletedProcess(command, True, b"", b""), "dynamicBudget.git.returncode"),
+        ("returncode", subprocess.CompletedProcess(command, 1, b"", b""), "dynamicBudget.git.returncode"),
+        ("stderr-type", subprocess.CompletedProcess(command, 0, b"", ""), "dynamicBudget.git.stderr"),
+        ("stderr", subprocess.CompletedProcess(command, 0, b"", b"hostile"), "dynamicBudget.git.stderr"),
+        ("stdout-type", subprocess.CompletedProcess(command, 0, "", b""), "dynamicBudget.git.stdout"),
+        ("stdout-lf", subprocess.CompletedProcess(command, 0, b"1\t0\tpath", b""), "dynamicBudget.git.stdout"),
+        ("row-count", subprocess.CompletedProcess(command, 0, b"1\t0\tpath\n", b""), "dynamicBudget.git.rows"),
+        ("tabs", subprocess.CompletedProcess(command, 0, valid_process.stdout.replace(b"\t", b" ", 1), b""), "dynamicBudget.git.rows[0]"),
+        ("digits", subprocess.CompletedProcess(command, 0, valid_process.stdout.replace(b"1\t", b"01\t", 1), b""), "dynamicBudget.git.rows[0].count"),
+        ("binary", subprocess.CompletedProcess(command, 0, valid_process.stdout.replace(b"1\t", b"-\t", 1), b""), "dynamicBudget.git.rows[0].count"),
+        ("path", subprocess.CompletedProcess(command, 0, valid_process.stdout.replace(b"docs/ADR", b"docs/XXX", 1), b""), "dynamicBudget.git.rows[0]"),
+        ("deletion", subprocess.CompletedProcess(command, 0, valid_process.stdout.replace(b"\t0\t", b"\t1\t", 1), b""), "dynamicBudget.git.rows[0].deletions"),
+    )
+    for mutant_id, process, location in git_mutants:
+        raw_calls.clear()
+        assert core_oracle.measure_reset47_current_budget(
+            expected_policy,
+            lambda *args, process=process, **kwargs: cast(
+                subprocess.CompletedProcess[bytes], process
+            ),
+            observed_raw((safe_path_uses, ())),
+        ) == core_oracle.reset47_budget_failure(location), mutant_id
+        assert raw_calls == []
+
+    over_cap = (1, 1, 4500, 1, 1, 1, 1)
+    raw_calls.clear()
+    assert core_oracle.measure_reset47_current_budget(
+        expected_policy,
+        lambda *args, **kwargs: subprocess.CompletedProcess(
+            command, 0, git_stdout(over_cap), b""
+        ),
+        observed_raw((safe_path_uses, ())),
+    ) == core_oracle.reset47_budget_failure("dynamicBudget.gitUses[2].stop")
+    assert raw_calls == []
+
+    raw_mutants: tuple[tuple[str, object, str], ...] = (
+        ("result", [], "dynamicBudget.raw.result"),
+        ("findings", (safe_path_uses, []), "dynamicBudget.raw.findings"),
+        ("uses-count", ((1,), ()), "dynamicBudget.raw.uses"),
+        ("uses-bool", ((True, 1, 1, 1, 1, 1, 1), ()), "dynamicBudget.raw.uses"),
+        ("uses-negative", ((-1, 1, 1, 1, 1, 1, 1), ()), "dynamicBudget.raw.uses"),
+    )
+    for mutant_id, raw_result, location in raw_mutants:
+        assert core_oracle.measure_reset47_current_budget(
+            expected_policy,
+            result_runner,
+            observed_raw(raw_result),
+        ) == core_oracle.reset47_budget_failure(location), mutant_id
+
+    for error in (OSError("raw"), subprocess.TimeoutExpired(command, 5)):
+        assert core_oracle.measure_reset47_current_budget(
+            expected_policy,
+            result_runner,
+            raising_raw(error),
+        ) == core_oracle.reset47_budget_failure("dynamicBudget.raw.invocation")
+    with pytest.raises(ValueError, match="unhandled"):
+        core_oracle.measure_reset47_current_budget(
+            expected_policy,
+            result_runner,
+            raising_raw(ValueError("unhandled")),
+        )
+
+    below = (1, 1, 4249, 1, 1, 1, 1)
+    boundary = (1, 1, 4250, 1, 1, 1, 1)
+    below_result = core_oracle.measure_reset47_current_budget(
+        expected_policy, result_runner, observed_raw((below, ()))
+    )
+    boundary_result = core_oracle.measure_reset47_current_budget(
+        expected_policy, result_runner, observed_raw((boundary, ()))
+    )
+    assert isinstance(below_result, core_oracle.Reset47BudgetEvidence)
+    assert isinstance(boundary_result, core_oracle.Reset47BudgetEvidence)
+    assert "coreOracle" not in below_result.raw_risk_set
+    assert "coreOracle" in boundary_result.raw_risk_set
+    assert reset47_budget_percentages((1,) * 12)[6] == "N/A"
+    assert reset47_budget_percentages((1,) * 11 + (0,))[11] == "0.00"
+
+    live = core_oracle.measure_reset47_current_budget(
+        expected_policy,
+        core_oracle.RESET47_SUBPROCESS_RUN,
+        core_oracle.read_reset47_raw_checkout,
+    )
+    assert isinstance(live, core_oracle.Reset47BudgetEvidence)
+    assert live.state is core_oracle.Reset47BudgetState.CLEAN_EQUAL
+    line_uses = dict(
+        zip(
+            (row[1] for row in EXPECTED_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_ROWS),
+            live.raw_uses,
+            strict=True,
+        )
+    )
+    caps = {
+        row[1]: row[3]
+        for row in EXPECTED_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_ROWS
+        if type(row[3]) is int
+    }
     matrix_document = json.loads(MATRIX_PATH.read_text(encoding="utf-8"))
     budget_policy = cast(dict[str, object], matrix_document["budgetPolicy"])
-    cap_catalog = cast(dict[str, object], budget_policy["reset39Caps"])
-    readability_catalog = cast(dict[str, object], budget_policy["readabilityDisposition"])
-    matrix_cap_rows = tuple(
-        tuple(row) for row in cast(list[list[object]], cap_catalog["rows"])
+    assert budget_policy == expected_policy
+    assert validate_reset47_budget_policy(budget_policy) == ()
+    suffixes = tuple(
+        name.removeprefix("EXPECTED_RESET47_")
+        for name in globals()
+        if name.startswith("EXPECTED_RESET47_")
     )
-    matrix_readability_rows = tuple(
-        tuple(row) for row in cast(list[list[str]], readability_catalog["rows"])
-    )
-    semantic_paths = {
-        "matrix": MATRIX_PATH,
-        "protocol": Path(protocol.__file__),
-        "coreOracle": CORE_ORACLE_PATH,
-        "repositoryOracle": Path(__file__),
-        "template": ROOT / "docs/templates/ADVERSARIAL_INVARIANT_MATRIX.md",
-        "adr0064": ROOT / "docs/ADR/0064-adversarial-convergence-protocol.md",
-        "playbook": ROOT / "docs/ADVERSARIAL_VERIFICATION_PLAYBOOK.md",
-    }
-    for name, path in semantic_paths.items():
-        observed_use, text_findings = reset39_text_line_use(path.read_bytes())
-        assert text_findings == () and observed_use is not None
-    assert reset39_text_line_use(b"hostile\0binary") == (
-        None,
-        reset39_budget_contract_finding("binary"),
-    )
-    relative_semantic_paths = {
-        path.relative_to(ROOT).as_posix(): name for name, path in semantic_paths.items()
-    }
-    numstat_command = (
-        *GIT_PREFIX, "diff", "--no-renames", "--ignore-submodules=none",
-        "--no-ext-diff", "--no-textconv", "--numstat", RESET39_BUDGET_BASE, "--",
-        *relative_semantic_paths,
-    )
-    numstat = REAL_SUBPROCESS_RUN(
-        numstat_command,
-        cwd=ROOT,
-        check=False,
-        capture_output=True,
-        text=False,
-        timeout=5,
-        env=dict(GIT_ENV_FIXED),
-    )
-    assert type(numstat) is subprocess.CompletedProcess
-    assert numstat.args == numstat_command
-    assert numstat.returncode == 0 and numstat.stderr == b""
-    line_uses: dict[str, int] = {}
-    for line in numstat.stdout.decode("ascii").splitlines():
-        additions, deletions, relative_path = line.split("\t", 2)
-        assert additions != "-" and deletions != "-"
-        line_uses[relative_semantic_paths[relative_path]] = int(additions) + int(deletions)
-    assert set(line_uses) == set(semantic_paths)
-    line_uses["validator"] = sum(
-        line_uses[name] for name in ("protocol", "coreOracle", "repositoryOracle")
-    )
-    line_uses["architectureSecurity"] = sum(
-        line_uses[name] for name in ("template", "adr0064", "playbook")
-    )
-    line_uses["route"] = line_uses["matrix"]
-    line_uses["sevenSemanticPaths"] = sum(
-        line_uses[name] for name in semantic_paths
-    )
-    caps = {name: limit for _, name, limit in EXPECTED_RESET39_BUDGET_CAPS}
-    assert caps["binary"] == 0
-    for name, cap in caps.items():
-        if name != "binary":
-            assert line_uses[name] * 10 < cap * 9
-    reviewed_scopes = {
-        name for name, cap in caps.items()
-        if cap and line_uses[name] * 100 >= cap * 85
-    }
-    assert reviewed_scopes == {
-        "repositoryOracle", "validator", "sevenSemanticPaths"
-    }
-    assert 89 * 10 < 100 * 9 and not 90 * 10 < 100 * 9
+    for suffix in suffixes:
+        assert globals()[f"EXPECTED_RESET47_{suffix}"] == getattr(
+            protocol, f"STATIC_RESET47_{suffix}"
+        )
 
-    def line_use(name: str) -> str:
-        return f"{line_uses[name]}-of-{caps[name]}-{line_uses[name] * 100 / caps[name]:.2f}"
-
-    derived_readability_rows = (
-        ("actual-at-or-above-85-percent-requires-recorded-readability-and-convergence-risk-review",),
-        (f"core-oracle-{line_use('coreOracle')}-percent-normal",),
-        (f"repository-oracle-{line_use('repositoryOracle')}-percent-risk-pass-named-helpers-one-semantic-row-each-ruff-mypy-readable-no-compression-below-90-no-further-growth",),
-        (f"validator-{line_use('validator')}-percent-risk-pass-explicit-independent-oracles-readable-no-compression-below-90-no-further-growth",),
-        (f"seven-semantic-paths-{line_use('sevenSemanticPaths')}-percent-risk-pass-explicit-rows-docs-readable-no-compression-below-90-no-further-growth",),
-        (f"matrix-{line_use('matrix')}-percent-normal",),
-        (f"protocol-{line_use('protocol')}-percent-normal",),
-        (f"template-{line_use('template')}-percent-normal",),
-        (f"adr0064-{line_use('adr0064')}-percent-normal",),
-        (f"playbook-{line_uses['playbook']}-lines",),
-        (f"architecture-security-{line_use('architectureSecurity')}-percent-normal",),
-        (f"route-{line_use('route')}-percent-normal",),
-        ("binary-zero",),
-        ("all-caps-below-90-percent-stop",),
-        ("semantic-compression-prohibited",),
-    )
-    assert matrix_readability_rows == derived_readability_rows
-    assert tuple(cast(list[str], cap_catalog["fields"])) == (
-        EXPECTED_RESET39_BUDGET_CAP_FIELDS
-    ) == protocol.STATIC_RESET39_BUDGET_CAP_FIELDS
-    assert matrix_cap_rows == EXPECTED_RESET39_BUDGET_CAPS
-    assert cast(object, matrix_cap_rows) == cast(
-        object, protocol.STATIC_RESET39_BUDGET_CAPS
-    )
-    assert cap_catalog["count"] == (
-        EXPECTED_RESET39_BUDGET_CAP_COUNT
-    ) == protocol.STATIC_RESET39_BUDGET_CAP_COUNT
-    assert cap_catalog["sha256"] == (
-        EXPECTED_RESET39_BUDGET_CAP_SHA256
-    ) == protocol.STATIC_RESET39_BUDGET_CAP_SHA256
-    assert tuple(cast(list[str], readability_catalog["fields"])) == (
-        EXPECTED_RESET39_READABILITY_DISPOSITION_FIELDS
-    ) == protocol.STATIC_RESET39_READABILITY_DISPOSITION_FIELDS
-    assert matrix_readability_rows == EXPECTED_RESET39_READABILITY_DISPOSITION
-    assert cast(object, matrix_readability_rows) == cast(
-        object, protocol.STATIC_RESET39_READABILITY_DISPOSITION
-    )
-    assert readability_catalog["count"] == (
-        EXPECTED_RESET39_READABILITY_DISPOSITION_COUNT
-    ) == protocol.STATIC_RESET39_READABILITY_DISPOSITION_COUNT
-    assert readability_catalog["sha256"] == (
-        EXPECTED_RESET39_READABILITY_DISPOSITION_SHA256
-    ) == protocol.STATIC_RESET39_READABILITY_DISPOSITION_SHA256
-    assert validate_reset39_budget_contract(budget_policy) == ()
-
-    def hostile_catalog(
-        name: str,
-    ) -> tuple[dict[str, object], dict[str, object], list[object]]:
-        hostile_policy = deepcopy(budget_policy)
-        catalog = cast(dict[str, object], hostile_policy[name])
-        return hostile_policy, catalog, cast(list[object], catalog["rows"])
-
-    budget_mutants: list[tuple[str, dict[str, object], str]] = []
-    hostile_budget_policy, catalog, mutant_rows = hostile_catalog("reset39Caps")
-    mutant_rows.pop()
-    budget_mutants.append(("missing", hostile_budget_policy, "reset39Caps.rows.missing"))
-    hostile_budget_policy, catalog, mutant_rows = hostile_catalog("reset39Caps")
-    mutant_rows[-1] = deepcopy(mutant_rows[-2])
-    budget_mutants.append(
-        ("duplicate", hostile_budget_policy, "reset39Caps.rows.duplicate")
-    )
-    hostile_budget_policy, catalog, mutant_rows = hostile_catalog("reset39Caps")
-    mutant_rows[0], mutant_rows[1] = mutant_rows[1], mutant_rows[0]
-    budget_mutants.append(("reorder", hostile_budget_policy, "reset39Caps.rows.order"))
-    hostile_budget_policy, catalog, mutant_rows = hostile_catalog("readabilityDisposition")
-    compressed_first = cast(list[str], mutant_rows[5])[0]
-    compressed_second = cast(list[str], mutant_rows[6])[0]
-    mutant_rows[5] = [f"{compressed_first};{compressed_second}"]
-    budget_mutants.append(
-        ("compressed", hostile_budget_policy, "readabilityDisposition.rows.compressed")
-    )
-    hostile_budget_policy, catalog, mutant_rows = hostile_catalog("reset39Caps")
-    cast(list[object], mutant_rows[9])[2] = 35001
-    budget_mutants.append(("cap-drift", hostile_budget_policy, "reset39Caps.cap"))
-    hostile_budget_policy, catalog, mutant_rows = hostile_catalog("readabilityDisposition")
-    use_row = cast(list[str], mutant_rows[2])
-    use_parts = use_row[0].split("-")
-    use_parts[2] = str(int(use_parts[2]) + 1)
-    use_row[0] = "-".join(use_parts)
-    budget_mutants.append(
-        ("use-drift", hostile_budget_policy, "readabilityDisposition.use")
-    )
-    hostile_budget_policy, catalog, mutant_rows = hostile_catalog("readabilityDisposition")
-    cast(list[str], mutant_rows[1])[0] = cast(list[str], mutant_rows[1])[0].replace(
-        "percent-normal", "percent-risk-fail"
-    )
-    budget_mutants.append(
-        ("review-drift", hostile_budget_policy, "readabilityDisposition.review")
-    )
-    hostile_budget_policy, catalog, mutant_rows = hostile_catalog("reset39Caps")
-    mutant_rows.append(["unknown", "novel", 1])
-    budget_mutants.append(("unknown-extra", hostile_budget_policy, "reset39Caps.rows.cardinality"))
-    hostile_budget_policy, catalog, mutant_rows = hostile_catalog("reset39Caps")
-    catalog["fields"] = ["name", "scope", "limit"]
-    budget_mutants.append(("fields-drift", hostile_budget_policy, "reset39Caps.fields"))
-    hostile_budget_policy, catalog, mutant_rows = hostile_catalog("reset39Caps")
-    catalog["count"] = EXPECTED_RESET39_BUDGET_CAP_COUNT + 1
-    budget_mutants.append(("count-drift", hostile_budget_policy, "reset39Caps.count"))
-    hostile_budget_policy, catalog, mutant_rows = hostile_catalog("reset39Caps")
-    catalog["sha256"] = "0" * 64
-    budget_mutants.append(("sha-drift", hostile_budget_policy, "reset39Caps.sha256"))
-    assert len({coordinate for _, _, coordinate in budget_mutants[:7]}) == 7
-    for mutant_id, hostile_policy, coordinate in budget_mutants:
-        assert validate_reset39_budget_contract(hostile_policy) == (
-            reset39_budget_contract_finding(coordinate)
-        ), mutant_id
-
-    prose_catalog = cast(dict[str, object], budget_policy["reset44ProseUse"])
+    prose_catalog = cast(dict[str, object], budget_policy["reset47RedSnapshotProseUse"])
     prose_rows = tuple(
         tuple(row) for row in cast(list[list[object]], prose_catalog["rows"])
     )
     assert tuple(cast(list[str], prose_catalog["fields"])) == (
-        EXPECTED_RESET44_PROSE_USE_FIELDS
-    ) == protocol.STATIC_RESET44_PROSE_USE_FIELDS
-    assert prose_rows == EXPECTED_RESET44_PROSE_USE_ROWS
-    assert cast(object, prose_rows) == cast(object, protocol.STATIC_RESET44_PROSE_USE_ROWS)
+        EXPECTED_RESET47_RED_SNAPSHOT_PROSE_USE_FIELDS
+    ) == protocol.STATIC_RESET47_RED_SNAPSHOT_PROSE_USE_FIELDS
+    assert prose_rows == EXPECTED_RESET47_RED_SNAPSHOT_PROSE_USE_ROWS
+    assert cast(object, prose_rows) == cast(object, protocol.STATIC_RESET47_RED_SNAPSHOT_PROSE_USE_ROWS)
     assert prose_catalog["count"] == (
-        EXPECTED_RESET44_PROSE_USE_COUNT
-    ) == protocol.STATIC_RESET44_PROSE_USE_COUNT
+        EXPECTED_RESET47_RED_SNAPSHOT_PROSE_USE_COUNT
+    ) == protocol.STATIC_RESET47_RED_SNAPSHOT_PROSE_USE_COUNT
     assert prose_catalog["sha256"] == (
-        EXPECTED_RESET44_PROSE_USE_SHA256
-    ) == protocol.STATIC_RESET44_PROSE_USE_SHA256
+        EXPECTED_RESET47_RED_SNAPSHOT_PROSE_USE_SHA256
+    ) == protocol.STATIC_RESET47_RED_SNAPSHOT_PROSE_USE_SHA256
     assert hashlib.sha256(canonical(prose_rows)).hexdigest() == (
-        EXPECTED_RESET44_PROSE_USE_SHA256
+        EXPECTED_RESET47_RED_SNAPSHOT_PROSE_USE_SHA256
     )
-    assert validate_reset44_prose_catalog(prose_catalog) == ()
+    assert validate_reset47_prose_catalog(prose_catalog) == ()
 
     expected_prose_paths = tuple(row[0] for row in prose_rows)
     document_load_calls: list[tuple[str, ...]] = []
@@ -14044,7 +14403,7 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
         document_load_calls.append(paths)
         return {path: (ROOT / path).read_bytes() for path in paths}
 
-    assert validate_reset44_prose_contract(
+    assert validate_reset47_prose_contract(
         prose_catalog, load_prose_documents, line_uses, caps
     ) == ()
     assert document_load_calls == [expected_prose_paths]
@@ -14055,56 +14414,56 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
         changed = deepcopy(prose_catalog)
         return changed, cast(list[object], changed["rows"])
 
-    catalog_mutants: list[tuple[str, object, str]] = [
+    prose_catalog_mutants: list[tuple[str, object, str]] = [
         ("non-dict", (), "catalog.type"),
     ]
-    changed_catalog, changed_rows = hostile_prose_catalog()
-    changed_catalog["unknown"] = "value"
-    catalog_mutants.append(("unknown-key", changed_catalog, "catalog.type"))
-    changed_catalog, changed_rows = hostile_prose_catalog()
-    changed_rows.pop()
-    catalog_mutants.append(("missing", changed_catalog, "catalog.rows.missing"))
-    changed_catalog, changed_rows = hostile_prose_catalog()
-    changed_rows.append(deepcopy(changed_rows[0]))
-    catalog_mutants.append(("extra", changed_catalog, "catalog.rows.cardinality"))
-    changed_catalog, changed_rows = hostile_prose_catalog()
-    changed_rows[-1] = deepcopy(changed_rows[-2])
-    catalog_mutants.append(("duplicate", changed_catalog, "catalog.rows.duplicate"))
-    changed_catalog, changed_rows = hostile_prose_catalog()
-    changed_rows[0], changed_rows[1] = changed_rows[1], changed_rows[0]
-    catalog_mutants.append(("reorder", changed_catalog, "catalog.rows.order"))
-    changed_catalog, changed_rows = hostile_prose_catalog()
-    cast(list[object], changed_rows[0])[2] = line_uses["repositoryOracle"] + 1
-    catalog_mutants.append(("value", changed_catalog, "catalog.values"))
-    changed_catalog, changed_rows = hostile_prose_catalog()
-    changed_catalog["fields"] = ["marker", *EXPECTED_RESET44_PROSE_USE_FIELDS[1:]]
-    catalog_mutants.append(("fields", changed_catalog, "catalog.fields"))
-    changed_catalog, changed_rows = hostile_prose_catalog()
-    changed_catalog["count"] = EXPECTED_RESET44_PROSE_USE_COUNT + 1
-    catalog_mutants.append(("count", changed_catalog, "catalog.count"))
-    changed_catalog, changed_rows = hostile_prose_catalog()
-    changed_catalog["sha256"] = "0" * 64
-    catalog_mutants.append(("sha", changed_catalog, "catalog.sha256"))
-    for mutant_id, field, value in (
+    prose_mutant, prose_rows_mutant = hostile_prose_catalog()
+    prose_mutant["unknown"] = "value"
+    prose_catalog_mutants.append(("unknown-key", prose_mutant, "catalog.type"))
+    prose_mutant, prose_rows_mutant = hostile_prose_catalog()
+    prose_rows_mutant.pop()
+    prose_catalog_mutants.append(("missing", prose_mutant, "catalog.rows.missing"))
+    prose_mutant, prose_rows_mutant = hostile_prose_catalog()
+    prose_rows_mutant.append(deepcopy(prose_rows_mutant[0]))
+    prose_catalog_mutants.append(("extra", prose_mutant, "catalog.rows.cardinality"))
+    prose_mutant, prose_rows_mutant = hostile_prose_catalog()
+    prose_rows_mutant[-1] = deepcopy(prose_rows_mutant[-2])
+    prose_catalog_mutants.append(("duplicate", prose_mutant, "catalog.rows.duplicate"))
+    prose_mutant, prose_rows_mutant = hostile_prose_catalog()
+    prose_rows_mutant[0], prose_rows_mutant[1] = prose_rows_mutant[1], prose_rows_mutant[0]
+    prose_catalog_mutants.append(("reorder", prose_mutant, "catalog.rows.order"))
+    prose_mutant, prose_rows_mutant = hostile_prose_catalog()
+    cast(list[object], prose_rows_mutant[0])[2] = line_uses["repositoryOracle"] + 1
+    prose_catalog_mutants.append(("value", prose_mutant, "catalog.values"))
+    prose_mutant, prose_rows_mutant = hostile_prose_catalog()
+    prose_mutant["fields"] = ["marker", *EXPECTED_RESET47_RED_SNAPSHOT_PROSE_USE_FIELDS[1:]]
+    prose_catalog_mutants.append(("fields", prose_mutant, "catalog.fields"))
+    prose_mutant, prose_rows_mutant = hostile_prose_catalog()
+    prose_mutant["count"] = EXPECTED_RESET47_RED_SNAPSHOT_PROSE_USE_COUNT + 1
+    prose_catalog_mutants.append(("count", prose_mutant, "catalog.count"))
+    prose_mutant, prose_rows_mutant = hostile_prose_catalog()
+    prose_mutant["sha256"] = "0" * 64
+    prose_catalog_mutants.append(("sha", prose_mutant, "catalog.sha256"))
+    for mutant_id, field_ordinal, mutant_value in (
         ("nested-list", 0, ["path"]),
         ("nested-dict", 1, {"marker": "value"}),
         ("bool", 2, True),
         ("wrong-percent-type", 5, 0),
     ):
-        changed_catalog, changed_rows = hostile_prose_catalog()
-        cast(list[object], changed_rows[0])[field] = value
-        catalog_mutants.append((mutant_id, changed_catalog, "catalog.rows.type"))
+        prose_mutant, prose_rows_mutant = hostile_prose_catalog()
+        cast(list[object], prose_rows_mutant[0])[field_ordinal] = mutant_value
+        prose_catalog_mutants.append((mutant_id, prose_mutant, "catalog.rows.type"))
 
-    for mutant_id, mutant_catalog, coordinate in catalog_mutants:
+    for mutant_id, mutant_catalog, coordinate in prose_catalog_mutants:
         forbidden_calls: list[tuple[str, ...]] = []
 
         def forbidden_document_loader(paths: tuple[str, ...]) -> object:
             forbidden_calls.append(paths)
             return {"docs/unlisted.md": "dual document fault"}
 
-        assert validate_reset44_prose_contract(
+        assert validate_reset47_prose_contract(
             mutant_catalog, forbidden_document_loader, line_uses, caps
-        ) == reset44_prose_finding(coordinate), mutant_id
+        ) == reset47_prose_finding(coordinate), mutant_id
         assert forbidden_calls == [], mutant_id
 
     def run_document_mutant(documents: object) -> tuple[protocol.Finding, ...]:
@@ -14114,7 +14473,7 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
             calls.append(paths)
             return documents
 
-        findings = validate_reset44_prose_contract(
+        findings = validate_reset47_prose_contract(
             prose_catalog, hostile_document_loader, line_uses, caps
         )
         assert calls == [expected_prose_paths]
@@ -14132,7 +14491,7 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
         ("mapping-extra", extra_documents),
         ("mapping-substitution", substituted_documents),
     ):
-        assert run_document_mutant(documents) == reset44_prose_finding(
+        assert run_document_mutant(documents) == reset47_prose_finding(
             "documents.path"
         ), mutant_id
 
@@ -14141,7 +14500,7 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
     assert type(governed_payload) is bytes
     governed_marker = prose_rows[0][1]
     start_line = governed_marker.encode("ascii") + b"\n"
-    end_line = b"<!-- issue-435-reset44-prose-use:end -->\n"
+    end_line = b"<!-- issue-435-reset47-red-snapshot:end -->\n"
     start = governed_payload.index(start_line)
     content_start = start + len(start_line)
     end = governed_payload.index(end_line, content_start)
@@ -14184,7 +14543,7 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
         ("payload-marker", changed_document(start_line, payload_marker_drift), "documents.marker.substitution"),
     )
     for mutant_id, documents, coordinate in raw_document_mutants:
-        assert run_document_mutant(documents) == reset44_prose_finding(coordinate), mutant_id
+        assert run_document_mutant(documents) == reset47_prose_finding(coordinate), mutant_id
 
     for path_ordinal, governed_row in enumerate(prose_rows):
         branch_path = governed_row[0]
@@ -14235,7 +14594,7 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
             ("trailing", branch_document(end_line, b"trailing junk\n" + end_line), "documents.text.trailing"),
         )
         for mutant_id, documents, coordinate in branch_mutants:
-            assert run_document_mutant(documents) == reset44_prose_finding(
+            assert run_document_mutant(documents) == reset47_prose_finding(
                 coordinate
             ), f"path-{path_ordinal}-{mutant_id}"
 
@@ -14275,7 +14634,7 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
         ("number", first_interior_mutant(matrix_token, matrix_token.replace(f"{line_uses['matrix']:,}".encode(), f"0{line_uses['matrix']:,}".encode())), "documents.tokens.number"),
     )
     for mutant_id, documents, coordinate in semantic_document_mutants:
-        assert run_document_mutant(documents) == reset44_prose_finding(coordinate), mutant_id
+        assert run_document_mutant(documents) == reset47_prose_finding(coordinate), mutant_id
 
     assert len(EXPECTED_PORTABLE_CONSTRUCTION_MUTANT_FIELDS) == 4
     assert len(EXPECTED_PORTABLE_CONSTRUCTION_MUTANTS) == (
@@ -14536,25 +14895,29 @@ def test_real_git_freeze_binds_ancestry_blobs_hashes_author_and_immutability(
         operation,
         expected_location,
     ) in EXPECTED_METADATA_REPLAY_DIVERGENCE_MUTANTS:
-        rows = list(getattr(second, field_name))
+        replay_rows = list(
+            cast(tuple[tuple[object, ...], ...], getattr(second, field_name))
+        )
         matching = tuple(
             ordinal
-            for ordinal, row in enumerate(rows)
-            if row[0] == execution_id and row[1] == role_ordinal
+            for ordinal, replay_row in enumerate(replay_rows)
+            if replay_row[0] == execution_id and replay_row[1] == role_ordinal
         )
         assert len(matching) == 1
         row_index = matching[0]
-        row = list(rows[row_index])
+        replay_row = list(replay_rows[row_index])
         if operation == "increment-first-request":
-            requests = list(row[3])
+            requests = list(cast(tuple[int, ...], replay_row[3]))
             requests[0] += 1
-            row[3] = tuple(requests)
+            replay_row[3] = tuple(requests)
         else:
             assert operation == "replace-first-payload-identity"
-            row[3] = "0" * 64
-        rows[row_index] = tuple(row)
-        changed = replace(second, **{field_name: tuple(rows)})
-        assert replay_findings(first, changed) == finding(
+            replay_row[3] = "0" * 64
+        replay_rows[row_index] = tuple(replay_row)
+        changed_collection = replace(
+            second, **cast(Any, {field_name: tuple(replay_rows)})
+        )
+        assert replay_findings(first, changed_collection) == finding(
             "evidence",
             "ACP.EVIDENCE.CROSS_ROOT_REPLAY_MISMATCH",
             expected_location,

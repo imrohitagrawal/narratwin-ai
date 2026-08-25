@@ -250,27 +250,63 @@ generic process failure before output interpretation, with `-1`, `2`, and `127`
 frozen for every form. Author bounds separately prove a scripted RED size of 320
 bytes at exact N/N+1 and a smaller dynamic RED-object cap.
 
-<!-- issue-435-reset44-prose-use:sha256=071fb29a3d38c635c5ea51bcf588ef6fbc2b6754d1c2da09bc8f7c9c40d83dd6 -->
-Reset44 caps are matrix 5,500, protocol 7,000, core oracle 4,500, repository
+<!-- issue-435-reset47-red-snapshot:sha256=PENDING_RESET47_ADR_BLOCK_SHA256 -->
+This block records `C2R47_RED_SNAPSHOT_ONLY`; it never represents the mutable
+current GREEN head. Its non-self-referential catalog binds fixed base
+`d3d93ac5678268f861cf7af6286b48ec062c3d19`, exact C1R47 parent
+`6bfe884b175c2d03a52f608b8b8f433849236517`, the Reset47 snapshot schema and
+version, exact ordered rows, row count, and a SHA-256 over those rows. The
+external C2 checkpoint and later C3 freeze alone bind the eventual C2 commit,
+tree, and seven blobs.
+
+Reset47 caps are matrix 5,500, protocol 12,000, core oracle 5,000, repository
 oracle 19,000, template 600, ADR 550, route partition 5,800,
-architecture/security partition 2,200, validator partition 30,000, seven-path
-aggregate 35,200, and zero binaries. Exact file use is matrix 4,496/5,500
-(81.75%), protocol 5,335/7,000 (76.21%), core 3,824/4,500 (84.98%), repository
-16,620/19,000 (87.47%), template 370/600 (61.67%), ADR 380/550 (69.09%), and
-playbook 547 lines. Exact partitions are validator 25,779/30,000 (85.93%),
-architecture/security 1,297/2,200 (58.95%), and route 4,496/5,800 (77.52%);
-the seven-path aggregate is 31,572/35,200 (89.69%). Readability/convergence PASS
-for core, repository, validator, and aggregate only when each at-risk surface
-has an explicit review: core changes use independent semantic literals and
-catalog assertions; named parser, binder, constructor, validator, and mutator
-helpers and one-semantic-case rows remain explicit; Ruff and strict mypy pass;
-prose and tables remain readable. Every
-file, partition, and aggregate must be below the exact 90% pre-C3/GREEN stop.
-No semantic compression or further growth is permitted on frozen Reset44
-surfaces. The whole-line start marker encodes SHA-256 of the raw UTF-8/LF bytes
-strictly between the newline after this marker and the byte before the end
-marker, including exactly one terminal LF and excluding both marker lines.
-<!-- issue-435-reset44-prose-use:end -->
+architecture/security partition 2,200, validator partition 40,000, seven-path
+aggregate 45,000, and zero binaries. Core risk review starts at 4,250 lines and
+the core pre-GREEN stop is 4,500 lines. Exact C2R47 RED-snapshot uses,
+percentages, and readability dispositions are
+`PENDING_RESET47_RED_SNAPSHOT_USES`; they are immutable historical evidence,
+not current-head acceptance values. Each snapshot surface at or above 85% needs
+an explicit readability/convergence review, and every snapshot surface remains
+strictly below 90% without semantic compression.
+
+Current-head acceptance is separate. Before intentional RED, the dynamic proof
+validates the frozen contract before either evidence source. Tree-to-tree Git
+argv is
+`/usr/bin/git --no-pager --no-replace-objects --no-optional-locks
+--no-lazy-fetch -c protocol.allow=never -c core.commitGraph=false -c
+core.fsmonitor=false -c log.showSignature=false -c fsck.skipList=/dev/null diff
+--no-renames --ignore-submodules=none --no-ext-diff --no-textconv
+--diff-filter=A --numstat
+<fixed-base> HEAD -- <seven-frozen-paths>`. A fresh closed environment requires
+an exact `CompletedProcess`, integer-zero status, empty byte stderr, exact byte
+stdout, and NUL-free ASCII with seven ordered terminal-LF rows, exactly three
+tab fields, canonical counts, fixed-base
+absence, and zero deletions. Git output paths are independently frozen in
+lexicographic order as "docs/ADR/0064-adversarial-convergence-protocol.md",
+"docs/ADVERSARIAL_VERIFICATION_PLAYBOOK.md",
+"docs/governance/adversarial-convergence-invariant-matrix-v1.json",
+"docs/templates/ADVERSARIAL_INVARIANT_MATRIX.md",
+"scripts/quality/issue435_adversarial_convergence.py",
+"tests/unit/test_issue435_adversarial_convergence.py", and
+"tests/unit/test_issue435_adversarial_convergence_repository.py".
+Independently, exact raw checkout bytes for the
+seven allowlisted contained files require no-symlink ancestors and leaves,
+regular fstat identity, bounded descriptor reads at 4,194,304 bytes per item and
+16,777,216 bytes total, and reject FIFO/block/unbounded reads, non-bytes, NUL,
+invalid UTF-8, CR, and malformed line endings while counting LF records plus a
+final unterminated record exactly.
+Each measurement separately derives seven uses, route/architecture/validator
+partitions, aggregate, binary-zero state, ratios, the >=85% review set, and the
+strict `use * 10 < cap * 9` result. An authorized pre-commit slice requires both
+under caps; a clean immutable head additionally requires exact Git/raw equality.
+Catalog failure is the exact first finding with zero Git, raw reads, or later
+semantic work. The proof accepts no caller-supplied current-use table and never
+treats this snapshot block as current truth. The whole-line
+start marker encodes SHA-256 of raw UTF-8/LF bytes strictly between the newline
+after this marker and the byte before the end marker, including exactly one
+terminal LF and excluding both marker lines.
+<!-- issue-435-reset47-red-snapshot:end -->
 
 
 ### Filesystem snapshot boundary
