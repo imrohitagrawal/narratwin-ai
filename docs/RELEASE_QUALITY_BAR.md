@@ -29,7 +29,8 @@ Every slice must include:
 - Unsupported-claim tests exist once generation is implemented.
 - Empty-context refusal test exists once retrieval/generation is implemented.
 - Provider adapters have contract tests once real adapters are added.
-- Generated outputs include AI disclosure where media output is relevant.
+- Generated outputs carry the approved legal/compliance metadata where required;
+  ordinary presenter UX wording is governed by the Cut 1 presenter contract.
 
 ## MVP release blocker list
 

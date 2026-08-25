@@ -8,6 +8,10 @@
 - Last updated: 2026-06-29
 - Implementation status: evaluation architecture only; product implementation blocked
 
+The current cross-document AI-quality authority is
+`docs/AI_QUALITY_AND_EVALUATION_CONTRACT.md`; this document supplies the detailed
+architecture and safety rationale referenced by that contract.
+
 ## Safety Goal
 
 NarraTwin AI must generate useful walkthroughs without inventing project facts,
@@ -37,7 +41,7 @@ is not avatar realism, voice quality, or media polish.
 | Unsafe output handling | LLM output rendered as HTML | output encoding and schema validation |
 | Provider drift | Provider returns unexpected schema | adapter-level response validation |
 | Cost abuse | repeated generation loop | rate limits, token caps, and run cache |
-| Media misuse | avatar/voice implies real person consent | consent metadata and AI disclosure |
+| Media misuse | avatar/voice implies real person consent | consent, provenance, and legally required compliance metadata |
 
 ## Evaluation Dimensions
 
@@ -389,7 +393,8 @@ Stage 6 and Stage 7 expansion:
 - subtitle structure checks
 - TTS fallback checks
 - avatar/video provider contract checks
-- AI disclosure and consent checks
+- legally required compliance-metadata and consent checks; ordinary presenter UX
+  wording is governed by the Cut 1 presenter contract
 
 ## Metrics
 

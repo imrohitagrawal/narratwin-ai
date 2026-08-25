@@ -13,6 +13,44 @@ This phase plan converts PRD v1.0 into gated, reviewable work. It uses
 spec-driven development and vertical slicing. It is a plan only; it does not
 authorize product implementation in Stage 1.
 
+## Current Contract Precedence
+
+Issue `#440` proposes reconciliation of the current product and readiness direction.
+It becomes authoritative only after its dedicated PR merges. The
+canonical sources are:
+
+1. `docs/PRODUCT_CONTRACTS/CUT1_PRESENTER_CONTRACT.md` for Meera, Raj, Myra,
+   eye contact, framing, body/hand/head/hair motion, provenance, and Cut 1/Cut 2
+   boundaries.
+2. `docs/AI_QUALITY_AND_EVALUATION_CONTRACT.md` for grounding, hallucination
+   controls, Ragas/DeepEval/LLM-judge strategy, golden suites, human review,
+   multilingual evaluation, drift, and rollback.
+3. `docs/ENTERPRISE_READINESS_REGISTER.md` for enterprise capability status,
+   ownership, evidence, and commercial/public release gates.
+4. `docs/CUT_ROADMAP_AND_EVIDENCE_MATRIX.md` for the single Cut 1–5 roadmap,
+   numeric Cut 1 thresholds, AI/MLOps protocol, enterprise targets, tenant/data
+   controls, and requirement-to-evidence mapping.
+5. `docs/demo/CUT1_ACCEPTANCE_CHECKLIST.md` for the executable controlled-demo
+   acceptance artifact.
+
+`STATUS.md` is the current ledger and points to these contracts. The intended
+end product is the human-like Meera presenter with multilingual delivery,
+user-selected language/audience preferences, grounded interactive Q&A, and
+later enterprise/public readiness. Existing local/mock/provider/public-release
+restrictions remain binding implementation authorization gates. Historical
+product-mode tables do not replace the intended end-product contract. Issue #435
+remains an adversarial evidence gate, not a product definition source.
+
+## Cut roadmap authority
+
+Cuts are product acceptance units layered over the approved implementation
+stages. The five-cut scope, exclusions, thresholds, evidence owners, and later
+decisions are defined only in
+`docs/CUT_ROADMAP_AND_EVIDENCE_MATRIX.md`; do not reconstruct them from older
+issue or phase prose. Cut 1 cannot be called accepted until
+`docs/demo/CUT1_ACCEPTANCE_CHECKLIST.md` passes. Cut 2–5 remain gated by their
+listed evidence and the enterprise register.
+
 ## Assumptions
 
 1. NarraTwin AI remains a web application with backend, frontend, RAG, provider,
@@ -327,7 +365,8 @@ Scope:
 - translation/localization
 - subtitle-ready output
 - mock/local TTS adapter
-- AI voice disclosure
+- legal/compliance-controlled disclosure metadata where required; ordinary
+  product presentation remains governed by the Cut 1 presenter contract
 
 Acceptance:
 
@@ -348,7 +387,8 @@ Scope:
 - adapter contract tests
 - video export artifact path
 - optional premium provider adapter contracts where explicitly approved
-- AI media disclosure
+- legal/compliance-controlled disclosure metadata where required; ordinary
+  presenter UX remains governed by the Cut 1 presenter contract
 - consent controls for any cloned identity feature
 
 Acceptance:

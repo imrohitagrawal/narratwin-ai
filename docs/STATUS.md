@@ -12,6 +12,36 @@ Use it to answer:
 - what is blocked or ambiguous
 - what the next approved action is
 
+## Canonical Current Product and Readiness Contract
+
+Issue `#440` is the proposed reconciliation authority for the refreshed Cut 1
+direction. It becomes active only after the dedicated PR merges and closeout
+records its merge state. The proposed normative sources are:
+
+- `docs/PRODUCT_CONTRACTS/CUT1_PRESENTER_CONTRACT.md` — Meera primary, Raj first
+  backup, Myra second backup, human-like presentation, mandatory eye contact,
+  framing and motion acceptance, provenance, and Cut 1/Cut 2 boundaries.
+- `docs/AI_QUALITY_AND_EVALUATION_CONTRACT.md` — grounding, hallucination
+  prevention, lineage, golden suites, Ragas, DeepEval/custom evaluation,
+  calibrated LLM-as-judge, human review, multilingual/media evaluation, drift,
+  observability, and rollback.
+- `docs/ENTERPRISE_READINESS_REGISTER.md` — architecture, security, SRE,
+  availability, disaster recovery, scalability, DevOps, supply chain,
+  observability, accessibility, operations, and commercial-readiness gates.
+- `docs/CUT_ROADMAP_AND_EVIDENCE_MATRIX.md` — the single Cut 1–5 roadmap,
+  numeric thresholds, AI/MLOps protocol, tenant/data targets, enterprise
+  targets, deferred decisions, and requirement-to-evidence matrix.
+- `docs/demo/CUT1_ACCEPTANCE_CHECKLIST.md` — the controlled Cut 1 demo run and
+  human acceptance record.
+
+Historical issue and phase tables below remain evidence and sequencing history.
+They must not be interpreted as a competing current product contract. Current
+implementation restrictions remain restrictions, not a redefinition of the
+intended end product. Issue `#435` remains a separate adversarial evidence gate;
+it validates approved contracts and does not redefine them. Until #440 merges,
+the existing merged-main authority and implementation gates remain binding; this
+branch must not be treated as product or release authorization.
+
 ## Current Baseline
 
 - Issue `#434` is the current OWNER-approved, nonactivating Child B route under
@@ -58,7 +88,7 @@ Use it to answer:
   post-merge canary found a hosted-runner package-import defect; its Issue #415
   corrective PR must merge and the canary must be resumed before activation.
 
-- Current Cut 1 route authority: Issue `#346` / PR `#347` merged at
+- Historical implementation-route evidence only (superseded as the Cut 1 product contract by Issue `#440` after merge; its current-stage implementation restrictions remain binding where applicable): Issue `#346` / PR `#347` merged at
   `4c5d7cf16fb8cdf7046d561c882f655d06125127` and established exact branch
   `cut1-335-r0c-a2-1-stage4-rag-v1-lineage` for A2.1. Issue `#335` is closed
   completed through PR `#348` at `454025c403334933306142f65bc3e25541eeb23e` and binds new Stage 4 output and evaluations to canonical
@@ -87,7 +117,7 @@ Use it to answer:
   `a69903fea50c22e12926d7e13dffdc74e55dfb65`; post-merge `main` workflow
   `31046587813` passed. Its citation-lineage repair is accepted prerequisite
   evidence, not an unresolved Cut 1 blocker.
-- Issue `#366` governs the controlled local, key-free Cut 1. PR `#373` revises
+- Historical implementation-route evidence only (superseded as the Cut 1 product contract by Issue `#440` after merge; its current-stage local/key-free restrictions remain binding where applicable): Issue `#366` governs the controlled local, key-free Cut 1. PR `#373` revises
   governance only under OWNER comments `5197711390`, `5197717563`, and
   `5197776590` and merged as `48fc32a2689c9bbc03742d774f3eadb8a500dafc`;
   post-merge workflow `31056401428` passed. The serialized path is #386 → #385
@@ -136,10 +166,10 @@ Use it to answer:
   `15716441d23edbf1c1863112bb721c4bf9bbde4e`; exact-head main quality run
   `31262941423`, CI run `31262959535`, security run `31262961083`, and eval run
   `31262962297` passed. Issues `#403` and `#405` are closed after merged-main
-  acceptance. Issue `#367` / PR `#400` is now the active exact fourteen-path
+  acceptance. Historical implementation-route evidence only (superseded as the Cut 1 product contract by Issue `#440` after merge; its current-stage registry restrictions remain binding where applicable): Issue `#367` / PR `#400` is the exact fourteen-path
   child for a strict provider-neutral registry of Meera, Myra, and Raj, with
   its presenter ADR renumbered to ADR `0054`. It binds the accepted
-  assets/personas/provenance, synthetic disclosure, controlled-local
+  assets/personas/provenance, compliance-channel provenance metadata, controlled-local
   permission, distinct non-cloned qualitative voice-direction metadata,
   canonical production-field integrity, renderer-neutral settings, monotonic
   lifecycle, and trace integrity. It produces no listenable audio and proves no

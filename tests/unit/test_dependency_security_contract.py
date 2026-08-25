@@ -52,6 +52,9 @@ SEMGREP_LOCK_SHA256 = "1975bebb0fca718a45742ad13a759e2092162c44c944c310572b4d553
 ISSUE150_BASE = "a02286240212ad8958915aec01aa5ebaf60fa705"
 PYPDF_WHEEL_SHA256 = "14e001d6504822cb1ca9c7ed9a69bccb320f59b320730f55af804361abe4d5ee"
 PYPDF_SDIST_SHA256 = "d39c4d955a76409284a905e2d65b40076d77ab76129e0faaeeb6612403ecfc79"
+PIP_SECURITY_VERSION = "26.2.1"
+PIP_SECURITY_WHEEL_SHA256 = "71138adf1f4ca900cdb7d289c21b7494329f2332b6d85f0e1c42108c0384ed3e"
+PIP_SECURITY_SDIST_SHA256 = "f6ad667e89a1fe78046c8f13232b247200f5258d7828f3f7883d660878e0813f"
 GOOGLE_AUTH_PACKAGES = {
     "google-auth": ("2.56.3", "aafe27da7ef14e2ec2b24d75c45f7d800cfa7b3eb2d3d73a85228aafcfd870bc", "40e229fc901f0a305b553050e5fce562d509bee0435be053abfa91582b51b90c", "8ec438808f813ad034535000261eed1067475d229d05bbf4216e78c3f2362e53"),
     "cryptography": ("50.0.0", "8584b52fbe429cb4b08434bf19df055dfe7c97a11d486c9b265ec1ee01851bb4", "eeac2acb5a20ed25e0ad6d1df9891a520b78b404266b6d11778f25d5d691a6c9", "031e2d5dd4bb9caa3ca9c82e5a197fd8ae680232cee62603d1a813f3f07e3d03"),
@@ -63,6 +66,15 @@ def _normalize_issue434_project(project: dict[str, Any]) -> None:
 def _normalize_issue434_lock(lock: dict[str, Any]) -> None:
     root = next(package for package in lock["package"] if package["name"] == "narratwin-ai"); dependencies = root["dev-dependencies"]["dev"]; metadata = root["metadata"]["requires-dev"]["dev"]  # noqa: E702
     assert dependencies.count({"name": "cryptography"}) == 1 and metadata.count({"name": "cryptography", "specifier": "==50.0.0"}) == 1; dependencies.remove({"name": "cryptography"}); metadata.remove({"name": "cryptography", "specifier": "==50.0.0"})  # noqa: E702
+
+
+def _normalize_pip_security_delta(lock: dict[str, Any], base_lock: dict[str, Any]) -> None:
+    package = next(package for package in lock["package"] if package["name"] == "pip")
+    assert package["version"] == PIP_SECURITY_VERSION
+    assert package["sdist"]["hash"] == f"sha256:{PIP_SECURITY_SDIST_SHA256}"
+    assert package["wheels"][0]["hash"] == f"sha256:{PIP_SECURITY_WHEEL_SHA256}"
+    index = next(i for i, item in enumerate(lock["package"]) if item["name"] == "pip")
+    lock["package"][index] = next(item for item in base_lock["package"] if item["name"] == "pip")
 
 
 def _assert_google_auth_delta(project: dict[str, Any], lock: dict[str, Any], base_project: dict[str, Any], base_lock: dict[str, Any]) -> None:
@@ -94,6 +106,7 @@ def _assert_google_auth_delta(project: dict[str, Any], lock: dict[str, Any], bas
     normalized_root["metadata"]["requires-dist"].remove(google_metadata[0])
     normalized_lock["package"] = [package for package in normalized_lock["package"] if package["name"] not in GOOGLE_AUTH_PACKAGES]
     _normalize_issue434_lock(normalized_lock)
+    _normalize_pip_security_delta(normalized_lock, base_lock)
     assert normalized_lock == base_lock
 
 
@@ -159,6 +172,7 @@ def _assert_pypdf_615_contract(project_text: str, lock_text: str) -> None:
     )
     normalized_lock["package"] = [package for package in normalized_lock["package"] if package["name"] not in GOOGLE_AUTH_PACKAGES]
     _normalize_issue434_lock(normalized_lock)
+    _normalize_pip_security_delta(normalized_lock, base_lock)
     assert normalized_lock == base_lock
 
 
@@ -177,6 +191,7 @@ def test_pypdf_contract_rejects_vulnerable_hash_and_unrelated_drift() -> None:
         (project_text.replace('"cryptography==50.0.0"', '"cryptography==49.0.0"'), lock_text),
         (project_text, lock_text.replace('{ name = "cryptography", specifier = "==50.0.0" }', '{ name = "cryptography", specifier = "==49.0.0" }')),
         (project_text, lock_text.replace(f"sha256:{PYPDF_WHEEL_SHA256}", "sha256:wrong")),
+        (project_text, lock_text.replace(f"sha256:{PIP_SECURITY_WHEEL_SHA256}", "sha256:wrong")),
         (project_text, lock_text.replace('version = "2.6.2"', 'version = "0.0.0"', 1)),
     )
     for candidate_project, candidate_lock in mutations:
