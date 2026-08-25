@@ -88,7 +88,7 @@ branch must not be treated as product or release authorization.
   post-merge canary found a hosted-runner package-import defect; its Issue #415
   corrective PR must merge and the canary must be resumed before activation.
 
-- Current Cut 1 route authority: Issue `#346` / PR `#347` merged at
+- Historical implementation-route evidence only (superseded as the Cut 1 product contract by Issue `#440` after merge; its current-stage implementation restrictions remain binding where applicable): Issue `#346` / PR `#347` merged at
   `4c5d7cf16fb8cdf7046d561c882f655d06125127` and established exact branch
   `cut1-335-r0c-a2-1-stage4-rag-v1-lineage` for A2.1. Issue `#335` is closed
   completed through PR `#348` at `454025c403334933306142f65bc3e25541eeb23e` and binds new Stage 4 output and evaluations to canonical
@@ -117,7 +117,7 @@ branch must not be treated as product or release authorization.
   `a69903fea50c22e12926d7e13dffdc74e55dfb65`; post-merge `main` workflow
   `31046587813` passed. Its citation-lineage repair is accepted prerequisite
   evidence, not an unresolved Cut 1 blocker.
-- Issue `#366` governs the controlled local, key-free Cut 1. PR `#373` revises
+- Historical implementation-route evidence only (superseded as the Cut 1 product contract by Issue `#440` after merge; its current-stage local/key-free restrictions remain binding where applicable): Issue `#366` governs the controlled local, key-free Cut 1. PR `#373` revises
   governance only under OWNER comments `5197711390`, `5197717563`, and
   `5197776590` and merged as `48fc32a2689c9bbc03742d774f3eadb8a500dafc`;
   post-merge workflow `31056401428` passed. The serialized path is #386 → #385
@@ -166,10 +166,10 @@ branch must not be treated as product or release authorization.
   `15716441d23edbf1c1863112bb721c4bf9bbde4e`; exact-head main quality run
   `31262941423`, CI run `31262959535`, security run `31262961083`, and eval run
   `31262962297` passed. Issues `#403` and `#405` are closed after merged-main
-  acceptance. Issue `#367` / PR `#400` is now the active exact fourteen-path
+  acceptance. Historical implementation-route evidence only (superseded as the Cut 1 product contract by Issue `#440` after merge; its current-stage registry restrictions remain binding where applicable): Issue `#367` / PR `#400` is the exact fourteen-path
   child for a strict provider-neutral registry of Meera, Myra, and Raj, with
   its presenter ADR renumbered to ADR `0054`. It binds the accepted
-  assets/personas/provenance, synthetic disclosure, controlled-local
+  assets/personas/provenance, compliance-channel provenance metadata, controlled-local
   permission, distinct non-cloned qualitative voice-direction metadata,
   canonical production-field integrity, renderer-neutral settings, monotonic
   lifecycle, and trace integrity. It produces no listenable audio and proves no
