@@ -25,10 +25,10 @@ FREEZE_PATH = ROOT / "docs/governance/adversarial-convergence-red-freeze-v1.json
 REPOSITORY_TEST_PATH = ROOT / "tests/unit/test_issue435_adversarial_convergence_repository.py"
 IDENTITY_DOMAIN = b"NARRATWIN:ACP:IDENTITY:V1\x00"
 SIGNATURE_DOMAIN = b"NARRATWIN:ACP:SIGNATURE:V1\x00"
-EXPECTED_SEMANTIC_SHA256 = "38ad351f746db06ead18c7ec96688743badf8264a304c750e7ee2c87eb170c2e"
-EXPECTED_RESET47_RED_SNAPSHOT_SCHEMA_VERSION = "C2R48_RED_SNAPSHOT_ONLY_V1"
+EXPECTED_SEMANTIC_SHA256 = "2c1158d8acb7acdf180c9d11e9f2f8f98bab0753b61055c3f03bfedd3c68a188"
+EXPECTED_RESET47_RED_SNAPSHOT_SCHEMA_VERSION = "C2R50_RED_SNAPSHOT_ONLY_V1"
 EXPECTED_RESET47_RED_SNAPSHOT_FIXED_BASE = "a6284f7d8f1a14ef4c9a99493d6b06046505f20c"
-EXPECTED_RESET47_RED_SNAPSHOT_C1_HEAD = "d30fbccde228f713860d5592df1f6230953a30b1"
+EXPECTED_RESET47_RED_SNAPSHOT_C1_HEAD = "142dc1502ebec9483c58770f1c03dca9862e9bc8"
 EXPECTED_RESET47_RED_SNAPSHOT_FIELDS = (
     "scope",
     "name",
@@ -43,9 +43,9 @@ EXPECTED_RESET47_RED_SNAPSHOT_ROWS = (
         "path",
         "matrix",
         "docs/governance/adversarial-convergence-invariant-matrix-v1.json",
-        4509,
+        4510,
         5500,
-        "81.98",
+        "82.00",
         "normal",
     ),
     (
@@ -61,19 +61,19 @@ EXPECTED_RESET47_RED_SNAPSHOT_ROWS = (
         "path",
         "coreOracle",
         "tests/unit/test_issue435_adversarial_convergence.py",
-        4373,
+        4496,
         5000,
-        "87.46",
+        "89.92",
         "readability-convergence-pass",
     ),
     (
         "path",
         "repositoryOracle",
         "tests/unit/test_issue435_adversarial_convergence_repository.py",
-        16999,
+        15791,
         19000,
-        "89.47",
-        "readability-convergence-pass",
+        "83.11",
+        "normal",
     ),
     (
         "path",
@@ -102,7 +102,7 @@ EXPECTED_RESET47_RED_SNAPSHOT_ROWS = (
         "N/A",
         "uncapped-contributor",
     ),
-    ("partition", "route", "matrix", 4509, 5800, "77.74", "normal"),
+    ("partition", "route", "matrix", 4510, 5800, "77.76", "normal"),
     (
         "partition",
         "architectureSecurity",
@@ -116,18 +116,18 @@ EXPECTED_RESET47_RED_SNAPSHOT_ROWS = (
         "partition",
         "validator",
         "protocol+coreOracle+repositoryOracle",
-        26897,
+        25812,
         40000,
-        "67.24",
+        "64.53",
         "normal",
     ),
     (
         "aggregate",
         "sevenSemanticPaths",
         "matrix+protocol+coreOracle+repositoryOracle+template+adr0064+playbook",
-        32815,
+        31731,
         45000,
-        "72.92",
+        "70.51",
         "normal",
     ),
     (
@@ -142,10 +142,10 @@ EXPECTED_RESET47_RED_SNAPSHOT_ROWS = (
 )
 EXPECTED_RESET47_RED_SNAPSHOT_COUNT = 12
 EXPECTED_RESET47_RED_SNAPSHOT_SHA256 = (
-    "9374a1b7570092e8121c2754a23be7a2efbadca6f7649ea9270b85335698e731"
+    "32b47bf3eebdb87e512fb8e3e4c99c4d168a20f24811b041061fead2f2997a10"
 )
 EXPECTED_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_SCHEMA_VERSION = (
-    "RESET48_DYNAMIC_CURRENT_HEAD_BUDGET_V1"
+    "RESET50_DYNAMIC_CURRENT_HEAD_BUDGET_V1"
 )
 EXPECTED_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_FIXED_BASE = "a6284f7d8f1a14ef4c9a99493d6b06046505f20c"
 EXPECTED_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_GIT_PREFIX = (
@@ -275,38 +275,38 @@ EXPECTED_RESET47_RED_SNAPSHOT_PROSE_USE_FIELDS = (
 EXPECTED_RESET47_RED_SNAPSHOT_PROSE_USE_ROWS = (
     (
         "docs/ADR/0064-adversarial-convergence-protocol.md",
-        "<!-- issue-435-reset47-red-snapshot:sha256=5208044851f0a2e46970697b37cd8160ba5b21d6e927f23af4334d3a91965607 -->",
-        16999,
-        26897,
-        32815,
-        "89.47",
-        "67.24",
-        "72.92",
+        "<!-- issue-435-reset47-red-snapshot:sha256=8e97148cbd13a76c5b091c8d3abfb6550b86fbaa13528af5e151315fdede83c4 -->",
+        15791,
+        25812,
+        31731,
+        "83.11",
+        "64.53",
+        "70.51",
     ),
     (
         "docs/ADVERSARIAL_VERIFICATION_PLAYBOOK.md",
-        "<!-- issue-435-reset47-red-snapshot:sha256=1a07b51b085ed33ad0df2a7a89a2abffd9a98617a291f053cda088a663af5e4f -->",
-        16999,
-        26897,
-        32815,
-        "89.47",
-        "67.24",
-        "72.92",
+        "<!-- issue-435-reset47-red-snapshot:sha256=f3519f11231079688a811e0adab52a968aa2893ccf11d42dcf4d57118eee2270 -->",
+        15791,
+        25812,
+        31731,
+        "83.11",
+        "64.53",
+        "70.51",
     ),
     (
         "docs/templates/ADVERSARIAL_INVARIANT_MATRIX.md",
-        "<!-- issue-435-reset47-red-snapshot:sha256=6a6c27c219edeb9e47008ea434321cd2ec4510c0923ba7bbd19b9aa807e07f47 -->",
-        16999,
-        26897,
-        32815,
-        "89.47",
-        "67.24",
-        "72.92",
+        "<!-- issue-435-reset47-red-snapshot:sha256=55aa43ac306e78ad73137963ef9437f114868c53753a0781f5988736242d1519 -->",
+        15791,
+        25812,
+        31731,
+        "83.11",
+        "64.53",
+        "70.51",
     ),
 )
 EXPECTED_RESET47_RED_SNAPSHOT_PROSE_USE_COUNT = 3
 EXPECTED_RESET47_RED_SNAPSHOT_PROSE_USE_SHA256 = (
-    "865ceaf5ab67c390a603f222abe425991332452de4ed1621aaab00cdb9c0e202"
+    "84b9ed78f4bd7eb548e9b8ebdee3616f38426dbcf4433a39a5639fec31f468aa"
 )
 RESET47_SUBPROCESS_RUN = subprocess.run
 EXPECTED_MUTANT_OUTCOMES_SHA256 = "67b7a36a4cc09fe3a2e092361ada276715ce273aa3b10259a2b4ea92987d1b03"
@@ -759,6 +759,15 @@ def expected_reset47_budget_policy() -> dict[str, object]:
         "riskThresholdPercent": 85,
         "stopThresholdPercent": 90,
         "denseCompressionProhibited": True,
+        "repositoryEvidenceFixtureByteBudget": [
+            "tests/fixtures/governance/issue435-repository-evidence-v1.json",
+            1_272_789,
+            1_500_000,
+            1_275_000,
+            1_350_000,
+            "84.85",
+            "8d040be04eda3236c6bce82ebefda11691a7b53d523d536520e7089e09ccaa77",
+        ],
         "reset47RedSnapshot": {
             "schemaVersion": EXPECTED_RESET47_RED_SNAPSHOT_SCHEMA_VERSION,
             "fixedBase": EXPECTED_RESET47_RED_SNAPSHOT_FIXED_BASE,
@@ -867,6 +876,11 @@ def validate_reset47_budget_policy(policy: object) -> tuple[protocol.Finding, ..
             return reset47_budget_failure(f"budgetPolicy.{key}")
     if not same_reset47_value(actual["denseCompressionProhibited"], True):
         return reset47_budget_failure("budgetPolicy.denseCompressionProhibited")
+    if not same_reset47_value(
+        actual["repositoryEvidenceFixtureByteBudget"],
+        expected["repositoryEvidenceFixtureByteBudget"],
+    ):
+        return reset47_budget_failure("budgetPolicy.repositoryEvidenceFixtureByteBudget")
     for key in (
         "reset47RedSnapshot",
         "dynamicCurrentHeadBudgetContract",
@@ -1829,9 +1843,66 @@ def test_budget_thresholds_are_exact_at_85_and_90_percent() -> None:
     _budget_thresholds_are_exact_at_85_and_90_percent()
 
 
-def test_matrix_cross_product_and_exact_outcomes_are_closed(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
+@dataclass(frozen=True)
+class _MatrixContract:
+    document: dict[str, Any]
+    invariants: list[dict[str, Any]]
+    expected: tuple[protocol.MatrixCase, ...]
+    registry: dict[str, bytes]
+    forbidden_wire_keys: set[str]
+    modes: dict[str, str]
+
+
+@dataclass
+class _MatrixExecutionTrace:
+    original_parse: Callable[[bytes], protocol.MatrixStimulusParse]
+    parser_calls: list[tuple[bytes, protocol.MatrixStimulusParse]]
+    engine_calls: list[tuple[str, object, protocol.Evaluation]]
+    execution_events: list[str]
+
+
+HostileStimulus = tuple[bytes, str, str, str]
+EXPECTED_HOSTILE_STIMULUS_COUNT = 296
+EXPECTED_DISTINCT_HOSTILE_STIMULUS_COUNT = 287
+EXPECTED_HOSTILE_STIMULUS_CATALOG_SHA256 = (
+    "b2ccabe4769c9bf34514f6d79c4805b714681e02a960d9b088be6d7a3d5e29fc"
+)
+
+
+@dataclass(frozen=True)
+class _HostileMatrixContext:
+    hostile_stimuli: tuple[HostileStimulus, ...]
+    valid_document: dict[str, Any]
+    retained_document: dict[str, Any]
+    two_stimulus: protocol.MatrixStimulus
+    two_document: dict[str, Any]
+    first_id: str
+    second_id: str
+    first_message: bytes
+    second_message: bytes
+    stimulus_cap: int
+
+
+@dataclass
+class _RejectionTrace:
+    original_parse: Callable[[bytes], protocol.MatrixStimulusParse]
+    unexpected_crypto_verifier: Callable[[protocol.CryptoProbe], bool]
+    parse_calls: list[tuple[bytes, protocol.MatrixStimulusParse]]
+    unexpected_engines: list[str]
+    unexpected_crypto: list[protocol.CryptoProbe]
+    delegation_events: list[str]
+    reconstruction_calls: list[
+        tuple[
+            tuple[bytes, ...],
+            protocol.RetainedEvaluation,
+            protocol.EvaluationContext,
+            protocol.CryptoVerifier,
+            protocol.Evaluation,
+        ]
+    ]
+
+
+def _closed_matrix_contract() -> _MatrixContract:
     document = matrix_document()
     assert document["fixtureContract"]["cryptoLedgerContract"]["validationPrecedence"] == [
         "actual_candidate_count",
@@ -1878,21 +1949,26 @@ def test_matrix_cross_product_and_exact_outcomes_are_closed(
         "mutantId",
     }
     modes = document["materializedOutcomeContracts"]["dimensionExecutionModes"]
+    return _MatrixContract(document, invariants, expected, registry, forbidden_wire_keys, modes)
 
-    def all_keys(value: object) -> set[str]:
-        if isinstance(value, dict):
-            return set(value).union(*(all_keys(item) for item in value.values()))
-        if isinstance(value, list):
-            return set().union(*(all_keys(item) for item in value))
-        return set()
 
-    def all_strings(value: object) -> set[str]:
-        if isinstance(value, dict):
-            return {item for key, nested in value.items() for item in (key, *all_strings(nested))}
-        if isinstance(value, list):
-            return set().union(*(all_strings(item) for item in value))
-        return {value} if isinstance(value, str) else set()
+def _all_keys(value: object) -> set[str]:
+    if isinstance(value, dict):
+        return set(value).union(*(_all_keys(item) for item in value.values()))
+    if isinstance(value, list):
+        return set().union(*(_all_keys(item) for item in value))
+    return set()
 
+
+def _all_strings(value: object) -> set[str]:
+    if isinstance(value, dict):
+        return {item for key, nested in value.items() for item in (key, *_all_strings(nested))}
+    if isinstance(value, list):
+        return set().union(*(_all_strings(item) for item in value))
+    return {value} if isinstance(value, str) else set()
+
+
+def _install_matrix_execution_trace(monkeypatch: pytest.MonkeyPatch) -> _MatrixExecutionTrace:
     original_parse = protocol.parse_matrix_stimulus
     original_evaluate = protocol.evaluate_candidates
     original_reconstruct = protocol.reconstruct_candidates
@@ -1949,13 +2025,32 @@ def test_matrix_cross_product_and_exact_outcomes_are_closed(
     monkeypatch.setattr(protocol, "parse_matrix_stimulus", observe_parse)
     monkeypatch.setattr(protocol, "evaluate_candidates", observe_evaluate)
     monkeypatch.setattr(protocol, "reconstruct_candidates", observe_reconstruct)
+    return _MatrixExecutionTrace(
+        original_parse,
+        parser_calls,
+        engine_calls,
+        execution_events,
+    )
+
+
+def _assert_materialized_cross_product(
+    contract: _MatrixContract, trace: _MatrixExecutionTrace
+) -> dict[str, protocol.MatrixObservation]:
+    document = contract.document
+    expected = contract.expected
+    registry = contract.registry
+    forbidden_wire_keys = contract.forbidden_wire_keys
+    modes = contract.modes
+    parser_calls = trace.parser_calls
+    engine_calls = trace.engine_calls
+    execution_events = trace.execution_events
     observations: dict[str, protocol.MatrixObservation] = {}
 
     for case in expected:
         fixture = registry[case.input_reference]
         fixture_document = strict_object(fixture)
-        assert not (all_keys(fixture_document) & forbidden_wire_keys)
-        scalar_strings = all_strings(fixture_document)
+        assert not (_all_keys(fixture_document) & forbidden_wire_keys)
+        scalar_strings = _all_strings(fixture_document)
         label = f"{case.dimension}:{case.test_class}"
         assert case.dimension not in scalar_strings
         assert case.test_class not in scalar_strings
@@ -2051,7 +2146,20 @@ def test_matrix_cross_product_and_exact_outcomes_are_closed(
             item.message_sha256 for item in case.crypto_expectations
         )
         observations[case.case_id] = execution.observation
+    return observations
 
+
+def _assert_derangement_and_dispatch_independence(
+    monkeypatch: pytest.MonkeyPatch,
+    contract: _MatrixContract,
+    trace: _MatrixExecutionTrace,
+    observations: dict[str, protocol.MatrixObservation],
+) -> None:
+    expected = contract.expected
+    registry = contract.registry
+    parser_calls = trace.parser_calls
+    engine_calls = trace.engine_calls
+    execution_events = trace.execution_events
     assert set(DERANGEMENT_CLASS) == set(TEST_CLASSES)
     assert set(DERANGEMENT_CLASS.values()) == set(TEST_CLASSES)
     for source in expected:
@@ -2138,6 +2246,10 @@ def test_matrix_cross_product_and_exact_outcomes_are_closed(
         assert execution.observation.evaluation is delegated_result
         spy.assert_exhausted()
 
+
+def _assert_negative_boundary_separation(
+    observations: dict[str, protocol.MatrixObservation],
+) -> None:
     for dimension in DIMENSIONS:
         negative = observations[f"{dimension}:negative"].evaluation
         boundary = observations[f"{dimension}:boundary"].evaluation
@@ -2171,64 +2283,68 @@ def test_matrix_cross_product_and_exact_outcomes_are_closed(
     replay_boundary = DIMENSION_MATERIALIZERS["reconstruction_replay"]("boundary")
     assert replay_negative.stimulus.retained != replay_boundary.stimulus.retained
 
-    monkeypatch.undo()
-    valid_document = strict_object(registry["fixture://validation_order:positive"])
-    retained_document = strict_object(registry["fixture://reconstruction_replay:positive"])
-    first_raw, first_id, first_message = candidate(payload="nested-count-first", priority=1)
-    second_raw, second_id, second_message = candidate(payload="nested-count-second", priority=2)
-    two_stimulus = protocol.MatrixStimulus(
-        (first_raw, second_raw),
-        context((first_id, second_id)),
-        retained_fixture(
-            (first_raw, second_raw),
-            (first_id, second_id),
-            (first_message, second_message),
-            selected=second_id,
-        ),
+
+def _append_changed_hostile_stimulus(
+    hostile_stimuli: list[HostileStimulus],
+    source: dict[str, Any],
+    path: tuple[str, ...],
+    value: object,
+    code: str,
+    location: str | None = None,
+) -> None:
+    changed = json.loads(json.dumps(source))
+    target = changed
+    for segment in path[:-1]:
+        target = target[segment]
+    target[path[-1]] = value
+    hostile_stimuli.append((canonical(changed), "schema", code, location or ".".join(path)))
+
+
+def _append_missing_hostile_stimulus(
+    hostile_stimuli: list[HostileStimulus], source: dict[str, Any], path: tuple[str, ...]
+) -> None:
+    changed = json.loads(json.dumps(source))
+    target = changed
+    for segment in path[:-1]:
+        target = target[segment]
+    del target[path[-1]]
+    hostile_stimuli.append(
+        (canonical(changed), "schema", "ACP.STIMULUS.REQUIRED_FIELD", ".".join(path))
     )
-    two_document = strict_object(matrix_stimulus_bytes(two_stimulus))
-    hostile_stimuli: list[tuple[bytes, str, str, str]] = [
-        (b"\xff", "parse", "ACP.STIMULUS.INVALID_UTF8", "fixture"),
-        (b"{", "parse", "ACP.STIMULUS.INVALID_JSON", "fixture"),
-        (b"[]", "schema", "ACP.STIMULUS.OBJECT_REQUIRED", "fixture"),
-        (
-            canonical(valid_document) + b"{}",
-            "parse",
-            "ACP.STIMULUS.INVALID_JSON",
-            "fixture",
-        ),
-        (
-            canonical(retained_document) + b"{}",
-            "parse",
-            "ACP.STIMULUS.INVALID_JSON",
-            "fixture",
-        ),
-    ]
 
-    def changed_case(
-        source: dict[str, Any],
-        path: tuple[str, ...],
-        value: object,
-        code: str,
-        location: str | None = None,
-    ) -> None:
-        changed = json.loads(json.dumps(source))
-        target = changed
-        for segment in path[:-1]:
-            target = target[segment]
-        target[path[-1]] = value
-        hostile_stimuli.append((canonical(changed), "schema", code, location or ".".join(path)))
 
-    def missing_case(source: dict[str, Any], path: tuple[str, ...]) -> None:
-        changed = json.loads(json.dumps(source))
-        target = changed
-        for segment in path[:-1]:
-            target = target[segment]
-        del target[path[-1]]
-        hostile_stimuli.append(
-            (canonical(changed), "schema", "ACP.STIMULUS.REQUIRED_FIELD", ".".join(path))
-        )
+def _append_base_hostile_stimuli(
+    hostile_stimuli: list[HostileStimulus],
+    valid_document: dict[str, Any],
+    retained_document: dict[str, Any],
+) -> None:
+    hostile_stimuli.extend(
+        [
+            (b"\xff", "parse", "ACP.STIMULUS.INVALID_UTF8", "fixture"),
+            (b"{", "parse", "ACP.STIMULUS.INVALID_JSON", "fixture"),
+            (b"[]", "schema", "ACP.STIMULUS.OBJECT_REQUIRED", "fixture"),
+            (
+                canonical(valid_document) + b"{}",
+                "parse",
+                "ACP.STIMULUS.INVALID_JSON",
+                "fixture",
+            ),
+            (
+                canonical(retained_document) + b"{}",
+                "parse",
+                "ACP.STIMULUS.INVALID_JSON",
+                "fixture",
+            ),
+        ]
+    )
 
+
+def _append_object_field_hostile_stimuli(
+    hostile_stimuli: list[HostileStimulus],
+    document: dict[str, Any],
+    valid_document: dict[str, Any],
+    retained_document: dict[str, Any],
+) -> None:
     object_paths: tuple[tuple[dict[str, Any], tuple[str, ...]], ...] = (
         (valid_document, ()),
         (valid_document, ("evaluationContext",)),
@@ -2238,8 +2354,20 @@ def test_matrix_cross_product_and_exact_outcomes_are_closed(
     )
     for source_document, path in object_paths:
         for key in document["fixtureContract"]["forbiddenRecursiveFields"]:
-            changed_case(source_document, (*path, key), "forbidden", "ACP.STIMULUS.FORBIDDEN_FIELD")
-        changed_case(source_document, (*path, "unknown"), "value", "ACP.STIMULUS.UNKNOWN_FIELD")
+            _append_changed_hostile_stimulus(
+                hostile_stimuli,
+                source_document,
+                (*path, key),
+                "forbidden",
+                "ACP.STIMULUS.FORBIDDEN_FIELD",
+            )
+        _append_changed_hostile_stimulus(
+            hostile_stimuli,
+            source_document,
+            (*path, "unknown"),
+            "value",
+            "ACP.STIMULUS.UNKNOWN_FIELD",
+        )
 
     top_fields = tuple(document["fixtureContract"]["orderedFields"])
     context_fields = (
@@ -2260,19 +2388,31 @@ def test_matrix_cross_product_and_exact_outcomes_are_closed(
     )
     for source_document, prefix, fields in typed_objects:
         for field in fields:
-            missing_case(source_document, (*prefix, field))
-            changed_case(source_document, (*prefix, field), True, "ACP.STIMULUS.TYPE")
+            _append_missing_hostile_stimulus(hostile_stimuli, source_document, (*prefix, field))
+            _append_changed_hostile_stimulus(
+                hostile_stimuli, source_document, (*prefix, field), True, "ACP.STIMULUS.TYPE"
+            )
 
-    changed_case(valid_document, ("schemaVersion",), "OtherV1", "ACP.STIMULUS.SCHEMA_VERSION")
-    changed_case(valid_document, ("candidateDocumentsHex",), ["zz"], "ACP.STIMULUS.HEX")
-    changed_case(
+    _append_changed_hostile_stimulus(
+        hostile_stimuli,
+        valid_document,
+        ("schemaVersion",),
+        "OtherV1",
+        "ACP.STIMULUS.SCHEMA_VERSION",
+    )
+    _append_changed_hostile_stimulus(
+        hostile_stimuli, valid_document, ("candidateDocumentsHex",), ["zz"], "ACP.STIMULUS.HEX"
+    )
+    _append_changed_hostile_stimulus(
+        hostile_stimuli,
         valid_document,
         ("evaluationContext", "expectedPhase"),
         "OTHER",
         "ACP.STIMULUS.ENUM",
     )
     trusted_id = next(iter(valid_document["evaluationContext"]["trustedPublicKeys"]))
-    changed_case(
+    _append_changed_hostile_stimulus(
+        hostile_stimuli,
         valid_document,
         ("evaluationContext", "trustedPublicKeys", trusted_id),
         "zz",
@@ -2329,399 +2469,284 @@ def test_matrix_cross_product_and_exact_outcomes_are_closed(
             "ACP.STIMULUS.TUPLE_SHAPE",
         ),
     ):
-        changed_case(source_document, path, value, code)
+        _append_changed_hostile_stimulus(hostile_stimuli, source_document, path, value, code)
 
-    retained = retained_document["retainedEvaluation"]
-    crypto_row = list(retained["cryptoCalls"][0])
-    retained_candidate_id = cast(str, retained["authorizedCandidateIds"][0])
-    nested_mutations: tuple[tuple[dict[str, Any], tuple[str, ...], object, str, str], ...] = (
-        (
-            valid_document,
-            ("evaluationContext", "authorizedCandidateIds"),
-            ["short"],
-            "ACP.STIMULUS.ID",
-            "evaluationContext.authorizedCandidateIds[0]",
-        ),
-        (
+
+def _append_retained_value_mutations(
+    hostile_stimuli: list[HostileStimulus],
+    retained_document: dict[str, Any],
+    specs: tuple[tuple[str, object, str, str], ...],
+) -> None:
+    for field, value, code, location_suffix in specs:
+        _append_changed_hostile_stimulus(
+            hostile_stimuli,
             retained_document,
-            ("retainedEvaluation", "authorizedCandidateIds"),
-            ["short"],
-            "ACP.STIMULUS.ID",
-            "retainedEvaluation.authorizedCandidateIds[0]",
-        ),
+            ("retainedEvaluation", field),
+            value,
+            code,
+            f"retainedEvaluation.{field}{location_suffix}",
+        )
+
+
+def _append_retained_identity_and_phase_mutations(
+    hostile_stimuli: list[HostileStimulus],
+    valid_document: dict[str, Any],
+    retained_document: dict[str, Any],
+    retained_candidate_id: str,
+) -> None:
+    del retained_candidate_id
+    _append_changed_hostile_stimulus(
+        hostile_stimuli,
+        valid_document,
+        ("evaluationContext", "authorizedCandidateIds"),
+        ["short"],
+        "ACP.STIMULUS.ID",
+        "evaluationContext.authorizedCandidateIds[0]",
+    )
+    _append_retained_value_mutations(
+        hostile_stimuli,
+        retained_document,
         (
-            retained_document,
-            ("retainedEvaluation", "eligibleCandidateIds"),
-            ["short"],
-            "ACP.STIMULUS.ID",
-            "retainedEvaluation.eligibleCandidateIds[0]",
-        ),
-        (
-            retained_document,
-            ("retainedEvaluation", "selectedCandidateId"),
-            "short",
-            "ACP.STIMULUS.ID",
-            "retainedEvaluation.selectedCandidateId",
-        ),
-        (
-            retained_document,
-            ("retainedEvaluation", "trustedKeySha256s"),
-            [["short", "0" * 64]],
-            "ACP.STIMULUS.ID",
-            "retainedEvaluation.trustedKeySha256s[0][0]",
-        ),
-        (
-            retained_document,
-            ("retainedEvaluation", "trustedKeySha256s"),
-            [["0" * 64, "short"]],
-            "ACP.STIMULUS.SHA256",
-            "retainedEvaluation.trustedKeySha256s[0][1]",
-        ),
-        (
-            retained_document,
-            ("retainedEvaluation", "phaseVerdicts"),
-            [["OTHER", "VALID"]],
-            "ACP.STIMULUS.ENUM",
-            "retainedEvaluation.phaseVerdicts[0][0]",
-        ),
-        (
-            retained_document,
-            ("retainedEvaluation", "phaseVerdicts"),
-            [["CURRENT", "OTHER"]],
-            "ACP.STIMULUS.ENUM",
-            "retainedEvaluation.phaseVerdicts[0][1]",
-        ),
-        (
-            retained_document,
-            ("retainedEvaluation", "evaluationPhase"),
-            "OTHER",
-            "ACP.STIMULUS.ENUM",
-            "retainedEvaluation.evaluationPhase",
-        ),
-        (
-            retained_document,
-            ("retainedEvaluation", "evaluationPhase"),
-            True,
-            "ACP.STIMULUS.TYPE",
-            "retainedEvaluation.evaluationPhase",
-        ),
-        (
-            retained_document,
-            ("retainedEvaluation", "stageCalls"),
-            [["OTHER", "candidate[0]", 0]],
-            "ACP.STIMULUS.ENUM",
-            "retainedEvaluation.stageCalls[0][0]",
-        ),
-        (
-            retained_document,
-            ("retainedEvaluation", "stageCalls"),
-            [["bounds", 1, 0]],
-            "ACP.STIMULUS.TYPE",
-            "retainedEvaluation.stageCalls[0][1]",
-        ),
-        (
-            retained_document,
-            ("retainedEvaluation", "stageCalls"),
-            [["bounds", "wrong-target", 0]],
-            "ACP.STIMULUS.STAGE_REFERENCE",
-            "retainedEvaluation.stageCalls[0][1]",
-        ),
-        (
-            retained_document,
-            ("retainedEvaluation", "stageCalls"),
-            [["bounds", retained_candidate_id, 0]],
-            "ACP.STIMULUS.STAGE_REFERENCE",
-            "retainedEvaluation.stageCalls[0][1]",
-        ),
-        (
-            retained_document,
-            ("retainedEvaluation", "stageCalls"),
-            [["bounds", "candidate[1]", 0]],
-            "ACP.STIMULUS.STAGE_REFERENCE",
-            "retainedEvaluation.stageCalls[0][1]",
-        ),
-        (
-            retained_document,
-            ("retainedEvaluation", "stageCalls"),
-            [["independent_trust", "candidate[0]", 0]],
-            "ACP.STIMULUS.STAGE_REFERENCE",
-            "retainedEvaluation.stageCalls[0][1]",
-        ),
-        (
-            retained_document,
-            ("retainedEvaluation", "stageCalls"),
-            [["independent_trust", "f" * 64, 0]],
-            "ACP.STIMULUS.STAGE_REFERENCE",
-            "retainedEvaluation.stageCalls[0][1]",
-        ),
-        (
-            retained_document,
-            ("retainedEvaluation", "stageCalls"),
-            [["graph_conflict", "candidate[0]", 0]],
-            "ACP.STIMULUS.STAGE_REFERENCE",
-            "retainedEvaluation.stageCalls[0][1]",
-        ),
-        (
-            retained_document,
-            ("retainedEvaluation", "stageCalls"),
-            [["bounds", "candidate[0]", True]],
-            "ACP.STIMULUS.TYPE",
-            "retainedEvaluation.stageCalls[0][2]",
-        ),
-        (
-            retained_document,
-            ("retainedEvaluation", "stageCalls"),
-            [["independent_trust", retained_candidate_id, 1]],
-            "ACP.STIMULUS.RANGE",
-            "retainedEvaluation.stageCalls[0][2]",
-        ),
-        (
-            retained_document,
-            ("retainedEvaluation", "stageCalls"),
-            [["graph_conflict", "candidate-set", 1]],
-            "ACP.STIMULUS.RANGE",
-            "retainedEvaluation.stageCalls[0][2]",
-        ),
-        (
-            retained_document,
-            ("retainedEvaluation", "stageCalls"),
-            [["bounds", "candidate[0]", -1]],
-            "ACP.STIMULUS.RANGE",
-            "retainedEvaluation.stageCalls[0][2]",
-        ),
-        (
-            retained_document,
-            ("retainedEvaluation", "stageCalls"),
-            [["bounds", "candidate[0]", 1]],
-            "ACP.STIMULUS.RANGE",
-            "retainedEvaluation.stageCalls[0][2]",
-        ),
-        (
-            retained_document,
-            ("retainedEvaluation", "findings"),
-            [["OTHER", "CURRENT", "ACP.SENTINEL", "candidate[0]"]],
-            "ACP.STIMULUS.ENUM",
-            "retainedEvaluation.findings[0][0]",
-        ),
-        (
-            retained_document,
-            ("retainedEvaluation", "findings"),
-            [[True, "CURRENT", "ACP.SENTINEL", "candidate[0]"]],
-            "ACP.STIMULUS.TYPE",
-            "retainedEvaluation.findings[0][0]",
-        ),
-        (
-            retained_document,
-            ("retainedEvaluation", "findings"),
-            [["schema", "OTHER", "ACP.SENTINEL", "candidate[0]"]],
-            "ACP.STIMULUS.ENUM",
-            "retainedEvaluation.findings[0][1]",
-        ),
-        (
-            retained_document,
-            ("retainedEvaluation", "findings"),
-            [["schema", "CURRENT", 1, "candidate[0]"]],
-            "ACP.STIMULUS.TYPE",
-            "retainedEvaluation.findings[0][2]",
-        ),
-        (
-            retained_document,
-            ("retainedEvaluation", "findings"),
-            [["schema", "CURRENT", "NOT_ACP", "candidate[0]"]],
-            "ACP.STIMULUS.CODE",
-            "retainedEvaluation.findings[0][2]",
-        ),
-        (
-            retained_document,
-            ("retainedEvaluation", "findings"),
-            [["schema", "CURRENT", "ACP.SENTINEL", 1]],
-            "ACP.STIMULUS.TYPE",
-            "retainedEvaluation.findings[0][3]",
-        ),
-        (
-            retained_document,
-            ("retainedEvaluation", "cryptoCalls"),
-            [["short", *crypto_row[1:]]],
-            "ACP.STIMULUS.ID",
-            "retainedEvaluation.cryptoCalls[0][0]",
-        ),
-        (
-            retained_document,
-            ("retainedEvaluation", "cryptoCalls"),
-            [[crypto_row[0], "zz", *crypto_row[2:]]],
-            "ACP.STIMULUS.HEX",
-            "retainedEvaluation.cryptoCalls[0][1]",
-        ),
-        (
-            retained_document,
-            ("retainedEvaluation", "cryptoCalls"),
-            [[crypto_row[0], "aa", *crypto_row[2:]]],
-            "ACP.STIMULUS.SIGNATURE",
-            "retainedEvaluation.cryptoCalls[0][1]",
-        ),
-        (
-            retained_document,
-            ("retainedEvaluation", "cryptoCalls"),
-            [[crypto_row[0], 1, *crypto_row[2:]]],
-            "ACP.STIMULUS.TYPE",
-            "retainedEvaluation.cryptoCalls[0][1]",
-        ),
-        (
-            retained_document,
-            ("retainedEvaluation", "cryptoCalls"),
-            [[*crypto_row[:2], True, *crypto_row[3:]]],
-            "ACP.STIMULUS.TYPE",
-            "retainedEvaluation.cryptoCalls[0][2]",
-        ),
-        (
-            retained_document,
-            ("retainedEvaluation", "cryptoCalls"),
-            [[*crypto_row[:2], -1, *crypto_row[3:]]],
-            "ACP.STIMULUS.RANGE",
-            "retainedEvaluation.cryptoCalls[0][2]",
-        ),
-        (
-            retained_document,
-            ("retainedEvaluation", "cryptoCalls"),
-            [[*crypto_row[:2], 1, 1, *crypto_row[4:]]],
-            "ACP.STIMULUS.RANGE",
-            "retainedEvaluation.cryptoCalls[0][2]",
-        ),
-        (
-            retained_document,
-            ("retainedEvaluation", "cryptoCalls"),
-            [[*crypto_row[:3], True, *crypto_row[4:]]],
-            "ACP.STIMULUS.TYPE",
-            "retainedEvaluation.cryptoCalls[0][3]",
-        ),
-        (
-            retained_document,
-            ("retainedEvaluation", "cryptoCalls"),
-            [[*crypto_row[:3], 0, *crypto_row[4:]]],
-            "ACP.STIMULUS.RANGE",
-            "retainedEvaluation.cryptoCalls[0][3]",
-        ),
-        (
-            retained_document,
-            ("retainedEvaluation", "cryptoCalls"),
-            [[*crypto_row[:4], "OTHER", *crypto_row[5:]]],
-            "ACP.STIMULUS.ENUM",
-            "retainedEvaluation.cryptoCalls[0][4]",
-        ),
-        (
-            retained_document,
-            ("retainedEvaluation", "cryptoCalls"),
-            [[*crypto_row[:4], True, *crypto_row[5:]]],
-            "ACP.STIMULUS.TYPE",
-            "retainedEvaluation.cryptoCalls[0][4]",
-        ),
-        (
-            retained_document,
-            ("retainedEvaluation", "cryptoCalls"),
-            [[*crypto_row[:5], "short", *crypto_row[6:]]],
-            "ACP.STIMULUS.SHA256",
-            "retainedEvaluation.cryptoCalls[0][5]",
-        ),
-        (
-            retained_document,
-            ("retainedEvaluation", "cryptoCalls"),
-            [[*crypto_row[:6], "short", crypto_row[7]]],
-            "ACP.STIMULUS.SHA256",
-            "retainedEvaluation.cryptoCalls[0][6]",
-        ),
-        (
-            retained_document,
-            ("retainedEvaluation", "cryptoCalls"),
-            [[*crypto_row[:-1], 1]],
-            "ACP.STIMULUS.TYPE",
-            "retainedEvaluation.cryptoCalls[0][7]",
+            ("authorizedCandidateIds", ["short"], "ACP.STIMULUS.ID", "[0]"),
+            ("eligibleCandidateIds", ["short"], "ACP.STIMULUS.ID", "[0]"),
+            ("selectedCandidateId", "short", "ACP.STIMULUS.ID", ""),
+            ("trustedKeySha256s", [["short", "0" * 64]], "ACP.STIMULUS.ID", "[0][0]"),
+            ("trustedKeySha256s", [["0" * 64, "short"]], "ACP.STIMULUS.SHA256", "[0][1]"),
+            ("phaseVerdicts", [["OTHER", "VALID"]], "ACP.STIMULUS.ENUM", "[0][0]"),
+            ("phaseVerdicts", [["CURRENT", "OTHER"]], "ACP.STIMULUS.ENUM", "[0][1]"),
+            ("evaluationPhase", "OTHER", "ACP.STIMULUS.ENUM", ""),
+            ("evaluationPhase", True, "ACP.STIMULUS.TYPE", ""),
         ),
     )
-    for source_document, path, nested_value, code, location in nested_mutations:
-        changed_case(source_document, path, nested_value, code, location)
+
+
+def _append_retained_stage_call_mutations(
+    hostile_stimuli: list[HostileStimulus],
+    retained_document: dict[str, Any],
+    retained_candidate_id: str,
+) -> None:
+    _append_retained_value_mutations(
+        hostile_stimuli,
+        retained_document,
+        (
+            ("stageCalls", [["OTHER", "candidate[0]", 0]], "ACP.STIMULUS.ENUM", "[0][0]"),
+            ("stageCalls", [["bounds", 1, 0]], "ACP.STIMULUS.TYPE", "[0][1]"),
+            (
+                "stageCalls",
+                [["bounds", "wrong-target", 0]],
+                "ACP.STIMULUS.STAGE_REFERENCE",
+                "[0][1]",
+            ),
+            (
+                "stageCalls",
+                [["bounds", retained_candidate_id, 0]],
+                "ACP.STIMULUS.STAGE_REFERENCE",
+                "[0][1]",
+            ),
+            (
+                "stageCalls",
+                [["bounds", "candidate[1]", 0]],
+                "ACP.STIMULUS.STAGE_REFERENCE",
+                "[0][1]",
+            ),
+            (
+                "stageCalls",
+                [["independent_trust", "candidate[0]", 0]],
+                "ACP.STIMULUS.STAGE_REFERENCE",
+                "[0][1]",
+            ),
+            (
+                "stageCalls",
+                [["independent_trust", "f" * 64, 0]],
+                "ACP.STIMULUS.STAGE_REFERENCE",
+                "[0][1]",
+            ),
+            (
+                "stageCalls",
+                [["graph_conflict", "candidate[0]", 0]],
+                "ACP.STIMULUS.STAGE_REFERENCE",
+                "[0][1]",
+            ),
+            ("stageCalls", [["bounds", "candidate[0]", True]], "ACP.STIMULUS.TYPE", "[0][2]"),
+            (
+                "stageCalls",
+                [["independent_trust", retained_candidate_id, 1]],
+                "ACP.STIMULUS.RANGE",
+                "[0][2]",
+            ),
+            (
+                "stageCalls",
+                [["graph_conflict", "candidate-set", 1]],
+                "ACP.STIMULUS.RANGE",
+                "[0][2]",
+            ),
+            ("stageCalls", [["bounds", "candidate[0]", -1]], "ACP.STIMULUS.RANGE", "[0][2]"),
+            ("stageCalls", [["bounds", "candidate[0]", 1]], "ACP.STIMULUS.RANGE", "[0][2]"),
+        ),
+    )
+
+
+def _append_retained_finding_mutations(
+    hostile_stimuli: list[HostileStimulus],
+    retained_document: dict[str, Any],
+) -> None:
+    _append_retained_value_mutations(
+        hostile_stimuli,
+        retained_document,
+        (
+            (
+                "findings",
+                [["OTHER", "CURRENT", "ACP.SENTINEL", "candidate[0]"]],
+                "ACP.STIMULUS.ENUM",
+                "[0][0]",
+            ),
+            (
+                "findings",
+                [[True, "CURRENT", "ACP.SENTINEL", "candidate[0]"]],
+                "ACP.STIMULUS.TYPE",
+                "[0][0]",
+            ),
+            (
+                "findings",
+                [["schema", "OTHER", "ACP.SENTINEL", "candidate[0]"]],
+                "ACP.STIMULUS.ENUM",
+                "[0][1]",
+            ),
+            ("findings", [["schema", "CURRENT", 1, "candidate[0]"]], "ACP.STIMULUS.TYPE", "[0][2]"),
+            (
+                "findings",
+                [["schema", "CURRENT", "NOT_ACP", "candidate[0]"]],
+                "ACP.STIMULUS.CODE",
+                "[0][2]",
+            ),
+            ("findings", [["schema", "CURRENT", "ACP.SENTINEL", 1]], "ACP.STIMULUS.TYPE", "[0][3]"),
+        ),
+    )
+
+
+def _append_retained_crypto_call_mutations(
+    hostile_stimuli: list[HostileStimulus],
+    retained_document: dict[str, Any],
+    crypto_row: list[object],
+) -> None:
+    _append_retained_value_mutations(
+        hostile_stimuli,
+        retained_document,
+        (
+            ("cryptoCalls", [["short", *crypto_row[1:]]], "ACP.STIMULUS.ID", "[0][0]"),
+            ("cryptoCalls", [[crypto_row[0], "zz", *crypto_row[2:]]], "ACP.STIMULUS.HEX", "[0][1]"),
+            (
+                "cryptoCalls",
+                [[crypto_row[0], "aa", *crypto_row[2:]]],
+                "ACP.STIMULUS.SIGNATURE",
+                "[0][1]",
+            ),
+            ("cryptoCalls", [[crypto_row[0], 1, *crypto_row[2:]]], "ACP.STIMULUS.TYPE", "[0][1]"),
+            (
+                "cryptoCalls",
+                [[*crypto_row[:2], True, *crypto_row[3:]]],
+                "ACP.STIMULUS.TYPE",
+                "[0][2]",
+            ),
+            (
+                "cryptoCalls",
+                [[*crypto_row[:2], -1, *crypto_row[3:]]],
+                "ACP.STIMULUS.RANGE",
+                "[0][2]",
+            ),
+            (
+                "cryptoCalls",
+                [[*crypto_row[:2], 1, 1, *crypto_row[4:]]],
+                "ACP.STIMULUS.RANGE",
+                "[0][2]",
+            ),
+            (
+                "cryptoCalls",
+                [[*crypto_row[:3], True, *crypto_row[4:]]],
+                "ACP.STIMULUS.TYPE",
+                "[0][3]",
+            ),
+            (
+                "cryptoCalls",
+                [[*crypto_row[:3], 0, *crypto_row[4:]]],
+                "ACP.STIMULUS.RANGE",
+                "[0][3]",
+            ),
+            (
+                "cryptoCalls",
+                [[*crypto_row[:4], "OTHER", *crypto_row[5:]]],
+                "ACP.STIMULUS.ENUM",
+                "[0][4]",
+            ),
+            (
+                "cryptoCalls",
+                [[*crypto_row[:4], True, *crypto_row[5:]]],
+                "ACP.STIMULUS.TYPE",
+                "[0][4]",
+            ),
+            (
+                "cryptoCalls",
+                [[*crypto_row[:5], "short", *crypto_row[6:]]],
+                "ACP.STIMULUS.SHA256",
+                "[0][5]",
+            ),
+            (
+                "cryptoCalls",
+                [[*crypto_row[:6], "short", crypto_row[7]]],
+                "ACP.STIMULUS.SHA256",
+                "[0][6]",
+            ),
+            ("cryptoCalls", [[*crypto_row[:-1], 1]], "ACP.STIMULUS.TYPE", "[0][7]"),
+        ),
+    )
+
+
+def _append_stage_reference_hostile_stimuli(
+    hostile_stimuli: list[HostileStimulus],
+    retained_document: dict[str, Any],
+    retained_candidate_id: str,
+    valid_document: dict[str, Any],
+    trusted_id: str,
+) -> None:
+    def append_stage(row: list[object], code: str, location_index: int) -> None:
+        _append_changed_hostile_stimulus(
+            hostile_stimuli,
+            retained_document,
+            ("retainedEvaluation", "stageCalls"),
+            [row],
+            code,
+            f"retainedEvaluation.stageCalls[0][{location_index}]",
+        )
 
     per_candidate_stages = ("bounds", "parse", "schema", "canonical_identity")
     identity_stages = ("independent_trust", "authorization")
     set_stages = ("graph_conflict", "phase_verdict")
     for stage in per_candidate_stages:
-        changed_case(
-            retained_document,
-            ("retainedEvaluation", "stageCalls"),
-            [[stage, retained_candidate_id, 0]],
-            "ACP.STIMULUS.STAGE_REFERENCE",
-            "retainedEvaluation.stageCalls[0][1]",
-        )
-        changed_case(
-            retained_document,
-            ("retainedEvaluation", "stageCalls"),
-            [[stage, "candidate[1]", 1]],
-            "ACP.STIMULUS.RANGE",
-            "retainedEvaluation.stageCalls[0][1]",
-        )
-        changed_case(
-            retained_document,
-            ("retainedEvaluation", "stageCalls"),
-            [[stage, "candidate[0]", 1]],
-            "ACP.STIMULUS.RANGE",
-            "retainedEvaluation.stageCalls[0][2]",
-        )
+        append_stage([stage, retained_candidate_id, 0], "ACP.STIMULUS.STAGE_REFERENCE", 1)
+        append_stage([stage, "candidate[1]", 1], "ACP.STIMULUS.RANGE", 1)
+        append_stage([stage, "candidate[0]", 1], "ACP.STIMULUS.RANGE", 2)
     for stage in identity_stages:
-        changed_case(
-            retained_document,
-            ("retainedEvaluation", "stageCalls"),
-            [[stage, "candidate[0]", 0]],
-            "ACP.STIMULUS.STAGE_REFERENCE",
-            "retainedEvaluation.stageCalls[0][1]",
-        )
-        changed_case(
-            retained_document,
-            ("retainedEvaluation", "stageCalls"),
-            [[stage, retained_candidate_id, 1]],
-            "ACP.STIMULUS.RANGE",
-            "retainedEvaluation.stageCalls[0][2]",
-        )
+        append_stage([stage, "candidate[0]", 0], "ACP.STIMULUS.STAGE_REFERENCE", 1)
+        append_stage([stage, retained_candidate_id, 1], "ACP.STIMULUS.RANGE", 2)
     for stage in set_stages:
-        changed_case(
-            retained_document,
-            ("retainedEvaluation", "stageCalls"),
-            [[stage, "candidate[0]", 0]],
-            "ACP.STIMULUS.STAGE_REFERENCE",
-            "retainedEvaluation.stageCalls[0][1]",
-        )
-        changed_case(
-            retained_document,
-            ("retainedEvaluation", "stageCalls"),
-            [[stage, "candidate-set", 1]],
-            "ACP.STIMULUS.RANGE",
-            "retainedEvaluation.stageCalls[0][2]",
-        )
+        append_stage([stage, "candidate[0]", 0], "ACP.STIMULUS.STAGE_REFERENCE", 1)
+        append_stage([stage, "candidate-set", 1], "ACP.STIMULUS.RANGE", 2)
     stage_references = {
         **{stage: "candidate[0]" for stage in per_candidate_stages},
         **{stage: retained_candidate_id for stage in identity_stages},
         **{stage: "candidate-set" for stage in set_stages},
     }
     for stage, reference in stage_references.items():
-        for row, location in (
-            ([stage, 1, 0], "retainedEvaluation.stageCalls[0][1]"),
-            ([stage, reference, True], "retainedEvaluation.stageCalls[0][2]"),
-            ([stage, reference, "0"], "retainedEvaluation.stageCalls[0][2]"),
-            ([stage, reference, 0.0], "retainedEvaluation.stageCalls[0][2]"),
+        for row, location_index in (
+            ([stage, 1, 0], 1),
+            ([stage, reference, True], 2),
+            ([stage, reference, "0"], 2),
+            ([stage, reference, 0.0], 2),
         ):
-            changed_case(
-                retained_document,
-                ("retainedEvaluation", "stageCalls"),
-                [row],
-                "ACP.STIMULUS.TYPE",
-                location,
-            )
-    changed_case(
-        retained_document,
-        ("retainedEvaluation", "stageCalls"),
-        [[True, "candidate[0]", 0]],
-        "ACP.STIMULUS.TYPE",
-        "retainedEvaluation.stageCalls[0][0]",
-    )
-    changed_case(
+            append_stage(cast(list[object], row), "ACP.STIMULUS.TYPE", location_index)
+    append_stage([True, "candidate[0]", 0], "ACP.STIMULUS.TYPE", 0)
+    _append_changed_hostile_stimulus(
+        hostile_stimuli,
         valid_document,
         ("evaluationContext", "trustedPublicKeys", trusted_id),
         1,
@@ -2729,107 +2754,76 @@ def test_matrix_cross_product_and_exact_outcomes_are_closed(
         f"evaluationContext.trustedPublicKeys.{trusted_id}",
     )
 
+
+def _append_retained_closure_hostile_stimuli(
+    hostile_stimuli: list[HostileStimulus],
+    retained_document: dict[str, Any],
+    crypto_row: list[object],
+) -> None:
     exact_signature = cast(str, crypto_row[1])
     assert len(bytes.fromhex(exact_signature)) == 64
-    nested_closure_cases: tuple[tuple[tuple[str, ...], object, str, str], ...] = (
+    _append_retained_value_mutations(
+        hostile_stimuli,
+        retained_document,
         (
-            ("retainedEvaluation", "phaseVerdicts"),
-            [[True, "VALID"]],
-            "ACP.STIMULUS.TYPE",
-            "retainedEvaluation.phaseVerdicts[0][0]",
-        ),
-        (
-            ("retainedEvaluation", "phaseVerdicts"),
-            [["CURRENT", True]],
-            "ACP.STIMULUS.TYPE",
-            "retainedEvaluation.phaseVerdicts[0][1]",
-        ),
-        (
-            ("retainedEvaluation", "candidateSha256s"),
-            [1],
-            "ACP.STIMULUS.TYPE",
-            "retainedEvaluation.candidateSha256s[0]",
-        ),
-        (
-            ("retainedEvaluation", "authorizedCandidateIds"),
-            [1],
-            "ACP.STIMULUS.TYPE",
-            "retainedEvaluation.authorizedCandidateIds[0]",
-        ),
-        (
-            ("retainedEvaluation", "eligibleCandidateIds"),
-            [1],
-            "ACP.STIMULUS.TYPE",
-            "retainedEvaluation.eligibleCandidateIds[0]",
-        ),
-        (
-            ("retainedEvaluation", "findings"),
-            [["schema", True, "ACP.SENTINEL", "candidate[0]"]],
-            "ACP.STIMULUS.TYPE",
-            "retainedEvaluation.findings[0][1]",
-        ),
-        (
-            ("retainedEvaluation", "trustedKeySha256s"),
-            [[1, "0" * 64]],
-            "ACP.STIMULUS.TYPE",
-            "retainedEvaluation.trustedKeySha256s[0][0]",
-        ),
-        (
-            ("retainedEvaluation", "trustedKeySha256s"),
-            [["0" * 64, 1]],
-            "ACP.STIMULUS.TYPE",
-            "retainedEvaluation.trustedKeySha256s[0][1]",
-        ),
-        (
-            ("retainedEvaluation", "cryptoCalls"),
-            [[1, *crypto_row[1:]]],
-            "ACP.STIMULUS.TYPE",
-            "retainedEvaluation.cryptoCalls[0][0]",
-        ),
-        (
-            ("retainedEvaluation", "cryptoCalls"),
-            [[crypto_row[0], "aa" * 63, *crypto_row[2:]]],
-            "ACP.STIMULUS.SIGNATURE",
-            "retainedEvaluation.cryptoCalls[0][1]",
-        ),
-        (
-            ("retainedEvaluation", "cryptoCalls"),
-            [[crypto_row[0], "aa" * 65, *crypto_row[2:]]],
-            "ACP.STIMULUS.SIGNATURE",
-            "retainedEvaluation.cryptoCalls[0][1]",
-        ),
-        (
-            ("retainedEvaluation", "cryptoCalls"),
-            [[*crypto_row[:3], 2, *crypto_row[4:]]],
-            "ACP.STIMULUS.COUNT",
-            "retainedEvaluation.cryptoCalls[0][3]",
-        ),
-        (
-            ("retainedEvaluation", "cryptoCalls"),
-            [[*crypto_row[:3], 5, *crypto_row[4:]]],
-            "ACP.STIMULUS.RANGE",
-            "retainedEvaluation.cryptoCalls[0][3]",
-        ),
-        (
-            ("retainedEvaluation", "cryptoCalls"),
-            [[*crypto_row[:5], 1, *crypto_row[6:]]],
-            "ACP.STIMULUS.TYPE",
-            "retainedEvaluation.cryptoCalls[0][5]",
-        ),
-        (
-            ("retainedEvaluation", "cryptoCalls"),
-            [[*crypto_row[:6], 1, crypto_row[7]]],
-            "ACP.STIMULUS.TYPE",
-            "retainedEvaluation.cryptoCalls[0][6]",
+            ("phaseVerdicts", [[True, "VALID"]], "ACP.STIMULUS.TYPE", "[0][0]"),
+            ("phaseVerdicts", [["CURRENT", True]], "ACP.STIMULUS.TYPE", "[0][1]"),
+            ("candidateSha256s", [1], "ACP.STIMULUS.TYPE", "[0]"),
+            ("authorizedCandidateIds", [1], "ACP.STIMULUS.TYPE", "[0]"),
+            ("eligibleCandidateIds", [1], "ACP.STIMULUS.TYPE", "[0]"),
+            (
+                "findings",
+                [["schema", True, "ACP.SENTINEL", "candidate[0]"]],
+                "ACP.STIMULUS.TYPE",
+                "[0][1]",
+            ),
+            ("trustedKeySha256s", [[1, "0" * 64]], "ACP.STIMULUS.TYPE", "[0][0]"),
+            ("trustedKeySha256s", [["0" * 64, 1]], "ACP.STIMULUS.TYPE", "[0][1]"),
+            ("cryptoCalls", [[1, *crypto_row[1:]]], "ACP.STIMULUS.TYPE", "[0][0]"),
+            (
+                "cryptoCalls",
+                [[crypto_row[0], "aa" * 63, *crypto_row[2:]]],
+                "ACP.STIMULUS.SIGNATURE",
+                "[0][1]",
+            ),
+            (
+                "cryptoCalls",
+                [[crypto_row[0], "aa" * 65, *crypto_row[2:]]],
+                "ACP.STIMULUS.SIGNATURE",
+                "[0][1]",
+            ),
+            (
+                "cryptoCalls",
+                [[*crypto_row[:3], 2, *crypto_row[4:]]],
+                "ACP.STIMULUS.COUNT",
+                "[0][3]",
+            ),
+            (
+                "cryptoCalls",
+                [[*crypto_row[:3], 5, *crypto_row[4:]]],
+                "ACP.STIMULUS.RANGE",
+                "[0][3]",
+            ),
+            ("cryptoCalls", [[*crypto_row[:5], 1, *crypto_row[6:]]], "ACP.STIMULUS.TYPE", "[0][5]"),
+            ("cryptoCalls", [[*crypto_row[:6], 1, crypto_row[7]]], "ACP.STIMULUS.TYPE", "[0][6]"),
         ),
     )
-    for nested_path, nested_value, nested_code, nested_location in nested_closure_cases:
-        changed_case(
-            retained_document,
-            nested_path,
-            nested_value,
-            nested_code,
-            nested_location,
+
+
+def _append_ledger_order_hostile_stimuli(
+    hostile_stimuli: list[HostileStimulus],
+    retained_document: dict[str, Any],
+    two_document: dict[str, Any],
+    second_id: str,
+) -> None:
+    def append_ledger(rows: list[list[object]], code: str, location: str) -> None:
+        _append_changed_hostile_stimulus(
+            hostile_stimuli,
+            two_document,
+            ("retainedEvaluation", "cryptoCalls"),
+            rows,
+            code,
+            location,
         )
 
     two_crypto_rows = cast(list[list[object]], two_document["retainedEvaluation"]["cryptoCalls"])
@@ -2844,50 +2838,34 @@ def test_matrix_cross_product_and_exact_outcomes_are_closed(
             "retainedEvaluation.cryptoCalls[0][3]",
         )
     )
-    changed_case(
-        two_document,
-        ("retainedEvaluation", "cryptoCalls"),
-        [two_crypto_rows[0]],
-        "ACP.STIMULUS.COUNT",
-        "retainedEvaluation.cryptoCalls",
-    )
+    append_ledger([two_crypto_rows[0]], "ACP.STIMULUS.COUNT", "retainedEvaluation.cryptoCalls")
     duplicate_ordinal = json.loads(json.dumps(two_crypto_rows))
     duplicate_ordinal[1][2] = 0
     out_of_order = json.loads(json.dumps(two_crypto_rows))[::-1]
     wrong_identity = json.loads(json.dumps(two_crypto_rows))
     wrong_identity[0][0] = second_id
     for rows, code, location in (
-        (
-            duplicate_ordinal,
-            "ACP.STIMULUS.ORDER",
-            "retainedEvaluation.cryptoCalls[1][2]",
-        ),
-        (
-            out_of_order,
-            "ACP.STIMULUS.ORDER",
-            "retainedEvaluation.cryptoCalls[0][2]",
-        ),
-        (
-            wrong_identity,
-            "ACP.STIMULUS.CRYPTO_IDENTITY",
-            "retainedEvaluation.cryptoCalls[0][0]",
-        ),
+        (duplicate_ordinal, "ACP.STIMULUS.ORDER", "retainedEvaluation.cryptoCalls[1][2]"),
+        (out_of_order, "ACP.STIMULUS.ORDER", "retainedEvaluation.cryptoCalls[0][2]"),
+        (wrong_identity, "ACP.STIMULUS.CRYPTO_IDENTITY", "retainedEvaluation.cryptoCalls[0][0]"),
     ):
-        changed_case(
-            two_document,
-            ("retainedEvaluation", "cryptoCalls"),
-            rows,
-            code,
-            location,
-        )
+        append_ledger(rows, code, location)
     for graph_call_count in (-1, 2):
-        changed_case(
+        _append_changed_hostile_stimulus(
+            hostile_stimuli,
             retained_document,
             ("retainedEvaluation", "graphCallCount"),
             graph_call_count,
             "ACP.STIMULUS.RANGE",
         )
 
+
+def _append_limit_hostile_stimuli(
+    hostile_stimuli: list[HostileStimulus],
+    document: dict[str, Any],
+    valid_document: dict[str, Any],
+    retained_document: dict[str, Any],
+) -> None:
     limit_names = {
         "candidates": "candidateCount",
         "candidateBytes": "candidateBytes",
@@ -2909,15 +2887,24 @@ def test_matrix_cross_product_and_exact_outcomes_are_closed(
                 (-1, "ACP.STIMULUS.RANGE"),
                 (maximum + 1, "ACP.STIMULUS.LIMIT_EXCEEDED"),
             ):
-                changed_case(source_document, (*prefix, wire_name), limit_value, code)
+                _append_changed_hostile_stimulus(
+                    hostile_stimuli, source_document, (*prefix, wire_name), limit_value, code
+                )
 
-    def duplicated(source: dict[str, Any], path: tuple[str, ...]) -> bytes:
-        target: Any = source
-        for segment in path[:-1]:
-            target = target[segment]
-        member = canonical(path[-1]).decode() + ":" + canonical(target[path[-1]]).decode()
-        return canonical(source).replace(member.encode(), f"{member},{member}".encode(), 1)
 
+def _duplicated_member_stimulus(source: dict[str, Any], path: tuple[str, ...]) -> bytes:
+    target: Any = source
+    for segment in path[:-1]:
+        target = target[segment]
+    member = canonical(path[-1]).decode() + ":" + canonical(target[path[-1]]).decode()
+    return canonical(source).replace(member.encode(), f"{member},{member}".encode(), 1)
+
+
+def _append_duplicate_member_hostile_stimuli(
+    hostile_stimuli: list[HostileStimulus],
+    valid_document: dict[str, Any],
+    retained_document: dict[str, Any],
+) -> None:
     duplicate_objects: tuple[tuple[dict[str, Any], tuple[str, ...]], ...] = (
         (valid_document, ("schemaVersion",)),
         (valid_document, ("evaluationContext", "expectedPhase")),
@@ -2928,22 +2915,92 @@ def test_matrix_cross_product_and_exact_outcomes_are_closed(
     for source_document, path in duplicate_objects:
         hostile_stimuli.append(
             (
-                duplicated(source_document, path),
+                _duplicated_member_stimulus(source_document, path),
                 "parse",
                 "ACP.STIMULUS.DUPLICATE_MEMBER",
                 ".".join(path),
             )
         )
 
-    stimulus_cap = document["limits"]["stimulusBytes"]
-    hostile_stimuli.append(
-        (
-            b"{" + b" " * stimulus_cap,
-            "bounds",
-            "ACP.BOUNDS.MATRIX_STIMULUS_BYTES",
-            "fixture",
-        )
+
+def _hostile_stimulus_catalog_sha256(stimuli: tuple[HostileStimulus, ...]) -> str:
+    wire = tuple((raw.hex(), stage, code, location) for raw, stage, code, location in stimuli)
+    return hashlib.sha256(canonical(wire)).hexdigest()
+
+
+def _assert_hostile_stimulus_catalog_identity(stimuli: tuple[HostileStimulus, ...]) -> None:
+    assert len(stimuli) == EXPECTED_HOSTILE_STIMULUS_COUNT
+    wire = tuple((raw.hex(), stage, code, location) for raw, stage, code, location in stimuli)
+    assert len({canonical(row) for row in wire}) == EXPECTED_DISTINCT_HOSTILE_STIMULUS_COUNT
+    assert _hostile_stimulus_catalog_sha256(stimuli) == EXPECTED_HOSTILE_STIMULUS_CATALOG_SHA256
+    swapped = list(stimuli)
+    swapped[0], swapped[1] = swapped[1], swapped[0]
+    assert (
+        _hostile_stimulus_catalog_sha256(tuple(swapped)) != EXPECTED_HOSTILE_STIMULUS_CATALOG_SHA256
     )
+
+
+def _build_hostile_matrix_context(
+    document: dict[str, Any], registry: dict[str, bytes]
+) -> _HostileMatrixContext:
+    valid_document = strict_object(registry["fixture://validation_order:positive"])
+    retained_document = strict_object(registry["fixture://reconstruction_replay:positive"])
+    first_raw, first_id, first_message = candidate(payload="nested-count-first", priority=1)
+    second_raw, second_id, second_message = candidate(payload="nested-count-second", priority=2)
+    two_stimulus = protocol.MatrixStimulus(
+        (first_raw, second_raw),
+        context((first_id, second_id)),
+        retained_fixture(
+            (first_raw, second_raw),
+            (first_id, second_id),
+            (first_message, second_message),
+            selected=second_id,
+        ),
+    )
+    two_document = strict_object(matrix_stimulus_bytes(two_stimulus))
+    hostile_stimuli: list[HostileStimulus] = []
+    _append_base_hostile_stimuli(hostile_stimuli, valid_document, retained_document)
+    _append_object_field_hostile_stimuli(
+        hostile_stimuli, document, valid_document, retained_document
+    )
+    retained = retained_document["retainedEvaluation"]
+    crypto_row = list(retained["cryptoCalls"][0])
+    retained_candidate_id = cast(str, retained["authorizedCandidateIds"][0])
+    trusted_id = next(iter(valid_document["evaluationContext"]["trustedPublicKeys"]))
+    _append_retained_identity_and_phase_mutations(
+        hostile_stimuli, valid_document, retained_document, retained_candidate_id
+    )
+    _append_retained_stage_call_mutations(hostile_stimuli, retained_document, retained_candidate_id)
+    _append_retained_finding_mutations(hostile_stimuli, retained_document)
+    _append_retained_crypto_call_mutations(hostile_stimuli, retained_document, crypto_row)
+    _append_stage_reference_hostile_stimuli(
+        hostile_stimuli, retained_document, retained_candidate_id, valid_document, trusted_id
+    )
+    _append_retained_closure_hostile_stimuli(hostile_stimuli, retained_document, crypto_row)
+    _append_ledger_order_hostile_stimuli(
+        hostile_stimuli, retained_document, two_document, second_id
+    )
+    _append_limit_hostile_stimuli(hostile_stimuli, document, valid_document, retained_document)
+    _append_duplicate_member_hostile_stimuli(hostile_stimuli, valid_document, retained_document)
+    frozen_stimuli = tuple(hostile_stimuli)
+    _assert_hostile_stimulus_catalog_identity(frozen_stimuli)
+    return _HostileMatrixContext(
+        frozen_stimuli,
+        valid_document,
+        retained_document,
+        two_stimulus,
+        two_document,
+        first_id,
+        second_id,
+        first_message,
+        second_message,
+        cast(int, document["limits"]["stimulusBytes"]),
+    )
+
+
+def _install_rejection_trace(monkeypatch: pytest.MonkeyPatch) -> _RejectionTrace:
+    original_parse = protocol.parse_matrix_stimulus
+    original_reconstruct = protocol.reconstruct_candidates
     parse_calls: list[tuple[bytes, protocol.MatrixStimulusParse]] = []
     unexpected_engines: list[str] = []
     unexpected_crypto: list[protocol.CryptoProbe] = []
@@ -2995,6 +3052,26 @@ def test_matrix_cross_product_and_exact_outcomes_are_closed(
     monkeypatch.setattr(protocol, "parse_matrix_stimulus", observe_rejection_parse)
     monkeypatch.setattr(protocol, "evaluate_candidates", unexpected_evaluate)
     monkeypatch.setattr(protocol, "reconstruct_candidates", observe_exact_reconstruct)
+    return _RejectionTrace(
+        original_parse,
+        observe_unexpected_crypto,
+        parse_calls,
+        unexpected_engines,
+        unexpected_crypto,
+        delegation_events,
+        reconstruction_calls,
+    )
+
+
+def _assert_hostile_stimuli_fail_closed(
+    context_fixture: _HostileMatrixContext, trace: _RejectionTrace
+) -> None:
+    hostile_stimuli = context_fixture.hostile_stimuli
+    original_parse = trace.original_parse
+    parse_calls = trace.parse_calls
+    unexpected_engines = trace.unexpected_engines
+    unexpected_crypto = trace.unexpected_crypto
+    observe_unexpected_crypto = trace.unexpected_crypto_verifier
     for raw, stage, code, location in hostile_stimuli:
         expected_findings = exact_finding(stage, "CURRENT", code, location)
         assert original_parse(raw) == protocol.MatrixStimulusParse(None, expected_findings)
@@ -3007,6 +3084,21 @@ def test_matrix_cross_product_and_exact_outcomes_are_closed(
         assert unexpected_engines == []
         assert unexpected_crypto == []
 
+
+def _assert_two_candidate_reconstruction_delegation(
+    context_fixture: _HostileMatrixContext, trace: _RejectionTrace
+) -> None:
+    two_document = context_fixture.two_document
+    two_stimulus = context_fixture.two_stimulus
+    first_id = context_fixture.first_id
+    second_id = context_fixture.second_id
+    first_message = context_fixture.first_message
+    second_message = context_fixture.second_message
+    original_parse = trace.original_parse
+    parse_calls = trace.parse_calls
+    unexpected_engines = trace.unexpected_engines
+    delegation_events = trace.delegation_events
+    reconstruction_calls = trace.reconstruction_calls
     two_raw = canonical(two_document)
     assert original_parse(two_raw) == protocol.MatrixStimulusParse(two_stimulus, ())
     two_probes = [
@@ -3055,6 +3147,15 @@ def test_matrix_cross_product_and_exact_outcomes_are_closed(
     assert two_execution.observation.evaluation is delegated_result
     two_spy.assert_exhausted()
 
+
+def _assert_at_cap_evaluation_delegation(
+    context_fixture: _HostileMatrixContext, trace: _RejectionTrace
+) -> None:
+    valid_document = context_fixture.valid_document
+    stimulus_cap = context_fixture.stimulus_cap
+    original_parse = trace.original_parse
+    parse_calls = trace.parse_calls
+    unexpected_engines = trace.unexpected_engines
     valid_raw = canonical(valid_document)
     at_cap = valid_raw[:-1] + (b" " * (stimulus_cap - len(valid_raw))) + b"}"
     assert len(at_cap) == stimulus_cap
@@ -3074,6 +3175,11 @@ def test_matrix_cross_product_and_exact_outcomes_are_closed(
         (),
     )
 
+
+def _assert_final_matrix_validation(contract: _MatrixContract) -> None:
+    document = contract.document
+    invariants = contract.invariants
+    expected = contract.expected
     result = protocol.validate_matrix_bytes(MATRIX_PATH.read_bytes(), synthetic_freeze(document))
     assert result.findings == ()
     assert result.semantic_sha256 == EXPECTED_SEMANTIC_SHA256
@@ -3083,6 +3189,23 @@ def test_matrix_cross_product_and_exact_outcomes_are_closed(
         protocol.BlockerClass.EVIDENCE,
     )
     assert result.normalized_case_ids == tuple(case.case_id for case in expected)
+
+
+def test_matrix_cross_product_and_exact_outcomes_are_closed(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    contract = _closed_matrix_contract()
+    trace = _install_matrix_execution_trace(monkeypatch)
+    observations = _assert_materialized_cross_product(contract, trace)
+    _assert_derangement_and_dispatch_independence(monkeypatch, contract, trace, observations)
+    _assert_negative_boundary_separation(observations)
+    monkeypatch.undo()
+    hostile_context = _build_hostile_matrix_context(contract.document, contract.registry)
+    rejection_trace = _install_rejection_trace(monkeypatch)
+    _assert_hostile_stimuli_fail_closed(hostile_context, rejection_trace)
+    _assert_two_candidate_reconstruction_delegation(hostile_context, rejection_trace)
+    _assert_at_cap_evaluation_delegation(hostile_context, rejection_trace)
+    _assert_final_matrix_validation(contract)
 
 
 def test_closed_universe_shrink_fails_exactly() -> None:

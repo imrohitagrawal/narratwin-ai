@@ -250,26 +250,26 @@ generic process failure before output interpretation, with `-1`, `2`, and `127`
 frozen for every form. Author bounds separately prove a scripted RED size of 320
 bytes at exact N/N+1 and a smaller dynamic RED-object cap.
 
-<!-- issue-435-reset47-red-snapshot:sha256=5208044851f0a2e46970697b37cd8160ba5b21d6e927f23af4334d3a91965607 -->
-This block records `C2R48_RED_SNAPSHOT_ONLY`; it never represents the mutable
+<!-- issue-435-reset47-red-snapshot:sha256=8e97148cbd13a76c5b091c8d3abfb6550b86fbaa13528af5e151315fdede83c4 -->
+This block records `C2R50_RED_SNAPSHOT_ONLY`; it never represents the mutable
 current GREEN head. Its non-self-referential catalog binds fixed base
-`a6284f7d8f1a14ef4c9a99493d6b06046505f20c`, exact C1R48 parent
-`d30fbccde228f713860d5592df1f6230953a30b1`, the Reset48 snapshot schema and
+`a6284f7d8f1a14ef4c9a99493d6b06046505f20c`, exact C1R50 parent
+`142dc1502ebec9483c58770f1c03dca9862e9bc8`, the Reset50 snapshot schema and
 version, exact ordered rows, row count, and a SHA-256 over those rows. The
 external C2 checkpoint and later C3 freeze alone bind the eventual C2 commit,
 tree, and seven blobs.
 
-Exact file use is matrix 4,509/5,500
-(81.98%), protocol 5,525/12,000 (46.04%), core 4,373/5,000 (87.46%),
-repository 16,999/19,000 (89.47%), template 408/600 (68.00%), ADR 417/550
-(75.82%), and playbook 584 lines. Exact partitions are validator 26,897/40,000 (67.24%),
-architecture/security 1,409/2,200 (64.05%), and route 4,509/5,800
-(77.74%); the seven-path aggregate is 32,815/45,000 (72.92%).
+Exact file use is matrix 4,510/5,500
+(82.00%), protocol 5,525/12,000 (46.04%), core 4,496/5,000 (89.92%),
+repository 15,791/19,000 (83.11%), template 408/600 (68.00%), ADR 417/550
+(75.82%), and playbook 584 lines. Exact partitions are validator 25,812/40,000 (64.53%),
+architecture/security 1,409/2,200 (64.05%), and route 4,510/5,800
+(77.76%); the seven-path aggregate is 31,731/45,000 (70.51%).
 
 Readability/convergence PASS covers core, repository, validator, and aggregate.
 Independent semantic literals and catalog assertions, with bounded helpers, keep all governed uses
 below 90 percent with no semantic compression. Further growth requires a fresh
-recorded risk review before growth continues. These values are immutable C2R48 historical evidence and never current-head acceptance truth.
+recorded risk review before growth continues. These values are immutable C2R50 historical evidence and never current-head acceptance truth.
 
 Current-head acceptance is separate. Before intentional RED, the dynamic proof
 validates the frozen contract before either evidence source. Tree-to-tree Git

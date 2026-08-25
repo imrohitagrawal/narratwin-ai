@@ -3060,30 +3060,31 @@
     "riskThresholdPercent": 85,
     "stopThresholdPercent": 90,
     "denseCompressionProhibited": true,
+    "repositoryEvidenceFixtureByteBudget": ["tests/fixtures/governance/issue435-repository-evidence-v1.json",1272789,1500000,1275000,1350000,"84.85","8d040be04eda3236c6bce82ebefda11691a7b53d523d536520e7089e09ccaa77"],
     "reset47RedSnapshot": {
-      "schemaVersion": "C2R48_RED_SNAPSHOT_ONLY_V1",
+      "schemaVersion": "C2R50_RED_SNAPSHOT_ONLY_V1",
       "fixedBase": "a6284f7d8f1a14ef4c9a99493d6b06046505f20c",
-      "c1Head": "d30fbccde228f713860d5592df1f6230953a30b1",
+      "c1Head": "142dc1502ebec9483c58770f1c03dca9862e9bc8",
       "fields": ["scope","name","source","use","limit","percent","disposition"],
       "rows": [
-        ["path","matrix","docs/governance/adversarial-convergence-invariant-matrix-v1.json",4509,5500,"81.98","normal"],
+        ["path","matrix","docs/governance/adversarial-convergence-invariant-matrix-v1.json",4510,5500,"82.00","normal"],
         ["path","protocol","scripts/quality/issue435_adversarial_convergence.py",5525,12000,"46.04","normal"],
-        ["path","coreOracle","tests/unit/test_issue435_adversarial_convergence.py",4373,5000,"87.46","readability-convergence-pass"],
-        ["path","repositoryOracle","tests/unit/test_issue435_adversarial_convergence_repository.py",16999,19000,"89.47","readability-convergence-pass"],
+        ["path","coreOracle","tests/unit/test_issue435_adversarial_convergence.py",4496,5000,"89.92","readability-convergence-pass"],
+        ["path","repositoryOracle","tests/unit/test_issue435_adversarial_convergence_repository.py",15791,19000,"83.11","normal"],
         ["path","template","docs/templates/ADVERSARIAL_INVARIANT_MATRIX.md",408,600,"68.00","normal"],
         ["path","adr0064","docs/ADR/0064-adversarial-convergence-protocol.md",417,550,"75.82","normal"],
         ["path","playbook","docs/ADVERSARIAL_VERIFICATION_PLAYBOOK.md",584,null,"N/A","uncapped-contributor"],
-        ["partition","route","matrix",4509,5800,"77.74","normal"],
+        ["partition","route","matrix",4510,5800,"77.76","normal"],
         ["partition","architectureSecurity","template+adr0064+playbook",1409,2200,"64.05","normal"],
-        ["partition","validator","protocol+coreOracle+repositoryOracle",26897,40000,"67.24","normal"],
-        ["aggregate","sevenSemanticPaths","matrix+protocol+coreOracle+repositoryOracle+template+adr0064+playbook",32815,45000,"72.92","normal"],
+        ["partition","validator","protocol+coreOracle+repositoryOracle",25812,40000,"64.53","normal"],
+        ["aggregate","sevenSemanticPaths","matrix+protocol+coreOracle+repositoryOracle+template+adr0064+playbook",31731,45000,"70.51","normal"],
         ["binary","binary","matrix+protocol+coreOracle+repositoryOracle+template+adr0064+playbook",0,0,"0.00","binary-zero"]
       ],
       "count": 12,
-      "sha256": "9374a1b7570092e8121c2754a23be7a2efbadca6f7649ea9270b85335698e731"
+      "sha256": "32b47bf3eebdb87e512fb8e3e4c99c4d168a20f24811b041061fead2f2997a10"
     },
     "dynamicCurrentHeadBudgetContract": {
-      "schemaVersion": "RESET48_DYNAMIC_CURRENT_HEAD_BUDGET_V1",
+      "schemaVersion": "RESET50_DYNAMIC_CURRENT_HEAD_BUDGET_V1",
       "fixedBase": "a6284f7d8f1a14ef4c9a99493d6b06046505f20c",
       "gitPrefix": ["/usr/bin/git","--no-pager","--no-replace-objects","--no-optional-locks","--no-lazy-fetch","-c","protocol.allow=never","-c","core.commitGraph=false","-c","core.fsmonitor=false","-c","log.showSignature=false","-c","fsck.skipList=/dev/null"],
       "gitDiffArguments": ["diff","--no-renames","--ignore-submodules=none","--no-ext-diff","--no-textconv","--diff-filter=A","--numstat","a6284f7d8f1a14ef4c9a99493d6b06046505f20c","HEAD","--","docs/governance/adversarial-convergence-invariant-matrix-v1.json","scripts/quality/issue435_adversarial_convergence.py","tests/unit/test_issue435_adversarial_convergence.py","tests/unit/test_issue435_adversarial_convergence_repository.py","docs/templates/ADVERSARIAL_INVARIANT_MATRIX.md","docs/ADR/0064-adversarial-convergence-protocol.md","docs/ADVERSARIAL_VERIFICATION_PLAYBOOK.md"],
@@ -3116,12 +3117,12 @@
     "reset47RedSnapshotProseUse": {
       "fields": ["path","marker","repositoryUse","validatorUse","aggregateUse","repositoryPercent","validatorPercent","aggregatePercent"],
       "rows": [
-        ["docs/ADR/0064-adversarial-convergence-protocol.md","<!-- issue-435-reset47-red-snapshot:sha256=5208044851f0a2e46970697b37cd8160ba5b21d6e927f23af4334d3a91965607 -->",16999,26897,32815,"89.47","67.24","72.92"],
-["docs/ADVERSARIAL_VERIFICATION_PLAYBOOK.md","<!-- issue-435-reset47-red-snapshot:sha256=1a07b51b085ed33ad0df2a7a89a2abffd9a98617a291f053cda088a663af5e4f -->",16999,26897,32815,"89.47","67.24","72.92"],
-["docs/templates/ADVERSARIAL_INVARIANT_MATRIX.md","<!-- issue-435-reset47-red-snapshot:sha256=6a6c27c219edeb9e47008ea434321cd2ec4510c0923ba7bbd19b9aa807e07f47 -->",16999,26897,32815,"89.47","67.24","72.92"]
+        ["docs/ADR/0064-adversarial-convergence-protocol.md","<!-- issue-435-reset47-red-snapshot:sha256=8e97148cbd13a76c5b091c8d3abfb6550b86fbaa13528af5e151315fdede83c4 -->",15791,25812,31731,"83.11","64.53","70.51"],
+["docs/ADVERSARIAL_VERIFICATION_PLAYBOOK.md","<!-- issue-435-reset47-red-snapshot:sha256=f3519f11231079688a811e0adab52a968aa2893ccf11d42dcf4d57118eee2270 -->",15791,25812,31731,"83.11","64.53","70.51"],
+["docs/templates/ADVERSARIAL_INVARIANT_MATRIX.md","<!-- issue-435-reset47-red-snapshot:sha256=55aa43ac306e78ad73137963ef9437f114868c53753a0781f5988736242d1519 -->",15791,25812,31731,"83.11","64.53","70.51"]
       ],
       "count": 3,
-      "sha256": "865ceaf5ab67c390a603f222abe425991332452de4ed1621aaab00cdb9c0e202"
+      "sha256": "84b9ed78f4bd7eb548e9b8ebdee3616f38426dbcf4433a39a5639fec31f468aa"
     },
     "levels": [
       "per_file",

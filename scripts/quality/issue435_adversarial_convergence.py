@@ -4752,9 +4752,9 @@ STATIC_GIT_METADATA_GOVERNED_PRECEDENCE_MUTANT_COUNT = 1
 STATIC_GIT_METADATA_GOVERNED_PRECEDENCE_MUTANT_SHA256 = (
     "ddaf256a0bdf6c063ab8fd0e5a8eeb74ec97b4c78a58d380f17ed8a93453093e"
 )
-STATIC_RESET47_RED_SNAPSHOT_SCHEMA_VERSION = "C2R48_RED_SNAPSHOT_ONLY_V1"
+STATIC_RESET47_RED_SNAPSHOT_SCHEMA_VERSION = "C2R50_RED_SNAPSHOT_ONLY_V1"
 STATIC_RESET47_RED_SNAPSHOT_FIXED_BASE = "a6284f7d8f1a14ef4c9a99493d6b06046505f20c"
-STATIC_RESET47_RED_SNAPSHOT_C1_HEAD = "d30fbccde228f713860d5592df1f6230953a30b1"
+STATIC_RESET47_RED_SNAPSHOT_C1_HEAD = "142dc1502ebec9483c58770f1c03dca9862e9bc8"
 STATIC_RESET47_RED_SNAPSHOT_FIELDS = (
     "scope",
     "name",
@@ -4769,9 +4769,9 @@ STATIC_RESET47_RED_SNAPSHOT_ROWS: tuple[tuple[object, ...], ...] = (
         "path",
         "matrix",
         "docs/governance/adversarial-convergence-invariant-matrix-v1.json",
-        4509,
+        4510,
         5500,
-        "81.98",
+        "82.00",
         "normal",
     ),
     (
@@ -4787,19 +4787,19 @@ STATIC_RESET47_RED_SNAPSHOT_ROWS: tuple[tuple[object, ...], ...] = (
         "path",
         "coreOracle",
         "tests/unit/test_issue435_adversarial_convergence.py",
-        4373,
+        4496,
         5000,
-        "87.46",
+        "89.92",
         "readability-convergence-pass",
     ),
     (
         "path",
         "repositoryOracle",
         "tests/unit/test_issue435_adversarial_convergence_repository.py",
-        16999,
+        15791,
         19000,
-        "89.47",
-        "readability-convergence-pass",
+        "83.11",
+        "normal",
     ),
     (
         "path",
@@ -4828,7 +4828,7 @@ STATIC_RESET47_RED_SNAPSHOT_ROWS: tuple[tuple[object, ...], ...] = (
         "N/A",
         "uncapped-contributor",
     ),
-    ("partition", "route", "matrix", 4509, 5800, "77.74", "normal"),
+    ("partition", "route", "matrix", 4510, 5800, "77.76", "normal"),
     (
         "partition",
         "architectureSecurity",
@@ -4842,18 +4842,18 @@ STATIC_RESET47_RED_SNAPSHOT_ROWS: tuple[tuple[object, ...], ...] = (
         "partition",
         "validator",
         "protocol+coreOracle+repositoryOracle",
-        26897,
+        25812,
         40000,
-        "67.24",
+        "64.53",
         "normal",
     ),
     (
         "aggregate",
         "sevenSemanticPaths",
         "matrix+protocol+coreOracle+repositoryOracle+template+adr0064+playbook",
-        32815,
+        31731,
         45000,
-        "72.92",
+        "70.51",
         "normal",
     ),
     (
@@ -4868,9 +4868,9 @@ STATIC_RESET47_RED_SNAPSHOT_ROWS: tuple[tuple[object, ...], ...] = (
 )
 STATIC_RESET47_RED_SNAPSHOT_COUNT = 12
 STATIC_RESET47_RED_SNAPSHOT_SHA256 = (
-    "9374a1b7570092e8121c2754a23be7a2efbadca6f7649ea9270b85335698e731"
+    "32b47bf3eebdb87e512fb8e3e4c99c4d168a20f24811b041061fead2f2997a10"
 )
-STATIC_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_SCHEMA_VERSION = "RESET48_DYNAMIC_CURRENT_HEAD_BUDGET_V1"
+STATIC_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_SCHEMA_VERSION = "RESET50_DYNAMIC_CURRENT_HEAD_BUDGET_V1"
 STATIC_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_FIXED_BASE = "a6284f7d8f1a14ef4c9a99493d6b06046505f20c"
 STATIC_RESET47_DYNAMIC_CURRENT_HEAD_BUDGET_GIT_PREFIX = (
     "/usr/bin/git",
@@ -4999,38 +4999,38 @@ STATIC_RESET47_RED_SNAPSHOT_PROSE_USE_FIELDS = (
 STATIC_RESET47_RED_SNAPSHOT_PROSE_USE_ROWS: tuple[tuple[object, ...], ...] = (
     (
         "docs/ADR/0064-adversarial-convergence-protocol.md",
-        "<!-- issue-435-reset47-red-snapshot:sha256=5208044851f0a2e46970697b37cd8160ba5b21d6e927f23af4334d3a91965607 -->",
-        16999,
-        26897,
-        32815,
-        "89.47",
-        "67.24",
-        "72.92",
+        "<!-- issue-435-reset47-red-snapshot:sha256=8e97148cbd13a76c5b091c8d3abfb6550b86fbaa13528af5e151315fdede83c4 -->",
+        15791,
+        25812,
+        31731,
+        "83.11",
+        "64.53",
+        "70.51",
     ),
     (
         "docs/ADVERSARIAL_VERIFICATION_PLAYBOOK.md",
-        "<!-- issue-435-reset47-red-snapshot:sha256=1a07b51b085ed33ad0df2a7a89a2abffd9a98617a291f053cda088a663af5e4f -->",
-        16999,
-        26897,
-        32815,
-        "89.47",
-        "67.24",
-        "72.92",
+        "<!-- issue-435-reset47-red-snapshot:sha256=f3519f11231079688a811e0adab52a968aa2893ccf11d42dcf4d57118eee2270 -->",
+        15791,
+        25812,
+        31731,
+        "83.11",
+        "64.53",
+        "70.51",
     ),
     (
         "docs/templates/ADVERSARIAL_INVARIANT_MATRIX.md",
-        "<!-- issue-435-reset47-red-snapshot:sha256=6a6c27c219edeb9e47008ea434321cd2ec4510c0923ba7bbd19b9aa807e07f47 -->",
-        16999,
-        26897,
-        32815,
-        "89.47",
-        "67.24",
-        "72.92",
+        "<!-- issue-435-reset47-red-snapshot:sha256=55aa43ac306e78ad73137963ef9437f114868c53753a0781f5988736242d1519 -->",
+        15791,
+        25812,
+        31731,
+        "83.11",
+        "64.53",
+        "70.51",
     ),
 )
 STATIC_RESET47_RED_SNAPSHOT_PROSE_USE_COUNT = 3
 STATIC_RESET47_RED_SNAPSHOT_PROSE_USE_SHA256 = (
-    "865ceaf5ab67c390a603f222abe425991332452de4ed1621aaab00cdb9c0e202"
+    "84b9ed78f4bd7eb548e9b8ebdee3616f38426dbcf4433a39a5639fec31f468aa"
 )
 STATIC_GIT_RETURN_CODES = (
     ("object_format", (0,), (), (-1, 2, 127)),

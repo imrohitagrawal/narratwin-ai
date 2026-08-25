@@ -326,26 +326,26 @@ comparison is killed without fabricating work after a failed crypto check.
 
 Never compress semantics to fit a cap.
 
-<!-- issue-435-reset47-red-snapshot:sha256=6a6c27c219edeb9e47008ea434321cd2ec4510c0923ba7bbd19b9aa807e07f47 -->
+<!-- issue-435-reset47-red-snapshot:sha256=55aa43ac306e78ad73137963ef9437f114868c53753a0781f5988736242d1519 -->
 For the Issue #435 exemplar, label immutable evidence
-`C2R48_RED_SNAPSHOT_ONLY`; never present it as mutable current GREEN truth. The
+`C2R50_RED_SNAPSHOT_ONLY`; never present it as mutable current GREEN truth. The
 independently owned, non-self-referential snapshot catalog binds fixed base
-`a6284f7d8f1a14ef4c9a99493d6b06046505f20c`, exact C1R48 parent
-`d30fbccde228f713860d5592df1f6230953a30b1`, snapshot schema/version, exact
+`a6284f7d8f1a14ef4c9a99493d6b06046505f20c`, exact C1R50 parent
+`142dc1502ebec9483c58770f1c03dca9862e9bc8`, snapshot schema/version, exact
 ordered rows, row count, and rows SHA-256. Record the actual C2 commit, tree, and
 seven blobs only in the external checkpoint and subsequent freeze.
 
-Exact use is matrix 4,509/5,500 (81.98%); protocol 5,525/12,000 (46.04%);
-core 4,373/5,000 (87.46%); repository 16,999/19,000 (89.47%); template
+Exact use is matrix 4,510/5,500 (82.00%); protocol 5,525/12,000 (46.04%);
+core 4,496/5,000 (89.92%); repository 15,791/19,000 (83.11%); template
 408/600 (68.00%); ADR 417/550 (75.82%); playbook 584; validator
-26,897/40,000 (67.24%); architecture/security 1,409/2,200 (64.05%); route
-4,509/5,800 (77.74%); and seven-path aggregate 32,815/45,000 (72.92%).
+25,812/40,000 (64.53%); architecture/security 1,409/2,200 (64.05%); route
+4,510/5,800 (77.76%); and seven-path aggregate 31,731/45,000 (70.51%).
 
 The core, repository, validator, and aggregate evidence stays independently
 reviewable; repository, validator, and aggregate reviews PASS. Independent
 semantic literals and catalog assertions, with bounded helpers, keep each use below 90 percent with
 no semantic compression. Further growth requires a fresh review before growth
-continues. These values are immutable C2R48 history, not current GREEN truth.
+continues. These values are immutable C2R50 history, not current GREEN truth.
 
 Define a separate dynamic current-head proof that validates its frozen catalog
 before either evidence source and accepts no caller-supplied current uses.

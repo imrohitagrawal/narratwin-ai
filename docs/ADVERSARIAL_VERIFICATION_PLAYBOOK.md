@@ -467,24 +467,24 @@ aggregate before implementation. Deletions grant no credit. Record each ratio.
 Dense one-line code, collapsed assertions, broad helpers that hide outcomes,
 and semantic compression used only to fit a cap are prohibited.
 
-<!-- issue-435-reset47-red-snapshot:sha256=1a07b51b085ed33ad0df2a7a89a2abffd9a98617a291f053cda088a663af5e4f -->
-`C2R48_RED_SNAPSHOT_ONLY` is immutable historical evidence, never a claim about
+<!-- issue-435-reset47-red-snapshot:sha256=f3519f11231079688a811e0adab52a968aa2893ccf11d42dcf4d57118eee2270 -->
+`C2R50_RED_SNAPSHOT_ONLY` is immutable historical evidence, never a claim about
 the later mutable GREEN head. Its independently owned, non-self-referential
 catalog binds fixed base `a6284f7d8f1a14ef4c9a99493d6b06046505f20c`, exact
-C1R48 parent `d30fbccde228f713860d5592df1f6230953a30b1`, the Reset48
+C1R50 parent `142dc1502ebec9483c58770f1c03dca9862e9bc8`, the Reset50
 snapshot schema/version, exact ordered rows, row count, and rows SHA-256. The
 external C2 checkpoint and C3 freeze alone bind eventual C2 Git identities.
 
-Exact use: matrix 4,509 (81.98%); protocol 5,525 (46.04%); core 4,373
-(87.46%); repository 16,999 (89.47%); template 408 (68.00%); ADR 417
-(75.82%); playbook 584; validator 26,897/40,000 (67.24%);
-architecture/security 1,409/2,200 (64.05%); route 4,509/5,800 (77.74%); and
-seven-path aggregate 32,815/45,000 (72.92%).
+Exact use: matrix 4,510 (82.00%); protocol 5,525 (46.04%); core 4,496
+(89.92%); repository 15,791 (83.11%); template 408 (68.00%); ADR 417
+(75.82%); playbook 584; validator 25,812/40,000 (64.53%);
+architecture/security 1,409/2,200 (64.05%); route 4,510/5,800 (77.76%); and
+seven-path aggregate 31,731/45,000 (70.51%).
 
 The core, repository, validator, and aggregate evidence remains explicit; aggregate readability and convergence reviews PASS. Independent semantic
 literals and catalog assertions, with bounded helpers, keep every surface below 90 percent with no
 semantic compression. Further growth requires a renewed review before growth
-continues. These are C2R48 historical values, not mutable GREEN truth.
+continues. These are C2R50 historical values, not mutable GREEN truth.
 
 Before either focused oracle reaches its intentional RED boundary, the dynamic
 current-head proof validates bounds, types, schema, identities, thresholds,
