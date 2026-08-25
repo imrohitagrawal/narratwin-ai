@@ -87,7 +87,8 @@ def issue435_route_fixture(
 ) -> None:
     script = tmp_path / "scripts/quality/adversarial_convergence.py"
     script.parent.mkdir(parents=True)
-    script.write_text(convergence.MODULE_PATH.read_text() if hasattr(convergence, "MODULE_PATH") else (Path(__file__).parents[2] / "scripts/quality/adversarial_convergence.py").read_text(), encoding="utf-8")
+    script_source = (Path(__file__).parents[2] / "scripts/quality/adversarial_convergence.py").read_text()
+    script.write_text(script_source, encoding="utf-8")
     freeze = tmp_path / convergence.ISSUE435_FREEZE
     if mutation == "freeze":
         freeze.parent.mkdir(parents=True)
@@ -102,6 +103,10 @@ def issue435_route_fixture(
             return branch
         if args[:2] == ["rev-parse", "HEAD"]:
             return head
+        if args[:2] == ["show", f"{head}:scripts/quality/adversarial_convergence.py"]:
+            return script_source
+        if args[:2] == ["show", f"{head}:{convergence.ISSUE435_FREEZE}"]:
+            return freeze.read_text()
         if "--name-status" in args:
             status = "R100" if mutation == "rename" else "A"
             return "\n".join(f"{status}\t{path}" for path in paths)

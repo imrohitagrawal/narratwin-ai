@@ -239,8 +239,7 @@ CANONICAL_STAGE_ISSUE_CLOSURE = (
 )
 ISSUE_353_RECOVERY_BRANCH = "stage8-353-r0c-a2-3b-evaluation-lineage-v2"
 ISSUE_424_MASTER_PROGRAM_BRANCH = "stage8-424-master-program-authority-prelog"
-ISSUE435_BRANCH = "governance-435-adversarial-convergence-framework-v1"
-ISSUE435_BASE = "a6284f7d8f1a14ef4c9a99493d6b06046505f20c"
+ISSUE435_BRANCH, ISSUE435_BASE = "governance-435-adversarial-convergence-framework-v1", "a6284f7d8f1a14ef4c9a99493d6b06046505f20c"
 FORCE_PULL_REQUEST_GUARDRAILS_ENV = "NARRATWIN_FORCE_PULL_REQUEST_GUARDRAILS"
 STATUS_RECONCILIATION_BRANCH_PATTERN = re.compile(
     r"^phase-1-closure-process-(?P<issue>\d+)-post-pr-(?P<pr>\d+)-status-reconciliation$"
@@ -2383,7 +2382,7 @@ def issue435_route_findings() -> list[str]:
     git_head = run_git(["rev-parse", "HEAD"])
     if os.environ.get("GITHUB_HEAD_SHA", "").strip() not in {"", git_head}:
         return ["ACP.IDENTITY.MISMATCH"]
-    source = read_text(ROOT / "scripts/quality/adversarial_convergence.py")
+    source = run_git(["show", f"{git_head}:scripts/quality/adversarial_convergence.py"])
     cap_nodes = [
         node for node in ast.walk(ast.parse(source)) if isinstance(node, ast.Assign) and any(isinstance(target, ast.Name) and target.id == "ISSUE435_CAPS" for target in node.targets)
     ]
@@ -2393,10 +2392,11 @@ def issue435_route_findings() -> list[str]:
     ):
         return ["ACP.SCHEMA.DRIFT"]
     caps = cast(dict[str, int], candidate)
-    expected = set(caps) if (freeze_path := ROOT / "docs/governance/adversarial-convergence-red-freeze-v1.json").exists() else set(caps) - {"docs/governance/adversarial-convergence-red-freeze-v1.json"}
     name_rows = [line.split("\t") for line in run_git(["diff", "--name-status", "-M", "-C", ISSUE435_BASE, git_head, "--"]).splitlines()]
     if any(len(row) != 2 or row[0] not in {"A", "M"} for row in name_rows):
         return ["ACP.AUTH.ROUTE_DRIFT"]
+    freeze_present = "docs/governance/adversarial-convergence-red-freeze-v1.json" in {row[1] for row in name_rows}
+    expected = set(caps) if freeze_present else set(caps) - {"docs/governance/adversarial-convergence-red-freeze-v1.json"}
     number_rows = [line.split("\t") for line in run_git(["diff", "--numstat", "--no-renames", ISSUE435_BASE, git_head, "--"]).splitlines()]
     if {row[1] for row in name_rows} != expected or len(number_rows) != len(expected):
         return ["ACP.AUTH.ROUTE_DRIFT"]
@@ -2412,10 +2412,10 @@ def issue435_route_findings() -> list[str]:
     history = run_git(["rev-list", "--reverse", f"{ISSUE435_BASE}..{git_head}"]).splitlines()
     if not history or history[0] != "205c02b3bac633d023d753356bc966c194ed36a7" or run_git(["rev-list", "--min-parents=2", f"{ISSUE435_BASE}..{git_head}"]) or run_git(["rev-parse", f"{git_head}:docs/governance/preflights/issue-435.json"]) != "c554eaf7f73ea081434b1e2f818441fe0bc3eee9" or run_git(["status", "--porcelain=v1", "--untracked-files=all"]):
         return ["ACP.IDENTITY.MISMATCH"]
-    if charged > (3_620 if freeze_path.exists() else 3_500):
+    if charged > (3_620 if freeze_present else 3_500):
         return ["ACP.AUTH.BUDGET_STOP"]
-    if freeze_path.exists():
-        freeze = json.loads(read_text(freeze_path))
+    if freeze_present:
+        freeze = json.loads(run_git(["show", f"{git_head}:docs/governance/adversarial-convergence-red-freeze-v1.json"]))
         start, end = source.find("# ISSUE435_ROUTE_ADAPTER_V1_START"), source.find("# ISSUE435_ROUTE_ADAPTER_V1_END")
         adapter = source[start : end + len("# ISSUE435_ROUTE_ADAPTER_V1_END")].encode()
         if start < 0 or end < start or freeze.get("routeAdapterSha256") != hashlib.sha256(adapter).hexdigest():
