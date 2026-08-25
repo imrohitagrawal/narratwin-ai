@@ -19,6 +19,52 @@ When `docs/STATUS.md` StatusStateV1 records `SSV1-MODE` as `phase1-closure`, pla
 Product behavior remains blocked except for an exact owner-authorized Stage 8
 Cut 1 route described below.
 
+### Issue #435 finite adversarial-convergence route
+
+Exact branch `governance-435-adversarial-convergence-framework-v1` dispatches
+directly to `scripts/quality/adversarial_convergence.py`; it does not inherit
+the legacy Stage 8 branch-name router. Prefix and suffix lookalikes receive no
+authority. All unrelated Stage 8, Final Review, Phase 1 Closure, and
+policy-only behavior is unchanged.
+
+The route is governance-only with activation `NONE`, authority effect
+`NO_AUTHORITY_EFFECT`, and release No-Go. It starts at exact base
+`a6284f7d8f1a14ef4c9a99493d6b06046505f20c`, preserves exact C1
+`205c02b3bac633d023d753356bc966c194ed36a7` and preflight blob
+`c554eaf7f73ea081434b1e2f818441fe0bc3eee9`, and enforces the OWNER-amended
+20-path map. C2 must cumulatively contain the 19 non-freeze paths; C3 adds only
+the freeze; C4 changes only the executor file outside the frozen route adapter.
+
+Charged lines are additions plus deletions with no deletion credit. Per-path
+caps and the 3,500 non-freeze / 3,620 final aggregates are hard. Binary,
+rename/copy, symlink, nonregular, missing, extra, untracked, dirty, wrong-mode,
+malformed-numstat, history, base/head, or blob drift fails closed. At 85 percent
+record readability review; at 90 percent stop.
+
+The frozen C2 corpus is `ACP-FRAMEWORK-CASES-V1-N40`, exactly 40 stimulus-only
+cases with semantic SHA-256
+`5fd31be0dddf4572f1e8cb5405524ee97e4bd2b20448aded7197949ecb3fe371`.
+Expected results live only in `tests/unit/test_adversarial_convergence.py`.
+Twelve separately named test-only mutants must each execute once and be killed.
+
+C2/C3 are intentionally RED. Required evidence is:
+
+- all bootstrap, corpus/schema, safe-loader, import, mutation-harness,
+  dispatcher, guardrail, security, route, and readability tests GREEN;
+- exactly 40 future-executor failures and zero errors, each reaching typed
+  `ACP.NOT_IMPLEMENTED`;
+- `make quality` canonical JSON `kind=INTENTIONAL_RED`, direct exit 3;
+- candidate review state `PENDING_EXTERNAL_REVIEW` until four independent
+  exact-head/tree reviews pass.
+
+Direct exit 1 is `CONTRACT_FAILURE`; exit 2 is `INFRASTRUCTURE_FAILURE`; exit 3
+is `INTENTIONAL_RED`. `make` may map any failed recipe to exit 2, so canonical
+JSON and the direct gate exit are the discriminating evidence. A different RED,
+a new threat/path/cap/invariant/corpus, a second correction, post-C3 finding, or
+review disagreement stops for OWNER disposition. The framework provides no
+product, provider, workflow, dependency, deployment, publication, or release
+authority.
+
 ### Cut 1 Stage 8 Transition
 
 Exact branches `cut1-process-346-governance-transition`,

@@ -721,3 +721,48 @@ intent -> source facts -> contract -> failure matrix -> RED tests
 
 If that chain is broken, review quality becomes dependent on who happens to ask
 the right question later. That is the loop PR `#54` exposed.
+
+## Finite adversarial-convergence recovery
+
+Issue #435 exposed a second loop: a reusable verification protocol was treated
+as a universal oracle and repeatedly expanded whenever review found another
+domain-specific false pass. Roughly 50 preflight revisions and a rejected
+75,600-line candidate did not converge because implementation, expectations,
+review evidence, and future-slice semantics could all grow together.
+
+For reusable adversarial frameworks, preflight must now freeze:
+
+- the framework-owned threat universe and the future-slice ownership boundary;
+- exact case count, order, corpus identity, and stimulus/expectation separation;
+- processing order, typed failures, resource limits, and candidate review state;
+- exact paths, per-path and aggregate caps, phase-specific mutations, and Git
+  identities;
+- named controlled mutants and the difference between harness discrimination
+  and production-mutant evidence;
+- correction-wave count, readability thresholds, freeze point, and terminal
+  stop/exit decisions.
+
+The candidate implementation may not author expected outcomes or review PASS.
+Expectations must be fixed independently and the executor receives stimulus
+only. Four independent reviews bind one immutable RED candidate. A corrected
+head invalidates every receipt. After the RED freeze, required findings cannot
+be patched; they stop for OWNER rescope, defer, or non-convergent closeout.
+
+Safe-input review must precede semantic review. Check descriptor-relative
+no-follow regular-file reads, byte identity before parsing, duplicate members,
+depth/work limits, contained platform/resource failures, import collisions,
+portable temporary roots, exact route membership, modes, rename/copy, numstat,
+dirty state, and history. A semantic test result is not evidence if any of
+these predecessors failed.
+
+The reusable sequence is:
+
+```text
+finite framework boundary -> independent stimuli/expectations -> genuine RED
+-> exact-head architecture/security/readability/mutation reviews
+-> immutable RED freeze -> one implementation -> terminal disposition
+```
+
+Do not respond to a new blocker by adding an invariant, corpus row, path, cap,
+reset number, or automatic framework version. Those are contract changes and
+require explicit OWNER authority.

@@ -77,6 +77,50 @@ STAGE8_STATUS = """
 | SSV1-MODE | repo-mode | Stage 8 | stage8 | stage8 | Stage 8 hardening mode. |
 """.strip()
 
+ISSUE435_BRANCH = "governance-435-adversarial-convergence-framework-v1"
+
+
+def test_issue435_exact_branch_dispatches_only_dedicated_gate(monkeypatch: Any, tmp_path: Path) -> None:
+    calls = run_dispatcher(
+        monkeypatch,
+        tmp_path,
+        branch=ISSUE435_BRANCH,
+        status_text=PHASE1_STATUS,
+    )
+
+    assert calls == [[sys.executable, "scripts/quality/adversarial_convergence.py"]]
+
+
+def test_issue435_policy_only_cannot_bypass_dedicated_gate(monkeypatch: Any, tmp_path: Path) -> None:
+    calls = run_dispatcher(
+        monkeypatch,
+        tmp_path,
+        branch=ISSUE435_BRANCH,
+        status_text=STAGE8_STATUS,
+        policy_only=True,
+    )
+
+    assert calls == [[sys.executable, "scripts/quality/adversarial_convergence.py"]]
+
+
+def test_issue435_intentional_red_exit_is_propagated(monkeypatch: Any) -> None:
+    dispatcher = load_dispatcher()
+    monkeypatch.setattr(dispatcher, "current_branch", lambda: ISSUE435_BRANCH)
+    monkeypatch.setattr(dispatcher, "run_adversarial_convergence_gate", lambda: 3)
+
+    assert dispatcher.main() == 3
+
+
+def test_issue435_near_match_receives_no_route_authority(monkeypatch: Any, tmp_path: Path) -> None:
+    calls = run_dispatcher(
+        monkeypatch,
+        tmp_path,
+        branch=f"{ISSUE435_BRANCH}-evil",
+        status_text=STAGE8_STATUS,
+    )
+
+    assert calls == [["make", "stage8-quality"]]
+
 
 def test_main_dispatches_phase1_closure_when_status_state_says_phase1(monkeypatch: Any, tmp_path: Path) -> None:
     calls = run_dispatcher(monkeypatch, tmp_path, branch="main", status_text=PHASE1_STATUS)

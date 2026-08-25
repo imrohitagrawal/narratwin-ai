@@ -19,6 +19,13 @@ CURRENT_STAGE = ROOT / ".stage" / "current"
 STATUS_DOC = ROOT / "docs" / "STATUS.md"
 FINAL_REVIEW_BRANCH_PREFIX = "final-review-"
 PHASE1_CLOSURE_BRANCH_PREFIX = "phase-1-closure-"
+ISSUE435_BRANCH = "governance-435-adversarial-convergence-framework-v1"
+
+
+def run_adversarial_convergence_gate() -> int:
+    return subprocess.call(
+        [sys.executable, "scripts/quality/adversarial_convergence.py"], cwd=ROOT
+    )
 
 
 def run_recommended_review_item_check(stage: str) -> int:
@@ -39,15 +46,17 @@ def phase1_closure_mode_active() -> bool:
 
 
 def main() -> int:
+    branch = current_branch()
+    if not branch:
+        print("Quality dispatcher branch evidence is unavailable or inconsistent.")
+        return 1
+    if branch == ISSUE435_BRANCH:
+        return run_adversarial_convergence_gate()
     if not CURRENT_STAGE.exists():
         print("Missing .stage/current. Cannot determine quality stage.")
         return 1
 
     stage = CURRENT_STAGE.read_text(encoding="utf-8").strip()
-    branch = current_branch()
-    if not branch:
-        print("Quality dispatcher branch evidence is unavailable or inconsistent.")
-        return 1
     if branch.startswith(FINAL_REVIEW_BRANCH_PREFIX):
         stage = "Final Review"
     if branch.startswith(PHASE1_CLOSURE_BRANCH_PREFIX):

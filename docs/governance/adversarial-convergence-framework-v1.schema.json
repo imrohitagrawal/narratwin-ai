@@ -1,0 +1,195 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://narratwin.local/schemas/adversarial-convergence-framework-v1.schema.json",
+  "title": "Adversarial convergence framework v1",
+  "oneOf": [
+    {"$ref": "#/$defs/caseCorpus"},
+    {"$ref": "#/$defs/invariantMatrix"},
+    {"$ref": "#/$defs/redFreeze"}
+  ],
+  "$defs": {
+    "threatId": {
+      "type": "string",
+      "pattern": "^[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+$",
+      "maxLength": 64
+    },
+    "identifier": {
+      "type": "string",
+      "pattern": "^[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+$",
+      "maxLength": 96
+    },
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "gitOid": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "path": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512,
+      "not": {"pattern": "(^/|^~|\\\\|(^|/)\\.{1,2}(/|$))"}
+    },
+    "jsonValue": {
+      "oneOf": [
+        {"type": ["string", "number", "integer", "boolean", "null"]},
+        {
+          "type": "array",
+          "maxItems": 64,
+          "items": {"$ref": "#/$defs/jsonValue"}
+        },
+        {
+          "type": "object",
+          "maxProperties": 64,
+          "propertyNames": {"type": "string", "maxLength": 128},
+          "additionalProperties": {"$ref": "#/$defs/jsonValue"}
+        }
+      ]
+    },
+    "stimulus": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["operation", "variant"],
+      "properties": {
+        "operation": {"type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}$"},
+        "variant": {"type": "string", "pattern": "^[a-z][a-z0-9_]{0,95}$"},
+        "input": {"$ref": "#/$defs/jsonValue"}
+      }
+    },
+    "case": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["caseId", "threatId", "testClass", "stimulus"],
+      "properties": {
+        "caseId": {"type": "string", "pattern": "^ACP-C[0-9]{3}$"},
+        "threatId": {"enum": [
+          "ACP-T01", "ACP-T02", "ACP-T03", "ACP-T04", "ACP-T05", "ACP-T06",
+          "ACP-T07", "ACP-T08", "ACP-T09", "ACP-T10", "ACP-T11", "ACP-T12"
+        ]},
+        "testClass": {"enum": [
+          "POSITIVE", "NEGATIVE", "BOUNDARY", "MALFORMED", "DELETION",
+          "CORRUPTION", "REORDERING", "DUPLICATION", "SUBSTITUTION",
+          "MAX_CARDINALITY"
+        ]},
+        "stimulus": {"$ref": "#/$defs/stimulus"}
+      }
+    },
+    "caseCorpus": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "corpusId", "caseCount", "threatUniverse", "cases"],
+      "properties": {
+        "schemaVersion": {"const": "AdversarialConvergenceCaseCorpusV1"},
+        "corpusId": {"const": "ACP-FRAMEWORK-CASES-V1-N40"},
+        "caseCount": {"const": 40},
+        "threatUniverse": {
+          "type": "array",
+          "prefixItems": [
+            {"const": "ACP-T01"}, {"const": "ACP-T02"}, {"const": "ACP-T03"},
+            {"const": "ACP-T04"}, {"const": "ACP-T05"}, {"const": "ACP-T06"},
+            {"const": "ACP-T07"}, {"const": "ACP-T08"}, {"const": "ACP-T09"},
+            {"const": "ACP-T10"}, {"const": "ACP-T11"}, {"const": "ACP-T12"}
+          ],
+          "items": false
+        },
+        "cases": {
+          "type": "array",
+          "minItems": 40,
+          "maxItems": 40,
+          "items": {"$ref": "#/$defs/case"}
+        }
+      }
+    },
+    "invariant": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["invariantId", "threatId", "stage", "rule", "evidenceClass"],
+      "properties": {
+        "invariantId": {"$ref": "#/$defs/identifier"},
+        "threatId": {"$ref": "#/$defs/threatId"},
+        "stage": {"$ref": "#/$defs/stage"},
+        "rule": {"type": "string", "minLength": 1, "maxLength": 1000},
+        "evidenceClass": {"enum": ["TEST", "SOURCE", "HUMAN_ONLY", "NON_GOAL"]},
+        "testIds": {
+          "type": "array",
+          "maxItems": 64,
+          "uniqueItems": true,
+          "items": {"type": "string", "minLength": 1, "maxLength": 160}
+        }
+      }
+    },
+    "stage": {"enum": [
+      "BOUNDS", "PARSE", "SCHEMA", "CANONICAL_IDENTITY", "INDEPENDENT_TRUST",
+      "AUTHORIZATION", "GRAPH_CONFLICT", "PHASE_VERDICT"
+    ]},
+    "invariantMatrix": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "matrixId", "processingOrder", "invariants", "limits"],
+      "properties": {
+        "schemaVersion": {"const": "AdversarialInvariantMatrixV1"},
+        "matrixId": {"$ref": "#/$defs/identifier"},
+        "processingOrder": {
+          "type": "array",
+          "prefixItems": [
+            {"const": "BOUNDS"}, {"const": "PARSE"}, {"const": "SCHEMA"},
+            {"const": "CANONICAL_IDENTITY"}, {"const": "INDEPENDENT_TRUST"},
+            {"const": "AUTHORIZATION"}, {"const": "GRAPH_CONFLICT"},
+            {"const": "PHASE_VERDICT"}
+          ],
+          "items": false
+        },
+        "invariants": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 64,
+          "items": {"$ref": "#/$defs/invariant"}
+        },
+        "limits": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["maxBytes", "maxDepth", "maxMembers", "maxFindings", "maxCases"],
+          "properties": {
+            "maxBytes": {"type": "integer", "minimum": 1, "maximum": 65536},
+            "maxDepth": {"type": "integer", "minimum": 1, "maximum": 32},
+            "maxMembers": {"type": "integer", "minimum": 1, "maximum": 4096},
+            "maxFindings": {"type": "integer", "minimum": 1, "maximum": 256},
+            "maxCases": {"type": "integer", "minimum": 1, "maximum": 64}
+          }
+        }
+      }
+    },
+    "reviewReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["role", "reviewer", "url", "disposition", "head", "tree"],
+      "properties": {
+        "role": {"enum": ["ARCHITECTURE_SCOPE_PHASE", "SECURITY_TRUST", "READABILITY_FEASIBILITY", "MUTATION_FALSE_PASS"]},
+        "reviewer": {"type": "string", "minLength": 1, "maxLength": 160},
+        "url": {"type": "string", "pattern": "^https://github\\.com/imrohitagrawal/narratwin-ai/issues/435#issuecomment-[0-9]+$"},
+        "disposition": {"const": "PASS"},
+        "head": {"$ref": "#/$defs/gitOid"},
+        "tree": {"$ref": "#/$defs/gitOid"}
+      }
+    },
+    "redFreeze": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "issue", "c2Head", "c2Tree", "corpusBlob", "schemaBlob", "testBlob", "skeletonBlob", "corpusSemanticSha256", "routeAdapterSha256", "reviews"],
+      "properties": {
+        "schemaVersion": {"const": "AdversarialConvergenceRedFreezeV1"},
+        "issue": {"const": 435},
+        "c2Head": {"$ref": "#/$defs/gitOid"},
+        "c2Tree": {"$ref": "#/$defs/gitOid"},
+        "corpusBlob": {"$ref": "#/$defs/gitOid"},
+        "schemaBlob": {"$ref": "#/$defs/gitOid"},
+        "testBlob": {"$ref": "#/$defs/gitOid"},
+        "skeletonBlob": {"$ref": "#/$defs/gitOid"},
+        "corpusSemanticSha256": {"$ref": "#/$defs/sha256"},
+        "routeAdapterSha256": {"$ref": "#/$defs/sha256"},
+        "reviews": {
+          "type": "array",
+          "minItems": 4,
+          "maxItems": 4,
+          "items": {"$ref": "#/$defs/reviewReceipt"}
+        }
+      }
+    }
+  }
+}

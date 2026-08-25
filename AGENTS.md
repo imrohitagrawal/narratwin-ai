@@ -118,3 +118,22 @@ Each implementation slice must include:
 Stage 4 is the first product implementation stage:
 
 Project creation -> upload markdown knowledge -> ingest/chunk/store -> retrieve context -> generate grounded walkthrough script -> evaluate unsupported claims -> store output -> display in UI.
+
+## Adversarial-Convergence Framework
+
+Issue #435 framework work follows
+`docs/ADVERSARIAL_VERIFICATION_PLAYBOOK.md` and the exact OWNER amendment linked
+there. The framework is governance-only: activation is `NONE`, authority effect
+is `NO_AUTHORITY_EFFECT`, and it never supplies a future slice's threat matrix
+or authorizes product, runtime, provider, media, deployment, or release work.
+
+Keep corpus stimuli separate from test-owned expected results. An executor may
+receive only the materialized stimulus and must not import tests, corpus files,
+or expectation modules. Candidate artifacts remain
+`PENDING_EXTERNAL_REVIEW`; candidate authors cannot record review PASS.
+
+The v1 route has four ordered commits: preflight, complete genuine RED,
+review-bound freeze, then implementation. Only one bounded correction wave may
+precede the freeze, and no correction follows it. A new threat, invariant,
+path, cap, corpus identity, second correction, or unresolved review finding
+stops for OWNER disposition rather than starting another numbered reset.

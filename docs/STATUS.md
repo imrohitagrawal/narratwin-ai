@@ -1585,3 +1585,36 @@ prerequisites passed unchanged full Stage 8 scanner consensus together and are
 accepted on `main`, so Child B resumes with its own complete validation and
 review sequence. Release, deployment, publication, provider activation,
 egress, spend, media generation, and production readiness remain No-Go.
+
+## Issue #435 framework v1 C2 RED state (2026-08-26)
+
+- Issue #435 remains open and separate from Cut 1 presenter implementation.
+- OWNER amendment `5416186961` authorizes exact branch
+  `governance-435-adversarial-convergence-framework-v1` from main
+  `a6284f7d8f1a14ef4c9a99493d6b06046505f20c`.
+- C1 is preserved and pushed at
+  `205c02b3bac633d023d753356bc966c194ed36a7`; the preflight blob remains
+  `c554eaf7f73ea081434b1e2f818441fe0bc3eee9`.
+- C2 freezes the closed ACP-T01–ACP-T12 framework, 40 ordered stimulus-only
+  cases, test-owned expected outcomes, 12 executed/killed test mutants, safe
+  parsing, exact route adapters, process docs, and a typed unimplemented
+  executor.
+- Corpus ID is `ACP-FRAMEWORK-CASES-V1-N40`; semantic SHA-256 is
+  `5fd31be0dddf4572f1e8cb5405524ee97e4bd2b20448aded7197949ecb3fe371`.
+- Bootstrap, harness, security, route, dispatcher, guardrail, import, and
+  readability surfaces must be GREEN. Future-executor evidence must remain
+  exactly 40 `ACP.NOT_IMPLEMENTED` failures and zero errors.
+- Candidate review state is `PENDING_EXTERNAL_REVIEW`. Architecture/scope,
+  security/trust, readability/feasibility, and mutation/false-pass reviews must
+  bind one exact candidate head/tree before any authoritative C2 push or C3.
+- C3 is not started. It may add only the RED-freeze file after all four reviews
+  pass. C4 may later change only the executor file outside the protected route
+  adapter. No correction follows C3.
+- Reset51 C1 and rejected candidate2 remain historical evidence. There is no
+  Reset52, history rewrite, product/runtime/provider/media/network/credential/
+  spend/deployment/publication authority, or release claim.
+
+This state is intentionally not merge-ready: activation is `NONE`, authority
+effect is `NO_AUTHORITY_EFFECT`, and release posture remains No-Go. A new
+threat, path, cap, invariant, corpus identity, second correction, post-freeze
+finding, or unresolved review disagreement stops for OWNER disposition.

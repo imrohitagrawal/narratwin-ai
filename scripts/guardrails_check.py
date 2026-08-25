@@ -7,6 +7,8 @@ without paid providers, real API keys, or project-specific dependencies.
 
 from __future__ import annotations
 
+import ast
+import hashlib
 import json
 import os
 import re
@@ -237,6 +239,8 @@ CANONICAL_STAGE_ISSUE_CLOSURE = (
 )
 ISSUE_353_RECOVERY_BRANCH = "stage8-353-r0c-a2-3b-evaluation-lineage-v2"
 ISSUE_424_MASTER_PROGRAM_BRANCH = "stage8-424-master-program-authority-prelog"
+ISSUE435_BRANCH = "governance-435-adversarial-convergence-framework-v1"
+ISSUE435_BASE = "a6284f7d8f1a14ef4c9a99493d6b06046505f20c"
 FORCE_PULL_REQUEST_GUARDRAILS_ENV = "NARRATWIN_FORCE_PULL_REQUEST_GUARDRAILS"
 STATUS_RECONCILIATION_BRANCH_PATTERN = re.compile(
     r"^phase-1-closure-process-(?P<issue>\d+)-post-pr-(?P<pr>\d+)-status-reconciliation$"
@@ -2369,8 +2373,57 @@ def check_governance_preflight_repository() -> None:
     failures.extend(f"Governance preflight finding: {finding.code}" for finding in findings)
 
 
+def issue435_route_findings() -> list[str]:
+    event_branch = os.environ.get("GITHUB_HEAD_REF", "").strip()
+    git_branch = run_git(["branch", "--show-current"])
+    if not (event_branch or git_branch).startswith("governance-435"):
+        return []
+    if (event_branch or git_branch) != ISSUE435_BRANCH or (event_branch and git_branch != event_branch):
+        return ["ACP.AUTH.ROUTE_DRIFT"]
+    git_head = run_git(["rev-parse", "HEAD"])
+    if os.environ.get("GITHUB_HEAD_SHA", "").strip() not in {"", git_head}:
+        return ["ACP.IDENTITY.MISMATCH"]
+    source = read_text(ROOT / "scripts/quality/adversarial_convergence.py")
+    cap_nodes = [
+        node for node in ast.walk(ast.parse(source)) if isinstance(node, ast.Assign) and any(isinstance(target, ast.Name) and target.id == "ISSUE435_CAPS" for target in node.targets)
+    ]
+    candidate = ast.literal_eval(cap_nodes[0].value) if len(cap_nodes) == 1 else {}
+    if (
+        not isinstance(candidate, dict) or len(candidate) != 20 or not all(isinstance(key, str) and isinstance(value, int) for key, value in candidate.items())
+    ):
+        return ["ACP.SCHEMA.DRIFT"]
+    caps = cast(dict[str, int], candidate)
+    expected = set(caps) if (freeze_path := ROOT / "docs/governance/adversarial-convergence-red-freeze-v1.json").exists() else set(caps) - {"docs/governance/adversarial-convergence-red-freeze-v1.json"}
+    name_rows = [line.split("\t") for line in run_git(["diff", "--name-status", "-M", "-C", ISSUE435_BASE, git_head, "--"]).splitlines()]
+    if any(len(row) != 2 or row[0] not in {"A", "M"} for row in name_rows):
+        return ["ACP.AUTH.ROUTE_DRIFT"]
+    number_rows = [line.split("\t") for line in run_git(["diff", "--numstat", "--no-renames", ISSUE435_BASE, git_head, "--"]).splitlines()]
+    if {row[1] for row in name_rows} != expected or len(number_rows) != len(expected):
+        return ["ACP.AUTH.ROUTE_DRIFT"]
+    charged = 0
+    for row in number_rows:
+        if len(row) != 3 or not row[0].isdigit() or not row[1].isdigit() or row[2] not in expected:
+            return ["ACP.AUTH.ROUTE_DRIFT"]
+        path_charge = int(row[0]) + int(row[1])
+        mode = run_git(["ls-tree", git_head, "--", row[2]]).split(maxsplit=1)[0]
+        if path_charge > caps[row[2]] or mode != "100644":
+            return ["ACP.AUTH.BUDGET_STOP"]
+        charged += path_charge
+    history = run_git(["rev-list", "--reverse", f"{ISSUE435_BASE}..{git_head}"]).splitlines()
+    if not history or history[0] != "205c02b3bac633d023d753356bc966c194ed36a7" or run_git(["rev-list", "--min-parents=2", f"{ISSUE435_BASE}..{git_head}"]) or run_git(["rev-parse", f"{git_head}:docs/governance/preflights/issue-435.json"]) != "c554eaf7f73ea081434b1e2f818441fe0bc3eee9" or run_git(["status", "--porcelain=v1", "--untracked-files=all"]):
+        return ["ACP.IDENTITY.MISMATCH"]
+    if charged > (3_620 if freeze_path.exists() else 3_500):
+        return ["ACP.AUTH.BUDGET_STOP"]
+    if freeze_path.exists():
+        freeze = json.loads(read_text(freeze_path))
+        start, end = source.find("# ISSUE435_ROUTE_ADAPTER_V1_START"), source.find("# ISSUE435_ROUTE_ADAPTER_V1_END")
+        adapter = source[start : end + len("# ISSUE435_ROUTE_ADAPTER_V1_END")].encode()
+        if start < 0 or end < start or freeze.get("routeAdapterSha256") != hashlib.sha256(adapter).hexdigest():
+            return ["ACP.IDENTITY.MISMATCH"]
+    return []
 def main() -> int:
     check_no_direct_main_push()
+    failures.extend(f"Issue #435 convergence finding: {code}" for code in issue435_route_findings())
     check_governance_preflight_repository()
     if failures == ["Governance preflight finding: GPF.REPO.HISTORY_UNAVAILABLE"]:
         print("Guardrail failures:")
