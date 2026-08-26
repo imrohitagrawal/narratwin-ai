@@ -496,6 +496,7 @@ def test_candidate_authors_are_parsed_from_bounded_framed_git_history() -> None:
         "8fa7667b1d613b1470195ff712763aac5b5e048c", "0ae2593eca92c4e9657a04cb45152d7be839a48b", "a4d903dfb5b0c40aabb4117a29a901db0972182f",
         "dcbe15d58dff5ceafe7319e2baa3302ff01b6510",
         "8a9bdc41c63cb449afdc6bf7f806ef946a73faa2",
+        "84f1430822d696537c41b5a022d3cc14d72becea",
         head,
     )
     history = "".join(f"{commit}\0Rohit   Agrawal\0ROHIT.RA.AGRAWAL@GMAIL.COM\0" for commit in hashes)
@@ -694,6 +695,12 @@ def test_hosted_route_head_accepts_only_exact_detached_synthetic_merge(tmp_path:
     ).strip()
     subprocess.run(["/usr/bin/git", "checkout", "--quiet", "--detach", reverse], cwd=checkout, check=True)
     assert _module_probe(expression, str(checkout), ISSUE435_BRANCH, extra_env=environment) == ""
+
+
+def test_route_inspector_never_reads_candidate_evidence_from_ambient_head() -> None:
+    source = MODULE_PATH.read_text(encoding="utf-8")
+    inspector = source.split("def inspect_issue435_repository", 1)[1].split("def _resolve_branch", 1)[0]
+    assert '"HEAD:' not in inspector and "..HEAD" not in inspector
 
 
 def test_matrix_cross_fields_reject_duplicates_missing_tests_and_coverage() -> None:
