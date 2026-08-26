@@ -495,6 +495,7 @@ def test_candidate_authors_are_parsed_from_bounded_framed_git_history() -> None:
         "6d741aec9a2a56d54034e0092a2e24d535079517", "9bd0a2786ca41e720a275e70a2c98470a3f3aa38", "6b681b4acc419d2fa63c35862d6b6185ce82dd50", "7a17fe323a8c9acd9ea887f9932e4ca79ff02853", "26347f466778e946cc3b5aa8fa110f4597b279e2", "e6821c579c7bc1a28778278954cb52de7bf41dbb", "55a3911c3b2b35ae681b647e143c492e6a4a8cad", "bf795a2760479784012fff6e644ec5d102b3caf2",
         "8fa7667b1d613b1470195ff712763aac5b5e048c", "0ae2593eca92c4e9657a04cb45152d7be839a48b", "a4d903dfb5b0c40aabb4117a29a901db0972182f",
         "dcbe15d58dff5ceafe7319e2baa3302ff01b6510",
+        "8a9bdc41c63cb449afdc6bf7f806ef946a73faa2",
         head,
     )
     history = "".join(f"{commit}\0Rohit   Agrawal\0ROHIT.RA.AGRAWAL@GMAIL.COM\0" for commit in hashes)
@@ -674,6 +675,15 @@ def test_hosted_route_head_accepts_only_exact_detached_synthetic_merge(tmp_path:
         {**environment, "GITHUB_HEAD_SHA": ""},
     )
     assert all(_module_probe(expression, str(checkout), ISSUE435_BRANCH, extra_env=item) == "" for item in hostile)
+    unauthorized_base = subprocess.check_output(["/usr/bin/git", "rev-parse", f"{head}^"], cwd=checkout, text=True).strip()
+    paired = subprocess.check_output(
+        ["/usr/bin/git", "-c", "user.name=CI", "-c", "user.email=ci@example.invalid", "commit-tree", f"{head}^{{tree}}", "-p", unauthorized_base, "-p", head],
+        cwd=checkout,
+        input="synthetic paired base\n",
+        text=True,
+    ).strip()
+    subprocess.run(["/usr/bin/git", "checkout", "--quiet", "--detach", paired], cwd=checkout, check=True)
+    assert _module_probe(expression, str(checkout), ISSUE435_BRANCH, extra_env={**environment, "GITHUB_BASE_SHA": unauthorized_base}) == ""
     subprocess.run(["/usr/bin/git", "checkout", "--quiet", "--detach", head], cwd=checkout, check=True)
     assert _module_probe(expression, str(checkout), ISSUE435_BRANCH, extra_env=environment) == ""
     reverse = subprocess.check_output(
