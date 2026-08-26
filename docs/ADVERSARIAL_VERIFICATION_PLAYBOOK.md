@@ -15,7 +15,7 @@ The preserved-H4 additive H5 budget correction is authorized by
 <https://github.com/imrohitagrawal/narratwin-ai/issues/435#issuecomment-5424570808>.
 The exact three-root H6 validation correction is authorized by
 <https://github.com/imrohitagrawal/narratwin-ai/issues/435#issuecomment-5425499794>.
-The C2 architecture-feasibility closeout is authorized by <https://github.com/imrohitagrawal/narratwin-ai/issues/435#issuecomment-5426258878>.
+The final C4 false-acceptance recovery is authorized by <https://github.com/imrohitagrawal/narratwin-ai/issues/435#issuecomment-5428186737>.
 The framework branch starts at
 `a6284f7d8f1a14ef4c9a99493d6b06046505f20c`. C1 is preserved at
 `205c02b3bac633d023d753356bc966c194ed36a7`; its preflight blob must remain
@@ -150,8 +150,7 @@ the real executor satisfy the frozen 40 expectations without changing them.
   test, schema, guardrail, skeleton, and four durable review receipts.
 - C4 changes only bytes inside the marked executor region of
   `scripts/quality/adversarial_convergence.py`; every byte outside it remains
-  bound to C2. The region is at most 160 physical lines and the projected final
-  module is at most 694/800, below the 720-line stop.
+  bound to C2. The region is at most 240 physical lines; final module projection is at most 774/900, below the 810-line stop.
 - No correction follows C3. A required C4 finding stops for OWNER disposition.
 
 The exact dispatcher routes only
@@ -166,22 +165,20 @@ cannot declare repository GREEN. Worker exits are diagnostic:
 | 2 | `INFRASTRUCTURE_FAILURE` | Git, import, platform, or resource evidence was unavailable. |
 | 3 | `INTENTIONAL_RED` | C2/C3 reached the exact typed `ACP.NOT_IMPLEMENTED` boundary. |
 
-At C2/C3, all 40 worker calls return typed exit 3 and canonical
-`ACP.NOT_IMPLEMENTED`; the immutable pytest runner reports exactly 40 failures
+At C2/C3, all 100 corpus and hostile-regression worker calls return typed exit 3 and canonical `ACP.NOT_IMPLEMENTED`; pytest reports exactly 100 failures
 and zero errors. At C4, dispatcher exit 0 is available only after the unchanged
 acceptance file passes in full.
 
 Mandatory readability evidence is recorded for the four C2 designated paths:
 `docs/ENGINEERING_PROCESS_RCA.md` 71/80,
-`scripts/quality/adversarial_convergence.py` 539/800,
-`tests/unit/test_adversarial_convergence.py` 708/900, and
+`scripts/quality/adversarial_convergence.py` 561/900 and `tests/unit/test_adversarial_convergence.py` 851/1000, with
 `tests/unit/test_quality_dispatcher.py` 83/100. All remain below the 90-percent
 stop and require independent exact-head readability disposition. The only
 production function above 60 logical lines is the 61-line fail-closed repository
 inspector; it has two parameters, bounded early exits, and no semantic executor
 responsibility.
 
-Executable thresholds accept module 719 and focused-test 809 only with recorded readability evidence; 720 and 810 stop.
+Executable thresholds accept module 809 and focused-test 899 only with readability evidence; 810 and 900 stop.
 Aggregate stops remain 3,500 for C2 and 3,620 after the C3 freeze.
 
 ## Historical regression mapping
@@ -265,7 +262,6 @@ make quality
 ```
 
 At C2, the bootstrap/harness/security/route subset must be GREEN, the future
-executor subset must contain exactly 40 failures and zero errors, and
-`make quality` must reach the same exact 40 typed `ACP.NOT_IMPLEMENTED`
+executor subset must contain exactly 100 failures and zero errors, and `make quality` must reach the same exact 100 typed `ACP.NOT_IMPLEMENTED`
 failures and zero errors through the immutable runner. Any different failure
 stops.

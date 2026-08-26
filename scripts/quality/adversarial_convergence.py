@@ -226,7 +226,7 @@ ISSUE435_BASE = "a6284f7d8f1a14ef4c9a99493d6b06046505f20c"
 ISSUE435_C1 = "205c02b3bac633d023d753356bc966c194ed36a7"
 ISSUE435_REJECTED = "8d83713ed09dc626e24f1fe063e6afd9cfa5e8e9"
 ISSUE435_BLOCKED = "134fbd91606eebbcdcff5f47b26b6d286acc1fa2"
-ISSUE435_H6 = "7a17fe323a8c9acd9ea887f9932e4ca79ff02853"
+ISSUE435_H6, ISSUE435_C2 = "7a17fe323a8c9acd9ea887f9932e4ca79ff02853", "26347f466778e946cc3b5aa8fa110f4597b279e2"
 ISSUE435_PREFLIGHT = "docs/governance/preflights/issue-435.json"
 ISSUE435_PREFLIGHT_BLOB = "c554eaf7f73ea081434b1e2f818441fe0bc3eee9"
 ISSUE435_FREEZE = "docs/governance/adversarial-convergence-red-freeze-v1.json"
@@ -235,8 +235,8 @@ ISSUE435_CAPS = {
     "docs/ADVERSARIAL_VERIFICATION_PLAYBOOK.md": 320, "docs/templates/ADVERSARIAL_INVARIANT_MATRIX.md": 180,
     "docs/governance/adversarial-convergence-framework-v1.schema.json": 260,
     "docs/governance/adversarial-convergence-framework-cases-v1.json": 300,
-    ISSUE435_FREEZE: 120, "scripts/quality/adversarial_convergence.py": 800,
-    "tests/unit/test_adversarial_convergence.py": 900, "scripts/quality/check_quality_stage.py": 60,
+    ISSUE435_FREEZE: 120, "scripts/quality/adversarial_convergence.py": 900,
+    "tests/unit/test_adversarial_convergence.py": 1000, "scripts/quality/check_quality_stage.py": 60,
     "tests/unit/test_quality_dispatcher.py": 100, "scripts/guardrails_check.py": 60,
     "tests/unit/test_guardrails_check.py": 140, ".github/pull_request_template.md": 45,
     "docs/ADR/0064-adversarial-convergence-protocol.md": 160, "docs/QUALITY_GATES.md": 80,
@@ -316,7 +316,7 @@ def _normalized_source(raw: bytes) -> bytes | None:
         return None
     prefix, rest = raw.split(start_marker)
     region, suffix = rest.split(end_marker)
-    return prefix + start_marker + b"<C4_EXECUTOR_REGION>\n" + end_marker + suffix if len(region.splitlines()) <= 160 else None
+    return prefix + start_marker + b"<C4_EXECUTOR_REGION>\n" + end_marker + suffix if len(region.splitlines()) <= 240 else None
 def _hex_text(value: JsonValue, width: int) -> bool:
     return isinstance(value, str) and len(value) == width and all(character in "0123456789abcdef" for character in value)
 def _identity(name: str, email: str) -> tuple[str, str] | None:
@@ -380,7 +380,7 @@ def _candidate_authors(root: Path, c2_head: str) -> tuple[str, ...] | None:
     if text is None or len(result.stdout) > 8_192 or not text.endswith("\0"):
         return None
     fields = text[:-1].split("\0")
-    if len(fields) % 3 or fields[::3] != [ISSUE435_C1, "b099747812bcd97f812358908cb847c351190bc3", ISSUE435_REJECTED, ISSUE435_BLOCKED, "6d741aec9a2a56d54034e0092a2e24d535079517", "9bd0a2786ca41e720a275e70a2c98470a3f3aa38", "6b681b4acc419d2fa63c35862d6b6185ce82dd50", ISSUE435_H6, c2_head]:
+    if len(fields) % 3 or fields[::3] != [ISSUE435_C1, "b099747812bcd97f812358908cb847c351190bc3", ISSUE435_REJECTED, ISSUE435_BLOCKED, "6d741aec9a2a56d54034e0092a2e24d535079517", "9bd0a2786ca41e720a275e70a2c98470a3f3aa38", "6b681b4acc419d2fa63c35862d6b6185ce82dd50", ISSUE435_H6, ISSUE435_C2, c2_head]:
         return None
     identities = [_identity(fields[index], fields[index + 1]) for index in range(1, len(fields), 3)]
     if any(identity is None for identity in identities):
@@ -459,7 +459,7 @@ def inspect_issue435_repository(root: Path, branch: str) -> RouteInspection:
     phase = "C2"
     if not freeze_present:
         parent = _text(_git(root, "rev-parse", "HEAD^"))
-        if len(commits) != 9 or parent is None or parent.strip() != ISSUE435_H6:
+        if len(commits) != 10 or commits[8] != ISSUE435_C2 or parent is None or parent.strip() != ISSUE435_C2:
             findings.append(FindingCode.ROUTE_DRIFT)
     else:
         raw = _git(root, "show", f"HEAD:{ISSUE435_FREEZE}")
@@ -468,15 +468,15 @@ def inspect_issue435_repository(root: Path, branch: str) -> RouteInspection:
             findings.append(FindingCode.REVIEW_IDENTITY_MISMATCH)
         c2_value = parsed.document.get("c2") if isinstance(parsed.document, dict) else None
         c2_head = c2_value.get("head") if isinstance(c2_value, dict) else ""
-        if len(commits) == 10 and commits[8] == c2_head:
+        if len(commits) == 11 and commits[9] == c2_head:
             phase = "C3"
-            delta = _text(_git(root, "diff-tree", "--no-commit-id", "--name-only", "-r", commits[9]))
+            delta = _text(_git(root, "diff-tree", "--no-commit-id", "--name-only", "-r", commits[10]))
             if delta is None or delta.splitlines() != [ISSUE435_FREEZE]:
                 findings.append(FindingCode.ROUTE_DRIFT)
-        elif len(commits) == 11 and commits[8] == c2_head:
+        elif len(commits) == 12 and commits[9] == c2_head:
             phase = "C4"
-            c3_delta = _text(_git(root, "diff-tree", "--no-commit-id", "--name-only", "-r", commits[9]))
-            c4_delta = _text(_git(root, "diff-tree", "--no-commit-id", "--name-only", "-r", commits[10]))
+            c3_delta = _text(_git(root, "diff-tree", "--no-commit-id", "--name-only", "-r", commits[10]))
+            c4_delta = _text(_git(root, "diff-tree", "--no-commit-id", "--name-only", "-r", commits[11]))
             if c3_delta is None or c3_delta.splitlines() != [ISSUE435_FREEZE] or c4_delta is None or c4_delta.splitlines() != ["scripts/quality/adversarial_convergence.py"]:
                 findings.append(FindingCode.ROUTE_DRIFT)
         else:

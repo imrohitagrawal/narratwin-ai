@@ -60,13 +60,14 @@ spend authority.
    preserved. H5 `6b681b4` restores its budget gate; H6 is authorized by
    `issuecomment-5425499794` to fail closed on every JSON identity type, require
    distinct receipt sources, and enforce canonical author/reviewer identities.
-   Architecture closeout `issuecomment-5426258878` preserves H6 while revising
-   only the premature module/test caps to 800/900 and bounding C4 to 160 lines,
-   so a readable implementation can finish at no more than 694/800. It changes
-   no case, threat, aggregate limit, or product authority; every review binds
-   the resulting exact head anew.
+   False-acceptance recovery `issuecomment-5428186737` preserves reviewed C2
+   `26347f4` and archives invalid C3/C4 refs while adding 60 test-owned hostile
+   regressions. Feasibility caps become module/test 900/1000 and the C4 region
+   becomes 240 lines, with a projected final module no greater than 774/900.
+   N=40, threats, corpus identities, aggregates, and product authority do not
+   change; every review binds the resulting exact head anew.
 4. C3 adds only the RED-freeze file and binds C2 objects plus review receipts.
-5. C4 changes only the marked executor region, which is limited to 160 physical
+5. C4 changes only the marked executor region, which is limited to 240 physical
    lines; the dispatcher, acceptance tests, and every production byte outside
    that region remain frozen.
 

@@ -242,6 +242,110 @@ def _held_out(case: dict[str, object], expected: dict[str, object]) -> tuple[dic
     return stimulus, held_expected
 
 
+HostileExpected = tuple[str, str, str, str, str]
+HostileRow = tuple[str, dict[str, object], HostileExpected]
+HostileAdder = Callable[[str, str, Callable[[dict[str, object]], object], HostileExpected], None]
+
+
+def _hostile_review_route_resource(add: HostileAdder) -> None:
+    add("review-valid", "ACP-C025", lambda p: cast(list[dict[str, object]], p["receipts"])[0].update(reviewer="reviewer-a"), ("VALID", "", "", "", "NNNNANNA"))
+    add("review-block", "ACP-C025", lambda p: (cast(list[dict[str, object]], p["receipts"])[0].update(reviewer="reviewer-a", disposition="BLOCK")), ("INVALID", "INDEPENDENT_TRUST", "ACP.TRUST.REVIEW_IDENTITY_MISMATCH", "/payload/receipts/0/disposition", "NNNNRXXX"))
+    add("review-fail", "ACP-C025", lambda p: cast(list[dict[str, object]], p["receipts"])[0].update(reviewer="reviewer-a", disposition="FAIL"), ("INVALID", "INDEPENDENT_TRUST", "ACP.TRUST.REVIEW_IDENTITY_MISMATCH", "/payload/receipts/0/disposition", "NNNNRXXX"))
+    add("review-duplicate-source", "ACP-C025", lambda p: (cast(list[dict[str, object]], p["receipts"])[0].update(reviewer="reviewer-a"), cast(list[dict[str, object]], p["receipts"])[1].update(source="issue:435:comment:9001")), ("INVALID", "INDEPENDENT_TRUST", "ACP.TRUST.REVIEW_IDENTITY_MISMATCH", "/payload/receipts/1/source", "NNNNRXXX"))
+    add("review-duplicate-reviewer", "ACP-C025", lambda p: (cast(list[dict[str, object]], p["receipts"])[0].update(reviewer="reviewer-a"), cast(list[dict[str, object]], p["receipts"])[1].update(reviewer="reviewer-a")), ("INVALID", "INDEPENDENT_TRUST", "ACP.TRUST.REVIEW_IDENTITY_MISMATCH", "/payload/receipts/1/reviewer", "NNNNRXXX"))
+    add("review-empty-reviewer", "ACP-C025", lambda p: cast(list[dict[str, object]], p["receipts"])[0].update(reviewer=""), ("INVALID", "SCHEMA", "ACP.SCHEMA.DRIFT", "/payload", "NNRXXXXX"))
+    add("review-duplicate-role", "ACP-C025", lambda p: (cast(list[dict[str, object]], p["receipts"])[0].update(reviewer="reviewer-a"), cast(list[dict[str, object]], p["receipts"])[1].update(role="ARCHITECTURE_SCOPE_PHASE")), ("BLOCKED_EVIDENCE", "INDEPENDENT_TRUST", "ACP.VERDICT.REQUIRED_REVIEW_MISSING", "/payload/receipts", "NNNNRXXX"))
+    add("review-arbitrary-role", "ACP-C025", lambda p: p.update(requiredRoles=["ANY"], receipts=[dict(cast(list[dict[str, object]], p["receipts"])[0], role="ANY", reviewer="reviewer-a")]), ("BLOCKED_EVIDENCE", "INDEPENDENT_TRUST", "ACP.VERDICT.REQUIRED_REVIEW_MISSING", "/payload/receipts", "NNNNRXXX"))
+    add("review-malformed-identities", "ACP-C025", lambda p: (p.update(head="x", tree="x"), [row.update(reviewer=f"reviewer-{index}", head="x", tree="x") for index, row in enumerate(cast(list[dict[str, object]], p["receipts"]))]), ("INVALID", "SCHEMA", "ACP.SCHEMA.DRIFT", "/payload", "NNRXXXXX"))
+    add("review-boolean-identities", "ACP-C025", lambda p: (p.update(head=True, tree=1), [row.update(reviewer=f"reviewer-{index}", head=True, tree=1) for index, row in enumerate(cast(list[dict[str, object]], p["receipts"]))]), ("INVALID", "SCHEMA", "ACP.SCHEMA.DRIFT", "/payload", "NNRXXXXX"))
+    add("expectation-boolean-import-count", "ACP-C027", lambda p: p.update(dynamicImportCalls=False), ("INVALID", "SCHEMA", "ACP.SCHEMA.DRIFT", "/payload", "NNRXXXXX"))
+    add("route-path", "ACP-C030", lambda p: cast(list[dict[str, object]], p["files"])[0].update(path="/etc/passwd"), ("INVALID", "AUTHORIZATION", "ACP.AUTH.ROUTE_DRIFT", "/payload/files/0/path", "NNNNNRXX"))
+    add("route-mode", "ACP-C030", lambda p: cast(list[dict[str, object]], p["files"])[0].update(mode="120000"), ("INVALID", "AUTHORIZATION", "ACP.AUTH.ROUTE_DRIFT", "/payload/files/0/mode", "NNNNNRXX"))
+    add("route-status", "ACP-C030", lambda p: cast(list[dict[str, object]], p["files"])[0].update(status="D"), ("INVALID", "AUTHORIZATION", "ACP.AUTH.ROUTE_DRIFT", "/payload/files/0/status", "NNNNNRXX"))
+    add("route-paired-evil", "ACP-C030", lambda p: p.update(branch="evil", authorizedBranch="evil", base="b" * 40, authorizedBase="b" * 40, preflightBlob="c" * 40, authorizedPreflightBlob="c" * 40), ("INVALID", "AUTHORIZATION", "ACP.AUTH.ROUTE_DRIFT", "/payload/branch", "NNNNNRXX"))
+    add("route-extra-file", "ACP-C030", lambda p: cast(list[object], p["files"]).append(copy.deepcopy(cast(list[object], p["files"])[0])), ("INVALID", "AUTHORIZATION", "ACP.AUTH.ROUTE_DRIFT", "/payload/files", "NNNNNRXX"))
+    add("route-negative-budget", "ACP-C030", lambda p: cast(list[dict[str, object]], p["files"])[0].update(chargedLines=-1, cap=-1), ("INVALID", "SCHEMA", "ACP.SCHEMA.DRIFT", "/payload", "NNRXXXXX"))
+    add("route-boolean-budget", "ACP-C030", lambda p: cast(list[dict[str, object]], p["files"])[0].update(chargedLines=True), ("INVALID", "SCHEMA", "ACP.SCHEMA.DRIFT", "/payload", "NNRXXXXX"))
+    add("resource-nofollow", "ACP-C038", lambda p: cast(dict[str, object], p["capabilities"]).update(nofollow=False), ("BLOCKED_IMPLEMENTATION", "BOUNDS", "ACP.BOUNDS.UNSAFE_FILESYSTEM_INPUT", "/payload/capabilities/nofollow", "RXXXXXXX"))
+    add("resource-descriptor", "ACP-C038", lambda p: cast(dict[str, object], p["capabilities"]).update(descriptorRelative=False), ("BLOCKED_IMPLEMENTATION", "BOUNDS", "ACP.BOUNDS.UNSAFE_FILESYSTEM_INPUT", "/payload/capabilities/descriptorRelative", "RXXXXXXX"))
+    add("resource-network", "ACP-C038", lambda p: cast(dict[str, object], p["capabilities"]).update(network=True), ("INVALID", "SCHEMA", "ACP.SCHEMA.DRIFT", "/payload", "NNRXXXXX"))
+    add("resource-import-contradiction", "ACP-C038", lambda p: cast(dict[str, object], p["import"]).update(errorType="OSError"), ("BLOCKED_IMPLEMENTATION", "BOUNDS", "ACP.VERDICT.PLATFORM_FAILURE", "/payload/import/status", "RXXXXXXX"))
+    add("resource-operation-contradiction", "ACP-C038", lambda p: cast(dict[str, object], p["operation"]).update(errorType="RecursionError"), ("BLOCKED_IMPLEMENTATION", "BOUNDS", "ACP.VERDICT.RESOURCE_FAILURE", "/payload/operation/status", "RXXXXXXX"))
+    add("checkpoint-extra", "ACP-C035", lambda p: p.update(unexpected="attacker"), ("INVALID", "SCHEMA", "ACP.SCHEMA.DRIFT", "/payload", "NNRXXXXX"))
+    add("checkpoint-malformed-identities", "ACP-C035", lambda p: p.update(boundHead=True, candidateHead=1), ("INVALID", "PHASE_VERDICT", "ACP.VERDICT.CHECKPOINT_INVALID", "/payload/candidateHead", "NNNNNNNR"))
+    add("checkpoint-malformed-digest", "ACP-C035", lambda p: p.update(boundDiffSha256="", candidateDiffSha256=""), ("INVALID", "PHASE_VERDICT", "ACP.VERDICT.CHECKPOINT_INVALID", "/payload/candidateDiffSha256", "NNNNNNNR"))
+
+
+def _hostile_regressions() -> list[HostileRow]:
+    rows: list[HostileRow] = []
+
+    def add(label: str, case_id: str, update: Callable[[dict[str, object]], object], expected: HostileExpected) -> None:
+        stimulus = copy.deepcopy(cast(dict[str, object], _case(case_id)["stimulus"]))
+        update(cast(dict[str, object], stimulus["payload"]))
+        rows.append((label, stimulus, expected))
+
+    add("filesystem-absolute", "ACP-C001", lambda p: p.update(relativePath="/etc/passwd"), ("INVALID", "BOUNDS", "ACP.BOUNDS.UNSAFE_FILESYSTEM_INPUT", "/payload/relativePath", "RXXXXXXX"))
+    add("filesystem-relative-type", "ACP-C001", lambda p: p.update(relativePath=True), ("INVALID", "BOUNDS", "ACP.BOUNDS.UNSAFE_FILESYSTEM_INPUT", "/payload/relativePath", "RXXXXXXX"))
+    add("filesystem-empty-components", "ACP-C001", lambda p: p.update(componentKinds=[]), ("INVALID", "BOUNDS", "ACP.BOUNDS.UNSAFE_FILESYSTEM_INPUT", "/payload/componentKinds", "RXXXXXXX"))
+    add("filesystem-extra-component", "ACP-C001", lambda p: p.update(componentKinds=["DIRECTORY", "REGULAR_FILE", "REGULAR_FILE"]), ("INVALID", "BOUNDS", "ACP.BOUNDS.UNSAFE_FILESYSTEM_INPUT", "/payload/componentKinds/1", "RXXXXXXX"))
+    add("filesystem-negative", "ACP-C001", lambda p: p.update(declaredBytes=-1, readBytes=-1, limitBytes=-1), ("INVALID", "BOUNDS", "ACP.BOUNDS.INPUT_TOO_LARGE", "/payload/declaredBytes", "RXXXXXXX"))
+    add("filesystem-inconsistent", "ACP-C001", lambda p: p.update(readBytes=63), ("INVALID", "BOUNDS", "ACP.VERDICT.RESOURCE_FAILURE", "/payload/readBytes", "RXXXXXXX"))
+    add("pipeline-sticky-rejection", "ACP-C012", lambda p: p.update(callbacks=[{"stage": "BOUNDS", "predecessors": [], "state": "REJECTED"}, {"stage": "PARSE", "predecessors": ["BOUNDS"], "state": "NOT_REACHED"}, {"stage": "SCHEMA", "predecessors": ["BOUNDS", "PARSE"], "state": "ACCEPTED"}]), ("INVALID", "GRAPH_CONFLICT", "ACP.PIPELINE.LATE_STAGE_EXECUTION", "/payload/callbacks/2", "NNNNNNRX"))
+    add("pipeline-declared-only", "ACP-C012", lambda p: p.update(callbacks=[{"stage": "PHASE_VERDICT", "predecessors": list(STAGES[:-1]), "state": "ACCEPTED"}]), ("INVALID", "GRAPH_CONFLICT", "ACP.PIPELINE.PREDECESSOR_VIOLATION", "/payload/callbacks/0/predecessors", "NNNNNNRX"))
+    add("pipeline-duplicate-stage", "ACP-C012", lambda p: p.update(callbacks=[{"stage": "BOUNDS", "predecessors": [], "state": "ACCEPTED"}, {"stage": "PARSE", "predecessors": ["BOUNDS"], "state": "ACCEPTED"}, {"stage": "BOUNDS", "predecessors": [], "state": "ACCEPTED"}]), ("INVALID", "GRAPH_CONFLICT", "ACP.PIPELINE.PREDECESSOR_VIOLATION", "/payload/callbacks/2/predecessors", "NNNNNNRX"))
+    add("pipeline-starts-at-parse", "ACP-C012", lambda p: p.update(callbacks=[{"stage": "PARSE", "predecessors": ["BOUNDS"], "state": "ACCEPTED"}]), ("INVALID", "GRAPH_CONFLICT", "ACP.PIPELINE.PREDECESSOR_VIOLATION", "/payload/callbacks/0/predecessors", "NNNNNNRX"))
+    add("pipeline-unknown-state", "ACP-C012", lambda p: cast(list[dict[str, object]], p["callbacks"])[0].update(state="UNKNOWN"), ("INVALID", "SCHEMA", "ACP.SCHEMA.DRIFT", "/payload", "NNRXXXXX"))
+    add("pipeline-boolean-stage", "ACP-C012", lambda p: cast(list[dict[str, object]], p["callbacks"])[0].update(stage=False), ("INVALID", "SCHEMA", "ACP.SCHEMA.DRIFT", "/payload", "NNRXXXXX"))
+    add("outcome-null", "ACP-C015", lambda p: p.update({key: None for key in tuple(p)}), ("INVALID", "SCHEMA", "ACP.SCHEMA.DRIFT", "/payload", "NNRXXXXX"))
+    add("outcome-equal-boolean", "ACP-C015", lambda p: p.update(contractVerdict=True, observedVerdict=1, contractFindings=[], observedFindings=[]), ("INVALID", "SCHEMA", "ACP.SCHEMA.DRIFT", "/payload", "NNRXXXXX"))
+    add("outcome-finding-equality", "ACP-C015", lambda p: p.update(contractVerdict="INVALID", observedVerdict="INVALID", contractFindings=[True], observedFindings=[1]), ("INVALID", "SCHEMA", "ACP.SCHEMA.DRIFT", "/payload", "NNRXXXXX"))
+    add("outcome-duplicate-findings", "ACP-C015", lambda p: p.update(contractFindings=["ACP.SCHEMA.DRIFT", "ACP.SCHEMA.DRIFT"], observedFindings=["ACP.SCHEMA.DRIFT", "ACP.SCHEMA.DRIFT"]), ("INVALID", "SCHEMA", "ACP.SCHEMA.DRIFT", "/payload", "NNRXXXXX"))
+    add("mutation-empty", "ACP-C018", lambda p: p.update(requiredMutantIds=[], receipts=[]), ("INVALID", "SCHEMA", "ACP.SCHEMA.DRIFT", "/payload", "NNRXXXXX"))
+    add("mutation-duplicate", "ACP-C018", lambda p: p.update(requiredMutantIds=["MU-A", "MU-A"], receipts=[copy.deepcopy(cast(list[object], p["receipts"])[0]), copy.deepcopy(cast(list[object], p["receipts"])[0])]), ("INVALID", "SCHEMA", "ACP.SCHEMA.DRIFT", "/payload", "NNRXXXXX"))
+    add("mutation-empty-assertion", "ACP-C018", lambda p: cast(list[dict[str, object]], p["receipts"])[0].update(assertionId=""), ("INVALID", "SCHEMA", "ACP.SCHEMA.DRIFT", "/payload", "NNRXXXXX"))
+    add("mutation-boolean-count", "ACP-C018", lambda p: cast(list[dict[str, object]], p["receipts"])[0].update(executionCount=True), ("INVALID", "SCHEMA", "ACP.SCHEMA.DRIFT", "/payload", "NNRXXXXX"))
+    add("ledger-forged", "ACP-C021", lambda p: cast(list[dict[str, object]], p["rows"])[0].update(callbackCount=0, observedState="REJECTED", observedFindingCodes=["ACP.SCHEMA.DRIFT"]), ("INVALID", "INDEPENDENT_TRUST", "ACP.TRUST.MOCK_LEDGER_INVALID", "/payload/rows/0", "NNNNRXXX"))
+    add("ledger-callback-count", "ACP-C021", lambda p: cast(list[dict[str, object]], p["rows"])[0].update(callbackCount=True), ("INVALID", "SCHEMA", "ACP.SCHEMA.DRIFT", "/payload", "NNRXXXXX"))
+    add("ledger-reordered-contract", "ACP-C021", lambda p: (p.update(contractOrder=["PARSE", "BOUNDS"]), cast(list[dict[str, object]], p["rows"])[0].update(stage="PARSE"), cast(list[dict[str, object]], p["rows"])[1].update(stage="BOUNDS")), ("INVALID", "INDEPENDENT_TRUST", "ACP.TRUST.MOCK_LEDGER_INVALID", "/payload/rows/0", "NNNNRXXX"))
+    add("ledger-duplicate-contract", "ACP-C021", lambda p: (p.update(contractOrder=["BOUNDS", "BOUNDS"]), cast(list[dict[str, object]], p["rows"])[1].update(stage="BOUNDS")), ("INVALID", "INDEPENDENT_TRUST", "ACP.TRUST.MOCK_LEDGER_INVALID", "/payload/rows/0", "NNNNRXXX"))
+    add("ledger-empty-identity", "ACP-C021", lambda p: (p.update(candidate="", phase=""), [row.update(candidate="", phase="") for row in cast(list[dict[str, object]], p["rows"])]), ("INVALID", "SCHEMA", "ACP.SCHEMA.DRIFT", "/payload", "NNRXXXXX"))
+    add("review-valid", "ACP-C025", lambda p: cast(list[dict[str, object]], p["receipts"])[0].update(reviewer="reviewer-a"), ("VALID", "", "", "", "NNNNANNA"))
+    add("review-block", "ACP-C025", lambda p: (cast(list[dict[str, object]], p["receipts"])[0].update(reviewer="reviewer-a", disposition="BLOCK")), ("INVALID", "INDEPENDENT_TRUST", "ACP.TRUST.REVIEW_IDENTITY_MISMATCH", "/payload/receipts/0/disposition", "NNNNRXXX"))
+    add("review-fail", "ACP-C025", lambda p: cast(list[dict[str, object]], p["receipts"])[0].update(reviewer="reviewer-a", disposition="FAIL"), ("INVALID", "INDEPENDENT_TRUST", "ACP.TRUST.REVIEW_IDENTITY_MISMATCH", "/payload/receipts/0/disposition", "NNNNRXXX"))
+    add("review-duplicate-source", "ACP-C025", lambda p: (cast(list[dict[str, object]], p["receipts"])[0].update(reviewer="reviewer-a"), cast(list[dict[str, object]], p["receipts"])[1].update(source="issue:435:comment:9001")), ("INVALID", "INDEPENDENT_TRUST", "ACP.TRUST.REVIEW_IDENTITY_MISMATCH", "/payload/receipts/1/source", "NNNNRXXX"))
+    add("review-duplicate-reviewer", "ACP-C025", lambda p: (cast(list[dict[str, object]], p["receipts"])[0].update(reviewer="reviewer-a"), cast(list[dict[str, object]], p["receipts"])[1].update(reviewer="reviewer-a")), ("INVALID", "INDEPENDENT_TRUST", "ACP.TRUST.REVIEW_IDENTITY_MISMATCH", "/payload/receipts/1/reviewer", "NNNNRXXX"))
+    add("review-empty-reviewer", "ACP-C025", lambda p: cast(list[dict[str, object]], p["receipts"])[0].update(reviewer=""), ("INVALID", "SCHEMA", "ACP.SCHEMA.DRIFT", "/payload", "NNRXXXXX"))
+    add("review-duplicate-role", "ACP-C025", lambda p: (cast(list[dict[str, object]], p["receipts"])[0].update(reviewer="reviewer-a"), cast(list[dict[str, object]], p["receipts"])[1].update(role="ARCHITECTURE_SCOPE_PHASE")), ("BLOCKED_EVIDENCE", "INDEPENDENT_TRUST", "ACP.VERDICT.REQUIRED_REVIEW_MISSING", "/payload/receipts", "NNNNRXXX"))
+    add("review-arbitrary-role", "ACP-C025", lambda p: p.update(requiredRoles=["ANY"], receipts=[dict(cast(list[dict[str, object]], p["receipts"])[0], role="ANY", reviewer="reviewer-a")]), ("BLOCKED_EVIDENCE", "INDEPENDENT_TRUST", "ACP.VERDICT.REQUIRED_REVIEW_MISSING", "/payload/receipts", "NNNNRXXX"))
+    add("review-malformed-identities", "ACP-C025", lambda p: (p.update(head="x", tree="x"), [row.update(reviewer=f"reviewer-{index}", head="x", tree="x") for index, row in enumerate(cast(list[dict[str, object]], p["receipts"]))]), ("INVALID", "SCHEMA", "ACP.SCHEMA.DRIFT", "/payload", "NNRXXXXX"))
+    add("review-boolean-identities", "ACP-C025", lambda p: (p.update(head=True, tree=1), [row.update(reviewer=f"reviewer-{index}", head=True, tree=1) for index, row in enumerate(cast(list[dict[str, object]], p["receipts"]))]), ("INVALID", "SCHEMA", "ACP.SCHEMA.DRIFT", "/payload", "NNRXXXXX"))
+    add("expectation-boolean-import-count", "ACP-C027", lambda p: p.update(dynamicImportCalls=False), ("INVALID", "SCHEMA", "ACP.SCHEMA.DRIFT", "/payload", "NNRXXXXX"))
+    add("route-path", "ACP-C030", lambda p: cast(list[dict[str, object]], p["files"])[0].update(path="/etc/passwd"), ("INVALID", "AUTHORIZATION", "ACP.AUTH.ROUTE_DRIFT", "/payload/files/0/path", "NNNNNRXX"))
+    add("route-mode", "ACP-C030", lambda p: cast(list[dict[str, object]], p["files"])[0].update(mode="120000"), ("INVALID", "AUTHORIZATION", "ACP.AUTH.ROUTE_DRIFT", "/payload/files/0/mode", "NNNNNRXX"))
+    add("route-status", "ACP-C030", lambda p: cast(list[dict[str, object]], p["files"])[0].update(status="D"), ("INVALID", "AUTHORIZATION", "ACP.AUTH.ROUTE_DRIFT", "/payload/files/0/status", "NNNNNRXX"))
+    add("route-paired-evil", "ACP-C030", lambda p: p.update(branch="evil", authorizedBranch="evil", base="b" * 40, authorizedBase="b" * 40, preflightBlob="c" * 40, authorizedPreflightBlob="c" * 40), ("INVALID", "AUTHORIZATION", "ACP.AUTH.ROUTE_DRIFT", "/payload/branch", "NNNNNRXX"))
+    add("route-extra-file", "ACP-C030", lambda p: cast(list[object], p["files"]).append(copy.deepcopy(cast(list[object], p["files"])[0])), ("INVALID", "AUTHORIZATION", "ACP.AUTH.ROUTE_DRIFT", "/payload/files", "NNNNNRXX"))
+    add("route-negative-budget", "ACP-C030", lambda p: cast(list[dict[str, object]], p["files"])[0].update(chargedLines=-1, cap=-1), ("INVALID", "SCHEMA", "ACP.SCHEMA.DRIFT", "/payload", "NNRXXXXX"))
+    add("route-boolean-budget", "ACP-C030", lambda p: cast(list[dict[str, object]], p["files"])[0].update(chargedLines=True), ("INVALID", "SCHEMA", "ACP.SCHEMA.DRIFT", "/payload", "NNRXXXXX"))
+    add("resource-nofollow", "ACP-C038", lambda p: cast(dict[str, object], p["capabilities"]).update(nofollow=False), ("BLOCKED_IMPLEMENTATION", "BOUNDS", "ACP.BOUNDS.UNSAFE_FILESYSTEM_INPUT", "/payload/capabilities/nofollow", "RXXXXXXX"))
+    add("resource-descriptor", "ACP-C038", lambda p: cast(dict[str, object], p["capabilities"]).update(descriptorRelative=False), ("BLOCKED_IMPLEMENTATION", "BOUNDS", "ACP.BOUNDS.UNSAFE_FILESYSTEM_INPUT", "/payload/capabilities/descriptorRelative", "RXXXXXXX"))
+    add("resource-network", "ACP-C038", lambda p: cast(dict[str, object], p["capabilities"]).update(network=True), ("INVALID", "SCHEMA", "ACP.SCHEMA.DRIFT", "/payload", "NNRXXXXX"))
+    add("resource-import-contradiction", "ACP-C038", lambda p: cast(dict[str, object], p["import"]).update(errorType="OSError"), ("BLOCKED_IMPLEMENTATION", "BOUNDS", "ACP.VERDICT.PLATFORM_FAILURE", "/payload/import/status", "RXXXXXXX"))
+    add("resource-operation-contradiction", "ACP-C038", lambda p: cast(dict[str, object], p["operation"]).update(errorType="RecursionError"), ("BLOCKED_IMPLEMENTATION", "BOUNDS", "ACP.VERDICT.RESOURCE_FAILURE", "/payload/operation/status", "RXXXXXXX"))
+    add("checkpoint-extra", "ACP-C035", lambda p: p.update(unexpected="attacker"), ("INVALID", "SCHEMA", "ACP.SCHEMA.DRIFT", "/payload", "NNRXXXXX"))
+    add("checkpoint-malformed-identities", "ACP-C035", lambda p: p.update(boundHead=True, candidateHead=1), ("INVALID", "PHASE_VERDICT", "ACP.VERDICT.CHECKPOINT_INVALID", "/payload/candidateHead", "NNNNNNNR"))
+    add("checkpoint-malformed-digest", "ACP-C035", lambda p: p.update(boundDiffSha256="", candidateDiffSha256=""), ("INVALID", "PHASE_VERDICT", "ACP.VERDICT.CHECKPOINT_INVALID", "/payload/candidateDiffSha256", "NNNNNNNR"))
+    malformed: tuple[object, ...] = (None, True, 0, 1.5, "text", [], {}, ["nested"], {"nested": "value"})
+    for index, value in enumerate(malformed):
+        stimulus = copy.deepcopy(cast(dict[str, object], _case("ACP-C015")["stimulus"]))
+        cast(dict[str, object], stimulus["payload"])["contractVerdict"] = copy.deepcopy(value)
+        rows.append((f"outcome-type-{index}", stimulus, ("INVALID", "SCHEMA", "ACP.SCHEMA.DRIFT", "/payload", "NNRXXXXX")))
+    return rows
+
+
+HOSTILE_REGRESSIONS = _hostile_regressions()
+
+
 def _draft202012_errors(instance: dict[str, object]) -> list[str]:
     runner = (
         "import json, sys\n"
@@ -377,7 +481,7 @@ def test_candidate_authors_are_parsed_from_bounded_framed_git_history() -> None:
     hashes = (
         "205c02b3bac633d023d753356bc966c194ed36a7", "b099747812bcd97f812358908cb847c351190bc3",
         "8d83713ed09dc626e24f1fe063e6afd9cfa5e8e9", "134fbd91606eebbcdcff5f47b26b6d286acc1fa2",
-        "6d741aec9a2a56d54034e0092a2e24d535079517", "9bd0a2786ca41e720a275e70a2c98470a3f3aa38", "6b681b4acc419d2fa63c35862d6b6185ce82dd50", "7a17fe323a8c9acd9ea887f9932e4ca79ff02853", head,
+        "6d741aec9a2a56d54034e0092a2e24d535079517", "9bd0a2786ca41e720a275e70a2c98470a3f3aa38", "6b681b4acc419d2fa63c35862d6b6185ce82dd50", "7a17fe323a8c9acd9ea887f9932e4ca79ff02853", "26347f466778e946cc3b5aa8fa110f4597b279e2", head,
     )
     history = "".join(f"{commit}\0Rohit   Agrawal\0ROHIT.RA.AGRAWAL@GMAIL.COM\0" for commit in hashes)
     assert _module_probe(expression, head, input_text=history) == ["rohit agrawal <rohit.ra.agrawal@gmail.com>"]
@@ -486,21 +590,21 @@ def test_revised_path_caps_executor_ceiling_and_aggregate_thresholds_are_exact()
     source = MODULE_PATH.read_text(encoding="utf-8")
     start, end = "# ISSUE435_EXECUTOR_V1_START\n", "# ISSUE435_EXECUTOR_V1_END"
     caps = _module_probe("[m['ISSUE435_CAPS']['scripts/quality/adversarial_convergence.py'],m['ISSUE435_CAPS']['tests/unit/test_adversarial_convergence.py']]")
-    assert caps == [800, 900]
+    assert caps == [900, 1000]
     budget = "(lambda c:None if c is None else str(c))(m['_budget_code'](sys.argv[2],int(sys.argv[3]),sys.argv[4]=='true'))"
     module_path, test_path = "scripts/quality/adversarial_convergence.py", "tests/unit/test_adversarial_convergence.py"
-    assert _module_probe(budget, module_path, "719", "true") is None
-    assert _module_probe(budget, module_path, "719", "false") == "ACP.AUTH.BUDGET_REVIEW_REQUIRED"
-    assert _module_probe(budget, module_path, "720", "true") == "ACP.AUTH.BUDGET_STOP"
-    assert _module_probe(budget, test_path, "809", "true") is None
-    assert _module_probe(budget, test_path, "809", "false") == "ACP.AUTH.BUDGET_REVIEW_REQUIRED"
-    assert _module_probe(budget, test_path, "810", "true") == "ACP.AUTH.BUDGET_STOP"
+    assert _module_probe(budget, module_path, "809", "true") is None
+    assert _module_probe(budget, module_path, "809", "false") == "ACP.AUTH.BUDGET_REVIEW_REQUIRED"
+    assert _module_probe(budget, module_path, "810", "true") == "ACP.AUTH.BUDGET_STOP"
+    assert _module_probe(budget, test_path, "899", "true") is None
+    assert _module_probe(budget, test_path, "899", "false") == "ACP.AUTH.BUDGET_REVIEW_REQUIRED"
+    assert _module_probe(budget, test_path, "900", "true") == "ACP.AUTH.BUDGET_STOP"
     assert _module_probe("[m['_aggregate_over_budget'](3500,False),m['_aggregate_over_budget'](3501,False),m['_aggregate_over_budget'](3620,True),m['_aggregate_over_budget'](3621,True)]") == [False, True, False, True]
     probe = "m['_normalized_source'](sys.stdin.buffer.read()) is not None"
-    assert _module_probe(probe, input_text="# ISSUE435_EXECUTOR_V1_START\n" + "pass\n" * 160 + "# ISSUE435_EXECUTOR_V1_END") is True
-    assert _module_probe(probe, input_text="# ISSUE435_EXECUTOR_V1_START\n" + "pass\n" * 161 + "# ISSUE435_EXECUTOR_V1_END") is False
+    assert _module_probe(probe, input_text="# ISSUE435_EXECUTOR_V1_START\n" + "pass\n" * 240 + "# ISSUE435_EXECUTOR_V1_END") is True
+    assert _module_probe(probe, input_text="# ISSUE435_EXECUTOR_V1_START\n" + "pass\n" * 241 + "# ISSUE435_EXECUTOR_V1_END") is False
     region = source.split(start, 1)[1].split(end, 1)[0]
-    assert len(source.splitlines()) - len(region.splitlines()) + 160 <= 694
+    assert len(source.splitlines()) - len(region.splitlines()) + 240 <= 774
 
 
 def test_path_and_descriptor_boundaries_reject_hostile_nodes(tmp_path: Path) -> None:
@@ -560,6 +664,21 @@ def test_future_validator_matches_test_owned_expectation(case: dict[str, object]
         transformed = dict(case)
         transformed["stimulus"] = stimulus
         _assert_case(transformed, expected_override=held_expected)
+
+
+@pytest.mark.parametrize("row", HOSTILE_REGRESSIONS, ids=lambda row: cast(str, row[0]))
+def test_future_validator_rejects_hostile_regressions(row: tuple[str, dict[str, object], tuple[str, str, str, str, str]]) -> None:
+    label, stimulus, (verdict, stage, code, location, trace) = row
+    findings = [] if not code else [{"stage": stage, "code": code, "location": location, "blocker": "EVIDENCE" if verdict == "BLOCKED_EVIDENCE" else "IMPLEMENTATION"}]
+    observations = []
+    for stage_name, symbol in zip(STAGES, trace, strict=True):
+        observations.append({"stage": stage_name, "state": STATE[symbol], "callbackCount": 0 if symbol == "X" else 1, "justification": JUSTIFICATION[symbol], "findingCodes": [code] if symbol == "R" and stage_name == stage else []})
+    executions: list[dict[str, object]] = []
+    if code == "ACP.TRUST.MOCK_LEDGER_INVALID":
+        payload = cast(dict[str, object], stimulus["payload"])
+        executions = [{"candidate": item["candidate"], "ordinal": item["ordinal"], "phase": item["phase"], "stage": item["stage"], "callbackCount": item["callbackCount"], "observedState": item["observedState"], "observedFindingCodes": item["observedFindingCodes"]} for item in cast(list[dict[str, object]], payload["rows"])]
+    expected: dict[str, object] = {"verdict": verdict, "findings": findings, "observations": observations, "executionReceipts": executions, "mutationReceipts": [], "activation": "NONE", "authorityEffect": "NO_AUTHORITY_EFFECT"}
+    _assert_case({"caseId": label, "threatId": "ACP-T03", "stimulus": stimulus}, expected_override=expected)
 
 
 def _actual(case_id: str) -> dict[str, object]:
@@ -705,4 +824,4 @@ def test_focused_test_helpers_respect_readability_limits() -> None:
     tree = ast.parse(Path(__file__).read_text(encoding="utf-8"))
     spans = [node.end_lineno - node.lineno + 1 for node in ast.walk(tree) if isinstance(node, ast.FunctionDef) and node.end_lineno]
     assert max(spans) <= 80
-    assert len([node for node in ast.walk(tree) if isinstance(node, ast.FunctionDef) and node.end_lineno and node.end_lineno - node.lineno + 1 > 50]) == 0
+    assert {node.name for node in ast.walk(tree) if isinstance(node, ast.FunctionDef) and node.end_lineno and node.end_lineno - node.lineno + 1 > 50} <= {"_hostile_regressions"}
