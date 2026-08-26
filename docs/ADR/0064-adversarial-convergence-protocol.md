@@ -61,7 +61,7 @@ spend authority.
    `issuecomment-5425499794` to fail closed on every JSON identity type, require
    distinct receipt sources, and enforce canonical author/reviewer identities.
    False-acceptance recovery `issuecomment-5428186737` preserves reviewed C2
-   `26347f4` and archives invalid C3/C4 refs while adding 67 test-owned hostile
+   `26347f4` and archives invalid C3/C4 refs while adding 68 test-owned hostile
    regressions. Feasibility caps become module/test 900/1000 and the C4 region
    becomes 240 lines, with a projected final module no greater than 774/900.
    N=40, threats, corpus identities, aggregates, and product authority do not

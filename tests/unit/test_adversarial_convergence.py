@@ -288,6 +288,7 @@ def _hostile_regressions() -> list[HostileRow]:
     add("filesystem-relative-type", "ACP-C001", lambda p: p.update(relativePath=True), ("INVALID", "BOUNDS", "ACP.BOUNDS.UNSAFE_FILESYSTEM_INPUT", "/payload/relativePath", "RXXXXXXX"))
     add("filesystem-empty-components", "ACP-C001", lambda p: p.update(componentKinds=[]), ("INVALID", "BOUNDS", "ACP.BOUNDS.UNSAFE_FILESYSTEM_INPUT", "/payload/componentKinds", "RXXXXXXX"))
     add("filesystem-extra-component", "ACP-C001", lambda p: p.update(componentKinds=["DIRECTORY", "REGULAR_FILE", "REGULAR_FILE"]), ("INVALID", "BOUNDS", "ACP.BOUNDS.UNSAFE_FILESYSTEM_INPUT", "/payload/componentKinds/1", "RXXXXXXX"))
+    add("filesystem-component-count", "ACP-C001", lambda p: p.update(componentKinds=["DIRECTORY", "DIRECTORY", "REGULAR_FILE"]), ("INVALID", "BOUNDS", "ACP.BOUNDS.UNSAFE_FILESYSTEM_INPUT", "/payload/componentKinds", "RXXXXXXX"))
     add("filesystem-negative", "ACP-C001", lambda p: p.update(declaredBytes=-1, readBytes=-1, limitBytes=-1), ("INVALID", "BOUNDS", "ACP.BOUNDS.INPUT_TOO_LARGE", "/payload/declaredBytes", "RXXXXXXX"))
     add("filesystem-inconsistent", "ACP-C001", lambda p: p.update(readBytes=63), ("INVALID", "BOUNDS", "ACP.VERDICT.RESOURCE_FAILURE", "/payload/readBytes", "RXXXXXXX"))
     add("pipeline-sticky-rejection", "ACP-C012", lambda p: p.update(callbacks=[{"stage": "BOUNDS", "predecessors": [], "state": "REJECTED"}, {"stage": "PARSE", "predecessors": ["BOUNDS"], "state": "NOT_REACHED"}, {"stage": "SCHEMA", "predecessors": ["BOUNDS", "PARSE"], "state": "ACCEPTED"}]), ("INVALID", "GRAPH_CONFLICT", "ACP.PIPELINE.LATE_STAGE_EXECUTION", "/payload/callbacks/2", "NNNNNNRX"))
@@ -488,7 +489,7 @@ def test_candidate_authors_are_parsed_from_bounded_framed_git_history() -> None:
     hashes = (
         "205c02b3bac633d023d753356bc966c194ed36a7", "b099747812bcd97f812358908cb847c351190bc3",
         "8d83713ed09dc626e24f1fe063e6afd9cfa5e8e9", "134fbd91606eebbcdcff5f47b26b6d286acc1fa2",
-        "6d741aec9a2a56d54034e0092a2e24d535079517", "9bd0a2786ca41e720a275e70a2c98470a3f3aa38", "6b681b4acc419d2fa63c35862d6b6185ce82dd50", "7a17fe323a8c9acd9ea887f9932e4ca79ff02853", "26347f466778e946cc3b5aa8fa110f4597b279e2", "e6821c579c7bc1a28778278954cb52de7bf41dbb", "55a3911c3b2b35ae681b647e143c492e6a4a8cad", head,
+        "6d741aec9a2a56d54034e0092a2e24d535079517", "9bd0a2786ca41e720a275e70a2c98470a3f3aa38", "6b681b4acc419d2fa63c35862d6b6185ce82dd50", "7a17fe323a8c9acd9ea887f9932e4ca79ff02853", "26347f466778e946cc3b5aa8fa110f4597b279e2", "e6821c579c7bc1a28778278954cb52de7bf41dbb", "55a3911c3b2b35ae681b647e143c492e6a4a8cad", "bf795a2760479784012fff6e644ec5d102b3caf2", head,
     )
     history = "".join(f"{commit}\0Rohit   Agrawal\0ROHIT.RA.AGRAWAL@GMAIL.COM\0" for commit in hashes)
     assert _module_probe(expression, head, input_text=history) == ["rohit agrawal <rohit.ra.agrawal@gmail.com>"]
