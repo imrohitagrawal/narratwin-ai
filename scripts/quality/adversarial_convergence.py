@@ -4,6 +4,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 import select
 import stat
 import subprocess
@@ -16,6 +17,7 @@ ROOT = Path(__file__).resolve().parents[2]
 ACTIVATION = "NONE"
 AUTHORITY_EFFECT = "NO_AUTHORITY_EFFECT"
 CORPUS_DOMAIN = b"NARRATWIN-ADVERSARIAL-CONVERGENCE-CASES-V1\0"
+IDENTITY_PATTERN = re.compile(r"[a-z0-9](?:[a-z0-9._'-]*[a-z0-9])?(?: [a-z0-9](?:[a-z0-9._'-]*[a-z0-9])?)* <[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)+>\Z", re.ASCII)
 JsonScalar: TypeAlias = str | int | float | bool | None
 JsonValue: TypeAlias = JsonScalar | list["JsonValue"] | dict[str, "JsonValue"]
 class ProcessingStage(StrEnum):
@@ -224,7 +226,7 @@ ISSUE435_BASE = "a6284f7d8f1a14ef4c9a99493d6b06046505f20c"
 ISSUE435_C1 = "205c02b3bac633d023d753356bc966c194ed36a7"
 ISSUE435_REJECTED = "8d83713ed09dc626e24f1fe063e6afd9cfa5e8e9"
 ISSUE435_BLOCKED = "134fbd91606eebbcdcff5f47b26b6d286acc1fa2"
-ISSUE435_H4 = "9bd0a2786ca41e720a275e70a2c98470a3f3aa38"
+ISSUE435_H5 = "6b681b4acc419d2fa63c35862d6b6185ce82dd50"
 ISSUE435_PREFLIGHT = "docs/governance/preflights/issue-435.json"
 ISSUE435_PREFLIGHT_BLOB = "c554eaf7f73ea081434b1e2f818441fe0bc3eee9"
 ISSUE435_FREEZE = "docs/governance/adversarial-convergence-red-freeze-v1.json"
@@ -242,7 +244,7 @@ ISSUE435_CAPS = {
     "docs/STAGE_ISSUE_PLAN.md": 70, "docs/STATUS.md": 80,
 }
 ISSUE435_NONFREEZE = frozenset(ISSUE435_CAPS) - {ISSUE435_FREEZE}
-ISSUE435_READABILITY_REVIEWED = {"docs/ENGINEERING_PROCESS_RCA.md", "scripts/quality/adversarial_convergence.py", "tests/unit/test_quality_dispatcher.py"}
+ISSUE435_READABILITY_REVIEWED = {"docs/ENGINEERING_PROCESS_RCA.md", "scripts/quality/adversarial_convergence.py", "tests/unit/test_adversarial_convergence.py", "tests/unit/test_quality_dispatcher.py"}
 FREEZE_ARTIFACT_PATHS = {"corpus": "docs/governance/adversarial-convergence-framework-cases-v1.json", "schema": "docs/governance/adversarial-convergence-framework-v1.schema.json", "acceptanceTest": "tests/unit/test_adversarial_convergence.py", "skeleton": "scripts/quality/adversarial_convergence.py", "dispatcher": "scripts/quality/check_quality_stage.py", "guardrail": "scripts/guardrails_check.py"}
 FREEZE_ROLES = ("ARCHITECTURE_SCOPE_PHASE", "SECURITY_TRUST", "READABILITY_FEASIBILITY", "MUTATION_FALSE_PASS")
 def _git(root: Path, *args: str) -> GitResult:
@@ -323,7 +325,8 @@ def _identity(name: str, email: str) -> tuple[str, str] | None:
     if not name.isascii() or not email.isascii() or not name.isprintable() or not email.isprintable() or "<" in name or ">" in name:
         return None
     normalized = " ".join(name.split()).casefold(), email.strip().casefold()
-    return normalized if normalized[0] and normalized[1].count("@") == 1 and all(normalized[1].split("@")) and len(f"{normalized[0]} <{normalized[1]}>") <= 160 else None
+    rendered = f"{normalized[0]} <{normalized[1]}>"
+    return normalized if len(rendered) <= 160 and IDENTITY_PATTERN.fullmatch(rendered) is not None else None
 def _canonical_identity(value: JsonValue) -> tuple[str, str] | None:
     if not _bounded_text(value, 1, 160) or not isinstance(value, str) or not value.endswith(">") or " <" not in value:
         return None
@@ -331,7 +334,6 @@ def _canonical_identity(value: JsonValue) -> tuple[str, str] | None:
     return identity if identity is not None and value == f"{identity[0]} <{identity[1]}>" else None
 def _pass_content(role: str, head: str, tree: str, reviewer: str, url: str) -> str:
     return f"ISSUE435_REVIEW_V1\nrole={role}\ndisposition=PASS\nhead={head}\ntree={tree}\nreviewer={reviewer}\nurl={url}"
-
 def _closed_freeze_shape(document: JsonValue) -> bool:
     top = {"schemaVersion", "issue", "activation", "authorityEffect", "correction", "c2", "artifacts", "reviews"}
     if not isinstance(document, dict) or set(document) != top or document.get("schemaVersion") != "AdversarialConvergenceRedFreezeV1" or document.get("issue") != 435 or document.get("activation") != ACTIVATION or document.get("authorityEffect") != AUTHORITY_EFFECT:
@@ -340,7 +342,7 @@ def _closed_freeze_shape(document: JsonValue) -> bool:
     if not isinstance(correction, dict) or set(correction) != {"rejectedHead", "wave", "authors"} or correction.get("rejectedHead") != ISSUE435_REJECTED or type(correction.get("wave")) is not int or correction.get("wave") != 1 or not isinstance(c2, dict) or set(c2) != {"head", "tree", "diffSha256"} or not isinstance(artifacts, dict) or set(artifacts) != set(FREEZE_ARTIFACT_PATHS) or not isinstance(reviews, list) or len(reviews) != 4:
         return False
     authors = correction.get("authors")
-    if not isinstance(authors, list) or not 1 <= len(authors) <= 8 or len(set(cast(list[object], authors))) != len(authors) or any(_canonical_identity(item) is None for item in authors):
+    if not isinstance(authors, list) or not 1 <= len(authors) <= 8 or any(_canonical_identity(item) is None for item in authors) or len(set(cast(list[str], authors))) != len(authors):
         return False
     if not _hex_text(c2.get("head"), 40) or not _hex_text(c2.get("tree"), 40) or not _hex_text(c2.get("diffSha256"), 64):
         return False
@@ -355,13 +357,12 @@ def _closed_freeze_shape(document: JsonValue) -> bool:
             return False
         role, reviewer, url, content = (receipt.get(key) for key in ("role", "reviewer", "url", "content"))
         suffix = url.removeprefix(prefix) if isinstance(url, str) and url.startswith(prefix) else ""
-        if role != FREEZE_ROLES[index] or _canonical_identity(reviewer) is None or receipt.get("disposition") != "PASS" or receipt.get("head") != c2.get("head") or receipt.get("tree") != c2.get("tree") or not suffix or any(character not in "0123456789" for character in suffix) or not _bounded_text(content, 1, 8192):
+        if role != FREEZE_ROLES[index] or _canonical_identity(reviewer) is None or receipt.get("disposition") != "PASS" or receipt.get("head") != c2.get("head") or receipt.get("tree") != c2.get("tree") or not suffix or suffix.startswith("0") or any(character not in "0123456789" for character in suffix) or not _bounded_text(content, 1, 8192):
             return False
         expected = _pass_content(role, cast(str, c2["head"]), cast(str, c2["tree"]), cast(str, reviewer), cast(str, url))
         if content != expected or not _hex_text(receipt.get("contentSha256"), 64) or hashlib.sha256(expected.encode("ascii")).hexdigest() != receipt.get("contentSha256"):
             return False
-    return True
-
+    return len({cast(str, cast(dict[str, JsonValue], receipt)["url"]) for receipt in reviews}) == 4
 def _review_provenance(document: JsonValue, candidate_authors: tuple[str, ...]) -> bool:
     if not isinstance(document, dict) or not isinstance(document.get("correction"), dict) or not isinstance(document.get("reviews"), list):
         return False
@@ -381,14 +382,13 @@ def _candidate_authors(root: Path, c2_head: str) -> tuple[str, ...] | None:
     if text is None or len(result.stdout) > 8_192 or not text.endswith("\0"):
         return None
     fields = text[:-1].split("\0")
-    if len(fields) % 3 or fields[::3] != [ISSUE435_C1, "b099747812bcd97f812358908cb847c351190bc3", ISSUE435_REJECTED, ISSUE435_BLOCKED, "6d741aec9a2a56d54034e0092a2e24d535079517", ISSUE435_H4, c2_head]:
+    if len(fields) % 3 or fields[::3] != [ISSUE435_C1, "b099747812bcd97f812358908cb847c351190bc3", ISSUE435_REJECTED, ISSUE435_BLOCKED, "6d741aec9a2a56d54034e0092a2e24d535079517", "9bd0a2786ca41e720a275e70a2c98470a3f3aa38", ISSUE435_H5, c2_head]:
         return None
     identities = [_identity(fields[index], fields[index + 1]) for index in range(1, len(fields), 3)]
     if any(identity is None for identity in identities):
         return None
     rendered = [f"{identity[0]} <{identity[1]}>" for identity in cast(list[tuple[str, str]], identities)]
     return tuple(dict.fromkeys(rendered))
-
 def _valid_freeze(document: JsonValue, root: Path, head: str) -> bool:
     if not _closed_freeze_shape(document) or not isinstance(document, dict):
         return False
@@ -443,7 +443,7 @@ def inspect_issue435_repository(root: Path, branch: str) -> RouteInspection:
     event_head = os.environ.get("GITHUB_HEAD_SHA", "").strip()
     if event_head and event_head != head:
         findings.append(FindingCode.IDENTITY_MISMATCH)
-    if commits[:6] != [ISSUE435_C1, "b099747812bcd97f812358908cb847c351190bc3", ISSUE435_REJECTED, ISSUE435_BLOCKED, "6d741aec9a2a56d54034e0092a2e24d535079517", ISSUE435_H4]:
+    if commits[:7] != [ISSUE435_C1, "b099747812bcd97f812358908cb847c351190bc3", ISSUE435_REJECTED, ISSUE435_BLOCKED, "6d741aec9a2a56d54034e0092a2e24d535079517", "9bd0a2786ca41e720a275e70a2c98470a3f3aa38", ISSUE435_H5]:
         findings.append(FindingCode.IDENTITY_MISMATCH)
     if cast(str, values["merges"]).strip() or cast(str, values["status"]) or cast(str, values["preflight"]).strip() != ISSUE435_PREFLIGHT_BLOB:
         findings.append(FindingCode.ROUTE_DRIFT)
@@ -458,7 +458,7 @@ def inspect_issue435_repository(root: Path, branch: str) -> RouteInspection:
     phase = "C2"
     if not freeze_present:
         parent = _text(_git(root, "rev-parse", "HEAD^"))
-        if len(commits) != 7 or parent is None or parent.strip() != ISSUE435_H4:
+        if len(commits) != 8 or parent is None or parent.strip() != ISSUE435_H5:
             findings.append(FindingCode.ROUTE_DRIFT)
     else:
         raw = _git(root, "show", f"HEAD:{ISSUE435_FREEZE}")
@@ -467,15 +467,15 @@ def inspect_issue435_repository(root: Path, branch: str) -> RouteInspection:
             findings.append(FindingCode.REVIEW_IDENTITY_MISMATCH)
         c2_value = parsed.document.get("c2") if isinstance(parsed.document, dict) else None
         c2_head = c2_value.get("head") if isinstance(c2_value, dict) else ""
-        if len(commits) == 8 and commits[6] == c2_head:
+        if len(commits) == 9 and commits[7] == c2_head:
             phase = "C3"
-            delta = _text(_git(root, "diff-tree", "--no-commit-id", "--name-only", "-r", commits[7]))
+            delta = _text(_git(root, "diff-tree", "--no-commit-id", "--name-only", "-r", commits[8]))
             if delta is None or delta.splitlines() != [ISSUE435_FREEZE]:
                 findings.append(FindingCode.ROUTE_DRIFT)
-        elif len(commits) == 9 and commits[6] == c2_head:
+        elif len(commits) == 10 and commits[7] == c2_head:
             phase = "C4"
-            c3_delta = _text(_git(root, "diff-tree", "--no-commit-id", "--name-only", "-r", commits[7]))
-            c4_delta = _text(_git(root, "diff-tree", "--no-commit-id", "--name-only", "-r", commits[8]))
+            c3_delta = _text(_git(root, "diff-tree", "--no-commit-id", "--name-only", "-r", commits[8]))
+            c4_delta = _text(_git(root, "diff-tree", "--no-commit-id", "--name-only", "-r", commits[9]))
             if c3_delta is None or c3_delta.splitlines() != [ISSUE435_FREEZE] or c4_delta is None or c4_delta.splitlines() != ["scripts/quality/adversarial_convergence.py"]:
                 findings.append(FindingCode.ROUTE_DRIFT)
         else:

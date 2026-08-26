@@ -373,12 +373,52 @@ def test_candidate_authors_are_parsed_from_bounded_framed_git_history() -> None:
     hashes = (
         "205c02b3bac633d023d753356bc966c194ed36a7", "b099747812bcd97f812358908cb847c351190bc3",
         "8d83713ed09dc626e24f1fe063e6afd9cfa5e8e9", "134fbd91606eebbcdcff5f47b26b6d286acc1fa2",
-        "6d741aec9a2a56d54034e0092a2e24d535079517", "9bd0a2786ca41e720a275e70a2c98470a3f3aa38", head,
+        "6d741aec9a2a56d54034e0092a2e24d535079517", "9bd0a2786ca41e720a275e70a2c98470a3f3aa38", "6b681b4acc419d2fa63c35862d6b6185ce82dd50", head,
     )
     history = "".join(f"{commit}\0Rohit   Agrawal\0ROHIT.RA.AGRAWAL@GMAIL.COM\0" for commit in hashes)
     assert _module_probe(expression, head, input_text=history) == ["rohit agrawal <rohit.ra.agrawal@gmail.com>"]
     assert _module_probe(expression, head, input_text=history[:-1]) is None
     assert _module_probe(expression, head, input_text=history.replace(hashes[0], "e" * 40, 1)) is None
+
+
+@pytest.mark.parametrize("value", [None, True, 0, 1.5, "text", [], {}, ["nested"], {"nested": "value"}], ids=("null", "bool", "int", "float", "string", "array", "object", "nested-array", "nested-object"))
+def test_freeze_identity_fields_fail_closed_for_every_non_string_json_type(value: object) -> None:
+    expression = "m['_closed_freeze_shape'](json.loads(sys.stdin.read()))"
+    for field in ("authors", "author", "reviewer"):
+        freeze = _valid_freeze()
+        if field == "authors":
+            cast(dict[str, object], freeze["correction"])["authors"] = copy.deepcopy(value)
+        elif field == "author":
+            cast(dict[str, object], freeze["correction"])["authors"] = [copy.deepcopy(value)]
+        else:
+            cast(list[dict[str, object]], freeze["reviews"])[0]["reviewer"] = copy.deepcopy(value)
+        assert _module_probe(expression, input_text=json.dumps(freeze)) is False
+
+
+@pytest.mark.parametrize(("order", "expected"), [((0, 1, 2, 3), True), ((3, 2, 1, 0), True), ((0, 0, 2, 3), False), ((0, 0, 0, 0), False)])
+def test_review_urls_are_distinct_after_permutation(order: tuple[int, ...], expected: bool) -> None:
+    freeze = _valid_freeze()
+    reviews = cast(list[dict[str, object]], freeze["reviews"])
+    urls = [cast(str, receipt["url"]) for receipt in reviews]
+    for receipt, source in zip(reviews, order, strict=True):
+        receipt["url"] = urls[source]
+        receipt["content"] = f"ISSUE435_REVIEW_V1\nrole={receipt['role']}\ndisposition=PASS\nhead={receipt['head']}\ntree={receipt['tree']}\nreviewer={receipt['reviewer']}\nurl={receipt['url']}"
+        receipt["contentSha256"] = hashlib.sha256(cast(str, receipt["content"]).encode("ascii")).hexdigest()
+    assert _module_probe("m['_closed_freeze_shape'](json.loads(sys.stdin.read()))", input_text=json.dumps(freeze)) is expected
+
+
+def test_review_url_rejects_noncanonical_decimal_identity() -> None:
+    freeze = _valid_freeze()
+    receipt = cast(list[dict[str, object]], freeze["reviews"])[0]
+    receipt["url"] = cast(str, receipt["url"]).replace("issuecomment-1", "issuecomment-01")
+    receipt["content"] = f"ISSUE435_REVIEW_V1\nrole={receipt['role']}\ndisposition=PASS\nhead={receipt['head']}\ntree={receipt['tree']}\nreviewer={receipt['reviewer']}\nurl={receipt['url']}"
+    receipt["contentSha256"] = hashlib.sha256(cast(str, receipt["content"]).encode("ascii")).hexdigest()
+    assert _module_probe("m['_closed_freeze_shape'](json.loads(sys.stdin.read()))", input_text=json.dumps(freeze)) is False
+
+
+@pytest.mark.parametrize("identity", ["Reviewer <reviewer@example.test>", " reviewer <reviewer@example.test>", "reviewer  one <reviewer@example.test>", "reviewer < reviewer@example.test>", "reviewer <reviewer @example.test>", "reviewer <reviewer@ example.test>", "reviewer <reviewer@example.test >", "reviewer <reviewer>@example.test>", "reviewer <reviewer@@example.test>", "reviewer <.reviewer@example.test>", "reviewer <reviewer@example..test>", "reviewer <reviewer＠example.test>"])
+def test_canonical_identity_rejects_case_whitespace_delimiter_and_confusable_aliases(identity: str) -> None:
+    assert _module_probe("m['_canonical_identity'](sys.argv[2])", identity) is None
 
 
 def test_test_oracle_is_literal_and_candidate_is_only_a_subprocess() -> None:

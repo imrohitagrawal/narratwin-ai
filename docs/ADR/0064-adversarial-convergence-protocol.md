@@ -57,9 +57,11 @@ spend authority.
    adapters, tests, docs, and a typed `ACP.NOT_IMPLEMENTED` executor.
 3. Four independent reviews bind one immutable C2 candidate. The original
    correction and blocked heads `134fbd9`, H3 `6d741ae`, and H4 `9bd0a27` are
-   preserved. The additive H5 budget correction is authorized by
-   `issuecomment-5424570808`; it changes no semantic test, cap, case, or threat,
-   and all four reviews bind the resulting exact head anew.
+   preserved. H5 `6b681b4` restores its budget gate; H6 is authorized by
+   `issuecomment-5425499794` to fail closed on every JSON identity type, require
+   distinct receipt sources, and enforce canonical author/reviewer identities.
+   Neither changes a cap, case, threat, or product authority, and every review
+   binds the resulting exact head anew.
 4. C3 adds only the RED-freeze file and binds C2 objects plus review receipts.
 5. C4 changes only the marked executor region; the dispatcher, acceptance
    tests, and every production byte outside that region remain frozen.

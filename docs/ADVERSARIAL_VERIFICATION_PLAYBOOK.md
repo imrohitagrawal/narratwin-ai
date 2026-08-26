@@ -13,6 +13,8 @@ The blocked candidate findings and exact bounded H3 replan are authorized by
 <https://github.com/imrohitagrawal/narratwin-ai/issues/435#issuecomment-5422439650>.
 The preserved-H4 additive H5 budget correction is authorized by
 <https://github.com/imrohitagrawal/narratwin-ai/issues/435#issuecomment-5424570808>.
+The exact three-root H6 validation correction is authorized by
+<https://github.com/imrohitagrawal/narratwin-ai/issues/435#issuecomment-5425499794>.
 The framework branch starts at
 `a6284f7d8f1a14ef4c9a99493d6b06046505f20c`. C1 is preserved at
 `205c02b3bac633d023d753356bc966c194ed36a7`; its preflight blob must remain
@@ -139,8 +141,8 @@ the real executor satisfy the frozen 40 expectations without changing them.
   blocked head `134fbd9`; H4 follows preserved blocked H3 head `6d741ae` and is
   limited to schema-value parity, exact PASS grammar, and Git-derived author
   exclusion. H5 preserves H4 `9bd0a27` and only restores the pre-review budget
-  gate through non-semantic test compaction plus history recognition. All four
-  exact-head reviews rerun after each authorized head.
+  gate; H6 preserves H5 `6b681b4` and only closes JSON identity types, canonical
+  identities, and distinct receipt URLs. All four exact-head reviews rerun.
 - C3 adds only `adversarial-convergence-red-freeze-v1.json` and binds the C2
   objects, corpus identities, protected-source digest, dispatcher, acceptance
   test, schema, guardrail, skeleton, and four durable review receipts.
@@ -166,9 +168,10 @@ At C2/C3, all 40 worker calls return typed exit 3 and canonical
 and zero errors. At C4, dispatcher exit 0 is available only after the unchanged
 acceptance file passes in full.
 
-Mandatory readability evidence is recorded for the C2 paths at or above 85
-percent: `docs/ENGINEERING_PROCESS_RCA.md` 71/80,
-`scripts/quality/adversarial_convergence.py` 539/600, and
+Mandatory readability evidence is recorded for the four C2 designated paths:
+`docs/ENGINEERING_PROCESS_RCA.md` 71/80,
+`scripts/quality/adversarial_convergence.py` 539/600,
+`tests/unit/test_adversarial_convergence.py` 683/760, and
 `tests/unit/test_quality_dispatcher.py` 83/100. All remain below the 90-percent
 stop and require independent exact-head readability disposition. The only
 production function above 60 logical lines is the 61-line fail-closed repository
