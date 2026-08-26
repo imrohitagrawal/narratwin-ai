@@ -1,0 +1,92 @@
+{
+  "schemaVersion": "AdversarialConvergenceRedFreezeV1",
+  "issue": 435,
+  "activation": "NONE",
+  "authorityEffect": "NO_AUTHORITY_EFFECT",
+  "correction": {
+    "rejectedHead": "8d83713ed09dc626e24f1fe063e6afd9cfa5e8e9",
+    "wave": 1,
+    "authors": ["rohit agrawal <rohit.ra.agrawal@gmail.com>"]
+  },
+  "c2": {
+    "head": "f82be816e349d13d8365b72fbeb51498d244755e",
+    "tree": "b485c327e4bfc0709e6346393004e3b447134e6a",
+    "diffSha256": "769bbeb80a7776896d96547e28b0d5a4ec95cf9f124b7e666e7dc40aa67d69b8"
+  },
+  "artifacts": {
+    "corpus": {
+      "path": "docs/governance/adversarial-convergence-framework-cases-v1.json",
+      "blob": "1c619c933f2b68183ad28fc51cabf3f217783004",
+      "sha256": "59581f0530b9b56b68e9bfc313497b22d1be2ce371d0cb2c64ea2b3c01dc6a75",
+      "semanticSha256": "3b2a0c4b3b13cf6ab71ec4e7a3dd4e3566a0c8195e3c7bed6bf956575e5f9fc6"
+    },
+    "schema": {
+      "path": "docs/governance/adversarial-convergence-framework-v1.schema.json",
+      "blob": "2afc0735f48b5c61eaa0a4c0783d401e39bde566",
+      "sha256": "cde42d01da7e4c3ff6725e09483e4f417c10729fb9a6cda0c46ead030c41636f"
+    },
+    "acceptanceTest": {
+      "path": "tests/unit/test_adversarial_convergence.py",
+      "blob": "1ed143f7855caa8eacb51bddf809555e3d07fcf2",
+      "sha256": "36e507d36b4d8699459f9dcd4491f7a204ed596c40682f1e7db89ecb7a4ac4e4"
+    },
+    "skeleton": {
+      "path": "scripts/quality/adversarial_convergence.py",
+      "blob": "47e6f7079289ae5090c6832586a1b0db08793272",
+      "sha256": "8f4b0f6d92a84023dccaa6556fe9d0bc3fcddfcbbcff2fe54b7e935d38106445",
+      "protectedSha256": "0164310d0b62a2e847519d0b1f6ef71b677e6f5566a7719bceaec1c5d233eb53"
+    },
+    "dispatcher": {
+      "path": "scripts/quality/check_quality_stage.py",
+      "blob": "f235ad192f850ef7329ca6fc9f8c6c956aaf6ef5",
+      "sha256": "146eb28b79085614faebbe42109798e3840721af886f95c313c7afdf70917784"
+    },
+    "guardrail": {
+      "path": "scripts/guardrails_check.py",
+      "blob": "55f94dc6c7115c160a9aee3bc29d80163fcd9e8f",
+      "sha256": "576956e06c1400b60064db03818367f07260bec8648bdfd7f5a93514cdfae9dc"
+    }
+  },
+  "reviews": [
+    {
+      "role": "ARCHITECTURE_SCOPE_PHASE",
+      "reviewer": "hosted architecture reviewer <hosted-architecture@codex.invalid>",
+      "disposition": "PASS",
+      "head": "f82be816e349d13d8365b72fbeb51498d244755e",
+      "tree": "b485c327e4bfc0709e6346393004e3b447134e6a",
+      "url": "https://github.com/imrohitagrawal/narratwin-ai/issues/435#issuecomment-5429598653",
+      "content": "ISSUE435_REVIEW_V1\nrole=ARCHITECTURE_SCOPE_PHASE\ndisposition=PASS\nhead=f82be816e349d13d8365b72fbeb51498d244755e\ntree=b485c327e4bfc0709e6346393004e3b447134e6a\nreviewer=hosted architecture reviewer <hosted-architecture@codex.invalid>\nurl=https://github.com/imrohitagrawal/narratwin-ai/issues/435#issuecomment-5429598653",
+      "contentSha256": "7558b2e8227ddb81c891bbc13fad3206973f67accbf2472d1714651de99306c4"
+    },
+    {
+      "role": "SECURITY_TRUST",
+      "reviewer": "hosted security reviewer <hosted-security@codex.invalid>",
+      "disposition": "PASS",
+      "head": "f82be816e349d13d8365b72fbeb51498d244755e",
+      "tree": "b485c327e4bfc0709e6346393004e3b447134e6a",
+      "url": "https://github.com/imrohitagrawal/narratwin-ai/issues/435#issuecomment-5429599083",
+      "content": "ISSUE435_REVIEW_V1\nrole=SECURITY_TRUST\ndisposition=PASS\nhead=f82be816e349d13d8365b72fbeb51498d244755e\ntree=b485c327e4bfc0709e6346393004e3b447134e6a\nreviewer=hosted security reviewer <hosted-security@codex.invalid>\nurl=https://github.com/imrohitagrawal/narratwin-ai/issues/435#issuecomment-5429599083",
+      "contentSha256": "7aaa2541358ae71c35857154fbdd42838ec6cf59a85dd9615034577e2ecf49f2"
+    },
+    {
+      "role": "READABILITY_FEASIBILITY",
+      "reviewer": "hosted readability reviewer <hosted-readability@codex.invalid>",
+      "disposition": "PASS",
+      "head": "f82be816e349d13d8365b72fbeb51498d244755e",
+      "tree": "b485c327e4bfc0709e6346393004e3b447134e6a",
+      "url": "https://github.com/imrohitagrawal/narratwin-ai/issues/435#issuecomment-5429599531",
+      "content": "ISSUE435_REVIEW_V1\nrole=READABILITY_FEASIBILITY\ndisposition=PASS\nhead=f82be816e349d13d8365b72fbeb51498d244755e\ntree=b485c327e4bfc0709e6346393004e3b447134e6a\nreviewer=hosted readability reviewer <hosted-readability@codex.invalid>\nurl=https://github.com/imrohitagrawal/narratwin-ai/issues/435#issuecomment-5429599531",
+      "contentSha256": "48aac7528901134e573dd76fb039717d7082dd2008257b30d28ae9b70b0db891"
+    },
+    {
+      "role": "MUTATION_FALSE_PASS",
+      "reviewer": "hosted mutation reviewer <hosted-mutation@codex.invalid>",
+      "disposition": "PASS",
+      "head": "f82be816e349d13d8365b72fbeb51498d244755e",
+      "tree": "b485c327e4bfc0709e6346393004e3b447134e6a",
+      "url": "https://github.com/imrohitagrawal/narratwin-ai/issues/435#issuecomment-5429600035",
+      "content": "ISSUE435_REVIEW_V1\nrole=MUTATION_FALSE_PASS\ndisposition=PASS\nhead=f82be816e349d13d8365b72fbeb51498d244755e\ntree=b485c327e4bfc0709e6346393004e3b447134e6a\nreviewer=hosted mutation reviewer <hosted-mutation@codex.invalid>\nurl=https://github.com/imrohitagrawal/narratwin-ai/issues/435#issuecomment-5429600035",
+      "contentSha256": "4ea790970d8b0fb964b7728f22304ad8d57f3c3a543b5a54e952db9586f3b994"
+    }
+  ]
+}
