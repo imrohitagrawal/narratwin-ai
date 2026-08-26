@@ -63,9 +63,14 @@ spend authority.
    False-acceptance recovery `issuecomment-5428186737` preserves reviewed C2
    `26347f4` and archives invalid C3/C4 refs while adding 68 test-owned hostile
    regressions. Feasibility caps become module/test 900/1000 and the C4 region
-   becomes 240 lines, with a projected final module no greater than 774/900.
+   becomes 240 lines, with a projected final module no greater than 790/900.
    N=40, threats, corpus identities, aggregates, and product authority do not
-   change; every review binds the resulting exact head anew.
+   change; every review binds the resulting exact head anew. Hosted-route
+   recovery `issuecomment-5429174756`, corrected by
+   `issuecomment-5429198021`, preserves the prior reviewed C3/C4 commits as
+   rejected history and adds an ordinary fast-forward C2/C3/C4 suffix. Its
+   sole semantic change outside the executor is exact validation of GitHub's
+   detached two-parent pull-request merge before selecting the candidate head.
 4. C3 adds only the RED-freeze file and binds C2 objects plus review receipts.
 5. C4 changes only the marked executor region, which is limited to 240 physical
    lines; the dispatcher, acceptance tests, and every production byte outside
@@ -111,6 +116,10 @@ unrelated Stage 8, Final Review, and Phase 1 Closure behavior.
 - The exact 40 future-behavior tests fail only with `ACP.NOT_IMPLEMENTED`.
 - `make quality` reaches the typed intentional RED rather than legacy routing.
 - C3 and C4 require the separately frozen identities and review evidence.
+- Hosted checks construct a detached merge commit. The route accepts it only
+  when its ordered parents, exact branch, configured base, and configured head
+  bind the frozen base and candidate; all repository evidence is then read
+  from that candidate head rather than the ambient merge commit.
 
 ## Residual risks
 

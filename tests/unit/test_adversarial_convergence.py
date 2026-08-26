@@ -20,6 +20,7 @@ SCHEMA_PATH = ROOT / "docs/governance/adversarial-convergence-framework-v1.schem
 MODULE_PATH = ROOT / "scripts/quality/adversarial_convergence.py"
 FREEZE_PATH = ROOT / "docs/governance/adversarial-convergence-red-freeze-v1.json"
 ISSUE435_BRANCH = "governance-435-adversarial-convergence-framework-v1"
+ISSUE435_BASE = "a6284f7d8f1a14ef4c9a99493d6b06046505f20c"
 CORPUS_DOMAIN = b"NARRATWIN-ADVERSARIAL-CONVERGENCE-CASES-V1\0"
 RAW_SHA256 = "59581f0530b9b56b68e9bfc313497b22d1be2ce371d0cb2c64ea2b3c01dc6a75"
 SEMANTIC_SHA256 = "3b2a0c4b3b13cf6ab71ec4e7a3dd4e3566a0c8195e3c7bed6bf956575e5f9fc6"
@@ -139,8 +140,10 @@ def _invoke_candidate(stimulus: dict[str, object]) -> dict[str, object]:
     return value
 
 
-def _module_probe(expression: str, *arguments: str, input_text: str = "") -> object:
+def _module_probe(expression: str, *arguments: str, input_text: str = "", extra_env: dict[str, str] | None = None) -> object:
     runner = "import json,runpy,sys;m=runpy.run_path(sys.argv[1],run_name='issue435_probe');print(json.dumps(" + expression + "))"
+    environment = {"PATH": "/usr/bin:/bin", "LC_ALL": "C"}
+    environment.update(extra_env or {})
     completed = subprocess.run(
         [sys.executable, "-I", "-P", "-c", runner, str(MODULE_PATH), *arguments],
         input=input_text,
@@ -148,7 +151,7 @@ def _module_probe(expression: str, *arguments: str, input_text: str = "") -> obj
         capture_output=True,
         timeout=5,
         check=False,
-        env={"PATH": "/usr/bin:/bin", "LC_ALL": "C"},
+        env=environment,
     )
     assert completed.returncode == 0, completed.stderr
     return json.loads(completed.stdout)
@@ -489,7 +492,9 @@ def test_candidate_authors_are_parsed_from_bounded_framed_git_history() -> None:
     hashes = (
         "205c02b3bac633d023d753356bc966c194ed36a7", "b099747812bcd97f812358908cb847c351190bc3",
         "8d83713ed09dc626e24f1fe063e6afd9cfa5e8e9", "134fbd91606eebbcdcff5f47b26b6d286acc1fa2",
-        "6d741aec9a2a56d54034e0092a2e24d535079517", "9bd0a2786ca41e720a275e70a2c98470a3f3aa38", "6b681b4acc419d2fa63c35862d6b6185ce82dd50", "7a17fe323a8c9acd9ea887f9932e4ca79ff02853", "26347f466778e946cc3b5aa8fa110f4597b279e2", "e6821c579c7bc1a28778278954cb52de7bf41dbb", "55a3911c3b2b35ae681b647e143c492e6a4a8cad", "bf795a2760479784012fff6e644ec5d102b3caf2", head,
+        "6d741aec9a2a56d54034e0092a2e24d535079517", "9bd0a2786ca41e720a275e70a2c98470a3f3aa38", "6b681b4acc419d2fa63c35862d6b6185ce82dd50", "7a17fe323a8c9acd9ea887f9932e4ca79ff02853", "26347f466778e946cc3b5aa8fa110f4597b279e2", "e6821c579c7bc1a28778278954cb52de7bf41dbb", "55a3911c3b2b35ae681b647e143c492e6a4a8cad", "bf795a2760479784012fff6e644ec5d102b3caf2",
+        "8fa7667b1d613b1470195ff712763aac5b5e048c", "0ae2593eca92c4e9657a04cb45152d7be839a48b", "a4d903dfb5b0c40aabb4117a29a901db0972182f",
+        head,
     )
     history = "".join(f"{commit}\0Rohit   Agrawal\0ROHIT.RA.AGRAWAL@GMAIL.COM\0" for commit in hashes)
     assert _module_probe(expression, head, input_text=history) == ["rohit agrawal <rohit.ra.agrawal@gmail.com>"]
@@ -612,7 +617,7 @@ def test_revised_path_caps_executor_ceiling_and_aggregate_thresholds_are_exact()
     assert _module_probe(probe, input_text="# ISSUE435_EXECUTOR_V1_START\n" + "pass\n" * 240 + "# ISSUE435_EXECUTOR_V1_END") is True
     assert _module_probe(probe, input_text="# ISSUE435_EXECUTOR_V1_START\n" + "pass\n" * 241 + "# ISSUE435_EXECUTOR_V1_END") is False
     region = source.split(start, 1)[1].split(end, 1)[0]
-    assert len(source.splitlines()) - len(region.splitlines()) + 240 <= 774
+    assert len(source.splitlines()) - len(region.splitlines()) + 240 <= 790
 
 
 def test_path_and_descriptor_boundaries_reject_hostile_nodes(tmp_path: Path) -> None:
@@ -645,6 +650,39 @@ def test_event_branch_resolution_accepts_detached_and_rejects_conflict() -> None
     expression = "m['_resolve_branch'](sys.argv[2],sys.argv[3])"
     assert _module_probe(expression, ISSUE435_BRANCH, "") == ISSUE435_BRANCH
     assert _module_probe(expression, ISSUE435_BRANCH, "conflict") == ""
+
+
+def test_hosted_route_head_accepts_only_exact_detached_synthetic_merge(tmp_path: Path) -> None:
+    checkout = tmp_path / "checkout"
+    subprocess.run(["/usr/bin/git", "clone", "--quiet", "--no-local", str(ROOT), str(checkout)], check=True)
+    head = subprocess.check_output(["/usr/bin/git", "rev-parse", "HEAD"], cwd=checkout, text=True).strip()
+    subprocess.run(["/usr/bin/git", "checkout", "--quiet", "--detach", ISSUE435_BASE], cwd=checkout, check=True)
+    subprocess.run(
+        ["/usr/bin/git", "-c", "user.name=CI", "-c", "user.email=ci@example.invalid", "merge", "--quiet", "--no-ff", "--no-edit", head],
+        cwd=checkout,
+        check=True,
+    )
+    expression = "m['_route_head'](m['Path'](sys.argv[2]),sys.argv[3])"
+    environment = {"GITHUB_HEAD_REF": ISSUE435_BRANCH, "GITHUB_BASE_SHA": ISSUE435_BASE, "GITHUB_HEAD_SHA": head}
+    assert _module_probe(expression, str(checkout), ISSUE435_BRANCH, extra_env=environment) == head
+    hostile = (
+        {**environment, "GITHUB_HEAD_REF": "wrong-branch"},
+        {**environment, "GITHUB_BASE_SHA": "0" * 40},
+        {**environment, "GITHUB_HEAD_SHA": "0" * 40},
+        {**environment, "GITHUB_HEAD_SHA": head.upper()},
+        {**environment, "GITHUB_HEAD_SHA": ""},
+    )
+    assert all(_module_probe(expression, str(checkout), ISSUE435_BRANCH, extra_env=item) == "" for item in hostile)
+    subprocess.run(["/usr/bin/git", "checkout", "--quiet", "--detach", head], cwd=checkout, check=True)
+    assert _module_probe(expression, str(checkout), ISSUE435_BRANCH, extra_env=environment) == ""
+    reverse = subprocess.check_output(
+        ["/usr/bin/git", "-c", "user.name=CI", "-c", "user.email=ci@example.invalid", "commit-tree", f"{head}^{{tree}}", "-p", head, "-p", ISSUE435_BASE],
+        cwd=checkout,
+        input="synthetic reverse\n",
+        text=True,
+    ).strip()
+    subprocess.run(["/usr/bin/git", "checkout", "--quiet", "--detach", reverse], cwd=checkout, check=True)
+    assert _module_probe(expression, str(checkout), ISSUE435_BRANCH, extra_env=environment) == ""
 
 
 def test_matrix_cross_fields_reject_duplicates_missing_tests_and_coverage() -> None:
