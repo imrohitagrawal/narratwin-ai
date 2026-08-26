@@ -354,8 +354,6 @@ def test_application_freeze_values_enforce_schema_constraints_and_exact_pass() -
     cast(list[object], fewer_reviews["reviews"]).pop()
     assert _draft202012_errors(fewer_reviews) == []
     assert _module_probe(expression, input_text=json.dumps(fewer_reviews)) is False
-
-
 def test_review_provenance_rejects_declared_author_omission_and_normalized_collision() -> None:
     expression = "m['_review_provenance'](json.loads(sys.stdin.read()),tuple(sys.argv[2:]))"
     freeze = _valid_freeze()
@@ -369,15 +367,13 @@ def test_review_provenance_rejects_declared_author_omission_and_normalized_colli
     freeze = _valid_freeze()
     cast(list[dict[str, object]], freeze["reviews"])[0]["reviewer"] = "other reviewer <rohit.ra.agrawal@gmail.com>"
     assert _module_probe(expression, author, input_text=json.dumps(freeze)) is False
-
-
 def test_candidate_authors_are_parsed_from_bounded_framed_git_history() -> None:
     expression = "(m['_candidate_authors'].__globals__.__setitem__('_git',lambda *_:m['GitResult']('OK',0,sys.stdin.buffer.read(),b'')),m['_candidate_authors'](m['Path']('.'),sys.argv[2]))[1]"
     head = "d" * 40
     hashes = (
         "205c02b3bac633d023d753356bc966c194ed36a7", "b099747812bcd97f812358908cb847c351190bc3",
         "8d83713ed09dc626e24f1fe063e6afd9cfa5e8e9", "134fbd91606eebbcdcff5f47b26b6d286acc1fa2",
-        "6d741aec9a2a56d54034e0092a2e24d535079517", head,
+        "6d741aec9a2a56d54034e0092a2e24d535079517", "9bd0a2786ca41e720a275e70a2c98470a3f3aa38", head,
     )
     history = "".join(f"{commit}\0Rohit   Agrawal\0ROHIT.RA.AGRAWAL@GMAIL.COM\0" for commit in hashes)
     assert _module_probe(expression, head, input_text=history) == ["rohit agrawal <rohit.ra.agrawal@gmail.com>"]

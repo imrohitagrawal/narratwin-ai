@@ -56,8 +56,10 @@ spend authority.
 2. C2 freezes complete contracts, N=40 stimuli, test-owned expectations,
    adapters, tests, docs, and a typed `ACP.NOT_IMPLEMENTED` executor.
 3. Four independent reviews bind one immutable C2 candidate. The original
-   correction and blocked head `134fbd9` are preserved; the narrow H3 replan is
-   authorized by `issuecomment-5422439650` and must rerun every review.
+   correction and blocked heads `134fbd9`, H3 `6d741ae`, and H4 `9bd0a27` are
+   preserved. The additive H5 budget correction is authorized by
+   `issuecomment-5424570808`; it changes no semantic test, cap, case, or threat,
+   and all four reviews bind the resulting exact head anew.
 4. C3 adds only the RED-freeze file and binds C2 objects plus review receipts.
 5. C4 changes only the marked executor region; the dispatcher, acceptance
    tests, and every production byte outside that region remain frozen.

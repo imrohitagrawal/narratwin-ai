@@ -224,7 +224,7 @@ ISSUE435_BASE = "a6284f7d8f1a14ef4c9a99493d6b06046505f20c"
 ISSUE435_C1 = "205c02b3bac633d023d753356bc966c194ed36a7"
 ISSUE435_REJECTED = "8d83713ed09dc626e24f1fe063e6afd9cfa5e8e9"
 ISSUE435_BLOCKED = "134fbd91606eebbcdcff5f47b26b6d286acc1fa2"
-ISSUE435_H3 = "6d741aec9a2a56d54034e0092a2e24d535079517"
+ISSUE435_H4 = "9bd0a2786ca41e720a275e70a2c98470a3f3aa38"
 ISSUE435_PREFLIGHT = "docs/governance/preflights/issue-435.json"
 ISSUE435_PREFLIGHT_BLOB = "c554eaf7f73ea081434b1e2f818441fe0bc3eee9"
 ISSUE435_FREEZE = "docs/governance/adversarial-convergence-red-freeze-v1.json"
@@ -381,7 +381,7 @@ def _candidate_authors(root: Path, c2_head: str) -> tuple[str, ...] | None:
     if text is None or len(result.stdout) > 8_192 or not text.endswith("\0"):
         return None
     fields = text[:-1].split("\0")
-    if len(fields) % 3 or fields[::3] != [ISSUE435_C1, "b099747812bcd97f812358908cb847c351190bc3", ISSUE435_REJECTED, ISSUE435_BLOCKED, ISSUE435_H3, c2_head]:
+    if len(fields) % 3 or fields[::3] != [ISSUE435_C1, "b099747812bcd97f812358908cb847c351190bc3", ISSUE435_REJECTED, ISSUE435_BLOCKED, "6d741aec9a2a56d54034e0092a2e24d535079517", ISSUE435_H4, c2_head]:
         return None
     identities = [_identity(fields[index], fields[index + 1]) for index in range(1, len(fields), 3)]
     if any(identity is None for identity in identities):
@@ -443,7 +443,7 @@ def inspect_issue435_repository(root: Path, branch: str) -> RouteInspection:
     event_head = os.environ.get("GITHUB_HEAD_SHA", "").strip()
     if event_head and event_head != head:
         findings.append(FindingCode.IDENTITY_MISMATCH)
-    if commits[:5] != [ISSUE435_C1, "b099747812bcd97f812358908cb847c351190bc3", ISSUE435_REJECTED, ISSUE435_BLOCKED, ISSUE435_H3]:
+    if commits[:6] != [ISSUE435_C1, "b099747812bcd97f812358908cb847c351190bc3", ISSUE435_REJECTED, ISSUE435_BLOCKED, "6d741aec9a2a56d54034e0092a2e24d535079517", ISSUE435_H4]:
         findings.append(FindingCode.IDENTITY_MISMATCH)
     if cast(str, values["merges"]).strip() or cast(str, values["status"]) or cast(str, values["preflight"]).strip() != ISSUE435_PREFLIGHT_BLOB:
         findings.append(FindingCode.ROUTE_DRIFT)
@@ -458,7 +458,7 @@ def inspect_issue435_repository(root: Path, branch: str) -> RouteInspection:
     phase = "C2"
     if not freeze_present:
         parent = _text(_git(root, "rev-parse", "HEAD^"))
-        if len(commits) != 6 or parent is None or parent.strip() != ISSUE435_H3:
+        if len(commits) != 7 or parent is None or parent.strip() != ISSUE435_H4:
             findings.append(FindingCode.ROUTE_DRIFT)
     else:
         raw = _git(root, "show", f"HEAD:{ISSUE435_FREEZE}")
@@ -467,15 +467,15 @@ def inspect_issue435_repository(root: Path, branch: str) -> RouteInspection:
             findings.append(FindingCode.REVIEW_IDENTITY_MISMATCH)
         c2_value = parsed.document.get("c2") if isinstance(parsed.document, dict) else None
         c2_head = c2_value.get("head") if isinstance(c2_value, dict) else ""
-        if len(commits) == 7 and commits[5] == c2_head:
+        if len(commits) == 8 and commits[6] == c2_head:
             phase = "C3"
-            delta = _text(_git(root, "diff-tree", "--no-commit-id", "--name-only", "-r", commits[6]))
+            delta = _text(_git(root, "diff-tree", "--no-commit-id", "--name-only", "-r", commits[7]))
             if delta is None or delta.splitlines() != [ISSUE435_FREEZE]:
                 findings.append(FindingCode.ROUTE_DRIFT)
-        elif len(commits) == 8 and commits[5] == c2_head:
+        elif len(commits) == 9 and commits[6] == c2_head:
             phase = "C4"
-            c3_delta = _text(_git(root, "diff-tree", "--no-commit-id", "--name-only", "-r", commits[6]))
-            c4_delta = _text(_git(root, "diff-tree", "--no-commit-id", "--name-only", "-r", commits[7]))
+            c3_delta = _text(_git(root, "diff-tree", "--no-commit-id", "--name-only", "-r", commits[7]))
+            c4_delta = _text(_git(root, "diff-tree", "--no-commit-id", "--name-only", "-r", commits[8]))
             if c3_delta is None or c3_delta.splitlines() != [ISSUE435_FREEZE] or c4_delta is None or c4_delta.splitlines() != ["scripts/quality/adversarial_convergence.py"]:
                 findings.append(FindingCode.ROUTE_DRIFT)
         else:

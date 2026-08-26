@@ -11,6 +11,8 @@ The one-time materialized-corpus correction is authorized by
 <https://github.com/imrohitagrawal/narratwin-ai/issues/435#issuecomment-5421421524>.
 The blocked candidate findings and exact bounded H3 replan are authorized by
 <https://github.com/imrohitagrawal/narratwin-ai/issues/435#issuecomment-5422439650>.
+The preserved-H4 additive H5 budget correction is authorized by
+<https://github.com/imrohitagrawal/narratwin-ai/issues/435#issuecomment-5424570808>.
 The framework branch starts at
 `a6284f7d8f1a14ef4c9a99493d6b06046505f20c`. C1 is preserved at
 `205c02b3bac633d023d753356bc966c194ed36a7`; its preflight blob must remain
@@ -136,7 +138,9 @@ the real executor satisfy the frozen 40 expectations without changing them.
 - Only OWNER-enumerated corrections may occur before C3. H3 follows preserved
   blocked head `134fbd9`; H4 follows preserved blocked H3 head `6d741ae` and is
   limited to schema-value parity, exact PASS grammar, and Git-derived author
-  exclusion. All four exact-head reviews rerun after each authorized head.
+  exclusion. H5 preserves H4 `9bd0a27` and only restores the pre-review budget
+  gate through non-semantic test compaction plus history recognition. All four
+  exact-head reviews rerun after each authorized head.
 - C3 adds only `adversarial-convergence-red-freeze-v1.json` and binds the C2
   objects, corpus identities, protected-source digest, dispatcher, acceptance
   test, schema, guardrail, skeleton, and four durable review receipts.
