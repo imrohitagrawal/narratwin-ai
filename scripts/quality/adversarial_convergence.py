@@ -16,7 +16,6 @@ ROOT = Path(__file__).resolve().parents[2]
 ACTIVATION = "NONE"
 AUTHORITY_EFFECT = "NO_AUTHORITY_EFFECT"
 CORPUS_DOMAIN = b"NARRATWIN-ADVERSARIAL-CONVERGENCE-CASES-V1\0"
-
 JsonScalar: TypeAlias = str | int | float | bool | None
 JsonValue: TypeAlias = JsonScalar | list["JsonValue"] | dict[str, "JsonValue"]
 class ProcessingStage(StrEnum):
@@ -46,7 +45,6 @@ class MutationState(StrEnum):
     NOT_EXECUTED = "NOT_EXECUTED"
     SURVIVED = "SURVIVED"
     KILLED = "KILLED"
-
 class FindingCode(StrEnum):
     UNSAFE_FILESYSTEM_INPUT = "ACP.BOUNDS.UNSAFE_FILESYSTEM_INPUT"
     INPUT_TOO_LARGE = "ACP.BOUNDS.INPUT_TOO_LARGE"
@@ -74,23 +72,19 @@ class FindingCode(StrEnum):
     PLATFORM_FAILURE = "ACP.VERDICT.PLATFORM_FAILURE"
     RESOURCE_FAILURE = "ACP.VERDICT.RESOURCE_FAILURE"
     NOT_IMPLEMENTED = "ACP.NOT_IMPLEMENTED"
-
 Stimulus = NamedTuple("Stimulus", [("kind", str), ("payload", dict[str, JsonValue])])
 Finding = NamedTuple("Finding", [("stage", ProcessingStage), ("code", FindingCode), ("location", str), ("blocker", BlockerClass)])
 StageObservation = NamedTuple("StageObservation", [("stage", ProcessingStage), ("state", StageState), ("callback_count", int), ("justification", str), ("finding_codes", tuple[FindingCode, ...])])
 ExecutionReceipt = NamedTuple("ExecutionReceipt", [("candidate", str), ("ordinal", int), ("phase", str), ("stage", ProcessingStage), ("callback_count", int), ("observed_state", StageState), ("observed_finding_codes", tuple[FindingCode, ...])])
 MutationReceipt = NamedTuple("MutationReceipt", [("mutant_id", str), ("assertion_id", str), ("execution_count", int), ("failure_count", int), ("state", MutationState), ("observed_verdict", PhaseVerdict), ("observed_finding_codes", tuple[FindingCode, ...])])
 ValidationResult = NamedTuple("ValidationResult", [("verdict", PhaseVerdict), ("findings", tuple[Finding, ...]), ("observations", tuple[StageObservation, ...]), ("execution_receipts", tuple[ExecutionReceipt, ...]), ("mutation_receipts", tuple[MutationReceipt, ...]), ("activation", str), ("authority_effect", str)])
-
 ParseLimits = NamedTuple("ParseLimits", [("max_bytes", int), ("max_depth", int), ("max_members", int)])
 DEFAULT_PARSE_LIMITS = ParseLimits(65_536, 32, 4_096)
-
 BoundaryResult = NamedTuple("BoundaryResult", [("data", bytes | None), ("finding", Finding | None)])
 ParseResult = NamedTuple("ParseResult", [("document", JsonValue | None), ("findings", tuple[Finding, ...]), ("semantic_sha256", str)])
 GitResult = NamedTuple("GitResult", [("state", str), ("returncode", int), ("stdout", bytes), ("stderr", bytes)])
 RouteInspection = NamedTuple("RouteInspection", [("phase", str), ("findings", tuple[FindingCode, ...]), ("charged_lines", int)])
 PathCharge = NamedTuple("PathCharge", [("path", str), ("status", str), ("additions", int), ("deletions", int), ("mode", str)])
-
 def _finding(
     code: FindingCode,
     stage: ProcessingStage,
@@ -98,7 +92,6 @@ def _finding(
     blocker: BlockerClass = BlockerClass.IMPLEMENTATION,
 ) -> Finding:
     return Finding(stage, code, location, blocker)
-
 def _valid_relative_path(relative: str) -> bool:
     if not relative or len(relative) > 512 or relative.startswith(("/", "~")):
         return False
@@ -106,13 +99,11 @@ def _valid_relative_path(relative: str) -> bool:
         return False
     parts = relative.split("/")
     return len(parts) <= 64 and all(part not in {"", ".", ".."} for part in parts)
-
 def _safe_close(descriptor: int) -> None:
     try:
         os.close(descriptor)
     except OSError:
         pass
-
 def _open_regular_descriptor(root: Path, relative: str) -> tuple[int, os.stat_result, int, str] | None:
     nofollow = getattr(os, "O_NOFOLLOW", 0)
     directory = getattr(os, "O_DIRECTORY", 0)
@@ -139,7 +130,6 @@ def _open_regular_descriptor(root: Path, relative: str) -> tuple[int, os.stat_re
         for descriptor in reversed(parents):
             _safe_close(descriptor)
     return None
-
 def read_bounded_regular_file(root: Path, relative: str, max_bytes: int) -> BoundaryResult:
     opened = _open_regular_descriptor(root, relative)
     if opened is None:
@@ -168,7 +158,6 @@ def read_bounded_regular_file(root: Path, relative: str, max_bytes: int) -> Boun
     finally:
         _safe_close(descriptor)
         _safe_close(parent)
-
 def _strict_object(pairs: list[tuple[str, object]]) -> dict[str, object]:
     result: dict[str, object] = {}
     for key, value in pairs:
@@ -176,7 +165,6 @@ def _strict_object(pairs: list[tuple[str, object]]) -> dict[str, object]:
             raise KeyError(key)
         result[key] = value
     return result
-
 def _normalize_json(value: object, depth: int, limits: ParseLimits) -> tuple[JsonValue, int]:
     if depth > limits.max_depth:
         raise RecursionError
@@ -195,7 +183,6 @@ def _normalize_json(value: object, depth: int, limits: ParseLimits) -> tuple[Jso
             raise OverflowError
         return {key: child for key, (child, _) in children_by_key.items()}, count
     raise TypeError
-
 def parse_json_bytes(raw: bytes, expected_sha256: str, limits: ParseLimits = DEFAULT_PARSE_LIMITS) -> ParseResult:
     if len(raw) > limits.max_bytes:
         return ParseResult(None, (_finding(FindingCode.INPUT_TOO_LARGE, ProcessingStage.BOUNDS, "/"),), "")
@@ -214,7 +201,6 @@ def parse_json_bytes(raw: bytes, expected_sha256: str, limits: ParseLimits = DEF
     except (OverflowError, RecursionError, TypeError, ValueError, MemoryError):
         return ParseResult(None, (_finding(FindingCode.RESOURCE_LIMIT, ProcessingStage.PARSE, "/"),), "")
     return ParseResult(document, (), hashlib.sha256(CORPUS_DOMAIN + canonical).hexdigest())
-
 def validate_matrix_cross_fields(document: JsonValue) -> bool:
     if not isinstance(document, dict) or document.get("schemaVersion") != "AdversarialInvariantMatrixV1":
         return False
@@ -226,7 +212,6 @@ def validate_matrix_cross_fields(document: JsonValue) -> bool:
     covered_threats = {row.get("threatId") for row in rows}
     tests_are_bound = all(row.get("evidenceClass") != "TEST" or isinstance(row.get("testIds"), list) and bool(row.get("testIds")) for row in rows)
     return len(set(identifiers)) == len(identifiers) and covered_threats == set(threats) and tests_are_bound
-
 # ISSUE435_EXECUTOR_V1_START
 def execute(stimulus: Stimulus) -> ValidationResult:
     """C2 boundary: C4 may replace only this marked executor region."""
@@ -234,12 +219,12 @@ def execute(stimulus: Stimulus) -> ValidationResult:
     finding = _finding(FindingCode.NOT_IMPLEMENTED, ProcessingStage.PHASE_VERDICT, "/")
     return ValidationResult(PhaseVerdict.NOT_IMPLEMENTED, (finding,), (), (), (), ACTIVATION, AUTHORITY_EFFECT)
 # ISSUE435_EXECUTOR_V1_END
-
 ISSUE435_BRANCH = "governance-435-adversarial-convergence-framework-v1"
 ISSUE435_BASE = "a6284f7d8f1a14ef4c9a99493d6b06046505f20c"
 ISSUE435_C1 = "205c02b3bac633d023d753356bc966c194ed36a7"
 ISSUE435_REJECTED = "8d83713ed09dc626e24f1fe063e6afd9cfa5e8e9"
 ISSUE435_BLOCKED = "134fbd91606eebbcdcff5f47b26b6d286acc1fa2"
+ISSUE435_H3 = "6d741aec9a2a56d54034e0092a2e24d535079517"
 ISSUE435_PREFLIGHT = "docs/governance/preflights/issue-435.json"
 ISSUE435_PREFLIGHT_BLOB = "c554eaf7f73ea081434b1e2f818441fe0bc3eee9"
 ISSUE435_FREEZE = "docs/governance/adversarial-convergence-red-freeze-v1.json"
@@ -260,7 +245,6 @@ ISSUE435_NONFREEZE = frozenset(ISSUE435_CAPS) - {ISSUE435_FREEZE}
 ISSUE435_READABILITY_REVIEWED = {"docs/ENGINEERING_PROCESS_RCA.md", "scripts/quality/adversarial_convergence.py", "tests/unit/test_quality_dispatcher.py"}
 FREEZE_ARTIFACT_PATHS = {"corpus": "docs/governance/adversarial-convergence-framework-cases-v1.json", "schema": "docs/governance/adversarial-convergence-framework-v1.schema.json", "acceptanceTest": "tests/unit/test_adversarial_convergence.py", "skeleton": "scripts/quality/adversarial_convergence.py", "dispatcher": "scripts/quality/check_quality_stage.py", "guardrail": "scripts/guardrails_check.py"}
 FREEZE_ROLES = ("ARCHITECTURE_SCOPE_PHASE", "SECURITY_TRUST", "READABILITY_FEASIBILITY", "MUTATION_FALSE_PASS")
-
 def _git(root: Path, *args: str) -> GitResult:
     environment = {"PATH": "/usr/bin:/bin", "LC_ALL": "C", "GIT_CONFIG_NOSYSTEM": "1", "GIT_CONFIG_GLOBAL": "/dev/null", "GIT_OPTIONAL_LOCKS": "0", "GIT_NO_LAZY_FETCH": "1", "GIT_NO_REPLACE_OBJECTS": "1"}
     process: subprocess.Popen[bytes] | None = None
@@ -296,7 +280,6 @@ def _git(root: Path, *args: str) -> GitResult:
         return GitResult("DECODE_ERROR", 128, b"", b"")
     except (OSError, ValueError, OverflowError, MemoryError):
         return GitResult("FAILED", 128, b"", b"")
-
 def _text(result: GitResult) -> str | None:
     if result.state != "OK" or result.returncode:
         return None
@@ -304,7 +287,6 @@ def _text(result: GitResult) -> str | None:
         return result.stdout.decode("utf-8", errors="strict")
     except UnicodeError:
         return None
-
 def _collect_changes(root: Path, head: str) -> tuple[PathCharge, ...] | None:
     names = _text(_git(root, "diff", "--name-status", "-M", "-C", ISSUE435_BASE, head, "--"))
     numbers = _text(_git(root, "diff", "--numstat", "--no-renames", ISSUE435_BASE, head, "--"))
@@ -325,7 +307,6 @@ def _collect_changes(root: Path, head: str) -> tuple[PathCharge, ...] | None:
             return None
         charges.append(PathCharge(row[2], statuses[row[2]], int(row[0]), int(row[1]), fields[0]))
     return tuple(charges) if set(statuses) == {item.path for item in charges} else None
-
 def _normalized_source(raw: bytes) -> bytes | None:
     start_marker = b"# ISSUE435_EXECUTOR_V1_START\n"
     end_marker = b"# ISSUE435_EXECUTOR_" + b"V1_END"
@@ -334,60 +315,88 @@ def _normalized_source(raw: bytes) -> bytes | None:
     prefix, rest = raw.split(start_marker)
     _, suffix = rest.split(end_marker)
     return prefix + start_marker + b"<C4_EXECUTOR_REGION>\n" + end_marker + suffix
+def _hex_text(value: JsonValue, width: int) -> bool:
+    return isinstance(value, str) and len(value) == width and all(character in "0123456789abcdef" for character in value)
+def _bounded_text(value: JsonValue, minimum: int, maximum: int) -> bool:
+    return isinstance(value, str) and minimum <= len(value) <= maximum
+def _identity(name: str, email: str) -> tuple[str, str] | None:
+    if not name.isascii() or not email.isascii() or not name.isprintable() or not email.isprintable() or "<" in name or ">" in name:
+        return None
+    normalized = " ".join(name.split()).casefold(), email.strip().casefold()
+    return normalized if normalized[0] and normalized[1].count("@") == 1 and all(normalized[1].split("@")) and len(f"{normalized[0]} <{normalized[1]}>") <= 160 else None
+def _canonical_identity(value: JsonValue) -> tuple[str, str] | None:
+    if not _bounded_text(value, 1, 160) or not isinstance(value, str) or not value.endswith(">") or " <" not in value:
+        return None
+    identity = _identity(*value[:-1].rsplit(" <", 1))
+    return identity if identity is not None and value == f"{identity[0]} <{identity[1]}>" else None
+def _pass_content(role: str, head: str, tree: str, reviewer: str, url: str) -> str:
+    return f"ISSUE435_REVIEW_V1\nrole={role}\ndisposition=PASS\nhead={head}\ntree={tree}\nreviewer={reviewer}\nurl={url}"
 
 def _closed_freeze_shape(document: JsonValue) -> bool:
     top = {"schemaVersion", "issue", "activation", "authorityEffect", "correction", "c2", "artifacts", "reviews"}
-    if not isinstance(document, dict) or set(document) != top:
+    if not isinstance(document, dict) or set(document) != top or document.get("schemaVersion") != "AdversarialConvergenceRedFreezeV1" or document.get("issue") != 435 or document.get("activation") != ACTIVATION or document.get("authorityEffect") != AUTHORITY_EFFECT:
         return False
     correction, c2, artifacts, reviews = (document.get(key) for key in ("correction", "c2", "artifacts", "reviews"))
-    if not isinstance(correction, dict) or set(correction) != {"rejectedHead", "wave", "authors"} or not isinstance(c2, dict) or set(c2) != {"head", "tree", "diffSha256"} or not isinstance(artifacts, dict) or set(artifacts) != set(FREEZE_ARTIFACT_PATHS) or not isinstance(reviews, list) or len(reviews) != 4:
+    if not isinstance(correction, dict) or set(correction) != {"rejectedHead", "wave", "authors"} or correction.get("rejectedHead") != ISSUE435_REJECTED or type(correction.get("wave")) is not int or correction.get("wave") != 1 or not isinstance(c2, dict) or set(c2) != {"head", "tree", "diffSha256"} or not isinstance(artifacts, dict) or set(artifacts) != set(FREEZE_ARTIFACT_PATHS) or not isinstance(reviews, list) or len(reviews) != 4:
+        return False
+    authors = correction.get("authors")
+    if not isinstance(authors, list) or not 1 <= len(authors) <= 8 or len(set(cast(list[object], authors))) != len(authors) or any(_canonical_identity(item) is None for item in authors):
+        return False
+    if not _hex_text(c2.get("head"), 40) or not _hex_text(c2.get("tree"), 40) or not _hex_text(c2.get("diffSha256"), 64):
         return False
     for name, item in artifacts.items():
         extra = {"semanticSha256"} if name == "corpus" else {"protectedSha256"} if name == "skeleton" else set()
-        if not isinstance(item, dict) or set(item) != {"path", "blob", "sha256"} | extra:
+        if not isinstance(item, dict) or set(item) != {"path", "blob", "sha256"} | extra or item.get("path") != FREEZE_ARTIFACT_PATHS[name] or not _hex_text(item.get("blob"), 40) or not _hex_text(item.get("sha256"), 64) or any(not _hex_text(item.get(key), 64) for key in extra):
             return False
-    review_keys = {"role", "reviewer", "disposition", "head", "tree", "url", "content", "contentSha256"}
+    keys = {"role", "reviewer", "disposition", "head", "tree", "url", "content", "contentSha256"}
     prefix = "https://github.com/imrohitagrawal/narratwin-ai/issues/435#issuecomment-"
     for index, receipt in enumerate(reviews):
-        url = receipt.get("url") if isinstance(receipt, dict) else None
-        if not isinstance(receipt, dict) or set(receipt) != review_keys or receipt.get("role") != FREEZE_ROLES[index] or not isinstance(url, str) or not url.startswith(prefix) or not url.removeprefix(prefix).isdigit():
+        if not isinstance(receipt, dict) or set(receipt) != keys:
+            return False
+        role, reviewer, url, content = (receipt.get(key) for key in ("role", "reviewer", "url", "content"))
+        suffix = url.removeprefix(prefix) if isinstance(url, str) and url.startswith(prefix) else ""
+        if role != FREEZE_ROLES[index] or _canonical_identity(reviewer) is None or receipt.get("disposition") != "PASS" or receipt.get("head") != c2.get("head") or receipt.get("tree") != c2.get("tree") or not suffix or any(character not in "0123456789" for character in suffix) or not _bounded_text(content, 1, 8192):
+            return False
+        expected = _pass_content(role, cast(str, c2["head"]), cast(str, c2["tree"]), cast(str, reviewer), cast(str, url))
+        if content != expected or not _hex_text(receipt.get("contentSha256"), 64) or hashlib.sha256(expected.encode("ascii")).hexdigest() != receipt.get("contentSha256"):
             return False
     return True
 
+def _review_provenance(document: JsonValue, candidate_authors: tuple[str, ...]) -> bool:
+    if not isinstance(document, dict) or not isinstance(document.get("correction"), dict) or not isinstance(document.get("reviews"), list):
+        return False
+    correction = cast(dict[str, JsonValue], document["correction"])
+    reviews = cast(list[JsonValue], document["reviews"])
+    declared = correction.get("authors")
+    identities = [_canonical_identity(receipt.get("reviewer")) for receipt in reviews if isinstance(receipt, dict)]
+    author_identities = [_canonical_identity(author) for author in candidate_authors]
+    if not isinstance(declared, list) or tuple(declared) != candidate_authors or len(identities) != 4 or any(item is None for item in identities + author_identities):
+        return False
+    reviewers = cast(list[tuple[str, str]], identities)
+    authors = cast(list[tuple[str, str]], author_identities)
+    return len({item[0] for item in reviewers}) == len({item[1] for item in reviewers}) == 4 and all(name != author_name and email != author_email for name, email in reviewers for author_name, author_email in authors)
+def _candidate_authors(root: Path, c2_head: str) -> tuple[str, ...] | None:
+    result = _git(root, "log", "--no-show-signature", "--no-notes", "--reverse", "-z", "--format=%H%x00%an%x00%ae", f"{ISSUE435_BASE}..{c2_head}", "--")
+    text = _text(result)
+    if text is None or len(result.stdout) > 8_192 or not text.endswith("\0"):
+        return None
+    fields = text[:-1].split("\0")
+    if len(fields) % 3 or fields[::3] != [ISSUE435_C1, "b099747812bcd97f812358908cb847c351190bc3", ISSUE435_REJECTED, ISSUE435_BLOCKED, ISSUE435_H3, c2_head]:
+        return None
+    identities = [_identity(fields[index], fields[index + 1]) for index in range(1, len(fields), 3)]
+    if any(identity is None for identity in identities):
+        return None
+    rendered = [f"{identity[0]} <{identity[1]}>" for identity in cast(list[tuple[str, str]], identities)]
+    return tuple(dict.fromkeys(rendered))
+
 def _valid_freeze(document: JsonValue, root: Path, head: str) -> bool:
-    if not _closed_freeze_shape(document):
+    if not _closed_freeze_shape(document) or not isinstance(document, dict):
         return False
-    if not isinstance(document, dict) or document.get("schemaVersion") != "AdversarialConvergenceRedFreezeV1" or document.get("issue") != 435 or document.get("activation") != ACTIVATION or document.get("authorityEffect") != AUTHORITY_EFFECT:
-        return False
-    c2 = document.get("c2")
-    correction = document.get("correction")
-    artifacts = document.get("artifacts")
-    reviews = document.get("reviews")
-    if not isinstance(c2, dict) or not isinstance(correction, dict) or not isinstance(artifacts, dict) or not isinstance(reviews, list):
-        return False
-    c2_head, c2_tree = c2.get("head"), c2.get("tree")
-    if correction.get("rejectedHead") != ISSUE435_REJECTED or correction.get("wave") != 1 or not isinstance(c2_head, str) or not isinstance(c2_tree, str) or len(c2_head) != 40 or len(c2_tree) != 40 or any(character not in "0123456789abcdef" for character in c2_head + c2_tree):
-        return False
-    roles = set(FREEZE_ROLES)
-    seen_roles: set[str] = set()
-    seen_reviewers: set[str] = set()
-    seen_urls: set[str] = set()
-    authors = correction.get("authors")
-    if not isinstance(authors, list) or not authors or len(set(authors)) != len(authors) or not all(isinstance(item, str) for item in authors):
-        return False
-    for receipt in reviews:
-        if not isinstance(receipt, dict) or receipt.get("disposition") != "PASS" or receipt.get("head") != c2_head or receipt.get("tree") != c2_tree:
-            return False
-        role, reviewer, url, content, digest = (receipt.get(key) for key in ("role", "reviewer", "url", "content", "contentSha256"))
-        if not all(isinstance(item, str) for item in (role, reviewer, url, content, digest)):
-            return False
-        role_text, reviewer_text, url_text, content_text, digest_text = cast(tuple[str, str, str, str, str], (role, reviewer, url, content, digest))
-        if reviewer_text in authors or hashlib.sha256(content_text.encode()).hexdigest() != digest_text or not all(token in content_text for token in ("PASS", c2_head, c2_tree)):
-            return False
-        seen_roles.add(role_text)
-        seen_reviewers.add(reviewer_text)
-        seen_urls.add(url_text)
-    if seen_roles != roles or len(seen_reviewers) != 4 or len(seen_urls) != 4 or len(reviews) != 4:
+    c2 = cast(dict[str, JsonValue], document["c2"])
+    artifacts = cast(dict[str, JsonValue], document["artifacts"])
+    c2_head, c2_tree = cast(str, c2["head"]), cast(str, c2["tree"])
+    candidate_authors = _candidate_authors(root, c2_head)
+    if candidate_authors is None or not _review_provenance(document, candidate_authors):
         return False
     tree = _text(_git(root, "rev-parse", f"{c2_head}^{{tree}}"))
     if tree is None or tree.strip() != c2_tree:
@@ -408,7 +417,6 @@ def _valid_freeze(document: JsonValue, root: Path, head: str) -> bool:
     source = _git(root, "show", f"{head}:{skeleton['path']}")
     normalized = _normalized_source(source.stdout) if source.state == "OK" and not source.returncode else None
     return normalized is not None and hashlib.sha256(normalized).hexdigest() == skeleton.get("protectedSha256")
-
 def inspect_issue435_repository(root: Path, branch: str) -> RouteInspection:
     if branch != ISSUE435_BRANCH:
         return RouteInspection("UNKNOWN", (FindingCode.ROUTE_DRIFT,), 0)
@@ -435,7 +443,7 @@ def inspect_issue435_repository(root: Path, branch: str) -> RouteInspection:
     event_head = os.environ.get("GITHUB_HEAD_SHA", "").strip()
     if event_head and event_head != head:
         findings.append(FindingCode.IDENTITY_MISMATCH)
-    if commits[:4] != [ISSUE435_C1, "b099747812bcd97f812358908cb847c351190bc3", ISSUE435_REJECTED, ISSUE435_BLOCKED]:
+    if commits[:5] != [ISSUE435_C1, "b099747812bcd97f812358908cb847c351190bc3", ISSUE435_REJECTED, ISSUE435_BLOCKED, ISSUE435_H3]:
         findings.append(FindingCode.IDENTITY_MISMATCH)
     if cast(str, values["merges"]).strip() or cast(str, values["status"]) or cast(str, values["preflight"]).strip() != ISSUE435_PREFLIGHT_BLOB:
         findings.append(FindingCode.ROUTE_DRIFT)
@@ -450,7 +458,7 @@ def inspect_issue435_repository(root: Path, branch: str) -> RouteInspection:
     phase = "C2"
     if not freeze_present:
         parent = _text(_git(root, "rev-parse", "HEAD^"))
-        if len(commits) != 5 or parent is None or parent.strip() != ISSUE435_BLOCKED:
+        if len(commits) != 6 or parent is None or parent.strip() != ISSUE435_H3:
             findings.append(FindingCode.ROUTE_DRIFT)
     else:
         raw = _git(root, "show", f"HEAD:{ISSUE435_FREEZE}")
@@ -459,43 +467,38 @@ def inspect_issue435_repository(root: Path, branch: str) -> RouteInspection:
             findings.append(FindingCode.REVIEW_IDENTITY_MISMATCH)
         c2_value = parsed.document.get("c2") if isinstance(parsed.document, dict) else None
         c2_head = c2_value.get("head") if isinstance(c2_value, dict) else ""
-        if len(commits) == 6 and commits[4] == c2_head:
+        if len(commits) == 7 and commits[5] == c2_head:
             phase = "C3"
-            delta = _text(_git(root, "diff-tree", "--no-commit-id", "--name-only", "-r", commits[5]))
+            delta = _text(_git(root, "diff-tree", "--no-commit-id", "--name-only", "-r", commits[6]))
             if delta is None or delta.splitlines() != [ISSUE435_FREEZE]:
                 findings.append(FindingCode.ROUTE_DRIFT)
-        elif len(commits) == 7 and commits[4] == c2_head:
+        elif len(commits) == 8 and commits[5] == c2_head:
             phase = "C4"
-            c3_delta = _text(_git(root, "diff-tree", "--no-commit-id", "--name-only", "-r", commits[5]))
-            c4_delta = _text(_git(root, "diff-tree", "--no-commit-id", "--name-only", "-r", commits[6]))
+            c3_delta = _text(_git(root, "diff-tree", "--no-commit-id", "--name-only", "-r", commits[6]))
+            c4_delta = _text(_git(root, "diff-tree", "--no-commit-id", "--name-only", "-r", commits[7]))
             if c3_delta is None or c3_delta.splitlines() != [ISSUE435_FREEZE] or c4_delta is None or c4_delta.splitlines() != ["scripts/quality/adversarial_convergence.py"]:
                 findings.append(FindingCode.ROUTE_DRIFT)
         else:
             findings.append(FindingCode.ROUTE_DRIFT)
     return RouteInspection(phase, tuple(dict.fromkeys(findings)), charged)
-
 def _resolve_branch(event: str, local: str) -> str:
     return "" if event and local and event != local else event or local
-
 def _current_branch(root: Path) -> str:
     event = os.environ.get("GITHUB_HEAD_REF", "").strip()
     local = _text(_git(root, "branch", "--show-current"))
     local_branch = local.strip() if local is not None else ""
     return _resolve_branch(event, local_branch)
-
 def _result_document(result: ValidationResult) -> dict[str, JsonValue]:
     findings: list[JsonValue] = [{"stage": item.stage, "code": item.code, "location": item.location, "blocker": item.blocker} for item in result.findings]
     observations: list[JsonValue] = [{"stage": item.stage, "state": item.state, "callbackCount": item.callback_count, "justification": item.justification, "findingCodes": list(item.finding_codes)} for item in result.observations]
     executions: list[JsonValue] = [{"candidate": item.candidate, "ordinal": item.ordinal, "phase": item.phase, "stage": item.stage, "callbackCount": item.callback_count, "observedState": item.observed_state, "observedFindingCodes": list(item.observed_finding_codes)} for item in result.execution_receipts]
     mutations: list[JsonValue] = [{"mutantId": item.mutant_id, "assertionId": item.assertion_id, "executionCount": item.execution_count, "failureCount": item.failure_count, "state": item.state, "observedVerdict": item.observed_verdict, "observedFindingCodes": list(item.observed_finding_codes)} for item in result.mutation_receipts]
     return {"verdict": result.verdict, "findings": findings, "observations": observations, "executionReceipts": executions, "mutationReceipts": mutations, "activation": result.activation, "authorityEffect": result.authority_effect}
-
 def _emit(document: dict[str, JsonValue]) -> None:
     raw = json.dumps(document, sort_keys=True, separators=(",", ":"), ensure_ascii=True).encode("ascii")
     if len(raw) > 131_072:
         raw = b'{"code":"ACP.VERDICT.RESOURCE_FAILURE","kind":"INFRASTRUCTURE_FAILURE"}'
     sys.stdout.buffer.write(raw + b"\n")
-
 def _worker_main() -> int:
     try:
         raw = sys.stdin.buffer.read(65_537)
@@ -513,7 +516,6 @@ def _worker_main() -> int:
     except (OSError, UnicodeError, RecursionError, MemoryError, ValueError, OverflowError):
         _emit({"code": FindingCode.RESOURCE_FAILURE, "kind": "INFRASTRUCTURE_FAILURE"})
         return 2
-
 def _route_main() -> int:
     try:
         branch = _current_branch(ROOT)
@@ -526,7 +528,6 @@ def _route_main() -> int:
     except (OSError, UnicodeError, RecursionError, MemoryError, ValueError, OverflowError):
         _emit({"code": FindingCode.PLATFORM_FAILURE, "kind": "INFRASTRUCTURE_FAILURE"})
         return 2
-
 def main() -> int:
     if sys.argv[1:] == ["--execute-stdin"]:
         return _worker_main()
@@ -534,6 +535,5 @@ def main() -> int:
         return _route_main()
     _emit({"code": "ACP.RUNNER_REQUIRED", "kind": "CONTRACT_FAILURE"})
     return 1
-
 if __name__ == "__main__":
     raise SystemExit(main())

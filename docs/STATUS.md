@@ -1596,6 +1596,10 @@ egress, spend, media generation, and production readiness remain No-Go.
   materialized corpus identity recorded below.
 - OWNER replan `5422439650` preserves blocked head `134fbd9` and authorizes one
   H3 limited to the four reproduced route/freeze/safe-reader root causes.
+- Exact-head H3 `6d741aec9a2a56d54034e0092a2e24d535079517` is preserved as
+  blocked review evidence. OWNER replan `5423165038` authorizes H4 only for
+  full freeze-value parity, exact PASS receipt grammar, and candidate-author
+  exclusion derived from trusted bounded Git history.
 - C1 is preserved and pushed at
   `205c02b3bac633d023d753356bc966c194ed36a7`; the preflight blob remains
   `c554eaf7f73ea081434b1e2f818441fe0bc3eee9`.
@@ -1612,6 +1616,11 @@ egress, spend, media generation, and production readiness remain No-Go.
 - Candidate review state is `PENDING_EXTERNAL_REVIEW`. Architecture/scope,
   security/trust, readability/feasibility, and mutation/false-pass reviews must
   bind one exact candidate head/tree before any authoritative C2 push or C3.
+- H4 accepts review credit only from four exact, ASCII, digest-bound receipt
+  bodies. Reviewer names and emails are normalized and must be distinct from
+  the actual candidate authors derived from the fixed base-to-C2 Git history;
+  caller-declared omission cannot create independence. GitHub comment-author
+  authentication remains a C3 external-orchestration responsibility.
 - C3 is not started. It may add only the RED-freeze file after all four reviews
   pass. C4 may later change only the marked executor region; the dispatcher,
   acceptance test, and all other production bytes stay frozen. No correction

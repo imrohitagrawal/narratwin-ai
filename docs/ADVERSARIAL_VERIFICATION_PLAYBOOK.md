@@ -134,7 +134,9 @@ the real executor satisfy the frozen 40 expectations without changing them.
 - Four independent reviews bind one exact C2 head/tree while candidate review
   state remains `PENDING_EXTERNAL_REVIEW`.
 - Only OWNER-enumerated corrections may occur before C3. H3 follows preserved
-  blocked head `134fbd9`; all four exact-head reviews rerun.
+  blocked head `134fbd9`; H4 follows preserved blocked H3 head `6d741ae` and is
+  limited to schema-value parity, exact PASS grammar, and Git-derived author
+  exclusion. All four exact-head reviews rerun after each authorized head.
 - C3 adds only `adversarial-convergence-red-freeze-v1.json` and binds the C2
   objects, corpus identities, protected-source digest, dispatcher, acceptance
   test, schema, guardrail, skeleton, and four durable review receipts.
@@ -184,6 +186,30 @@ responsibility.
 Residual risk before C3 is external-review authenticity and exact candidate
 identity; before C4 it is the intentionally absent executor. Neither is a
 product/runtime risk because the framework has no activation authority.
+
+### Review receipt grammar and candidate authors
+
+Each receipt `content` is exactly seven LF-delimited, ASCII lines, with no
+prefix, suffix, alternate disposition, or substring interpretation:
+
+```text
+ISSUE435_REVIEW_V1
+role=<exact frozen role>
+disposition=PASS
+head=<exact lowercase 40-hex C2 head>
+tree=<exact lowercase 40-hex C2 tree>
+reviewer=<canonical lower-case name <canonical lower-case email>>
+url=<exact ASCII-decimal Issue #435 comment URL>
+```
+
+The application validates every freeze value constraint, additionally requires
+exactly four ordered receipts, and binds the digest to the exact content above.
+Candidate authors are not caller declarations: a bounded, NUL-framed Git log
+over the trusted base-to-C2 history supplies normalized `name <email>` values.
+The declaration must equal that derived ordered unique list. Reviewer names and
+emails are independently unique and neither normalized component may equal any
+candidate-author component. C3 must still authenticate durable GitHub comment
+authorship externally; local receipt parsing does not prove GitHub identity.
 
 ## Review finding triage and correction outcome
 

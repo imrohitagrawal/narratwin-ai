@@ -298,9 +298,12 @@ def _valid_freeze() -> dict[str, object]:
     roles = ("ARCHITECTURE_SCOPE_PHASE", "SECURITY_TRUST", "READABILITY_FEASIBILITY", "MUTATION_FALSE_PASS")
     reviews = []
     for index, role in enumerate(roles, start=1):
-        content = f"{role} PASS"
-        reviews.append({"role": role, "reviewer": f"reviewer-{index}", "disposition": "PASS", "head": "a" * 40, "tree": "b" * 40, "url": f"https://github.com/imrohitagrawal/narratwin-ai/issues/435#issuecomment-{index}", "content": content, "contentSha256": hashlib.sha256(content.encode()).hexdigest()})
-    return {"schemaVersion": "AdversarialConvergenceRedFreezeV1", "issue": 435, "activation": "NONE", "authorityEffect": "NO_AUTHORITY_EFFECT", "correction": {"rejectedHead": "8d83713ed09dc626e24f1fe063e6afd9cfa5e8e9", "wave": 1, "authors": ["candidate"]}, "c2": {"head": "a" * 40, "tree": "b" * 40, "diffSha256": "c" * 64}, "artifacts": artifacts, "reviews": reviews}
+        reviewer = f"reviewer-{index} <reviewer-{index}@example.test>"
+        url = f"https://github.com/imrohitagrawal/narratwin-ai/issues/435#issuecomment-{index}"
+        content = f"ISSUE435_REVIEW_V1\nrole={role}\ndisposition=PASS\nhead={'a' * 40}\ntree={'b' * 40}\nreviewer={reviewer}\nurl={url}"
+        reviews.append({"role": role, "reviewer": reviewer, "disposition": "PASS", "head": "a" * 40, "tree": "b" * 40, "url": url, "content": content, "contentSha256": hashlib.sha256(content.encode()).hexdigest()})
+    author = "rohit agrawal <rohit.ra.agrawal@gmail.com>"
+    return {"schemaVersion": "AdversarialConvergenceRedFreezeV1", "issue": 435, "activation": "NONE", "authorityEffect": "NO_AUTHORITY_EFFECT", "correction": {"rejectedHead": "8d83713ed09dc626e24f1fe063e6afd9cfa5e8e9", "wave": 1, "authors": [author]}, "c2": {"head": "a" * 40, "tree": "b" * 40, "diffSha256": "c" * 64}, "artifacts": artifacts, "reviews": reviews}
 
 
 def test_schema_accepts_complete_freeze_and_rejects_duplicate_reviews() -> None:
@@ -318,9 +321,68 @@ def test_application_freeze_shape_rejects_nested_drift_and_invalid_review_url() 
     assert _module_probe(expression, input_text=json.dumps(freeze)) is True
     cast(dict[str, object], freeze["c2"])["unexpected"] = True
     assert _module_probe(expression, input_text=json.dumps(freeze)) is False
+
+
+def test_application_freeze_values_enforce_schema_constraints_and_exact_pass() -> None:
+    expression = "m['_closed_freeze_shape'](json.loads(sys.stdin.read()))"
+    valid = _valid_freeze()
+    assert _module_probe(expression, input_text=json.dumps(valid)) is True
+    mutations: list[dict[str, object]] = []
+    for mutate in ("unicode_url", "blocking_content", "boolean_wave", "long_author", "long_reviewer", "uppercase_oid", "uppercase_sha"):
+        broken = copy.deepcopy(valid)
+        reviews = cast(list[dict[str, object]], broken["reviews"])
+        if mutate == "unicode_url":
+            reviews[0]["url"] = "https://github.com/imrohitagrawal/narratwin-ai/issues/435#issuecomment-١"
+        elif mutate == "blocking_content":
+            reviews[0]["content"] = f"BLOCK: DO NOT PASS {'a' * 40} {'b' * 40}"
+            reviews[0]["contentSha256"] = hashlib.sha256(cast(str, reviews[0]["content"]).encode()).hexdigest()
+        elif mutate == "boolean_wave":
+            cast(dict[str, object], broken["correction"])["wave"] = True
+        elif mutate == "long_author":
+            cast(dict[str, object], broken["correction"])["authors"] = ["x" * 161]
+        elif mutate == "long_reviewer":
+            reviews[0]["reviewer"] = "x" * 161
+        elif mutate == "uppercase_oid":
+            cast(dict[str, object], broken["c2"])["head"] = "A" * 40
+        else:
+            cast(dict[str, object], broken["c2"])["diffSha256"] = "C" * 64
+        mutations.append(broken)
+    assert _draft202012_errors(mutations[1]) == []
+    assert all(_draft202012_errors(item) for index, item in enumerate(mutations) if index != 1)
+    assert all(_module_probe(expression, input_text=json.dumps(item)) is False for item in mutations)
+    fewer_reviews = copy.deepcopy(valid)
+    cast(list[object], fewer_reviews["reviews"]).pop()
+    assert _draft202012_errors(fewer_reviews) == []
+    assert _module_probe(expression, input_text=json.dumps(fewer_reviews)) is False
+
+
+def test_review_provenance_rejects_declared_author_omission_and_normalized_collision() -> None:
+    expression = "m['_review_provenance'](json.loads(sys.stdin.read()),tuple(sys.argv[2:]))"
     freeze = _valid_freeze()
-    cast(list[dict[str, object]], freeze["reviews"])[0]["url"] = "not-a-durable-url"
-    assert _module_probe(expression, input_text=json.dumps(freeze)) is False
+    author = "rohit agrawal <rohit.ra.agrawal@gmail.com>"
+    assert _module_probe(expression, author, input_text=json.dumps(freeze)) is True
+    cast(dict[str, object], freeze["correction"])["authors"] = ["declared other <other@example.test>"]
+    assert _module_probe(expression, author, input_text=json.dumps(freeze)) is False
+    freeze = _valid_freeze()
+    cast(list[dict[str, object]], freeze["reviews"])[0]["reviewer"] = "rohit agrawal <other@example.test>"
+    assert _module_probe(expression, author, input_text=json.dumps(freeze)) is False
+    freeze = _valid_freeze()
+    cast(list[dict[str, object]], freeze["reviews"])[0]["reviewer"] = "other reviewer <rohit.ra.agrawal@gmail.com>"
+    assert _module_probe(expression, author, input_text=json.dumps(freeze)) is False
+
+
+def test_candidate_authors_are_parsed_from_bounded_framed_git_history() -> None:
+    expression = "(m['_candidate_authors'].__globals__.__setitem__('_git',lambda *_:m['GitResult']('OK',0,sys.stdin.buffer.read(),b'')),m['_candidate_authors'](m['Path']('.'),sys.argv[2]))[1]"
+    head = "d" * 40
+    hashes = (
+        "205c02b3bac633d023d753356bc966c194ed36a7", "b099747812bcd97f812358908cb847c351190bc3",
+        "8d83713ed09dc626e24f1fe063e6afd9cfa5e8e9", "134fbd91606eebbcdcff5f47b26b6d286acc1fa2",
+        "6d741aec9a2a56d54034e0092a2e24d535079517", head,
+    )
+    history = "".join(f"{commit}\0Rohit   Agrawal\0ROHIT.RA.AGRAWAL@GMAIL.COM\0" for commit in hashes)
+    assert _module_probe(expression, head, input_text=history) == ["rohit agrawal <rohit.ra.agrawal@gmail.com>"]
+    assert _module_probe(expression, head, input_text=history[:-1]) is None
+    assert _module_probe(expression, head, input_text=history.replace(hashes[0], "e" * 40, 1)) is None
 
 
 def test_test_oracle_is_literal_and_candidate_is_only_a_subprocess() -> None:
