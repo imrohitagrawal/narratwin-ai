@@ -494,6 +494,7 @@ def test_candidate_authors_are_parsed_from_bounded_framed_git_history() -> None:
         "8d83713ed09dc626e24f1fe063e6afd9cfa5e8e9", "134fbd91606eebbcdcff5f47b26b6d286acc1fa2",
         "6d741aec9a2a56d54034e0092a2e24d535079517", "9bd0a2786ca41e720a275e70a2c98470a3f3aa38", "6b681b4acc419d2fa63c35862d6b6185ce82dd50", "7a17fe323a8c9acd9ea887f9932e4ca79ff02853", "26347f466778e946cc3b5aa8fa110f4597b279e2", "e6821c579c7bc1a28778278954cb52de7bf41dbb", "55a3911c3b2b35ae681b647e143c492e6a4a8cad", "bf795a2760479784012fff6e644ec5d102b3caf2",
         "8fa7667b1d613b1470195ff712763aac5b5e048c", "0ae2593eca92c4e9657a04cb45152d7be839a48b", "a4d903dfb5b0c40aabb4117a29a901db0972182f",
+        "dcbe15d58dff5ceafe7319e2baa3302ff01b6510",
         head,
     )
     history = "".join(f"{commit}\0Rohit   Agrawal\0ROHIT.RA.AGRAWAL@GMAIL.COM\0" for commit in hashes)

@@ -16,9 +16,7 @@ The preserved-H4 additive H5 budget correction is authorized by
 The exact three-root H6 validation correction is authorized by
 <https://github.com/imrohitagrawal/narratwin-ai/issues/435#issuecomment-5425499794>.
 The final C4 false-acceptance recovery is authorized by <https://github.com/imrohitagrawal/narratwin-ai/issues/435#issuecomment-5428186737>.
-The hosted detached-merge recovery and additive fast-forward correction are
-authorized by <https://github.com/imrohitagrawal/narratwin-ai/issues/435#issuecomment-5429174756>
-and <https://github.com/imrohitagrawal/narratwin-ai/issues/435#issuecomment-5429198021>.
+Hosted detached-merge recovery is authorized by `issuecomment-5429174756` and its additive fast-forward correction by `issuecomment-5429198021`.
 The framework branch starts at
 `a6284f7d8f1a14ef4c9a99493d6b06046505f20c`. C1 is preserved at
 `205c02b3bac633d023d753356bc966c194ed36a7`; its preflight blob must remain
@@ -139,9 +137,7 @@ the real executor satisfy the frozen 40 expectations without changing them.
 
 - C1 changes only the preflight and is immutable afterward.
 - C2 cumulatively changes all 19 non-freeze paths and contains no freeze file.
-- The additive recovery preserves the prior reviewed C3/C4 as rejected history,
-  removes their freeze from the new C2 tree, and appends a new C3/C4 without
-  rewriting, merging, dropping, or force-pushing history.
+- The additive recovery preserves prior C3/C4 as rejected history, removes that freeze from the new C2 tree, and appends C3/C4 without history rewriting or force push.
 - Four independent reviews bind one exact C2 head/tree while candidate review
   state remains `PENDING_EXTERNAL_REVIEW`.
 - Only OWNER-enumerated corrections may occur before C3. H3 follows preserved
@@ -164,13 +160,7 @@ The exact dispatcher routes only
 acceptance file. Lookalikes receive no authority, and the mutable worker CLI
 cannot declare repository GREEN. Worker exits are diagnostic:
 
-On GitHub `pull_request`, ambient `HEAD` is an untrusted synthetic merge. The
-route selects its candidate second parent only when the checkout is detached,
-the merge has exactly two ordered parents, and `GITHUB_HEAD_REF`,
-`GITHUB_BASE_SHA`, and `GITHUB_HEAD_SHA` are exact canonical values matching
-the approved branch and those parents. Attached, missing, malformed, reversed,
-or conflicting topology fails closed. History, diff, paths, blobs, freeze,
-authors, protected source, and phase are all evaluated at that validated head.
+On GitHub `pull_request`, ambient `HEAD` is untrusted; the route selects its candidate second parent only for a detached two-parent merge whose exact branch/base/head environment matches those ordered parents. Attached, missing, malformed, reversed, or conflicting topology fails closed; all evidence is evaluated at the validated candidate head.
 
 | Exit | Kind | Meaning |
 |---:|---|---|
@@ -185,7 +175,7 @@ acceptance file passes in full.
 
 Mandatory readability evidence is recorded for the four C2 designated paths:
 `docs/ENGINEERING_PROCESS_RCA.md` 71/80,
-`scripts/quality/adversarial_convergence.py` 554/900 and `tests/unit/test_adversarial_convergence.py` 873/1000, with
+`scripts/quality/adversarial_convergence.py` 555/900 and `tests/unit/test_adversarial_convergence.py` 874/1000, with
 `tests/unit/test_quality_dispatcher.py` 83/100. All remain below the 90-percent
 stop and require independent exact-head readability disposition. The only
 production function above 60 logical lines is the 63-line fail-closed repository
