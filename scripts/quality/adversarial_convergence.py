@@ -228,8 +228,8 @@ ISSUE435_REJECTED = "8d83713ed09dc626e24f1fe063e6afd9cfa5e8e9"
 ISSUE435_BLOCKED = "134fbd91606eebbcdcff5f47b26b6d286acc1fa2"
 ISSUE435_H6, ISSUE435_C2_BASE, ISSUE435_C2_HARDENED, ISSUE435_C2_TYPED, ISSUE435_C2 = "7a17fe323a8c9acd9ea887f9932e4ca79ff02853", "26347f466778e946cc3b5aa8fa110f4597b279e2", "e6821c579c7bc1a28778278954cb52de7bf41dbb", "55a3911c3b2b35ae681b647e143c492e6a4a8cad", "bf795a2760479784012fff6e644ec5d102b3caf2"
 ISSUE435_PRIOR_C2, ISSUE435_PRIOR_C3, ISSUE435_PRIOR_C4 = "8fa7667b1d613b1470195ff712763aac5b5e048c", "0ae2593eca92c4e9657a04cb45152d7be839a48b", "a4d903dfb5b0c40aabb4117a29a901db0972182f"
-ISSUE435_ROUTE_RED, ISSUE435_ROUTE_C2, ISSUE435_ROUTE_BASE_BOUND, ISSUE435_ROUTE_HEAD_BOUND, ISSUE435_ROUTE_ADAPTER, ISSUE435_PORTABLE_C2, ISSUE435_BLOCKED_C3, ISSUE435_FALSE_RED_C2, ISSUE435_LABELED_C2, ISSUE435_PORTABLE_C3, ISSUE435_HOSTED_C4, ISSUE435_DIRECT_C2, ISSUE435_DIRECT_C3, ISSUE435_DIRECT_C4 = "dcbe15d58dff5ceafe7319e2baa3302ff01b6510", "8a9bdc41c63cb449afdc6bf7f806ef946a73faa2", "84f1430822d696537c41b5a022d3cc14d72becea", "c7886a86ad84f8c3e2ceb1a9f9c675e7f3d535da", "956aed3d78733259ba6a024dcbead6f2f6f43c40", "f82be816e349d13d8365b72fbeb51498d244755e", "cc394d4dadef3c32dc735fc84a2b9c49e3336985", "bf3a53ddac282a8daab61db2eaa5d030959eae0f", "f4eab6b3febb9feb78699930bf4a453a76ca6b9d", "6325fe3eddffc57d0ef066705b6bb3ca276f353b", "221ab84b75667176aaf1c34513bf6967d1390d5f", "317fb741327a599239fe3b86e5711821f5a2b226", "3f00bc5c2e88ee8598fdf12cedae5fcd1afa6d1e", "ce70e1dfee5fb6e88e86c7a86ca496cf103ea2bd"
-ISSUE435_HISTORY = (ISSUE435_C1, "b099747812bcd97f812358908cb847c351190bc3", ISSUE435_REJECTED, ISSUE435_BLOCKED, "6d741aec9a2a56d54034e0092a2e24d535079517", "9bd0a2786ca41e720a275e70a2c98470a3f3aa38", "6b681b4acc419d2fa63c35862d6b6185ce82dd50", ISSUE435_H6, ISSUE435_C2_BASE, ISSUE435_C2_HARDENED, ISSUE435_C2_TYPED, ISSUE435_C2, ISSUE435_PRIOR_C2, ISSUE435_PRIOR_C3, ISSUE435_PRIOR_C4, ISSUE435_ROUTE_RED, ISSUE435_ROUTE_C2, ISSUE435_ROUTE_BASE_BOUND, ISSUE435_ROUTE_HEAD_BOUND, ISSUE435_ROUTE_ADAPTER, ISSUE435_PORTABLE_C2, ISSUE435_BLOCKED_C3, ISSUE435_FALSE_RED_C2, ISSUE435_LABELED_C2, ISSUE435_PORTABLE_C3, ISSUE435_HOSTED_C4, ISSUE435_DIRECT_C2, ISSUE435_DIRECT_C3, ISSUE435_DIRECT_C4)
+ISSUE435_ROUTE_RED, ISSUE435_ROUTE_C2, ISSUE435_ROUTE_BASE_BOUND, ISSUE435_ROUTE_HEAD_BOUND, ISSUE435_ROUTE_ADAPTER, ISSUE435_PORTABLE_C2, ISSUE435_BLOCKED_C3, ISSUE435_FALSE_RED_C2, ISSUE435_LABELED_C2, ISSUE435_PORTABLE_C3, ISSUE435_HOSTED_C4, ISSUE435_DIRECT_C2, ISSUE435_DIRECT_C3, ISSUE435_DIRECT_C4, ISSUE435_OMITTED_C2 = "dcbe15d58dff5ceafe7319e2baa3302ff01b6510", "8a9bdc41c63cb449afdc6bf7f806ef946a73faa2", "84f1430822d696537c41b5a022d3cc14d72becea", "c7886a86ad84f8c3e2ceb1a9f9c675e7f3d535da", "956aed3d78733259ba6a024dcbead6f2f6f43c40", "f82be816e349d13d8365b72fbeb51498d244755e", "cc394d4dadef3c32dc735fc84a2b9c49e3336985", "bf3a53ddac282a8daab61db2eaa5d030959eae0f", "f4eab6b3febb9feb78699930bf4a453a76ca6b9d", "6325fe3eddffc57d0ef066705b6bb3ca276f353b", "221ab84b75667176aaf1c34513bf6967d1390d5f", "317fb741327a599239fe3b86e5711821f5a2b226", "3f00bc5c2e88ee8598fdf12cedae5fcd1afa6d1e", "ce70e1dfee5fb6e88e86c7a86ca496cf103ea2bd", "1fd860ccb37418f5c59cc05e825b645bc02498ba"
+ISSUE435_HISTORY = (ISSUE435_C1, "b099747812bcd97f812358908cb847c351190bc3", ISSUE435_REJECTED, ISSUE435_BLOCKED, "6d741aec9a2a56d54034e0092a2e24d535079517", "9bd0a2786ca41e720a275e70a2c98470a3f3aa38", "6b681b4acc419d2fa63c35862d6b6185ce82dd50", ISSUE435_H6, ISSUE435_C2_BASE, ISSUE435_C2_HARDENED, ISSUE435_C2_TYPED, ISSUE435_C2, ISSUE435_PRIOR_C2, ISSUE435_PRIOR_C3, ISSUE435_PRIOR_C4, ISSUE435_ROUTE_RED, ISSUE435_ROUTE_C2, ISSUE435_ROUTE_BASE_BOUND, ISSUE435_ROUTE_HEAD_BOUND, ISSUE435_ROUTE_ADAPTER, ISSUE435_PORTABLE_C2, ISSUE435_BLOCKED_C3, ISSUE435_FALSE_RED_C2, ISSUE435_LABELED_C2, ISSUE435_PORTABLE_C3, ISSUE435_HOSTED_C4, ISSUE435_DIRECT_C2, ISSUE435_DIRECT_C3, ISSUE435_DIRECT_C4, ISSUE435_OMITTED_C2)
 ISSUE435_PREFLIGHT = "docs/governance/preflights/issue-435.json"
 ISSUE435_PREFLIGHT_BLOB = "c554eaf7f73ea081434b1e2f818441fe0bc3eee9"
 ISSUE435_FREEZE = "docs/governance/adversarial-convergence-red-freeze-v1.json"
@@ -425,14 +425,13 @@ def _route_head(root: Path, branch: str) -> str:
     if ambient is None or local is None:
         return ""
     head = ambient.strip()
-    event_branch = os.environ.get("GITHUB_HEAD_REF", "").strip()
-    event_base = os.environ.get("GITHUB_BASE_SHA", "").strip()
-    event_head = os.environ.get("GITHUB_HEAD_SHA", "").strip()
-    if not any((event_branch, event_base, event_head)):
-        return head
+    raw = (os.environ.get("GITHUB_HEAD_REF", ""), os.environ.get("GITHUB_BASE_SHA", ""), os.environ.get("GITHUB_HEAD_SHA", ""))
+    event_branch, event_base, event_head = (value.strip() for value in raw)
+    if raw != (event_branch, event_base, event_head) or not any((event_branch, event_base, event_head)):
+        return head if raw == ("", "", "") else ""
     parents = _text(_git(root, "rev-list", "--parents", "-n", "1", head))
     fields = parents.split() if parents is not None else []
-    valid = branch == event_branch == ISSUE435_BRANCH and not local.strip() and (bool(event_head) and event_base == ISSUE435_BASE and _hex_text(event_head, 40) or not event_head and _hex_text(event_base, 40) and event_base != head and len(fields) == 2)
+    valid = branch == event_branch == ISSUE435_BRANCH and not local.strip() and event_base != (event_head or head) and (bool(event_head) and event_base == ISSUE435_BASE and _hex_text(event_head, 40) or not event_head and _hex_text(event_base, 40) and len(fields) == 2)
     direct = _git(root, "merge-base", "--is-ancestor", event_base, event_head or head) if valid and head == (event_head or head) else None
     return (event_head or head) if valid and (fields == [head, event_base, event_head] or direct is not None and direct.state == "OK" and direct.returncode == 0) else ""
 def inspect_issue435_repository(root: Path, branch: str) -> RouteInspection:
@@ -475,7 +474,7 @@ def inspect_issue435_repository(root: Path, branch: str) -> RouteInspection:
     phase = "C2"
     if not freeze_present:
         parent = _text(_git(root, "rev-parse", f"{head}^"))
-        if len(commits) != 30 or commits[-1] != head or parent is None or parent.strip() != ISSUE435_DIRECT_C4:
+        if len(commits) != 31 or commits[-1] != head or parent is None or parent.strip() != ISSUE435_OMITTED_C2:
             findings.append(FindingCode.ROUTE_DRIFT)
     else:
         raw = _git(root, "show", f"{head}:{ISSUE435_FREEZE}")
@@ -484,15 +483,15 @@ def inspect_issue435_repository(root: Path, branch: str) -> RouteInspection:
             findings.append(FindingCode.REVIEW_IDENTITY_MISMATCH)
         c2_value = parsed.document.get("c2") if isinstance(parsed.document, dict) else None
         c2_head = c2_value.get("head") if isinstance(c2_value, dict) else ""
-        if len(commits) == 31 and commits[29] == c2_head:
+        if len(commits) == 32 and commits[30] == c2_head:
             phase = "C3"
-            delta = _text(_git(root, "diff-tree", "--no-commit-id", "--name-only", "-r", commits[27]))
+            delta = _text(_git(root, "diff-tree", "--no-commit-id", "--name-only", "-r", commits[-1]))
             if delta is None or delta.splitlines() != [ISSUE435_FREEZE]:
                 findings.append(FindingCode.ROUTE_DRIFT)
-        elif len(commits) == 32 and commits[29] == c2_head:
+        elif len(commits) == 33 and commits[30] == c2_head:
             phase = "C4"
-            c3_delta = _text(_git(root, "diff-tree", "--no-commit-id", "--name-only", "-r", commits[27]))
-            c4_delta = _text(_git(root, "diff-tree", "--no-commit-id", "--name-only", "-r", commits[28]))
+            c3_delta = _text(_git(root, "diff-tree", "--no-commit-id", "--name-only", "-r", commits[-2]))
+            c4_delta = _text(_git(root, "diff-tree", "--no-commit-id", "--name-only", "-r", commits[-1]))
             if c3_delta is None or c3_delta.splitlines() != [ISSUE435_FREEZE] or c4_delta is None or c4_delta.splitlines() != ["scripts/quality/adversarial_convergence.py"]:
                 findings.append(FindingCode.ROUTE_DRIFT)
         else:
