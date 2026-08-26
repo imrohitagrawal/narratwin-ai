@@ -190,11 +190,11 @@ def _assert_case(case: dict[str, object], executor: Executor = _invoke_candidate
     if threat == "ACP-T07":
         assert actual.get("executionReceipts") == expected["executionReceipts"], "ACP-A07-EXECUTION-RECEIPTS"
     if threat == "ACP-T08":
-        assert cast(list[object], actual.get("observations", []))[4] == cast(list[object], expected["observations"])[4], "ACP-A08-REVIEW-TRUST"
+        assert isinstance(actual.get("observations"), list) and cast(list[object], actual["observations"])[4:5] == cast(list[object], expected["observations"])[4:5], "ACP-A08-REVIEW-TRUST"
     if threat == "ACP-T09":
-        assert cast(list[object], actual.get("observations", []))[4] == cast(list[object], expected["observations"])[4], "ACP-A09-EXPECTATION-BOUNDARY"
+        assert isinstance(actual.get("observations"), list) and cast(list[object], actual["observations"])[4:5] == cast(list[object], expected["observations"])[4:5], "ACP-A09-EXPECTATION-BOUNDARY"
     if threat == "ACP-T10":
-        assert cast(list[object], actual.get("observations", []))[5] == cast(list[object], expected["observations"])[5], "ACP-A10-AUTHORIZATION"
+        assert isinstance(actual.get("observations"), list) and cast(list[object], actual["observations"])[5:6] == cast(list[object], expected["observations"])[5:6], "ACP-A10-AUTHORIZATION"
     if threat == "ACP-T11":
         assert (actual.get("verdict"), actual.get("findings")) == (expected["verdict"], expected["findings"]), "ACP-A11-CHECKPOINT"
     assert set(actual) == {"verdict", "findings", "observations", "executionReceipts", "mutationReceipts", "activation", "authorityEffect"}, "ACP-A00-ENVELOPE"
@@ -499,7 +499,7 @@ def test_candidate_authors_are_parsed_from_bounded_framed_git_history() -> None:
         "84f1430822d696537c41b5a022d3cc14d72becea",
         "c7886a86ad84f8c3e2ceb1a9f9c675e7f3d535da",
         "956aed3d78733259ba6a024dcbead6f2f6f43c40",
-        "f82be816e349d13d8365b72fbeb51498d244755e", "cc394d4dadef3c32dc735fc84a2b9c49e3336985",
+        "f82be816e349d13d8365b72fbeb51498d244755e", "cc394d4dadef3c32dc735fc84a2b9c49e3336985", "bf3a53ddac282a8daab61db2eaa5d030959eae0f",
         head,
     )
     history = "".join(f"{commit}\0Rohit   Agrawal\0ROHIT.RA.AGRAWAL@GMAIL.COM\0" for commit in hashes)
