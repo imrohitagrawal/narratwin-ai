@@ -499,6 +499,7 @@ def test_candidate_authors_are_parsed_from_bounded_framed_git_history() -> None:
         "84f1430822d696537c41b5a022d3cc14d72becea",
         "c7886a86ad84f8c3e2ceb1a9f9c675e7f3d535da",
         "956aed3d78733259ba6a024dcbead6f2f6f43c40",
+        "f82be816e349d13d8365b72fbeb51498d244755e", "cc394d4dadef3c32dc735fc84a2b9c49e3336985",
         head,
     )
     history = "".join(f"{commit}\0Rohit   Agrawal\0ROHIT.RA.AGRAWAL@GMAIL.COM\0" for commit in hashes)
@@ -661,6 +662,9 @@ def test_hosted_route_head_accepts_only_exact_detached_synthetic_merge(tmp_path:
     checkout = tmp_path / "checkout"
     subprocess.run(["/usr/bin/git", "clone", "--quiet", "--no-local", str(ROOT), str(checkout)], check=True)
     head = os.environ.get("GITHUB_HEAD_SHA") or subprocess.check_output(["/usr/bin/git", "rev-parse", "HEAD"], cwd=checkout, text=True).strip()
+    source_diff = subprocess.check_output(["/usr/bin/git", "diff", "--binary", "--full-index", ISSUE435_BASE, head, "--"], cwd=ROOT)
+    cloned_diff = subprocess.check_output(["/usr/bin/git", "diff", "--binary", "--full-index", ISSUE435_BASE, head, "--"], cwd=checkout)
+    assert source_diff == cloned_diff
     subprocess.run(["/usr/bin/git", "checkout", "--quiet", "--detach", ISSUE435_BASE], cwd=checkout, check=True)
     subprocess.run(
         ["/usr/bin/git", "-c", "user.name=CI", "-c", "user.email=ci@example.invalid", "merge", "--quiet", "--no-ff", "--no-edit", head],
@@ -703,6 +707,8 @@ def test_route_inspector_never_reads_candidate_evidence_from_ambient_head() -> N
     source = MODULE_PATH.read_text(encoding="utf-8")
     inspector = source.split("def inspect_issue435_repository", 1)[1].split("def _resolve_branch", 1)[0]
     assert '"HEAD:' not in inspector and "..HEAD" not in inspector
+    freeze_validator = source.split("def _valid_freeze", 1)[1].split("def _budget_code", 1)[0]
+    assert '"--full-index"' in freeze_validator
 
 
 def test_matrix_cross_fields_reject_duplicates_missing_tests_and_coverage() -> None:
