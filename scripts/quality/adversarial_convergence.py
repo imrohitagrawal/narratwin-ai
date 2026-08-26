@@ -215,11 +215,240 @@ def validate_matrix_cross_fields(document: JsonValue) -> bool:
     tests_are_bound = all(row.get("evidenceClass") != "TEST" or isinstance(row.get("testIds"), list) and bool(row.get("testIds")) for row in rows)
     return len(set(identifiers)) == len(identifiers) and covered_threats == set(threats) and tests_are_bound
 # ISSUE435_EXECUTOR_V1_START
+def _execute_result(verdict: PhaseVerdict, findings: tuple[Finding, ...], trace: str, *evidence: object) -> ValidationResult:
+    states = {"A": StageState.ACCEPTED, "R": StageState.REJECTED, "N": StageState.NOT_APPLICABLE, "X": StageState.NOT_REACHED}
+    reasons = {"A": "contract satisfied", "R": "rejected", "N": "not applicable", "X": "blocked by rejected predecessor"}
+    observations = tuple(StageObservation(stage, states[symbol], 0 if symbol == "X" else 1, reasons[symbol], tuple(item.code for item in findings if item.stage is stage) if symbol == "R" else ()) for stage, symbol in zip(ProcessingStage, trace, strict=True))
+    executions = cast(tuple[ExecutionReceipt, ...], evidence[0]) if evidence else ()
+    mutations = cast(tuple[MutationReceipt, ...], evidence[1]) if len(evidence) > 1 else ()
+    return ValidationResult(verdict, findings, observations, executions, mutations, ACTIVATION, AUTHORITY_EFFECT)
+def _execute_invalid(code: FindingCode, stage: ProcessingStage, location: str, *settings: object) -> ValidationResult:
+    verdict = next((item for item in settings if isinstance(item, PhaseVerdict)), PhaseVerdict.INVALID)
+    blocker = next((item for item in settings if isinstance(item, BlockerClass)), BlockerClass.IMPLEMENTATION)
+    trace = next((item for item in settings if isinstance(item, str) and not isinstance(item, PhaseVerdict | BlockerClass)), "NNRXXXXX")
+    return _execute_result(verdict, (_finding(code, stage, location, blocker),), trace)
+def _execute_closed(value: JsonValue, keys: str) -> bool:
+    return isinstance(value, dict) and set(value) == set(keys.split())
+def _execute_strings(value: JsonValue, *requirements: bool) -> bool:
+    nonempty, unique = (requirements + (False, False))[:2]
+    return isinstance(value, list) and (bool(value) or not nonempty) and all(isinstance(item, str) and (bool(item) or not nonempty) for item in value) and (not unique or len(value) == len(set(cast(list[str], value))))
+def _execute_schema_invalid() -> ValidationResult:
+    return _execute_invalid(FindingCode.SCHEMA_DRIFT, ProcessingStage.SCHEMA, "/payload")
+def _execute_filesystem(payload: dict[str, JsonValue]) -> ValidationResult:
+    relative, kinds = payload["relativePath"], payload["componentKinds"]
+    if not isinstance(relative, str) or not _valid_relative_path(relative):
+        return _execute_invalid(FindingCode.UNSAFE_FILESYSTEM_INPUT, ProcessingStage.BOUNDS, "/payload/relativePath", "RXXXXXXX")
+    if not isinstance(kinds, list) or not kinds:
+        return _execute_invalid(FindingCode.UNSAFE_FILESYSTEM_INPUT, ProcessingStage.BOUNDS, "/payload/componentKinds", "RXXXXXXX")
+    bad = next((index for index, kind in enumerate(kinds) if not isinstance(kind, str) or kind != ("DIRECTORY" if index < len(kinds) - 1 else "REGULAR_FILE")), None)
+    if bad is not None or payload["nofollowAvailable"] is not True or payload["stableIdentity"] is not True:
+        location = f"/payload/componentKinds/{bad}" if bad is not None else "/payload"
+        return _execute_invalid(FindingCode.UNSAFE_FILESYSTEM_INPUT, ProcessingStage.BOUNDS, location, "RXXXXXXX")
+    if len(kinds) != len(relative.split("/")):
+        return _execute_invalid(FindingCode.UNSAFE_FILESYSTEM_INPUT, ProcessingStage.BOUNDS, "/payload/componentKinds", "RXXXXXXX")
+    sizes = payload["declaredBytes"], payload["readBytes"], payload["limitBytes"]
+    if not all(type(value) is int for value in sizes):
+        return _execute_schema_invalid()
+    declared, read, limit = cast(tuple[int, int, int], sizes)
+    if min(declared, read, limit) < 0 or declared > limit:
+        return _execute_invalid(FindingCode.INPUT_TOO_LARGE, ProcessingStage.BOUNDS, "/payload/declaredBytes", "RXXXXXXX")
+    if declared != read:
+        return _execute_invalid(FindingCode.RESOURCE_FAILURE, ProcessingStage.BOUNDS, "/payload/readBytes", "RXXXXXXX")
+    return _execute_result(PhaseVerdict.VALID, (), "ANNNNNNA")
+def _execute_json(payload: dict[str, JsonValue]) -> ValidationResult:
+    raw, digest = payload["raw"], payload["rawSha256"]
+    limits = payload["maxBytes"], payload["maxDepth"], payload["maxMembers"]
+    if not isinstance(raw, str) or not _hex_text(digest, 64) or not all(type(value) is int for value in limits):
+        return _execute_schema_invalid()
+    parsed_limits = cast(tuple[int, int, int], limits)
+    if min(parsed_limits) <= 0:
+        return _execute_schema_invalid()
+    parsed = parse_json_bytes(raw.encode("utf-8"), cast(str, digest), ParseLimits(*parsed_limits))
+    if not parsed.findings:
+        return _execute_result(PhaseVerdict.VALID, (), "AANANNNA")
+    finding = parsed.findings[0]
+    stage = ProcessingStage.BOUNDS if finding.code is FindingCode.INPUT_TOO_LARGE else ProcessingStage.PARSE
+    return _execute_invalid(finding.code, stage, "/payload/raw", "RXXXXXXX" if stage is ProcessingStage.BOUNDS else "ARXXXXXX")
+def _execute_document(payload: dict[str, JsonValue]) -> ValidationResult:
+    document = payload["document"]
+    expected = {"schemaVersion": "FrameworkEvidenceV1", "reviewState": "PENDING_EXTERNAL_REVIEW"}
+    if document == expected and isinstance(document, dict):
+        return _execute_result(PhaseVerdict.VALID, (), "NNANNNNA")
+    extra = next((key for key in document if key not in expected), "document") if isinstance(document, dict) else "document"
+    return _execute_invalid(FindingCode.SCHEMA_DRIFT, ProcessingStage.SCHEMA, f"/payload/document/{extra}")
+def _execute_pipeline(payload: dict[str, JsonValue]) -> ValidationResult:
+    callbacks = payload["callbacks"]
+    if not isinstance(callbacks, list) or not callbacks or len(callbacks) > len(ProcessingStage):
+        return _execute_schema_invalid()
+    rejected = False
+    stages = list(ProcessingStage)
+    for index, value in enumerate(callbacks):
+        if not _execute_closed(value, "stage predecessors state"):
+            return _execute_schema_invalid()
+        row = cast(dict[str, JsonValue], value)
+        stage, predecessors, state = row["stage"], row["predecessors"], row["state"]
+        if not isinstance(stage, str) or stage not in ProcessingStage or not _execute_strings(predecessors) or not isinstance(state, str) or state not in StageState:
+            return _execute_schema_invalid()
+        expected = [str(item) for item in stages[:index]]
+        if stage != str(stages[index]) or predecessors != expected or state == StageState.NOT_REACHED and not rejected:
+            return _execute_invalid(FindingCode.PREDECESSOR_VIOLATION, ProcessingStage.GRAPH_CONFLICT, f"/payload/callbacks/{index}/predecessors", "NNNNNNRX")
+        if rejected and state != StageState.NOT_REACHED:
+            return _execute_invalid(FindingCode.LATE_STAGE_EXECUTION, ProcessingStage.GRAPH_CONFLICT, f"/payload/callbacks/{index}", "NNNNNNRX")
+        rejected = rejected or state == StageState.REJECTED
+    return _execute_result(PhaseVerdict.VALID, (), "NNNNNNAA")
+def _execute_outcome(payload: dict[str, JsonValue]) -> ValidationResult:
+    contract_verdict, observed_verdict = payload["contractVerdict"], payload["observedVerdict"]
+    contract, observed = payload["contractFindings"], payload["observedFindings"]
+    if not isinstance(contract_verdict, str) or contract_verdict not in PhaseVerdict or not isinstance(observed_verdict, str) or observed_verdict not in PhaseVerdict or not _execute_strings(contract, False, True) or not _execute_strings(observed, False, True):
+        return _execute_schema_invalid()
+    if contract_verdict == observed_verdict and contract == observed:
+        return _execute_result(PhaseVerdict.VALID, (), "NNNNNNNA")
+    findings = [_finding(FindingCode.OUTCOME_NOT_EXACT, ProcessingStage.PHASE_VERDICT, "/payload/observedFindings")]
+    if set(cast(list[str], observed)) < set(cast(list[str], contract)):
+        findings.append(_finding(FindingCode.SUBSET_OUTCOME, ProcessingStage.PHASE_VERDICT, "/payload/observedFindings"))
+    return _execute_result(PhaseVerdict.INVALID, tuple(findings), "NNNNNNNR")
+def _execute_mutations(payload: dict[str, JsonValue]) -> ValidationResult:
+    required, values = payload["requiredMutantIds"], payload["receipts"]
+    keys = "mutantId assertionId executionCount failureCount state observedVerdict observedFindingCodes"
+    if not _execute_strings(required, True, True) or not isinstance(values, list) or len(values) != len(cast(list[str], required)) or any(not _execute_closed(value, keys) for value in values):
+        return _execute_schema_invalid()
+    rows = cast(list[dict[str, JsonValue]], values)
+    for index, row in enumerate(rows):
+        if row["mutantId"] != cast(list[str], required)[index] or not isinstance(row["assertionId"], str) or not row["assertionId"] or type(row["executionCount"]) is not int or type(row["failureCount"]) is not int or row["state"] not in MutationState or row["observedVerdict"] not in PhaseVerdict or not _execute_strings(row["observedFindingCodes"], False, True):
+            return _execute_schema_invalid()
+    receipts = tuple(MutationReceipt(cast(str, row["mutantId"]), cast(str, row["assertionId"]), cast(int, row["executionCount"]), cast(int, row["failureCount"]), MutationState(cast(str, row["state"])), PhaseVerdict(cast(str, row["observedVerdict"])), tuple(FindingCode(code) for code in cast(list[str], row["observedFindingCodes"]))) for row in rows)
+    bad = next((index for index, row in enumerate(rows) if row["executionCount"] != 1 or row["failureCount"] != 1 or row["state"] != MutationState.KILLED), None)
+    if bad is None:
+        return _execute_result(PhaseVerdict.VALID, (), "NNNNANNA", (), receipts)
+    field = "executionCount" if rows[bad]["executionCount"] != 1 else "state"
+    code = FindingCode.MUTANT_NOT_EXECUTED if field == "executionCount" else FindingCode.MUTANT_SURVIVED
+    finding = _finding(code, ProcessingStage.INDEPENDENT_TRUST, f"/payload/receipts/{bad}/{field}")
+    return _execute_result(PhaseVerdict.INVALID, (finding,), "NNNNRXXX", (), receipts)
+def _execute_ledger(payload: dict[str, JsonValue]) -> ValidationResult:
+    candidate, phase, order, values = payload["candidate"], payload["phase"], payload["contractOrder"], payload["rows"]
+    keys = "candidate ordinal phase stage callbackCount observedState observedFindingCodes"
+    if not isinstance(candidate, str) or not candidate or not isinstance(phase, str) or not phase or not _execute_strings(order, True, False) or not isinstance(values, list) or any(not _execute_closed(value, keys) for value in values):
+        return _execute_schema_invalid()
+    rows = cast(list[dict[str, JsonValue]], values)
+    for row in rows:
+        if not isinstance(row["candidate"], str) or not row["candidate"] or type(row["ordinal"]) is not int or not isinstance(row["phase"], str) or not row["phase"] or row["stage"] not in ProcessingStage or type(row["callbackCount"]) is not int or row["callbackCount"] not in {0, 1} or row["observedState"] not in StageState or not _execute_strings(row["observedFindingCodes"], False, True):
+            return _execute_schema_invalid()
+    receipts = tuple(ExecutionReceipt(cast(str, row["candidate"]), cast(int, row["ordinal"]), cast(str, row["phase"]), ProcessingStage(cast(str, row["stage"])), cast(int, row["callbackCount"]), StageState(cast(str, row["observedState"])), tuple(FindingCode(code) for code in cast(list[str], row["observedFindingCodes"]))) for row in rows)
+    expected_order = [str(stage) for stage in list(ProcessingStage)[:len(cast(list[str], order))]]
+    location = "/payload/rows"
+    if order == expected_order and len(rows) == len(cast(list[str], order)):
+        for index, row in enumerate(rows):
+            semantic = row["candidate"] == candidate and row["phase"] == phase and row["ordinal"] == index + 1 and row["stage"] == cast(list[str], order)[index]
+            semantic = semantic and (row["callbackCount"] == 0) == (row["observedState"] == StageState.NOT_REACHED)
+            semantic = semantic and (row["observedState"] == StageState.REJECTED or not row["observedFindingCodes"])
+            if not semantic:
+                location = f"/payload/rows/{index}/ordinal" if row["ordinal"] != index + 1 else f"/payload/rows/{index}"
+                break
+        else:
+            return _execute_result(PhaseVerdict.VALID, (), "NNNNANNA", receipts)
+    elif rows:
+        location = "/payload/rows/0" if len(rows) == len(cast(list[str], order)) else location
+    finding = _finding(FindingCode.MOCK_LEDGER_INVALID, ProcessingStage.INDEPENDENT_TRUST, location)
+    return _execute_result(PhaseVerdict.INVALID, (finding,), "NNNNRXXX", receipts)
+def _execute_reviews(payload: dict[str, JsonValue]) -> ValidationResult:
+    author, head, tree, required, values = payload["candidateAuthor"], payload["head"], payload["tree"], payload["requiredRoles"], payload["receipts"]
+    roles = ["ARCHITECTURE_SCOPE_PHASE", "SECURITY_TRUST", "READABILITY_FEASIBILITY", "MUTATION_FALSE_PASS"]
+    keys = "role reviewer source disposition head tree"
+    if not isinstance(author, str) or not author or not _hex_text(head, 40) or not _hex_text(tree, 40) or not _execute_strings(required, True, False) or not isinstance(values, list):
+        return _execute_schema_invalid()
+    if required != roles or len(values) != 4 or [value.get("role") for value in values if isinstance(value, dict)] != roles:
+        return _execute_invalid(FindingCode.REQUIRED_REVIEW_MISSING, ProcessingStage.INDEPENDENT_TRUST, "/payload/receipts", PhaseVerdict.BLOCKED_EVIDENCE, "NNNNRXXX", BlockerClass.EVIDENCE)
+    if any(not _execute_closed(value, keys) for value in values):
+        return _execute_schema_invalid()
+    rows = cast(list[dict[str, JsonValue]], values)
+    reviewers: set[str] = set()
+    sources: set[str] = set()
+    for index, row in enumerate(rows):
+        if any(not isinstance(row[field], str) or not row[field] for field in keys.split()) or not _hex_text(row["head"], 40) or not _hex_text(row["tree"], 40):
+            return _execute_schema_invalid()
+        if row["reviewer"] == author:
+            return _execute_invalid(FindingCode.REVIEW_SELF_ATTESTED, ProcessingStage.INDEPENDENT_TRUST, f"/payload/receipts/{index}/reviewer", "NNNNRXXX")
+        field = "disposition" if row["disposition"] != "PASS" else "head" if row["head"] != head else "tree" if row["tree"] != tree else "reviewer" if cast(str, row["reviewer"]) in reviewers else "source" if cast(str, row["source"]) in sources else ""
+        if field:
+            return _execute_invalid(FindingCode.REVIEW_IDENTITY_MISMATCH, ProcessingStage.INDEPENDENT_TRUST, f"/payload/receipts/{index}/{field}", "NNNNRXXX")
+        reviewers.add(cast(str, row["reviewer"]))
+        sources.add(cast(str, row["source"]))
+    return _execute_result(PhaseVerdict.VALID, (), "NNNNANNA")
+def _execute_expectation(payload: dict[str, JsonValue]) -> ValidationResult:
+    members, imports, calls, identifiers = payload["executorMembers"], payload["productionImports"], payload["dynamicImportCalls"], payload["oracleIdentifiers"]
+    if not _execute_strings(members) or not _execute_strings(imports) or type(calls) is not int or not _execute_strings(identifiers):
+        return _execute_schema_invalid()
+    if members != ["kind", "payload"]:
+        bad = next((index for index, value in enumerate(cast(list[str], members)) if index > 1 or value not in {"kind", "payload"}), 0)
+        return _execute_invalid(FindingCode.EXPECTATION_NOT_INDEPENDENT, ProcessingStage.INDEPENDENT_TRUST, f"/payload/executorMembers/{bad}", "NNNNRXXX")
+    if imports != ["hashlib", "json"] or calls != 0 or identifiers:
+        return _execute_invalid(FindingCode.EXPECTATION_NOT_INDEPENDENT, ProcessingStage.INDEPENDENT_TRUST, "/payload/productionImports/0", "NNNNRXXX")
+    return _execute_result(PhaseVerdict.VALID, (), "NNNNANNA")
+def _execute_route(payload: dict[str, JsonValue]) -> ValidationResult:
+    trusted = {"branch": ISSUE435_BRANCH, "authorizedBranch": ISSUE435_BRANCH, "base": ISSUE435_BASE, "authorizedBase": ISSUE435_BASE, "preflightBlob": ISSUE435_PREFLIGHT_BLOB, "authorizedPreflightBlob": ISSUE435_PREFLIGHT_BLOB}
+    for field, trusted_value in trusted.items():
+        if payload[field] != trusted_value:
+            code = FindingCode.IDENTITY_MISMATCH if field == "preflightBlob" else FindingCode.ROUTE_DRIFT
+            return _execute_invalid(code, ProcessingStage.AUTHORIZATION, f"/payload/{field}", "NNNNNRXX")
+    values = payload["files"]
+    if not isinstance(values, list) or len(values) != 1 or not _execute_closed(values[0], "path status mode chargedLines cap readabilityReviewed"):
+        return _execute_invalid(FindingCode.ROUTE_DRIFT, ProcessingStage.AUTHORIZATION, "/payload/files", "NNNNNRXX")
+    row = cast(dict[str, JsonValue], values[0])
+    if type(row["chargedLines"]) is not int or type(row["cap"]) is not int or type(row["readabilityReviewed"]) is not bool:
+        return _execute_schema_invalid()
+    charged, cap = row["chargedLines"], row["cap"]
+    if charged < 0 or cap <= 0:
+        return _execute_schema_invalid()
+    expected_route = {"path": "scripts/quality/adversarial_convergence.py", "status": "M", "mode": "100644"}
+    for field, value in expected_route.items():
+        if row[field] != value:
+            return _execute_invalid(FindingCode.ROUTE_DRIFT, ProcessingStage.AUTHORIZATION, f"/payload/files/0/{field}", "NNNNNRXX")
+    if charged * 10 >= cap * 9:
+        return _execute_invalid(FindingCode.BUDGET_STOP, ProcessingStage.AUTHORIZATION, "/payload/files/0/chargedLines", PhaseVerdict.BLOCKED_IMPLEMENTATION, "NNNNNRXX")
+    if charged * 20 >= cap * 17 and row["readabilityReviewed"] is not True:
+        return _execute_invalid(FindingCode.BUDGET_REVIEW_REQUIRED, ProcessingStage.AUTHORIZATION, "/payload/files/0/readabilityReviewed", PhaseVerdict.BLOCKED_EVIDENCE, "NNNNNRXX", BlockerClass.EVIDENCE)
+    return _execute_result(PhaseVerdict.VALID, (), "NNNNNANA")
+def _execute_checkpoint(payload: dict[str, JsonValue]) -> ValidationResult:
+    keys = "reviewState activation authorityEffect expectedRed implementationBlockers evidenceBlockers boundHead candidateHead boundDiffSha256 candidateDiffSha256"
+    if set(payload) - set(keys.split()) or set(keys.split()) - set(payload) not in (set(), {"authorityEffect"}):
+        return _execute_schema_invalid()
+    constants = {"reviewState": "PENDING_EXTERNAL_REVIEW", "activation": ACTIVATION, "expectedRed": ["ACP.NOT_IMPLEMENTED"], "implementationBlockers": ["IMPLEMENTATION"], "evidenceBlockers": ["FOUR_EXTERNAL_REVIEWS"]}
+    if any(payload.get(field) != value for field, value in constants.items()):
+        return _execute_invalid(FindingCode.CHECKPOINT_INVALID, ProcessingStage.PHASE_VERDICT, "/payload", "NNNNNNNR")
+    if payload.get("authorityEffect") != AUTHORITY_EFFECT:
+        return _execute_invalid(FindingCode.CHECKPOINT_INVALID, ProcessingStage.PHASE_VERDICT, "/payload/authorityEffect", "NNNNNNNR")
+    for bound, candidate, width in (("boundHead", "candidateHead", 40), ("boundDiffSha256", "candidateDiffSha256", 64)):
+        if not _hex_text(payload.get(bound), width) or not _hex_text(payload.get(candidate), width) or payload[bound] != payload[candidate]:
+            return _execute_invalid(FindingCode.CHECKPOINT_INVALID, ProcessingStage.PHASE_VERDICT, f"/payload/{candidate}", "NNNNNNNR")
+    return _execute_result(PhaseVerdict.VALID, (), "NNNNNNNA")
+def _execute_resource(payload: dict[str, JsonValue]) -> ValidationResult:
+    capabilities, imported, operation = payload["capabilities"], payload["import"], payload["operation"]
+    if not _execute_closed(capabilities, "nofollow descriptorRelative") or not _execute_closed(imported, "module origin status errorType") or not _execute_closed(operation, "status errorType"):
+        return _execute_schema_invalid()
+    caps, imp, op = cast(dict[str, JsonValue], capabilities), cast(dict[str, JsonValue], imported), cast(dict[str, JsonValue], operation)
+    if type(caps["nofollow"]) is not bool or type(caps["descriptorRelative"]) is not bool or not isinstance(imp["module"], str) or not isinstance(imp["origin"], str) or not isinstance(imp["status"], str) or not (imp["errorType"] is None or isinstance(imp["errorType"], str)) or not isinstance(op["status"], str) or not (op["errorType"] is None or isinstance(op["errorType"], str)):
+        return _execute_schema_invalid()
+    for field in ("nofollow", "descriptorRelative"):
+        if caps[field] is not True:
+            return _execute_invalid(FindingCode.UNSAFE_FILESYSTEM_INPUT, ProcessingStage.BOUNDS, f"/payload/capabilities/{field}", PhaseVerdict.BLOCKED_IMPLEMENTATION, "RXXXXXXX")
+    import_valid = imp["module"] == "scripts.quality.adversarial_convergence" and imp["origin"] == "scripts/quality/adversarial_convergence.py" and imp["status"] == "AVAILABLE" and imp["errorType"] is None
+    if not import_valid:
+        return _execute_invalid(FindingCode.PLATFORM_FAILURE, ProcessingStage.BOUNDS, "/payload/import/status", PhaseVerdict.BLOCKED_IMPLEMENTATION, "RXXXXXXX")
+    if op["status"] != "COMPLETED" or op["errorType"] is not None:
+        return _execute_invalid(FindingCode.RESOURCE_FAILURE, ProcessingStage.BOUNDS, "/payload/operation/status", PhaseVerdict.BLOCKED_IMPLEMENTATION, "RXXXXXXX")
+    return _execute_result(PhaseVerdict.VALID, (), "ANNNNNNA")
 def execute(stimulus: Stimulus) -> ValidationResult:
-    """C2 boundary: C4 may replace only this marked executor region."""
-    del stimulus
-    finding = _finding(FindingCode.NOT_IMPLEMENTED, ProcessingStage.PHASE_VERDICT, "/")
-    return ValidationResult(PhaseVerdict.NOT_IMPLEMENTED, (finding,), (), (), (), ACTIVATION, AUTHORITY_EFFECT)
+    handlers = {"FILESYSTEM": _execute_filesystem, "JSON": _execute_json, "DOCUMENT": _execute_document, "PIPELINE": _execute_pipeline, "OUTCOME": _execute_outcome, "MUTATION_SET": _execute_mutations, "EXECUTION_LEDGER": _execute_ledger, "REVIEWS": _execute_reviews, "EXPECTATION_BOUNDARY": _execute_expectation, "ROUTE": _execute_route, "CHECKPOINT": _execute_checkpoint, "RESOURCE": _execute_resource}
+    shapes = {"FILESYSTEM": "relativePath componentKinds nofollowAvailable declaredBytes readBytes limitBytes stableIdentity", "JSON": "raw rawSha256 maxBytes maxDepth maxMembers", "DOCUMENT": "document", "PIPELINE": "callbacks", "OUTCOME": "contractVerdict contractFindings observedVerdict observedFindings", "MUTATION_SET": "requiredMutantIds receipts", "EXECUTION_LEDGER": "candidate phase contractOrder rows", "REVIEWS": "candidateAuthor head tree requiredRoles receipts", "EXPECTATION_BOUNDARY": "executorMembers productionImports dynamicImportCalls oracleIdentifiers", "ROUTE": "branch authorizedBranch base authorizedBase preflightBlob authorizedPreflightBlob files", "RESOURCE": "capabilities import operation"}
+    handler = handlers.get(stimulus.kind)
+    if handler is None:
+        return _execute_invalid(FindingCode.SCHEMA_DRIFT, ProcessingStage.SCHEMA, "/kind")
+    if stimulus.kind in shapes and set(stimulus.payload) != set(shapes[stimulus.kind].split()):
+        return _execute_schema_invalid()
+    try:
+        return handler(stimulus.payload)
+    except (AttributeError, KeyError, TypeError, ValueError, IndexError, OverflowError, MemoryError):
+        return _execute_schema_invalid()
 # ISSUE435_EXECUTOR_V1_END
 ISSUE435_BRANCH = "governance-435-adversarial-convergence-framework-v1"
 ISSUE435_BASE = "a6284f7d8f1a14ef4c9a99493d6b06046505f20c"
