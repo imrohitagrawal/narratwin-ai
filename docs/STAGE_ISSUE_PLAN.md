@@ -2778,8 +2778,9 @@ Serialized route:
    twelve test-owned mutants, complete contracts/adapters/docs, and a typed
    `ACP.NOT_IMPLEMENTED` executor.
 2. Architecture/scope/phase, security/trust, readability/feasibility, and
-   mutation/false-pass reviewers bind one immutable C2 candidate. At most one
-   bounded correction wave may precede C3; every review reruns.
+   mutation/false-pass reviewers bind one immutable C2 candidate. Blocked head
+   `134fbd9` is preserved and the exact H3 replan is authorized by
+   `issuecomment-5422439650`; every review reruns.
 3. C3 adds only `adversarial-convergence-red-freeze-v1.json`, binding C2
    objects, both corpus identities, protected-source digest, frozen dispatcher
    and acceptance artifacts, and four durable review receipts.
@@ -2792,7 +2793,7 @@ add 120 for a final 3,620. Per-path caps, 85-percent readability review,
 path/mode/history rules, and terminal disagreement/finding stops do not move.
 
 C2/C3 are intentionally RED and not merge-eligible. A new threat, semantic
-invariant, path, cap, corpus identity, second correction, post-freeze required
+invariant, path, cap, corpus identity, unapproved correction, post-freeze required
 finding, or unresolved review disagreement returns to the OWNER. No product,
 runtime, provider, media, network, credential, spend, deployment, publication,
 or release authority exists.

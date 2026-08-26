@@ -9,6 +9,8 @@ The controlling OWNER amendment is
 <https://github.com/imrohitagrawal/narratwin-ai/issues/435#issuecomment-5416186961>.
 The one-time materialized-corpus correction is authorized by
 <https://github.com/imrohitagrawal/narratwin-ai/issues/435#issuecomment-5421421524>.
+The blocked candidate findings and exact bounded H3 replan are authorized by
+<https://github.com/imrohitagrawal/narratwin-ai/issues/435#issuecomment-5422439650>.
 The framework branch starts at
 `a6284f7d8f1a14ef4c9a99493d6b06046505f20c`. C1 is preserved at
 `205c02b3bac633d023d753356bc966c194ed36a7`; its preflight blob must remain
@@ -131,7 +133,8 @@ the real executor satisfy the frozen 40 expectations without changing them.
 - C2 cumulatively changes all 19 non-freeze paths and contains no freeze file.
 - Four independent reviews bind one exact C2 head/tree while candidate review
   state remains `PENDING_EXTERNAL_REVIEW`.
-- At most one correction wave may occur before C3; all four reviews rerun.
+- Only OWNER-enumerated corrections may occur before C3. H3 follows preserved
+  blocked head `134fbd9`; all four exact-head reviews rerun.
 - C3 adds only `adversarial-convergence-red-freeze-v1.json` and binds the C2
   objects, corpus identities, protected-source digest, dispatcher, acceptance
   test, schema, guardrail, skeleton, and four durable review receipts.
@@ -160,7 +163,7 @@ acceptance file passes in full.
 Mandatory readability evidence is recorded for the C2 paths at or above 85
 percent: `docs/ENGINEERING_PROCESS_RCA.md` 71/80,
 `scripts/quality/adversarial_convergence.py` 539/600, and
-`tests/unit/test_quality_dispatcher.py` 88/100. All remain below the 90-percent
+`tests/unit/test_quality_dispatcher.py` 83/100. All remain below the 90-percent
 stop and require independent exact-head readability disposition. The only
 production function above 60 logical lines is the 61-line fail-closed repository
 inspector; it has two parameters, bounded early exits, and no semantic executor
@@ -176,7 +179,7 @@ responsibility.
 | Forged `sys.modules` oracle credit and implementation-derived results | ACP-T08/T09 AST import boundary plus stimulus-only handoff and test-owned literal expectations. |
 | macOS-only temporary roots | Tests use pytest `tmp_path`; production accepts an explicit trusted root. |
 | Oversized/compressed helpers and premature PASS prose | Function-length tests, per-file caps, mandatory readability review, and `PENDING_EXTERNAL_REVIEW`. |
-| Universal self-proving oracle growth | Finite N=40 corpus, 12 threats, 12 mutants, 3,500-line aggregate, one correction wave, and no automatic v2/reset. |
+| Universal self-proving oracle growth | Finite N=40 corpus, 12 threats, 12 mutants, 3,500-line aggregate, OWNER-enumerated corrections, and no automatic v2/reset. |
 
 Residual risk before C3 is external-review authenticity and exact candidate
 identity; before C4 it is the intentionally absent executor. Neither is a
@@ -201,7 +204,7 @@ checks evidence provenance, completeness, and integrity. Independent
 confirmation is required where the contract calls for it. The evidence,
 rationale, disposition, owner, and prevented action are durable review output.
 
-If the one bounded correction still has a blocker, return to an architecture
+If an authorized bounded correction still has a blocker, return to an architecture
 and authority checkpoint. Do not patch again automatically, declare the issue
 impossible, or abandon it. The OWNER may approve another finite plan, defer, or
 close out the attempt. A future root `CLAUDE.md` must be a thin pointer to

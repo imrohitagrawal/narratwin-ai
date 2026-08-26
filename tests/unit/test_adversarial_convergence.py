@@ -19,6 +19,7 @@ CORPUS_PATH = ROOT / "docs/governance/adversarial-convergence-framework-cases-v1
 SCHEMA_PATH = ROOT / "docs/governance/adversarial-convergence-framework-v1.schema.json"
 MODULE_PATH = ROOT / "scripts/quality/adversarial_convergence.py"
 FREEZE_PATH = ROOT / "docs/governance/adversarial-convergence-red-freeze-v1.json"
+ISSUE435_BRANCH = "governance-435-adversarial-convergence-framework-v1"
 CORPUS_DOMAIN = b"NARRATWIN-ADVERSARIAL-CONVERGENCE-CASES-V1\0"
 RAW_SHA256 = "59581f0530b9b56b68e9bfc313497b22d1be2ce371d0cb2c64ea2b3c01dc6a75"
 SEMANTIC_SHA256 = "3b2a0c4b3b13cf6ab71ec4e7a3dd4e3566a0c8195e3c7bed6bf956575e5f9fc6"
@@ -311,6 +312,17 @@ def test_schema_accepts_complete_freeze_and_rejects_duplicate_reviews() -> None:
     assert _draft202012_errors(duplicate)
 
 
+def test_application_freeze_shape_rejects_nested_drift_and_invalid_review_url() -> None:
+    expression = "m['_closed_freeze_shape'](json.loads(sys.stdin.read()))"
+    freeze = _valid_freeze()
+    assert _module_probe(expression, input_text=json.dumps(freeze)) is True
+    cast(dict[str, object], freeze["c2"])["unexpected"] = True
+    assert _module_probe(expression, input_text=json.dumps(freeze)) is False
+    freeze = _valid_freeze()
+    cast(list[dict[str, object]], freeze["reviews"])[0]["url"] = "not-a-durable-url"
+    assert _module_probe(expression, input_text=json.dumps(freeze)) is False
+
+
 def test_test_oracle_is_literal_and_candidate_is_only_a_subprocess() -> None:
     source = Path(__file__).read_text(encoding="utf-8")
     tree = ast.parse(source)
@@ -379,6 +391,25 @@ def test_path_and_descriptor_boundaries_reject_hostile_nodes(tmp_path: Path) -> 
     assert _module_probe(probe, str(tmp_path), "regular.json") is None
     assert _module_probe(probe, str(tmp_path), "target.json") == "ACP.BOUNDS.UNSAFE_FILESYSTEM_INPUT"
     assert _module_probe(probe, str(tmp_path), "fifo") == "ACP.BOUNDS.UNSAFE_FILESYSTEM_INPUT"
+
+
+def test_descriptor_boundary_detects_short_read_and_replacement(tmp_path: Path) -> None:
+    target = tmp_path / "target.json"
+    target.write_text("{}", encoding="utf-8")
+    runner = "import json,os,runpy,sys;m=runpy.run_path(sys.argv[1],run_name='probe');old=os.read;os.read=lambda fd,n:b'';r=m['read_bounded_regular_file'](m['Path'](sys.argv[2]),'target.json',8);print(json.dumps(str(r.finding.code)))"
+    completed = subprocess.run([sys.executable, "-I", "-P", "-c", runner, str(MODULE_PATH), str(tmp_path)], text=True, capture_output=True, check=False)
+    assert completed.returncode == 0 and json.loads(completed.stdout) == "ACP.VERDICT.RESOURCE_FAILURE"
+    replacement = tmp_path / "replacement.json"
+    replacement.write_text("[]", encoding="utf-8")
+    runner = "import json,os,runpy,sys;m=runpy.run_path(sys.argv[1],run_name='probe');old=os.read;done=[False];f=lambda fd,n:(os.replace(sys.argv[3],sys.argv[2]+'/target.json'),done.__setitem__(0,True),old(fd,n))[2] if not done[0] else old(fd,n);os.read=f;r=m['read_bounded_regular_file'](m['Path'](sys.argv[2]),'target.json',8);print(json.dumps(str(r.finding.code)))"
+    completed = subprocess.run([sys.executable, "-I", "-P", "-c", runner, str(MODULE_PATH), str(tmp_path), str(replacement)], text=True, capture_output=True, check=False)
+    assert completed.returncode == 0 and json.loads(completed.stdout) == "ACP.VERDICT.RESOURCE_FAILURE"
+
+
+def test_event_branch_resolution_accepts_detached_and_rejects_conflict() -> None:
+    expression = "m['_resolve_branch'](sys.argv[2],sys.argv[3])"
+    assert _module_probe(expression, ISSUE435_BRANCH, "") == ISSUE435_BRANCH
+    assert _module_probe(expression, ISSUE435_BRANCH, "conflict") == ""
 
 
 def test_matrix_cross_fields_reject_duplicates_missing_tests_and_coverage() -> None:

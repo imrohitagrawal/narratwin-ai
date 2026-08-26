@@ -132,10 +132,11 @@ receive only the materialized stimulus and must not import tests, corpus files,
 or expectation modules. Candidate artifacts remain
 `PENDING_EXTERNAL_REVIEW`; candidate authors cannot record review PASS.
 
-The v1 route has four ordered commits: preflight, complete genuine RED,
-review-bound freeze, then implementation. Only one bounded correction wave may
-precede the freeze, and no correction follows it. A new threat, invariant,
-path, cap, corpus identity, second correction, or unresolved blocking review finding
+The v1 route has four ordered phases: preflight, complete genuine RED,
+review-bound freeze, then implementation. Only OWNER-enumerated bounded
+corrections may precede the freeze; Issue #435 H3 is narrowly authorized at
+`issuecomment-5422439650`. No correction follows the freeze. A new threat, invariant,
+path, cap, corpus identity, unapproved correction, or unresolved blocking review finding
 stops for OWNER disposition rather than starting another numbered reset.
 The one-time materialized identity authorized for the final C2 correction is
 the identity recorded in the playbook and is immutable after that candidate.

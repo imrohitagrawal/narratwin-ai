@@ -30,7 +30,7 @@ Adopt one finite framework v1 with:
 - eight deterministic processing stages with complete predecessors;
 - typed findings, verdicts, observations, mutation receipts, and review states;
 - exact Issue #435 branch/base/path/mode/history/blob/budget enforcement;
-- C1/C2/C3/C4 sequencing, four external reviews, one pre-C3 correction wave,
+- C1/C2/C3/C4 sequencing, four external reviews, only OWNER-enumerated pre-C3 corrections,
   a RED freeze, and no correction after C3;
 - fixed readability, per-file, aggregate, corpus, and stop limits.
 
@@ -55,8 +55,9 @@ spend authority.
 1. C1 preserves only the preflight.
 2. C2 freezes complete contracts, N=40 stimuli, test-owned expectations,
    adapters, tests, docs, and a typed `ACP.NOT_IMPLEMENTED` executor.
-3. Four independent reviews bind one immutable C2 candidate. At most one
-   bounded correction wave may precede C3.
+3. Four independent reviews bind one immutable C2 candidate. The original
+   correction and blocked head `134fbd9` are preserved; the narrow H3 replan is
+   authorized by `issuecomment-5422439650` and must rerun every review.
 4. C3 adds only the RED-freeze file and binds C2 objects plus review receipts.
 5. C4 changes only the marked executor region; the dispatcher, acceptance
    tests, and every production byte outside that region remain frozen.
@@ -64,7 +65,7 @@ spend authority.
 The immutable dispatcher-owned runner distinguishes contract failure,
 infrastructure failure, and exact typed RED; the mutable worker cannot
 self-green. C2/C3 are intentionally not merge-eligible. Any new threat,
-path, cap, invariant, corpus identity, second correction, required post-C3
+path, cap, invariant, corpus identity, unapproved correction, required post-C3
 finding, or unresolved review disagreement stops for OWNER disposition.
 
 ## Alternatives rejected

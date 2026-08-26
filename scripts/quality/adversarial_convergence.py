@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 """Finite offline adversarial-convergence worker and fail-closed route inspector."""
-
 from __future__ import annotations
-
 import hashlib
 import json
 import os
@@ -21,7 +19,6 @@ CORPUS_DOMAIN = b"NARRATWIN-ADVERSARIAL-CONVERGENCE-CASES-V1\0"
 
 JsonScalar: TypeAlias = str | int | float | bool | None
 JsonValue: TypeAlias = JsonScalar | list["JsonValue"] | dict[str, "JsonValue"]
-
 class ProcessingStage(StrEnum):
     BOUNDS = "BOUNDS"
     PARSE = "PARSE"
@@ -31,24 +28,20 @@ class ProcessingStage(StrEnum):
     AUTHORIZATION = "AUTHORIZATION"
     GRAPH_CONFLICT = "GRAPH_CONFLICT"
     PHASE_VERDICT = "PHASE_VERDICT"
-
 class StageState(StrEnum):
     ACCEPTED = "ACCEPTED"
     REJECTED = "REJECTED"
     NOT_REACHED = "NOT_REACHED"
     NOT_APPLICABLE = "NOT_APPLICABLE"
-
 class PhaseVerdict(StrEnum):
     VALID = "VALID"
     INVALID = "INVALID"
     BLOCKED_IMPLEMENTATION = "BLOCKED_IMPLEMENTATION"
     BLOCKED_EVIDENCE = "BLOCKED_EVIDENCE"
     NOT_IMPLEMENTED = "NOT_IMPLEMENTED"
-
 class BlockerClass(StrEnum):
     IMPLEMENTATION = "IMPLEMENTATION"
     EVIDENCE = "EVIDENCE"
-
 class MutationState(StrEnum):
     NOT_EXECUTED = "NOT_EXECUTED"
     SURVIVED = "SURVIVED"
@@ -234,7 +227,6 @@ def validate_matrix_cross_fields(document: JsonValue) -> bool:
     tests_are_bound = all(row.get("evidenceClass") != "TEST" or isinstance(row.get("testIds"), list) and bool(row.get("testIds")) for row in rows)
     return len(set(identifiers)) == len(identifiers) and covered_threats == set(threats) and tests_are_bound
 
-
 # ISSUE435_EXECUTOR_V1_START
 def execute(stimulus: Stimulus) -> ValidationResult:
     """C2 boundary: C4 may replace only this marked executor region."""
@@ -243,11 +235,11 @@ def execute(stimulus: Stimulus) -> ValidationResult:
     return ValidationResult(PhaseVerdict.NOT_IMPLEMENTED, (finding,), (), (), (), ACTIVATION, AUTHORITY_EFFECT)
 # ISSUE435_EXECUTOR_V1_END
 
-
 ISSUE435_BRANCH = "governance-435-adversarial-convergence-framework-v1"
 ISSUE435_BASE = "a6284f7d8f1a14ef4c9a99493d6b06046505f20c"
 ISSUE435_C1 = "205c02b3bac633d023d753356bc966c194ed36a7"
 ISSUE435_REJECTED = "8d83713ed09dc626e24f1fe063e6afd9cfa5e8e9"
+ISSUE435_BLOCKED = "134fbd91606eebbcdcff5f47b26b6d286acc1fa2"
 ISSUE435_PREFLIGHT = "docs/governance/preflights/issue-435.json"
 ISSUE435_PREFLIGHT_BLOB = "c554eaf7f73ea081434b1e2f818441fe0bc3eee9"
 ISSUE435_FREEZE = "docs/governance/adversarial-convergence-red-freeze-v1.json"
@@ -266,6 +258,8 @@ ISSUE435_CAPS = {
 }
 ISSUE435_NONFREEZE = frozenset(ISSUE435_CAPS) - {ISSUE435_FREEZE}
 ISSUE435_READABILITY_REVIEWED = {"docs/ENGINEERING_PROCESS_RCA.md", "scripts/quality/adversarial_convergence.py", "tests/unit/test_quality_dispatcher.py"}
+FREEZE_ARTIFACT_PATHS = {"corpus": "docs/governance/adversarial-convergence-framework-cases-v1.json", "schema": "docs/governance/adversarial-convergence-framework-v1.schema.json", "acceptanceTest": "tests/unit/test_adversarial_convergence.py", "skeleton": "scripts/quality/adversarial_convergence.py", "dispatcher": "scripts/quality/check_quality_stage.py", "guardrail": "scripts/guardrails_check.py"}
+FREEZE_ROLES = ("ARCHITECTURE_SCOPE_PHASE", "SECURITY_TRUST", "READABILITY_FEASIBILITY", "MUTATION_FALSE_PASS")
 
 def _git(root: Path, *args: str) -> GitResult:
     environment = {"PATH": "/usr/bin:/bin", "LC_ALL": "C", "GIT_CONFIG_NOSYSTEM": "1", "GIT_CONFIG_GLOBAL": "/dev/null", "GIT_OPTIONAL_LOCKS": "0", "GIT_NO_LAZY_FETCH": "1", "GIT_NO_REPLACE_OBJECTS": "1"}
@@ -303,7 +297,6 @@ def _git(root: Path, *args: str) -> GitResult:
     except (OSError, ValueError, OverflowError, MemoryError):
         return GitResult("FAILED", 128, b"", b"")
 
-
 def _text(result: GitResult) -> str | None:
     if result.state != "OK" or result.returncode:
         return None
@@ -311,7 +304,6 @@ def _text(result: GitResult) -> str | None:
         return result.stdout.decode("utf-8", errors="strict")
     except UnicodeError:
         return None
-
 
 def _collect_changes(root: Path, head: str) -> tuple[PathCharge, ...] | None:
     names = _text(_git(root, "diff", "--name-status", "-M", "-C", ISSUE435_BASE, head, "--"))
@@ -334,7 +326,6 @@ def _collect_changes(root: Path, head: str) -> tuple[PathCharge, ...] | None:
         charges.append(PathCharge(row[2], statuses[row[2]], int(row[0]), int(row[1]), fields[0]))
     return tuple(charges) if set(statuses) == {item.path for item in charges} else None
 
-
 def _normalized_source(raw: bytes) -> bytes | None:
     start_marker = b"# ISSUE435_EXECUTOR_V1_START\n"
     end_marker = b"# ISSUE435_EXECUTOR_" + b"V1_END"
@@ -344,12 +335,29 @@ def _normalized_source(raw: bytes) -> bytes | None:
     _, suffix = rest.split(end_marker)
     return prefix + start_marker + b"<C4_EXECUTOR_REGION>\n" + end_marker + suffix
 
+def _closed_freeze_shape(document: JsonValue) -> bool:
+    top = {"schemaVersion", "issue", "activation", "authorityEffect", "correction", "c2", "artifacts", "reviews"}
+    if not isinstance(document, dict) or set(document) != top:
+        return False
+    correction, c2, artifacts, reviews = (document.get(key) for key in ("correction", "c2", "artifacts", "reviews"))
+    if not isinstance(correction, dict) or set(correction) != {"rejectedHead", "wave", "authors"} or not isinstance(c2, dict) or set(c2) != {"head", "tree", "diffSha256"} or not isinstance(artifacts, dict) or set(artifacts) != set(FREEZE_ARTIFACT_PATHS) or not isinstance(reviews, list) or len(reviews) != 4:
+        return False
+    for name, item in artifacts.items():
+        extra = {"semanticSha256"} if name == "corpus" else {"protectedSha256"} if name == "skeleton" else set()
+        if not isinstance(item, dict) or set(item) != {"path", "blob", "sha256"} | extra:
+            return False
+    review_keys = {"role", "reviewer", "disposition", "head", "tree", "url", "content", "contentSha256"}
+    prefix = "https://github.com/imrohitagrawal/narratwin-ai/issues/435#issuecomment-"
+    for index, receipt in enumerate(reviews):
+        url = receipt.get("url") if isinstance(receipt, dict) else None
+        if not isinstance(receipt, dict) or set(receipt) != review_keys or receipt.get("role") != FREEZE_ROLES[index] or not isinstance(url, str) or not url.startswith(prefix) or not url.removeprefix(prefix).isdigit():
+            return False
+    return True
 
 def _valid_freeze(document: JsonValue, root: Path, head: str) -> bool:
-    if not isinstance(document, dict):
+    if not _closed_freeze_shape(document):
         return False
-    required = {"schemaVersion", "issue", "activation", "authorityEffect", "correction", "c2", "artifacts", "reviews"}
-    if set(document) != required or document.get("schemaVersion") != "AdversarialConvergenceRedFreezeV1" or document.get("issue") != 435 or document.get("activation") != ACTIVATION or document.get("authorityEffect") != AUTHORITY_EFFECT:
+    if not isinstance(document, dict) or document.get("schemaVersion") != "AdversarialConvergenceRedFreezeV1" or document.get("issue") != 435 or document.get("activation") != ACTIVATION or document.get("authorityEffect") != AUTHORITY_EFFECT:
         return False
     c2 = document.get("c2")
     correction = document.get("correction")
@@ -360,7 +368,7 @@ def _valid_freeze(document: JsonValue, root: Path, head: str) -> bool:
     c2_head, c2_tree = c2.get("head"), c2.get("tree")
     if correction.get("rejectedHead") != ISSUE435_REJECTED or correction.get("wave") != 1 or not isinstance(c2_head, str) or not isinstance(c2_tree, str) or len(c2_head) != 40 or len(c2_tree) != 40 or any(character not in "0123456789abcdef" for character in c2_head + c2_tree):
         return False
-    roles = {"ARCHITECTURE_SCOPE_PHASE", "SECURITY_TRUST", "READABILITY_FEASIBILITY", "MUTATION_FALSE_PASS"}
+    roles = set(FREEZE_ROLES)
     seen_roles: set[str] = set()
     seen_reviewers: set[str] = set()
     seen_urls: set[str] = set()
@@ -387,11 +395,8 @@ def _valid_freeze(document: JsonValue, root: Path, head: str) -> bool:
     diff = _git(root, "diff", "--binary", ISSUE435_BASE, c2_head, "--")
     if diff.state != "OK" or diff.returncode or hashlib.sha256(diff.stdout).hexdigest() != c2.get("diffSha256"):
         return False
-    required_artifacts = {"corpus": "docs/governance/adversarial-convergence-framework-cases-v1.json", "schema": "docs/governance/adversarial-convergence-framework-v1.schema.json", "acceptanceTest": "tests/unit/test_adversarial_convergence.py", "skeleton": "scripts/quality/adversarial_convergence.py", "dispatcher": "scripts/quality/check_quality_stage.py", "guardrail": "scripts/guardrails_check.py"}
-    if set(artifacts) != set(required_artifacts):
-        return False
     for name, item in artifacts.items():
-        if not isinstance(item, dict) or item.get("path") != required_artifacts[name] or not all(isinstance(item.get(key), str) for key in ("path", "blob", "sha256")):
+        if not isinstance(item, dict) or item.get("path") != FREEZE_ARTIFACT_PATHS[name] or not all(isinstance(item.get(key), str) for key in ("path", "blob", "sha256")):
             return False
         raw = _git(root, "show", f"{c2_head}:{item['path']}")
         blob = _text(_git(root, "rev-parse", f"{c2_head}:{item['path']}"))
@@ -403,7 +408,6 @@ def _valid_freeze(document: JsonValue, root: Path, head: str) -> bool:
     source = _git(root, "show", f"{head}:{skeleton['path']}")
     normalized = _normalized_source(source.stdout) if source.state == "OK" and not source.returncode else None
     return normalized is not None and hashlib.sha256(normalized).hexdigest() == skeleton.get("protectedSha256")
-
 
 def inspect_issue435_repository(root: Path, branch: str) -> RouteInspection:
     if branch != ISSUE435_BRANCH:
@@ -431,7 +435,7 @@ def inspect_issue435_repository(root: Path, branch: str) -> RouteInspection:
     event_head = os.environ.get("GITHUB_HEAD_SHA", "").strip()
     if event_head and event_head != head:
         findings.append(FindingCode.IDENTITY_MISMATCH)
-    if commits[:3] != [ISSUE435_C1, "b099747812bcd97f812358908cb847c351190bc3", ISSUE435_REJECTED]:
+    if commits[:4] != [ISSUE435_C1, "b099747812bcd97f812358908cb847c351190bc3", ISSUE435_REJECTED, ISSUE435_BLOCKED]:
         findings.append(FindingCode.IDENTITY_MISMATCH)
     if cast(str, values["merges"]).strip() or cast(str, values["status"]) or cast(str, values["preflight"]).strip() != ISSUE435_PREFLIGHT_BLOB:
         findings.append(FindingCode.ROUTE_DRIFT)
@@ -446,7 +450,7 @@ def inspect_issue435_repository(root: Path, branch: str) -> RouteInspection:
     phase = "C2"
     if not freeze_present:
         parent = _text(_git(root, "rev-parse", "HEAD^"))
-        if len(commits) != 4 or parent is None or parent.strip() != ISSUE435_REJECTED:
+        if len(commits) != 5 or parent is None or parent.strip() != ISSUE435_BLOCKED:
             findings.append(FindingCode.ROUTE_DRIFT)
     else:
         raw = _git(root, "show", f"HEAD:{ISSUE435_FREEZE}")
@@ -455,28 +459,29 @@ def inspect_issue435_repository(root: Path, branch: str) -> RouteInspection:
             findings.append(FindingCode.REVIEW_IDENTITY_MISMATCH)
         c2_value = parsed.document.get("c2") if isinstance(parsed.document, dict) else None
         c2_head = c2_value.get("head") if isinstance(c2_value, dict) else ""
-        if len(commits) == 5 and commits[3] == c2_head:
+        if len(commits) == 6 and commits[4] == c2_head:
             phase = "C3"
-            delta = _text(_git(root, "diff-tree", "--no-commit-id", "--name-only", "-r", commits[4]))
+            delta = _text(_git(root, "diff-tree", "--no-commit-id", "--name-only", "-r", commits[5]))
             if delta is None or delta.splitlines() != [ISSUE435_FREEZE]:
                 findings.append(FindingCode.ROUTE_DRIFT)
-        elif len(commits) == 6 and commits[3] == c2_head:
+        elif len(commits) == 7 and commits[4] == c2_head:
             phase = "C4"
-            c3_delta = _text(_git(root, "diff-tree", "--no-commit-id", "--name-only", "-r", commits[4]))
-            c4_delta = _text(_git(root, "diff-tree", "--no-commit-id", "--name-only", "-r", commits[5]))
+            c3_delta = _text(_git(root, "diff-tree", "--no-commit-id", "--name-only", "-r", commits[5]))
+            c4_delta = _text(_git(root, "diff-tree", "--no-commit-id", "--name-only", "-r", commits[6]))
             if c3_delta is None or c3_delta.splitlines() != [ISSUE435_FREEZE] or c4_delta is None or c4_delta.splitlines() != ["scripts/quality/adversarial_convergence.py"]:
                 findings.append(FindingCode.ROUTE_DRIFT)
         else:
             findings.append(FindingCode.ROUTE_DRIFT)
     return RouteInspection(phase, tuple(dict.fromkeys(findings)), charged)
 
+def _resolve_branch(event: str, local: str) -> str:
+    return "" if event and local and event != local else event or local
 
 def _current_branch(root: Path) -> str:
     event = os.environ.get("GITHUB_HEAD_REF", "").strip()
     local = _text(_git(root, "branch", "--show-current"))
     local_branch = local.strip() if local is not None else ""
-    return "" if event and event != local_branch else event or local_branch
-
+    return _resolve_branch(event, local_branch)
 
 def _result_document(result: ValidationResult) -> dict[str, JsonValue]:
     findings: list[JsonValue] = [{"stage": item.stage, "code": item.code, "location": item.location, "blocker": item.blocker} for item in result.findings]
@@ -485,13 +490,11 @@ def _result_document(result: ValidationResult) -> dict[str, JsonValue]:
     mutations: list[JsonValue] = [{"mutantId": item.mutant_id, "assertionId": item.assertion_id, "executionCount": item.execution_count, "failureCount": item.failure_count, "state": item.state, "observedVerdict": item.observed_verdict, "observedFindingCodes": list(item.observed_finding_codes)} for item in result.mutation_receipts]
     return {"verdict": result.verdict, "findings": findings, "observations": observations, "executionReceipts": executions, "mutationReceipts": mutations, "activation": result.activation, "authorityEffect": result.authority_effect}
 
-
 def _emit(document: dict[str, JsonValue]) -> None:
     raw = json.dumps(document, sort_keys=True, separators=(",", ":"), ensure_ascii=True).encode("ascii")
     if len(raw) > 131_072:
         raw = b'{"code":"ACP.VERDICT.RESOURCE_FAILURE","kind":"INFRASTRUCTURE_FAILURE"}'
     sys.stdout.buffer.write(raw + b"\n")
-
 
 def _worker_main() -> int:
     try:
@@ -511,7 +514,6 @@ def _worker_main() -> int:
         _emit({"code": FindingCode.RESOURCE_FAILURE, "kind": "INFRASTRUCTURE_FAILURE"})
         return 2
 
-
 def _route_main() -> int:
     try:
         branch = _current_branch(ROOT)
@@ -525,7 +527,6 @@ def _route_main() -> int:
         _emit({"code": FindingCode.PLATFORM_FAILURE, "kind": "INFRASTRUCTURE_FAILURE"})
         return 2
 
-
 def main() -> int:
     if sys.argv[1:] == ["--execute-stdin"]:
         return _worker_main()
@@ -533,7 +534,6 @@ def main() -> int:
         return _route_main()
     _emit({"code": "ACP.RUNNER_REQUIRED", "kind": "CONTRACT_FAILURE"})
     return 1
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

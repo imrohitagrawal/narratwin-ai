@@ -2376,7 +2376,7 @@ def issue435_route_findings() -> list[str]:
     branch = event_branch or git_branch
     if not branch.startswith("governance-435"):
         return []
-    if branch != ISSUE435_BRANCH or (event_branch and git_branch != event_branch):
+    if branch != ISSUE435_BRANCH or (event_branch and git_branch and git_branch != event_branch):
         return ["ACP.AUTH.ROUTE_DRIFT"]
     environment = {"PATH": os.defpath, "LC_ALL": "C"}
     for name in ("GITHUB_HEAD_REF", "GITHUB_HEAD_SHA"):

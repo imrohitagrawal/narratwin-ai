@@ -1594,6 +1594,8 @@ egress, spend, media generation, and production readiness remain No-Go.
   `a6284f7d8f1a14ef4c9a99493d6b06046505f20c`.
 - OWNER correction `5421421524` authorizes exactly one replacement C2 with the
   materialized corpus identity recorded below.
+- OWNER replan `5422439650` preserves blocked head `134fbd9` and authorizes one
+  H3 limited to the four reproduced route/freeze/safe-reader root causes.
 - C1 is preserved and pushed at
   `205c02b3bac633d023d753356bc966c194ed36a7`; the preflight blob remains
   `c554eaf7f73ea081434b1e2f818441fe0bc3eee9`.
@@ -1620,5 +1622,5 @@ egress, spend, media generation, and production readiness remain No-Go.
 
 This state is intentionally not merge-ready: activation is `NONE`, authority
 effect is `NO_AUTHORITY_EFFECT`, and release posture remains No-Go. A new
-threat, path, cap, invariant, corpus identity, second correction, post-freeze
+threat, path, cap, invariant, corpus identity, unapproved correction, post-freeze
 finding, or unresolved review disagreement stops for OWNER disposition.

@@ -80,7 +80,7 @@ PRODUCT_CONTEXT_CONTENT = (
 ISSUE435_BRANCH = "governance-435-adversarial-convergence-framework-v1"
 
 
-def _issue435_adapter_fixture(monkeypatch: Any, branch: str, returncode: int, stdout: bytes) -> list[object]:
+def _issue435_adapter_fixture(monkeypatch: Any, branch: str, returncode: int, stdout: bytes, event: str = "") -> list[object]:
     calls: list[object] = []
     monkeypatch.setattr(guardrails, "run_git", lambda args: branch)
 
@@ -89,7 +89,7 @@ def _issue435_adapter_fixture(monkeypatch: Any, branch: str, returncode: int, st
         return subprocess.CompletedProcess([], returncode, stdout, b"")
 
     monkeypatch.setattr(guardrails.subprocess, "run", run)
-    monkeypatch.delenv("GITHUB_HEAD_REF", raising=False)
+    monkeypatch.setenv("GITHUB_HEAD_REF", event) if event else monkeypatch.delenv("GITHUB_HEAD_REF", raising=False)
     return calls
 
 
@@ -113,6 +113,13 @@ def test_issue435_unrelated_and_lookalike_branches_do_not_gain_authority(monkeyp
     _issue435_adapter_fixture(monkeypatch, "stage8-unrelated", 0, b'{"code":null}')
     assert guardrails.issue435_route_findings() == []
     _issue435_adapter_fixture(monkeypatch, ISSUE435_BRANCH + "-evil", 0, b'{"code":null}')
+    assert guardrails.issue435_route_findings() == ["ACP.AUTH.ROUTE_DRIFT"]
+
+
+def test_issue435_exact_event_branch_accepts_detached_and_rejects_conflict(monkeypatch: Any) -> None:
+    _issue435_adapter_fixture(monkeypatch, "", 0, b'{"code":null}', ISSUE435_BRANCH)
+    assert guardrails.issue435_route_findings() == []
+    _issue435_adapter_fixture(monkeypatch, "conflicting-branch", 0, b'{"code":null}', ISSUE435_BRANCH)
     assert guardrails.issue435_route_findings() == ["ACP.AUTH.ROUTE_DRIFT"]
 
 

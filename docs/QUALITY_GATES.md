@@ -21,8 +21,8 @@ Cut 1 route described below.
 
 ### Issue #435 finite adversarial-convergence route
 
-Exact branch `governance-435-adversarial-convergence-framework-v1` dispatches
-directly to `scripts/quality/adversarial_convergence.py`; it does not inherit
+Exact branch `governance-435-adversarial-convergence-framework-v1` runs typed
+repository-route inspection before the immutable pytest acceptance file; it does not inherit
 the legacy Stage 8 branch-name router. Prefix and suffix lookalikes receive no
 authority. All unrelated Stage 8, Final Review, Phase 1 Closure, and
 policy-only behavior is unchanged.
@@ -63,7 +63,7 @@ Worker exit 1 is `CONTRACT_FAILURE`; exit 2 is `INFRASTRUCTURE_FAILURE`; exit 3
 is intentional unimplemented RED. `make` may map a failed recipe generically,
 so the immutable pytest inventory and worker results are the discriminating
 evidence. A different RED,
-a new threat/path/cap/invariant/corpus, a second correction, post-C3 finding, or
+a new threat/path/cap/invariant/corpus, an unapproved correction, post-C3 finding, or
 review disagreement stops for OWNER disposition. The framework provides no
 product, provider, workflow, dependency, deployment, publication, or release
 authority.
