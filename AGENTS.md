@@ -135,5 +135,15 @@ or expectation modules. Candidate artifacts remain
 The v1 route has four ordered commits: preflight, complete genuine RED,
 review-bound freeze, then implementation. Only one bounded correction wave may
 precede the freeze, and no correction follows it. A new threat, invariant,
-path, cap, corpus identity, second correction, or unresolved review finding
+path, cap, corpus identity, second correction, or unresolved blocking review finding
 stops for OWNER disposition rather than starting another numbered reset.
+The one-time materialized identity authorized for the final C2 correction is
+the identity recorded in the playbook and is immutable after that candidate.
+
+Review findings must be evidence-triaged as `CRITICAL_BLOCKER`,
+`REQUIRED_CONTRACT`, `ADVISORY_DEBT`, `DUPLICATE`, or `OUT_OF_SCOPE`. Only a
+reproduced critical bypass or direct contract violation blocks progress;
+reviewer labels alone do not. The Primary Orchestrator records the reproduction,
+rationale, owner, and final disposition. A failed bounded correction returns to
+architecture replanning and explicit OWNER direction; it is not abandonment or
+authority for an automatic retry.

@@ -7,6 +7,8 @@ provider, or authorize release. Activation is `NONE`, authority effect is
 
 The controlling OWNER amendment is
 <https://github.com/imrohitagrawal/narratwin-ai/issues/435#issuecomment-5416186961>.
+The one-time materialized-corpus correction is authorized by
+<https://github.com/imrohitagrawal/narratwin-ai/issues/435#issuecomment-5421421524>.
 The framework branch starts at
 `a6284f7d8f1a14ef4c9a99493d6b06046505f20c`. C1 is preserved at
 `205c02b3bac633d023d753356bc966c194ed36a7`; its preflight blob must remain
@@ -78,13 +80,15 @@ SHA256(
   b"NARRATWIN-ADVERSARIAL-CONVERGENCE-CASES-V1\0"
   + strict_canonical_json(parsed_corpus)
 )
-= 5fd31be0dddf4572f1e8cb5405524ee97e4bd2b20448aded7197949ecb3fe371
+= 3b2a0c4b3b13cf6ab71ec4e7a3dd4e3566a0c8195e3c7bed6bf956575e5f9fc6
 ```
 
 Canonical JSON uses UTF-8/ASCII-safe output, sorted keys, `(',', ':')`
 separators, and no NaN. Raw corpus SHA-256 is
-`49184abda0f21351049810bee09eb81dba40bdfb8a9afbdaf8f97cf8dcbe8cab`.
-The corpus is 6,782 bytes, below the 48 KiB target and 64 KiB hard cap.
+`59581f0530b9b56b68e9bfc313497b22d1be2ce371d0cb2c64ea2b3c01dc6a75`.
+The materialized corpus is 18,821 bytes, below the 48 KiB target and 64 KiB
+hard cap. It has no `variant` labels. Twelve test-owned held-out transforms
+prevent the reproduced fixed-label lookup bypass without increasing N=40.
 
 `tests/unit/test_adversarial_convergence.py` owns the literal expected result
 for every case. Production code neither imports that test nor receives a case
@@ -100,8 +104,10 @@ skip, xfail, or missing-callable behavior.
 
 Twelve separately named test-only mutant executors each model one ACP-T01 to
 ACP-T12 defect. Each receives only a stimulus, executes exactly once, differs
-from the test-owned expectation, and produces a `KILLED` receipt naming its
-assertion. This proves C2 assertion discrimination. It is not a claim that the
+from the test-owned expectation, and is killed only when the same named literal
+assertion used for acceptance is caught. The measured call count and caught
+assertion are the evidence; candidate-authored receipt synthesis is forbidden.
+This proves C2 assertion discrimination. It is not a claim that the
 unimplemented production executor has passed mutation testing; C4 must make
 the real executor satisfy the frozen 40 expectations without changing them.
 
@@ -127,24 +133,38 @@ the real executor satisfy the frozen 40 expectations without changing them.
   state remains `PENDING_EXTERNAL_REVIEW`.
 - At most one correction wave may occur before C3; all four reviews rerun.
 - C3 adds only `adversarial-convergence-red-freeze-v1.json` and binds the C2
-  objects, semantic corpus identity, route-adapter digest, and review receipts.
-- C4 changes only `scripts/quality/adversarial_convergence.py`, outside the
-  frozen route-adapter sentinel, to replace the executor skeleton.
+  objects, corpus identities, protected-source digest, dispatcher, acceptance
+  test, schema, guardrail, skeleton, and four durable review receipts.
+- C4 changes only bytes inside the marked executor region of
+  `scripts/quality/adversarial_convergence.py`; every byte outside it remains
+  bound to C2.
 - No correction follows C3. A required C4 finding stops for OWNER disposition.
 
 The exact dispatcher routes only
-`governance-435-adversarial-convergence-framework-v1` to this gate. Lookalikes
-receive no authority. Direct gate exit codes are authoritative:
+`governance-435-adversarial-convergence-framework-v1` to the C2-frozen pytest
+acceptance file. Lookalikes receive no authority, and the mutable worker CLI
+cannot declare repository GREEN. Worker exits are diagnostic:
 
 | Exit | Kind | Meaning |
 |---:|---|---|
-| 0 | completed framework result | Available only after C4 satisfies the frozen contract. |
+| 0 | completed worker result | Repository GREEN still requires the frozen pytest file to pass. |
 | 1 | `CONTRACT_FAILURE` | Route, schema, identity, trust, or budget contract failed. |
 | 2 | `INFRASTRUCTURE_FAILURE` | Git, import, platform, or resource evidence was unavailable. |
 | 3 | `INTENTIONAL_RED` | C2/C3 reached the exact typed `ACP.NOT_IMPLEMENTED` boundary. |
 
-`make` itself reports nonzero recipes generically; the gate's canonical JSON
-`kind`, `code`, and direct exit distinguish intentional RED from infrastructure.
+At C2/C3, all 40 worker calls return typed exit 3 and canonical
+`ACP.NOT_IMPLEMENTED`; the immutable pytest runner reports exactly 40 failures
+and zero errors. At C4, dispatcher exit 0 is available only after the unchanged
+acceptance file passes in full.
+
+Mandatory readability evidence is recorded for the C2 paths at or above 85
+percent: `docs/ENGINEERING_PROCESS_RCA.md` 71/80,
+`scripts/quality/adversarial_convergence.py` 539/600, and
+`tests/unit/test_quality_dispatcher.py` 88/100. All remain below the 90-percent
+stop and require independent exact-head readability disposition. The only
+production function above 60 logical lines is the 61-line fail-closed repository
+inspector; it has two parameters, bounded early exits, and no semantic executor
+responsibility.
 
 ## Historical regression mapping
 
@@ -162,6 +182,32 @@ Residual risk before C3 is external-review authenticity and exact candidate
 identity; before C4 it is the intentionally absent executor. Neither is a
 product/runtime risk because the framework has no activation authority.
 
+## Review finding triage and correction outcome
+
+Each exact-head observation receives one evidence-backed disposition. The
+Primary Orchestrator, not the reviewer label, owns the final classification:
+
+| Disposition | Meaning | Gate effect |
+|---|---|---|
+| `CRITICAL_BLOCKER` | Reproduced false acceptance, security bypass, or authority bypass. | Blocks. |
+| `REQUIRED_CONTRACT` | Reproduced direct violation of frozen acceptance. | Blocks. |
+| `ADVISORY_DEBT` | Readability or maintainability debt without false credit. | Record owner and rationale; does not block by itself. |
+| `DUPLICATE` | Same root cause and correction as an existing finding. | Consolidate; no second blocker. |
+| `OUT_OF_SCOPE` | Outside the issue's frozen authority. | Prevent the action and route separately if needed. |
+
+Reproduction binds the exact head, environment, and input; compares actual
+output with a literal oracle; includes positive and negative controls; and
+checks evidence provenance, completeness, and integrity. Independent
+confirmation is required where the contract calls for it. The evidence,
+rationale, disposition, owner, and prevented action are durable review output.
+
+If the one bounded correction still has a blocker, return to an architecture
+and authority checkpoint. Do not patch again automatically, declare the issue
+impossible, or abandon it. The OWNER may approve another finite plan, defer, or
+close out the attempt. A future root `CLAUDE.md` must be a thin pointer to
+`AGENTS.md` on a separate issue/branch after Issue #435; it is not part of this
+path set.
+
 ## Required commands
 
 ```bash
@@ -178,4 +224,6 @@ make quality
 
 At C2, the bootstrap/harness/security/route subset must be GREEN, the future
 executor subset must contain exactly 40 failures and zero errors, and
-`make quality` must reach typed `INTENTIONAL_RED`. Any different failure stops.
+`make quality` must reach the same exact 40 typed `ACP.NOT_IMPLEMENTED`
+failures and zero errors through the immutable runner. Any different failure
+stops.

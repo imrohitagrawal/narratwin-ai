@@ -37,7 +37,10 @@ def run_dispatcher(
     monkeypatch.setattr(dispatcher, "current_branch", lambda: branch)
     monkeypatch.setattr(dispatcher, "run_recommended_review_item_check", lambda stage: 0)
 
-    def record_subprocess_call(args: list[str], cwd: Path | None = None) -> int:
+    def record_subprocess_call(
+        args: list[str], cwd: Path | None = None, env: dict[str, str] | None = None
+    ) -> int:
+        del cwd, env
         calls.append(list(args))
         return 0
 
@@ -78,6 +81,10 @@ STAGE8_STATUS = """
 """.strip()
 
 ISSUE435_BRANCH = "governance-435-adversarial-convergence-framework-v1"
+ISSUE435_ACCEPTANCE_COMMAND = [
+    sys.executable,
+    *"-I -P -m pytest -p no:cacheprovider -o addopts= -q tests/unit/test_adversarial_convergence.py".split(),
+]
 
 
 def test_issue435_exact_branch_dispatches_only_dedicated_gate(monkeypatch: Any, tmp_path: Path) -> None:
@@ -88,7 +95,7 @@ def test_issue435_exact_branch_dispatches_only_dedicated_gate(monkeypatch: Any, 
         status_text=PHASE1_STATUS,
     )
 
-    assert calls == [[sys.executable, "scripts/quality/adversarial_convergence.py"]]
+    assert calls == [ISSUE435_ACCEPTANCE_COMMAND]
 
 
 def test_issue435_policy_only_cannot_bypass_dedicated_gate(monkeypatch: Any, tmp_path: Path) -> None:
@@ -100,15 +107,50 @@ def test_issue435_policy_only_cannot_bypass_dedicated_gate(monkeypatch: Any, tmp
         policy_only=True,
     )
 
-    assert calls == [[sys.executable, "scripts/quality/adversarial_convergence.py"]]
+    assert calls == [ISSUE435_ACCEPTANCE_COMMAND]
 
 
-def test_issue435_intentional_red_exit_is_propagated(monkeypatch: Any) -> None:
+def test_issue435_runner_uses_exact_argv_cwd_and_scrubbed_environment(monkeypatch: Any) -> None:
+    dispatcher = load_dispatcher()
+    inherited = {
+        "PATH": "/trusted/bin",
+        "TMPDIR": "/trusted/tmp",
+        "PYTHONHOME": "/attacker/python",
+        "PYTHONPATH": "/attacker/imports",
+        "PYTEST_ADDOPTS": "-k nothing",
+        "PYTEST_PLUGINS": "attacker_plugin",
+        "PYTEST_CURRENT_TEST": "attacker::selection",
+    }
+    observed: dict[str, object] = {}
+
+    def record_call(args: list[str], *, cwd: Path, env: dict[str, str]) -> int:
+        observed.update(args=list(args), cwd=cwd, env=env)
+        if args == [sys.executable, "scripts/quality/adversarial_convergence.py"]:
+            return 0
+        return 17
+
+    monkeypatch.setattr(dispatcher.os, "environ", inherited)
+    monkeypatch.setattr(dispatcher.subprocess, "call", record_call)
+
+    assert dispatcher.run_adversarial_convergence_gate() == 17
+    assert observed == {
+        "args": ISSUE435_ACCEPTANCE_COMMAND,
+        "cwd": dispatcher.ROOT,
+        "env": {
+            "LC_ALL": "C",
+            "PATH": dispatcher.os.defpath,
+            "PYTEST_DISABLE_PLUGIN_AUTOLOAD": "1",
+            "TMPDIR": "/trusted/tmp",
+        },
+    }
+
+
+def test_issue435_acceptance_runner_exit_is_propagated(monkeypatch: Any) -> None:
     dispatcher = load_dispatcher()
     monkeypatch.setattr(dispatcher, "current_branch", lambda: ISSUE435_BRANCH)
-    monkeypatch.setattr(dispatcher, "run_adversarial_convergence_gate", lambda: 3)
+    monkeypatch.setattr(dispatcher, "run_adversarial_convergence_gate", lambda: 17)
 
-    assert dispatcher.main() == 3
+    assert dispatcher.main() == 17
 
 
 def test_issue435_near_match_receives_no_route_authority(monkeypatch: Any, tmp_path: Path) -> None:

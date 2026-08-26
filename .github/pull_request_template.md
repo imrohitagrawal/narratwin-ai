@@ -216,9 +216,9 @@ GITHUB_EVENT_NAME=pull_request GITHUB_EVENT_PATH=/path/to/pr-event.json NARRATWI
 
 - Add notes here, or write `N/A`.
 
-For Issue #435, state the direct gate result as one of
-`INTENTIONAL_RED`, `CONTRACT_FAILURE`, or `INFRASTRUCTURE_FAILURE`; a generic
+For Issue #435, state the immutable-runner result as exact typed RED,
+`CONTRACT_FAILURE`, or `INFRASTRUCTURE_FAILURE`; a generic
 nonzero `make` result is insufficient. List the exact candidate head/tree,
 corpus semantic identity, 40-failure RED count, 12 executed/killed test-mutant
-receipts, C1 blob, route-adapter digest, charged-line totals, and four external
+receipts, C1 blob, protected-source digest, charged-line totals, and four external
 review dispositions. Never describe C2/C3 as merge-ready or implemented.

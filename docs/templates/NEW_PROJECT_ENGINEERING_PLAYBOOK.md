@@ -1020,7 +1020,7 @@ Required C2 evidence separates:
   dispatcher/guardrail, mutation-harness, and readability tests;
 - genuine RED future-behavior assertions reaching the exact typed unimplemented
   result with zero collection/setup errors;
-- `CONTRACT_FAILURE`, `INFRASTRUCTURE_FAILURE`, and `INTENTIONAL_RED` outputs;
+- contract/infrastructure failures and the exact immutable-runner RED inventory;
 - `PENDING_EXTERNAL_REVIEW` candidate state from independent PASS receipts.
 
 At every wave, recompute per-path, partition, and aggregate charged lines,

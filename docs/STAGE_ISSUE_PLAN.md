@@ -2781,10 +2781,10 @@ Serialized route:
    mutation/false-pass reviewers bind one immutable C2 candidate. At most one
    bounded correction wave may precede C3; every review reruns.
 3. C3 adds only `adversarial-convergence-red-freeze-v1.json`, binding C2
-   objects, semantic corpus identity, protected route-adapter digest, and four
-   durable review receipts.
-4. C4 changes only `scripts/quality/adversarial_convergence.py` outside the
-   frozen route adapter. No correction follows C3.
+   objects, both corpus identities, protected-source digest, frozen dispatcher
+   and acceptance artifacts, and four durable review receipts.
+4. C4 changes only the marked executor region in
+   `scripts/quality/adversarial_convergence.py`. No correction follows C3.
 
 The non-freeze hard aggregate is 3,500 charged additions plus deletions; C3 may
 add 120 for a final 3,620. Per-path caps, 85-percent readability review,

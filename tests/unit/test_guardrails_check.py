@@ -1,12 +1,11 @@
 import importlib.util
 import json
+import subprocess
 from pathlib import Path
 from types import ModuleType
 from typing import Any
 
 import pytest
-
-from scripts.quality import adversarial_convergence as convergence
 
 
 def load_guardrails_module() -> ModuleType:
@@ -78,100 +77,69 @@ PRODUCT_CONTEXT_CONTENT = (
 )
 
 
-def issue435_route_fixture(
-    monkeypatch: Any,
-    tmp_path: Path,
-    *,
-    branch: str = convergence.ISSUE435_BRANCH,
-    mutation: str = "",
-) -> None:
-    script = tmp_path / "scripts/quality/adversarial_convergence.py"
-    script.parent.mkdir(parents=True)
-    script_source = (Path(__file__).parents[2] / "scripts/quality/adversarial_convergence.py").read_text()
-    script.write_text(script_source, encoding="utf-8")
-    freeze = tmp_path / convergence.ISSUE435_FREEZE
-    if mutation == "freeze":
-        freeze.parent.mkdir(parents=True)
-        freeze.write_text('{"routeAdapterSha256":"' + "0" * 64 + '"}\n', encoding="utf-8")
-    paths = sorted(convergence.ISSUE435_CAPS if freeze.exists() else convergence.ISSUE435_NONFREEZE)
-    if mutation == "extra":
-        paths.append("backend/evil.py")
-    head = "f" * 40
+ISSUE435_BRANCH = "governance-435-adversarial-convergence-framework-v1"
 
-    def fake_run_git(args: list[str]) -> str:
-        if args[:2] == ["branch", "--show-current"]:
-            return branch
-        if args[:2] == ["rev-parse", "HEAD"]:
-            return head
-        if args[:2] == ["show", f"{head}:scripts/quality/adversarial_convergence.py"]:
-            return script_source
-        if args[:2] == ["show", f"{head}:{convergence.ISSUE435_FREEZE}"]:
-            return freeze.read_text()
-        if "--name-status" in args:
-            status = "R100" if mutation == "rename" else "A"
-            return "\n".join(f"{status}\t{path}" for path in paths)
-        if "--numstat" in args:
-            additions = "-" if mutation == "binary" else "10000" if mutation == "budget" else "1"
-            deletions = "-" if mutation == "binary" else "0"
-            return "\n".join(f"{additions}\t{deletions}\t{path}" for path in paths)
-        if args[:2] == ["ls-tree", head]:
-            mode = "120000" if mutation == "mode" else "100644"
-            return f"{mode} blob {'a' * 40}\t{args[-1]}"
-        if args[:2] == ["rev-list", "--reverse"]:
-            first = "0" * 40 if mutation == "c1" else convergence.ISSUE435_C1
-            return f"{first}\n{head}"
-        if args[:2] == ["rev-list", "--min-parents=2"]:
-            return "e" * 40 if mutation == "merge" else ""
-        if args[:2] == ["rev-parse", f"{head}:{convergence.ISSUE435_PREFLIGHT}"]:
-            return "0" * 40 if mutation == "blob" else convergence.ISSUE435_PREFLIGHT_BLOB
-        if args[:2] == ["status", "--porcelain=v1"]:
-            return "?? backend/evil.py" if mutation == "dirty" else ""
-        raise AssertionError(args)
 
-    monkeypatch.setattr(guardrails, "ROOT", tmp_path)
-    monkeypatch.setattr(guardrails, "run_git", fake_run_git)
+def _issue435_adapter_fixture(monkeypatch: Any, branch: str, returncode: int, stdout: bytes) -> list[object]:
+    calls: list[object] = []
+    monkeypatch.setattr(guardrails, "run_git", lambda args: branch)
+
+    def run(*args: object, **kwargs: object) -> subprocess.CompletedProcess[bytes]:
+        calls.extend((args, kwargs))
+        return subprocess.CompletedProcess([], returncode, stdout, b"")
+
+    monkeypatch.setattr(guardrails.subprocess, "run", run)
     monkeypatch.delenv("GITHUB_HEAD_REF", raising=False)
-    monkeypatch.delenv("GITHUB_HEAD_SHA", raising=False)
+    return calls
 
 
-def test_issue435_exact_c2_route_passes_guardrail(monkeypatch: Any, tmp_path: Path) -> None:
-    issue435_route_fixture(monkeypatch, tmp_path)
-
-    assert guardrails.issue435_route_findings() == []
-
-
-def test_issue435_unrelated_branch_is_unchanged(monkeypatch: Any, tmp_path: Path) -> None:
-    issue435_route_fixture(monkeypatch, tmp_path, branch="stage8-unrelated")
+def test_issue435_exact_route_uses_thin_isolated_adapter(monkeypatch: Any) -> None:
+    calls = _issue435_adapter_fixture(monkeypatch, ISSUE435_BRANCH, 0, b'{"code":null}\n')
 
     assert guardrails.issue435_route_findings() == []
+    raw_args, raw_kwargs = calls
+    assert isinstance(raw_args, tuple) and isinstance(raw_kwargs, dict)
+    command = raw_args[0]
+    assert isinstance(command, list)
+    assert Path(command[-2]).name == "adversarial_convergence.py"
+    assert command[-1] == "--route-only"
+    assert command[1:3] == ["-I", "-P"]
+    assert raw_kwargs["timeout"] == 10
+    environment = raw_kwargs["env"]
+    assert isinstance(environment, dict) and "PYTHONPATH" not in environment
+
+
+def test_issue435_unrelated_and_lookalike_branches_do_not_gain_authority(monkeypatch: Any) -> None:
+    _issue435_adapter_fixture(monkeypatch, "stage8-unrelated", 0, b'{"code":null}')
+    assert guardrails.issue435_route_findings() == []
+    _issue435_adapter_fixture(monkeypatch, ISSUE435_BRANCH + "-evil", 0, b'{"code":null}')
+    assert guardrails.issue435_route_findings() == ["ACP.AUTH.ROUTE_DRIFT"]
 
 
 @pytest.mark.parametrize(
-    ("branch", "mutation", "finding"),
+    ("returncode", "stdout", "finding"),
     (
-        (f"{convergence.ISSUE435_BRANCH}-evil", "", "ACP.AUTH.ROUTE_DRIFT"),
-        (convergence.ISSUE435_BRANCH, "extra", "ACP.AUTH.ROUTE_DRIFT"),
-        (convergence.ISSUE435_BRANCH, "rename", "ACP.AUTH.ROUTE_DRIFT"),
-        (convergence.ISSUE435_BRANCH, "binary", "ACP.AUTH.ROUTE_DRIFT"),
-        (convergence.ISSUE435_BRANCH, "mode", "ACP.AUTH.BUDGET_STOP"),
-        (convergence.ISSUE435_BRANCH, "budget", "ACP.AUTH.BUDGET_STOP"),
-        (convergence.ISSUE435_BRANCH, "dirty", "ACP.IDENTITY.MISMATCH"),
-        (convergence.ISSUE435_BRANCH, "c1", "ACP.IDENTITY.MISMATCH"),
-        (convergence.ISSUE435_BRANCH, "merge", "ACP.IDENTITY.MISMATCH"),
-        (convergence.ISSUE435_BRANCH, "blob", "ACP.IDENTITY.MISMATCH"),
-        (convergence.ISSUE435_BRANCH, "freeze", "ACP.IDENTITY.MISMATCH"),
+        (1, b'{"code":"ACP.AUTH.BUDGET_STOP"}', "ACP.AUTH.BUDGET_STOP"),
+        (0, b'{"code":"ACP.AUTH.ROUTE_DRIFT"}', "ACP.VERDICT.PLATFORM_FAILURE"),
+        (2, b'{"code":"ACP.VERDICT.PLATFORM_FAILURE"}', "ACP.VERDICT.PLATFORM_FAILURE"),
+        (0, b"not-json", "ACP.VERDICT.PLATFORM_FAILURE"),
     ),
 )
-def test_issue435_route_mutations_fail_closed(
-    monkeypatch: Any,
-    tmp_path: Path,
-    branch: str,
-    mutation: str,
-    finding: str,
+def test_issue435_adapter_maps_only_typed_contract_results(
+    monkeypatch: Any, returncode: int, stdout: bytes, finding: str
 ) -> None:
-    issue435_route_fixture(monkeypatch, tmp_path, branch=branch, mutation=mutation)
-
+    _issue435_adapter_fixture(monkeypatch, ISSUE435_BRANCH, returncode, stdout)
     assert guardrails.issue435_route_findings() == [finding]
+
+
+def test_issue435_adapter_contains_timeout(monkeypatch: Any) -> None:
+    monkeypatch.setattr(guardrails, "run_git", lambda args: ISSUE435_BRANCH)
+    monkeypatch.setattr(
+        guardrails.subprocess,
+        "run",
+        lambda *args, **kwargs: (_ for _ in ()).throw(subprocess.TimeoutExpired([], 10)),
+    )
+    assert guardrails.issue435_route_findings() == ["ACP.VERDICT.PLATFORM_FAILURE"]
 
 
 def reviewer_overview_body(

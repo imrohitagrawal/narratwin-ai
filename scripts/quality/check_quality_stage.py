@@ -20,11 +20,33 @@ STATUS_DOC = ROOT / "docs" / "STATUS.md"
 FINAL_REVIEW_BRANCH_PREFIX = "final-review-"
 PHASE1_CLOSURE_BRANCH_PREFIX = "phase-1-closure-"
 ISSUE435_BRANCH = "governance-435-adversarial-convergence-framework-v1"
+ISSUE435_ENV_ALLOWLIST = ("SYSTEMROOT", "TMPDIR", "TEMP", "TMP")
+ISSUE435_ACCEPTANCE_TEST = "tests/unit/test_adversarial_convergence.py"
 
 
 def run_adversarial_convergence_gate() -> int:
+    environment = {
+        key: os.environ[key] for key in ISSUE435_ENV_ALLOWLIST if key in os.environ
+    }
+    environment.update(
+        LC_ALL="C", PATH=os.defpath, PYTEST_DISABLE_PLUGIN_AUTOLOAD="1"
+    )
     return subprocess.call(
-        [sys.executable, "scripts/quality/adversarial_convergence.py"], cwd=ROOT
+        [
+            sys.executable,
+            "-I",
+            "-P",
+            "-m",
+            "pytest",
+            "-p",
+            "no:cacheprovider",
+            "-o",
+            "addopts=",
+            "-q",
+            ISSUE435_ACCEPTANCE_TEST,
+        ],
+        cwd=ROOT,
+        env=environment,
     )
 
 

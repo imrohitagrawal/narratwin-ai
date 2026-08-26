@@ -58,10 +58,12 @@ spend authority.
 3. Four independent reviews bind one immutable C2 candidate. At most one
    bounded correction wave may precede C3.
 4. C3 adds only the RED-freeze file and binds C2 objects plus review receipts.
-5. C4 changes only the executor file outside the frozen route-adapter sentinel.
+5. C4 changes only the marked executor region; the dispatcher, acceptance
+   tests, and every production byte outside that region remain frozen.
 
-The direct gate distinguishes contract failure, infrastructure failure, and
-intentional RED. C2/C3 are intentionally not merge-eligible. Any new threat,
+The immutable dispatcher-owned runner distinguishes contract failure,
+infrastructure failure, and exact typed RED; the mutable worker cannot
+self-green. C2/C3 are intentionally not merge-eligible. Any new threat,
 path, cap, invariant, corpus identity, second correction, required post-C3
 finding, or unresolved review disagreement stops for OWNER disposition.
 

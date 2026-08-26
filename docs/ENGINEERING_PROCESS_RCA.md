@@ -766,3 +766,29 @@ finite framework boundary -> independent stimuli/expectations -> genuine RED
 Do not respond to a new blocker by adding an invariant, corpus row, path, cap,
 reset number, or automatic framework version. Those are contract changes and
 require explicit OWNER authority.
+
+### Evidence-backed review finding triage
+
+Reviewer severity labels are inputs, not authority. The Primary Orchestrator
+must reproduce the claimed boundary on the exact candidate and environment,
+compare actual evidence with the explicit oracle, exercise positive and
+negative controls, verify provenance and integrity, and seek independent
+confirmation where practical. It then records evidence, rationale, owner, and
+one disposition:
+
+- `CRITICAL_BLOCKER`: a reproduced false acceptance, security bypass, or
+  authority bypass.
+- `REQUIRED_CONTRACT`: a reproduced direct violation of frozen acceptance.
+- `ADVISORY_DEBT`: maintainability or readability debt without false credit.
+- `DUPLICATE`: another observation of an already dispositioned root cause.
+- `OUT_OF_SCOPE`: behavior the current issue has no authority to change.
+
+Only the first two block the current gate. Advisory debt remains visible with
+an owner and rationale but does not inherit blocker status from reviewer prose.
+A failed bounded correction returns to deliberate architecture replanning and
+explicit OWNER disposition. It does not prove impossibility, abandon the issue,
+or authorize an automatic reset or patch wave.
+
+The repository root does not yet contain `CLAUDE.md`. After Issue #435 merges,
+a separate issue, branch, and pull request should add only a thin pointer to
+`AGENTS.md`; duplicating this policy would create two competing authorities.

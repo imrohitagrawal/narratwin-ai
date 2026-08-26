@@ -33,7 +33,8 @@ The route is governance-only with activation `NONE`, authority effect
 `205c02b3bac633d023d753356bc966c194ed36a7` and preflight blob
 `c554eaf7f73ea081434b1e2f818441fe0bc3eee9`, and enforces the OWNER-amended
 20-path map. C2 must cumulatively contain the 19 non-freeze paths; C3 adds only
-the freeze; C4 changes only the executor file outside the frozen route adapter.
+the freeze; C4 changes only the marked executor region while the dispatcher,
+acceptance test, and all other production bytes remain frozen.
 
 Charged lines are additions plus deletions with no deletion credit. Per-path
 caps and the 3,500 non-freeze / 3,620 final aggregates are hard. Binary,
@@ -43,7 +44,7 @@ record readability review; at 90 percent stop.
 
 The frozen C2 corpus is `ACP-FRAMEWORK-CASES-V1-N40`, exactly 40 stimulus-only
 cases with semantic SHA-256
-`5fd31be0dddf4572f1e8cb5405524ee97e4bd2b20448aded7197949ecb3fe371`.
+`3b2a0c4b3b13cf6ab71ec4e7a3dd4e3566a0c8195e3c7bed6bf956575e5f9fc6`.
 Expected results live only in `tests/unit/test_adversarial_convergence.py`.
 Twelve separately named test-only mutants must each execute once and be killed.
 
@@ -53,13 +54,15 @@ C2/C3 are intentionally RED. Required evidence is:
   dispatcher, guardrail, security, route, and readability tests GREEN;
 - exactly 40 future-executor failures and zero errors, each reaching typed
   `ACP.NOT_IMPLEMENTED`;
-- `make quality` canonical JSON `kind=INTENTIONAL_RED`, direct exit 3;
+- `make quality` immutable-runner output with exactly 40 typed
+  `ACP.NOT_IMPLEMENTED` failures and zero errors; each worker call exits 3;
 - candidate review state `PENDING_EXTERNAL_REVIEW` until four independent
   exact-head/tree reviews pass.
 
-Direct exit 1 is `CONTRACT_FAILURE`; exit 2 is `INFRASTRUCTURE_FAILURE`; exit 3
-is `INTENTIONAL_RED`. `make` may map any failed recipe to exit 2, so canonical
-JSON and the direct gate exit are the discriminating evidence. A different RED,
+Worker exit 1 is `CONTRACT_FAILURE`; exit 2 is `INFRASTRUCTURE_FAILURE`; exit 3
+is intentional unimplemented RED. `make` may map a failed recipe generically,
+so the immutable pytest inventory and worker results are the discriminating
+evidence. A different RED,
 a new threat/path/cap/invariant/corpus, a second correction, post-C3 finding, or
 review disagreement stops for OWNER disposition. The framework provides no
 product, provider, workflow, dependency, deployment, publication, or release
