@@ -66,8 +66,9 @@ spend authority.
    becomes 240 lines, with a projected final module no greater than 790/900.
    N=40, threats, corpus identities, aggregates, and product authority do not
    change; every review binds the resulting exact head anew. Hosted-route
-   recovery `issuecomment-5429174756`, corrected by `issuecomment-5429198021`
-   and direct-head closure `issuecomment-5430095513`, preserves each reviewed
+   recovery `issuecomment-5429174756`, corrected by `issuecomment-5429198021`,
+   direct-head closure `issuecomment-5430095513`, and omitted-head closure
+   `issuecomment-5430474392`, preserves each reviewed
    C3/C4 as rejected history and appends ordinary fast-forward suffixes. Its
    sole semantic change outside the executor validates GitHub's detached merge
    or exact detached candidate checkout before selecting the candidate head.
@@ -116,10 +117,13 @@ unrelated Stage 8, Final Review, and Phase 1 Closure behavior.
 - The exact 40 future-behavior tests fail only with `ACP.NOT_IMPLEMENTED`.
 - `make quality` reaches the typed intentional RED rather than legacy routing.
 - C3 and C4 require the separately frozen identities and review evidence.
-- Hosted checks construct a detached merge commit. The route accepts it only
-  when its ordered parents, exact branch, configured base, and configured head
-  bind the frozen base and candidate; all repository evidence is then read
-  from that candidate head rather than the ambient merge commit.
+- Hosted checks use a detached merge or candidate checkout. The route accepts
+  omitted-head evidence only when its canonical branch is detached, its supplied
+  base is a strict ancestor of ambient HEAD, and the complete fixed topology passes.
+  Explicit-head evidence remains bound to the exact canonical base and head.
+  A detached merge still requires ordered frozen-base/candidate parents; all
+  repository evidence is read from the selected candidate, never ambient merge
+  content.
 
 ## Residual risks
 

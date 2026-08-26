@@ -398,12 +398,9 @@ def test_schema_draft202012_accepts_actual_corpus_and_closes_stimulus() -> None:
 
 def _valid_freeze() -> dict[str, object]:
     paths = {
-        "corpus": "docs/governance/adversarial-convergence-framework-cases-v1.json",
-        "schema": "docs/governance/adversarial-convergence-framework-v1.schema.json",
-        "acceptanceTest": "tests/unit/test_adversarial_convergence.py",
-        "skeleton": "scripts/quality/adversarial_convergence.py",
-        "dispatcher": "scripts/quality/check_quality_stage.py",
-        "guardrail": "scripts/guardrails_check.py",
+        "corpus": "docs/governance/adversarial-convergence-framework-cases-v1.json", "schema": "docs/governance/adversarial-convergence-framework-v1.schema.json",
+        "acceptanceTest": "tests/unit/test_adversarial_convergence.py", "skeleton": "scripts/quality/adversarial_convergence.py",
+        "dispatcher": "scripts/quality/check_quality_stage.py", "guardrail": "scripts/guardrails_check.py",
     }
     artifacts: dict[str, object] = {}
     for index, (name, path) in enumerate(paths.items(), start=1):
@@ -499,7 +496,7 @@ def test_candidate_authors_are_parsed_from_bounded_framed_git_history() -> None:
         "84f1430822d696537c41b5a022d3cc14d72becea",
         "c7886a86ad84f8c3e2ceb1a9f9c675e7f3d535da",
         "956aed3d78733259ba6a024dcbead6f2f6f43c40",
-        "f82be816e349d13d8365b72fbeb51498d244755e", "cc394d4dadef3c32dc735fc84a2b9c49e3336985", "bf3a53ddac282a8daab61db2eaa5d030959eae0f", "f4eab6b3febb9feb78699930bf4a453a76ca6b9d", "6325fe3eddffc57d0ef066705b6bb3ca276f353b", "221ab84b75667176aaf1c34513bf6967d1390d5f",
+        "f82be816e349d13d8365b72fbeb51498d244755e", "cc394d4dadef3c32dc735fc84a2b9c49e3336985", "bf3a53ddac282a8daab61db2eaa5d030959eae0f", "f4eab6b3febb9feb78699930bf4a453a76ca6b9d", "6325fe3eddffc57d0ef066705b6bb3ca276f353b", "221ab84b75667176aaf1c34513bf6967d1390d5f", "317fb741327a599239fe3b86e5711821f5a2b226", "3f00bc5c2e88ee8598fdf12cedae5fcd1afa6d1e", "ce70e1dfee5fb6e88e86c7a86ca496cf103ea2bd",
         head,
     )
     history = "".join(f"{commit}\0Rohit   Agrawal\0ROHIT.RA.AGRAWAL@GMAIL.COM\0" for commit in hashes)
@@ -673,13 +670,14 @@ def test_hosted_route_head_accepts_exact_detached_checkout_topologies(tmp_path: 
     )
     expression = "m['_route_head'](m['Path'](sys.argv[2]),sys.argv[3])"
     environment = {"GITHUB_HEAD_REF": ISSUE435_BRANCH, "GITHUB_BASE_SHA": ISSUE435_BASE, "GITHUB_HEAD_SHA": head}
+    missing_head = {"GITHUB_HEAD_REF": ISSUE435_BRANCH, "GITHUB_BASE_SHA": ISSUE435_BASE}
     assert _module_probe(expression, str(checkout), ISSUE435_BRANCH, extra_env=environment) == head
     hostile = (
         {**environment, "GITHUB_HEAD_REF": "wrong-branch"},
         {**environment, "GITHUB_BASE_SHA": "0" * 40},
         {**environment, "GITHUB_HEAD_SHA": "0" * 40},
         {**environment, "GITHUB_HEAD_SHA": head.upper()},
-        {**environment, "GITHUB_HEAD_SHA": ""},
+        missing_head,
     )
     assert all(_module_probe(expression, str(checkout), ISSUE435_BRANCH, extra_env=item) == "" for item in hostile)
     unauthorized_base = subprocess.check_output(["/usr/bin/git", "rev-parse", f"{head}^"], cwd=checkout, text=True).strip()
@@ -692,7 +690,7 @@ def test_hosted_route_head_accepts_exact_detached_checkout_topologies(tmp_path: 
     subprocess.run(["/usr/bin/git", "checkout", "--quiet", "--detach", paired], cwd=checkout, check=True)
     assert _module_probe(expression, str(checkout), ISSUE435_BRANCH, extra_env={**environment, "GITHUB_BASE_SHA": unauthorized_base}) == ""
     subprocess.run(["/usr/bin/git", "checkout", "--quiet", "--detach", head], cwd=checkout, check=True)
-    assert _module_probe(expression, str(checkout), ISSUE435_BRANCH, extra_env=environment) == head
+    assert _module_probe(expression, str(checkout), ISSUE435_BRANCH, extra_env=environment) == head and _module_probe(expression, str(checkout), ISSUE435_BRANCH, extra_env=missing_head) == head and _module_probe(expression, str(checkout), ISSUE435_BRANCH, extra_env={**missing_head, "GITHUB_BASE_SHA": unauthorized_base}) == head
     reverse = subprocess.check_output(
         ["/usr/bin/git", "-c", "user.name=CI", "-c", "user.email=ci@example.invalid", "commit-tree", f"{head}^{{tree}}", "-p", head, "-p", ISSUE435_BASE],
         cwd=checkout,
@@ -701,6 +699,8 @@ def test_hosted_route_head_accepts_exact_detached_checkout_topologies(tmp_path: 
     ).strip()
     subprocess.run(["/usr/bin/git", "checkout", "--quiet", "--detach", reverse], cwd=checkout, check=True)
     assert _module_probe(expression, str(checkout), ISSUE435_BRANCH, extra_env=environment) == ""
+    subprocess.run(["/usr/bin/git", "checkout", "--quiet", "-B", "attached", head], cwd=checkout, check=True)
+    assert _module_probe(expression, str(checkout), ISSUE435_BRANCH, extra_env=missing_head) == ""
 
 
 def test_route_inspector_never_reads_candidate_evidence_from_ambient_head() -> None:
