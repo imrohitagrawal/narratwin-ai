@@ -354,6 +354,8 @@ def test_application_freeze_values_enforce_schema_constraints_and_exact_pass() -
     cast(list[object], fewer_reviews["reviews"]).pop()
     assert _draft202012_errors(fewer_reviews) == []
     assert _module_probe(expression, input_text=json.dumps(fewer_reviews)) is False
+
+
 def test_review_provenance_rejects_declared_author_omission_and_normalized_collision() -> None:
     expression = "m['_review_provenance'](json.loads(sys.stdin.read()),tuple(sys.argv[2:]))"
     freeze = _valid_freeze()
@@ -367,13 +369,15 @@ def test_review_provenance_rejects_declared_author_omission_and_normalized_colli
     freeze = _valid_freeze()
     cast(list[dict[str, object]], freeze["reviews"])[0]["reviewer"] = "other reviewer <rohit.ra.agrawal@gmail.com>"
     assert _module_probe(expression, author, input_text=json.dumps(freeze)) is False
+
+
 def test_candidate_authors_are_parsed_from_bounded_framed_git_history() -> None:
     expression = "(m['_candidate_authors'].__globals__.__setitem__('_git',lambda *_:m['GitResult']('OK',0,sys.stdin.buffer.read(),b'')),m['_candidate_authors'](m['Path']('.'),sys.argv[2]))[1]"
     head = "d" * 40
     hashes = (
         "205c02b3bac633d023d753356bc966c194ed36a7", "b099747812bcd97f812358908cb847c351190bc3",
         "8d83713ed09dc626e24f1fe063e6afd9cfa5e8e9", "134fbd91606eebbcdcff5f47b26b6d286acc1fa2",
-        "6d741aec9a2a56d54034e0092a2e24d535079517", "9bd0a2786ca41e720a275e70a2c98470a3f3aa38", "6b681b4acc419d2fa63c35862d6b6185ce82dd50", head,
+        "6d741aec9a2a56d54034e0092a2e24d535079517", "9bd0a2786ca41e720a275e70a2c98470a3f3aa38", "6b681b4acc419d2fa63c35862d6b6185ce82dd50", "7a17fe323a8c9acd9ea887f9932e4ca79ff02853", head,
     )
     history = "".join(f"{commit}\0Rohit   Agrawal\0ROHIT.RA.AGRAWAL@GMAIL.COM\0" for commit in hashes)
     assert _module_probe(expression, head, input_text=history) == ["rohit agrawal <rohit.ra.agrawal@gmail.com>"]
@@ -476,6 +480,27 @@ def test_protected_executor_region_is_unique_closed_and_oracle_free() -> None:
         def normalize(text: str) -> str:
             return text.split(start, 1)[0] + start + "<C4_EXECUTOR_REGION>\n" + end + text.split(end, 1)[1]
         assert normalize(source) == normalize(frozen)
+
+
+def test_revised_path_caps_executor_ceiling_and_aggregate_thresholds_are_exact() -> None:
+    source = MODULE_PATH.read_text(encoding="utf-8")
+    start, end = "# ISSUE435_EXECUTOR_V1_START\n", "# ISSUE435_EXECUTOR_V1_END"
+    caps = _module_probe("[m['ISSUE435_CAPS']['scripts/quality/adversarial_convergence.py'],m['ISSUE435_CAPS']['tests/unit/test_adversarial_convergence.py']]")
+    assert caps == [800, 900]
+    budget = "(lambda c:None if c is None else str(c))(m['_budget_code'](sys.argv[2],int(sys.argv[3]),sys.argv[4]=='true'))"
+    module_path, test_path = "scripts/quality/adversarial_convergence.py", "tests/unit/test_adversarial_convergence.py"
+    assert _module_probe(budget, module_path, "719", "true") is None
+    assert _module_probe(budget, module_path, "719", "false") == "ACP.AUTH.BUDGET_REVIEW_REQUIRED"
+    assert _module_probe(budget, module_path, "720", "true") == "ACP.AUTH.BUDGET_STOP"
+    assert _module_probe(budget, test_path, "809", "true") is None
+    assert _module_probe(budget, test_path, "809", "false") == "ACP.AUTH.BUDGET_REVIEW_REQUIRED"
+    assert _module_probe(budget, test_path, "810", "true") == "ACP.AUTH.BUDGET_STOP"
+    assert _module_probe("[m['_aggregate_over_budget'](3500,False),m['_aggregate_over_budget'](3501,False),m['_aggregate_over_budget'](3620,True),m['_aggregate_over_budget'](3621,True)]") == [False, True, False, True]
+    probe = "m['_normalized_source'](sys.stdin.buffer.read()) is not None"
+    assert _module_probe(probe, input_text="# ISSUE435_EXECUTOR_V1_START\n" + "pass\n" * 160 + "# ISSUE435_EXECUTOR_V1_END") is True
+    assert _module_probe(probe, input_text="# ISSUE435_EXECUTOR_V1_START\n" + "pass\n" * 161 + "# ISSUE435_EXECUTOR_V1_END") is False
+    region = source.split(start, 1)[1].split(end, 1)[0]
+    assert len(source.splitlines()) - len(region.splitlines()) + 160 <= 694
 
 
 def test_path_and_descriptor_boundaries_reject_hostile_nodes(tmp_path: Path) -> None:

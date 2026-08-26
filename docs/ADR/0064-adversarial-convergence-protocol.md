@@ -60,11 +60,15 @@ spend authority.
    preserved. H5 `6b681b4` restores its budget gate; H6 is authorized by
    `issuecomment-5425499794` to fail closed on every JSON identity type, require
    distinct receipt sources, and enforce canonical author/reviewer identities.
-   Neither changes a cap, case, threat, or product authority, and every review
-   binds the resulting exact head anew.
+   Architecture closeout `issuecomment-5426258878` preserves H6 while revising
+   only the premature module/test caps to 800/900 and bounding C4 to 160 lines,
+   so a readable implementation can finish at no more than 694/800. It changes
+   no case, threat, aggregate limit, or product authority; every review binds
+   the resulting exact head anew.
 4. C3 adds only the RED-freeze file and binds C2 objects plus review receipts.
-5. C4 changes only the marked executor region; the dispatcher, acceptance
-   tests, and every production byte outside that region remain frozen.
+5. C4 changes only the marked executor region, which is limited to 160 physical
+   lines; the dispatcher, acceptance tests, and every production byte outside
+   that region remain frozen.
 
 The immutable dispatcher-owned runner distinguishes contract failure,
 infrastructure failure, and exact typed RED; the mutable worker cannot
