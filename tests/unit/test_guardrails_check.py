@@ -95,6 +95,8 @@ def _issue435_adapter_fixture(monkeypatch: Any, branch: str, returncode: int, st
 
 def test_issue435_exact_route_uses_thin_isolated_adapter(monkeypatch: Any) -> None:
     calls = _issue435_adapter_fixture(monkeypatch, ISSUE435_BRANCH, 0, b'{"code":null}\n')
+    monkeypatch.setenv("GITHUB_BASE_SHA", "b" * 40)
+    monkeypatch.setenv("GITHUB_HEAD_SHA", "a" * 40)
 
     assert guardrails.issue435_route_findings() == []
     raw_args, raw_kwargs = calls
@@ -106,7 +108,8 @@ def test_issue435_exact_route_uses_thin_isolated_adapter(monkeypatch: Any) -> No
     assert command[1:3] == ["-I", "-P"]
     assert raw_kwargs["timeout"] == 10
     environment = raw_kwargs["env"]
-    assert isinstance(environment, dict) and "PYTHONPATH" not in environment
+    assert isinstance(environment, dict) and environment["GITHUB_BASE_SHA"] == "b" * 40
+    assert environment["GITHUB_HEAD_SHA"] == "a" * 40 and "PYTHONPATH" not in environment
 
 
 def test_issue435_unrelated_and_lookalike_branches_do_not_gain_authority(monkeypatch: Any) -> None:

@@ -2379,7 +2379,7 @@ def issue435_route_findings() -> list[str]:
     if branch != ISSUE435_BRANCH or (event_branch and git_branch and git_branch != event_branch):
         return ["ACP.AUTH.ROUTE_DRIFT"]
     environment = {"PATH": os.defpath, "LC_ALL": "C"}
-    for name in ("GITHUB_HEAD_REF", "GITHUB_HEAD_SHA"):
+    for name in ("GITHUB_HEAD_REF", "GITHUB_BASE_SHA", "GITHUB_HEAD_SHA"):
         if name in os.environ:
             environment[name] = os.environ[name]
     command = [sys.executable, "-I", "-P", str(ROOT / "scripts/quality/adversarial_convergence.py"), "--route-only"]

@@ -175,7 +175,7 @@ acceptance file passes in full.
 
 Mandatory readability evidence is recorded for the four C2 designated paths:
 `docs/ENGINEERING_PROCESS_RCA.md` 71/80,
-`scripts/quality/adversarial_convergence.py` 555/900 and `tests/unit/test_adversarial_convergence.py` 891/1000, with
+`scripts/quality/adversarial_convergence.py` 555/900 and `tests/unit/test_adversarial_convergence.py` 892/1000, with
 `tests/unit/test_quality_dispatcher.py` 83/100. All remain below the 90-percent
 stop and require independent exact-head readability disposition. The only
 production function above 60 logical lines is the 63-line fail-closed repository

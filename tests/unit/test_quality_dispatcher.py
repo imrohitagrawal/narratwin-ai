@@ -113,7 +113,7 @@ def test_issue435_policy_only_cannot_bypass_dedicated_gate(monkeypatch: Any, tmp
 
 def test_issue435_runner_uses_exact_argv_cwd_and_scrubbed_environment(monkeypatch: Any) -> None:
     dispatcher = load_dispatcher()
-    inherited = {"PATH": "/bad", "TMPDIR": "/trusted/tmp", "PYTHONPATH": "/bad", "PYTEST_ADDOPTS": "-k nothing", "GITHUB_HEAD_REF": ISSUE435_BRANCH, "GITHUB_HEAD_SHA": "a" * 40}
+    inherited = {"PATH": "/bad", "TMPDIR": "/trusted/tmp", "PYTHONPATH": "/bad", "PYTEST_ADDOPTS": "-k nothing", "GITHUB_HEAD_REF": ISSUE435_BRANCH, "GITHUB_BASE_SHA": "b" * 40, "GITHUB_HEAD_SHA": "a" * 40}
     observed: list[tuple[list[str], Path, dict[str, str]]] = []
 
     def record_call(args: list[str], *, cwd: Path, env: dict[str, str]) -> int:
@@ -125,7 +125,7 @@ def test_issue435_runner_uses_exact_argv_cwd_and_scrubbed_environment(monkeypatc
 
     assert dispatcher.run_adversarial_convergence_gate() == 0
     assert [row[0] for row in observed] == [ISSUE435_ROUTE_COMMAND, ISSUE435_ACCEPTANCE_COMMAND]
-    expected_env = {"LC_ALL": "C", "PATH": dispatcher.os.defpath, "PYTEST_DISABLE_PLUGIN_AUTOLOAD": "1", "TMPDIR": "/trusted/tmp", "GITHUB_HEAD_REF": ISSUE435_BRANCH, "GITHUB_HEAD_SHA": "a" * 40}
+    expected_env = {"LC_ALL": "C", "PATH": dispatcher.os.defpath, "PYTEST_DISABLE_PLUGIN_AUTOLOAD": "1", "TMPDIR": "/trusted/tmp", "GITHUB_HEAD_REF": ISSUE435_BRANCH, "GITHUB_BASE_SHA": "b" * 40, "GITHUB_HEAD_SHA": "a" * 40}
     assert all(cwd == dispatcher.ROOT and env == expected_env for _, cwd, env in observed)
 
 
