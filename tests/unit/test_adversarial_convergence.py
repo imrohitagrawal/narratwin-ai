@@ -308,7 +308,7 @@ def _hostile_regressions() -> list[HostileRow]:
     add("mutation-float-failure-count", "ACP-C018", lambda p: cast(list[dict[str, object]], p["receipts"])[0].update(failureCount=1.0), ("INVALID", "SCHEMA", "ACP.SCHEMA.DRIFT", "/payload", "NNRXXXXX"))
     add("ledger-forged", "ACP-C021", lambda p: cast(list[dict[str, object]], p["rows"])[0].update(callbackCount=0, observedState="REJECTED", observedFindingCodes=["ACP.SCHEMA.DRIFT"]), ("INVALID", "INDEPENDENT_TRUST", "ACP.TRUST.MOCK_LEDGER_INVALID", "/payload/rows/0", "NNNNRXXX"))
     add("ledger-callback-count", "ACP-C021", lambda p: cast(list[dict[str, object]], p["rows"])[0].update(callbackCount=True), ("INVALID", "SCHEMA", "ACP.SCHEMA.DRIFT", "/payload", "NNRXXXXX"))
-    add("ledger-float-ordinal", "ACP-C021", lambda p: cast(list[dict[str, object]], p["rows"])[0].update(ordinal=0.0), ("INVALID", "SCHEMA", "ACP.SCHEMA.DRIFT", "/payload", "NNRXXXXX"))
+    add("ledger-float-ordinal", "ACP-C021", lambda p: cast(list[dict[str, object]], p["rows"])[0].update(ordinal=1.0), ("INVALID", "SCHEMA", "ACP.SCHEMA.DRIFT", "/payload", "NNRXXXXX"))
     add("ledger-float-callback-count", "ACP-C021", lambda p: cast(list[dict[str, object]], p["rows"])[0].update(callbackCount=1.0), ("INVALID", "SCHEMA", "ACP.SCHEMA.DRIFT", "/payload", "NNRXXXXX"))
     add("ledger-reordered-contract", "ACP-C021", lambda p: (p.update(contractOrder=["PARSE", "BOUNDS"]), cast(list[dict[str, object]], p["rows"])[0].update(stage="PARSE"), cast(list[dict[str, object]], p["rows"])[1].update(stage="BOUNDS")), ("INVALID", "INDEPENDENT_TRUST", "ACP.TRUST.MOCK_LEDGER_INVALID", "/payload/rows/0", "NNNNRXXX"))
     add("ledger-duplicate-contract", "ACP-C021", lambda p: (p.update(contractOrder=["BOUNDS", "BOUNDS"]), cast(list[dict[str, object]], p["rows"])[1].update(stage="BOUNDS")), ("INVALID", "INDEPENDENT_TRUST", "ACP.TRUST.MOCK_LEDGER_INVALID", "/payload/rows/0", "NNNNRXXX"))
@@ -488,7 +488,7 @@ def test_candidate_authors_are_parsed_from_bounded_framed_git_history() -> None:
     hashes = (
         "205c02b3bac633d023d753356bc966c194ed36a7", "b099747812bcd97f812358908cb847c351190bc3",
         "8d83713ed09dc626e24f1fe063e6afd9cfa5e8e9", "134fbd91606eebbcdcff5f47b26b6d286acc1fa2",
-        "6d741aec9a2a56d54034e0092a2e24d535079517", "9bd0a2786ca41e720a275e70a2c98470a3f3aa38", "6b681b4acc419d2fa63c35862d6b6185ce82dd50", "7a17fe323a8c9acd9ea887f9932e4ca79ff02853", "26347f466778e946cc3b5aa8fa110f4597b279e2", "e6821c579c7bc1a28778278954cb52de7bf41dbb", head,
+        "6d741aec9a2a56d54034e0092a2e24d535079517", "9bd0a2786ca41e720a275e70a2c98470a3f3aa38", "6b681b4acc419d2fa63c35862d6b6185ce82dd50", "7a17fe323a8c9acd9ea887f9932e4ca79ff02853", "26347f466778e946cc3b5aa8fa110f4597b279e2", "e6821c579c7bc1a28778278954cb52de7bf41dbb", "55a3911c3b2b35ae681b647e143c492e6a4a8cad", head,
     )
     history = "".join(f"{commit}\0Rohit   Agrawal\0ROHIT.RA.AGRAWAL@GMAIL.COM\0" for commit in hashes)
     assert _module_probe(expression, head, input_text=history) == ["rohit agrawal <rohit.ra.agrawal@gmail.com>"]

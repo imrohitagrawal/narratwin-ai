@@ -251,8 +251,8 @@ path set.
 
 ```bash
 python3 -m json.tool docs/governance/adversarial-convergence-framework-cases-v1.json
-uv run pytest tests/unit/test_adversarial_convergence.py -k 'not future_validator_matches_test_owned_expectation'
-uv run pytest tests/unit/test_adversarial_convergence.py -k future_validator_matches_test_owned_expectation --tb=no
+uv run pytest tests/unit/test_adversarial_convergence.py -k 'not future_validator'
+uv run pytest tests/unit/test_adversarial_convergence.py -k future_validator --tb=no
 uv run pytest tests/unit/test_quality_dispatcher.py tests/unit/test_guardrails_check.py -k 'issue435 or dispatcher'
 uv run ruff check scripts/quality/adversarial_convergence.py tests/unit/test_adversarial_convergence.py
 uv run mypy --strict scripts/quality/adversarial_convergence.py tests/unit/test_adversarial_convergence.py
