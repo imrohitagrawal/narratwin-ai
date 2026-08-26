@@ -165,7 +165,7 @@ cannot declare repository GREEN. Worker exits are diagnostic:
 | 2 | `INFRASTRUCTURE_FAILURE` | Git, import, platform, or resource evidence was unavailable. |
 | 3 | `INTENTIONAL_RED` | C2/C3 reached the exact typed `ACP.NOT_IMPLEMENTED` boundary. |
 
-At C2/C3, all 100 corpus and hostile-regression worker calls return typed exit 3 and canonical `ACP.NOT_IMPLEMENTED`; pytest reports exactly 100 failures
+At C2/C3, all 107 corpus and hostile-regression worker calls return typed exit 3 and canonical `ACP.NOT_IMPLEMENTED`; pytest reports exactly 107 failures
 and zero errors. At C4, dispatcher exit 0 is available only after the unchanged
 acceptance file passes in full.
 
@@ -262,6 +262,6 @@ make quality
 ```
 
 At C2, the bootstrap/harness/security/route subset must be GREEN, the future
-executor subset must contain exactly 100 failures and zero errors, and `make quality` must reach the same exact 100 typed `ACP.NOT_IMPLEMENTED`
+executor subset must contain exactly 107 failures and zero errors, and `make quality` must reach the same exact 107 typed `ACP.NOT_IMPLEMENTED`
 failures and zero errors through the immutable runner. Any different failure
 stops.

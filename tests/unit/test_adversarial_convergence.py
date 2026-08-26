@@ -304,8 +304,12 @@ def _hostile_regressions() -> list[HostileRow]:
     add("mutation-duplicate", "ACP-C018", lambda p: p.update(requiredMutantIds=["MU-A", "MU-A"], receipts=[copy.deepcopy(cast(list[object], p["receipts"])[0]), copy.deepcopy(cast(list[object], p["receipts"])[0])]), ("INVALID", "SCHEMA", "ACP.SCHEMA.DRIFT", "/payload", "NNRXXXXX"))
     add("mutation-empty-assertion", "ACP-C018", lambda p: cast(list[dict[str, object]], p["receipts"])[0].update(assertionId=""), ("INVALID", "SCHEMA", "ACP.SCHEMA.DRIFT", "/payload", "NNRXXXXX"))
     add("mutation-boolean-count", "ACP-C018", lambda p: cast(list[dict[str, object]], p["receipts"])[0].update(executionCount=True), ("INVALID", "SCHEMA", "ACP.SCHEMA.DRIFT", "/payload", "NNRXXXXX"))
+    add("mutation-float-execution-count", "ACP-C018", lambda p: cast(list[dict[str, object]], p["receipts"])[0].update(executionCount=1.0), ("INVALID", "SCHEMA", "ACP.SCHEMA.DRIFT", "/payload", "NNRXXXXX"))
+    add("mutation-float-failure-count", "ACP-C018", lambda p: cast(list[dict[str, object]], p["receipts"])[0].update(failureCount=1.0), ("INVALID", "SCHEMA", "ACP.SCHEMA.DRIFT", "/payload", "NNRXXXXX"))
     add("ledger-forged", "ACP-C021", lambda p: cast(list[dict[str, object]], p["rows"])[0].update(callbackCount=0, observedState="REJECTED", observedFindingCodes=["ACP.SCHEMA.DRIFT"]), ("INVALID", "INDEPENDENT_TRUST", "ACP.TRUST.MOCK_LEDGER_INVALID", "/payload/rows/0", "NNNNRXXX"))
     add("ledger-callback-count", "ACP-C021", lambda p: cast(list[dict[str, object]], p["rows"])[0].update(callbackCount=True), ("INVALID", "SCHEMA", "ACP.SCHEMA.DRIFT", "/payload", "NNRXXXXX"))
+    add("ledger-float-ordinal", "ACP-C021", lambda p: cast(list[dict[str, object]], p["rows"])[0].update(ordinal=0.0), ("INVALID", "SCHEMA", "ACP.SCHEMA.DRIFT", "/payload", "NNRXXXXX"))
+    add("ledger-float-callback-count", "ACP-C021", lambda p: cast(list[dict[str, object]], p["rows"])[0].update(callbackCount=1.0), ("INVALID", "SCHEMA", "ACP.SCHEMA.DRIFT", "/payload", "NNRXXXXX"))
     add("ledger-reordered-contract", "ACP-C021", lambda p: (p.update(contractOrder=["PARSE", "BOUNDS"]), cast(list[dict[str, object]], p["rows"])[0].update(stage="PARSE"), cast(list[dict[str, object]], p["rows"])[1].update(stage="BOUNDS")), ("INVALID", "INDEPENDENT_TRUST", "ACP.TRUST.MOCK_LEDGER_INVALID", "/payload/rows/0", "NNNNRXXX"))
     add("ledger-duplicate-contract", "ACP-C021", lambda p: (p.update(contractOrder=["BOUNDS", "BOUNDS"]), cast(list[dict[str, object]], p["rows"])[1].update(stage="BOUNDS")), ("INVALID", "INDEPENDENT_TRUST", "ACP.TRUST.MOCK_LEDGER_INVALID", "/payload/rows/0", "NNNNRXXX"))
     add("ledger-empty-identity", "ACP-C021", lambda p: (p.update(candidate="", phase=""), [row.update(candidate="", phase="") for row in cast(list[dict[str, object]], p["rows"])]), ("INVALID", "SCHEMA", "ACP.SCHEMA.DRIFT", "/payload", "NNRXXXXX"))
@@ -320,6 +324,7 @@ def _hostile_regressions() -> list[HostileRow]:
     add("review-malformed-identities", "ACP-C025", lambda p: (p.update(head="x", tree="x"), [row.update(reviewer=f"reviewer-{index}", head="x", tree="x") for index, row in enumerate(cast(list[dict[str, object]], p["receipts"]))]), ("INVALID", "SCHEMA", "ACP.SCHEMA.DRIFT", "/payload", "NNRXXXXX"))
     add("review-boolean-identities", "ACP-C025", lambda p: (p.update(head=True, tree=1), [row.update(reviewer=f"reviewer-{index}", head=True, tree=1) for index, row in enumerate(cast(list[dict[str, object]], p["receipts"]))]), ("INVALID", "SCHEMA", "ACP.SCHEMA.DRIFT", "/payload", "NNRXXXXX"))
     add("expectation-boolean-import-count", "ACP-C027", lambda p: p.update(dynamicImportCalls=False), ("INVALID", "SCHEMA", "ACP.SCHEMA.DRIFT", "/payload", "NNRXXXXX"))
+    add("expectation-float-import-count", "ACP-C027", lambda p: p.update(dynamicImportCalls=0.0), ("INVALID", "SCHEMA", "ACP.SCHEMA.DRIFT", "/payload", "NNRXXXXX"))
     add("route-path", "ACP-C030", lambda p: cast(list[dict[str, object]], p["files"])[0].update(path="/etc/passwd"), ("INVALID", "AUTHORIZATION", "ACP.AUTH.ROUTE_DRIFT", "/payload/files/0/path", "NNNNNRXX"))
     add("route-mode", "ACP-C030", lambda p: cast(list[dict[str, object]], p["files"])[0].update(mode="120000"), ("INVALID", "AUTHORIZATION", "ACP.AUTH.ROUTE_DRIFT", "/payload/files/0/mode", "NNNNNRXX"))
     add("route-status", "ACP-C030", lambda p: cast(list[dict[str, object]], p["files"])[0].update(status="D"), ("INVALID", "AUTHORIZATION", "ACP.AUTH.ROUTE_DRIFT", "/payload/files/0/status", "NNNNNRXX"))
@@ -327,6 +332,8 @@ def _hostile_regressions() -> list[HostileRow]:
     add("route-extra-file", "ACP-C030", lambda p: cast(list[object], p["files"]).append(copy.deepcopy(cast(list[object], p["files"])[0])), ("INVALID", "AUTHORIZATION", "ACP.AUTH.ROUTE_DRIFT", "/payload/files", "NNNNNRXX"))
     add("route-negative-budget", "ACP-C030", lambda p: cast(list[dict[str, object]], p["files"])[0].update(chargedLines=-1, cap=-1), ("INVALID", "SCHEMA", "ACP.SCHEMA.DRIFT", "/payload", "NNRXXXXX"))
     add("route-boolean-budget", "ACP-C030", lambda p: cast(list[dict[str, object]], p["files"])[0].update(chargedLines=True), ("INVALID", "SCHEMA", "ACP.SCHEMA.DRIFT", "/payload", "NNRXXXXX"))
+    add("route-float-charged-lines", "ACP-C030", lambda p: cast(list[dict[str, object]], p["files"])[0].update(chargedLines=509.0), ("INVALID", "SCHEMA", "ACP.SCHEMA.DRIFT", "/payload", "NNRXXXXX"))
+    add("route-float-cap", "ACP-C030", lambda p: cast(list[dict[str, object]], p["files"])[0].update(cap=600.0), ("INVALID", "SCHEMA", "ACP.SCHEMA.DRIFT", "/payload", "NNRXXXXX"))
     add("resource-nofollow", "ACP-C038", lambda p: cast(dict[str, object], p["capabilities"]).update(nofollow=False), ("BLOCKED_IMPLEMENTATION", "BOUNDS", "ACP.BOUNDS.UNSAFE_FILESYSTEM_INPUT", "/payload/capabilities/nofollow", "RXXXXXXX"))
     add("resource-descriptor", "ACP-C038", lambda p: cast(dict[str, object], p["capabilities"]).update(descriptorRelative=False), ("BLOCKED_IMPLEMENTATION", "BOUNDS", "ACP.BOUNDS.UNSAFE_FILESYSTEM_INPUT", "/payload/capabilities/descriptorRelative", "RXXXXXXX"))
     add("resource-network", "ACP-C038", lambda p: cast(dict[str, object], p["capabilities"]).update(network=True), ("INVALID", "SCHEMA", "ACP.SCHEMA.DRIFT", "/payload", "NNRXXXXX"))
@@ -481,7 +488,7 @@ def test_candidate_authors_are_parsed_from_bounded_framed_git_history() -> None:
     hashes = (
         "205c02b3bac633d023d753356bc966c194ed36a7", "b099747812bcd97f812358908cb847c351190bc3",
         "8d83713ed09dc626e24f1fe063e6afd9cfa5e8e9", "134fbd91606eebbcdcff5f47b26b6d286acc1fa2",
-        "6d741aec9a2a56d54034e0092a2e24d535079517", "9bd0a2786ca41e720a275e70a2c98470a3f3aa38", "6b681b4acc419d2fa63c35862d6b6185ce82dd50", "7a17fe323a8c9acd9ea887f9932e4ca79ff02853", "26347f466778e946cc3b5aa8fa110f4597b279e2", head,
+        "6d741aec9a2a56d54034e0092a2e24d535079517", "9bd0a2786ca41e720a275e70a2c98470a3f3aa38", "6b681b4acc419d2fa63c35862d6b6185ce82dd50", "7a17fe323a8c9acd9ea887f9932e4ca79ff02853", "26347f466778e946cc3b5aa8fa110f4597b279e2", "e6821c579c7bc1a28778278954cb52de7bf41dbb", head,
     )
     history = "".join(f"{commit}\0Rohit   Agrawal\0ROHIT.RA.AGRAWAL@GMAIL.COM\0" for commit in hashes)
     assert _module_probe(expression, head, input_text=history) == ["rohit agrawal <rohit.ra.agrawal@gmail.com>"]
