@@ -498,6 +498,7 @@ def test_candidate_authors_are_parsed_from_bounded_framed_git_history() -> None:
         "8a9bdc41c63cb449afdc6bf7f806ef946a73faa2",
         "84f1430822d696537c41b5a022d3cc14d72becea",
         "c7886a86ad84f8c3e2ceb1a9f9c675e7f3d535da",
+        "956aed3d78733259ba6a024dcbead6f2f6f43c40",
         head,
     )
     history = "".join(f"{commit}\0Rohit   Agrawal\0ROHIT.RA.AGRAWAL@GMAIL.COM\0" for commit in hashes)
@@ -659,7 +660,7 @@ def test_event_branch_resolution_accepts_detached_and_rejects_conflict() -> None
 def test_hosted_route_head_accepts_only_exact_detached_synthetic_merge(tmp_path: Path) -> None:
     checkout = tmp_path / "checkout"
     subprocess.run(["/usr/bin/git", "clone", "--quiet", "--no-local", str(ROOT), str(checkout)], check=True)
-    head = subprocess.check_output(["/usr/bin/git", "rev-parse", "HEAD"], cwd=checkout, text=True).strip()
+    head = os.environ.get("GITHUB_HEAD_SHA") or subprocess.check_output(["/usr/bin/git", "rev-parse", "HEAD"], cwd=checkout, text=True).strip()
     subprocess.run(["/usr/bin/git", "checkout", "--quiet", "--detach", ISSUE435_BASE], cwd=checkout, check=True)
     subprocess.run(
         ["/usr/bin/git", "-c", "user.name=CI", "-c", "user.email=ci@example.invalid", "merge", "--quiet", "--no-ff", "--no-edit", head],
