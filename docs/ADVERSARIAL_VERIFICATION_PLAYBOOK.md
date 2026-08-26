@@ -16,7 +16,7 @@ The preserved-H4 additive H5 budget correction is authorized by
 The exact three-root H6 validation correction is authorized by
 <https://github.com/imrohitagrawal/narratwin-ai/issues/435#issuecomment-5425499794>.
 The final C4 false-acceptance recovery is authorized by <https://github.com/imrohitagrawal/narratwin-ai/issues/435#issuecomment-5428186737>.
-Hosted detached-merge recovery is authorized by `issuecomment-5429174756` and its additive fast-forward correction by `issuecomment-5429198021`.
+Hosted detached recovery is authorized by `issuecomment-5429174756`, additive correction `issuecomment-5429198021`, and direct-head closure `issuecomment-5430095513`.
 The framework branch starts at
 `a6284f7d8f1a14ef4c9a99493d6b06046505f20c`. C1 is preserved at
 `205c02b3bac633d023d753356bc966c194ed36a7`; its preflight blob must remain
@@ -160,7 +160,7 @@ The exact dispatcher routes only
 acceptance file. Lookalikes receive no authority, and the mutable worker CLI
 cannot declare repository GREEN. Worker exits are diagnostic:
 
-On GitHub `pull_request`, ambient `HEAD` is untrusted; the route selects its candidate second parent only for a detached two-parent merge whose exact branch/base/head environment matches those ordered parents. Attached, missing, malformed, reversed, or conflicting topology fails closed; all evidence is evaluated at the validated candidate head.
+On GitHub `pull_request`, ambient `HEAD` is untrusted; the route selects the candidate only from a detached two-parent merge with exact ordered base/head parents or an exact detached event head whose canonical base is an ancestor. Attached, missing, malformed, reversed, unrelated, or conflicting topology fails closed; all evidence is evaluated at the validated candidate head.
 
 | Exit | Kind | Meaning |
 |---:|---|---|

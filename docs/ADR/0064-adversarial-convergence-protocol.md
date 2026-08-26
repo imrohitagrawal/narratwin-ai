@@ -66,11 +66,11 @@ spend authority.
    becomes 240 lines, with a projected final module no greater than 790/900.
    N=40, threats, corpus identities, aggregates, and product authority do not
    change; every review binds the resulting exact head anew. Hosted-route
-   recovery `issuecomment-5429174756`, corrected by
-   `issuecomment-5429198021`, preserves the prior reviewed C3/C4 commits as
-   rejected history and adds an ordinary fast-forward C2/C3/C4 suffix. Its
-   sole semantic change outside the executor is exact validation of GitHub's
-   detached two-parent pull-request merge before selecting the candidate head.
+   recovery `issuecomment-5429174756`, corrected by `issuecomment-5429198021`
+   and direct-head closure `issuecomment-5430095513`, preserves each reviewed
+   C3/C4 as rejected history and appends ordinary fast-forward suffixes. Its
+   sole semantic change outside the executor validates GitHub's detached merge
+   or exact detached candidate checkout before selecting the candidate head.
 4. C3 adds only the RED-freeze file and binds C2 objects plus review receipts.
 5. C4 changes only the marked executor region, which is limited to 240 physical
    lines; the dispatcher, acceptance tests, and every production byte outside
