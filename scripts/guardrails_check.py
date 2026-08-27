@@ -2371,17 +2371,22 @@ def check_governance_preflight_repository() -> None:
 
 
 def issue435_route_findings() -> list[str]:
-    event_branch = os.environ.get("GITHUB_HEAD_REF", "").strip()
+    head_ref = os.environ.get("GITHUB_HEAD_REF", "")
+    push_ref = os.environ.get("GITHUB_REF_NAME", "") if os.environ.get("GITHUB_EVENT_NAME", "") == "push" else ""
+    raw_event_branch = head_ref or push_ref
+    event_branch = raw_event_branch.strip()
     git_branch = run_git(["branch", "--show-current"])
     branch = event_branch or git_branch
     if not branch.startswith("governance-435"):
         return []
-    if branch != ISSUE435_BRANCH or (event_branch and git_branch and git_branch != event_branch):
+    if raw_event_branch != event_branch or branch != ISSUE435_BRANCH or (event_branch and git_branch and git_branch != event_branch):
         return ["ACP.AUTH.ROUTE_DRIFT"]
     environment = {"PATH": os.defpath, "LC_ALL": "C"}
     for name in ("GITHUB_HEAD_REF", "GITHUB_BASE_SHA", "GITHUB_HEAD_SHA"):
         if name in os.environ:
             environment[name] = os.environ[name]
+    if event_branch:
+        environment["GITHUB_HEAD_REF"] = event_branch
     command = [sys.executable, "-I", "-P", str(ROOT / "scripts/quality/adversarial_convergence.py"), "--route-only"]
     try:
         result = subprocess.run(command, cwd=ROOT, env=environment, capture_output=True, check=False, timeout=10)

@@ -464,6 +464,7 @@ ISSUE435_PARITY = "6f97b374c9dbe64653e6064ae7491cf6f18ddb4e"
 ISSUE435_PARITY_REPAIR = "fbbb45a2c6d9f026b681aff9d74560a5a3dca1e0"
 ISSUE435_PARITY_CLOSED = "81dbf7be31ec525c78a3f6361a936c5cb8a23a42"
 ISSUE435_PARITY_TYPED = "2f2aa3ae05c8df0cf58ecf3576d7c53855af0a50"
+ISSUE435_PARITY_PUSH = "bcbe293a094ba2647b213eb039274a8bc8f85685"
 ISSUE435_PREFLIGHT = "docs/governance/preflights/issue-435.json"
 ISSUE435_PREFLIGHT_BLOB = "c554eaf7f73ea081434b1e2f818441fe0bc3eee9"
 ISSUE435_FREEZE = "docs/governance/adversarial-convergence-red-freeze-v1.json"
@@ -485,6 +486,7 @@ ISSUE435_NONFREEZE = frozenset(ISSUE435_CAPS) - {ISSUE435_FREEZE}
 ISSUE435_READABILITY_REVIEWED = {"docs/ENGINEERING_PROCESS_RCA.md", "docs/ADR/0064-adversarial-convergence-protocol.md", "scripts/quality/adversarial_convergence.py", "tests/unit/test_adversarial_convergence.py", "tests/unit/test_quality_dispatcher.py"}
 ISSUE435_PARITY_PATHS = {".github/workflows/quality-gates.yml", "docs/ADR/0064-adversarial-convergence-protocol.md", "docs/ADVERSARIAL_VERIFICATION_PLAYBOOK.md", "docs/agent-context/context-policy-manifest-v1.json", "scripts/quality/adversarial_convergence.py", "scripts/quality/check_quality_stage.py", "tests/unit/test_adversarial_convergence.py", "tests/unit/test_guardrails_check.py", "tests/unit/test_quality_dispatcher.py", "tests/unit/test_stage8_quality_gate.py"}
 ISSUE435_PARITY_REPAIR_PATHS = {"scripts/quality/adversarial_convergence.py", "tests/unit/test_stage8_quality_gate.py"}
+ISSUE435_PARITY_PUSH_PATHS = {"scripts/guardrails_check.py", "scripts/quality/adversarial_convergence.py", "tests/unit/test_guardrails_check.py"}
 FREEZE_ARTIFACT_PATHS = {"corpus": "docs/governance/adversarial-convergence-framework-cases-v1.json", "schema": "docs/governance/adversarial-convergence-framework-v1.schema.json", "acceptanceTest": "tests/unit/test_adversarial_convergence.py", "skeleton": "scripts/quality/adversarial_convergence.py", "dispatcher": "scripts/quality/check_quality_stage.py", "guardrail": "scripts/guardrails_check.py"}
 FREEZE_ROLES = ("ARCHITECTURE_SCOPE_PHASE", "SECURITY_TRUST", "READABILITY_FEASIBILITY", "MUTATION_FALSE_PASS")
 def _git(root: Path, *args: str) -> GitResult:
@@ -722,7 +724,8 @@ def inspect_issue435_repository(root: Path, branch: str) -> RouteInspection:
         parity_final = len(commits) == 42 and commits[-4:-1] == [ISSUE435_PUBLISHED_C4, ISSUE435_PARITY, ISSUE435_PARITY_REPAIR]
         parity_closed = len(commits) == 43 and commits[-5:-1] == [ISSUE435_PUBLISHED_C4, ISSUE435_PARITY, ISSUE435_PARITY_REPAIR, ISSUE435_PARITY_CLOSED]
         parity_typed = len(commits) == 44 and commits[-6:-1] == [ISSUE435_PUBLISHED_C4, ISSUE435_PARITY, ISSUE435_PARITY_REPAIR, ISSUE435_PARITY_CLOSED, ISSUE435_PARITY_TYPED]
-        parity = parity_p or parity_repair or parity_final or parity_closed or parity_typed
+        parity_push = len(commits) == 45 and commits[-7:-1] == [ISSUE435_PUBLISHED_C4, ISSUE435_PARITY, ISSUE435_PARITY_REPAIR, ISSUE435_PARITY_CLOSED, ISSUE435_PARITY_TYPED, ISSUE435_PARITY_PUSH]
+        parity = parity_p or parity_repair or parity_final or parity_closed or parity_typed or parity_push
         freeze_head = ISSUE435_PUBLISHED_C4 if parity else head
         if parsed.document is None or not _valid_freeze(parsed.document, root, freeze_head):
             findings.append(FindingCode.REVIEW_IDENTITY_MISMATCH)
@@ -732,8 +735,8 @@ def inspect_issue435_repository(root: Path, branch: str) -> RouteInspection:
             phase = "PARITY_CHECKPOINT"
             parent = _text(_git(root, "rev-parse", f"{head}^"))
             delta = _text(_git(root, "diff-tree", "--no-commit-id", "--name-only", "-r", head))
-            parity_parent = ISSUE435_PARITY_TYPED if parity_typed else ISSUE435_PARITY_CLOSED if parity_closed else ISSUE435_PARITY_REPAIR if parity_final else ISSUE435_PARITY if parity_repair else ISSUE435_PUBLISHED_C4
-            parity_paths = ISSUE435_PARITY_REPAIR_PATHS if parity_repair or parity_final or parity_closed or parity_typed else ISSUE435_PARITY_PATHS
+            parity_parent = ISSUE435_PARITY_PUSH if parity_push else ISSUE435_PARITY_TYPED if parity_typed else ISSUE435_PARITY_CLOSED if parity_closed else ISSUE435_PARITY_REPAIR if parity_final else ISSUE435_PARITY if parity_repair else ISSUE435_PUBLISHED_C4
+            parity_paths = ISSUE435_PARITY_PUSH_PATHS if parity_push else ISSUE435_PARITY_REPAIR_PATHS if parity_repair or parity_final or parity_closed or parity_typed else ISSUE435_PARITY_PATHS
             if parent is None or parent.strip() != parity_parent or delta is None or set(delta.splitlines()) != parity_paths:
                 findings.append(FindingCode.ROUTE_DRIFT)
         elif len(commits) == 38 and commits[36] == c2_head:

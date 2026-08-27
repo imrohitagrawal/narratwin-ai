@@ -90,6 +90,8 @@ def _issue435_adapter_fixture(monkeypatch: Any, branch: str, returncode: int, st
 
     monkeypatch.setattr(guardrails.subprocess, "run", run)
     monkeypatch.setenv("GITHUB_HEAD_REF", event) if event else monkeypatch.delenv("GITHUB_HEAD_REF", raising=False)
+    monkeypatch.delenv("GITHUB_REF_NAME", raising=False)
+    monkeypatch.delenv("GITHUB_EVENT_NAME", raising=False)
     return calls
 
 
@@ -124,6 +126,23 @@ def test_issue435_exact_event_branch_accepts_detached_and_rejects_conflict(monke
     assert guardrails.issue435_route_findings() == []
     _issue435_adapter_fixture(monkeypatch, "conflicting-branch", 0, b'{"code":null}', ISSUE435_BRANCH)
     assert guardrails.issue435_route_findings() == ["ACP.AUTH.ROUTE_DRIFT"]
+
+
+def test_issue435_push_ref_is_bound_as_detached_event_branch(monkeypatch: Any) -> None:
+    calls = _issue435_adapter_fixture(monkeypatch, "", 0, b'{"code":null}')
+    monkeypatch.setenv("GITHUB_EVENT_NAME", "push")
+    monkeypatch.setenv("GITHUB_REF_NAME", ISSUE435_BRANCH)
+
+    assert guardrails.issue435_route_findings() == []
+    _, raw_kwargs = calls
+    assert isinstance(raw_kwargs, dict)
+    environment = raw_kwargs["env"]
+    assert isinstance(environment, dict)
+    assert environment["GITHUB_HEAD_REF"] == ISSUE435_BRANCH
+
+    for hostile in (f" {ISSUE435_BRANCH}", f"{ISSUE435_BRANCH} ", ISSUE435_BRANCH + "-evil"):
+        monkeypatch.setenv("GITHUB_REF_NAME", hostile)
+        assert guardrails.issue435_route_findings() == ["ACP.AUTH.ROUTE_DRIFT"]
 
 
 @pytest.mark.parametrize(
