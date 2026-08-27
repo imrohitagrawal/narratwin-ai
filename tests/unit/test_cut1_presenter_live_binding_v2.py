@@ -4,6 +4,7 @@ import hashlib
 import json
 import shutil
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -22,20 +23,21 @@ IMMUTABLE_SHA256 = {
     "docs/governance/schemas/cut1-human-realism-evaluation-v1.schema.json": "14eac190bd8ee590d1c1bd59cd6fa16b9413322e1e3a5bca23dfb9030afc5f9c",
     "docs/governance/schemas/cut1-presenter-provider-acceptance-v1.schema.json": "cb5ad105b53f52e8be888bb8007098368a9f08eafc7ea3eb407f035a5d13b31a",
 }
-EXPECTED_BINDING = {
+HISTORICAL_V1: dict[str, Any] = {
+    "manifestPath": "docs/governance/cut1-presenter-contract-red-freeze-v1.json",
+    "manifestSha256": "b9921a468f1383a3525879144992fd9ccb30c3dbf62481dcfc9f6e2d3b8afceb",
+    "acceptedPullRequest": 455,
+    "acceptedHead": "89164f25998b0088ae2b6c645dbe935efe50cf7e",
+    "acceptedTree": "6d42093643a133f239265432a2cca4f539eb392b",
+    "mergeCommit": "c3ac83bf05336a539dbdd6af1de9905e6b954289",
+}
+EXPECTED_BINDING: dict[str, Any] = {
     "schemaVersion": "Cut1PresenterLiveBindingV2",
     "issue": 456,
     "activation": "NONE",
     "authorityEffect": "NO_AUTHORITY_EFFECT",
     "releasePosture": "NO_GO",
-    "historicalV1": {
-        "manifestPath": "docs/governance/cut1-presenter-contract-red-freeze-v1.json",
-        "manifestSha256": "b9921a468f1383a3525879144992fd9ccb30c3dbf62481dcfc9f6e2d3b8afceb",
-        "acceptedPullRequest": 455,
-        "acceptedHead": "89164f25998b0088ae2b6c645dbe935efe50cf7e",
-        "acceptedTree": "6d42093643a133f239265432a2cca4f539eb392b",
-        "mergeCommit": "c3ac83bf05336a539dbdd6af1de9905e6b954289",
-    },
+    "historicalV1": HISTORICAL_V1,
     "immutableInputSha256": IMMUTABLE_SHA256,
     "limitations": [
         "This live binding changes integrity routing only; every Cut 1 acceptance threshold and presenter requirement remains unchanged.",
@@ -85,9 +87,9 @@ def test_repository_manifest_matches_frozen_expected_value() -> None:
 
 
 def test_v1_history_identity_is_preserved() -> None:
-    assert hashlib.sha256(V1_FREEZE.read_bytes()).hexdigest() == EXPECTED_BINDING["historicalV1"]["manifestSha256"]
-    assert EXPECTED_BINDING["historicalV1"]["acceptedHead"] == "89164f25998b0088ae2b6c645dbe935efe50cf7e"
-    assert EXPECTED_BINDING["historicalV1"]["acceptedTree"] == "6d42093643a133f239265432a2cca4f539eb392b"
+    assert hashlib.sha256(V1_FREEZE.read_bytes()).hexdigest() == HISTORICAL_V1["manifestSha256"]
+    assert HISTORICAL_V1["acceptedHead"] == "89164f25998b0088ae2b6c645dbe935efe50cf7e"
+    assert HISTORICAL_V1["acceptedTree"] == "6d42093643a133f239265432a2cca4f539eb392b"
 
 
 def test_pristine_bundle_passes(tmp_path: Path) -> None:
@@ -111,7 +113,7 @@ def test_immutable_contract_tamper_remains_rejected(tmp_path: Path) -> None:
 
 
 @pytest.mark.parametrize("relative", tuple(IMMUTABLE_SHA256))
-@pytest.mark.parametrize("fault", ("tamper", "missing", "directory", "symlink"))
+@pytest.mark.parametrize("fault", ("tamper", "missing", "directory", "symlink", "oversized"))
 def test_every_immutable_input_fault_fails_closed(tmp_path: Path, relative: str, fault: str) -> None:
     root = isolated_bundle(tmp_path)
     target = root / relative
@@ -123,6 +125,8 @@ def test_every_immutable_input_fault_fails_closed(tmp_path: Path, relative: str,
             target.mkdir()
         elif fault == "symlink":
             target.symlink_to(root / IMMUTABLE_INPUT)
+        elif fault == "oversized":
+            target.write_bytes(b"x" * 65_537)
     assert_rejected(root)
 
 
@@ -162,17 +166,27 @@ def test_binding_files_fail_closed_when_not_bounded_regular_files(tmp_path: Path
     assert_rejected(root)
 
 
-@pytest.mark.parametrize("fault", ("malformed", "duplicate", "unknown", "missing", "wrong-history", "non-object", "non-finite"))
+@pytest.mark.parametrize("fault", (
+    "malformed", "invalid-utf8", "duplicate", "duplicate-nested", "unknown", "unknown-nested",
+    "missing", "wrong-history", "non-object", "non-finite",
+))
 def test_v2_manifest_shape_and_history_fail_closed(tmp_path: Path, fault: str) -> None:
     root = isolated_bundle(tmp_path)
     target = root / "docs/governance/cut1-presenter-live-binding-v2.json"
     value = json.loads(target.read_text(encoding="utf-8"))
     if fault == "malformed":
         target.write_text("{", encoding="utf-8")
+    elif fault == "invalid-utf8":
+        target.write_bytes(b"\xff")
     elif fault == "duplicate":
         target.write_text(target.read_text(encoding="utf-8").replace('"issue": 456,', '"issue": 456,\n  "issue": 456,'), encoding="utf-8")
+    elif fault == "duplicate-nested":
+        target.write_text(target.read_text(encoding="utf-8").replace('"acceptedPullRequest": 455,', '"acceptedPullRequest": 455,\n    "acceptedPullRequest": 455,'), encoding="utf-8")
     elif fault == "unknown":
         value["unknown"] = True
+        target.write_text(json.dumps(value), encoding="utf-8")
+    elif fault == "unknown-nested":
+        value["historicalV1"]["unknown"] = True
         target.write_text(json.dumps(value), encoding="utf-8")
     elif fault == "missing":
         value.pop("authorityEffect")

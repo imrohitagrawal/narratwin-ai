@@ -2779,3 +2779,22 @@ route, RED, review, mutation, and closeout evidence remains in Issue `#435`, the
 merged playbook, and the repository history. The framework supplies no future
 slice's domain threat matrix and creates no product, provider, media,
 deployment, publication, release, or production authority.
+
+## Issue #456 — Cut 1 presenter live-binding prerequisite
+
+Issue `#456` is the bounded Lane B prerequisite discovered after Issue `#452` /
+PR `#455`. It starts from exact merge `c3ac83bf05336a539dbdd6af1de9905e6b954289`
+on branch `phase-1-closure-process-456-cut1-live-binding-v2`, owns exactly the
+eleven paths in its preflight, and preserves the v1 freeze byte-for-byte.
+
+The v2 route binds current bytes only for the five immutable Issue #452
+contract JSON/schema inputs, rejects manifest and filesystem substitution, and
+registers fail-closed Phase 1 propagation. Mutable shared ledgers, prose,
+routes, and tests remain historically auditable but are excluded from current
+bundle integrity. No acceptance threshold or presenter/provider requirement is
+changed.
+
+Issue #16 remains blocked until Issue #456 passes focused/full gates, hosted
+checks, independent exact-head review, eligible non-author approval, merge, and
+closeout. This route creates no Lane A, product, provider, credential, egress,
+spend, media, deployment, publication, release, or production authority.

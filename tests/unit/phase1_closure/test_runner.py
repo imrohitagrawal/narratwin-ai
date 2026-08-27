@@ -5,7 +5,7 @@ from typing import Any
 from scripts.quality.phase1_closure import runner
 
 
-def test_runner_checks_publication_boundary_before_preserved_contracts(monkeypatch: Any) -> None:
+def test_runner_checks_publication_and_cut1_before_preserved_contracts(monkeypatch: Any) -> None:
     calls: list[str] = []
 
     def publication() -> int:
@@ -16,11 +16,16 @@ def test_runner_checks_publication_boundary_before_preserved_contracts(monkeypat
         calls.append("legacy")
         return 0
 
+    def cut1() -> int:
+        calls.append("cut1")
+        return 0
+
     monkeypatch.setattr(runner, "check_publication_boundary", publication)
+    monkeypatch.setattr(runner, "check_cut1_presenter_contract", cut1)
     monkeypatch.setattr(runner, "run_preserved_contracts", preserved)
 
     assert runner.main() == 0
-    assert calls == ["new", "legacy"]
+    assert calls == ["new", "cut1", "legacy"]
 
 
 def test_publication_failure_prevents_legacy_continuation(monkeypatch: Any) -> None:
@@ -34,15 +39,44 @@ def test_publication_failure_prevents_legacy_continuation(monkeypatch: Any) -> N
         calls.append("legacy")
         return 0
 
+    def cut1() -> int:
+        calls.append("cut1")
+        return 0
+
     monkeypatch.setattr(runner, "check_publication_boundary", publication)
+    monkeypatch.setattr(runner, "check_cut1_presenter_contract", cut1)
     monkeypatch.setattr(runner, "run_preserved_contracts", preserved)
 
     assert runner.main() == 17
     assert calls == ["new"]
 
 
+def test_cut1_failure_prevents_preserved_contract_continuation(monkeypatch: Any) -> None:
+    calls: list[str] = []
+
+    def publication() -> int:
+        calls.append("publication")
+        return 0
+
+    def cut1() -> int:
+        calls.append("cut1")
+        return 23
+
+    def preserved() -> int:
+        calls.append("legacy")
+        return 0
+
+    monkeypatch.setattr(runner, "check_publication_boundary", publication)
+    monkeypatch.setattr(runner, "check_cut1_presenter_contract", cut1)
+    monkeypatch.setattr(runner, "run_preserved_contracts", preserved)
+
+    assert runner.main() == 23
+    assert calls == ["publication", "cut1"]
+
+
 def test_runner_propagates_preserved_contract_failure(monkeypatch: Any) -> None:
     monkeypatch.setattr(runner, "check_publication_boundary", lambda: 0)
+    monkeypatch.setattr(runner, "check_cut1_presenter_contract", lambda: 0)
     monkeypatch.setattr(runner, "run_preserved_contracts", lambda: 19)
 
     assert runner.main() == 19
@@ -50,6 +84,7 @@ def test_runner_propagates_preserved_contract_failure(monkeypatch: Any) -> None:
 
 def test_runner_redacts_unhandled_exception(monkeypatch: Any, capsys: Any) -> None:
     monkeypatch.setattr(runner, "check_publication_boundary", lambda: 0)
+    monkeypatch.setattr(runner, "check_cut1_presenter_contract", lambda: 0)
 
     def fail() -> None:
         raise RuntimeError("sensitive implementation detail")

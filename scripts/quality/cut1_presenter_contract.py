@@ -46,6 +46,7 @@ _GOV = Path(__file__).resolve().parents[2] / "docs/governance"
 _SCRIPT_SHA = "3b071180d4723784d84f5005644fc5a2aa5ef6b6adb6f7caeba2de76d68be435"
 _KNOWLEDGE_SHA = "49b75655ddbbe43145a35215069bce2751de66393b39eb68d69b584d7ecfcc5e"
 _FREEZE_SHA = "b9921a468f1383a3525879144992fd9ccb30c3dbf62481dcfc9f6e2d3b8afceb"
+_LIVE_SHA = "89199278feabfdcee21fffe4a9ad4d157dd7fc9a11a2529562876cb6ecc74702"
 _NAMES = (
     "cut1-blinded-human-evaluation-protocol-v1.json",
     "cut1-all-presenter-acceptance-matrix-v1.json",
@@ -425,23 +426,32 @@ def validate_contract_documents(d: _Doc) -> _Findings:
     if d[_NAMES[2]] != canonical[_NAMES[2]]:
         return _fail("BUNDLE","PROVIDER")
     return ()
+def _bounded(root: Path,name: str,limit: int) -> bytes:
+    path = root
+    for part in Path(name).parts:
+        path /= part
+        if path.is_symlink():
+            raise OSError
+    if not path.is_file():
+        raise OSError
+    with path.open("rb") as stream:
+        raw = stream.read(limit + 1)
+    if len(raw) > limit:
+        raise OSError
+    return raw
 def validate_contract_bundle(root: Path) -> _Findings:
-    gov,names = root / "docs/governance",_NAMES
     try:
-        manifest = gov / "cut1-presenter-contract-red-freeze-v1.json"
-        if _hash.sha256(manifest.read_bytes()).hexdigest() != _FREEZE_SHA:
+        old = _bounded(root,"docs/governance/cut1-presenter-contract-red-freeze-v1.json",16384)
+        live = _bounded(root,"docs/governance/cut1-presenter-live-binding-v2.json",16384)
+        if _hash.sha256(old).hexdigest() != _FREEZE_SHA or _hash.sha256(live).hexdigest() != _LIVE_SHA:
             return _fail("BUNDLE","PROTOCOL")
-        lock = _read(manifest)
-        target = lock["scope"]["c4EditablePath"]
-        if any(_hash.sha256((root / path).read_bytes()).hexdigest() != want for path,want in lock["frozenFileSha256"].items() if path != target):
+        hashes = json.loads(live.decode("utf-8"))["immutableInputSha256"]
+        raw = {path: _bounded(root,path,65536) for path in hashes}
+        if any(_hash.sha256(raw[path]).hexdigest() != want for path,want in hashes.items()):
             return _fail("BUNDLE","PROTOCOL")
-        raw,bind = (root / target).read_bytes(),lock["validatorRegionBinding"]
-        start,end = bind["prefixByteCount"],raw.index(lock["scope"]["c4EditableRegionEnd"].encode())
-        if _hash.sha256(raw[:start]).hexdigest() != bind["prefixThroughStartMarkerSha256"] or _hash.sha256(raw[end:]).hexdigest() != bind["suffixFromEndMarkerSha256"]:
-            return _fail("BUNDLE","PROTOCOL")
-        docs = {name: _read(gov / name) for name in names}
+        docs = {name: json.loads(raw[f"docs/governance/{name}"].decode("utf-8")) for name in _NAMES}
         return validate_contract_documents(docs)
-    except (OSError,ValueError,json.JSONDecodeError):
+    except Exception:
         return _fail("BUNDLE","PROTOCOL")
 # C4_IMPLEMENTATION_REGION_END
 
