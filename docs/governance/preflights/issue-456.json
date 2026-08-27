@@ -1,0 +1,51 @@
+{
+  "schema_version": "GovernancePreflightV1",
+  "issue_number": 456,
+  "branch": "phase-1-closure-process-456-cut1-live-binding-v2",
+  "objective": "From fixed base c3ac83bf05336a539dbdd6af1de9905e6b954289, preserve docs/governance/cut1-presenter-contract-red-freeze-v1.json byte-for-byte as historical PR #455 evidence and add a v2 current-worktree live binding limited to the five immutable #452-owned acceptance matrix, blinded-evaluation protocol, provider-bake-off contract, human-realism schema, and provider-acceptance schema inputs. C1 changes only this preflight. C2 adds an authentic RED test proving that isolated mutable ledger evolution is accepted while immutable input tamper remains rejected, followed by independent read-only review. C3 implements a closed, duplicate-rejecting, fail-closed manifest/validator and phase-closure route; documents the decision, gate, issue, status, and traceability state; and proves v1 identity, pristine pass, immutable tamper/missing/non-regular rejection, mutable ledger/route/test tolerance, malformed/duplicate/unknown v2 rejection, route propagation, and existing #452 regression safety. The exact 11 paths are controlling. Hard charged-line cap is 1,200, target 900, review 1,020, and stop/rescope 1,080; validator is at most 500 physical lines and under 32 KB, and the new test is at most 300 physical lines and under 32 KB. Lane B governance only: no product/runtime/provider/media code, provider call, account, credential, egress, spend, asset change, deployment, publication, release, production-readiness claim, presenter-role change, threshold weakening, or v1 rewrite. Issue #16 and Lane A remain blocked until this prerequisite merges. Stop on path, budget, freeze identity, immutable-set, fail-closed, false-pass, security/privacy, review, authority, or source conflict.",
+  "status_decision": "update-minimally",
+  "scope": {
+    "required": [
+      "docs/governance/preflights/issue-456.json",
+      "docs/governance/cut1-presenter-live-binding-v2.json",
+      "scripts/quality/cut1_presenter_contract.py",
+      "tests/unit/test_cut1_presenter_live_binding_v2.py",
+      "scripts/quality/phase1_closure/runner.py",
+      "tests/unit/phase1_closure/test_runner.py",
+      "docs/ADR/0066-cut1-presenter-live-binding-v2.md",
+      "docs/QUALITY_GATES.md",
+      "docs/STAGE_ISSUE_PLAN.md",
+      "docs/STATUS.md",
+      "docs/TRACEABILITY.md"
+    ],
+    "allowed_prefixes": [
+      "docs/governance/preflights/issue-456.json",
+      "docs/governance/cut1-presenter-live-binding-v2.json",
+      "scripts/quality/cut1_presenter_contract.py",
+      "tests/unit/test_cut1_presenter_live_binding_v2.py",
+      "scripts/quality/phase1_closure/runner.py",
+      "tests/unit/phase1_closure/test_runner.py",
+      "docs/ADR/0066-cut1-presenter-live-binding-v2.md",
+      "docs/QUALITY_GATES.md",
+      "docs/STAGE_ISSUE_PLAN.md",
+      "docs/STATUS.md",
+      "docs/TRACEABILITY.md"
+    ],
+    "forbidden": [
+      "backend/",
+      "frontend/",
+      ".github/workflows/",
+      "Makefile",
+      "pyproject.toml",
+      "uv.lock",
+      "assets/",
+      "data/",
+      "docs/governance/cut1-presenter-contract-red-freeze-v1.json",
+      "docs/governance/cut1-all-presenter-acceptance-matrix-v1.json",
+      "docs/governance/cut1-blinded-human-evaluation-protocol-v1.json",
+      "docs/governance/cut1-provider-bakeoff-contract-v1.json",
+      "docs/governance/schemas/cut1-human-realism-evaluation-v1.schema.json",
+      "docs/governance/schemas/cut1-presenter-provider-acceptance-v1.schema.json"
+    ]
+  }
+}
