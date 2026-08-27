@@ -1654,6 +1654,11 @@ finding, or unresolved review disagreement stops for OWNER disposition.
   `97e8173c2ec1323aa9ced23d43059bca2e5a204f` under OWNER route comment
   `5443917600`; numeric comments `5444058376` and `5444076231` control.
 - C1 preflight commit is `5df52f9e979e87f9305012752b80ac79f16093ec`.
+- OWNER corrective comment `5445887301` (body SHA-256
+  `6c667549e12c3db9478f69ea6dfe580ecf9e0b0e0b603550c7e62657df8d66e8`)
+  authorizes only the bounded readability cap, dispatcher-test split,
+  non-secret-shaped fake mutant, corrective RED proof and C3 refreeze; it adds
+  no product, provider, egress, spend, media, deployment or release authority.
 - The package defines closed human/provider schemas, the all-presenter matrix,
   blinded protocol, provider bake-off, literal positive/negative/mutation cases
   and a validator whose exact RED/GREEN evidence is bound by

@@ -63,6 +63,7 @@ ISSUE452_EXPECTED = {
     "scripts/quality/cut1_presenter_contract.py",
     "tests/unit/test_cut1_presenter_contract.py",
     "scripts/quality/check_quality_stage.py",
+    "tests/unit/test_issue452_quality_dispatcher.py",
     "tests/unit/test_quality_dispatcher.py",
     "scripts/quality/stage8_cut1_routes.py",
     "tests/unit/test_stage8_cut1_routes.py",
@@ -1240,9 +1241,10 @@ def test_issue452_route_is_exact_fixed_and_budgeted() -> None:
         "docs/governance/cut1-all-presenter-acceptance-matrix-v1.json": 300,
         "docs/governance/cut1-provider-bakeoff-contract-v1.json": 360,
         "docs/governance/cut1-presenter-contract-red-freeze-v1.json": 220,
-        "scripts/quality/cut1_presenter_contract.py": 400,
+        "scripts/quality/cut1_presenter_contract.py": 480,
         "tests/unit/test_cut1_presenter_contract.py": 450,
         "scripts/quality/check_quality_stage.py": 50,
+        "tests/unit/test_issue452_quality_dispatcher.py": 120,
         "tests/unit/test_quality_dispatcher.py": 100,
         "scripts/quality/stage8_cut1_routes.py": 160,
         "tests/unit/test_stage8_cut1_routes.py": 240,
@@ -1268,8 +1270,15 @@ def test_issue452_route_is_exact_fixed_and_budgeted() -> None:
         "docs/governance/schemas/cut1-presenter-provider-acceptance-v1.schema.json",
         "scripts/quality/cut1_presenter_contract.py",
         "tests/unit/test_cut1_presenter_contract.py",
+        "tests/unit/test_issue452_quality_dispatcher.py",
     }
-    assert set(routes.ISSUE452_BYTE_LIMITS.values()) == {30_000}
+    assert routes.ISSUE452_BYTE_LIMITS == {
+        "docs/governance/schemas/cut1-human-realism-evaluation-v1.schema.json": 30_000,
+        "docs/governance/schemas/cut1-presenter-provider-acceptance-v1.schema.json": 30_000,
+        "scripts/quality/cut1_presenter_contract.py": 40_000,
+        "tests/unit/test_cut1_presenter_contract.py": 30_000,
+        "tests/unit/test_issue452_quality_dispatcher.py": 30_000,
+    }
 
 
 def test_issue452_requires_fixed_base_and_branch_point() -> None:
@@ -1286,10 +1295,13 @@ def test_issue452_requires_fixed_base_and_branch_point() -> None:
 
 def test_issue452_contract_bytes_schemas_and_authority_hashes() -> None:
     governance = REPO / "docs/governance"
+    objective = json.loads((governance / "preflights/issue-452.json").read_text())["objective"]
+    assert "5445887301" in objective
+    assert "6c667549e12c3db9478f69ea6dfe580ecf9e0b0e0b603550c7e62657df8d66e8" in objective
     protocol_path = governance / "cut1-blinded-human-evaluation-protocol-v1.json"
     bakeoff_path = governance / "cut1-provider-bakeoff-contract-v1.json"
     assert hashlib.sha256(protocol_path.read_bytes()).hexdigest() == "fa3759985141639185618fbc595057412dd8582f60ed97fc462b30b7548580b8"
-    assert hashlib.sha256(bakeoff_path.read_bytes()).hexdigest() == "863dfa743770f52e1d4e9018a34e6f1002e5abdddcce6b845df400a423523bfb"
+    assert hashlib.sha256(bakeoff_path.read_bytes()).hexdigest() == "1a3fd981644488203e8c7cc38fc0389092b23b579cce860c3d35a1ca7a1786db"
     protocol = json.loads(protocol_path.read_text())
     assert [row["bodySha256"] for row in protocol["authority"]] == ["03e23b4faaea5389514d55529d284743a034efd0fad126bb704ea22c0d51c450", "4f599502ee3658a97c5dbfee8296193880a732641eea1a26b196e3ce9d79ab1c", "391de2e22898416fa9192d9bd47f8bb3e97d6a73d263e65721ff4e6b99448a33", "63c5fcd41bfb86971abe8c28f44903a12ad5d825dd988b85737c8f0b06644ae7"]
     assert hashlib.sha256(protocol["endpoint"]["prompt"].encode()).hexdigest() == protocol["endpoint"]["promptSha256"]

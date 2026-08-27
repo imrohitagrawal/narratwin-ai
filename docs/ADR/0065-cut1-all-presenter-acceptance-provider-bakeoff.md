@@ -83,6 +83,13 @@ must bind the exact C2 head/tree before C3 freezes expectations; C4 may change
 only the marked validator region. Any post-freeze contract defect stops for
 OWNER disposition.
 
+OWNER corrective comment `5445887301` resolves the stopped post-freeze audit:
+the validator receives a readability-only 480-line/<40 KB ceiling, Issue #452
+dispatcher coverage moves to its own bounded test, and the fake secret mutant
+uses a non-secret-shaped value. The aggregate budget and every authority,
+activation, egress, spend, provider, media and release prohibition remain
+unchanged. C2 RED and C3 hashes must be regenerated before readable C4 work.
+
 ## Alternatives rejected
 
 - Treat local/mock renders as final quality evidence: they do not prove the
@@ -94,6 +101,8 @@ OWNER disposition.
 
 ## References
 
-Issue #452 OWNER comments `5443917600`, `5444058376`, and `5444076231`;
+Issue #452 OWNER comments `5443917600`, `5444058376`, `5444076231`, and
+`5445887301` (body SHA-256
+`6c667549e12c3db9478f69ea6dfe580ecf9e0b0e0b603550c7e62657df8d66e8`);
 Issues #432, #449 and #450; ADR 0054; the Cut 1 presenter, AI-quality,
 enterprise-readiness, roadmap and demo-acceptance contracts.

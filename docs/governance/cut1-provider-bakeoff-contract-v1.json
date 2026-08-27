@@ -203,7 +203,7 @@
     {"id":"consent-media-drift","path":["rights","consentBinding","mediaTypes"],"value":["BATCH_VIDEO"],"code":"CUT1.PROVIDER.CONSENT_BINDING"},
     {"id":"training-enabled","path":["privacy","trainingUse"],"value":"ENABLED","code":"CUT1.PROVIDER.PRIVACY"},
     {"id":"raw-secret-scheme","path":["credentialRef","scheme"],"value":"ApiKey","code":"CUT1.PROVIDER.SECRET_REF"},
-    {"id":"raw-secret-id","path":["credentialRef","id"],"value":"sk-live-raw-secret-value","code":"CUT1.PROVIDER.SECRET_REF"},
+    {"id":"raw-secret-id","path":["credentialRef","id"],"value":"sk-live-raw","code":"CUT1.PROVIDER.SECRET_REF"},
     {"id":"screen-tenant-drift","path":["screening","transcript","tenantId"],"value":"tenant-2","code":"CUT1.PROVIDER.SCREENING"},
     {"id":"screen-type-drift","path":["screening","transcript","inputType"],"value":"prompt","code":"CUT1.PROVIDER.SCREENING"},
     {"id":"project-drift","path":["idempotency","projectId"],"value":"project-2","code":"CUT1.PROVIDER.TENANT_BOUNDARY"},

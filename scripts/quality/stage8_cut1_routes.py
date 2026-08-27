@@ -63,6 +63,7 @@ ROUTES = {
         "scripts/quality/cut1_presenter_contract.py",
         "tests/unit/test_cut1_presenter_contract.py",
         "scripts/quality/check_quality_stage.py",
+        "tests/unit/test_issue452_quality_dispatcher.py",
         "tests/unit/test_quality_dispatcher.py",
         "scripts/quality/stage8_cut1_routes.py",
         "tests/unit/test_stage8_cut1_routes.py",
@@ -455,8 +456,9 @@ ISSUE383_BINARY_FILES = {
 ISSUE452_BYTE_LIMITS = {
     "docs/governance/schemas/cut1-human-realism-evaluation-v1.schema.json": 30_000,
     "docs/governance/schemas/cut1-presenter-provider-acceptance-v1.schema.json": 30_000,
-    "scripts/quality/cut1_presenter_contract.py": 30_000,
+    "scripts/quality/cut1_presenter_contract.py": 40_000,
     "tests/unit/test_cut1_presenter_contract.py": 30_000,
+    "tests/unit/test_issue452_quality_dispatcher.py": 30_000,
 }
 TEXT_LIMITS = {
     ISSUE452_BRANCH: {
@@ -467,9 +469,10 @@ TEXT_LIMITS = {
         "docs/governance/cut1-all-presenter-acceptance-matrix-v1.json": 300,
         "docs/governance/cut1-provider-bakeoff-contract-v1.json": 360,
         "docs/governance/cut1-presenter-contract-red-freeze-v1.json": 220,
-        "scripts/quality/cut1_presenter_contract.py": 400,
+        "scripts/quality/cut1_presenter_contract.py": 480,
         "tests/unit/test_cut1_presenter_contract.py": 450,
         "scripts/quality/check_quality_stage.py": 50,
+        "tests/unit/test_issue452_quality_dispatcher.py": 120,
         "tests/unit/test_quality_dispatcher.py": 100,
         "scripts/quality/stage8_cut1_routes.py": 160,
         "tests/unit/test_stage8_cut1_routes.py": 240,
