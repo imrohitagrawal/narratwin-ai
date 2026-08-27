@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from types import SimpleNamespace
 from typing import Any
 
 from scripts.quality.phase1_closure import runner
@@ -95,3 +96,57 @@ def test_runner_redacts_unhandled_exception(monkeypatch: Any, capsys: Any) -> No
     output = capsys.readouterr().out
     assert "could not complete safely" in output
     assert "sensitive implementation detail" not in output
+
+
+def test_issue456_preflight_supersedes_only_legacy_path_list(monkeypatch: Any) -> None:
+    calls: list[str] = []
+
+    def record(name: str) -> Any:
+        return lambda failures: calls.append(name)
+
+    checker = SimpleNamespace(
+        check_branch=record("branch"),
+        check_required_files=record("required"),
+        check_changed_files=record("prohibited-legacy-scope"),
+        check_final_review_baseline=record("preserved"),
+    )
+    monkeypatch.setattr(runner, "current_branch", lambda root: runner.ISSUE456_BRANCH)
+    monkeypatch.setattr(runner, "_head", lambda: "a" * 40)
+    monkeypatch.setattr(runner, "_changed_paths", lambda head: runner.ISSUE456_PATHS)
+    monkeypatch.setattr(runner, "validate_governance_preflight_repository", lambda *args, **kwargs: [])
+    monkeypatch.setattr(runner.legacy, "_load_checker", lambda: checker)
+    monkeypatch.setattr(runner.legacy, "legacy_parity_failures", lambda value: [])
+    monkeypatch.setattr(runner.legacy, "PRESERVED_CHECKS", ("check_final_review_baseline",))
+    monkeypatch.setattr(runner.legacy, "_print_result", lambda failures: 1 if failures else 0)
+
+    assert runner.run_preserved_contracts() == 0
+    assert calls == ["branch", "required", "preserved"]
+
+
+def test_issue456_preflight_failure_blocks_preserved_checks(monkeypatch: Any) -> None:
+    monkeypatch.setattr(runner, "current_branch", lambda root: runner.ISSUE456_BRANCH)
+    monkeypatch.setattr(runner, "_head", lambda: "a" * 40)
+    monkeypatch.setattr(runner, "_changed_paths", lambda head: runner.ISSUE456_PATHS)
+    monkeypatch.setattr(runner, "validate_governance_preflight_repository", lambda *args, **kwargs: [object()])
+    monkeypatch.setattr(runner.legacy, "_load_checker", lambda: (_ for _ in ()).throw(AssertionError("must not run")))
+    monkeypatch.setattr(runner.legacy, "_print_result", lambda failures: 1 if failures else 0)
+
+    assert runner.run_preserved_contracts() == 1
+
+
+def test_coherent_preflight_with_extra_path_cannot_bypass_legacy_scope(monkeypatch: Any) -> None:
+    monkeypatch.setattr(runner, "current_branch", lambda root: runner.ISSUE456_BRANCH)
+    monkeypatch.setattr(runner, "_head", lambda: "a" * 40)
+    monkeypatch.setattr(runner, "_changed_paths", lambda head: runner.ISSUE456_PATHS | {"extra/path"})
+    monkeypatch.setattr(runner, "validate_governance_preflight_repository", lambda *args, **kwargs: [])
+    monkeypatch.setattr(runner.legacy, "_load_checker", lambda: (_ for _ in ()).throw(AssertionError("must not run")))
+    monkeypatch.setattr(runner.legacy, "_print_result", lambda failures: 1 if failures else 0)
+
+    assert runner.run_preserved_contracts() == 1
+
+
+def test_other_branch_retains_frozen_legacy_scope(monkeypatch: Any) -> None:
+    monkeypatch.setattr(runner, "current_branch", lambda root: "phase-1-closure-process-455-other")
+    monkeypatch.setattr(runner.legacy, "run_preserved_contracts", lambda: 31)
+
+    assert runner.run_preserved_contracts() == 31
