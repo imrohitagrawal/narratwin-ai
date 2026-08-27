@@ -14,9 +14,8 @@ Use it to answer:
 
 ## Canonical Current Product and Readiness Contract
 
-Issue `#440` is the proposed reconciliation authority for the refreshed Cut 1
-direction. It becomes active only after the dedicated PR merges and closeout
-records its merge state. The proposed normative sources are:
+PR `#443` merged at `a6284f7d8f1a14ef4c9a99493d6b06046505f20c`
+and completed Issue `#440`. The current normative sources are:
 
 - `docs/PRODUCT_CONTRACTS/CUT1_PRESENTER_CONTRACT.md` — Meera primary, Raj first
   backup, Myra second backup, human-like presentation, mandatory eye contact,
@@ -34,13 +33,15 @@ records its merge state. The proposed normative sources are:
 - `docs/demo/CUT1_ACCEPTANCE_CHECKLIST.md` — the controlled Cut 1 demo run and
   human acceptance record.
 
-Historical issue and phase tables below remain evidence and sequencing history.
-They must not be interpreted as a competing current product contract. Current
-implementation restrictions remain restrictions, not a redefinition of the
-intended end product. Issue `#435` remains a separate adversarial evidence gate;
-it validates approved contracts and does not redefine them. Until #440 merges,
-the existing merged-main authority and implementation gates remain binding; this
-branch must not be treated as product or release authorization.
+Issue `#450` is the approved Cut 1 / Slice 4 master planning authority. Its
+approval does not authorize product mutation, provider calls, credentials,
+egress, spending, media generation, deployment, publication, release, or
+production claims. Historical issue and phase tables below remain evidence and
+sequencing history; they are not a competing current product contract. Current
+implementation restrictions remain binding. Issue `#435` completed separately
+through PR `#453`; its framework remains governance-only with activation `NONE`
+and authority effect `NO_AUTHORITY_EFFECT`, and does not redefine the product or
+authorize implementation.
 
 ## Current Baseline
 
@@ -1586,7 +1587,20 @@ accepted on `main`, so Child B resumes with its own complete validation and
 review sequence. Release, deployment, publication, provider activation,
 egress, spend, media generation, and production readiness remain No-Go.
 
-## Issue #435 framework v1 C2 RED state (2026-08-26)
+## Issue #435 framework v1 completed state (2026-08-27)
+
+- Issue `#435` is closed as completed through merged PR `#453` at
+  `59db96aaab6c4e75b12d134dc9b02330c5a982ac`; post-merge workflow
+  `33090778982` passed.
+- The framework remains separate from Cut 1 presenter implementation, with
+  activation `NONE`, authority effect `NO_AUTHORITY_EFFECT`, and release posture
+  No-Go. It supplies no product/runtime/provider/media/deployment/release
+  authority and no future slice's domain-specific threat or invariant matrix.
+- Issue `#451` is the current Lane B wording-reconciliation route. After its PR
+  merges, the next approved Lane B action is the bounded Issue `#452` contract
+  activation; Stage 1 follow-on Issue `#16` still blocks new product code.
+
+### Historical pre-merge C2 RED snapshot (2026-08-26)
 
 - Issue #435 remains open and separate from Cut 1 presenter implementation.
 - OWNER amendment `5416186961` authorizes exact branch
