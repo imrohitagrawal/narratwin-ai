@@ -1,0 +1,185 @@
+{
+  "schemaVersion": "Cut1BlindedHumanEvaluationProtocolV1",
+  "protocolId": "cut1-blinded-human-evaluation-v1",
+  "protocolVersion": "1.0.0",
+  "activation": "NONE",
+  "authorityEffect": "NO_AUTHORITY_EFFECT",
+  "claimScope": "CONTROLLED_EXACT_ARTIFACT_ACCEPTANCE_ONLY",
+  "authority": [
+    {
+      "sourceKey": "OWNER_ROUTE",
+      "url": "https://github.com/imrohitagrawal/narratwin-ai/issues/452#issuecomment-5443917600",
+      "bodySha256": "03e23b4faaea5389514d55529d284743a034efd0fad126bb704ea22c0d51c450",
+      "accessedAt": "2026-08-28T00:00:00+05:30",
+      "rationale": "OWNER route and acceptance thresholds."
+    },
+    {
+      "sourceKey": "OWNER_NUMERIC",
+      "url": "https://github.com/imrohitagrawal/narratwin-ai/issues/452#issuecomment-5444058376",
+      "bodySha256": "4f599502ee3658a97c5dbfee8296193880a732641eea1a26b196e3ce9d79ab1c",
+      "accessedAt": "2026-08-28T00:00:00+05:30",
+      "rationale": "OWNER Cut 1 product-risk decision; not an external universal standard."
+    },
+    {
+      "sourceKey": "OWNER_CLARIFICATION",
+      "url": "https://github.com/imrohitagrawal/narratwin-ai/issues/452#issuecomment-5444076231",
+      "bodySha256": "391de2e22898416fa9192d9bd47f8bb3e97d6a73d263e65721ff4e6b99448a33",
+      "accessedAt": "2026-08-28T00:00:00+05:30",
+      "rationale": "OWNER clarification of cohort, cells, bootstrap, motion and caption rules."
+    }
+  ],
+  "preregistration": {
+    "requiredBeforeExposure": true,
+    "bindingFields": [
+      "protocolId", "protocolVersion", "protocolSha256", "frozenAt", "firstExposureAt",
+      "baseCommit", "headCommit", "treeOid", "analysisCodeSha256",
+      "analysisEnvironmentSha256", "randomizationCommitmentSha256", "candidateManifestSha256"
+    ],
+    "timestampRule": "frozenAt MUST be a valid timezone-aware instant strictly before firstExposureAt",
+    "formatValidation": "Validator parses and compares timestamps; JSON Schema format annotation is insufficient."
+  },
+  "cells": {
+    "presenters": ["meera", "raj", "myra"],
+    "languages": ["en"],
+    "aspectRatios": ["LANDSCAPE", "PORTRAIT"],
+    "exactCartesianCellCount": 6,
+    "independentVerdictRequired": true,
+    "poolingProhibited": true,
+    "languageExpansionRule": "A new language adds six cells and requires a newly frozen independently powered protocol."
+  },
+  "endpoint": {
+    "design": "MATCHED_PAIR_SEQUENTIAL_2AFC",
+    "prompt": "Which clip contains the generated presenter?",
+    "promptHashConvention": "SHA256_OF_EXACT_UTF8_BYTES_WITH_NO_TRAILING_NEWLINE",
+    "promptSha256": "b74578d092f5f7dc56801375a8184dea60e73b62ca547664110e63e607396256",
+    "primaryResponse": "FORCED_A_OR_B",
+    "unsurePolicy": "SEPARATE_DIAGNOSTIC_CONFIDENCE_ONLY_NO_EXCLUSION_OR_RECODING",
+    "estimand": "MODEL_STANDARDIZED_MARGINAL_CORRECT_IDENTIFICATION_PROBABILITY_INTEGRATING_VIEWER_AND_PAIR_RANDOM_EFFECTS"
+  },
+  "analysis": {
+    "chance": {"value": 0.5, "sourceKey": "OWNER_NUMERIC"},
+    "equivalenceLower": {"value": 0.4, "comparator": "STRICTLY_GREATER", "sourceKey": "OWNER_NUMERIC"},
+    "equivalenceUpper": {"value": 0.6, "comparator": "STRICTLY_LESS", "sourceKey": "OWNER_NUMERIC"},
+    "tostAlphaEachSide": {"value": 0.05, "sourceKey": "OWNER_NUMERIC"},
+    "confidenceLevel": {"value": 0.9, "sourceKey": "OWNER_NUMERIC"},
+    "formula": "correct ~ 1 + (1|viewerId) + (1|pairId)",
+    "model": "CROSSED_LOGISTIC_MIXED_MODEL",
+    "ciMethod": "FIXED_SEED_PARAMETRIC_BOOTSTRAP_MODEL_STANDARDIZED_MARGINAL",
+    "ciPercentiles": [5, 95],
+    "minimumSuccessfulBootstrapDraws": {"value": 10000, "sourceKey": "OWNER_CLARIFICATION"},
+    "minimumBootstrapSuccessRate": {"value": 0.99, "sourceKey": "OWNER_CLARIFICATION"},
+    "modelFailureRule": "SINGULAR_CONVERGENCE_OR_INSUFFICIENT_BOOTSTRAP_CANNOT_PASS",
+    "missingResponseRule": "NO_IMPUTATION_NEVER_FAVORABLE"
+  },
+  "sample": {
+    "minimumEligibleViewersTotal": {"value": 200, "sourceKey": "OWNER_CLARIFICATION"},
+    "ratingsPerCell": {"value": 400, "sourceKey": "OWNER_NUMERIC"},
+    "ratingsOverall": {"value": 2400, "sourceKey": "OWNER_CLARIFICATION"},
+    "uniquePairsPerCell": {"value": 20, "sourceKey": "OWNER_NUMERIC"},
+    "ratingsPerPair": {"value": 20, "sourceKey": "OWNER_NUMERIC"},
+    "trialsPerViewerPerCell": {"value": 2, "sourceKey": "OWNER_CLARIFICATION"},
+    "trialsPerViewerTotal": {"value": 12, "sourceKey": "OWNER_CLARIFICATION"},
+    "samePairOrExcerptRepeatAllowed": false,
+    "independentViewerDefinition": "ADULT_CONSENTED_PROJECT_AND_PROVIDER_INDEPENDENT_NO_PRIOR_SCORED_BYTES"
+  },
+  "power": {
+    "minimumSimulationCountPerCell": {"value": 100000, "sourceKey": "OWNER_NUMERIC"},
+    "minimumEstimatedPower": {"value": 0.9, "sourceKey": "OWNER_NUMERIC"},
+    "minimumWilsonLower95": {"value": 0.9, "sourceKey": "OWNER_NUMERIC"},
+    "viewerIccPlanning": {"value": 0.05, "sourceKey": "OWNER_NUMERIC"},
+    "pairIccPlanning": {"value": 0.02, "sourceKey": "OWNER_NUMERIC"},
+    "seed": "FROZEN_NONZERO_INTEGER",
+    "failureRule": "INCREASE_SAMPLE_ONLY_MARGIN_ALPHA_MODEL_AND_RULE_CANNOT_RELAX_AFTER_EXPOSURE"
+  },
+  "matching": {
+    "same": ["scriptExcerpt", "language", "framing", "playerChrome", "resolution", "frameRate", "captureQualityBand"],
+    "durationRelativeTolerance": {"value": 0.05, "unit": "RATIO", "sourceKey": "OWNER_CLARIFICATION"},
+    "loudnessToleranceLufs": {"value": 1, "unit": "LUFS", "sourceKey": "OWNER_CLARIFICATION"},
+    "controlConsentRequired": true,
+    "opaqueIdentifiersRequired": true,
+    "strip": ["metadata", "providerLabels", "watermarks"],
+    "allocationCommitmentRequired": true,
+    "pairingConcealedUntilLock": true
+  },
+  "orderAndFatigue": {
+    "schedule": "COMMITTED_SEEDED_BALANCED_BLOCK_LATIN_SQUARE",
+    "adjacentSamePresenterOrAspectAllowed": false,
+    "unscoredTutorialCount": 2,
+    "mandatoryBreakAfterTrial": 6,
+    "maximumScoredMediaMinutes": 18,
+    "sessionDurationHandlingFrozenBeforeUnblinding": true
+  },
+  "viewerEligibility": {
+    "minimumAge": 18,
+    "consentRequired": true,
+    "projectAndProviderIndependenceRequired": true,
+    "priorScoredByteExposureAllowed": false,
+    "englishScreenItems": 5,
+    "minimumEnglishScreenScore": 4,
+    "sensitiveCohortDataRule": "DO_NOT_COLLECT_UNLESS_PRIVACY_APPROVED",
+    "postOutcomeNativeLanguageExclusionAllowed": false,
+    "devicePlaybackCalibrationRefRequired": true
+  },
+  "exclusions": {
+    "preregisteredObjectiveOutcomeBlind": true,
+    "appliedBeforeUnblinding": true,
+    "maximumTotalRate": {"value": 0.1, "comparator": "LESS_THAN_OR_EQUAL", "sourceKey": "OWNER_NUMERIC"},
+    "maximumSingleReasonRate": {"value": 0.05, "comparator": "LESS_THAN_OR_EQUAL", "sourceKey": "OWNER_NUMERIC"},
+    "capFailureDisposition": "INVALID"
+  },
+  "subgroups": {
+    "closedRowsRequired": true,
+    "allowedDispositions": ["PASSED", "FAILED", "INCONCLUSIVE", "DESCRIPTIVE_ONLY"],
+    "demographicClaimRule": "SEPARATELY_PREREGISTERED_AND_POWERED_OR_DESCRIPTIVE_ONLY",
+    "aggregateBooleanProhibited": true
+  },
+  "dimensionReview": {
+    "dimensions": ["IDENTITY", "VOICE_PROSODY", "GAZE", "BLINK", "EXPRESSION", "LIP_SYNC", "HEAD", "TORSO_POSTURE", "ARM", "HAND_FINGER", "BODY", "HAIR_CLOTHING_BACKGROUND", "TIMING", "ACCESSIBILITY", "GROUNDING", "LANGUAGE", "PROVENANCE"],
+    "anchors": ["PASS", "UNCERTAIN", "FAIL"],
+    "independentQualifiedRaters": 2,
+    "adjudicationRequired": true,
+    "passRule": "ZERO_CONFIRMED_FAIL_AND_ZERO_UNCERTAIN_AND_AT_LEAST_ONE_SCORABLE_EVENT_PER_DIMENSION_PER_CELL",
+    "overallScoreSubstitutionAllowed": false
+  },
+  "objectiveThresholds": {
+    "gazeAlignedSpeakingTime": {"value": 0.8, "comparator": "GREATER_THAN_OR_EQUAL", "denominator": "eligibleSpeakingMs", "sourceKey": "OWNER_ROUTE"},
+    "maximumUnexplainedOffCameraMs": {"value": 2000, "sourceKey": "OWNER_ROUTE"},
+    "lipAbsoluteOffsetP95Ms": {"value": 80, "comparator": "LESS_THAN_OR_EQUAL", "sourceKey": "OWNER_CLARIFICATION"},
+    "lipOver80MsLongestMs": {"value": 200, "comparator": "LESS_THAN_OR_EQUAL", "sourceKey": "OWNER_CLARIFICATION"},
+    "captionWordAccuracy": {"value": 0.98, "formula": "1-(S+D+I)/referenceWordCount", "sourceKey": "OWNER_CLARIFICATION"},
+    "captionSpokenWordCoverage": {"value": 0.98, "formula": "1-D/referenceWordCount", "sourceKey": "OWNER_CLARIFICATION"},
+    "maximumUncaptionedAudibleSpeechMs": {"value": 1000, "sourceKey": "OWNER_ROUTE"},
+    "zeroDenominatorDisposition": "INCONCLUSIVE",
+    "wcagEvidenceIndependent": true,
+    "speakerAndNonSpeechCueEvidenceRequired": true
+  },
+  "defectReview": {
+    "calibrationClipCount": 60,
+    "severeClipCount": 30,
+    "cleanClipCount": 30,
+    "severePerClass": {"IDENTITY": 10, "LIMB_HAND_FINGER": 10, "TEMPORAL": 10},
+    "corpusDisjointFromLive": true,
+    "minimumRawAgreement": 0.9,
+    "minimumKappa": 0.8,
+    "perRaterOverallAndPerClassSensitivity": 1,
+    "minimumPerRaterSpecificity": 0.9,
+    "liveDoubleCoding": true,
+    "thirdRaterTwoOfThreeAdjudication": true,
+    "allNotSevereKappaRule": "NA_WITH_RAW_AGREEMENT_1_AND_PASSED_CALIBRATION",
+    "anyAdjudicatedSevereDefectDisposition": "FAILED_DEFECT"
+  },
+  "retest": {
+    "sameBytesAfterFailureOrInconclusiveAllowed": false,
+    "maximumOperationalInvalidReruns": 1,
+    "maximumRevisedCandidateRetests": 1,
+    "freshViewersRequired": true,
+    "priorOutcomesRetained": true,
+    "priorFailureConcealedFromViewersAndPrimaryRaters": true
+  },
+  "privacyAndEvidence": {
+    "deidentifiedRawResponsesRequired": true,
+    "immutableHashesRequiredFor": ["protocol", "randomization", "simulation", "controls", "candidates", "responses", "exclusions", "analysis", "calibration", "adjudication", "consent", "retentionDeletion"],
+    "selectionRatingsReusableForConfirmation": false,
+    "independentHoldoutRequired": true
+  }
+}

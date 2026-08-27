@@ -86,6 +86,45 @@ ISSUE435_ACCEPTANCE_COMMAND = [
     sys.executable,
     *"-I -P -m pytest -p no:cacheprovider -o addopts= -q tests/unit/test_adversarial_convergence.py".split(),
 ]
+ISSUE452_BRANCH = "docs/cut1-acceptance-provider-contract-452"
+ISSUE452_ROUTE_COMMAND = [sys.executable, "scripts/quality/check_stage8_docs.py"]
+ISSUE452_ACCEPTANCE_COMMAND = [
+    sys.executable,
+    *"-I -P -m pytest -p no:cacheprovider -o addopts= -q tests/unit/test_cut1_presenter_contract.py".split(),
+]
+
+
+def test_issue452_exact_branch_dispatches_dedicated_gate(monkeypatch: Any, tmp_path: Path) -> None:
+    calls = run_dispatcher(monkeypatch, tmp_path, branch=ISSUE452_BRANCH, status_text=STAGE8_STATUS)
+    assert calls == [ISSUE452_ROUTE_COMMAND, ISSUE452_ACCEPTANCE_COMMAND]
+
+
+def test_issue452_policy_only_cannot_bypass_gate(monkeypatch: Any, tmp_path: Path) -> None:
+    calls = run_dispatcher(
+        monkeypatch, tmp_path, branch=ISSUE452_BRANCH, status_text=STAGE8_STATUS, policy_only=True
+    )
+    assert calls == [ISSUE452_ROUTE_COMMAND, ISSUE452_ACCEPTANCE_COMMAND]
+
+
+def test_issue452_route_failure_stops_acceptance(monkeypatch: Any) -> None:
+    dispatcher = load_dispatcher()
+    calls: list[list[str]] = []
+
+    def fail(args: list[str], **kwargs: object) -> int:
+        del kwargs
+        calls.append(args)
+        return 17
+
+    monkeypatch.setattr(dispatcher.subprocess, "call", fail)
+    assert dispatcher.run_cut1_presenter_contract_gate() == 17
+    assert calls == [ISSUE452_ROUTE_COMMAND]
+
+
+def test_issue452_near_match_has_no_authority(monkeypatch: Any, tmp_path: Path) -> None:
+    calls = run_dispatcher(
+        monkeypatch, tmp_path, branch=ISSUE452_BRANCH + "-evil", status_text=STAGE8_STATUS
+    )
+    assert calls == [["make", "stage8-quality"]]
 
 
 def test_issue435_exact_branch_dispatches_only_dedicated_gate(monkeypatch: Any, tmp_path: Path) -> None:

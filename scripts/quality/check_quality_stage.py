@@ -24,6 +24,8 @@ ISSUE435_ENV_ALLOWLIST = (
     "SYSTEMROOT", "TMPDIR", "TEMP", "TMP", "GITHUB_HEAD_REF", "GITHUB_BASE_SHA", "GITHUB_HEAD_SHA"
 )
 ISSUE435_ACCEPTANCE_TEST = "tests/unit/test_adversarial_convergence.py"
+ISSUE452_BRANCH = "docs/cut1-acceptance-provider-contract-452"
+ISSUE452_ACCEPTANCE_TEST = "tests/unit/test_cut1_presenter_contract.py"
 
 
 def run_adversarial_convergence_gate() -> int:
@@ -41,24 +43,29 @@ def run_adversarial_convergence_gate() -> int:
     if route_status:
         return route_status
     return subprocess.call(
-        [
-            sys.executable,
-            "-I",
-            "-P",
-            "-m",
-            "pytest",
-            "-p",
-            "no:cacheprovider",
-            "-o",
-            "addopts=",
-            "-q",
-            ISSUE435_ACCEPTANCE_TEST,
-        ],
+        [sys.executable, "-I", "-P", "-m", "pytest", "-p", "no:cacheprovider",
+         "-o", "addopts=", "-q", ISSUE435_ACCEPTANCE_TEST],
         cwd=ROOT,
         env=environment,
     )
 
 
+def run_cut1_presenter_contract_gate() -> int:
+    environment = {
+        key: os.environ[key] for key in ISSUE435_ENV_ALLOWLIST if key in os.environ
+    }
+    environment.update(LC_ALL="C", PATH=os.defpath, PYTEST_DISABLE_PLUGIN_AUTOLOAD="1")
+    route_status = subprocess.call(
+        [sys.executable, "scripts/quality/check_stage8_docs.py"], cwd=ROOT, env=environment
+    )
+    if route_status:
+        return route_status
+    return subprocess.call(
+        [sys.executable, "-I", "-P", "-m", "pytest", "-p", "no:cacheprovider",
+         "-o", "addopts=", "-q", ISSUE452_ACCEPTANCE_TEST],
+        cwd=ROOT,
+        env=environment,
+    )
 def run_recommended_review_item_check(stage: str) -> int:
     return subprocess.call(
         [sys.executable, "scripts/quality/check_recommended_review_items.py", stage],
@@ -83,6 +90,8 @@ def main() -> int:
         return 1
     if branch == ISSUE435_BRANCH:
         return run_adversarial_convergence_gate()
+    if branch == ISSUE452_BRANCH:
+        return run_cut1_presenter_contract_gate()
     if not CURRENT_STAGE.exists():
         print("Missing .stage/current. Cannot determine quality stage.")
         return 1

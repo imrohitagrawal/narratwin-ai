@@ -72,3 +72,25 @@ This is the single presenter contract. `STATUS.md`, `PHASE_PLAN.md`, and issue
 plans link here and do not restate competing acceptance criteria. Changes require
 an issue, dedicated branch, pull request, independent review, and traceability
 update.
+
+## Issue #452 executable acceptance package
+
+Issue #452 converts this contract into closed schemas plus a blinded-human
+protocol, all-presenter matrix and provider bake-off contract. Until that work
+is reviewed and merged, its state is RED governance evidence only.
+
+- Meera, Raj and Myra use the same independent identity, voice/prosody, gaze,
+  blink, expression, lip-sync, head, torso/posture, arm, hand/finger, body,
+  hair/clothing/background, timing, accessibility, grounding, language,
+  provenance and human-evaluation gates.
+- Each presenter × `en` × landscape/portrait cell passes separately. Aggregate
+  results, severe-defect averaging and full-body claims are prohibited.
+- Existing checksum-bound stills are preserved. Meera is conditional and
+  Raj/Myra are `NOT_READY` for hands-visible scoring; derivative media needs a
+  separate Lane A issue and cannot overwrite originals.
+- Local/mock providers remain CI/failure-test tools, not final realism evidence.
+  Paid providers stay disabled and unauthorized pending separate controls.
+
+The executable sources are `docs/governance/cut1-all-presenter-acceptance-matrix-v1.json`,
+`docs/governance/cut1-blinded-human-evaluation-protocol-v1.json`, and
+`docs/governance/cut1-provider-bakeoff-contract-v1.json`.

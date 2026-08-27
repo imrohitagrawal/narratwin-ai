@@ -12,6 +12,7 @@ from scripts.governance_preflight_v1 import validate_governance_preflight
 
 ISSUE150_BRANCH = "cut1-process-150-semgrep-mcp-renewal"
 ISSUE451_BRANCH = "docs/cut1-post-443-reconciliation-451"
+ISSUE452_BRANCH = "docs/cut1-acceptance-provider-contract-452"
 ISSUE386_BRANCH = "cut1-process-386-modular-route-enforcement"
 ISSUE413_BRANCH = "cut1-process-413-frontend-runtime-openssl"
 ISSUE405_BRANCH = "process-405-heartbeat2-main-reliability"
@@ -44,12 +45,38 @@ ISSUE421_BASE = "a868137fab607ae75d4b272301e9fc52b898e15c"
 ISSUE424_BASE = "afcf0325c3ec925b68b770eda0bb8c839bcce4dd"
 ISSUE150_BASE = "a02286240212ad8958915aec01aa5ebaf60fa705"
 ISSUE451_BASE = "59db96aaab6c4e75b12d134dc9b02330c5a982ac"
+ISSUE452_BASE = "97e8173c2ec1323aa9ced23d43059bca2e5a204f"
 SECURITY_PREFLIGHTS = {
     150: ("Issue150SecurityRenewalPreflightV1", "e6a569cb6254ef58c36fb44e9cdece26e0816b49c9f62ce08e9d90f3843c97e3"),
     428: ("Issue428NanoidSecurityPreflightV1", "0d8da352c98855bc481581f1ca13cc2d4e994838b1afb31d974ad2b17caf7a9b"),
 }
 
 ROUTES = {
+    ISSUE452_BRANCH: {
+        "docs/governance/preflights/issue-452.json",
+        "docs/governance/schemas/cut1-human-realism-evaluation-v1.schema.json",
+        "docs/governance/schemas/cut1-presenter-provider-acceptance-v1.schema.json",
+        "docs/governance/cut1-blinded-human-evaluation-protocol-v1.json",
+        "docs/governance/cut1-all-presenter-acceptance-matrix-v1.json",
+        "docs/governance/cut1-provider-bakeoff-contract-v1.json",
+        "docs/governance/cut1-presenter-contract-red-freeze-v1.json",
+        "scripts/quality/cut1_presenter_contract.py",
+        "tests/unit/test_cut1_presenter_contract.py",
+        "scripts/quality/check_quality_stage.py",
+        "tests/unit/test_quality_dispatcher.py",
+        "scripts/quality/stage8_cut1_routes.py",
+        "tests/unit/test_stage8_cut1_routes.py",
+        "docs/ADR/0065-cut1-all-presenter-acceptance-provider-bakeoff.md",
+        "docs/PRODUCT_CONTRACTS/CUT1_PRESENTER_CONTRACT.md",
+        "docs/AI_QUALITY_AND_EVALUATION_CONTRACT.md",
+        "docs/ENTERPRISE_READINESS_REGISTER.md",
+        "docs/CUT_ROADMAP_AND_EVIDENCE_MATRIX.md",
+        "docs/demo/CUT1_ACCEPTANCE_CHECKLIST.md",
+        "docs/QUALITY_GATES.md",
+        "docs/STATUS.md",
+        "docs/THIRD_PARTY_NOTICES.md",
+        "docs/TRACEABILITY.md",
+    },
     ISSUE451_BRANCH: {
         "docs/PHASE_PLAN.md",
         "docs/STATUS.md",
@@ -413,11 +440,11 @@ ROUTES = {
         "docs/THIRD_PARTY_NOTICES.md",
     },
 }
-ROUTE_ISSUES = {ISSUE451_BRANCH: 451, ISSUE150_BRANCH: 150, ISSUE424_BRANCH: 424, ISSUE421_BRANCH: 421, ISSUE415_BRANCH: 415, ISSUE415_CORRECTION_BRANCH: 415, ISSUE413_BRANCH: 413, ISSUE368_ADAPTER_BRANCH: 368, ISSUE368_IMPLEMENTATION_BRANCH: 368, ISSUE368_QUOTA_FIX_BRANCH: 368, ISSUE368_PROMPT_BRANCH: 368, ISSUE368_BRANCH: 368, ISSUE405_BRANCH: 405, ISSUE428_BRANCH: 428, ISSUE403_BRANCH: 403, ISSUE401_BRANCH: 401, ISSUE396_BRANCH: 396,
+ROUTE_ISSUES = {ISSUE452_BRANCH: 452, ISSUE451_BRANCH: 451, ISSUE150_BRANCH: 150, ISSUE424_BRANCH: 424, ISSUE421_BRANCH: 421, ISSUE415_BRANCH: 415, ISSUE415_CORRECTION_BRANCH: 415, ISSUE413_BRANCH: 413, ISSUE368_ADAPTER_BRANCH: 368, ISSUE368_IMPLEMENTATION_BRANCH: 368, ISSUE368_QUOTA_FIX_BRANCH: 368, ISSUE368_PROMPT_BRANCH: 368, ISSUE368_BRANCH: 368, ISSUE405_BRANCH: 405, ISSUE428_BRANCH: 428, ISSUE403_BRANCH: 403, ISSUE401_BRANCH: 401, ISSUE396_BRANCH: 396,
                 ISSUE386_BRANCH: 386, ISSUE385_BRANCH: 385,
                 ISSUE384_BRANCH: 384, ISSUE383_BRANCH: 383, ISSUE397_BRANCH: 397,
                 ISSUE393_BRANCH: 393, ISSUE382_BRANCH: 382, ISSUE367_BRANCH: 367}
-TOTAL_LIMITS = {ISSUE451_BRANCH: 600, ISSUE150_BRANCH: 1000, ISSUE424_BRANCH: 8500, ISSUE421_BRANCH: 4000, ISSUE415_BRANCH: 5000, ISSUE415_CORRECTION_BRANCH: 800, ISSUE413_BRANCH: 5000, ISSUE368_ADAPTER_BRANCH: 5600, ISSUE368_IMPLEMENTATION_BRANCH: 3600, ISSUE368_QUOTA_FIX_BRANCH: 2800, ISSUE368_PROMPT_BRANCH: 1000, ISSUE368_BRANCH: 3200, ISSUE405_BRANCH: 800, ISSUE428_BRANCH: 500, ISSUE403_BRANCH: 650, ISSUE401_BRANCH: 600, ISSUE396_BRANCH: 500,
+TOTAL_LIMITS = {ISSUE452_BRANCH: 3600, ISSUE451_BRANCH: 600, ISSUE150_BRANCH: 1000, ISSUE424_BRANCH: 8500, ISSUE421_BRANCH: 4000, ISSUE415_BRANCH: 5000, ISSUE415_CORRECTION_BRANCH: 800, ISSUE413_BRANCH: 5000, ISSUE368_ADAPTER_BRANCH: 5600, ISSUE368_IMPLEMENTATION_BRANCH: 3600, ISSUE368_QUOTA_FIX_BRANCH: 2800, ISSUE368_PROMPT_BRANCH: 1000, ISSUE368_BRANCH: 3200, ISSUE405_BRANCH: 800, ISSUE428_BRANCH: 500, ISSUE403_BRANCH: 650, ISSUE401_BRANCH: 600, ISSUE396_BRANCH: 500,
                 ISSUE386_BRANCH: 700, ISSUE385_BRANCH: 350,
                 ISSUE384_BRANCH: 500, ISSUE383_BRANCH: 700, ISSUE397_BRANCH: 500,
                 ISSUE393_BRANCH: 700, ISSUE382_BRANCH: 3200, ISSUE367_BRANCH: 2000}
@@ -426,6 +453,31 @@ ISSUE383_BINARY_FILES = {
     "frontend/public/demo/raj-synthetic-presenter.webp",
 }
 TEXT_LIMITS = {
+    ISSUE452_BRANCH: {
+        "docs/governance/preflights/issue-452.json": 260,
+        "docs/governance/schemas/cut1-human-realism-evaluation-v1.schema.json": 360,
+        "docs/governance/schemas/cut1-presenter-provider-acceptance-v1.schema.json": 400,
+        "docs/governance/cut1-blinded-human-evaluation-protocol-v1.json": 300,
+        "docs/governance/cut1-all-presenter-acceptance-matrix-v1.json": 300,
+        "docs/governance/cut1-provider-bakeoff-contract-v1.json": 360,
+        "docs/governance/cut1-presenter-contract-red-freeze-v1.json": 220,
+        "scripts/quality/cut1_presenter_contract.py": 400,
+        "tests/unit/test_cut1_presenter_contract.py": 450,
+        "scripts/quality/check_quality_stage.py": 50,
+        "tests/unit/test_quality_dispatcher.py": 100,
+        "scripts/quality/stage8_cut1_routes.py": 160,
+        "tests/unit/test_stage8_cut1_routes.py": 240,
+        "docs/ADR/0065-cut1-all-presenter-acceptance-provider-bakeoff.md": 240,
+        "docs/PRODUCT_CONTRACTS/CUT1_PRESENTER_CONTRACT.md": 100,
+        "docs/AI_QUALITY_AND_EVALUATION_CONTRACT.md": 120,
+        "docs/ENTERPRISE_READINESS_REGISTER.md": 100,
+        "docs/CUT_ROADMAP_AND_EVIDENCE_MATRIX.md": 100,
+        "docs/demo/CUT1_ACCEPTANCE_CHECKLIST.md": 120,
+        "docs/QUALITY_GATES.md": 100,
+        "docs/STATUS.md": 120,
+        "docs/THIRD_PARTY_NOTICES.md": 100,
+        "docs/TRACEABILITY.md": 100,
+    },
     ISSUE451_BRANCH: {
         "docs/PHASE_PLAN.md": 120,
         "docs/STATUS.md": 180,
@@ -957,6 +1009,7 @@ def parse_name_status_z(output: str) -> list[str]:
 
 def route_base(run: Callable[[list[str]], Any], branch: str) -> str:
     fixed_routes = {
+        ISSUE452_BRANCH: (452, ISSUE452_BASE),
         ISSUE451_BRANCH: (451, ISSUE451_BASE),
         ISSUE150_BRANCH: (150, ISSUE150_BASE),
         ISSUE424_BRANCH: (424, ISSUE424_BASE),
@@ -975,7 +1028,7 @@ def route_base(run: Callable[[list[str]], Any], branch: str) -> str:
         fixed_value = str(fixed.stdout).strip()
         common_value = str(common.stdout).strip()
         branch_point_invalid = False
-        if branch in {ISSUE451_BRANCH, ISSUE150_BRANCH, ISSUE424_BRANCH, ISSUE421_BRANCH, ISSUE368_IMPLEMENTATION_BRANCH,
+        if branch in {ISSUE452_BRANCH, ISSUE451_BRANCH, ISSUE150_BRANCH, ISSUE424_BRANCH, ISSUE421_BRANCH, ISSUE368_IMPLEMENTATION_BRANCH,
                       ISSUE368_QUOTA_FIX_BRANCH, ISSUE368_BRANCH,
                       ISSUE368_PROMPT_BRANCH}:
             branch_point = run(["git", "merge-base", "origin/main", "HEAD"])

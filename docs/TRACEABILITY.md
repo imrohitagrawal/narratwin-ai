@@ -661,3 +661,13 @@ remain separate gates.
 | Enterprise/SRE/DevOps targets | `docs/ENTERPRISE_READINESS_REGISTER.md` and roadmap matrix | SLO, capacity, restore/failover, supply-chain and release reports |
 | Accessibility/public-use acceptance | roadmap matrix and Cut 1 checklist | browser/accessibility report plus human legal/compliance review |
 | Single current authority | `docs/STATUS.md`, `docs/PHASE_PLAN.md`, ADR 0048 | Issue/branch/PR review and post-merge status reconciliation |
+
+## Issue #452 executable presenter/provider contract
+
+| Requirement | Canonical evidence | Preserved boundary |
+|---|---|---|
+| Same human behavior for Meera, Raj and Myra | all-presenter matrix, blinded protocol, human-evaluation schema and tests | Six cells pass independently; no aggregate masking or full-body claim |
+| Reuse approved knowledge, scripts and identities | checksum-bound matrix and ADR 0065 | Originals unchanged; Raj/Myra hands-visible derivatives remain later Lane A work |
+| Quality-first replaceable provider choice | provider bake-off and provider-acceptance schema | Candidates disabled; local mocks are not realism evidence; no provider permanently selected |
+| Human-like acceptance is measured | crossed 2AFC, bootstrap/power, dimension, IRR, caption/accessibility and severe-defect evidence | Exact-artifact controlled claim only; no literal indistinguishability/public/production claim |
+| Security/privacy false-success resistance | consent/egress/spend/idempotency/tenant/output/deletion mutants | No account, credential resolution, egress, spend, media, publication or release authority |

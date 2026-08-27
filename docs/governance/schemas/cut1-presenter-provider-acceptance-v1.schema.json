@@ -1,0 +1,386 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://narratwin.local/schemas/cut1-presenter-provider-acceptance-v1.schema.json",
+  "title": "Cut1PresenterProviderAcceptanceV1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "candidateId",
+    "activation",
+    "authorityEffect",
+    "presenter",
+    "provider",
+    "rights",
+    "privacy",
+    "egress",
+    "credentialRef",
+    "screening",
+    "experiment",
+    "idempotency",
+    "lineage",
+    "outputValidation",
+    "disclosure",
+    "deletion",
+    "observability",
+    "reproducibility",
+    "eligibility"
+  ],
+  "properties": {
+    "schemaVersion": {"const": "Cut1PresenterProviderAcceptanceV1"},
+    "candidateId": {"$ref": "#/$defs/id"},
+    "activation": {"const": "NONE"},
+    "authorityEffect": {"const": "NO_AUTHORITY_EFFECT"},
+    "presenter": {"$ref": "#/$defs/presenter"},
+    "provider": {"$ref": "#/$defs/provider"},
+    "rights": {"$ref": "#/$defs/rights"},
+    "privacy": {"$ref": "#/$defs/privacy"},
+    "egress": {"$ref": "#/$defs/egress"},
+    "credentialRef": {"$ref": "#/$defs/credentialRef"},
+    "screening": {"$ref": "#/$defs/screening"},
+    "experiment": {"$ref": "#/$defs/experiment"},
+    "idempotency": {"$ref": "#/$defs/idempotency"},
+    "lineage": {"$ref": "#/$defs/lineage"},
+    "outputValidation": {"$ref": "#/$defs/outputValidation"},
+    "disclosure": {"$ref": "#/$defs/disclosure"},
+    "deletion": {"$ref": "#/$defs/deletion"},
+    "observability": {"$ref": "#/$defs/observability"},
+    "reproducibility": {"$ref": "#/$defs/reproducibility"},
+    "eligibility": {
+      "enum": ["NOT_AUTHORIZED", "CONDITIONAL", "EXPLORATORY_ONLY", "ELIGIBLE", "REJECTED"]
+    }
+  },
+  "$defs": {
+    "id": {"type": "string", "minLength": 1, "maxLength": 160},
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "sha256"],
+      "properties": {"id": {"$ref": "#/$defs/id"}, "sha256": {"$ref": "#/$defs/sha256"}}
+    },
+    "presenter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "presenterId",
+        "role",
+        "assetSha256",
+        "identityKind",
+        "cloned",
+        "realPersonLikeness",
+        "framing",
+        "handsVisible",
+        "gesturesScored",
+        "originalOverwritten",
+        "derivativeAuthorityRef"
+      ],
+      "properties": {
+        "presenterId": {"enum": ["meera", "raj", "myra"]},
+        "role": {"enum": ["PRIMARY", "FIRST_BACKUP", "SECOND_BACKUP"]},
+        "assetSha256": {"$ref": "#/$defs/sha256"},
+        "identityKind": {"const": "SYNTHETIC_FICTIONAL"},
+        "cloned": {"const": false},
+        "realPersonLikeness": {"const": false},
+        "framing": {"enum": ["WAIST_UP", "MID_THIGH"]},
+        "handsVisible": {"type": "boolean"},
+        "gesturesScored": {"type": "boolean"},
+        "originalOverwritten": {"const": false},
+        "derivativeAuthorityRef": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/ref"}]}
+      }
+    },
+    "provider": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "legalEntity",
+        "product",
+        "api",
+        "modelOrEngine",
+        "version",
+        "lifecycle",
+        "region",
+        "endpoint",
+        "identityOrVoiceId",
+        "identityOrVoiceType",
+        "modality",
+        "role",
+        "officialSourceUrls",
+        "sourceCheckpoint"
+      ],
+      "properties": {
+        "legalEntity": {"$ref": "#/$defs/id"},
+        "product": {"$ref": "#/$defs/id"},
+        "api": {"$ref": "#/$defs/id"},
+        "modelOrEngine": {"$ref": "#/$defs/id"},
+        "version": {"$ref": "#/$defs/id"},
+        "lifecycle": {"enum": ["GA", "PREVIEW", "DEPRECATED", "UNVERIFIED"]},
+        "region": {"$ref": "#/$defs/id"},
+        "endpoint": {"type": "string", "pattern": "^https://"},
+        "identityOrVoiceId": {"$ref": "#/$defs/id"},
+        "identityOrVoiceType": {"enum": ["PREBUILT_NON_CLONED", "GENERATED_NON_CLONED", "FICTIONAL_STILL", "UNVERIFIED"]},
+        "modality": {"enum": ["VOICE", "BATCH_VIDEO", "FUTURE_QA"]},
+        "role": {
+          "enum": ["BASELINE", "CHALLENGER", "FIRST_CANDIDATE", "CONSTRAINED_FALLBACK", "FUTURE_ONLY", "CONDITIONAL", "EXPLORATORY_ONLY"]
+        },
+        "officialSourceUrls": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 12,
+          "uniqueItems": true,
+          "items": {"type": "string", "pattern": "^https://"}
+        },
+        "sourceCheckpoint": {"$ref": "#/$defs/ref"}
+      }
+    },
+    "rights": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "provenanceRef",
+        "rightsEvidenceRef",
+        "consentEvidenceRef",
+        "consentStatus",
+        "consentBinding",
+        "identityCompatibility",
+        "commercialUseDecision",
+        "derivativeUseDecision",
+        "termsRef",
+        "dpaRef",
+        "licenseRef",
+        "publicationAllowed"
+      ],
+      "properties": {
+        "provenanceRef": {"$ref": "#/$defs/ref"},
+        "rightsEvidenceRef": {"$ref": "#/$defs/ref"},
+        "consentEvidenceRef": {"$ref": "#/$defs/ref"},
+        "consentStatus": {"enum": ["CURRENT", "MISSING", "EXPIRED", "REVOKED"]},
+        "consentBinding": {"$ref": "#/$defs/consentBinding"},
+        "identityCompatibility": {"enum": ["VERIFIED", "UNVERIFIED", "BLOCKED"]},
+        "commercialUseDecision": {"enum": ["APPROVED", "BLOCKED", "UNKNOWN"]},
+        "derivativeUseDecision": {"enum": ["APPROVED", "BLOCKED", "UNKNOWN"]},
+        "termsRef": {"$ref": "#/$defs/ref"},
+        "dpaRef": {"$ref": "#/$defs/ref"},
+        "licenseRef": {"$ref": "#/$defs/ref"},
+        "publicationAllowed": {"const": false}
+      }
+    },
+    "consentBinding": {
+      "type": "object", "additionalProperties": false,
+      "required": ["presenterId", "projectId", "scope", "mediaTypes", "version", "effectiveAt", "expiresAt", "revokedAt"],
+      "properties": {
+        "presenterId": {"enum": ["meera", "raj", "myra"]}, "projectId": {"$ref": "#/$defs/id"},
+        "scope": {"const": "CONTROLLED_CUT1_EXPERIMENT"},
+        "mediaTypes": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"enum": ["VOICE", "BATCH_VIDEO", "FUTURE_QA"]}},
+        "version": {"$ref": "#/$defs/id"}, "effectiveAt": {"type": "string", "format": "date-time"},
+        "expiresAt": {"type": "string", "format": "date-time"},
+        "revokedAt": {"type": ["string", "null"], "format": "date-time"}
+      }
+    },
+    "privacy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "inputClassification",
+        "controllerProcessorRole",
+        "trainingUse",
+        "processingRegion",
+        "storageRegion",
+        "crossBorderTransfer",
+        "subprocessorRef",
+        "backupDeletionRef",
+        "retentionRef",
+        "providerDeletionSlaRef"
+      ],
+      "properties": {
+        "inputClassification": {"const": "APPROVED_SYNTHETIC_NON_SENSITIVE"},
+        "controllerProcessorRole": {"enum": ["PROVIDER_PROCESSOR", "UNKNOWN"]},
+        "trainingUse": {"enum": ["DISABLED_VERIFIED", "UNKNOWN", "ENABLED"]},
+        "processingRegion": {"$ref": "#/$defs/id"},
+        "storageRegion": {"$ref": "#/$defs/id"},
+        "crossBorderTransfer": {"enum": ["NONE_VERIFIED", "APPROVED", "UNKNOWN"]},
+        "subprocessorRef": {"$ref": "#/$defs/ref"},
+        "backupDeletionRef": {"$ref": "#/$defs/ref"},
+        "retentionRef": {"$ref": "#/$defs/ref"},
+        "providerDeletionSlaRef": {"$ref": "#/$defs/ref"}
+      }
+    },
+    "egress": {
+      "type": "object", "additionalProperties": false,
+      "required": ["enabled", "method", "endpoint", "redirectsAllowed", "proxy", "dnsPolicyRef", "tlsPolicyRef", "approvalRef"],
+      "properties": {
+        "enabled": {"const": false}, "method": {"enum": ["POST", "WEBSOCKET"]},
+        "endpoint": {"type": "string", "pattern": "^https://"}, "redirectsAllowed": {"const": false},
+        "proxy": {"const": "NONE"}, "dnsPolicyRef": {"$ref": "#/$defs/ref"},
+        "tlsPolicyRef": {"$ref": "#/$defs/ref"}, "approvalRef": {"type": "null"}
+      }
+    },
+    "credentialRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["scheme", "id", "scope", "owner"],
+      "properties": {
+        "scheme": {"const": "SecretRef"},
+        "id": {"$ref": "#/$defs/id"},
+        "scope": {"$ref": "#/$defs/id"},
+        "owner": {"$ref": "#/$defs/id"}
+      }
+    },
+    "screen": {
+      "type": "object", "additionalProperties": false,
+      "required": ["contentRef", "scannerRef", "result"],
+      "properties": {"contentRef": {"$ref": "#/$defs/ref"}, "scannerRef": {"$ref": "#/$defs/ref"}, "result": {"enum": ["CLEAN", "BLOCKED"]}}
+    },
+    "screening": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["upload", "retrievedContext", "prompt", "transcript", "providerPayload", "evaluatorPayload"],
+      "properties": {
+        "upload": {"$ref": "#/$defs/screen"},
+        "retrievedContext": {"$ref": "#/$defs/screen"},
+        "prompt": {"$ref": "#/$defs/screen"},
+        "transcript": {"$ref": "#/$defs/screen"},
+        "providerPayload": {"$ref": "#/$defs/screen"},
+        "evaluatorPayload": {"$ref": "#/$defs/screen"}
+      }
+    },
+    "experiment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "enabled",
+        "currency",
+        "pricingRef",
+        "rateSnapshotRef",
+        "maxCalls",
+        "maxSeconds",
+        "maxAttemptsPerCall",
+        "maxRetries",
+        "maxConcurrency",
+        "timeoutMs",
+        "perCallCeilingMicros",
+        "experimentCeilingMicros",
+        "providerHardCapMicros",
+        "chargedOnFailure",
+        "spendState",
+        "ownerApprovalRef"
+      ],
+      "properties": {
+        "enabled": {"const": false},
+        "currency": {"type": "string", "pattern": "^[A-Z]{3}$"},
+        "pricingRef": {"$ref": "#/$defs/ref"},
+        "rateSnapshotRef": {"$ref": "#/$defs/ref"},
+        "maxCalls": {"type": "integer", "minimum": 0},
+        "maxSeconds": {"type": "integer", "minimum": 0},
+        "maxAttemptsPerCall": {"type": "integer", "minimum": 1},
+        "maxRetries": {"type": "integer", "minimum": 0},
+        "maxConcurrency": {"type": "integer", "minimum": 1},
+        "timeoutMs": {"type": "integer", "minimum": 1},
+        "perCallCeilingMicros": {"type": "integer", "minimum": 0},
+        "experimentCeilingMicros": {"type": "integer", "minimum": 0},
+        "providerHardCapMicros": {"type": ["integer", "null"], "minimum": 0},
+        "chargedOnFailure": {"enum": ["YES", "NO", "UNKNOWN"]},
+        "spendState": {"enum": ["NOT_AUTHORIZED", "RESERVED", "COMMITTED", "RELEASED", "BILLABLE_UNKNOWN"]},
+        "ownerApprovalRef": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/ref"}]}
+      }
+    },
+    "idempotency": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["key", "requestFingerprint", "tenantId", "projectId", "actorId", "state", "persistedBeforeEgress", "egressPossible", "retryPermitted", "reservationDisposition"],
+      "properties": {
+        "key": {"$ref": "#/$defs/id"},
+        "requestFingerprint": {"$ref": "#/$defs/sha256"},
+        "tenantId": {"$ref": "#/$defs/id"}, "projectId": {"$ref": "#/$defs/id"}, "actorId": {"$ref": "#/$defs/id"},
+        "state": {"enum": ["PENDING", "COMPLETED", "FAILED_PRE_EGRESS", "FAILED_BILLABLE", "BILLABLE_UNKNOWN", "TOMBSTONED"]},
+        "persistedBeforeEgress": {"type": "boolean"},
+        "egressPossible": {"type": "boolean"},
+        "retryPermitted": {"type": "boolean"},
+        "reservationDisposition": {"enum": ["HELD", "COMMITTED", "RELEASED"]}
+      }
+    },
+    "lineage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tenantId", "projectId", "actorId", "runId", "traceId", "requestId", "sourceRef", "scriptRef", "evaluationRef", "artifactRef"],
+      "properties": {
+        "tenantId": {"$ref": "#/$defs/id"},
+        "projectId": {"$ref": "#/$defs/id"},
+        "actorId": {"$ref": "#/$defs/id"},
+        "runId": {"$ref": "#/$defs/id"},
+        "traceId": {"$ref": "#/$defs/id"},
+        "requestId": {"$ref": "#/$defs/id"},
+        "sourceRef": {"$ref": "#/$defs/ref"},
+        "scriptRef": {"$ref": "#/$defs/ref"},
+        "evaluationRef": {"$ref": "#/$defs/ref"},
+        "artifactRef": {"$ref": "#/$defs/ref"}
+      }
+    },
+    "outputValidation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["providerSuccess", "schemaValid", "contentSafe", "moderationRef", "checksumValid", "sizeValid", "accepted"],
+      "properties": {
+        "providerSuccess": {"type": "boolean"},
+        "schemaValid": {"type": "boolean"},
+        "contentSafe": {"type": "boolean"},
+        "moderationRef": {"$ref": "#/$defs/ref"},
+        "checksumValid": {"type": "boolean"},
+        "sizeValid": {"type": "boolean"},
+        "accepted": {"type": "boolean"}
+      }
+    },
+    "disclosure": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["policyRef", "textSha256", "artifactEmbedded", "complianceSurface", "consistent"],
+      "properties": {
+        "policyRef": {"$ref": "#/$defs/ref"},
+        "textSha256": {"$ref": "#/$defs/sha256"},
+        "artifactEmbedded": {"type": "boolean"},
+        "complianceSurface": {"const": "APPROVED_COMPLIANCE_METADATA"},
+        "consistent": {"type": "boolean"}
+      }
+    },
+    "deletion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["localState", "providerState", "providerJobId", "tombstoneRef", "confirmationRef", "cacheState", "resurrectionCheckRef", "cleanupRef"],
+      "properties": {
+        "localState": {"enum": ["NOT_REQUESTED", "PENDING", "CONFIRMED"]},
+        "providerState": {"enum": ["NOT_REQUESTED", "PENDING", "CONFIRMED", "UNVERIFIABLE"]},
+        "providerJobId": {"$ref": "#/$defs/id"},
+        "tombstoneRef": {"$ref": "#/$defs/ref"},
+        "confirmationRef": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/ref"}]},
+        "cacheState": {"enum": ["ACTIVE", "INVALIDATED"]},
+        "resurrectionCheckRef": {"$ref": "#/$defs/ref"},
+        "cleanupRef": {"$ref": "#/$defs/ref"}
+      }
+    },
+    "observability": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["eventRef", "redactionPolicyRef", "latencyMs", "billableUnits", "costMicros", "rawContentLogged", "secretResolutionLogged", "raterPiiLogged"],
+      "properties": {
+        "eventRef": {"$ref": "#/$defs/ref"},
+        "redactionPolicyRef": {"$ref": "#/$defs/ref"},
+        "latencyMs": {"type": "integer", "minimum": 0}, "billableUnits": {"type": "number", "minimum": 0},
+        "costMicros": {"type": "integer", "minimum": 0},
+        "rawContentLogged": {"const": false},
+        "secretResolutionLogged": {"const": false},
+        "raterPiiLogged": {"const": false}
+      }
+    },
+    "reproducibility": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repeatCount", "outputSha256s", "nondeterministic", "selectionDecision"],
+      "properties": {
+        "repeatCount": {"type": "integer", "minimum": 3},
+        "outputSha256s": {"type": "array", "minItems": 3, "maxItems": 20, "items": {"$ref": "#/$defs/sha256"}},
+        "nondeterministic": {"type": "boolean"},
+        "selectionDecision": {"enum": ["NOT_SCORED", "PASS", "FAIL"]}
+      }
+    }
+  }
+}

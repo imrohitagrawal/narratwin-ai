@@ -59,3 +59,22 @@ This checklist does not prove full-body walking, open-domain Q&A, public
 availability, production reliability, legal approval, real-person likeness,
 paid-provider readiness, or commercial launch. Those are later cut or
 enterprise gates in `docs/CUT_ROADMAP_AND_EVIDENCE_MATRIX.md`.
+
+## Issue #452 machine-evaluated additions
+
+- [ ] All six presenter/language/aspect cells are present and independently
+      passed; no presenter, language, aspect or severe defect is pooled away.
+- [ ] Preregistration hash/timestamp precedes first exposure; candidate,
+      control-consent, randomization, model, environment and analysis bytes are
+      immutable and reviewable.
+- [ ] The 2AFC crossed-model 90% interval lies strictly inside `(0.40, 0.60)`;
+      bootstrap, power, sample, exclusion and subgroup rules pass.
+- [ ] Every named motion/voice/language dimension has scorable events, zero
+      confirmed `FAIL` and zero `UNCERTAIN`.
+- [ ] Caption lexical accuracy and spoken-word coverage are each at least 98%,
+      the longest uncaptioned audible speech is at most one second, cues are
+      reviewed, and independent WCAG evidence passes.
+- [ ] Raj/Myra remain `NOT_READY` for hands-visible scoring until separately
+      authorized checksum-bound derivatives exist; originals are unchanged.
+- [ ] Provider, consent, privacy, egress, spend, idempotency, deletion,
+      observability and false-success evidence passes before any later call.

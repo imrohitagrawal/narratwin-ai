@@ -1,0 +1,186 @@
+{
+  "schemaVersion": "Cut1ProviderBakeoffContractV1",
+  "activation": "NONE",
+  "authorityEffect": "NO_AUTHORITY_EFFECT",
+  "providersEnabled": false,
+  "accountsCredentialsEgressSpendAuthorized": false,
+  "sourceCheckpoint": {
+    "url": "https://github.com/imrohitagrawal/narratwin-ai/issues/452#issuecomment-5442862365",
+    "bodySha256": "19f1619ce83591f4e70285603487d823b7ebe90b208030dd4370846aff425a77",
+    "accessedAt": "2026-08-27T00:00:00+05:30",
+    "refreshRequiredBeforeExperiment": true
+  },
+  "selectionPriority": [
+    "BLINDED_HUMAN_REALISM_NATURALNESS", "PRESENTER_IDENTITY_CONTINUITY",
+    "VISUAL_TEMPORAL_QUALITY", "VOICE_LANGUAGE_CAPTIONS_ACCESSIBILITY",
+    "RIGHTS_PRIVACY_DISCLOSURE_RETENTION", "REPRODUCIBILITY_RELIABILITY_FALLBACK_ROLLBACK",
+    "LATENCY", "COST"
+  ],
+  "commonRules": {
+    "presentersScoredIndependently": ["meera", "raj", "myra"],
+    "sameApprovedScriptGlossaryFormatLoudnessLanguageDirection": true,
+    "sameWinningAudioForEligibleVideoCandidates": true,
+    "selectionRatingsAreConfirmatoryEvidence": false,
+    "holdoutRequiredForFinalAcceptance": true,
+    "nonClonedFictionalVoiceOnly": true,
+    "realPersonLikenessAllowed": false,
+    "secretRefOnly": true,
+    "syntheticNonSensitiveInputsFirst": true,
+    "minimumRepeatOutputs": 3,
+    "automaticPaidFallback": false,
+    "providerOutputTrustedWithoutValidation": false,
+    "publicationAllowed": false,
+    "refreshTermsPricingAvailabilityBeforeExperiment": true
+  },
+  "requiredAcceptanceRecord": "docs/governance/schemas/cut1-presenter-provider-acceptance-v1.schema.json",
+  "voice": [
+    {
+      "candidateId": "google-gemini-25-pro-tts",
+      "legalEntity": "Google LLC",
+      "product": "Google Cloud Text-to-Speech",
+      "api": "Gemini TTS",
+      "modelOrEngine": "gemini-2.5-pro-tts",
+      "lifecycle": "GA",
+      "role": "BASELINE",
+      "eligibility": "NOT_AUTHORIZED",
+      "requirements": ["SELECT_REGION", "PREFER_VERTEX_GOVERNANCE", "NO_VOICE_REPLICATION", "APPLICATION_HARD_CAP", "RECORD_MODEL_VOICE_REGION_PAYLOAD_SDK_REPEATS"],
+      "sources": [
+        "https://docs.cloud.google.com/text-to-speech/docs/gemini-tts",
+        "https://docs.cloud.google.com/vertex-ai/generative-ai/docs/vertex-ai-zero-data-retention",
+        "https://cloud.google.com/text-to-speech/pricing"
+      ]
+    },
+    {
+      "candidateId": "google-gemini-25-flash-tts",
+      "legalEntity": "Google LLC",
+      "product": "Google Cloud Text-to-Speech",
+      "api": "Gemini TTS",
+      "modelOrEngine": "gemini-2.5-flash-tts",
+      "lifecycle": "GA",
+      "role": "FUTURE_ONLY",
+      "eligibility": "NOT_AUTHORIZED",
+      "requirements": ["LATENCY_ROUTE_SEPARATELY_AUTHORIZED", "NO_VOICE_REPLICATION"],
+      "sources": ["https://docs.cloud.google.com/text-to-speech/docs/gemini-tts"]
+    },
+    {
+      "candidateId": "elevenlabs-v3-multilingual-v2",
+      "legalEntity": "ElevenLabs Inc.",
+      "product": "ElevenLabs Text to Speech",
+      "api": "ElevenLabs API",
+      "modelOrEngine": "v3-or-multilingual-v2",
+      "lifecycle": "GA_OR_PREVIEW_MUST_PIN",
+      "role": "CHALLENGER",
+      "eligibility": "NOT_AUTHORIZED",
+      "requirements": ["VOICE_DESIGN_OR_PREBUILT_NON_CLONED", "NO_COMMUNITY_CLONES", "ENTERPRISE_API_ZRM_OR_SYNTHETIC_ONLY", "RESIDENCY_SEPARATE_FROM_ZRM", "PER_KEY_CREDIT_QUOTA_AND_SCOPE", "SEED_NOT_DETERMINISM"],
+      "sources": [
+        "https://elevenlabs.io/docs/overview/models",
+        "https://elevenlabs.io/docs/overview/capabilities/voices",
+        "https://elevenlabs.io/docs/eleven-api/resources/zero-retention-mode",
+        "https://elevenlabs.io/docs/overview/administration/data-residency"
+      ]
+    }
+  ],
+  "batchVideo": [
+    {
+      "candidateId": "heygen-avatar-iv-photo",
+      "legalEntity": "HeyGen Technology Inc.",
+      "product": "HeyGen Avatar IV Photo",
+      "api": "HeyGen Video API v3",
+      "modelOrEngine": "Avatar IV or pinned eligible engine",
+      "role": "FIRST_CANDIDATE",
+      "eligibility": "NOT_AUTHORIZED",
+      "motionScope": "TARGET_WAIST_UP_OR_MID_THIGH_SUBJECT_TO_IDENTITY_COMPATIBILITY",
+      "requirements": ["BYO_WINNING_AUDIO_AND_CAPTIONS", "FICTIONAL_STILL_NOT_DIGITAL_TWIN_CONSENT_FLOW", "ENTERPRISE_DPA_NO_TRAINING", "ENGINE_LOOK_AUDIO_PROMPT_RESOLUTION_REPEATS", "PREPAID_WALLET_AND_APPLICATION_CAP"],
+      "sources": [
+        "https://developers.heygen.com/reference/create-video",
+        "https://developers.heygen.com/generate-avatar-video",
+        "https://developers.heygen.com/docs/pricing",
+        "https://www.heygen.com/terms",
+        "https://www.heygen.com/privacy"
+      ]
+    },
+    {
+      "candidateId": "d-id-talks",
+      "legalEntity": "de-identification Ltd.",
+      "product": "D-ID Creative Reality Studio",
+      "api": "D-ID Talks API",
+      "modelOrEngine": "pinned-current-talks",
+      "role": "CONSTRAINED_FALLBACK",
+      "eligibility": "NOT_AUTHORIZED",
+      "motionScope": "TALKING_HEAD_ONLY_NO_TORSO_ARM_BODY_PROOF",
+      "requirements": ["PERSIST_FALSE", "CAPTURE_EPHEMERAL_RESULT", "REGION_AND_DPA_PROOF", "NO_LEGACY_STREAMING_ROUTE"],
+      "sources": [
+        "https://docs.d-id.com/reference/createtalk",
+        "https://docs.d-id.com/reference/createtalkstream",
+        "https://www.d-id.com/privacy-policy/",
+        "https://www.d-id.com/pricing/api"
+      ]
+    },
+    {
+      "candidateId": "synthesia-photo-avatar",
+      "legalEntity": "Synthesia Ltd.",
+      "product": "Synthesia Photo Avatar",
+      "api": "Synthesia API v2",
+      "modelOrEngine": "UNVERIFIED_EXISTING_FICTIONAL_IDENTITY",
+      "role": "CONDITIONAL",
+      "eligibility": "CONDITIONAL",
+      "motionScope": "BLOCKED_UNTIL_WRITTEN_IDENTITY_COMPATIBILITY",
+      "requirements": ["WRITTEN_VENDOR_CONFIRMATION_FOR_EXISTING_FICTIONAL_IDENTITY", "REGION_RETENTION_DELETION", "CREDIT_HARD_CAP"],
+      "sources": [
+        "https://docs.synthesia.io/reference/introduction",
+        "https://www.synthesia.io/legal/ai-governance-practices",
+        "https://www.synthesia.io/legal/security-practices",
+        "https://help.synthesia.io/en/articles/13846500-photo-avatars-content-moderation"
+      ]
+    },
+    {
+      "candidateId": "higgsfield-presenter",
+      "legalEntity": "Higgsfield AI",
+      "product": "Higgsfield",
+      "api": "NO_ACCEPTANCE_GRADE_STABLE_API_VERIFIED",
+      "modelOrEngine": "UNVERIFIED",
+      "role": "EXPLORATORY_ONLY",
+      "eligibility": "EXPLORATORY_ONLY",
+      "motionScope": "EXCLUDED_FROM_ACCEPTANCE_CRITICAL_BAKEOFF",
+      "requirements": ["NO_AUTOMATED_GENERATION", "STABLE_VERSION_PINNABLE_CONTRACT_REQUIRED", "TRAINING_USE_AND_PRIVACY_REVIEW"],
+      "sources": [
+        "https://higgsfield.ai/terms-of-use-agreement",
+        "https://higgsfield.ai/privacy-policy",
+        "https://higgsfield.ai/creator-hub/help-center/integrations/how-do-i-access-higgsfield-via-cli"
+      ]
+    }
+  ],
+  "futureQa": [
+    {
+      "candidateId": "tavus-cvi",
+      "legalEntity": "Tavus Inc.",
+      "product": "Conversational Video Interface",
+      "api": "Tavus CVI",
+      "modelOrEngine": "PINNED_FUTURE_VERSION",
+      "role": "FUTURE_ONLY",
+      "eligibility": "NOT_AUTHORIZED",
+      "requirements": ["VENDOR_IDENTITY_COMPATIBILITY", "DISCLOSURE_VIA_APPROVED_COMPLIANCE_MECHANISM", "BIOMETRIC_RETENTION_REVIEW", "EXPLICIT_END_SESSION", "WALL_CLOCK_CALL_RETRY_SPEND_CAPS"],
+      "sources": [
+        "https://docs.tavus.io/sections/video/overview",
+        "https://docs.tavus.io/sections/conversational-video-interface/overview-cvi",
+        "https://www.tavus.io/pricing",
+        "https://www.tavus.io/acceptable-use-policy"
+      ]
+    }
+  ],
+  "providerFailureSemantics": {
+    "preEgressFailure": "RELEASE_RESERVATION_AND_ALLOW_EXPLICIT_RETRY_WITH_SAME_FINGERPRINT",
+    "billableOrUnknown": "COMMIT_RESERVATION_BLOCK_RETRY_REQUIRE_RECONCILIATION",
+    "changedFingerprint": "NEW_IDEMPOTENCY_KEY_AND_NEW_AUTHORIZATION",
+    "restoredPending": "NO_RE_EGRESS_UNTIL_RECONCILED",
+    "fallback": "ONLY_EXPLICITLY_AUTHORIZED_COMPATIBLE_CANDIDATE_OTHERWISE_FAIL_CLOSED"
+  },
+  "deletionAndRevocation": {
+    "pendingIsConfirmed": false,
+    "providerAndLocalConfirmationRequired": true,
+    "tombstoneAndCacheInvalidationRequired": true,
+    "resurrectionCheckRequired": true,
+    "consentRevocationInvalidatesOutputs": true
+  },
+  "currentDisposition": "RESEARCH_CONTRACT_ONLY_NO_PROVIDER_SELECTED_OR_ACTIVATED"
+}
