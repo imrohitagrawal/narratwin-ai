@@ -67,8 +67,9 @@ spend authority.
    N=40, threats, corpus identities, aggregates, and product authority do not
    change; every review binds the resulting exact head anew. Hosted-route
    recovery `issuecomment-5429174756`, corrected by `issuecomment-5429198021`,
-   direct-head closure `issuecomment-5430095513`, and omitted-head closure
-   `issuecomment-5430474392`, preserves each reviewed
+   direct-head closure `issuecomment-5430095513`, omitted-head closure
+   `issuecomment-5430474392`, and explicit-ancestor closure
+   `issuecomment-5434868752`, preserves each reviewed
    C3/C4 as rejected history and appends ordinary fast-forward suffixes. Its
    sole semantic change outside the executor validates GitHub's detached merge
    or exact detached candidate checkout before selecting the candidate head.
@@ -120,7 +121,9 @@ unrelated Stage 8, Final Review, and Phase 1 Closure behavior.
 - Hosted checks use a detached merge or candidate checkout. The route accepts
   omitted-head evidence only when its canonical branch is detached, its supplied
   base is a strict ancestor of ambient HEAD, and the complete fixed topology passes.
-  Explicit-head evidence remains bound to the exact canonical base and head.
+  Explicit-head single-parent evidence requires ambient to equal the event head
+  and its supplied base to be a strict ancestor. Explicit two-parent merge
+  evidence remains bound to exact canonical base/head order.
   A detached merge still requires ordered frozen-base/candidate parents; all
   repository evidence is read from the selected candidate, never ambient merge
   content.
