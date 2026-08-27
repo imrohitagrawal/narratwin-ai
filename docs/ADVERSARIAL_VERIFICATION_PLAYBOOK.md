@@ -169,7 +169,7 @@ On GitHub, ambient `HEAD` is untrusted; the route selects the candidate only fro
 | 2 | `INFRASTRUCTURE_FAILURE` | Git, import, platform, or resource evidence was unavailable. |
 | 3 | `INTENTIONAL_RED` | C2/C3 reached the exact typed `ACP.NOT_IMPLEMENTED` boundary. |
 
-P must first produce 165 GREEN controls plus clean direct-PR, ordered-merge, push/prior-base, and full-suite hosted parity; C2/C3 then produce exactly 108 named `ACP.NOT_IMPLEMENTED` assertion failures with zero unrelated failures or errors, and C4 passes the unchanged acceptance file.
+P must first produce 165 GREEN controls plus clean direct-PR, ordered-merge, push/prior-base, and full-suite hosted parity. C2/C3 add five event-only fail-closed controls and produce 62 GREEN controls plus exactly 108 named `ACP.NOT_IMPLEMENTED` assertion failures with zero unrelated failures or errors; C4 passes all 170 frozen tests.
 
 Mandatory readability evidence is recorded for the five C2 designated paths:
 `docs/ENGINEERING_PROCESS_RCA.md` 71/80 and `docs/ADR/0064-adversarial-convergence-protocol.md` 137/160,

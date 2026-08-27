@@ -237,7 +237,8 @@ ISSUE435_PARITY_TYPED = "2f2aa3ae05c8df0cf58ecf3576d7c53855af0a50"
 ISSUE435_PARITY_PUSH = "bcbe293a094ba2647b213eb039274a8bc8f85685"
 ISSUE435_PARITY_ATTACHED = "f60fb878e92ccd2bd7c457723adb486f79ac773f"
 ISSUE435_PARITY_PASS = "3f71dd2220ed9b9f4d5aaae7e65cdb66f1f2379f"
-ISSUE435_HISTORY = (ISSUE435_C1, "b099747812bcd97f812358908cb847c351190bc3", ISSUE435_REJECTED, ISSUE435_BLOCKED, "6d741aec9a2a56d54034e0092a2e24d535079517", "9bd0a2786ca41e720a275e70a2c98470a3f3aa38", "6b681b4acc419d2fa63c35862d6b6185ce82dd50", ISSUE435_H6, ISSUE435_C2_BASE, ISSUE435_C2_HARDENED, ISSUE435_C2_TYPED, ISSUE435_C2, ISSUE435_PRIOR_C2, ISSUE435_PRIOR_C3, ISSUE435_PRIOR_C4, ISSUE435_ROUTE_RED, ISSUE435_ROUTE_C2, ISSUE435_ROUTE_BASE_BOUND, ISSUE435_ROUTE_HEAD_BOUND, ISSUE435_ROUTE_ADAPTER, ISSUE435_PORTABLE_C2, ISSUE435_BLOCKED_C3, ISSUE435_FALSE_RED_C2, ISSUE435_LABELED_C2, ISSUE435_PORTABLE_C3, ISSUE435_HOSTED_C4, ISSUE435_DIRECT_C2, ISSUE435_DIRECT_C3, ISSUE435_DIRECT_C4, ISSUE435_OMITTED_C2, ISSUE435_BOUND_C2, ISSUE435_BOUND_C3, ISSUE435_BOUND_C4, ISSUE435_EXPLICIT_C2, ISSUE435_EXPLICIT_BOUND_C2, ISSUE435_READABILITY_C2, ISSUE435_PUBLISHED_C2, ISSUE435_PUBLISHED_C3, ISSUE435_PUBLISHED_C4, ISSUE435_PARITY, ISSUE435_PARITY_REPAIR, ISSUE435_PARITY_CLOSED, ISSUE435_PARITY_TYPED, ISSUE435_PARITY_PUSH, ISSUE435_PARITY_ATTACHED, ISSUE435_PARITY_PASS)
+ISSUE435_EVENT_GAP = "1170485e613e8e86309f72df064b800ae0fef0a7"
+ISSUE435_HISTORY = (ISSUE435_C1, "b099747812bcd97f812358908cb847c351190bc3", ISSUE435_REJECTED, ISSUE435_BLOCKED, "6d741aec9a2a56d54034e0092a2e24d535079517", "9bd0a2786ca41e720a275e70a2c98470a3f3aa38", "6b681b4acc419d2fa63c35862d6b6185ce82dd50", ISSUE435_H6, ISSUE435_C2_BASE, ISSUE435_C2_HARDENED, ISSUE435_C2_TYPED, ISSUE435_C2, ISSUE435_PRIOR_C2, ISSUE435_PRIOR_C3, ISSUE435_PRIOR_C4, ISSUE435_ROUTE_RED, ISSUE435_ROUTE_C2, ISSUE435_ROUTE_BASE_BOUND, ISSUE435_ROUTE_HEAD_BOUND, ISSUE435_ROUTE_ADAPTER, ISSUE435_PORTABLE_C2, ISSUE435_BLOCKED_C3, ISSUE435_FALSE_RED_C2, ISSUE435_LABELED_C2, ISSUE435_PORTABLE_C3, ISSUE435_HOSTED_C4, ISSUE435_DIRECT_C2, ISSUE435_DIRECT_C3, ISSUE435_DIRECT_C4, ISSUE435_OMITTED_C2, ISSUE435_BOUND_C2, ISSUE435_BOUND_C3, ISSUE435_BOUND_C4, ISSUE435_EXPLICIT_C2, ISSUE435_EXPLICIT_BOUND_C2, ISSUE435_READABILITY_C2, ISSUE435_PUBLISHED_C2, ISSUE435_PUBLISHED_C3, ISSUE435_PUBLISHED_C4, ISSUE435_PARITY, ISSUE435_PARITY_REPAIR, ISSUE435_PARITY_CLOSED, ISSUE435_PARITY_TYPED, ISSUE435_PARITY_PUSH, ISSUE435_PARITY_ATTACHED, ISSUE435_PARITY_PASS, ISSUE435_EVENT_GAP)
 ISSUE435_PREFLIGHT = "docs/governance/preflights/issue-435.json"
 ISSUE435_PREFLIGHT_BLOB = "c554eaf7f73ea081434b1e2f818441fe0bc3eee9"
 ISSUE435_FREEZE = "docs/governance/adversarial-convergence-red-freeze-v1.json"
@@ -439,12 +440,13 @@ def _route_head(root: Path, branch: str) -> str:
         return ""
     head = ambient.strip()
     raw = (os.environ.get("GITHUB_HEAD_REF", ""), os.environ.get("GITHUB_BASE_SHA", ""), os.environ.get("GITHUB_HEAD_SHA", ""))
+    event = os.environ.get("GITHUB_EVENT_NAME", "")
     event_branch, event_base, event_head = (value.strip() for value in raw)
     if raw != (event_branch, event_base, event_head) or not any((event_branch, event_base, event_head)):
-        return head if raw == ("", "", "") else ""
+        return head if raw == ("", "", "") and not event else ""
     parents = _text(_git(root, "rev-list", "--parents", "-n", "1", head))
     fields = parents.split() if parents is not None else []
-    attached_push = os.environ.get("GITHUB_EVENT_NAME", "") == "push" and local.strip() == branch
+    attached_push = event == "push" and local.strip() == branch
     valid = branch == event_branch == ISSUE435_BRANCH and (not local.strip() or attached_push) and event_base != (event_head or head) and _hex_text(event_base, 40) and (not event_head or _hex_text(event_head, 40))
     direct = _git(root, "merge-base", "--is-ancestor", event_base, event_head or head) if valid and len(fields) == 2 and head == (event_head or head) else None
     merge = bool(event_head) and event_base == ISSUE435_BASE and fields == [head, event_base, event_head]
@@ -489,7 +491,7 @@ def inspect_issue435_repository(root: Path, branch: str) -> RouteInspection:
     phase = "C2"
     if not freeze_present:
         parent = _text(_git(root, "rev-parse", f"{head}^"))
-        if len(commits) != 47 or commits[-1] != head or parent is None or parent.strip() != ISSUE435_PARITY_PASS:
+        if len(commits) != 48 or commits[-1] != head or parent is None or parent.strip() != ISSUE435_EVENT_GAP:
             findings.append(FindingCode.ROUTE_DRIFT)
     else:
         raw = _git(root, "show", f"{head}:{ISSUE435_FREEZE}")
@@ -515,12 +517,12 @@ def inspect_issue435_repository(root: Path, branch: str) -> RouteInspection:
             parity_paths = ISSUE435_PARITY_ATTACHED_PATHS if parity_attached else ISSUE435_PARITY_PUSH_PATHS if parity_push else ISSUE435_PARITY_REPAIR_PATHS if parity_repair or parity_final or parity_closed or parity_typed else ISSUE435_PARITY_PATHS
             if parent is None or parent.strip() != parity_parent or delta is None or set(delta.splitlines()) != parity_paths:
                 findings.append(FindingCode.ROUTE_DRIFT)
-        elif len(commits) == 48 and commits[46] == c2_head:
+        elif len(commits) == 49 and commits[47] == c2_head:
             phase = "C3"
             delta = _text(_git(root, "diff-tree", "--no-commit-id", "--name-only", "-r", commits[-1]))
             if delta is None or delta.splitlines() != [ISSUE435_FREEZE]:
                 findings.append(FindingCode.ROUTE_DRIFT)
-        elif len(commits) == 49 and commits[46] == c2_head:
+        elif len(commits) == 50 and commits[47] == c2_head:
             phase = "C4"
             c3_delta = _text(_git(root, "diff-tree", "--no-commit-id", "--name-only", "-r", commits[-2]))
             c4_delta = _text(_git(root, "diff-tree", "--no-commit-id", "--name-only", "-r", commits[-1]))

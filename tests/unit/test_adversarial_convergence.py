@@ -496,6 +496,7 @@ def test_candidate_authors_are_parsed_from_bounded_framed_git_history() -> None:
             "956aed3d78733259ba6a024dcbead6f2f6f43c40",
             "f82be816e349d13d8365b72fbeb51498d244755e", "cc394d4dadef3c32dc735fc84a2b9c49e3336985", "bf3a53ddac282a8daab61db2eaa5d030959eae0f", "f4eab6b3febb9feb78699930bf4a453a76ca6b9d", "6325fe3eddffc57d0ef066705b6bb3ca276f353b", "221ab84b75667176aaf1c34513bf6967d1390d5f", "317fb741327a599239fe3b86e5711821f5a2b226", "3f00bc5c2e88ee8598fdf12cedae5fcd1afa6d1e", "ce70e1dfee5fb6e88e86c7a86ca496cf103ea2bd", "1fd860ccb37418f5c59cc05e825b645bc02498ba", "8881dbbd9078c07cc956384675a3b7b6748a0951", "67efee0fae5d457ef1a2c63bd56784055ce989f2", "261f9935655e6219744fe02852452439744f441a", "6d9c79f6dba5d0793097f481cdc8a305cec4f467", "65cd6c84fed71227b0b6baddbe1755429131a229", "0b12da62fa8ffc855b25e32bda24a4f03620bbb5",
             "07c4c8fb81d61e892660ac472fbc3bd8e9c93a1d", "a736c9dce5b8ae1b8bf5abff4b39bba008432f24", "3523fbae45f896a331bcf58b08ada3ef3fbceac9", "6f97b374c9dbe64653e6064ae7491cf6f18ddb4e", "fbbb45a2c6d9f026b681aff9d74560a5a3dca1e0", "81dbf7be31ec525c78a3f6361a936c5cb8a23a42", "2f2aa3ae05c8df0cf58ecf3576d7c53855af0a50", "bcbe293a094ba2647b213eb039274a8bc8f85685", "f60fb878e92ccd2bd7c457723adb486f79ac773f", "3f71dd2220ed9b9f4d5aaae7e65cdb66f1f2379f",
+            "1170485e613e8e86309f72df064b800ae0fef0a7",
             head,
     )
     history = "".join(f"{commit}\0Rohit   Agrawal\0ROHIT.RA.AGRAWAL@GMAIL.COM\0" for commit in hashes)
@@ -655,6 +656,13 @@ def test_event_branch_resolution_accepts_detached_and_rejects_conflict() -> None
     expression = "m['_resolve_branch'](sys.argv[2],sys.argv[3])"
     assert _module_probe(expression, ISSUE435_BRANCH, "") == ISSUE435_BRANCH
     assert _module_probe(expression, ISSUE435_BRANCH, "conflict") == ""
+
+
+@pytest.mark.parametrize("event", ["push", "pull_request", "merge_group", "unknown", " push "])
+def test_route_head_rejects_event_without_bound_identity(event: str) -> None:
+    expression = "m['_route_head'](m['Path'](sys.argv[2]),sys.argv[3])"
+    environment = {"GITHUB_EVENT_NAME": event, "GITHUB_HEAD_REF": "", "GITHUB_BASE_SHA": "", "GITHUB_HEAD_SHA": ""}
+    assert _module_probe(expression, str(ROOT), ISSUE435_BRANCH, extra_env=environment) == ""
 
 
 def test_hosted_route_head_accepts_exact_detached_checkout_topologies(tmp_path: Path) -> None:
