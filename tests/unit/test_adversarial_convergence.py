@@ -668,9 +668,7 @@ def test_hosted_route_head_accepts_exact_detached_checkout_topologies(tmp_path: 
     subprocess.run(["/usr/bin/git", "checkout", "--quiet", "--detach", ISSUE435_BASE], cwd=checkout, check=True)
     subprocess.run(
         ["/usr/bin/git", "-c", "user.name=CI", "-c", "user.email=ci@example.invalid", "merge", "--quiet", "--no-ff", "--no-edit", head],
-        cwd=checkout,
-        check=True,
-    )
+        cwd=checkout, check=True)
     expression = "m['_route_head'](m['Path'](sys.argv[2]),sys.argv[3])"
     environment = {"GITHUB_HEAD_REF": ISSUE435_BRANCH, "GITHUB_BASE_SHA": ISSUE435_BASE, "GITHUB_HEAD_SHA": head}
     missing_head = {"GITHUB_HEAD_REF": ISSUE435_BRANCH, "GITHUB_BASE_SHA": ISSUE435_BASE}
@@ -702,8 +700,9 @@ def test_hosted_route_head_accepts_exact_detached_checkout_topologies(tmp_path: 
     ).strip()
     subprocess.run(["/usr/bin/git", "checkout", "--quiet", "--detach", reverse], cwd=checkout, check=True)
     assert _module_probe(expression, str(checkout), ISSUE435_BRANCH, extra_env=environment) == ""
-    subprocess.run(["/usr/bin/git", "checkout", "--quiet", "-B", "attached", head], cwd=checkout, check=True)
-    assert _module_probe(expression, str(checkout), ISSUE435_BRANCH, extra_env=missing_head) == ""
+    for name,event,want in (("attached","", ""),("attached","push",""),(ISSUE435_BRANCH,"push",head),(ISSUE435_BRANCH,"pull_request","")):
+        subprocess.run(["/usr/bin/git", "checkout", "--quiet", "-B", name, head], cwd=checkout, check=True)
+        assert _module_probe(expression, str(checkout), ISSUE435_BRANCH, extra_env={**missing_head, **({"GITHUB_EVENT_NAME":event} if event else {})}) == want
     subprocess.run(["/usr/bin/git", "checkout", "--quiet", "--detach", ISSUE435_BASE], cwd=checkout, check=True)
     assert _module_probe(expression, str(checkout), ISSUE435_BRANCH, extra_env={**environment, "GITHUB_HEAD_SHA": ISSUE435_BASE}) == ""
 

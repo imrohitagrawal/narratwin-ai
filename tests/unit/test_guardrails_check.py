@@ -139,6 +139,7 @@ def test_issue435_push_ref_is_bound_as_detached_event_branch(monkeypatch: Any) -
     environment = raw_kwargs["env"]
     assert isinstance(environment, dict)
     assert environment["GITHUB_HEAD_REF"] == ISSUE435_BRANCH
+    assert environment["GITHUB_EVENT_NAME"] == "push"
 
     for hostile in (f" {ISSUE435_BRANCH}", f"{ISSUE435_BRANCH} ", ISSUE435_BRANCH + "-evil"):
         monkeypatch.setenv("GITHUB_REF_NAME", hostile)
