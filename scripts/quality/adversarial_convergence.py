@@ -462,6 +462,7 @@ ISSUE435_HISTORY = (ISSUE435_C1, "b099747812bcd97f812358908cb847c351190bc3", ISS
 ISSUE435_PUBLISHED_C2, ISSUE435_PUBLISHED_C3, ISSUE435_PUBLISHED_C4 = "07c4c8fb81d61e892660ac472fbc3bd8e9c93a1d", "a736c9dce5b8ae1b8bf5abff4b39bba008432f24", "3523fbae45f896a331bcf58b08ada3ef3fbceac9"
 ISSUE435_PARITY = "6f97b374c9dbe64653e6064ae7491cf6f18ddb4e"
 ISSUE435_PARITY_REPAIR = "fbbb45a2c6d9f026b681aff9d74560a5a3dca1e0"
+ISSUE435_PARITY_CLOSED = "81dbf7be31ec525c78a3f6361a936c5cb8a23a42"
 ISSUE435_PREFLIGHT = "docs/governance/preflights/issue-435.json"
 ISSUE435_PREFLIGHT_BLOB = "c554eaf7f73ea081434b1e2f818441fe0bc3eee9"
 ISSUE435_FREEZE = "docs/governance/adversarial-convergence-red-freeze-v1.json"
@@ -718,7 +719,8 @@ def inspect_issue435_repository(root: Path, branch: str) -> RouteInspection:
         parity_p = len(commits) == 40 and commits[-2:] == [ISSUE435_PUBLISHED_C4, head]
         parity_repair = len(commits) == 41 and commits[-3:-1] == [ISSUE435_PUBLISHED_C4, ISSUE435_PARITY]
         parity_final = len(commits) == 42 and commits[-4:-1] == [ISSUE435_PUBLISHED_C4, ISSUE435_PARITY, ISSUE435_PARITY_REPAIR]
-        parity = parity_p or parity_repair or parity_final
+        parity_closed = len(commits) == 43 and commits[-5:-1] == [ISSUE435_PUBLISHED_C4, ISSUE435_PARITY, ISSUE435_PARITY_REPAIR, ISSUE435_PARITY_CLOSED]
+        parity = parity_p or parity_repair or parity_final or parity_closed
         freeze_head = ISSUE435_PUBLISHED_C4 if parity else head
         if parsed.document is None or not _valid_freeze(parsed.document, root, freeze_head):
             findings.append(FindingCode.REVIEW_IDENTITY_MISMATCH)
@@ -728,8 +730,8 @@ def inspect_issue435_repository(root: Path, branch: str) -> RouteInspection:
             phase = "PARITY_CHECKPOINT"
             parent = _text(_git(root, "rev-parse", f"{head}^"))
             delta = _text(_git(root, "diff-tree", "--no-commit-id", "--name-only", "-r", head))
-            parity_parent = ISSUE435_PARITY_REPAIR if parity_final else ISSUE435_PARITY if parity_repair else ISSUE435_PUBLISHED_C4
-            parity_paths = ISSUE435_PARITY_REPAIR_PATHS if parity_repair or parity_final else ISSUE435_PARITY_PATHS
+            parity_parent = ISSUE435_PARITY_CLOSED if parity_closed else ISSUE435_PARITY_REPAIR if parity_final else ISSUE435_PARITY if parity_repair else ISSUE435_PUBLISHED_C4
+            parity_paths = ISSUE435_PARITY_REPAIR_PATHS if parity_repair or parity_final or parity_closed else ISSUE435_PARITY_PATHS
             if parent is None or parent.strip() != parity_parent or delta is None or set(delta.splitlines()) != parity_paths:
                 findings.append(FindingCode.ROUTE_DRIFT)
         elif len(commits) == 38 and commits[36] == c2_head:

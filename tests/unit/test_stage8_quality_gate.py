@@ -29,8 +29,8 @@ stage8=load("scripts/quality/check_stage8_docs.py","s8"); stage2=load("scripts/q
 def git(r:Path,*a:str)->str:return sp.run(["git",*a],cwd=r,text=True,capture_output=True,check=True).stdout.strip()
 def put(r:Path,p:str,v:str)->None:t=r/p;t.parent.mkdir(parents=True,exist_ok=True);t.write_text(v)
 def route(m:Any,b:str,c:list[str])->list[str]:
-    s=stage8;digest=s.cut1_digest;f:list[Any]=[];z=m.setattr;z(s,"current_branch",lambda:b)
-    z(s,"changed_files_for_stage_scope",lambda:c);b!=C1 or z(s,"cut1_digest",lambda:s.C1_DOC_SHA)
+    s=stage8;digest=s.cut1_digest;f:list[Any]=[];m.setattr(s,"current_branch",lambda:b)
+    m.setattr(s,"changed_files_for_stage_scope",lambda:c);b!=C1 or m.setattr(s,"cut1_digest",lambda:s.C1_DOC_SHA)
     s.check_stage_marker_and_branch(f);s.check_stage_scope(f);m.setattr(s,"cut1_digest",digest);return f
 def test_cut1_routes_are_exact_stage8_and_not_preflight_owned(monkeypatch: Any, tmp_path: Path) -> None:
     for x,s in (SCOPES|(b:=stage8.backend_security).ISSUE436_ROUTES).items():
@@ -84,11 +84,9 @@ def test_issue366_contract_rejects_partial_scope_and_content_mutations(monkeypat
     assert stage8.cut1_digest()!=baseline;sc((0,{}));assert route(m,CUT1_REAL_MEDIA_TRANSITION,full)==[]
     p=s.R434;q=s.check_issue434_verifier;v={**s.LIMITS434,p[11]:100,p[12]:100};k="NARRATWIN_POLICY_ONLY"
     cases:Any=((5601,{}),(1201,{p[9]:1201}),(0,v),(201,{p[11]:101,p[12]:100}));m.delenv("GITHUB_EVENT_NAME",False)
-    p0=sp.run(["python3","-S",p[11]],capture_output=True,text=True)
-    h:Any=lambda x:hashlib.shake_256(repr((x.returncode,x.stdout,x.stderr)).encode()).hexdigest(10)
-    e={"6d1dd7f1dd932117bddd","fa371403673443b6aeaa"};q0=p0.returncode;o=p0.stdout;z0=p0.stderr
-    bad=(d([],q0,o+"x",z0),d([],q0,o,z0+"x"))
-    assert h(p0) in e and all(h(x) not in e for x in bad);r=0;b=sorted(F);A=s.A434;g=["git"];x:Any=d(g,0);w=um.Mock()
+    p=sp.run(["python3","-S",p[11]],capture_output=True);q0=p.returncode;o=p.stdout;z0=p.stderr;r=0;b=sorted(F)
+    h=lambda x:hashlib.shake_256(repr(x).encode()).hexdigest(8);e="6d072fdd70c3a1bfbb6d3fc768e5f0e9";A=s.A434
+    assert [h(x)in e for x in ((q0,o,z0),(q0,o+b"x",z0),(q0,o,z0+b"x"))]==[1,0,0];g=["git"];x=d(g,0);w=um.Mock()
     z(s,"issue434_charges",lambda:(0,{}));assert route(m,B,b[1:])and all(s.issue434_budget_findings(*x)for x in cases)
     a={x:(REPO/x).read_bytes()for x in A};f=s.issue434_artifact_findings;assert not f(a)and f(a|{A[0]:b"x"})and f({})
     z(s,"run",w);m.setenv(k,"1");q([]);m.delenv(k);z(s,f.__name__,um.Mock(side_effect=(["x"],[])));q([]);q([])
@@ -183,8 +181,7 @@ def test_stage8_script_markers_match_mandatory_container_scanners() -> None:
     f:list[str]=[]; stage8.check_dependencies_and_scripts(f); assert stage8.node_security.I376_ROUTES
     assert not any(m in "\n".join(f) for m in ("docker scout cves","--only-severity critical,high"))
 def test_unrouted_stage8_branch_is_rejected(monkeypatch:Any)->None:
-    b="feature/untracked-stage8-work"; monkeypatch.setattr(stage8,"current_branch",lambda:b); f:list[str]=[]
-    stage8.check_stage_marker_and_branch(f)
+    b="x";monkeypatch.setattr(stage8,"current_branch",lambda:b);f=[];stage8.check_stage_marker_and_branch(f)
     assert f==[f"Stage 8 work must run on a stage8-* branch or main after merge; got {b}."]
 A22_SOURCE,A22_DECL,A22_RUNTIME,A22_SELECT,A22_REFUSE=("Stage 2 retrieval-v1 accepted sources must retain the canonica"
     "l oracle.|Stage 2 retrievalStrategy must equal the canonical v1 machine declaration.|Stage 4 retrieval-v1 runtime "
@@ -204,8 +201,7 @@ def test_a22_oracle_rejects_independent_drift(monkeypatch: Any) -> None:
     model=(("STRATEGY_VERSION",'"stage4-rag-v1"','"v2"'),("TOP_K","6","7"),("MIN_SCORE","0.72","0.60"),
            ("MAX_CHUNKS_PER_DOCUMENT","3","6")); prefix = "query=retrieval_query,\n" + " " * 24
     low = 'status="REFUSED",\n' + " " * 28 + "failure_reason=self.WALKTHROUGH_REFUSAL_REASON_LOW_RETRIEVAL,"
-    cap="RETRIEVAL_MAX_CHUNKS_PER_DOCUMENT";mc='"maximumChunksPerDocument": 3';rs='"retrievalStrategy": {'
-    changes: dict[str, tuple[tuple[Any, ...], ...]] = {
+    cap="RETRIEVAL_MAX_CHUNKS_PER_DOCUMENT"; changes: dict[str, tuple[tuple[Any, ...], ...]] = {
         MODELS: tuple((f"RETRIEVAL_{name} = {old}", f"RETRIEVAL_{name} = {new}") for name, old, new in model) +
                 tuple(("RETRIEVAL_TOP_K = 6", "RETRIEVAL_TOP_K = 6\n" + suffix) for suffix in
                 ("RETRIEVAL_TOP_K = 7", "RETRIEVAL_TOP_K += 1", "RETRIEVAL_TOP_K: int = 7")),
@@ -226,9 +222,11 @@ def test_a22_oracle_rejects_independent_drift(monkeypatch: Any) -> None:
         ARCH: (("`topK = 6`", "`topK = 7`"), ("`min_retrieved_chunks = 1`", "`min_retrieved_chunks = 0`"),
                ("`min_distinct_documents = 1`", "`min_distinct_documents = 0`"),
                ("## Provider Adapter Contract", "## Retrieval Strategy v1   \n\n## Provider Adapter Contract")),
-        ADR: (("`topK = 6`", "`topK = 7`"),), DECL: ((f'    {mc},\n', ""),(mc,'"maximumChunksPerDocument": true'),
-               (mc,'"maximumChunksPerDocument": 6'),(rs,'"retrievalStrategy": {},\n  "retrievalStrategy": {'),
-               (f"{mc},",f'{mc},\n    "minimumChunks": 1,')),}
+        ADR: (("`topK = 6`", "`topK = 7`"),), DECL: (('    "maximumChunksPerDocument": 3,\n', ""),
+               ('"maximumChunksPerDocument": 3', '"maximumChunksPerDocument": true'),
+               ('"maximumChunksPerDocument": 3', '"maximumChunksPerDocument": 6'),
+               ('"retrievalStrategy": {', '"retrievalStrategy": {},\n  "retrievalStrategy": {'),
+               ('"maximumChunksPerDocument": 3,', '"maximumChunksPerDocument": 3,\n    "minimumChunks": 1,')),}
     expected=(A22_RUNTIME,A22_SELECT,A22_REFUSE,A22_SOURCE,A22_SOURCE,A22_DECL); assert not a22_check(monkeypatch,{})
     for (path, edits), error in zip(changes.items(), expected):
         for edit in edits: assert a22_check(monkeypatch, {path: (edit,)}) == [error]
@@ -237,14 +235,16 @@ def test_a22_oracle_rejects_independent_drift(monkeypatch: Any) -> None:
             MODELS: ((f"RETRIEVAL_{name} = {old}", f"RETRIEVAL_{name} = {new}"),)}) == [A22_DECL, A22_RUNTIME]
     old = " " * 20 + "if not retrieved:\n"; call = " " * 20 + "self.l" + "lm.generate_" + "script(audience=audience)\n"
     assert a22_check(monkeypatch, {STAGE4: ((old, call + old),)}) == [A22_REFUSE]
-    c=[];z=monkeypatch.setattr;r=lambda x,y:c.append(x);z(stage8,"check_required_files",lambda f:f.append("earlier"))
+    calls: list[Path] = []; monkeypatch.setattr(stage8, "check_required_files", lambda f: f.append("earlier"))
     for module in (stage8, stage2):
-        z(module,"check_retrieval_strategy_v1_parity",r);assert module.main()==1 and c==[module.ROOT];c.clear()
+        monkeypatch.setattr(module, "check_retrieval_strategy_v1_parity", lambda root, failures: calls.append(root))
+        assert module.main() == 1 and calls == [module.ROOT]; calls.clear()
 def test_a23a_contract_gate_rejects_every_frozen_marker_mutation(tmp_path: Path) -> None:
-    ms=stage8.A23A_CONTRACT_MARKERS;assert a23b.a23a_markers_frozen(ms)
-    d={p:(REPO/p).read_text(encoding="utf-8") for p in ms}
-    v=stage8.evaluation_lineage_checksum_v2_contract_valid;assert v(d)
-    for p,m in ((p,m)for p,marks in ms.items()for m in marks):assert not v({**d,p:d[p].replace(m,"MUTATED")})
-    api=d["docs/API_CONTRACT.md"];preimage=api.rsplit("```json\n",1)[1].split("\n```",1)[0]
+    assert a23b.a23a_markers_frozen(stage8.A23A_CONTRACT_MARKERS)
+    documents={path:(REPO/path).read_text(encoding="utf-8") for path in stage8.A23A_CONTRACT_MARKERS}
+    valid=stage8.evaluation_lineage_checksum_v2_contract_valid;assert valid(documents)
+    for path,marker in ((p,m) for p,markers in stage8.A23A_CONTRACT_MARKERS.items() for m in markers):
+            mutated={**documents,path:documents[path].replace(marker,"MUTATED")};assert not valid(mutated)
+    api=documents["docs/API_CONTRACT.md"]; preimage=api.rsplit("```json\n",1)[1].split("\n```",1)[0]
     f=a23b.semantic_detector_self_test; assert "sha256:" + hashlib.sha256(preimage.encode()).hexdigest() == (
         "sha256:a956a969f4f147fb020fa06b71722d8fcf76ad850f0c5f6be8d78bbbadb81377") and f(tmp_path)
