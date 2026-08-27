@@ -8,12 +8,18 @@
   "branch": "docs/cut1-acceptance-provider-contract-452",
   "fixedBaseCommit": "97e8173c2ec1323aa9ced23d43059bca2e5a204f",
   "c1PreflightCommit": "5df52f9e979e87f9305012752b80ac79f16093ec",
-  "reviewedC2Commit": "25e158497b0709269316043cffd9267f69fb17e8",
-  "reviewedC2Tree": "d8b85021e3c5a324fe7f9f5f978c381a67541a6a",
-  "frozenAt": "2026-08-28T02:41:54+05:30",
+  "reviewedC2Commit": "73496f433ef9262b2a1daebbadf284d0035e76e9",
+  "reviewedC2Tree": "a346fe9b066743c1f219d1f115d927c228a86380",
+  "frozenAt": "2026-08-28T03:59:00+05:30",
+  "correctiveRefreeze": {
+    "supersededC3Commit": "30f14fe9127d6695a6ad7ff0e4e9e51417733673",
+    "ownerAmendmentComment": 5445887301,
+    "ownerAmendmentSha256": "6c667549e12c3db9478f69ea6dfe580ecf9e0b0e0b603550c7e62657df8d66e8",
+    "reason": "Split Issue 452 dispatcher proof below the inherited context cap and replace a fake secret-shaped mutant before refreezing."
+  },
   "scope": {
-    "frozenNonFreezePathCount": 22,
-    "finalRoutePathCount": 23,
+    "frozenNonFreezePathCount": 23,
+    "finalRoutePathCount": 24,
     "c4EditablePath": "scripts/quality/cut1_presenter_contract.py",
     "c4EditableRegionStart": "# C4_IMPLEMENTATION_REGION_START",
     "c4EditableRegionEnd": "# C4_IMPLEMENTATION_REGION_END",
@@ -30,28 +36,29 @@
     "suffixByteCount": 1188
   },
   "frozenFileSha256": {
-    "docs/ADR/0065-cut1-all-presenter-acceptance-provider-bakeoff.md": "d4fb60a480760eb00f202b175f2f4e0f37da2c0a2788e2347104bf7d16ff51dc",
+    "docs/ADR/0065-cut1-all-presenter-acceptance-provider-bakeoff.md": "57f4c27b93f2e8a666cb6f095c210a9a8c216ea5ee6d3d77ba1c8f4106e8eb99",
     "docs/AI_QUALITY_AND_EVALUATION_CONTRACT.md": "14dbbb6f005d9887ad8ab90340bca9fdcc5fb969579ef3d03f69d5566d0616f8",
     "docs/CUT_ROADMAP_AND_EVIDENCE_MATRIX.md": "e358396e7be7ecee89539b1bfb9eb7eb4d331799dd41a64b4cfca4f74e22489b",
     "docs/ENTERPRISE_READINESS_REGISTER.md": "fd42d73871b62f48e018ced1eb5020ffcb53a62cdbdd53936b7c257c22940c1d",
     "docs/PRODUCT_CONTRACTS/CUT1_PRESENTER_CONTRACT.md": "2e864e044253a98ea10fdf6dde1ab32a026354aaa5c00cebe3b40756d653936e",
     "docs/QUALITY_GATES.md": "a212735a6138deeaca37ed833206c2f044e43f0c45be45596c2751dc07c4a95e",
-    "docs/STATUS.md": "918ccc92e26317e371e182cba18114c7f7856d888a573c2e311750266ed4a72a",
+    "docs/STATUS.md": "e3a04934b6e435bcce5a6b3c888ddf715034d0e2051b22902607458639d3dbba",
     "docs/THIRD_PARTY_NOTICES.md": "d3087c0f0b85abfb4084925c0c9c3cf1416ab87a108b93f1d0582c1ab65c6d5b",
     "docs/TRACEABILITY.md": "3cfeb170d28b6d52a3a6d34cd6d874ab467636b3694c49f7cb50bd819b3440b7",
     "docs/demo/CUT1_ACCEPTANCE_CHECKLIST.md": "7c041dfcca1e5f7e067744eaec18b1577df4be2cf391eb128b786bde7ca1521b",
     "docs/governance/cut1-all-presenter-acceptance-matrix-v1.json": "f61cef9f7731f4603778d1b6a3a9ccccd3682c8e0ad233c9370169320612b2f5",
     "docs/governance/cut1-blinded-human-evaluation-protocol-v1.json": "fa3759985141639185618fbc595057412dd8582f60ed97fc462b30b7548580b8",
-    "docs/governance/cut1-provider-bakeoff-contract-v1.json": "863dfa743770f52e1d4e9018a34e6f1002e5abdddcce6b845df400a423523bfb",
-    "docs/governance/preflights/issue-452.json": "b13bf5dd9ca359786b5121cbc0a97a994aa8458c8cfa9e4caf68c404a526bb9e",
+    "docs/governance/cut1-provider-bakeoff-contract-v1.json": "1a3fd981644488203e8c7cc38fc0389092b23b579cce860c3d35a1ca7a1786db",
+    "docs/governance/preflights/issue-452.json": "4ad7d8827afc23c92f3cb0de474fd3479d84848a5bb1ec26bd80b7901e709fff",
     "docs/governance/schemas/cut1-human-realism-evaluation-v1.schema.json": "14eac190bd8ee590d1c1bd59cd6fa16b9413322e1e3a5bca23dfb9030afc5f9c",
     "docs/governance/schemas/cut1-presenter-provider-acceptance-v1.schema.json": "cb5ad105b53f52e8be888bb8007098368a9f08eafc7ea3eb407f035a5d13b31a",
     "scripts/quality/check_quality_stage.py": "46c0741afb4513e065fb5ebea774abf6acea6ec94ece7405e42fb3afae6c612f",
     "scripts/quality/cut1_presenter_contract.py": "4d041aafc12571c1ceb9eb41ed40b3cd9f740778e100d4670b4568dd22f459a5",
-    "scripts/quality/stage8_cut1_routes.py": "300d52483c44cf1026b1b40c398973a29c657fb6940f0ce9cc0a9211e1f3e3c7",
-    "tests/unit/test_cut1_presenter_contract.py": "cd22eaac4802e7e551ec491a85962c6f8c72e921568b9c1ec857d71b6a77281d",
-    "tests/unit/test_quality_dispatcher.py": "676e7756b1d773e49f5d2d9b1f0e6c972501c2c843dd9c42ea547dd050213c50",
-    "tests/unit/test_stage8_cut1_routes.py": "bbcab751745c5b3d07e137fbd32dbf1e6c64e315d62788b334ac665af6e0c525"
+    "scripts/quality/stage8_cut1_routes.py": "3903c64a582ea0f12734fd61960a4a8c4ed7fb6498c6924978bcd9f6ebd701d0",
+    "tests/unit/test_cut1_presenter_contract.py": "2d8fdbcf25541bff974c14bfe50794621f49d8a2513eabc3a39dfebf769c7de3",
+    "tests/unit/test_issue452_quality_dispatcher.py": "c1fa00681317900e97d82c690744715c7e3edfa26aa6d62569f1d550d0273668",
+    "tests/unit/test_quality_dispatcher.py": "3f7735dbfba649bd3f704ff23fd81cac9987d73882d794e3c6dbc4824df67c0f",
+    "tests/unit/test_stage8_cut1_routes.py": "a6033f6e32ece3d355f8445adeec6283c52cf2d3de265910c50139dea72687d8"
   },
   "redEvidence": {
     "pytestCollected": 168,
@@ -66,14 +73,12 @@
     "backupPositiveCases": 2,
     "distinctMaterializedInputs": 167,
     "routeAndDispatcherPasses": 91,
-    "routeChargeBeforeFreeze": 2376,
+    "routeChargeBeforeFreeze": 2535,
     "aggregateHardCap": 3600
   },
   "reviews": [
-    {"reviewer":"statistics_protocol_review","scope":"statistics, blinded protocol, raw evidence, multilingual and accessibility","disposition":"PASS","head":"25e158497b0709269316043cffd9267f69fb17e8","tree":"d8b85021e3c5a324fe7f9f5f978c381a67541a6a"},
-    {"reviewer":"security_provider_review","scope":"security, privacy, provider contract, consent, egress, spend and deletion","disposition":"PASS","head":"25e158497b0709269316043cffd9267f69fb17e8","tree":"d8b85021e3c5a324fe7f9f5f978c381a67541a6a"},
-    {"reviewer":"architecture_scope_review","scope":"architecture, authorization, presenter parity, framing, feasibility and accessibility","disposition":"PASS","head":"25e158497b0709269316043cffd9267f69fb17e8","tree":"d8b85021e3c5a324fe7f9f5f978c381a67541a6a"},
-    {"reviewer":"mutation_readability_review","scope":"mutation isolation, false-pass resistance, readability, budgets and C4 feasibility","disposition":"PASS","head":"25e158497b0709269316043cffd9267f69fb17e8","tree":"d8b85021e3c5a324fe7f9f5f978c381a67541a6a"}
+    {"reviewer":"statistics_security_corrective_review","scope":"statistics, raw evidence, security, privacy, provider contract, secret scanning and deletion","disposition":"PASS","head":"73496f433ef9262b2a1daebbadf284d0035e76e9","tree":"a346fe9b066743c1f219d1f115d927c228a86380"},
+    {"reviewer":"architecture_readability_corrective_review","scope":"architecture, authorization, presenter parity, mutation isolation, readability, budgets and C4 feasibility","disposition":"PASS","head":"73496f433ef9262b2a1daebbadf284d0035e76e9","tree":"a346fe9b066743c1f219d1f115d927c228a86380"}
   ],
   "c4EntryCondition": "Only the marked validator implementation region may change; all frozen tests, schemas, contracts, routes, docs and this freeze remain byte-identical.",
   "limitations": [
