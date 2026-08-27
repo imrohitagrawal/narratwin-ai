@@ -19,6 +19,44 @@ CURRENT_STAGE = ROOT / ".stage" / "current"
 STATUS_DOC = ROOT / "docs" / "STATUS.md"
 FINAL_REVIEW_BRANCH_PREFIX = "final-review-"
 PHASE1_CLOSURE_BRANCH_PREFIX = "phase-1-closure-"
+ISSUE435_BRANCH = "governance-435-adversarial-convergence-framework-v1"
+ISSUE435_ENV_ALLOWLIST = (
+    "SYSTEMROOT", "TMPDIR", "TEMP", "TMP", "GITHUB_HEAD_REF", "GITHUB_BASE_SHA", "GITHUB_HEAD_SHA"
+)
+ISSUE435_ACCEPTANCE_TEST = "tests/unit/test_adversarial_convergence.py"
+
+
+def run_adversarial_convergence_gate() -> int:
+    environment = {
+        key: os.environ[key] for key in ISSUE435_ENV_ALLOWLIST if key in os.environ
+    }
+    environment.update(
+        LC_ALL="C", PATH=os.defpath, PYTEST_DISABLE_PLUGIN_AUTOLOAD="1"
+    )
+    route_status = subprocess.call(
+        [sys.executable, "-I", "-P", "scripts/quality/adversarial_convergence.py", "--route-only"],
+        cwd=ROOT,
+        env=environment,
+    )
+    if route_status:
+        return route_status
+    return subprocess.call(
+        [
+            sys.executable,
+            "-I",
+            "-P",
+            "-m",
+            "pytest",
+            "-p",
+            "no:cacheprovider",
+            "-o",
+            "addopts=",
+            "-q",
+            ISSUE435_ACCEPTANCE_TEST,
+        ],
+        cwd=ROOT,
+        env=environment,
+    )
 
 
 def run_recommended_review_item_check(stage: str) -> int:
@@ -39,15 +77,17 @@ def phase1_closure_mode_active() -> bool:
 
 
 def main() -> int:
+    branch = current_branch()
+    if not branch:
+        print("Quality dispatcher branch evidence is unavailable or inconsistent.")
+        return 1
+    if branch == ISSUE435_BRANCH:
+        return run_adversarial_convergence_gate()
     if not CURRENT_STAGE.exists():
         print("Missing .stage/current. Cannot determine quality stage.")
         return 1
 
     stage = CURRENT_STAGE.read_text(encoding="utf-8").strip()
-    branch = current_branch()
-    if not branch:
-        print("Quality dispatcher branch evidence is unavailable or inconsistent.")
-        return 1
     if branch.startswith(FINAL_REVIEW_BRANCH_PREFIX):
         stage = "Final Review"
     if branch.startswith(PHASE1_CLOSURE_BRANCH_PREFIX):

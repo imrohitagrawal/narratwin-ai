@@ -1585,3 +1585,51 @@ prerequisites passed unchanged full Stage 8 scanner consensus together and are
 accepted on `main`, so Child B resumes with its own complete validation and
 review sequence. Release, deployment, publication, provider activation,
 egress, spend, media generation, and production readiness remain No-Go.
+
+## Issue #435 framework v1 C2 RED state (2026-08-26)
+
+- Issue #435 remains open and separate from Cut 1 presenter implementation.
+- OWNER amendment `5416186961` authorizes exact branch
+  `governance-435-adversarial-convergence-framework-v1` from main
+  `a6284f7d8f1a14ef4c9a99493d6b06046505f20c`.
+- OWNER correction `5421421524` authorizes exactly one replacement C2 with the
+  materialized corpus identity recorded below.
+- OWNER replan `5422439650` preserves blocked head `134fbd9` and authorizes one
+  H3 limited to the four reproduced route/freeze/safe-reader root causes.
+- Exact-head H3 `6d741aec9a2a56d54034e0092a2e24d535079517` is preserved as
+  blocked review evidence. OWNER replan `5423165038` authorizes H4 only for
+  full freeze-value parity, exact PASS receipt grammar, and candidate-author
+  exclusion derived from trusted bounded Git history.
+- C1 is preserved and pushed at
+  `205c02b3bac633d023d753356bc966c194ed36a7`; the preflight blob remains
+  `c554eaf7f73ea081434b1e2f818441fe0bc3eee9`.
+- C2 freezes the closed ACP-T01–ACP-T12 framework, 40 ordered stimulus-only
+  cases, test-owned expected outcomes, 12 executed/killed test mutants, safe
+  parsing, exact route adapters, process docs, and a typed unimplemented
+  executor.
+- Corpus ID is `ACP-FRAMEWORK-CASES-V1-N40`; the one-time materialized semantic
+  SHA-256 is
+  `3b2a0c4b3b13cf6ab71ec4e7a3dd4e3566a0c8195e3c7bed6bf956575e5f9fc6`.
+- Bootstrap, harness, security, route, dispatcher, guardrail, import, and
+  readability surfaces must be GREEN. Future-executor evidence must remain
+  exactly 40 `ACP.NOT_IMPLEMENTED` failures and zero errors.
+- Candidate review state is `PENDING_EXTERNAL_REVIEW`. Architecture/scope,
+  security/trust, readability/feasibility, and mutation/false-pass reviews must
+  bind one exact candidate head/tree before any authoritative C2 push or C3.
+- H4 accepts review credit only from four exact, ASCII, digest-bound receipt
+  bodies. Reviewer names and emails are normalized and must be distinct from
+  the actual candidate authors derived from the fixed base-to-C2 Git history;
+  caller-declared omission cannot create independence. GitHub comment-author
+  authentication remains a C3 external-orchestration responsibility.
+- C3 is not started. It may add only the RED-freeze file after all four reviews
+  pass. C4 may later change only the marked executor region; the dispatcher,
+  acceptance test, and all other production bytes stay frozen. No correction
+  follows C3.
+- Reset51 C1 and rejected candidate2 remain historical evidence. There is no
+  Reset52, history rewrite, product/runtime/provider/media/network/credential/
+  spend/deployment/publication authority, or release claim.
+
+This state is intentionally not merge-ready: activation is `NONE`, authority
+effect is `NO_AUTHORITY_EFFECT`, and release posture remains No-Go. A new
+threat, path, cap, invariant, corpus identity, unapproved correction, post-freeze
+finding, or unresolved review disagreement stops for OWNER disposition.

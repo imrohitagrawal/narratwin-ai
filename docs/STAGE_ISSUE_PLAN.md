@@ -2756,3 +2756,44 @@ closeout, Child C remains next under the current architecture. Issue `#432` is
 unmerged source authority only and requires a separately audited post-B parent
 `#426` amendment before it may be inserted ahead of C. Child B does not
 implement that amendment or any Child C–F capability.
+
+## Issue #435 — finite adversarial-convergence framework v1
+
+Issue #435 remains open as a separate non-product governance prerequisite. The
+OWNER amendment at `issuecomment-5416186961` supersedes only the Reset51 route.
+Reset51 C1 `089dfa817e6f7357acfa466bc10bfbb09c82fcc6` and rejected
+candidate/tree `65f402c` / `d10d2a6` remain historical evidence; there is no
+Reset52 and no history rewrite.
+
+The active branch is
+`governance-435-adversarial-convergence-framework-v1` from exact base
+`a6284f7d8f1a14ef4c9a99493d6b06046505f20c`. C1 is preserved at
+`205c02b3bac633d023d753356bc966c194ed36a7` with preflight blob
+`c554eaf7f73ea081434b1e2f818441fe0bc3eee9`.
+
+Serialized route:
+
+1. C2 changes the other 18 non-freeze paths, so base through C2 contains all
+   19 non-freeze paths. It freezes N=40 stimuli, independent expectations,
+   twelve test-owned mutants, complete contracts/adapters/docs, and a typed
+   `ACP.NOT_IMPLEMENTED` executor.
+2. Architecture/scope/phase, security/trust, readability/feasibility, and
+   mutation/false-pass reviewers bind one immutable C2 candidate. Blocked head
+   `134fbd9` is preserved and the exact H3 replan is authorized by
+   `issuecomment-5422439650`; every review reruns.
+3. C3 adds only `adversarial-convergence-red-freeze-v1.json`, binding C2
+   objects, both corpus identities, protected-source digest, frozen dispatcher
+   and acceptance artifacts, and four durable review receipts.
+4. C4 changes only the marked executor region in
+   `scripts/quality/adversarial_convergence.py`. No correction follows C3.
+
+The non-freeze hard aggregate is 3,500 charged additions plus deletions; C3 may
+add 120 for a final 3,620. Per-path caps, 85-percent readability review,
+90-percent stop, closed ACP-T01–ACP-T12 universe, 64 KiB corpus cap, exact
+path/mode/history rules, and terminal disagreement/finding stops do not move.
+
+C2/C3 are intentionally RED and not merge-eligible. A new threat, semantic
+invariant, path, cap, corpus identity, unapproved correction, post-freeze required
+finding, or unresolved review disagreement returns to the OWNER. No product,
+runtime, provider, media, network, credential, spend, deployment, publication,
+or release authority exists.

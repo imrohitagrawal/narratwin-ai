@@ -1,5 +1,6 @@
 import importlib.util
 import json
+import subprocess
 from pathlib import Path
 from types import ModuleType
 from typing import Any
@@ -74,6 +75,101 @@ PRODUCT_CONTEXT_CONTENT = (
     "Pass condition: every required field is specific and the complete body passes.\n"
     "Fail condition: any required field is missing, generic, or unsupported.",
 )
+
+
+ISSUE435_BRANCH = "governance-435-adversarial-convergence-framework-v1"
+
+
+def _issue435_adapter_fixture(monkeypatch: Any, branch: str, returncode: int, stdout: bytes, event: str = "") -> list[object]:
+    calls: list[object] = []
+    monkeypatch.setattr(guardrails, "run_git", lambda args: branch)
+
+    def run(*args: object, **kwargs: object) -> subprocess.CompletedProcess[bytes]:
+        calls.extend((args, kwargs))
+        return subprocess.CompletedProcess([], returncode, stdout, b"")
+
+    monkeypatch.setattr(guardrails.subprocess, "run", run)
+    monkeypatch.setenv("GITHUB_HEAD_REF", event) if event else monkeypatch.delenv("GITHUB_HEAD_REF", raising=False)
+    monkeypatch.delenv("GITHUB_REF_NAME", raising=False)
+    monkeypatch.delenv("GITHUB_EVENT_NAME", raising=False)
+    return calls
+
+
+def test_issue435_exact_route_uses_thin_isolated_adapter(monkeypatch: Any) -> None:
+    calls = _issue435_adapter_fixture(monkeypatch, ISSUE435_BRANCH, 0, b'{"code":null}\n')
+    monkeypatch.setenv("GITHUB_BASE_SHA", "b" * 40)
+    monkeypatch.setenv("GITHUB_HEAD_SHA", "a" * 40)
+
+    assert guardrails.issue435_route_findings() == []
+    raw_args, raw_kwargs = calls
+    assert isinstance(raw_args, tuple) and isinstance(raw_kwargs, dict)
+    command = raw_args[0]
+    assert isinstance(command, list)
+    assert Path(command[-2]).name == "adversarial_convergence.py"
+    assert command[-1] == "--route-only"
+    assert command[1:3] == ["-I", "-P"]
+    assert raw_kwargs["timeout"] == 10
+    environment = raw_kwargs["env"]
+    assert isinstance(environment, dict) and environment["GITHUB_BASE_SHA"] == "b" * 40
+    assert environment["GITHUB_HEAD_SHA"] == "a" * 40 and "PYTHONPATH" not in environment
+
+
+def test_issue435_unrelated_and_lookalike_branches_do_not_gain_authority(monkeypatch: Any) -> None:
+    _issue435_adapter_fixture(monkeypatch, "stage8-unrelated", 0, b'{"code":null}')
+    assert guardrails.issue435_route_findings() == []
+    _issue435_adapter_fixture(monkeypatch, ISSUE435_BRANCH + "-evil", 0, b'{"code":null}')
+    assert guardrails.issue435_route_findings() == ["ACP.AUTH.ROUTE_DRIFT"]
+
+
+def test_issue435_exact_event_branch_accepts_detached_and_rejects_conflict(monkeypatch: Any) -> None:
+    _issue435_adapter_fixture(monkeypatch, "", 0, b'{"code":null}', ISSUE435_BRANCH)
+    assert guardrails.issue435_route_findings() == []
+    _issue435_adapter_fixture(monkeypatch, "conflicting-branch", 0, b'{"code":null}', ISSUE435_BRANCH)
+    assert guardrails.issue435_route_findings() == ["ACP.AUTH.ROUTE_DRIFT"]
+
+
+def test_issue435_push_ref_is_bound_as_detached_event_branch(monkeypatch: Any) -> None:
+    calls = _issue435_adapter_fixture(monkeypatch, "", 0, b'{"code":null}')
+    monkeypatch.setenv("GITHUB_EVENT_NAME", "push")
+    monkeypatch.setenv("GITHUB_REF_NAME", ISSUE435_BRANCH)
+
+    assert guardrails.issue435_route_findings() == []
+    _, raw_kwargs = calls
+    assert isinstance(raw_kwargs, dict)
+    environment = raw_kwargs["env"]
+    assert isinstance(environment, dict)
+    assert environment["GITHUB_HEAD_REF"] == ISSUE435_BRANCH
+    assert environment["GITHUB_EVENT_NAME"] == "push"
+
+    for hostile in (f" {ISSUE435_BRANCH}", f"{ISSUE435_BRANCH} ", ISSUE435_BRANCH + "-evil"):
+        monkeypatch.setenv("GITHUB_REF_NAME", hostile)
+        assert guardrails.issue435_route_findings() == ["ACP.AUTH.ROUTE_DRIFT"]
+
+
+@pytest.mark.parametrize(
+    ("returncode", "stdout", "finding"),
+    (
+        (1, b'{"code":"ACP.AUTH.BUDGET_STOP"}', "ACP.AUTH.BUDGET_STOP"),
+        (0, b'{"code":"ACP.AUTH.ROUTE_DRIFT"}', "ACP.VERDICT.PLATFORM_FAILURE"),
+        (2, b'{"code":"ACP.VERDICT.PLATFORM_FAILURE"}', "ACP.VERDICT.PLATFORM_FAILURE"),
+        (0, b"not-json", "ACP.VERDICT.PLATFORM_FAILURE"),
+    ),
+)
+def test_issue435_adapter_maps_only_typed_contract_results(
+    monkeypatch: Any, returncode: int, stdout: bytes, finding: str
+) -> None:
+    _issue435_adapter_fixture(monkeypatch, ISSUE435_BRANCH, returncode, stdout)
+    assert guardrails.issue435_route_findings() == [finding]
+
+
+def test_issue435_adapter_contains_timeout(monkeypatch: Any) -> None:
+    monkeypatch.setattr(guardrails, "run_git", lambda args: ISSUE435_BRANCH)
+    monkeypatch.setattr(
+        guardrails.subprocess,
+        "run",
+        lambda *args, **kwargs: (_ for _ in ()).throw(subprocess.TimeoutExpired([], 10)),
+    )
+    assert guardrails.issue435_route_findings() == ["ACP.VERDICT.PLATFORM_FAILURE"]
 
 
 def reviewer_overview_body(
@@ -3690,6 +3786,20 @@ def test_workflows_least_privilege_rejects_commented_permissions(
     guardrails.check_workflows_least_privilege()
 
     assert ".github/workflows/quality.yml is missing explicit least-privilege permissions." in guardrails.failures
+
+
+def test_quality_gates_bootstraps_locked_environment_after_stdlib_policy_checks() -> None:
+    workflow = (Path(__file__).parents[2] / ".github" / "workflows" / "quality-gates.yml").read_text(
+        encoding="utf-8"
+    )
+    guardrails = workflow.index("run: python scripts/guardrails_check.py")
+    preflight = workflow.index("run: python -m scripts.governance_preflight_github")
+    install_uv = workflow.index("python -m pip install uv==0.11.18")
+    locked_sync = workflow.index("uv sync --frozen")
+    quality = workflow.index('run: GITHUB_HEAD_REF="$NARRATWIN_HEAD_REF" make quality')
+
+    assert guardrails < install_uv and preflight < install_uv < locked_sync < quality
+    assert 'echo "$GITHUB_WORKSPACE/.venv/bin" >> "$GITHUB_PATH"' in workflow
 
 
 def test_workflows_least_privilege_ignores_commented_write_permissions(

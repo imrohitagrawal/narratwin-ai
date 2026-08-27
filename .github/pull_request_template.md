@@ -140,6 +140,10 @@ and final merge-message wording.
 - [ ] Process/durability/governance work considered whether `docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md` should receive reusable lessons for future projects/apps.
 - [ ] Implementation or release-readiness changes completed invariant, exploit-matrix, and contract/gate review per `docs/REVIEW_RIGOR_RETROSPECTIVE.md`.
 - [ ] PR title, body, branch commit messages, and final merge/squash message plan were checked for automation-sensitive wording such as issue-closing keywords.
+- [ ] Adversarial-framework changes keep stimuli separate from test-owned expectations and show the executor received stimulus only.
+- [ ] Adversarial-framework candidate review states remain `PENDING_EXTERNAL_REVIEW`; every PASS links an eligible independent reviewer receipt for the exact head/tree.
+- [ ] Mutation claims distinguish C2 test-oracle discrimination from C4 execution against the frozen production executor.
+- [ ] The Issue #435 phase, corpus identity, path/cap, readability, correction-wave, and post-freeze stop rules were checked when applicable.
 
 ## Preflight evidence
 
@@ -211,3 +215,10 @@ GITHUB_EVENT_NAME=pull_request GITHUB_EVENT_PATH=/path/to/pr-event.json NARRATWI
 ## Notes for reviewer
 
 - Add notes here, or write `N/A`.
+
+For Issue #435, state the immutable-runner result as exact typed RED,
+`CONTRACT_FAILURE`, or `INFRASTRUCTURE_FAILURE`; a generic
+nonzero `make` result is insufficient. List the exact candidate head/tree,
+corpus semantic identity, 40-failure RED count, 12 executed/killed test-mutant
+receipts, C1 blob, protected-source digest, charged-line totals, and four external
+review dispositions. Never describe C2/C3 as merge-ready or implemented.

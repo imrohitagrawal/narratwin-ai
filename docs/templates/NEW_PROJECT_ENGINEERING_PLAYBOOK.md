@@ -988,6 +988,47 @@ media misuse.
 - Waiting for the owner to repeat routine merge-closeout hygiene after the PR
   is already approved and green.
 
+## Reusable adversarial-framework gate
+
+When a project needs a reusable adversarial verifier, keep the framework finite
+and make each product slice supply its own domain matrix. Before code, record:
+
+| Decision | Required evidence |
+|---|---|
+| Framework responsibility | Closed vocabulary, parser, stage order, typed results, route/freeze/review rules only |
+| Slice responsibility | Domain threats, lifecycle/trust semantics, stimuli, expectations, evidence, mutants, thresholds |
+| Corpus | Exact count/order/identity/byte cap; stimulus-only records |
+| Oracle independence | Test-owned literal outcomes; executor receives one stimulus; no test/corpus import |
+| Mutation | Named real execution and killing assertion; harness and production claims separated |
+| Route | Exact base/branch/paths/modes/history/blobs; additions plus deletions caps |
+| Review | Independent roles bind one head/tree; candidate remains pending |
+| Stop | Readability threshold, one correction maximum, immutable freeze, terminal post-freeze finding |
+
+Use this four-phase shape:
+
+1. C1 commits only the preflight.
+2. C2 commits the complete contracts, stimulus corpus, independent expected
+   results, tests, adapters, docs, and typed `NOT_IMPLEMENTED` executor.
+3. Independent reviews pass on one exact C2 candidate; C3 adds only the freeze
+   binding those identities and receipts.
+4. C4 changes only the pre-authorized executor surface. A required finding
+   stops; it does not start an unbounded correction loop.
+
+Required C2 evidence separates:
+
+- GREEN bootstrap, corpus/schema, security, import, route, budget,
+  dispatcher/guardrail, mutation-harness, and readability tests;
+- genuine RED future-behavior assertions reaching the exact typed unimplemented
+  result with zero collection/setup errors;
+- contract/infrastructure failures and the exact immutable-runner RED inventory;
+- `PENDING_EXTERNAL_REVIEW` candidate state from independent PASS receipts.
+
+At every wave, recompute per-path, partition, and aggregate charged lines,
+confirm regular text modes and exact changed paths, and recheck frozen blobs.
+At 85 percent record readability review. At 90 percent stop before mutation.
+No wildcard, prefix, binary, symlink, rename/copy, nonregular, malformed-numstat,
+missing, extra, untracked, or dirty-state authority is implied.
+
 ## Reusable Sequence
 
 ```text

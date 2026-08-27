@@ -237,6 +237,7 @@ CANONICAL_STAGE_ISSUE_CLOSURE = (
 )
 ISSUE_353_RECOVERY_BRANCH = "stage8-353-r0c-a2-3b-evaluation-lineage-v2"
 ISSUE_424_MASTER_PROGRAM_BRANCH = "stage8-424-master-program-authority-prelog"
+ISSUE435_BRANCH = "governance-435-adversarial-convergence-framework-v1"
 FORCE_PULL_REQUEST_GUARDRAILS_ENV = "NARRATWIN_FORCE_PULL_REQUEST_GUARDRAILS"
 STATUS_RECONCILIATION_BRANCH_PATTERN = re.compile(
     r"^phase-1-closure-process-(?P<issue>\d+)-post-pr-(?P<pr>\d+)-status-reconciliation$"
@@ -2369,8 +2370,38 @@ def check_governance_preflight_repository() -> None:
     failures.extend(f"Governance preflight finding: {finding.code}" for finding in findings)
 
 
+def issue435_route_findings() -> list[str]:
+    head_ref = os.environ.get("GITHUB_HEAD_REF", "")
+    push_ref = os.environ.get("GITHUB_REF_NAME", "") if os.environ.get("GITHUB_EVENT_NAME", "") == "push" else ""
+    raw_event_branch = head_ref or push_ref
+    event_branch = raw_event_branch.strip()
+    git_branch = run_git(["branch", "--show-current"])
+    branch = event_branch or git_branch
+    if not branch.startswith("governance-435"):
+        return []
+    if raw_event_branch != event_branch or branch != ISSUE435_BRANCH or (event_branch and git_branch and git_branch != event_branch):
+        return ["ACP.AUTH.ROUTE_DRIFT"]
+    environment = {"PATH": os.defpath, "LC_ALL": "C"}
+    for name in ("GITHUB_EVENT_NAME", "GITHUB_HEAD_REF", "GITHUB_BASE_SHA", "GITHUB_HEAD_SHA"):
+        if name in os.environ:
+            environment[name] = os.environ[name]
+    if event_branch:
+        environment["GITHUB_HEAD_REF"] = event_branch
+    command = [sys.executable, "-I", "-P", str(ROOT / "scripts/quality/adversarial_convergence.py"), "--route-only"]
+    try:
+        result = subprocess.run(command, cwd=ROOT, env=environment, capture_output=True, check=False, timeout=10)
+        if len(result.stdout) + len(result.stderr) > 131_072:
+            return ["ACP.VERDICT.PLATFORM_FAILURE"]
+        document = json.loads(result.stdout.decode("utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError, subprocess.TimeoutExpired, MemoryError):
+        return ["ACP.VERDICT.PLATFORM_FAILURE"]
+    if result.returncode == 0 and isinstance(document, dict) and document.get("code") is None:
+        return []
+    code = document.get("code") if isinstance(document, dict) else None
+    return [code] if result.returncode == 1 and isinstance(code, str) else ["ACP.VERDICT.PLATFORM_FAILURE"]
 def main() -> int:
     check_no_direct_main_push()
+    failures.extend(f"Issue #435 convergence finding: {code}" for code in issue435_route_findings())
     check_governance_preflight_repository()
     if failures == ["Governance preflight finding: GPF.REPO.HISTORY_UNAVAILABLE"]:
         print("Guardrail failures:")

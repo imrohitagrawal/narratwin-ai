@@ -118,3 +118,33 @@ Each implementation slice must include:
 Stage 4 is the first product implementation stage:
 
 Project creation -> upload markdown knowledge -> ingest/chunk/store -> retrieve context -> generate grounded walkthrough script -> evaluate unsupported claims -> store output -> display in UI.
+
+## Adversarial-Convergence Framework
+
+Issue #435 framework work follows
+`docs/ADVERSARIAL_VERIFICATION_PLAYBOOK.md` and the exact OWNER amendment linked
+there. The framework is governance-only: activation is `NONE`, authority effect
+is `NO_AUTHORITY_EFFECT`, and it never supplies a future slice's threat matrix
+or authorizes product, runtime, provider, media, deployment, or release work.
+
+Keep corpus stimuli separate from test-owned expected results. An executor may
+receive only the materialized stimulus and must not import tests, corpus files,
+or expectation modules. Candidate artifacts remain
+`PENDING_EXTERNAL_REVIEW`; candidate authors cannot record review PASS.
+
+The v1 route has four ordered phases: preflight, complete genuine RED,
+review-bound freeze, then implementation. Only OWNER-enumerated bounded
+corrections may precede the freeze; Issue #435 H3 is narrowly authorized at
+`issuecomment-5422439650`. No correction follows the freeze. A new threat, invariant,
+path, cap, corpus identity, unapproved correction, or unresolved blocking review finding
+stops for OWNER disposition rather than starting another numbered reset.
+The one-time materialized identity authorized for the final C2 correction is
+the identity recorded in the playbook and is immutable after that candidate.
+
+Review findings must be evidence-triaged as `CRITICAL_BLOCKER`,
+`REQUIRED_CONTRACT`, `ADVISORY_DEBT`, `DUPLICATE`, or `OUT_OF_SCOPE`. Only a
+reproduced critical bypass or direct contract violation blocks progress;
+reviewer labels alone do not. The Primary Orchestrator records the reproduction,
+rationale, owner, and final disposition. A failed bounded correction returns to
+architecture replanning and explicit OWNER direction; it is not abandonment or
+authority for an automatic retry.

@@ -1,0 +1,92 @@
+{
+  "schemaVersion": "AdversarialConvergenceRedFreezeV1",
+  "issue": 435,
+  "activation": "NONE",
+  "authorityEffect": "NO_AUTHORITY_EFFECT",
+  "correction": {
+    "rejectedHead": "8d83713ed09dc626e24f1fe063e6afd9cfa5e8e9",
+    "wave": 1,
+    "authors": ["rohit agrawal <rohit.ra.agrawal@gmail.com>"]
+  },
+  "c2": {
+    "head": "48915e7b82d837cdabd7a061911ff1aea1bce70a",
+    "tree": "4a52552bed6c17866e1640cc046b43a7ace7de8a",
+    "diffSha256": "ec7b506389e8b6b37a64319c848dfd3596744ced992316c28f0bd39398dd4232"
+  },
+  "artifacts": {
+    "corpus": {
+      "path": "docs/governance/adversarial-convergence-framework-cases-v1.json",
+      "blob": "1c619c933f2b68183ad28fc51cabf3f217783004",
+      "sha256": "59581f0530b9b56b68e9bfc313497b22d1be2ce371d0cb2c64ea2b3c01dc6a75",
+      "semanticSha256": "3b2a0c4b3b13cf6ab71ec4e7a3dd4e3566a0c8195e3c7bed6bf956575e5f9fc6"
+    },
+    "schema": {
+      "path": "docs/governance/adversarial-convergence-framework-v1.schema.json",
+      "blob": "2afc0735f48b5c61eaa0a4c0783d401e39bde566",
+      "sha256": "cde42d01da7e4c3ff6725e09483e4f417c10729fb9a6cda0c46ead030c41636f"
+    },
+    "acceptanceTest": {
+      "path": "tests/unit/test_adversarial_convergence.py",
+      "blob": "3fa4c3a06d1dac483a1abdb396654abaaa4a7698",
+      "sha256": "343366705f412e48d82655463ee6e92fe0a15c0c8922013f497c881b54c4b5f3"
+    },
+    "skeleton": {
+      "path": "scripts/quality/adversarial_convergence.py",
+      "blob": "a131de85bd82c5977a9679e2a3ee706fb2ad83c4",
+      "sha256": "a4e676deb853078ba5070d8717ce2bc39b371dad9ef8d531ab0efa0179f2cb89",
+      "protectedSha256": "3562f89ffb55333dfb3bc7b7e14a777556a413703216773b89163169233fd6a7"
+    },
+    "dispatcher": {
+      "path": "scripts/quality/check_quality_stage.py",
+      "blob": "29950ee28416a59e59c5df8d1734f69d06b93139",
+      "sha256": "456d4eabdcdc158a40b4e5d7ee7a3d9dd5e24fd162e3b386ea9808956569717e"
+    },
+    "guardrail": {
+      "path": "scripts/guardrails_check.py",
+      "blob": "d90b2d87f8c170864d16a067dfc58fca4543a416",
+      "sha256": "c05999a52d78b0a9d985314b121f6d91b1560e08815ed8b99c885cb33ff1ee6e"
+    }
+  },
+  "reviews": [
+    {
+      "role": "ARCHITECTURE_SCOPE_PHASE",
+      "reviewer": "codex architecture scope reviewer <codex.architecture.scope@agents.invalid>",
+      "disposition": "PASS",
+      "head": "48915e7b82d837cdabd7a061911ff1aea1bce70a",
+      "tree": "4a52552bed6c17866e1640cc046b43a7ace7de8a",
+      "url": "https://github.com/imrohitagrawal/narratwin-ai/issues/435#issuecomment-5436525330",
+      "content": "ISSUE435_REVIEW_V1\nrole=ARCHITECTURE_SCOPE_PHASE\ndisposition=PASS\nhead=48915e7b82d837cdabd7a061911ff1aea1bce70a\ntree=4a52552bed6c17866e1640cc046b43a7ace7de8a\nreviewer=codex architecture scope reviewer <codex.architecture.scope@agents.invalid>\nurl=https://github.com/imrohitagrawal/narratwin-ai/issues/435#issuecomment-5436525330",
+      "contentSha256": "3b37e9ba2b68ad3a96a3d7719202ed072e38e4b9b8d879a5aeca522c9e883c74"
+    },
+    {
+      "role": "SECURITY_TRUST",
+      "reviewer": "security trust reviewer <security-trust-reviewer@agents.invalid>",
+      "disposition": "PASS",
+      "head": "48915e7b82d837cdabd7a061911ff1aea1bce70a",
+      "tree": "4a52552bed6c17866e1640cc046b43a7ace7de8a",
+      "url": "https://github.com/imrohitagrawal/narratwin-ai/issues/435#issuecomment-5436528227",
+      "content": "ISSUE435_REVIEW_V1\nrole=SECURITY_TRUST\ndisposition=PASS\nhead=48915e7b82d837cdabd7a061911ff1aea1bce70a\ntree=4a52552bed6c17866e1640cc046b43a7ace7de8a\nreviewer=security trust reviewer <security-trust-reviewer@agents.invalid>\nurl=https://github.com/imrohitagrawal/narratwin-ai/issues/435#issuecomment-5436528227",
+      "contentSha256": "418512e31488e046004f219a400c53365df9023001c3fdb236ab0223cb0a13f3"
+    },
+    {
+      "role": "READABILITY_FEASIBILITY",
+      "reviewer": "replacement c2 readability reviewer 48915e7 <replacement-c2-readability-48915e7@agents.openai.test>",
+      "disposition": "PASS",
+      "head": "48915e7b82d837cdabd7a061911ff1aea1bce70a",
+      "tree": "4a52552bed6c17866e1640cc046b43a7ace7de8a",
+      "url": "https://github.com/imrohitagrawal/narratwin-ai/issues/435#issuecomment-5436566663",
+      "content": "ISSUE435_REVIEW_V1\nrole=READABILITY_FEASIBILITY\ndisposition=PASS\nhead=48915e7b82d837cdabd7a061911ff1aea1bce70a\ntree=4a52552bed6c17866e1640cc046b43a7ace7de8a\nreviewer=replacement c2 readability reviewer 48915e7 <replacement-c2-readability-48915e7@agents.openai.test>\nurl=https://github.com/imrohitagrawal/narratwin-ai/issues/435#issuecomment-5436566663",
+      "contentSha256": "6a75ff475b99012d2df40cc45708269bb6e0861f30ecc85d9d800aa43e4b6fb3"
+    },
+    {
+      "role": "MUTATION_FALSE_PASS",
+      "reviewer": "delta mutation reviewer <delta.mutation.reviewer@narratwin.local>",
+      "disposition": "PASS",
+      "head": "48915e7b82d837cdabd7a061911ff1aea1bce70a",
+      "tree": "4a52552bed6c17866e1640cc046b43a7ace7de8a",
+      "url": "https://github.com/imrohitagrawal/narratwin-ai/issues/435#issuecomment-5436564210",
+      "content": "ISSUE435_REVIEW_V1\nrole=MUTATION_FALSE_PASS\ndisposition=PASS\nhead=48915e7b82d837cdabd7a061911ff1aea1bce70a\ntree=4a52552bed6c17866e1640cc046b43a7ace7de8a\nreviewer=delta mutation reviewer <delta.mutation.reviewer@narratwin.local>\nurl=https://github.com/imrohitagrawal/narratwin-ai/issues/435#issuecomment-5436564210",
+      "contentSha256": "11b2bcf6a3a58f94d70c6bd87028dae42dc44eafbc27d7e4f06f79efd2eb99af"
+    }
+  ]
+}
