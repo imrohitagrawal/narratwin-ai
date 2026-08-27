@@ -671,7 +671,7 @@ def test_hosted_route_head_accepts_exact_detached_checkout_topologies(tmp_path: 
     subprocess.run(["/usr/bin/git", "clone", "--quiet", "--no-local", str(ROOT), str(checkout)], check=True)
     ambient = subprocess.check_output(["/usr/bin/git", "rev-parse", "HEAD"], cwd=checkout, text=True).strip()
     parents = subprocess.check_output(["/usr/bin/git", "rev-list", "--parents", "-n", "1", ambient], cwd=checkout, text=True).split()
-    head = os.environ.get("GITHUB_HEAD_SHA") or (parents[2] if len(parents) == 3 and parents[1] == ISSUE435_BASE else ambient)
+    head = parents[2] if len(parents) == 3 and parents[1] == ISSUE435_BASE else ambient
     source_diff = subprocess.check_output(["/usr/bin/git", "diff", "--binary", "--full-index", ISSUE435_BASE, head, "--"], cwd=ROOT)
     cloned_diff = subprocess.check_output(["/usr/bin/git", "diff", "--binary", "--full-index", ISSUE435_BASE, head, "--"], cwd=checkout)
     assert source_diff == cloned_diff

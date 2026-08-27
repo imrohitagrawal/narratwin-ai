@@ -2759,7 +2759,7 @@ implement that amendment or any Child C–F capability.
 
 ## Issue #451 — post-PR-443 authority reconciliation
 
-Issue `#451` is the exact seven-path Lane B route on branch
+Issue `#451` is the exact eight-path Lane B route on branch
 `docs/cut1-post-443-reconciliation-451`, fixed to base
 `59db96aaab6c4e75b12d134dc9b02330c5a982ac`. It reconciles current authority
 wording, registers its modular Stage 8 gate, and preserves all implementation,
