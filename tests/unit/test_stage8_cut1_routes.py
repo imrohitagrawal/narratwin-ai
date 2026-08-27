@@ -1263,6 +1263,13 @@ def test_issue452_route_is_exact_fixed_and_budgeted() -> None:
     assert routes.ROUTE_ISSUES[branch] == 452
     assert routes.TOTAL_LIMITS[branch] == 3600
     assert routes.TEXT_LIMITS[branch] == limits
+    assert set(routes.ISSUE452_BYTE_LIMITS) == {
+        "docs/governance/schemas/cut1-human-realism-evaluation-v1.schema.json",
+        "docs/governance/schemas/cut1-presenter-provider-acceptance-v1.schema.json",
+        "scripts/quality/cut1_presenter_contract.py",
+        "tests/unit/test_cut1_presenter_contract.py",
+    }
+    assert set(routes.ISSUE452_BYTE_LIMITS.values()) == {30_000}
 
 
 def test_issue452_requires_fixed_base_and_branch_point() -> None:
@@ -1275,6 +1282,25 @@ def test_issue452_requires_fixed_base_and_branch_point() -> None:
     drifted = iter((completed([], out=base + "\n"), completed([], out=base + "\n"), completed([], out="c" * 40 + "\n")))
     error = pytest.raises(RuntimeError, routes.route_base, lambda _: next(drifted), routes.ISSUE452_BRANCH)
     assert "Issue #452 fixed base" in str(error.value)
+
+
+def test_issue452_contract_bytes_schemas_and_authority_hashes() -> None:
+    governance = REPO / "docs/governance"
+    protocol_path = governance / "cut1-blinded-human-evaluation-protocol-v1.json"
+    bakeoff_path = governance / "cut1-provider-bakeoff-contract-v1.json"
+    assert hashlib.sha256(protocol_path.read_bytes()).hexdigest() == "fa3759985141639185618fbc595057412dd8582f60ed97fc462b30b7548580b8"
+    assert hashlib.sha256(bakeoff_path.read_bytes()).hexdigest() == "863dfa743770f52e1d4e9018a34e6f1002e5abdddcce6b845df400a423523bfb"
+    protocol = json.loads(protocol_path.read_text())
+    assert [row["bodySha256"] for row in protocol["authority"]] == ["03e23b4faaea5389514d55529d284743a034efd0fad126bb704ea22c0d51c450", "4f599502ee3658a97c5dbfee8296193880a732641eea1a26b196e3ce9d79ab1c", "391de2e22898416fa9192d9bd47f8bb3e97d6a73d263e65721ff4e6b99448a33", "63c5fcd41bfb86971abe8c28f44903a12ad5d825dd988b85737c8f0b06644ae7"]
+    assert hashlib.sha256(protocol["endpoint"]["prompt"].encode()).hexdigest() == protocol["endpoint"]["promptSha256"]
+    matrix = json.loads((governance / "cut1-all-presenter-acceptance-matrix-v1.json").read_text())
+    bakeoff = json.loads(bakeoff_path.read_text())
+    assert matrix["assetCheckpoint"]["bodySha256"] == "c6383a73611294f43bbd7528015f6e661f42d4c3d5b0000483f25a19daa748ee"
+    assert bakeoff["sourceCheckpoint"]["bodySha256"] == "19f1619ce83591f4e70285603487d823b7ebe90b208030dd4370846aff425a77"
+    for name in ("cut1-human-realism-evaluation-v1.schema.json", "cut1-presenter-provider-acceptance-v1.schema.json"):
+        schema = json.loads((governance / "schemas" / name).read_text())
+        assert schema["$schema"] == "https://json-schema.org/draft/2020-12/schema"
+        assert schema["type"] == "object" and schema["additionalProperties"] is False
 
 
 def test_issue452_rejects_each_missing_path_and_lookalikes(monkeypatch: Any) -> None:
@@ -1304,6 +1330,18 @@ def test_issue452_rejects_aggregate_and_each_path_budget(monkeypatch: Any) -> No
         assert failures == [f"Issue #452 charge for {path} exceeds {limit}."]
 
 
+def test_issue452_rejects_each_file_at_30kb_boundary(monkeypatch: Any) -> None:
+    branch = routes.ISSUE452_BRANCH
+    monkeypatch.setattr(routes, "route_base", lambda *_: "base")
+    monkeypatch.setattr(routes, "route_text_charges", lambda *_: (0, {}))
+    for path, limit in routes.ISSUE452_BYTE_LIMITS.items():
+        sizes = {candidate: maximum - 1 for candidate, maximum in routes.ISSUE452_BYTE_LIMITS.items()}
+        monkeypatch.setattr(routes, "route_binary_sizes", lambda *_, values=sizes | {path: limit}: values)
+        failures: list[str] = []
+        routes.check_exact_route(REPO, lambda _: completed([]), branch, ISSUE452_EXPECTED, failures)
+        assert failures == [f"Issue #452 file {path} must be smaller than {limit} bytes."]
+
+
 def test_legacy_checker_caps_are_unchanged_and_executable() -> None:
     checker = REPO / "scripts/quality/check_stage8_docs.py"
     checker_text = checker.read_text(encoding="utf-8")
@@ -1320,7 +1358,7 @@ def test_legacy_checker_caps_are_unchanged_and_executable() -> None:
 def test_exact_route_completeness_lookalikes_and_budgets(monkeypatch: Any) -> None:
     monkeypatch.setattr(routes, "route_base", lambda *_: "base")
     monkeypatch.setattr(routes, "route_text_charges", lambda *_: (0, {}))
-    monkeypatch.setattr(routes, "route_binary_sizes", lambda *_: {path: 1 for path in routes.ISSUE383_BINARY_FILES})
+    monkeypatch.setattr(routes, "route_binary_sizes", lambda *_: {path: 1 for path in routes.ISSUE383_BINARY_FILES | set(routes.ISSUE452_BYTE_LIMITS)})
     for branch, paths in EXPECTED.items():
         failures: list[str] = []
         routes.check_exact_route(REPO, lambda _: completed([]), branch, set(paths), failures)
@@ -1346,7 +1384,7 @@ def test_exact_route_completeness_lookalikes_and_budgets(monkeypatch: Any) -> No
 
 def test_per_route_aggregate_per_file_and_binary_caps(monkeypatch: Any) -> None:
     monkeypatch.setattr(routes, "route_base", lambda *_: "base")
-    monkeypatch.setattr(routes, "route_binary_sizes", lambda *_: {path: 1 for path in routes.ISSUE383_BINARY_FILES})
+    monkeypatch.setattr(routes, "route_binary_sizes", lambda *_: {path: 1 for path in routes.ISSUE383_BINARY_FILES | set(routes.ISSUE452_BYTE_LIMITS)})
     for branch, limit in routes.TOTAL_LIMITS.items():
         monkeypatch.setattr(routes, "route_text_charges", lambda *_, value=limit: (value + 1, {}))
         failures: list[str] = []

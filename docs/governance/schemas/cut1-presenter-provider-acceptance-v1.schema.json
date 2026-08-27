@@ -4,31 +4,11 @@
   "title": "Cut1PresenterProviderAcceptanceV1",
   "type": "object",
   "additionalProperties": false,
-  "required": [
-    "schemaVersion",
-    "candidateId",
-    "activation",
-    "authorityEffect",
-    "presenter",
-    "provider",
-    "rights",
-    "privacy",
-    "egress",
-    "credentialRef",
-    "screening",
-    "experiment",
-    "idempotency",
-    "lineage",
-    "outputValidation",
-    "disclosure",
-    "deletion",
-    "observability",
-    "reproducibility",
-    "eligibility"
-  ],
+  "required": ["schemaVersion", "candidateId", "evaluatedAt", "activation", "authorityEffect", "presenter", "provider", "rights", "privacy", "egress", "credentialRef", "screening", "experiment", "idempotency", "lineage", "outputValidation", "disclosure", "deletion", "observability", "reproducibility", "eligibility"],
   "properties": {
     "schemaVersion": {"const": "Cut1PresenterProviderAcceptanceV1"},
     "candidateId": {"$ref": "#/$defs/id"},
+    "evaluatedAt": {"type": "string", "format": "date-time"},
     "activation": {"const": "NONE"},
     "authorityEffect": {"const": "NO_AUTHORITY_EFFECT"},
     "presenter": {"$ref": "#/$defs/presenter"},
@@ -46,9 +26,7 @@
     "deletion": {"$ref": "#/$defs/deletion"},
     "observability": {"$ref": "#/$defs/observability"},
     "reproducibility": {"$ref": "#/$defs/reproducibility"},
-    "eligibility": {
-      "enum": ["NOT_AUTHORIZED", "CONDITIONAL", "EXPLORATORY_ONLY", "ELIGIBLE", "REJECTED"]
-    }
+    "eligibility": {"enum": ["NOT_AUTHORIZED", "CONDITIONAL", "EXPLORATORY_ONLY", "REJECTED"]}
   },
   "$defs": {
     "id": {"type": "string", "minLength": 1, "maxLength": 160},
@@ -59,22 +37,15 @@
       "required": ["id", "sha256"],
       "properties": {"id": {"$ref": "#/$defs/id"}, "sha256": {"$ref": "#/$defs/sha256"}}
     },
+    "checkpoint": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "sha256", "accessedAt", "effectiveAt", "expiresAt", "refreshRequired"],
+      "properties": {"id": {"$ref": "#/$defs/id"}, "sha256": {"$ref": "#/$defs/sha256"}, "accessedAt": {"type": "string", "format": "date-time"}, "effectiveAt": {"type": "string", "format": "date-time"}, "expiresAt": {"type": "string", "format": "date-time"}, "refreshRequired": {"type": "boolean"}}
+    },
     "presenter": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "presenterId",
-        "role",
-        "assetSha256",
-        "identityKind",
-        "cloned",
-        "realPersonLikeness",
-        "framing",
-        "handsVisible",
-        "gesturesScored",
-        "originalOverwritten",
-        "derivativeAuthorityRef"
-      ],
+      "required": ["presenterId", "role", "assetSha256", "identityKind", "cloned", "realPersonLikeness", "framing", "handsVisible", "gesturesScored", "originalOverwritten", "derivativeAuthorityRef"],
       "properties": {
         "presenterId": {"enum": ["meera", "raj", "myra"]},
         "role": {"enum": ["PRIMARY", "FIRST_BACKUP", "SECOND_BACKUP"]},
@@ -82,7 +53,7 @@
         "identityKind": {"const": "SYNTHETIC_FICTIONAL"},
         "cloned": {"const": false},
         "realPersonLikeness": {"const": false},
-        "framing": {"enum": ["WAIST_UP", "MID_THIGH"]},
+        "framing": {"enum": ["HEAD_SHOULDERS_UPPER_TORSO", "WAIST_UP", "MID_THIGH"]},
         "handsVisible": {"type": "boolean"},
         "gesturesScored": {"type": "boolean"},
         "originalOverwritten": {"const": false},
@@ -92,22 +63,7 @@
     "provider": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "legalEntity",
-        "product",
-        "api",
-        "modelOrEngine",
-        "version",
-        "lifecycle",
-        "region",
-        "endpoint",
-        "identityOrVoiceId",
-        "identityOrVoiceType",
-        "modality",
-        "role",
-        "officialSourceUrls",
-        "sourceCheckpoint"
-      ],
+      "required": ["legalEntity", "product", "api", "modelOrEngine", "version", "lifecycle", "region", "endpoint", "identityOrVoiceId", "identityOrVoiceType", "modality", "role", "officialSourceUrls", "sourceCheckpoint"],
       "properties": {
         "legalEntity": {"$ref": "#/$defs/id"},
         "product": {"$ref": "#/$defs/id"},
@@ -130,26 +86,13 @@
           "uniqueItems": true,
           "items": {"type": "string", "pattern": "^https://"}
         },
-        "sourceCheckpoint": {"$ref": "#/$defs/ref"}
+        "sourceCheckpoint": {"$ref": "#/$defs/checkpoint"}
       }
     },
     "rights": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "provenanceRef",
-        "rightsEvidenceRef",
-        "consentEvidenceRef",
-        "consentStatus",
-        "consentBinding",
-        "identityCompatibility",
-        "commercialUseDecision",
-        "derivativeUseDecision",
-        "termsRef",
-        "dpaRef",
-        "licenseRef",
-        "publicationAllowed"
-      ],
+      "required": ["provenanceRef", "rightsEvidenceRef", "consentEvidenceRef", "consentStatus", "consentBinding", "identityCompatibility", "commercialUseDecision", "derivativeUseDecision", "termsRef", "dpaRef", "licenseRef", "governanceCheckpoint", "publicationAllowed"],
       "properties": {
         "provenanceRef": {"$ref": "#/$defs/ref"},
         "rightsEvidenceRef": {"$ref": "#/$defs/ref"},
@@ -162,6 +105,7 @@
         "termsRef": {"$ref": "#/$defs/ref"},
         "dpaRef": {"$ref": "#/$defs/ref"},
         "licenseRef": {"$ref": "#/$defs/ref"},
+        "governanceCheckpoint": {"$ref": "#/$defs/checkpoint"},
         "publicationAllowed": {"const": false}
       }
     },
@@ -180,18 +124,7 @@
     "privacy": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "inputClassification",
-        "controllerProcessorRole",
-        "trainingUse",
-        "processingRegion",
-        "storageRegion",
-        "crossBorderTransfer",
-        "subprocessorRef",
-        "backupDeletionRef",
-        "retentionRef",
-        "providerDeletionSlaRef"
-      ],
+      "required": ["inputClassification", "controllerProcessorRole", "trainingUse", "processingRegion", "storageRegion", "crossBorderTransfer", "subprocessorRef", "backupDeletionRef", "retentionRef", "providerDeletionSlaRef"],
       "properties": {
         "inputClassification": {"const": "APPROVED_SYNTHETIC_NON_SENSITIVE"},
         "controllerProcessorRole": {"enum": ["PROVIDER_PROCESSOR", "UNKNOWN"]},
@@ -200,9 +133,9 @@
         "storageRegion": {"$ref": "#/$defs/id"},
         "crossBorderTransfer": {"enum": ["NONE_VERIFIED", "APPROVED", "UNKNOWN"]},
         "subprocessorRef": {"$ref": "#/$defs/ref"},
-        "backupDeletionRef": {"$ref": "#/$defs/ref"},
-        "retentionRef": {"$ref": "#/$defs/ref"},
-        "providerDeletionSlaRef": {"$ref": "#/$defs/ref"}
+        "backupDeletionRef": {"$ref": "#/$defs/checkpoint"},
+        "retentionRef": {"$ref": "#/$defs/checkpoint"},
+        "providerDeletionSlaRef": {"$ref": "#/$defs/checkpoint"}
       }
     },
     "egress": {
@@ -228,8 +161,8 @@
     },
     "screen": {
       "type": "object", "additionalProperties": false,
-      "required": ["contentRef", "scannerRef", "result"],
-      "properties": {"contentRef": {"$ref": "#/$defs/ref"}, "scannerRef": {"$ref": "#/$defs/ref"}, "result": {"enum": ["CLEAN", "BLOCKED"]}}
+      "required": ["contentRef", "tenantId", "projectId", "inputType", "contentSha256", "scannerRef", "scannerVersion", "result"],
+      "properties": {"contentRef": {"$ref": "#/$defs/ref"}, "tenantId": {"$ref": "#/$defs/id"}, "projectId": {"$ref": "#/$defs/id"}, "inputType": {"$ref": "#/$defs/id"}, "contentSha256": {"$ref": "#/$defs/sha256"}, "scannerRef": {"$ref": "#/$defs/ref"}, "scannerVersion": {"$ref": "#/$defs/id"}, "result": {"enum": ["CLEAN", "BLOCKED"]}}
     },
     "screening": {
       "type": "object",
@@ -247,24 +180,7 @@
     "experiment": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "enabled",
-        "currency",
-        "pricingRef",
-        "rateSnapshotRef",
-        "maxCalls",
-        "maxSeconds",
-        "maxAttemptsPerCall",
-        "maxRetries",
-        "maxConcurrency",
-        "timeoutMs",
-        "perCallCeilingMicros",
-        "experimentCeilingMicros",
-        "providerHardCapMicros",
-        "chargedOnFailure",
-        "spendState",
-        "ownerApprovalRef"
-      ],
+      "required": ["enabled", "currency", "pricingRef", "rateSnapshotRef", "maxCalls", "maxSeconds", "maxAttemptsPerCall", "maxRetries", "maxConcurrency", "timeoutMs", "perCallCeilingMicros", "experimentCeilingMicros", "providerHardCapMicros", "chargedOnFailure", "spendState", "ownerApprovalRef"],
       "properties": {
         "enabled": {"const": false},
         "currency": {"type": "string", "pattern": "^[A-Z]{3}$"},
@@ -302,31 +218,42 @@
     "lineage": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["tenantId", "projectId", "actorId", "runId", "traceId", "requestId", "sourceRef", "scriptRef", "evaluationRef", "artifactRef"],
+      "required": ["tenantId", "projectId", "actorId", "presenterId", "language", "providerCandidateId", "modelOrEngine", "version", "region", "runId", "traceId", "requestId", "requestPayloadSha256", "sourceRef", "scriptRef", "promptRef", "optionsRef", "evaluationRef", "approvalRef", "consumptionReceiptRef", "artifactRef"],
       "properties": {
         "tenantId": {"$ref": "#/$defs/id"},
         "projectId": {"$ref": "#/$defs/id"},
         "actorId": {"$ref": "#/$defs/id"},
+        "presenterId": {"enum": ["meera", "raj", "myra"]}, "language": {"const": "en"},
+        "providerCandidateId": {"$ref": "#/$defs/id"}, "modelOrEngine": {"$ref": "#/$defs/id"},
+        "version": {"$ref": "#/$defs/id"}, "region": {"$ref": "#/$defs/id"},
         "runId": {"$ref": "#/$defs/id"},
         "traceId": {"$ref": "#/$defs/id"},
         "requestId": {"$ref": "#/$defs/id"},
+        "requestPayloadSha256": {"$ref": "#/$defs/sha256"},
         "sourceRef": {"$ref": "#/$defs/ref"},
         "scriptRef": {"$ref": "#/$defs/ref"},
+        "promptRef": {"$ref": "#/$defs/ref"}, "optionsRef": {"$ref": "#/$defs/ref"},
         "evaluationRef": {"$ref": "#/$defs/ref"},
+        "approvalRef": {"$ref": "#/$defs/ref"}, "consumptionReceiptRef": {"$ref": "#/$defs/ref"},
         "artifactRef": {"$ref": "#/$defs/ref"}
       }
     },
     "outputValidation": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["providerSuccess", "schemaValid", "contentSafe", "moderationRef", "checksumValid", "sizeValid", "accepted"],
+      "required": ["providerSuccess", "responseSchemaRef", "bodySha256", "mimeType", "byteCount", "decoded", "schemaValid", "contentSafe", "activeContentSafe", "moderationRef", "checksumValid", "sizeValid", "artifactSha256", "accepted"],
       "properties": {
         "providerSuccess": {"type": "boolean"},
+        "responseSchemaRef": {"$ref": "#/$defs/ref"}, "bodySha256": {"$ref": "#/$defs/sha256"},
+        "mimeType": {"enum": ["audio/wav", "audio/mpeg", "video/mp4", "application/json"]},
+        "byteCount": {"type": "integer", "minimum": 0}, "decoded": {"type": "boolean"},
         "schemaValid": {"type": "boolean"},
         "contentSafe": {"type": "boolean"},
+        "activeContentSafe": {"type": "boolean"},
         "moderationRef": {"$ref": "#/$defs/ref"},
         "checksumValid": {"type": "boolean"},
         "sizeValid": {"type": "boolean"},
+        "artifactSha256": {"$ref": "#/$defs/sha256"},
         "accepted": {"type": "boolean"}
       }
     },
@@ -345,14 +272,17 @@
     "deletion": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["localState", "providerState", "providerJobId", "tombstoneRef", "confirmationRef", "cacheState", "resurrectionCheckRef", "cleanupRef"],
+      "required": ["localState", "providerState", "providerJobId", "resourceRef", "requestedAt", "deletedAt", "tombstoneRef", "confirmationRef", "cacheState", "noResurrection", "resurrectionCheckRef", "cleanupRef"],
       "properties": {
         "localState": {"enum": ["NOT_REQUESTED", "PENDING", "CONFIRMED"]},
         "providerState": {"enum": ["NOT_REQUESTED", "PENDING", "CONFIRMED", "UNVERIFIABLE"]},
         "providerJobId": {"$ref": "#/$defs/id"},
+        "resourceRef": {"$ref": "#/$defs/ref"}, "requestedAt": {"type": ["string", "null"], "format": "date-time"},
+        "deletedAt": {"type": ["string", "null"], "format": "date-time"},
         "tombstoneRef": {"$ref": "#/$defs/ref"},
         "confirmationRef": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/ref"}]},
         "cacheState": {"enum": ["ACTIVE", "INVALIDATED"]},
+        "noResurrection": {"type": "boolean"},
         "resurrectionCheckRef": {"$ref": "#/$defs/ref"},
         "cleanupRef": {"$ref": "#/$defs/ref"}
       }
@@ -377,7 +307,7 @@
       "required": ["repeatCount", "outputSha256s", "nondeterministic", "selectionDecision"],
       "properties": {
         "repeatCount": {"type": "integer", "minimum": 3},
-        "outputSha256s": {"type": "array", "minItems": 3, "maxItems": 20, "items": {"$ref": "#/$defs/sha256"}},
+        "outputSha256s": {"type": "array", "minItems": 3, "maxItems": 20, "uniqueItems": true, "items": {"$ref": "#/$defs/sha256"}},
         "nondeterministic": {"type": "boolean"},
         "selectionDecision": {"enum": ["NOT_SCORED", "PASS", "FAIL"]}
       }

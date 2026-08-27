@@ -5,6 +5,15 @@
   "activation": "NONE",
   "authorityEffect": "NO_AUTHORITY_EFFECT",
   "claimScope": "CONTROLLED_EXACT_ARTIFACT_ACCEPTANCE_ONLY",
+  "exceptionPolicy": {
+    "sourceKey": "OWNER_EXCEPTION_BOUNDARY",
+    "governingIssue": 432,
+    "meeraOnly": true,
+    "authorizedByThisRoute": false,
+    "ordinaryOrGenericApprovalAccepted": false,
+    "requiredFutureSchema": "Cut1HumanRealismExceptionV1",
+    "unauthorizedDisposition": "OWNER_EXCEPTION_UNAUTHORIZED"
+  },
   "authority": [
     {
       "sourceKey": "OWNER_ROUTE",
@@ -26,6 +35,13 @@
       "bodySha256": "391de2e22898416fa9192d9bd47f8bb3e97d6a73d263e65721ff4e6b99448a33",
       "accessedAt": "2026-08-28T00:00:00+05:30",
       "rationale": "OWNER clarification of cohort, cells, bootstrap, motion and caption rules."
+    },
+    {
+      "sourceKey": "OWNER_EXCEPTION_BOUNDARY",
+      "url": "https://github.com/imrohitagrawal/narratwin-ai/issues/452#issuecomment-5444690736",
+      "bodySha256": "63c5fcd41bfb86971abe8c28f44903a12ad5d825dd988b85737c8f0b06644ae7",
+      "accessedAt": "2026-08-28T00:00:00+05:30",
+      "rationale": "OWNER confirms Issue #452 has no exception or activation authority."
     }
   ],
   "preregistration": {
@@ -33,7 +49,8 @@
     "bindingFields": [
       "protocolId", "protocolVersion", "protocolSha256", "frozenAt", "firstExposureAt",
       "baseCommit", "headCommit", "treeOid", "analysisCodeSha256",
-      "analysisEnvironmentSha256", "randomizationCommitmentSha256", "candidateManifestSha256"
+      "analysisEnvironmentSha256", "randomizationSeed", "bootstrapSeed", "powerSeed",
+      "randomizationCommitmentSha256", "candidateManifestSha256"
     ],
     "timestampRule": "frozenAt MUST be a valid timezone-aware instant strictly before firstExposureAt",
     "formatValidation": "Validator parses and compares timestamps; JSON Schema format annotation is insufficient."
@@ -54,6 +71,8 @@
     "promptSha256": "b74578d092f5f7dc56801375a8184dea60e73b62ca547664110e63e607396256",
     "primaryResponse": "FORCED_A_OR_B",
     "unsurePolicy": "SEPARATE_DIAGNOSTIC_CONFIDENCE_ONLY_NO_EXCLUSION_OR_RECODING",
+    "responseHashConvention": "SHA256_CANONICAL_JSON_UTF8_SORTED_KEYS_COMPACT_SEPARATORS_EXCLUDING_RESPONSE_SHA256",
+    "immutableResponseFields": ["responseId", "responseSha256", "viewerId", "cellId", "pairId", "excerptId", "order", "candidateSide", "forcedChoice", "correct", "confidence"],
     "estimand": "MODEL_STANDARDIZED_MARGINAL_CORRECT_IDENTIFICATION_PROBABILITY_INTEGRATING_VIEWER_AND_PAIR_RANDOM_EFFECTS"
   },
   "analysis": {
@@ -65,6 +84,7 @@
     "formula": "correct ~ 1 + (1|viewerId) + (1|pairId)",
     "model": "CROSSED_LOGISTIC_MIXED_MODEL",
     "ciMethod": "FIXED_SEED_PARAMETRIC_BOOTSTRAP_MODEL_STANDARDIZED_MARGINAL",
+    "bootstrapSeed": 4522026082802,
     "ciPercentiles": [5, 95],
     "minimumSuccessfulBootstrapDraws": {"value": 10000, "sourceKey": "OWNER_CLARIFICATION"},
     "minimumBootstrapSuccessRate": {"value": 0.99, "sourceKey": "OWNER_CLARIFICATION"},
@@ -86,11 +106,40 @@
     "minimumSimulationCountPerCell": {"value": 100000, "sourceKey": "OWNER_NUMERIC"},
     "minimumEstimatedPower": {"value": 0.9, "sourceKey": "OWNER_NUMERIC"},
     "minimumWilsonLower95": {"value": 0.9, "sourceKey": "OWNER_NUMERIC"},
+    "wilsonMethod": "BERNOULLI_SCORE_INTERVAL_TWO_SIDED",
+    "wilsonConfidenceLevel": 0.95,
+    "recomputationTolerance": 1e-12,
     "viewerIccPlanning": {"value": 0.05, "sourceKey": "OWNER_NUMERIC"},
     "pairIccPlanning": {"value": 0.02, "sourceKey": "OWNER_NUMERIC"},
-    "seed": "FROZEN_NONZERO_INTEGER",
+    "seed": 4522026082803,
+    "simulationDesign": {
+      "trueMarginalProbability": 0.5,
+      "link": "LOGIT",
+      "randomInterceptDistribution": "INDEPENDENT_ZERO_MEAN_NORMAL",
+      "logisticResidualVariance": "PI_SQUARED_OVER_3",
+      "iccVarianceConversion": "TOTAL_LATENT_VARIANCE=residualVariance/(1-viewerIcc-pairIcc); viewerVariance=viewerIcc*TOTAL_LATENT_VARIANCE; pairVariance=pairIcc*TOTAL_LATENT_VARIANCE",
+      "allocation": {"viewers": 200, "cells": 6, "pairsPerCell": 20, "ratingsPerViewerPerCell": 2},
+      "replicateFit": "FIT_FROZEN_CROSSED_LOGISTIC_MIXED_MODEL_AND_APPLY_SAME_TOST_AND_BOOTSTRAP_CI_PASS_RULE",
+      "bootstrapSeedDerivation": "SHA256_BIG_ENDIAN_UINT64(powerSeed || replicateIndex)",
+      "unsuccessfulFitTreatment": "NONCONVERGED_SINGULAR_OR_INSUFFICIENT_BOOTSTRAP_REPLICATE_COUNTS_AS_POWER_FAILURE"
+    },
     "failureRule": "INCREASE_SAMPLE_ONLY_MARGIN_ALPHA_MODEL_AND_RULE_CANNOT_RELAX_AFTER_EXPOSURE"
   },
+  "frozenBundleMutations": [
+    {"id":"margin-widened","document":"cut1-blinded-human-evaluation-protocol-v1.json","path":["analysis","equivalenceUpper","value"],"value":0.65,"code":"CUT1.BUNDLE.PROTOCOL"},
+    {"id":"viewers-lowered","document":"cut1-blinded-human-evaluation-protocol-v1.json","path":["sample","minimumEligibleViewersTotal","value"],"value":199,"code":"CUT1.BUNDLE.PROTOCOL"},
+    {"id":"language-expanded","document":"cut1-blinded-human-evaluation-protocol-v1.json","path":["cells","languages"],"value":["en","hi"],"code":"CUT1.BUNDLE.PROTOCOL"},
+    {"id":"exception-authorized","document":"cut1-blinded-human-evaluation-protocol-v1.json","path":["exceptionPolicy","authorizedByThisRoute"],"value":true,"code":"CUT1.BUNDLE.UNAUTHORIZED_EXCEPTION"},
+    {"id":"generic-exception","document":"cut1-blinded-human-evaluation-protocol-v1.json","path":["exceptionPolicy","ordinaryOrGenericApprovalAccepted"],"value":true,"code":"CUT1.BUNDLE.UNAUTHORIZED_EXCEPTION"},
+    {"id":"power-dgp-drift","document":"cut1-blinded-human-evaluation-protocol-v1.json","path":["power","simulationDesign","trueMarginalProbability"],"value":0.6,"code":"CUT1.BUNDLE.PROTOCOL"},
+    {"id":"power-allocation-drift","document":"cut1-blinded-human-evaluation-protocol-v1.json","path":["power","simulationDesign","allocation","viewers"],"value":199,"code":"CUT1.BUNDLE.PROTOCOL"},
+    {"id":"power-variance-drift","document":"cut1-blinded-human-evaluation-protocol-v1.json","path":["power","simulationDesign","iccVarianceConversion"],"value":"DRIFT","code":"CUT1.BUNDLE.PROTOCOL"},
+    {"id":"power-fit-false-pass","document":"cut1-blinded-human-evaluation-protocol-v1.json","path":["power","simulationDesign","unsuccessfulFitTreatment"],"value":"IGNORE","code":"CUT1.BUNDLE.PROTOCOL"},
+    {"id":"provider-activated","document":"cut1-provider-bakeoff-contract-v1.json","path":["providersEnabled"],"value":true,"code":"CUT1.BUNDLE.PROVIDER"},
+    {"id":"raj-readiness-forged","document":"cut1-all-presenter-acceptance-matrix-v1.json","path":["presenters",1,"handsVisibleReadiness"],"value":"READY","code":"CUT1.BUNDLE.ASSET"},
+    {"id":"presenter-order-drift","document":"cut1-all-presenter-acceptance-matrix-v1.json","path":["presenterOrder"],"value":["meera","myra","raj"],"code":"CUT1.BUNDLE.ASSET"},
+    {"id":"myra-role-drift","document":"cut1-all-presenter-acceptance-matrix-v1.json","path":["presenters",2,"role"],"value":"FIRST_BACKUP","code":"CUT1.BUNDLE.ASSET"}
+  ],
   "matching": {
     "same": ["scriptExcerpt", "language", "framing", "playerChrome", "resolution", "frameRate", "captureQualityBand"],
     "durationRelativeTolerance": {"value": 0.05, "unit": "RATIO", "sourceKey": "OWNER_CLARIFICATION"},
@@ -103,6 +152,7 @@
   },
   "orderAndFatigue": {
     "schedule": "COMMITTED_SEEDED_BALANCED_BLOCK_LATIN_SQUARE",
+    "randomizationSeed": 4522026082801,
     "adjacentSamePresenterOrAspectAllowed": false,
     "unscoredTutorialCount": 2,
     "mandatoryBreakAfterTrial": 6,

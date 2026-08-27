@@ -4,7 +4,7 @@
   "title": "Cut1HumanRealismEvaluationV1",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schemaVersion", "evaluationId", "activation", "authorityEffect", "protocolBinding", "cohort", "cells", "studyDisposition", "retentionEvidenceRef"],
+  "required": ["schemaVersion", "evaluationId", "activation", "authorityEffect", "protocolBinding", "cohort", "sharedCalibration", "cells", "studyDisposition", "retentionEvidenceRef"],
   "properties": {
     "schemaVersion": {"const": "Cut1HumanRealismEvaluationV1"},
     "evaluationId": {"$ref": "#/$defs/id"},
@@ -12,6 +12,7 @@
     "authorityEffect": {"const": "NO_AUTHORITY_EFFECT"},
     "protocolBinding": {"$ref": "#/$defs/protocolBinding"},
     "cohort": {"$ref": "#/$defs/cohort"},
+    "sharedCalibration": {"$ref": "#/$defs/sharedCalibration"},
     "cells": {"type": "array", "minItems": 6, "maxItems": 6, "items": {"$ref": "#/$defs/cell"}},
     "studyDisposition": {"enum": ["NOT_RUN", "PASSED_STATISTICAL", "FAILED_STATISTICAL", "FAILED_DEFECT", "FAILED_DIMENSION", "INCONCLUSIVE", "INVALID"]},
     "retentionEvidenceRef": {"$ref": "#/$defs/ref"}
@@ -28,7 +29,7 @@
     },
     "protocolBinding": {
       "type": "object", "additionalProperties": false,
-      "required": ["protocolId", "protocolVersion", "protocolSha256", "frozenAt", "firstExposureAt", "baseCommit", "headCommit", "treeOid", "ownerDecisionRefs", "analysisCodeSha256", "analysisEnvironmentSha256", "randomizationCommitmentSha256", "candidateManifestSha256"],
+      "required": ["protocolId", "protocolVersion", "protocolSha256", "frozenAt", "firstExposureAt", "baseCommit", "headCommit", "treeOid", "ownerDecisionRefs", "governedSubgroupIds", "analysisCodeSha256", "analysisEnvironmentSha256", "randomizationSeed", "randomizationCommitmentSha256", "candidateManifestSha256"],
       "properties": {
         "protocolId": {"const": "cut1-blinded-human-evaluation-v1"},
         "protocolVersion": {"const": "1.0.0"},
@@ -38,33 +39,89 @@
         "baseCommit": {"$ref": "#/$defs/gitOid"},
         "headCommit": {"$ref": "#/$defs/gitOid"},
         "treeOid": {"$ref": "#/$defs/gitOid"},
-        "ownerDecisionRefs": {"type": "array", "minItems": 2, "maxItems": 2, "uniqueItems": true, "items": {"type": "string", "pattern": "^https://github\\.com/imrohitagrawal/narratwin-ai/issues/452#issuecomment-[0-9]+$"}},
+        "ownerDecisionRefs": {"type": "array", "minItems": 3, "maxItems": 3, "uniqueItems": true, "items": {"type": "string", "pattern": "^https://github\\.com/imrohitagrawal/narratwin-ai/issues/452#issuecomment-[0-9]+$"}},
+        "governedSubgroupIds": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/id"}},
         "analysisCodeSha256": {"$ref": "#/$defs/sha256"},
         "analysisEnvironmentSha256": {"$ref": "#/$defs/sha256"},
+        "randomizationSeed": {"type": "integer", "minimum": 1},
         "randomizationCommitmentSha256": {"$ref": "#/$defs/sha256"},
         "candidateManifestSha256": {"$ref": "#/$defs/sha256"}
       }
     },
     "candidate": {
       "type": "object", "additionalProperties": false,
-      "required": ["artifactId", "artifactSha256", "controlSha256", "controlManifestSha256", "assetSha256", "scriptSha256", "audioSha256", "captionSha256", "providerCandidateId", "modelOrEngineVersion", "tenantId", "projectId", "runId"],
+      "required": ["artifactId", "artifactSha256", "controlSha256", "controlManifestSha256", "assetSha256", "knowledgeSha256", "scriptSha256", "audioSha256", "captionSha256", "providerCandidateId", "modelOrEngineVersion", "tenantId", "projectId", "runId"],
       "properties": {
         "artifactId": {"$ref": "#/$defs/id"}, "artifactSha256": {"$ref": "#/$defs/sha256"},
         "controlSha256": {"$ref": "#/$defs/sha256"}, "controlManifestSha256": {"$ref": "#/$defs/sha256"},
         "assetSha256": {"$ref": "#/$defs/sha256"},
+        "knowledgeSha256": {"$ref": "#/$defs/sha256"},
         "scriptSha256": {"$ref": "#/$defs/sha256"}, "audioSha256": {"$ref": "#/$defs/sha256"},
         "captionSha256": {"$ref": "#/$defs/sha256"}, "providerCandidateId": {"$ref": "#/$defs/id"},
         "modelOrEngineVersion": {"$ref": "#/$defs/id"}, "tenantId": {"$ref": "#/$defs/id"},
         "projectId": {"$ref": "#/$defs/id"}, "runId": {"$ref": "#/$defs/id"}
       }
     },
+    "control": {
+      "type": "object", "additionalProperties": false,
+      "required": ["controlId", "artifactSha256", "manifestSha256", "subjectId", "projectId", "scope", "consentStatus", "consentEvidenceRef", "rightsEvidenceRef", "effectiveAt", "expiresAt", "revokedAt", "publicationClass"],
+      "properties": {
+        "controlId": {"$ref": "#/$defs/id"}, "artifactSha256": {"$ref": "#/$defs/sha256"},
+        "manifestSha256": {"$ref": "#/$defs/sha256"}, "subjectId": {"$ref": "#/$defs/id"},
+        "projectId": {"$ref": "#/$defs/id"}, "scope": {"const": "MATCHED_HUMAN_CONTROL"},
+        "consentStatus": {"const": "CURRENT"}, "consentEvidenceRef": {"$ref": "#/$defs/ref"},
+        "rightsEvidenceRef": {"$ref": "#/$defs/ref"}, "effectiveAt": {"$ref": "#/$defs/timestamp"},
+        "expiresAt": {"$ref": "#/$defs/timestamp"}, "revokedAt": {"type": "null"},
+        "publicationClass": {"const": "CONTROLLED_RESEARCH_ONLY"}
+      }
+    },
+    "pair": {
+      "type": "object", "additionalProperties": false,
+      "required": ["pairId", "excerptId", "candidateClipSha256", "control", "candidateDurationMs", "controlDurationMs", "candidateLufs", "controlLufs", "language", "framing", "resolution", "frameRate", "playerChrome", "captureQualityBand", "sideChannelsStripped", "allocationId"],
+      "properties": {
+        "pairId": {"$ref": "#/$defs/id"}, "excerptId": {"$ref": "#/$defs/id"},
+        "candidateClipSha256": {"$ref": "#/$defs/sha256"}, "control": {"$ref": "#/$defs/control"},
+        "candidateDurationMs": {"type": "integer", "minimum": 1}, "controlDurationMs": {"type": "integer", "minimum": 1},
+        "candidateLufs": {"type": "number"}, "controlLufs": {"type": "number"},
+        "language": {"const": "en"}, "framing": {"enum": ["WAIST_UP", "MID_THIGH"]},
+        "resolution": {"$ref": "#/$defs/id"}, "frameRate": {"type": "number", "exclusiveMinimum": 0},
+        "playerChrome": {"$ref": "#/$defs/id"}, "captureQualityBand": {"$ref": "#/$defs/id"},
+        "sideChannelsStripped": {"const": true}, "allocationId": {"$ref": "#/$defs/id"}
+      }
+    },
+    "trial": {
+      "type": "object", "additionalProperties": false,
+      "required": ["responseId", "responseSha256", "viewerId", "cellId", "pairId", "excerptId", "order", "candidateSide", "forcedChoice", "correct", "confidence"],
+      "properties": {
+        "responseId": {"$ref": "#/$defs/id"}, "responseSha256": {"$ref": "#/$defs/sha256"},
+        "viewerId": {"$ref": "#/$defs/id"}, "cellId": {"$ref": "#/$defs/id"}, "pairId": {"$ref": "#/$defs/id"},
+        "excerptId": {"$ref": "#/$defs/id"}, "order": {"type": "integer", "minimum": 1, "maximum": 12},
+        "candidateSide": {"enum": ["A", "B"]}, "forcedChoice": {"enum": ["A", "B"]},
+        "correct": {"type": "boolean"}, "confidence": {"enum": ["SURE", "UNSURE"]}
+      }
+    },
+    "viewer": {
+      "type": "object", "additionalProperties": false,
+      "required": ["viewerId", "age", "consentRef", "projectIndependent", "providerIndependent", "noPriorExposure", "languageScreenScore", "trials"],
+      "properties": {
+        "viewerId": {"$ref": "#/$defs/id"}, "age": {"type": "integer", "minimum": 18},
+        "consentRef": {"$ref": "#/$defs/ref"}, "projectIndependent": {"const": true},
+        "providerIndependent": {"const": true}, "noPriorExposure": {"const": true},
+        "languageScreenScore": {"type": "integer", "minimum": 4, "maximum": 5},
+        "trials": {"type": "array", "minItems": 12, "maxItems": 12, "items": {"$ref": "#/$defs/trial"}}
+      }
+    },
     "cohort": {
       "type": "object", "additionalProperties": false,
-      "required": ["totalUniqueViewerCount", "totalRatingCount", "trialsPerViewerTotal", "viewerManifestSha256", "allocationManifestSha256", "deviceCalibrationSha256"],
+      "required": ["totalUniqueViewerCount", "totalRatingCount", "trialsPerViewerTotal", "tutorialCount", "breakAfterTrial", "scoredMediaMinutes", "sessionHandlingFrozen", "viewers", "viewerManifestSha256", "allocationManifestSha256", "deviceCalibrationSha256"],
       "properties": {
         "totalUniqueViewerCount": {"type": "integer", "minimum": 0},
         "totalRatingCount": {"type": "integer", "minimum": 0},
         "trialsPerViewerTotal": {"type": "integer", "minimum": 0},
+        "tutorialCount": {"const": 2}, "breakAfterTrial": {"const": 6},
+        "scoredMediaMinutes": {"type": "number", "minimum": 0, "maximum": 18},
+        "sessionHandlingFrozen": {"const": true},
+        "viewers": {"type": "array", "minItems": 200, "items": {"$ref": "#/$defs/viewer"}},
         "viewerManifestSha256": {"$ref": "#/$defs/sha256"},
         "allocationManifestSha256": {"$ref": "#/$defs/sha256"},
         "deviceCalibrationSha256": {"$ref": "#/$defs/sha256"}
@@ -72,7 +129,7 @@
     },
     "analysis": {
       "type": "object", "additionalProperties": false,
-      "required": ["viewerCount", "forcedChoiceCount", "pairCount", "minimumRatingsPerPair", "maximumRatingsPerPair", "viewerTrialManifestSha256", "correctCount", "unsureConfidenceCount", "missingCount", "pointEstimate", "ciLower", "ciUpper", "bootstrapSuccessfulDraws", "bootstrapSuccessRate", "modelConverged", "modelSingular", "simulatedPower", "powerWilsonLower", "powerSimulationCount"],
+      "required": ["viewerCount", "forcedChoiceCount", "pairCount", "minimumRatingsPerPair", "maximumRatingsPerPair", "viewerTrialManifestSha256", "correctCount", "unsureConfidenceCount", "missingCount", "pointEstimate", "ciLower", "ciUpper", "bootstrapAttemptedDraws", "bootstrapSuccessfulDraws", "bootstrapSuccessRate", "bootstrapSeed", "bootstrapResultSha256", "modelConverged", "modelSingular", "simulatedPower", "powerWilsonLower", "powerSimulationCount", "powerSimulatedPassCount", "powerSeed", "powerResultSha256", "powerModel", "powerWilsonMethod", "powerWilsonConfidenceLevel", "powerWilsonTolerance", "viewerIccPlanning", "pairIccPlanning"],
       "properties": {
         "viewerCount": {"type": "integer", "minimum": 0}, "forcedChoiceCount": {"type": "integer", "minimum": 0},
         "pairCount": {"type": "integer", "minimum": 0},
@@ -82,18 +139,30 @@
         "correctCount": {"type": "integer", "minimum": 0}, "unsureConfidenceCount": {"type": "integer", "minimum": 0},
         "missingCount": {"type": "integer", "minimum": 0}, "pointEstimate": {"$ref": "#/$defs/rate"},
         "ciLower": {"$ref": "#/$defs/rate"}, "ciUpper": {"$ref": "#/$defs/rate"},
+        "bootstrapAttemptedDraws": {"type": "integer", "minimum": 0},
         "bootstrapSuccessfulDraws": {"type": "integer", "minimum": 0}, "bootstrapSuccessRate": {"$ref": "#/$defs/rate"},
+        "bootstrapSeed": {"type": "integer", "minimum": 1}, "bootstrapResultSha256": {"$ref": "#/$defs/sha256"},
         "modelConverged": {"type": "boolean"}, "modelSingular": {"type": "boolean"},
         "simulatedPower": {"$ref": "#/$defs/rate"}, "powerWilsonLower": {"$ref": "#/$defs/rate"},
-        "powerSimulationCount": {"type": "integer", "minimum": 0}
+        "powerSimulationCount": {"type": "integer", "minimum": 0},
+        "powerSimulatedPassCount": {"type": "integer", "minimum": 0},
+        "powerSeed": {"type": "integer", "minimum": 1}, "powerResultSha256": {"$ref": "#/$defs/sha256"},
+        "powerModel": {"const": "CROSSED_LOGISTIC_MIXED_MODEL"},
+        "powerWilsonMethod": {"const": "BERNOULLI_SCORE_INTERVAL_TWO_SIDED"},
+        "powerWilsonConfidenceLevel": {"const": 0.95}, "powerWilsonTolerance": {"const": 1e-12},
+        "viewerIccPlanning": {"const": 0.05}, "pairIccPlanning": {"const": 0.02}
       }
     },
     "exclusions": {
       "type": "object", "additionalProperties": false,
-      "required": ["eligibleCount", "excludedCount", "totalRate", "maximumSingleReasonRate", "reasonRowsSha256"],
+      "required": ["eligibleCount", "excludedCount", "totalRate", "maximumSingleReasonRate", "reasonRows", "reasonRowsSha256"],
       "properties": {
         "eligibleCount": {"type": "integer", "minimum": 0}, "excludedCount": {"type": "integer", "minimum": 0},
         "totalRate": {"$ref": "#/$defs/rate"}, "maximumSingleReasonRate": {"$ref": "#/$defs/rate"},
+        "reasonRows": {"type": "array", "items": {
+          "type": "object", "additionalProperties": false, "required": ["reason", "count"],
+          "properties": {"reason": {"$ref": "#/$defs/id"}, "count": {"type": "integer", "minimum": 1}}
+        }},
         "reasonRowsSha256": {"$ref": "#/$defs/sha256"}
       }
     },
@@ -109,27 +178,52 @@
     },
     "dimension": {
       "type": "object", "additionalProperties": false,
-      "required": ["dimension", "scorableEventCount", "passCount", "uncertainCount", "failCount", "evidenceSha256"],
+      "required": ["dimension", "scorableEventCount", "passCount", "uncertainCount", "failCount", "clipRows", "evidenceSha256"],
       "properties": {
         "dimension": {"enum": ["IDENTITY", "VOICE_PROSODY", "GAZE", "BLINK", "EXPRESSION", "LIP_SYNC", "HEAD", "TORSO_POSTURE", "ARM", "HAND_FINGER", "BODY", "HAIR_CLOTHING_BACKGROUND", "TIMING", "ACCESSIBILITY", "GROUNDING", "LANGUAGE", "PROVENANCE"]},
         "scorableEventCount": {"type": "integer", "minimum": 0}, "passCount": {"type": "integer", "minimum": 0},
         "uncertainCount": {"type": "integer", "minimum": 0}, "failCount": {"type": "integer", "minimum": 0},
+        "clipRows": {"type": "array", "minItems": 20, "maxItems": 20, "items": {"$ref": "#/$defs/dimensionClip"}},
         "evidenceSha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "dimensionClip": {
+      "type": "object", "additionalProperties": false,
+      "required": ["clipId", "clipSha256", "raterLabels", "adjudicatedLabel", "adjudicatorId", "adjudicationEvidenceRef"],
+      "properties": {
+        "clipId": {"$ref": "#/$defs/id"}, "clipSha256": {"$ref": "#/$defs/sha256"},
+        "raterLabels": {"type": "array", "minItems": 2, "maxItems": 2, "items": {"type": "object", "additionalProperties": false, "required": ["raterId", "qualificationRef", "independenceRef", "label"], "properties": {"raterId": {"$ref": "#/$defs/id"}, "qualificationRef": {"$ref": "#/$defs/ref"}, "independenceRef": {"$ref": "#/$defs/ref"}, "label": {"enum": ["PASS", "UNCERTAIN", "FAIL"]}}}},
+        "adjudicatedLabel": {"enum": ["PASS", "UNCERTAIN", "FAIL"]},
+        "adjudicatorId": {"$ref": "#/$defs/id"}, "adjudicationEvidenceRef": {"$ref": "#/$defs/ref"}
       }
     },
     "objectiveMetrics": {
       "type": "object", "additionalProperties": false,
-      "required": ["eligibleSpeakingMs", "gazeAlignedMs", "lipOffsetP95Ms", "lipOver80MsLongestMs", "captionReferenceWords", "captionSubstitutions", "captionDeletions", "captionInsertions", "captionWordAccuracy", "captionSpokenWordCoverage", "captionLongestUncaptionedSpeechMs", "captionCueEvidenceSha256", "wcagEvidenceSha256"],
+      "required": ["eligibleSpeakingMs", "gazeAlignedMs", "maximumOffCameraMs", "lipOffsetP95Ms", "lipOver80MsLongestMs", "identicalGestureMaxConsecutive", "captionReferenceWords", "captionSubstitutions", "captionDeletions", "captionInsertions", "captionWordAccuracy", "captionSpokenWordCoverage", "captionLongestUncaptionedSpeechMs", "contrastRatio", "keyboardPassed", "screenReaderPassed", "visibleFocusPassed", "reducedMotionPassed", "captionCuePassed", "wcagAuditPassed", "groundedClaimCount", "groundedClaimCitedCount", "groundedClaimCitationCoverage", "acceptedUnsupportedClaimCount", "insufficientContextCaseCount", "insufficientContextAbstainCount", "insufficientContextAbstention", "groundingEvidenceSha256", "captionCueEvidenceSha256", "wcagEvidenceSha256"],
       "properties": {
         "eligibleSpeakingMs": {"type": "integer", "minimum": 0}, "gazeAlignedMs": {"type": "integer", "minimum": 0},
+        "maximumOffCameraMs": {"type": "integer", "minimum": 0},
         "lipOffsetP95Ms": {"type": ["number", "null"], "minimum": 0},
         "lipOver80MsLongestMs": {"type": ["number", "null"], "minimum": 0},
+        "identicalGestureMaxConsecutive": {"type": "integer", "minimum": 0},
         "captionReferenceWords": {"type": "integer", "minimum": 0},
         "captionSubstitutions": {"type": "integer", "minimum": 0},
         "captionDeletions": {"type": "integer", "minimum": 0}, "captionInsertions": {"type": "integer", "minimum": 0},
         "captionWordAccuracy": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
         "captionSpokenWordCoverage": {"type": ["number", "null"], "minimum": 0, "maximum": 1},
         "captionLongestUncaptionedSpeechMs": {"type": ["number", "null"], "minimum": 0},
+        "contrastRatio": {"type": "number", "minimum": 0},
+        "keyboardPassed": {"type": "boolean"}, "screenReaderPassed": {"type": "boolean"},
+        "visibleFocusPassed": {"type": "boolean"}, "reducedMotionPassed": {"type": "boolean"},
+        "captionCuePassed": {"type": "boolean"}, "wcagAuditPassed": {"type": "boolean"},
+        "groundedClaimCount": {"type": "integer", "minimum": 1},
+        "groundedClaimCitedCount": {"type": "integer", "minimum": 0},
+        "groundedClaimCitationCoverage": {"$ref": "#/$defs/rate"},
+        "acceptedUnsupportedClaimCount": {"type": "integer", "minimum": 0},
+        "insufficientContextCaseCount": {"type": "integer", "minimum": 1},
+        "insufficientContextAbstainCount": {"type": "integer", "minimum": 0},
+        "insufficientContextAbstention": {"$ref": "#/$defs/rate"},
+        "groundingEvidenceSha256": {"$ref": "#/$defs/sha256"},
         "captionCueEvidenceSha256": {"$ref": "#/$defs/sha256"}, "wcagEvidenceSha256": {"$ref": "#/$defs/sha256"}
       }
     },
@@ -143,17 +237,37 @@
         "specificity": {"$ref": "#/$defs/rate"}
       }
     },
+    "binaryLabel": {
+      "type": "object", "additionalProperties": false, "required": ["raterId", "severe"],
+      "properties": {"raterId": {"$ref": "#/$defs/id"}, "severe": {"type": "boolean"}}
+    },
+    "calibrationRow": {
+      "type": "object", "additionalProperties": false, "required": ["clipId", "expectedClass", "raterLabels"],
+      "properties": {"clipId": {"$ref": "#/$defs/id"}, "expectedClass": {"enum": ["IDENTITY", "LIMB", "TEMPORAL", "CLEAN"]}, "raterLabels": {"type": "array", "minItems": 2, "maxItems": 2, "items": {"$ref": "#/$defs/binaryLabel"}}}
+    },
+    "sharedCalibration": {
+      "type": "object", "additionalProperties": false,
+      "required": ["corpusSha256", "expectationSha256", "initialLabelsSha256", "clipCount", "severePerClassCount", "cleanClipCount", "rawAgreement", "kappa", "raters", "rows"],
+      "properties": {
+        "corpusSha256": {"$ref": "#/$defs/sha256"}, "expectationSha256": {"$ref": "#/$defs/sha256"},
+        "initialLabelsSha256": {"$ref": "#/$defs/sha256"}, "clipCount": {"const": 60},
+        "severePerClassCount": {"const": 10}, "cleanClipCount": {"const": 30},
+        "rawAgreement": {"$ref": "#/$defs/rate"}, "kappa": {"type": "number", "minimum": -1, "maximum": 1},
+        "raters": {"type": "array", "minItems": 2, "maxItems": 2, "items": {"$ref": "#/$defs/calibrationRater"}},
+        "rows": {"type": "array", "minItems": 60, "maxItems": 60, "items": {"$ref": "#/$defs/calibrationRow"}}
+      }
+    },
+    "liveDefectRow": {
+      "type": "object", "additionalProperties": false,
+      "required": ["clipId", "clipSha256", "raterLabels", "adjudicatedSevere"],
+      "properties": {"clipId": {"$ref": "#/$defs/id"}, "clipSha256": {"$ref": "#/$defs/sha256"}, "raterLabels": {"type": "array", "minItems": 2, "maxItems": 2, "items": {"$ref": "#/$defs/binaryLabel"}}, "adjudicatedSevere": {"type": "boolean"}}
+    },
     "defectReview": {
       "type": "object", "additionalProperties": false,
-      "required": ["calibrationCorpusSha256", "calibrationExpectationSha256", "calibrationInitialLabelsSha256", "calibrationClipCount", "severePerClassCount", "cleanClipCount", "calibrationRawAgreement", "calibrationKappa", "raters", "liveClipCount", "liveInitialLabelsSha256", "liveRawAgreement", "liveKappa", "kappaDisposition", "adjudicatorId", "adjudicatorIndependenceRef", "disagreementLedgerSha256", "adjudicatedSevereDefectCount"],
+      "required": ["liveClipCount", "liveInitialLabelsSha256", "liveRows", "liveRawAgreement", "liveKappa", "kappaDisposition", "adjudicatorId", "adjudicatorIndependenceRef", "disagreementLedgerSha256", "adjudicatedSevereDefectCount"],
       "properties": {
-        "calibrationCorpusSha256": {"$ref": "#/$defs/sha256"}, "calibrationExpectationSha256": {"$ref": "#/$defs/sha256"},
-        "calibrationInitialLabelsSha256": {"$ref": "#/$defs/sha256"}, "calibrationClipCount": {"const": 60},
-        "severePerClassCount": {"const": 10}, "cleanClipCount": {"const": 30},
-        "calibrationRawAgreement": {"$ref": "#/$defs/rate"},
-        "calibrationKappa": {"type": "number", "minimum": -1, "maximum": 1},
-        "raters": {"type": "array", "minItems": 2, "maxItems": 2, "items": {"$ref": "#/$defs/calibrationRater"}},
         "liveClipCount": {"type": "integer", "minimum": 1}, "liveInitialLabelsSha256": {"$ref": "#/$defs/sha256"},
+        "liveRows": {"type": "array", "minItems": 20, "maxItems": 20, "items": {"$ref": "#/$defs/liveDefectRow"}},
         "liveRawAgreement": {"$ref": "#/$defs/rate"}, "liveKappa": {"type": ["number", "null"], "minimum": -1, "maximum": 1},
         "kappaDisposition": {"enum": ["MEASURED", "NA_ALL_INITIAL_LABELS_NOT_SEVERE"]},
         "adjudicatorId": {"$ref": "#/$defs/id"}, "disagreementLedgerSha256": {"$ref": "#/$defs/sha256"},
@@ -163,24 +277,27 @@
     },
     "retest": {
       "type": "object", "additionalProperties": false,
-      "required": ["attemptNumber", "operationalInvalidRerunCount", "revisedCandidateRetestCount", "attemptKind", "priorAttemptRef", "priorArtifactSha256", "freshViewerManifestSha256", "priorFailureVisibility"],
+      "required": ["attemptNumber", "operationalInvalidRerunCount", "revisedCandidateRetestCount", "attemptKind", "priorDisposition", "priorAttemptRef", "priorArtifactSha256", "priorViewerManifestSha256", "freshViewerManifestSha256", "priorFailureVisibility"],
       "properties": {
         "attemptNumber": {"type": "integer", "minimum": 1, "maximum": 3},
         "operationalInvalidRerunCount": {"type": "integer", "minimum": 0, "maximum": 1},
         "revisedCandidateRetestCount": {"type": "integer", "minimum": 0, "maximum": 1},
         "attemptKind": {"enum": ["INITIAL", "OPERATIONAL_INVALID_RERUN", "REVISED_CANDIDATE_RETEST"]},
+        "priorDisposition": {"enum": ["NONE", "INVALID", "FAILED_STATISTICAL", "INCONCLUSIVE"]},
         "priorAttemptRef": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/ref"}]},
         "priorArtifactSha256": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/sha256"}]},
+        "priorViewerManifestSha256": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/sha256"}]},
         "freshViewerManifestSha256": {"$ref": "#/$defs/sha256"},
         "priorFailureVisibility": {"const": "CONCEALED_FROM_VIEWERS_AND_PRIMARY_RATERS"}
       }
     },
     "cell": {
       "type": "object", "additionalProperties": false,
-      "required": ["presenterId", "language", "aspectRatio", "candidate", "analysis", "exclusions", "subgroups", "dimensions", "objectiveMetrics", "defectReview", "retest", "decision"],
+      "required": ["presenterId", "language", "aspectRatio", "candidate", "pairs", "analysis", "exclusions", "subgroups", "dimensions", "objectiveMetrics", "defectReview", "retest", "decision"],
       "properties": {
         "presenterId": {"enum": ["meera", "raj", "myra"]}, "language": {"const": "en"},
         "aspectRatio": {"enum": ["LANDSCAPE", "PORTRAIT"]}, "candidate": {"$ref": "#/$defs/candidate"},
+        "pairs": {"type": "array", "minItems": 20, "maxItems": 20, "items": {"$ref": "#/$defs/pair"}},
         "analysis": {"$ref": "#/$defs/analysis"}, "exclusions": {"$ref": "#/$defs/exclusions"},
         "subgroups": {"type": "array", "items": {"$ref": "#/$defs/subgroup"}},
         "dimensions": {"type": "array", "minItems": 17, "maxItems": 17, "items": {"$ref": "#/$defs/dimension"}},

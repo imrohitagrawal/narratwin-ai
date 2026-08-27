@@ -52,6 +52,13 @@ def validate_provider_acceptance(data: Mapping[str, Any]) -> tuple[Finding, ...]
     return (NOT_IMPLEMENTED,)
 
 
+def validate_contract_documents(data: Mapping[str, Any]) -> tuple[Finding, ...]:
+    """Validate materialized static Issue #452 contract documents."""
+
+    del data
+    return (NOT_IMPLEMENTED,)
+
+
 def validate_contract_bundle(root: Path) -> tuple[Finding, ...]:
     """Validate the static Issue #452 protocol, matrix, and bake-off bundle."""
 

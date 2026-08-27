@@ -452,6 +452,12 @@ ISSUE383_BINARY_FILES = {
     "frontend/public/demo/myra-synthetic-presenter.webp",
     "frontend/public/demo/raj-synthetic-presenter.webp",
 }
+ISSUE452_BYTE_LIMITS = {
+    "docs/governance/schemas/cut1-human-realism-evaluation-v1.schema.json": 30_000,
+    "docs/governance/schemas/cut1-presenter-provider-acceptance-v1.schema.json": 30_000,
+    "scripts/quality/cut1_presenter_contract.py": 30_000,
+    "tests/unit/test_cut1_presenter_contract.py": 30_000,
+}
 TEXT_LIMITS = {
     ISSUE452_BRANCH: {
         "docs/governance/preflights/issue-452.json": 260,
@@ -1150,7 +1156,13 @@ def check_exact_route(
             f"Issue #{issue} charge for {path} exceeds {limit}."
             for path, limit in TEXT_LIMITS[branch].items() if charges.get(path, 0) > limit
         )
-        if branch == ISSUE383_BRANCH:
+        if branch == ISSUE452_BRANCH:
+            sizes = route_binary_sizes(root, set(ISSUE452_BYTE_LIMITS))
+            failures.extend(
+                f"Issue #452 file {path} must be smaller than {limit} bytes."
+                for path, limit in ISSUE452_BYTE_LIMITS.items() if sizes[path] >= limit
+            )
+        elif branch == ISSUE383_BRANCH:
             sizes = route_binary_sizes(root, ISSUE383_BINARY_FILES)
             failures.extend(
                 f"Issue #383 binary {path} exceeds 500000 bytes."
