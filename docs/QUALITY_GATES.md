@@ -1545,7 +1545,10 @@ ledger, prose, ADR, preflight, route, validator-copy, and test evolution is not
 a live bundle-integrity failure.
 
 The Phase 1 order is publication boundary, Cut 1 live binding, then preserved
-contracts. Required evidence is:
+contracts. On the exact Issue #456 branch, fixed-base preflight validation and
+hard-coded eleven-path equality replace only the frozen legacy changed-path
+list; all legacy parity, branch, required-file, and preserved checks remain.
+All other branches retain the frozen behavior. Required evidence is:
 
 ```text
 python3 -m pytest -q tests/unit/test_cut1_presenter_live_binding_v2.py tests/unit/test_cut1_presenter_contract.py tests/unit/phase1_closure/test_runner.py

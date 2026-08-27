@@ -49,6 +49,14 @@ The Phase 1 runner order becomes publication boundary, Cut 1 live binding, then
 preserved contracts. Any nonzero status short-circuits later checks; unexpected
 exceptions produce only the existing generic runner message.
 
+The frozen legacy path list predates prospective GovernancePreflightV1 routes.
+For the exact Issue #456 branch only, the runner hard-binds the fixed base and
+eleven paths in code, validates repository history and the matching preflight,
+then omits only the obsolete legacy `check_changed_files` call. Legacy parity,
+branch, required-file, and every `PRESERVED_CHECKS` check still run. Every other
+branch retains the frozen legacy scope path unchanged; a coherent preflight plus
+extra-path edit is rejected by the independently hard-coded path equality.
+
 ## Security, privacy, and observability
 
 - Validation is standard-library-only, offline, and performs no provider call,
