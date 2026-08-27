@@ -122,7 +122,9 @@ unrelated Stage 8, Final Review, and Phase 1 Closure behavior.
   base is a strict ancestor of ambient HEAD, and the complete fixed topology passes.
   Explicit-head single-parent evidence requires ambient to equal the event head
   and its supplied base to be a strict ancestor. Explicit two-parent merge
-  evidence remains bound to exact canonical base/head order.
+  evidence remains bound to exact canonical base/head order. An attached checkout
+  is accepted only for a `push` event on the exact canonical branch; attached
+  pull-request/merge checkouts and wrong attached branches fail closed.
   A detached merge still requires ordered frozen-base/candidate parents; all
   repository evidence is read from the selected candidate, never ambient merge
   content.

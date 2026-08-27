@@ -160,7 +160,7 @@ The exact dispatcher routes only
 acceptance file. Lookalikes receive no authority, and the mutable worker CLI
 cannot declare repository GREEN. Worker exits are diagnostic:
 
-On GitHub, ambient `HEAD` is untrusted; the route selects the candidate only from a detached two-parent merge with exact ordered canonical base/head parents, or a detached single-parent ambient head equal to the supplied event head (when present) whose supplied base is a strict ancestor. The quality runner may omit `GITHUB_HEAD_SHA`; all raw identities, parent cardinality, ancestry, complete fixed history, paths, caps, and freeze evidence still validate. Attached, malformed, equal-base, unrelated, reversed, extra-parent, or conflicting topology fails closed.
+On GitHub, ambient `HEAD` is untrusted; the route selects the candidate only from a detached two-parent merge with exact ordered canonical base/head parents, a detached single-parent ambient head equal to the supplied event head (when present) whose supplied base is a strict ancestor, or the exact canonical branch checkout of a `push` event. The quality runner may omit `GITHUB_HEAD_SHA`; all raw identities, event kind, attached branch identity, parent cardinality, ancestry, complete fixed history, paths, caps, and freeze evidence still validate. Attached pull-request/merge checkouts, wrong attached branches, malformed, equal-base, unrelated, reversed, extra-parent, or conflicting topology fail closed.
 
 | Exit | Kind | Meaning |
 |---:|---|---|
