@@ -1554,8 +1554,8 @@ All other branches retain the frozen behavior. Required evidence is:
 python3 -m pytest -q tests/unit/test_cut1_presenter_live_binding_v2.py tests/unit/test_cut1_presenter_contract.py tests/unit/phase1_closure/test_runner.py
 python3 scripts/quality/cut1_presenter_contract.py --kind bundle --root .
 make phase1-closure-quality
-make stage8-quality
 make quality
+uv run pytest -q tests/unit/test_stage8_cut1_routes.py tests/unit/test_issue452_quality_dispatcher.py tests/unit/test_quality_dispatcher.py
 uv run ruff check scripts tests
 uv run mypy scripts tests
 python3 scripts/guardrails_check.py
@@ -1567,3 +1567,6 @@ stop/rescope at 1,080. The validator must remain below 500 physical lines and
 32,000 bytes; its dedicated v2 test must remain below 300 physical lines and
 32,000 bytes. Green execution creates no product, provider, media, spend,
 deployment, release, production, or acceptance authority.
+Direct `make stage8-quality` is not this phase-closure branch's route and is
+expected to reject its branch identity; the listed Stage 8 unit regressions are
+the applicable inherited route evidence.
