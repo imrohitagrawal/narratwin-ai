@@ -461,6 +461,7 @@ ISSUE435_ROUTE_RED, ISSUE435_ROUTE_C2, ISSUE435_ROUTE_BASE_BOUND, ISSUE435_ROUTE
 ISSUE435_HISTORY = (ISSUE435_C1, "b099747812bcd97f812358908cb847c351190bc3", ISSUE435_REJECTED, ISSUE435_BLOCKED, "6d741aec9a2a56d54034e0092a2e24d535079517", "9bd0a2786ca41e720a275e70a2c98470a3f3aa38", "6b681b4acc419d2fa63c35862d6b6185ce82dd50", ISSUE435_H6, ISSUE435_C2_BASE, ISSUE435_C2_HARDENED, ISSUE435_C2_TYPED, ISSUE435_C2, ISSUE435_PRIOR_C2, ISSUE435_PRIOR_C3, ISSUE435_PRIOR_C4, ISSUE435_ROUTE_RED, ISSUE435_ROUTE_C2, ISSUE435_ROUTE_BASE_BOUND, ISSUE435_ROUTE_HEAD_BOUND, ISSUE435_ROUTE_ADAPTER, ISSUE435_PORTABLE_C2, ISSUE435_BLOCKED_C3, ISSUE435_FALSE_RED_C2, ISSUE435_LABELED_C2, ISSUE435_PORTABLE_C3, ISSUE435_HOSTED_C4, ISSUE435_DIRECT_C2, ISSUE435_DIRECT_C3, ISSUE435_DIRECT_C4, ISSUE435_OMITTED_C2, ISSUE435_BOUND_C2, ISSUE435_BOUND_C3, ISSUE435_BOUND_C4, ISSUE435_EXPLICIT_C2, ISSUE435_EXPLICIT_BOUND_C2, ISSUE435_READABILITY_C2)
 ISSUE435_PUBLISHED_C2, ISSUE435_PUBLISHED_C3, ISSUE435_PUBLISHED_C4 = "07c4c8fb81d61e892660ac472fbc3bd8e9c93a1d", "a736c9dce5b8ae1b8bf5abff4b39bba008432f24", "3523fbae45f896a331bcf58b08ada3ef3fbceac9"
 ISSUE435_PARITY = "6f97b374c9dbe64653e6064ae7491cf6f18ddb4e"
+ISSUE435_PARITY_REPAIR = "fbbb45a2c6d9f026b681aff9d74560a5a3dca1e0"
 ISSUE435_PREFLIGHT = "docs/governance/preflights/issue-435.json"
 ISSUE435_PREFLIGHT_BLOB = "c554eaf7f73ea081434b1e2f818441fe0bc3eee9"
 ISSUE435_FREEZE = "docs/governance/adversarial-convergence-red-freeze-v1.json"
@@ -716,7 +717,8 @@ def inspect_issue435_repository(root: Path, branch: str) -> RouteInspection:
         parsed = parse_json_bytes(raw.stdout, hashlib.sha256(raw.stdout).hexdigest(), ParseLimits(65_536, 32, 4_096)) if raw.state == "OK" and not raw.returncode else ParseResult(None, (), "")
         parity_p = len(commits) == 40 and commits[-2:] == [ISSUE435_PUBLISHED_C4, head]
         parity_repair = len(commits) == 41 and commits[-3:-1] == [ISSUE435_PUBLISHED_C4, ISSUE435_PARITY]
-        parity = parity_p or parity_repair
+        parity_final = len(commits) == 42 and commits[-4:-1] == [ISSUE435_PUBLISHED_C4, ISSUE435_PARITY, ISSUE435_PARITY_REPAIR]
+        parity = parity_p or parity_repair or parity_final
         freeze_head = ISSUE435_PUBLISHED_C4 if parity else head
         if parsed.document is None or not _valid_freeze(parsed.document, root, freeze_head):
             findings.append(FindingCode.REVIEW_IDENTITY_MISMATCH)
@@ -726,8 +728,8 @@ def inspect_issue435_repository(root: Path, branch: str) -> RouteInspection:
             phase = "PARITY_CHECKPOINT"
             parent = _text(_git(root, "rev-parse", f"{head}^"))
             delta = _text(_git(root, "diff-tree", "--no-commit-id", "--name-only", "-r", head))
-            parity_parent = ISSUE435_PARITY if parity_repair else ISSUE435_PUBLISHED_C4
-            parity_paths = ISSUE435_PARITY_REPAIR_PATHS if parity_repair else ISSUE435_PARITY_PATHS
+            parity_parent = ISSUE435_PARITY_REPAIR if parity_final else ISSUE435_PARITY if parity_repair else ISSUE435_PUBLISHED_C4
+            parity_paths = ISSUE435_PARITY_REPAIR_PATHS if parity_repair or parity_final else ISSUE435_PARITY_PATHS
             if parent is None or parent.strip() != parity_parent or delta is None or set(delta.splitlines()) != parity_paths:
                 findings.append(FindingCode.ROUTE_DRIFT)
         elif len(commits) == 38 and commits[36] == c2_head:
