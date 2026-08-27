@@ -85,8 +85,8 @@ def test_issue366_contract_rejects_partial_scope_and_content_mutations(monkeypat
     p=s.R434;q=s.check_issue434_verifier;v={**s.LIMITS434,p[11]:100,p[12]:100};k="NARRATWIN_POLICY_ONLY"
     cases:Any=((5601,{}),(1201,{p[9]:1201}),(0,v),(201,{p[11]:101,p[12]:100}));m.delenv("GITHUB_EVENT_NAME",False)
     p=sp.run(["python3","-S",p[11]],capture_output=True);q0=p.returncode;o=p.stdout;z0=p.stderr;r=0;b=sorted(F)
-    h=lambda x:hashlib.shake_256(repr(x).encode()).hexdigest(8);e="6d072fdd70c3a1bfbb6d3fc768e5f0e9";A=s.A434
-    assert [h(x)in e for x in ((q0,o,z0),(q0,o+b"x",z0),(q0,o,z0+b"x"))]==[1,0,0];g=["git"];x=d(g,0);w=um.Mock()
+    h:Any=lambda x:hashlib.shake_256(repr(x).encode()).hexdigest(8);e="6d072fdd70c3a1bfbb6d3fc768e5f0e9";A=s.A434
+    assert [h(x)in e for x in ((q0,o,z0),(q0,o+b"x",z0),(q0,o,z0+b"x"))]==[1,0,0];g=["git"];x:Any=d(g,0);w=um.Mock()
     z(s,"issue434_charges",lambda:(0,{}));assert route(m,B,b[1:])and all(s.issue434_budget_findings(*x)for x in cases)
     a={x:(REPO/x).read_bytes()for x in A};f=s.issue434_artifact_findings;assert not f(a)and f(a|{A[0]:b"x"})and f({})
     z(s,"run",w);m.setenv(k,"1");q([]);m.delenv(k);z(s,f.__name__,um.Mock(side_effect=(["x"],[])));q([]);q([])
@@ -181,7 +181,7 @@ def test_stage8_script_markers_match_mandatory_container_scanners() -> None:
     f:list[str]=[]; stage8.check_dependencies_and_scripts(f); assert stage8.node_security.I376_ROUTES
     assert not any(m in "\n".join(f) for m in ("docker scout cves","--only-severity critical,high"))
 def test_unrouted_stage8_branch_is_rejected(monkeypatch:Any)->None:
-    b="x";monkeypatch.setattr(stage8,"current_branch",lambda:b);f=[];stage8.check_stage_marker_and_branch(f)
+    b="x";monkeypatch.setattr(stage8,"current_branch",lambda:b);f:list[str]=[];stage8.check_stage_marker_and_branch(f)
     assert f==[f"Stage 8 work must run on a stage8-* branch or main after merge; got {b}."]
 A22_SOURCE,A22_DECL,A22_RUNTIME,A22_SELECT,A22_REFUSE=("Stage 2 retrieval-v1 accepted sources must retain the canonica"
     "l oracle.|Stage 2 retrievalStrategy must equal the canonical v1 machine declaration.|Stage 4 retrieval-v1 runtime "
