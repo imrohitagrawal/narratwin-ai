@@ -54,6 +54,16 @@ stage8: Any = load(REPO / "scripts/quality/check_stage8_docs.py", "stage8_with_c
 
 
 EXPECTED = {
+    "docs/cut1-post-443-reconciliation-451": {
+        "docs/PHASE_PLAN.md",
+        "docs/QUALITY_GATES.md",
+        "docs/STAGE_ISSUE_PLAN.md",
+        "docs/STATUS.md",
+        "scripts/quality/stage8_cut1_routes.py",
+        "tests/unit/test_adversarial_convergence.py",
+        "tests/unit/test_guardrails_check.py",
+        "tests/unit/test_stage8_cut1_routes.py",
+    },
     "cut1-process-150-semgrep-mcp-renewal": {
         "docs/governance/preflights/issue-150.json",
         "docs/ADR/0061-semgrep-1-172-mcp-override-renewal.md",
@@ -1087,6 +1097,110 @@ def test_issue415_correction_route_rejects_charge_801(monkeypatch: Any) -> None:
     assert failures == ["Issue #415 charge 801 exceeds 800."]
 
 
+def test_issue451_route_is_fixed_to_exact_base_paths_and_limits() -> None:
+    branch = "docs/cut1-post-443-reconciliation-451"
+    expected = EXPECTED[branch]
+    assert routes.ISSUE451_BRANCH == branch
+    assert routes.ISSUE451_BASE == "59db96aaab6c4e75b12d134dc9b02330c5a982ac"
+    assert routes.ROUTES[branch] == expected
+    assert routes.ROUTE_ISSUES[branch] == 451
+    assert routes.TOTAL_LIMITS[branch] == 600
+    assert routes.TEXT_LIMITS[branch] == {
+        "docs/PHASE_PLAN.md": 120,
+        "docs/STATUS.md": 180,
+        "scripts/quality/stage8_cut1_routes.py": 100,
+        "tests/unit/test_adversarial_convergence.py": 20,
+        "tests/unit/test_guardrails_check.py": 20,
+        "tests/unit/test_stage8_cut1_routes.py": 120,
+        "docs/QUALITY_GATES.md": 80,
+        "docs/STAGE_ISSUE_PLAN.md": 80,
+    }
+
+
+def test_issue451_route_requires_exact_fixed_base_and_branch_point() -> None:
+    base = "59db96aaab6c4e75b12d134dc9b02330c5a982ac"
+
+    def good(args: list[str]) -> subprocess.CompletedProcess[str]:
+        return completed(args, out=base + "\n")
+
+    assert routes.route_base(good, routes.ISSUE451_BRANCH) == base
+    drifted = iter((
+        completed([], out=base + "\n"),
+        completed([], out="a" * 40 + "\n"),
+        completed([], out=base + "\n"),
+    ))
+    error = pytest.raises(
+        RuntimeError,
+        routes.route_base,
+        lambda _: next(drifted),
+        routes.ISSUE451_BRANCH,
+    )
+    assert "Issue #451 fixed base" in str(error.value)
+
+
+def test_issue451_route_accepts_exact_scope_and_rejects_every_missing_or_outside_path(
+    monkeypatch: Any,
+) -> None:
+    branch = "docs/cut1-post-443-reconciliation-451"
+    expected = EXPECTED[branch]
+    monkeypatch.setattr(routes, "route_base", lambda *_: "base")
+    monkeypatch.setattr(routes, "route_text_charges", lambda *_: (0, {}))
+    for missing in expected:
+        failures: list[str] = []
+        routes.check_exact_route(REPO, lambda _: completed([]), branch, expected - {missing}, failures)
+        assert failures == [f"Issue #451 route is missing required path: {missing}"]
+    monkeypatch.setattr(stage8, "current_branch", lambda: branch)
+    monkeypatch.setattr(stage8, "changed_files_for_stage_scope", lambda: sorted(expected))
+    failures = []
+    stage8.check_stage_scope(failures)
+    assert failures == []
+    monkeypatch.setattr(stage8, "changed_files_for_stage_scope", lambda: [*expected, "rogue.txt"])
+    failures = []
+    stage8.check_stage_scope(failures)
+    assert failures == ["Stage 8 changed file outside the allowlist: rogue.txt"]
+
+
+def test_issue451_route_rejects_near_match_child_and_unicode_lookalikes(monkeypatch: Any) -> None:
+    branch = "docs/cut1-post-443-reconciliation-451"
+    for lookalike in (
+        branch + "-retry",
+        branch + "/child",
+        branch.replace("docs", "docѕ"),
+    ):
+        assert lookalike not in stage8.EFFECTIVE_STAGE8_ROUTES
+        monkeypatch.setattr(stage8, "current_branch", lambda value=lookalike: value)
+        failures: list[str] = []
+        stage8.check_stage_scope(failures)
+        assert failures == [f"Stage 8 scope requires an exact reviewed branch; got {lookalike}."]
+
+
+def test_issue451_route_rejects_aggregate_and_each_per_path_budget(monkeypatch: Any) -> None:
+    branch = "docs/cut1-post-443-reconciliation-451"
+    monkeypatch.setattr(routes, "route_base", lambda *_: "base")
+    monkeypatch.setattr(routes, "route_text_charges", lambda *_: (601, {}))
+    failures: list[str] = []
+    routes.check_exact_route(REPO, lambda _: completed([]), branch, EXPECTED[branch], failures)
+    assert failures == ["Issue #451 charge 601 exceeds 600."]
+    for path, limit in {
+        "docs/PHASE_PLAN.md": 120,
+        "docs/STATUS.md": 180,
+        "scripts/quality/stage8_cut1_routes.py": 100,
+        "tests/unit/test_adversarial_convergence.py": 20,
+        "tests/unit/test_guardrails_check.py": 20,
+        "tests/unit/test_stage8_cut1_routes.py": 120,
+        "docs/QUALITY_GATES.md": 80,
+        "docs/STAGE_ISSUE_PLAN.md": 80,
+    }.items():
+        monkeypatch.setattr(
+            routes,
+            "route_text_charges",
+            lambda *_, path=path, limit=limit: (limit + 1, {path: limit + 1}),
+        )
+        failures = []
+        routes.check_exact_route(REPO, lambda _: completed([]), branch, EXPECTED[branch], failures)
+        assert failures == [f"Issue #451 charge for {path} exceeds {limit}."]
+
+
 def test_legacy_checker_caps_are_unchanged_and_executable() -> None:
     checker = REPO / "scripts/quality/check_stage8_docs.py"
     checker_text = checker.read_text(encoding="utf-8")
@@ -1117,6 +1231,8 @@ def test_exact_route_completeness_lookalikes_and_budgets(monkeypatch: Any) -> No
             branch.replace("stage8", "stageв")
             if "stage8" in branch
             else branch.replace("process", "procesѕ")
+            if "process" in branch
+            else branch.replace("docs", "docѕ")
         )
         for lookalike in (branch + "-retry", branch.upper(), confusable):
             failures = []

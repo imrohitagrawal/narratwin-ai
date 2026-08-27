@@ -19,7 +19,33 @@ When `docs/STATUS.md` StatusStateV1 records `SSV1-MODE` as `phase1-closure`, pla
 Product behavior remains blocked except for an exact owner-authorized Stage 8
 Cut 1 route described below.
 
-### Issue #435 finite adversarial-convergence route
+### Issue #451 post-PR-443 reconciliation route
+
+Exact branch `docs/cut1-post-443-reconciliation-451` starts from
+`59db96aaab6c4e75b12d134dc9b02330c5a982ac` and must change exactly these eight
+text paths:
+
+- `docs/PHASE_PLAN.md`
+- `docs/STATUS.md`
+- `scripts/quality/stage8_cut1_routes.py`
+- `tests/unit/test_adversarial_convergence.py`
+- `tests/unit/test_guardrails_check.py`
+- `tests/unit/test_stage8_cut1_routes.py`
+- `docs/QUALITY_GATES.md`
+- `docs/STAGE_ISSUE_PLAN.md`
+
+The aggregate additions-plus-deletions limit is 600. Per-path limits are 120,
+180, 100, 20, 20, 120, 80, and 80 respectively in the order above. Missing or outside
+paths, branch lookalikes, base drift, and aggregate or per-path budget excess
+fail closed. Both plain `make quality` and
+`NARRATWIN_POLICY_ONLY=1 make quality` must pass. The route is governance-only;
+it adds no product, provider, media, deployment, publication, release, or
+production authority.
+
+### Historical Issue #435 finite adversarial-convergence route
+
+Issue `#435` completed through merged PR `#453`. The route contract below is
+retained as historical evidence; its merged framework remains nonactivating.
 
 Exact branch `governance-435-adversarial-convergence-framework-v1` runs typed
 repository-route inspection before the immutable pytest acceptance file; it does not inherit

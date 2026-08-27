@@ -5,7 +5,7 @@
 - Version: 1.0
 - Stage: Stage 1 product strategy and PRD hardening
 - Canonical issue: `#1`
-- Last updated: 2026-06-29
+- Last updated: 2026-08-27
 
 ## Purpose
 
@@ -15,9 +15,8 @@ authorize product implementation in Stage 1.
 
 ## Current Contract Precedence
 
-Issue `#440` proposes reconciliation of the current product and readiness direction.
-It becomes authoritative only after its dedicated PR merges. The
-canonical sources are:
+PR `#443` merged at `a6284f7d8f1a14ef4c9a99493d6b06046505f20c`
+and completed Issue `#440`. The current canonical sources are:
 
 1. `docs/PRODUCT_CONTRACTS/CUT1_PRESENTER_CONTRACT.md` for Meera, Raj, Myra,
    eye contact, framing, body/hand/head/hair motion, provenance, and Cut 1/Cut 2
@@ -38,8 +37,12 @@ end product is the human-like Meera presenter with multilingual delivery,
 user-selected language/audience preferences, grounded interactive Q&A, and
 later enterprise/public readiness. Existing local/mock/provider/public-release
 restrictions remain binding implementation authorization gates. Historical
-product-mode tables do not replace the intended end-product contract. Issue #435
-remains an adversarial evidence gate, not a product definition source.
+product-mode tables do not replace the intended end-product contract. Issue
+`#450` is the approved Cut 1 / Slice 4 master planning authority; its approval
+does not authorize product mutation, provider calls, spending, deployment,
+publication, release, or production claims. Issue `#435` completed separately
+through merged PR `#453`; its nonactivating adversarial-convergence framework is
+governance evidence, not a product definition or implementation authority.
 
 ## Cut roadmap authority
 
