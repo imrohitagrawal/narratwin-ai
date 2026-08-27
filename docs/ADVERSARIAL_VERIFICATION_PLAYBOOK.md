@@ -174,8 +174,7 @@ and zero errors. At C4, dispatcher exit 0 is available only after the unchanged
 acceptance file passes in full.
 
 Mandatory readability evidence is recorded for the five C2 designated paths:
-`docs/ENGINEERING_PROCESS_RCA.md` 71/80,
-`docs/ADR/0064-adversarial-convergence-protocol.md` 137/160,
+`docs/ENGINEERING_PROCESS_RCA.md` 71/80 and `docs/ADR/0064-adversarial-convergence-protocol.md` 137/160,
 `scripts/quality/adversarial_convergence.py` 555/900 and `tests/unit/test_adversarial_convergence.py` 899/1000, with
 `tests/unit/test_quality_dispatcher.py` 83/100. All remain below the 90-percent
 stop and require independent exact-head readability disposition. The only
