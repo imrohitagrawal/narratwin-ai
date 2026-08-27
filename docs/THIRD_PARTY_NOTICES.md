@@ -296,3 +296,14 @@ embedded OpenSSL 3.5.7 remains truthfully reported, shared OpenSSL and QUIC are
 build-time failures, and no OS OpenSSL package is imported. This removes the
 affected builder capability without claiming an upstream fix, VEX, scanner
 exception, deployment, release, public availability or production readiness.
+
+## Issue #452 provider research records
+
+The governance-only provider bake-off records official documentation, terms,
+privacy and pricing URLs for Google Gemini TTS, ElevenLabs, HeyGen, D-ID,
+Synthesia, Higgsfield and Tavus. No SDK, package, model, voice, media, dataset,
+account, credential or provider output is added. No provider call, egress,
+spend, redistribution right, legal clearance or final selection is authorized.
+Sources and provider-specific constraints are enumerated in
+`docs/governance/cut1-provider-bakeoff-contract-v1.json` and must be refreshed
+before any later experiment.

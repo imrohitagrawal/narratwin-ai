@@ -1522,3 +1522,14 @@ no trust root, signer, authority, runtime, release, or production claim.
 
 Issue `#432` remains unmerged source authority outside this gate. Child C is
 next unless parent `#426` is separately amended after Child B closeout.
+
+## Issue #452 Cut 1 presenter-contract gate
+
+On exact branch `docs/cut1-acceptance-provider-contract-452`, the quality
+dispatcher first runs the Stage 8 route checker, then the isolated
+`tests/unit/test_cut1_presenter_contract.py` suite with plugin autoload disabled.
+C2 intentionally records exact `CUT1.NOT_IMPLEMENTED` RED failures. After an
+independently reviewed C3 freeze, C4 may implement only the marked validator
+region. The final gate requires zero findings plus route, focused, mutation,
+Ruff, strict mypy, policy-only/full quality and regression evidence. Green
+governance checks authorize no provider call, media, spend or release.

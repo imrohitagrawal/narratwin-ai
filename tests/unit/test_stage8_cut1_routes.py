@@ -52,8 +52,36 @@ def load(path: Path, name: str) -> ModuleType:
 routes: Any = load(MODULE_PATH, "stage8_cut1_routes_under_test")
 stage8: Any = load(REPO / "scripts/quality/check_stage8_docs.py", "stage8_with_cut1_routes")
 
+ISSUE452_EXPECTED = {
+    "docs/governance/preflights/issue-452.json",
+    "docs/governance/schemas/cut1-human-realism-evaluation-v1.schema.json",
+    "docs/governance/schemas/cut1-presenter-provider-acceptance-v1.schema.json",
+    "docs/governance/cut1-blinded-human-evaluation-protocol-v1.json",
+    "docs/governance/cut1-all-presenter-acceptance-matrix-v1.json",
+    "docs/governance/cut1-provider-bakeoff-contract-v1.json",
+    "docs/governance/cut1-presenter-contract-red-freeze-v1.json",
+    "scripts/quality/cut1_presenter_contract.py",
+    "tests/unit/test_cut1_presenter_contract.py",
+    "scripts/quality/check_quality_stage.py",
+    "tests/unit/test_issue452_quality_dispatcher.py",
+    "tests/unit/test_quality_dispatcher.py",
+    "scripts/quality/stage8_cut1_routes.py",
+    "tests/unit/test_stage8_cut1_routes.py",
+    "docs/ADR/0065-cut1-all-presenter-acceptance-provider-bakeoff.md",
+    "docs/PRODUCT_CONTRACTS/CUT1_PRESENTER_CONTRACT.md",
+    "docs/AI_QUALITY_AND_EVALUATION_CONTRACT.md",
+    "docs/ENTERPRISE_READINESS_REGISTER.md",
+    "docs/CUT_ROADMAP_AND_EVIDENCE_MATRIX.md",
+    "docs/demo/CUT1_ACCEPTANCE_CHECKLIST.md",
+    "docs/QUALITY_GATES.md",
+    "docs/STATUS.md",
+    "docs/THIRD_PARTY_NOTICES.md",
+    "docs/TRACEABILITY.md",
+}
+
 
 EXPECTED = {
+    "docs/cut1-acceptance-provider-contract-452": ISSUE452_EXPECTED,
     "docs/cut1-post-443-reconciliation-451": {
         "docs/PHASE_PLAN.md",
         "docs/QUALITY_GATES.md",
@@ -1145,6 +1173,8 @@ def test_issue451_route_accepts_exact_scope_and_rejects_every_missing_or_outside
     expected = EXPECTED[branch]
     monkeypatch.setattr(routes, "route_base", lambda *_: "base")
     monkeypatch.setattr(routes, "route_text_charges", lambda *_: (0, {}))
+    monkeypatch.setattr(stage8.cut1_routes, "route_base", lambda *_: "base")
+    monkeypatch.setattr(stage8.cut1_routes, "route_text_charges", lambda *_: (0, {}))
     for missing in expected:
         failures: list[str] = []
         routes.check_exact_route(REPO, lambda _: completed([]), branch, expected - {missing}, failures)
@@ -1201,6 +1231,129 @@ def test_issue451_route_rejects_aggregate_and_each_per_path_budget(monkeypatch: 
         assert failures == [f"Issue #451 charge for {path} exceeds {limit}."]
 
 
+def test_issue452_route_is_exact_fixed_and_budgeted() -> None:
+    branch = "docs/cut1-acceptance-provider-contract-452"
+    limits = {
+        "docs/governance/preflights/issue-452.json": 260,
+        "docs/governance/schemas/cut1-human-realism-evaluation-v1.schema.json": 360,
+        "docs/governance/schemas/cut1-presenter-provider-acceptance-v1.schema.json": 400,
+        "docs/governance/cut1-blinded-human-evaluation-protocol-v1.json": 300,
+        "docs/governance/cut1-all-presenter-acceptance-matrix-v1.json": 300,
+        "docs/governance/cut1-provider-bakeoff-contract-v1.json": 360,
+        "docs/governance/cut1-presenter-contract-red-freeze-v1.json": 220,
+        "scripts/quality/cut1_presenter_contract.py": 480,
+        "tests/unit/test_cut1_presenter_contract.py": 450,
+        "scripts/quality/check_quality_stage.py": 50,
+        "tests/unit/test_issue452_quality_dispatcher.py": 120,
+        "tests/unit/test_quality_dispatcher.py": 100,
+        "scripts/quality/stage8_cut1_routes.py": 160,
+        "tests/unit/test_stage8_cut1_routes.py": 240,
+        "docs/ADR/0065-cut1-all-presenter-acceptance-provider-bakeoff.md": 240,
+        "docs/PRODUCT_CONTRACTS/CUT1_PRESENTER_CONTRACT.md": 100,
+        "docs/AI_QUALITY_AND_EVALUATION_CONTRACT.md": 120,
+        "docs/ENTERPRISE_READINESS_REGISTER.md": 100,
+        "docs/CUT_ROADMAP_AND_EVIDENCE_MATRIX.md": 100,
+        "docs/demo/CUT1_ACCEPTANCE_CHECKLIST.md": 120,
+        "docs/QUALITY_GATES.md": 100,
+        "docs/STATUS.md": 120,
+        "docs/THIRD_PARTY_NOTICES.md": 100,
+        "docs/TRACEABILITY.md": 100,
+    }
+    assert routes.ISSUE452_BRANCH == branch
+    assert routes.ISSUE452_BASE == "97e8173c2ec1323aa9ced23d43059bca2e5a204f"
+    assert routes.ROUTES[branch] == ISSUE452_EXPECTED
+    assert routes.ROUTE_ISSUES[branch] == 452
+    assert routes.TOTAL_LIMITS[branch] == 3600
+    assert routes.TEXT_LIMITS[branch] == limits
+    assert set(routes.ISSUE452_BYTE_LIMITS) == {
+        "docs/governance/schemas/cut1-human-realism-evaluation-v1.schema.json",
+        "docs/governance/schemas/cut1-presenter-provider-acceptance-v1.schema.json",
+        "scripts/quality/cut1_presenter_contract.py",
+        "tests/unit/test_cut1_presenter_contract.py",
+        "tests/unit/test_issue452_quality_dispatcher.py",
+    }
+    assert routes.ISSUE452_BYTE_LIMITS == {
+        "docs/governance/schemas/cut1-human-realism-evaluation-v1.schema.json": 30_000,
+        "docs/governance/schemas/cut1-presenter-provider-acceptance-v1.schema.json": 30_000,
+        "scripts/quality/cut1_presenter_contract.py": 40_000,
+        "tests/unit/test_cut1_presenter_contract.py": 30_000,
+        "tests/unit/test_issue452_quality_dispatcher.py": 30_000,
+    }
+
+
+def test_issue452_requires_fixed_base_and_branch_point() -> None:
+    base = routes.ISSUE452_BASE
+
+    def good(_: list[str]) -> subprocess.CompletedProcess[str]:
+        return completed([], out=base + "\n")
+
+    assert routes.route_base(good, routes.ISSUE452_BRANCH) == base
+    drifted = iter((completed([], out=base + "\n"), completed([], out=base + "\n"), completed([], out="c" * 40 + "\n")))
+    error = pytest.raises(RuntimeError, routes.route_base, lambda _: next(drifted), routes.ISSUE452_BRANCH)
+    assert "Issue #452 fixed base" in str(error.value)
+
+
+def test_issue452_contract_bytes_schemas_and_authority_hashes() -> None:
+    governance = REPO / "docs/governance"
+    objective = json.loads((governance / "preflights/issue-452.json").read_text())["objective"]
+    assert "5445887301" in objective
+    assert "6c667549e12c3db9478f69ea6dfe580ecf9e0b0e0b603550c7e62657df8d66e8" in objective
+    protocol_path = governance / "cut1-blinded-human-evaluation-protocol-v1.json"
+    bakeoff_path = governance / "cut1-provider-bakeoff-contract-v1.json"
+    assert hashlib.sha256(protocol_path.read_bytes()).hexdigest() == "fa3759985141639185618fbc595057412dd8582f60ed97fc462b30b7548580b8"
+    assert hashlib.sha256(bakeoff_path.read_bytes()).hexdigest() == "1a3fd981644488203e8c7cc38fc0389092b23b579cce860c3d35a1ca7a1786db"
+    protocol = json.loads(protocol_path.read_text())
+    assert [row["bodySha256"] for row in protocol["authority"]] == ["03e23b4faaea5389514d55529d284743a034efd0fad126bb704ea22c0d51c450", "4f599502ee3658a97c5dbfee8296193880a732641eea1a26b196e3ce9d79ab1c", "391de2e22898416fa9192d9bd47f8bb3e97d6a73d263e65721ff4e6b99448a33", "63c5fcd41bfb86971abe8c28f44903a12ad5d825dd988b85737c8f0b06644ae7"]
+    assert hashlib.sha256(protocol["endpoint"]["prompt"].encode()).hexdigest() == protocol["endpoint"]["promptSha256"]
+    matrix = json.loads((governance / "cut1-all-presenter-acceptance-matrix-v1.json").read_text())
+    bakeoff = json.loads(bakeoff_path.read_text())
+    assert matrix["assetCheckpoint"]["bodySha256"] == "c6383a73611294f43bbd7528015f6e661f42d4c3d5b0000483f25a19daa748ee"
+    assert bakeoff["sourceCheckpoint"]["bodySha256"] == "19f1619ce83591f4e70285603487d823b7ebe90b208030dd4370846aff425a77"
+    for name in ("cut1-human-realism-evaluation-v1.schema.json", "cut1-presenter-provider-acceptance-v1.schema.json"):
+        schema = json.loads((governance / "schemas" / name).read_text())
+        assert schema["$schema"] == "https://json-schema.org/draft/2020-12/schema"
+        assert schema["type"] == "object" and schema["additionalProperties"] is False
+
+
+def test_issue452_rejects_each_missing_path_and_lookalikes(monkeypatch: Any) -> None:
+    branch = routes.ISSUE452_BRANCH
+    monkeypatch.setattr(routes, "route_base", lambda *_: "base")
+    monkeypatch.setattr(routes, "route_text_charges", lambda *_: (0, {}))
+    for missing in ISSUE452_EXPECTED:
+        failures: list[str] = []
+        routes.check_exact_route(REPO, lambda _: completed([]), branch, ISSUE452_EXPECTED - {missing}, failures)
+        assert failures == [f"Issue #452 route is missing required path: {missing}"]
+    for lookalike in (branch + "-retry", branch + "/child", branch.replace("docs", "docѕ")):
+        assert lookalike not in routes.ROUTES
+        assert lookalike not in stage8.EFFECTIVE_STAGE8_ROUTES
+
+
+def test_issue452_rejects_aggregate_and_each_path_budget(monkeypatch: Any) -> None:
+    branch = routes.ISSUE452_BRANCH
+    monkeypatch.setattr(routes, "route_base", lambda *_: "base")
+    monkeypatch.setattr(routes, "route_text_charges", lambda *_: (3601, {}))
+    failures: list[str] = []
+    routes.check_exact_route(REPO, lambda _: completed([]), branch, ISSUE452_EXPECTED, failures)
+    assert failures == ["Issue #452 charge 3601 exceeds 3600."]
+    for path, limit in routes.TEXT_LIMITS[branch].items():
+        monkeypatch.setattr(routes, "route_text_charges", lambda *_, p=path, n=limit: (n + 1, {p: n + 1}))
+        failures = []
+        routes.check_exact_route(REPO, lambda _: completed([]), branch, ISSUE452_EXPECTED, failures)
+        assert failures == [f"Issue #452 charge for {path} exceeds {limit}."]
+
+
+def test_issue452_rejects_each_file_at_30kb_boundary(monkeypatch: Any) -> None:
+    branch = routes.ISSUE452_BRANCH
+    monkeypatch.setattr(routes, "route_base", lambda *_: "base")
+    monkeypatch.setattr(routes, "route_text_charges", lambda *_: (0, {}))
+    for path, limit in routes.ISSUE452_BYTE_LIMITS.items():
+        sizes = {candidate: maximum - 1 for candidate, maximum in routes.ISSUE452_BYTE_LIMITS.items()}
+        monkeypatch.setattr(routes, "route_binary_sizes", lambda *_, values=sizes | {path: limit}: values)
+        failures: list[str] = []
+        routes.check_exact_route(REPO, lambda _: completed([]), branch, ISSUE452_EXPECTED, failures)
+        assert failures == [f"Issue #452 file {path} must be smaller than {limit} bytes."]
+
+
 def test_legacy_checker_caps_are_unchanged_and_executable() -> None:
     checker = REPO / "scripts/quality/check_stage8_docs.py"
     checker_text = checker.read_text(encoding="utf-8")
@@ -1217,7 +1370,7 @@ def test_legacy_checker_caps_are_unchanged_and_executable() -> None:
 def test_exact_route_completeness_lookalikes_and_budgets(monkeypatch: Any) -> None:
     monkeypatch.setattr(routes, "route_base", lambda *_: "base")
     monkeypatch.setattr(routes, "route_text_charges", lambda *_: (0, {}))
-    monkeypatch.setattr(routes, "route_binary_sizes", lambda *_: {path: 1 for path in routes.ISSUE383_BINARY_FILES})
+    monkeypatch.setattr(routes, "route_binary_sizes", lambda *_: {path: 1 for path in routes.ISSUE383_BINARY_FILES | set(routes.ISSUE452_BYTE_LIMITS)})
     for branch, paths in EXPECTED.items():
         failures: list[str] = []
         routes.check_exact_route(REPO, lambda _: completed([]), branch, set(paths), failures)
@@ -1243,7 +1396,7 @@ def test_exact_route_completeness_lookalikes_and_budgets(monkeypatch: Any) -> No
 
 def test_per_route_aggregate_per_file_and_binary_caps(monkeypatch: Any) -> None:
     monkeypatch.setattr(routes, "route_base", lambda *_: "base")
-    monkeypatch.setattr(routes, "route_binary_sizes", lambda *_: {path: 1 for path in routes.ISSUE383_BINARY_FILES})
+    monkeypatch.setattr(routes, "route_binary_sizes", lambda *_: {path: 1 for path in routes.ISSUE383_BINARY_FILES | set(routes.ISSUE452_BYTE_LIMITS)})
     for branch, limit in routes.TOTAL_LIMITS.items():
         monkeypatch.setattr(routes, "route_text_charges", lambda *_, value=limit: (value + 1, {}))
         failures: list[str] = []

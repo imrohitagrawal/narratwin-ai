@@ -86,8 +86,6 @@ ISSUE435_ACCEPTANCE_COMMAND = [
     sys.executable,
     *"-I -P -m pytest -p no:cacheprovider -o addopts= -q tests/unit/test_adversarial_convergence.py".split(),
 ]
-
-
 def test_issue435_exact_branch_dispatches_only_dedicated_gate(monkeypatch: Any, tmp_path: Path) -> None:
     calls = run_dispatcher(
         monkeypatch,

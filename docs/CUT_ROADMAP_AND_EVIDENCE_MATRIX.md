@@ -125,3 +125,17 @@ must remain visible rather than being guessed early:
 
 Each deferred choice requires a new issue, owner, ADR or release artifact before
 it can change an acceptance gate.
+
+## Cut 1 executable presenter evidence route
+
+Issue #452 is the governance predecessor to any quality-first voice/video
+experiment. Its six independent cells are Meera/Raj/Myra × `en` × landscape/
+portrait. The protocol requires 200 eligible viewers total, 400 ratings per
+cell, a crossed logistic model, at least 10,000 successful bootstrap draws and
+100,000 power simulations. Every cell also needs zero severe defects, complete
+dimension evidence, separate caption/accessibility proof and exact artifact
+lineage. Passing supports only controlled exact-artifact acceptance.
+
+Stage 1 Issue #16 and a later Lane A route still block product/provider/media
+implementation. No provider selection, spend, render, public availability or
+production readiness follows from the Issue #452 contract alone.

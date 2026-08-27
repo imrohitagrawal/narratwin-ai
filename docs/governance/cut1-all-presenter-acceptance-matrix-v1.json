@@ -1,0 +1,121 @@
+{
+  "schemaVersion": "Cut1AllPresenterAcceptanceMatrixV1",
+  "activation": "NONE",
+  "authorityEffect": "NO_AUTHORITY_EFFECT",
+  "claimScope": "CONTROLLED_EXACT_ARTIFACT_ACCEPTANCE_ONLY",
+  "assetCheckpoint": {
+    "url": "https://github.com/imrohitagrawal/narratwin-ai/issues/452#issuecomment-5442842849",
+    "bodySha256": "c6383a73611294f43bbd7528015f6e661f42d4c3d5b0000483f25a19daa748ee",
+    "accessedAt": "2026-08-28T00:00:00+05:30"
+  },
+  "presenterOrder": ["meera", "raj", "myra"],
+  "registry": {
+    "path": "backend/app/presenter_registry.json",
+    "sha256": "eb31a953b85ffaf2c43f54e4da7fb89eda740c724967a9301f726c6091ab01c2"
+  },
+  "approvedInputs": {
+    "knowledge": {
+      "path": "demo/stage8_seed_project.md",
+      "sha256": "49b75655ddbbe43145a35215069bce2751de66393b39eb68d69b584d7ecfcc5e",
+      "reuseRule": "REUSE_CURRENT_APPROVED_VERSION_NO_REWRITE_WITHOUT_GOVERNED_GAP"
+    },
+    "demoScript": {
+      "path": "docs/demo/PHASE_1_DEMO_SCRIPT.md",
+      "sha256": "3b071180d4723784d84f5005644fc5a2aa5ef6b6adb6f7caeba2de76d68be435",
+      "reuseRule": "REUSE_CURRENT_APPROVED_GROUNDED_SCRIPT_AND_CITATIONS"
+    }
+  },
+  "presenters": [
+    {
+      "presenterId": "meera",
+      "role": "PRIMARY",
+      "assetPath": "frontend/public/demo/narratwin-synthetic-presenter.webp",
+      "assetSha256": "d8c4ecb2acadcc3440b7be345b5620717ea0644a5643e41986b9d3f2ea1c30d1",
+      "dimensions": {"width": 1536, "height": 1024, "format": "WEBP"},
+      "framing": "HEAD_SHOULDERS_UPPER_TORSO",
+      "handsVisibleReadiness": "CONDITIONAL",
+      "derivativeRequired": true,
+      "limitation": "Forearms and one fixed clasped-hand pose do not prove a gesture envelope."
+    },
+    {
+      "presenterId": "raj",
+      "role": "FIRST_BACKUP",
+      "assetPath": "frontend/public/demo/raj-synthetic-presenter.webp",
+      "assetSha256": "663007e0c7603e80c179cfd2b92bb463d80765890c06ec4886eddabafafa26dd",
+      "dimensions": {"width": 1536, "height": 1024, "format": "WEBP"},
+      "framing": "HEAD_SHOULDERS_UPPER_TORSO",
+      "handsVisibleReadiness": "NOT_READY",
+      "derivativeRequired": true,
+      "limitation": "Approved original contains no hands; later derivative needs separate Lane A authority."
+    },
+    {
+      "presenterId": "myra",
+      "role": "SECOND_BACKUP",
+      "assetPath": "frontend/public/demo/myra-synthetic-presenter.webp",
+      "assetSha256": "30290deeea9abc85dde851006e3886dd0d9d6d299e4b54aa86ae3300a5e05d97",
+      "dimensions": {"width": 1536, "height": 1024, "format": "WEBP"},
+      "framing": "HEAD_SHOULDERS_UPPER_TORSO",
+      "handsVisibleReadiness": "NOT_READY",
+      "derivativeRequired": true,
+      "limitation": "Approved original contains no hands; later derivative needs separate Lane A authority."
+    }
+  ],
+  "identityAndRights": {
+    "identityKind": "SYNTHETIC_FICTIONAL_PROJECT_OWNED",
+    "voicePolicy": "NON_CLONED_FICTIONAL_ONLY",
+    "originalOverwriteAllowed": false,
+    "realPersonLikenessAllowed": false,
+    "publicationAllowed": false,
+    "provenanceSources": [
+      "docs/THIRD_PARTY_NOTICES.md",
+      "docs/ADR/0054-cut1-presenter-registry.md",
+      "https://github.com/imrohitagrawal/narratwin-ai/issues/358",
+      "https://github.com/imrohitagrawal/narratwin-ai/issues/367",
+      "https://github.com/imrohitagrawal/narratwin-ai/issues/383"
+    ]
+  },
+  "acceptance": {
+    "cellKey": ["presenterId", "language", "aspectRatio"],
+    "activatedLanguages": ["en"],
+    "aspectRatios": ["LANDSCAPE", "PORTRAIT"],
+    "targetFraming": ["WAIST_UP", "MID_THIGH"],
+    "handsVisibleWhenGesturesScored": true,
+    "fullBodyClaimAllowed": false,
+    "everyPresenterPassesIndependently": true,
+    "aggregateMaskingAllowed": false,
+    "dimensions": [
+      "IDENTITY", "VOICE_PROSODY", "GAZE", "BLINK", "EXPRESSION", "LIP_SYNC",
+      "HEAD", "TORSO_POSTURE", "ARM", "HAND_FINGER", "BODY",
+      "HAIR_CLOTHING_BACKGROUND", "TIMING", "ACCESSIBILITY", "GROUNDING",
+      "LANGUAGE", "PROVENANCE", "BLINDED_HUMAN_EQUIVALENCE"
+    ],
+    "threeStateDimensionRule": "EACH_CELL_REQUIRES_SCORABLE_EVENTS_ZERO_FAIL_ZERO_UNCERTAIN",
+    "objectiveThresholds": {
+      "gazeAlignedSpeakingRatioMinimum": 0.8,
+      "unexplainedOffCameraIntervalMaximumMs": 2000,
+      "lipAbsoluteOffsetP95MaximumMs": 80,
+      "lipOver80MsLongestMaximumMs": 200,
+      "captionWordAccuracyMinimum": 0.98,
+      "captionSpokenWordCoverageMinimum": 0.98,
+      "uncaptionedAudibleSpeechMaximumMs": 1000,
+      "groundedClaimCitationCoverage": 1,
+      "acceptedUnsupportedClaimCount": 0,
+      "governedInsufficientContextAbstention": 1,
+      "identicalGestureMaximumConsecutiveWithoutNeed": 2,
+      "contrastMinimum": 4.5
+    },
+    "accessibilityEvidence": [
+      "CAPTION_ACCURACY", "CAPTION_COVERAGE", "CAPTION_GAP", "SPEAKER_AND_NON_SPEECH_CUES",
+      "WCAG_2_2_AA_STATE_MATRIX", "KEYBOARD", "SCREEN_READER", "VISIBLE_FOCUS",
+      "CONTRAST", "REDUCED_MOTION"
+    ],
+    "humanEvaluationProtocol": "docs/governance/cut1-blinded-human-evaluation-protocol-v1.json"
+  },
+  "fallback": {
+    "presenterOrder": ["meera", "raj", "myra"],
+    "failureSemantics": "NEXT_PRESENTER_ONLY_IF_INDEPENDENT_CELL_AND_PROVENANCE_GATES_PASS_OTHERWISE_FAIL_CLOSED",
+    "providerFallback": "EXPLICIT_COMPATIBLE_AUTHORIZED_CANDIDATE_ONLY_NO_AUTOMATIC_PAID_FALLBACK",
+    "falseSuccessAllowed": false
+  },
+  "currentDisposition": "CONTRACT_ONLY_MEDIA_AND_ACCEPTANCE_NOT_RUN"
+}

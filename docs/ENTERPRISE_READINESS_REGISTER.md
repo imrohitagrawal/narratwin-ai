@@ -66,3 +66,13 @@ baseline for later evidence; they are not claims that production exists today:
 The register's `Specified` status means the decision is complete. The status
 may advance to `Validated` only when the evidence artifact in the roadmap
 matrix exists, passes, and has an accountable human reviewer.
+
+## Issue #452 readiness disposition
+
+The executable provider schema now requires closed rights/consent bindings,
+identity compatibility, training/region/retention/deletion evidence,
+SecretRef-only credentials, six-segment screening, disabled egress policy,
+hard call/time/retry/concurrency/spend controls, idempotency, tenant/project/
+actor lineage, output distrust, disclosure, reproducibility, observability,
+tombstones and resurrection checks. Current eligibility remains
+`NOT_AUTHORIZED`, `CONDITIONAL`, or `EXPLORATORY_ONLY`; no row is `Validated`.

@@ -103,3 +103,18 @@ shift, or any safety/privacy/provenance regression opens an investigation; two
 consecutive failing windows block promotion. The last approved bundle must be
 restorable within 15 minutes in an operational environment. No uncontrolled
 online self-training or agent-led production weight/policy changes are allowed.
+
+## Cut 1 human-realism evidence boundary
+
+Issue #452 defines a separate matched-pair audiovisual endpoint. Its crossed
+viewer/pair model, strict 90% equivalence interval, bootstrap/power proof,
+per-dimension ratings and severe-defect veto cannot be replaced by Ragas,
+DeepEval, an LLM judge, golden-suite totals or visual inspection. Selection
+bake-off ratings cannot be reused as confirmatory acceptance evidence; frozen
+candidate bytes and an independent holdout are required.
+
+Caption word accuracy, spoken-word coverage, maximum audible-speech gap,
+speaker/non-speech cues and WCAG evidence are independent fields. Missing or
+zero denominators are inconclusive, never perfect. The protocol and evaluation
+record retain raw counts, hashes, model/environment identity, exclusions,
+subgroups, per-rater calibration, adjudication and retest lineage.
