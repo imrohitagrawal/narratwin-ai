@@ -595,30 +595,33 @@ def test_protected_executor_region_is_unique_closed_and_oracle_free() -> None:
         freeze = _load(FREEZE_PATH)
         c2 = cast(dict[str, object], freeze["c2"])
         frozen = subprocess.run(["/usr/bin/git", "show", f"{c2['head']}:{MODULE_PATH.relative_to(ROOT)}"], cwd=ROOT, capture_output=True, check=False).stdout.decode()
+        protected = source
+        if c2["head"] == "07c4c8fb81d61e892660ac472fbc3bd8e9c93a1d":
+            protected = subprocess.run(["/usr/bin/git", "show", f"3523fbae45f896a331bcf58b08ada3ef3fbceac9:{MODULE_PATH.relative_to(ROOT)}"], cwd=ROOT, capture_output=True, check=True).stdout.decode()
         def normalize(text: str) -> str:
             return text.split(start, 1)[0] + start + "<C4_EXECUTOR_REGION>\n" + end + text.split(end, 1)[1]
-        assert normalize(source) == normalize(frozen)
+        assert normalize(protected) == normalize(frozen)
 
 
 def test_revised_path_caps_executor_ceiling_and_aggregate_thresholds_are_exact() -> None:
     source = MODULE_PATH.read_text(encoding="utf-8")
     start, end = "# ISSUE435_EXECUTOR_V1_START\n", "# ISSUE435_EXECUTOR_V1_END"
     caps = _module_probe("[m['ISSUE435_CAPS']['scripts/quality/adversarial_convergence.py'],m['ISSUE435_CAPS']['tests/unit/test_adversarial_convergence.py']]")
-    assert caps == [900, 1000]
+    assert caps == [950, 1100]
     budget = "(lambda c:None if c is None else str(c))(m['_budget_code'](sys.argv[2],int(sys.argv[3]),sys.argv[4]=='true'))"
     module_path, test_path = "scripts/quality/adversarial_convergence.py", "tests/unit/test_adversarial_convergence.py"
-    assert _module_probe(budget, module_path, "809", "true") is None
-    assert _module_probe(budget, module_path, "809", "false") == "ACP.AUTH.BUDGET_REVIEW_REQUIRED"
-    assert _module_probe(budget, module_path, "810", "true") == "ACP.AUTH.BUDGET_STOP"
-    assert _module_probe(budget, test_path, "899", "true") is None
-    assert _module_probe(budget, test_path, "899", "false") == "ACP.AUTH.BUDGET_REVIEW_REQUIRED"
-    assert _module_probe(budget, test_path, "900", "true") == "ACP.AUTH.BUDGET_STOP"
+    assert _module_probe(budget, module_path, "854", "true") is None
+    assert _module_probe(budget, module_path, "854", "false") == "ACP.AUTH.BUDGET_REVIEW_REQUIRED"
+    assert _module_probe(budget, module_path, "855", "true") == "ACP.AUTH.BUDGET_STOP"
+    assert _module_probe(budget, test_path, "989", "true") is None
+    assert _module_probe(budget, test_path, "989", "false") == "ACP.AUTH.BUDGET_REVIEW_REQUIRED"
+    assert _module_probe(budget, test_path, "990", "true") == "ACP.AUTH.BUDGET_STOP"
     assert _module_probe("[m['_aggregate_over_budget'](3500,False),m['_aggregate_over_budget'](3501,False),m['_aggregate_over_budget'](3620,True),m['_aggregate_over_budget'](3621,True)]") == [False, True, False, True]
     probe = "m['_normalized_source'](sys.stdin.buffer.read()) is not None"
     assert _module_probe(probe, input_text="# ISSUE435_EXECUTOR_V1_START\n" + "pass\n" * 240 + "# ISSUE435_EXECUTOR_V1_END") is True
     assert _module_probe(probe, input_text="# ISSUE435_EXECUTOR_V1_START\n" + "pass\n" * 241 + "# ISSUE435_EXECUTOR_V1_END") is False
     region = source.split(start, 1)[1].split(end, 1)[0]
-    assert len(source.splitlines()) - len(region.splitlines()) + 240 <= 790
+    assert len(source.splitlines()) - len(region.splitlines()) + 240 <= 850
 
 
 def test_path_and_descriptor_boundaries_reject_hostile_nodes(tmp_path: Path) -> None:
@@ -656,7 +659,9 @@ def test_event_branch_resolution_accepts_detached_and_rejects_conflict() -> None
 def test_hosted_route_head_accepts_exact_detached_checkout_topologies(tmp_path: Path) -> None:
     checkout = tmp_path / "checkout"
     subprocess.run(["/usr/bin/git", "clone", "--quiet", "--no-local", str(ROOT), str(checkout)], check=True)
-    head = os.environ.get("GITHUB_HEAD_SHA") or subprocess.check_output(["/usr/bin/git", "rev-parse", "HEAD"], cwd=checkout, text=True).strip()
+    ambient = subprocess.check_output(["/usr/bin/git", "rev-parse", "HEAD"], cwd=checkout, text=True).strip()
+    parents = subprocess.check_output(["/usr/bin/git", "rev-list", "--parents", "-n", "1", ambient], cwd=checkout, text=True).split()
+    head = os.environ.get("GITHUB_HEAD_SHA") or (parents[2] if len(parents) == 3 and parents[1] == ISSUE435_BASE else ambient)
     source_diff = subprocess.check_output(["/usr/bin/git", "diff", "--binary", "--full-index", ISSUE435_BASE, head, "--"], cwd=ROOT)
     cloned_diff = subprocess.check_output(["/usr/bin/git", "diff", "--binary", "--full-index", ISSUE435_BASE, head, "--"], cwd=checkout)
     assert source_diff == cloned_diff

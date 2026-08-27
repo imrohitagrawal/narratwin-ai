@@ -459,6 +459,7 @@ ISSUE435_H6, ISSUE435_C2_BASE, ISSUE435_C2_HARDENED, ISSUE435_C2_TYPED, ISSUE435
 ISSUE435_PRIOR_C2, ISSUE435_PRIOR_C3, ISSUE435_PRIOR_C4 = "8fa7667b1d613b1470195ff712763aac5b5e048c", "0ae2593eca92c4e9657a04cb45152d7be839a48b", "a4d903dfb5b0c40aabb4117a29a901db0972182f"
 ISSUE435_ROUTE_RED, ISSUE435_ROUTE_C2, ISSUE435_ROUTE_BASE_BOUND, ISSUE435_ROUTE_HEAD_BOUND, ISSUE435_ROUTE_ADAPTER, ISSUE435_PORTABLE_C2, ISSUE435_BLOCKED_C3, ISSUE435_FALSE_RED_C2, ISSUE435_LABELED_C2, ISSUE435_PORTABLE_C3, ISSUE435_HOSTED_C4, ISSUE435_DIRECT_C2, ISSUE435_DIRECT_C3, ISSUE435_DIRECT_C4, ISSUE435_OMITTED_C2, ISSUE435_BOUND_C2, ISSUE435_BOUND_C3, ISSUE435_BOUND_C4, ISSUE435_EXPLICIT_C2, ISSUE435_EXPLICIT_BOUND_C2, ISSUE435_READABILITY_C2 = "dcbe15d58dff5ceafe7319e2baa3302ff01b6510", "8a9bdc41c63cb449afdc6bf7f806ef946a73faa2", "84f1430822d696537c41b5a022d3cc14d72becea", "c7886a86ad84f8c3e2ceb1a9f9c675e7f3d535da", "956aed3d78733259ba6a024dcbead6f2f6f43c40", "f82be816e349d13d8365b72fbeb51498d244755e", "cc394d4dadef3c32dc735fc84a2b9c49e3336985", "bf3a53ddac282a8daab61db2eaa5d030959eae0f", "f4eab6b3febb9feb78699930bf4a453a76ca6b9d", "6325fe3eddffc57d0ef066705b6bb3ca276f353b", "221ab84b75667176aaf1c34513bf6967d1390d5f", "317fb741327a599239fe3b86e5711821f5a2b226", "3f00bc5c2e88ee8598fdf12cedae5fcd1afa6d1e", "ce70e1dfee5fb6e88e86c7a86ca496cf103ea2bd", "1fd860ccb37418f5c59cc05e825b645bc02498ba", "8881dbbd9078c07cc956384675a3b7b6748a0951", "67efee0fae5d457ef1a2c63bd56784055ce989f2", "261f9935655e6219744fe02852452439744f441a", "6d9c79f6dba5d0793097f481cdc8a305cec4f467", "65cd6c84fed71227b0b6baddbe1755429131a229", "0b12da62fa8ffc855b25e32bda24a4f03620bbb5"
 ISSUE435_HISTORY = (ISSUE435_C1, "b099747812bcd97f812358908cb847c351190bc3", ISSUE435_REJECTED, ISSUE435_BLOCKED, "6d741aec9a2a56d54034e0092a2e24d535079517", "9bd0a2786ca41e720a275e70a2c98470a3f3aa38", "6b681b4acc419d2fa63c35862d6b6185ce82dd50", ISSUE435_H6, ISSUE435_C2_BASE, ISSUE435_C2_HARDENED, ISSUE435_C2_TYPED, ISSUE435_C2, ISSUE435_PRIOR_C2, ISSUE435_PRIOR_C3, ISSUE435_PRIOR_C4, ISSUE435_ROUTE_RED, ISSUE435_ROUTE_C2, ISSUE435_ROUTE_BASE_BOUND, ISSUE435_ROUTE_HEAD_BOUND, ISSUE435_ROUTE_ADAPTER, ISSUE435_PORTABLE_C2, ISSUE435_BLOCKED_C3, ISSUE435_FALSE_RED_C2, ISSUE435_LABELED_C2, ISSUE435_PORTABLE_C3, ISSUE435_HOSTED_C4, ISSUE435_DIRECT_C2, ISSUE435_DIRECT_C3, ISSUE435_DIRECT_C4, ISSUE435_OMITTED_C2, ISSUE435_BOUND_C2, ISSUE435_BOUND_C3, ISSUE435_BOUND_C4, ISSUE435_EXPLICIT_C2, ISSUE435_EXPLICIT_BOUND_C2, ISSUE435_READABILITY_C2)
+ISSUE435_PUBLISHED_C2, ISSUE435_PUBLISHED_C3, ISSUE435_PUBLISHED_C4 = "07c4c8fb81d61e892660ac472fbc3bd8e9c93a1d", "a736c9dce5b8ae1b8bf5abff4b39bba008432f24", "3523fbae45f896a331bcf58b08ada3ef3fbceac9"
 ISSUE435_PREFLIGHT = "docs/governance/preflights/issue-435.json"
 ISSUE435_PREFLIGHT_BLOB = "c554eaf7f73ea081434b1e2f818441fe0bc3eee9"
 ISSUE435_FREEZE = "docs/governance/adversarial-convergence-red-freeze-v1.json"
@@ -467,16 +468,18 @@ ISSUE435_CAPS = {
     "docs/ADVERSARIAL_VERIFICATION_PLAYBOOK.md": 320, "docs/templates/ADVERSARIAL_INVARIANT_MATRIX.md": 180,
     "docs/governance/adversarial-convergence-framework-v1.schema.json": 260,
     "docs/governance/adversarial-convergence-framework-cases-v1.json": 300,
-    ISSUE435_FREEZE: 120, "scripts/quality/adversarial_convergence.py": 900,
-    "tests/unit/test_adversarial_convergence.py": 1000, "scripts/quality/check_quality_stage.py": 60,
-    "tests/unit/test_quality_dispatcher.py": 100, "scripts/guardrails_check.py": 60,
+    ISSUE435_FREEZE: 120, "scripts/quality/adversarial_convergence.py": 950,
+    "tests/unit/test_adversarial_convergence.py": 1100, "scripts/quality/check_quality_stage.py": 60,
+    "tests/unit/test_quality_dispatcher.py": 120, "scripts/guardrails_check.py": 60,
     "tests/unit/test_guardrails_check.py": 140, ".github/pull_request_template.md": 45,
     "docs/ADR/0064-adversarial-convergence-protocol.md": 160, "docs/QUALITY_GATES.md": 80,
     "docs/ENGINEERING_PROCESS_RCA.md": 80, "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md": 100,
-    "docs/STAGE_ISSUE_PLAN.md": 70, "docs/STATUS.md": 80,
+    "docs/STAGE_ISSUE_PLAN.md": 70, "docs/STATUS.md": 80, ".github/workflows/quality-gates.yml": 30,
+    "docs/agent-context/context-policy-manifest-v1.json": 20, "tests/unit/test_stage8_quality_gate.py": 12,
 }
 ISSUE435_NONFREEZE = frozenset(ISSUE435_CAPS) - {ISSUE435_FREEZE}
 ISSUE435_READABILITY_REVIEWED = {"docs/ENGINEERING_PROCESS_RCA.md", "docs/ADR/0064-adversarial-convergence-protocol.md", "scripts/quality/adversarial_convergence.py", "tests/unit/test_adversarial_convergence.py", "tests/unit/test_quality_dispatcher.py"}
+ISSUE435_PARITY_PATHS = {".github/workflows/quality-gates.yml", "docs/ADR/0064-adversarial-convergence-protocol.md", "docs/ADVERSARIAL_VERIFICATION_PLAYBOOK.md", "docs/agent-context/context-policy-manifest-v1.json", "scripts/quality/adversarial_convergence.py", "scripts/quality/check_quality_stage.py", "tests/unit/test_adversarial_convergence.py", "tests/unit/test_guardrails_check.py", "tests/unit/test_quality_dispatcher.py", "tests/unit/test_stage8_quality_gate.py"}
 FREEZE_ARTIFACT_PATHS = {"corpus": "docs/governance/adversarial-convergence-framework-cases-v1.json", "schema": "docs/governance/adversarial-convergence-framework-v1.schema.json", "acceptanceTest": "tests/unit/test_adversarial_convergence.py", "skeleton": "scripts/quality/adversarial_convergence.py", "dispatcher": "scripts/quality/check_quality_stage.py", "guardrail": "scripts/guardrails_check.py"}
 FREEZE_ROLES = ("ARCHITECTURE_SCOPE_PHASE", "SECURITY_TRUST", "READABILITY_FEASIBILITY", "MUTATION_FALSE_PASS")
 def _git(root: Path, *args: str) -> GitResult:
@@ -709,11 +712,19 @@ def inspect_issue435_repository(root: Path, branch: str) -> RouteInspection:
     else:
         raw = _git(root, "show", f"{head}:{ISSUE435_FREEZE}")
         parsed = parse_json_bytes(raw.stdout, hashlib.sha256(raw.stdout).hexdigest(), ParseLimits(65_536, 32, 4_096)) if raw.state == "OK" and not raw.returncode else ParseResult(None, (), "")
-        if parsed.document is None or not _valid_freeze(parsed.document, root, head):
+        parity = len(commits) == 40 and commits[-2:] == [ISSUE435_PUBLISHED_C4, head]
+        freeze_head = ISSUE435_PUBLISHED_C4 if parity else head
+        if parsed.document is None or not _valid_freeze(parsed.document, root, freeze_head):
             findings.append(FindingCode.REVIEW_IDENTITY_MISMATCH)
         c2_value = parsed.document.get("c2") if isinstance(parsed.document, dict) else None
         c2_head = c2_value.get("head") if isinstance(c2_value, dict) else ""
-        if len(commits) == 38 and commits[36] == c2_head:
+        if parity and commits[36] == c2_head:
+            phase = "PARITY_CHECKPOINT"
+            parent = _text(_git(root, "rev-parse", f"{head}^"))
+            delta = _text(_git(root, "diff-tree", "--no-commit-id", "--name-only", "-r", head))
+            if parent is None or parent.strip() != ISSUE435_PUBLISHED_C4 or delta is None or set(delta.splitlines()) != ISSUE435_PARITY_PATHS:
+                findings.append(FindingCode.ROUTE_DRIFT)
+        elif len(commits) == 38 and commits[36] == c2_head:
             phase = "C3"
             delta = _text(_git(root, "diff-tree", "--no-commit-id", "--name-only", "-r", commits[-1]))
             if delta is None or delta.splitlines() != [ISSUE435_FREEZE]:

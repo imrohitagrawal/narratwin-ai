@@ -20,7 +20,9 @@ STATUS_DOC = ROOT / "docs" / "STATUS.md"
 FINAL_REVIEW_BRANCH_PREFIX = "final-review-"
 PHASE1_CLOSURE_BRANCH_PREFIX = "phase-1-closure-"
 ISSUE435_BRANCH = "governance-435-adversarial-convergence-framework-v1"
-ISSUE435_ENV_ALLOWLIST = ("SYSTEMROOT", "TMPDIR", "TEMP", "TMP", "GITHUB_HEAD_REF", "GITHUB_BASE_SHA", "GITHUB_HEAD_SHA")
+ISSUE435_ENV_ALLOWLIST = (
+    "SYSTEMROOT", "TMPDIR", "TEMP", "TMP", "GITHUB_HEAD_REF", "GITHUB_BASE_SHA", "GITHUB_HEAD_SHA"
+)
 ISSUE435_ACCEPTANCE_TEST = "tests/unit/test_adversarial_convergence.py"
 
 
@@ -32,7 +34,9 @@ def run_adversarial_convergence_gate() -> int:
         LC_ALL="C", PATH=os.defpath, PYTEST_DISABLE_PLUGIN_AUTOLOAD="1"
     )
     route_status = subprocess.call(
-        [sys.executable, "-I", "-P", "scripts/quality/adversarial_convergence.py", "--route-only"], cwd=ROOT, env=environment
+        [sys.executable, "-I", "-P", "scripts/quality/adversarial_convergence.py", "--route-only"],
+        cwd=ROOT,
+        env=environment,
     )
     if route_status:
         return route_status

@@ -136,8 +136,8 @@ the real executor satisfy the frozen 40 expectations without changing them.
 ## Route and phase contract
 
 - C1 changes only the preflight and is immutable afterward.
-- C2 cumulatively changes all 19 non-freeze paths and contains no freeze file.
-- The additive recovery preserves prior C3/C4 as rejected history, removes that freeze from the new C2 tree, and appends C3/C4 without history rewriting or force push.
+- C2 cumulatively changes all 22 non-freeze paths and contains no freeze file.
+- Additive checkpoint P preserves prior C3/C4 and its freeze only for hosted parity; replacement C2 removes the freeze, then appends C3/C4 without rewriting or force push.
 - Four independent reviews bind one exact C2 head/tree while candidate review
   state remains `PENDING_EXTERNAL_REVIEW`.
 - Only OWNER-enumerated corrections may occur before C3. H3 follows preserved
@@ -152,7 +152,7 @@ the real executor satisfy the frozen 40 expectations without changing them.
   test, schema, guardrail, skeleton, and four durable review receipts.
 - C4 changes only bytes inside the marked executor region of
   `scripts/quality/adversarial_convergence.py`; every byte outside it remains
-  bound to C2. The region is at most 240 physical lines; final module projection is at most 790/900, below the 810-line stop.
+  bound to C2. The region is at most 240 physical lines; final module projection is at most 850/950, below the 855-line stop.
 - No correction follows C3. A required C4 finding stops for OWNER disposition.
 
 The exact dispatcher routes only
@@ -169,20 +169,16 @@ On GitHub, ambient `HEAD` is untrusted; the route selects the candidate only fro
 | 2 | `INFRASTRUCTURE_FAILURE` | Git, import, platform, or resource evidence was unavailable. |
 | 3 | `INTENTIONAL_RED` | C2/C3 reached the exact typed `ACP.NOT_IMPLEMENTED` boundary. |
 
-At C2/C3, all 108 corpus and hostile-regression worker calls return typed exit 3 and canonical `ACP.NOT_IMPLEMENTED`; pytest reports exactly 108 failures
-and zero errors. At C4, dispatcher exit 0 is available only after the unchanged
-acceptance file passes in full.
+P must first produce 165 GREEN controls plus clean direct-PR, ordered-merge, push/prior-base, and full-suite hosted parity; C2/C3 then produce exactly 108 named `ACP.NOT_IMPLEMENTED` assertion failures with zero unrelated failures or errors, and C4 passes the unchanged acceptance file.
 
 Mandatory readability evidence is recorded for the five C2 designated paths:
 `docs/ENGINEERING_PROCESS_RCA.md` 71/80 and `docs/ADR/0064-adversarial-convergence-protocol.md` 137/160,
-`scripts/quality/adversarial_convergence.py` 555/900 and `tests/unit/test_adversarial_convergence.py` 899/1000, with
-`tests/unit/test_quality_dispatcher.py` 83/100. All remain below the 90-percent
-stop and require independent exact-head readability disposition. The only
+`scripts/quality/adversarial_convergence.py` projects to at most 850/950, `tests/unit/test_adversarial_convergence.py` remains below 990/1100, and `tests/unit/test_quality_dispatcher.py` remains below 108/120.
+Readability evidence accepts module 854 and focused test 989; 855 and 990 stop. The only
 production function above 60 logical lines is the 63-line fail-closed repository
 inspector; it has two parameters, bounded early exits, and no semantic executor
 responsibility.
 
-Executable thresholds accept module 809 and focused-test 899 only with readability evidence; 810 and 900 stop.
 Aggregate stops remain 3,500 for C2 and 3,620 after the C3 freeze.
 
 ## Historical regression mapping

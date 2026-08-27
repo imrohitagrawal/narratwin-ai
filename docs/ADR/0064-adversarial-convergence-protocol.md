@@ -52,7 +52,7 @@ spend authority.
 
 ## Phase consequences
 
-1. C1 preserves only the preflight.
+1. C1 preserves only the preflight; `issuecomment-5435405260` adds parity checkpoint P, retaining C4/freeze solely to prove locked hosted CI without phase credit.
 2. C2 freezes complete contracts, N=40 stimuli, test-owned expectations,
    adapters, tests, docs, and a typed `ACP.NOT_IMPLEMENTED` executor.
 3. Four independent reviews bind one immutable C2 candidate. The original
@@ -62,8 +62,7 @@ spend authority.
    distinct receipt sources, and enforce canonical author/reviewer identities.
    False-acceptance recovery `issuecomment-5428186737` preserves reviewed C2
    `26347f4` and archives invalid C3/C4 refs while adding 68 test-owned hostile
-   regressions. Feasibility caps become module/test 900/1000 and the C4 region
-   becomes 240 lines, with a projected final module no greater than 790/900.
+   regressions. Feasibility caps become module/test 950/1100, the C4 region remains 240 lines, and the projected final module is at most 850/950.
    N=40, threats, corpus identities, aggregates, and product authority do not
    change; every review binds the resulting exact head anew. Hosted-route
    recovery `issuecomment-5429174756`, corrected by `issuecomment-5429198021`,

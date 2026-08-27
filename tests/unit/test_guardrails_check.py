@@ -3768,6 +3768,20 @@ def test_workflows_least_privilege_rejects_commented_permissions(
     assert ".github/workflows/quality.yml is missing explicit least-privilege permissions." in guardrails.failures
 
 
+def test_quality_gates_bootstraps_locked_environment_after_stdlib_policy_checks() -> None:
+    workflow = (Path(__file__).parents[2] / ".github" / "workflows" / "quality-gates.yml").read_text(
+        encoding="utf-8"
+    )
+    guardrails = workflow.index("run: python scripts/guardrails_check.py")
+    preflight = workflow.index("run: python -m scripts.governance_preflight_github")
+    install_uv = workflow.index("python -m pip install uv==0.11.18")
+    locked_sync = workflow.index("uv sync --frozen")
+    quality = workflow.index('run: GITHUB_HEAD_REF="$NARRATWIN_HEAD_REF" make quality')
+
+    assert guardrails < install_uv and preflight < install_uv < locked_sync < quality
+    assert 'echo "$GITHUB_WORKSPACE/.venv/bin" >> "$GITHUB_PATH"' in workflow
+
+
 def test_workflows_least_privilege_ignores_commented_write_permissions(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
