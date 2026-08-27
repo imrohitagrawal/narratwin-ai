@@ -163,6 +163,8 @@ def test_issue435_adapter_maps_only_typed_contract_results(
 
 
 def test_issue435_adapter_contains_timeout(monkeypatch: Any) -> None:
+    for name in ("GITHUB_HEAD_REF", "GITHUB_REF_NAME", "GITHUB_EVENT_NAME"):
+        monkeypatch.delenv(name, raising=False)
     monkeypatch.setattr(guardrails, "run_git", lambda args: ISSUE435_BRANCH)
     monkeypatch.setattr(
         guardrails.subprocess,
