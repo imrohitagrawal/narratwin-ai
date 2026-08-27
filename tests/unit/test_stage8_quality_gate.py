@@ -85,7 +85,10 @@ def test_issue366_contract_rejects_partial_scope_and_content_mutations(monkeypat
     assert stage8.cut1_digest()!=baseline;sc((0,{}));assert route(m,CUT1_REAL_MEDIA_TRANSITION,full)==[]
     p=s.R434;q=s.check_issue434_verifier;v={**s.LIMITS434,p[11]:100,p[12]:100};k="NARRATWIN_POLICY_ONLY"
     cases:Any=((5601,{}),(1201,{p[9]:1201}),(0,v),(201,{p[11]:101,p[12]:100}));m.delenv("GITHUB_EVENT_NAME",False)
-    compile((REPO/p[11]).read_text(),p[11],"exec");r=0;b=sorted(F);A=s.A434;g=["git"];x:Any=d(g,0);w=um.Mock()
+    probe=sp.run(["python3","-S",p[11]],capture_output=True,text=True);assert probe.returncode in {0,1}
+    assert not probe.returncode or (not probe.stderr and "Stage 8 quality gate failed:" in probe.stdout and
+        "Stage 8 work must run on a stage8-* branch or main after merge" in probe.stdout)
+    r=0;b=sorted(F);A=s.A434;g=["git"];x:Any=d(g,0);w=um.Mock()
     z(s,"issue434_charges",lambda:(0,{}));assert route(m,B,b[1:])and all(s.issue434_budget_findings(*x)for x in cases)
     a={x:(REPO/x).read_bytes()for x in A};f=s.issue434_artifact_findings;assert not f(a)and f(a|{A[0]:b"x"})and f({})
     z(s,"run",w);m.setenv(k,"1");q([]);m.delenv(k);z(s,f.__name__,um.Mock(side_effect=(["x"],[])));q([]);q([])
