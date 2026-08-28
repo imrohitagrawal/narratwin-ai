@@ -10,13 +10,14 @@
     "authority": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["baseCommit", "sourceSha256", "scriptSha256", "projectFactsSha256", "liveBindingSha256", "evaluationSha256", "evaluationSourceSha256"],
+      "required": ["baseCommit", "sourceSha256", "scriptSha256", "projectFactsSha256", "liveBindingSha256", "evidenceRegisterSha256", "evaluationSha256", "evaluationSourceSha256"],
       "properties": {
         "baseCommit": {"const": "ab97b6eecba6db9c66c37d19b29257c7398f3ab7"},
         "sourceSha256": {"const": "49b75655ddbbe43145a35215069bce2751de66393b39eb68d69b584d7ecfcc5e"},
         "scriptSha256": {"const": "3b071180d4723784d84f5005644fc5a2aa5ef6b6adb6f7caeba2de76d68be435"},
         "projectFactsSha256": {"const": "cb50de12ce2debb3d52308892428b9711e5efb41fe2ad59b175563809e7d314b"},
         "liveBindingSha256": {"const": "89199278feabfdcee21fffe4a9ad4d157dd7fc9a11a2529562876cb6ecc74702"},
+        "evidenceRegisterSha256": {"const": "a021bdfdefbdbf52d185f1a06434146ac4c7aa5313d5959f1b6d5918427784b8"},
         "evaluationSha256": {"$ref": "#/$defs/sha256"},
         "evaluationSourceSha256": {"$ref": "#/$defs/sha256"}
       }
@@ -65,7 +66,7 @@
         "mode": {"const": "LOCAL_KEY_FREE_DISABLED_EXTERNAL"},
         "model": {"const": "NONE"},
         "enabled": {"const": false},
-        "configSha256": {"$ref": "#/$defs/sha256"},
+        "configSha256": {"const": "656b7fb57f70033be9deb023db57337a2e4afb6aff54e43ee5aa90dbd42fb864"},
         "credentialCount": {"const": 0},
         "egressAttemptCount": {"const": 0},
         "providerCallCount": {"const": 0},
@@ -125,7 +126,7 @@
         "lineage": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["retrievalSha256", "claimSupportSha256", "presenterBindingSha256", "narrationSha256", "voiceProfileId", "voiceProfileVersion", "audioSha256", "captionSha256", "captionCueEvidenceSha256", "manifestSha256", "evaluationSha256", "evaluatorVersion", "metricEvidenceSha256", "approvalId", "approvalRequestSha256", "approvalSha256", "approvedArtifactSha256", "approvedManifestSha256", "artifactAuthorId", "reviewerId", "approvedAt", "approvalCurrent", "approvalUseCount"],
+          "required": ["retrievalSha256", "claimSupportSha256", "presenterBindingSha256", "narrationSha256", "voiceProfileId", "voiceProfileVersion", "audioSha256", "captionSha256", "captionCueEvidenceSha256", "manifestSha256", "evaluationSha256", "evaluatorVersion", "metricEvidenceSha256", "approvalId", "approvalRequestSha256", "approvalSha256", "approvedArtifactSha256", "approvedManifestSha256", "artifactAuthorId", "reviewerId", "approvedAt", "approvalCurrent", "approvalUseCount", "approvalValidUntil", "approvalRevoked"],
           "properties": {
             "retrievalSha256": {"$ref": "#/$defs/sha256"},
             "claimSupportSha256": {"$ref": "#/$defs/sha256"},
@@ -149,7 +150,9 @@
             "reviewerId": {"$ref": "#/$defs/id"},
             "approvedAt": {"type": "string", "format": "date-time"},
             "approvalCurrent": {"const": true},
-            "approvalUseCount": {"const": 1}
+            "approvalUseCount": {"const": 1},
+            "approvalValidUntil": {"type": "string", "format": "date-time"},
+            "approvalRevoked": {"const": false}
           }
         },
         "rights": {
@@ -167,7 +170,7 @@
         "artifact": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["mediaKind", "mimeType", "regularFile", "decoded", "placeholder", "sha256", "byteCount", "durationMs", "width", "height", "audioPresent", "captionsPresent"],
+          "required": ["mediaKind", "mimeType", "regularFile", "decoded", "placeholder", "sha256", "createdAt", "byteCount", "durationMs", "width", "height", "audioPresent", "captionsPresent"],
           "properties": {
             "mediaKind": {"const": "VIDEO"},
             "mimeType": {"const": "video/mp4"},
@@ -175,6 +178,7 @@
             "decoded": {"const": true},
             "placeholder": {"const": false},
             "sha256": {"$ref": "#/$defs/sha256"},
+            "createdAt": {"type": "string", "format": "date-time"},
             "byteCount": {"type": "integer", "minimum": 1, "maximum": 50000000},
             "durationMs": {"type": "integer", "minimum": 1, "maximum": 300000},
             "width": {"type": "integer", "minimum": 1, "maximum": 7680},

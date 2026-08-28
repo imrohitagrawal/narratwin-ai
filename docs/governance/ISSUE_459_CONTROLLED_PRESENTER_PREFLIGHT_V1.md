@@ -132,8 +132,29 @@ artifact and manifest digests must equal the same cell's artifact and manifest.
 `Cut1ApprovalRequestV1`, artifact digest, manifest digest, presenter-binding
 digest. `approvalSha256` is SHA-256 over the UTF-8 newline-framed sequence
 `Cut1ApprovalV1`, approval ID, approval-request digest, reviewer ID, artifact
-author ID, approved-at timestamp. No corpus ID, magic actor name, prior process
-memory, or expectation map is an input to those decisions.
+author ID, artifact-created timestamp, approved-at timestamp, valid-until
+timestamp, lowercase revoked boolean, use count. Artifact creation must precede
+approval, evaluation start must precede approval expiry, and revoked approval
+fails regardless of its hashes.
+
+The local provider configuration digest is
+`656b7fb57f70033be9deb023db57337a2e4afb6aff54e43ee5aa90dbd42fb864`,
+derived with the same newline framing from `Cut1ProviderPostureV1`, mode, model,
+enabled, credential, egress, call, retry, and spend values. The synthetic T02
+evidence register is independently frozen as
+`a021bdfdefbdbf52d185f1a06434146ac4c7aa5313d5959f1b6d5918427784b8`.
+It is SHA-256 over compact ASCII JSON with lexicographically sorted keys of the
+complete provider posture and the presenter/aspect-sorted cell identity,
+evidence-state, lineage, rights, and artifact projections; metrics and decision
+are evaluated rather than treated as authority. The evaluator recomputes this
+register and compares it to the repository-frozen constant, so recomputing an
+outer candidate hash cannot mint authority. This register binds configuration,
+provenance, deletion reference, artifact bytes digest, approval/currentness,
+and ordered lineage. It authorizes no real artifact: T06 must create and
+independently freeze a new exact-artifact register before any acceptance.
+
+No corpus ID, magic actor name, caller-supplied replacement register, prior
+process memory, or test expectation map is an input to those decisions.
 
 ### Reproduced lineage conflict
 

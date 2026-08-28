@@ -36,7 +36,7 @@ entry-scope REQUIRED_CONTRACT roots:
 | Stale current-state ledger | STATUS and stage plan simultaneously called Issue #16 current/future and #459 current | #16/#456 wording made explicitly historical/completed; #459 is the only current Lane A entry route |
 
 The correction head must independently reproduce green bootstrap/policy checks
-and exactly 128 future assertions failing only against
+and exactly 136 future assertions failing only against
 `CUT1.ENTRY.NOT_IMPLEMENTED`. Any new reproduced CRITICAL_BLOCKER or entry-scope
 REQUIRED_CONTRACT keeps this review pending and blocks GREEN implementation.
 
@@ -50,11 +50,21 @@ self-authorship, replay, and approval checksum findings depended on magic values
 rather than relations available to the materialized-stimulus-only executor.
 
 The pending final correction binds the four mutable authorities to their
-accepted-base bytes, expands the stimulus-only corpus to 128 test-owned cases,
+accepted-base bytes, expands the stimulus-only corpus to 136 test-owned cases,
 and defines reviewer/author independence, single-use approval state, immutable
 request framing, and canonical approval-digest framing. Focused bootstrap,
 route/dispatcher, lint, type, guardrail, diff, budget, and policy checks are
-green. Full RED has one bootstrap pass and exactly 128 future failures, each
+green. Full RED has one bootstrap pass and exactly 136 future failures, each
 showing only typed `CUT1.ENTRY.NOT_IMPLEMENTED`, with no setup or collection
 error. These are candidate observations, not an approval; independent review
 must reproduce them on the committed exact head before T03 or any GREEN work.
+
+Review of `77ebfc3218a003a06f7b43098624c30f2b43bf4e` reproduced a coherent
+recomputation/currentness root: candidate artifact and approval fields could be
+rewritten together, valid hashes recomputed, and self-asserted currentness left
+true without an external anchor. Configuration, provenance, and deletion
+references had the same valid-substitution weakness, and repeated synthetic
+digests did not discriminate ordered fields. That head is rejected. The next
+candidate must bind distinct synthetic fields through the frozen evidence
+register, prove ordered framing, and include coherent-forgery, revoked,
+expired, and pre-artifact stimuli before independent exact-head review.

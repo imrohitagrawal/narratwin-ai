@@ -17,6 +17,7 @@ REPO = Path(__file__).parents[2]
 CORPUS_PATH = REPO / "docs/governance/cut1-controlled-presenter-red-corpus-v1.json"
 SCHEMA_PATH = REPO / "docs/governance/schemas/cut1-controlled-presenter-evidence-v1.schema.json"
 EXECUTOR_PATH = REPO / "scripts/quality/cut1_controlled_presenter.py"
+FROZEN_EVIDENCE_REGISTER_SHA256 = "a021bdfdefbdbf52d185f1a06434146ac4c7aa5313d5959f1b6d5918427784b8"
 
 EXPECTED_CODES = {
     "VALID-01": (),
@@ -35,6 +36,7 @@ EXPECTED_CODES = {
     "AUTH-05": ("CUT1.AUTHORITY.PROJECT_FACTS_DRIFT",),
     "AUTH-06": ("CUT1.AUTHORITY.LIVE_BINDING_DRIFT",),
     "AUTH-07": ("CUT1.AUTHORITY.EVALUATION_SOURCE_DRIFT",),
+    "AUTH-08": ("CUT1.AUTHORITY.EVIDENCE_REGISTER_DRIFT",),
     "LINEAGE-01": ("CUT1.LINEAGE.PRESENTER_SUBSTITUTED",),
     **{f"LINEAGE-{index:02d}": (code,) for index, code in enumerate((
         "CUT1.LINEAGE.NARRATION", "CUT1.LINEAGE.AUDIO", "CUT1.LINEAGE.CAPTION",
@@ -57,6 +59,9 @@ EXPECTED_CODES = {
     "APPROVAL-11": ("CUT1.APPROVAL.DIGEST_MISMATCH",),
     "APPROVAL-12": ("CUT1.APPROVAL.REQUEST_MISMATCH",),
     "APPROVAL-13": ("CUT1.APPROVAL.SELF_AUTHORED",),
+    "APPROVAL-14": ("CUT1.APPROVAL.REVOKED",),
+    "APPROVAL-15": ("CUT1.APPROVAL.EXPIRED",),
+    "APPROVAL-16": ("CUT1.APPROVAL.PRE_ARTIFACT",),
     "RIGHTS-01": ("CUT1.RIGHTS.ORIGINAL_OVERWRITTEN",),
     "RIGHTS-02": ("CUT1.RIGHTS.PROVENANCE",),
     "RIGHTS-03": ("CUT1.RIGHTS.DELETION_REF",),
@@ -68,6 +73,10 @@ EXPECTED_CODES = {
         "CUT1.MEDIA.FOREIGN", "CUT1.MEDIA.DURATION", "CUT1.MEDIA.DIMENSIONS"), start=3)},
     "MEDIA-12": ("CUT1.MEDIA.KIND",),
     "MEDIA-13": ("CUT1.MEDIA.DIMENSIONS",),
+    "FORGERY-01": ("CUT1.AUTHORITY.EVIDENCE_REGISTER_MISMATCH",),
+    "FORGERY-02": ("CUT1.AUTHORITY.EVIDENCE_REGISTER_DRIFT",),
+    "FORGERY-03": ("CUT1.AUTHORITY.EVIDENCE_REGISTER_MISMATCH",),
+    "FORGERY-04": ("CUT1.APPROVAL.REQUEST_MISMATCH",),
     "GROUND-01": ("CUT1.GROUNDING.UNSUPPORTED",),
     "IDENTITY-01": ("CUT1.IDENTITY.UNAUTHORIZED",),
     "DERIVATIVE-01": ("CUT1.DERIVATIVE.UNAUTHORIZED",),
@@ -151,6 +160,41 @@ def framed_sha256(*parts: str) -> str:
     return hashlib.sha256("\n".join(parts).encode("utf-8")).hexdigest()
 
 
+def synthetic_digest(index: int, label: str) -> str:
+    return framed_sha256("Cut1SyntheticRedV1", str(index), label)
+
+
+def approval_request_sha256(cell: dict[str, Any]) -> str:
+    lineage = cell["lineage"]
+    return framed_sha256(
+        "Cut1ApprovalRequestV1", cell["artifact"]["sha256"],
+        lineage["manifestSha256"], lineage["presenterBindingSha256"]
+    )
+
+
+def approval_sha256(cell: dict[str, Any]) -> str:
+    lineage = cell["lineage"]
+    return framed_sha256(
+        "Cut1ApprovalV1", lineage["approvalId"], lineage["approvalRequestSha256"],
+        lineage["reviewerId"], lineage["artifactAuthorId"],
+        cell["artifact"]["createdAt"], lineage["approvedAt"],
+        lineage["approvalValidUntil"], str(lineage["approvalRevoked"]).lower(),
+        str(lineage["approvalUseCount"])
+    )
+
+
+def evidence_register_sha256(value: dict[str, Any]) -> str:
+    cells = [{key: copy.deepcopy(cell[key]) for key in (
+        "presenterId", "presenterVersion", "registrySha256", "language", "aspectRatio",
+        "evidenceState", "lineage", "rights", "artifact"
+    )} for cell in sorted(value["cells"], key=lambda item: (
+        item["presenterId"], item["aspectRatio"]
+    ))]
+    projection = {"providerPosture": value["providerPosture"], "cells": cells}
+    canonical = json.dumps(projection, ensure_ascii=True, separators=(",", ":"), sort_keys=True)
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
 def baseline() -> dict[str, Any]:
     metrics = {
         "gazeRatio": 0.8, "maxOffCameraMs": 2000,
@@ -176,62 +220,77 @@ def baseline() -> dict[str, Any]:
          ("raj", "LANDSCAPE"), ("raj", "PORTRAIT"),
          ("myra", "LANDSCAPE"), ("myra", "PORTRAIT")), start=1
     ):
-        digest = f"{index:x}" * 64
         approval_id = f"approval-{index}"
         artifact_author_id = f"candidate-author-{index}"
         reviewer_id = f"reviewer-{index}"
+        artifact_created_at = "2026-08-27T23:59:00Z"
         approved_at = "2026-08-28T00:00:00Z"
-        approval_request = framed_sha256(
-            "Cut1ApprovalRequestV1", digest, digest, digest
-        )
-        approval_digest = framed_sha256(
-            "Cut1ApprovalV1", approval_id, approval_request, reviewer_id,
-            artifact_author_id, approved_at
-        )
+        approval_valid_until = "2026-08-29T00:00:00Z"
         cell_metrics = copy.deepcopy(metrics)
         cell_metrics.update(
             repeatScriptSha256="3b071180d4723784d84f5005644fc5a2aa5ef6b6adb6f7caeba2de76d68be435",
-            repeatPresenterBindingSha256=digest,
-            repeatEvaluatorSha256=digest,
-            repeatManifestSha256=digest,
+            repeatPresenterBindingSha256=synthetic_digest(index, "presenter-binding"),
+            repeatEvaluatorSha256=synthetic_digest(index, "evaluator-repeat"),
+            repeatManifestSha256=synthetic_digest(index, "manifest"),
         )
-        cells.append({
+        cell = {
             "presenterId": presenter, "presenterVersion": "v1",
             "registrySha256": "eb31a953b85ffaf2c43f54e4da7fb89eda740c724967a9301f726c6091ab01c2",
             "language": "en", "aspectRatio": aspect,
             "evidenceState": "SYNTHETIC_RED_TARGET_NOT_EXECUTED",
-            "lineage": {"retrievalSha256": digest, "claimSupportSha256": digest,
-                        "presenterBindingSha256": digest, "narrationSha256": digest,
+            "lineage": {"retrievalSha256": synthetic_digest(index, "retrieval"),
+                        "claimSupportSha256": synthetic_digest(index, "claim-support"),
+                        "presenterBindingSha256": synthetic_digest(index, "presenter-binding"),
+                        "narrationSha256": synthetic_digest(index, "narration"),
                         "voiceProfileId": f"voice-{presenter}", "voiceProfileVersion": "v1",
-                        "audioSha256": digest, "captionSha256": digest,
-                        "captionCueEvidenceSha256": digest,
-                        "manifestSha256": digest, "evaluationSha256": digest,
+                        "audioSha256": synthetic_digest(index, "audio"),
+                        "captionSha256": synthetic_digest(index, "caption"),
+                        "captionCueEvidenceSha256": synthetic_digest(index, "caption-cues"),
+                        "manifestSha256": synthetic_digest(index, "manifest"),
+                        "evaluationSha256": synthetic_digest(index, "evaluation"),
                         "evaluatorVersion": "v1",
-                        "metricEvidenceSha256": digest, "approvalId": approval_id,
-                        "approvalRequestSha256": approval_request,
-                        "approvalSha256": approval_digest, "approvedArtifactSha256": digest,
-                        "approvedManifestSha256": digest,
+                        "metricEvidenceSha256": synthetic_digest(index, "metric-evidence"),
+                        "approvalId": approval_id, "approvalRequestSha256": "0" * 64,
+                        "approvalSha256": "0" * 64,
+                        "approvedArtifactSha256": synthetic_digest(index, "artifact"),
+                        "approvedManifestSha256": synthetic_digest(index, "manifest"),
                         "artifactAuthorId": artifact_author_id, "reviewerId": reviewer_id,
                         "approvedAt": approved_at, "approvalCurrent": True,
-                        "approvalUseCount": 1},
+                        "approvalUseCount": 1, "approvalValidUntil": approval_valid_until,
+                        "approvalRevoked": False},
             "rights": {"fictionalIdentity": True, "derivativeAuthorized": False,
-                       "originalOverwritten": False, "provenanceSha256": digest,
+                       "originalOverwritten": False,
+                       "provenanceSha256": synthetic_digest(index, "provenance"),
                        "deletionRef": f"delete-{index}"},
             "artifact": {"mediaKind": "VIDEO", "mimeType": "video/mp4",
                          "regularFile": True, "decoded": True, "placeholder": False,
-                         "sha256": digest, "byteCount": 1000, "durationMs": 10000,
+                         "sha256": synthetic_digest(index, "artifact"),
+                         "createdAt": artifact_created_at,
+                         "byteCount": 1000, "durationMs": 10000,
                          "width": 1920 if aspect == "LANDSCAPE" else 1080,
                          "height": 1080 if aspect == "LANDSCAPE" else 1920,
                          "audioPresent": True, "captionsPresent": True},
             "metrics": cell_metrics, "decision": "NOT_EXECUTED",
-        })
-    return {
+        }
+        cell["lineage"]["approvalRequestSha256"] = approval_request_sha256(cell)
+        cell["lineage"]["approvalSha256"] = approval_sha256(cell)
+        cells.append(cell)
+    provider_posture = {
+        "mode": "LOCAL_KEY_FREE_DISABLED_EXTERNAL", "model": "NONE", "enabled": False,
+        "configSha256": framed_sha256(
+            "Cut1ProviderPostureV1", "LOCAL_KEY_FREE_DISABLED_EXTERNAL", "NONE", "false",
+            "0", "0", "0", "0", "0"
+        ), "credentialCount": 0, "egressAttemptCount": 0,
+        "providerCallCount": 0, "retryCount": 0, "spendMicrousd": 0,
+    }
+    result = {
         "schemaVersion": "Cut1ControlledPresenterEvidenceV1",
         "authority": {"baseCommit": "ab97b6eecba6db9c66c37d19b29257c7398f3ab7",
                       "sourceSha256": "49b75655ddbbe43145a35215069bce2751de66393b39eb68d69b584d7ecfcc5e",
                       "scriptSha256": "3b071180d4723784d84f5005644fc5a2aa5ef6b6adb6f7caeba2de76d68be435",
                       "projectFactsSha256": "cb50de12ce2debb3d52308892428b9711e5efb41fe2ad59b175563809e7d314b",
                       "liveBindingSha256": "89199278feabfdcee21fffe4a9ad4d157dd7fc9a11a2529562876cb6ecc74702",
+                      "evidenceRegisterSha256": "0" * 64,
                       "evaluationSha256": "7" * 64, "evaluationSourceSha256": "8" * 64},
         "cells": cells,
         "approvals": {"speechApprovalStatus": "MEERA_ONLY_EXISTING_RAJ_MYRA_BLOCKED",
@@ -241,11 +300,7 @@ def baseline() -> dict[str, Any]:
                               "providerAuthority": "ISSUE_449_NOT_AUTHORIZED",
                               "humanStudyAuthority": "ISSUE_432_NOT_AUTHORIZED",
                               "derivativeReadiness": "RAJ_MYRA_NOT_READY"},
-        "providerPosture": {"mode": "LOCAL_KEY_FREE_DISABLED_EXTERNAL", "model": "NONE",
-                            "enabled": False, "configSha256": "e" * 64,
-                            "credentialCount": 0, "egressAttemptCount": 0,
-                            "providerCallCount": 0, "retryCount": 0,
-                            "spendMicrousd": 0},
+        "providerPosture": provider_posture,
         "observability": {"tenantId": "tenant-459", "projectId": "project-459",
                           "requestId": "request-459", "traceId": "trace-459",
                           "runId": "run-459", "provenanceRef": "provenance-459",
@@ -261,6 +316,8 @@ def baseline() -> dict[str, Any]:
                        "cut1Decision": "BLOCKED_NOT_ACCEPTED",
                        "humanEvidencePresent": False},
     }
+    result["authority"]["evidenceRegisterSha256"] = evidence_register_sha256(result)
+    return result
 
 
 def set_path(value: dict[str, Any], path: str, replacement: Any) -> None:
@@ -295,6 +352,26 @@ def materialize(mutation: dict[str, Any]) -> dict[str, Any]:
         target = next(cell for cell in value["cells"] if
                       f'{cell["presenterId"]}-en-{cell["aspectRatio"].lower()}' == mutation["cell"])
         target["lineage"] = copy.deepcopy(value["cells"][0]["lineage"])
+    elif operation == "RECOMPUTE_ARTIFACT_AND_APPROVAL":
+        cell = value["cells"][0]
+        cell["artifact"]["sha256"] = "f" * 64
+        cell["lineage"]["approvedArtifactSha256"] = "f" * 64
+        cell["lineage"]["approvalRequestSha256"] = approval_request_sha256(cell)
+        cell["lineage"]["approvalSha256"] = approval_sha256(cell)
+        if mutation.get("recomputeRegister"):
+            value["authority"]["evidenceRegisterSha256"] = evidence_register_sha256(value)
+    elif operation == "RECOMPUTE_CONFIG_PROVENANCE_DELETION":
+        value["providerPosture"]["configSha256"] = "f" * 64
+        value["cells"][0]["rights"]["provenanceSha256"] = "e" * 64
+        value["cells"][0]["rights"]["deletionRef"] = "substituted-deletion"
+    elif operation == "SWAP_APPROVAL_REQUEST_ORDER":
+        cell = value["cells"][0]
+        lineage = cell["lineage"]
+        lineage["approvalRequestSha256"] = framed_sha256(
+            "Cut1ApprovalRequestV1", cell["artifact"]["sha256"],
+            lineage["presenterBindingSha256"], lineage["manifestSha256"]
+        )
+        lineage["approvalSha256"] = approval_sha256(cell)
     else:
         assert operation == "NONE"
     return value
@@ -324,24 +401,46 @@ def test_bootstrap_schema_corpus_and_oracle_are_closed() -> None:
     assert schema["properties"]["cells"]["maxItems"] == 6
     assert len(schema["properties"]["cells"]["allOf"]) == 6
     assert schema["$defs"]["cell"]["additionalProperties"] is False
-    assert len(baseline()["cells"]) == 6
-    assert schema_valid(baseline(), schema, schema)
-    first = baseline()["cells"][0]
+    valid = baseline()
+    assert len(valid["cells"]) == 6
+    assert schema_valid(valid, schema, schema)
+    assert valid["authority"]["evidenceRegisterSha256"] == FROZEN_EVIDENCE_REGISTER_SHA256
+    assert evidence_register_sha256(valid) == FROZEN_EVIDENCE_REGISTER_SHA256
+    assert schema["properties"]["authority"]["properties"]["evidenceRegisterSha256"][
+        "const"
+    ] == FROZEN_EVIDENCE_REGISTER_SHA256
+    expected_config = framed_sha256(
+        "Cut1ProviderPostureV1", "LOCAL_KEY_FREE_DISABLED_EXTERNAL", "NONE", "false",
+        "0", "0", "0", "0", "0"
+    )
+    assert valid["providerPosture"]["configSha256"] == expected_config
+    assert schema["properties"]["providerPosture"]["properties"]["configSha256"][
+        "const"
+    ] == expected_config
+    first = valid["cells"][0]
     lineage = first["lineage"]
     assert lineage["artifactAuthorId"] != lineage["reviewerId"]
     assert lineage["approvalUseCount"] == 1
-    assert lineage["approvalRequestSha256"] == framed_sha256(
+    assert lineage["approvalRequestSha256"] == approval_request_sha256(first)
+    assert lineage["approvalSha256"] == approval_sha256(first)
+    assert len({first["artifact"]["sha256"], lineage["manifestSha256"],
+                lineage["presenterBindingSha256"], lineage["evaluationSha256"],
+                lineage["metricEvidenceSha256"]}) == 5
+    assert first["artifact"]["createdAt"] < lineage["approvedAt"]
+    assert valid["observability"]["startedAt"] < lineage["approvalValidUntil"]
+    swapped = framed_sha256(
         "Cut1ApprovalRequestV1", first["artifact"]["sha256"],
-        lineage["manifestSha256"], lineage["presenterBindingSha256"]
+        lineage["presenterBindingSha256"], lineage["manifestSha256"]
     )
-    assert lineage["approvalSha256"] == framed_sha256(
-        "Cut1ApprovalV1", lineage["approvalId"], lineage["approvalRequestSha256"],
-        lineage["reviewerId"], lineage["artifactAuthorId"], lineage["approvedAt"]
-    )
+    assert swapped != lineage["approvalRequestSha256"]
     self_authored = materialize(next(case["mutation"] for case in corpus["cases"]
                                      if case["id"] == "APPROVAL-04"))["cells"][0]["lineage"]
     assert self_authored["reviewerId"] == self_authored["artifactAuthorId"]
-    assert exact_cell_keys_conform(baseline(), schema)
+    coherent = materialize({"op": "RECOMPUTE_ARTIFACT_AND_APPROVAL"})
+    assert evidence_register_sha256(coherent) != coherent["authority"]["evidenceRegisterSha256"]
+    forged = materialize({"op": "RECOMPUTE_ARTIFACT_AND_APPROVAL", "recomputeRegister": True})
+    assert forged["authority"]["evidenceRegisterSha256"] != FROZEN_EVIDENCE_REGISTER_SHA256
+    assert exact_cell_keys_conform(valid, schema)
     assert not exact_cell_keys_conform(materialize({"op": "DUPLICATE_CELL_KEY"}), schema)
     assert not schema_valid(materialize({"op": "SET_NON_FINITE",
                                          "path": "cells.0.metrics.gazeRatio"}), schema, schema)
