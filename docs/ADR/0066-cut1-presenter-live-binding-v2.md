@@ -51,11 +51,22 @@ exceptions produce only the existing generic runner message.
 
 The frozen legacy path list predates prospective GovernancePreflightV1 routes.
 For the exact Issue #456 branch only, the runner hard-binds the fixed base and
-eleven paths in code, validates repository history and the matching preflight,
+twelve paths in code, validates repository history and the matching preflight,
 then omits only the obsolete legacy `check_changed_files` call. Legacy parity,
 branch, required-file, and every `PRESERVED_CHECKS` check still run. Every other
 branch retains the frozen legacy scope path unchanged; a coherent preflight plus
 extra-path edit is rejected by the independently hard-coded path equality.
+
+Required CI then exposed an inherited false negative in the historical Issue
+#434 subprocess receipt: it pinned one complete, branch-specific subprocess
+tuple. The Issue #456 OWNER amendment adds only that shared test as the twelfth
+path. Its corrective RED proves the old receipt rejects the current branch
+while baseline, stdout mutation, and stderr mutation remain distinct. The
+replacement validates the exact command and typed `CompletedProcess`, accepts
+only canonical success or the exact three-line branch-rejection stdout with
+matching branch values, requires empty stderr, and rejects independent stdout
+and stderr mutations. It changes no Issue #434 verifier, Stage 8 checker,
+workflow, or acceptance identity.
 
 ## Security, privacy, and observability
 

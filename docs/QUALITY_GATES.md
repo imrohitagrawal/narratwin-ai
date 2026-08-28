@@ -1546,7 +1546,7 @@ a live bundle-integrity failure.
 
 The Phase 1 order is publication boundary, Cut 1 live binding, then preserved
 contracts. On the exact Issue #456 branch, fixed-base preflight validation and
-hard-coded eleven-path equality replace only the frozen legacy changed-path
+hard-coded twelve-path equality replace only the frozen legacy changed-path
 list; all legacy parity, branch, required-file, and preserved checks remain.
 All other branches retain the frozen behavior. Required evidence is:
 
@@ -1556,6 +1556,8 @@ python3 scripts/quality/cut1_presenter_contract.py --kind bundle --root .
 make phase1-closure-quality
 make quality
 uv run pytest -q tests/unit/test_stage8_cut1_routes.py tests/unit/test_issue452_quality_dispatcher.py tests/unit/test_quality_dispatcher.py
+uv run pytest -q tests/unit/test_stage8_quality_gate.py::test_issue366_contract_rejects_partial_scope_and_content_mutations
+uv run pytest -q tests/unit
 uv run ruff check scripts tests
 uv run mypy scripts tests
 python3 scripts/guardrails_check.py
@@ -1570,3 +1572,10 @@ deployment, release, production, or acceptance authority.
 Direct `make stage8-quality` is not this phase-closure branch's route and is
 expected to reject its branch identity; the listed Stage 8 unit regressions are
 the applicable inherited route evidence.
+The OWNER corrective amendment adds only the inherited Stage 8 test as path 12.
+Its subprocess assertion replaces the historical branch-specific complete-
+tuple receipt with a structural contract: exact command and typed
+`CompletedProcess`, canonical success or exact three-line branch-rejection
+stdout with matching branch values, empty stderr, and rejected independent
+stdout/stderr mutations. The Issue #434 verifier, Stage 8 checker, workflows,
+and all v1/v2 acceptance identities remain unchanged.

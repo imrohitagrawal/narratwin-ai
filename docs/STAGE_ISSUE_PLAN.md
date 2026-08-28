@@ -2785,7 +2785,7 @@ deployment, publication, release, or production authority.
 Issue `#456` is the bounded Lane B prerequisite discovered after Issue `#452` /
 PR `#455`. It starts from exact merge `c3ac83bf05336a539dbdd6af1de9905e6b954289`
 on branch `phase-1-closure-process-456-cut1-live-binding-v2`, owns exactly the
-eleven paths in its preflight, and preserves the v1 freeze byte-for-byte.
+twelve paths in its amended preflight, and preserves the v1 freeze byte-for-byte.
 
 The v2 route binds current bytes only for the five immutable Issue #452
 contract JSON/schema inputs, rejects manifest and filesystem substitution, and
@@ -2793,6 +2793,16 @@ registers fail-closed Phase 1 propagation. Mutable shared ledgers, prose,
 routes, and tests remain historically auditable but are excluded from current
 bundle integrity. No acceptance threshold or presenter/provider requirement is
 changed.
+
+OWNER corrective comment `5446644219` adds only
+`tests/unit/test_stage8_quality_gate.py` as path 12 to break a circular required-
+CI false negative. A committed RED proves the old complete-subprocess receipt
+is branch-specific while three result states remain distinguishable. The GREEN
+contract validates the exact command and typed `CompletedProcess`, canonical
+success or exact three-line branch-rejection stdout with matching branch
+values, empty stderr, and rejected independent stdout/stderr mutations without
+changing the Issue #434 verifier, Stage 8 checker, workflow, product, provider,
+media, or runtime code.
 
 Issue #16 remains blocked until Issue #456 passes focused/full gates, hosted
 checks, independent exact-head review, eligible non-author approval, merge, and

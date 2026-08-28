@@ -23,6 +23,7 @@ ISSUE456_PATHS = frozenset({
     "tests/unit/test_cut1_presenter_live_binding_v2.py",
     "scripts/quality/phase1_closure/runner.py",
     "tests/unit/phase1_closure/test_runner.py",
+    "tests/unit/test_stage8_quality_gate.py",
     "docs/ADR/0066-cut1-presenter-live-binding-v2.md",
     "docs/QUALITY_GATES.md",
     "docs/STAGE_ISSUE_PLAN.md",
