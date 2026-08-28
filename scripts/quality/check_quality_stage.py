@@ -26,6 +26,8 @@ ISSUE435_ENV_ALLOWLIST = (
 ISSUE435_ACCEPTANCE_TEST = "tests/unit/test_adversarial_convergence.py"
 ISSUE452_BRANCH = "docs/cut1-acceptance-provider-contract-452"
 ISSUE452_ACCEPTANCE_TEST = "tests/unit/test_cut1_presenter_contract.py"
+ISSUE459_BRANCH = "lane-a-cut1-459-controlled-presenter"
+ISSUE459_ACCEPTANCE_TEST = "tests/unit/test_cut1_controlled_presenter_red.py"
 ISSUE16_BRANCH = "stage1-16-spec-kit-gate"
 
 
@@ -73,6 +75,26 @@ def run_cut1_presenter_contract_gate() -> int:
         cwd=ROOT,
         env=environment,
     )
+
+
+def run_cut1_controlled_presenter_entry_gate() -> int:
+    environment = {
+        key: os.environ[key] for key in ISSUE435_ENV_ALLOWLIST if key in os.environ
+    }
+    environment.update(LC_ALL="C", PATH=os.defpath, PYTEST_DISABLE_PLUGIN_AUTOLOAD="1")
+    route_status = subprocess.call(
+        [sys.executable, "scripts/quality/check_stage8_docs.py"], cwd=ROOT, env=environment
+    )
+    if route_status or os.environ.get("NARRATWIN_POLICY_ONLY") == "1":
+        return route_status
+    return subprocess.call(
+        [sys.executable, "-I", "-P", "-m", "pytest", "-p", "no:cacheprovider",
+         "-o", "addopts=", "-q", ISSUE459_ACCEPTANCE_TEST],
+        cwd=ROOT,
+        env=environment,
+    )
+
+
 def run_recommended_review_item_check(stage: str) -> int:
     return subprocess.call(
         [sys.executable, "scripts/quality/check_recommended_review_items.py", stage],
@@ -101,6 +123,8 @@ def main() -> int:
         return run_adversarial_convergence_gate()
     if branch == ISSUE452_BRANCH:
         return run_cut1_presenter_contract_gate()
+    if branch == ISSUE459_BRANCH:
+        return run_cut1_controlled_presenter_entry_gate()
     if not CURRENT_STAGE.exists():
         print("Missing .stage/current. Cannot determine quality stage.")
         return 1

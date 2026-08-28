@@ -1592,3 +1592,29 @@ a branch-canonical complete-tuple receipt: only the current branch token is
 normalized before hashing, canonical success and branch rejection are pinned,
 and independent stdout/stderr mutations are rejected. The Issue #434 verifier,
 Stage 8 checker, workflows, and all v1/v2 identities remain unchanged.
+
+## Issue #459 Lane A Cut 1 T01/T02 entry gate
+
+Exact branch `lane-a-cut1-459-controlled-presenter` is fixed to base
+`ab97b6eecba6db9c66c37d19b29257c7398f3ab7` and exactly the 16 paths in its
+preflight. The route enforces every per-path line cap, the 4,300 aggregate cap,
+eight byte caps, exact branch/base ancestry, and preflight/path equality.
+
+`NARRATWIN_POLICY_ONLY=1 make quality` must pass the route. Full `make quality`
+must reach the isolated RED oracle and fail only with the 32 test-owned future-
+behavior mismatches against typed `CUT1.ENTRY.NOT_IMPLEMENTED`; collection,
+setup, bootstrap, schema, route, dispatcher, security, or governance errors are
+not accepted as RED. Focused evidence:
+
+```text
+uv run pytest -q tests/unit/test_stage8_cut1_routes.py tests/unit/test_issue459_quality_dispatcher.py
+uv run pytest -q tests/unit/test_cut1_controlled_presenter_red.py -k 'not future_behavior'
+uv run pytest -q tests/unit/test_cut1_controlled_presenter_red.py
+NARRATWIN_POLICY_ONLY=1 make quality
+make quality
+```
+
+This entry gate authorizes no GREEN product behavior. Audio remains with Issue
+`#368` pending reviewed handoff; human-study and provider activation remain
+with `#432` and `#449`; Raj/Myra derivatives and presenter-specific grounding
+must satisfy the recorded stops before T03/T05/T06.

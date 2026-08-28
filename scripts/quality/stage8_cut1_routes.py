@@ -13,6 +13,7 @@ from scripts.governance_preflight_v1 import validate_governance_preflight
 ISSUE150_BRANCH = "cut1-process-150-semgrep-mcp-renewal"
 ISSUE451_BRANCH = "docs/cut1-post-443-reconciliation-451"
 ISSUE452_BRANCH = "docs/cut1-acceptance-provider-contract-452"
+ISSUE459_BRANCH = "lane-a-cut1-459-controlled-presenter"
 ISSUE386_BRANCH = "cut1-process-386-modular-route-enforcement"
 ISSUE413_BRANCH = "cut1-process-413-frontend-runtime-openssl"
 ISSUE405_BRANCH = "process-405-heartbeat2-main-reliability"
@@ -46,12 +47,31 @@ ISSUE424_BASE = "afcf0325c3ec925b68b770eda0bb8c839bcce4dd"
 ISSUE150_BASE = "a02286240212ad8958915aec01aa5ebaf60fa705"
 ISSUE451_BASE = "59db96aaab6c4e75b12d134dc9b02330c5a982ac"
 ISSUE452_BASE = "97e8173c2ec1323aa9ced23d43059bca2e5a204f"
+ISSUE459_BASE = "ab97b6eecba6db9c66c37d19b29257c7398f3ab7"
 SECURITY_PREFLIGHTS = {
     150: ("Issue150SecurityRenewalPreflightV1", "e6a569cb6254ef58c36fb44e9cdece26e0816b49c9f62ce08e9d90f3843c97e3"),
     428: ("Issue428NanoidSecurityPreflightV1", "0d8da352c98855bc481581f1ca13cc2d4e994838b1afb31d974ad2b17caf7a9b"),
 }
 
 ROUTES = {
+    ISSUE459_BRANCH: {
+        "docs/governance/preflights/issue-459.json",
+        "docs/governance/ISSUE_459_CONTROLLED_PRESENTER_PREFLIGHT_V1.md",
+        "docs/governance/schemas/cut1-controlled-presenter-evidence-v1.schema.json",
+        "docs/governance/cut1-controlled-presenter-red-corpus-v1.json",
+        "scripts/quality/cut1_controlled_presenter.py",
+        "tests/unit/test_cut1_controlled_presenter_red.py",
+        "scripts/quality/check_quality_stage.py",
+        "tests/unit/test_issue459_quality_dispatcher.py",
+        "scripts/quality/stage8_cut1_routes.py",
+        "tests/unit/test_stage8_cut1_routes.py",
+        "docs/reviews/ISSUE_459_ENTRY_GATE_REVIEW.md",
+        "docs/QUALITY_GATES.md",
+        "docs/STAGE_ISSUE_PLAN.md",
+        "docs/PHASE_PLAN.md",
+        "docs/STATUS.md",
+        "docs/TRACEABILITY.md",
+    },
     ISSUE452_BRANCH: {
         "docs/governance/preflights/issue-452.json",
         "docs/governance/schemas/cut1-human-realism-evaluation-v1.schema.json",
@@ -449,6 +469,8 @@ TOTAL_LIMITS = {ISSUE452_BRANCH: 3600, ISSUE451_BRANCH: 600, ISSUE150_BRANCH: 10
                 ISSUE386_BRANCH: 700, ISSUE385_BRANCH: 350,
                 ISSUE384_BRANCH: 500, ISSUE383_BRANCH: 700, ISSUE397_BRANCH: 500,
                 ISSUE393_BRANCH: 700, ISSUE382_BRANCH: 3200, ISSUE367_BRANCH: 2000}
+ROUTE_ISSUES[ISSUE459_BRANCH] = 459
+TOTAL_LIMITS[ISSUE459_BRANCH] = 4300
 ISSUE383_BINARY_FILES = {
     "frontend/public/demo/myra-synthetic-presenter.webp",
     "frontend/public/demo/raj-synthetic-presenter.webp",
@@ -460,7 +482,60 @@ ISSUE452_BYTE_LIMITS = {
     "tests/unit/test_cut1_presenter_contract.py": 30_000,
     "tests/unit/test_issue452_quality_dispatcher.py": 30_000,
 }
+ISSUE459_BYTE_LIMITS = {
+    "docs/governance/preflights/issue-459.json": 32_000,
+    "docs/governance/ISSUE_459_CONTROLLED_PRESENTER_PREFLIGHT_V1.md": 64_000,
+    "docs/governance/schemas/cut1-controlled-presenter-evidence-v1.schema.json": 40_000,
+    "docs/governance/cut1-controlled-presenter-red-corpus-v1.json": 48_000,
+    "scripts/quality/cut1_controlled_presenter.py": 16_000,
+    "tests/unit/test_cut1_controlled_presenter_red.py": 60_000,
+    "tests/unit/test_issue459_quality_dispatcher.py": 24_000,
+    "docs/reviews/ISSUE_459_ENTRY_GATE_REVIEW.md": 48_000,
+}
+ISSUE459_SOURCE_SHA256 = {
+    "specs/001-grounded-walkthrough-script/spec.md": "cd16ea947a70271f60a5ce7086e577c1cc25f380baf9a338342bfafb522b8c35",
+    "specs/001-grounded-walkthrough-script/plan.md": "166dd8021026eb334607d0dab290c2b121964bcb979e7e502b574f830b45dfd4",
+    "specs/001-grounded-walkthrough-script/tasks.md": "9c244de820bf0df1c1d7d7e4c323e5317ba5818cb625f88165e675ce51817fdc",
+    "docs/reviews/ISSUE_16_SPEC_KIT_REVIEW_CHECKPOINT.md": "14dbdeb898af240fd30d203e131be8c6e8e29c5803c82463c1b50dc4c8616877",
+    ".specify/memory/constitution.md": "ebb0c16c8aa9d967e4c946f31ae600e6e45016bf5c3aa6f098ceac795cd142c2",
+    "docs/PRODUCT_CONTRACTS/CUT1_PRESENTER_CONTRACT.md": "2e864e044253a98ea10fdf6dde1ab32a026354aaa5c00cebe3b40756d653936e",
+    "docs/AI_QUALITY_AND_EVALUATION_CONTRACT.md": "14dbbb6f005d9887ad8ab90340bca9fdcc5fb969579ef3d03f69d5566d0616f8",
+    "docs/ENTERPRISE_READINESS_REGISTER.md": "fd42d73871b62f48e018ced1eb5020ffcb53a62cdbdd53936b7c257c22940c1d",
+    "docs/CUT_ROADMAP_AND_EVIDENCE_MATRIX.md": "e358396e7be7ecee89539b1bfb9eb7eb4d331799dd41a64b4cfca4f74e22489b",
+    "docs/demo/CUT1_ACCEPTANCE_CHECKLIST.md": "7c041dfcca1e5f7e067744eaec18b1577df4be2cf391eb128b786bde7ca1521b",
+    "docs/governance/cut1-all-presenter-acceptance-matrix-v1.json": "f61cef9f7731f4603778d1b6a3a9ccccd3682c8e0ad233c9370169320612b2f5",
+    "docs/governance/cut1-presenter-live-binding-v2.json": "89199278feabfdcee21fffe4a9ad4d157dd7fc9a11a2529562876cb6ecc74702",
+    "docs/governance/cut1-project-facts-v1.json": "cb50de12ce2debb3d52308892428b9711e5efb41fe2ad59b175563809e7d314b",
+    "demo/stage8_seed_project.md": "49b75655ddbbe43145a35215069bce2751de66393b39eb68d69b584d7ecfcc5e",
+    "docs/demo/PHASE_1_DEMO_SCRIPT.md": "3b071180d4723784d84f5005644fc5a2aa5ef6b6adb6f7caeba2de76d68be435",
+    "backend/app/presenter_registry.json": "eb31a953b85ffaf2c43f54e4da7fb89eda740c724967a9301f726c6091ab01c2",
+}
+ISSUE459_EDITABLE_AUTHORITY_SHA256 = {
+    "Issue #459": "dd03b171f25b0d249a79834f22674c728e539fa8b171a97b3a4728474e0039d5",
+    "5449632582": "07b7cb91660a21ba0a70419ff07195a2532089a087d7a289806142dc81151fa0",
+    "5449637037": "f236d2840a7ce35e074b6e370dcc706278772c47fa09b6c18b20a344b22fd1a0",
+    "5449765467": "75882f1f3deb8dea77ab945cd58f0526b04644fb4cb208bcd50ddea29846bbe7",
+    "5449822130": "48f86809e1032884d5576ceefde06d64785b486e1adae940fe32c2b6391e6cf3",
+}
 TEXT_LIMITS = {
+    ISSUE459_BRANCH: {
+        "docs/governance/preflights/issue-459.json": 220,
+        "docs/governance/ISSUE_459_CONTROLLED_PRESENTER_PREFLIGHT_V1.md": 850,
+        "docs/governance/schemas/cut1-controlled-presenter-evidence-v1.schema.json": 450,
+        "docs/governance/cut1-controlled-presenter-red-corpus-v1.json": 500,
+        "scripts/quality/cut1_controlled_presenter.py": 140,
+        "tests/unit/test_cut1_controlled_presenter_red.py": 700,
+        "scripts/quality/check_quality_stage.py": 60,
+        "tests/unit/test_issue459_quality_dispatcher.py": 140,
+        "scripts/quality/stage8_cut1_routes.py": 180,
+        "tests/unit/test_stage8_cut1_routes.py": 340,
+        "docs/reviews/ISSUE_459_ENTRY_GATE_REVIEW.md": 500,
+        "docs/QUALITY_GATES.md": 120,
+        "docs/STAGE_ISSUE_PLAN.md": 120,
+        "docs/PHASE_PLAN.md": 100,
+        "docs/STATUS.md": 160,
+        "docs/TRACEABILITY.md": 120,
+    },
     ISSUE452_BRANCH: {
         "docs/governance/preflights/issue-452.json": 260,
         "docs/governance/schemas/cut1-human-realism-evaluation-v1.schema.json": 360,
@@ -1018,6 +1093,7 @@ def parse_name_status_z(output: str) -> list[str]:
 
 def route_base(run: Callable[[list[str]], Any], branch: str) -> str:
     fixed_routes = {
+        ISSUE459_BRANCH: (459, ISSUE459_BASE),
         ISSUE452_BRANCH: (452, ISSUE452_BASE),
         ISSUE451_BRANCH: (451, ISSUE451_BASE),
         ISSUE150_BRANCH: (150, ISSUE150_BASE),
@@ -1037,7 +1113,7 @@ def route_base(run: Callable[[list[str]], Any], branch: str) -> str:
         fixed_value = str(fixed.stdout).strip()
         common_value = str(common.stdout).strip()
         branch_point_invalid = False
-        if branch in {ISSUE452_BRANCH, ISSUE451_BRANCH, ISSUE150_BRANCH, ISSUE424_BRANCH, ISSUE421_BRANCH, ISSUE368_IMPLEMENTATION_BRANCH,
+        if branch in {ISSUE459_BRANCH, ISSUE452_BRANCH, ISSUE451_BRANCH, ISSUE150_BRANCH, ISSUE424_BRANCH, ISSUE421_BRANCH, ISSUE368_IMPLEMENTATION_BRANCH,
                       ISSUE368_QUOTA_FIX_BRANCH, ISSUE368_BRANCH,
                       ISSUE368_PROMPT_BRANCH}:
             branch_point = run(["git", "merge-base", "origin/main", "HEAD"])
@@ -1135,6 +1211,28 @@ def route_binary_sizes(root: Path, paths: set[str]) -> dict[str, int]:
     return sizes
 
 
+def issue459_source_failures(root: Path) -> list[str]:
+    failures: list[str] = []
+    preflight = root / "docs/governance/ISSUE_459_CONTROLLED_PRESENTER_PREFLIGHT_V1.md"
+    try:
+        text = preflight.read_text(encoding="utf-8")
+    except (OSError, UnicodeError) as error:
+        return [f"Issue #459 source freeze failed closed: {error}"]
+    for path, expected in ISSUE459_SOURCE_SHA256.items():
+        target = root / path
+        try:
+            actual = hashlib.sha256(target.read_bytes()).hexdigest()
+        except OSError as error:
+            failures.append(f"Issue #459 source unavailable: {path}: {error}")
+            continue
+        if actual != expected or f"`{expected}`" not in text:
+            failures.append(f"Issue #459 source identity drifted: {path}")
+    for label, expected in ISSUE459_EDITABLE_AUTHORITY_SHA256.items():
+        if label not in text or f"`{expected}`" not in text:
+            failures.append(f"Issue #459 editable authority identity drifted: {label}")
+    return failures
+
+
 def check_exact_route(
     root: Path, run: Callable[[list[str]], Any], branch: str, changed: set[str], failures: list[str]
 ) -> None:
@@ -1150,6 +1248,23 @@ def check_exact_route(
         failures.extend(security_preflight_failures(root, 428))
     if branch == ISSUE424_BRANCH:
         failures.extend(issue424_governance_failures(root))
+    if branch == ISSUE459_BRANCH:
+        failures.extend(issue459_source_failures(root))
+        try:
+            preflight = load_json_without_duplicate_members(
+                root / "docs/governance/preflights/issue-459.json"
+            )
+            findings = validate_governance_preflight(
+                preflight,
+                context={"issue_number": 459, "branch": branch,
+                         "changed_files": sorted(files)},
+            )
+            failures.extend(
+                f"Issue #459 governance preflight failed: {finding.code}"
+                for finding in findings
+            )
+        except (OSError, ValueError, TypeError) as error:
+            failures.append(f"Issue #459 governance preflight failed closed: {error}")
     try:
         base = route_base(run, branch)
         total, charges = route_text_charges(run, base, set(TEXT_LIMITS[branch]))
@@ -1159,7 +1274,13 @@ def check_exact_route(
             f"Issue #{issue} charge for {path} exceeds {limit}."
             for path, limit in TEXT_LIMITS[branch].items() if charges.get(path, 0) > limit
         )
-        if branch == ISSUE452_BRANCH:
+        if branch == ISSUE459_BRANCH:
+            sizes = route_binary_sizes(root, set(ISSUE459_BYTE_LIMITS))
+            failures.extend(
+                f"Issue #459 file {path} must be smaller than {limit} bytes."
+                for path, limit in ISSUE459_BYTE_LIMITS.items() if sizes[path] >= limit
+            )
+        elif branch == ISSUE452_BRANCH:
             sizes = route_binary_sizes(root, set(ISSUE452_BYTE_LIMITS))
             failures.extend(
                 f"Issue #452 file {path} must be smaller than {limit} bytes."

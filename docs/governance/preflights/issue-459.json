@@ -2,7 +2,7 @@
   "schema_version": "GovernancePreflightV1",
   "issue_number": 459,
   "branch": "lane-a-cut1-459-controlled-presenter",
-  "objective": "From exact accepted main and branch point ab97b6eecba6db9c66c37d19b29257c7398f3ab7, execute only the Issue #459 T01/T02 entry gate frozen in OWNER issue comment 5449765467. Preserve six independent Meera/Raj/Myra x en x landscape/portrait cells and exact C1-M01 through C1-M10 thresholds. C1 changes only this preflight. C2 adds the detailed source, interface, observability, failure, test, human-only, skill and stop contract; closed schema and stimulus-only RED corpus; literal test-owned expectations; a typed CUT1.ENTRY.NOT_IMPLEMENTED executor; exact route/dispatcher mutations; governance ledgers; and independent review. The exact 15 text paths, per-path caps, 4,300 aggregate cap, 3,655 readability review, and stop before 3,870 are controlling. The executor receives one materialized stimulus and cannot import tests or corpus expectations. Bootstrap/schema/corpus/route/security evidence stays green while future-behavior assertions genuinely reach typed RED with zero collection or setup errors. No GREEN product work starts before independent review finds no reproduced blocker. Backend, frontend, assets, provider calls, credentials, egress, spend, media, deployment, publication, release, production claims and human study are forbidden. Issue #368 retains audio/provider ownership until reviewed handoff; #432 and #449 retain study/provider authority. Stop before T03/T06 without exact Raj/Myra derivative provenance and permitted-use authority, or on source, branch, base, path, budget, metric, lineage, false-pass, security/privacy, accessibility, review or authority drift.",
+  "objective": "From exact accepted main and branch point ab97b6eecba6db9c66c37d19b29257c7398f3ab7, execute only the Issue #459 T01/T02 entry gate frozen in issue comment 5449765467 and corrected only by comment 5449822130. Preserve six independent Meera/Raj/Myra x en x landscape/portrait cells and exact C1-M01 through C1-M10 thresholds. C1 changes only this preflight. C2 adds the detailed source, interface, observability, failure, test, human-only, skill and stop contract; closed schema and stimulus-only RED corpus; literal test-owned expectations; a typed CUT1.ENTRY.NOT_IMPLEMENTED executor; exact route/dispatcher mutations; governance ledgers; and independent review. The exact 16 text paths, per-path caps, 4,300 aggregate cap, 3,655 readability review, and stop before 3,870 are controlling. The executor receives one materialized stimulus and cannot import tests or corpus expectations. Bootstrap/schema/corpus/route/security evidence stays green while future-behavior assertions genuinely reach typed RED with zero collection or setup errors. No GREEN product work starts before independent review finds no reproduced blocker. Backend, frontend, assets, provider calls, credentials, egress, spend, media, deployment, publication, release, production claims and human study are forbidden. Issue #368 retains audio/provider ownership until reviewed handoff; #432 and #449 retain study/provider authority. Stop before T03/T06 without exact Raj/Myra derivative provenance and permitted-use authority, or on source, branch, base, path, budget, metric, lineage, false-pass, security/privacy, accessibility, review or authority drift.",
   "status_decision": "update-minimally",
   "scope": {
     "required": [
@@ -19,6 +19,7 @@
       "docs/reviews/ISSUE_459_ENTRY_GATE_REVIEW.md",
       "docs/QUALITY_GATES.md",
       "docs/STAGE_ISSUE_PLAN.md",
+      "docs/PHASE_PLAN.md",
       "docs/STATUS.md",
       "docs/TRACEABILITY.md"
     ],
@@ -36,6 +37,7 @@
       "docs/reviews/ISSUE_459_ENTRY_GATE_REVIEW.md",
       "docs/QUALITY_GATES.md",
       "docs/STAGE_ISSUE_PLAN.md",
+      "docs/PHASE_PLAN.md",
       "docs/STATUS.md",
       "docs/TRACEABILITY.md"
     ],

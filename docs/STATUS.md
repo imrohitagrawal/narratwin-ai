@@ -1692,3 +1692,19 @@ remain blocked. Issue #435 remains closed and separate. No product, provider,
 credential, egress, spend, media, asset, deployment, publication, release,
 public-availability, production-readiness, or presenter-acceptance authority is
 created by Issue #16.
+
+## Issue #459 Lane A Cut 1 entry state
+
+PR `#458` merged and closed Issue `#16` at accepted main
+`ab97b6eecba6db9c66c37d19b29257c7398f3ab7`. Issue `#459` is open on exact
+branch `lane-a-cut1-459-controlled-presenter`. Commit `ce0dcb4` froze the C1
+preflight; OWNER comments `5449765467` and `5449822130` control the 16-path
+T01/T02 correction.
+
+Current work is entry-only: exact route/bootstrap evidence plus a typed,
+stimulus-only authentic RED corpus. Product implementation has not started.
+Raj/Myra derivatives are not ready; accepted grounding/narration remains
+Meera-only; Issue `#368` retains audio ownership; Issues `#432` and `#449`
+retain human-study and provider authority. Provider calls, credentials, egress,
+spend, media generation, deployment, publication, release and acceptance
+claims remain absent and unauthorized.

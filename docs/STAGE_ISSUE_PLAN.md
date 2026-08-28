@@ -1,5 +1,20 @@
 # Stage Issue Plan
 
+## Issue #459 Lane A Cut 1 implementation entry
+
+Issue `#459` starts from accepted main
+`ab97b6eecba6db9c66c37d19b29257c7398f3ab7` on exact branch
+`lane-a-cut1-459-controlled-presenter`. T01 freezes the source, six-cell matrix,
+C1-M01–C1-M10 thresholds, interfaces, observability, failures, route, budgets,
+human decisions and stops. T02 commits a stimulus-only corpus and test-owned
+literal RED oracle before any GREEN behavior.
+
+T03/T06 stop unless Raj/Myra derivative provenance and permitted use are
+accepted. T05 cannot assign audio while Issue `#368` owns it and cannot reuse
+the accepted Meera-only grounding/narration receipt for Raj/Myra. Issues `#432`
+and `#449` retain human-study and provider/credential/egress/spend authority.
+This entry increment changes no backend, frontend, asset, media or workflow.
+
 ## Issue #16 specification-kit route
 
 Issue `#16` uses exact branch `stage1-16-spec-kit-gate` from authoritative main
