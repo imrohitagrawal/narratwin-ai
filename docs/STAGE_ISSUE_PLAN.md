@@ -2798,11 +2798,10 @@ OWNER corrective comment `5446644219` adds only
 `tests/unit/test_stage8_quality_gate.py` as path 12 to break a circular required-
 CI false negative. A committed RED proves the old complete-subprocess receipt
 is branch-specific while three result states remain distinguishable. The GREEN
-contract validates the exact command and typed `CompletedProcess`, canonical
-success or exact three-line branch-rejection stdout with matching branch
-values, empty stderr, and rejected independent stdout/stderr mutations without
-changing the Issue #434 verifier, Stage 8 checker, workflow, product, provider,
-media, or runtime code.
+contract normalizes only the current branch token before hashing the complete
+subprocess tuple, pins canonical success and branch-rejection receipts, and
+rejects independent stdout/stderr mutations without changing the Issue #434
+verifier, Stage 8 checker, workflow, product, provider, media, or runtime code.
 
 Issue #16 remains blocked until Issue #456 passes focused/full gates, hosted
 checks, independent exact-head review, eligible non-author approval, merge, and

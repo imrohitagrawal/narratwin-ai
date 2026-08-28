@@ -1573,9 +1573,8 @@ Direct `make stage8-quality` is not this phase-closure branch's route and is
 expected to reject its branch identity; the listed Stage 8 unit regressions are
 the applicable inherited route evidence.
 The OWNER corrective amendment adds only the inherited Stage 8 test as path 12.
-Its subprocess assertion replaces the historical branch-specific complete-
-tuple receipt with a structural contract: exact command and typed
-`CompletedProcess`, canonical success or exact three-line branch-rejection
-stdout with matching branch values, empty stderr, and rejected independent
-stdout/stderr mutations. The Issue #434 verifier, Stage 8 checker, workflows,
-and all v1/v2 acceptance identities remain unchanged.
+Its subprocess assertion replaces the historical branch-specific receipt with
+a branch-canonical complete-tuple receipt: only the current branch token is
+normalized before hashing, canonical success and branch rejection are pinned,
+and independent stdout/stderr mutations are rejected. The Issue #434 verifier,
+Stage 8 checker, workflows, and all v1/v2 identities remain unchanged.

@@ -62,11 +62,11 @@ Required CI then exposed an inherited false negative in the historical Issue
 tuple. The Issue #456 OWNER amendment adds only that shared test as the twelfth
 path. Its corrective RED proves the old receipt rejects the current branch
 while baseline, stdout mutation, and stderr mutation remain distinct. The
-replacement validates the exact command and typed `CompletedProcess`, accepts
-only canonical success or the exact three-line branch-rejection stdout with
-matching branch values, requires empty stderr, and rejects independent stdout
-and stderr mutations. It changes no Issue #434 verifier, Stage 8 checker,
-workflow, or acceptance identity.
+replacement canonicalizes only the current branch token before hashing the
+complete subprocess tuple, accepts only the pinned canonical-success or
+branch-rejection receipt, and rejects independent stdout and stderr mutations.
+It changes no Issue #434 verifier, Stage 8 checker, workflow, or acceptance
+identity.
 
 ## Security, privacy, and observability
 

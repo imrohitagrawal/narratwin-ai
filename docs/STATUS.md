@@ -1682,11 +1682,11 @@ Required local and hosted CI reproduced the same inherited Issue #434
 false-negative: a fixed receipt pinned one branch-specific complete subprocess
 tuple. OWNER corrective comment `5446644219` adds only that shared test as path
 12. Corrective RED commit `219f310` proves the baseline and two mutations are
-distinguishable before the old receipt fails. The GREEN state validates the
-exact command and typed `CompletedProcess`, canonical success or exact
-three-line branch-rejection stdout with matching branch values, empty stderr,
-and rejected independent stdout/stderr mutations. It does not change the
-verifier, Stage 8 checker, workflow, product, or acceptance identity.
+distinguishable before the old receipt fails. The GREEN state normalizes only
+the current branch token before hashing the complete subprocess tuple, pins
+canonical success and branch-rejection receipts, and rejects independent
+stdout/stderr mutations. It does not change the verifier, Stage 8 checker,
+workflow, product, or acceptance identity.
 
 Local implementation is not merge or completion evidence. Hosted checks,
 independent exact-head review, eligible non-author approval, merge, and

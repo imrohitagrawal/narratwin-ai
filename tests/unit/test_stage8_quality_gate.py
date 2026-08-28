@@ -83,11 +83,11 @@ def test_issue366_contract_rejects_partial_scope_and_content_mutations(monkeypat
     assert stage8.cut1_digest()!=baseline;sc((0,{}));assert route(m,C1,full)==[]
     p=s.R434;q=s.check_issue434_verifier;v={**s.LIMITS434,p[11]:100,p[12]:100};k="NARRATWIN_POLICY_ONLY"
     cases:Any=((5601,{}),(1201,{p[9]:1201}),(0,v),(201,{p[11]:101,p[12]:100}));m.delenv("GITHUB_EVENT_NAME",False)
-    command=["python3","-S",p[11]];p=sp.run(command,capture_output=True);actual=(p.returncode,p.stdout,p.stderr)
-    r=0;b=sorted(F);A=s.A434;n=load("scripts/quality/branch_identity.py","bi").current_branch(REPO)
-    e=(1,(f"Stage 8 quality gate failed:\n- Stage 8 work must run on a stage8-* branch or main after merge; got {n}.\n- Stage 8 scope requires an exact reviewed branch; got {n}.\n").encode(),b"")
-    allowed=((0,b"Stage 8 quality gate passed.\n",b""),e);outcomes=(actual,(actual[0],actual[1]+b"x",actual[2]),(actual[0],actual[1],actual[2]+b"x"))
-    assert isinstance(p,d)and p.args==command and [v in allowed for v in outcomes]==[True,False,False];g=["git"];x:Any=d(g,0);w=um.Mock()
+    p=sp.run(["python3","-S",p[11]],capture_output=True);q0=p.returncode;o=p.stdout;z0=p.stderr;r=0;b=sorted(F);A=s.A434
+    n=sp.run(["git","branch","--show-current"],capture_output=True).stdout.strip()
+    norm=lambda x:(x[0],x[1].replace(n,b"<branch>"),x[2])
+    h:Any=lambda x:hashlib.shake_256(repr(norm(x)).encode()).hexdigest(8);e="6d072fdd70c3a1bfa7db25ea8285d0de"
+    assert [h(x)in e for x in ((q0,o,z0),(q0,o+b"x",z0),(q0,o,z0+b"x"))]==[1,0,0];g=["git"];x:Any=d(g,0);w=um.Mock()
     z(s,"issue434_charges",lambda:(0,{}));assert route(m,B,b[1:])and all(s.issue434_budget_findings(*x)for x in cases)
     a={x:(REPO/x).read_bytes()for x in A};f=s.issue434_artifact_findings;assert not f(a)and f(a|{A[0]:b"x"})and f({})
     z(s,"run",w);m.setenv(k,"1");q([]);m.delenv(k);z(s,f.__name__,um.Mock(side_effect=(["x"],[])));q([]);q([])
@@ -141,9 +141,9 @@ def test_scope_parser_flags_and_command_failures(monkeypatch: Any, tmp_path: Pat
     bad=("0"*39,"0"*41,"0"*39+"1","invalid-explicit-base"); cases=[(None,"0"*40,""),*((x,"base","") for x in
         ("rev-parse","merge-base","committed","cached","unstaged","untracked")),
         *(("explicit-base",base,"pull_request" if i%2 else "pull_request_review") for i,base in enumerate(bad))]
-    event=tmp_path/"event.json";event.write_text(json.dumps({"pull_request":{"head":{"sha":"head"}}}));z=monkeypatch.setenv
+    event=tmp_path/"event.json";event.write_text(json.dumps({"pull_request":{"head":{"sha":"head"}}}))
     for failed, base, event_name in cases:
-        calls:list[list[str]]=[]
+        calls:list[list[str]]=[];z=monkeypatch.setenv
         def fake(args: list[str]) -> sp.CompletedProcess[str]:
             calls.append(args); layer=("rev-parse" if "rev-parse" in args else "merge-base" if "merge-base" in args
                 else "untracked" if "ls-files" in args else "cached" if "--cached" in args else
