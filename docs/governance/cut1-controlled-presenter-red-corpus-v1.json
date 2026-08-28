@@ -73,7 +73,7 @@
     {"id": "MEDIA-13", "group": "artifact", "mutation": {"op": "SET", "path": "cells.0.artifact.height", "value": 0}},
     {"id": "FORGERY-01", "group": "coherent-forgery", "mutation": {"op": "RECOMPUTE_ARTIFACT_AND_APPROVAL"}},
     {"id": "FORGERY-02", "group": "coherent-forgery", "mutation": {"op": "RECOMPUTE_ARTIFACT_AND_APPROVAL", "recomputeRegister": true}},
-    {"id": "FORGERY-03", "group": "coherent-forgery", "mutation": {"op": "RECOMPUTE_CONFIG_PROVENANCE_DELETION"}},
+    {"id": "FORGERY-03", "group": "coherent-forgery", "mutation": {"op": "RECOMPUTE_PROVENANCE_DELETION"}},
     {"id": "FORGERY-04", "group": "coherent-forgery", "mutation": {"op": "SWAP_APPROVAL_REQUEST_ORDER"}},
     {"id": "GROUND-01", "group": "grounding", "mutation": {"op": "SET", "path": "cells.0.metrics.acceptedUnsupportedClaims", "value": 1}},
     {"id": "IDENTITY-01", "group": "identity", "mutation": {"op": "SET", "path": "cells.0.rights.fictionalIdentity", "value": false}},

@@ -360,8 +360,7 @@ def materialize(mutation: dict[str, Any]) -> dict[str, Any]:
         cell["lineage"]["approvalSha256"] = approval_sha256(cell)
         if mutation.get("recomputeRegister"):
             value["authority"]["evidenceRegisterSha256"] = evidence_register_sha256(value)
-    elif operation == "RECOMPUTE_CONFIG_PROVENANCE_DELETION":
-        value["providerPosture"]["configSha256"] = "f" * 64
+    elif operation == "RECOMPUTE_PROVENANCE_DELETION":
         value["cells"][0]["rights"]["provenanceSha256"] = "e" * 64
         value["cells"][0]["rights"]["deletionRef"] = "substituted-deletion"
     elif operation == "SWAP_APPROVAL_REQUEST_ORDER":
@@ -438,8 +437,13 @@ def test_bootstrap_schema_corpus_and_oracle_are_closed() -> None:
     assert self_authored["reviewerId"] == self_authored["artifactAuthorId"]
     coherent = materialize({"op": "RECOMPUTE_ARTIFACT_AND_APPROVAL"})
     assert evidence_register_sha256(coherent) != coherent["authority"]["evidenceRegisterSha256"]
+    assert schema_valid(coherent, schema, schema)
     forged = materialize({"op": "RECOMPUTE_ARTIFACT_AND_APPROVAL", "recomputeRegister": True})
     assert forged["authority"]["evidenceRegisterSha256"] != FROZEN_EVIDENCE_REGISTER_SHA256
+    assert not schema_valid(forged, schema, schema)
+    rights_forgery = materialize({"op": "RECOMPUTE_PROVENANCE_DELETION"})
+    assert schema_valid(rights_forgery, schema, schema)
+    assert evidence_register_sha256(rights_forgery) != FROZEN_EVIDENCE_REGISTER_SHA256
     assert exact_cell_keys_conform(valid, schema)
     assert not exact_cell_keys_conform(materialize({"op": "DUPLICATE_CELL_KEY"}), schema)
     assert not schema_valid(materialize({"op": "SET_NON_FINITE",
