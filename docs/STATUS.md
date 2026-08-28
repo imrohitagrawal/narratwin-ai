@@ -1596,9 +1596,9 @@ egress, spend, media generation, and production readiness remain No-Go.
   activation `NONE`, authority effect `NO_AUTHORITY_EFFECT`, and release posture
   No-Go. It supplies no product/runtime/provider/media/deployment/release
   authority and no future slice's domain-specific threat or invariant matrix.
-- Issue `#451` is the current Lane B wording-reconciliation route. After its PR
-  merges, the next approved Lane B action is the bounded Issue `#452` contract
-  activation; Stage 1 follow-on Issue `#16` still blocks new product code.
+- The completed Lane B sequence was Issue `#451` wording reconciliation followed
+  by Issue `#452` contract activation. Issue `#16` subsequently completed; this
+  historical sequence no longer describes current authority.
 
 ### Historical pre-merge C2 RED snapshot (2026-08-26)
 
@@ -1663,9 +1663,9 @@ finding, or unresolved review disagreement stops for OWNER disposition.
   blinded protocol, provider bake-off, literal positive/negative/mutation cases
   and a validator whose exact RED/GREEN evidence is bound by
   `docs/governance/cut1-presenter-contract-red-freeze-v1.json` and the linked PR.
-- Stage 1 Issue #16 still blocks Lane A product/provider/media work. Activation,
-  authority effect, provider/spend/media/release and production claims remain
-  none/No-Go regardless of governance-validator state.
+- At Issue #452 closeout, Stage 1 Issue #16 still blocked Lane A work. Issue #16
+  later completed through PR #458; provider/spend/media/release and production
+  claims remain none/No-Go regardless of governance-validator state.
 
 ## Issue #456 Cut 1 live-binding prerequisite — merged and closed
 
@@ -1675,20 +1675,18 @@ cycle passed and Issue `#456` is closed. The accepted route preserves the v1
 historical identity, binds the v2 immutable live set, rejects substitution and
 independent receipt mutations, and creates no product/provider/media authority.
 
-## Issue #16 specification-gate target state
+## Issue #16 specification-gate completed state
 
-Issue `#16` is the current governance/specification gate. Its substantive PR
-defines the repository-native constitution, current Lane A Cut 1 specification,
+Issue `#16` completed through PR `#458`. Its substantive PR defined the
+repository-native constitution, current Lane A Cut 1 specification,
 dependency plan, eight future tasks, post-merge task-to-issue sequencing,
 review checkpoint, and executable structural/mutation gate. External GitHub
 Spec Kit is not installed or activated; `.stage/current` remains `8`.
 
-Once this PR merges, passes merged-main verification, and Issue #16 closes, the
-primary orchestrator creates one separately authorized Lane A Cut 1
-implementation issue, copies LA-C1-T01 through LA-C1-T08 and their stop
-conditions into it, and creates its branch from then-current accepted `main`.
-Until that closeout completes, `$speckit-implement` and Lane A implementation
-remain blocked. Issue #435 remains closed and separate. No product, provider,
+After merged-main verification and closeout, the primary orchestrator created
+separately authorized Issue `#459` and copied LA-C1-T01 through LA-C1-T08 and
+their stop conditions into it. Issue #435 remains closed and separate. No
+product, provider,
 credential, egress, spend, media, asset, deployment, publication, release,
 public-availability, production-readiness, or presenter-acceptance authority is
 created by Issue #16.

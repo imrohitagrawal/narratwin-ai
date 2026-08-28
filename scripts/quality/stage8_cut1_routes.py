@@ -509,6 +509,15 @@ ISSUE459_SOURCE_SHA256 = {
     "demo/stage8_seed_project.md": "49b75655ddbbe43145a35215069bce2751de66393b39eb68d69b584d7ecfcc5e",
     "docs/demo/PHASE_1_DEMO_SCRIPT.md": "3b071180d4723784d84f5005644fc5a2aa5ef6b6adb6f7caeba2de76d68be435",
     "backend/app/presenter_registry.json": "eb31a953b85ffaf2c43f54e4da7fb89eda740c724967a9301f726c6091ab01c2",
+    "docs/PRD.md": "2cde5d9ec7d8e932b25f2fdf66d4dd11f49065b50078f16f59b6a65cbb7d720a",
+    "docs/REQUIREMENTS_TRACEABILITY_MATRIX.md": "0a3c14d0d61fbfaf5fe6dec0a7ca3a9412f1b1fd8aa458837f0c3b37b5570db3",
+    "docs/ARCHITECTURE.md": "e7515ee96dce07e0d583e15984ea335b6f2499bfd8aa6e9f519bc4a830122fa4",
+    "docs/API_CONTRACT.md": "910259f61acbbec4e3432c482d821fd56f2fe8b2073211c7ce112c3cd87405bf",
+    "docs/DATA_MODEL.md": "f073c9bff26717233f23c6317b03736c02bee5952b88fa840767f79287b6ec09",
+    "docs/SECURITY_AND_PRIVACY.md": "185fe98ffa0b12287b6e7e8a532fac89ffa7a29380db71f8dd6aa4d1b7bc4b62",
+    "docs/OBSERVABILITY_AND_COST.md": "c77a0d4ea071e6ea364d9c1f4175361633d4d54962c7fc8d9527033e160d91c6",
+    "docs/governance/cut1-blinded-human-evaluation-protocol-v1.json": "fa3759985141639185618fbc595057412dd8582f60ed97fc462b30b7548580b8",
+    "docs/governance/cut1-provider-bakeoff-contract-v1.json": "1a3fd981644488203e8c7cc38fc0389092b23b579cce860c3d35a1ca7a1786db",
 }
 ISSUE459_EDITABLE_AUTHORITY_SHA256 = {
     "Issue #459": "dd03b171f25b0d249a79834f22674c728e539fa8b171a97b3a4728474e0039d5",
@@ -1091,6 +1100,26 @@ def parse_name_status_z(output: str) -> list[str]:
     return paths
 
 
+def route_has_copy_or_rename(output: str) -> bool:
+    fields = parse_paths_z(output)
+    found = False
+    index = 0
+    while index < len(fields):
+        status_value = fields[index]
+        index += 1
+        if status_value in {"A", "B", "D", "M", "T", "U"}:
+            arity = 1
+        elif re.fullmatch(r"[RC]\d{1,3}", status_value) and int(status_value[1:]) <= 100:
+            arity = 2
+            found = True
+        else:
+            raise RuntimeError(f"Malformed Git name-status record: {status_value!r}")
+        if len(fields[index:index + arity]) != arity:
+            raise RuntimeError(f"Incomplete Git name-status record: {status_value!r}")
+        index += arity
+    return found
+
+
 def route_base(run: Callable[[list[str]], Any], branch: str) -> str:
     fixed_routes = {
         ISSUE459_BRANCH: (459, ISSUE459_BASE),
@@ -1267,6 +1296,17 @@ def check_exact_route(
             failures.append(f"Issue #459 governance preflight failed closed: {error}")
     try:
         base = route_base(run, branch)
+        if branch == ISSUE459_BRANCH:
+            transitions = (
+                run(["git", "diff", "--cached", "--name-status", "-z",
+                     "--find-copies-harder", base, "--", *sorted(files)]),
+                run(["git", "diff", "--name-status", "-z", "--find-copies-harder",
+                     base, "--", *sorted(files)]),
+            )
+            if any(result.returncode for result in transitions):
+                raise RuntimeError("Issue #459 rename/copy evidence is unavailable.")
+            if any(route_has_copy_or_rename(str(result.stdout)) for result in transitions):
+                failures.append("Issue #459 route forbids renamed or copied paths.")
         total, charges = route_text_charges(run, base, set(TEXT_LIMITS[branch]))
         if total > TOTAL_LIMITS[branch]:
             failures.append(f"Issue #{issue} charge {total} exceeds {TOTAL_LIMITS[branch]}.")

@@ -38,6 +38,15 @@ this increment.
 | `docs/governance/cut1-all-presenter-acceptance-matrix-v1.json` | `f61cef9f7731f4603778d1b6a3a9ccccd3682c8e0ad233c9370169320612b2f5` | six-cell and asset contract |
 | `docs/governance/cut1-presenter-live-binding-v2.json` | `89199278feabfdcee21fffe4a9ad4d157dd7fc9a11a2529562876cb6ecc74702` | immutable live input set |
 | `docs/governance/cut1-project-facts-v1.json` | `cb50de12ce2debb3d52308892428b9711e5efb41fe2ad59b175563809e7d314b` | accepted atomic project facts |
+| `docs/PRD.md` | `2cde5d9ec7d8e932b25f2fdf66d4dd11f49065b50078f16f59b6a65cbb7d720a` | inherited product requirements |
+| `docs/REQUIREMENTS_TRACEABILITY_MATRIX.md` | `0a3c14d0d61fbfaf5fe6dec0a7ca3a9412f1b1fd8aa458837f0c3b37b5570db3` | inherited requirement mappings |
+| `docs/ARCHITECTURE.md` | `e7515ee96dce07e0d583e15984ea335b6f2499bfd8aa6e9f519bc4a830122fa4` | architecture constraint |
+| `docs/API_CONTRACT.md` | `910259f61acbbec4e3432c482d821fd56f2fe8b2073211c7ce112c3cd87405bf` | API constraint |
+| `docs/DATA_MODEL.md` | `f073c9bff26717233f23c6317b03736c02bee5952b88fa840767f79287b6ec09` | data constraint |
+| `docs/SECURITY_AND_PRIVACY.md` | `185fe98ffa0b12287b6e7e8a532fac89ffa7a29380db71f8dd6aa4d1b7bc4b62` | security/privacy constraint |
+| `docs/OBSERVABILITY_AND_COST.md` | `c77a0d4ea071e6ea364d9c1f4175361633d4d54962c7fc8d9527033e160d91c6` | observability/cost constraint |
+| `docs/governance/cut1-blinded-human-evaluation-protocol-v1.json` | `fa3759985141639185618fbc595057412dd8582f60ed97fc462b30b7548580b8` | nonactivated human-study contract |
+| `docs/governance/cut1-provider-bakeoff-contract-v1.json` | `1a3fd981644488203e8c7cc38fc0389092b23b579cce860c3d35a1ca7a1786db` | disabled provider contract |
 
 The approved knowledge is `demo/stage8_seed_project.md` at
 `49b75655ddbbe43145a35215069bce2751de66393b39eb68d69b584d7ecfcc5e`.

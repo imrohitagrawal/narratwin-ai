@@ -1364,6 +1364,15 @@ def test_issue459_route_is_exact_fixed_and_budgeted() -> None:
         "demo/stage8_seed_project.md": "49b75655ddbbe43145a35215069bce2751de66393b39eb68d69b584d7ecfcc5e",
         "docs/demo/PHASE_1_DEMO_SCRIPT.md": "3b071180d4723784d84f5005644fc5a2aa5ef6b6adb6f7caeba2de76d68be435",
         "backend/app/presenter_registry.json": "eb31a953b85ffaf2c43f54e4da7fb89eda740c724967a9301f726c6091ab01c2",
+        "docs/PRD.md": "2cde5d9ec7d8e932b25f2fdf66d4dd11f49065b50078f16f59b6a65cbb7d720a",
+        "docs/REQUIREMENTS_TRACEABILITY_MATRIX.md": "0a3c14d0d61fbfaf5fe6dec0a7ca3a9412f1b1fd8aa458837f0c3b37b5570db3",
+        "docs/ARCHITECTURE.md": "e7515ee96dce07e0d583e15984ea335b6f2499bfd8aa6e9f519bc4a830122fa4",
+        "docs/API_CONTRACT.md": "910259f61acbbec4e3432c482d821fd56f2fe8b2073211c7ce112c3cd87405bf",
+        "docs/DATA_MODEL.md": "f073c9bff26717233f23c6317b03736c02bee5952b88fa840767f79287b6ec09",
+        "docs/SECURITY_AND_PRIVACY.md": "185fe98ffa0b12287b6e7e8a532fac89ffa7a29380db71f8dd6aa4d1b7bc4b62",
+        "docs/OBSERVABILITY_AND_COST.md": "c77a0d4ea071e6ea364d9c1f4175361633d4d54962c7fc8d9527033e160d91c6",
+        "docs/governance/cut1-blinded-human-evaluation-protocol-v1.json": "fa3759985141639185618fbc595057412dd8582f60ed97fc462b30b7548580b8",
+        "docs/governance/cut1-provider-bakeoff-contract-v1.json": "1a3fd981644488203e8c7cc38fc0389092b23b579cce860c3d35a1ca7a1786db",
     }
     assert routes.ISSUE459_EDITABLE_AUTHORITY_SHA256 == {
         "Issue #459": "dd03b171f25b0d249a79834f22674c728e539fa8b171a97b3a4728474e0039d5",
@@ -1399,6 +1408,58 @@ def test_issue459_rejects_each_byte_boundary(monkeypatch: Any) -> None:
         routes.check_exact_route(REPO, lambda _: completed([]), branch,
                                  ISSUE459_EXPECTED, failures)
         assert failures == [f"Issue #459 file {path} must be smaller than {limit} bytes."]
+
+
+def test_issue459_rejects_each_missing_extra_and_text_budget(monkeypatch: Any) -> None:
+    branch = routes.ISSUE459_BRANCH
+    monkeypatch.setattr(routes, "route_base", lambda *_: "base")
+    monkeypatch.setattr(routes, "route_binary_sizes",
+                        lambda *_: {path: 1 for path in ISSUE459_BYTE_CAPS})
+    monkeypatch.setattr(routes, "route_text_charges", lambda *_: (0, {}))
+    for missing in ISSUE459_EXPECTED:
+        failures: list[str] = []
+        routes.check_exact_route(REPO, lambda _: completed([]), branch,
+                                 ISSUE459_EXPECTED - {missing}, failures)
+        assert failures == [f"Issue #459 route is missing required path: {missing}"]
+    for path, limit in ISSUE459_LINE_CAPS.items():
+        monkeypatch.setattr(routes, "route_text_charges",
+                            lambda *_, p=path, n=limit: (n + 1, {p: n + 1}))
+        failures = []
+        routes.check_exact_route(REPO, lambda _: completed([]), branch,
+                                 ISSUE459_EXPECTED, failures)
+        assert failures == [f"Issue #459 charge for {path} exceeds {limit}."]
+    monkeypatch.setattr(stage8, "current_branch", lambda: branch)
+    monkeypatch.setattr(stage8, "changed_files_for_stage_scope",
+                        lambda: [*ISSUE459_EXPECTED, "rogue.txt"])
+    failures = []
+    stage8.check_stage_scope(failures)
+    assert failures == ["Stage 8 changed file outside the allowlist: rogue.txt"]
+
+
+def test_issue459_rejects_source_authority_and_rename_copy_drift(monkeypatch: Any) -> None:
+    monkeypatch.setattr(routes, "ISSUE459_SOURCE_SHA256", {"docs/PRD.md": "0" * 64})
+    assert routes.issue459_source_failures(REPO) == [
+        "Issue #459 source identity drifted: docs/PRD.md"
+    ]
+    monkeypatch.setattr(routes, "ISSUE459_SOURCE_SHA256", {})
+    monkeypatch.setattr(routes, "ISSUE459_EDITABLE_AUTHORITY_SHA256",
+                        {"missing-authority": "0" * 64})
+    assert routes.issue459_source_failures(REPO) == [
+        "Issue #459 editable authority identity drifted: missing-authority"
+    ]
+    monkeypatch.undo()
+    assert routes.route_has_copy_or_rename("R100\0old\0new\0")
+    assert routes.route_has_copy_or_rename("C056\0old\0new\0")
+    assert not routes.route_has_copy_or_rename("M\0file\0")
+    monkeypatch.setattr(routes, "route_base", lambda *_: "base")
+    monkeypatch.setattr(routes, "route_text_charges", lambda *_: (0, {}))
+    monkeypatch.setattr(routes, "route_binary_sizes",
+                        lambda *_: {path: 1 for path in ISSUE459_BYTE_CAPS})
+    renamed = completed([], out="R100\0docs/PHASE_PLAN.md\0docs/STATUS.md\0")
+    failures: list[str] = []
+    routes.check_exact_route(REPO, lambda _: renamed, routes.ISSUE459_BRANCH,
+                             ISSUE459_EXPECTED, failures)
+    assert failures == ["Issue #459 route forbids renamed or copied paths."]
 
 
 def test_issue452_contract_bytes_schemas_and_authority_hashes() -> None:

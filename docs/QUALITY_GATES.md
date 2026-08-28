@@ -1601,7 +1601,7 @@ preflight. The route enforces every per-path line cap, the 4,300 aggregate cap,
 eight byte caps, exact branch/base ancestry, and preflight/path equality.
 
 `NARRATWIN_POLICY_ONLY=1 make quality` must pass the route. Full `make quality`
-must reach the isolated RED oracle and fail only with the 32 test-owned future-
+must reach the isolated RED oracle and fail only with the 91 test-owned future-
 behavior mismatches against typed `CUT1.ENTRY.NOT_IMPLEMENTED`; collection,
 setup, bootstrap, schema, route, dispatcher, security, or governance errors are
 not accepted as RED. Focused evidence:

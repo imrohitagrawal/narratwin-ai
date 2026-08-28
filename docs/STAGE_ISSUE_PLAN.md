@@ -23,13 +23,13 @@ Kit-compatible artifacts define its constitution, current Lane A Cut 1 spec,
 dependency plan, eight tasks, future mapping, review checkpoint, and executable
 gate. External Spec Kit activation is not claimed.
 
-### Post-gate Lane A sequencing
+### Historical post-gate Lane A sequencing
 
-Issue #16 must merge, pass merged-main verification, and close before the
-primary orchestrator creates one separate Lane A Cut 1 implementation issue.
-That issue copies LA-C1-T01 through LA-C1-T08 and all stop conditions, freezes
-its own exact base/path/budget/RED contract, and only then creates a dedicated
-branch from accepted `main`. Issue #16 grants no product, provider, media,
+Issue #16 merged, passed merged-main verification, and closed before the
+primary orchestrator created separate Lane A Cut 1 Issue `#459`. Issue #459
+copied LA-C1-T01 through LA-C1-T08 and all stop conditions, froze its own exact
+base/path/budget/RED contract, and uses a dedicated branch from accepted
+`main`. Issue #16 grants no product, provider, media,
 credential, egress, spend, deployment, publication, release, public-
 availability, or production authority. Invariant: `I16.STAGE.PLAN`.
 
@@ -2836,7 +2836,8 @@ subprocess tuple, pins canonical success and branch-rejection receipts, and
 rejects independent stdout/stderr mutations without changing the Issue #434
 verifier, Stage 8 checker, workflow, product, provider, media, or runtime code.
 
-Issue #16 remains blocked until Issue #456 passes focused/full gates, hosted
+Issue #16 remained blocked until Issue #456 passed focused/full gates, hosted
 checks, independent exact-head review, eligible non-author approval, merge, and
-closeout. This route creates no Lane A, product, provider, credential, egress,
+closeout. That historical route created no Lane A, product, provider,
+credential, egress,
 spend, media, deployment, publication, release, or production authority.

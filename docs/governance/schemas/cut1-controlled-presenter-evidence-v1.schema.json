@@ -10,13 +10,15 @@
     "authority": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["baseCommit", "sourceSha256", "scriptSha256", "evaluationSha256", "approvalSha256"],
+      "required": ["baseCommit", "sourceSha256", "scriptSha256", "projectFactsSha256", "liveBindingSha256", "evaluationSha256", "evaluationSourceSha256"],
       "properties": {
         "baseCommit": {"const": "ab97b6eecba6db9c66c37d19b29257c7398f3ab7"},
         "sourceSha256": {"const": "49b75655ddbbe43145a35215069bce2751de66393b39eb68d69b584d7ecfcc5e"},
         "scriptSha256": {"const": "3b071180d4723784d84f5005644fc5a2aa5ef6b6adb6f7caeba2de76d68be435"},
-        "evaluationSha256": {"const": "cb50de12ce2debb3d52308892428b9711e5efb41fe2ad59b175563809e7d314b"},
-        "approvalSha256": {"const": "89199278feabfdcee21fffe4a9ad4d157dd7fc9a11a2529562876cb6ecc74702"}
+        "projectFactsSha256": {"const": "cb50de12ce2debb3d52308892428b9711e5efb41fe2ad59b175563809e7d314b"},
+        "liveBindingSha256": {"const": "89199278feabfdcee21fffe4a9ad4d157dd7fc9a11a2529562876cb6ecc74702"},
+        "evaluationSha256": {"$ref": "#/$defs/sha256"},
+        "evaluationSourceSha256": {"$ref": "#/$defs/sha256"}
       }
     },
     "cells": {
@@ -37,10 +39,10 @@
     "approvals": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["speechApprovalCurrent", "artifactApprovalStatus", "humanApprovalStatus"],
+      "required": ["speechApprovalStatus", "artifactApprovalStatus", "humanApprovalStatus"],
       "properties": {
-        "speechApprovalCurrent": {"const": true},
-        "artifactApprovalStatus": {"const": "TECHNICAL_ONLY"},
+        "speechApprovalStatus": {"const": "MEERA_ONLY_EXISTING_RAJ_MYRA_BLOCKED"},
+        "artifactApprovalStatus": {"const": "SYNTHETIC_RED_FIXTURE_ONLY"},
         "humanApprovalStatus": {"const": "NOT_AUTHORIZED_ISSUE_432"}
       }
     },
@@ -58,9 +60,10 @@
     "providerPosture": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["mode", "enabled", "configSha256", "credentialCount", "egressAttemptCount", "providerCallCount", "retryCount", "spendMicrousd"],
+      "required": ["mode", "model", "enabled", "configSha256", "credentialCount", "egressAttemptCount", "providerCallCount", "retryCount", "spendMicrousd"],
       "properties": {
         "mode": {"const": "LOCAL_KEY_FREE_DISABLED_EXTERNAL"},
+        "model": {"const": "NONE"},
         "enabled": {"const": false},
         "configSha256": {"$ref": "#/$defs/sha256"},
         "credentialCount": {"const": 0},
@@ -73,7 +76,7 @@
     "observability": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["tenantId", "projectId", "requestId", "traceId", "runId", "provenanceRef", "deletionRef", "rawSensitiveContentPresent", "providerPayloadPresent"],
+      "required": ["tenantId", "projectId", "requestId", "traceId", "runId", "provenanceRef", "deletionRef", "outcomeReason", "refusalReason", "errorReason", "fallbackReason", "startedAt", "finishedAt", "durationMs", "rawSensitiveContentPresent", "providerPayloadPresent"],
       "properties": {
         "tenantId": {"$ref": "#/$defs/id"},
         "projectId": {"$ref": "#/$defs/id"},
@@ -82,6 +85,13 @@
         "runId": {"$ref": "#/$defs/id"},
         "provenanceRef": {"$ref": "#/$defs/id"},
         "deletionRef": {"$ref": "#/$defs/id"},
+        "outcomeReason": {"const": "ENTRY_ORACLE_TARGET_ONLY"},
+        "refusalReason": {"const": "NONE"},
+        "errorReason": {"const": "NONE"},
+        "fallbackReason": {"const": "NONE"},
+        "startedAt": {"type": "string", "format": "date-time"},
+        "finishedAt": {"type": "string", "format": "date-time"},
+        "durationMs": {"type": "integer", "minimum": 0, "maximum": 300000},
         "rawSensitiveContentPresent": {"const": false},
         "providerPayloadPresent": {"const": false}
       }
@@ -104,23 +114,38 @@
     "cell": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["presenterId", "language", "aspectRatio", "lineage", "rights", "artifact", "metrics", "decision"],
+      "required": ["presenterId", "presenterVersion", "registrySha256", "language", "aspectRatio", "evidenceState", "lineage", "rights", "artifact", "metrics", "decision"],
       "properties": {
         "presenterId": {"enum": ["meera", "raj", "myra"]},
+        "presenterVersion": {"$ref": "#/$defs/id"},
+        "registrySha256": {"$ref": "#/$defs/sha256"},
         "language": {"const": "en"},
         "aspectRatio": {"enum": ["LANDSCAPE", "PORTRAIT"]},
+        "evidenceState": {"const": "SYNTHETIC_RED_TARGET_NOT_EXECUTED"},
         "lineage": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["presenterBindingSha256", "narrationSha256", "audioSha256", "captionSha256", "manifestSha256", "evaluationSha256", "metricEvidenceSha256", "approvalCurrent"],
+          "required": ["retrievalSha256", "claimSupportSha256", "presenterBindingSha256", "narrationSha256", "voiceProfileId", "voiceProfileVersion", "audioSha256", "captionSha256", "captionCueEvidenceSha256", "manifestSha256", "evaluationSha256", "evaluatorVersion", "metricEvidenceSha256", "approvalId", "approvalSha256", "approvedArtifactSha256", "approvedManifestSha256", "reviewerId", "approvedAt", "approvalCurrent"],
           "properties": {
+            "retrievalSha256": {"$ref": "#/$defs/sha256"},
+            "claimSupportSha256": {"$ref": "#/$defs/sha256"},
             "presenterBindingSha256": {"$ref": "#/$defs/sha256"},
             "narrationSha256": {"$ref": "#/$defs/sha256"},
+            "voiceProfileId": {"$ref": "#/$defs/id"},
+            "voiceProfileVersion": {"$ref": "#/$defs/id"},
             "audioSha256": {"$ref": "#/$defs/sha256"},
             "captionSha256": {"$ref": "#/$defs/sha256"},
+            "captionCueEvidenceSha256": {"$ref": "#/$defs/sha256"},
             "manifestSha256": {"$ref": "#/$defs/sha256"},
             "evaluationSha256": {"$ref": "#/$defs/sha256"},
+            "evaluatorVersion": {"$ref": "#/$defs/id"},
             "metricEvidenceSha256": {"$ref": "#/$defs/sha256"},
+            "approvalId": {"$ref": "#/$defs/id"},
+            "approvalSha256": {"$ref": "#/$defs/sha256"},
+            "approvedArtifactSha256": {"$ref": "#/$defs/sha256"},
+            "approvedManifestSha256": {"$ref": "#/$defs/sha256"},
+            "reviewerId": {"$ref": "#/$defs/id"},
+            "approvedAt": {"type": "string", "format": "date-time"},
             "approvalCurrent": {"const": true}
           }
         },
@@ -130,7 +155,7 @@
           "required": ["fictionalIdentity", "derivativeAuthorized", "originalOverwritten", "provenanceSha256", "deletionRef"],
           "properties": {
             "fictionalIdentity": {"const": true},
-            "derivativeAuthorized": {"const": true},
+            "derivativeAuthorized": {"const": false},
             "originalOverwritten": {"const": false},
             "provenanceSha256": {"$ref": "#/$defs/sha256"},
             "deletionRef": {"$ref": "#/$defs/id"}
@@ -156,13 +181,13 @@
           }
         },
         "metrics": {"$ref": "#/$defs/metrics"},
-        "decision": {"const": "PASSED_INDEPENDENTLY"}
+        "decision": {"const": "NOT_EXECUTED"}
       }
     },
     "metrics": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["gazeRatio", "maxOffCameraMs", "lipOffsetP95Ms", "maxLipErrorMs", "captionWordAccuracy", "captionCoverage", "maxCaptionGapMs", "citationCoverage", "acceptedUnsupportedClaims", "abstentionRate", "identityMismatchCount", "severeMotionDefectCount", "maxRepeatedGesture", "keyboardPassed", "screenReaderPassed", "visibleFocusPassed", "reducedMotionPassed", "contrastRatio", "scriptEvaluationP95Ms", "previewAfterReadyMs", "repeatBindingEqual"],
+      "required": ["gazeRatio", "maxOffCameraMs", "lipOffsetP95Ms", "maxLipErrorMs", "captionWordAccuracy", "captionCoverage", "maxCaptionGapMs", "citationCoverage", "acceptedUnsupportedClaims", "abstentionRate", "identityMismatchCount", "faceMismatchCount", "hairMismatchCount", "clothingMismatchCount", "backgroundMismatchCount", "presenterSwitchMismatchCount", "severeMotionDefectCount", "maxRepeatedGesture", "keyboardPassed", "screenReaderPassed", "visibleFocusPassed", "reducedMotionPassed", "captionsEnabledByDefaultPassed", "contrastRatio", "scriptEvaluationP95Ms", "previewAfterReadyMs", "repeatScriptSha256", "repeatPresenterBindingSha256", "repeatEvaluatorSha256", "repeatManifestSha256", "repeatBindingEqual"],
       "properties": {
         "gazeRatio": {"type": "number", "minimum": 0.8, "maximum": 1},
         "maxOffCameraMs": {"type": "integer", "minimum": 0, "maximum": 2000},
@@ -175,15 +200,25 @@
         "acceptedUnsupportedClaims": {"const": 0},
         "abstentionRate": {"const": 1},
         "identityMismatchCount": {"const": 0},
+        "faceMismatchCount": {"const": 0},
+        "hairMismatchCount": {"const": 0},
+        "clothingMismatchCount": {"const": 0},
+        "backgroundMismatchCount": {"const": 0},
+        "presenterSwitchMismatchCount": {"const": 0},
         "severeMotionDefectCount": {"const": 0},
         "maxRepeatedGesture": {"type": "integer", "minimum": 0, "maximum": 2},
         "keyboardPassed": {"const": true},
         "screenReaderPassed": {"const": true},
         "visibleFocusPassed": {"const": true},
         "reducedMotionPassed": {"const": true},
+        "captionsEnabledByDefaultPassed": {"const": true},
         "contrastRatio": {"type": "number", "minimum": 4.5},
         "scriptEvaluationP95Ms": {"type": "number", "minimum": 0, "maximum": 20000},
         "previewAfterReadyMs": {"type": "number", "minimum": 0, "maximum": 5000},
+        "repeatScriptSha256": {"$ref": "#/$defs/sha256"},
+        "repeatPresenterBindingSha256": {"$ref": "#/$defs/sha256"},
+        "repeatEvaluatorSha256": {"$ref": "#/$defs/sha256"},
+        "repeatManifestSha256": {"$ref": "#/$defs/sha256"},
         "repeatBindingEqual": {"const": true}
       }
     }
