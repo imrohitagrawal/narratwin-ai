@@ -341,7 +341,7 @@ def _media_finding(cell: Mapping[str, Any], index: int) -> Finding | None:
         return _finding("CUT1.MEDIA.NO_CAPTIONS", f"{path}.captionsPresent")
     if artifact["sha256"] != _synthetic_digest(index, "artifact") and cell["lineage"]["approvedArtifactSha256"] != artifact["sha256"]:
         return _finding("CUT1.MEDIA.FOREIGN", f"{path}.sha256")
-    if not isinstance(artifact["durationMs"], int) or isinstance(artifact["durationMs"], bool) or artifact["durationMs"] <= 0:
+    if not isinstance(artifact["durationMs"], int) or isinstance(artifact["durationMs"], bool) or not 0 < artifact["durationMs"] <= 300_000:
         return _finding("CUT1.MEDIA.DURATION", f"{path}.durationMs")
     dimensions = (1920, 1080) if cell["aspectRatio"] == "LANDSCAPE" else (1080, 1920)
     if (artifact["width"], artifact["height"]) != dimensions:

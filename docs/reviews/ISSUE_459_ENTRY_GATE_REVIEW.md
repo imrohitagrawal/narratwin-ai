@@ -137,3 +137,11 @@ comment `5452170084` adds exactly ADR `0068` without expanding behavior or the
 2,000-line implementation budget. The executable route binds its 260-line and
 32,000-byte caps inside the existing cumulative maximum. This correction is
 pending independent exact-head review and committed-head guardrail evidence.
+
+Contract re-review of `433ef84126bb6fe01946e864cc2dee38a7c213ce`
+reproduced one final `REQUIRED_CONTRACT`: an extreme materialized integer in
+`artifact.durationMs` reached evidence-register serialization before the frozen
+300,000 ms maximum and raised. The controller now rejects that value as
+`CUT1.MEDIA.DURATION` before hashing, with an exact regression. No other blocker
+was reproduced at that head; the final correction still requires exact-head
+confirmation.

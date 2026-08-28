@@ -208,6 +208,14 @@ def test_extreme_json_integer_is_bounded(field: str) -> None:
     assert first == second
 
 
+def test_extreme_artifact_duration_rejects_before_register_serialization() -> None:
+    evidence = baseline()
+    evidence["cells"][0]["artifact"]["durationMs"] = 10**10_000
+    assert controller.finding_codes(controller.evaluate_controlled_presenter(evidence)) == (
+        "CUT1.MEDIA.DURATION",
+    )
+
+
 @pytest.mark.parametrize("path", SCALAR_PATHS, ids=lambda path: ".".join(map(str, path)))
 def test_every_json_scalar_shape_corruption_is_bounded_and_deterministic(
     path: tuple[str | int, ...],
