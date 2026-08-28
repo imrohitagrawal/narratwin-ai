@@ -704,4 +704,4 @@ remain separate gates.
 | T02 authentic RED | stimulus-only corpus, closed evidence schema, test-owned literal expectations, typed unimplemented executor | Bootstrap is green; every future behavior remains RED without collection/setup failure |
 | Identity and lineage integrity | unauthorized identity/derivative, stale approval, presenter-substitution and blocked-audio cases | Meera evidence cannot substitute for Raj/Myra; #368 ownership is not duplicated |
 | Security, privacy and accessibility | credential/egress/spend, sensitive-observability, corrupt media, keyboard/contrast and metric mutations | Local, key-free, provider-disabled, zero-egress and zero-spend posture |
-| Progression authority | independent entry review and explicit T03/T05/T06 stops | #432 study and #449 provider decisions remain human-owned and out of scope |
+| Progression authority | three independent entry reviews passed exact candidate `2cfced8034b207e2ad12c450d5281d8446060a85`; explicit T03/T05/T06 stops remain | #432 study and #449 provider decisions remain human-owned and out of scope |

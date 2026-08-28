@@ -1,6 +1,6 @@
 # Issue #459 T01/T02 Entry-Gate Review
 
-Status: `FINAL_CORRECTION_HEAD_PENDING_EXACT_REVIEW`
+Status: `APPROVED_T01_T02_EXACT_HEAD_2CFCED8`
 
 Scope is limited to the fixed-base preflight, exact route/dispatcher, closed
 evidence schema, stimulus-only corpus, literal test-owned RED oracle, process
@@ -68,3 +68,29 @@ digests did not discriminate ordered fields. That head is rejected. The next
 candidate must bind distinct synthetic fields through the frozen evidence
 register, prove ordered framing, and include coherent-forgery, revoked,
 expired, and pre-artifact stimuli before independent exact-head review.
+
+## Final exact-head disposition
+
+Requirements/governance, security/quality, and topology/acceptance reviewers
+independently pinned
+`2cfced8034b207e2ad12c450d5281d8446060a85`. Each reported no reproduced
+`CRITICAL_BLOCKER` or T01/T02 `REQUIRED_CONTRACT`. They reproduced:
+
+- the fixed base, exact 16-path topology, no rename/copy, 1,956/4,300 aggregate
+  charge, every per-path and byte cap, 25 repository source hashes, four
+  accepted-base hashes, and five editable GitHub authority hashes;
+- six unique non-executed cells, distinct ordered primary bindings, correct
+  C1-M10 repeat equality, fixed provider configuration, and the frozen evidence
+  register across provider, identity, lineage, rights, and artifact projections;
+- schema-valid coherent artifact/approval and provenance/deletion substitution,
+  attacker-recomputed outer-register rejection, and relational self-author,
+  replay, revoked, expired, pre-artifact, and swapped-order cases;
+- 83 route/dispatcher passes, one bootstrap pass with 136 deselections, exactly
+  136 authentic future failures against typed `CUT1.ENTRY.NOT_IMPLEMENTED`,
+  direct-head hosted-policy parity, guardrails, diff checks, and a clean head.
+
+T01/T02 may complete. This approval creates no artifact, product, provider,
+media, human-study, hosted-freeze, merge, release, or Cut 1 acceptance evidence.
+T03/T05/T06 and later remain governed by the derivative, Meera-only lineage,
+Issue #368, #432, #449, legal, accessibility, exact-artifact, and hosted-parity
+stops in the preflight. No GREEN behavior is included in the reviewed head.
