@@ -49,6 +49,16 @@ base, and the Issue `#434` historical route test isolates its original charge
 from successor edits. The original 17-path preflight remains byte-immutable;
 the combined reviewed route is exactly 21 paths with a 2,000-line cap.
 
+Hosted security then reproduced a topology-specific full-history failure: the
+exact Issue `#460` range was clean, but checkout fetched the remote Issue `#459`
+branch and Gitleaks rediscovered three immutable SHA-256 governance literals.
+Checkpoint `5457578336`, body SHA-256
+`82773778e0a791dffcf4f6f27cb265df6013f2a79ae107d484d1db10c8697368`,
+authorizes four more paths only. The final route is exactly 25 paths with a
+2,600-line cap. Each suppression binds the exact commit, path, rule, line,
+frozen API-contract digest, and frozen Issue `#459` head. A representative real
+secret must still be detected before the unchanged full-history scan runs.
+
 ## Rejected alternatives
 
 - Renew MCP `1.28.1`: unnecessary because reviewed upstream metadata now pins a
@@ -59,6 +69,8 @@ the combined reviewed route is exactly 21 paths with a 2,000-line cap.
 - Move Semgrep into the root/runtime graph: violates tool isolation and would
   expand the application attack and dependency surface.
 - Remove SAST: loses an established security boundary and canary.
+- Skip full Git history or use a broad Gitleaks exclusion: would conceal real
+  secrets outside the current range and cannot distinguish the reviewed hashes.
 
 ## Consequences
 

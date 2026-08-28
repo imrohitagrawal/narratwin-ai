@@ -20,6 +20,16 @@ snapshots and original-route fail-closed behavior. Strict root/tool audits,
 reviewed-input hashes, exact rules/targets, scan/canaries, backend-image
 exclusion, and no-runtime posture remain.
 
+Hosted security run `33208873797` proved the exact Issue `#460` correction
+range clean, then reproduced three generic-key false positives from fetched
+remote Issue `#459` history. Owner checkpoint `5457578336` (body SHA-256
+`82773778e0a791dffcf4f6f27cb265df6013f2a79ae107d484d1db10c8697368`)
+adds exactly `.gitleaksignore`, the fingerprint checker and test, and the
+security wrapper. The final route is 25 paths capped at 2,600 charged lines.
+Only the three immutable fingerprints are suppressed; provenance drift,
+missing history, wildcard additions, and a real-secret canary false negative
+fail closed before the unchanged full-history scan.
+
 This prerequisite grants no product, runtime MCP server, provider, credential,
 deployment, release, commercial-readiness, or production authority. Issue
 `#459` must consume it only through a separately reviewed base/route transition

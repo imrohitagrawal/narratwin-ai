@@ -59,6 +59,12 @@ ISSUE460_CORRECTION_PATHS = {
     "tests/unit/test_issue427_architecture_reset.py",
     "tests/unit/test_stage8_quality_gate.py",
 }
+ISSUE460_HOSTED_SECURITY_PATHS = {
+    ".gitleaksignore",
+    "scripts/ci/check_gitleaks_regression.py",
+    "scripts/ci/dependency-security.sh",
+    "tests/unit/test_gitleaks_regression.py",
+}
 
 ROUTES = {
     ISSUE460_BRANCH: {
@@ -69,7 +75,7 @@ ROUTES = {
         "scripts/quality/stage8_cut1_routes.py", "tests/unit/test_stage8_cut1_routes.py",
         "tests/unit/test_dependency_security_contract.py", "docs/QUALITY_GATES.md",
         "docs/STAGE_ISSUE_PLAN.md", "docs/STATUS.md", "docs/THIRD_PARTY_NOTICES.md", "docs/TRACEABILITY.md",
-    } | ISSUE460_CORRECTION_PATHS,
+    } | ISSUE460_CORRECTION_PATHS | ISSUE460_HOSTED_SECURITY_PATHS,
     ISSUE452_BRANCH: {
         "docs/governance/preflights/issue-452.json",
         "docs/governance/schemas/cut1-human-realism-evaluation-v1.schema.json",
@@ -468,7 +474,7 @@ TOTAL_LIMITS = {ISSUE452_BRANCH: 3600, ISSUE451_BRANCH: 600, ISSUE150_BRANCH: 10
                 ISSUE384_BRANCH: 500, ISSUE383_BRANCH: 700, ISSUE397_BRANCH: 500,
                 ISSUE393_BRANCH: 700, ISSUE382_BRANCH: 3200, ISSUE367_BRANCH: 2000}
 ROUTE_ISSUES[ISSUE460_BRANCH] = 460
-TOTAL_LIMITS[ISSUE460_BRANCH] = 2000
+TOTAL_LIMITS[ISSUE460_BRANCH] = 2600
 ISSUE383_BINARY_FILES = {
     "frontend/public/demo/myra-synthetic-presenter.webp",
     "frontend/public/demo/raj-synthetic-presenter.webp",
@@ -494,6 +500,10 @@ TEXT_LIMITS = {
         "tests/unit/test_issue16_spec_kit_gate.py": 500,
         "tests/unit/test_issue427_architecture_reset.py": 80,
         "tests/unit/test_stage8_quality_gate.py": 80,
+        ".gitleaksignore": 20,
+        "scripts/ci/check_gitleaks_regression.py": 220,
+        "scripts/ci/dependency-security.sh": 80,
+        "tests/unit/test_gitleaks_regression.py": 260,
     },
     ISSUE452_BRANCH: {
         "docs/governance/preflights/issue-452.json": 260,
@@ -906,7 +916,7 @@ def security_preflight_failures(root: Path, issue: int) -> list[str]:
     forbidden = scope.get("forbidden") if isinstance(scope, dict) else None
     expected = set(ROUTES[expected_branch])
     if issue == 460:
-        expected -= ISSUE460_CORRECTION_PATHS
+        expected -= ISSUE460_CORRECTION_PATHS | ISSUE460_HOSTED_SECURITY_PATHS
     if not isinstance(required, list) or set(required) != expected or len(required) != len(expected):
         failures.append(f"Issue #{issue} security preflight scope drifted.")
     if not isinstance(forbidden, list) or any(
@@ -1198,7 +1208,9 @@ def check_exact_route(
                 context={
                     "issue_number": 460,
                     "branch": branch,
-                    "changed_files": sorted(files - ISSUE460_CORRECTION_PATHS),
+                    "changed_files": sorted(
+                        files - ISSUE460_CORRECTION_PATHS - ISSUE460_HOSTED_SECURITY_PATHS
+                    ),
                 },
             )
             failures.extend(f"Issue #460 governance preflight failed: {finding.code}" for finding in findings)

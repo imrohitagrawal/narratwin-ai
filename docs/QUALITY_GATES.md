@@ -361,6 +361,10 @@ Gate validates:
   every tool dependency override now fails closed; its bounded convergence
   route also evaluates Issue `#16`, `#427`, and `#434` historical contracts
   from their immutable accepted snapshots instead of mutable successor state
+- Issue `#460` permits exactly three full-history Gitleaks fingerprints whose
+  lines bind the frozen API-contract SHA-256; an executable provenance checker
+  rejects any omission, addition, source-head/ancestry/line drift, and a real-
+  secret stdin canary must fail detection before the full-history scan proceeds
 - the backend Docker build explicitly verifies Click `>=8.3.3` and Semgrep
   absence in addition to the critical/high image vulnerability scan
 - Issue `#428` requires the sole transitive frontend Nano ID record to be exact

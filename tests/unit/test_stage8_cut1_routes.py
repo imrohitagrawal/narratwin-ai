@@ -63,10 +63,16 @@ ISSUE460_EXPECTED = {
     "docs/STAGE_ISSUE_PLAN.md", "docs/STATUS.md", "docs/THIRD_PARTY_NOTICES.md", "docs/TRACEABILITY.md",
     "scripts/quality/check_issue16_spec_kit.py", "tests/unit/test_issue16_spec_kit_gate.py",
     "tests/unit/test_issue427_architecture_reset.py", "tests/unit/test_stage8_quality_gate.py",
+    ".gitleaksignore", "scripts/ci/check_gitleaks_regression.py",
+    "scripts/ci/dependency-security.sh", "tests/unit/test_gitleaks_regression.py",
 }
 ISSUE460_CORRECTION_PATHS = {
     "scripts/quality/check_issue16_spec_kit.py", "tests/unit/test_issue16_spec_kit_gate.py",
     "tests/unit/test_issue427_architecture_reset.py", "tests/unit/test_stage8_quality_gate.py",
+}
+ISSUE460_HOSTED_SECURITY_PATHS = {
+    ".gitleaksignore", "scripts/ci/check_gitleaks_regression.py",
+    "scripts/ci/dependency-security.sh", "tests/unit/test_gitleaks_regression.py",
 }
 ISSUE460_LINE_CAPS = {
     "docs/governance/preflights/issue-460.json": 180,
@@ -82,6 +88,10 @@ ISSUE460_LINE_CAPS = {
     "tests/unit/test_issue16_spec_kit_gate.py": 500,
     "tests/unit/test_issue427_architecture_reset.py": 80,
     "tests/unit/test_stage8_quality_gate.py": 80,
+    ".gitleaksignore": 20,
+    "scripts/ci/check_gitleaks_regression.py": 220,
+    "scripts/ci/dependency-security.sh": 80,
+    "tests/unit/test_gitleaks_regression.py": 260,
 }
 
 ISSUE452_EXPECTED = {
@@ -1271,15 +1281,18 @@ def test_issue460_route_is_exact_fixed_budgeted_and_preflight_bound() -> None:
     assert routes.ISSUE460_BASE == "ab97b6eecba6db9c66c37d19b29257c7398f3ab7"
     assert routes.ROUTES[branch] == ISSUE460_EXPECTED
     assert routes.ROUTE_ISSUES[branch] == 460
-    assert routes.TOTAL_LIMITS[branch] == 2000
+    assert routes.TOTAL_LIMITS[branch] == 2600
     assert routes.TEXT_LIMITS[branch] == ISSUE460_LINE_CAPS
 
     artifact = json.loads(
         (REPO / "docs/governance/preflights/issue-460.json").read_text(encoding="utf-8")
     )
     assert artifact["scope"]["required"] == artifact["scope"]["allowed_prefixes"]
-    assert set(artifact["scope"]["required"]) == ISSUE460_EXPECTED - ISSUE460_CORRECTION_PATHS
+    assert set(artifact["scope"]["required"]) == (
+        ISSUE460_EXPECTED - ISSUE460_CORRECTION_PATHS - ISSUE460_HOSTED_SECURITY_PATHS
+    )
     assert routes.ISSUE460_CORRECTION_PATHS == ISSUE460_CORRECTION_PATHS
+    assert routes.ISSUE460_HOSTED_SECURITY_PATHS == ISSUE460_HOSTED_SECURITY_PATHS
     assert artifact["branch"] == branch
 
 

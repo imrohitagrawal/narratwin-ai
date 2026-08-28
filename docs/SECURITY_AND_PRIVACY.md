@@ -434,6 +434,13 @@ MCP CLI path is approved. The repository:
 - verifies the backend image contains Click `>=8.3.3` and no Semgrep; and
 - rejects any future Semgrep-tool dependency override.
 
+Issue `#460` also binds three Gitleaks `generic-api-key` false positives from
+remote Issue `#459` history to exact commits, paths, lines, rule identity, the
+frozen API-contract SHA-256, and frozen source head. `.gitleaksignore` contains
+only those exact fingerprints. A representative real secret must be detected
+before the unchanged full-history scan; wildcard/regex exclusions, history
+skipping, missing provenance, and real-secret false negatives remain blocking.
+
 Any Semgrep version, lock, rule, target, canary, or invocation change breaks the
 reviewed-input hash manifest and requires renewed compatibility review. ADR
 `0061` records the historical renewal; ADR `0069` records its removal.
