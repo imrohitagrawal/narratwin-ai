@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 import subprocess
 import sys
@@ -16,6 +17,19 @@ BASE_SHA = "6f2bfebf794ca6263b6cb42f65bbdc8328cc8e5a"
 ISSUE16_BRANCH = "stage1-16-spec-kit-gate"
 PREFLIGHT = "docs/governance/preflights/issue-16.json"
 TOTAL_CHARGED_LINE_CAP = 2_400
+EXPECTED_PATHS = (
+    "docs/governance/preflights/issue-16.json", ".specify/memory/constitution.md",
+    "specs/001-grounded-walkthrough-script/spec.md", "specs/001-grounded-walkthrough-script/plan.md",
+    "specs/001-grounded-walkthrough-script/tasks.md", "docs/reviews/ISSUE_16_SPEC_KIT_REVIEW_CHECKPOINT.md",
+    "scripts/quality/check_issue16_spec_kit.py", "tests/unit/test_issue16_spec_kit_gate.py",
+    "scripts/quality/check_quality_stage.py", "Makefile", "docs/QUALITY_GATES.md",
+    "docs/STAGE_ISSUE_PLAN.md", "docs/STATUS.md", "docs/TRACEABILITY.md",
+)
+EXPECTED_FORBIDDEN = (
+    "backend/", "frontend/", "rag/", "providers/", "avatar/", "assets/", "data/",
+    ".github/workflows/", "docker-compose.yml", "pyproject.toml", "uv.lock",
+    "package.json", "package-lock.json", ".env", ".env.example",
+)
 
 REQUIRED_MARKDOWN = (
     ".specify/memory/constitution.md",
@@ -73,8 +87,6 @@ _ACTIVATION_CLAIM = re.compile(
 
 
 def load_preflight(root: Path) -> dict[str, Any]:
-    """Load the closed Issue #16 scope contract or return an empty artifact."""
-
     try:
         value = json.loads((root / PREFLIGHT).read_text(encoding="utf-8"))
     except (OSError, UnicodeError, json.JSONDecodeError):
@@ -101,11 +113,11 @@ def validate_scope_snapshot(
     changed_files: list[str],
     charged_lines: dict[str, int],
 ) -> list[str]:
-    """Validate a materialized base/branch/path/budget snapshot without I/O."""
-
     failures: list[str] = []
     scope = artifact.get("scope")
     required = scope.get("required") if isinstance(scope, dict) else None
+    allowed = scope.get("allowed_prefixes") if isinstance(scope, dict) else None
+    forbidden = scope.get("forbidden") if isinstance(scope, dict) else None
     binding_valid = (
         artifact.get("schema_version") == "GovernancePreflightV1"
         and artifact.get("issue_number") == 16
@@ -117,11 +129,11 @@ def validate_scope_snapshot(
     if not base_is_ancestor:
         failures.append("I16.SCOPE.HISTORY")
     if (
-        not isinstance(required, list)
-        or not all(isinstance(path, str) for path in required)
-        or len(required) != len(set(required))
+        not isinstance(required, list) or tuple(required) != EXPECTED_PATHS
+        or not isinstance(allowed, list) or tuple(allowed) != EXPECTED_PATHS
+        or not isinstance(forbidden, list) or tuple(forbidden) != EXPECTED_FORBIDDEN
         or len(changed_files) != len(set(changed_files))
-        or set(changed_files) != set(required)
+        or set(changed_files) != set(EXPECTED_PATHS)
         or set(charged_lines) != set(changed_files)
     ):
         failures.append("I16.SCOPE.PATHS")
@@ -154,9 +166,13 @@ def _git(root: Path, *args: str) -> subprocess.CompletedProcess[bytes]:
     )
 
 
-def repository_snapshot(root: Path) -> tuple[str, bool, list[str], dict[str, int]]:
-    """Materialize the complete Issue #16 worktree diff against its fixed base."""
+def _branch_identity(git_branch: str) -> str:
+    if git_branch or os.environ.get("GITHUB_ACTIONS") != "true":
+        return git_branch
+    return os.environ.get("GITHUB_HEAD_REF", "")
 
+
+def repository_snapshot(root: Path) -> tuple[str, bool, list[str], dict[str, int]]:
     branch_result = _git(root, "branch", "--show-current")
     ancestor_result = _git(root, "merge-base", "--is-ancestor", BASE_SHA, "HEAD")
     names_result = _git(root, "diff", "--name-only", "-z", BASE_SHA, "--")
@@ -184,7 +200,7 @@ def repository_snapshot(root: Path) -> tuple[str, bool, list[str], dict[str, int
         path = fields[2].decode("utf-8", errors="surrogateescape")
         charged[path] = int(fields[0]) + int(fields[1])
     return (
-        branch_result.stdout.decode("utf-8", errors="replace").strip(),
+        _branch_identity(branch_result.stdout.decode("utf-8", errors="replace").strip()),
         ancestor_result.returncode == 0,
         changed,
         charged,
@@ -259,8 +275,6 @@ def _check_task_graph(tasks: str | None, failures: list[str]) -> None:
 
 
 def validate(root: Path = ROOT) -> list[str]:
-    """Return stable finding codes for an incomplete or mutated Issue #16 kit."""
-
     failures: list[str] = []
     content = _read_contract(root, failures)
     _check_markers(content, failures)

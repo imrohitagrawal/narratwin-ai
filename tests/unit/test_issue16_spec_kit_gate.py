@@ -235,49 +235,27 @@ def test_scope_snapshot_rejects_path_binding_and_budget_mutations() -> None:
     required = artifact["scope"]["required"]
     charges = {path: 1 for path in required}
 
-    assert gate.validate_scope_snapshot(
-        artifact,
-        branch=gate.ISSUE16_BRANCH,
-        base_is_ancestor=True,
-        changed_files=required,
-        charged_lines=charges,
-    ) == []
+    def check(
+        candidate: dict[str, Any] = artifact,
+        *, branch: str = gate.ISSUE16_BRANCH,
+        ancestor: bool = True,
+        changed: list[str] = required,
+        charged: dict[str, int] = charges,
+    ) -> list[str]:
+        return gate.validate_scope_snapshot(
+            candidate, branch=branch, base_is_ancestor=ancestor,
+            changed_files=changed, charged_lines=charged,
+        )
 
-    assert "I16.SCOPE.PATHS" in gate.validate_scope_snapshot(
-        artifact,
-        branch=gate.ISSUE16_BRANCH,
-        base_is_ancestor=True,
-        changed_files=[*required, "frontend/unauthorized.ts"],
-        charged_lines={**charges, "frontend/unauthorized.ts": 1},
+    assert check() == []
+    unauthorized = "frontend/unauthorized.ts"
+    assert "I16.SCOPE.PATHS" in check(
+        changed=[*required, unauthorized], charged={**charges, unauthorized: 1}
     )
-    assert "I16.SCOPE.BINDING" in gate.validate_scope_snapshot(
-        artifact,
-        branch=f"{gate.ISSUE16_BRANCH}-extra",
-        base_is_ancestor=True,
-        changed_files=required,
-        charged_lines=charges,
-    )
-    assert "I16.SCOPE.HISTORY" in gate.validate_scope_snapshot(
-        artifact,
-        branch=gate.ISSUE16_BRANCH,
-        base_is_ancestor=False,
-        changed_files=required,
-        charged_lines=charges,
-    )
-    assert "I16.SCOPE.FILE_BUDGET" in gate.validate_scope_snapshot(
-        artifact,
-        branch=gate.ISSUE16_BRANCH,
-        base_is_ancestor=True,
-        changed_files=required,
-        charged_lines={**charges, "docs/STATUS.md": 301},
-    )
-    assert "I16.SCOPE.TOTAL_BUDGET" in gate.validate_scope_snapshot(
-        artifact,
-        branch=gate.ISSUE16_BRANCH,
-        base_is_ancestor=True,
-        changed_files=required,
-        charged_lines={path: 200 for path in required},
-    )
+    assert "I16.SCOPE.BINDING" in check(branch=f"{gate.ISSUE16_BRANCH}-extra")
+    assert "I16.SCOPE.HISTORY" in check(ancestor=False)
+    assert "I16.SCOPE.FILE_BUDGET" in check(charged={**charges, "docs/STATUS.md": 301})
+    assert "I16.SCOPE.TOTAL_BUDGET" in check(charged={path: 200 for path in required})
 
     substituted = "frontend/unauthorized.ts"
     mutated_required = [substituted if path == "docs/TRACEABILITY.md" else path for path in required]
@@ -289,16 +267,18 @@ def test_scope_snapshot_rejects_path_binding_and_budget_mutations() -> None:
             "allowed_prefixes": list(mutated_required),
         },
     }
-    assert "I16.SCOPE.PATHS" in gate.validate_scope_snapshot(
-        mutated,
-        branch=gate.ISSUE16_BRANCH,
-        base_is_ancestor=True,
-        changed_files=mutated_required,
-        charged_lines={path: 1 for path in mutated_required},
+    assert "I16.SCOPE.PATHS" in check(
+        mutated, changed=mutated_required,
+        charged={path: 1 for path in mutated_required},
     )
+    forbidden_mutation = {**artifact, "scope": {**artifact["scope"], "forbidden": []}}
+    assert "I16.SCOPE.PATHS" in check(forbidden_mutation)
 
 
 def test_live_repository_snapshot_is_part_of_validation(monkeypatch: Any) -> None:
+    monkeypatch.setenv("GITHUB_ACTIONS", "true")
+    monkeypatch.setenv("GITHUB_HEAD_REF", gate.ISSUE16_BRANCH)
+    assert gate._branch_identity("") == gate.ISSUE16_BRANCH
     artifact = gate.load_preflight(ROOT)
     required = artifact["scope"]["required"]
     monkeypatch.setattr(
