@@ -26,6 +26,13 @@ ISSUE435_ENV_ALLOWLIST = (
 ISSUE435_ACCEPTANCE_TEST = "tests/unit/test_adversarial_convergence.py"
 ISSUE452_BRANCH = "docs/cut1-acceptance-provider-contract-452"
 ISSUE452_ACCEPTANCE_TEST = "tests/unit/test_cut1_presenter_contract.py"
+ISSUE16_BRANCH = "stage1-16-spec-kit-gate"
+
+
+def run_issue16_spec_kit_gate() -> int:
+    return subprocess.call(
+        [sys.executable, "scripts/quality/check_issue16_spec_kit.py"], cwd=ROOT
+    )
 
 
 def run_adversarial_convergence_gate() -> int:
@@ -88,6 +95,8 @@ def main() -> int:
     if not branch:
         print("Quality dispatcher branch evidence is unavailable or inconsistent.")
         return 1
+    if branch == ISSUE16_BRANCH:
+        return run_issue16_spec_kit_gate()
     if branch == ISSUE435_BRANCH:
         return run_adversarial_convergence_gate()
     if branch == ISSUE452_BRANCH:

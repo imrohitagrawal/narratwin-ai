@@ -2,8 +2,14 @@
 
 export UV_CACHE_DIR ?= .uv-cache
 
+.PHONY: issue16-spec-quality
+
 quality:
 	python3 scripts/quality/check_quality_stage.py
+
+issue16-spec-quality:
+	python3 scripts/quality/check_issue16_spec_kit.py
+	uv run pytest -q tests/unit/test_issue16_spec_kit_gate.py tests/unit/test_quality_dispatcher.py
 
 pr-reconcile:
 	uv run python -m scripts.quality.pr_body_consistency_cli --repository "$${GITHUB_REPOSITORY:?set GITHUB_REPOSITORY}" --pr "$${PR:?set PR}" --apply

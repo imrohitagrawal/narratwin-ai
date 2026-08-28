@@ -1,5 +1,19 @@
 # Quality Gates
 
+## Issue #16 specification-kit gate
+
+Invariant `I16.QUALITY.DOC` binds exact branch `stage1-16-spec-kit-gate` to the
+repository-native, Spec Kit-compatible checker while preserving
+`.stage/current = 8`, normal Stage 8/main routing, and legacy Stage 1 semantics.
+The external GitHub Spec Kit CLI is not installed or activated by this route.
+
+`make issue16-spec-quality` runs the stdlib-only checker plus focused document
+and dispatcher mutation tests. Exact-branch `make quality`, including policy-
+only mode, dispatches the checker before Stage 8; near-match branches receive no
+Issue #16 authority. The gate proves specification completeness only and grants
+no product, provider, media, credential, egress, spending, deployment,
+publication, release, public-availability, or production-readiness authority.
+
 NarraTwin AI quality gates are executable stage contracts. A gate that is not implemented must fail loudly when called directly.
 
 ## Stable Command

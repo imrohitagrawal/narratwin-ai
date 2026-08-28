@@ -1,5 +1,17 @@
 # Traceability Register
 
+## Issue #16 specification-gate traceability
+
+| Gate ID | Claim | Source | Evidence / next mapping |
+|---|---|---|---|
+| I16-GATE-01 | Constitution, Lane A spec, plan, tasks and checkpoint precede implementation authority. | Issue #16; constitution; `specs/001-grounded-walkthrough-script/` | `make issue16-spec-quality`; future issue stays TBD until #16 merges/closes. |
+| I16-GATE-02 | Inherited grounded-walkthrough requirements are prerequisites, not reimplementation authority. | PRD and canonical RTM | Spec binds inherited IDs; future task graph consumes accepted lineage. |
+| I16-GATE-03 | Current presenter requirements and exact Cut 1 metrics govern future work. | Presenter, AI-quality, roadmap/evidence, acceptance-checklist contracts | LA-C1-R01–R10; C1-M01–M10 by reference without weaker restatement. |
+| I16-GATE-04 | Future implementation waits for a new post-closeout issue/branch. | Constitution, plan, tasks, Stage Issue Plan | Sequencing mutation tests and primary-orchestrator closeout. |
+| I16-GATE-05 | Governance-only scope preserves provider/media/release boundaries. | Issue #16, preflight, constitution, spec | Scope gate, guardrails, security/governance review. |
+
+Invariant: `I16.TRACEABILITY`.
+
 This file maps product requirements to implementation slices, tests, evaluation
 evidence, and documentation updates.
 
