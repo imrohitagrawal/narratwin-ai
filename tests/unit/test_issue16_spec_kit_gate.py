@@ -228,3 +228,70 @@ def test_external_spec_kit_activation_claim_fails_closed(tmp_path: Path) -> None
         encoding="utf-8",
     )
     assert "I16.SPECKIT.ACTIVATION" in gate.validate(root)
+
+
+def test_scope_snapshot_rejects_path_binding_and_budget_mutations() -> None:
+    artifact = gate.load_preflight(ROOT)
+    required = artifact["scope"]["required"]
+    charges = {path: 1 for path in required}
+
+    assert gate.validate_scope_snapshot(
+        artifact,
+        branch=gate.ISSUE16_BRANCH,
+        base_is_ancestor=True,
+        changed_files=required,
+        charged_lines=charges,
+    ) == []
+
+    assert "I16.SCOPE.PATHS" in gate.validate_scope_snapshot(
+        artifact,
+        branch=gate.ISSUE16_BRANCH,
+        base_is_ancestor=True,
+        changed_files=[*required, "frontend/unauthorized.ts"],
+        charged_lines={**charges, "frontend/unauthorized.ts": 1},
+    )
+    assert "I16.SCOPE.BINDING" in gate.validate_scope_snapshot(
+        artifact,
+        branch=f"{gate.ISSUE16_BRANCH}-extra",
+        base_is_ancestor=True,
+        changed_files=required,
+        charged_lines=charges,
+    )
+    assert "I16.SCOPE.HISTORY" in gate.validate_scope_snapshot(
+        artifact,
+        branch=gate.ISSUE16_BRANCH,
+        base_is_ancestor=False,
+        changed_files=required,
+        charged_lines=charges,
+    )
+    assert "I16.SCOPE.FILE_BUDGET" in gate.validate_scope_snapshot(
+        artifact,
+        branch=gate.ISSUE16_BRANCH,
+        base_is_ancestor=True,
+        changed_files=required,
+        charged_lines={**charges, "docs/STATUS.md": 301},
+    )
+    assert "I16.SCOPE.TOTAL_BUDGET" in gate.validate_scope_snapshot(
+        artifact,
+        branch=gate.ISSUE16_BRANCH,
+        base_is_ancestor=True,
+        changed_files=required,
+        charged_lines={path: 200 for path in required},
+    )
+
+
+def test_live_repository_snapshot_is_part_of_validation(monkeypatch: Any) -> None:
+    artifact = gate.load_preflight(ROOT)
+    required = artifact["scope"]["required"]
+    monkeypatch.setattr(
+        gate,
+        "repository_snapshot",
+        lambda root: (
+            f"{gate.ISSUE16_BRANCH}-extra",
+            True,
+            required,
+            {path: 1 for path in required},
+        ),
+    )
+
+    assert "I16.SCOPE.BINDING" in gate.validate(ROOT)
