@@ -356,9 +356,11 @@ Gate validates:
   canaries, and the tool lock are hash-bound as reviewed inputs, engine config
   validation must pass, JSON output must prove nonempty file coverage with no
   findings or parse/engine errors, and positive/clean canaries must pass
-- Issue `#150` pins isolated Semgrep `1.172.0`, accepts upstream Click `8.4.2`
-  without an override, and permits only `mcp==1.28.1` as a tool override through
-  `2026-08-28`; any additional override or expired date fails closed
+- Issue `#460` replaces the expired Issue `#150` exception with exact isolated
+  Semgrep `1.175.0`, upstream Click `8.4.2`, MCP `1.29.0`, and PyJWT `2.13.0`;
+  every tool dependency override now fails closed; its bounded convergence
+  route also evaluates Issue `#16`, `#427`, and `#434` historical contracts
+  from their immutable accepted snapshots instead of mutable successor state
 - the backend Docker build explicitly verifies Click `>=8.3.3` and Semgrep
   absence in addition to the critical/high image vulnerability scan
 - Issue `#428` requires the sole transitive frontend Nano ID record to be exact

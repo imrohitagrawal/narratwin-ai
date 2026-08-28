@@ -52,6 +52,38 @@ def load(path: Path, name: str) -> ModuleType:
 routes: Any = load(MODULE_PATH, "stage8_cut1_routes_under_test")
 stage8: Any = load(REPO / "scripts/quality/check_stage8_docs.py", "stage8_with_cut1_routes")
 
+ISSUE460_EXPECTED = {
+    "docs/governance/preflights/issue-460.json",
+    "docs/ADR/0069-semgrep-1-175-override-removal.md",
+    "docs/RELEASE_CHECKLIST.md", "docs/RISK_REGISTER.md", "docs/SECURITY_AND_PRIVACY.md",
+    "scripts/ci/check_semgrep_security.py", "tools/semgrep/pyproject.toml",
+    "tools/semgrep/reviewed-inputs.sha256", "tools/semgrep/uv.lock",
+    "scripts/quality/stage8_cut1_routes.py", "tests/unit/test_stage8_cut1_routes.py",
+    "tests/unit/test_dependency_security_contract.py", "docs/QUALITY_GATES.md",
+    "docs/STAGE_ISSUE_PLAN.md", "docs/STATUS.md", "docs/THIRD_PARTY_NOTICES.md", "docs/TRACEABILITY.md",
+    "scripts/quality/check_issue16_spec_kit.py", "tests/unit/test_issue16_spec_kit_gate.py",
+    "tests/unit/test_issue427_architecture_reset.py", "tests/unit/test_stage8_quality_gate.py",
+}
+ISSUE460_CORRECTION_PATHS = {
+    "scripts/quality/check_issue16_spec_kit.py", "tests/unit/test_issue16_spec_kit_gate.py",
+    "tests/unit/test_issue427_architecture_reset.py", "tests/unit/test_stage8_quality_gate.py",
+}
+ISSUE460_LINE_CAPS = {
+    "docs/governance/preflights/issue-460.json": 180,
+    "docs/ADR/0069-semgrep-1-175-override-removal.md": 180,
+    "docs/RELEASE_CHECKLIST.md": 80, "docs/RISK_REGISTER.md": 80, "docs/SECURITY_AND_PRIVACY.md": 80,
+    "scripts/ci/check_semgrep_security.py": 220, "tools/semgrep/pyproject.toml": 20,
+    "tools/semgrep/reviewed-inputs.sha256": 20, "tools/semgrep/uv.lock": 500,
+    "scripts/quality/stage8_cut1_routes.py": 180, "tests/unit/test_stage8_cut1_routes.py": 300,
+    "tests/unit/test_dependency_security_contract.py": 250, "docs/QUALITY_GATES.md": 80,
+    "docs/STAGE_ISSUE_PLAN.md": 80, "docs/STATUS.md": 80, "docs/THIRD_PARTY_NOTICES.md": 80,
+    "docs/TRACEABILITY.md": 80,
+    "scripts/quality/check_issue16_spec_kit.py": 420,
+    "tests/unit/test_issue16_spec_kit_gate.py": 500,
+    "tests/unit/test_issue427_architecture_reset.py": 80,
+    "tests/unit/test_stage8_quality_gate.py": 80,
+}
+
 ISSUE452_EXPECTED = {
     "docs/governance/preflights/issue-452.json",
     "docs/governance/schemas/cut1-human-realism-evaluation-v1.schema.json",
@@ -81,6 +113,7 @@ ISSUE452_EXPECTED = {
 
 
 EXPECTED = {
+    "security-460-semgrep-override-removal": ISSUE460_EXPECTED,
     "docs/cut1-acceptance-provider-contract-452": ISSUE452_EXPECTED,
     "docs/cut1-post-443-reconciliation-451": {
         "docs/PHASE_PLAN.md",
@@ -597,10 +630,11 @@ def test_routes_are_exact_pre_registered_and_issue386_preflight_matches() -> Non
     assert issue150["change_budget"]["maximum_additions_plus_deletions"] == 1000
     assert routes.security_preflight_failures(REPO, 150) == []
     assert routes.security_preflight_failures(REPO, 428) == []
+    assert routes.security_preflight_failures(REPO, 460) == []
 
 
 def test_security_preflights_reject_duplicate_and_exact_byte_drift(tmp_path: Path) -> None:
-    for issue in (150, 428):
+    for issue in (150, 428, 460):
         source = REPO / f"docs/governance/preflights/issue-{issue}.json"
         target = tmp_path / f"docs/governance/preflights/issue-{issue}.json"
         target.parent.mkdir(parents=True, exist_ok=True)
@@ -1231,6 +1265,24 @@ def test_issue451_route_rejects_aggregate_and_each_per_path_budget(monkeypatch: 
         assert failures == [f"Issue #451 charge for {path} exceeds {limit}."]
 
 
+def test_issue460_route_is_exact_fixed_budgeted_and_preflight_bound() -> None:
+    branch = routes.ISSUE460_BRANCH
+    assert branch == "security-460-semgrep-override-removal"
+    assert routes.ISSUE460_BASE == "ab97b6eecba6db9c66c37d19b29257c7398f3ab7"
+    assert routes.ROUTES[branch] == ISSUE460_EXPECTED
+    assert routes.ROUTE_ISSUES[branch] == 460
+    assert routes.TOTAL_LIMITS[branch] == 2000
+    assert routes.TEXT_LIMITS[branch] == ISSUE460_LINE_CAPS
+
+    artifact = json.loads(
+        (REPO / "docs/governance/preflights/issue-460.json").read_text(encoding="utf-8")
+    )
+    assert artifact["scope"]["required"] == artifact["scope"]["allowed_prefixes"]
+    assert set(artifact["scope"]["required"]) == ISSUE460_EXPECTED - ISSUE460_CORRECTION_PATHS
+    assert routes.ISSUE460_CORRECTION_PATHS == ISSUE460_CORRECTION_PATHS
+    assert artifact["branch"] == branch
+
+
 def test_issue452_route_is_exact_fixed_and_budgeted() -> None:
     branch = "docs/cut1-acceptance-provider-contract-452"
     limits = {
@@ -1383,9 +1435,11 @@ def test_exact_route_completeness_lookalikes_and_budgets(monkeypatch: Any) -> No
         confusable = (
             branch.replace("stage8", "stageв")
             if "stage8" in branch
-            else branch.replace("process", "procesѕ")
-            if "process" in branch
-            else branch.replace("docs", "docѕ")
+                else branch.replace("process", "procesѕ")
+                if "process" in branch
+                else branch.replace("security", "securitу")
+                if "security" in branch
+                else branch.replace("docs", "docѕ")
         )
         for lookalike in (branch + "-retry", branch.upper(), confusable):
             failures = []

@@ -14,6 +14,7 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[2]
 BASE_SHA = "6f2bfebf794ca6263b6cb42f65bbdc8328cc8e5a"
+ACCEPTED_SHA = "ab97b6eecba6db9c66c37d19b29257c7398f3ab7"
 ISSUE16_BRANCH = "stage1-16-spec-kit-gate"
 PREFLIGHT = "docs/governance/preflights/issue-16.json"
 TOTAL_CHARGED_LINE_CAP = 2_400
@@ -90,6 +91,14 @@ def load_preflight(root: Path) -> dict[str, Any]:
     try:
         value = json.loads((root / PREFLIGHT).read_text(encoding="utf-8"))
     except (OSError, UnicodeError, json.JSONDecodeError):
+        return {}
+    return value if isinstance(value, dict) else {}
+
+
+def _parse_preflight(text: str) -> dict[str, Any]:
+    try:
+        value = json.loads(text)
+    except json.JSONDecodeError:
         return {}
     return value if isinstance(value, dict) else {}
 
@@ -172,39 +181,81 @@ def _branch_identity(git_branch: str) -> str:
     return os.environ.get("GITHUB_HEAD_REF", "")
 
 
-def repository_snapshot(root: Path) -> tuple[str, bool, list[str], dict[str, int]]:
-    branch_result = _git(root, "branch", "--show-current")
-    ancestor_result = _git(root, "merge-base", "--is-ancestor", BASE_SHA, "HEAD")
-    names_result = _git(root, "diff", "--name-only", "-z", BASE_SHA, "--")
-    untracked_result = _git(root, "ls-files", "--others", "--exclude-standard", "-z")
-    numstat_result = _git(root, "diff", "--numstat", "-z", BASE_SHA, "--")
-    results = (branch_result, names_result, untracked_result, numstat_result)
-    if any(result.returncode != 0 or (result.stdout and not result.stdout.endswith(b"\0")) for result in results[1:]):
-        raise RuntimeError("repository snapshot unavailable")
-    if branch_result.returncode != 0:
+def current_branch(root: Path) -> str:
+    result = _git(root, "branch", "--show-current")
+    if result.returncode != 0:
         raise RuntimeError("branch unavailable")
+    return _branch_identity(result.stdout.decode("utf-8", errors="replace").strip())
 
-    def paths(raw: bytes) -> list[str]:
-        return [item.decode("utf-8", errors="surrogateescape") for item in raw.split(b"\0") if item]
 
-    changed = paths(names_result.stdout)
-    untracked = paths(untracked_result.stdout)
-    changed.extend(path for path in untracked if path not in changed)
+def _paths(raw: bytes) -> list[str]:
+    return [
+        item.decode("utf-8", errors="surrogateescape")
+        for item in raw.split(b"\0")
+        if item
+    ]
+
+
+def _charged_lines(raw: bytes) -> dict[str, int]:
     charged: dict[str, int] = {}
-    for record in numstat_result.stdout.split(b"\0"):
+    for record in raw.split(b"\0"):
         if not record:
             continue
         fields = record.split(b"\t", 2)
         if len(fields) != 3 or fields[0] == b"-" or fields[1] == b"-" or not fields[2]:
             raise RuntimeError("unsupported numstat record")
         path = fields[2].decode("utf-8", errors="surrogateescape")
+        if path in charged:
+            raise RuntimeError("duplicate numstat record")
         charged[path] = int(fields[0]) + int(fields[1])
+    return charged
+
+
+def repository_snapshot(root: Path) -> tuple[str, bool, list[str], dict[str, int]]:
+    ancestor_result = _git(root, "merge-base", "--is-ancestor", BASE_SHA, "HEAD")
+    names_result = _git(root, "diff", "--name-only", "-z", BASE_SHA, "--")
+    untracked_result = _git(root, "ls-files", "--others", "--exclude-standard", "-z")
+    numstat_result = _git(root, "diff", "--numstat", "-z", BASE_SHA, "--")
+    results = (names_result, untracked_result, numstat_result)
+    if any(result.returncode != 0 or (result.stdout and not result.stdout.endswith(b"\0")) for result in results):
+        raise RuntimeError("repository snapshot unavailable")
+    changed = _paths(names_result.stdout)
+    untracked = _paths(untracked_result.stdout)
+    changed.extend(path for path in untracked if path not in changed)
     return (
-        _branch_identity(branch_result.stdout.decode("utf-8", errors="replace").strip()),
+        current_branch(root),
         ancestor_result.returncode == 0,
         changed,
-        charged,
+        _charged_lines(numstat_result.stdout),
     )
+
+
+def _historical_text(root: Path, relative: str) -> str:
+    result = _git(root, "show", f"{ACCEPTED_SHA}:{relative}")
+    if result.returncode != 0:
+        raise RuntimeError(f"accepted artifact unavailable: {relative}")
+    try:
+        return result.stdout.decode("utf-8")
+    except UnicodeDecodeError as error:
+        raise RuntimeError(f"accepted artifact is not UTF-8: {relative}") from error
+
+
+def historical_snapshot(
+    root: Path,
+) -> tuple[dict[str, str], dict[str, Any], bool, list[str], dict[str, int]]:
+    """Return the immutable accepted Issue #16 contract and exact route."""
+
+    content = {relative: _historical_text(root, relative) for relative in REQUIRED_FILES}
+    artifact = _parse_preflight(_historical_text(root, PREFLIGHT))
+    ancestor = _git(root, "merge-base", "--is-ancestor", BASE_SHA, ACCEPTED_SHA)
+    names = _git(root, "diff", "--name-only", "-z", BASE_SHA, ACCEPTED_SHA, "--")
+    numstat = _git(root, "diff", "--numstat", "-z", BASE_SHA, ACCEPTED_SHA, "--")
+    if ancestor.returncode not in {0, 1}:
+        raise RuntimeError("accepted ancestry unavailable")
+    for result in (names, numstat):
+        if result.returncode != 0 or (result.stdout and not result.stdout.endswith(b"\0")):
+            raise RuntimeError("accepted route unavailable")
+    return content, artifact, ancestor.returncode == 0, _paths(names.stdout), _charged_lines(numstat.stdout)
 
 
 def _read_contract(root: Path, failures: list[str]) -> dict[str, str]:
@@ -276,7 +327,29 @@ def _check_task_graph(tasks: str | None, failures: list[str]) -> None:
 
 def validate(root: Path = ROOT) -> list[str]:
     failures: list[str] = []
-    content = _read_contract(root, failures)
+    scope_snapshot: tuple[dict[str, Any], str, bool, list[str], dict[str, int]] | None = None
+    if (root / ".git").exists():
+        try:
+            branch = current_branch(root)
+        except (OSError, subprocess.SubprocessError, RuntimeError, ValueError):
+            return ["I16.SCOPE.HISTORY"]
+        if branch == ISSUE16_BRANCH:
+            content = _read_contract(root, failures)
+            try:
+                live_branch, ancestor, changed, charged = repository_snapshot(root)
+            except (OSError, subprocess.SubprocessError, RuntimeError, ValueError):
+                failures.append("I16.SCOPE.HISTORY")
+            else:
+                scope_snapshot = (load_preflight(root), live_branch, ancestor, changed, charged)
+        else:
+            try:
+                content, artifact, ancestor, changed, charged = historical_snapshot(root)
+            except (OSError, subprocess.SubprocessError, RuntimeError, ValueError):
+                return ["I16.HISTORICAL.SNAPSHOT"]
+            scope_snapshot = (artifact, ISSUE16_BRANCH, ancestor, changed, charged)
+    else:
+        content = _read_contract(root, failures)
+
     _check_markers(content, failures)
     _check_task_graph(
         content.get("specs/001-grounded-walkthrough-script/tasks.md"), failures
@@ -286,21 +359,17 @@ def validate(root: Path = ROOT) -> list[str]:
     if constitution is not None and _ACTIVATION_CLAIM.search(constitution):
         failures.append("I16.SPECKIT.ACTIVATION")
 
-    if (root / ".git").exists():
-        try:
-            branch, ancestor, changed, charged = repository_snapshot(root)
-        except (OSError, subprocess.SubprocessError, RuntimeError, ValueError):
-            failures.append("I16.SCOPE.HISTORY")
-        else:
-            failures.extend(
-                validate_scope_snapshot(
-                    load_preflight(root),
-                    branch=branch,
-                    base_is_ancestor=ancestor,
-                    changed_files=changed,
-                    charged_lines=charged,
-                )
+    if scope_snapshot is not None:
+        artifact, branch, ancestor, changed, charged = scope_snapshot
+        failures.extend(
+            validate_scope_snapshot(
+                artifact,
+                branch=branch,
+                base_is_ancestor=ancestor,
+                changed_files=changed,
+                charged_lines=charged,
             )
+        )
 
     return failures
 

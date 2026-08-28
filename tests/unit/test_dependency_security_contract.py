@@ -49,6 +49,7 @@ BRACE_509_INTEGRITY = (
     "sha512-ScQ4IuvIEF1TMlP7Zt+vjJ//9zlPb2SDcxWxM3bk8s6t6GGdJ7KO1dCcTidOPJKePW30LE/2cT7wCyPho9/Wxg=="
 )
 ISSUE150_BASE = "a02286240212ad8958915aec01aa5ebaf60fa705"
+ISSUE460_BASE = "ab97b6eecba6db9c66c37d19b29257c7398f3ab7"
 PYPDF_WHEEL_SHA256 = "14e001d6504822cb1ca9c7ed9a69bccb320f59b320730f55af804361abe4d5ee"
 PYPDF_SDIST_SHA256 = "d39c4d955a76409284a905e2d65b40076d77ab76129e0faaeeb6612403ecfc79"
 PIP_SECURITY_VERSION = "26.2.1"
@@ -336,8 +337,9 @@ def test_root_and_semgrep_tool_locks_are_separate_and_patched() -> None:
 def test_semgrep_1_175_generated_lock_has_no_override_and_is_isolated() -> None:
     lock_bytes = (ROOT / "tools/semgrep/uv.lock").read_bytes()
     lock = tomllib.loads(lock_bytes.decode())
-    base_lock = tomllib.loads(_text_at(ISSUE150_BASE, "tools/semgrep/uv.lock"))
-    assert lock["manifest"].get("overrides", []) == []
+    base_lock = tomllib.loads(_text_at(ISSUE460_BASE, "tools/semgrep/uv.lock"))
+    assert hashlib.sha256(lock_bytes).hexdigest() == "85340b301faabb76e071fe27b660f5532b54901b9d0c92e02000f16c16404416"
+    assert "manifest" not in lock
     packages = {package["name"]: package for package in lock["package"]}
     assert packages["narratwin-semgrep-tool"]["dependencies"] == [{"name": "semgrep"}]
     assert packages["semgrep"]["version"] == "1.175.0"
@@ -346,6 +348,20 @@ def test_semgrep_1_175_generated_lock_has_no_override_and_is_isolated() -> None:
     assert packages["pyjwt"]["version"] == "2.13.0"
     assert packages["cryptography"]["version"] == "50.0.0"
     assert base_lock["manifest"]["overrides"] == [{"name": "mcp", "specifier": "==1.28.1"}]
+    assert [package["name"] for package in lock["package"]] == [
+        package["name"] for package in base_lock["package"]
+    ]
+    normalized = copy.deepcopy(lock)
+    normalized["manifest"] = base_lock["manifest"]
+    for name in ("mcp", "narratwin-semgrep-tool", "semgrep"):
+        current_index = next(
+            index for index, package in enumerate(normalized["package"])
+            if package["name"] == name
+        )
+        normalized["package"][current_index] = next(
+            package for package in base_lock["package"] if package["name"] == name
+        )
+    assert normalized == base_lock
 
 
 def test_semgrep_tool_contract_rejects_vulnerable_cryptography_lock(
@@ -378,6 +394,7 @@ def test_semgrep_tool_contract_rejects_vulnerable_cryptography_lock(
             "click": {"8.4.2"},
             "mcp": {"1.29.0"},
             "cryptography": {version},
+            "pyjwt": {"2.13.0"},
         }
         monkeypatch.setattr(
             semgrep_security,
@@ -395,7 +412,7 @@ def test_semgrep_tool_contract_rejects_any_override_and_dependency_drift(monkeyp
     root_project: dict[str, Any] = {"tool": {"uv": {}}}
     root_lock: dict[str, set[str]] = {"click": {"8.3.3"}}
     base_tool: dict[str, Any] = {"project": {"dependencies": ["semgrep==1.175.0"]}, "tool": {"uv": {}}}
-    base_lock: dict[str, set[str]] = {"semgrep": {"1.175.0"}, "click": {"8.4.2"}, "mcp": {"1.29.0"}, "cryptography": {"50.0.0"}}
+    base_lock: dict[str, set[str]] = {"semgrep": {"1.175.0"}, "click": {"8.4.2"}, "mcp": {"1.29.0"}, "cryptography": {"50.0.0"}, "pyjwt": {"2.13.0"}}
 
     def install(tool_project: dict[str, Any], tool_lock: dict[str, set[str]]) -> None:
         monkeypatch.setattr(semgrep_security, "_toml", lambda path: tool_project if "tools/semgrep" in str(path) else root_project)
@@ -416,6 +433,13 @@ def test_semgrep_tool_contract_rejects_any_override_and_dependency_drift(monkeyp
         validate_project_contract(ROOT, today=dt.date(2026, 8, 29))
     install(copy.deepcopy(base_tool), {**base_lock, "mcp": {"1.28.1"}})
     with pytest.raises(ContractError, match="MCP lock"):
+        validate_project_contract(ROOT, today=dt.date(2026, 8, 29))
+    install(copy.deepcopy(base_tool), {**base_lock, "pyjwt": {"0.0.0"}})
+    with pytest.raises(ContractError, match="PyJWT lock"):
+        validate_project_contract(ROOT, today=dt.date(2026, 8, 29))
+    root_lock["mcp"] = {"1.29.0"}
+    install(copy.deepcopy(base_tool), copy.deepcopy(base_lock))
+    with pytest.raises(ContractError, match="root lock"):
         validate_project_contract(ROOT, today=dt.date(2026, 8, 29))
 
 

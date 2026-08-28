@@ -80,13 +80,25 @@ def test_serialized_successor_uses_only_the_merged_frozen_reset_head(tmp_path: P
     assert reset.ci_route_head(checkout) == reset.BASE
 
 
-def test_current_main_base_contains_the_reviewed_security_renewal() -> None:
+def test_reset_base_contains_the_reviewed_security_renewal() -> None:
     root = Path(__file__).resolve().parents[2]
-    lock = json.loads((root / "frontend/package-lock.json").read_text())
+    lock_result = subprocess.run(
+        ["/usr/bin/git", "show", f"{reset.BASE}:frontend/package-lock.json"],
+        cwd=root,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    checker_result = subprocess.run(
+        ["/usr/bin/git", "show", f"{reset.BASE}:scripts/ci/check_semgrep_security.py"],
+        cwd=root,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    lock = json.loads(lock_result.stdout)
     assert lock["packages"]["node_modules/nanoid"]["version"] == "3.3.18"
-    assert "OVERRIDE_EXPIRY = dt.date(2026, 8, 28)" in (
-        root / "scripts/ci/check_semgrep_security.py"
-    ).read_text()
+    assert "OVERRIDE_EXPIRY = dt.date(2026, 8, 28)" in checker_result.stdout
 
 
 def facts() -> reset.RepositoryFacts:
