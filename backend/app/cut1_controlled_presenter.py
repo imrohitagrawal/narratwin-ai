@@ -94,17 +94,24 @@ def _evidence_register_sha256(evidence: Mapping[str, Any]) -> str:
 
 
 def _parse_time(value: Any) -> datetime | None:
-    if not isinstance(value, str) or not value.endswith("Z"):
+    if not isinstance(value, str) or re.fullmatch(
+        r"\d{4}-\d{2}-\d{2}[Tt]\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:[Zz]|[+-]\d{2}:\d{2})",
+        value,
+    ) is None:
         return None
     try:
-        parsed = datetime.fromisoformat(value[:-1] + "+00:00")
+        parsed = datetime.fromisoformat(value[:-1] + "+00:00" if value[-1] in "Zz" else value)
     except ValueError:
         return None
     return parsed if parsed.tzinfo is not None else None
 
 
 def _is_number(value: Any) -> bool:
-    return isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value)
+    if isinstance(value, bool):
+        return False
+    if isinstance(value, int):
+        return True
+    return isinstance(value, float) and math.isfinite(value)
 
 
 def _is_integer(value: Any) -> bool:

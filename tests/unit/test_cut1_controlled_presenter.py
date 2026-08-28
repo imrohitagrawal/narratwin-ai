@@ -179,6 +179,35 @@ def test_schema_invalid_observability_ids_fail_closed(value: str) -> None:
     )
 
 
+@pytest.mark.parametrize(
+    ("started", "finished"),
+    (
+        ("2026-W35-5T00:00:00Z", "2026-W35-5T00:00:01Z"),
+        ("20260828T000000Z", "20260828T000001Z"),
+    ),
+)
+def test_schema_invalid_timestamp_lexemes_fail_closed(started: str, finished: str) -> None:
+    evidence = baseline()
+    evidence["observability"]["startedAt"] = started
+    evidence["observability"]["finishedAt"] = finished
+    assert controller.finding_codes(controller.evaluate_controlled_presenter(evidence)) == (
+        "CUT1.OBSERVABILITY.START_INVALID",
+    )
+
+
+@pytest.mark.parametrize(
+    "field",
+    ("gazeRatio", "maxOffCameraMs", "identityMismatchCount", "contrastRatio"),
+)
+def test_extreme_json_integer_is_bounded(field: str) -> None:
+    evidence = baseline()
+    evidence["cells"][0]["metrics"][field] = 10**10_000
+    first = controller.evaluate_controlled_presenter(evidence)
+    second = controller.evaluate_controlled_presenter(evidence)
+    assert len(first) <= 1
+    assert first == second
+
+
 @pytest.mark.parametrize("path", SCALAR_PATHS, ids=lambda path: ".".join(map(str, path)))
 def test_every_json_scalar_shape_corruption_is_bounded_and_deterministic(
     path: tuple[str | int, ...],

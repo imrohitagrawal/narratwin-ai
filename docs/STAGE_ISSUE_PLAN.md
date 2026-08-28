@@ -10,6 +10,8 @@ human decisions and stops. T02 commits a stimulus-only corpus and test-owned
 literal RED oracle before any GREEN behavior. OWNER transition comment
 `5451872197` activates T04 first: one pure canonical evidence evaluator, its
 focused test, and a thin quality adapter under a 2,000-line incremental cap.
+Guardrail correction comment `5452170084` adds only ADR `0068` to record that
+controller boundary inside the unchanged cumulative route budget.
 The evaluator neither renders media nor activates a provider and rejects
 mock/stub/placeholder/non-real-video evidence.
 

@@ -121,3 +121,19 @@ The full-history Gitleaks result contains six older findings: none is introduced
 by the `c1a08396..729c1dd3` increment. This is classified `OUT_OF_SCOPE` for the
 T04 implementation while remaining explicit hosted-baseline debt; it is not
 silently converted into controller acceptance evidence.
+
+Re-review of `eef7a3569fe1adf600755f8144b88f44e7f39bbf` closed the first
+reproductions and then found one narrower `CRITICAL_BLOCKER` at the same schema
+boundary: Python accepted ISO week/basic timestamp lexemes that the frozen
+RFC3339 schema rejects. An extreme JSON integer also raised during float
+finiteness conversion; that exception is a `DUPLICATE` symptom. The correction
+adds an explicit RFC3339 lexical guard and treats integers as intrinsically
+finite while applying `math.isfinite` only to floats. Six exact regressions join
+the full scalar suite, bringing focused/frozen evidence to 702 passes.
+
+The canonical repository guardrail then reproduced one separate
+`REQUIRED_CONTRACT`: a new backend authority boundary requires an ADR. Issue
+comment `5452170084` adds exactly ADR `0068` without expanding behavior or the
+2,000-line implementation budget. The executable route binds its 260-line and
+32,000-byte caps inside the existing cumulative maximum. This correction is
+pending independent exact-head review and committed-head guardrail evidence.

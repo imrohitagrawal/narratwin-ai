@@ -1602,6 +1602,8 @@ eight byte caps, exact branch/base ancestry, and preflight/path equality.
 
 T04 additionally freezes a 2,000-line incremental implementation budget across
 the canonical backend evaluator, its focused test, and the quality adapter.
+Issue comment `5452170084` adds ADR `0068` under 260 lines/32,000 bytes to
+satisfy the unchanged architecture guardrail inside the cumulative route.
 The adapter re-exports the backend implementation. The evaluator is pure,
 deterministic, single-finding, and forbidden from network, credentials,
 environment lookup, providers, spend, retry, rendering, or writes.

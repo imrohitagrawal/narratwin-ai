@@ -74,6 +74,7 @@ digests are the frozen identities.
 | [T01/T02 freeze comment 5449765467](https://github.com/imrohitagrawal/narratwin-ai/issues/459#issuecomment-5449765467) | `75882f1f3deb8dea77ab945cd58f0526b04644fb4cb208bcd50ddea29846bbe7` |
 | [Path correction comment 5449822130](https://github.com/imrohitagrawal/narratwin-ai/issues/459#issuecomment-5449822130) | `48f86809e1032884d5576ceefde06d64785b486e1adae940fe32c2b6391e6cf3` |
 | [T03/T04 transition comment 5451872197](https://github.com/imrohitagrawal/narratwin-ai/issues/459#issuecomment-5451872197) | `a5241954c115e6849da70401cc029cc4517f83a3629b043462a42becc6146e7d` |
+| [T04 ADR correction comment 5452170084](https://github.com/imrohitagrawal/narratwin-ai/issues/459#issuecomment-5452170084) | `8c9297b3faf1d6894442017afef2ce58dcb3ec2a6ee6c3037be2024abb2d0fce` |
 
 ## Independent cells
 
@@ -192,8 +193,10 @@ durations, and hashes are the allowed diagnostic projection.
 The transition comment activates the canonical pure evaluator at
 `backend/app/cut1_controlled_presenter.py`, its focused unit test, and the
 existing quality module as an import/re-export adapter. T04 may charge at most
-2,000 incremental lines across those three paths, within the frozen 2,400-line
-future maximum. The controller may inspect only its materialized mapping and
+2,000 incremental lines across those three implementation paths, within the
+frozen 2,400-line future maximum. Correction comment `5452170084` adds only
+ADR `0068` under a 260-line/32,000-byte cap inside the cumulative route. The
+controller may inspect only its materialized mapping and
 must not read environment variables or credentials, access the network, call a
 provider, retry, spend, render media, or write a file. It returns at most one
 primary finding under the current single-mutation oracle.
@@ -230,6 +233,7 @@ work stops for rescope before 3,870.
 | `docs/TRACEABILITY.md` | 120 | — |
 | `backend/app/cut1_controlled_presenter.py` | 900 | — |
 | `tests/unit/test_cut1_controlled_presenter.py` | 900 | — |
+| `docs/ADR/0068-cut1-controlled-presenter-controller.md` | 260 | 32,000 |
 
 All are regular UTF-8 text. Missing, extra, renamed, copied, binary, symlinked,
 untracked, lookalike-branch, wrong-base, dirty, or cap-breaching evidence fails.
@@ -244,7 +248,7 @@ owner rescope before mutation.
 | Task | Future-owned paths | Maximum charged lines |
 |---|---|---:|
 | T03 | `docs/governance/cut1-presenter-derivatives-v1.json`, `frontend/public/demo/cut1/raj-waist-up.webp`, `frontend/public/demo/cut1/myra-waist-up.webp`, `backend/app/presenter_registry.json`, `backend/app/presenter_registry.py`, `tests/unit/test_cut1_presenter_derivatives.py`, `docs/THIRD_PARTY_NOTICES.md` | 2,400 text; each binary <=500,000 bytes |
-| T04 | `backend/app/cut1_controlled_presenter.py`, `tests/unit/test_cut1_controlled_presenter.py`, `scripts/quality/cut1_controlled_presenter.py` | 2,000 incremental |
+| T04 | `backend/app/cut1_controlled_presenter.py`, `tests/unit/test_cut1_controlled_presenter.py`, `scripts/quality/cut1_controlled_presenter.py`; ADR `0068` is cumulative-route governance | 2,000 implementation incremental; ADR 260/32,000 |
 | T05 | `backend/app/cut1_grounding.py`, `backend/app/narration.py`, `backend/app/stage6.py`, `backend/app/stage7.py`, `tests/unit/test_cut1_atomic_grounding.py`, `tests/unit/test_cut1_narration.py`, `tests/unit/test_stage6_multilingual.py`, `tests/unit/test_stage7_avatar.py` | 4,600 |
 | T06 | `tests/acceptance/test_cut1_controlled_presenter.py`, `evals/cut1/controlled-presenter-v1.json` | 1,800 |
 | T07 | `backend/app/main.py`, `tests/api/test_cut1_controlled_presenter_api.py`, `frontend/src/app/demo/guide-client.ts`, `frontend/src/app/demo/guide-client.test.ts`, `frontend/src/app/demo/page.tsx`, `frontend/src/app/demo/page.module.css`, `frontend/src/app/demo/page.test.tsx`, `frontend/tests/cut1-controlled-presenter.spec.ts` | 4,000 |

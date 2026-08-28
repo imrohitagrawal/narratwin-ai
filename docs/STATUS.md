@@ -1702,7 +1702,8 @@ T01/T02 correction.
 T01/T02 remain complete. OWNER transition comment `5451872197` activates T04
 first under a 2,000-line incremental cap: a canonical pure deterministic
 evidence evaluator, focused safety tests, and a thin quality adapter. It does
-not render media or activate any provider. T03 is bounded to Raj/Myra design-
+not render media or activate any provider. Guardrail correction comment
+`5452170084` adds only ADR `0068` to the cumulative route. T03 is bounded to Raj/Myra design-
 time portrait edits; Meera is `SOURCE_READY_NO_DERIVATIVE` and receives no new
 binary.
 Three independent review lanes approved the T01/T02 candidate exact head
