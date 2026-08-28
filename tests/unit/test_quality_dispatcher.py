@@ -86,6 +86,52 @@ ISSUE435_ACCEPTANCE_COMMAND = [
     sys.executable,
     *"-I -P -m pytest -p no:cacheprovider -o addopts= -q tests/unit/test_adversarial_convergence.py".split(),
 ]
+ISSUE16_BRANCH = "stage1-16-spec-kit-gate"
+ISSUE16_GATE_COMMAND = [sys.executable, "scripts/quality/check_issue16_spec_kit.py"]
+
+
+def test_issue16_exact_branch_dispatches_only_dedicated_gate(monkeypatch: Any, tmp_path: Path) -> None:
+    calls = run_dispatcher(
+        monkeypatch,
+        tmp_path,
+        branch=ISSUE16_BRANCH,
+        status_text=PHASE1_STATUS,
+    )
+
+    assert calls == [ISSUE16_GATE_COMMAND]
+
+
+def test_issue16_policy_only_cannot_bypass_dedicated_gate(monkeypatch: Any, tmp_path: Path) -> None:
+    calls = run_dispatcher(
+        monkeypatch,
+        tmp_path,
+        branch=ISSUE16_BRANCH,
+        status_text=STAGE8_STATUS,
+        policy_only=True,
+    )
+
+    assert calls == [ISSUE16_GATE_COMMAND]
+
+
+def test_issue16_gate_failure_is_propagated(monkeypatch: Any) -> None:
+    dispatcher = load_dispatcher()
+    monkeypatch.setattr(dispatcher, "current_branch", lambda: ISSUE16_BRANCH)
+    monkeypatch.setattr(dispatcher, "run_issue16_spec_kit_gate", lambda: 17)
+
+    assert dispatcher.main() == 17
+
+
+def test_issue16_near_match_receives_no_route_authority(monkeypatch: Any, tmp_path: Path) -> None:
+    calls = run_dispatcher(
+        monkeypatch,
+        tmp_path,
+        branch=f"{ISSUE16_BRANCH}-extra",
+        status_text=STAGE8_STATUS,
+    )
+
+    assert calls == [["make", "stage8-quality"]]
+
+
 def test_issue435_exact_branch_dispatches_only_dedicated_gate(monkeypatch: Any, tmp_path: Path) -> None:
     calls = run_dispatcher(
         monkeypatch,
