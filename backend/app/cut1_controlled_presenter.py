@@ -9,6 +9,7 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+import re
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Mapping, Sequence
@@ -106,6 +107,18 @@ def _is_number(value: Any) -> bool:
     return isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value)
 
 
+def _is_integer(value: Any) -> bool:
+    return isinstance(value, int) and not isinstance(value, bool)
+
+
+def _is_id(value: Any) -> bool:
+    return (
+        isinstance(value, str)
+        and 1 <= len(value) <= 128
+        and re.fullmatch(r"[a-z0-9][a-z0-9._:-]*", value) is not None
+    )
+
+
 def _contains_non_finite(value: Any) -> bool:
     if isinstance(value, float):
         return not math.isfinite(value)
@@ -132,8 +145,132 @@ def _structure_is_closed(evidence: Mapping[str, Any]) -> bool:
     return all(_exact_mapping(evidence.get(key), expected) for key, expected in (("approvals", APPROVAL_KEYS), ("dependencyPosture", DEPENDENCY_KEYS), ("providerPosture", PROVIDER_KEYS), ("observability", OBS_KEYS), ("acceptance", ACCEPTANCE_KEYS)))
 
 
+def _scalar_types_are_valid(evidence: Mapping[str, Any]) -> bool:
+    if not isinstance(evidence["schemaVersion"], str):
+        return False
+    if not all(isinstance(value, str) for value in evidence["authority"].values()):
+        return False
+    for cell in evidence["cells"]:
+        if not all(
+            isinstance(cell[field], str)
+            for field in (
+                "presenterId", "presenterVersion", "registrySha256", "language",
+                "aspectRatio", "evidenceState", "decision",
+            )
+        ):
+            return False
+        lineage = cell["lineage"]
+        if not all(
+            isinstance(lineage[field], str)
+            for field in LINEAGE_KEYS - {"approvalCurrent", "approvalUseCount", "approvalRevoked"}
+        ):
+            return False
+        if not (
+            isinstance(lineage["approvalCurrent"], bool)
+            and _is_integer(lineage["approvalUseCount"])
+            and isinstance(lineage["approvalRevoked"], bool)
+        ):
+            return False
+        rights = cell["rights"]
+        if not all(
+            isinstance(rights[field], bool)
+            for field in ("fictionalIdentity", "derivativeAuthorized", "originalOverwritten")
+        ) or not all(isinstance(rights[field], str) for field in ("provenanceSha256", "deletionRef")):
+            return False
+        artifact = cell["artifact"]
+        if not all(
+            isinstance(artifact[field], str)
+            for field in ("mediaKind", "mimeType", "sha256", "createdAt")
+        ) or not all(
+            isinstance(artifact[field], bool)
+            for field in ("regularFile", "decoded", "placeholder", "audioPresent", "captionsPresent")
+        ) or not all(
+            _is_integer(artifact[field])
+            for field in ("byteCount", "durationMs", "width", "height")
+        ):
+            return False
+        metrics = cell["metrics"]
+        numeric = METRIC_KEYS - {
+            "keyboardPassed", "screenReaderPassed", "visibleFocusPassed", "reducedMotionPassed",
+            "captionsEnabledByDefaultPassed", "repeatScriptSha256",
+            "repeatPresenterBindingSha256", "repeatEvaluatorSha256", "repeatManifestSha256",
+            "repeatBindingEqual",
+        }
+        if not all(_is_number(metrics[field]) for field in numeric):
+            return False
+        if not all(
+            _is_integer(metrics[field])
+            for field in (
+                "maxOffCameraMs", "maxLipErrorMs", "maxCaptionGapMs", "maxRepeatedGesture",
+            )
+        ):
+            return False
+        if not all(
+            isinstance(metrics[field], bool)
+            for field in (
+                "keyboardPassed", "screenReaderPassed", "visibleFocusPassed", "reducedMotionPassed",
+                "captionsEnabledByDefaultPassed", "repeatBindingEqual",
+            )
+        ) or not all(
+            isinstance(metrics[field], str)
+            for field in (
+                "repeatScriptSha256", "repeatPresenterBindingSha256", "repeatEvaluatorSha256",
+                "repeatManifestSha256",
+            )
+        ):
+            return False
+    if not all(isinstance(value, str) for value in evidence["approvals"].values()):
+        return False
+    if not all(isinstance(value, str) for value in evidence["dependencyPosture"].values()):
+        return False
+    provider = evidence["providerPosture"]
+    if not all(isinstance(provider[field], str) for field in ("mode", "model", "configSha256")):
+        return False
+    if not isinstance(provider["enabled"], bool) or not all(
+        _is_integer(provider[field])
+        for field in (
+            "credentialCount", "egressAttemptCount", "providerCallCount", "retryCount",
+            "spendMicrousd",
+        )
+    ):
+        return False
+    observability = evidence["observability"]
+    if not all(
+        isinstance(observability[field], str) for field in OBS_KEYS - {
+            "durationMs", "rawSensitiveContentPresent", "providerPayloadPresent",
+        }
+    ) or not _is_integer(observability["durationMs"]) or not all(
+        isinstance(observability[field], bool)
+        for field in ("rawSensitiveContentPresent", "providerPayloadPresent")
+    ):
+        return False
+    acceptance = evidence["acceptance"]
+    return (
+        isinstance(acceptance["technicalDecision"], str)
+        and isinstance(acceptance["cut1Decision"], str)
+        and isinstance(acceptance["humanEvidencePresent"], bool)
+    )
+
+
+def _scalar_domain_finding(evidence: Mapping[str, Any]) -> Finding | None:
+    for index, cell in enumerate(evidence["cells"]):
+        if not all(
+            _is_id(value)
+            for value in (
+                cell["presenterVersion"], cell["lineage"]["voiceProfileId"],
+                cell["lineage"]["voiceProfileVersion"], cell["lineage"]["evaluatorVersion"],
+                cell["lineage"]["approvalId"], cell["lineage"]["artifactAuthorId"],
+                cell["lineage"]["reviewerId"], cell["rights"]["deletionRef"],
+            )
+        ):
+            return _finding("CUT1.INPUT.MALFORMED", f"$.cells[{index}]")
+    return None
+
+
 def _artifact_deny_finding(cells: Sequence[Mapping[str, Any]]) -> Finding | None:
     for index, cell in enumerate(cells):
+        if not isinstance(cell, Mapping):
+            continue
         artifact = cell.get("artifact")
         if not isinstance(artifact, Mapping):
             continue
@@ -291,6 +428,8 @@ def _observability_finding(observability: Mapping[str, Any]) -> Finding | None:
     ):
         if not isinstance(observability[field], str) or not observability[field]:
             return _finding(code, f"{path}.{field}")
+        if not _is_id(observability[field]):
+            return _finding("CUT1.INPUT.MALFORMED", f"{path}.{field}")
     for field, expected, code in (
         ("outcomeReason", "ENTRY_ORACLE_TARGET_ONLY", "CUT1.OBSERVABILITY.OUTCOME_INVALID"),
         ("refusalReason", "NONE", "CUT1.OBSERVABILITY.REFUSAL_INVALID"),
@@ -316,6 +455,19 @@ def _metric_finding(cell: Mapping[str, Any], index: int) -> Finding | None:
     metrics, path = cell["metrics"], f"$.cells[{index - 1}].metrics"
     numeric = ("gazeRatio", "maxOffCameraMs", "lipOffsetP95Ms", "maxLipErrorMs", "captionWordAccuracy", "captionCoverage", "maxCaptionGapMs", "citationCoverage", "acceptedUnsupportedClaims", "abstentionRate", "identityMismatchCount", "faceMismatchCount", "hairMismatchCount", "clothingMismatchCount", "backgroundMismatchCount", "presenterSwitchMismatchCount", "severeMotionDefectCount", "maxRepeatedGesture", "contrastRatio", "scriptEvaluationP95Ms", "previewAfterReadyMs")
     if not all(_is_number(metrics[key]) for key in numeric):
+        return _finding("CUT1.INPUT.MALFORMED", path)
+    if (
+        metrics["gazeRatio"] > 1
+        or metrics["captionWordAccuracy"] > 1
+        or metrics["captionCoverage"] > 1
+        or any(
+            metrics[key] < 0
+            for key in (
+                "maxOffCameraMs", "lipOffsetP95Ms", "maxLipErrorMs", "maxCaptionGapMs",
+                "maxRepeatedGesture", "scriptEvaluationP95Ms", "previewAfterReadyMs",
+            )
+        )
+    ):
         return _finding("CUT1.INPUT.MALFORMED", path)
     if metrics["gazeRatio"] < 0.8 or metrics["maxOffCameraMs"] > 2000:
         return _finding("CUT1.METRIC.C1-M01", path)
@@ -355,6 +507,11 @@ def evaluate_controlled_presenter(evidence: Mapping[str, Any]) -> tuple[Finding,
         return (denied,)
     if not _structure_is_closed(evidence):
         return _one("CUT1.INPUT.MALFORMED", "$")
+    if not _scalar_types_are_valid(evidence):
+        return _one("CUT1.INPUT.MALFORMED", "$")
+    domain_finding = _scalar_domain_finding(evidence)
+    if domain_finding is not None:
+        return (domain_finding,)
     if evidence["schemaVersion"] != SCHEMA_VERSION:
         return _one("CUT1.DOCUMENT.SCHEMA_VERSION", "$.schemaVersion")
     if len(cells) != len(EXPECTED_CELLS):

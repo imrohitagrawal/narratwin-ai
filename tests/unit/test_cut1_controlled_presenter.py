@@ -27,6 +27,17 @@ def _load_baseline_factory() -> Callable[[], dict[str, Any]]:
 baseline = _load_baseline_factory()
 
 
+def _scalar_paths(value: Any, prefix: tuple[str | int, ...] = ()) -> list[tuple[str | int, ...]]:
+    if isinstance(value, dict):
+        return [path for key, item in value.items() for path in _scalar_paths(item, (*prefix, key))]
+    if isinstance(value, list):
+        return [path for index, item in enumerate(value) for path in _scalar_paths(item, (*prefix, index))]
+    return [prefix]
+
+
+SCALAR_PATHS = tuple(_scalar_paths(baseline()))
+
+
 def test_quality_module_is_a_thin_canonical_adapter() -> None:
     assert adapter.Finding is controller.Finding
     assert adapter.evaluate_controlled_presenter is controller.evaluate_controlled_presenter
@@ -107,3 +118,77 @@ def test_evaluation_does_not_mutate_caller_evidence() -> None:
     controller.evaluate_controlled_presenter(evidence)
     after = json.dumps(evidence, ensure_ascii=True, separators=(",", ":"), sort_keys=True)
     assert after == before
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    (
+        ("gazeRatio", 1.01),
+        ("maxOffCameraMs", -1),
+        ("maxOffCameraMs", 1.5),
+        ("lipOffsetP95Ms", -1),
+        ("maxLipErrorMs", -1),
+        ("captionWordAccuracy", 1.01),
+        ("captionCoverage", 1.01),
+        ("maxCaptionGapMs", -1),
+        ("maxRepeatedGesture", -1),
+        ("scriptEvaluationP95Ms", -1),
+        ("previewAfterReadyMs", -1),
+    ),
+)
+def test_schema_invalid_metric_domains_fail_closed(field: str, value: object) -> None:
+    evidence = baseline()
+    evidence["cells"][0]["metrics"][field] = value
+    assert controller.finding_codes(controller.evaluate_controlled_presenter(evidence)) == (
+        "CUT1.INPUT.MALFORMED",
+    )
+
+
+@pytest.mark.parametrize(
+    ("path", "value"),
+    (
+        (("cells", 0, "presenterId"), {}),
+        (("cells", 0), None),
+        (("cells", 0, "lineage", "approvalId"), None),
+        (("cells", 0, "artifact", "width"), []),
+        (("providerPosture", "credentialCount"), {}),
+    ),
+)
+def test_ordinary_json_shape_corruption_never_raises(
+    path: tuple[str | int, ...], value: object
+) -> None:
+    evidence = baseline()
+    cursor: Any = evidence
+    for part in path[:-1]:
+        cursor = cursor[part]
+    cursor[path[-1]] = value
+    assert controller.finding_codes(controller.evaluate_controlled_presenter(evidence)) == (
+        "CUT1.INPUT.MALFORMED",
+    )
+
+
+@pytest.mark.parametrize(
+    "value",
+    ("Tenant-459", "x" * 129, "/private/sensitive/path"),
+)
+def test_schema_invalid_observability_ids_fail_closed(value: str) -> None:
+    evidence = baseline()
+    evidence["observability"]["tenantId"] = value
+    assert controller.finding_codes(controller.evaluate_controlled_presenter(evidence)) == (
+        "CUT1.INPUT.MALFORMED",
+    )
+
+
+@pytest.mark.parametrize("path", SCALAR_PATHS, ids=lambda path: ".".join(map(str, path)))
+def test_every_json_scalar_shape_corruption_is_bounded_and_deterministic(
+    path: tuple[str | int, ...],
+) -> None:
+    evidence = baseline()
+    cursor: Any = evidence
+    for part in path[:-1]:
+        cursor = cursor[part]
+    cursor[path[-1]] = {}
+    first = controller.evaluate_controlled_presenter(evidence)
+    second = controller.evaluate_controlled_presenter(evidence)
+    assert len(first) == 1
+    assert first == second

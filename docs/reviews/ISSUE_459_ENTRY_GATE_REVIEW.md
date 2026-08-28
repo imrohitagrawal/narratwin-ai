@@ -94,3 +94,30 @@ media, human-study, hosted-freeze, merge, release, or Cut 1 acceptance evidence.
 T03/T05/T06 and later remain governed by the derivative, Meera-only lineage,
 Issue #368, #432, #449, legal, accessibility, exact-artifact, and hosted-parity
 stops in the preflight. No GREEN behavior is included in the reviewed head.
+
+## T04 controller convergence record
+
+Independent contract and security/governance reviews of candidate
+`729c1dd3bb0ad1e5fa500cf40e8d40b6bea86352` reproduced one consolidated
+`CRITICAL_BLOCKER`: the evaluator closed mapping keys but not scalar types and
+domains. Schema-invalid upper ratios, negative timing/count values and a
+fractional integer returned no finding; malformed JSON-shaped leaves could
+raise instead of returning one bounded finding; and invalid non-secret
+observability IDs could pass. The exception symptoms are `DUPLICATE` instances
+of that scalar-boundary root rather than separate defects.
+
+The controller owner corrected the smallest responsible boundary before any
+checkpoint push or T03 activation. The correction adds pure pre-hash scalar
+type and ID validation, rejects otherwise false-accepted metric domains,
+guards non-mapping cells, and preserves the frozen semantic precedence.
+Regression evidence covers every scalar leaf with JSON object substitution,
+the reproduced metric/domain values, invalid observability IDs, non-mapping
+cells, unhashable artifact values, deterministic repeats, and at-most-one
+finding. Focused evidence is 696 passing tests; policy-only quality, full
+quality, Ruff, mypy, and the exact route remain green. The correction remains
+pending independent review at its new committed exact head.
+
+The full-history Gitleaks result contains six older findings: none is introduced
+by the `c1a08396..729c1dd3` increment. This is classified `OUT_OF_SCOPE` for the
+T04 implementation while remaining explicit hosted-baseline debt; it is not
+silently converted into controller acceptance evidence.
