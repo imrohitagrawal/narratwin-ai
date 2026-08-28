@@ -96,6 +96,8 @@ ISSUE459_EXPECTED = {
     "docs/PHASE_PLAN.md",
     "docs/STATUS.md",
     "docs/TRACEABILITY.md",
+    "backend/app/cut1_controlled_presenter.py",
+    "tests/unit/test_cut1_controlled_presenter.py",
 }
 ISSUE459_LINE_CAPS = {
     "docs/governance/preflights/issue-459.json": 220,
@@ -111,6 +113,8 @@ ISSUE459_LINE_CAPS = {
     "docs/reviews/ISSUE_459_ENTRY_GATE_REVIEW.md": 500,
     "docs/QUALITY_GATES.md": 120, "docs/STAGE_ISSUE_PLAN.md": 120,
     "docs/PHASE_PLAN.md": 100, "docs/STATUS.md": 160, "docs/TRACEABILITY.md": 120,
+    "backend/app/cut1_controlled_presenter.py": 900,
+    "tests/unit/test_cut1_controlled_presenter.py": 900,
 }
 ISSUE459_BYTE_CAPS = {
     "docs/governance/preflights/issue-459.json": 32_000,
@@ -1380,6 +1384,7 @@ def test_issue459_route_is_exact_fixed_and_budgeted() -> None:
         "5449637037": "f236d2840a7ce35e074b6e370dcc706278772c47fa09b6c18b20a344b22fd1a0",
         "5449765467": "75882f1f3deb8dea77ab945cd58f0526b04644fb4cb208bcd50ddea29846bbe7",
         "5449822130": "48f86809e1032884d5576ceefde06d64785b486e1adae940fe32c2b6391e6cf3",
+        "5451872197": "a5241954c115e6849da70401cc029cc4517f83a3629b043462a42becc6146e7d",
     }
     assert routes.ISSUE459_BASE_SOURCE_SHA256 == {
         "docs/STATUS.md": "9045b595ca1622680f621dffa4dff88435e2fde0d13e3c061ced7eb6df9ae8bf",

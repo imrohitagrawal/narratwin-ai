@@ -60,7 +60,8 @@ listed evidence and the enterprise register.
    storage, avatar, and media implementation blocked until later approved stages.
 2. Stage 1 closes product/PRD hardening under issue `#1`.
 3. Issue `#16` completed through PR `#458`; Issue `#459` is the separately
-   authorized Lane A Cut 1 implementation issue, currently limited to T01/T02.
+   authorized Lane A Cut 1 implementation issue. T01/T02 are complete; T04 is
+   activated before bounded T03 repository asset activation.
 4. `.stage/current` is advanced to `1` in the Stage 1 PR because this PR implements
    the executable Stage 1 documentation quality gate.
 5. Slice 1 implementation starts only after Stage 2 architecture/security/AI-safety
@@ -75,7 +76,7 @@ phases only to order planning work within or across stages.
 |---|---|---|---|
 | Phase 1 | Stage 1 | `#1` | No product implementation |
 | Phase 2 | Stage 1 follow-on | `#16` | No product implementation |
-| Lane A Cut 1 entry | Stage 8-controlled implementation entry | `#459` | T01/T02 governance and authentic RED only |
+| Lane A Cut 1 controlled increment | Stage 8-controlled implementation | `#459` | T04 deterministic evidence controller; bounded T03 Raj/Myra derivatives after review |
 | Phase 3 | Stage 2 | `#2` | No product implementation |
 | Phase 4 | Stage 3 | `#5` | No product feature code |
 | Phase 5 | Stage 4 | `#4` | First vertical slice only |

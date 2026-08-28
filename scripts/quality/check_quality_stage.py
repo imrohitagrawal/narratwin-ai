@@ -27,7 +27,10 @@ ISSUE435_ACCEPTANCE_TEST = "tests/unit/test_adversarial_convergence.py"
 ISSUE452_BRANCH = "docs/cut1-acceptance-provider-contract-452"
 ISSUE452_ACCEPTANCE_TEST = "tests/unit/test_cut1_presenter_contract.py"
 ISSUE459_BRANCH = "lane-a-cut1-459-controlled-presenter"
-ISSUE459_ACCEPTANCE_TEST = "tests/unit/test_cut1_controlled_presenter_red.py"
+ISSUE459_ACCEPTANCE_TESTS = (
+    "tests/unit/test_cut1_controlled_presenter_red.py",
+    "tests/unit/test_cut1_controlled_presenter.py",
+)
 ISSUE16_BRANCH = "stage1-16-spec-kit-gate"
 
 
@@ -89,7 +92,7 @@ def run_cut1_controlled_presenter_entry_gate() -> int:
         return route_status
     return subprocess.call(
         [sys.executable, "-I", "-P", "-m", "pytest", "-p", "no:cacheprovider",
-         "-o", "addopts=", "-q", ISSUE459_ACCEPTANCE_TEST],
+         "-o", "addopts=", "-q", *ISSUE459_ACCEPTANCE_TESTS],
         cwd=ROOT,
         env=environment,
     )

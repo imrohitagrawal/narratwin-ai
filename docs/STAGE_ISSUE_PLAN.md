@@ -1,19 +1,26 @@
 # Stage Issue Plan
 
-## Issue #459 Lane A Cut 1 implementation entry
+## Issue #459 Lane A Cut 1 T03/T04 increment
 
 Issue `#459` starts from accepted main
 `ab97b6eecba6db9c66c37d19b29257c7398f3ab7` on exact branch
 `lane-a-cut1-459-controlled-presenter`. T01 freezes the source, six-cell matrix,
 C1-M01–C1-M10 thresholds, interfaces, observability, failures, route, budgets,
 human decisions and stops. T02 commits a stimulus-only corpus and test-owned
-literal RED oracle before any GREEN behavior.
+literal RED oracle before any GREEN behavior. OWNER transition comment
+`5451872197` activates T04 first: one pure canonical evidence evaluator, its
+focused test, and a thin quality adapter under a 2,000-line incremental cap.
+The evaluator neither renders media nor activates a provider and rejects
+mock/stub/placeholder/non-real-video evidence.
 
-T03/T06 stop unless Raj/Myra derivative provenance and permitted use are
-accepted. T05 cannot assign audio while Issue `#368` owns it and cannot reuse
+T03 may edit only the existing Raj/Myra fictional portraits with at most two
+attempts each. Meera is `SOURCE_READY_NO_DERIVATIVE`, so the T03 inventory has
+no Meera binary. Registry activation waits for visual selection and independent
+provenance/privacy review. T05 cannot assign audio while Issue `#368` owns it and cannot reuse
 the accepted Meera-only grounding/narration receipt for Raj/Myra. Issues `#432`
 and `#449` retain human-study and provider/credential/egress/spend authority.
-This entry increment changes no backend, frontend, asset, media or workflow.
+No runtime provider, deployment, publication, human study, acceptance, or
+release authority is created.
 
 ## Issue #16 specification-kit route
 

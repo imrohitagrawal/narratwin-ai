@@ -1699,15 +1699,21 @@ branch `lane-a-cut1-459-controlled-presenter`. Commit `ce0dcb4` froze the C1
 preflight; OWNER comments `5449765467` and `5449822130` control the 16-path
 T01/T02 correction.
 
-Current work is entry-only: exact route/bootstrap evidence plus a typed,
-stimulus-only authentic RED corpus. Product implementation has not started.
+T01/T02 remain complete. OWNER transition comment `5451872197` activates T04
+first under a 2,000-line incremental cap: a canonical pure deterministic
+evidence evaluator, focused safety tests, and a thin quality adapter. It does
+not render media or activate any provider. T03 is bounded to Raj/Myra design-
+time portrait edits; Meera is `SOURCE_READY_NO_DERIVATIVE` and receives no new
+binary.
 Three independent review lanes approved the T01/T02 candidate exact head
 `2cfced8034b207e2ad12c450d5281d8446060a85` with no reproduced entry-scope
 blocker after 83 route/dispatcher passes, one bootstrap pass, exactly 136 typed
 future RED failures, policy parity, guardrails, and exact-budget checks. The
 receipt records entry-gate completion only; it does not start GREEN behavior.
-Raj/Myra derivatives are not ready; accepted grounding/narration remains
+Raj/Myra derivatives remain unregistered until visual selection and independent
+provenance/privacy review; accepted grounding/narration remains
 Meera-only; Issue `#368` retains audio ownership; Issues `#432` and `#449`
 retain human-study and provider authority. Provider calls, credentials, egress,
 spend, media generation, deployment, publication, release and acceptance
-claims remain absent and unauthorized.
+claims remain absent and unauthorized. Empty T04 findings validate only the
+synthetic blocked fixture and do not establish Cut 1 acceptance.

@@ -233,7 +233,7 @@ def baseline() -> dict[str, Any]:
             repeatEvaluatorSha256=synthetic_digest(index, "evaluation"),
             repeatManifestSha256=synthetic_digest(index, "manifest"),
         )
-        cell = {
+        cell: dict[str, Any] = {
             "presenterId": presenter, "presenterVersion": "v1",
             "registrySha256": "eb31a953b85ffaf2c43f54e4da7fb89eda740c724967a9301f726c6091ab01c2",
             "language": "en", "aspectRatio": aspect,
@@ -283,7 +283,7 @@ def baseline() -> dict[str, Any]:
         ), "credentialCount": 0, "egressAttemptCount": 0,
         "providerCallCount": 0, "retryCount": 0, "spendMicrousd": 0,
     }
-    result = {
+    result: dict[str, Any] = {
         "schemaVersion": "Cut1ControlledPresenterEvidenceV1",
         "authority": {"baseCommit": "ab97b6eecba6db9c66c37d19b29257c7398f3ab7",
                       "sourceSha256": "49b75655ddbbe43145a35215069bce2751de66393b39eb68d69b584d7ecfcc5e",
@@ -462,10 +462,15 @@ def test_bootstrap_schema_corpus_and_oracle_are_closed() -> None:
     assert corpus["expectationsLocation"] == "TEST_OWNED_LITERAL_MAP"
     assert {case["id"] for case in corpus["cases"]} == set(EXPECTED_CODES)
     assert all("expected" not in case and "finding" not in case for case in corpus["cases"])
-    executor = EXECUTOR_PATH.read_text(encoding="utf-8")
-    assert "cut1-controlled-presenter-red-corpus" not in executor
-    assert "from tests" not in executor and "import tests" not in executor
-    assert "CUT1.ENTRY.NOT_IMPLEMENTED" in executor
+    adapter_source = EXECUTOR_PATH.read_text(encoding="utf-8")
+    canonical_source = (
+        REPO / "backend/app/cut1_controlled_presenter.py"
+    ).read_text(encoding="utf-8")
+    for source in (adapter_source, canonical_source):
+        assert "cut1-controlled-presenter-red-corpus" not in source
+        assert "from tests" not in source and "import tests" not in source
+    assert "backend.app.cut1_controlled_presenter" in adapter_source
+    assert "CUT1.ENTRY.NOT_IMPLEMENTED" not in canonical_source
 
 
 CORPUS = strict_loads(CORPUS_PATH.read_text(encoding="utf-8"))

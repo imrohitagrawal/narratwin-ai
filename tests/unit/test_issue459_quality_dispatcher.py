@@ -10,8 +10,9 @@ from scripts.quality import check_quality_stage as dispatcher
 
 BRANCH = "lane-a-cut1-459-controlled-presenter"
 ROUTE = [sys.executable, "scripts/quality/check_stage8_docs.py"]
-RED = [sys.executable, "-I", "-P", "-m", "pytest", "-p", "no:cacheprovider",
-       "-o", "addopts=", "-q", "tests/unit/test_cut1_controlled_presenter_red.py"]
+T04 = [sys.executable, "-I", "-P", "-m", "pytest", "-p", "no:cacheprovider",
+       "-o", "addopts=", "-q", "tests/unit/test_cut1_controlled_presenter_red.py",
+       "tests/unit/test_cut1_controlled_presenter.py"]
 
 
 def invoke(
@@ -35,7 +36,7 @@ def invoke(
 
 @pytest.mark.parametrize(
     ("branch", "policy_only", "expected"),
-    ((BRANCH, False, [ROUTE, RED]), (BRANCH, True, [ROUTE]),
+    ((BRANCH, False, [ROUTE, T04]), (BRANCH, True, [ROUTE]),
      (BRANCH + "-evil", False, [["make", "stage8-quality"]])),
 )
 def test_issue459_dispatch_is_exact_and_policy_aware(

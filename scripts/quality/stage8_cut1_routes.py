@@ -71,7 +71,7 @@ ROUTES = {
         "docs/STAGE_ISSUE_PLAN.md",
         "docs/PHASE_PLAN.md",
         "docs/STATUS.md",
-        "docs/TRACEABILITY.md",
+        "docs/TRACEABILITY.md", "backend/app/cut1_controlled_presenter.py", "tests/unit/test_cut1_controlled_presenter.py",
     },
     ISSUE452_BRANCH: {
         "docs/governance/preflights/issue-452.json",
@@ -518,7 +518,7 @@ ISSUE459_SOURCE_SHA256 = {
 }
 ISSUE459_EDITABLE_AUTHORITY_SHA256 = {
     "Issue #459": "dd03b171f25b0d249a79834f22674c728e539fa8b171a97b3a4728474e0039d5", "5449632582": "07b7cb91660a21ba0a70419ff07195a2532089a087d7a289806142dc81151fa0", "5449637037": "f236d2840a7ce35e074b6e370dcc706278772c47fa09b6c18b20a344b22fd1a0",
-    "5449765467": "75882f1f3deb8dea77ab945cd58f0526b04644fb4cb208bcd50ddea29846bbe7", "5449822130": "48f86809e1032884d5576ceefde06d64785b486e1adae940fe32c2b6391e6cf3",
+    "5449765467": "75882f1f3deb8dea77ab945cd58f0526b04644fb4cb208bcd50ddea29846bbe7", "5449822130": "48f86809e1032884d5576ceefde06d64785b486e1adae940fe32c2b6391e6cf3", "5451872197": "a5241954c115e6849da70401cc029cc4517f83a3629b043462a42becc6146e7d",
 }
 ISSUE459_BASE_SOURCE_SHA256 = {
     "docs/STATUS.md": "9045b595ca1622680f621dffa4dff88435e2fde0d13e3c061ced7eb6df9ae8bf", "docs/TRACEABILITY.md": "e597069e3d6b765a9d68e5336ff9597d6d7b809e5ea6f316f22312ca71ea136a", "docs/QUALITY_GATES.md": "9f628d22ec62075e560ef478820cf094d923cdf1cfded56a512291c61f6e542b", "docs/REPOSITORY_GUARDRAILS.md": "04f8b405bc7ba9b615cc1d5d7e489bcbf643b9de4bfc9b331e5a60c38629e82f",
@@ -540,7 +540,7 @@ TEXT_LIMITS = {
         "docs/STAGE_ISSUE_PLAN.md": 120,
         "docs/PHASE_PLAN.md": 100,
         "docs/STATUS.md": 160,
-        "docs/TRACEABILITY.md": 120,
+        "docs/TRACEABILITY.md": 120, "backend/app/cut1_controlled_presenter.py": 900, "tests/unit/test_cut1_controlled_presenter.py": 900,
     },
     ISSUE452_BRANCH: {
         "docs/governance/preflights/issue-452.json": 260,

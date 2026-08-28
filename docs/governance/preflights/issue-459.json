@@ -2,7 +2,7 @@
   "schema_version": "GovernancePreflightV1",
   "issue_number": 459,
   "branch": "lane-a-cut1-459-controlled-presenter",
-  "objective": "From exact accepted main and branch point ab97b6eecba6db9c66c37d19b29257c7398f3ab7, execute only the Issue #459 T01/T02 entry gate frozen in issue comment 5449765467 and corrected only by comment 5449822130. Preserve six independent Meera/Raj/Myra x en x landscape/portrait cells and exact C1-M01 through C1-M10 thresholds. C1 changes only this preflight. C2 adds the detailed source, interface, observability, failure, test, human-only, skill and stop contract; closed schema and stimulus-only RED corpus; literal test-owned expectations; a typed CUT1.ENTRY.NOT_IMPLEMENTED executor; exact route/dispatcher mutations; governance ledgers; and independent review. The exact 16 text paths, per-path caps, 4,300 aggregate cap, 3,655 readability review, and stop before 3,870 are controlling. The executor receives one materialized stimulus and cannot import tests or corpus expectations. Bootstrap/schema/corpus/route/security evidence stays green while future-behavior assertions genuinely reach typed RED with zero collection or setup errors. No GREEN product work starts before independent review finds no reproduced blocker. Backend, frontend, assets, provider calls, credentials, egress, spend, media, deployment, publication, release, production claims and human study are forbidden. Issue #368 retains audio/provider ownership until reviewed handoff; #432 and #449 retain study/provider authority. Stop before T03/T06 without exact Raj/Myra derivative provenance and permitted-use authority, or on source, branch, base, path, budget, metric, lineage, false-pass, security/privacy, accessibility, review or authority drift.",
+  "objective": "Preserve the completed Issue #459 T01/T02 entry gate from exact accepted main and branch point ab97b6eecba6db9c66c37d19b29257c7398f3ab7, then execute only the T04-first transition frozen in OWNER comment 5451872197. Add backend/app/cut1_controlled_presenter.py as the sole canonical deterministic evidence evaluator, tests/unit/test_cut1_controlled_presenter.py as its focused test, and make scripts/quality/cut1_controlled_presenter.py a thin import/re-export adapter. Preserve six independent Meera/Raj/Myra x en x landscape/portrait cells, exact C1-M01 through C1-M10 thresholds, the frozen 136-case oracle, and a 2,000-line T04 incremental cap within the prior 2,400 maximum. The controller receives only materialized evidence and performs no network, credential/environment lookup, provider call, spend, retry, media generation, or filesystem write. Reject mock/stub/HTML/JSON-placeholder/supportsRealVideo=false output; leave historical Stage 7 compatibility mocks unchanged. T03 design-time work is separately bounded to immutable Meera reuse and at most two Raj/Myra editing attempts each, with no repository asset activation before selection and provenance/privacy review. T05 remains stopped on Meera-only lineage and Issue #368 audio ownership; #432 and #449 retain study/provider authority. No runtime provider, credential, deployment, publication, release, production, human study, or Cut 1 acceptance is authorized.",
   "status_decision": "update-minimally",
   "scope": {
     "required": [
@@ -21,7 +21,9 @@
       "docs/STAGE_ISSUE_PLAN.md",
       "docs/PHASE_PLAN.md",
       "docs/STATUS.md",
-      "docs/TRACEABILITY.md"
+      "docs/TRACEABILITY.md",
+      "backend/app/cut1_controlled_presenter.py",
+      "tests/unit/test_cut1_controlled_presenter.py"
     ],
     "allowed_prefixes": [
       "docs/governance/preflights/issue-459.json",
@@ -39,10 +41,11 @@
       "docs/STAGE_ISSUE_PLAN.md",
       "docs/PHASE_PLAN.md",
       "docs/STATUS.md",
-      "docs/TRACEABILITY.md"
+      "docs/TRACEABILITY.md",
+      "backend/app/cut1_controlled_presenter.py",
+      "tests/unit/test_cut1_controlled_presenter.py"
     ],
     "forbidden": [
-      "backend/",
       "frontend/",
       "assets/",
       "data/",

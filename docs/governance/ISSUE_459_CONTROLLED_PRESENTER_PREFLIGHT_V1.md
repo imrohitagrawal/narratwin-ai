@@ -1,6 +1,6 @@
 # Issue 459 Controlled Presenter Entry Preflight V1
 
-Status: T01/T02 entry contract; product implementation remains blocked
+Status: T01/T02 complete; T04 deterministic controller activated before T03 assets
 Issue: `#459`
 Branch: `lane-a-cut1-459-controlled-presenter`
 Accepted base: `ab97b6eecba6db9c66c37d19b29257c7398f3ab7`
@@ -73,6 +73,7 @@ digests are the frozen identities.
 | [Branch correction comment 5449637037](https://github.com/imrohitagrawal/narratwin-ai/issues/459#issuecomment-5449637037) | `f236d2840a7ce35e074b6e370dcc706278772c47fa09b6c18b20a344b22fd1a0` |
 | [T01/T02 freeze comment 5449765467](https://github.com/imrohitagrawal/narratwin-ai/issues/459#issuecomment-5449765467) | `75882f1f3deb8dea77ab945cd58f0526b04644fb4cb208bcd50ddea29846bbe7` |
 | [Path correction comment 5449822130](https://github.com/imrohitagrawal/narratwin-ai/issues/459#issuecomment-5449822130) | `48f86809e1032884d5576ceefde06d64785b486e1adae940fe32c2b6391e6cf3` |
+| [T03/T04 transition comment 5451872197](https://github.com/imrohitagrawal/narratwin-ai/issues/459#issuecomment-5451872197) | `a5241954c115e6849da70401cc029cc4517f83a3629b043462a42becc6146e7d` |
 
 ## Independent cells
 
@@ -186,7 +187,24 @@ video bytes, biometric/personal data, credentials, environment values, provider
 payloads, stderr, and sensitive absolute paths. IDs, counts, enum reasons,
 durations, and hashes are the allowed diagnostic projection.
 
-## Entry-route paths and budgets
+## T04-first transition
+
+The transition comment activates the canonical pure evaluator at
+`backend/app/cut1_controlled_presenter.py`, its focused unit test, and the
+existing quality module as an import/re-export adapter. T04 may charge at most
+2,000 incremental lines across those three paths, within the frozen 2,400-line
+future maximum. The controller may inspect only its materialized mapping and
+must not read environment variables or credentials, access the network, call a
+provider, retry, spend, render media, or write a file. It returns at most one
+primary finding under the current single-mutation oracle.
+
+T03 may be prepared concurrently but repository activation follows T04. Meera
+is `SOURCE_READY_NO_DERIVATIVE`; the inventory contains no new Meera binary.
+Only Raj and Myra may receive new hands-visible derivatives, and only after the
+bounded design-time generation, visual selection, provenance/privacy review,
+and original-immutability checks recorded in the transition authority.
+
+## Entry and T04-route paths and budgets
 
 Charged lines are additions plus deletions from the fixed base with no deletion
 credit. The aggregate cap is 4,300, readability review begins at 3,655, and
@@ -210,6 +228,8 @@ work stops for rescope before 3,870.
 | `docs/PHASE_PLAN.md` | 100 | — |
 | `docs/STATUS.md` | 160 | — |
 | `docs/TRACEABILITY.md` | 120 | — |
+| `backend/app/cut1_controlled_presenter.py` | 900 | — |
+| `tests/unit/test_cut1_controlled_presenter.py` | 900 | — |
 
 All are regular UTF-8 text. Missing, extra, renamed, copied, binary, symlinked,
 untracked, lookalike-branch, wrong-base, dirty, or cap-breaching evidence fails.
@@ -223,8 +243,8 @@ owner rescope before mutation.
 
 | Task | Future-owned paths | Maximum charged lines |
 |---|---|---:|
-| T03 | `docs/governance/cut1-presenter-derivatives-v1.json`, `frontend/public/demo/cut1/meera-waist-up.webp`, `frontend/public/demo/cut1/raj-waist-up.webp`, `frontend/public/demo/cut1/myra-waist-up.webp`, `backend/app/presenter_registry.json`, `backend/app/presenter_registry.py`, `tests/unit/test_cut1_presenter_derivatives.py`, `docs/THIRD_PARTY_NOTICES.md` | 2,400 text; each binary <=500,000 bytes |
-| T04 | `backend/app/cut1_controlled_presenter.py`, `tests/unit/test_cut1_controlled_presenter.py` | 2,400 |
+| T03 | `docs/governance/cut1-presenter-derivatives-v1.json`, `frontend/public/demo/cut1/raj-waist-up.webp`, `frontend/public/demo/cut1/myra-waist-up.webp`, `backend/app/presenter_registry.json`, `backend/app/presenter_registry.py`, `tests/unit/test_cut1_presenter_derivatives.py`, `docs/THIRD_PARTY_NOTICES.md` | 2,400 text; each binary <=500,000 bytes |
+| T04 | `backend/app/cut1_controlled_presenter.py`, `tests/unit/test_cut1_controlled_presenter.py`, `scripts/quality/cut1_controlled_presenter.py` | 2,000 incremental |
 | T05 | `backend/app/cut1_grounding.py`, `backend/app/narration.py`, `backend/app/stage6.py`, `backend/app/stage7.py`, `tests/unit/test_cut1_atomic_grounding.py`, `tests/unit/test_cut1_narration.py`, `tests/unit/test_stage6_multilingual.py`, `tests/unit/test_stage7_avatar.py` | 4,600 |
 | T06 | `tests/acceptance/test_cut1_controlled_presenter.py`, `evals/cut1/controlled-presenter-v1.json` | 1,800 |
 | T07 | `backend/app/main.py`, `tests/api/test_cut1_controlled_presenter_api.py`, `frontend/src/app/demo/guide-client.ts`, `frontend/src/app/demo/guide-client.test.ts`, `frontend/src/app/demo/page.tsx`, `frontend/src/app/demo/page.module.css`, `frontend/src/app/demo/page.test.tsx`, `frontend/tests/cut1-controlled-presenter.spec.ts` | 4,000 |
@@ -326,6 +346,8 @@ in Issue #368. It does not transfer final audio/provider ownership to #459.
 | multi-file execution | `incremental-implementation` | invoked as in-session guidance | C1 preflight-only commit precedes C2 | guidance consulted; repository activation not claimed |
 | security/privacy | repository RCA, playbook, security docs | selected | stopped credentials, egress, spend, derivatives and sensitive logs | useful; prevented unsafe action |
 | browser testing | browser/DevTools skill | deferred | no UI exists in T01/T02 | considered but wrong stage |
+| T04 controller behavior | `test-driven-development` | invoked as in-session guidance | preserves the committed 136-case RED oracle and adds focused no-side-effect/media-authenticity tests before GREEN | useful; produced RED/GREEN evidence |
+| T03 identity-preserving raster edits | built-in `imagegen` | invoked under comment 5451872197 | limits edits to Raj/Myra originals and avoids CLI credentials or a Meera regeneration | useful; prevented unauthorized provider/identity action |
 | performance optimization | performance skill | deferred | no runtime performance claim exists | considered but redundant at entry |
 | shipping/launch | shipping skill | rejected | release and deployment are prohibited | useful; prevented scope expansion |
 | custom skill/plugin | any new custom capability | rejected | approved docs and existing guidance cover the method | considered but unnecessary |
