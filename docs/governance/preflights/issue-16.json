@@ -1,0 +1,58 @@
+{
+  "schema_version": "GovernancePreflightV1",
+  "issue_number": 16,
+  "branch": "stage1-16-spec-kit-gate",
+  "objective": "From exact authoritative main 6f2bfebf794ca6263b6cb42f65bbdc8328cc8e5a, complete Issue #16 as a governance/specification-only gate. Produce a NarraTwin constitution plus Lane A Cut 1 spec, dependency-ordered plan and tasks; keep the future implementation issue blocked until this issue merges and closes; record task-to-future-issue mapping, reviewer checkpoint, source facts, invariant/test matrix, security/privacy/accessibility/performance/observability/limitations boundaries, and skill/test evidence; add a stdlib-only executable Issue #16 document gate with committed RED before GREEN; add only the exact Issue #16 dispatcher route needed to preserve current Stage 8 main and legacy Stage 1 semantics; and reconcile the stale pre-merge Issue #456 paragraph in docs/STATUS.md. Exactly fourteen paths are allowed. Charge additions plus deletions against the fixed base: target 1,900, review at 2,160, hard stop above 2,400; checker and focused test are each capped at 320 physical lines, each specification artifact at 420, and every other changed path at 300. The second substantive post-review blocker class triggered bounded replanning: live fixed-base ancestry, exact local or hosted PR branch identity, immutable expected-path and forbidden-path authority independent of this mutable artifact, and charged-budget enforcement are mandatory before GREEN. No external Spec Kit installation or activation is claimed. No product, backend, frontend, RAG, database, Docker/runtime, provider, avatar, media, dependency, workflow, credential, egress, spend, deployment, publication, release, or production-readiness change is authorized. Stop for authority/base/branch drift, a fifteenth path, any budget breach, dependency or source conflict, inability to define executable acceptance before implementation, unresolved reproduced CRITICAL_BLOCKER or REQUIRED_CONTRACT finding, two substantive post-review blocker classes without contract rewrite, or need for owner authority, credentials, spending, deployment, consent/provenance, legal, or destructive action.",
+  "status_decision": "update-minimally",
+  "scope": {
+    "required": [
+      "docs/governance/preflights/issue-16.json",
+      ".specify/memory/constitution.md",
+      "specs/001-grounded-walkthrough-script/spec.md",
+      "specs/001-grounded-walkthrough-script/plan.md",
+      "specs/001-grounded-walkthrough-script/tasks.md",
+      "docs/reviews/ISSUE_16_SPEC_KIT_REVIEW_CHECKPOINT.md",
+      "scripts/quality/check_issue16_spec_kit.py",
+      "tests/unit/test_issue16_spec_kit_gate.py",
+      "scripts/quality/check_quality_stage.py",
+      "Makefile",
+      "docs/QUALITY_GATES.md",
+      "docs/STAGE_ISSUE_PLAN.md",
+      "docs/STATUS.md",
+      "docs/TRACEABILITY.md"
+    ],
+    "allowed_prefixes": [
+      "docs/governance/preflights/issue-16.json",
+      ".specify/memory/constitution.md",
+      "specs/001-grounded-walkthrough-script/spec.md",
+      "specs/001-grounded-walkthrough-script/plan.md",
+      "specs/001-grounded-walkthrough-script/tasks.md",
+      "docs/reviews/ISSUE_16_SPEC_KIT_REVIEW_CHECKPOINT.md",
+      "scripts/quality/check_issue16_spec_kit.py",
+      "tests/unit/test_issue16_spec_kit_gate.py",
+      "scripts/quality/check_quality_stage.py",
+      "Makefile",
+      "docs/QUALITY_GATES.md",
+      "docs/STAGE_ISSUE_PLAN.md",
+      "docs/STATUS.md",
+      "docs/TRACEABILITY.md"
+    ],
+    "forbidden": [
+      "backend/",
+      "frontend/",
+      "rag/",
+      "providers/",
+      "avatar/",
+      "assets/",
+      "data/",
+      ".github/workflows/",
+      "docker-compose.yml",
+      "pyproject.toml",
+      "uv.lock",
+      "package.json",
+      "package-lock.json",
+      ".env",
+      ".env.example"
+    ]
+  }
+}

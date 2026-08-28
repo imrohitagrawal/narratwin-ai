@@ -1,5 +1,23 @@
 # Stage Issue Plan
 
+## Issue #16 specification-kit route
+
+Issue `#16` uses exact branch `stage1-16-spec-kit-gate` from authoritative main
+`6f2bfebf794ca6263b6cb42f65bbdc8328cc8e5a`. Repository-native Spec
+Kit-compatible artifacts define its constitution, current Lane A Cut 1 spec,
+dependency plan, eight tasks, future mapping, review checkpoint, and executable
+gate. External Spec Kit activation is not claimed.
+
+### Post-gate Lane A sequencing
+
+Issue #16 must merge, pass merged-main verification, and close before the
+primary orchestrator creates one separate Lane A Cut 1 implementation issue.
+That issue copies LA-C1-T01 through LA-C1-T08 and all stop conditions, freezes
+its own exact base/path/budget/RED contract, and only then creates a dedicated
+branch from accepted `main`. Issue #16 grants no product, provider, media,
+credential, egress, spend, deployment, publication, release, public-
+availability, or production authority. Invariant: `I16.STAGE.PLAN`.
+
 Issues `#428` and `#150` are converged Stage 8 security prerequisites in one
 OWNER-approved protected PR: refresh only transitive Nano ID `3.3.17` to
 `3.3.18`, preserve the current container-evidence architecture and all

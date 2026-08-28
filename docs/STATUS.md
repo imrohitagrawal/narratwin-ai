@@ -1667,29 +1667,28 @@ finding, or unresolved review disagreement stops for OWNER disposition.
   authority effect, provider/spend/media/release and production claims remain
   none/No-Go regardless of governance-validator state.
 
-## Issue #456 Cut 1 live-binding prerequisite — implementation complete, review pending
+## Issue #456 Cut 1 live-binding prerequisite — merged and closed
 
-Issue `#456` is active on branch
-`phase-1-closure-process-456-cut1-live-binding-v2` from exact base
-`c3ac83bf05336a539dbdd6af1de9905e6b954289`. C1 froze the original eleven-path
-preflight; C2 reproduced the mutable-ledger false rejection while preserving
-immutable-tamper rejection; two independent reviews passed C3 entry with no
-critical or high finding. C3 preserves the v1 SHA and PR #455 head/tree, pins a
-v2 five-input live set, rejects manifest/filesystem substitution, and routes
-failures through Phase 1 quality.
+PR `#457` merged Issue `#456` as
+`6f2bfebf794ca6263b6cb42f65bbdc8328cc8e5a`; its post-merge quality and cleanup
+cycle passed and Issue `#456` is closed. The accepted route preserves the v1
+historical identity, binds the v2 immutable live set, rejects substitution and
+independent receipt mutations, and creates no product/provider/media authority.
 
-Required local and hosted CI reproduced the same inherited Issue #434
-false-negative: a fixed receipt pinned one branch-specific complete subprocess
-tuple. OWNER corrective comment `5446644219` adds only that shared test as path
-12. Corrective RED commit `219f310` proves the baseline and two mutations are
-distinguishable before the old receipt fails. The GREEN state normalizes only
-the current branch token before hashing the complete subprocess tuple, pins
-canonical success and branch-rejection receipts, and rejects independent
-stdout/stderr mutations. It does not change the verifier, Stage 8 checker,
-workflow, product, or acceptance identity.
+## Issue #16 specification-gate target state
 
-Local implementation is not merge or completion evidence. Hosted checks,
-independent exact-head review, eligible non-author approval, merge, and
-closeout remain pending. Issue `#16` and Lane A remain blocked. No product,
-provider, credential, egress, spend, media, asset, deployment, publication,
-release, production-readiness, or presenter-acceptance authority is created.
+Issue `#16` is the current governance/specification gate. Its substantive PR
+defines the repository-native constitution, current Lane A Cut 1 specification,
+dependency plan, eight future tasks, post-merge task-to-issue sequencing,
+review checkpoint, and executable structural/mutation gate. External GitHub
+Spec Kit is not installed or activated; `.stage/current` remains `8`.
+
+Once this PR merges, passes merged-main verification, and Issue #16 closes, the
+primary orchestrator creates one separately authorized Lane A Cut 1
+implementation issue, copies LA-C1-T01 through LA-C1-T08 and their stop
+conditions into it, and creates its branch from then-current accepted `main`.
+Until that closeout completes, `$speckit-implement` and Lane A implementation
+remain blocked. Issue #435 remains closed and separate. No product, provider,
+credential, egress, spend, media, asset, deployment, publication, release,
+public-availability, production-readiness, or presenter-acceptance authority is
+created by Issue #16.
