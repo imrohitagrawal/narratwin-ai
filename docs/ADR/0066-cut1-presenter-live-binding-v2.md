@@ -57,8 +57,8 @@ branch, required-file, and every `PRESERVED_CHECKS` check still run. Every other
 branch retains the frozen legacy scope path unchanged; a coherent preflight plus
 extra-path edit is rejected by the independently hard-coded path equality.
 
-Required CI then exposed an inherited false negative in the historical Issue
-Issue #434 subprocess receipt: it pinned one complete, branch-specific subprocess
+Required CI then exposed an inherited false negative in the historical Issue #434
+subprocess receipt: it pinned one complete, branch-specific subprocess
 tuple. The Issue #456 OWNER amendment adds only that shared test as the twelfth
 path. Its corrective RED proves the old receipt rejects the current branch
 while baseline, stdout mutation, and stderr mutation remain distinct. The

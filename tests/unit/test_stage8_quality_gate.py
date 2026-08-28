@@ -2,7 +2,7 @@
 import hashlib,importlib.util,json,subprocess as sp,unittest.mock as um;from pathlib import Path;from typing import Any
 import pytest; from scripts.guardrails_check import canonical_stage_issue
 from scripts.quality import stage8_a23b as a23b, stage8_cut1_routes as cut1_routes, issue427_architecture_reset as i
-from scripts.quality import check_stage8_docs as s8c
+from scripts.quality import check_stage8_docs as s8c;from scripts.quality.branch_identity import current_branch as cb
 CP=s8c.CITATION_PARITY_BRANCH;B=s8c.ISSUE434_BRANCH;F=s8c.ISSUE434_FILES;QP=s8c.QUIET_PRESENCE_BRANCH
 C1S=s8c.CUT1_REAL_MEDIA_TRANSITION_FILES;CS=s8c.CITATION_PARITY_FILES;QS=s8c.QUIET_PRESENCE_FILES
 TRANSITION = "cut1-process-346-governance-transition"; A2_1 = "cut1-335-r0c-a2-1-stage4-rag-v1-lineage"
@@ -84,9 +84,9 @@ def test_issue366_contract_rejects_partial_scope_and_content_mutations(monkeypat
     p=s.R434;q=s.check_issue434_verifier;v={**s.LIMITS434,p[11]:100,p[12]:100};k="NARRATWIN_POLICY_ONLY"
     cases:Any=((5601,{}),(1201,{p[9]:1201}),(0,v),(201,{p[11]:101,p[12]:100}));m.delenv("GITHUB_EVENT_NAME",False)
     p=sp.run(["python3","-S",p[11]],capture_output=True);q0=p.returncode;o=p.stdout;z0=p.stderr;r=0;b=sorted(F);A=s.A434
-    n=sp.run(["git","branch","--show-current"],capture_output=True).stdout.strip()
+    n=cb().encode();assert n
     norm:Any=lambda x:(x[0],x[1].replace(n,b"<branch>"),x[2])
-    h:Any=lambda x:hashlib.shake_256(repr(norm(x)).encode()).hexdigest(8);e="6d072fdd70c3a1bfa7db25ea8285d0de"
+    h:Any=lambda x:hashlib.shake_256(repr(norm(x)).encode()).hexdigest(8);e={"6d072fdd70c3a1bf","a7db25ea8285d0de"}
     assert [h(x)in e for x in ((q0,o,z0),(q0,o+b"x",z0),(q0,o,z0+b"x"))]==[1,0,0];g=["git"];x:Any=d(g,0);w=um.Mock()
     z(s,"issue434_charges",lambda:(0,{}));assert route(m,B,b[1:])and all(s.issue434_budget_findings(*x)for x in cases)
     a={x:(REPO/x).read_bytes()for x in A};f=s.issue434_artifact_findings;assert not f(a)and f(a|{A[0]:b"x"})and f({})
