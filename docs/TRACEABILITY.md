@@ -671,3 +671,15 @@ remain separate gates.
 | Quality-first replaceable provider choice | provider bake-off and provider-acceptance schema | Candidates disabled; local mocks are not realism evidence; no provider permanently selected |
 | Human-like acceptance is measured | crossed 2AFC, bootstrap/power, dimension, IRR, caption/accessibility and severe-defect evidence | Exact-artifact controlled claim only; no literal indistinguishability/public/production claim |
 | Security/privacy false-success resistance | consent/egress/spend/idempotency/tenant/output/deletion mutants | No account, credential resolution, egress, spend, media, publication or release authority |
+
+## Issue #456 versioned Cut 1 live binding
+
+| Requirement | Evidence | Preserved boundary |
+|---|---|---|
+| Preserve accepted #452 history | Unchanged v1 SHA; PR #455 accepted head/tree and merge pinned in v2; ADR 0066 | Historical evidence is not rewritten or treated as mutable current bytes |
+| Bind exactly five immutable current inputs | V2 manifest byte pin; five SHA-256 values; pristine and per-input tamper/missing/non-regular tests | No threshold, presenter parity, provider candidate, study, or outcome changes |
+| Permit truthful governance evolution | Mutable STATUS, QUALITY_GATES, TRACEABILITY, canonical prose, ADR, preflight, route, test, and validator-copy mutations pass | Mutation tolerance is limited to v1-historical non-live surfaces |
+| Fail closed on binding substitution | Malformed, duplicate, unknown, missing, non-object, non-finite, coherent-tamper, size, directory, leaf/parent symlink tests | Generic finding only; no content or exception disclosure |
+| Propagate the gate | Phase 1 publication → Cut 1 → preserved-contract order and short-circuit tests | No later check can mask a Cut 1 failure |
+| Remove inherited CI false negative | OWNER amendment `5446644219`, corrective RED `219f310`, branch-canonical subprocess receipt and stdout/stderr mutation checks in `test_stage8_quality_gate.py` | Only path 12 is added; no Issue #434 verifier, Stage 8 checker, workflow, product, provider, media, or acceptance identity changes |
+| Preserve no-authority posture | Issue #456 preflight, v2 limitations, ADR, status, and stage plan | No product/runtime/provider/media, credential, egress, spend, deployment, release, production, or acceptance authority |

@@ -1,0 +1,27 @@
+{
+  "schemaVersion": "Cut1PresenterLiveBindingV2",
+  "issue": 456,
+  "activation": "NONE",
+  "authorityEffect": "NO_AUTHORITY_EFFECT",
+  "releasePosture": "NO_GO",
+  "historicalV1": {
+    "manifestPath": "docs/governance/cut1-presenter-contract-red-freeze-v1.json",
+    "manifestSha256": "b9921a468f1383a3525879144992fd9ccb30c3dbf62481dcfc9f6e2d3b8afceb",
+    "acceptedPullRequest": 455,
+    "acceptedHead": "89164f25998b0088ae2b6c645dbe935efe50cf7e",
+    "acceptedTree": "6d42093643a133f239265432a2cca4f539eb392b",
+    "mergeCommit": "c3ac83bf05336a539dbdd6af1de9905e6b954289"
+  },
+  "immutableInputSha256": {
+    "docs/governance/cut1-all-presenter-acceptance-matrix-v1.json": "f61cef9f7731f4603778d1b6a3a9ccccd3682c8e0ad233c9370169320612b2f5",
+    "docs/governance/cut1-blinded-human-evaluation-protocol-v1.json": "fa3759985141639185618fbc595057412dd8582f60ed97fc462b30b7548580b8",
+    "docs/governance/cut1-provider-bakeoff-contract-v1.json": "1a3fd981644488203e8c7cc38fc0389092b23b579cce860c3d35a1ca7a1786db",
+    "docs/governance/schemas/cut1-human-realism-evaluation-v1.schema.json": "14eac190bd8ee590d1c1bd59cd6fa16b9413322e1e3a5bca23dfb9030afc5f9c",
+    "docs/governance/schemas/cut1-presenter-provider-acceptance-v1.schema.json": "cb5ad105b53f52e8be888bb8007098368a9f08eafc7ea3eb407f035a5d13b31a"
+  },
+  "limitations": [
+    "This live binding changes integrity routing only; every Cut 1 acceptance threshold and presenter requirement remains unchanged.",
+    "Mutable ledgers, routes, tests, ADRs, preflights, and canonical prose remain historically auditable through the v1 freeze but are not current-byte inputs.",
+    "No product, provider, media, credential, egress, spend, deployment, release, or production-readiness authority is created."
+  ]
+}

@@ -1533,3 +1533,48 @@ independently reviewed C3 freeze, C4 may implement only the marked validator
 region. The final gate requires zero findings plus route, focused, mutation,
 Ruff, strict mypy, policy-only/full quality and regression evidence. Green
 governance checks authorize no provider call, media, spend or release.
+
+## Issue #456 Cut 1 presenter live-binding v2 gate
+
+Issue #456 preserves the Issue #452 v1 freeze byte-for-byte while moving
+current-worktree integrity to the five immutable contract-owned inputs recorded
+in `cut1-presenter-live-binding-v2.json`. The v2 bytes are independently pinned;
+malformed, duplicate, unknown, missing, oversized, non-regular, symlinked, or
+tampered bindings and inputs fail with generic `CUT1.BUNDLE.PROTOCOL`. Mutable
+ledger, prose, ADR, preflight, route, validator-copy, and test evolution is not
+a live bundle-integrity failure.
+
+The Phase 1 order is publication boundary, Cut 1 live binding, then preserved
+contracts. On the exact Issue #456 branch, fixed-base preflight validation and
+hard-coded twelve-path equality replace only the frozen legacy changed-path
+list; all legacy parity, branch, required-file, and preserved checks remain.
+All other branches retain the frozen behavior. Required evidence is:
+
+```text
+python3 -m pytest -q tests/unit/test_cut1_presenter_live_binding_v2.py tests/unit/test_cut1_presenter_contract.py tests/unit/phase1_closure/test_runner.py
+python3 scripts/quality/cut1_presenter_contract.py --kind bundle --root .
+make phase1-closure-quality
+make quality
+uv run pytest -q tests/unit/test_stage8_cut1_routes.py tests/unit/test_issue452_quality_dispatcher.py tests/unit/test_quality_dispatcher.py
+uv run pytest -q tests/unit/test_stage8_quality_gate.py::test_issue366_contract_rejects_partial_scope_and_content_mutations
+uv run pytest -q tests/unit
+uv run ruff check scripts tests
+uv run mypy scripts tests
+python3 scripts/guardrails_check.py
+git diff --check
+```
+
+The exact route is capped at 1,200 charged lines, with review at 1,020 and
+stop/rescope at 1,080. The validator must remain below 500 physical lines and
+32,000 bytes; its dedicated v2 test must remain below 300 physical lines and
+32,000 bytes. Green execution creates no product, provider, media, spend,
+deployment, release, production, or acceptance authority.
+Direct `make stage8-quality` is not this phase-closure branch's route and is
+expected to reject its branch identity; the listed Stage 8 unit regressions are
+the applicable inherited route evidence.
+The OWNER corrective amendment adds only the inherited Stage 8 test as path 12.
+Its subprocess assertion replaces the historical branch-specific receipt with
+a branch-canonical complete-tuple receipt: only the current branch token is
+normalized before hashing, canonical success and branch rejection are pinned,
+and independent stdout/stderr mutations are rejected. The Issue #434 verifier,
+Stage 8 checker, workflows, and all v1/v2 identities remain unchanged.

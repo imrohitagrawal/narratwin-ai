@@ -1666,3 +1666,30 @@ finding, or unresolved review disagreement stops for OWNER disposition.
 - Stage 1 Issue #16 still blocks Lane A product/provider/media work. Activation,
   authority effect, provider/spend/media/release and production claims remain
   none/No-Go regardless of governance-validator state.
+
+## Issue #456 Cut 1 live-binding prerequisite — implementation complete, review pending
+
+Issue `#456` is active on branch
+`phase-1-closure-process-456-cut1-live-binding-v2` from exact base
+`c3ac83bf05336a539dbdd6af1de9905e6b954289`. C1 froze the original eleven-path
+preflight; C2 reproduced the mutable-ledger false rejection while preserving
+immutable-tamper rejection; two independent reviews passed C3 entry with no
+critical or high finding. C3 preserves the v1 SHA and PR #455 head/tree, pins a
+v2 five-input live set, rejects manifest/filesystem substitution, and routes
+failures through Phase 1 quality.
+
+Required local and hosted CI reproduced the same inherited Issue #434
+false-negative: a fixed receipt pinned one branch-specific complete subprocess
+tuple. OWNER corrective comment `5446644219` adds only that shared test as path
+12. Corrective RED commit `219f310` proves the baseline and two mutations are
+distinguishable before the old receipt fails. The GREEN state normalizes only
+the current branch token before hashing the complete subprocess tuple, pins
+canonical success and branch-rejection receipts, and rejects independent
+stdout/stderr mutations. It does not change the verifier, Stage 8 checker,
+workflow, product, or acceptance identity.
+
+Local implementation is not merge or completion evidence. Hosted checks,
+independent exact-head review, eligible non-author approval, merge, and
+closeout remain pending. Issue `#16` and Lane A remain blocked. No product,
+provider, credential, egress, spend, media, asset, deployment, publication,
+release, production-readiness, or presenter-acceptance authority is created.
