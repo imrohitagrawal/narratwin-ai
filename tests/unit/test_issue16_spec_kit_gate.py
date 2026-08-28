@@ -1,7 +1,11 @@
 from __future__ import annotations
 
+import importlib.util
 import shutil
+import sys
 from pathlib import Path
+from types import ModuleType
+from typing import Any
 
 import pytest
 
@@ -9,6 +13,76 @@ from scripts.quality import check_issue16_spec_kit as gate
 
 
 ROOT = Path(__file__).resolve().parents[2]
+ISSUE16_BRANCH = "stage1-16-spec-kit-gate"
+ISSUE16_GATE_COMMAND = [sys.executable, "scripts/quality/check_issue16_spec_kit.py"]
+
+
+def _load_dispatcher() -> ModuleType:
+    module_path = ROOT / "scripts/quality/check_quality_stage.py"
+    spec = importlib.util.spec_from_file_location("issue16_dispatcher_under_test", module_path)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def _run_dispatcher(
+    monkeypatch: Any, tmp_path: Path, *, branch: str, policy_only: bool = False
+) -> list[list[str]]:
+    dispatcher = _load_dispatcher()
+    stage_file = tmp_path / "current"
+    stage_file.write_text("8", encoding="utf-8")
+    status_file = tmp_path / "STATUS.md"
+    status_file.write_text("# status", encoding="utf-8")
+    calls: list[list[str]] = []
+    monkeypatch.setattr(dispatcher, "CURRENT_STAGE", stage_file)
+    monkeypatch.setattr(dispatcher, "STATUS_DOC", status_file)
+    monkeypatch.setattr(dispatcher, "current_branch", lambda: branch)
+    monkeypatch.setattr(dispatcher, "run_recommended_review_item_check", lambda stage: 0)
+
+    def record_call(args: list[str], **kwargs: object) -> int:
+        del kwargs
+        calls.append(list(args))
+        return 0
+
+    monkeypatch.setattr(dispatcher.subprocess, "call", record_call)
+    if policy_only:
+        monkeypatch.setenv("NARRATWIN_POLICY_ONLY", "1")
+    else:
+        monkeypatch.delenv("NARRATWIN_POLICY_ONLY", raising=False)
+    assert dispatcher.main() == 0
+    return calls
+
+
+def test_issue16_exact_branch_dispatches_only_dedicated_gate(
+    monkeypatch: Any, tmp_path: Path
+) -> None:
+    assert _run_dispatcher(monkeypatch, tmp_path, branch=ISSUE16_BRANCH) == [
+        ISSUE16_GATE_COMMAND
+    ]
+
+
+def test_issue16_policy_only_cannot_bypass_dedicated_gate(
+    monkeypatch: Any, tmp_path: Path
+) -> None:
+    assert _run_dispatcher(
+        monkeypatch, tmp_path, branch=ISSUE16_BRANCH, policy_only=True
+    ) == [ISSUE16_GATE_COMMAND]
+
+
+def test_issue16_gate_failure_is_propagated(monkeypatch: Any) -> None:
+    dispatcher = _load_dispatcher()
+    monkeypatch.setattr(dispatcher, "current_branch", lambda: ISSUE16_BRANCH)
+    monkeypatch.setattr(dispatcher, "run_issue16_spec_kit_gate", lambda: 17)
+    assert dispatcher.main() == 17
+
+
+def test_issue16_near_match_receives_no_route_authority(
+    monkeypatch: Any, tmp_path: Path
+) -> None:
+    assert _run_dispatcher(
+        monkeypatch, tmp_path, branch=f"{ISSUE16_BRANCH}-extra"
+    ) == [["make", "stage8-quality"]]
 
 
 def _copy_contract(tmp_path: Path) -> Path:

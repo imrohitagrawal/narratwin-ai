@@ -16,7 +16,7 @@ or claimed as approved. No product, provider, media, dependency, workflow,
 credential, egress, spend, deployment, publication, release, public-
 availability, or production-readiness authority is created.
 
-The exact 15-path GovernancePreflightV1 route is controlling. Charged-line
+The exact 14-path GovernancePreflightV1 route is controlling. Charged-line
 target/review/stop values are 1,900/2,160/2,400; they are orchestrator bounds,
 not OWNER-supplied requirements. `.stage/current` remains `8`.
 
@@ -98,6 +98,7 @@ prevented actions above are the evidence.
 | Required artifacts absent | Current main had no `.specify/` or `specs/`. | REQUIRED_CONTRACT | spec writer | Created within bounded route. |
 | Legacy Stage 1 gate cannot prove late gate | `.stage/current=8`; checker rejects current product tree. | REQUIRED_CONTRACT | orchestrator | Dedicated exact Issue #16 gate; no stage rollback. |
 | Top-level quality misrouted exact branch | Dispatcher RED: three fail, near-match green. | REQUIRED_CONTRACT | checker writer | Exact route added with failure propagation. |
+| Shared dispatcher test exceeded 250-line context cap | Full unit gate failed after first GREEN. | REQUIRED_CONTRACT | test writer | Regressions moved to focused test; shared file restored; route reduced to 14 paths. |
 | Status said #456 review pending | Compared GitHub state and status paragraph. | REQUIRED_CONTRACT | status writer | Reconciled in substantive PR. |
 | Spec Kit activation not approved | Skill Lock pin/license state checked. | REQUIRED_CONTRACT if activated | orchestrator | Equivalent artifacts only; no activation claim. |
 | Chosen path/line budgets not OWNER-provided | Issue body/comments contain no numeric budget. | ADVISORY_DEBT | orchestrator | Clearly labeled bounded planning decision. |
