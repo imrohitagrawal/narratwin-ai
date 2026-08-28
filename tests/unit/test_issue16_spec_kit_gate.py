@@ -279,6 +279,24 @@ def test_scope_snapshot_rejects_path_binding_and_budget_mutations() -> None:
         charged_lines={path: 200 for path in required},
     )
 
+    substituted = "frontend/unauthorized.ts"
+    mutated_required = [substituted if path == "docs/TRACEABILITY.md" else path for path in required]
+    mutated = {
+        **artifact,
+        "scope": {
+            **artifact["scope"],
+            "required": mutated_required,
+            "allowed_prefixes": list(mutated_required),
+        },
+    }
+    assert "I16.SCOPE.PATHS" in gate.validate_scope_snapshot(
+        mutated,
+        branch=gate.ISSUE16_BRANCH,
+        base_is_ancestor=True,
+        changed_files=mutated_required,
+        charged_lines={path: 1 for path in mutated_required},
+    )
+
 
 def test_live_repository_snapshot_is_part_of_validation(monkeypatch: Any) -> None:
     artifact = gate.load_preflight(ROOT)
