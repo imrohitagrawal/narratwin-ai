@@ -48,7 +48,6 @@ JS_YAML_431_INTEGRITY = (
 BRACE_509_INTEGRITY = (
     "sha512-ScQ4IuvIEF1TMlP7Zt+vjJ//9zlPb2SDcxWxM3bk8s6t6GGdJ7KO1dCcTidOPJKePW30LE/2cT7wCyPho9/Wxg=="
 )
-SEMGREP_LOCK_SHA256 = "1975bebb0fca718a45742ad13a759e2092162c44c944c310572b4d553de4d51c"
 ISSUE150_BASE = "a02286240212ad8958915aec01aa5ebaf60fa705"
 PYPDF_WHEEL_SHA256 = "14e001d6504822cb1ca9c7ed9a69bccb320f59b320730f55af804361abe4d5ee"
 PYPDF_SDIST_SHA256 = "d39c4d955a76409284a905e2d65b40076d77ab76129e0faaeeb6612403ecfc79"
@@ -312,7 +311,7 @@ def _packages(lock_path: Path) -> dict[str, set[str]]:
 
 
 def test_root_and_semgrep_tool_locks_are_separate_and_patched() -> None:
-    validate_project_contract(ROOT, today=dt.date(2026, 8, 28))
+    validate_project_contract(ROOT, today=dt.date(2026, 8, 29))
 
     root_project = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
     tool_project = tomllib.loads(
@@ -325,32 +324,28 @@ def test_root_and_semgrep_tool_locks_are_separate_and_patched() -> None:
     assert "semgrep" not in root_packages
     assert len(root_packages["click"]) == 1
     assert Version(next(iter(root_packages["click"]))) >= Version("8.3.3")
-    assert tool_project["project"]["dependencies"] == ["semgrep==1.172.0"]
-    assert tool_project["tool"]["uv"]["override-dependencies"] == ["mcp==1.28.1"]
-    assert tool_packages["semgrep"] == {"1.172.0"}
+    assert tool_project["project"]["dependencies"] == ["semgrep==1.175.0"]
+    assert "override-dependencies" not in tool_project["tool"]["uv"]
+    assert tool_packages["semgrep"] == {"1.175.0"}
     assert tool_packages["click"] == {"8.4.2"}
-    assert tool_packages["mcp"] == {"1.28.1"}
+    assert tool_packages["mcp"] == {"1.29.0"}
     assert tool_packages["cryptography"] == {"50.0.0"}
     assert tool_packages["pyjwt"] == {"2.13.0"}
 
 
-def test_semgrep_cryptography_generated_lock_delta_is_exact_and_isolated() -> None:
+def test_semgrep_1_175_generated_lock_has_no_override_and_is_isolated() -> None:
     lock_bytes = (ROOT / "tools/semgrep/uv.lock").read_bytes()
     lock = tomllib.loads(lock_bytes.decode())
     base_lock = tomllib.loads(_text_at(ISSUE150_BASE, "tools/semgrep/uv.lock"))
-    assert hashlib.sha256(lock_bytes).hexdigest() == "482cbb34aa540d8dc08598112ec6907e20aa99ff2fd17a248de2d2eba0a9a636"
-    assert lock["manifest"]["overrides"] == [{"name": "mcp", "specifier": "==1.28.1"}]
-    assert [package["name"] for package in lock["package"]] == [
-        package["name"] for package in base_lock["package"]
-    ]
-    normalized = copy.deepcopy(lock)
-    normalized["manifest"] = base_lock["manifest"]
-    for name in ("click", "narratwin-semgrep-tool", "semgrep"):
-        current_index = next(i for i, package in enumerate(normalized["package"]) if package["name"] == name)
-        normalized["package"][current_index] = next(
-            package for package in base_lock["package"] if package["name"] == name
-        )
-    assert normalized == base_lock
+    assert lock["manifest"].get("overrides", []) == []
+    packages = {package["name"]: package for package in lock["package"]}
+    assert packages["narratwin-semgrep-tool"]["dependencies"] == [{"name": "semgrep"}]
+    assert packages["semgrep"]["version"] == "1.175.0"
+    assert packages["mcp"]["version"] == "1.29.0"
+    assert packages["click"]["version"] == "8.4.2"
+    assert packages["pyjwt"]["version"] == "2.13.0"
+    assert packages["cryptography"]["version"] == "50.0.0"
+    assert base_lock["manifest"]["overrides"] == [{"name": "mcp", "specifier": "==1.28.1"}]
 
 
 def test_semgrep_tool_contract_rejects_vulnerable_cryptography_lock(
@@ -358,8 +353,8 @@ def test_semgrep_tool_contract_rejects_vulnerable_cryptography_lock(
 ) -> None:
     root_project: dict[str, Any] = {"tool": {"uv": {}}}
     tool_project: dict[str, Any] = {
-        "project": {"dependencies": ["semgrep==1.172.0"]},
-        "tool": {"uv": {"override-dependencies": ["mcp==1.28.1"]}},
+        "project": {"dependencies": ["semgrep==1.175.0"]},
+        "tool": {"uv": {}},
     }
     root_lock = {"click": {"8.3.3"}}
 
@@ -379,9 +374,9 @@ def test_semgrep_tool_contract_rejects_vulnerable_cryptography_lock(
 
     for version, accepted in (("49.0.0", False), ("50.0.0", True)):
         tool_lock = {
-            "semgrep": {"1.172.0"},
+            "semgrep": {"1.175.0"},
             "click": {"8.4.2"},
-            "mcp": {"1.28.1"},
+            "mcp": {"1.29.0"},
             "cryptography": {version},
         }
         monkeypatch.setattr(
@@ -396,11 +391,11 @@ def test_semgrep_tool_contract_rejects_vulnerable_cryptography_lock(
                 validate_project_contract(ROOT, today=dt.date(2026, 8, 4))
 
 
-def test_semgrep_tool_contract_rejects_missing_wrong_or_extra_mcp_override(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_semgrep_tool_contract_rejects_any_override_and_dependency_drift(monkeypatch: pytest.MonkeyPatch) -> None:
     root_project: dict[str, Any] = {"tool": {"uv": {}}}
     root_lock: dict[str, set[str]] = {"click": {"8.3.3"}}
-    base_tool: dict[str, Any] = {"project": {"dependencies": ["semgrep==1.172.0"]}, "tool": {"uv": {"override-dependencies": ["mcp==1.28.1"]}}}
-    base_lock: dict[str, set[str]] = {"semgrep": {"1.172.0"}, "click": {"8.4.2"}, "mcp": {"1.28.1"}, "cryptography": {"50.0.0"}}
+    base_tool: dict[str, Any] = {"project": {"dependencies": ["semgrep==1.175.0"]}, "tool": {"uv": {}}}
+    base_lock: dict[str, set[str]] = {"semgrep": {"1.175.0"}, "click": {"8.4.2"}, "mcp": {"1.29.0"}, "cryptography": {"50.0.0"}}
 
     def install(tool_project: dict[str, Any], tool_lock: dict[str, set[str]]) -> None:
         monkeypatch.setattr(semgrep_security, "_toml", lambda path: tool_project if "tools/semgrep" in str(path) else root_project)
@@ -410,15 +405,18 @@ def test_semgrep_tool_contract_rejects_missing_wrong_or_extra_mcp_override(monke
         monkeypatch.setattr(semgrep_security, "validate_reviewed_inputs", lambda root: None)
         monkeypatch.setattr(semgrep_security, "validate_audit_wrappers", lambda root: None)
 
-    for overrides in ([], ["mcp==1.23.3"], ["click==8.4.2", "mcp==1.28.1"], ["mcp==1.28.1", "other==1"]):
+    for overrides in (["mcp==1.29.0"], ["click==8.4.2"], ["other==1"]):
         candidate = copy.deepcopy(base_tool)
         candidate["tool"]["uv"]["override-dependencies"] = overrides
         install(candidate, copy.deepcopy(base_lock))
-        with pytest.raises(ContractError, match="MCP override"):
-            validate_project_contract(ROOT, today=dt.date(2026, 8, 28))
-    install(copy.deepcopy(base_tool), {**base_lock, "mcp": {"1.23.3"}})
+        with pytest.raises(ContractError, match="overrides"):
+            validate_project_contract(ROOT, today=dt.date(2026, 8, 29))
+    install({**copy.deepcopy(base_tool), "project": {"dependencies": ["semgrep==1.174.0"]}}, base_lock)
+    with pytest.raises(ContractError, match="Semgrep tool pin"):
+        validate_project_contract(ROOT, today=dt.date(2026, 8, 29))
+    install(copy.deepcopy(base_tool), {**base_lock, "mcp": {"1.28.1"}})
     with pytest.raises(ContractError, match="MCP lock"):
-        validate_project_contract(ROOT, today=dt.date(2026, 8, 28))
+        validate_project_contract(ROOT, today=dt.date(2026, 8, 29))
 
 
 def test_installed_semgrep_tool_identity_requires_locked_mcp(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
@@ -428,8 +426,8 @@ def test_installed_semgrep_tool_identity_requires_locked_mcp(monkeypatch: pytest
     site_packages = tmp_path / "semgrep-tool" / "lib"
     site_packages.mkdir(parents=True)
     monkeypatch.setattr(semgrep_security, "TOOL_ENV", tmp_path)
-    lock = {"semgrep": {"1.172.0"}, "click": {"8.4.2"}, "mcp": {"1.28.1"}, "cryptography": {"50.0.0"}, "pyjwt": {"2.13.0"}}
-    installed = [dist("semgrep", "1.172.0"), dist("click", "8.4.2"), dist("mcp", "1.28.1"), dist("cryptography", "50.0.0"), dist("PyJWT", "2.13.0")]
+    lock = {"semgrep": {"1.175.0"}, "click": {"8.4.2"}, "mcp": {"1.29.0"}, "cryptography": {"50.0.0"}, "pyjwt": {"2.13.0"}}
+    installed = [dist("semgrep", "1.175.0"), dist("click", "8.4.2"), dist("mcp", "1.29.0"), dist("cryptography", "50.0.0"), dist("PyJWT", "2.13.0")]
     monkeypatch.setattr(semgrep_security, "_locked_versions", lambda path: lock)
     monkeypatch.setattr(importlib.metadata, "distributions", lambda path: installed)
     validate_installed_tool(site_packages)
@@ -448,17 +446,17 @@ def test_installed_semgrep_tool_identity_rejects_vulnerable_cryptography(
     site_packages.mkdir(parents=True)
     monkeypatch.setattr(semgrep_security, "TOOL_ENV", tmp_path)
     locked = {
-        "semgrep": {"1.172.0"},
+        "semgrep": {"1.175.0"},
         "click": {"8.4.2"},
-        "mcp": {"1.28.1"},
+        "mcp": {"1.29.0"},
         "cryptography": {"50.0.0"},
         "pyjwt": {"2.13.0"},
     }
     monkeypatch.setattr(semgrep_security, "_locked_versions", lambda path: locked)
     installed = [
-        dist("semgrep", "1.172.0"),
+        dist("semgrep", "1.175.0"),
         dist("click", "8.4.2"),
-        dist("mcp", "1.28.1"),
+        dist("mcp", "1.29.0"),
         dist("cryptography", "49.0.0"),
         dist("PyJWT", "2.13.0"),
     ]
@@ -477,7 +475,7 @@ def test_installed_semgrep_tool_identity_requires_exact_pyjwt(
     site_packages = tmp_path / "semgrep-tool" / "lib"
     site_packages.mkdir(parents=True)
     monkeypatch.setattr(semgrep_security, "TOOL_ENV", tmp_path)
-    installed = [dist("semgrep", "1.172.0"), dist("click", "8.4.2"), dist("mcp", "1.28.1"), dist("cryptography", "50.0.0")]
+    installed = [dist("semgrep", "1.175.0"), dist("click", "8.4.2"), dist("mcp", "1.29.0"), dist("cryptography", "50.0.0")]
     if version is not None:
         installed.append(dist("PyJWT", version))
     monkeypatch.setattr(importlib.metadata, "distributions", lambda path: installed)
@@ -621,9 +619,9 @@ def test_semgrep_canary_requires_one_finding_and_both_files() -> None:
             validate_canary_result(candidate)
 
 
-def test_override_expiry_fails_closed() -> None:
-    with pytest.raises(ContractError, match="expired"):
-        validate_project_contract(ROOT, today=dt.date(2026, 8, 29))
+def test_removed_override_has_no_calendar_expiry() -> None:
+    assert not hasattr(semgrep_security, "OVERRIDE_EXPIRY")
+    validate_project_contract(ROOT, today=dt.date(2030, 1, 1))
 
 
 def test_backend_build_requires_explicit_click_and_semgrep_inventory() -> None:
