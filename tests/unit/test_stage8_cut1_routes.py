@@ -1451,6 +1451,37 @@ def test_issue459_rejects_each_missing_extra_and_text_budget(monkeypatch: Any) -
     assert failures == ["Stage 8 changed file outside the allowlist: rogue.txt"]
 
 
+def test_issue459_route_uses_frozen_base_on_incremental_hosted_push(
+    monkeypatch: Any,
+) -> None:
+    """A push's `before` SHA cannot hide paths added after the frozen base."""
+    branch = routes.ISSUE459_BRANCH
+    hidden = {
+        "docs/governance/cut1-controlled-presenter-red-corpus-v1.json",
+        "docs/governance/schemas/cut1-controlled-presenter-evidence-v1.schema.json",
+    }
+    monkeypatch.setattr(routes, "route_base", lambda *_: routes.ISSUE459_BASE)
+    monkeypatch.setattr(routes, "issue459_source_failures", lambda *_: [])
+    monkeypatch.setattr(routes, "issue459_base_source_failures", lambda *_: [])
+    monkeypatch.setattr(routes, "route_text_charges", lambda *_: (0, {}))
+    monkeypatch.setattr(
+        routes,
+        "route_binary_sizes",
+        lambda *_: {path: 1 for path in routes.ISSUE459_BYTE_LIMITS},
+    )
+
+    def hosted(args: list[str]) -> subprocess.CompletedProcess[str]:
+        if args[:4] == ["git", "diff", "--name-only", "-z"]:
+            return completed(args, out="".join(f"{path}\0" for path in sorted(ISSUE459_EXPECTED)))
+        return completed(args)
+
+    failures: list[str] = []
+    routes.check_exact_route(
+        REPO, hosted, branch, ISSUE459_EXPECTED - hidden, failures
+    )
+    assert failures == []
+
+
 def test_issue459_rejects_source_authority_and_rename_copy_drift(monkeypatch: Any) -> None:
     monkeypatch.setattr(routes, "ISSUE459_SOURCE_SHA256", {"docs/PRD.md": "0" * 64})
     assert routes.issue459_source_failures(REPO) == [
@@ -1477,8 +1508,12 @@ def test_issue459_rejects_source_authority_and_rename_copy_drift(monkeypatch: An
     monkeypatch.setattr(routes, "route_binary_sizes",
                         lambda *_: {path: 1 for path in ISSUE459_BYTE_CAPS})
     renamed = completed([], out="R100\0docs/PHASE_PLAN.md\0docs/STATUS.md\0")
+    def renamed_run(args: list[str]) -> subprocess.CompletedProcess[str]:
+        if "--name-only" in args:
+            return completed(args, out="".join(f"{path}\0" for path in sorted(ISSUE459_EXPECTED)))
+        return renamed
     failures: list[str] = []
-    routes.check_exact_route(REPO, lambda _: renamed, routes.ISSUE459_BRANCH,
+    routes.check_exact_route(REPO, renamed_run, routes.ISSUE459_BRANCH,
                              ISSUE459_EXPECTED, failures)
     assert failures == ["Issue #459 route forbids renamed or copied paths."]
 
