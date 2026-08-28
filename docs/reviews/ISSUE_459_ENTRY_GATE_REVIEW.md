@@ -1,6 +1,6 @@
 # Issue #459 T01/T02 Entry-Gate Review
 
-Status: `CORRECTION_HEAD_PENDING_EXACT_REVIEW`
+Status: `FINAL_CORRECTION_HEAD_PENDING_EXACT_REVIEW`
 
 Scope is limited to the fixed-base preflight, exact route/dispatcher, closed
 evidence schema, stimulus-only corpus, literal test-owned RED oracle, process
@@ -36,6 +36,25 @@ entry-scope REQUIRED_CONTRACT roots:
 | Stale current-state ledger | STATUS and stage plan simultaneously called Issue #16 current/future and #459 current | #16/#456 wording made explicitly historical/completed; #459 is the only current Lane A entry route |
 
 The correction head must independently reproduce green bootstrap/policy checks
-and exactly 91 future assertions failing only against
+and exactly 128 future assertions failing only against
 `CUT1.ENTRY.NOT_IMPLEMENTED`. Any new reproduced CRITICAL_BLOCKER or entry-scope
 REQUIRED_CONTRACT keeps this review pending and blocks GREEN implementation.
+
+Independent review of correction candidate
+`8dd002589d45b41205a80dc004e7e6480bec901f` closed the earlier source,
+topology, route, readiness, and ledger roots, then reproduced two narrower
+`REQUIRED_CONTRACT` roots. First, mutable incorporated repository authorities
+needed accepted-base digests and several observability, approval/dependency,
+rights, configuration, and acceptance leaves lacked literal mutations. Second,
+self-authorship, replay, and approval checksum findings depended on magic values
+rather than relations available to the materialized-stimulus-only executor.
+
+The pending final correction binds the four mutable authorities to their
+accepted-base bytes, expands the stimulus-only corpus to 128 test-owned cases,
+and defines reviewer/author independence, single-use approval state, immutable
+request framing, and canonical approval-digest framing. Focused bootstrap,
+route/dispatcher, lint, type, guardrail, diff, budget, and policy checks are
+green. Full RED has one bootstrap pass and exactly 128 future failures, each
+showing only typed `CUT1.ENTRY.NOT_IMPLEMENTED`, with no setup or collection
+error. These are candidate observations, not an approval; independent review
+must reproduce them on the committed exact head before T03 or any GREEN work.

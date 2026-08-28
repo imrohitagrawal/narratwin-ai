@@ -1381,6 +1381,12 @@ def test_issue459_route_is_exact_fixed_and_budgeted() -> None:
         "5449765467": "75882f1f3deb8dea77ab945cd58f0526b04644fb4cb208bcd50ddea29846bbe7",
         "5449822130": "48f86809e1032884d5576ceefde06d64785b486e1adae940fe32c2b6391e6cf3",
     }
+    assert routes.ISSUE459_BASE_SOURCE_SHA256 == {
+        "docs/STATUS.md": "9045b595ca1622680f621dffa4dff88435e2fde0d13e3c061ced7eb6df9ae8bf",
+        "docs/TRACEABILITY.md": "e597069e3d6b765a9d68e5336ff9597d6d7b809e5ea6f316f22312ca71ea136a",
+        "docs/QUALITY_GATES.md": "9f628d22ec62075e560ef478820cf094d923cdf1cfded56a512291c61f6e542b",
+        "docs/REPOSITORY_GUARDRAILS.md": "04f8b405bc7ba9b615cc1d5d7e489bcbf643b9de4bfc9b331e5a60c38629e82f",
+    }
 
 
 def test_issue459_requires_fixed_base_and_branch_point() -> None:
@@ -1446,6 +1452,12 @@ def test_issue459_rejects_source_authority_and_rename_copy_drift(monkeypatch: An
                         {"missing-authority": "0" * 64})
     assert routes.issue459_source_failures(REPO) == [
         "Issue #459 editable authority identity drifted: missing-authority"
+    ]
+    monkeypatch.undo()
+    assert routes.issue459_base_source_failures(REPO) == []
+    monkeypatch.setattr(routes, "ISSUE459_BASE_SOURCE_SHA256", {"docs/STATUS.md": "0" * 64})
+    assert routes.issue459_base_source_failures(REPO) == [
+        "Issue #459 base source identity drifted: docs/STATUS.md"
     ]
     monkeypatch.undo()
     assert routes.route_has_copy_or_rename("R100\0old\0new\0")

@@ -47,6 +47,10 @@ this increment.
 | `docs/OBSERVABILITY_AND_COST.md` | `c77a0d4ea071e6ea364d9c1f4175361633d4d54962c7fc8d9527033e160d91c6` | observability/cost constraint |
 | `docs/governance/cut1-blinded-human-evaluation-protocol-v1.json` | `fa3759985141639185618fbc595057412dd8582f60ed97fc462b30b7548580b8` | nonactivated human-study contract |
 | `docs/governance/cut1-provider-bakeoff-contract-v1.json` | `1a3fd981644488203e8c7cc38fc0389092b23b579cce860c3d35a1ca7a1786db` | disabled provider contract |
+| `docs/STATUS.md` at accepted base | `9045b595ca1622680f621dffa4dff88435e2fde0d13e3c061ced7eb6df9ae8bf` | mutable current-state constraint before this route |
+| `docs/TRACEABILITY.md` at accepted base | `e597069e3d6b765a9d68e5336ff9597d6d7b809e5ea6f316f22312ca71ea136a` | mutable traceability constraint before this route |
+| `docs/QUALITY_GATES.md` at accepted base | `9f628d22ec62075e560ef478820cf094d923cdf1cfded56a512291c61f6e542b` | mutable quality constraint before this route |
+| `docs/REPOSITORY_GUARDRAILS.md` at accepted base | `04f8b405bc7ba9b615cc1d5d7e489bcbf643b9de4bfc9b331e5a60c38629e82f` | immutable route-entry guardrail constraint |
 
 The approved knowledge is `demo/stage8_seed_project.md` at
 `49b75655ddbbe43145a35215069bce2751de66393b39eb68d69b584d7ecfcc5e`.
@@ -120,6 +124,16 @@ infinity, strings, booleans, pooled values, or missing per-cell evidence fail.
 | Captions | Stage 6 artifact/manifest contracts | exact script/audio/caption agreement | text-only placeholder success |
 | Presenter output | `AvatarProvider`, `Stage7Service`, artifact metadata | controlled local render boundary | external stub or JSON placeholder as video |
 | Evaluation | current evaluation and approval checksums | current passing evidence | stale or replayed approval |
+
+Approval evaluation is self-contained. For each cell, `artifactAuthorId` must
+differ from `reviewerId`, `approvalUseCount` must equal one, and the approved
+artifact and manifest digests must equal the same cell's artifact and manifest.
+`approvalRequestSha256` is SHA-256 over the UTF-8 newline-framed sequence
+`Cut1ApprovalRequestV1`, artifact digest, manifest digest, presenter-binding
+digest. `approvalSha256` is SHA-256 over the UTF-8 newline-framed sequence
+`Cut1ApprovalV1`, approval ID, approval-request digest, reviewer ID, artifact
+author ID, approved-at timestamp. No corpus ID, magic actor name, prior process
+memory, or expectation map is an input to those decisions.
 
 ### Reproduced lineage conflict
 

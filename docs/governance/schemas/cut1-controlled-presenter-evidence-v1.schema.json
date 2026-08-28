@@ -125,7 +125,7 @@
         "lineage": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["retrievalSha256", "claimSupportSha256", "presenterBindingSha256", "narrationSha256", "voiceProfileId", "voiceProfileVersion", "audioSha256", "captionSha256", "captionCueEvidenceSha256", "manifestSha256", "evaluationSha256", "evaluatorVersion", "metricEvidenceSha256", "approvalId", "approvalSha256", "approvedArtifactSha256", "approvedManifestSha256", "reviewerId", "approvedAt", "approvalCurrent"],
+          "required": ["retrievalSha256", "claimSupportSha256", "presenterBindingSha256", "narrationSha256", "voiceProfileId", "voiceProfileVersion", "audioSha256", "captionSha256", "captionCueEvidenceSha256", "manifestSha256", "evaluationSha256", "evaluatorVersion", "metricEvidenceSha256", "approvalId", "approvalRequestSha256", "approvalSha256", "approvedArtifactSha256", "approvedManifestSha256", "artifactAuthorId", "reviewerId", "approvedAt", "approvalCurrent", "approvalUseCount"],
           "properties": {
             "retrievalSha256": {"$ref": "#/$defs/sha256"},
             "claimSupportSha256": {"$ref": "#/$defs/sha256"},
@@ -141,12 +141,15 @@
             "evaluatorVersion": {"$ref": "#/$defs/id"},
             "metricEvidenceSha256": {"$ref": "#/$defs/sha256"},
             "approvalId": {"$ref": "#/$defs/id"},
+            "approvalRequestSha256": {"$ref": "#/$defs/sha256"},
             "approvalSha256": {"$ref": "#/$defs/sha256"},
             "approvedArtifactSha256": {"$ref": "#/$defs/sha256"},
             "approvedManifestSha256": {"$ref": "#/$defs/sha256"},
+            "artifactAuthorId": {"$ref": "#/$defs/id"},
             "reviewerId": {"$ref": "#/$defs/id"},
             "approvedAt": {"type": "string", "format": "date-time"},
-            "approvalCurrent": {"const": true}
+            "approvalCurrent": {"const": true},
+            "approvalUseCount": {"const": 1}
           }
         },
         "rights": {

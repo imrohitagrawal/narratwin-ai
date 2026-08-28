@@ -5,6 +5,7 @@ import hashlib
 import json
 import re
 import stat
+import subprocess
 from pathlib import Path
 from typing import Any, Callable
 
@@ -509,22 +510,18 @@ ISSUE459_SOURCE_SHA256 = {
     "demo/stage8_seed_project.md": "49b75655ddbbe43145a35215069bce2751de66393b39eb68d69b584d7ecfcc5e",
     "docs/demo/PHASE_1_DEMO_SCRIPT.md": "3b071180d4723784d84f5005644fc5a2aa5ef6b6adb6f7caeba2de76d68be435",
     "backend/app/presenter_registry.json": "eb31a953b85ffaf2c43f54e4da7fb89eda740c724967a9301f726c6091ab01c2",
-    "docs/PRD.md": "2cde5d9ec7d8e932b25f2fdf66d4dd11f49065b50078f16f59b6a65cbb7d720a",
-    "docs/REQUIREMENTS_TRACEABILITY_MATRIX.md": "0a3c14d0d61fbfaf5fe6dec0a7ca3a9412f1b1fd8aa458837f0c3b37b5570db3",
-    "docs/ARCHITECTURE.md": "e7515ee96dce07e0d583e15984ea335b6f2499bfd8aa6e9f519bc4a830122fa4",
-    "docs/API_CONTRACT.md": "910259f61acbbec4e3432c482d821fd56f2fe8b2073211c7ce112c3cd87405bf",
-    "docs/DATA_MODEL.md": "f073c9bff26717233f23c6317b03736c02bee5952b88fa840767f79287b6ec09",
-    "docs/SECURITY_AND_PRIVACY.md": "185fe98ffa0b12287b6e7e8a532fac89ffa7a29380db71f8dd6aa4d1b7bc4b62",
-    "docs/OBSERVABILITY_AND_COST.md": "c77a0d4ea071e6ea364d9c1f4175361633d4d54962c7fc8d9527033e160d91c6",
-    "docs/governance/cut1-blinded-human-evaluation-protocol-v1.json": "fa3759985141639185618fbc595057412dd8582f60ed97fc462b30b7548580b8",
+    "docs/PRD.md": "2cde5d9ec7d8e932b25f2fdf66d4dd11f49065b50078f16f59b6a65cbb7d720a", "docs/REQUIREMENTS_TRACEABILITY_MATRIX.md": "0a3c14d0d61fbfaf5fe6dec0a7ca3a9412f1b1fd8aa458837f0c3b37b5570db3",
+    "docs/ARCHITECTURE.md": "e7515ee96dce07e0d583e15984ea335b6f2499bfd8aa6e9f519bc4a830122fa4", "docs/API_CONTRACT.md": "910259f61acbbec4e3432c482d821fd56f2fe8b2073211c7ce112c3cd87405bf",
+    "docs/DATA_MODEL.md": "f073c9bff26717233f23c6317b03736c02bee5952b88fa840767f79287b6ec09", "docs/SECURITY_AND_PRIVACY.md": "185fe98ffa0b12287b6e7e8a532fac89ffa7a29380db71f8dd6aa4d1b7bc4b62",
+    "docs/OBSERVABILITY_AND_COST.md": "c77a0d4ea071e6ea364d9c1f4175361633d4d54962c7fc8d9527033e160d91c6", "docs/governance/cut1-blinded-human-evaluation-protocol-v1.json": "fa3759985141639185618fbc595057412dd8582f60ed97fc462b30b7548580b8",
     "docs/governance/cut1-provider-bakeoff-contract-v1.json": "1a3fd981644488203e8c7cc38fc0389092b23b579cce860c3d35a1ca7a1786db",
 }
 ISSUE459_EDITABLE_AUTHORITY_SHA256 = {
-    "Issue #459": "dd03b171f25b0d249a79834f22674c728e539fa8b171a97b3a4728474e0039d5",
-    "5449632582": "07b7cb91660a21ba0a70419ff07195a2532089a087d7a289806142dc81151fa0",
-    "5449637037": "f236d2840a7ce35e074b6e370dcc706278772c47fa09b6c18b20a344b22fd1a0",
-    "5449765467": "75882f1f3deb8dea77ab945cd58f0526b04644fb4cb208bcd50ddea29846bbe7",
-    "5449822130": "48f86809e1032884d5576ceefde06d64785b486e1adae940fe32c2b6391e6cf3",
+    "Issue #459": "dd03b171f25b0d249a79834f22674c728e539fa8b171a97b3a4728474e0039d5", "5449632582": "07b7cb91660a21ba0a70419ff07195a2532089a087d7a289806142dc81151fa0", "5449637037": "f236d2840a7ce35e074b6e370dcc706278772c47fa09b6c18b20a344b22fd1a0",
+    "5449765467": "75882f1f3deb8dea77ab945cd58f0526b04644fb4cb208bcd50ddea29846bbe7", "5449822130": "48f86809e1032884d5576ceefde06d64785b486e1adae940fe32c2b6391e6cf3",
+}
+ISSUE459_BASE_SOURCE_SHA256 = {
+    "docs/STATUS.md": "9045b595ca1622680f621dffa4dff88435e2fde0d13e3c061ced7eb6df9ae8bf", "docs/TRACEABILITY.md": "e597069e3d6b765a9d68e5336ff9597d6d7b809e5ea6f316f22312ca71ea136a", "docs/QUALITY_GATES.md": "9f628d22ec62075e560ef478820cf094d923cdf1cfded56a512291c61f6e542b", "docs/REPOSITORY_GUARDRAILS.md": "04f8b405bc7ba9b615cc1d5d7e489bcbf643b9de4bfc9b331e5a60c38629e82f",
 }
 TEXT_LIMITS = {
     ISSUE459_BRANCH: {
@@ -1262,6 +1259,23 @@ def issue459_source_failures(root: Path) -> list[str]:
     return failures
 
 
+def issue459_base_source_failures(root: Path) -> list[str]:
+    try:
+        text = (root / "docs/governance/ISSUE_459_CONTROLLED_PRESENTER_PREFLIGHT_V1.md").read_text(encoding="utf-8")
+        failures: list[str] = []
+        environment = {"PATH": "/usr/bin:/bin", "LC_ALL": "C", "GIT_NO_LAZY_FETCH": "1"}
+        for path, expected in ISSUE459_BASE_SOURCE_SHA256.items():
+            result = subprocess.run(["/usr/bin/git", "show", f"{ISSUE459_BASE}:{path}"], cwd=root,
+                env=environment, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False, timeout=5
+            )
+            if (result.returncode or hashlib.sha256(result.stdout).hexdigest() != expected or
+                    f"`{expected}`" not in text):
+                failures.append(f"Issue #459 base source identity drifted: {path}")
+        return failures
+    except (OSError, UnicodeError, subprocess.TimeoutExpired) as error:
+        return [f"Issue #459 base-source freeze failed closed: {error}"]
+
+
 def check_exact_route(
     root: Path, run: Callable[[list[str]], Any], branch: str, changed: set[str], failures: list[str]
 ) -> None:
@@ -1279,6 +1293,7 @@ def check_exact_route(
         failures.extend(issue424_governance_failures(root))
     if branch == ISSUE459_BRANCH:
         failures.extend(issue459_source_failures(root))
+        failures.extend(issue459_base_source_failures(root))
         try:
             preflight = load_json_without_duplicate_members(
                 root / "docs/governance/preflights/issue-459.json"

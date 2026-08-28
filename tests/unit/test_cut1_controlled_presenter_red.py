@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import copy
+import hashlib
 import importlib.util
 import json
 import sys
@@ -23,6 +24,10 @@ EXPECTED_CODES = {
     "CELL-02": ("CUT1.CELL.POOLED",),
     "CELL-03": ("CUT1.CELL.DUPLICATE",),
     "CELL-04": ("CUT1.CELL.UNKNOWN",),
+    "CELL-05": ("CUT1.CELL.LANGUAGE",),
+    "CELL-06": ("CUT1.CELL.ASPECT",),
+    "CELL-07": ("CUT1.CELL.EVIDENCE_STATE",),
+    "CELL-08": ("CUT1.CELL.DECISION",),
     "AUTH-01": ("CUT1.AUTHORITY.BASE_DRIFT",),
     "AUTH-02": ("CUT1.AUTHORITY.SOURCE_DRIFT",),
     "AUTH-03": ("CUT1.AUTHORITY.SCRIPT_DRIFT",),
@@ -38,19 +43,31 @@ EXPECTED_CODES = {
         "CUT1.LINEAGE.RETRIEVAL", "CUT1.LINEAGE.CLAIM_SUPPORT",
         "CUT1.LINEAGE.CAPTION_CUES", "CUT1.LINEAGE.EVALUATOR_VERSION",
         "CUT1.LINEAGE.REGISTRY", "CUT1.LINEAGE.PRESENTER_VERSION"), start=2)},
+    "LINEAGE-16": ("CUT1.LINEAGE.PRESENTER_BINDING",),
     "APPROVAL-01": ("CUT1.APPROVAL.STALE",),
     "APPROVAL-02": ("CUT1.APPROVAL.ARTIFACT_MISMATCH",),
     "APPROVAL-03": ("CUT1.APPROVAL.MANIFEST_MISMATCH",),
     "APPROVAL-04": ("CUT1.APPROVAL.SELF_AUTHORED",),
-    "APPROVAL-05": ("CUT1.APPROVAL.BINDING_MISMATCH",),
-    "APPROVAL-06": ("CUT1.APPROVAL.ID_MISMATCH",),
+    "APPROVAL-05": ("CUT1.APPROVAL.DIGEST_MISMATCH",),
+    "APPROVAL-06": ("CUT1.APPROVAL.REPLAYED",),
     "APPROVAL-07": ("CUT1.APPROVAL.TIME_INVALID",),
+    "APPROVAL-08": ("CUT1.APPROVAL.SPEECH_STATUS",),
+    "APPROVAL-09": ("CUT1.APPROVAL.ARTIFACT_STATUS",),
+    "APPROVAL-10": ("CUT1.APPROVAL.HUMAN_STATUS",),
+    "APPROVAL-11": ("CUT1.APPROVAL.DIGEST_MISMATCH",),
+    "APPROVAL-12": ("CUT1.APPROVAL.REQUEST_MISMATCH",),
+    "APPROVAL-13": ("CUT1.APPROVAL.SELF_AUTHORED",),
+    "RIGHTS-01": ("CUT1.RIGHTS.ORIGINAL_OVERWRITTEN",),
+    "RIGHTS-02": ("CUT1.RIGHTS.PROVENANCE",),
+    "RIGHTS-03": ("CUT1.RIGHTS.DELETION_REF",),
     "MEDIA-01": ("CUT1.MEDIA.PLACEHOLDER",),
     "MEDIA-02": ("CUT1.MEDIA.CORRUPT",),
     **{f"MEDIA-{index:02d}": (code,) for index, code in enumerate((
         "CUT1.MEDIA.TYPE", "CUT1.MEDIA.EMPTY", "CUT1.MEDIA.NONREGULAR",
         "CUT1.MEDIA.OVERSIZED", "CUT1.MEDIA.NO_AUDIO", "CUT1.MEDIA.NO_CAPTIONS",
         "CUT1.MEDIA.FOREIGN", "CUT1.MEDIA.DURATION", "CUT1.MEDIA.DIMENSIONS"), start=3)},
+    "MEDIA-12": ("CUT1.MEDIA.KIND",),
+    "MEDIA-13": ("CUT1.MEDIA.DIMENSIONS",),
     "GROUND-01": ("CUT1.GROUNDING.UNSUPPORTED",),
     "IDENTITY-01": ("CUT1.IDENTITY.UNAUTHORIZED",),
     "DERIVATIVE-01": ("CUT1.DERIVATIVE.UNAUTHORIZED",),
@@ -61,10 +78,20 @@ EXPECTED_CODES = {
     "PROVIDER-05": ("CUT1.PROVIDER.CALL",),
     "PROVIDER-06": ("CUT1.PROVIDER.RETRY",),
     "PROVIDER-07": ("CUT1.PROVIDER.MODEL",),
+    "PROVIDER-08": ("CUT1.PROVIDER.MODE",),
+    "PROVIDER-09": ("CUT1.PROVIDER.CONFIG",),
     "A11Y-01": ("CUT1.A11Y.KEYBOARD",),
     "OBS-01": ("CUT1.PRIVACY.SENSITIVE_CONTENT",),
     "OBS-02": ("CUT1.PRIVACY.PROVIDER_PAYLOAD",),
     "OBS-03": ("CUT1.OBSERVABILITY.TRACE_MISSING",),
+    **{f"OBS-{index:02d}": (code,) for index, code in enumerate((
+        "CUT1.OBSERVABILITY.TENANT_MISSING", "CUT1.OBSERVABILITY.PROJECT_MISSING",
+        "CUT1.OBSERVABILITY.REQUEST_MISSING", "CUT1.OBSERVABILITY.RUN_MISSING",
+        "CUT1.OBSERVABILITY.PROVENANCE_MISSING", "CUT1.OBSERVABILITY.DELETION_MISSING",
+        "CUT1.OBSERVABILITY.OUTCOME_INVALID", "CUT1.OBSERVABILITY.REFUSAL_INVALID",
+        "CUT1.OBSERVABILITY.ERROR_INVALID", "CUT1.OBSERVABILITY.FALLBACK_INVALID",
+        "CUT1.OBSERVABILITY.START_INVALID", "CUT1.OBSERVABILITY.FINISH_INVALID",
+        "CUT1.OBSERVABILITY.DURATION_INVALID"), start=4)},
     "INPUT-01": ("CUT1.INPUT.NON_FINITE",),
     "M01-01": ("CUT1.METRIC.C1-M01",),
     "M01-02": ("CUT1.METRIC.C1-M01",),
@@ -87,6 +114,12 @@ EXPECTED_CODES = {
     **{f"M10-{index:02d}": ("CUT1.METRIC.C1-M10",) for index in range(2, 6)},
     "BLOCKED-01": ("CUT1.DEPENDENCY.AUDIO_OWNERSHIP",),
     "BLOCKED-02": ("CUT1.DEPENDENCY.HUMAN_STUDY",),
+    "BLOCKED-03": ("CUT1.DEPENDENCY.PROVIDER_AUTHORITY",),
+    "BLOCKED-04": ("CUT1.DEPENDENCY.HUMAN_STUDY_AUTHORITY",),
+    "BLOCKED-05": ("CUT1.DEPENDENCY.DERIVATIVE_READINESS",),
+    "BLOCKED-06": ("CUT1.ACCEPTANCE.TECHNICAL_DECISION",),
+    "BLOCKED-07": ("CUT1.ACCEPTANCE.CUT1_DECISION",),
+    "DOC-01": ("CUT1.DOCUMENT.SCHEMA_VERSION",),
 }
 
 
@@ -112,6 +145,10 @@ def load_module() -> ModuleType:
     sys.modules[spec.name] = module
     spec.loader.exec_module(module)
     return module
+
+
+def framed_sha256(*parts: str) -> str:
+    return hashlib.sha256("\n".join(parts).encode("utf-8")).hexdigest()
 
 
 def baseline() -> dict[str, Any]:
@@ -140,6 +177,17 @@ def baseline() -> dict[str, Any]:
          ("myra", "LANDSCAPE"), ("myra", "PORTRAIT")), start=1
     ):
         digest = f"{index:x}" * 64
+        approval_id = f"approval-{index}"
+        artifact_author_id = f"candidate-author-{index}"
+        reviewer_id = f"reviewer-{index}"
+        approved_at = "2026-08-28T00:00:00Z"
+        approval_request = framed_sha256(
+            "Cut1ApprovalRequestV1", digest, digest, digest
+        )
+        approval_digest = framed_sha256(
+            "Cut1ApprovalV1", approval_id, approval_request, reviewer_id,
+            artifact_author_id, approved_at
+        )
         cell_metrics = copy.deepcopy(metrics)
         cell_metrics.update(
             repeatScriptSha256="3b071180d4723784d84f5005644fc5a2aa5ef6b6adb6f7caeba2de76d68be435",
@@ -159,10 +207,13 @@ def baseline() -> dict[str, Any]:
                         "captionCueEvidenceSha256": digest,
                         "manifestSha256": digest, "evaluationSha256": digest,
                         "evaluatorVersion": "v1",
-                        "metricEvidenceSha256": digest, "approvalId": f"approval-{index}",
-                        "approvalSha256": digest, "approvedArtifactSha256": digest,
-                        "approvedManifestSha256": digest, "reviewerId": f"reviewer-{index}",
-                        "approvedAt": "2026-08-28T00:00:00Z", "approvalCurrent": True},
+                        "metricEvidenceSha256": digest, "approvalId": approval_id,
+                        "approvalRequestSha256": approval_request,
+                        "approvalSha256": approval_digest, "approvedArtifactSha256": digest,
+                        "approvedManifestSha256": digest,
+                        "artifactAuthorId": artifact_author_id, "reviewerId": reviewer_id,
+                        "approvedAt": approved_at, "approvalCurrent": True,
+                        "approvalUseCount": 1},
             "rights": {"fictionalIdentity": True, "derivativeAuthorized": False,
                        "originalOverwritten": False, "provenanceSha256": digest,
                        "deletionRef": f"delete-{index}"},
@@ -275,6 +326,21 @@ def test_bootstrap_schema_corpus_and_oracle_are_closed() -> None:
     assert schema["$defs"]["cell"]["additionalProperties"] is False
     assert len(baseline()["cells"]) == 6
     assert schema_valid(baseline(), schema, schema)
+    first = baseline()["cells"][0]
+    lineage = first["lineage"]
+    assert lineage["artifactAuthorId"] != lineage["reviewerId"]
+    assert lineage["approvalUseCount"] == 1
+    assert lineage["approvalRequestSha256"] == framed_sha256(
+        "Cut1ApprovalRequestV1", first["artifact"]["sha256"],
+        lineage["manifestSha256"], lineage["presenterBindingSha256"]
+    )
+    assert lineage["approvalSha256"] == framed_sha256(
+        "Cut1ApprovalV1", lineage["approvalId"], lineage["approvalRequestSha256"],
+        lineage["reviewerId"], lineage["artifactAuthorId"], lineage["approvedAt"]
+    )
+    self_authored = materialize(next(case["mutation"] for case in corpus["cases"]
+                                     if case["id"] == "APPROVAL-04"))["cells"][0]["lineage"]
+    assert self_authored["reviewerId"] == self_authored["artifactAuthorId"]
     assert exact_cell_keys_conform(baseline(), schema)
     assert not exact_cell_keys_conform(materialize({"op": "DUPLICATE_CELL_KEY"}), schema)
     assert not schema_valid(materialize({"op": "SET_NON_FINITE",
