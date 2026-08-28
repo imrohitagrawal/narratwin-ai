@@ -230,7 +230,7 @@ def baseline() -> dict[str, Any]:
         cell_metrics.update(
             repeatScriptSha256="3b071180d4723784d84f5005644fc5a2aa5ef6b6adb6f7caeba2de76d68be435",
             repeatPresenterBindingSha256=synthetic_digest(index, "presenter-binding"),
-            repeatEvaluatorSha256=synthetic_digest(index, "evaluator-repeat"),
+            repeatEvaluatorSha256=synthetic_digest(index, "evaluation"),
             repeatManifestSha256=synthetic_digest(index, "manifest"),
         )
         cell = {
@@ -425,6 +425,12 @@ def test_bootstrap_schema_corpus_and_oracle_are_closed() -> None:
     assert len({first["artifact"]["sha256"], lineage["manifestSha256"],
                 lineage["presenterBindingSha256"], lineage["evaluationSha256"],
                 lineage["metricEvidenceSha256"]}) == 5
+    assert first["metrics"]["repeatScriptSha256"] == valid["authority"]["scriptSha256"]
+    assert first["metrics"]["repeatPresenterBindingSha256"] == lineage[
+        "presenterBindingSha256"
+    ]
+    assert first["metrics"]["repeatEvaluatorSha256"] == lineage["evaluationSha256"]
+    assert first["metrics"]["repeatManifestSha256"] == lineage["manifestSha256"]
     assert first["artifact"]["createdAt"] < lineage["approvedAt"]
     assert valid["observability"]["startedAt"] < lineage["approvalValidUntil"]
     swapped = framed_sha256(
