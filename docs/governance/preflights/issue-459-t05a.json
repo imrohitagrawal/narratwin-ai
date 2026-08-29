@@ -1,0 +1,53 @@
+{
+  "schema_version": "GovernancePreflightV1",
+  "issue_number": 459,
+  "branch": "stage8-459-t05a-grounded-narration-handoff",
+  "objective": "From exact accepted main 0d70fa8e27ad4760249d75e7782ac06b5d68b173, implement only the Issue #459 T05A grounded-narration handoff under checkpoint comment 5465050919, exact body SHA-256 ab0d0b486bf77eac59db2b83c0d33bd0ae61bb52ed26b37b4d7a8402b2ec31c8. Infer exactly one governed presenter from the complete canonical 18-claim hash set; reject mixed, partial, stale, substituted, ambiguous, or unmatched claims; and create presenter-matched, independently replayable narration receipts for Meera, Raj, and Myra. Preserve Issue #368 ownership of real audio and caption production. Use exactly twelve paths and no more than 2200 charged text lines. Keep providers, credentials, network, egress, spend, synthesis, media generation, registry/media changes, deployment, publication, release, production, and Cut 1 acceptance out of scope. Stop on route, base, authority, budget, lineage, presenter, source, evaluation, replay, security, or hosted drift.",
+  "status_decision": "update-minimally",
+  "scope": {
+    "required": [
+      "docs/governance/preflights/issue-459-t05a.json",
+      "backend/app/cut1_grounding.py",
+      "backend/app/narration.py",
+      "tests/unit/test_cut1_atomic_grounding.py",
+      "tests/unit/test_cut1_narration.py",
+      "docs/ADR/0070-cut1-t05-grounded-narration-handoff.md",
+      "scripts/quality/stage8_cut1_routes.py",
+      "tests/unit/test_stage8_cut1_routes.py",
+      "docs/QUALITY_GATES.md",
+      "docs/STAGE_ISSUE_PLAN.md",
+      "docs/STATUS.md",
+      "docs/TRACEABILITY.md"
+    ],
+    "allowed_prefixes": [
+      "docs/governance/preflights/issue-459-t05a.json",
+      "backend/app/cut1_grounding.py",
+      "backend/app/narration.py",
+      "tests/unit/test_cut1_atomic_grounding.py",
+      "tests/unit/test_cut1_narration.py",
+      "docs/ADR/0070-cut1-t05-grounded-narration-handoff.md",
+      "scripts/quality/stage8_cut1_routes.py",
+      "tests/unit/test_stage8_cut1_routes.py",
+      "docs/QUALITY_GATES.md",
+      "docs/STAGE_ISSUE_PLAN.md",
+      "docs/STATUS.md",
+      "docs/TRACEABILITY.md"
+    ],
+    "forbidden": [
+      ".github/",
+      "pyproject.toml",
+      "uv.lock",
+      "frontend/",
+      "backend/app/presenter_registry.json",
+      "backend/app/presenter_registry.py",
+      "backend/app/cut1_controlled_presenter.py",
+      "backend/app/avatar_video_provider.py",
+      "backend/app/google_tts_provider.py",
+      "backend/app/stage7.py",
+      "docs/governance/cut1-project-facts-v1.json",
+      "docs/governance/cut1-presenter-derivatives-v1.json",
+      "docs/governance/cut1-presenter-live-binding-v2.json",
+      "docs/governance/cut1-all-presenter-acceptance-matrix-v1.json"
+    ]
+  }
+}

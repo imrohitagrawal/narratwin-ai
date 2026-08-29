@@ -1669,3 +1669,31 @@ bash scripts/ci/backend-test.sh
 Green T03 evidence activates only controlled-local Raj/Myra still-image
 derivative readiness. It activates no provider/runtime, audio, video, UI,
 publication, human study, release, production, or Cut 1 acceptance claim.
+
+## Issue #459 T05A grounded-narration handoff gate
+
+Exact branch `stage8-459-t05a-grounded-narration-handoff` is pinned to merged
+T03 main `0d70fa8e27ad4760249d75e7782ac06b5d68b173` and checkpoint
+`5465050919` with exact body SHA-256
+`ab0d0b486bf77eac59db2b83c0d33bd0ae61bb52ed26b37b4d7a8402b2ec31c8`.
+Its exact twelve-path route permits 2,200 charged text lines. Wrong base,
+branch-point drift, missing or extra paths, authority/preflight drift,
+deletion/rename/copy drift, and aggregate or per-path overrun fail closed.
+
+The focused gate proves that each complete canonical eighteen-claim sequence
+matches exactly one governed presenter, all three presenter runs and narration
+receipts persist and replay independently, and mixed or cross-presenter
+substitution fails:
+
+```text
+uv run pytest -q tests/unit/test_cut1_atomic_grounding.py tests/unit/test_cut1_narration.py
+uv run pytest -q tests/unit/test_stage8_cut1_routes.py
+NARRATWIN_POLICY_ONLY=1 make quality
+make quality
+bash scripts/ci/backend-test.sh
+```
+
+This gate produces provider-neutral narration input authority only. It does not
+produce or validate audio, captions, video, providers, credentials, egress,
+spend, publication, release, production readiness, or Cut 1 acceptance.
+Issue `#368` retains the real audio/caption handoff.

@@ -667,13 +667,18 @@ def evaluate_cut1_grounding(
         ):
             return failed
         claim_hashes = [_sha(claim.text.encode()) for claim in candidate.claims]
-        if not all(
-            claim.claim_id == mapping.claim_id
-            and claim_hash == mapping.claim_sha256_by_presenter[SELECTED_PRESENTER]
-            for claim, claim_hash, mapping in zip(
-                candidate.claims, claim_hashes, contract.claim_mappings, strict=True
+        matching_presenters = tuple(
+            presenter
+            for presenter in PRESENTERS
+            if all(
+                claim.claim_id == mapping.claim_id
+                and claim_hash == mapping.claim_sha256_by_presenter[presenter]
+                for claim, claim_hash, mapping in zip(
+                    candidate.claims, claim_hashes, contract.claim_mappings, strict=True
+                )
             )
-        ):
+        )
+        if len(matching_presenters) != 1:
             return failed
         chunks = {item.chunk_id: item for item in all_chunks}
         fact_checksum = "sha256:" + _sha(contract.project_source_bytes())

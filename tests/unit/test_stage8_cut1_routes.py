@@ -213,11 +213,40 @@ ISSUE459_T03_BYTE_CAPS = {
     "frontend/public/demo/cut1/raj-waist-up.webp": 500_000,
     "frontend/public/demo/cut1/myra-waist-up.webp": 500_000,
 }
+ISSUE459_T05A_EXPECTED = {
+    "docs/governance/preflights/issue-459-t05a.json",
+    "backend/app/cut1_grounding.py",
+    "backend/app/narration.py",
+    "tests/unit/test_cut1_atomic_grounding.py",
+    "tests/unit/test_cut1_narration.py",
+    "docs/ADR/0070-cut1-t05-grounded-narration-handoff.md",
+    "scripts/quality/stage8_cut1_routes.py",
+    "tests/unit/test_stage8_cut1_routes.py",
+    "docs/QUALITY_GATES.md",
+    "docs/STAGE_ISSUE_PLAN.md",
+    "docs/STATUS.md",
+    "docs/TRACEABILITY.md",
+}
+ISSUE459_T05A_LINE_CAPS = {
+    "docs/governance/preflights/issue-459-t05a.json": 180,
+    "backend/app/cut1_grounding.py": 120,
+    "backend/app/narration.py": 180,
+    "tests/unit/test_cut1_atomic_grounding.py": 260,
+    "tests/unit/test_cut1_narration.py": 240,
+    "docs/ADR/0070-cut1-t05-grounded-narration-handoff.md": 180,
+    "scripts/quality/stage8_cut1_routes.py": 180,
+    "tests/unit/test_stage8_cut1_routes.py": 320,
+    "docs/QUALITY_GATES.md": 100,
+    "docs/STAGE_ISSUE_PLAN.md": 120,
+    "docs/STATUS.md": 120,
+    "docs/TRACEABILITY.md": 100,
+}
 
 
 EXPECTED = {
     "lane-a-cut1-459-controlled-presenter": ISSUE459_EXPECTED,
     "stage8-459-t03-presenter-derivatives": ISSUE459_T03_EXPECTED,
+    "stage8-459-t05a-grounded-narration-handoff": ISSUE459_T05A_EXPECTED,
     "security-460-semgrep-override-removal": ISSUE460_EXPECTED,
     "docs/cut1-acceptance-provider-contract-452": ISSUE452_EXPECTED,
     "docs/cut1-post-443-reconciliation-451": {
@@ -1565,6 +1594,73 @@ def test_issue459_t03_route_freezes_authority_scope_and_budgets() -> None:
     assert routes.TOTAL_LIMITS[branch] == 2400
     assert routes.TEXT_LIMITS[branch] == ISSUE459_T03_LINE_CAPS
     assert routes.ISSUE459_T03_BYTE_LIMITS == ISSUE459_T03_BYTE_CAPS
+
+
+def test_issue459_t05a_route_freezes_authority_scope_and_budgets() -> None:
+    branch = routes.ISSUE459_T05A_BRANCH
+    assert branch == "stage8-459-t05a-grounded-narration-handoff"
+    assert routes.ISSUE459_T05A_BASE == "0d70fa8e27ad4760249d75e7782ac06b5d68b173"
+    assert routes.ISSUE459_T05A_AUTHORITY_COMMENT == "5465050919"
+    assert routes.ISSUE459_T05A_AUTHORITY_SHA256 == (
+        "ab0d0b486bf77eac59db2b83c0d33bd0ae61bb52ed26b37b4d7a8402b2ec31c8"
+    )
+    assert routes.ROUTES[branch] == ISSUE459_T05A_EXPECTED
+    assert routes.ROUTE_ISSUES[branch] == 459
+    assert routes.TOTAL_LIMITS[branch] == 2200
+    assert routes.TEXT_LIMITS[branch] == ISSUE459_T05A_LINE_CAPS
+
+
+def test_issue459_t05a_requires_exact_main_branch_point() -> None:
+    base = routes.ISSUE459_T05A_BASE
+
+    def good(args: list[str]) -> subprocess.CompletedProcess[str]:
+        if args[:2] == ["git", "rev-parse"]:
+            return completed(args, out=base + "\n")
+        assert args[:2] == ["git", "merge-base"]
+        return completed(args, out=base + "\n")
+
+    assert routes.route_base(good, routes.ISSUE459_T05A_BRANCH) == base
+    for command in ("rev-parse", "fixed-merge-base", "branch-point"):
+        def broken(args: list[str], *, rejected: str = command) -> subprocess.CompletedProcess[str]:
+            if rejected == "rev-parse" and args[:2] == ["git", "rev-parse"]:
+                return completed(args, code=128)
+            if rejected == "fixed-merge-base" and args[:3] == ["git", "merge-base", base]:
+                return completed(args, out="0" * 40 + "\n")
+            if rejected == "branch-point" and args[:3] == ["git", "merge-base", "origin/main"]:
+                return completed(args, out="0" * 40 + "\n")
+            return good(args)
+        error = pytest.raises(RuntimeError, routes.route_base, broken, routes.ISSUE459_T05A_BRANCH)
+        assert "Issue #459 fixed base" in str(error.value)
+
+
+def test_issue459_t05a_rejects_authority_drift_and_rename(
+    monkeypatch: Any, tmp_path: Path,
+) -> None:
+    branch = routes.ISSUE459_T05A_BRANCH
+    monkeypatch.setattr(routes, "route_base", lambda *_: routes.ISSUE459_T05A_BASE)
+    monkeypatch.setattr(routes, "route_text_charges", lambda *_: (0, {}))
+    artifact = json.loads(
+        (REPO / "docs/governance/preflights/issue-459-t05a.json").read_text()
+    )
+    target = tmp_path / "docs/governance/preflights/issue-459-t05a.json"
+    target.parent.mkdir(parents=True)
+    drifted = copy.deepcopy(artifact)
+    drifted["objective"] = drifted["objective"].replace(
+        routes.ISSUE459_T05A_AUTHORITY_SHA256, "0" * 64
+    )
+    target.write_text(json.dumps(drifted))
+    failures: list[str] = []
+    routes.check_exact_route(
+        tmp_path, lambda _: completed([]), branch, ISSUE459_T05A_EXPECTED, failures
+    )
+    assert failures == ["Issue #459 T05A governance authority drifted."]
+
+    renamed = completed([], out="R100\0old\0new\0")
+    failures = []
+    routes.check_exact_route(
+        REPO, lambda _: renamed, branch, ISSUE459_T05A_EXPECTED, failures
+    )
+    assert failures == ["Issue #459 route forbids deleted, renamed, or copied paths."]
 
 
 def test_issue459_t03_requires_exact_main_branch_point() -> None:

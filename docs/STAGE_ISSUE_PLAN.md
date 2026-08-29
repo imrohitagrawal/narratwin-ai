@@ -1,6 +1,6 @@
 # Stage Issue Plan
 
-## Issue #459 Lane A Cut 1 T03/T04 increment
+## Issue #459 Lane A Cut 1 T03/T04/T05A increments
 
 Issue `#459` starts from accepted main
 `ab97b6eecba6db9c66c37d19b29257c7398f3ab7` on exact branch
@@ -50,8 +50,20 @@ authorized Myra's second and final attempt for hand lighting, gesture, jewelry,
 and nail-polish continuity; independent review accepted it and recorded attempt
 1 as owner-superseded. Their bounded metadata-free WebPs are registered through a
 separate derivative manifest and additive binding; the source registry, all
-three originals, and T04 authority stay byte-identical. T03 remains pending
-hosted parity, independent exact-head review, and PR approval/merge closeout.
+three originals, and T04 authority stay byte-identical. PR `#463` merged the
+approved T03 tree byte-identically as
+`0d70fa8e27ad4760249d75e7782ac06b5d68b173`; merged-main quality passed and
+the branch/worktree closeout completed. T03 is complete.
+
+Checkpoint `5465050919` starts the twelve-path T05A grounded-narration handoff
+from that exact merge on branch
+`stage8-459-t05a-grounded-narration-handoff`, capped at 2,200 charged text
+lines. It extends the already immutable per-presenter eighteen-claim mappings
+and narration lifecycle to create separate Meera, Raj, and Myra receipts while
+rejecting mixed, partial, stale, substituted, or cross-presenter evidence.
+Issue `#368` still owns real audio and captions; T05A performs no provider,
+credential, egress, spend, synthesis, rendering, publication, release, or
+production operation and does not complete T05 or Cut 1.
 
 ## Issue #460 completed Semgrep override removal
 

@@ -501,8 +501,32 @@ def test_cut1_mixed_presenter_claims_fail_closed(
 
     def mixed_generate(**kwargs: Any) -> GeneratedScript:
         candidate = original_generate(**kwargs)
-        raj_claim = CanonicalCut1Generator("raj").generate_script(**kwargs).claims[0]
-        return replace(candidate, claims=[raj_claim, *candidate.claims[1:]])
+        raj_claims = CanonicalCut1Generator("raj").generate_script(**kwargs).claims
+        mixed_index = next(
+            index
+            for index, (myra_claim, raj_claim) in enumerate(
+                zip(candidate.claims, raj_claims, strict=True)
+            )
+            if myra_claim.text != raj_claim.text
+        )
+        original = candidate.claims[mixed_index]
+        replacement = raj_claims[mixed_index]
+        delta = len(replacement.text) - len(original.text)
+        claims = [
+            replace(
+                claim,
+                text=replacement.text if index == mixed_index else claim.text,
+                script_span_start=claim.script_span_start + (delta if index > mixed_index else 0),
+                script_span_end=claim.script_span_end + (delta if index >= mixed_index else 0),
+            )
+            for index, claim in enumerate(candidate.claims)
+        ]
+        text = (
+            candidate.text[: original.script_span_start]
+            + replacement.text
+            + candidate.text[original.script_span_start + len(original.text) :]
+        )
+        return GeneratedScript(text=text, claims=claims)
 
     generator.generate_script = mixed_generate  # type: ignore[method-assign]
     service.llm = generator  # type: ignore[assignment]
