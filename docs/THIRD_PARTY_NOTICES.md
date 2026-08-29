@@ -307,3 +307,21 @@ spend, redistribution right, legal clearance or final selection is authorized.
 Sources and provider-specific constraints are enumerated in
 `docs/governance/cut1-provider-bakeoff-contract-v1.json` and must be refreshed
 before any later experiment.
+
+## Issue #459 T03 controlled-local presenter derivatives
+
+Issue #459 uses OpenAI's built-in `gpt-image-2.0` image-edit capability to make
+one private Raj candidate and one private Myra candidate from project-owned
+fictional synthetic identity anchors. Each accepted candidate used one attempt
+and no retry. The private PNG sources are excluded from Git and retained only
+for owner cleanup after merge; no rejected candidate exists. Exact source,
+candidate, output, conversion, review, rights, privacy, and deletion records are
+in `docs/governance/cut1-presenter-derivatives-v1.json`.
+
+Accepted repository outputs are metadata-stripped WebPs for controlled local
+Cut 1 use only. Independent review found no real-person reference, text, logo,
+watermark, identity substitution, anatomy defect, or conversion-induced drift.
+This record grants no publication, distribution, provider/runtime activation,
+credential, egress, spend, human-study, release, production, or Cut 1 acceptance
+authority. The Meera, Raj, and Myra originals remain immutable, and no new Meera
+binary was generated or activated.

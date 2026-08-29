@@ -229,6 +229,26 @@ def test_derivative_readiness_is_controlled_local_reviewed_and_provider_free() -
         )
 
 
+def test_provenance_privacy_and_authority_references_are_exact_and_resolve() -> None:
+    manifest = _manifest()
+    notice = ROOT / "docs/THIRD_PARTY_NOTICES.md"
+    heading = "## Issue #459 T03 controlled-local presenter derivatives"
+    assert heading in notice.read_text(encoding="utf-8")
+    for row in manifest["derivatives"]:
+        assert row["review"]["authority_ref"] == (
+            "https://github.com/imrohitagrawal/narratwin-ai/issues/459"
+            "#issuecomment-5463568867"
+        )
+        assert row["review"]["provenance_privacy_review"] == "INDEPENDENT_ACCEPTED"
+        assert row["rights"]["privacy_posture"] == (
+            "PRIVATE_GENERATED_SOURCE_RESTRICTED_LOCAL_ONLY"
+        )
+        assert row["rights"]["provenance_ref"] == (
+            "docs/THIRD_PARTY_NOTICES.md"
+            "#issue-459-t03-controlled-local-presenter-derivatives"
+        )
+
+
 def test_binding_keeps_source_registry_and_derivative_authorities_distinct() -> None:
     registry = _load()
     binding = registry.bind("raj", "1.0.0")
