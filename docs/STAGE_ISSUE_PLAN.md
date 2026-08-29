@@ -22,6 +22,13 @@ with frozen T04 head `570239effbcae3990a24ffdc809622f02364ff0d` as
 first parent and reviewed main as second parent. The original route is still
 validated from `ab97b6e` to the frozen head; active paths and charges use the
 reviewed prerequisite base. No prerequisite path becomes Issue `#459` scope.
+Push runs `33240873828` and `33240873835` then reproduced two hosted-only
+boundaries: generic push scope treated accepted prerequisite paths as current
+ownership, and the integration commit created a fourth line-specific fingerprint
+for the already-reviewed API-contract SHA. Comments `5461065184` and
+`5461070398` authorize only exact fingerprint provenance enforcement and pinned
+Issue `#459` push-base selection. Frozen route history remains 19 paths; the
+active correction route is exactly 24 paths under the unchanged aggregate cap.
 
 T03 may edit only the existing Raj/Myra fictional portraits with at most two
 attempts each. Meera is `SOURCE_READY_NO_DERIVATIVE`, so the T03 inventory has

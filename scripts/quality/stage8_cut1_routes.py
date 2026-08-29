@@ -69,12 +69,13 @@ ISSUE460_HOSTED_SECURITY_PATHS = {
     "scripts/ci/dependency-security.sh",
     "tests/unit/test_gitleaks_regression.py",
 }
+ISSUE459_HOSTED_CORRECTION_PATHS = {".gitleaksignore", "scripts/ci/check_gitleaks_regression.py", "tests/unit/test_gitleaks_regression.py", "scripts/quality/check_stage8_docs.py", "tests/unit/test_stage8_quality_gate.py"}
 
 ROUTES = {
     ISSUE459_BRANCH: {
         "docs/governance/preflights/issue-459.json", "docs/governance/ISSUE_459_CONTROLLED_PRESENTER_PREFLIGHT_V1.md", "docs/governance/schemas/cut1-controlled-presenter-evidence-v1.schema.json", "docs/governance/cut1-controlled-presenter-red-corpus-v1.json",
         "scripts/quality/cut1_controlled_presenter.py", "tests/unit/test_cut1_controlled_presenter_red.py", "scripts/quality/check_quality_stage.py", "tests/unit/test_issue459_quality_dispatcher.py", "scripts/quality/stage8_cut1_routes.py", "tests/unit/test_stage8_cut1_routes.py",
-        "docs/reviews/ISSUE_459_ENTRY_GATE_REVIEW.md", "docs/QUALITY_GATES.md", "docs/STAGE_ISSUE_PLAN.md", "docs/PHASE_PLAN.md", "docs/STATUS.md", "docs/TRACEABILITY.md", "backend/app/cut1_controlled_presenter.py", "tests/unit/test_cut1_controlled_presenter.py", "docs/ADR/0068-cut1-controlled-presenter-controller.md",
+        "docs/reviews/ISSUE_459_ENTRY_GATE_REVIEW.md", "docs/QUALITY_GATES.md", "docs/STAGE_ISSUE_PLAN.md", "docs/PHASE_PLAN.md", "docs/STATUS.md", "docs/TRACEABILITY.md", "backend/app/cut1_controlled_presenter.py", "tests/unit/test_cut1_controlled_presenter.py", "docs/ADR/0068-cut1-controlled-presenter-controller.md", *ISSUE459_HOSTED_CORRECTION_PATHS,
     },
     ISSUE460_BRANCH: {
         "docs/governance/preflights/issue-460.json", "docs/ADR/0069-semgrep-1-175-override-removal.md",
@@ -499,7 +500,7 @@ ISSUE452_BYTE_LIMITS = {
 }
 ISSUE459_BYTE_LIMITS = {
     "docs/governance/preflights/issue-459.json": 32_000, "docs/governance/ISSUE_459_CONTROLLED_PRESENTER_PREFLIGHT_V1.md": 64_000, "docs/governance/schemas/cut1-controlled-presenter-evidence-v1.schema.json": 40_000,
-    "docs/governance/cut1-controlled-presenter-red-corpus-v1.json": 48_000, "scripts/quality/cut1_controlled_presenter.py": 16_000, "tests/unit/test_cut1_controlled_presenter_red.py": 60_000, "tests/unit/test_issue459_quality_dispatcher.py": 24_000, "docs/reviews/ISSUE_459_ENTRY_GATE_REVIEW.md": 48_000, "docs/ADR/0068-cut1-controlled-presenter-controller.md": 32_000,
+    "docs/governance/cut1-controlled-presenter-red-corpus-v1.json": 48_000, "scripts/quality/cut1_controlled_presenter.py": 16_000, "tests/unit/test_cut1_controlled_presenter_red.py": 60_000, "tests/unit/test_issue459_quality_dispatcher.py": 24_000, "docs/reviews/ISSUE_459_ENTRY_GATE_REVIEW.md": 48_000, "docs/ADR/0068-cut1-controlled-presenter-controller.md": 32_000, ".gitleaksignore": 2_000, "scripts/ci/check_gitleaks_regression.py": 24_000, "tests/unit/test_gitleaks_regression.py": 32_000, "scripts/quality/check_stage8_docs.py": 48_000, "tests/unit/test_stage8_quality_gate.py": 40_000,
 }
 ISSUE459_SOURCE_SHA256 = {
     "specs/001-grounded-walkthrough-script/spec.md": "cd16ea947a70271f60a5ce7086e577c1cc25f380baf9a338342bfafb522b8c35", "specs/001-grounded-walkthrough-script/plan.md": "166dd8021026eb334607d0dab290c2b121964bcb979e7e502b574f830b45dfd4", "specs/001-grounded-walkthrough-script/tasks.md": "9c244de820bf0df1c1d7d7e4c323e5317ba5818cb625f88165e675ce51817fdc", "docs/reviews/ISSUE_16_SPEC_KIT_REVIEW_CHECKPOINT.md": "14dbdeb898af240fd30d203e131be8c6e8e29c5803c82463c1b50dc4c8616877",
@@ -510,14 +511,14 @@ ISSUE459_SOURCE_SHA256 = {
     "docs/DATA_MODEL.md": "f073c9bff26717233f23c6317b03736c02bee5952b88fa840767f79287b6ec09", "docs/SECURITY_AND_PRIVACY.md": "185fe98ffa0b12287b6e7e8a532fac89ffa7a29380db71f8dd6aa4d1b7bc4b62", "docs/OBSERVABILITY_AND_COST.md": "c77a0d4ea071e6ea364d9c1f4175361633d4d54962c7fc8d9527033e160d91c6", "docs/governance/cut1-blinded-human-evaluation-protocol-v1.json": "fa3759985141639185618fbc595057412dd8582f60ed97fc462b30b7548580b8", "docs/governance/cut1-provider-bakeoff-contract-v1.json": "1a3fd981644488203e8c7cc38fc0389092b23b579cce860c3d35a1ca7a1786db",
 }
 ISSUE459_EDITABLE_AUTHORITY_SHA256 = {
-    "Issue #459": "dd03b171f25b0d249a79834f22674c728e539fa8b171a97b3a4728474e0039d5", "5449632582": "07b7cb91660a21ba0a70419ff07195a2532089a087d7a289806142dc81151fa0", "5449637037": "f236d2840a7ce35e074b6e370dcc706278772c47fa09b6c18b20a344b22fd1a0", "5449765467": "75882f1f3deb8dea77ab945cd58f0526b04644fb4cb208bcd50ddea29846bbe7", "5449822130": "48f86809e1032884d5576ceefde06d64785b486e1adae940fe32c2b6391e6cf3", "5451872197": "a5241954c115e6849da70401cc029cc4517f83a3629b043462a42becc6146e7d", "5452170084": "8c9297b3faf1d6894442017afef2ce58dcb3ec2a6ee6c3037be2024abb2d0fce", "5456406377": "dcbc20d52a6acb636463389f7a4996d79b7262f30209576e13522e3576782a7a", "5460884573": "6ef7158ffa8347defbed97b3c18a7ad0728cec02ff217b8a0984048fb44887ac",
+    "Issue #459": "dd03b171f25b0d249a79834f22674c728e539fa8b171a97b3a4728474e0039d5", "5449632582": "07b7cb91660a21ba0a70419ff07195a2532089a087d7a289806142dc81151fa0", "5449637037": "f236d2840a7ce35e074b6e370dcc706278772c47fa09b6c18b20a344b22fd1a0", "5449765467": "75882f1f3deb8dea77ab945cd58f0526b04644fb4cb208bcd50ddea29846bbe7", "5449822130": "48f86809e1032884d5576ceefde06d64785b486e1adae940fe32c2b6391e6cf3", "5451872197": "a5241954c115e6849da70401cc029cc4517f83a3629b043462a42becc6146e7d", "5452170084": "8c9297b3faf1d6894442017afef2ce58dcb3ec2a6ee6c3037be2024abb2d0fce", "5456406377": "dcbc20d52a6acb636463389f7a4996d79b7262f30209576e13522e3576782a7a", "5460884573": "6ef7158ffa8347defbed97b3c18a7ad0728cec02ff217b8a0984048fb44887ac", "5461065184": "33a87c363da666be77362291e338323b57311f78c5f1ed22155f619dbe9726fc", "5461070398": "66a28207adc9c9a0438a0d1012baf626561bfca0e6e6644d837328f08808cb1f",
 }
 ISSUE459_BASE_SOURCE_SHA256 = {"docs/STATUS.md": "9045b595ca1622680f621dffa4dff88435e2fde0d13e3c061ced7eb6df9ae8bf", "docs/TRACEABILITY.md": "e597069e3d6b765a9d68e5336ff9597d6d7b809e5ea6f316f22312ca71ea136a", "docs/QUALITY_GATES.md": "9f628d22ec62075e560ef478820cf094d923cdf1cfded56a512291c61f6e542b", "docs/REPOSITORY_GUARDRAILS.md": "04f8b405bc7ba9b615cc1d5d7e489bcbf643b9de4bfc9b331e5a60c38629e82f"}
 TEXT_LIMITS = {
     ISSUE459_BRANCH: {
         "docs/governance/preflights/issue-459.json": 220, "docs/governance/ISSUE_459_CONTROLLED_PRESENTER_PREFLIGHT_V1.md": 850, "docs/governance/schemas/cut1-controlled-presenter-evidence-v1.schema.json": 450, "docs/governance/cut1-controlled-presenter-red-corpus-v1.json": 500,
         "scripts/quality/cut1_controlled_presenter.py": 140, "tests/unit/test_cut1_controlled_presenter_red.py": 700, "scripts/quality/check_quality_stage.py": 60, "tests/unit/test_issue459_quality_dispatcher.py": 140, "scripts/quality/stage8_cut1_routes.py": 180, "tests/unit/test_stage8_cut1_routes.py": 340,
-        "docs/reviews/ISSUE_459_ENTRY_GATE_REVIEW.md": 500, "docs/QUALITY_GATES.md": 120, "docs/STAGE_ISSUE_PLAN.md": 120, "docs/PHASE_PLAN.md": 100, "docs/STATUS.md": 160, "docs/TRACEABILITY.md": 120, "backend/app/cut1_controlled_presenter.py": 900, "tests/unit/test_cut1_controlled_presenter.py": 900, "docs/ADR/0068-cut1-controlled-presenter-controller.md": 260,
+        "docs/reviews/ISSUE_459_ENTRY_GATE_REVIEW.md": 500, "docs/QUALITY_GATES.md": 120, "docs/STAGE_ISSUE_PLAN.md": 120, "docs/PHASE_PLAN.md": 100, "docs/STATUS.md": 160, "docs/TRACEABILITY.md": 120, "backend/app/cut1_controlled_presenter.py": 900, "tests/unit/test_cut1_controlled_presenter.py": 900, "docs/ADR/0068-cut1-controlled-presenter-controller.md": 260, ".gitleaksignore": 20, "scripts/ci/check_gitleaks_regression.py": 220, "tests/unit/test_gitleaks_regression.py": 260, "scripts/quality/check_stage8_docs.py": 60, "tests/unit/test_stage8_quality_gate.py": 100,
     },
     ISSUE460_BRANCH: {
         "docs/governance/preflights/issue-460.json": 180, "docs/ADR/0069-semgrep-1-175-override-removal.md": 180,
@@ -1312,15 +1313,14 @@ def check_exact_route(
             )
             if any(snapshot.returncode for snapshot in snapshots):
                 raise RuntimeError("Issue #459 transition route evidence is unavailable.")
-            transition_changed = [set(parse_paths_z(str(snapshot.stdout))) for snapshot in snapshots]
-            for paths in transition_changed:
+            for paths, expected in zip((set(parse_paths_z(str(snapshot.stdout))) | (effective_changed & ISSUE459_HOSTED_CORRECTION_PATHS if index else set()) for index, snapshot in enumerate(snapshots)), (files - ISSUE459_HOSTED_CORRECTION_PATHS, files), strict=True):
                 effective_changed.update(paths)
                 failures.extend(
                     f"Issue #459 route contains unauthorized path: {path}"
-                    for path in sorted(paths - files)
+                    for path in sorted(paths - expected)
                 )
                 failures.extend(f"Issue #459 route snapshot is missing required path: {path}"
-                                for path in sorted(files - paths))
+                                for path in sorted(expected - paths))
         except RuntimeError as error:
             failures.append(str(error))
     failures.extend(

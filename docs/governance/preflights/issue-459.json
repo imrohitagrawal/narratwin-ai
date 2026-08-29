@@ -2,7 +2,7 @@
   "schema_version": "GovernancePreflightV1",
   "issue_number": 459,
   "branch": "lane-a-cut1-459-controlled-presenter",
-  "objective": "Preserve the completed Issue #459 T01/T02 entry gate from exact accepted main ab97b6eecba6db9c66c37d19b29257c7398f3ab7 and immutable T04 head 570239effbcae3990a24ffdc809622f02364ff0d, then consume reviewed Issue #460 prerequisite main 285458f22a5d8786c359c6e4ebf0f9acd82ead96 only through exact two-parent merge b569e0bbc6175423706558aa1cc78486a09dfbe5 under comments 5456406377 and 5460884573. Preserve the original frozen route independently while charging the active tree from reviewed prerequisite main. Execute only the T04-first transition frozen in OWNER comment 5451872197 and the single-ADR guardrail correction in comment 5452170084. Add backend/app/cut1_controlled_presenter.py as the sole canonical deterministic evidence evaluator, tests/unit/test_cut1_controlled_presenter.py as its focused test, docs/ADR/0068-cut1-controlled-presenter-controller.md as the architecture record, and make scripts/quality/cut1_controlled_presenter.py a thin import/re-export adapter. Preserve six independent Meera/Raj/Myra x en x landscape/portrait cells, exact C1-M01 through C1-M10 thresholds, the frozen 136-case oracle, and a 2,000-line T04 incremental cap within the prior 2,400 maximum. The controller receives only materialized evidence and performs no network, credential/environment lookup, provider call, spend, retry, media generation, or filesystem write. Reject mock/stub/HTML/JSON-placeholder/supportsRealVideo=false output; leave historical Stage 7 compatibility mocks unchanged. T03 design-time work is separately bounded to immutable Meera reuse and at most two Raj/Myra editing attempts each, with no repository asset activation before selection and provenance/privacy review. T05 remains stopped on Meera-only lineage and Issue #368 audio ownership; #432 and #449 retain study/provider authority. No runtime provider, credential, deployment, publication, release, production, human study, or Cut 1 acceptance is authorized.",
+  "objective": "Preserve Issue #459 T01/T02 from accepted base ab97b6eecba6db9c66c37d19b29257c7398f3ab7 and immutable T04 head 570239effbcae3990a24ffdc809622f02364ff0d. Consume reviewed Issue #460 main 285458f22a5d8786c359c6e4ebf0f9acd82ead96 only through exact two-parent merge b569e0bbc6175423706558aa1cc78486a09dfbe5 under comments 5456406377 and 5460884573. Preserve the original 19-path snapshot and charge the active tree from reviewed main. Hosted corrections 5461065184 and 5461070398 bind only the fourth immutable-SHA Gitleaks fingerprint and use the pinned transition base for Issue #459 push scope, producing an exact 24-path active route without transferring prerequisite paths. Under comments 5451872197 and 5452170084, add backend/app/cut1_controlled_presenter.py as the sole canonical deterministic evaluator, its focused test, ADR 0068, and a thin quality adapter. Preserve six independent Meera/Raj/Myra x English x landscape/portrait cells, exact C1-M01 through C1-M10, the 136-case oracle, and the approved T04 budget. The controller receives only materialized evidence, returns at most one primary finding, and performs no network, environment/credential lookup, provider call, spend, retry, media generation, or write. Reject mock, stub, HTML/JSON placeholder, and supportsRealVideo=false output. T03 remains bounded to immutable Meera reuse and at most two Raj/Myra attempts with no activation before visual and provenance/privacy review. T05 remains stopped on Meera-only lineage and Issue #368 audio ownership; #432 and #449 retain study/provider authority. No runtime provider, credential, deployment, publication, release, production, human study, or Cut 1 acceptance is authorized.",
   "status_decision": "update-minimally",
   "scope": {
     "required": [
@@ -24,7 +24,12 @@
       "docs/TRACEABILITY.md",
       "backend/app/cut1_controlled_presenter.py",
       "tests/unit/test_cut1_controlled_presenter.py",
-      "docs/ADR/0068-cut1-controlled-presenter-controller.md"
+      "docs/ADR/0068-cut1-controlled-presenter-controller.md",
+      ".gitleaksignore",
+      "scripts/ci/check_gitleaks_regression.py",
+      "tests/unit/test_gitleaks_regression.py",
+      "scripts/quality/check_stage8_docs.py",
+      "tests/unit/test_stage8_quality_gate.py"
     ],
     "allowed_prefixes": [
       "docs/governance/preflights/issue-459.json",
@@ -45,7 +50,12 @@
       "docs/TRACEABILITY.md",
       "backend/app/cut1_controlled_presenter.py",
       "tests/unit/test_cut1_controlled_presenter.py",
-      "docs/ADR/0068-cut1-controlled-presenter-controller.md"
+      "docs/ADR/0068-cut1-controlled-presenter-controller.md",
+      ".gitleaksignore",
+      "scripts/ci/check_gitleaks_regression.py",
+      "tests/unit/test_gitleaks_regression.py",
+      "scripts/quality/check_stage8_docs.py",
+      "tests/unit/test_stage8_quality_gate.py"
     ],
     "forbidden": [
       "frontend/",

@@ -121,7 +121,7 @@ ISSUE452_EXPECTED = {
     "docs/TRACEABILITY.md",
 }
 
-ISSUE459_EXPECTED = {
+ISSUE459_FROZEN_EXPECTED = {
     "docs/governance/preflights/issue-459.json",
     "docs/governance/ISSUE_459_CONTROLLED_PRESENTER_PREFLIGHT_V1.md",
     "docs/governance/schemas/cut1-controlled-presenter-evidence-v1.schema.json",
@@ -142,6 +142,7 @@ ISSUE459_EXPECTED = {
     "tests/unit/test_cut1_controlled_presenter.py",
     "docs/ADR/0068-cut1-controlled-presenter-controller.md",
 }
+ISSUE459_EXPECTED = ISSUE459_FROZEN_EXPECTED | {".gitleaksignore", "scripts/ci/check_gitleaks_regression.py", "tests/unit/test_gitleaks_regression.py", "scripts/quality/check_stage8_docs.py", "tests/unit/test_stage8_quality_gate.py"}
 ISSUE459_LINE_CAPS = {
     "docs/governance/preflights/issue-459.json": 220,
     "docs/governance/ISSUE_459_CONTROLLED_PRESENTER_PREFLIGHT_V1.md": 850,
@@ -158,7 +159,7 @@ ISSUE459_LINE_CAPS = {
     "docs/PHASE_PLAN.md": 100, "docs/STATUS.md": 160, "docs/TRACEABILITY.md": 120,
     "backend/app/cut1_controlled_presenter.py": 900,
     "tests/unit/test_cut1_controlled_presenter.py": 900,
-    "docs/ADR/0068-cut1-controlled-presenter-controller.md": 260,
+    "docs/ADR/0068-cut1-controlled-presenter-controller.md": 260, ".gitleaksignore": 20, "scripts/ci/check_gitleaks_regression.py": 220, "tests/unit/test_gitleaks_regression.py": 260, "scripts/quality/check_stage8_docs.py": 60, "tests/unit/test_stage8_quality_gate.py": 100,
 }
 ISSUE459_BYTE_CAPS = {
     "docs/governance/preflights/issue-459.json": 32_000,
@@ -169,7 +170,7 @@ ISSUE459_BYTE_CAPS = {
     "tests/unit/test_cut1_controlled_presenter_red.py": 60_000,
     "tests/unit/test_issue459_quality_dispatcher.py": 24_000,
     "docs/reviews/ISSUE_459_ENTRY_GATE_REVIEW.md": 48_000,
-    "docs/ADR/0068-cut1-controlled-presenter-controller.md": 32_000,
+    "docs/ADR/0068-cut1-controlled-presenter-controller.md": 32_000, ".gitleaksignore": 2_000, "scripts/ci/check_gitleaks_regression.py": 24_000, "tests/unit/test_gitleaks_regression.py": 32_000, "scripts/quality/check_stage8_docs.py": 48_000, "tests/unit/test_stage8_quality_gate.py": 40_000,
 }
 
 
@@ -548,8 +549,7 @@ def completed(args: list[str], code: int = 0, out: str = "", err: str = "") -> s
 
 
 def issue459_run(args: list[str]) -> subprocess.CompletedProcess[str]:
-    paths = "".join(f"{path}\0" for path in sorted(ISSUE459_EXPECTED))
-    return completed(args, out=paths if args[:4] == ["git", "diff", "--name-only", "-z"] else "")
+    return completed(args, out="".join(f"{path}\0" for path in sorted(ISSUE459_FROZEN_EXPECTED if f"{routes.ISSUE459_BASE}..{routes.ISSUE459_FROZEN_HEAD}" in args else ISSUE459_EXPECTED)) if args[:4] == ["git", "diff", "--name-only", "-z"] else "")
 
 
 def validate_prompt_contract(contract: dict[str, Any]) -> None:
@@ -1460,7 +1460,7 @@ def test_issue459_route_is_exact_fixed_and_budgeted() -> None:
         "5451872197": "a5241954c115e6849da70401cc029cc4517f83a3629b043462a42becc6146e7d",
         "5452170084": "8c9297b3faf1d6894442017afef2ce58dcb3ec2a6ee6c3037be2024abb2d0fce",
         "5456406377": "dcbc20d52a6acb636463389f7a4996d79b7262f30209576e13522e3576782a7a",
-        "5460884573": "6ef7158ffa8347defbed97b3c18a7ad0728cec02ff217b8a0984048fb44887ac",
+        "5460884573": "6ef7158ffa8347defbed97b3c18a7ad0728cec02ff217b8a0984048fb44887ac", "5461065184": "33a87c363da666be77362291e338323b57311f78c5f1ed22155f619dbe9726fc", "5461070398": "66a28207adc9c9a0438a0d1012baf626561bfca0e6e6644d837328f08808cb1f",
     }
     assert routes.ISSUE459_BASE_SOURCE_SHA256 == {
         "docs/STATUS.md": "9045b595ca1622680f621dffa4dff88435e2fde0d13e3c061ced7eb6df9ae8bf",
@@ -1540,7 +1540,7 @@ def test_issue459_rejects_extra_and_each_text_budget(monkeypatch: Any) -> None:
     assert failures == ["Stage 8 changed file outside the allowlist: rogue.txt"]
 
 
-def test_issue459_route_uses_frozen_base_on_incremental_hosted_push(
+def test_issue459_route_unions_current_correction_on_incremental_hosted_push(
     monkeypatch: Any,
 ) -> None:
     """A push's `before` SHA cannot hide paths added after the frozen base."""
@@ -1559,7 +1559,7 @@ def test_issue459_route_uses_frozen_base_on_incremental_hosted_push(
         lambda *_: {path: 1 for path in routes.ISSUE459_BYTE_LIMITS},
     )
 
-    snapshots = iter((ISSUE459_EXPECTED, ISSUE459_EXPECTED))
+    snapshots = iter((ISSUE459_FROZEN_EXPECTED, ISSUE459_FROZEN_EXPECTED))
 
     def hosted(args: list[str]) -> subprocess.CompletedProcess[str]:
         if args[:4] == ["git", "diff", "--name-only", "-z"]:
@@ -1589,13 +1589,13 @@ def test_issue459_rejects_unauthorized_path_in_either_transition_snapshot(
     )
     missing = "backend/app/cut1_controlled_presenter.py"
     for frozen_paths, active_paths, expected in (
-        ({*ISSUE459_EXPECTED, "frozen-rogue.txt"}, ISSUE459_EXPECTED,
+        ({*ISSUE459_FROZEN_EXPECTED, "frozen-rogue.txt"}, ISSUE459_EXPECTED,
          "Issue #459 route contains unauthorized path: frozen-rogue.txt"),
-        (ISSUE459_EXPECTED, {*ISSUE459_EXPECTED, "active-rogue.txt"},
+        (ISSUE459_FROZEN_EXPECTED, {*ISSUE459_EXPECTED, "active-rogue.txt"},
          "Issue #459 route contains unauthorized path: active-rogue.txt"),
-        (ISSUE459_EXPECTED - {missing}, ISSUE459_EXPECTED,
+        (ISSUE459_FROZEN_EXPECTED - {missing}, ISSUE459_EXPECTED,
          f"Issue #459 route snapshot is missing required path: {missing}"),
-        (ISSUE459_EXPECTED, ISSUE459_EXPECTED - {missing},
+        (ISSUE459_FROZEN_EXPECTED, ISSUE459_EXPECTED - {missing},
          f"Issue #459 route snapshot is missing required path: {missing}"),
     ):
         snapshots = iter((frozen_paths, active_paths))
@@ -1668,7 +1668,7 @@ def test_issue459_rejects_source_authority_and_rename_copy_drift(monkeypatch: An
     renamed = completed([], out="R100\0docs/PHASE_PLAN.md\0docs/STATUS.md\0")
     def renamed_run(args: list[str]) -> subprocess.CompletedProcess[str]:
         if "--name-only" in args:
-            return completed(args, out="".join(f"{path}\0" for path in sorted(ISSUE459_EXPECTED)))
+            return issue459_run(args)
         return renamed
     failures: list[str] = []
     routes.check_exact_route(REPO, renamed_run, routes.ISSUE459_BRANCH,

@@ -1608,6 +1608,11 @@ The route validates both original and active path snapshots, exact merge
 parents/ancestry, every per-path line cap, the 4,300 aggregate cap, eight byte
 caps, and preflight/path equality. Active charges start at reviewed prerequisite
 main, so accepted Issue `#460` files are neither owned nor double-charged.
+Hosted checkpoint comments `5461065184` and `5461070398` expand only the
+active snapshot to 24 paths: an exact fourth immutable-SHA Gitleaks fingerprint
+plus its checker/test, and pinned push-scope selection plus its test. The frozen
+snapshot stays 19 paths; the real-secret canary and all other branch/PR scope
+behavior remain blocking and unchanged.
 
 T04 additionally freezes a 2,000-line incremental implementation budget across
 the canonical backend evaluator, its focused test, and the quality adapter.

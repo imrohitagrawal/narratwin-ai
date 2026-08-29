@@ -91,6 +91,26 @@ digests are the frozen identities.
 | [T04 ADR correction comment 5452170084](https://github.com/imrohitagrawal/narratwin-ai/issues/459#issuecomment-5452170084) | `8c9297b3faf1d6894442017afef2ce58dcb3ec2a6ee6c3037be2024abb2d0fce` |
 | [Hosted-correction authorization comment 5456406377](https://github.com/imrohitagrawal/narratwin-ai/issues/459#issuecomment-5456406377) | `dcbc20d52a6acb636463389f7a4996d79b7262f30209576e13522e3576782a7a` |
 | [Reviewed-main transition comment 5460884573](https://github.com/imrohitagrawal/narratwin-ai/issues/459#issuecomment-5460884573) | `6ef7158ffa8347defbed97b3c18a7ad0728cec02ff217b8a0984048fb44887ac` |
+| [Hosted fingerprint correction comment 5461065184](https://github.com/imrohitagrawal/narratwin-ai/issues/459#issuecomment-5461065184) | `33a87c363da666be77362291e338323b57311f78c5f1ed22155f619dbe9726fc` |
+| [Hosted push-scope correction comment 5461070398](https://github.com/imrohitagrawal/narratwin-ai/issues/459#issuecomment-5461070398) | `66a28207adc9c9a0438a0d1012baf626561bfca0e6e6644d837328f08808cb1f` |
+
+### Hosted correction route
+
+Pushed head `9644296da92bf3b3f373cd2afd2c7a64d6ca7c8c` reproduced one
+new Gitleaks fingerprint for the same frozen `docs/API_CONTRACT.md` SHA-256
+literal and a push-scope false ownership transfer of already-reviewed Issue
+`#460` paths. The active route therefore adds only `.gitleaksignore`, the exact
+fingerprint checker/test, and the Stage 8 scope collector/test. The fourth
+suppression is commit/path/rule/line/provenance bound; wildcard additions,
+history gaps, provenance drift, and a representative real secret fail closed.
+Exact Issue `#459` push scope uses reviewed transition base `285458f2`; pull
+requests and every other branch retain their prior selection behavior.
+
+The immutable snapshot remains exactly 19 paths. The active snapshot is exactly
+24 paths and does not include any other Issue `#460` prerequisite file. New
+line/byte caps are respectively: `.gitleaksignore` 20/2,000; checker
+220/24,000; checker test 260/32,000; Stage 8 collector 60/48,000; collector test
+100/40,000. The aggregate remains 4,300.
 
 ## Independent cells
 
