@@ -214,7 +214,11 @@ def test_pypdf_contract_rejects_vulnerable_hash_and_unrelated_drift() -> None:
     mutations = (
         (project_text.replace("pypdf>=6.15.0", "pypdf>=6.14.2"), lock_text),
         (project_text.replace('"cryptography==50.0.0"', '"cryptography==49.0.0"'), lock_text),
+        (project_text.replace('    "pillow>=12.3.0",\n', ""), lock_text),
         (project_text.replace('"pillow>=12.3.0"', '"pillow>=12.2.0"'), lock_text),
+        (project_text, lock_text.replace('    { name = "pillow" },\n', "", 1)),
+        (project_text, lock_text.replace('    { name = "pillow", specifier = ">=12.3.0" },\n', "", 1)),
+        (project_text, lock_text.replace('name = "pillow"\nversion = "12.3.0"', 'name = "missing-pillow"\nversion = "12.3.0"')),
         (project_text, lock_text.replace('name = "pillow"\nversion = "12.3.0"', 'name = "pillow"\nversion = "12.2.0"')),
         (project_text, lock_text.replace("sha256:3b8182a766685eaa002637e28b4ec8d6b18819a0c71f579bf0dbaa5830297cce", "sha256:" + "5" * 64)),
         (project_text, lock_text.replace('{ name = "cryptography", specifier = "==50.0.0" }', '{ name = "cryptography", specifier = "==49.0.0" }')),
