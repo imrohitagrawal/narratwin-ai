@@ -649,7 +649,7 @@ Use these files together with this tracker:
 | `#149` | Open, depends on `#130`, `#141`-`#148` | Phase 1 follow-on | Independently review actual environment/tooling/calculation-test readiness, tested CH-12 alert routes, and approvals without recording actual restore or RTO/RPO results; must leave issue `#126`, `DUR-RESTORE-001`, and issue `#39` open for the later exercise. |
 | `#138` | Closed | Security follow-up | `PYSEC-2026-2132` Click command-injection remediation completed and closed on 2026-07-14. This did not change production or restore readiness. |
 | `#150` | Closed; exception expired | Security follow-up | PR `#429` temporarily renewed only MCP through `2026-08-28`; the accepted fail-closed date has now passed. Issue `#460` owns removal rather than another renewal. |
-| `#460` | Active | Security prerequisite | Exact branch `security-460-semgrep-override-removal` pins isolated Semgrep `1.175.0`, accepts upstream Click `8.4.2`, MCP `1.29.0`, and PyJWT `2.13.0`, and removes every tool override. Checkpoint `5456985567` adds the Issue `#16`, `#427`, and `#434` immutable-history convergence boundary; hosted checkpoint `5457578336` adds exact provenance-bound suppression for three remote Issue `#459` SHA-256 false positives plus a real-secret canary. The final route is 25 paths and 2,600 lines. Hosted parity, independent exact-head review, and merged-main verification remain required; release/production stays No-Go. |
+| `#460` | Closed | Security prerequisite | PR `#461` merged at `285458f22a5d8786c359c6e4ebf0f9acd82ead96` after all required contexts and exact-head review passed; merged-main Quality Gates run `33239107478` passed. The accepted correction pins isolated Semgrep `1.175.0`, removes every tool override, preserves immutable Issue `#16`/`#427`/`#434` history checks, and suppresses only three provenance-bound Issue `#459` SHA-256 false positives while retaining a real-secret canary. Release/production stays No-Go. |
 | `#428` | Closed, converged with `#150` | Security prerequisite | PR `#429` accepted exact transitive Nano ID `3.3.18` with the historical Semgrep renewal. Issue `#460` changes only the later expired Semgrep MCP boundary; no product/release/production posture changes. |
 | `#151` | Closed | Security follow-up | CPython `3.13.14` security remediation and scanner-consensus work closed on 2026-07-16. This does not change production, restore, hosted launch, or Product Mode 1 local-demo posture. |
 | `#158` | Closed | Security governance history | PR `#325` merged at `11385d661e1da23f9be4101d9e8d3b3d2ca679e4`; merged-tree quality passed and Issue `#158` closed, unblocking the publication-boundary controller. Issue `#150` remains open and release/production posture remains No-Go. |
@@ -1707,6 +1707,12 @@ not render media or activate any provider. Guardrail correction comment
 `5452170084` adds only ADR `0068` to the cumulative route. T03 is bounded to Raj/Myra design-
 time portrait edits; Meera is `SOURCE_READY_NO_DERIVATIVE` and receives no new
 binary.
+PR `#461` completed the hosted-parity prerequisite at reviewed main
+`285458f22a5d8786c359c6e4ebf0f9acd82ead96`. Comment `5460884573` freezes the
+exact two-parent transition merge `b569e0bbc6175423706558aa1cc78486a09dfbe5`.
+The source freeze and original route remain bound to T04 head `570239ef`; the
+active tree is charged from reviewed prerequisite main, with no prerequisite
+path transferred into Issue `#459` ownership.
 Three independent review lanes approved the T01/T02 candidate exact head
 `2cfced8034b207e2ad12c450d5281d8446060a85` with no reproduced entry-scope
 blocker after 83 route/dispatcher passes, one bootstrap pass, exactly 136 typed

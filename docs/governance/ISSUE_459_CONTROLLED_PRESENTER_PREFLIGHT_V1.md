@@ -4,6 +4,9 @@ Status: T01/T02 complete; T04 deterministic controller activated before T03 asse
 Issue: `#459`
 Branch: `lane-a-cut1-459-controlled-presenter`
 Accepted base: `ab97b6eecba6db9c66c37d19b29257c7398f3ab7`
+Frozen T04 head: `570239effbcae3990a24ffdc809622f02364ff0d`
+Reviewed prerequisite main: `285458f22a5d8786c359c6e4ebf0f9acd82ead96`
+Reviewed transition merge: `b569e0bbc6175423706558aa1cc78486a09dfbe5`
 Pre-code freeze: [Issue comment 5449765467](https://github.com/imrohitagrawal/narratwin-ai/issues/459#issuecomment-5449765467)
 
 ## Intent and completion boundary
@@ -60,6 +63,17 @@ The presenter registry is `backend/app/presenter_registry.json` at
 `eb31a953b85ffaf2c43f54e4da7fb89eda740c724967a9301f726c6091ab01c2`.
 Any mismatch stops and requires contract rebinding before product work.
 
+These source identities are read from the immutable frozen T04 head, not from
+the mutable successor worktree. The original accepted-base-to-frozen-head path
+set remains independently checked. Active route paths and line charges are read
+from reviewed prerequisite main to the current head, so consuming the reviewed
+Issue #460 correction cannot mutate T04 authority or double-charge prerequisite
+files. The transition merge must retain the exact ordered parents frozen T04
+head then reviewed prerequisite main; missing objects, ancestry drift, parent
+drift, unauthorized paths, rename/copy evidence, or budget drift fail closed.
+Each snapshot must independently contain every required path, and every current
+route file must be nonempty, regular, non-symlink, and valid UTF-8.
+
 ### Editable GitHub authority snapshot
 
 Bodies were read through the GitHub API on `2026-08-28` and hashed as their
@@ -75,6 +89,8 @@ digests are the frozen identities.
 | [Path correction comment 5449822130](https://github.com/imrohitagrawal/narratwin-ai/issues/459#issuecomment-5449822130) | `48f86809e1032884d5576ceefde06d64785b486e1adae940fe32c2b6391e6cf3` |
 | [T03/T04 transition comment 5451872197](https://github.com/imrohitagrawal/narratwin-ai/issues/459#issuecomment-5451872197) | `a5241954c115e6849da70401cc029cc4517f83a3629b043462a42becc6146e7d` |
 | [T04 ADR correction comment 5452170084](https://github.com/imrohitagrawal/narratwin-ai/issues/459#issuecomment-5452170084) | `8c9297b3faf1d6894442017afef2ce58dcb3ec2a6ee6c3037be2024abb2d0fce` |
+| [Hosted-correction authorization comment 5456406377](https://github.com/imrohitagrawal/narratwin-ai/issues/459#issuecomment-5456406377) | `dcbc20d52a6acb636463389f7a4996d79b7262f30209576e13522e3576782a7a` |
+| [Reviewed-main transition comment 5460884573](https://github.com/imrohitagrawal/narratwin-ai/issues/459#issuecomment-5460884573) | `6ef7158ffa8347defbed97b3c18a7ad0728cec02ff217b8a0984048fb44887ac` |
 
 ## Independent cells
 

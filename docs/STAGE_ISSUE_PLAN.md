@@ -15,6 +15,14 @@ controller boundary inside the unchanged cumulative route budget.
 The evaluator neither renders media nor activates a provider and rejects
 mock/stub/placeholder/non-real-video evidence.
 
+PR `#461` merged the hosted-parity prerequisite at reviewed main
+`285458f22a5d8786c359c6e4ebf0f9acd82ead96`. Transition authority comment
+`5460884573` requires exact merge `b569e0bbc6175423706558aa1cc78486a09dfbe5`
+with frozen T04 head `570239effbcae3990a24ffdc809622f02364ff0d` as
+first parent and reviewed main as second parent. The original route is still
+validated from `ab97b6e` to the frozen head; active paths and charges use the
+reviewed prerequisite base. No prerequisite path becomes Issue `#459` scope.
+
 T03 may edit only the existing Raj/Myra fictional portraits with at most two
 attempts each. Meera is `SOURCE_READY_NO_DERIVATIVE`, so the T03 inventory has
 no Meera binary. Registry activation waits for visual selection and independent
@@ -24,7 +32,7 @@ and `#449` retain human-study and provider/credential/egress/spend authority.
 No runtime provider, deployment, publication, human study, acceptance, or
 release authority is created.
 
-## Issue #460 Semgrep override removal
+## Issue #460 completed Semgrep override removal
 
 Issue `#460` starts from exact accepted main
 `ab97b6eecba6db9c66c37d19b29257c7398f3ab7` on branch
@@ -57,7 +65,9 @@ fail closed before the unchanged full-history scan.
 This prerequisite grants no product, runtime MCP server, provider, credential,
 deployment, release, commercial-readiness, or production authority. Issue
 `#459` must consume it only through a separately reviewed base/route transition
-after #460 merges and merged-main security parity passes.
+after #460 merges and merged-main security parity passes. PR `#461` merged at
+`285458f22a5d8786c359c6e4ebf0f9acd82ead96`; merged-main Quality Gates run
+`33239107478` passed and Issue `#460` is closed.
 
 ## Issue #16 specification-kit route
 
