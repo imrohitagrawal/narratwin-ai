@@ -66,7 +66,7 @@ registry binding and add a separately named derivative/readiness binding, or
 explicitly re-freeze every affected consumer.
 
 T05 remains stopped on the Meera-only grounding/narration contract and Issue
-#368 audio ownership. Issues #432 and #449 retain human-study and runtime
+Issue #368 audio ownership. Issues #432 and #449 retain human-study and runtime
 provider authority. Historical Stage 7 mocks/stubs remain unchanged for
 compatibility and can never produce acceptance evidence.
 
