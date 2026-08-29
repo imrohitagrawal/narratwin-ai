@@ -2,7 +2,7 @@
   "schema_version": "GovernancePreflightV1",
   "issue_number": 459,
   "branch": "stage8-459-t03-presenter-derivatives",
-  "objective": "From exact accepted main 4ef3a8ba70cbf97b7704f5f589b0887f840081cb, implement only Issue #459 LA-C1-T03 derivative readiness under OWNER checkpoint comment 5463568867, exact body SHA-256 728705c278db4b05d4072bcacc3af657b069662e21fbf4f5f5ee2f934a155da8, and hosted decode correction comment 5463979365, exact body SHA-256 c8816f6243e5810267b66c84fcaa6bd471d78fca24463f6b9e46352a93c42113. Preserve the Meera, Raj, and Myra originals and the byte-identical source registry; activate separately hashed Raj/Myra attempt-1 controlled-local WebP derivatives only after RED tests and independent visual, provenance, and privacy review. Use exactly sixteen paths, no more than 2400 charged text lines, and regular non-symlink WebPs below 500000 bytes without upscaling. Add Pillow only to the development dependency group for hosted-parity executable WebP decoding and corrupt-payload rejection. Keep T04 authority frozen and providers, credentials, network, egress, retries, spend, runtime, UI, audio, publication, release, production, human-study, and Cut 1 acceptance out of scope. Stop on any route, budget, hash, rights, provenance, identity, media, original, registry, T04, hosted, dependency, or review drift.",
+  "objective": "From exact accepted main 4ef3a8ba70cbf97b7704f5f589b0887f840081cb, implement only Issue #459 LA-C1-T03 derivative readiness under OWNER checkpoint comment 5463568867, exact body SHA-256 728705c278db4b05d4072bcacc3af657b069662e21fbf4f5f5ee2f934a155da8, hosted decode correction comment 5463979365, exact body SHA-256 c8816f6243e5810267b66c84fcaa6bd471d78fca24463f6b9e46352a93c42113, and inherited dependency-contract correction comment 5464081073, exact body SHA-256 1e07f4d261216e3d3b218160e1b46bf84f3f395fbe816db926f004314182f369. Preserve the Meera, Raj, and Myra originals and the byte-identical source registry; activate separately hashed Raj/Myra attempt-1 controlled-local WebP derivatives only after RED tests and independent visual, provenance, and privacy review. Use exactly seventeen paths, no more than 2400 charged text lines, and regular non-symlink WebPs below 500000 bytes without upscaling. Add Pillow only to the development dependency group for hosted-parity executable WebP decoding and corrupt-payload rejection, and normalize only its exact frozen dev-only delta before historical PyPDF assertions. Keep T04 authority frozen and providers, credentials, network, egress, retries, spend, runtime, UI, audio, publication, release, production, human-study, and Cut 1 acceptance out of scope. Stop on any route, budget, hash, rights, provenance, identity, media, original, registry, T04, hosted, dependency, or review drift.",
   "status_decision": "update-minimally",
   "scope": {
     "required": [
@@ -14,6 +14,7 @@
       "frontend/public/demo/cut1/myra-waist-up.webp",
       "backend/app/presenter_registry.py",
       "tests/unit/test_cut1_presenter_derivatives.py",
+      "tests/unit/test_dependency_security_contract.py",
       "docs/ADR/0069-cut1-presenter-derivative-readiness-binding.md",
       "docs/THIRD_PARTY_NOTICES.md",
       "scripts/quality/stage8_cut1_routes.py",
@@ -32,6 +33,7 @@
       "frontend/public/demo/cut1/myra-waist-up.webp",
       "backend/app/presenter_registry.py",
       "tests/unit/test_cut1_presenter_derivatives.py",
+      "tests/unit/test_dependency_security_contract.py",
       "docs/ADR/0069-cut1-presenter-derivative-readiness-binding.md",
       "docs/THIRD_PARTY_NOTICES.md",
       "scripts/quality/stage8_cut1_routes.py",

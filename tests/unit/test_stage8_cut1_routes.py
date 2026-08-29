@@ -182,6 +182,7 @@ ISSUE459_T03_EXPECTED = {
     "frontend/public/demo/cut1/myra-waist-up.webp",
     "backend/app/presenter_registry.py",
     "tests/unit/test_cut1_presenter_derivatives.py",
+    "tests/unit/test_dependency_security_contract.py",
     "docs/ADR/0069-cut1-presenter-derivative-readiness-binding.md",
     "docs/THIRD_PARTY_NOTICES.md",
     "scripts/quality/stage8_cut1_routes.py",
@@ -198,6 +199,7 @@ ISSUE459_T03_LINE_CAPS = {
     "docs/governance/cut1-presenter-derivatives-v1.json": 420,
     "backend/app/presenter_registry.py": 500,
     "tests/unit/test_cut1_presenter_derivatives.py": 700,
+    "tests/unit/test_dependency_security_contract.py": 220,
     "docs/ADR/0069-cut1-presenter-derivative-readiness-binding.md": 180,
     "docs/THIRD_PARTY_NOTICES.md": 260,
     "scripts/quality/stage8_cut1_routes.py": 220,
@@ -1552,6 +1554,8 @@ def test_issue459_t03_route_freezes_authority_scope_and_budgets() -> None:
     assert routes.ISSUE459_T03_AUTHORITY_SHA256 == "728705c278db4b05d4072bcacc3af657b069662e21fbf4f5f5ee2f934a155da8"
     assert routes.ISSUE459_T03_CORRECTION_COMMENT == "5463979365"
     assert routes.ISSUE459_T03_CORRECTION_SHA256 == "c8816f6243e5810267b66c84fcaa6bd471d78fca24463f6b9e46352a93c42113"
+    assert routes.ISSUE459_T03_DEPENDENCY_COMMENT == "5464081073"
+    assert routes.ISSUE459_T03_DEPENDENCY_SHA256 == "1e07f4d261216e3d3b218160e1b46bf84f3f395fbe816db926f004314182f369"
     assert routes.ROUTES[branch] == ISSUE459_T03_EXPECTED
     assert routes.ROUTE_ISSUES[branch] == 459
     assert routes.TOTAL_LIMITS[branch] == 2400
@@ -1596,6 +1600,7 @@ def test_issue459_t03_rejects_authority_rename_and_binary_boundary(
     for authority_sha256 in (
         routes.ISSUE459_T03_AUTHORITY_SHA256,
         routes.ISSUE459_T03_CORRECTION_SHA256,
+        routes.ISSUE459_T03_DEPENDENCY_SHA256,
     ):
         drifted = copy.deepcopy(artifact)
         drifted["objective"] = drifted["objective"].replace(authority_sha256, "0" * 64)

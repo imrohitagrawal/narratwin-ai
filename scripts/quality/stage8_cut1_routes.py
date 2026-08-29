@@ -58,6 +58,8 @@ ISSUE459_T03_AUTHORITY_COMMENT = "5463568867"
 ISSUE459_T03_AUTHORITY_SHA256 = "728705c278db4b05d4072bcacc3af657b069662e21fbf4f5f5ee2f934a155da8"
 ISSUE459_T03_CORRECTION_COMMENT = "5463979365"
 ISSUE459_T03_CORRECTION_SHA256 = "c8816f6243e5810267b66c84fcaa6bd471d78fca24463f6b9e46352a93c42113"
+ISSUE459_T03_DEPENDENCY_COMMENT = "5464081073"
+ISSUE459_T03_DEPENDENCY_SHA256 = "1e07f4d261216e3d3b218160e1b46bf84f3f395fbe816db926f004314182f369"
 SECURITY_PREFLIGHTS = {
     150: ("Issue150SecurityRenewalPreflightV1", "e6a569cb6254ef58c36fb44e9cdece26e0816b49c9f62ce08e9d90f3843c97e3"),
     428: ("Issue428NanoidSecurityPreflightV1", "0d8da352c98855bc481581f1ca13cc2d4e994838b1afb31d974ad2b17caf7a9b"),
@@ -83,6 +85,7 @@ ROUTES = {
         "docs/governance/preflights/issue-459-t03.json", "docs/governance/cut1-presenter-derivatives-v1.json",
         "frontend/public/demo/cut1/raj-waist-up.webp", "frontend/public/demo/cut1/myra-waist-up.webp",
         "backend/app/presenter_registry.py", "tests/unit/test_cut1_presenter_derivatives.py",
+        "tests/unit/test_dependency_security_contract.py",
         "docs/ADR/0069-cut1-presenter-derivative-readiness-binding.md", "docs/THIRD_PARTY_NOTICES.md",
         "scripts/quality/stage8_cut1_routes.py", "tests/unit/test_stage8_cut1_routes.py",
         "docs/QUALITY_GATES.md", "docs/STAGE_ISSUE_PLAN.md", "docs/STATUS.md", "docs/TRACEABILITY.md",
@@ -542,6 +545,7 @@ TEXT_LIMITS = {
         "docs/governance/cut1-presenter-derivatives-v1.json": 420,
         "backend/app/presenter_registry.py": 500,
         "tests/unit/test_cut1_presenter_derivatives.py": 700,
+        "tests/unit/test_dependency_security_contract.py": 220,
         "docs/ADR/0069-cut1-presenter-derivative-readiness-binding.md": 180,
         "docs/THIRD_PARTY_NOTICES.md": 260,
         "scripts/quality/stage8_cut1_routes.py": 220,
@@ -1401,6 +1405,8 @@ def check_exact_route(
                 ISSUE459_T03_AUTHORITY_SHA256,
                 ISSUE459_T03_CORRECTION_COMMENT,
                 ISSUE459_T03_CORRECTION_SHA256,
+                ISSUE459_T03_DEPENDENCY_COMMENT,
+                ISSUE459_T03_DEPENDENCY_SHA256,
             )
             failures.extend(
                 f"Issue #459 T03 governance preflight failed: {finding.code}"
