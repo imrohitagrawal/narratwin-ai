@@ -39,6 +39,20 @@ and `#449` retain human-study and provider/credential/egress/spend authority.
 No runtime provider, deployment, publication, human study, acceptance, or
 release authority is created.
 
+PR `#462` merged the T04 controller and hosted-parity corrections at accepted
+main `4ef3a8ba70cbf97b7704f5f589b0887f840081cb`. OWNER checkpoint
+`5463568867` starts T03 on exact branch
+`stage8-459-t03-presenter-derivatives` with fourteen paths and a 2,400-line
+cap, later expanded to seventeen paths only for hosted decode and historical
+dependency-contract parity. Independent visual/provenance/privacy review
+accepted Raj attempt 1. OWNER correction checkpoint `5464690216` then
+authorized Myra's second and final attempt for hand lighting, gesture, jewelry,
+and nail-polish continuity; independent review accepted it and recorded attempt
+1 as owner-superseded. Their bounded metadata-free WebPs are registered through a
+separate derivative manifest and additive binding; the source registry, all
+three originals, and T04 authority stay byte-identical. T03 remains pending
+hosted parity, independent exact-head review, and PR approval/merge closeout.
+
 ## Issue #460 completed Semgrep override removal
 
 Issue `#460` starts from exact accepted main

@@ -307,3 +307,35 @@ spend, redistribution right, legal clearance or final selection is authorized.
 Sources and provider-specific constraints are enumerated in
 `docs/governance/cut1-provider-bakeoff-contract-v1.json` and must be refreshed
 before any later experiment.
+
+## Issue #459 T03 controlled-local presenter derivatives
+
+Issue #459 uses OpenAI's built-in `gpt-image-2.0` image-edit capability on
+project-owned fictional synthetic identity anchors. Raj used one accepted
+attempt. Myra used the authorized maximum of two attempts: owner review
+superseded attempt 1 for hand lighting, gesture, coordinated jewelry, and
+deep-maroon nail-polish continuity; attempt 2 passed independent visual,
+provenance, and privacy review. No third attempt is authorized. The private PNG
+sources are excluded from Git and retained only for owner cleanup after merge.
+Exact source, candidate, output, conversion, review, rights, privacy, and
+deletion records are in
+`docs/governance/cut1-presenter-derivatives-v1.json`.
+
+Accepted repository outputs are metadata-stripped WebPs for controlled local
+Cut 1 use only. Independent review found no real-person reference, text, logo,
+watermark, identity substitution, blocking anatomy defect, or
+conversion-induced drift. Myra attempt 2 is private SHA-256
+`00d71d0e6d25ff3772c2f6e05617853a240248e5e4ffa3ac623f7de5d7eed6bf`;
+its generated PNG contains C2PA provenance identifying `gpt-image 2.0`, trained
+algorithmic media, and OpenAI Media Service. The metadata-stripped WebP is
+SHA-256
+`46390ac627662bff38c9bb4ec904520a808e42030ff698741b5c32519f0be4c3`,
+1086×1448, and 150246 bytes.
+Pillow `12.3.0` under the MIT-CMU license is installed only in the development
+dependency group to decode one complete frame from each frozen WebP during
+tests and to reject a structurally plausible WebP with corrupted VP8 pixels.
+It is not added to the application runtime or used to generate or modify media.
+This record grants no publication, distribution, provider/runtime activation,
+credential, egress, spend, human-study, release, production, or Cut 1 acceptance
+authority. The Meera, Raj, and Myra originals remain immutable, and no new Meera
+binary was generated or activated.

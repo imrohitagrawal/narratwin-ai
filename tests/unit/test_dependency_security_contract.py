@@ -55,6 +55,7 @@ PYPDF_SDIST_SHA256 = "d39c4d955a76409284a905e2d65b40076d77ab76129e0faaeeb6612403
 PIP_SECURITY_VERSION = "26.2.1"
 PIP_SECURITY_WHEEL_SHA256 = "71138adf1f4ca900cdb7d289c21b7494329f2332b6d85f0e1c42108c0384ed3e"
 PIP_SECURITY_SDIST_SHA256 = "f6ad667e89a1fe78046c8f13232b247200f5258d7828f3f7883d660878e0813f"
+PILLOW_PACKAGE_SHA256 = "c70cea2f3be57c728d2b012f17b7fbc4c9c839a9ed34329d17d7f57575f9e660"
 GOOGLE_AUTH_PACKAGES = {
     "google-auth": ("2.56.3", "aafe27da7ef14e2ec2b24d75c45f7d800cfa7b3eb2d3d73a85228aafcfd870bc", "40e229fc901f0a305b553050e5fce562d509bee0435be053abfa91582b51b90c", "8ec438808f813ad034535000261eed1067475d229d05bbf4216e78c3f2362e53"),
     "cryptography": ("50.0.0", "8584b52fbe429cb4b08434bf19df055dfe7c97a11d486c9b265ec1ee01851bb4", "eeac2acb5a20ed25e0ad6d1df9891a520b78b404266b6d11778f25d5d691a6c9", "031e2d5dd4bb9caa3ca9c82e5a197fd8ae680232cee62603d1a813f3f07e3d03"),
@@ -75,6 +76,28 @@ def _normalize_pip_security_delta(lock: dict[str, Any], base_lock: dict[str, Any
     assert package["wheels"][0]["hash"] == f"sha256:{PIP_SECURITY_WHEEL_SHA256}"
     index = next(i for i, item in enumerate(lock["package"]) if item["name"] == "pip")
     lock["package"][index] = next(item for item in base_lock["package"] if item["name"] == "pip")
+
+
+def _normalize_t03_pillow_dev_delta(project: dict[str, Any], lock: dict[str, Any]) -> None:
+    dev = project["dependency-groups"]["dev"]
+    assert dev.count("pillow>=12.3.0") == 1
+    dev.remove("pillow>=12.3.0")
+    packages = [package for package in lock["package"] if package["name"] == "pillow"]
+    assert len(packages) == 1
+    pillow = packages[0]
+    assert pillow["version"] == "12.3.0"
+    assert pillow["source"] == {"registry": "https://pypi.org/simple"}
+    assert hashlib.sha256(
+        json.dumps(pillow, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest() == PILLOW_PACKAGE_SHA256
+    root = next(package for package in lock["package"] if package["name"] == "narratwin-ai")
+    root_dev = root["dev-dependencies"]["dev"]
+    root_metadata = root["metadata"]["requires-dev"]["dev"]
+    assert root_dev.count({"name": "pillow"}) == 1
+    assert root_metadata.count({"name": "pillow", "specifier": ">=12.3.0"}) == 1
+    root_dev.remove({"name": "pillow"})
+    root_metadata.remove({"name": "pillow", "specifier": ">=12.3.0"})
+    lock["package"] = [package for package in lock["package"] if package["name"] != "pillow"]
 
 
 def _assert_google_auth_delta(project: dict[str, Any], lock: dict[str, Any], base_project: dict[str, Any], base_lock: dict[str, Any]) -> None:
@@ -139,13 +162,13 @@ def _assert_pypdf_615_contract(project_text: str, lock_text: str) -> None:
     google_pypdf_metadata["specifier"] = ">=6.14.2"
     google_pypdf_index = next(i for i, package in enumerate(google_lock["package"]) if package["name"] == "pypdf")
     google_lock["package"][google_pypdf_index] = next(package for package in base_lock["package"] if package["name"] == "pypdf")
+    _normalize_t03_pillow_dev_delta(google_project, google_lock)
     _assert_google_auth_delta(google_project, google_lock, base_project, base_lock)
     normalized_project = copy.deepcopy(project)
     index = dependencies.index("pypdf>=6.15.0")
     normalized_project["project"]["dependencies"][index] = "pypdf>=6.14.2"
     normalized_project["project"]["optional-dependencies"]["providers"] = base_project["project"]["optional-dependencies"]["providers"]
     _normalize_issue434_project(normalized_project)
-    assert normalized_project == base_project
 
     pypdf = [package for package in lock["package"] if package["name"] == "pypdf"]
     assert len(pypdf) == 1 and pypdf[0]["version"] == "6.15.0"
@@ -173,6 +196,8 @@ def _assert_pypdf_615_contract(project_text: str, lock_text: str) -> None:
     normalized_lock["package"] = [package for package in normalized_lock["package"] if package["name"] not in GOOGLE_AUTH_PACKAGES]
     _normalize_issue434_lock(normalized_lock)
     _normalize_pip_security_delta(normalized_lock, base_lock)
+    _normalize_t03_pillow_dev_delta(normalized_project, normalized_lock)
+    assert normalized_project == base_project
     assert normalized_lock == base_lock
 
 
@@ -189,6 +214,13 @@ def test_pypdf_contract_rejects_vulnerable_hash_and_unrelated_drift() -> None:
     mutations = (
         (project_text.replace("pypdf>=6.15.0", "pypdf>=6.14.2"), lock_text),
         (project_text.replace('"cryptography==50.0.0"', '"cryptography==49.0.0"'), lock_text),
+        (project_text.replace('    "pillow>=12.3.0",\n', ""), lock_text),
+        (project_text.replace('"pillow>=12.3.0"', '"pillow>=12.2.0"'), lock_text),
+        (project_text, lock_text.replace('    { name = "pillow" },\n', "", 1)),
+        (project_text, lock_text.replace('    { name = "pillow", specifier = ">=12.3.0" },\n', "", 1)),
+        (project_text, lock_text.replace('name = "pillow"\nversion = "12.3.0"', 'name = "missing-pillow"\nversion = "12.3.0"')),
+        (project_text, lock_text.replace('name = "pillow"\nversion = "12.3.0"', 'name = "pillow"\nversion = "12.2.0"')),
+        (project_text, lock_text.replace("sha256:3b8182a766685eaa002637e28b4ec8d6b18819a0c71f579bf0dbaa5830297cce", "sha256:" + "5" * 64)),
         (project_text, lock_text.replace('{ name = "cryptography", specifier = "==50.0.0" }', '{ name = "cryptography", specifier = "==49.0.0" }')),
         (project_text, lock_text.replace(f"sha256:{PYPDF_WHEEL_SHA256}", "sha256:wrong")),
         (project_text, lock_text.replace(f"sha256:{PIP_SECURITY_WHEEL_SHA256}", "sha256:wrong")),

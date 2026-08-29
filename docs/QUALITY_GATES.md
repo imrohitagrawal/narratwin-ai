@@ -1640,3 +1640,32 @@ This gate validates synthetic blocked evidence; an empty finding set is not Cut
 with `#432` and `#449`; Raj/Myra derivatives and presenter-specific grounding
 must satisfy the recorded stops before T03/T05/T06. Mock/stub/HTML/JSON and
 `supportsRealVideo=false` results can never serve as Cut 1 evidence.
+
+## Issue #459 T03 presenter-derivative readiness gate
+
+Exact branch `stage8-459-t03-presenter-derivatives` is pinned to accepted main
+`4ef3a8ba70cbf97b7704f5f589b0887f840081cb` and OWNER checkpoint
+`5463568867`, with Myra attempt-2 correction checkpoint `5464690216`. Its exact
+seventeen-path route allows 2,400 charged text lines and
+two regular non-symlink WebPs, each strictly below 500,000 bytes. Missing or
+extra paths, wrong base/branch point, unavailable snapshots, authority/preflight
+drift, deletion/rename/copy drift, budget overrun, and binary boundary violations
+fail closed.
+
+The focused gate proves original immutability, exact derivative hashes and
+dimensions, WebP decoding/container safety, Raj/Myra presenter binding, explicit
+Meera source-only readiness, T04/source-registry digest preservation, and exact
+privacy/provenance/deletion references. It also binds Myra's maximum second
+attempt and owner-superseded attempt-1 disposition while Raj remains attempt 1:
+
+```text
+uv run pytest -q tests/unit/test_cut1_presenter_derivatives.py tests/unit/test_cut1_presenter_registry.py tests/unit/test_cut1_controlled_presenter.py tests/unit/test_cut1_controlled_presenter_red.py
+uv run pytest -q tests/unit/test_stage8_cut1_routes.py
+NARRATWIN_POLICY_ONLY=1 make quality
+make quality
+bash scripts/ci/backend-test.sh
+```
+
+Green T03 evidence activates only controlled-local Raj/Myra still-image
+derivative readiness. It activates no provider/runtime, audio, video, UI,
+publication, human study, release, production, or Cut 1 acceptance claim.

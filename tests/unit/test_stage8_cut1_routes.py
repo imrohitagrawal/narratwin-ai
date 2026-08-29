@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import importlib.util
 import hashlib
 import json
@@ -172,10 +173,51 @@ ISSUE459_BYTE_CAPS = {
     "docs/reviews/ISSUE_459_ENTRY_GATE_REVIEW.md": 48_000,
     "docs/ADR/0068-cut1-controlled-presenter-controller.md": 32_000, ".gitleaksignore": 2_000, "scripts/ci/check_gitleaks_regression.py": 24_000, "tests/unit/test_gitleaks_regression.py": 32_000, "scripts/quality/check_stage8_docs.py": 48_000, "tests/unit/test_stage8_quality_gate.py": 40_000,
 }
+ISSUE459_T03_EXPECTED = {
+    "pyproject.toml",
+    "uv.lock",
+    "docs/governance/preflights/issue-459-t03.json",
+    "docs/governance/cut1-presenter-derivatives-v1.json",
+    "frontend/public/demo/cut1/raj-waist-up.webp",
+    "frontend/public/demo/cut1/myra-waist-up.webp",
+    "backend/app/presenter_registry.py",
+    "tests/unit/test_cut1_presenter_derivatives.py",
+    "tests/unit/test_dependency_security_contract.py",
+    "docs/ADR/0069-cut1-presenter-derivative-readiness-binding.md",
+    "docs/THIRD_PARTY_NOTICES.md",
+    "scripts/quality/stage8_cut1_routes.py",
+    "tests/unit/test_stage8_cut1_routes.py",
+    "docs/QUALITY_GATES.md",
+    "docs/STAGE_ISSUE_PLAN.md",
+    "docs/STATUS.md",
+    "docs/TRACEABILITY.md",
+}
+ISSUE459_T03_LINE_CAPS = {
+    "pyproject.toml": 20,
+    "uv.lock": 200,
+    "docs/governance/preflights/issue-459-t03.json": 220,
+    "docs/governance/cut1-presenter-derivatives-v1.json": 420,
+    "backend/app/presenter_registry.py": 500,
+    "tests/unit/test_cut1_presenter_derivatives.py": 700,
+    "tests/unit/test_dependency_security_contract.py": 220,
+    "docs/ADR/0069-cut1-presenter-derivative-readiness-binding.md": 180,
+    "docs/THIRD_PARTY_NOTICES.md": 260,
+    "scripts/quality/stage8_cut1_routes.py": 220,
+    "tests/unit/test_stage8_cut1_routes.py": 340,
+    "docs/QUALITY_GATES.md": 120,
+    "docs/STAGE_ISSUE_PLAN.md": 120,
+    "docs/STATUS.md": 160,
+    "docs/TRACEABILITY.md": 120,
+}
+ISSUE459_T03_BYTE_CAPS = {
+    "frontend/public/demo/cut1/raj-waist-up.webp": 500_000,
+    "frontend/public/demo/cut1/myra-waist-up.webp": 500_000,
+}
 
 
 EXPECTED = {
     "lane-a-cut1-459-controlled-presenter": ISSUE459_EXPECTED,
+    "stage8-459-t03-presenter-derivatives": ISSUE459_T03_EXPECTED,
     "security-460-semgrep-override-removal": ISSUE460_EXPECTED,
     "docs/cut1-acceptance-provider-contract-452": ISSUE452_EXPECTED,
     "docs/cut1-post-443-reconciliation-451": {
@@ -1505,6 +1547,92 @@ def test_issue459_requires_exact_reviewed_transition() -> None:
         assert "Issue #459 reviewed transition" in str(error.value)
 
 
+def test_issue459_t03_route_freezes_authority_scope_and_budgets() -> None:
+    branch = routes.ISSUE459_T03_BRANCH
+    assert routes.ISSUE459_T03_BASE == "4ef3a8ba70cbf97b7704f5f589b0887f840081cb"
+    assert routes.ISSUE459_T03_AUTHORITY_COMMENT == "5463568867"
+    assert routes.ISSUE459_T03_AUTHORITY_SHA256 == "728705c278db4b05d4072bcacc3af657b069662e21fbf4f5f5ee2f934a155da8"
+    assert routes.ISSUE459_T03_CORRECTION_COMMENT == "5463979365"
+    assert routes.ISSUE459_T03_CORRECTION_SHA256 == "c8816f6243e5810267b66c84fcaa6bd471d78fca24463f6b9e46352a93c42113"
+    assert routes.ISSUE459_T03_DEPENDENCY_COMMENT == "5464081073"
+    assert routes.ISSUE459_T03_DEPENDENCY_SHA256 == "1e07f4d261216e3d3b218160e1b46bf84f3f395fbe816db926f004314182f369"
+    assert routes.ISSUE459_T03_MYRA_CORRECTION_COMMENT == "5464690216"
+    assert routes.ISSUE459_T03_MYRA_CORRECTION_SHA256 == (
+        "4b69e4707492c6e6c7d8b8527680d8ef0987043745220e19e0c2036faaf62bfa"
+    )
+    assert routes.ROUTES[branch] == ISSUE459_T03_EXPECTED
+    assert routes.ROUTE_ISSUES[branch] == 459
+    assert routes.TOTAL_LIMITS[branch] == 2400
+    assert routes.TEXT_LIMITS[branch] == ISSUE459_T03_LINE_CAPS
+    assert routes.ISSUE459_T03_BYTE_LIMITS == ISSUE459_T03_BYTE_CAPS
+
+
+def test_issue459_t03_requires_exact_main_branch_point() -> None:
+    base = routes.ISSUE459_T03_BASE
+
+    def good(args: list[str]) -> subprocess.CompletedProcess[str]:
+        if args[:2] == ["git", "rev-parse"]:
+            return completed(args, out=base + "\n")
+        assert args[:2] == ["git", "merge-base"]
+        return completed(args, out=base + "\n")
+
+    assert routes.route_base(good, routes.ISSUE459_T03_BRANCH) == base
+    for command in ("rev-parse", "fixed-merge-base", "branch-point"):
+        def broken(args: list[str], *, rejected: str = command) -> subprocess.CompletedProcess[str]:
+            if rejected == "rev-parse" and args[:2] == ["git", "rev-parse"]:
+                return completed(args, code=128)
+            if rejected == "fixed-merge-base" and args[:3] == ["git", "merge-base", base]:
+                return completed(args, out="0" * 40 + "\n")
+            if rejected == "branch-point" and args[:3] == ["git", "merge-base", "origin/main"]:
+                return completed(args, out="0" * 40 + "\n")
+            return good(args)
+        error = pytest.raises(RuntimeError, routes.route_base, broken, routes.ISSUE459_T03_BRANCH)
+        assert "Issue #459 fixed base" in str(error.value)
+
+
+def test_issue459_t03_rejects_authority_rename_and_binary_boundary(
+    monkeypatch: Any, tmp_path: Path,
+) -> None:
+    branch = routes.ISSUE459_T03_BRANCH
+    monkeypatch.setattr(routes, "route_base", lambda *_: routes.ISSUE459_T03_BASE)
+    monkeypatch.setattr(routes, "route_text_charges", lambda *_: (0, {}))
+    artifact = json.loads((REPO / "docs/governance/preflights/issue-459-t03.json").read_text())
+    target = tmp_path / "docs/governance/preflights/issue-459-t03.json"
+    target.parent.mkdir(parents=True)
+    monkeypatch.setattr(routes, "route_binary_sizes",
+                        lambda *_: {path: 1 for path in ISSUE459_T03_BYTE_CAPS})
+    for authority_sha256 in (
+        routes.ISSUE459_T03_AUTHORITY_SHA256,
+        routes.ISSUE459_T03_CORRECTION_SHA256,
+        routes.ISSUE459_T03_DEPENDENCY_SHA256,
+        routes.ISSUE459_T03_MYRA_CORRECTION_SHA256,
+    ):
+        drifted = copy.deepcopy(artifact)
+        drifted["objective"] = drifted["objective"].replace(authority_sha256, "0" * 64)
+        target.write_text(json.dumps(drifted))
+        failures: list[str] = []
+        routes.check_exact_route(tmp_path, lambda _: completed([]), branch,
+                                 ISSUE459_T03_EXPECTED, failures)
+        assert failures == ["Issue #459 T03 governance authority drifted."]
+
+    for path, limit in ISSUE459_T03_BYTE_CAPS.items():
+        monkeypatch.setattr(routes, "route_binary_sizes", lambda *_, p=path, n=limit: {
+            candidate: n if candidate == p else 1 for candidate in ISSUE459_T03_BYTE_CAPS
+        })
+        failures = []
+        routes.check_exact_route(REPO, lambda _: completed([]), branch,
+                                 ISSUE459_T03_EXPECTED, failures)
+        assert failures == [f"Issue #459 file {path} must be smaller than {limit} bytes."]
+
+    monkeypatch.setattr(routes, "route_binary_sizes",
+                        lambda *_: {path: 1 for path in ISSUE459_T03_BYTE_CAPS})
+    renamed = completed([], out="R100\0old\0new\0")
+    failures = []
+    routes.check_exact_route(REPO, lambda _: renamed, branch,
+                             ISSUE459_T03_EXPECTED, failures)
+    assert failures == ["Issue #459 route forbids deleted, renamed, or copied paths."]
+
+
 def test_issue459_rejects_each_byte_boundary(monkeypatch: Any) -> None:
     branch = routes.ISSUE459_BRANCH
     monkeypatch.setattr(routes, "route_base", lambda *_: "base")
@@ -1753,7 +1881,7 @@ def test_legacy_checker_caps_are_unchanged_and_executable() -> None:
 def test_exact_route_completeness_lookalikes_and_budgets(monkeypatch: Any) -> None:
     monkeypatch.setattr(routes, "route_base", lambda *_: "base")
     monkeypatch.setattr(routes, "route_text_charges", lambda *_: (0, {}))
-    monkeypatch.setattr(routes, "route_binary_sizes", lambda *_: {path: 1 for path in routes.ISSUE383_BINARY_FILES | set(routes.ISSUE452_BYTE_LIMITS) | set(routes.ISSUE459_BYTE_LIMITS)})
+    monkeypatch.setattr(routes, "route_binary_sizes", lambda *_: {path: 1 for path in routes.ISSUE383_BINARY_FILES | set(routes.ISSUE452_BYTE_LIMITS) | set(routes.ISSUE459_BYTE_LIMITS) | set(routes.ISSUE459_T03_BYTE_LIMITS)})
     for branch, paths in EXPECTED.items():
         failures: list[str] = []
         routes.check_exact_route(REPO, issue459_run if branch == routes.ISSUE459_BRANCH else lambda _: completed([]), branch, set(paths), failures)
@@ -1785,7 +1913,7 @@ def test_exact_route_completeness_lookalikes_and_budgets(monkeypatch: Any) -> No
 
 def test_per_route_aggregate_per_file_and_binary_caps(monkeypatch: Any) -> None:
     monkeypatch.setattr(routes, "route_base", lambda *_: "base")
-    monkeypatch.setattr(routes, "route_binary_sizes", lambda *_: {path: 1 for path in routes.ISSUE383_BINARY_FILES | set(routes.ISSUE452_BYTE_LIMITS) | set(routes.ISSUE459_BYTE_LIMITS)})
+    monkeypatch.setattr(routes, "route_binary_sizes", lambda *_: {path: 1 for path in routes.ISSUE383_BINARY_FILES | set(routes.ISSUE452_BYTE_LIMITS) | set(routes.ISSUE459_BYTE_LIMITS) | set(routes.ISSUE459_T03_BYTE_LIMITS)})
     for branch, limit in routes.TOTAL_LIMITS.items():
         monkeypatch.setattr(routes, "route_text_charges", lambda *_, value=limit: (value + 1, {}))
         failures: list[str] = []

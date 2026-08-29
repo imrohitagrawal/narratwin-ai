@@ -16,6 +16,7 @@ ISSUE460_BRANCH = "security-460-semgrep-override-removal"
 ISSUE451_BRANCH = "docs/cut1-post-443-reconciliation-451"
 ISSUE452_BRANCH = "docs/cut1-acceptance-provider-contract-452"
 ISSUE459_BRANCH = "lane-a-cut1-459-controlled-presenter"
+ISSUE459_T03_BRANCH = "stage8-459-t03-presenter-derivatives"
 ISSUE386_BRANCH = "cut1-process-386-modular-route-enforcement"
 ISSUE413_BRANCH = "cut1-process-413-frontend-runtime-openssl"
 ISSUE405_BRANCH = "process-405-heartbeat2-main-reliability"
@@ -52,6 +53,15 @@ ISSUE451_BASE = "59db96aaab6c4e75b12d134dc9b02330c5a982ac"
 ISSUE452_BASE = "97e8173c2ec1323aa9ced23d43059bca2e5a204f"
 ISSUE459_BASE, ISSUE459_FROZEN_HEAD = "ab97b6eecba6db9c66c37d19b29257c7398f3ab7", "570239effbcae3990a24ffdc809622f02364ff0d"
 ISSUE459_TRANSITION_BASE, ISSUE459_TRANSITION_MERGE = "285458f22a5d8786c359c6e4ebf0f9acd82ead96", "b569e0bbc6175423706558aa1cc78486a09dfbe5"
+ISSUE459_T03_BASE = "4ef3a8ba70cbf97b7704f5f589b0887f840081cb"
+ISSUE459_T03_AUTHORITY_COMMENT = "5463568867"
+ISSUE459_T03_AUTHORITY_SHA256 = "728705c278db4b05d4072bcacc3af657b069662e21fbf4f5f5ee2f934a155da8"
+ISSUE459_T03_CORRECTION_COMMENT = "5463979365"
+ISSUE459_T03_CORRECTION_SHA256 = "c8816f6243e5810267b66c84fcaa6bd471d78fca24463f6b9e46352a93c42113"
+ISSUE459_T03_DEPENDENCY_COMMENT = "5464081073"
+ISSUE459_T03_DEPENDENCY_SHA256 = "1e07f4d261216e3d3b218160e1b46bf84f3f395fbe816db926f004314182f369"
+ISSUE459_T03_MYRA_CORRECTION_COMMENT = "5464690216"
+ISSUE459_T03_MYRA_CORRECTION_SHA256 = "4b69e4707492c6e6c7d8b8527680d8ef0987043745220e19e0c2036faaf62bfa"
 SECURITY_PREFLIGHTS = {
     150: ("Issue150SecurityRenewalPreflightV1", "e6a569cb6254ef58c36fb44e9cdece26e0816b49c9f62ce08e9d90f3843c97e3"),
     428: ("Issue428NanoidSecurityPreflightV1", "0d8da352c98855bc481581f1ca13cc2d4e994838b1afb31d974ad2b17caf7a9b"),
@@ -72,6 +82,16 @@ ISSUE460_HOSTED_SECURITY_PATHS = {
 ISSUE459_HOSTED_CORRECTION_PATHS = {".gitleaksignore", "scripts/ci/check_gitleaks_regression.py", "tests/unit/test_gitleaks_regression.py", "scripts/quality/check_stage8_docs.py", "tests/unit/test_stage8_quality_gate.py"}
 
 ROUTES = {
+    ISSUE459_T03_BRANCH: {
+        "pyproject.toml", "uv.lock",
+        "docs/governance/preflights/issue-459-t03.json", "docs/governance/cut1-presenter-derivatives-v1.json",
+        "frontend/public/demo/cut1/raj-waist-up.webp", "frontend/public/demo/cut1/myra-waist-up.webp",
+        "backend/app/presenter_registry.py", "tests/unit/test_cut1_presenter_derivatives.py",
+        "tests/unit/test_dependency_security_contract.py",
+        "docs/ADR/0069-cut1-presenter-derivative-readiness-binding.md", "docs/THIRD_PARTY_NOTICES.md",
+        "scripts/quality/stage8_cut1_routes.py", "tests/unit/test_stage8_cut1_routes.py",
+        "docs/QUALITY_GATES.md", "docs/STAGE_ISSUE_PLAN.md", "docs/STATUS.md", "docs/TRACEABILITY.md",
+    },
     ISSUE459_BRANCH: {
         "docs/governance/preflights/issue-459.json", "docs/governance/ISSUE_459_CONTROLLED_PRESENTER_PREFLIGHT_V1.md", "docs/governance/schemas/cut1-controlled-presenter-evidence-v1.schema.json", "docs/governance/cut1-controlled-presenter-red-corpus-v1.json",
         "scripts/quality/cut1_controlled_presenter.py", "tests/unit/test_cut1_controlled_presenter_red.py", "scripts/quality/check_quality_stage.py", "tests/unit/test_issue459_quality_dispatcher.py", "scripts/quality/stage8_cut1_routes.py", "tests/unit/test_stage8_cut1_routes.py",
@@ -485,6 +505,8 @@ TOTAL_LIMITS = {ISSUE452_BRANCH: 3600, ISSUE451_BRANCH: 600, ISSUE150_BRANCH: 10
                 ISSUE393_BRANCH: 700, ISSUE382_BRANCH: 3200, ISSUE367_BRANCH: 2000}
 ROUTE_ISSUES[ISSUE459_BRANCH] = 459
 TOTAL_LIMITS[ISSUE459_BRANCH] = 4300
+ROUTE_ISSUES[ISSUE459_T03_BRANCH] = 459
+TOTAL_LIMITS[ISSUE459_T03_BRANCH] = 2400
 ROUTE_ISSUES[ISSUE460_BRANCH] = 460
 TOTAL_LIMITS[ISSUE460_BRANCH] = 2600
 ISSUE383_BINARY_FILES = {
@@ -502,6 +524,10 @@ ISSUE459_BYTE_LIMITS = {
     "docs/governance/preflights/issue-459.json": 32_000, "docs/governance/ISSUE_459_CONTROLLED_PRESENTER_PREFLIGHT_V1.md": 64_000, "docs/governance/schemas/cut1-controlled-presenter-evidence-v1.schema.json": 40_000,
     "docs/governance/cut1-controlled-presenter-red-corpus-v1.json": 48_000, "scripts/quality/cut1_controlled_presenter.py": 16_000, "tests/unit/test_cut1_controlled_presenter_red.py": 60_000, "tests/unit/test_issue459_quality_dispatcher.py": 24_000, "docs/reviews/ISSUE_459_ENTRY_GATE_REVIEW.md": 48_000, "docs/ADR/0068-cut1-controlled-presenter-controller.md": 32_000, ".gitleaksignore": 2_000, "scripts/ci/check_gitleaks_regression.py": 24_000, "tests/unit/test_gitleaks_regression.py": 32_000, "scripts/quality/check_stage8_docs.py": 48_000, "tests/unit/test_stage8_quality_gate.py": 40_000,
 }
+ISSUE459_T03_BYTE_LIMITS = {
+    "frontend/public/demo/cut1/raj-waist-up.webp": 500_000,
+    "frontend/public/demo/cut1/myra-waist-up.webp": 500_000,
+}
 ISSUE459_SOURCE_SHA256 = {
     "specs/001-grounded-walkthrough-script/spec.md": "cd16ea947a70271f60a5ce7086e577c1cc25f380baf9a338342bfafb522b8c35", "specs/001-grounded-walkthrough-script/plan.md": "166dd8021026eb334607d0dab290c2b121964bcb979e7e502b574f830b45dfd4", "specs/001-grounded-walkthrough-script/tasks.md": "9c244de820bf0df1c1d7d7e4c323e5317ba5818cb625f88165e675ce51817fdc", "docs/reviews/ISSUE_16_SPEC_KIT_REVIEW_CHECKPOINT.md": "14dbdeb898af240fd30d203e131be8c6e8e29c5803c82463c1b50dc4c8616877",
     ".specify/memory/constitution.md": "ebb0c16c8aa9d967e4c946f31ae600e6e45016bf5c3aa6f098ceac795cd142c2", "docs/PRODUCT_CONTRACTS/CUT1_PRESENTER_CONTRACT.md": "2e864e044253a98ea10fdf6dde1ab32a026354aaa5c00cebe3b40756d653936e", "docs/AI_QUALITY_AND_EVALUATION_CONTRACT.md": "14dbbb6f005d9887ad8ab90340bca9fdcc5fb969579ef3d03f69d5566d0616f8", "docs/ENTERPRISE_READINESS_REGISTER.md": "fd42d73871b62f48e018ced1eb5020ffcb53a62cdbdd53936b7c257c22940c1d",
@@ -515,6 +541,20 @@ ISSUE459_EDITABLE_AUTHORITY_SHA256 = {
 }
 ISSUE459_BASE_SOURCE_SHA256 = {"docs/STATUS.md": "9045b595ca1622680f621dffa4dff88435e2fde0d13e3c061ced7eb6df9ae8bf", "docs/TRACEABILITY.md": "e597069e3d6b765a9d68e5336ff9597d6d7b809e5ea6f316f22312ca71ea136a", "docs/QUALITY_GATES.md": "9f628d22ec62075e560ef478820cf094d923cdf1cfded56a512291c61f6e542b", "docs/REPOSITORY_GUARDRAILS.md": "04f8b405bc7ba9b615cc1d5d7e489bcbf643b9de4bfc9b331e5a60c38629e82f"}
 TEXT_LIMITS = {
+    ISSUE459_T03_BRANCH: {
+        "pyproject.toml": 20, "uv.lock": 200,
+        "docs/governance/preflights/issue-459-t03.json": 220,
+        "docs/governance/cut1-presenter-derivatives-v1.json": 420,
+        "backend/app/presenter_registry.py": 500,
+        "tests/unit/test_cut1_presenter_derivatives.py": 700,
+        "tests/unit/test_dependency_security_contract.py": 220,
+        "docs/ADR/0069-cut1-presenter-derivative-readiness-binding.md": 180,
+        "docs/THIRD_PARTY_NOTICES.md": 260,
+        "scripts/quality/stage8_cut1_routes.py": 220,
+        "tests/unit/test_stage8_cut1_routes.py": 340,
+        "docs/QUALITY_GATES.md": 120, "docs/STAGE_ISSUE_PLAN.md": 120,
+        "docs/STATUS.md": 160, "docs/TRACEABILITY.md": 120,
+    },
     ISSUE459_BRANCH: {
         "docs/governance/preflights/issue-459.json": 220, "docs/governance/ISSUE_459_CONTROLLED_PRESENTER_PREFLIGHT_V1.md": 850, "docs/governance/schemas/cut1-controlled-presenter-evidence-v1.schema.json": 450, "docs/governance/cut1-controlled-presenter-red-corpus-v1.json": 500,
         "scripts/quality/cut1_controlled_presenter.py": 140, "tests/unit/test_cut1_controlled_presenter_red.py": 700, "scripts/quality/check_quality_stage.py": 60, "tests/unit/test_issue459_quality_dispatcher.py": 140, "scripts/quality/stage8_cut1_routes.py": 180, "tests/unit/test_stage8_cut1_routes.py": 340,
@@ -1136,6 +1176,7 @@ def route_base(run: Callable[[list[str]], Any], branch: str) -> str:
             raise RuntimeError("Issue #459 reviewed transition evidence is unavailable or inconsistent.")
         return ISSUE459_TRANSITION_BASE
     fixed_routes = {
+        ISSUE459_T03_BRANCH: (459, ISSUE459_T03_BASE),
         ISSUE460_BRANCH: (460, ISSUE460_BASE),
         ISSUE452_BRANCH: (452, ISSUE452_BASE),
         ISSUE451_BRANCH: (451, ISSUE451_BASE),
@@ -1156,7 +1197,7 @@ def route_base(run: Callable[[list[str]], Any], branch: str) -> str:
         fixed_value = str(fixed.stdout).strip()
         common_value = str(common.stdout).strip()
         branch_point_invalid = False
-        if branch in {ISSUE460_BRANCH, ISSUE452_BRANCH, ISSUE451_BRANCH, ISSUE150_BRANCH, ISSUE424_BRANCH, ISSUE421_BRANCH, ISSUE368_IMPLEMENTATION_BRANCH,
+        if branch in {ISSUE459_T03_BRANCH, ISSUE460_BRANCH, ISSUE452_BRANCH, ISSUE451_BRANCH, ISSUE150_BRANCH, ISSUE424_BRANCH, ISSUE421_BRANCH, ISSUE368_IMPLEMENTATION_BRANCH,
                       ISSUE368_QUOTA_FIX_BRANCH, ISSUE368_BRANCH,
                       ISSUE368_PROMPT_BRANCH}:
             branch_point = run(["git", "merge-base", "origin/main", "HEAD"])
@@ -1349,6 +1390,36 @@ def check_exact_route(
             failures.extend(f"Issue #460 governance preflight failed: {finding.code}" for finding in findings)
         except (OSError, UnicodeError, json.JSONDecodeError) as error:
             failures.append(f"Issue #460 governance preflight failed closed: {error}")
+    elif branch == ISSUE459_T03_BRANCH:
+        try:
+            preflight = load_json_without_duplicate_members(
+                root / "docs/governance/preflights/issue-459-t03.json"
+            )
+            findings = validate_governance_preflight(
+                preflight,
+                context={"issue_number": 459, "branch": branch,
+                         "changed_files": sorted(files)},
+            )
+            objective = preflight.get("objective") if isinstance(preflight, dict) else None
+            authority = (
+                ISSUE459_T03_BASE,
+                ISSUE459_T03_AUTHORITY_COMMENT,
+                ISSUE459_T03_AUTHORITY_SHA256,
+                ISSUE459_T03_CORRECTION_COMMENT,
+                ISSUE459_T03_CORRECTION_SHA256,
+                ISSUE459_T03_DEPENDENCY_COMMENT,
+                ISSUE459_T03_DEPENDENCY_SHA256,
+                ISSUE459_T03_MYRA_CORRECTION_COMMENT,
+                ISSUE459_T03_MYRA_CORRECTION_SHA256,
+            )
+            failures.extend(
+                f"Issue #459 T03 governance preflight failed: {finding.code}"
+                for finding in findings
+            )
+            if not isinstance(objective, str) or any(value not in objective for value in authority):
+                failures.append("Issue #459 T03 governance authority drifted.")
+        except (OSError, ValueError, TypeError) as error:
+            failures.append(f"Issue #459 T03 governance preflight failed closed: {error}")
     if branch == ISSUE424_BRANCH:
         failures.extend(issue424_governance_failures(root))
     if branch == ISSUE459_BRANCH:
@@ -1371,12 +1442,15 @@ def check_exact_route(
             failures.append(f"Issue #459 governance preflight failed closed: {error}")
     try:
         base = fixed_base if fixed_base is not None else route_base(run, branch)
-        if branch == ISSUE459_BRANCH:
+        if branch in {ISSUE459_BRANCH, ISSUE459_T03_BRANCH}:
+            transition_base = ISSUE459_TRANSITION_BASE if branch == ISSUE459_BRANCH else base
             transitions = (
+                *(() if branch == ISSUE459_T03_BRANCH else (
+                    run(["git", "diff", "--name-status", "-z", "--find-copies-harder",
+                         ISSUE459_BASE, ISSUE459_FROZEN_HEAD, "--"]),
+                )),
                 run(["git", "diff", "--name-status", "-z", "--find-copies-harder",
-                     ISSUE459_BASE, ISSUE459_FROZEN_HEAD, "--"]),
-                run(["git", "diff", "--name-status", "-z", "--find-copies-harder",
-                     ISSUE459_TRANSITION_BASE, "HEAD", "--"]),
+                     transition_base, "HEAD", "--"]),
                 run(["git", "diff", "--cached", "--name-status", "-z",
                      "--find-copies-harder", base, "--"]),
                 run(["git", "diff", "--name-status", "-z", "--find-copies-harder",
@@ -1398,6 +1472,12 @@ def check_exact_route(
             failures.extend(
                 f"Issue #459 file {path} must be smaller than {limit} bytes."
                 for path, limit in ISSUE459_BYTE_LIMITS.items() if sizes[path] >= limit
+            )
+        elif branch == ISSUE459_T03_BRANCH:
+            sizes = route_binary_sizes(root, set(ISSUE459_T03_BYTE_LIMITS))
+            failures.extend(
+                f"Issue #459 file {path} must be smaller than {limit} bytes."
+                for path, limit in ISSUE459_T03_BYTE_LIMITS.items() if sizes[path] >= limit
             )
         elif branch == ISSUE452_BRANCH:
             sizes = route_binary_sizes(root, set(ISSUE452_BYTE_LIMITS))

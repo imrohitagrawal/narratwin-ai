@@ -1,0 +1,142 @@
+{
+  "schema_version": "cut1-presenter-derivatives-v1",
+  "manifest_version": "1.0.0",
+  "source_ready_without_derivative": [
+    "meera"
+  ],
+  "source_registry": {
+    "path": "backend/app/presenter_registry.json",
+    "file_sha256": "eb31a953b85ffaf2c43f54e4da7fb89eda740c724967a9301f726c6091ab01c2",
+    "manifest_sha256": "9671da9ef076a56d86c2e81307d71e83356e0b88050e1bae7ef8960919e50caa"
+  },
+  "posture": {
+    "permitted_use": "CONTROLLED_LOCAL_CUT1",
+    "publication_allowed": false,
+    "runtime_provider": null,
+    "credential_count": 0,
+    "egress_attempt_count": 0,
+    "spend_microusd": 0
+  },
+  "derivatives": [
+    {
+      "presenter_id": "myra",
+      "presenter_version": "1.0.0",
+      "source_asset": {
+        "path": "frontend/public/demo/myra-synthetic-presenter.webp",
+        "sha256": "30290deeea9abc85dde851006e3886dd0d9d6d299e4b54aa86ae3300a5e05d97",
+        "width": 1536,
+        "height": 1024
+      },
+      "candidate": {
+        "sha256": "00d71d0e6d25ff3772c2f6e05617853a240248e5e4ffa3ac623f7de5d7eed6bf",
+        "width": 1086,
+        "height": 1448,
+        "media_type": "image/png",
+        "attempt_count": 2,
+        "max_attempts": 2,
+        "retry_count": 1,
+        "generation_method": "OpenAI built-in image edit (gpt-image-2.0)"
+      },
+      "asset": {
+        "path": "frontend/public/demo/cut1/myra-waist-up.webp",
+        "sha256": "46390ac627662bff38c9bb4ec904520a808e42030ff698741b5c32519f0be4c3",
+        "width": 1086,
+        "height": 1448,
+        "byte_count": 150246,
+        "media_type": "image/webp"
+      },
+      "conversion": {
+        "tool": "sharp",
+        "version": "0.35.3",
+        "vips_version": "8.18.3",
+        "webp_version": "1.6.0",
+        "quality": 88,
+        "effort": 6,
+        "smart_subsample": true,
+        "upscaled": false,
+        "metadata_stripped": true
+      },
+      "review": {
+        "visual_review": "INDEPENDENT_ACCEPTED",
+        "provenance_privacy_review": "INDEPENDENT_ACCEPTED",
+        "reviewed_candidate_sha256": "00d71d0e6d25ff3772c2f6e05617853a240248e5e4ffa3ac623f7de5d7eed6bf",
+        "review_current_as_of": "2026-08-30",
+        "authority_ref": "https://github.com/imrohitagrawal/narratwin-ai/issues/459#issuecomment-5464690216",
+        "hands_visible": true,
+        "professional_gesture": true,
+        "complete_head_and_hands": true,
+        "identity_preserved": true
+      },
+      "rights": {
+        "consent_basis": "PROJECT_OWNED_SYNTHETIC_IDENTITY",
+        "permitted_use": "CONTROLLED_LOCAL_CUT1",
+        "publication_allowed": false,
+        "private_source_committed": false,
+        "privacy_posture": "PRIVATE_GENERATED_SOURCE_RESTRICTED_LOCAL_ONLY",
+        "deletion_posture": "PRIVATE_SOURCE_RETAINED_PENDING_OWNER_CLEANUP_AFTER_MERGE",
+        "rejected_candidate_disposition": "OWNER_SUPERSEDED_VISUAL_REFINEMENT:4f4fbd0f1f125cfb39b052b4717d8d30feb43dc226fcd940c1ef28b7ca48e360",
+        "provenance_ref": "docs/THIRD_PARTY_NOTICES.md#issue-459-t03-controlled-local-presenter-derivatives"
+      }
+    },
+    {
+      "presenter_id": "raj",
+      "presenter_version": "1.0.0",
+      "source_asset": {
+        "path": "frontend/public/demo/raj-synthetic-presenter.webp",
+        "sha256": "663007e0c7603e80c179cfd2b92bb463d80765890c06ec4886eddabafafa26dd",
+        "width": 1536,
+        "height": 1024
+      },
+      "candidate": {
+        "sha256": "d4ae828f1043a6191136956dc936a22e1b849cb5c9b9775a846efe403fd76196",
+        "width": 1024,
+        "height": 1536,
+        "media_type": "image/png",
+        "attempt_count": 1,
+        "max_attempts": 2,
+        "retry_count": 0,
+        "generation_method": "OpenAI built-in image edit (gpt-image-2.0)"
+      },
+      "asset": {
+        "path": "frontend/public/demo/cut1/raj-waist-up.webp",
+        "sha256": "f9060b3c0fb5d9cf0231f8142fff17a88c61537d12c6b90ad6be359085c86413",
+        "width": 1024,
+        "height": 1536,
+        "byte_count": 50406,
+        "media_type": "image/webp"
+      },
+      "conversion": {
+        "tool": "sharp",
+        "version": "0.35.3",
+        "vips_version": "8.18.3",
+        "webp_version": "1.6.0",
+        "quality": 88,
+        "effort": 6,
+        "smart_subsample": true,
+        "upscaled": false,
+        "metadata_stripped": true
+      },
+      "review": {
+        "visual_review": "INDEPENDENT_ACCEPTED",
+        "provenance_privacy_review": "INDEPENDENT_ACCEPTED",
+        "reviewed_candidate_sha256": "d4ae828f1043a6191136956dc936a22e1b849cb5c9b9775a846efe403fd76196",
+        "review_current_as_of": "2026-08-29",
+        "authority_ref": "https://github.com/imrohitagrawal/narratwin-ai/issues/459#issuecomment-5463568867",
+        "hands_visible": true,
+        "professional_gesture": true,
+        "complete_head_and_hands": true,
+        "identity_preserved": true
+      },
+      "rights": {
+        "consent_basis": "PROJECT_OWNED_SYNTHETIC_IDENTITY",
+        "permitted_use": "CONTROLLED_LOCAL_CUT1",
+        "publication_allowed": false,
+        "private_source_committed": false,
+        "privacy_posture": "PRIVATE_GENERATED_SOURCE_RESTRICTED_LOCAL_ONLY",
+        "deletion_posture": "PRIVATE_SOURCE_RETAINED_PENDING_OWNER_CLEANUP_AFTER_MERGE",
+        "rejected_candidate_disposition": "NONE_REJECTED_ONE_ATTEMPT_USED",
+        "provenance_ref": "docs/THIRD_PARTY_NOTICES.md#issue-459-t03-controlled-local-presenter-derivatives"
+      }
+    }
+  ]
+}
