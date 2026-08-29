@@ -1,0 +1,60 @@
+{
+  "schema_version": "GovernancePreflightV1",
+  "issue_number": 460,
+  "branch": "security-460-semgrep-override-removal",
+  "objective": "From exact accepted main ab97b6eecba6db9c66c37d19b29257c7398f3ab7, complete the remaining Issue #150 compatibility-debt outcome after the MCP exception expired on 2026-08-28. Official PyPI metadata checked on 2026-08-29 identifies Semgrep 1.175.0 with upstream Click 8.4.2, MCP 1.29.0, and PyJWT 2.13.0. Pin that isolated tool release, remove override-dependencies instead of renewing an exception, generate and review the exact lock, rebind changed reviewed inputs, and preserve strict root/tool isolation, zero audit ignores, exact rules and targets, clean scan, positive canary, backend image exclusion, and no-runtime posture. TDD must prove expiry, override, identity, inventory, invocation, scan, canary, reviewed-input, and unrelated-drift failures before implementation. Authority is Issue #460 body SHA-256 c76923acae26bc55bd0409219ef10def3b1b090d7330124f1eab4d87b5c9e1f2. Exactly seventeen paths are allowed; additions plus deletions target 900, review at 1,100, and stop above 1,400. Stop for an eighteenth path, metadata or generated-lock conflict, any override or audit ignore, unresolved High/Critical advisory, scanner weakening, hosted failure, or need for credentials, spending, legal/provenance, destructive action, deployment, release, or production authority. This security-tooling prerequisite creates no product, runtime MCP server, provider, credential, infrastructure, deployment, release, commercial-readiness, or production capability.",
+  "status_decision": "update-minimally",
+  "scope": {
+    "required": [
+      "docs/governance/preflights/issue-460.json",
+      "docs/ADR/0069-semgrep-1-175-override-removal.md",
+      "docs/RELEASE_CHECKLIST.md",
+      "docs/RISK_REGISTER.md",
+      "docs/SECURITY_AND_PRIVACY.md",
+      "scripts/ci/check_semgrep_security.py",
+      "tools/semgrep/pyproject.toml",
+      "tools/semgrep/reviewed-inputs.sha256",
+      "tools/semgrep/uv.lock",
+      "scripts/quality/stage8_cut1_routes.py",
+      "tests/unit/test_stage8_cut1_routes.py",
+      "tests/unit/test_dependency_security_contract.py",
+      "docs/QUALITY_GATES.md",
+      "docs/STAGE_ISSUE_PLAN.md",
+      "docs/STATUS.md",
+      "docs/THIRD_PARTY_NOTICES.md",
+      "docs/TRACEABILITY.md"
+    ],
+    "allowed_prefixes": [
+      "docs/governance/preflights/issue-460.json",
+      "docs/ADR/0069-semgrep-1-175-override-removal.md",
+      "docs/RELEASE_CHECKLIST.md",
+      "docs/RISK_REGISTER.md",
+      "docs/SECURITY_AND_PRIVACY.md",
+      "scripts/ci/check_semgrep_security.py",
+      "tools/semgrep/pyproject.toml",
+      "tools/semgrep/reviewed-inputs.sha256",
+      "tools/semgrep/uv.lock",
+      "scripts/quality/stage8_cut1_routes.py",
+      "tests/unit/test_stage8_cut1_routes.py",
+      "tests/unit/test_dependency_security_contract.py",
+      "docs/QUALITY_GATES.md",
+      "docs/STAGE_ISSUE_PLAN.md",
+      "docs/STATUS.md",
+      "docs/THIRD_PARTY_NOTICES.md",
+      "docs/TRACEABILITY.md"
+    ],
+    "forbidden": [
+      ".github/",
+      "backend/",
+      "frontend/",
+      "pyproject.toml",
+      "uv.lock",
+      "scripts/ci/dependency-audit.sh",
+      "scripts/ci/dependency-security.sh",
+      "scripts/ci/run-semgrep.sh",
+      "scripts/ci/semgrep-targets.txt",
+      "scripts/guardrails_check.py",
+      "semgrep.yml"
+    ]
+  }
+}

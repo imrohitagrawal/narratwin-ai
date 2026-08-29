@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import importlib.util
-import shutil
 import sys
 from pathlib import Path
 from types import ModuleType
@@ -14,6 +13,7 @@ from scripts.quality import check_issue16_spec_kit as gate
 
 ROOT = Path(__file__).resolve().parents[2]
 ISSUE16_BRANCH = "stage1-16-spec-kit-gate"
+ISSUE16_ACCEPTED_SHA = "ab97b6eecba6db9c66c37d19b29257c7398f3ab7"
 ISSUE16_GATE_COMMAND = [sys.executable, "scripts/quality/check_issue16_spec_kit.py"]
 
 
@@ -86,11 +86,11 @@ def test_issue16_near_match_receives_no_route_authority(
 
 
 def _copy_contract(tmp_path: Path) -> Path:
-    for relative in (*gate.REQUIRED_MARKDOWN, "Makefile", ".stage/current"):
-        source = ROOT / relative
+    content, _, _, _, _ = gate.historical_snapshot(ROOT)
+    for relative, text in content.items():
         target = tmp_path / relative
         target.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copyfile(source, target)
+        target.write_text(text, encoding="utf-8")
     return tmp_path
 
 
@@ -103,6 +103,34 @@ def _replace(root: Path, relative: str, old: str, new: str) -> None:
 
 def test_repository_contract_is_complete() -> None:
     assert gate.validate(ROOT) == []
+
+
+def test_historical_contract_is_pinned_to_the_accepted_issue16_snapshot() -> None:
+    assert gate.ACCEPTED_SHA == ISSUE16_ACCEPTED_SHA
+
+
+def test_successor_branch_does_not_inherit_issue16_live_route_authority(
+    monkeypatch: Any,
+) -> None:
+    monkeypatch.setattr(gate, "current_branch", lambda root: "security-460-semgrep-override-removal")
+    monkeypatch.setattr(
+        gate,
+        "repository_snapshot",
+        lambda root: (_ for _ in ()).throw(AssertionError("live Issue #16 route evaluated")),
+    )
+    assert gate.validate(ROOT) == []
+
+
+def test_successor_branch_fails_closed_when_accepted_snapshot_is_unavailable(
+    monkeypatch: Any,
+) -> None:
+    monkeypatch.setattr(gate, "current_branch", lambda root: "security-460-semgrep-override-removal")
+    monkeypatch.setattr(
+        gate,
+        "historical_snapshot",
+        lambda root: (_ for _ in ()).throw(RuntimeError("accepted object unavailable")),
+    )
+    assert gate.validate(ROOT) == ["I16.HISTORICAL.SNAPSHOT"]
 
 
 @pytest.mark.parametrize(
@@ -275,12 +303,19 @@ def test_scope_snapshot_rejects_path_binding_and_budget_mutations() -> None:
     assert "I16.SCOPE.PATHS" in check(forbidden_mutation)
 
 
+def test_numstat_parser_rejects_duplicate_path_records() -> None:
+    raw = b"1\t2\tdocs/STATUS.md\0" + b"3\t4\tdocs/STATUS.md\0"
+    with pytest.raises(RuntimeError, match="duplicate numstat record"):
+        gate._charged_lines(raw)
+
+
 def test_live_repository_snapshot_is_part_of_validation(monkeypatch: Any) -> None:
     monkeypatch.setenv("GITHUB_ACTIONS", "true")
     monkeypatch.setenv("GITHUB_HEAD_REF", gate.ISSUE16_BRANCH)
     assert gate._branch_identity("") == gate.ISSUE16_BRANCH
     artifact = gate.load_preflight(ROOT)
     required = artifact["scope"]["required"]
+    monkeypatch.setattr(gate, "current_branch", lambda root: gate.ISSUE16_BRANCH)
     monkeypatch.setattr(
         gate,
         "repository_snapshot",

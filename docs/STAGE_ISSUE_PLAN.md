@@ -24,6 +24,41 @@ and `#449` retain human-study and provider/credential/egress/spend authority.
 No runtime provider, deployment, publication, human study, acceptance, or
 release authority is created.
 
+## Issue #460 Semgrep override removal
+
+Issue `#460` starts from exact accepted main
+`ab97b6eecba6db9c66c37d19b29257c7398f3ab7` on branch
+`security-460-semgrep-override-removal`. It removes the expired Issue `#150`
+MCP exception by upgrading the isolated tool to exact Semgrep `1.175.0`, whose
+reviewed upstream metadata resolves Click `8.4.2`, MCP `1.29.0`, and PyJWT
+`2.13.0` without an override. The frozen preflight remains the original exact
+17-path, 1,400-line security route with a preflight-only first commit followed
+by authentic RED tests. Full-quality reproduction then demonstrated three
+historical gates incorrectly evaluating mutable successor state. Owner
+checkpoint comment `5456985567` (body SHA-256
+`7249ff4694fbf333f826147737e4e3e45e33cef045a6e507da029fbdd79da42f`)
+adds exactly four convergence paths, producing a 21-path, 2,000-line combined
+route: the Issue `#16` checker and test, the Issue `#427` reset test, and the
+Stage 8/Issue `#434` route test. Those corrections preserve immutable accepted
+snapshots and original-route fail-closed behavior. Strict root/tool audits,
+reviewed-input hashes, exact rules/targets, scan/canaries, backend-image
+exclusion, and no-runtime posture remain.
+
+Hosted security run `33208873797` proved the exact Issue `#460` correction
+range clean, then reproduced three generic-key false positives from fetched
+remote Issue `#459` history. Owner checkpoint `5457578336` (body SHA-256
+`82773778e0a791dffcf4f6f27cb265df6013f2a79ae107d484d1db10c8697368`)
+adds exactly `.gitleaksignore`, the fingerprint checker and test, and the
+security wrapper. The final route is 25 paths capped at 2,600 charged lines.
+Only the three immutable fingerprints are suppressed; provenance drift,
+missing history, wildcard additions, and a real-secret canary false negative
+fail closed before the unchanged full-history scan.
+
+This prerequisite grants no product, runtime MCP server, provider, credential,
+deployment, release, commercial-readiness, or production authority. Issue
+`#459` must consume it only through a separately reviewed base/route transition
+after #460 merges and merged-main security parity passes.
+
 ## Issue #16 specification-kit route
 
 Issue `#16` uses exact branch `stage1-16-spec-kit-gate` from authoritative main

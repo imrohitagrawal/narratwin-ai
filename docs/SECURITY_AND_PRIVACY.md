@@ -412,17 +412,17 @@ Frontend/backend deployment must include:
 - restricted CORS origins
 - secure, httpOnly, sameSite cookies when session cookies exist
 
-### Isolated Security Tool Compatibility Exception
+### Isolated Security Tool Dependency Boundary
 
 Issue `#138` removes Semgrep from the application/development dependency graph
 so the backend, local test environment, and runtime image resolve a fixed Click
-release. Issue `#150` upgrades the separate tool to Semgrep `1.172.0`, whose
-upstream metadata resolves fixed Click `8.4.2` without an override. Upstream
-still pins MCP `1.23.3`, so the isolated tool retains exactly one reviewed
-override, `mcp==1.28.1`.
+release. The Issue `#150` MCP exception expired after `2026-08-28`. Issue
+`#460` upgrades the separate tool to Semgrep `1.175.0`, whose reviewed upstream
+metadata resolves fixed Click `8.4.2`, MCP `1.29.0`, and PyJWT `2.13.0` without
+any dependency override.
 
-This is a narrow MCP compatibility exception, not a vulnerability ignore and
-not a claim that every Semgrep or MCP CLI path is approved. The repository:
+This is an isolated security-tool boundary, not a claim that every Semgrep or
+MCP CLI path is approved. The repository:
 
 - audits the root environment and exact isolated tool site-packages separately,
   with no ignored advisory IDs;
@@ -432,13 +432,18 @@ not a claim that every Semgrep or MCP CLI path is approved. The repository:
   exact target/rule manifests;
 - requires positive and clean Semgrep execution canaries;
 - verifies the backend image contains Click `>=8.3.3` and no Semgrep; and
-- fails the contract after `2026-08-28` unless a security/repo owner renews or
-  removes the exception through review.
+- rejects any future Semgrep-tool dependency override.
+
+Issue `#460` also binds three Gitleaks `generic-api-key` false positives from
+remote Issue `#459` history to exact commits, paths, lines, rule identity, the
+frozen API-contract SHA-256, and frozen source head. `.gitleaksignore` contains
+only those exact fingerprints. A representative real secret must be detected
+before the unchanged full-history scan; wildcard/regex exclusions, history
+skipping, missing provenance, and real-secret false negatives remain blocking.
 
 Any Semgrep version, lock, rule, target, canary, or invocation change breaks the
-reviewed-input hash manifest and requires renewed compatibility review. Remove
-the override when upstream publishes a reviewed
-Semgrep version compatible with fixed MCP; ADR `0061` records the renewal.
+reviewed-input hash manifest and requires renewed compatibility review. ADR
+`0061` records the historical renewal; ADR `0069` records its removal.
 
 ## Cut 1 Presenter Registry Boundary
 

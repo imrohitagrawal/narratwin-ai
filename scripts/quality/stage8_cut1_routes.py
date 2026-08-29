@@ -12,6 +12,7 @@ from typing import Any, Callable
 from scripts.governance_preflight_v1 import validate_governance_preflight
 
 ISSUE150_BRANCH = "cut1-process-150-semgrep-mcp-renewal"
+ISSUE460_BRANCH = "security-460-semgrep-override-removal"
 ISSUE451_BRANCH = "docs/cut1-post-443-reconciliation-451"
 ISSUE452_BRANCH = "docs/cut1-acceptance-provider-contract-452"
 ISSUE459_BRANCH = "lane-a-cut1-459-controlled-presenter"
@@ -46,12 +47,26 @@ ISSUE368_QUOTA_FIX_BASE = "9c165f739788fb0f09b315673f9125d700d6a96b"
 ISSUE421_BASE = "a868137fab607ae75d4b272301e9fc52b898e15c"
 ISSUE424_BASE = "afcf0325c3ec925b68b770eda0bb8c839bcce4dd"
 ISSUE150_BASE = "a02286240212ad8958915aec01aa5ebaf60fa705"
+ISSUE460_BASE = "ab97b6eecba6db9c66c37d19b29257c7398f3ab7"
 ISSUE451_BASE = "59db96aaab6c4e75b12d134dc9b02330c5a982ac"
 ISSUE452_BASE = "97e8173c2ec1323aa9ced23d43059bca2e5a204f"
 ISSUE459_BASE = "ab97b6eecba6db9c66c37d19b29257c7398f3ab7"
 SECURITY_PREFLIGHTS = {
     150: ("Issue150SecurityRenewalPreflightV1", "e6a569cb6254ef58c36fb44e9cdece26e0816b49c9f62ce08e9d90f3843c97e3"),
     428: ("Issue428NanoidSecurityPreflightV1", "0d8da352c98855bc481581f1ca13cc2d4e994838b1afb31d974ad2b17caf7a9b"),
+    460: ("GovernancePreflightV1", "62e230c6510c7ce88fef607e89254e3f3035fe8f49134abd200ba6124ac2d94b"),
+}
+ISSUE460_CORRECTION_PATHS = {
+    "scripts/quality/check_issue16_spec_kit.py",
+    "tests/unit/test_issue16_spec_kit_gate.py",
+    "tests/unit/test_issue427_architecture_reset.py",
+    "tests/unit/test_stage8_quality_gate.py",
+}
+ISSUE460_HOSTED_SECURITY_PATHS = {
+    ".gitleaksignore",
+    "scripts/ci/check_gitleaks_regression.py",
+    "scripts/ci/dependency-security.sh",
+    "tests/unit/test_gitleaks_regression.py",
 }
 
 ROUTES = {
@@ -64,6 +79,15 @@ ROUTES = {
         "docs/STATUS.md", "docs/TRACEABILITY.md", "backend/app/cut1_controlled_presenter.py", "tests/unit/test_cut1_controlled_presenter.py",
         "docs/ADR/0068-cut1-controlled-presenter-controller.md",
     },
+    ISSUE460_BRANCH: {
+        "docs/governance/preflights/issue-460.json", "docs/ADR/0069-semgrep-1-175-override-removal.md",
+        "docs/RELEASE_CHECKLIST.md", "docs/RISK_REGISTER.md", "docs/SECURITY_AND_PRIVACY.md",
+        "scripts/ci/check_semgrep_security.py", "tools/semgrep/pyproject.toml",
+        "tools/semgrep/reviewed-inputs.sha256", "tools/semgrep/uv.lock",
+        "scripts/quality/stage8_cut1_routes.py", "tests/unit/test_stage8_cut1_routes.py",
+        "tests/unit/test_dependency_security_contract.py", "docs/QUALITY_GATES.md",
+        "docs/STAGE_ISSUE_PLAN.md", "docs/STATUS.md", "docs/THIRD_PARTY_NOTICES.md", "docs/TRACEABILITY.md",
+    } | ISSUE460_CORRECTION_PATHS | ISSUE460_HOSTED_SECURITY_PATHS,
     ISSUE452_BRANCH: {
         "docs/governance/preflights/issue-452.json",
         "docs/governance/schemas/cut1-human-realism-evaluation-v1.schema.json",
@@ -463,6 +487,8 @@ TOTAL_LIMITS = {ISSUE452_BRANCH: 3600, ISSUE451_BRANCH: 600, ISSUE150_BRANCH: 10
                 ISSUE393_BRANCH: 700, ISSUE382_BRANCH: 3200, ISSUE367_BRANCH: 2000}
 ROUTE_ISSUES[ISSUE459_BRANCH] = 459
 TOTAL_LIMITS[ISSUE459_BRANCH] = 4300
+ROUTE_ISSUES[ISSUE460_BRANCH] = 460
+TOTAL_LIMITS[ISSUE460_BRANCH] = 2600
 ISSUE383_BINARY_FILES = {
     "frontend/public/demo/myra-synthetic-presenter.webp",
     "frontend/public/demo/raj-synthetic-presenter.webp",
@@ -515,6 +541,24 @@ TEXT_LIMITS = {
         "docs/reviews/ISSUE_459_ENTRY_GATE_REVIEW.md": 500, "docs/QUALITY_GATES.md": 120, "docs/STAGE_ISSUE_PLAN.md": 120,
         "docs/PHASE_PLAN.md": 100, "docs/STATUS.md": 160,
         "docs/TRACEABILITY.md": 120, "backend/app/cut1_controlled_presenter.py": 900, "tests/unit/test_cut1_controlled_presenter.py": 900, "docs/ADR/0068-cut1-controlled-presenter-controller.md": 260,
+    },
+    ISSUE460_BRANCH: {
+        "docs/governance/preflights/issue-460.json": 180, "docs/ADR/0069-semgrep-1-175-override-removal.md": 180,
+        "docs/RELEASE_CHECKLIST.md": 80, "docs/RISK_REGISTER.md": 80, "docs/SECURITY_AND_PRIVACY.md": 80,
+        "scripts/ci/check_semgrep_security.py": 220, "tools/semgrep/pyproject.toml": 20,
+        "tools/semgrep/reviewed-inputs.sha256": 20, "tools/semgrep/uv.lock": 500,
+        "scripts/quality/stage8_cut1_routes.py": 180, "tests/unit/test_stage8_cut1_routes.py": 300,
+        "tests/unit/test_dependency_security_contract.py": 250, "docs/QUALITY_GATES.md": 80,
+        "docs/STAGE_ISSUE_PLAN.md": 80, "docs/STATUS.md": 80, "docs/THIRD_PARTY_NOTICES.md": 80,
+        "docs/TRACEABILITY.md": 80,
+        "scripts/quality/check_issue16_spec_kit.py": 420,
+        "tests/unit/test_issue16_spec_kit_gate.py": 500,
+        "tests/unit/test_issue427_architecture_reset.py": 80,
+        "tests/unit/test_stage8_quality_gate.py": 80,
+        ".gitleaksignore": 20,
+        "scripts/ci/check_gitleaks_regression.py": 220,
+        "scripts/ci/dependency-security.sh": 80,
+        "tests/unit/test_gitleaks_regression.py": 260,
     },
     ISSUE452_BRANCH: {
         "docs/governance/preflights/issue-452.json": 260,
@@ -915,13 +959,19 @@ def security_preflight_failures(root: Path, issue: int) -> list[str]:
         failures.append(f"Issue #{issue} security preflight exact bytes drifted.")
     if artifact.get("schema_version") != schema:
         failures.append(f"Issue #{issue} security preflight schema drifted.")
-    expected_branch = ISSUE150_BRANCH if issue == 150 else ISSUE428_BRANCH
+    expected_branch = {
+        150: ISSUE150_BRANCH,
+        428: ISSUE428_BRANCH,
+        460: ISSUE460_BRANCH,
+    }[issue]
     if artifact.get("issue_number") != issue or artifact.get("branch") != expected_branch:
         failures.append(f"Issue #{issue} security preflight identity drifted.")
     scope = artifact.get("scope")
     required = scope.get("required") if isinstance(scope, dict) else None
     forbidden = scope.get("forbidden") if isinstance(scope, dict) else None
-    expected = ROUTES[expected_branch]
+    expected = set(ROUTES[expected_branch])
+    if issue == 460:
+        expected -= ISSUE460_CORRECTION_PATHS | ISSUE460_HOSTED_SECURITY_PATHS
     if not isinstance(required, list) or set(required) != expected or len(required) != len(expected):
         failures.append(f"Issue #{issue} security preflight scope drifted.")
     if not isinstance(forbidden, list) or any(
@@ -1094,6 +1144,7 @@ def route_has_copy_or_rename(output: str) -> bool:
 def route_base(run: Callable[[list[str]], Any], branch: str) -> str:
     fixed_routes = {
         ISSUE459_BRANCH: (459, ISSUE459_BASE),
+        ISSUE460_BRANCH: (460, ISSUE460_BASE),
         ISSUE452_BRANCH: (452, ISSUE452_BASE),
         ISSUE451_BRANCH: (451, ISSUE451_BASE),
         ISSUE150_BRANCH: (150, ISSUE150_BASE),
@@ -1113,7 +1164,7 @@ def route_base(run: Callable[[list[str]], Any], branch: str) -> str:
         fixed_value = str(fixed.stdout).strip()
         common_value = str(common.stdout).strip()
         branch_point_invalid = False
-        if branch in {ISSUE459_BRANCH, ISSUE452_BRANCH, ISSUE451_BRANCH, ISSUE150_BRANCH, ISSUE424_BRANCH, ISSUE421_BRANCH, ISSUE368_IMPLEMENTATION_BRANCH,
+        if branch in {ISSUE459_BRANCH, ISSUE460_BRANCH, ISSUE452_BRANCH, ISSUE451_BRANCH, ISSUE150_BRANCH, ISSUE424_BRANCH, ISSUE421_BRANCH, ISSUE368_IMPLEMENTATION_BRANCH,
                       ISSUE368_QUOTA_FIX_BRANCH, ISSUE368_BRANCH,
                       ISSUE368_PROMPT_BRANCH}:
             branch_point = run(["git", "merge-base", "origin/main", "HEAD"])
@@ -1285,6 +1336,23 @@ def check_exact_route(
         failures.extend(security_preflight_failures(root, 428))
     elif branch == ISSUE428_BRANCH:
         failures.extend(security_preflight_failures(root, 428))
+    elif branch == ISSUE460_BRANCH:
+        failures.extend(security_preflight_failures(root, 460))
+        try:
+            artifact = json.loads((root / "docs/governance/preflights/issue-460.json").read_text(encoding="utf-8"))
+            findings = validate_governance_preflight(
+                artifact,
+                context={
+                    "issue_number": 460,
+                    "branch": branch,
+                    "changed_files": sorted(
+                        files - ISSUE460_CORRECTION_PATHS - ISSUE460_HOSTED_SECURITY_PATHS
+                    ),
+                },
+            )
+            failures.extend(f"Issue #460 governance preflight failed: {finding.code}" for finding in findings)
+        except (OSError, UnicodeError, json.JSONDecodeError) as error:
+            failures.append(f"Issue #460 governance preflight failed closed: {error}")
     if branch == ISSUE424_BRANCH:
         failures.extend(issue424_governance_failures(root))
     if branch == ISSUE459_BRANCH:

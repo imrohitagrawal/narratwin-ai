@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import argparse
-import datetime as dt
 import hashlib
 import importlib.metadata
 import json
@@ -16,7 +15,6 @@ from typing import Any, cast
 ROOT = Path(__file__).resolve().parents[2]
 TOOL_ROOT = ROOT / "tools/semgrep"
 TOOL_ENV = (ROOT / ".uv-cache/semgrep-venv").resolve()
-OVERRIDE_EXPIRY = dt.date(2026, 8, 28)
 EXPECTED_TARGETS = (
     "backend",
     "frontend/src",
@@ -143,8 +141,8 @@ def validate_audit_wrappers(root: Path = ROOT) -> None:
         _require(forbidden not in wrapper_text, f"forbidden audit bypass found: {forbidden}")
 
 
-def validate_project_contract(root: Path = ROOT, *, today: dt.date | None = None) -> None:
-    today = today or dt.date.today()
+def validate_project_contract(root: Path = ROOT, *, today: object | None = None) -> None:
+    del today
     root_project = _toml(root / "pyproject.toml")
     tool_project = _toml(root / "tools/semgrep/pyproject.toml")
     root_lock = _locked_versions(root / "uv.lock")
@@ -153,23 +151,27 @@ def validate_project_contract(root: Path = ROOT, *, today: dt.date | None = None
     root_uv = root_project.get("tool", {}).get("uv", {})
     _require("override-dependencies" not in root_uv, "root dependency overrides are forbidden")
     _require("semgrep" not in root_lock, "Semgrep must not be present in the root lock")
+    _require("mcp" not in root_lock, "MCP must not be present in the root lock")
     root_click = root_lock.get("click", set())
     _require(
         len(root_click) == 1 and _version_tuple(next(iter(root_click))) >= (8, 3, 3),
         "root Click must be locked to a fixed version >=8.3.3",
     )
     _require(
-        tool_project["project"]["dependencies"] == ["semgrep==1.172.0"],
+        tool_project["project"]["dependencies"] == ["semgrep==1.175.0"],
         "Semgrep tool pin must remain exact",
     )
-    _require(tool_project["tool"]["uv"]["override-dependencies"] == ["mcp==1.28.1"], "the tool project must contain only the narrow MCP override")
-    _require(tool_lock.get("semgrep") == {"1.172.0"}, "tool Semgrep lock drifted")
+    _require(
+        "override-dependencies" not in tool_project["tool"]["uv"],
+        "Semgrep tool dependency overrides are forbidden",
+    )
+    _require(tool_lock.get("semgrep") == {"1.175.0"}, "tool Semgrep lock drifted")
     _require(tool_lock.get("click") == {"8.4.2"}, "tool Click lock drifted")
-    _require(tool_lock.get("mcp") == {"1.28.1"}, "tool MCP lock drifted")
+    _require(tool_lock.get("mcp") == {"1.29.0"}, "tool MCP lock drifted")
     _require(tool_lock.get("cryptography") == {"50.0.0"}, "tool cryptography lock drifted")
+    _require(tool_lock.get("pyjwt") == {"2.13.0"}, "tool PyJWT lock drifted")
     _require(_manifest_targets(root) == EXPECTED_TARGETS, "Semgrep target manifest drifted")
     validate_rule_ids(_configured_rule_ids(root / "semgrep.yml"))
-    _require(today <= OVERRIDE_EXPIRY, f"Semgrep MCP override expired on {OVERRIDE_EXPIRY}")
     validate_reviewed_inputs(root)
     validate_audit_wrappers(root)
 
@@ -183,9 +185,9 @@ def validate_installed_tool(site_packages: Path) -> None:
         for distribution in importlib.metadata.distributions(path=[str(resolved)])
         if distribution.metadata.get("Name")
     }
-    _require(installed.get("semgrep") == "1.172.0", "installed Semgrep identity mismatch")
+    _require(installed.get("semgrep") == "1.175.0", "installed Semgrep identity mismatch")
     _require(installed.get("click") == "8.4.2", "installed Click identity mismatch")
-    _require(installed.get("mcp") == "1.28.1", "installed MCP identity mismatch")
+    _require(installed.get("mcp") == "1.29.0", "installed MCP identity mismatch")
     _require(installed.get("cryptography") == "50.0.0", "installed cryptography identity mismatch")
     _require(installed.get("pyjwt") == "2.13.0", "installed PyJWT identity mismatch")
     locked = _locked_versions(TOOL_ROOT / "uv.lock")
