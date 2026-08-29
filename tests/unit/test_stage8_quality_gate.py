@@ -84,8 +84,7 @@ def test_issue366_contract_rejects_partial_scope_and_content_mutations(monkeypat
     p=s.R434;q=s.check_issue434_verifier;v={**s.LIMITS434,p[11]:100,p[12]:100};k="NARRATWIN_POLICY_ONLY"
     cases:Any=((5601,{}),(1201,{p[9]:1201}),(0,v),(201,{p[11]:101,p[12]:100}));m.delenv("GITHUB_EVENT_NAME",False)
     p=sp.run(["python3","-S",p[11]],capture_output=True);q0=p.returncode;o=p.stdout;z0=p.stderr;r=0;b=sorted(F);A=s.A434
-    n=cb().encode();assert n
-    norm:Any=lambda x:(x[0],x[1].replace(n,b"<branch>"),x[2])
+    n=cb().encode();assert n;norm:Any=lambda x:(x[0],x[1].replace(n,b"<branch>"),x[2])
     h:Any=lambda x:hashlib.shake_256(repr(norm(x)).encode()).hexdigest(8);e={"6d072fdd70c3a1bf","a7db25ea8285d0de"}
     assert [h(x)in e for x in ((q0,o,z0),(q0,o+b"x",z0),(q0,o,z0+b"x"))]==[1,0,0];g=["git"];x:Any=d(g,0);w=um.Mock()
     z(s,"issue434_charges",lambda:(0,{}));assert route(m,B,b[1:])and all(s.issue434_budget_findings(*x)for x in cases)
@@ -111,29 +110,30 @@ def test_scope_collection_covers_exact_layers_and_forbidden_sources(monkeypatch:
     (tmp_path / "forbidden/unstaged-source.txt").rename(tmp_path / "unstaged-destination.txt")
     put(tmp_path, "forbidden/cancelled.txt", "staged"); git(tmp_path, "add", "forbidden/cancelled.txt")
     put(tmp_path, "forbidden/cancelled.txt", "original"); put(tmp_path, "untracked\nnewline.txt", "new")
-    calls:list[list[str]]=[];m=monkeypatch; collect=stage8.changed_files_for_stage_scope; raises=pytest.raises
+    calls:list[list[str]]=[];m=monkeypatch;c=stage8.changed_files_for_stage_scope;raises=pytest.raises;r=cut1_routes
     def record(a:list[str])->Any:calls.append(a);return sp.run(a,cwd=tmp_path,text=True,capture_output=True)
     m.setattr(stage8,"ROOT",tmp_path); m.setattr(stage8,"run",record); m.delenv("GITHUB_EVENT_PATH",raising=False)
-    m.setenv("GITHUB_EVENT_NAME","push"); m.setenv("NARRATWIN_HEAD_REF","feature")
-    m.setenv("GITHUB_BASE_SHA",first_head); m.setenv("GITHUB_HEAD_SHA",head); paths=set(collect())
+    m.setattr(r,"ISSUE459_TRANSITION_BASE",base);m.setenv("GITHUB_EVENT_NAME","push")
+    m.setenv("GITHUB_BASE_SHA",first_head);m.setenv("GITHUB_HEAD_SHA",head)
     required=set(("forbidden/rename-source.txt|rename-destination.txt|forbidden/copy-source.txt|copy-destination.txt|"
         "forbidden/cached-source.txt|cached-destination.txt|forbidden/unstaged-source.txt|unstaged-destination.txt|"
         "forbidden/cancelled.txt|backend/app/main.py|committed.txt|docs/STATUS.md|untracked\nnewline.txt").split("|"))
-    assert required<=paths and "main-only.txt" not in paths
-    assert ["git", "merge-base", "origin/main", head] in calls and ["git", "merge-base", first_head, head] not in calls
+    for ref,want in (("feature","origin/main"),(r.ISSUE459_BRANCH,base)):
+        calls.clear();m.setenv("NARRATWIN_HEAD_REF",ref);p=set(c());assert required<=p and "main-only.txt" not in p
+        assert ["git","merge-base",want,head] in calls and ["git","merge-base",first_head,head] not in calls
     m.setattr(stage8,"current_branch",lambda:TRANSITION); failures:list[str]=[]
     stage8.check_stage_scope(failures); forbidden = required - SCOPES[TRANSITION]; assert all(
         f"Stage 8 changed file outside the allowlist: {path}" in failures for path in forbidden)
-    event=tmp_path/"event.json"; event.write_text(json.dumps({"pull_request":{"head":{"sha":first_head}}}))
+    e=tmp_path/"event.json";e.write_text(json.dumps({"pull_request":{"head":{"sha":first_head}}}))
     m.setenv("GITHUB_EVENT_NAME","pull_request"); m.setenv("GITHUB_BASE_SHA",base)
-    m.setenv("GITHUB_EVENT_PATH",str(event)); m.delenv("GITHUB_HEAD_SHA")
-    assert "exact head" in str(raises(RuntimeError,collect).value); m.setenv("GITHUB_EVENT_NAME","pull_request_review")
-    event.write_text(json.dumps({"pull_request":{"head":{"sha":head}}})); assert required<=set(collect())
-    n=len(calls);m.setenv("GITHUB_HEAD_SHA",first_head);assert "contradicts" in str(raises(RuntimeError,collect).value)
+    m.setenv("GITHUB_EVENT_PATH",str(e)); m.delenv("GITHUB_HEAD_SHA")
+    assert "exact head" in str(raises(RuntimeError,c).value); m.setenv("GITHUB_EVENT_NAME","pull_request_review")
+    e.write_text(json.dumps({"pull_request":{"head":{"sha":head}}})); assert required<=set(c())
+    n=len(calls);m.setenv("GITHUB_HEAD_SHA",first_head);assert "contradicts" in str(raises(RuntimeError,c).value)
     assert calls[n:]==[["git","rev-parse","HEAD"]]; m.delenv("GITHUB_HEAD_SHA")
-    m.setenv("GITHUB_EVENT_NAME","push"); event.write_text(json.dumps({"after":head})); assert required<=set(collect())
-    event.write_text("{"); assert "malformed or unavailable" in str(raises(RuntimeError,collect).value)
-    m.delenv("GITHUB_EVENT_PATH"); assert "malformed or unavailable" in str(raises(RuntimeError,collect).value)
+    m.setenv("GITHUB_EVENT_NAME","push"); e.write_text(json.dumps({"after":head})); assert required<=set(c())
+    e.write_text("{"); assert "malformed or unavailable" in str(raises(RuntimeError,c).value)
+    m.delenv("GITHUB_EVENT_PATH"); assert "malformed or unavailable" in str(raises(RuntimeError,c).value)
 def test_scope_parser_flags_and_command_failures(monkeypatch: Any, tmp_path: Path) -> None:
     assert stage8.parse_name_status_z("R087\0old\0new\0C064\0source\0copy\0") == ["old", "new", "source", "copy"]
     for malformed in ("R100\0old\0","M\0path","M\0\0","Q\0path\0","R101\0old\0new\0"):

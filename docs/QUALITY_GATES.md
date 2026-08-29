@@ -1598,3 +1598,45 @@ a branch-canonical complete-tuple receipt: only the current branch token is
 normalized before hashing, canonical success and branch rejection are pinned,
 and independent stdout/stderr mutations are rejected. The Issue #434 verifier,
 Stage 8 checker, workflows, and all v1/v2 identities remain unchanged.
+
+## Issue #459 Lane A Cut 1 T01/T02 entry and T04 controller gate
+
+Exact branch `lane-a-cut1-459-controlled-presenter` preserves original base
+`ab97b6eecba6db9c66c37d19b29257c7398f3ab7`, frozen T04 head `570239ef`,
+reviewed prerequisite main `285458f2`, and exact transition merge `b569e0b`.
+The route validates both original and active path snapshots, exact merge
+parents/ancestry, every per-path line cap, the 4,300 aggregate cap, eight byte
+caps, and preflight/path equality. Active charges start at reviewed prerequisite
+main, so accepted Issue `#460` files are neither owned nor double-charged.
+Hosted checkpoint comments `5461065184` and `5461070398` expand only the
+active snapshot to 24 paths: an exact fourth immutable-SHA Gitleaks fingerprint
+plus its checker/test, and pinned push-scope selection plus its test. The frozen
+snapshot stays 19 paths; the real-secret canary and all other branch/PR scope
+behavior remain blocking and unchanged.
+
+T04 additionally freezes a 2,000-line incremental implementation budget across
+the canonical backend evaluator, its focused test, and the quality adapter.
+Issue comment `5452170084` adds ADR `0068` under 260 lines/32,000 bytes to
+satisfy the unchanged architecture guardrail inside the cumulative route.
+The adapter re-exports the backend implementation. The evaluator is pure,
+deterministic, single-finding, and forbidden from network, credentials,
+environment lookup, providers, spend, retry, rendering, or writes.
+
+`NARRATWIN_POLICY_ONLY=1 make quality` must pass the route. Full `make quality`
+must run the frozen 136-case oracle plus the focused T04 side-effect and media-
+authenticity tests. During RED, only typed `CUT1.ENTRY.NOT_IMPLEMENTED` behavior
+is accepted; after implementation, all assertions must be GREEN. Focused evidence:
+
+```text
+uv run pytest -q tests/unit/test_stage8_cut1_routes.py tests/unit/test_issue459_quality_dispatcher.py
+uv run pytest -q tests/unit/test_cut1_controlled_presenter_red.py tests/unit/test_cut1_controlled_presenter.py
+NARRATWIN_POLICY_ONLY=1 make quality
+make quality
+```
+
+This gate validates synthetic blocked evidence; an empty finding set is not Cut
+1 acceptance. Audio remains with Issue
+`#368` pending reviewed handoff; human-study and provider activation remain
+with `#432` and `#449`; Raj/Myra derivatives and presenter-specific grounding
+must satisfy the recorded stops before T03/T05/T06. Mock/stub/HTML/JSON and
+`supportsRealVideo=false` results can never serve as Cut 1 evidence.

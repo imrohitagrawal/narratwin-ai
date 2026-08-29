@@ -649,7 +649,7 @@ Use these files together with this tracker:
 | `#149` | Open, depends on `#130`, `#141`-`#148` | Phase 1 follow-on | Independently review actual environment/tooling/calculation-test readiness, tested CH-12 alert routes, and approvals without recording actual restore or RTO/RPO results; must leave issue `#126`, `DUR-RESTORE-001`, and issue `#39` open for the later exercise. |
 | `#138` | Closed | Security follow-up | `PYSEC-2026-2132` Click command-injection remediation completed and closed on 2026-07-14. This did not change production or restore readiness. |
 | `#150` | Closed; exception expired | Security follow-up | PR `#429` temporarily renewed only MCP through `2026-08-28`; the accepted fail-closed date has now passed. Issue `#460` owns removal rather than another renewal. |
-| `#460` | Active | Security prerequisite | Exact branch `security-460-semgrep-override-removal` pins isolated Semgrep `1.175.0`, accepts upstream Click `8.4.2`, MCP `1.29.0`, and PyJWT `2.13.0`, and removes every tool override. Checkpoint `5456985567` adds the Issue `#16`, `#427`, and `#434` immutable-history convergence boundary; hosted checkpoint `5457578336` adds exact provenance-bound suppression for three remote Issue `#459` SHA-256 false positives plus a real-secret canary. The final route is 25 paths and 2,600 lines. Hosted parity, independent exact-head review, and merged-main verification remain required; release/production stays No-Go. |
+| `#460` | Closed | Security prerequisite | PR `#461` merged at `285458f22a5d8786c359c6e4ebf0f9acd82ead96` after all required contexts and exact-head review passed; merged-main Quality Gates run `33239107478` passed. The accepted correction pins isolated Semgrep `1.175.0`, removes every tool override, preserves immutable Issue `#16`/`#427`/`#434` history checks, and suppresses only three provenance-bound Issue `#459` SHA-256 false positives while retaining a real-secret canary. Release/production stays No-Go. |
 | `#428` | Closed, converged with `#150` | Security prerequisite | PR `#429` accepted exact transitive Nano ID `3.3.18` with the historical Semgrep renewal. Issue `#460` changes only the later expired Semgrep MCP boundary; no product/release/production posture changes. |
 | `#151` | Closed | Security follow-up | CPython `3.13.14` security remediation and scanner-consensus work closed on 2026-07-16. This does not change production, restore, hosted launch, or Product Mode 1 local-demo posture. |
 | `#158` | Closed | Security governance history | PR `#325` merged at `11385d661e1da23f9be4101d9e8d3b3d2ca679e4`; merged-tree quality passed and Issue `#158` closed, unblocking the publication-boundary controller. Issue `#150` remains open and release/production posture remains No-Go. |
@@ -1597,9 +1597,9 @@ egress, spend, media generation, and production readiness remain No-Go.
   activation `NONE`, authority effect `NO_AUTHORITY_EFFECT`, and release posture
   No-Go. It supplies no product/runtime/provider/media/deployment/release
   authority and no future slice's domain-specific threat or invariant matrix.
-- Issue `#451` is the current Lane B wording-reconciliation route. After its PR
-  merges, the next approved Lane B action is the bounded Issue `#452` contract
-  activation; Stage 1 follow-on Issue `#16` still blocks new product code.
+- The completed Lane B sequence was Issue `#451` wording reconciliation followed
+  by Issue `#452` contract activation. Issue `#16` subsequently completed; this
+  historical sequence no longer describes current authority.
 
 ### Historical pre-merge C2 RED snapshot (2026-08-26)
 
@@ -1664,9 +1664,9 @@ finding, or unresolved review disagreement stops for OWNER disposition.
   blinded protocol, provider bake-off, literal positive/negative/mutation cases
   and a validator whose exact RED/GREEN evidence is bound by
   `docs/governance/cut1-presenter-contract-red-freeze-v1.json` and the linked PR.
-- Stage 1 Issue #16 still blocks Lane A product/provider/media work. Activation,
-  authority effect, provider/spend/media/release and production claims remain
-  none/No-Go regardless of governance-validator state.
+- At Issue #452 closeout, Stage 1 Issue #16 still blocked Lane A work. Issue #16
+  later completed through PR #458; provider/spend/media/release and production
+  claims remain none/No-Go regardless of governance-validator state.
 
 ## Issue #456 Cut 1 live-binding prerequisite — merged and closed
 
@@ -1676,20 +1676,58 @@ cycle passed and Issue `#456` is closed. The accepted route preserves the v1
 historical identity, binds the v2 immutable live set, rejects substitution and
 independent receipt mutations, and creates no product/provider/media authority.
 
-## Issue #16 specification-gate target state
+## Issue #16 specification-gate completed state
 
-Issue `#16` is the current governance/specification gate. Its substantive PR
-defines the repository-native constitution, current Lane A Cut 1 specification,
+Issue `#16` completed through PR `#458`. Its substantive PR defined the
+repository-native constitution, current Lane A Cut 1 specification,
 dependency plan, eight future tasks, post-merge task-to-issue sequencing,
 review checkpoint, and executable structural/mutation gate. External GitHub
 Spec Kit is not installed or activated; `.stage/current` remains `8`.
 
-Once this PR merges, passes merged-main verification, and Issue #16 closes, the
-primary orchestrator creates one separately authorized Lane A Cut 1
-implementation issue, copies LA-C1-T01 through LA-C1-T08 and their stop
-conditions into it, and creates its branch from then-current accepted `main`.
-Until that closeout completes, `$speckit-implement` and Lane A implementation
-remain blocked. Issue #435 remains closed and separate. No product, provider,
+After merged-main verification and closeout, the primary orchestrator created
+separately authorized Issue `#459` and copied LA-C1-T01 through LA-C1-T08 and
+their stop conditions into it. Issue #435 remains closed and separate. No
+product, provider,
 credential, egress, spend, media, asset, deployment, publication, release,
 public-availability, production-readiness, or presenter-acceptance authority is
 created by Issue #16.
+
+## Issue #459 Lane A Cut 1 entry state
+
+PR `#458` merged and closed Issue `#16` at accepted main
+`ab97b6eecba6db9c66c37d19b29257c7398f3ab7`. Issue `#459` is open on exact
+branch `lane-a-cut1-459-controlled-presenter`. Commit `ce0dcb4` froze the C1
+preflight; OWNER comments `5449765467` and `5449822130` control the 16-path
+T01/T02 correction.
+
+T01/T02 remain complete. OWNER transition comment `5451872197` activates T04
+first under a 2,000-line incremental cap: a canonical pure deterministic
+evidence evaluator, focused safety tests, and a thin quality adapter. It does
+not render media or activate any provider. Guardrail correction comment
+`5452170084` adds only ADR `0068` to the cumulative route. T03 is bounded to Raj/Myra design-
+time portrait edits; Meera is `SOURCE_READY_NO_DERIVATIVE` and receives no new
+binary.
+PR `#461` completed the hosted-parity prerequisite at reviewed main
+`285458f22a5d8786c359c6e4ebf0f9acd82ead96`. Comment `5460884573` freezes the
+exact two-parent transition merge `b569e0bbc6175423706558aa1cc78486a09dfbe5`.
+The source freeze and original route remain bound to T04 head `570239ef`; the
+active tree is charged from reviewed prerequisite main, with no prerequisite
+path transferred into Issue `#459` ownership.
+Pushed head `9644296d` was not hosted-green: Quality Gates `33240873828`
+reproduced push-scope prerequisite leakage and security `33240873835`
+reproduced one new fingerprint for the frozen API-contract SHA literal.
+Checkpoint comments `5461065184` and `5461070398` bind the exact fourth
+fingerprint and pinned transition-base push topology only. These are hosted
+parity corrections, not T03 activation or a readiness claim.
+Three independent review lanes approved the T01/T02 candidate exact head
+`2cfced8034b207e2ad12c450d5281d8446060a85` with no reproduced entry-scope
+blocker after 83 route/dispatcher passes, one bootstrap pass, exactly 136 typed
+future RED failures, policy parity, guardrails, and exact-budget checks. The
+receipt records entry-gate completion only; it does not start GREEN behavior.
+Raj/Myra derivatives remain unregistered until visual selection and independent
+provenance/privacy review; accepted grounding/narration remains
+Meera-only; Issue `#368` retains audio ownership; Issues `#432` and `#449`
+retain human-study and provider authority. Provider calls, credentials, egress,
+spend, media generation, deployment, publication, release and acceptance
+claims remain absent and unauthorized. Empty T04 findings validate only the
+synthetic blocked fixture and do not establish Cut 1 acceptance.

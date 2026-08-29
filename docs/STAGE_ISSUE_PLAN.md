@@ -1,6 +1,45 @@
 # Stage Issue Plan
 
-## Issue #460 Semgrep override removal
+## Issue #459 Lane A Cut 1 T03/T04 increment
+
+Issue `#459` starts from accepted main
+`ab97b6eecba6db9c66c37d19b29257c7398f3ab7` on exact branch
+`lane-a-cut1-459-controlled-presenter`. T01 freezes the source, six-cell matrix,
+C1-M01–C1-M10 thresholds, interfaces, observability, failures, route, budgets,
+human decisions and stops. T02 commits a stimulus-only corpus and test-owned
+literal RED oracle before any GREEN behavior. OWNER transition comment
+`5451872197` activates T04 first: one pure canonical evidence evaluator, its
+focused test, and a thin quality adapter under a 2,000-line incremental cap.
+Guardrail correction comment `5452170084` adds only ADR `0068` to record that
+controller boundary inside the unchanged cumulative route budget.
+The evaluator neither renders media nor activates a provider and rejects
+mock/stub/placeholder/non-real-video evidence.
+
+PR `#461` merged the hosted-parity prerequisite at reviewed main
+`285458f22a5d8786c359c6e4ebf0f9acd82ead96`. Transition authority comment
+`5460884573` requires exact merge `b569e0bbc6175423706558aa1cc78486a09dfbe5`
+with frozen T04 head `570239effbcae3990a24ffdc809622f02364ff0d` as
+first parent and reviewed main as second parent. The original route is still
+validated from `ab97b6e` to the frozen head; active paths and charges use the
+reviewed prerequisite base. No prerequisite path becomes Issue `#459` scope.
+Push runs `33240873828` and `33240873835` then reproduced two hosted-only
+boundaries: generic push scope treated accepted prerequisite paths as current
+ownership, and the integration commit created a fourth line-specific fingerprint
+for the already-reviewed API-contract SHA. Comments `5461065184` and
+`5461070398` authorize only exact fingerprint provenance enforcement and pinned
+Issue `#459` push-base selection. Frozen route history remains 19 paths; the
+active correction route is exactly 24 paths under the unchanged aggregate cap.
+
+T03 may edit only the existing Raj/Myra fictional portraits with at most two
+attempts each. Meera is `SOURCE_READY_NO_DERIVATIVE`, so the T03 inventory has
+no Meera binary. Registry activation waits for visual selection and independent
+provenance/privacy review. T05 cannot assign audio while Issue `#368` owns it and cannot reuse
+the accepted Meera-only grounding/narration receipt for Raj/Myra. Issues `#432`
+and `#449` retain human-study and provider/credential/egress/spend authority.
+No runtime provider, deployment, publication, human study, acceptance, or
+release authority is created.
+
+## Issue #460 completed Semgrep override removal
 
 Issue `#460` starts from exact accepted main
 `ab97b6eecba6db9c66c37d19b29257c7398f3ab7` on branch
@@ -33,7 +72,9 @@ fail closed before the unchanged full-history scan.
 This prerequisite grants no product, runtime MCP server, provider, credential,
 deployment, release, commercial-readiness, or production authority. Issue
 `#459` must consume it only through a separately reviewed base/route transition
-after #460 merges and merged-main security parity passes.
+after #460 merges and merged-main security parity passes. PR `#461` merged at
+`285458f22a5d8786c359c6e4ebf0f9acd82ead96`; merged-main Quality Gates run
+`33239107478` passed and Issue `#460` is closed.
 
 ## Issue #16 specification-kit route
 
@@ -43,13 +84,13 @@ Kit-compatible artifacts define its constitution, current Lane A Cut 1 spec,
 dependency plan, eight tasks, future mapping, review checkpoint, and executable
 gate. External Spec Kit activation is not claimed.
 
-### Post-gate Lane A sequencing
+### Historical post-gate Lane A sequencing
 
-Issue #16 must merge, pass merged-main verification, and close before the
-primary orchestrator creates one separate Lane A Cut 1 implementation issue.
-That issue copies LA-C1-T01 through LA-C1-T08 and all stop conditions, freezes
-its own exact base/path/budget/RED contract, and only then creates a dedicated
-branch from accepted `main`. Issue #16 grants no product, provider, media,
+Issue #16 merged, passed merged-main verification, and closed before the
+primary orchestrator created separate Lane A Cut 1 Issue `#459`. Issue #459
+copied LA-C1-T01 through LA-C1-T08 and all stop conditions, froze its own exact
+base/path/budget/RED contract, and uses a dedicated branch from accepted
+`main`. Issue #16 grants no product, provider, media,
 credential, egress, spend, deployment, publication, release, public-
 availability, or production authority. Invariant: `I16.STAGE.PLAN`.
 
@@ -2856,7 +2897,8 @@ subprocess tuple, pins canonical success and branch-rejection receipts, and
 rejects independent stdout/stderr mutations without changing the Issue #434
 verifier, Stage 8 checker, workflow, product, provider, media, or runtime code.
 
-Issue #16 remains blocked until Issue #456 passes focused/full gates, hosted
+Issue #16 remained blocked until Issue #456 passed focused/full gates, hosted
 checks, independent exact-head review, eligible non-author approval, merge, and
-closeout. This route creates no Lane A, product, provider, credential, egress,
+closeout. That historical route created no Lane A, product, provider,
+credential, egress,
 spend, media, deployment, publication, release, or production authority.

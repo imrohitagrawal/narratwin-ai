@@ -121,8 +121,61 @@ ISSUE452_EXPECTED = {
     "docs/TRACEABILITY.md",
 }
 
+ISSUE459_FROZEN_EXPECTED = {
+    "docs/governance/preflights/issue-459.json",
+    "docs/governance/ISSUE_459_CONTROLLED_PRESENTER_PREFLIGHT_V1.md",
+    "docs/governance/schemas/cut1-controlled-presenter-evidence-v1.schema.json",
+    "docs/governance/cut1-controlled-presenter-red-corpus-v1.json",
+    "scripts/quality/cut1_controlled_presenter.py",
+    "tests/unit/test_cut1_controlled_presenter_red.py",
+    "scripts/quality/check_quality_stage.py",
+    "tests/unit/test_issue459_quality_dispatcher.py",
+    "scripts/quality/stage8_cut1_routes.py",
+    "tests/unit/test_stage8_cut1_routes.py",
+    "docs/reviews/ISSUE_459_ENTRY_GATE_REVIEW.md",
+    "docs/QUALITY_GATES.md",
+    "docs/STAGE_ISSUE_PLAN.md",
+    "docs/PHASE_PLAN.md",
+    "docs/STATUS.md",
+    "docs/TRACEABILITY.md",
+    "backend/app/cut1_controlled_presenter.py",
+    "tests/unit/test_cut1_controlled_presenter.py",
+    "docs/ADR/0068-cut1-controlled-presenter-controller.md",
+}
+ISSUE459_EXPECTED = ISSUE459_FROZEN_EXPECTED | {".gitleaksignore", "scripts/ci/check_gitleaks_regression.py", "tests/unit/test_gitleaks_regression.py", "scripts/quality/check_stage8_docs.py", "tests/unit/test_stage8_quality_gate.py"}
+ISSUE459_LINE_CAPS = {
+    "docs/governance/preflights/issue-459.json": 220,
+    "docs/governance/ISSUE_459_CONTROLLED_PRESENTER_PREFLIGHT_V1.md": 850,
+    "docs/governance/schemas/cut1-controlled-presenter-evidence-v1.schema.json": 450,
+    "docs/governance/cut1-controlled-presenter-red-corpus-v1.json": 500,
+    "scripts/quality/cut1_controlled_presenter.py": 140,
+    "tests/unit/test_cut1_controlled_presenter_red.py": 700,
+    "scripts/quality/check_quality_stage.py": 60,
+    "tests/unit/test_issue459_quality_dispatcher.py": 140,
+    "scripts/quality/stage8_cut1_routes.py": 180,
+    "tests/unit/test_stage8_cut1_routes.py": 340,
+    "docs/reviews/ISSUE_459_ENTRY_GATE_REVIEW.md": 500,
+    "docs/QUALITY_GATES.md": 120, "docs/STAGE_ISSUE_PLAN.md": 120,
+    "docs/PHASE_PLAN.md": 100, "docs/STATUS.md": 160, "docs/TRACEABILITY.md": 120,
+    "backend/app/cut1_controlled_presenter.py": 900,
+    "tests/unit/test_cut1_controlled_presenter.py": 900,
+    "docs/ADR/0068-cut1-controlled-presenter-controller.md": 260, ".gitleaksignore": 20, "scripts/ci/check_gitleaks_regression.py": 220, "tests/unit/test_gitleaks_regression.py": 260, "scripts/quality/check_stage8_docs.py": 60, "tests/unit/test_stage8_quality_gate.py": 100,
+}
+ISSUE459_BYTE_CAPS = {
+    "docs/governance/preflights/issue-459.json": 32_000,
+    "docs/governance/ISSUE_459_CONTROLLED_PRESENTER_PREFLIGHT_V1.md": 64_000,
+    "docs/governance/schemas/cut1-controlled-presenter-evidence-v1.schema.json": 40_000,
+    "docs/governance/cut1-controlled-presenter-red-corpus-v1.json": 48_000,
+    "scripts/quality/cut1_controlled_presenter.py": 16_000,
+    "tests/unit/test_cut1_controlled_presenter_red.py": 60_000,
+    "tests/unit/test_issue459_quality_dispatcher.py": 24_000,
+    "docs/reviews/ISSUE_459_ENTRY_GATE_REVIEW.md": 48_000,
+    "docs/ADR/0068-cut1-controlled-presenter-controller.md": 32_000, ".gitleaksignore": 2_000, "scripts/ci/check_gitleaks_regression.py": 24_000, "tests/unit/test_gitleaks_regression.py": 32_000, "scripts/quality/check_stage8_docs.py": 48_000, "tests/unit/test_stage8_quality_gate.py": 40_000,
+}
+
 
 EXPECTED = {
+    "lane-a-cut1-459-controlled-presenter": ISSUE459_EXPECTED,
     "security-460-semgrep-override-removal": ISSUE460_EXPECTED,
     "docs/cut1-acceptance-provider-contract-452": ISSUE452_EXPECTED,
     "docs/cut1-post-443-reconciliation-451": {
@@ -493,6 +546,10 @@ EXPECTED = {
 
 def completed(args: list[str], code: int = 0, out: str = "", err: str = "") -> subprocess.CompletedProcess[str]:
     return subprocess.CompletedProcess(args, code, out, err)
+
+
+def issue459_run(args: list[str]) -> subprocess.CompletedProcess[str]:
+    return completed(args, out="".join(f"{path}\0" for path in sorted(ISSUE459_FROZEN_EXPECTED if f"{routes.ISSUE459_BASE}..{routes.ISSUE459_FROZEN_HEAD}" in args else ISSUE459_EXPECTED)) if args[:4] == ["git", "diff", "--name-only", "-z"] else "")
 
 
 def validate_prompt_contract(contract: dict[str, Any]) -> None:
@@ -1358,6 +1415,267 @@ def test_issue452_requires_fixed_base_and_branch_point() -> None:
     assert "Issue #452 fixed base" in str(error.value)
 
 
+def test_issue459_route_is_exact_fixed_and_budgeted() -> None:
+    branch = routes.ISSUE459_BRANCH
+    assert branch == "lane-a-cut1-459-controlled-presenter"
+    assert routes.ISSUE459_BASE == "ab97b6eecba6db9c66c37d19b29257c7398f3ab7"
+    assert routes.ROUTES[branch] == ISSUE459_EXPECTED
+    assert routes.ROUTE_ISSUES[branch] == 459
+    assert routes.TOTAL_LIMITS[branch] == 4300
+    assert routes.TEXT_LIMITS[branch] == ISSUE459_LINE_CAPS
+    assert routes.ISSUE459_BYTE_LIMITS == ISSUE459_BYTE_CAPS
+    assert routes.ISSUE459_SOURCE_SHA256 == {
+        "specs/001-grounded-walkthrough-script/spec.md": "cd16ea947a70271f60a5ce7086e577c1cc25f380baf9a338342bfafb522b8c35",
+        "specs/001-grounded-walkthrough-script/plan.md": "166dd8021026eb334607d0dab290c2b121964bcb979e7e502b574f830b45dfd4",
+        "specs/001-grounded-walkthrough-script/tasks.md": "9c244de820bf0df1c1d7d7e4c323e5317ba5818cb625f88165e675ce51817fdc",
+        "docs/reviews/ISSUE_16_SPEC_KIT_REVIEW_CHECKPOINT.md": "14dbdeb898af240fd30d203e131be8c6e8e29c5803c82463c1b50dc4c8616877",
+        ".specify/memory/constitution.md": "ebb0c16c8aa9d967e4c946f31ae600e6e45016bf5c3aa6f098ceac795cd142c2",
+        "docs/PRODUCT_CONTRACTS/CUT1_PRESENTER_CONTRACT.md": "2e864e044253a98ea10fdf6dde1ab32a026354aaa5c00cebe3b40756d653936e",
+        "docs/AI_QUALITY_AND_EVALUATION_CONTRACT.md": "14dbbb6f005d9887ad8ab90340bca9fdcc5fb969579ef3d03f69d5566d0616f8",
+        "docs/ENTERPRISE_READINESS_REGISTER.md": "fd42d73871b62f48e018ced1eb5020ffcb53a62cdbdd53936b7c257c22940c1d",
+        "docs/CUT_ROADMAP_AND_EVIDENCE_MATRIX.md": "e358396e7be7ecee89539b1bfb9eb7eb4d331799dd41a64b4cfca4f74e22489b",
+        "docs/demo/CUT1_ACCEPTANCE_CHECKLIST.md": "7c041dfcca1e5f7e067744eaec18b1577df4be2cf391eb128b786bde7ca1521b",
+        "docs/governance/cut1-all-presenter-acceptance-matrix-v1.json": "f61cef9f7731f4603778d1b6a3a9ccccd3682c8e0ad233c9370169320612b2f5",
+        "docs/governance/cut1-presenter-live-binding-v2.json": "89199278feabfdcee21fffe4a9ad4d157dd7fc9a11a2529562876cb6ecc74702",
+        "docs/governance/cut1-project-facts-v1.json": "cb50de12ce2debb3d52308892428b9711e5efb41fe2ad59b175563809e7d314b",
+        "demo/stage8_seed_project.md": "49b75655ddbbe43145a35215069bce2751de66393b39eb68d69b584d7ecfcc5e",
+        "docs/demo/PHASE_1_DEMO_SCRIPT.md": "3b071180d4723784d84f5005644fc5a2aa5ef6b6adb6f7caeba2de76d68be435",
+        "backend/app/presenter_registry.json": "eb31a953b85ffaf2c43f54e4da7fb89eda740c724967a9301f726c6091ab01c2",
+        "docs/PRD.md": "2cde5d9ec7d8e932b25f2fdf66d4dd11f49065b50078f16f59b6a65cbb7d720a",
+        "docs/REQUIREMENTS_TRACEABILITY_MATRIX.md": "0a3c14d0d61fbfaf5fe6dec0a7ca3a9412f1b1fd8aa458837f0c3b37b5570db3",
+        "docs/ARCHITECTURE.md": "e7515ee96dce07e0d583e15984ea335b6f2499bfd8aa6e9f519bc4a830122fa4",
+        "docs/API_CONTRACT.md": "910259f61acbbec4e3432c482d821fd56f2fe8b2073211c7ce112c3cd87405bf",
+        "docs/DATA_MODEL.md": "f073c9bff26717233f23c6317b03736c02bee5952b88fa840767f79287b6ec09",
+        "docs/SECURITY_AND_PRIVACY.md": "185fe98ffa0b12287b6e7e8a532fac89ffa7a29380db71f8dd6aa4d1b7bc4b62",
+        "docs/OBSERVABILITY_AND_COST.md": "c77a0d4ea071e6ea364d9c1f4175361633d4d54962c7fc8d9527033e160d91c6",
+        "docs/governance/cut1-blinded-human-evaluation-protocol-v1.json": "fa3759985141639185618fbc595057412dd8582f60ed97fc462b30b7548580b8",
+        "docs/governance/cut1-provider-bakeoff-contract-v1.json": "1a3fd981644488203e8c7cc38fc0389092b23b579cce860c3d35a1ca7a1786db",
+    }
+    assert routes.ISSUE459_EDITABLE_AUTHORITY_SHA256 == {
+        "Issue #459": "dd03b171f25b0d249a79834f22674c728e539fa8b171a97b3a4728474e0039d5",
+        "5449632582": "07b7cb91660a21ba0a70419ff07195a2532089a087d7a289806142dc81151fa0",
+        "5449637037": "f236d2840a7ce35e074b6e370dcc706278772c47fa09b6c18b20a344b22fd1a0",
+        "5449765467": "75882f1f3deb8dea77ab945cd58f0526b04644fb4cb208bcd50ddea29846bbe7",
+        "5449822130": "48f86809e1032884d5576ceefde06d64785b486e1adae940fe32c2b6391e6cf3",
+        "5451872197": "a5241954c115e6849da70401cc029cc4517f83a3629b043462a42becc6146e7d",
+        "5452170084": "8c9297b3faf1d6894442017afef2ce58dcb3ec2a6ee6c3037be2024abb2d0fce",
+        "5456406377": "dcbc20d52a6acb636463389f7a4996d79b7262f30209576e13522e3576782a7a",
+        "5460884573": "6ef7158ffa8347defbed97b3c18a7ad0728cec02ff217b8a0984048fb44887ac", "5461065184": "33a87c363da666be77362291e338323b57311f78c5f1ed22155f619dbe9726fc", "5461070398": "66a28207adc9c9a0438a0d1012baf626561bfca0e6e6644d837328f08808cb1f",
+    }
+    assert routes.ISSUE459_BASE_SOURCE_SHA256 == {
+        "docs/STATUS.md": "9045b595ca1622680f621dffa4dff88435e2fde0d13e3c061ced7eb6df9ae8bf",
+        "docs/TRACEABILITY.md": "e597069e3d6b765a9d68e5336ff9597d6d7b809e5ea6f316f22312ca71ea136a",
+        "docs/QUALITY_GATES.md": "9f628d22ec62075e560ef478820cf094d923cdf1cfded56a512291c61f6e542b",
+        "docs/REPOSITORY_GUARDRAILS.md": "04f8b405bc7ba9b615cc1d5d7e489bcbf643b9de4bfc9b331e5a60c38629e82f",
+    }
+
+
+def test_issue459_requires_exact_reviewed_transition() -> None:
+    expected = {routes.ISSUE459_BASE, routes.ISSUE459_FROZEN_HEAD, routes.ISSUE459_TRANSITION_BASE, routes.ISSUE459_TRANSITION_MERGE}
+
+    def good(args: list[str]) -> subprocess.CompletedProcess[str]:
+        if args[:2] == ["git", "rev-parse"]:
+            value = args[2].removesuffix("^{commit}")
+            assert value in expected
+            return completed(args, out=value + "\n")
+        if args[:4] == ["git", "show", "-s", "--format=%P"]:
+            return completed(args, out=f"{routes.ISSUE459_FROZEN_HEAD} {routes.ISSUE459_TRANSITION_BASE}\n")
+        assert args[:3] == ["git", "merge-base", "--is-ancestor"]
+        return completed(args)
+
+    assert routes.route_base(good, routes.ISSUE459_BRANCH) == routes.ISSUE459_TRANSITION_BASE
+
+    for rejected in expected:
+        def missing(args: list[str], *, target: str = rejected) -> subprocess.CompletedProcess[str]:
+            result = good(args)
+            if args[:2] == ["git", "rev-parse"] and args[2] == f"{target}^{{commit}}":
+                return completed(args, code=128)
+            return result
+
+        error = pytest.raises(RuntimeError, routes.route_base, missing, routes.ISSUE459_BRANCH)
+        assert "Issue #459 reviewed transition" in str(error.value)
+
+    for corrupt in ("parents", "ancestry"):
+        def broken(args: list[str], *, kind: str = corrupt) -> subprocess.CompletedProcess[str]:
+            if kind == "parents" and args[:4] == ["git", "show", "-s", "--format=%P"]:
+                return completed(args, out=f"{routes.ISSUE459_TRANSITION_BASE}\n")
+            return (completed(args, code=1) if kind == "ancestry" and
+                    args[:3] == ["git", "merge-base", "--is-ancestor"] else good(args))
+        error = pytest.raises(RuntimeError, routes.route_base, broken, routes.ISSUE459_BRANCH)
+        assert "Issue #459 reviewed transition" in str(error.value)
+
+
+def test_issue459_rejects_each_byte_boundary(monkeypatch: Any) -> None:
+    branch = routes.ISSUE459_BRANCH
+    monkeypatch.setattr(routes, "route_base", lambda *_: "base")
+    monkeypatch.setattr(routes, "route_text_charges", lambda *_: (0, {}))
+    for path, limit in routes.ISSUE459_BYTE_LIMITS.items():
+        sizes = {candidate: maximum - 1 for candidate, maximum in routes.ISSUE459_BYTE_LIMITS.items()}
+        monkeypatch.setattr(routes, "route_binary_sizes",
+                            lambda *_, values=sizes | {path: limit}: values)
+        failures: list[str] = []
+        routes.check_exact_route(REPO, issue459_run, branch,
+                                 ISSUE459_EXPECTED, failures)
+        assert failures == [f"Issue #459 file {path} must be smaller than {limit} bytes."]
+
+
+def test_issue459_rejects_extra_and_each_text_budget(monkeypatch: Any) -> None:
+    branch = routes.ISSUE459_BRANCH
+    monkeypatch.setattr(routes, "route_base", lambda *_: "base")
+    monkeypatch.setattr(routes, "route_binary_sizes",
+                        lambda *_: {path: 1 for path in ISSUE459_BYTE_CAPS})
+    monkeypatch.setattr(routes, "route_text_charges", lambda *_: (0, {}))
+    for path, limit in ISSUE459_LINE_CAPS.items():
+        monkeypatch.setattr(routes, "route_text_charges",
+                            lambda *_, p=path, n=limit: (n + 1, {p: n + 1}))
+        failures: list[str] = []
+        routes.check_exact_route(REPO, issue459_run, branch,
+                                 ISSUE459_EXPECTED, failures)
+        assert failures == [f"Issue #459 charge for {path} exceeds {limit}."]
+    monkeypatch.setattr(stage8, "current_branch", lambda: branch)
+    monkeypatch.setattr(stage8, "changed_files_for_stage_scope",
+                        lambda: [*ISSUE459_EXPECTED, "rogue.txt"])
+    failures = []
+    stage8.check_stage_scope(failures)
+    assert failures == ["Stage 8 changed file outside the allowlist: rogue.txt"]
+
+
+def test_issue459_route_unions_current_correction_on_incremental_hosted_push(
+    monkeypatch: Any,
+) -> None:
+    """A push's `before` SHA cannot hide paths added after the frozen base."""
+    branch = routes.ISSUE459_BRANCH
+    hidden = {
+        "docs/governance/cut1-controlled-presenter-red-corpus-v1.json",
+        "docs/governance/schemas/cut1-controlled-presenter-evidence-v1.schema.json",
+    }
+    monkeypatch.setattr(routes, "route_base", lambda *_: routes.ISSUE459_TRANSITION_BASE)
+    monkeypatch.setattr(routes, "issue459_source_failures", lambda *_: [])
+    monkeypatch.setattr(routes, "issue459_base_source_failures", lambda *_: [])
+    monkeypatch.setattr(routes, "route_text_charges", lambda *_: (0, {}))
+    monkeypatch.setattr(
+        routes,
+        "route_binary_sizes",
+        lambda *_: {path: 1 for path in routes.ISSUE459_BYTE_LIMITS},
+    )
+
+    snapshots = iter((ISSUE459_FROZEN_EXPECTED, ISSUE459_FROZEN_EXPECTED))
+
+    def hosted(args: list[str]) -> subprocess.CompletedProcess[str]:
+        if args[:4] == ["git", "diff", "--name-only", "-z"]:
+            paths = next(snapshots)
+            return completed(args, out="".join(f"{path}\0" for path in sorted(paths)))
+        return completed(args)
+
+    failures: list[str] = []
+    routes.check_exact_route(
+        REPO, hosted, branch, ISSUE459_EXPECTED - hidden, failures
+    )
+    assert failures == []
+
+
+def test_issue459_rejects_unauthorized_path_in_either_transition_snapshot(
+    monkeypatch: Any,
+) -> None:
+    branch = routes.ISSUE459_BRANCH
+    monkeypatch.setattr(routes, "route_base", lambda *_: routes.ISSUE459_TRANSITION_BASE)
+    monkeypatch.setattr(routes, "issue459_source_failures", lambda *_: [])
+    monkeypatch.setattr(routes, "issue459_base_source_failures", lambda *_: [])
+    monkeypatch.setattr(routes, "route_text_charges", lambda *_: (0, {}))
+    monkeypatch.setattr(
+        routes,
+        "route_binary_sizes",
+        lambda *_: {path: 1 for path in routes.ISSUE459_BYTE_LIMITS},
+    )
+    missing = "backend/app/cut1_controlled_presenter.py"
+    for frozen_paths, active_paths, expected in (
+        ({*ISSUE459_FROZEN_EXPECTED, "frozen-rogue.txt"}, ISSUE459_EXPECTED,
+         "Issue #459 route contains unauthorized path: frozen-rogue.txt"),
+        (ISSUE459_FROZEN_EXPECTED, {*ISSUE459_EXPECTED, "active-rogue.txt"},
+         "Issue #459 route contains unauthorized path: active-rogue.txt"),
+        (ISSUE459_FROZEN_EXPECTED - {missing}, ISSUE459_EXPECTED,
+         f"Issue #459 route snapshot is missing required path: {missing}"),
+        (ISSUE459_FROZEN_EXPECTED, ISSUE459_EXPECTED - {missing},
+         f"Issue #459 route snapshot is missing required path: {missing}"),
+    ):
+        snapshots = iter((frozen_paths, active_paths))
+
+        def run(args: list[str]) -> subprocess.CompletedProcess[str]:
+            if args[:4] == ["git", "diff", "--name-only", "-z"]:
+                paths = next(snapshots)
+                return completed(args, out="".join(f"{path}\0" for path in sorted(paths)))
+            return completed(args)
+
+        failures: list[str] = []
+        routes.check_exact_route(REPO, run, branch, ISSUE459_EXPECTED, failures)
+        assert failures == [expected]
+
+
+def test_issue459_required_text_files_fail_closed(tmp_path: Path) -> None:
+    path = "required.txt"
+    with pytest.raises(RuntimeError, match="Route binary is missing"):
+        routes.route_binary_sizes(tmp_path, {path}, "utf-8")
+    target = tmp_path / path
+    target.write_bytes(b"\xff")
+    with pytest.raises(RuntimeError, match="not valid utf-8"):
+        routes.route_binary_sizes(tmp_path, {path}, "utf-8")
+    target.unlink()
+    target.symlink_to(tmp_path)
+    with pytest.raises(RuntimeError, match="regular non-symlink"):
+        routes.route_binary_sizes(tmp_path, {path}, "utf-8")
+
+
+def test_issue459_source_snapshot_fails_closed_when_frozen_commit_is_unavailable(
+    monkeypatch: Any,
+) -> None:
+    monkeypatch.setattr(routes, "ISSUE459_SOURCE_SHA256", {"docs/PRD.md": "0" * 64})
+    monkeypatch.setattr(
+        routes.subprocess,
+        "run",
+        lambda *args, **kwargs: subprocess.CompletedProcess(args[0], 128, b"", b"missing"),
+    )
+    assert routes.issue459_source_failures(REPO) == [
+        "Issue #459 frozen source identity drifted: docs/PRD.md"
+    ]
+
+
+def test_issue459_rejects_source_authority_and_rename_copy_drift(monkeypatch: Any) -> None:
+    monkeypatch.setattr(routes, "ISSUE459_SOURCE_SHA256", {"docs/PRD.md": "0" * 64})
+    assert routes.issue459_source_failures(REPO) == [
+        "Issue #459 frozen source identity drifted: docs/PRD.md"
+    ]
+    monkeypatch.setattr(routes, "ISSUE459_SOURCE_SHA256", {})
+    monkeypatch.setattr(routes, "ISSUE459_EDITABLE_AUTHORITY_SHA256",
+                        {"missing-authority": "0" * 64})
+    assert routes.issue459_source_failures(REPO) == [
+        "Issue #459 editable authority identity drifted: missing-authority"
+    ]
+    monkeypatch.undo()
+    assert routes.issue459_base_source_failures(REPO) == []
+    monkeypatch.setattr(routes, "ISSUE459_BASE_SOURCE_SHA256", {"docs/STATUS.md": "0" * 64})
+    assert routes.issue459_base_source_failures(REPO) == [
+        "Issue #459 base source identity drifted: docs/STATUS.md"
+    ]
+    monkeypatch.undo()
+    assert routes.route_has_copy_or_rename("R100\0old\0new\0")
+    assert routes.route_has_copy_or_rename("C056\0old\0new\0")
+    assert routes.route_has_copy_or_rename("D\0deleted\0")
+    assert not routes.route_has_copy_or_rename("M\0file\0")
+    monkeypatch.setattr(routes, "route_base", lambda *_: "base")
+    monkeypatch.setattr(routes, "route_text_charges", lambda *_: (0, {}))
+    monkeypatch.setattr(routes, "route_binary_sizes",
+                        lambda *_: {path: 1 for path in ISSUE459_BYTE_CAPS})
+    renamed = completed([], out="R100\0docs/PHASE_PLAN.md\0docs/STATUS.md\0")
+    def renamed_run(args: list[str]) -> subprocess.CompletedProcess[str]:
+        if "--name-only" in args:
+            return issue459_run(args)
+        return renamed
+    failures: list[str] = []
+    routes.check_exact_route(REPO, renamed_run, routes.ISSUE459_BRANCH,
+                             ISSUE459_EXPECTED, failures)
+    assert failures == ["Issue #459 route forbids deleted, renamed, or copied paths."]
+
+
 def test_issue452_contract_bytes_schemas_and_authority_hashes() -> None:
     governance = REPO / "docs/governance"
     objective = json.loads((governance / "preflights/issue-452.json").read_text())["objective"]
@@ -1435,11 +1753,13 @@ def test_legacy_checker_caps_are_unchanged_and_executable() -> None:
 def test_exact_route_completeness_lookalikes_and_budgets(monkeypatch: Any) -> None:
     monkeypatch.setattr(routes, "route_base", lambda *_: "base")
     monkeypatch.setattr(routes, "route_text_charges", lambda *_: (0, {}))
-    monkeypatch.setattr(routes, "route_binary_sizes", lambda *_: {path: 1 for path in routes.ISSUE383_BINARY_FILES | set(routes.ISSUE452_BYTE_LIMITS)})
+    monkeypatch.setattr(routes, "route_binary_sizes", lambda *_: {path: 1 for path in routes.ISSUE383_BINARY_FILES | set(routes.ISSUE452_BYTE_LIMITS) | set(routes.ISSUE459_BYTE_LIMITS)})
     for branch, paths in EXPECTED.items():
         failures: list[str] = []
-        routes.check_exact_route(REPO, lambda _: completed([]), branch, set(paths), failures)
+        routes.check_exact_route(REPO, issue459_run if branch == routes.ISSUE459_BRANCH else lambda _: completed([]), branch, set(paths), failures)
         assert failures == []
+        if branch == routes.ISSUE459_BRANCH:
+            continue
         missing = sorted(paths)[0]
         failures = []
         routes.check_exact_route(REPO, lambda _: completed([]), branch, paths - {missing}, failures)
@@ -1448,11 +1768,13 @@ def test_exact_route_completeness_lookalikes_and_budgets(monkeypatch: Any) -> No
         confusable = (
             branch.replace("stage8", "stageв")
             if "stage8" in branch
-                else branch.replace("process", "procesѕ")
-                if "process" in branch
-                else branch.replace("security", "securitу")
-                if "security" in branch
-                else branch.replace("docs", "docѕ")
+            else branch.replace("process", "procesѕ")
+            if "process" in branch
+            else branch.replace("security", "securitу")
+            if "security" in branch
+            else branch.replace("docs", "docѕ")
+            if "docs" in branch
+            else branch.replace("lane", "lanе")
         )
         for lookalike in (branch + "-retry", branch.upper(), confusable):
             failures = []
@@ -1463,11 +1785,11 @@ def test_exact_route_completeness_lookalikes_and_budgets(monkeypatch: Any) -> No
 
 def test_per_route_aggregate_per_file_and_binary_caps(monkeypatch: Any) -> None:
     monkeypatch.setattr(routes, "route_base", lambda *_: "base")
-    monkeypatch.setattr(routes, "route_binary_sizes", lambda *_: {path: 1 for path in routes.ISSUE383_BINARY_FILES | set(routes.ISSUE452_BYTE_LIMITS)})
+    monkeypatch.setattr(routes, "route_binary_sizes", lambda *_: {path: 1 for path in routes.ISSUE383_BINARY_FILES | set(routes.ISSUE452_BYTE_LIMITS) | set(routes.ISSUE459_BYTE_LIMITS)})
     for branch, limit in routes.TOTAL_LIMITS.items():
         monkeypatch.setattr(routes, "route_text_charges", lambda *_, value=limit: (value + 1, {}))
         failures: list[str] = []
-        routes.check_exact_route(REPO, lambda _: completed([]), branch, EXPECTED[branch], failures)
+        routes.check_exact_route(REPO, issue459_run if branch == routes.ISSUE459_BRANCH else lambda _: completed([]), branch, EXPECTED[branch], failures)
         assert failures == [f"Issue #{routes.ROUTE_ISSUES[branch]} charge {limit + 1} exceeds {limit}."]
     branch = routes.ISSUE383_BRANCH
     path = "tests/unit/test_cut1_presenter_assets.py"

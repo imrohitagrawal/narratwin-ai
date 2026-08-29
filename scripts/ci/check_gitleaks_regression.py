@@ -12,11 +12,13 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 FROZEN_BASE = "ab97b6eecba6db9c66c37d19b29257c7398f3ab7"
 SOURCE_HEAD = "570239effbcae3990a24ffdc809622f02364ff0d"
+SCAN_HEAD = "9644296da92bf3b3f373cd2afd2c7a64d6ca7c8c"
 EXPECTED_DIGEST = "910259f61acbbec4e3432c482d821fd56f2fe8b2073211c7ce112c3cd87405bf"
 EXPECTED_FINGERPRINTS = (
     "77ebfc3218a003a06f7b43098624c30f2b43bf4e:scripts/quality/stage8_cut1_routes.py:generic-api-key:514",
     "8dd002589d45b41205a80dc004e7e6480bec901f:scripts/quality/stage8_cut1_routes.py:generic-api-key:515",
     "8dd002589d45b41205a80dc004e7e6480bec901f:tests/unit/test_stage8_cut1_routes.py:generic-api-key:1370",
+    "9644296da92bf3b3f373cd2afd2c7a64d6ca7c8c:scripts/quality/stage8_cut1_routes.py:generic-api-key:509",
 )
 
 
@@ -82,13 +84,13 @@ def validate(root: Path = ROOT) -> list[str]:
         if hashlib.sha256(api_contract).hexdigest() != EXPECTED_DIGEST:
             _append_once(failures, "GITLEAKS.PROVENANCE.DIGEST")
 
-    source = _git(root, "cat-file", "-e", f"{SOURCE_HEAD}^{{commit}}")
-    if source.returncode != 0:
+    history = (_git(root, "cat-file", "-e", f"{head}^{{commit}}") for head in (SOURCE_HEAD, SCAN_HEAD))
+    if any(result.returncode != 0 for result in history):
         _append_once(failures, "GITLEAKS.PROVENANCE.HISTORY")
 
     for fingerprint in EXPECTED_FINGERPRINTS:
         commit, path, rule, line_text = fingerprint.rsplit(":", 3)
-        ancestor = _git(root, "merge-base", "--is-ancestor", commit, SOURCE_HEAD)
+        ancestor = _git(root, "merge-base", "--is-ancestor", commit, SCAN_HEAD)
         if ancestor.returncode != 0:
             _append_once(failures, "GITLEAKS.PROVENANCE.HISTORY")
             continue

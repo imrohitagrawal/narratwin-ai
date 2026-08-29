@@ -166,12 +166,13 @@ def changed_files_for_stage_scope() -> list[str]:
             raise RuntimeError(expected_result.stderr.strip() or "git rev-parse exact head failed")
         if expected_result.stdout.strip() != head:
             raise RuntimeError("Stage 8 scope checkout does not match the exact head.")
-    preferred_base = os.environ.get("GITHUB_BASE_SHA", "").strip()
-    push_ref = os.environ.get("NARRATWIN_HEAD_REF", os.environ.get("GITHUB_REF_NAME", "")).strip()
-    branch_base = (event_name == "push" and push_ref != "main") or not preferred_base or preferred_base == NULL_GIT_SHA
-    base_candidates = ["origin/main", "main"] if branch_base else [preferred_base]
+    b=os.environ.get("GITHUB_BASE_SHA","").strip()
+    r=os.environ.get("NARRATWIN_HEAD_REF",os.environ.get("GITHUB_REF_NAME","")).strip()
+    f=(event_name=="push" and r!="main") or not b or b==NULL_GIT_SHA
+    candidates=([cut1_routes.ISSUE459_TRANSITION_BASE] if event_name=="push" and
+        r==cut1_routes.ISSUE459_BRANCH else ["origin/main","main"] if f else [b])
     merge_base=""; last_error=""
-    for candidate in base_candidates:
+    for candidate in candidates:
         result = run(["git", "merge-base", candidate, head])
         if result.returncode == 0 and result.stdout.strip():
             merge_base = result.stdout.strip()
@@ -281,8 +282,7 @@ def check_stage_marker_and_branch(failures: list[str]) -> None:
     current = read(".stage/current").strip()
     if current != "8":
         fail(".stage/current must contain 8 for Stage 8 quality.", failures)
-    branch = current_branch()
-    if not branch:
+    if not (branch := current_branch()):
         fail("Stage 8 branch evidence is unavailable or inconsistent.", failures)
         return
     if (

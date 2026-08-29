@@ -696,3 +696,17 @@ remain separate gates.
 | Propagate the gate | Phase 1 publication → Cut 1 → preserved-contract order and short-circuit tests | No later check can mask a Cut 1 failure |
 | Remove inherited CI false negative | OWNER amendment `5446644219`, corrective RED `219f310`, branch-canonical subprocess receipt and stdout/stderr mutation checks in `test_stage8_quality_gate.py` | Only path 12 is added; no Issue #434 verifier, Stage 8 checker, workflow, product, provider, media, or acceptance identity changes |
 | Preserve no-authority posture | Issue #456 preflight, v2 limitations, ADR, status, and stage plan | No product/runtime/provider/media, credential, egress, spend, deployment, release, production, or acceptance authority |
+
+## Issue #459 Lane A Cut 1 entry traceability
+
+| Requirement | Evidence | Preserved boundary |
+|---|---|---|
+| T01 exact entry contract | Issue 459 preflight, detailed preflight, fixed-base route and mutation tests | Six independent Meera/Raj/Myra × English × aspect cells; exact C1-M01–M10; no product work |
+| T02 authentic RED | stimulus-only corpus, closed evidence schema, test-owned literal expectations, typed unimplemented executor | Bootstrap is green; every future behavior remains RED without collection/setup failure |
+| Identity and lineage integrity | unauthorized identity/derivative, stale approval, presenter-substitution and blocked-audio cases | Meera evidence cannot substitute for Raj/Myra; #368 ownership is not duplicated |
+| Security, privacy and accessibility | credential/egress/spend, sensitive-observability, corrupt media, keyboard/contrast and metric mutations | Local, key-free, provider-disabled, zero-egress and zero-spend posture |
+| Progression authority | three independent entry reviews passed exact candidate `2cfced8034b207e2ad12c450d5281d8446060a85`; explicit T03/T05/T06 stops remain | #432 study and #449 provider decisions remain human-owned and out of scope |
+| T04 canonical controller | ADR `0068`, `backend/app/cut1_controlled_presenter.py`, thin quality adapter, frozen 136-case oracle and focused side-effect/media-authenticity tests | Pure validation only; mock/stub/placeholder/non-real-video output rejects; no provider/render/write behavior and no Cut 1 acceptance |
+| Hosted-prerequisite transition | PR `#461` main `285458f2`, authority comment `5460884573`, exact merge `b569e0b`, dual frozen/active route mutation tests | T04 source/history stays immutable; Issue `#460` paths are not transferred or charged; missing objects, ancestry/parent drift, unauthorized paths, rename/copy drift, and budget excess fail closed |
+| Hosted push/security convergence | Comments `5461065184`/`5461070398`, exact four-fingerprint checker, real-secret canary, pinned Issue #459 push-base regression | Frozen route remains 19 paths; active route is exactly 24; no wildcard/history skip or prerequisite ownership transfer |
+| T03 transition inventory | OWNER comment `5451872197`; Meera `SOURCE_READY_NO_DERIVATIVE`; exact Raj/Myra-only derivative paths | Originals remain immutable; repository activation waits for visual and independent provenance/privacy review |
