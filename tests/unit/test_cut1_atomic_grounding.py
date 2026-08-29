@@ -540,6 +540,91 @@ def test_cut1_mixed_presenter_claims_fail_closed(
     assert not run.evaluation.claim_supports
 
 
+def test_cut1_ambiguous_complete_presenter_matches_fail_closed(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import backend.app.cut1_grounding as cut1
+
+    service, principal, project_id = _seed_public_stage4(
+        tmp_path, monkeypatch, include_facts=True
+    )
+    run = _generate(service, principal, project_id, key="ambiguous-presenter-claims")
+    assert run.generated_script is not None
+    contract = cut1.load_cut1_grounding_contract(root=ROOT)
+    ambiguous = replace(
+        contract,
+        claim_mappings=tuple(
+            replace(
+                mapping,
+                claim_sha256_by_presenter={
+                    **mapping.claim_sha256_by_presenter,
+                    "myra": mapping.claim_sha256_by_presenter["meera"],
+                },
+            )
+            for mapping in contract.claim_mappings
+        ),
+    )
+    monkeypatch.setattr(cut1, "load_cut1_grounding_contract", lambda *, root: ambiguous)
+
+    evaluation = cut1.evaluate_cut1_grounding(
+        root=ROOT,
+        tenant_id=principal.tenant_id,
+        project_id=project_id,
+        run_id=run.run_id,
+        candidate=run.generated_script,
+        retrieved_context=list(run.retrieved_context),
+        prompt=REQUEST["prompt"],
+        all_chunks=service.rag_store.chunks_for_project(
+            tenant_id=principal.tenant_id, project_id=project_id
+        ),
+    )
+
+    assert evaluation.evaluation_status == "FAILED"
+    assert evaluation.unsupported_claim_count == 18
+    assert not evaluation.claim_supports
+
+
+@pytest.mark.parametrize("mutation", ["missing", "reordered"])
+def test_cut1_runtime_claim_sequence_must_be_complete_and_ordered(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    mutation: str,
+) -> None:
+    from backend.app.cut1_grounding import evaluate_cut1_grounding
+
+    service, principal, project_id = _seed_public_stage4(
+        tmp_path, monkeypatch, include_facts=True
+    )
+    run = _generate(service, principal, project_id, key=f"runtime-{mutation}-claim")
+    assert run.generated_script is not None
+    claims = list(run.generated_script.claims)
+    text = run.generated_script.text
+    if mutation == "missing":
+        removed = claims.pop()
+        text = text[: removed.script_span_start].rstrip()
+    else:
+        claims[-2:] = reversed(claims[-2:])
+    candidate = GeneratedScript(text=text, claims=claims)
+
+    evaluation = evaluate_cut1_grounding(
+        root=ROOT,
+        tenant_id=principal.tenant_id,
+        project_id=project_id,
+        run_id=run.run_id,
+        candidate=candidate,
+        retrieved_context=list(run.retrieved_context),
+        prompt=REQUEST["prompt"],
+        all_chunks=service.rag_store.chunks_for_project(
+            tenant_id=principal.tenant_id, project_id=project_id
+        ),
+    )
+
+    assert evaluation.evaluation_status == "FAILED"
+    assert evaluation.unsupported_claim_count == len(claims)
+    assert not evaluation.claim_supports
+
+
 def test_atomic_fact_asset_bytes_are_immutable(tmp_path: Path) -> None:
     from backend.app.cut1_grounding import Cut1GroundingError, load_cut1_grounding_contract
 

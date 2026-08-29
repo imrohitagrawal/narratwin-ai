@@ -533,6 +533,11 @@ class NarrationService:
             markers = tuple(int(value) for value in CITATION_PATTERN.findall(row.review_text))
             valid = (
                 row.presenter_id in PRESENTERS
+                and (row.presenter_id, row.presenter_version, row.registry_sha256) == (
+                    row.presenter_binding.presenter_id,
+                    row.presenter_binding.presenter_version,
+                    row.presenter_binding.registry_sha256,
+                )
                 and run.style == CUT1_STYLE
                 and evaluation.policy_version == CUT1_POLICY_VERSION
                 and len(cast(Any, run.generated_script).claims) == len(evaluation.claim_supports) == 18
