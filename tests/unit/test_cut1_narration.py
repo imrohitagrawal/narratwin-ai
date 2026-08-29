@@ -163,15 +163,31 @@ def _service(narration: ModuleType, tmp_path: Path, presenter_id: str = "meera",
 
 
 @pytest.mark.parametrize("presenter_id", ["myra", "raj"])
-def test_g421_17_non_selected_presenter_cannot_create_narration_authority(
+def test_issue459_governed_fallback_presenter_creates_bound_narration_authority(
     narration: ModuleType, tmp_path: Path, presenter_id: str
 ) -> None:
     service, principal, binding, project_id = _service(narration, tmp_path, presenter_id)
     run = service.stage4.walkthrough_runs["run_narration"]
 
+    draft = service.create_draft(
+        principal=principal, project_id=project_id, source_run_id=run.run_id,
+        presenter_binding=binding, review_text=run.accepted_script_text,
+    )
+
+    assert draft.presenter_id == presenter_id
+    assert draft.spoken_text == narration.canonical_presenter_text(presenter_id)
+
+
+def test_issue459_cross_presenter_run_and_binding_are_rejected(
+    narration: ModuleType, tmp_path: Path
+) -> None:
+    service, principal, _, project_id = _service(narration, tmp_path, "myra")
+    _, raj_binding = _registry_binding("raj")
+    run = service.stage4.walkthrough_runs["run_narration"]
+
     _assert_code(narration, "AUTHORITY_MISMATCH", lambda: service.create_draft(
         principal=principal, project_id=project_id, source_run_id=run.run_id,
-        presenter_binding=binding, review_text=narration.canonical_presenter_text(presenter_id),
+        presenter_binding=raj_binding, review_text=run.accepted_script_text,
     ))
 
 

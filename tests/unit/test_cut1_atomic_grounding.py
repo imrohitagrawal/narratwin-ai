@@ -463,7 +463,7 @@ def test_owner_asserted_facts_are_classified_and_separate_from_repository_source
 
 
 @pytest.mark.parametrize("presenter_id", ["myra", "raj"])
-def test_cut1_owner_selection_refuses_non_selected_presenters(
+def test_cut1_governed_fallback_presenter_is_independently_grounded(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     presenter_id: str,
@@ -475,12 +475,43 @@ def test_cut1_owner_selection_refuses_non_selected_presenters(
         presenter_id=presenter_id,
     )
 
-    run = _generate(service, principal, project_id, key=f"{presenter_id}-not-selected")
+    run = _generate(service, principal, project_id, key=f"{presenter_id}-grounded")
+
+    assert run.status == "COMPLETED"
+    assert run.accepted_script_text == run.generated_script.text
+    assert run.evaluation is not None
+    assert run.evaluation.policy_version == "cut1-atomic-grounding-v1"
+    assert run.evaluation.unsupported_claim_count == 0
+    assert len(run.evaluation.claim_supports) == 18
+    assert all(support.proposition_ids for support in run.evaluation.claim_supports)
+
+
+def test_cut1_mixed_presenter_claims_fail_closed(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    service, principal, project_id = _seed_public_stage4(
+        tmp_path,
+        monkeypatch,
+        include_facts=True,
+        presenter_id="myra",
+    )
+    generator = CanonicalCut1Generator("myra")
+    original_generate = generator.generate_script
+
+    def mixed_generate(**kwargs: Any) -> GeneratedScript:
+        candidate = original_generate(**kwargs)
+        raj_claim = CanonicalCut1Generator("raj").generate_script(**kwargs).claims[0]
+        return replace(candidate, claims=[raj_claim, *candidate.claims[1:]])
+
+    generator.generate_script = mixed_generate  # type: ignore[method-assign]
+    service.llm = generator  # type: ignore[assignment]
+
+    run = _generate(service, principal, project_id, key="mixed-presenter-claims")
 
     assert run.status == "FAILED"
     assert run.accepted_script_text is None
     assert run.evaluation is not None
-    assert run.evaluation.policy_version == "cut1-atomic-grounding-v1"
     assert run.evaluation.unsupported_claim_count == 18
     assert not run.evaluation.claim_supports
 
@@ -639,7 +670,7 @@ def test_g421_17_restore_rejects_cut1_style_policy_disagreement(
     assert run.run_id not in restored.walkthrough_runs
 
 
-@pytest.mark.parametrize("presenter_id", ["meera"])
+@pytest.mark.parametrize("presenter_id", ["meera", "myra", "raj"])
 def test_public_stage4_and_issue382_lifecycle_persists_one_bound_receipt(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
