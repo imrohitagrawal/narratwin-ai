@@ -11,6 +11,7 @@ from typing import Any, Callable, cast
 import pytest
 
 import backend.app.presenter_registry as registry_module
+from backend.app.cut1_controlled_presenter import REGISTRY_SHA256 as T04_REGISTRY_SHA256
 from backend.app.presenter_registry import PresenterRegistryError
 
 
@@ -107,6 +108,19 @@ def _copy_bound_files(tmp_path: Path) -> None:
     shutil.copy2(SOURCE_REGISTRY_PATH, target)
 
 
+def _webp_chunks(path: Path) -> list[bytes]:
+    data = path.read_bytes()
+    assert data[:4] == b"RIFF" and data[8:12] == b"WEBP"
+    assert int.from_bytes(data[4:8], "little") + 8 == len(data)
+    offset, chunks = 12, []
+    while offset < len(data):
+        size = int.from_bytes(data[offset + 4 : offset + 8], "little")
+        chunks.append(data[offset : offset + 4])
+        offset += 8 + size + size % 2
+    assert offset == len(data)
+    return chunks
+
+
 def test_original_identity_anchors_and_source_registry_remain_byte_identical() -> None:
     assert hashlib.sha256(SOURCE_REGISTRY_PATH.read_bytes()).hexdigest() == (
         SOURCE_REGISTRY_FILE_SHA256
@@ -115,6 +129,23 @@ def test_original_identity_anchors_and_source_registry_remain_byte_identical() -
         candidate = ROOT / path
         assert candidate.is_file() and not candidate.is_symlink()
         assert hashlib.sha256(candidate.read_bytes()).hexdigest() == expected
+
+
+def test_source_and_derivative_digest_meanings_remain_distinct() -> None:
+    source = registry_module.load_cut1_presenter_registry(asset_root=ROOT)
+    derivatives = _load()
+    assert T04_REGISTRY_SHA256 == SOURCE_REGISTRY_FILE_SHA256
+    assert registry_module.CANONICAL_PRODUCTION_SHA256 == (
+        "14838d74e2ff35ca4af5336d937eb206ec77a8351ba6b7cd86bfdc6929913855"
+    )
+    assert source.manifest_sha256 == (
+        "9671da9ef076a56d86c2e81307d71e83356e0b88050e1bae7ef8960919e50caa"
+    )
+    assert derivatives.manifest_sha256 not in {
+        SOURCE_REGISTRY_FILE_SHA256,
+        registry_module.CANONICAL_PRODUCTION_SHA256,
+        source.manifest_sha256,
+    }
 
 
 def test_default_derivative_registry_binds_exact_raj_and_myra_assets() -> None:
@@ -142,6 +173,24 @@ def test_default_derivative_registry_binds_exact_raj_and_myra_assets() -> None:
         assert derivative.media_type == "image/webp"
         assert derivative.width <= derivative.candidate_width
         assert derivative.height <= derivative.candidate_height
+
+
+def test_derivative_webps_are_single_frame_and_metadata_free() -> None:
+    for path, _digest, _width, _height, _size, _candidate in DERIVATIVES.values():
+        chunks = _webp_chunks(ROOT / path)
+        assert chunks == [b"VP8 "]
+        assert not {b"EXIF", b"XMP ", b"ANIM", b"ANMF", b"ICCP"} & set(chunks)
+
+
+def test_meera_is_explicitly_source_ready_without_a_derivative() -> None:
+    readiness = _api("DerivativeReadiness")
+    registry = _load()
+    assert registry.source_ready_without_derivative == frozenset({"meera"})
+    assert registry.readiness("meera", "1.0.0") is readiness.SOURCE_READY_NO_DERIVATIVE
+    assert registry.readiness("myra", "1.0.0") is readiness.DERIVATIVE_READY
+    assert registry.readiness("raj", "1.0.0") is readiness.DERIVATIVE_READY
+    _assert_code("DERIVATIVE_STALE", lambda: registry.readiness("meera", "0.9.0"))
+    _assert_code("DERIVATIVE_NOT_FOUND", lambda: registry.readiness("other", "1.0.0"))
 
 
 def test_derivative_readiness_is_controlled_local_reviewed_and_provider_free() -> None:
@@ -213,6 +262,8 @@ def test_binding_keeps_source_registry_and_derivative_authorities_distinct() -> 
         lambda data: data.update({"unknown": True}),
         lambda data: data.update({"schema_version": "future"}),
         lambda data: data.update({"manifest_version": "9.9.9"}),
+        lambda data: data.update({"source_ready_without_derivative": []}),
+        lambda data: data.update({"source_ready_without_derivative": ["meera", "raj"]}),
         lambda data: data["source_registry"].update({"file_sha256": "0" * 64}),
         lambda data: data["source_registry"].update({"manifest_sha256": "1" * 64}),
         lambda data: data["posture"].update({"publication_allowed": True}),

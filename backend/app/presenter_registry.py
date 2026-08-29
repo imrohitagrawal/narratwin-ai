@@ -14,13 +14,19 @@ from typing import Any, Mapping, NoReturn, cast
 
 MAX_REGISTRY_BYTES, MAX_ASSET_BYTES = 65_536, 500_000
 REGISTRY_SCHEMA_VERSION = "cut1-presenter-registry-v1"
+DERIVATIVE_SCHEMA_VERSION = "cut1-presenter-derivatives-v1"
 PRODUCTION_IDS = frozenset({"meera", "myra", "raj"})
+DERIVATIVE_IDS = frozenset({"myra", "raj"})
 TEST_PERSONAL_ID = "future-personal-test"
 VERSION_PATTERN = re.compile(r"^[1-9][0-9]*\.[0-9]+\.[0-9]+\Z")
 IDENTIFIER_PATTERN = re.compile(r"^[a-z0-9][a-z0-9-]{0,63}\Z")
 TRACE_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}\Z")
 SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}\Z")
 CANONICAL_PRODUCTION_SHA256 = "14838d74e2ff35ca4af5336d937eb206ec77a8351ba6b7cd86bfdc6929913855"
+SOURCE_REGISTRY_FILE_SHA256 = "eb31a953b85ffaf2c43f54e4da7fb89eda740c724967a9301f726c6091ab01c2"
+CANONICAL_DERIVATIVE_MANIFEST_SHA256 = (
+    "e1acb069dd249b2b2b02b8daa10538446a8fa2cac7261a4b8ddbaacdc3cd9761"
+)
 CANONICAL_ASSETS = {
     "meera": ("frontend/public/demo/narratwin-synthetic-presenter.webp",
               "d8c4ecb2acadcc3440b7be345b5620717ea0644a5643e41986b9d3f2ea1c30d1"),
@@ -50,6 +56,11 @@ class PresenterLifecycle(StrEnum):
     REVOKED = "REVOKED"
     DELETED = "DELETED"
     DISABLED = "DISABLED"
+
+
+class DerivativeReadiness(StrEnum):
+    SOURCE_READY_NO_DERIVATIVE = "SOURCE_READY_NO_DERIVATIVE"
+    DERIVATIVE_READY = "DERIVATIVE_READY"
 
 
 @dataclass(frozen=True)
@@ -130,6 +141,54 @@ class PresenterTraceBinding:
     voice_reference_version: str
     registry_version: str
     registry_sha256: str
+    binding_sha256: str
+
+
+@dataclass(frozen=True)
+class PresenterDerivative:
+    presenter_id: str
+    presenter_version: str
+    source_asset_path: str
+    source_asset_sha256: str
+    candidate_sha256: str
+    candidate_width: int
+    candidate_height: int
+    path: str
+    sha256: str
+    width: int
+    height: int
+    byte_count: int
+    media_type: str
+    generation_method: str
+    attempt_count: int
+    max_attempts: int
+    retry_count: int
+    visual_review: str
+    provenance_privacy_review: str
+    reviewed_candidate_sha256: str
+    review_current_as_of: str
+    hands_visible: bool
+    professional_gesture: bool
+    complete_head_and_hands: bool
+    identity_preserved: bool
+    metadata_stripped: bool
+    consent_basis: str
+    permitted_use: str
+    publication_allowed: bool
+    private_source_committed: bool
+    deletion_posture: str
+    rejected_candidate_disposition: str
+
+
+@dataclass(frozen=True)
+class PresenterDerivativeBinding:
+    presenter_id: str
+    presenter_version: str
+    source_registry_sha256: str
+    source_asset_sha256: str
+    derivative_manifest_sha256: str
+    derivative_asset_sha256: str
+    derivative_path: str
     binding_sha256: str
 
 
@@ -498,3 +557,241 @@ def load_cut1_presenter_registry(*, asset_root: Path | None = None) -> Presenter
     repository_root = Path(__file__).resolve().parents[2]
     return load_presenter_registry(Path(__file__).with_name("presenter_registry.json"),
                                    asset_root=asset_root or repository_root)
+
+
+def _validate_derivative_asset(derivative: PresenterDerivative, asset_root: Path) -> None:
+    root = asset_root.resolve()
+    relative = PurePosixPath(derivative.path)
+    if relative.is_absolute() or ".." in relative.parts or "\\" in derivative.path \
+            or relative.suffix != ".webp":
+        _fail("DERIVATIVE_ASSET_UNSAFE", "Derivative path is not repository-contained WebP.")
+    candidate = asset_root / derivative.path
+    if not candidate.exists():
+        _fail("DERIVATIVE_ASSET_MISSING", "Presenter derivative asset is missing.")
+    if candidate.is_symlink() or not candidate.is_file() \
+            or not candidate.resolve().is_relative_to(root):
+        _fail("DERIVATIVE_ASSET_UNSAFE", "Presenter derivative must be a regular local file.")
+    with candidate.open("rb") as stream:
+        data = stream.read(MAX_ASSET_BYTES)
+    if not data or len(data) >= MAX_ASSET_BYTES or len(data) != derivative.byte_count:
+        _fail("DERIVATIVE_ASSET_METADATA", "Presenter derivative size is outside its bound.")
+    if hashlib.sha256(data).hexdigest() != derivative.sha256:
+        _fail("DERIVATIVE_ASSET_CHECKSUM", "Presenter derivative checksum does not match.")
+    try:
+        dimensions = _probe_webp(data)
+    except PresenterRegistryError:
+        _fail("DERIVATIVE_ASSET_METADATA", "Presenter derivative is not a decodable WebP.")
+    if dimensions != (derivative.width, derivative.height):
+        _fail("DERIVATIVE_ASSET_METADATA", "Presenter derivative dimensions do not match.")
+
+
+def _parse_derivative(row: Mapping[str, Any], source: PresenterRegistry) -> PresenterDerivative:
+    source_asset = cast(dict[str, Any], row["source_asset"])
+    candidate = cast(dict[str, Any], row["candidate"])
+    asset = cast(dict[str, Any], row["asset"])
+    conversion = cast(dict[str, Any], row["conversion"])
+    review = cast(dict[str, Any], row["review"])
+    rights = cast(dict[str, Any], row["rights"])
+    presenter_id = cast(str, row["presenter_id"])
+    presenter_version = cast(str, row["presenter_version"])
+    identity = source.get(presenter_id, presenter_version)
+    original = cast(AssetMetadata, identity.asset)
+    if (source_asset["path"], source_asset["sha256"], source_asset["width"],
+            source_asset["height"]) != (
+                original.path, original.sha256, original.width, original.height):
+        _fail("DERIVATIVE_SOURCE_ASSET", "Derivative source identity binding drifted.")
+    derivative = PresenterDerivative(
+        presenter_id=presenter_id,
+        presenter_version=presenter_version,
+        source_asset_path=cast(str, source_asset["path"]),
+        source_asset_sha256=cast(str, source_asset["sha256"]),
+        candidate_sha256=cast(str, candidate["sha256"]),
+        candidate_width=cast(int, candidate["width"]),
+        candidate_height=cast(int, candidate["height"]),
+        path=cast(str, asset["path"]),
+        sha256=cast(str, asset["sha256"]),
+        width=cast(int, asset["width"]),
+        height=cast(int, asset["height"]),
+        byte_count=cast(int, asset["byte_count"]),
+        media_type=cast(str, asset["media_type"]),
+        generation_method=cast(str, candidate["generation_method"]),
+        attempt_count=cast(int, candidate["attempt_count"]),
+        max_attempts=cast(int, candidate["max_attempts"]),
+        retry_count=cast(int, candidate["retry_count"]),
+        visual_review=cast(str, review["visual_review"]),
+        provenance_privacy_review=cast(str, review["provenance_privacy_review"]),
+        reviewed_candidate_sha256=cast(str, review["reviewed_candidate_sha256"]),
+        review_current_as_of=cast(str, review["review_current_as_of"]),
+        hands_visible=cast(bool, review["hands_visible"]),
+        professional_gesture=cast(bool, review["professional_gesture"]),
+        complete_head_and_hands=cast(bool, review["complete_head_and_hands"]),
+        identity_preserved=cast(bool, review["identity_preserved"]),
+        metadata_stripped=cast(bool, conversion["metadata_stripped"]),
+        consent_basis=cast(str, rights["consent_basis"]),
+        permitted_use=cast(str, rights["permitted_use"]),
+        publication_allowed=cast(bool, rights["publication_allowed"]),
+        private_source_committed=cast(bool, rights["private_source_committed"]),
+        deletion_posture=cast(str, rights["deletion_posture"]),
+        rejected_candidate_disposition=cast(str, rights["rejected_candidate_disposition"]),
+    )
+    if derivative.media_type != "image/webp" \
+            or derivative.width > derivative.candidate_width \
+            or derivative.height > derivative.candidate_height:
+        _fail("DERIVATIVE_ASSET_METADATA", "Derivative media type or no-upscale bound drifted.")
+    return derivative
+
+
+class PresenterDerivativeRegistry:
+    def __init__(
+        self,
+        derivatives: Mapping[str, PresenterDerivative],
+        *,
+        asset_root: Path,
+        source_registry_file_sha256: str,
+        source_registry_manifest_sha256: str,
+        manifest_sha256: str,
+        posture: Mapping[str, Any],
+        source_ready_without_derivative: frozenset[str],
+    ) -> None:
+        self._derivatives = dict(derivatives)
+        self._asset_root = asset_root
+        self.source_registry_file_sha256 = source_registry_file_sha256
+        self.source_registry_manifest_sha256 = source_registry_manifest_sha256
+        self.manifest_sha256 = manifest_sha256
+        self.posture = MappingProxyType(dict(posture))
+        self.source_ready_without_derivative = source_ready_without_derivative
+        for derivative in self._derivatives.values():
+            _validate_derivative_asset(derivative, asset_root)
+
+    @property
+    def derivatives(self) -> Mapping[str, PresenterDerivative]:
+        return MappingProxyType(self._derivatives)
+
+    def get(self, presenter_id: str, presenter_version: str) -> PresenterDerivative:
+        derivative = self._derivatives.get(presenter_id)
+        if derivative is None:
+            _fail("DERIVATIVE_NOT_FOUND", "Presenter has no controlled-local derivative.")
+        if derivative.presenter_version != presenter_version:
+            _fail("DERIVATIVE_STALE", "Presenter derivative version is stale or unknown.")
+        _validate_derivative_asset(derivative, self._asset_root)
+        return derivative
+
+    def readiness(self, presenter_id: str, presenter_version: str) -> DerivativeReadiness:
+        if presenter_id in self.source_ready_without_derivative:
+            if presenter_version != "1.0.0":
+                _fail("DERIVATIVE_STALE", "Presenter derivative version is stale or unknown.")
+            return DerivativeReadiness.SOURCE_READY_NO_DERIVATIVE
+        if presenter_id not in self._derivatives:
+            _fail("DERIVATIVE_NOT_FOUND", "Presenter is outside derivative readiness authority.")
+        self.get(presenter_id, presenter_version)
+        return DerivativeReadiness.DERIVATIVE_READY
+
+    def bind(self, presenter_id: str, presenter_version: str) -> PresenterDerivativeBinding:
+        derivative = self.get(presenter_id, presenter_version)
+        values = {
+            "presenter_id": derivative.presenter_id,
+            "presenter_version": derivative.presenter_version,
+            "source_registry_sha256": self.source_registry_manifest_sha256,
+            "source_asset_sha256": derivative.source_asset_sha256,
+            "derivative_manifest_sha256": self.manifest_sha256,
+            "derivative_asset_sha256": derivative.sha256,
+            "derivative_path": derivative.path,
+        }
+        return PresenterDerivativeBinding(**values, binding_sha256=_sha256_json(values))
+
+    def verify_binding(self, binding: PresenterDerivativeBinding) -> None:
+        if not isinstance(binding, PresenterDerivativeBinding):
+            _fail("DERIVATIVE_BINDING_MISMATCH", "Derivative binding is malformed.")
+        values = {
+            "presenter_id": binding.presenter_id,
+            "presenter_version": binding.presenter_version,
+            "source_registry_sha256": binding.source_registry_sha256,
+            "source_asset_sha256": binding.source_asset_sha256,
+            "derivative_manifest_sha256": binding.derivative_manifest_sha256,
+            "derivative_asset_sha256": binding.derivative_asset_sha256,
+            "derivative_path": binding.derivative_path,
+        }
+        try:
+            derivative = self.get(binding.presenter_id, binding.presenter_version)
+        except PresenterRegistryError:
+            _fail("DERIVATIVE_BINDING_MISMATCH", "Derivative binding presenter is invalid.")
+        if (
+            binding.source_registry_sha256 != self.source_registry_manifest_sha256
+            or binding.source_asset_sha256 != derivative.source_asset_sha256
+            or binding.derivative_manifest_sha256 != self.manifest_sha256
+            or binding.derivative_asset_sha256 != derivative.sha256
+            or binding.derivative_path != derivative.path
+            or binding.binding_sha256 != _sha256_json(values)
+        ):
+            _fail("DERIVATIVE_BINDING_MISMATCH", "Derivative binding is stale or mismatched.")
+
+
+def load_presenter_derivatives(
+    path: Path,
+    *,
+    asset_root: Path,
+    source_registry_path: Path,
+) -> PresenterDerivativeRegistry:
+    if path.is_symlink() or not path.is_file():
+        _fail("DERIVATIVE_MALFORMED", "Derivative manifest must be a regular file.")
+    with path.open("rb") as stream:
+        data = stream.read(MAX_REGISTRY_BYTES + 1)
+    if len(data) > MAX_REGISTRY_BYTES:
+        _fail("DERIVATIVE_TOO_LARGE", "Derivative manifest exceeds its byte limit.")
+    try:
+        payload = json.loads(data.decode("utf-8"), object_pairs_hook=_no_duplicate_keys)
+    except (UnicodeDecodeError, json.JSONDecodeError, _DuplicateKey):
+        _fail("DERIVATIVE_MALFORMED", "Derivative manifest JSON is malformed.")
+    if not isinstance(payload, dict):
+        _fail("DERIVATIVE_SCHEMA", "Derivative manifest root is not an object.")
+    try:
+        manifest_sha256 = _sha256_json(payload)
+    except (TypeError, UnicodeEncodeError):
+        _fail("DERIVATIVE_SCHEMA", "Derivative manifest is not canonical JSON.")
+    if manifest_sha256 != CANONICAL_DERIVATIVE_MANIFEST_SHA256:
+        _fail("DERIVATIVE_CANONICAL", "Reviewed derivative manifest fields drifted.")
+    if source_registry_path.is_symlink() or not source_registry_path.is_file():
+        _fail("DERIVATIVE_SOURCE_REGISTRY", "Source registry is not a regular file.")
+    source_bytes = source_registry_path.read_bytes()
+    source_file_sha256 = hashlib.sha256(source_bytes).hexdigest()
+    source_row = cast(dict[str, Any], payload["source_registry"])
+    if source_file_sha256 != SOURCE_REGISTRY_FILE_SHA256 \
+            or source_row["file_sha256"] != SOURCE_REGISTRY_FILE_SHA256:
+        _fail("DERIVATIVE_SOURCE_REGISTRY", "Source registry file binding drifted.")
+    source_registry = load_presenter_registry(
+        source_registry_path,
+        asset_root=asset_root,
+    )
+    if source_row["path"] != "backend/app/presenter_registry.json" \
+            or source_row["manifest_sha256"] != source_registry.manifest_sha256:
+        _fail("DERIVATIVE_SOURCE_REGISTRY", "Source registry authority binding drifted.")
+    rows = cast(list[dict[str, Any]], payload["derivatives"])
+    source_ready = payload["source_ready_without_derivative"]
+    if source_ready != ["meera"]:
+        _fail("DERIVATIVE_ID_SET", "Source-only presenter readiness is not exact.")
+    if [row["presenter_id"] for row in rows] != sorted(DERIVATIVE_IDS):
+        _fail("DERIVATIVE_ID_SET", "Derivative presenter set or order is not exact.")
+    parsed = [_parse_derivative(row, source_registry) for row in rows]
+    derivatives = {derivative.presenter_id: derivative for derivative in parsed}
+    if set(derivatives) != DERIVATIVE_IDS or len(derivatives) != len(parsed):
+        _fail("DERIVATIVE_ID_SET", "Derivative presenter identities are not exact.")
+    return PresenterDerivativeRegistry(
+        derivatives,
+        asset_root=asset_root,
+        source_registry_file_sha256=source_file_sha256,
+        source_registry_manifest_sha256=source_registry.manifest_sha256,
+        manifest_sha256=manifest_sha256,
+        posture=cast(dict[str, Any], payload["posture"]),
+        source_ready_without_derivative=frozenset(source_ready),
+    )
+
+
+def load_cut1_presenter_derivatives(
+    *, asset_root: Path | None = None
+) -> PresenterDerivativeRegistry:
+    repository_root = Path(__file__).resolve().parents[2]
+    return load_presenter_derivatives(
+        repository_root / "docs/governance/cut1-presenter-derivatives-v1.json",
+        asset_root=asset_root or repository_root,
+        source_registry_path=Path(__file__).with_name("presenter_registry.json"),
+    )
