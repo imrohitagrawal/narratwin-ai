@@ -4,6 +4,7 @@ import copy
 import hashlib
 import json
 import shutil
+import subprocess
 from dataclasses import replace
 from pathlib import Path
 from typing import Any, Callable, cast
@@ -121,6 +122,30 @@ def _webp_chunks(path: Path) -> list[bytes]:
     return chunks
 
 
+def _run_webp_decode(path: Path) -> subprocess.CompletedProcess[str]:
+    ffmpeg = shutil.which("ffmpeg")
+    assert ffmpeg is not None, "FFmpeg is required to prove executable WebP decoding"
+    return subprocess.run(
+        [
+            ffmpeg,
+            "-v",
+            "error",
+            "-xerror",
+            "-i",
+            str(path),
+            "-frames:v",
+            "1",
+            "-f",
+            "null",
+            "-",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=10,
+    )
+
+
 def test_original_identity_anchors_and_source_registry_remain_byte_identical() -> None:
     assert hashlib.sha256(SOURCE_REGISTRY_PATH.read_bytes()).hexdigest() == (
         SOURCE_REGISTRY_FILE_SHA256
@@ -180,6 +205,29 @@ def test_derivative_webps_are_single_frame_and_metadata_free() -> None:
         chunks = _webp_chunks(ROOT / path)
         assert chunks == [b"VP8 "]
         assert not {b"EXIF", b"XMP ", b"ANIM", b"ANMF", b"ICCP"} & set(chunks)
+
+
+def test_derivative_webps_decode_one_complete_frame() -> None:
+    for path, _digest, _width, _height, _size, _candidate in DERIVATIVES.values():
+        result = _run_webp_decode(ROOT / path)
+        assert result.returncode == 0, result.stderr
+
+
+def test_corrupt_compressed_webp_payload_fails_executable_decode(tmp_path: Path) -> None:
+    source = ROOT / DERIVATIVES["raj"][0]
+    data = bytearray(source.read_bytes())
+    assert data[12:16] == b"VP8 "
+    payload_size = int.from_bytes(data[16:20], "little")
+    payload_start, payload_end = 20, 20 + payload_size
+    assert data[payload_start + 3 : payload_start + 6] == b"\x9d\x01\x2a"
+    data[payload_start + 10 : payload_end] = b"\xff" * (payload_size - 10)
+    corrupt = tmp_path / "corrupt-compressed-payload.webp"
+    corrupt.write_bytes(data)
+
+    assert _webp_chunks(corrupt) == [b"VP8 "]
+    assert registry_module._probe_webp(bytes(data)) == (1024, 1536)
+    result = _run_webp_decode(corrupt)
+    assert result.returncode != 0, "corrupt compressed pixels must fail actual decoding"
 
 
 def test_meera_is_explicitly_source_ready_without_a_derivative() -> None:
