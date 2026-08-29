@@ -22,6 +22,11 @@ SOURCE_REGISTRY_PATH = ROOT / "backend/app/presenter_registry.json"
 SOURCE_REGISTRY_FILE_SHA256 = (
     "eb31a953b85ffaf2c43f54e4da7fb89eda740c724967a9301f726c6091ab01c2"
 )
+MYRA_ATTEMPT1_SHA256 = "4f4fbd0f1f125cfb39b052b4717d8d30feb43dc226fcd940c1ef28b7ca48e360"
+MYRA_ATTEMPT2_AUTHORITY_REF = (
+    "https://github.com/imrohitagrawal/narratwin-ai/issues/459"
+    "#issuecomment-5464690216"
+)
 SOURCE_ASSETS = {
     "meera": (
         "frontend/public/demo/narratwin-synthetic-presenter.webp",
@@ -233,17 +238,19 @@ def test_derivative_readiness_is_controlled_local_reviewed_and_provider_free() -
         "egress_attempt_count": 0,
         "spend_microusd": 0,
     }
-    for derivative in registry.derivatives.values():
+    for presenter_id, derivative in registry.derivatives.items():
         assert derivative.generation_method == "OpenAI built-in image edit (gpt-image-2.0)"
-        assert (derivative.attempt_count, derivative.max_attempts, derivative.retry_count) == (
-            1,
-            2,
-            0,
-        )
+        expected_attempts = (2, 2, 1) if presenter_id == "myra" else (1, 2, 0)
+        assert (
+            derivative.attempt_count,
+            derivative.max_attempts,
+            derivative.retry_count,
+        ) == expected_attempts
         assert derivative.visual_review == "INDEPENDENT_ACCEPTED"
         assert derivative.provenance_privacy_review == "INDEPENDENT_ACCEPTED"
         assert derivative.reviewed_candidate_sha256 == derivative.candidate_sha256
-        assert derivative.review_current_as_of == "2026-08-29"
+        expected_review_date = "2026-08-30" if presenter_id == "myra" else "2026-08-29"
+        assert derivative.review_current_as_of == expected_review_date
         assert derivative.hands_visible is True
         assert derivative.professional_gesture is True
         assert derivative.complete_head_and_hands is True
@@ -253,7 +260,12 @@ def test_derivative_readiness_is_controlled_local_reviewed_and_provider_free() -
         assert derivative.permitted_use == "CONTROLLED_LOCAL_CUT1"
         assert derivative.publication_allowed is False
         assert derivative.private_source_committed is False
-        assert derivative.rejected_candidate_disposition == "NONE_REJECTED_ONE_ATTEMPT_USED"
+        expected_disposition = (
+            f"OWNER_SUPERSEDED_VISUAL_REFINEMENT:{MYRA_ATTEMPT1_SHA256}"
+            if presenter_id == "myra"
+            else "NONE_REJECTED_ONE_ATTEMPT_USED"
+        )
+        assert derivative.rejected_candidate_disposition == expected_disposition
         assert derivative.deletion_posture == (
             "PRIVATE_SOURCE_RETAINED_PENDING_OWNER_CLEANUP_AFTER_MERGE"
         )
@@ -265,10 +277,13 @@ def test_provenance_privacy_and_authority_references_are_exact_and_resolve() -> 
     heading = "## Issue #459 T03 controlled-local presenter derivatives"
     assert heading in notice.read_text(encoding="utf-8")
     for row in manifest["derivatives"]:
-        assert row["review"]["authority_ref"] == (
-            "https://github.com/imrohitagrawal/narratwin-ai/issues/459"
+        expected_authority = (
+            MYRA_ATTEMPT2_AUTHORITY_REF
+            if row["presenter_id"] == "myra"
+            else "https://github.com/imrohitagrawal/narratwin-ai/issues/459"
             "#issuecomment-5463568867"
         )
+        assert row["review"]["authority_ref"] == expected_authority
         assert row["review"]["provenance_privacy_review"] == "INDEPENDENT_ACCEPTED"
         assert row["rights"]["privacy_posture"] == (
             "PRIVATE_GENERATED_SOURCE_RESTRICTED_LOCAL_ONLY"
@@ -277,6 +292,25 @@ def test_provenance_privacy_and_authority_references_are_exact_and_resolve() -> 
             "docs/THIRD_PARTY_NOTICES.md"
             "#issue-459-t03-controlled-local-presenter-derivatives"
         )
+
+
+def test_myra_attempt2_lineage_is_exact_and_raj_remains_attempt1() -> None:
+    manifest = _manifest()
+    myra, raj = _row(manifest, "myra"), _row(manifest, "raj")
+
+    assert myra["candidate"]["attempt_count"] == 2
+    assert myra["candidate"]["max_attempts"] == 2
+    assert myra["candidate"]["retry_count"] == 1
+    assert myra["candidate"]["sha256"] != MYRA_ATTEMPT1_SHA256
+    assert myra["rights"]["rejected_candidate_disposition"] == (
+        f"OWNER_SUPERSEDED_VISUAL_REFINEMENT:{MYRA_ATTEMPT1_SHA256}"
+    )
+    assert myra["review"]["authority_ref"] == MYRA_ATTEMPT2_AUTHORITY_REF
+
+    assert raj["candidate"]["attempt_count"] == 1
+    assert raj["candidate"]["retry_count"] == 0
+    assert raj["candidate"]["sha256"] == DERIVATIVES["raj"][5]
+    assert raj["asset"]["sha256"] == DERIVATIVES["raj"][1]
 
 
 def test_binding_keeps_source_registry_and_derivative_authorities_distinct() -> None:
