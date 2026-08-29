@@ -1428,7 +1428,7 @@ def check_exact_route(
                          "changed_files": sorted(files)},
             )
             objective = preflight.get("objective") if isinstance(preflight, dict) else None
-            authority = (
+            t05a_authority = (
                 ISSUE459_T05A_BASE,
                 ISSUE459_T05A_AUTHORITY_COMMENT,
                 ISSUE459_T05A_AUTHORITY_SHA256,
@@ -1437,7 +1437,9 @@ def check_exact_route(
                 f"Issue #459 T05A governance preflight failed: {finding.code}"
                 for finding in findings
             )
-            if not isinstance(objective, str) or any(value not in objective for value in authority):
+            if not isinstance(objective, str) or any(
+                value not in objective for value in t05a_authority
+            ):
                 failures.append("Issue #459 T05A governance authority drifted.")
         except (OSError, ValueError, TypeError) as error:
             failures.append(f"Issue #459 T05A governance preflight failed closed: {error}")
@@ -1452,7 +1454,7 @@ def check_exact_route(
                          "changed_files": sorted(files)},
             )
             objective = preflight.get("objective") if isinstance(preflight, dict) else None
-            authority = (
+            t03_authority = (
                 ISSUE459_T03_BASE,
                 ISSUE459_T03_AUTHORITY_COMMENT,
                 ISSUE459_T03_AUTHORITY_SHA256,
@@ -1467,7 +1469,9 @@ def check_exact_route(
                 f"Issue #459 T03 governance preflight failed: {finding.code}"
                 for finding in findings
             )
-            if not isinstance(objective, str) or any(value not in objective for value in authority):
+            if not isinstance(objective, str) or any(
+                value not in objective for value in t03_authority
+            ):
                 failures.append("Issue #459 T03 governance authority drifted.")
         except (OSError, ValueError, TypeError) as error:
             failures.append(f"Issue #459 T03 governance preflight failed closed: {error}")
