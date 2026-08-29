@@ -44,11 +44,11 @@ SOURCE_ASSETS = {
 DERIVATIVES = {
     "myra": (
         "frontend/public/demo/cut1/myra-waist-up.webp",
-        "76560538db614d6e9698ef5533a03fac60da10cb8a72b521a93cbffeaa6bd0fa",
+        "46390ac627662bff38c9bb4ec904520a808e42030ff698741b5c32519f0be4c3",
         1086,
         1448,
-        149_374,
-        "4f4fbd0f1f125cfb39b052b4717d8d30feb43dc226fcd940c1ef28b7ca48e360",
+        150_246,
+        "00d71d0e6d25ff3772c2f6e05617853a240248e5e4ffa3ac623f7de5d7eed6bf",
     ),
     "raj": (
         "frontend/public/demo/cut1/raj-waist-up.webp",
@@ -363,6 +363,24 @@ def test_binding_keeps_source_registry_and_derivative_authorities_distinct() -> 
         lambda data: _row(data, "raj")["candidate"].update({"sha256": "3" * 64}),
         lambda data: _row(data, "raj")["candidate"].update({"attempt_count": 2}),
         lambda data: _row(data, "raj")["candidate"].update({"retry_count": 1}),
+        lambda data: _row(data, "myra")["candidate"].update(
+            {"sha256": MYRA_ATTEMPT1_SHA256}
+        ),
+        lambda data: _row(data, "myra")["candidate"].update({"attempt_count": 1}),
+        lambda data: _row(data, "myra")["candidate"].update({"max_attempts": 3}),
+        lambda data: _row(data, "myra")["candidate"].update({"retry_count": 0}),
+        lambda data: _row(data, "myra")["review"].update(
+            {"reviewed_candidate_sha256": MYRA_ATTEMPT1_SHA256}
+        ),
+        lambda data: _row(data, "myra")["review"].update(
+            {
+                "authority_ref": "https://github.com/imrohitagrawal/narratwin-ai/"
+                "issues/459#issuecomment-5463568867"
+            }
+        ),
+        lambda data: _row(data, "myra")["rights"].update(
+            {"rejected_candidate_disposition": "NONE_REJECTED_ONE_ATTEMPT_USED"}
+        ),
         lambda data: _row(data, "raj")["asset"].update({"path": "../escape.webp"}),
         lambda data: _row(data, "raj")["asset"].update({"sha256": "4" * 64}),
         lambda data: _row(data, "raj")["asset"].update({"width": 2048}),

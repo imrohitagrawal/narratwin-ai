@@ -2,7 +2,7 @@
 
 - Status: Accepted for Issue #459 T03 controlled-local readiness
 - Date: 2026-08-29
-- Decision owner: Issue #459 OWNER checkpoint `5463568867`
+- Decision owner: Issue #459 OWNER checkpoints `5463568867` and `5464690216`
 
 ## Context
 
@@ -38,3 +38,9 @@ acceptance, release, deployment, public availability, or production readiness.
 Private candidate PNGs remain outside Git pending owner cleanup after merge.
 Later narration, audio, rendering, and acceptance increments must consume the
 typed readiness/binding and satisfy their own reviewed gates.
+
+Owner visual review superseded only Myra attempt 1. The second and final
+authorized edit corrects hand lighting, gesture, coordinated jewelry, and nail
+polish while preserving Myra's source identity and the byte-identical Raj
+attempt-1 derivative. The manifest binds both the final candidate and the
+superseded-candidate disposition so attempt history cannot be silently erased.

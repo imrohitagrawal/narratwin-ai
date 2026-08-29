@@ -1556,6 +1556,10 @@ def test_issue459_t03_route_freezes_authority_scope_and_budgets() -> None:
     assert routes.ISSUE459_T03_CORRECTION_SHA256 == "c8816f6243e5810267b66c84fcaa6bd471d78fca24463f6b9e46352a93c42113"
     assert routes.ISSUE459_T03_DEPENDENCY_COMMENT == "5464081073"
     assert routes.ISSUE459_T03_DEPENDENCY_SHA256 == "1e07f4d261216e3d3b218160e1b46bf84f3f395fbe816db926f004314182f369"
+    assert routes.ISSUE459_T03_MYRA_CORRECTION_COMMENT == "5464690216"
+    assert routes.ISSUE459_T03_MYRA_CORRECTION_SHA256 == (
+        "4b69e4707492c6e6c7d8b8527680d8ef0987043745220e19e0c2036faaf62bfa"
+    )
     assert routes.ROUTES[branch] == ISSUE459_T03_EXPECTED
     assert routes.ROUTE_ISSUES[branch] == 459
     assert routes.TOTAL_LIMITS[branch] == 2400
@@ -1601,6 +1605,7 @@ def test_issue459_t03_rejects_authority_rename_and_binary_boundary(
         routes.ISSUE459_T03_AUTHORITY_SHA256,
         routes.ISSUE459_T03_CORRECTION_SHA256,
         routes.ISSUE459_T03_DEPENDENCY_SHA256,
+        routes.ISSUE459_T03_MYRA_CORRECTION_SHA256,
     ):
         drifted = copy.deepcopy(artifact)
         drifted["objective"] = drifted["objective"].replace(authority_sha256, "0" * 64)
