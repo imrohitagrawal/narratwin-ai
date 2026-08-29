@@ -56,6 +56,8 @@ ISSUE459_TRANSITION_BASE, ISSUE459_TRANSITION_MERGE = "285458f22a5d8786c359c6e4e
 ISSUE459_T03_BASE = "4ef3a8ba70cbf97b7704f5f589b0887f840081cb"
 ISSUE459_T03_AUTHORITY_COMMENT = "5463568867"
 ISSUE459_T03_AUTHORITY_SHA256 = "728705c278db4b05d4072bcacc3af657b069662e21fbf4f5f5ee2f934a155da8"
+ISSUE459_T03_CORRECTION_COMMENT = "5463979365"
+ISSUE459_T03_CORRECTION_SHA256 = "c8816f6243e5810267b66c84fcaa6bd471d78fca24463f6b9e46352a93c42113"
 SECURITY_PREFLIGHTS = {
     150: ("Issue150SecurityRenewalPreflightV1", "e6a569cb6254ef58c36fb44e9cdece26e0816b49c9f62ce08e9d90f3843c97e3"),
     428: ("Issue428NanoidSecurityPreflightV1", "0d8da352c98855bc481581f1ca13cc2d4e994838b1afb31d974ad2b17caf7a9b"),
@@ -77,6 +79,7 @@ ISSUE459_HOSTED_CORRECTION_PATHS = {".gitleaksignore", "scripts/ci/check_gitleak
 
 ROUTES = {
     ISSUE459_T03_BRANCH: {
+        "pyproject.toml", "uv.lock",
         "docs/governance/preflights/issue-459-t03.json", "docs/governance/cut1-presenter-derivatives-v1.json",
         "frontend/public/demo/cut1/raj-waist-up.webp", "frontend/public/demo/cut1/myra-waist-up.webp",
         "backend/app/presenter_registry.py", "tests/unit/test_cut1_presenter_derivatives.py",
@@ -534,6 +537,7 @@ ISSUE459_EDITABLE_AUTHORITY_SHA256 = {
 ISSUE459_BASE_SOURCE_SHA256 = {"docs/STATUS.md": "9045b595ca1622680f621dffa4dff88435e2fde0d13e3c061ced7eb6df9ae8bf", "docs/TRACEABILITY.md": "e597069e3d6b765a9d68e5336ff9597d6d7b809e5ea6f316f22312ca71ea136a", "docs/QUALITY_GATES.md": "9f628d22ec62075e560ef478820cf094d923cdf1cfded56a512291c61f6e542b", "docs/REPOSITORY_GUARDRAILS.md": "04f8b405bc7ba9b615cc1d5d7e489bcbf643b9de4bfc9b331e5a60c38629e82f"}
 TEXT_LIMITS = {
     ISSUE459_T03_BRANCH: {
+        "pyproject.toml": 20, "uv.lock": 200,
         "docs/governance/preflights/issue-459-t03.json": 220,
         "docs/governance/cut1-presenter-derivatives-v1.json": 420,
         "backend/app/presenter_registry.py": 500,
@@ -1391,8 +1395,13 @@ def check_exact_route(
                          "changed_files": sorted(files)},
             )
             objective = preflight.get("objective") if isinstance(preflight, dict) else None
-            authority = (ISSUE459_T03_BASE, ISSUE459_T03_AUTHORITY_COMMENT,
-                         ISSUE459_T03_AUTHORITY_SHA256)
+            authority = (
+                ISSUE459_T03_BASE,
+                ISSUE459_T03_AUTHORITY_COMMENT,
+                ISSUE459_T03_AUTHORITY_SHA256,
+                ISSUE459_T03_CORRECTION_COMMENT,
+                ISSUE459_T03_CORRECTION_SHA256,
+            )
             failures.extend(
                 f"Issue #459 T03 governance preflight failed: {finding.code}"
                 for finding in findings

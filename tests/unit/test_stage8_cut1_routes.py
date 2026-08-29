@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import importlib.util
 import hashlib
 import json
@@ -173,6 +174,8 @@ ISSUE459_BYTE_CAPS = {
     "docs/ADR/0068-cut1-controlled-presenter-controller.md": 32_000, ".gitleaksignore": 2_000, "scripts/ci/check_gitleaks_regression.py": 24_000, "tests/unit/test_gitleaks_regression.py": 32_000, "scripts/quality/check_stage8_docs.py": 48_000, "tests/unit/test_stage8_quality_gate.py": 40_000,
 }
 ISSUE459_T03_EXPECTED = {
+    "pyproject.toml",
+    "uv.lock",
     "docs/governance/preflights/issue-459-t03.json",
     "docs/governance/cut1-presenter-derivatives-v1.json",
     "frontend/public/demo/cut1/raj-waist-up.webp",
@@ -189,6 +192,8 @@ ISSUE459_T03_EXPECTED = {
     "docs/TRACEABILITY.md",
 }
 ISSUE459_T03_LINE_CAPS = {
+    "pyproject.toml": 20,
+    "uv.lock": 200,
     "docs/governance/preflights/issue-459-t03.json": 220,
     "docs/governance/cut1-presenter-derivatives-v1.json": 420,
     "backend/app/presenter_registry.py": 500,
@@ -1545,6 +1550,8 @@ def test_issue459_t03_route_freezes_authority_scope_and_budgets() -> None:
     assert routes.ISSUE459_T03_BASE == "4ef3a8ba70cbf97b7704f5f589b0887f840081cb"
     assert routes.ISSUE459_T03_AUTHORITY_COMMENT == "5463568867"
     assert routes.ISSUE459_T03_AUTHORITY_SHA256 == "728705c278db4b05d4072bcacc3af657b069662e21fbf4f5f5ee2f934a155da8"
+    assert routes.ISSUE459_T03_CORRECTION_COMMENT == "5463979365"
+    assert routes.ISSUE459_T03_CORRECTION_SHA256 == "c8816f6243e5810267b66c84fcaa6bd471d78fca24463f6b9e46352a93c42113"
     assert routes.ROUTES[branch] == ISSUE459_T03_EXPECTED
     assert routes.ROUTE_ISSUES[branch] == 459
     assert routes.TOTAL_LIMITS[branch] == 2400
@@ -1584,16 +1591,19 @@ def test_issue459_t03_rejects_authority_rename_and_binary_boundary(
     artifact = json.loads((REPO / "docs/governance/preflights/issue-459-t03.json").read_text())
     target = tmp_path / "docs/governance/preflights/issue-459-t03.json"
     target.parent.mkdir(parents=True)
-    artifact["objective"] = artifact["objective"].replace(
-        routes.ISSUE459_T03_AUTHORITY_SHA256, "0" * 64
-    )
-    target.write_text(json.dumps(artifact))
     monkeypatch.setattr(routes, "route_binary_sizes",
                         lambda *_: {path: 1 for path in ISSUE459_T03_BYTE_CAPS})
-    failures: list[str] = []
-    routes.check_exact_route(tmp_path, lambda _: completed([]), branch,
-                             ISSUE459_T03_EXPECTED, failures)
-    assert failures == ["Issue #459 T03 governance authority drifted."]
+    for authority_sha256 in (
+        routes.ISSUE459_T03_AUTHORITY_SHA256,
+        routes.ISSUE459_T03_CORRECTION_SHA256,
+    ):
+        drifted = copy.deepcopy(artifact)
+        drifted["objective"] = drifted["objective"].replace(authority_sha256, "0" * 64)
+        target.write_text(json.dumps(drifted))
+        failures: list[str] = []
+        routes.check_exact_route(tmp_path, lambda _: completed([]), branch,
+                                 ISSUE459_T03_EXPECTED, failures)
+        assert failures == ["Issue #459 T03 governance authority drifted."]
 
     for path, limit in ISSUE459_T03_BYTE_CAPS.items():
         monkeypatch.setattr(routes, "route_binary_sizes", lambda *_, p=path, n=limit: {

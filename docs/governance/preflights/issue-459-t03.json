@@ -2,10 +2,12 @@
   "schema_version": "GovernancePreflightV1",
   "issue_number": 459,
   "branch": "stage8-459-t03-presenter-derivatives",
-  "objective": "From exact accepted main 4ef3a8ba70cbf97b7704f5f589b0887f840081cb, implement only Issue #459 LA-C1-T03 derivative readiness under OWNER checkpoint comment 5463568867, exact body SHA-256 728705c278db4b05d4072bcacc3af657b069662e21fbf4f5f5ee2f934a155da8. Preserve the Meera, Raj, and Myra originals and the byte-identical source registry; activate separately hashed Raj/Myra attempt-1 controlled-local WebP derivatives only after RED tests and independent visual, provenance, and privacy review. Use exactly fourteen paths, no more than 2400 charged text lines, and regular non-symlink WebPs below 500000 bytes without upscaling. Keep T04 authority frozen and providers, credentials, network, egress, retries, spend, runtime, UI, audio, publication, release, production, human-study, and Cut 1 acceptance out of scope. Stop on any route, budget, hash, rights, provenance, identity, media, original, registry, T04, hosted, or review drift.",
+  "objective": "From exact accepted main 4ef3a8ba70cbf97b7704f5f589b0887f840081cb, implement only Issue #459 LA-C1-T03 derivative readiness under OWNER checkpoint comment 5463568867, exact body SHA-256 728705c278db4b05d4072bcacc3af657b069662e21fbf4f5f5ee2f934a155da8, and hosted decode correction comment 5463979365, exact body SHA-256 c8816f6243e5810267b66c84fcaa6bd471d78fca24463f6b9e46352a93c42113. Preserve the Meera, Raj, and Myra originals and the byte-identical source registry; activate separately hashed Raj/Myra attempt-1 controlled-local WebP derivatives only after RED tests and independent visual, provenance, and privacy review. Use exactly sixteen paths, no more than 2400 charged text lines, and regular non-symlink WebPs below 500000 bytes without upscaling. Add Pillow only to the development dependency group for hosted-parity executable WebP decoding and corrupt-payload rejection. Keep T04 authority frozen and providers, credentials, network, egress, retries, spend, runtime, UI, audio, publication, release, production, human-study, and Cut 1 acceptance out of scope. Stop on any route, budget, hash, rights, provenance, identity, media, original, registry, T04, hosted, dependency, or review drift.",
   "status_decision": "update-minimally",
   "scope": {
     "required": [
+      "pyproject.toml",
+      "uv.lock",
       "docs/governance/preflights/issue-459-t03.json",
       "docs/governance/cut1-presenter-derivatives-v1.json",
       "frontend/public/demo/cut1/raj-waist-up.webp",
@@ -22,6 +24,8 @@
       "docs/TRACEABILITY.md"
     ],
     "allowed_prefixes": [
+      "pyproject.toml",
+      "uv.lock",
       "docs/governance/preflights/issue-459-t03.json",
       "docs/governance/cut1-presenter-derivatives-v1.json",
       "frontend/public/demo/cut1/raj-waist-up.webp",
@@ -40,8 +44,6 @@
     "forbidden": [
       ".github/",
       "Makefile",
-      "pyproject.toml",
-      "uv.lock",
       "frontend/src/",
       "frontend/public/demo/narratwin-synthetic-presenter.webp",
       "frontend/public/demo/raj-synthetic-presenter.webp",

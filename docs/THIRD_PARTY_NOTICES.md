@@ -321,6 +321,10 @@ in `docs/governance/cut1-presenter-derivatives-v1.json`.
 Accepted repository outputs are metadata-stripped WebPs for controlled local
 Cut 1 use only. Independent review found no real-person reference, text, logo,
 watermark, identity substitution, anatomy defect, or conversion-induced drift.
+Pillow `12.3.0` under the MIT-CMU license is installed only in the development
+dependency group to decode one complete frame from each frozen WebP during
+tests and to reject a structurally plausible WebP with corrupted VP8 pixels.
+It is not added to the application runtime or used to generate or modify media.
 This record grants no publication, distribution, provider/runtime activation,
 credential, egress, spend, human-study, release, production, or Cut 1 acceptance
 authority. The Meera, Raj, and Myra originals remain immutable, and no new Meera
