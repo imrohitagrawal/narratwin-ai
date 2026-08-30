@@ -9,7 +9,7 @@ import struct
 from dataclasses import replace
 from pathlib import Path
 from types import ModuleType
-from typing import Any, Callable
+from typing import Any, Callable, Mapping
 
 import pytest
 
@@ -113,7 +113,8 @@ def _result(
     receipt: TTSConsumptionReceipt,
     *,
     audio_bytes: bytes | None = None,
-    **overrides: object,
+    overrides: Mapping[str, object] | None = None,
+    **field_overrides: object,
 ) -> Any:
     audio = _speech_wav() if audio_bytes is None else audio_bytes
     values: dict[str, object] = {
@@ -130,7 +131,8 @@ def _result(
         "audio_bytes": audio,
         "artifact_checksum": _sha(audio),
     }
-    values.update(overrides)
+    values.update(overrides or {})
+    values.update(field_overrides)
     return tts_provider.ApprovedNarrationTTSResult(**values)
 
 
@@ -289,7 +291,15 @@ def test_t05b_rejects_stale_or_substituted_receipt_lineage(
     value: str,
 ) -> None:
     current = _receipt()
-    substituted = replace(current, **{field: value})
+    if field == "source_run_id":
+        substituted = replace(current, source_run_id=value)
+    elif field == "source_evaluation_checksum":
+        substituted = replace(current, source_evaluation_checksum=value)
+    elif field == "evaluation_checksum":
+        substituted = replace(current, evaluation_checksum=value)
+    else:
+        assert field == "narration_checksum"
+        substituted = replace(current, narration_checksum=value)
     result = _result(tts_provider, substituted)
     service = _service(
         cut1_audio,
@@ -328,7 +338,7 @@ def test_t05b_rejects_receipt_request_and_configuration_substitution(
     code: str,
 ) -> None:
     receipt = _receipt()
-    result = _result(tts_provider, receipt, **overrides)
+    result = _result(tts_provider, receipt, overrides=overrides)
     service = _service(
         cut1_audio,
         state_path=tmp_path / f"result-{code}.json",
@@ -366,7 +376,7 @@ def test_t05b_rejects_malformed_silent_wrong_duration_or_replaced_audio(
 ) -> None:
     receipt = _receipt()
     overrides = {} if checksum is None else {"artifact_checksum": checksum}
-    result = _result(tts_provider, receipt, audio_bytes=audio, **overrides)
+    result = _result(tts_provider, receipt, audio_bytes=audio, overrides=overrides)
     service = _service(
         cut1_audio,
         state_path=tmp_path / f"audio-{code}.json",
