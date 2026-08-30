@@ -6,6 +6,7 @@ import json
 import re
 import stat
 import subprocess
+import unicodedata
 from pathlib import Path
 from typing import Any, Callable
 
@@ -1067,16 +1068,19 @@ def operative_markdown_text(document: str) -> str:
 
 
 def has_unsafe_broad_prune_authorization(document: str) -> bool:
-    operative = re.sub(r"\s+", " ", operative_markdown_text(document).lower())
-    patterns = (
-        r"\bbroad prun(?:e|ing)(?: operations?)?\b.{0,120}\b(?:allow|authoriz|permitt|acceptable|okay)\w*\b",
-        r"\bbroad prun(?:e|ing)(?: operations?)?\b.{0,120}\b(?:may|can|should) be (?:run|used|performed)\b",
-        r"\bbroad prun(?:e|ing)(?: operations?)?\b.{0,120}\b(?:not|need not be|no longer) prohibit\w*\b",
-        r"\b(?:allow|authoriz|permit|disregard|ignore|deprecat|supersed|historical quotation|may run|"
-        r"can run|may use|can use|need not prohibit|no longer prohibit)\w*.{0,120}\bbroad prun(?:e|ing)\b",
-        r"\bbroad prun(?:e|ing)(?: operations?)?\b.{0,120}\b(?:only if|only when|unless|except)\b",
+    operative = unicodedata.normalize("NFKC", operative_markdown_text(document))
+    if any(unicodedata.category(char) == "Cf" or (char.isalpha() and not char.isascii()) for char in operative):
+        return True
+    normalized = re.sub(r"\s+", " ", operative.lower())
+    safe_clauses = (
+        "prohibit broad prune operations;",
+        "do not run broad prune operations, including docker system, image, builder, volume, network, cache, "
+        "worktree, branch, or recursive filesystem pruning; broad prune operations are prohibited even when "
+        "every cleanup target has asserted ownership",
     )
-    return any(re.search(pattern, operative) for pattern in patterns)
+    for clause in safe_clauses:
+        normalized = normalized.replace(clause, "", 1)
+    return "broad" in normalized and "prun" in normalized
 
 
 def merge_cleanup_contract_failures(
