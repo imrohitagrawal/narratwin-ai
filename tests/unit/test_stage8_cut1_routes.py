@@ -903,28 +903,20 @@ def test_routes_are_exact_pre_registered_and_issue386_preflight_matches() -> Non
 
 def test_issue468_route_preflight_and_budgets_are_exact() -> None:
     assert routes.ISSUE468_BRANCH == "governance-468-scoped-merge-cleanup"
-    preflight = json.loads(
-        (
-            REPO
-            / "docs/governance/preflights/issue-468-scoped-merge-cleanup.json"
-        ).read_text(encoding="utf-8")
-    )
+    path = REPO / "docs/governance/preflights/issue-468-scoped-merge-cleanup.json"
+    preflight = json.loads(path.read_text(encoding="utf-8"))
     assert set(preflight) == {
-        "schema_version",
-        "issue_number",
-        "branch",
-        "objective",
-        "status_decision",
-        "scope",
+        "schema_version", "issue_number", "branch", "objective", "status_decision", "scope",
     }
     assert preflight["schema_version"] == "GovernancePreflightV1"
     assert preflight["issue_number"] == 468
     assert preflight["branch"] == routes.ISSUE468_BRANCH
-    assert "5468560507" in preflight["objective"]
-    assert "5468813566" in preflight["objective"]
-    assert "5468861375" in preflight["objective"]
-    assert "5468898843" in preflight["objective"]
-    assert {"5468986974", "5469141049"} <= set(re.findall(r"\d{10}", preflight["objective"]))
+    comments = {"5468560507", "5468813566", "5468861375", "5468898843",
+                "5468986974", "5469141049", "5470386759", "5470396865"}
+    assert comments <= set(re.findall(r"\d{10}", preflight["objective"]))
+    assert {"0b9497679f12502276b15f759263bf32a803cf81",
+            "55a0810e2ff327490d6dbadbf58580c06edef600",
+            "af960c9de16e0f648737f105bca275e38895a410"} <= set(preflight["objective"].split())
     assert set(preflight["scope"]["required"]) == ISSUE468_EXPECTED
     assert set(preflight["scope"]["allowed_prefixes"]) == ISSUE468_EXPECTED
     assert routes.ROUTE_ISSUES[routes.ISSUE468_BRANCH] == 468
@@ -933,7 +925,7 @@ def test_issue468_route_preflight_and_budgets_are_exact() -> None:
 
 
 def test_issue468_route_requires_exact_fixed_base_and_branch_point() -> None:
-    base = "7eb4b99d7bc2bcf11cfc8c959baacb6cf3a21e81"
+    base = "55a0810e2ff327490d6dbadbf58580c06edef600"
     assert getattr(routes, "ISSUE468_BASE", None) == base
     calls: list[list[str]] = []
 
@@ -960,6 +952,15 @@ def test_issue468_route_requires_exact_fixed_base_and_branch_point() -> None:
             routes.ISSUE468_BRANCH,
         )
         assert "Issue #468 fixed base" in str(error.value)
+
+
+def test_issue468_route_hash_forgery_cannot_bypass_independent_anchor(monkeypatch: Any) -> None:
+    documents, clause, real_sha256 = cleanup_documents(), "\nroute-local hash bypass\n", hashlib.sha256
+    documents["AGENTS.md"] += clause
+    monkeypatch.setattr(routes.hashlib, "sha256",
+                        lambda data: real_sha256(data.replace(clause.encode(), b"")))
+    assert routes.merge_cleanup_contract_failures(REPO, documents.__getitem__) == [
+        "Merge-cleanup authority anchor rejected AGENTS.md bytes."]
 
 
 @pytest.mark.parametrize(
