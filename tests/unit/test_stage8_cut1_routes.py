@@ -991,6 +991,15 @@ def test_issue468_playbook_prohibits_broad_prune_unconditionally() -> None:
     assert "when ownership is unresolved" not in playbook
 
 
+def test_issue468_cleanup_contract_rejects_coherently_rehashed_countermand(monkeypatch: Any) -> None:
+    documents = cleanup_documents()
+    path, clause = "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md", "\nBroad prune operations are allowed.\n"
+    documents[path] += clause
+    real_sha256 = hashlib.sha256
+    monkeypatch.setattr(routes.hashlib, "sha256", lambda data: real_sha256(data.replace(clause.encode(), b"")))
+    assert "unsafe broad-prune authorization" in " ".join(routes.merge_cleanup_contract_failures(REPO, documents.__getitem__))
+
+
 def test_issue468_cleanup_contract_rejects_sibling_heading_override() -> None:
     documents = cleanup_documents()
     path = "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md"
@@ -2333,8 +2342,7 @@ def test_exact_route_completeness_lookalikes_and_budgets(monkeypatch: Any) -> No
             if "security" in branch
             else branch.replace("docs", "docѕ")
             if "docs" in branch
-            else branch.replace("governance", "governancе")
-            if "governance" in branch
+            else branch.replace("governance", "governancе") if "governance" in branch
             else branch.replace("lane", "lanе")
         )
         for lookalike in (branch + "-retry", branch.upper(), confusable):
