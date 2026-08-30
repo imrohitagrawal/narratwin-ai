@@ -679,6 +679,12 @@ Child C–F retain storage, acquisition, audit, reconciliation and integration.
 
 ## Issue #459 T05B offline audio/caption admission
 
+Three full-history `generic-api-key` findings are limited to an immutable
+public CPython release-signing fingerprint used for source verification. The
+exception inventory binds exact commits, path, rule, line, blob digest, key
+digest, and GPG receive/verify context. Any broader ignore, missing history,
+provenance drift, or representative real-secret false negative fails closed.
+
 The T05B authority service treats receipt, provider result, WAV, SRT, and
 persisted JSON as untrusted. It bounds bytes before parsing, strictly rejects
 duplicate JSON members, symlinks, wrong schemas, malformed RIFF chunks, silent

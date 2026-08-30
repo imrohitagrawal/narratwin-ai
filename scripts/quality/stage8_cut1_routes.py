@@ -70,6 +70,8 @@ ISSUE459_T05A_AUTHORITY_SHA256 = "ab0d0b486bf77eac59db2b83c0d33bd0ae61bb52ed26b3
 ISSUE459_T05B_BASE = "bfb8487760dc6aeef8b05af95e0ecd40d0076f3a"
 ISSUE459_T05B_AUTHORITY_COMMENT = "5466871459"
 ISSUE459_T05B_AUTHORITY_SHA256 = "f53e919836ea5edd58620d789497d945f317c354d0b5405a88d49e570c778b28"
+ISSUE459_T05B_CORRECTION_COMMENT = "5466962967"
+ISSUE459_T05B_CORRECTION_SHA256 = "4d4cd204972abfa70b687f416813937b41329c930cf1676706ce278798579032"
 SECURITY_PREFLIGHTS = {
     150: ("Issue150SecurityRenewalPreflightV1", "e6a569cb6254ef58c36fb44e9cdece26e0816b49c9f62ce08e9d90f3843c97e3"),
     428: ("Issue428NanoidSecurityPreflightV1", "0d8da352c98855bc481581f1ca13cc2d4e994838b1afb31d974ad2b17caf7a9b"),
@@ -91,6 +93,7 @@ ISSUE459_HOSTED_CORRECTION_PATHS = {".gitleaksignore", "scripts/ci/check_gitleak
 
 ROUTES = {
     ISSUE459_T05B_BRANCH: {
+        ".gitleaksignore",
         "docs/governance/preflights/issue-459-t05b.json",
         "backend/app/cut1_audio.py", "backend/app/tts_provider.py",
         "backend/app/stage6.py", "tests/unit/test_cut1_audio.py",
@@ -100,6 +103,8 @@ ROUTES = {
         "docs/QUALITY_GATES.md", "docs/STAGE_ISSUE_PLAN.md", "docs/STATUS.md",
         "docs/TRACEABILITY.md", "docs/DATA_MODEL.md", "docs/SECURITY_AND_PRIVACY.md",
         "docs/OBSERVABILITY_AND_COST.md",
+        "scripts/ci/check_gitleaks_regression.py",
+        "tests/unit/test_gitleaks_regression.py",
     },
     ISSUE459_T05A_BRANCH: {
         "docs/governance/preflights/issue-459-t05a.json",
@@ -1451,6 +1456,8 @@ def check_exact_route(
                 ISSUE459_T05B_BASE,
                 ISSUE459_T05B_AUTHORITY_COMMENT,
                 ISSUE459_T05B_AUTHORITY_SHA256,
+                ISSUE459_T05B_CORRECTION_COMMENT,
+                ISSUE459_T05B_CORRECTION_SHA256,
             )
             failures.extend(
                 f"Issue #459 T05B governance preflight failed: {finding.code}"

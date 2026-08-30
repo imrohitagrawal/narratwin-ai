@@ -1704,7 +1704,13 @@ Exact branch `stage8-459-t05b-audio-caption-authority` is pinned to merged
 T05A main `bfb8487760dc6aeef8b05af95e0ecd40d0076f3a` and checkpoint
 `5466871459` with exact body SHA-256
 `f53e919836ea5edd58620d789497d945f317c354d0b5405a88d49e570c778b28`.
-Its exact sixteen-path route permits 3,600 charged text lines. Wrong base,
+Correction checkpoint `5466962967`, body SHA-256
+`4d4cd204972abfa70b687f416813937b41329c930cf1676706ce278798579032`,
+expands the exact route to nineteen paths under the unchanged 3,600-line cap
+for three immutable public CPython signing-key false positives. Only exact
+fingerprints may be ignored; public-key blob/line/context provenance,
+missing/extra/wildcard drift, and the representative real-secret canary fail
+closed before the unchanged full-history scan. Wrong base,
 branch-point drift, missing or extra paths, authority/preflight drift,
 deletion/rename/copy drift, and aggregate or per-path overrun fail closed.
 

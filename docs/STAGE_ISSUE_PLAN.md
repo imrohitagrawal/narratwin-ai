@@ -77,6 +77,15 @@ exact-hash listening; its historical egress incident is neither accepted nor
 superseded. No provider call, credential/environment lookup, egress, spend,
 synthesis, final media, T05 completion, or Cut 1 acceptance is authorized.
 
+The mandatory full-history security gate then reproduced three findings from
+immutable backend-image commits. Correction checkpoint `5466962967` classifies
+them as one duplicated false-positive root cause: the public CPython 3.12/3.13
+release-signing fingerprint used to verify downloaded source. The exact T05B
+route expands from sixteen to nineteen paths without changing its 3,600-line
+cap. Only the three commit/path/rule/line fingerprints are ignored; executable
+provenance, exact-inventory mutations, the representative real-secret canary,
+and the unchanged full-history scan fail closed.
+
 ## Issue #460 completed Semgrep override removal
 
 Issue `#460` starts from exact accepted main

@@ -1752,8 +1752,12 @@ PR `#464` merged the T05A grounded-narration handoff at accepted main
 Meera, Myra, and Raj can each produce separate current text-authority receipts.
 
 T05B is active under checkpoint `5466871459` on branch
-`stage8-459-t05b-audio-caption-authority` from that exact merge. Its sixteen-
-path, 3,600-line route permits only a typed approved-narration result and an
+`stage8-459-t05b-audio-caption-authority` from that exact merge. Hosted-security
+checkpoint `5466962967` expands its route from sixteen to nineteen paths under
+the unchanged 3,600-line cap for three exact historical false-positive
+fingerprints of the public CPython release-signing key. Provenance, wildcard
+rejection, the real-secret canary, and full-history scanning remain mandatory.
+The route otherwise permits only a typed approved-narration result and an
 offline, atomic, fail-closed audio/caption authority record. It validates exact
 receipt/source/evaluation/presenter/configuration lineage, bounded decoded WAV,
 and exact SRT text/timing. Test fixtures are not acceptance evidence. Issue

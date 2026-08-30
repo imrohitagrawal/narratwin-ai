@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import hashlib
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -14,12 +15,18 @@ FROZEN_BASE = "ab97b6eecba6db9c66c37d19b29257c7398f3ab7"
 SOURCE_HEAD = "570239effbcae3990a24ffdc809622f02364ff0d"
 SCAN_HEAD = "9644296da92bf3b3f373cd2afd2c7a64d6ca7c8c"
 EXPECTED_DIGEST = "910259f61acbbec4e3432c482d821fd56f2fe8b2073211c7ce112c3cd87405bf"
+EXPECTED_PUBLIC_KEY_SHA256 = "6c3b7674b58d9f7266cd8b823ecf469b0a03d1bf2c8c24df1d0121d8e818f1fa"
+EXPECTED_DOCKERFILE_SHA256 = "27a75b496a53f07037bceadd7eb57ebdf3e07112df33bb554e674925b9e9dc16"
 EXPECTED_FINGERPRINTS = (
     "77ebfc3218a003a06f7b43098624c30f2b43bf4e:scripts/quality/stage8_cut1_routes.py:generic-api-key:514",
     "8dd002589d45b41205a80dc004e7e6480bec901f:scripts/quality/stage8_cut1_routes.py:generic-api-key:515",
     "8dd002589d45b41205a80dc004e7e6480bec901f:tests/unit/test_stage8_cut1_routes.py:generic-api-key:1370",
     "9644296da92bf3b3f373cd2afd2c7a64d6ca7c8c:scripts/quality/stage8_cut1_routes.py:generic-api-key:509",
+    "66dabedecdce4ed51b8354e44f2d1c749c209898:backend/Dockerfile:generic-api-key:18",
+    "0cea00fd0a2cda457473c4fccf1d6ab2b2250bae:backend/Dockerfile:generic-api-key:18",
+    "dd1e2118dede2b5cf9060d69cace0a3c9ab8ae4:backend/Dockerfile:generic-api-key:18",
 )
+PUBLIC_KEY_FINGERPRINTS = frozenset(EXPECTED_FINGERPRINTS[-3:])
 
 
 def _git(root: Path, *args: str) -> subprocess.CompletedProcess[bytes]:
@@ -72,6 +79,36 @@ def _blob(root: Path, ref: str, path: str) -> bytes:
     return result.stdout
 
 
+def validate_public_signing_key_blob(blob: bytes) -> list[str]:
+    """Prove the reviewed value is a public source-verification key, not a secret."""
+    failures: list[str] = []
+    if hashlib.sha256(blob).hexdigest() != EXPECTED_DOCKERFILE_SHA256:
+        _append_once(failures, "GITLEAKS.PROVENANCE.PUBLIC_KEY_BLOB")
+    try:
+        lines = blob.decode("utf-8").splitlines()
+        assignment = lines[17].strip()
+        match = re.fullmatch(r"python_gpg_key=([A-F0-9]{40}); \\", assignment)
+        key = match.group(1) if match else ""
+        receive = lines[18].strip()
+        verify = lines[19].strip()
+    except (IndexError, UnicodeError):
+        _append_once(failures, "GITLEAKS.PROVENANCE.PUBLIC_KEY_LINE")
+        return failures
+    if (
+        not match
+        or hashlib.sha256(key.encode("ascii")).hexdigest()
+        != EXPECTED_PUBLIC_KEY_SHA256
+    ):
+        _append_once(failures, "GITLEAKS.PROVENANCE.PUBLIC_KEY_LINE")
+    if (
+        receive
+        != 'gpg --batch --keyserver hkps://keys.openpgp.org --recv-keys "$python_gpg_key"; \\'
+        or verify != "gpg --batch --verify python.tar.xz.asc python.tar.xz; \\"
+    ):
+        _append_once(failures, "GITLEAKS.PROVENANCE.PUBLIC_KEY_CONTEXT")
+    return failures
+
+
 def validate(root: Path = ROOT) -> list[str]:
     failures: list[str] = []
     failures.extend(validate_ignore_lines(_read_ignore(root, failures)))
@@ -90,6 +127,26 @@ def validate(root: Path = ROOT) -> list[str]:
 
     for fingerprint in EXPECTED_FINGERPRINTS:
         commit, path, rule, line_text = fingerprint.rsplit(":", 3)
+        if fingerprint in PUBLIC_KEY_FINGERPRINTS:
+            try:
+                blob_bytes = _blob(root, commit, path)
+                line = blob_bytes.decode("utf-8").splitlines()[int(line_text) - 1]
+            except (
+                IndexError,
+                OSError,
+                UnicodeError,
+                ValueError,
+                subprocess.SubprocessError,
+                RuntimeError,
+            ):
+                _append_once(failures, "GITLEAKS.PROVENANCE.PUBLIC_KEY_SNAPSHOT")
+                continue
+            failures.extend(validate_public_signing_key_blob(blob_bytes))
+            if rule != "generic-api-key" or not line.strip().startswith(
+                "python_gpg_key="
+            ):
+                _append_once(failures, "GITLEAKS.PROVENANCE.PUBLIC_KEY_LINE")
+            continue
         ancestor = _git(root, "merge-base", "--is-ancestor", commit, SCAN_HEAD)
         if ancestor.returncode != 0:
             _append_once(failures, "GITLEAKS.PROVENANCE.HISTORY")

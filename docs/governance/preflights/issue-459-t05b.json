@@ -2,10 +2,11 @@
   "schema_version": "GovernancePreflightV1",
   "issue_number": 459,
   "branch": "stage8-459-t05b-audio-caption-authority",
-  "objective": "From exact accepted main bfb8487760dc6aeef8b05af95e0ecd40d0076f3a, implement only the Issue #459 T05B offline audio/caption authority boundary under checkpoint comment 5466871459, exact body SHA-256 f53e919836ea5edd58620d789497d945f317c354d0b5405a88d49e570c778b28. Replace the opaque approved-narration TTS return with a provider-neutral typed result and bind one current presenter-specific T05A receipt to independently validated WAV bytes, decoded measurements, exact caption text/timing, source/evaluation/presenter/configuration lineage, and one immutable persisted authority checksum. Reject stale, substituted, replayed, malformed, reordered, partial, rollback, or tampered state atomically. Preserve Issue #368 ownership of genuine synthesis and exact-hash listening evidence; its historical egress incident is neither accepted nor superseded. Use exactly sixteen paths and no more than 3600 charged text lines. Keep every provider absent and disabled by default. Perform no credential or environment lookup, network, egress, spend, synthesis, media generation, dependency, workflow, frontend, registry/media, deployment, publication, release, production, or Cut 1 acceptance operation. Test-only WAV and caption fixtures prove validation behavior only and are never acceptance evidence. Stop on route, base, authority, budget, lineage, receipt, presenter, source, evaluation, audio, caption, configuration, persistence, replay, security, or hosted drift.",
+  "objective": "From exact accepted main bfb8487760dc6aeef8b05af95e0ecd40d0076f3a, implement only the Issue #459 T05B offline audio/caption authority boundary under checkpoint comment 5466871459, exact body SHA-256 f53e919836ea5edd58620d789497d945f317c354d0b5405a88d49e570c778b28, plus hosted-security correction comment 5466962967, exact body SHA-256 4d4cd204972abfa70b687f416813937b41329c930cf1676706ce278798579032. Replace the opaque approved-narration TTS return with a provider-neutral typed result and bind one current presenter-specific T05A receipt to independently validated WAV bytes, decoded measurements, exact caption text/timing, source/evaluation/presenter/configuration lineage, and one immutable persisted authority checksum. Reject stale, substituted, replayed, malformed, reordered, partial, rollback, or tampered state atomically. Preserve Issue #368 ownership of genuine synthesis and exact-hash listening evidence; its historical egress incident is neither accepted nor superseded. Use exactly nineteen paths and no more than 3600 charged text lines. Suppress only three exact reviewed public CPython signing-key fingerprints while retaining immutable provenance checks, wildcard rejection, the real-secret canary, and full-history Gitleaks. Keep every provider absent and disabled by default. Perform no credential or environment lookup, network, egress, spend, synthesis, media generation, dependency, workflow, frontend, registry/media, deployment, publication, release, production, or Cut 1 acceptance operation. Test-only WAV and caption fixtures prove validation behavior only and are never acceptance evidence. Stop on route, base, authority, budget, lineage, receipt, presenter, source, evaluation, audio, caption, configuration, persistence, replay, security, or hosted drift.",
   "status_decision": "update-minimally",
   "scope": {
     "required": [
+      ".gitleaksignore",
       "docs/governance/preflights/issue-459-t05b.json",
       "backend/app/cut1_audio.py",
       "backend/app/tts_provider.py",
@@ -21,9 +22,12 @@
       "docs/TRACEABILITY.md",
       "docs/DATA_MODEL.md",
       "docs/SECURITY_AND_PRIVACY.md",
-      "docs/OBSERVABILITY_AND_COST.md"
+      "docs/OBSERVABILITY_AND_COST.md",
+      "scripts/ci/check_gitleaks_regression.py",
+      "tests/unit/test_gitleaks_regression.py"
     ],
     "allowed_prefixes": [
+      ".gitleaksignore",
       "docs/governance/preflights/issue-459-t05b.json",
       "backend/app/cut1_audio.py",
       "backend/app/tts_provider.py",
@@ -39,7 +43,9 @@
       "docs/TRACEABILITY.md",
       "docs/DATA_MODEL.md",
       "docs/SECURITY_AND_PRIVACY.md",
-      "docs/OBSERVABILITY_AND_COST.md"
+      "docs/OBSERVABILITY_AND_COST.md",
+      "scripts/ci/check_gitleaks_regression.py",
+      "tests/unit/test_gitleaks_regression.py"
     ],
     "forbidden": [
       ".github/",

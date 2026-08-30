@@ -65,6 +65,18 @@ def test_exact_reviewed_fingerprints_and_provenance_pass() -> None:
         (EXPECTED_FINGERPRINTS[0].replace("stage8_cut1_routes.py", "other.py"), *EXPECTED_FINGERPRINTS[1:]),
         (EXPECTED_FINGERPRINTS[0].replace("generic-api-key", "private-key"), *EXPECTED_FINGERPRINTS[1:]),
         (EXPECTED_FINGERPRINTS[0].replace(":514", ":515"), *EXPECTED_FINGERPRINTS[1:]),
+        tuple(
+            fingerprint
+            for fingerprint in EXPECTED_FINGERPRINTS
+            if fingerprint != EXPECTED_PUBLIC_KEY_FINGERPRINTS[0]
+        ),
+        (
+            *EXPECTED_FINGERPRINTS[:-3],
+            EXPECTED_PUBLIC_KEY_FINGERPRINTS[0].replace(
+                "backend/Dockerfile", "Dockerfile"
+            ),
+            *EXPECTED_PUBLIC_KEY_FINGERPRINTS[1:],
+        ),
     ),
 )
 def test_ignore_contract_rejects_omission_addition_and_fingerprint_drift(
@@ -119,6 +131,23 @@ def test_historical_dockerfile_public_key_provenance_is_exact() -> None:
                 capture_output=True,
             ).stdout
         ) == []
+
+
+def test_public_signing_key_provenance_rejects_blob_and_context_drift() -> None:
+    checker = _load_checker()
+    commit, path, _, _ = EXPECTED_PUBLIC_KEY_FINGERPRINTS[0].rsplit(":", 3)
+    blob = subprocess.run(
+        ["git", "show", f"{commit}:{path}"],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+    ).stdout
+    assert checker.validate_public_signing_key_blob(
+        blob.replace(b"python_gpg_key=", b"python_gpg_key=X", 1)
+    )
+    assert checker.validate_public_signing_key_blob(
+        blob.replace(b"--recv-keys", b"--list-keys", 1)
+    )
 
 
 def test_security_wrapper_runs_contract_canary_and_full_history_scan() -> None:
