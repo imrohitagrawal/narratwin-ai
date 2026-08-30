@@ -1741,9 +1741,17 @@ correction checkpoint `5464690216` authorized Myra's second and final attempt;
 independent visual/provenance/privacy review accepted the corrected hand
 lighting, graceful gesture, coordinated bangles/rings, and deep-maroon nails,
 and attempt 1 is recorded as owner-superseded visual refinement.
-The T03 candidate preserves the source registry, T04 controller, and all three
-original identity anchors while adding separate controlled-local derivative
-readiness/binding and explicit Meera `SOURCE_READY_NO_DERIVATIVE` state. Hosted
-parity, exact-head review, PR approval, merge, and closeout are still required;
-audio, video rendering, UI, providers, publication, release, production, and Cut
-1 acceptance remain unproven and unauthorized.
+PR `#463` was approved at exact head `ad30c6a2` and merged byte-identically as
+`0d70fa8e27ad4760249d75e7782ac06b5d68b173`; merged-main quality passed and
+T03 closeout completed. The source registry, T04 controller, and all three
+original identity anchors remain unchanged. Raj/Myra controlled-local still
+derivatives are ready, and Meera remains `SOURCE_READY_NO_DERIVATIVE`.
+
+T05A is active under checkpoint `5465050919` on branch
+`stage8-459-t05a-grounded-narration-handoff` from exact T03 merge `0d70fa8e`.
+Its twelve-path, 2,200-line route permits only exact per-presenter grounding
+inference, separate narration receipts, fail-closed cross-presenter mutations,
+governance evidence, and tests. Issue `#368` retains real audio/caption
+ownership. Audio, video rendering, UI, providers, credentials, egress, spend,
+publication, release, production, and Cut 1 acceptance remain unproven and
+unauthorized.

@@ -12,7 +12,7 @@ from pathlib import Path
 from threading import RLock
 from typing import Any, NoReturn, cast
 
-from backend.app.cut1_grounding import CUT1_POLICY_VERSION, CUT1_STYLE, SELECTED_PRESENTER
+from backend.app.cut1_grounding import CUT1_POLICY_VERSION, CUT1_STYLE, PRESENTERS
 from backend.app.evaluation_lineage import build_source_evaluation_checksum, derive_evaluation_lineage, validate_evaluation_lineage_payload
 from backend.app.presenter_registry import PresenterRegistry, PresenterRegistryError, PresenterTraceBinding
 from backend.app.rag.chunking import checksum_text
@@ -296,8 +296,6 @@ class NarrationService:
         context_ids = tuple(context.context_ref_id for context in run.retrieved_context)
         support_ids = tuple(support.claim_support_id for support in evaluation.claim_supports)
         evidence_counts = (len(indexes), len(context_ids), len(support_ids), len(generated.claims))
-        if binding.presenter_id != SELECTED_PRESENTER:
-            _fail("AUTHORITY_MISMATCH", "Narration presenter is not selected for Cut 1.")
         if (
             max(evidence_counts) > MAX_EVIDENCE_ITEMS
             or not indexes
@@ -312,6 +310,12 @@ class NarrationService:
             )
         ):
             _fail("EVIDENCE_INVALID", "Narration evidence is missing, duplicated, or exceeds its bounded limit.")
+        spoken = spoken_projection(review, indexes)
+        if (
+            binding.presenter_id not in PRESENTERS
+            or spoken != canonical_presenter_text(binding.presenter_id)
+        ):
+            _fail("AUTHORITY_MISMATCH", "Narration source and presenter do not match.")
         lineage = derive_evaluation_lineage(run)
         lineage_json = json.dumps(lineage, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
         source_checksum = build_source_evaluation_checksum(lineage)
@@ -319,7 +323,7 @@ class NarrationService:
         row = NarrationVersion(
             principal.tenant_id, principal.actor_id, project_id, version,
             binding.presenter_id, binding.presenter_version, binding, binding.registry_sha256,
-            review, spoken_projection(review, indexes), run.run_id, _checksum(run.request_checksum),
+            review, spoken, run.run_id, _checksum(run.request_checksum),
             _identifier(run.trace_id), lineage_json, claim_evidence_json, _identifier(evaluation.evaluation_id), source_checksum,
             context_ids, indexes, support_ids, "", NarrationState.DRAFT,
             invalidated_authorities=invalidations, invalidated_version=invalidated_version,
@@ -528,7 +532,12 @@ class NarrationService:
             indexes = tuple(support.citation_index for support in evaluation.claim_supports)
             markers = tuple(int(value) for value in CITATION_PATTERN.findall(row.review_text))
             valid = (
-                row.presenter_id == SELECTED_PRESENTER
+                row.presenter_id in PRESENTERS
+                and (row.presenter_id, row.presenter_version, row.registry_sha256) == (
+                    row.presenter_binding.presenter_id,
+                    row.presenter_binding.presenter_version,
+                    row.presenter_binding.registry_sha256,
+                )
                 and run.style == CUT1_STYLE
                 and evaluation.policy_version == CUT1_POLICY_VERSION
                 and len(cast(Any, run.generated_script).claims) == len(evaluation.claim_supports) == 18
@@ -550,7 +559,7 @@ class NarrationService:
                 and project.name in row.spoken_text
             )
             canonical = canonical_presenter_text(row.presenter_id)
-            valid = valid and ((project.name == "NarraTwin AI") == (row.spoken_text == canonical))
+            valid = valid and project.name == "NarraTwin AI" and row.spoken_text == canonical
             return () if valid else ("GROUNDING_OR_BINDING_STALE",)
         except (NarrationError, PresenterRegistryError, TypeError, ValueError):
             return ("GROUNDING_OR_BINDING_STALE",)

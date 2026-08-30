@@ -463,7 +463,7 @@ def test_owner_asserted_facts_are_classified_and_separate_from_repository_source
 
 
 @pytest.mark.parametrize("presenter_id", ["myra", "raj"])
-def test_cut1_owner_selection_refuses_non_selected_presenters(
+def test_cut1_governed_fallback_presenter_is_independently_grounded(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     presenter_id: str,
@@ -475,14 +475,154 @@ def test_cut1_owner_selection_refuses_non_selected_presenters(
         presenter_id=presenter_id,
     )
 
-    run = _generate(service, principal, project_id, key=f"{presenter_id}-not-selected")
+    run = _generate(service, principal, project_id, key=f"{presenter_id}-grounded")
+
+    assert run.status == "COMPLETED"
+    assert run.accepted_script_text == run.generated_script.text
+    assert run.evaluation is not None
+    assert run.evaluation.policy_version == "cut1-atomic-grounding-v1"
+    assert run.evaluation.unsupported_claim_count == 0
+    assert len(run.evaluation.claim_supports) == 18
+    assert all(support.proposition_ids for support in run.evaluation.claim_supports)
+
+
+def test_cut1_mixed_presenter_claims_fail_closed(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    service, principal, project_id = _seed_public_stage4(
+        tmp_path,
+        monkeypatch,
+        include_facts=True,
+        presenter_id="myra",
+    )
+    generator = CanonicalCut1Generator("myra")
+    original_generate = generator.generate_script
+
+    def mixed_generate(**kwargs: Any) -> GeneratedScript:
+        candidate = original_generate(**kwargs)
+        raj_claims = CanonicalCut1Generator("raj").generate_script(**kwargs).claims
+        mixed_index = next(
+            index
+            for index, (myra_claim, raj_claim) in enumerate(
+                zip(candidate.claims, raj_claims, strict=True)
+            )
+            if myra_claim.text != raj_claim.text
+        )
+        original = candidate.claims[mixed_index]
+        replacement = raj_claims[mixed_index]
+        delta = len(replacement.text) - len(original.text)
+        claims = [
+            replace(
+                claim,
+                text=replacement.text if index == mixed_index else claim.text,
+                script_span_start=claim.script_span_start + (delta if index > mixed_index else 0),
+                script_span_end=claim.script_span_end + (delta if index >= mixed_index else 0),
+            )
+            for index, claim in enumerate(candidate.claims)
+        ]
+        text = (
+            candidate.text[: original.script_span_start]
+            + replacement.text
+            + candidate.text[original.script_span_start + len(original.text) :]
+        )
+        return GeneratedScript(text=text, claims=claims)
+
+    generator.generate_script = mixed_generate  # type: ignore[method-assign]
+    service.llm = generator  # type: ignore[assignment]
+
+    run = _generate(service, principal, project_id, key="mixed-presenter-claims")
 
     assert run.status == "FAILED"
     assert run.accepted_script_text is None
     assert run.evaluation is not None
-    assert run.evaluation.policy_version == "cut1-atomic-grounding-v1"
     assert run.evaluation.unsupported_claim_count == 18
     assert not run.evaluation.claim_supports
+
+
+def test_cut1_ambiguous_complete_presenter_matches_fail_closed(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import backend.app.cut1_grounding as cut1
+
+    service, principal, project_id = _seed_public_stage4(
+        tmp_path, monkeypatch, include_facts=True
+    )
+    run = _generate(service, principal, project_id, key="ambiguous-presenter-claims")
+    assert run.generated_script is not None
+    contract = cut1.load_cut1_grounding_contract(root=ROOT)
+    ambiguous = replace(
+        contract,
+        claim_mappings=tuple(
+            replace(
+                mapping,
+                claim_sha256_by_presenter={
+                    **mapping.claim_sha256_by_presenter,
+                    "myra": mapping.claim_sha256_by_presenter["meera"],
+                },
+            )
+            for mapping in contract.claim_mappings
+        ),
+    )
+    monkeypatch.setattr(cut1, "load_cut1_grounding_contract", lambda *, root: ambiguous)
+
+    evaluation = cut1.evaluate_cut1_grounding(
+        root=ROOT,
+        tenant_id=principal.tenant_id,
+        project_id=project_id,
+        run_id=run.run_id,
+        candidate=run.generated_script,
+        retrieved_context=list(run.retrieved_context),
+        prompt=REQUEST["prompt"],
+        all_chunks=service.rag_store.chunks_for_project(
+            tenant_id=principal.tenant_id, project_id=project_id
+        ),
+    )
+
+    assert evaluation.evaluation_status == "FAILED"
+    assert evaluation.unsupported_claim_count == 18
+    assert not evaluation.claim_supports
+
+
+@pytest.mark.parametrize("mutation", ["missing", "reordered"])
+def test_cut1_runtime_claim_sequence_must_be_complete_and_ordered(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    mutation: str,
+) -> None:
+    from backend.app.cut1_grounding import evaluate_cut1_grounding
+
+    service, principal, project_id = _seed_public_stage4(
+        tmp_path, monkeypatch, include_facts=True
+    )
+    run = _generate(service, principal, project_id, key=f"runtime-{mutation}-claim")
+    assert run.generated_script is not None
+    claims = list(run.generated_script.claims)
+    text = run.generated_script.text
+    if mutation == "missing":
+        removed = claims.pop()
+        text = text[: removed.script_span_start].rstrip()
+    else:
+        claims[-2:] = reversed(claims[-2:])
+    candidate = GeneratedScript(text=text, claims=claims)
+
+    evaluation = evaluate_cut1_grounding(
+        root=ROOT,
+        tenant_id=principal.tenant_id,
+        project_id=project_id,
+        run_id=run.run_id,
+        candidate=candidate,
+        retrieved_context=list(run.retrieved_context),
+        prompt=REQUEST["prompt"],
+        all_chunks=service.rag_store.chunks_for_project(
+            tenant_id=principal.tenant_id, project_id=project_id
+        ),
+    )
+
+    assert evaluation.evaluation_status == "FAILED"
+    assert evaluation.unsupported_claim_count == len(claims)
+    assert not evaluation.claim_supports
 
 
 def test_atomic_fact_asset_bytes_are_immutable(tmp_path: Path) -> None:
@@ -639,7 +779,7 @@ def test_g421_17_restore_rejects_cut1_style_policy_disagreement(
     assert run.run_id not in restored.walkthrough_runs
 
 
-@pytest.mark.parametrize("presenter_id", ["meera"])
+@pytest.mark.parametrize("presenter_id", ["meera", "myra", "raj"])
 def test_public_stage4_and_issue382_lifecycle_persists_one_bound_receipt(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
