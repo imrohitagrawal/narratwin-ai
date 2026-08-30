@@ -1,0 +1,44 @@
+{
+  "schema_version": "GovernancePreflightV1",
+  "issue_number": 468,
+  "branch": "governance-468-scoped-merge-cleanup",
+  "objective": "From exact accepted main 35f7beddc9f5ad8c109011bce05eef077c8194f6 and tree 53a45a3fadbb1d847869be113219c5060bcfc78b, retain original authority base 7eb4b99d7bc2bcf11cfc8c959baacb6cf3a21e81 and prior PR head 0b9497679f12502276b15f759263bf32a803cf81 and reviewed main 55a0810e2ff327490d6dbadbf58580c06edef600 and transition merge af960c9de16e0f648737f105bca275e38895a410 while making the existing merge-closeout contract require scoped resource ownership before deletion, prohibit broad prune operations, preserve dirty local-main state with before-and-after hashes and status counts, prove main...origin/main is 0 ahead and 0 behind, and report retained, deleted, recoverability, and proof-of-absence posture. Bind Issue #468 route-freeze comment 5468440998 and route corrections 5468493806, 5468511334, 5468560507, prospective blocker corrections 5468813566, 5468861375, 5468898843, hosted-parity correction 5468986974, coherent-rehash correction 5469141049, closed-world authorization correction 5469182822, prior post-main transition route 5470386759, prior exact transition merge 5470396865, and post-PR #474 reviewed-main transition 5470664256. Consume the independently merged Issue #471 cleanup-authority anchor and Issue #473 consumer-safe fixture so route-local hash substitution cannot fabricate cleanup-policy acceptance. Use exactly nine paths and no more than 1500 charged text lines, including at most 180 charged lines in the route module and 220 in its route tests. Preserve the immutable Phase 1 legacy receipts, unrelated dirty work, and agent-context hash integrity; keep product runtime, provider, audio, presenter, media, credential, egress, spend, deployment, publication, release, production, and Cut 1 acceptance out of scope. Stop on path, budget, ownership, destructive-operation, dirty-work, divergence, hash, hosted-parity, or approval drift.",
+  "status_decision": "update-minimally",
+  "scope": {
+    "required": [
+      "AGENTS.md",
+      "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md",
+      "docs/governance/preflights/issue-468-scoped-merge-cleanup.json",
+      "docs/STATUS.md",
+      "docs/agent-context/context-policy-manifest-v1.json",
+      "scripts/quality/check_stage8_docs.py",
+      "scripts/quality/stage8_cut1_routes.py",
+      "tests/unit/test_stage8_quality_gate.py",
+      "tests/unit/test_stage8_cut1_routes.py"
+    ],
+    "allowed_prefixes": [
+      "AGENTS.md",
+      "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md",
+      "docs/governance/preflights/issue-468-scoped-merge-cleanup.json",
+      "docs/STATUS.md",
+      "docs/agent-context/context-policy-manifest-v1.json",
+      "scripts/quality/check_stage8_docs.py",
+      "scripts/quality/stage8_cut1_routes.py",
+      "tests/unit/test_stage8_quality_gate.py",
+      "tests/unit/test_stage8_cut1_routes.py"
+    ],
+    "forbidden": [
+      ".github/",
+      "backend/",
+      "frontend/",
+      "pyproject.toml",
+      "uv.lock",
+      "package.json",
+      "package-lock.json",
+      "docs/ADR/",
+      "docs/TRACEABILITY.md",
+      "docs/THIRD_PARTY_NOTICES.md",
+      "scripts/quality/phase1_closure/legacy.py"
+    ]
+  }
+}

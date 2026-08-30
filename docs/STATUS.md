@@ -1710,6 +1710,37 @@ credential, egress, spend, media, asset, deployment, publication, release,
 public-availability, production-readiness, or presenter-acceptance authority is
 created by Issue #16.
 
+## Issue #468 scoped merge-closeout cleanup governance
+
+Issue `#468` is active on branch `governance-468-scoped-merge-cleanup` as a
+separate, governance-only lane. It strengthens the existing merge-closeout
+contract with scoped resource ownership before deletion, explicit broad-prune
+prohibition, dirty local-main before-and-after hashes and status counts,
+`main...origin/main` zero-divergence evidence, proof of absence, and a retained,
+deleted, and recoverability report. Executable mutation tests bind the concise
+repository rule and the detailed reusable playbook checklist to their owning
+sections so duplicate wording elsewhere cannot create a false pass.
+
+PR `#472` merged the independent Issue `#471` authority anchor at
+`3b186af6f5787a47bbfa5f7aebaa2dc9661866ca`. After PR `#467` merged and closed
+Issue `#466`, PR `#470` transitioned from prior head `0b949767` onto exact main
+`55a0810e2ff327490d6dbadbf58580c06edef600` through two-parent merge
+`af960c9de16e0f648737f105bca275e38895a410`. The active correction consumes the
+independent anchor so a route-local coherent document-and-pin rehash cannot
+fabricate cleanup-policy acceptance. Fresh exact-head hosted checks, review,
+approval, merge, and closeout remain required.
+
+PR `#474` then merged the consumer-safe anchor fixture at exact accepted main
+`35f7beddc9f5ad8c109011bce05eef077c8194f6`. Issue `#468` is transitioning by
+normal merge onto that reviewed base, preserving both the independent Issue
+`#471` authority anchor and the Issue `#473` fixture. Fresh direct-head and
+merge-topology validation remain required before PR `#470` can be reviewed.
+
+This issue does not change product/runtime behavior and does not block or
+complete Issue `#459`, Issue `#368`, T05, T06, T07, or T08. It authorizes no
+provider, credential, egress, spend, media, deployment, publication, release,
+production-readiness, or Cut 1 acceptance claim.
+
 ## Issue #459 Lane A Cut 1 entry state
 
 PR `#458` merged and closed Issue `#16` at accepted main

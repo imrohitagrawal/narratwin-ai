@@ -6,10 +6,12 @@ import json
 import re
 import stat
 import subprocess
+import unicodedata
 from pathlib import Path
 from typing import Any, Callable
 
 from scripts.governance_preflight_v1 import validate_governance_preflight
+from scripts.guardrails_check import cleanup_authority_anchor_failures
 
 ISSUE150_BRANCH = "cut1-process-150-semgrep-mcp-renewal"
 ISSUE460_BRANCH = "security-460-semgrep-override-removal"
@@ -19,6 +21,7 @@ ISSUE459_BRANCH = "lane-a-cut1-459-controlled-presenter"
 ISSUE459_T03_BRANCH = "stage8-459-t03-presenter-derivatives"
 ISSUE459_T05A_BRANCH = "stage8-459-t05a-grounded-narration-handoff"
 ISSUE459_T05B_BRANCH = "stage8-459-t05b-audio-caption-authority"
+ISSUE468_BRANCH = "governance-468-scoped-merge-cleanup"
 ISSUE466_BRANCH = "cut1-466-t05a-presenter-source-integrity"
 ISSUE471_BRANCH = "governance-471-cleanup-authority-anchor"
 ISSUE473_BRANCH = "governance-473-cleanup-anchor-consumer-fixture"
@@ -52,6 +55,7 @@ ISSUE368_IMPLEMENTATION_BASE = "6766da34d73e301358f84f8eefb0985927292a26"
 ISSUE368_QUOTA_FIX_BASE = "9c165f739788fb0f09b315673f9125d700d6a96b"
 ISSUE421_BASE = "a868137fab607ae75d4b272301e9fc52b898e15c"
 ISSUE424_BASE = "afcf0325c3ec925b68b770eda0bb8c839bcce4dd"
+ISSUE468_BASE = "35f7beddc9f5ad8c109011bce05eef077c8194f6"
 ISSUE150_BASE = "a02286240212ad8958915aec01aa5ebaf60fa705"
 ISSUE460_BASE = "ab97b6eecba6db9c66c37d19b29257c7398f3ab7"
 ISSUE451_BASE = "59db96aaab6c4e75b12d134dc9b02330c5a982ac"
@@ -120,6 +124,17 @@ ISSUE460_HOSTED_SECURITY_PATHS = {
 ISSUE459_HOSTED_CORRECTION_PATHS = {".gitleaksignore", "scripts/ci/check_gitleaks_regression.py", "tests/unit/test_gitleaks_regression.py", "scripts/quality/check_stage8_docs.py", "tests/unit/test_stage8_quality_gate.py"}
 
 ROUTES = {
+    ISSUE468_BRANCH: {
+        "AGENTS.md",
+        "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md",
+        "docs/governance/preflights/issue-468-scoped-merge-cleanup.json",
+        "docs/STATUS.md",
+        "docs/agent-context/context-policy-manifest-v1.json",
+        "scripts/quality/check_stage8_docs.py",
+        "scripts/quality/stage8_cut1_routes.py",
+        "tests/unit/test_stage8_quality_gate.py",
+        "tests/unit/test_stage8_cut1_routes.py",
+    },
     ISSUE466_BRANCH: {
         "docs/governance/preflights/issue-466.json",
         "docs/governance/cut1-project-facts-v1.json",
@@ -588,10 +603,12 @@ ROUTE_ISSUES = {ISSUE452_BRANCH: 452, ISSUE451_BRANCH: 451, ISSUE150_BRANCH: 150
                 ISSUE386_BRANCH: 386, ISSUE385_BRANCH: 385,
                 ISSUE384_BRANCH: 384, ISSUE383_BRANCH: 383, ISSUE397_BRANCH: 397,
                 ISSUE393_BRANCH: 393, ISSUE382_BRANCH: 382, ISSUE367_BRANCH: 367}
+ROUTE_ISSUES[ISSUE468_BRANCH] = 468
 TOTAL_LIMITS = {ISSUE452_BRANCH: 3600, ISSUE451_BRANCH: 600, ISSUE150_BRANCH: 1000, ISSUE424_BRANCH: 8500, ISSUE421_BRANCH: 4000, ISSUE415_BRANCH: 5000, ISSUE415_CORRECTION_BRANCH: 800, ISSUE413_BRANCH: 5000, ISSUE368_ADAPTER_BRANCH: 5600, ISSUE368_IMPLEMENTATION_BRANCH: 3600, ISSUE368_QUOTA_FIX_BRANCH: 2800, ISSUE368_PROMPT_BRANCH: 1000, ISSUE368_BRANCH: 3200, ISSUE405_BRANCH: 800, ISSUE428_BRANCH: 500, ISSUE403_BRANCH: 650, ISSUE401_BRANCH: 600, ISSUE396_BRANCH: 500,
                 ISSUE386_BRANCH: 700, ISSUE385_BRANCH: 350,
                 ISSUE384_BRANCH: 500, ISSUE383_BRANCH: 700, ISSUE397_BRANCH: 500,
                 ISSUE393_BRANCH: 700, ISSUE382_BRANCH: 3200, ISSUE367_BRANCH: 2000}
+TOTAL_LIMITS[ISSUE468_BRANCH] = 1500
 ROUTE_ISSUES[ISSUE471_BRANCH] = 471
 TOTAL_LIMITS[ISSUE471_BRANCH] = 1400
 ROUTE_ISSUES[ISSUE473_BRANCH] = 473
@@ -640,6 +657,17 @@ ISSUE459_EDITABLE_AUTHORITY_SHA256 = {
 }
 ISSUE459_BASE_SOURCE_SHA256 = {"docs/STATUS.md": "9045b595ca1622680f621dffa4dff88435e2fde0d13e3c061ced7eb6df9ae8bf", "docs/TRACEABILITY.md": "e597069e3d6b765a9d68e5336ff9597d6d7b809e5ea6f316f22312ca71ea136a", "docs/QUALITY_GATES.md": "9f628d22ec62075e560ef478820cf094d923cdf1cfded56a512291c61f6e542b", "docs/REPOSITORY_GUARDRAILS.md": "04f8b405bc7ba9b615cc1d5d7e489bcbf643b9de4bfc9b331e5a60c38629e82f"}
 TEXT_LIMITS = {
+    ISSUE468_BRANCH: {
+        "AGENTS.md": 70,
+        "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md": 180,
+        "docs/governance/preflights/issue-468-scoped-merge-cleanup.json": 260,
+        "docs/STATUS.md": 90,
+        "docs/agent-context/context-policy-manifest-v1.json": 200,
+        "scripts/quality/check_stage8_docs.py": 80,
+        "scripts/quality/stage8_cut1_routes.py": 180,
+        "tests/unit/test_stage8_quality_gate.py": 160,
+        "tests/unit/test_stage8_cut1_routes.py": 220,
+    },
     ISSUE466_BRANCH: {
         "docs/governance/preflights/issue-466.json": 320,
         "docs/governance/cut1-project-facts-v1.json": 220,
@@ -1100,6 +1128,103 @@ def load_json_without_duplicate_members(path: Path) -> Any:
     )
 
 
+def markdown_heading_body(text: str, heading: str, level: int) -> str:
+    prefix = "#" * level
+    pattern = rf"^{prefix} {re.escape(heading)}\s*\n(?P<body>.*?)(?=^#{{1,{level}}} |\Z)"
+    match = re.search(pattern, text, flags=re.M | re.S)
+    return match.group("body") if match else ""
+
+
+def operative_markdown_text(document: str) -> str:
+    without_comments = re.sub(r"<!--.*?-->", "", document, flags=re.S)
+    operative: list[str] = []
+    fence: str | None = None
+    for line in without_comments.splitlines():
+        marker = re.match(r"^\s*(```|~~~)", line)
+        if marker:
+            if fence is None:
+                fence = marker.group(1)
+            elif fence == marker.group(1):
+                fence = None
+            continue
+        if fence is None:
+            operative.append(line)
+    return "\n".join(operative)
+
+
+def has_unsafe_broad_prune_authorization(document: str) -> bool:
+    operative = unicodedata.normalize("NFKC", operative_markdown_text(document))
+    if any(unicodedata.category(char) == "Cf" or (char.isalpha() and not char.isascii()) for char in operative):
+        return True
+    normalized = re.sub(r"\s+", " ", operative.lower())
+    safe_clauses = (
+        "prohibit broad prune operations;",
+        "do not run broad prune operations, including docker system, image, builder, volume, network, cache, "
+        "worktree, branch, or recursive filesystem pruning; broad prune operations are prohibited even when "
+        "every cleanup target has asserted ownership",
+    )
+    for clause in safe_clauses:
+        normalized = normalized.replace(clause, "", 1)
+    return "broad" in normalized and "prun" in normalized
+
+
+def merge_cleanup_contract_failures(
+    root: Path,
+    reader: Callable[[str], str] | None = None,
+) -> list[str]:
+    read_document = reader or (
+        lambda path: (root / path).read_text(encoding="utf-8")
+    )
+    specifications = (
+        (
+            "AGENTS.md", "Non-Negotiable Workflow", 2,
+            (
+                "resolve scoped resource ownership before deletion",
+                "prohibit broad prune operations",
+                "before-and-after hashes and status counts",
+                "main...origin/main is 0 ahead / 0 behind",
+                "retained, deleted, and recoverability report",
+                "proof of absence",
+            ),
+        ),
+        (
+            "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md",
+            "Mandatory Merge-Closeout Checklist", 3,
+            (
+                "inventory every cleanup target and resolve its ownership to the completed PR before deletion",
+                "completed implementation and verification worktrees",
+                "PR-owned Docker containers, images, volumes, and networks",
+                "PR-owned temporary clones, files, and isolated dependencies",
+                "do not run broad prune operations",
+                "hash staged, unstaged, and untracked state before and after preservation",
+                "verify `main...origin/main` is `0` ahead and `0` behind",
+                "retained, deleted, and recoverability",
+                "prove scoped resources are absent",
+            ),
+        ),
+    )
+    failures = cleanup_authority_anchor_failures(
+        lambda path: read_document(path).encode("utf-8")
+    )
+    for path, heading, level, markers in specifications:
+        try:
+            document = read_document(path)
+            body = markdown_heading_body(document, heading, level)
+        except (OSError, UnicodeError) as error:
+            failures.append(f"Stage 8 merge-closeout contract unavailable: {path}: {error}.")
+            continue
+        normalized = re.sub(r"\s+", " ", body)
+        failures.extend(
+            f"Stage 8 merge-closeout contract missing {path} marker: {marker}."
+            for marker in markers if marker not in normalized
+        )
+        if has_unsafe_broad_prune_authorization(document):
+            failures.append(
+                f"Stage 8 merge-closeout contract contains unsafe broad-prune authorization: {path}."
+            )
+    return failures
+
+
 def security_preflight_failures(root: Path, issue: int) -> list[str]:
     path = root / f"docs/governance/preflights/issue-{issue}.json"
     schema, expected_sha = SECURITY_PREFLIGHTS[issue]
@@ -1343,6 +1468,7 @@ def route_base(run: Callable[[list[str]], Any], branch: str) -> str:
             )
         return ISSUE466_TRANSITION_BASE
     fixed_routes = {
+        ISSUE468_BRANCH: (468, ISSUE468_BASE),
         ISSUE473_BRANCH: (473, ISSUE473_BASE),
         ISSUE471_BRANCH: (471, ISSUE471_BASE),
         ISSUE459_T05B_BRANCH: (459, ISSUE459_T05B_BASE),
@@ -1367,14 +1493,17 @@ def route_base(run: Callable[[list[str]], Any], branch: str) -> str:
         common = run(["git", "merge-base", base, "HEAD"])
         fixed_value = str(fixed.stdout).strip()
         common_value = str(common.stdout).strip()
+        fixed_invalid = (
+            fixed.returncode or common.returncode
+            or fixed_value != base or common_value != base
+        )
         branch_point_invalid = False
-        if branch in {ISSUE473_BRANCH, ISSUE471_BRANCH, ISSUE459_T05B_BRANCH, ISSUE459_T05A_BRANCH, ISSUE459_T03_BRANCH, ISSUE460_BRANCH, ISSUE452_BRANCH, ISSUE451_BRANCH, ISSUE150_BRANCH, ISSUE424_BRANCH, ISSUE421_BRANCH, ISSUE368_IMPLEMENTATION_BRANCH,
+        if not fixed_invalid and branch in {ISSUE468_BRANCH, ISSUE473_BRANCH, ISSUE471_BRANCH, ISSUE459_T05B_BRANCH, ISSUE459_T05A_BRANCH, ISSUE459_T03_BRANCH, ISSUE460_BRANCH, ISSUE452_BRANCH, ISSUE451_BRANCH, ISSUE150_BRANCH, ISSUE424_BRANCH, ISSUE421_BRANCH, ISSUE368_IMPLEMENTATION_BRANCH,
                       ISSUE368_QUOTA_FIX_BRANCH, ISSUE368_BRANCH,
                       ISSUE368_PROMPT_BRANCH}:
             branch_point = run(["git", "merge-base", "origin/main", "HEAD"])
             branch_point_invalid = branch_point.returncode != 0 or str(branch_point.stdout).strip() != base
-        if (fixed.returncode or common.returncode or fixed_value != base or common_value != base
-                or branch_point_invalid):
+        if fixed_invalid or branch_point_invalid:
             raise RuntimeError(f"Issue #{issue} fixed base evidence is unavailable or inconsistent.")
         return base
     current = run(["git", "rev-parse", "origin/main^{commit}"])
@@ -1595,6 +1724,25 @@ def check_exact_route(
             failures.extend(f"Issue #460 governance preflight failed: {finding.code}" for finding in findings)
         except (OSError, UnicodeError, json.JSONDecodeError) as error:
             failures.append(f"Issue #460 governance preflight failed closed: {error}")
+    elif branch == ISSUE468_BRANCH:
+        try:
+            preflight = load_json_without_duplicate_members(
+                root / "docs/governance/preflights/issue-468-scoped-merge-cleanup.json"
+            )
+            findings = validate_governance_preflight(
+                preflight,
+                context={
+                    "issue_number": 468,
+                    "branch": branch,
+                    "changed_files": sorted(files),
+                },
+            )
+            failures.extend(
+                f"Issue #468 governance preflight failed: {finding.code}"
+                for finding in findings
+            )
+        except (OSError, ValueError, TypeError) as error:
+            failures.append(f"Issue #468 governance preflight failed closed: {error}")
     elif branch == ISSUE466_BRANCH:
         try:
             preflight = load_json_without_duplicate_members(

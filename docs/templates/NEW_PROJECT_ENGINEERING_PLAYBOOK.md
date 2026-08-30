@@ -824,6 +824,8 @@ Rules:
 - Preserve negative claims explicitly when they matter, such as "this does not
   close the production blocker" or "this does not claim production readiness."
 
+### Mandatory Merge-Closeout Checklist
+
 When a PR becomes approved and merge-eligible, do not wait for the owner to
 restate routine hygiene. Treat merge closeout as the default continuation of
 the work unless an explicit human-only gate remains. This is a required
@@ -837,6 +839,25 @@ Minimum merge-closeout checklist:
 - verify post-merge workflows on the default branch
 - sync local default branch to the merged remote state
 - delete merged feature branches when no longer needed
+- inventory every cleanup target and resolve its ownership to the completed PR
+  before deletion; retain anything whose ownership is unclear
+- remove completed implementation and verification worktrees
+- remove PR-owned Docker containers, images, volumes, and networks
+- remove PR-owned temporary clones, files, and isolated dependencies
+- do not run broad prune operations, including Docker system, image, builder,
+  volume, network, cache, worktree, branch, or recursive filesystem pruning; broad prune operations are prohibited
+  even when every cleanup target has asserted ownership
+- when local `main` owns dirty work, hash staged, unstaged, and untracked state
+  before and after preservation; also record the status-entry count, preserve
+  the exact index and files on a clearly named local branch, and reverify both
+  hashes and count before recreating clean local `main`
+- after synchronization, verify `main...origin/main` is `0` ahead and `0`
+  behind
+- prove scoped resources are absent after deletion without treating unrelated
+  retained resources as cleanup failures
+- publish a retained, deleted, and recoverability report that identifies each
+  scoped resource, its ownership basis, disposition, reason, and whether the
+  deletion is recoverable
 - close satisfied child issues or follow-up tickets with evidence
 - reconcile repository-tracked status/governance docs if GitHub merge events
   changed the authoritative state after the PR docs were written

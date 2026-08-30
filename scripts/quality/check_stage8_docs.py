@@ -12,7 +12,7 @@ from scripts.quality.check_stage2_docs import check_retrieval_strategy_v1_parity
 from scripts.quality import stage8_brace_expansion_unblock as brace_security
 from scripts.quality import stage8_cache_pruning as cache_pruning
 from scripts.quality.stage8_a23b import A23A_BRANCH, A23B_BRANCH, A23_ROUTES, check_a23b
-from scripts.quality import stage8_backend_security as backend_security, stage8_cut1_routes as cut1_routes
+from scripts.quality import stage8_backend_security as backend_security,stage8_cut1_routes as cr;cut1_routes=cr
 from scripts.quality import stage8_node_security as node_security
 STAGE8_BRANCH_PATTERN = re.compile(r"(?ai)^stage8-(?![a-z0-9-]*366(?:-|$))(?![a-z0-9-]*cut1)[a-z0-9-]+$")
 ISSUE84_GUARDRAIL_BRANCH = "guardrail-main-merge-push-detection-84"
@@ -120,10 +120,10 @@ PROCESS_BRANCH_ALLOWED_FILES = {issue427_reset.BRANCH: set(issue427_reset.PATHS)
 PROCESS_BRANCH_ALLOWED_FILES.update(
     A23_ROUTES
     | cache_pruning.CACHE_PRUNING_ROUTES
-    | {branch: paths for branch, paths in cut1_routes.ROUTES.items() if branch != cut1_routes.ISSUE386_BRANCH}
+    | {branch: paths for branch, paths in cr.ROUTES.items() if branch != cr.ISSUE386_BRANCH}
 )
 EFFECTIVE_STAGE8_ROUTES = PROCESS_BRANCH_ALLOWED_FILES | brace_security.BRACE_EXPANSION_ROUTES \
-    | node_security.I389_ROUTES | node_security.I376_ROUTES | backend_security.ISSUE436_ROUTES | cut1_routes.ROUTES
+    | node_security.I389_ROUTES | node_security.I376_ROUTES | backend_security.ISSUE436_ROUTES | cr.ROUTES
 def run(a:list[str])->subprocess.CompletedProcess[str]:return subprocess.run(a,cwd=ROOT,text=True,capture_output=True)
 def issue434_artifact_findings(a:dict[str,bytes])->list[str]:
     if set(a)!=set(A434)or any(not isinstance(v,bytes)for v in a.values()):return["I434 set."]
@@ -169,8 +169,8 @@ def changed_files_for_stage_scope() -> list[str]:
     b=os.environ.get("GITHUB_BASE_SHA","").strip()
     r=os.environ.get("NARRATWIN_HEAD_REF",os.environ.get("GITHUB_REF_NAME","")).strip()
     f=(event_name=="push" and r!="main") or not b or b==NULL_GIT_SHA
-    candidates=([cut1_routes.ISSUE459_TRANSITION_BASE] if event_name=="push" and
-        r==cut1_routes.ISSUE459_BRANCH else ["origin/main","main"] if f else [b])
+    candidates=([cr.ISSUE459_TRANSITION_BASE] if event_name=="push" and
+        r==cr.ISSUE459_BRANCH else ["origin/main","main"] if f else [b])
     merge_base=""; last_error=""
     for candidate in candidates:
         result = run(["git", "merge-base", candidate, head])
@@ -220,7 +220,7 @@ def issue434_budget_findings(n:int,c:dict[str,int])->list[str]:
     if sum(c.get(p,0) for p in R434[11:13])>200:f.append("I434 Stage8>200.")
     return f
 def cut1_transition_charges() -> tuple[int, dict[str, int]]:
-    return cut1_routes.cut1_transition_charges(run, C1_BASE, CUT1_REAL_MEDIA_TRANSITION_FILES)
+    return cr.cut1_transition_charges(run, C1_BASE, CUT1_REAL_MEDIA_TRANSITION_FILES)
 def cut1_digest() -> str:
     digest=hashlib.sha256()
     for path in C1_BOUND:
@@ -303,7 +303,7 @@ def check_stage_scope(failures: list[str]) -> None:
     allowed_files = EFFECTIVE_STAGE8_ROUTES.get(branch, STAGE8_ALLOWED_FILES)
     changed_files = set(changed_files_for_stage_scope())
     outside = changed_files - allowed_files
-    if not outside: cut1_routes.check_exact_route(ROOT, run, branch, changed_files, failures)
+    if not outside: cr.check_exact_route(ROOT, run, branch, changed_files, failures)
     for path in sorted(outside):
         fail(f"Stage 8 changed file outside the allowlist: {path}", failures)
     if branch==ISSUE434_BRANCH and not outside:
@@ -474,7 +474,7 @@ def check_docs(failures: list[str]) -> None:
         fail("Stage 8 must carry forward RR-029 through RR-035.", failures)
 def main() -> int:
     failures: list[str] = []
-    check_required_files(failures)
+    check_required_files(failures); failures.extend(cr.merge_cleanup_contract_failures(ROOT))
     check_retrieval_strategy_v1_parity(ROOT, failures)
     check_evaluation_lineage_checksum_v2_contract(ROOT, failures)
     if not failures:

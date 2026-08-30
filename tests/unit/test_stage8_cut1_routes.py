@@ -4,6 +4,7 @@ import copy
 import importlib.util
 import hashlib
 import json
+import re
 import shutil
 import subprocess
 from pathlib import Path
@@ -293,9 +294,56 @@ ISSUE459_T05B_EXPECTED = {
     "tests/unit/test_gitleaks_regression.py",
 }
 ISSUE459_T05B_LINE_CAPS = {path: 3600 for path in ISSUE459_T05B_EXPECTED}
+ISSUE468_EXPECTED = {
+    "AGENTS.md",
+    "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md",
+    "docs/governance/preflights/issue-468-scoped-merge-cleanup.json",
+    "docs/STATUS.md",
+    "docs/agent-context/context-policy-manifest-v1.json",
+    "scripts/quality/check_stage8_docs.py",
+    "scripts/quality/stage8_cut1_routes.py",
+    "tests/unit/test_stage8_quality_gate.py",
+    "tests/unit/test_stage8_cut1_routes.py",
+}
+ISSUE468_LINE_CAPS = {
+    "AGENTS.md": 70,
+    "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md": 180,
+    "docs/governance/preflights/issue-468-scoped-merge-cleanup.json": 260,
+    "docs/STATUS.md": 90,
+    "docs/agent-context/context-policy-manifest-v1.json": 200,
+    "scripts/quality/check_stage8_docs.py": 80,
+    "scripts/quality/stage8_cut1_routes.py": 180,
+    "tests/unit/test_stage8_quality_gate.py": 160, "tests/unit/test_stage8_cut1_routes.py": 220,
+}
+ISSUE468_CLEANUP_CONTRACT = {
+    "AGENTS.md": (
+        "resolve scoped resource ownership before deletion", "prohibit broad prune operations",
+        "before-and-after hashes and status counts", "main...origin/main is 0 ahead / 0 behind",
+        "retained, deleted, and recoverability report", "proof of absence",
+    ),
+    "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md": (
+        "inventory every cleanup target and resolve its ownership to the completed PR before deletion",
+        "completed implementation and verification worktrees",
+        "PR-owned Docker containers, images, volumes, and networks",
+        "PR-owned temporary clones, files, and isolated dependencies",
+        "do not run broad prune operations",
+        "hash staged, unstaged, and untracked state before and after preservation",
+        "verify `main...origin/main` is `0` ahead and `0` behind",
+        "retained, deleted, and recoverability", "prove scoped resources are absent",
+    ),
+}
+
+
+def cleanup_documents() -> dict[str, str]:
+    return {path: (REPO / path).read_text(encoding="utf-8") for path in ISSUE468_CLEANUP_CONTRACT}
+
+
+def remove_cleanup_marker(text: str, marker: str) -> str:
+    return re.sub(re.escape(marker).replace(r"\ ", r"\s+"), "removed marker", text, count=1)
 
 
 EXPECTED = {
+    "governance-468-scoped-merge-cleanup": ISSUE468_EXPECTED,
     "cut1-466-t05a-presenter-source-integrity": ISSUE466_EXPECTED,
     "governance-473-cleanup-anchor-consumer-fixture": {
         "tests/unit/test_guardrails_check.py",
@@ -878,6 +926,174 @@ def test_routes_are_exact_pre_registered_and_issue386_preflight_matches() -> Non
     assert routes.security_preflight_failures(REPO, 150) == []
     assert routes.security_preflight_failures(REPO, 428) == []
     assert routes.security_preflight_failures(REPO, 460) == []
+
+
+def test_issue468_route_preflight_and_budgets_are_exact() -> None:
+    assert routes.ISSUE468_BRANCH == "governance-468-scoped-merge-cleanup"
+    path = REPO / "docs/governance/preflights/issue-468-scoped-merge-cleanup.json"
+    preflight = json.loads(path.read_text(encoding="utf-8"))
+    assert set(preflight) == {
+        "schema_version", "issue_number", "branch", "objective", "status_decision", "scope",
+    }
+    assert preflight["schema_version"] == "GovernancePreflightV1"
+    assert preflight["issue_number"] == 468
+    assert preflight["branch"] == routes.ISSUE468_BRANCH
+    comments = {"5468560507", "5468813566", "5468861375", "5468898843",
+                "5468986974", "5469141049", "5470386759", "5470396865", "5470664256"}
+    assert comments <= set(re.findall(r"\d{10}", preflight["objective"]))
+    assert {"0b9497679f12502276b15f759263bf32a803cf81",
+            "55a0810e2ff327490d6dbadbf58580c06edef600", "35f7beddc9f5ad8c109011bce05eef077c8194f6",
+            "af960c9de16e0f648737f105bca275e38895a410"} <= set(preflight["objective"].split())
+    assert set(preflight["scope"]["required"]) == ISSUE468_EXPECTED
+    assert set(preflight["scope"]["allowed_prefixes"]) == ISSUE468_EXPECTED
+    assert routes.ROUTE_ISSUES[routes.ISSUE468_BRANCH] == 468
+    assert routes.TOTAL_LIMITS[routes.ISSUE468_BRANCH] == 1500
+    assert routes.TEXT_LIMITS[routes.ISSUE468_BRANCH] == ISSUE468_LINE_CAPS
+
+
+def test_issue468_route_requires_exact_fixed_base_and_branch_point() -> None:
+    base = "35f7beddc9f5ad8c109011bce05eef077c8194f6"
+    assert getattr(routes, "ISSUE468_BASE", None) == base
+    calls: list[list[str]] = []
+
+    def good(args: list[str]) -> subprocess.CompletedProcess[str]:
+        calls.append(args)
+        return completed(args, out=base + "\n")
+
+    assert routes.route_base(good, routes.ISSUE468_BRANCH) == base
+    assert calls == [
+        ["git", "rev-parse", f"{base}^{{commit}}"],
+        ["git", "merge-base", base, "HEAD"],
+        ["git", "merge-base", "origin/main", "HEAD"],
+    ]
+
+    later = "a" * 40
+    for results in (
+        (completed([], out=later + "\n"), completed([], out=later + "\n")),
+        (completed([], code=1), completed([], out=base + "\n")),
+        (completed([], out=base + "\n"), completed([], out=later + "\n"),
+         completed([], out=base + "\n")),
+    ):
+        error = pytest.raises(
+            RuntimeError, routes.route_base, lambda _, values=iter(results): next(values),
+            routes.ISSUE468_BRANCH,
+        )
+        assert "Issue #468 fixed base" in str(error.value)
+
+
+def test_issue468_route_hash_forgery_cannot_bypass_independent_anchor(monkeypatch: Any) -> None:
+    documents, clause, real_sha256 = cleanup_documents(), "\nroute-local hash bypass\n", hashlib.sha256
+    documents["AGENTS.md"] += clause
+    monkeypatch.setattr(routes.hashlib, "sha256",
+                        lambda data: real_sha256(data.replace(clause.encode(), b"")))
+    assert routes.merge_cleanup_contract_failures(REPO, documents.__getitem__) == [
+        "Merge-cleanup authority anchor rejected AGENTS.md bytes."]
+
+
+@pytest.mark.parametrize(
+    ("path", "marker"),
+    [(path, marker) for path, markers in ISSUE468_CLEANUP_CONTRACT.items() for marker in markers],
+)
+def test_issue468_cleanup_contract_rejects_each_marker_mutation(
+    path: str, marker: str,
+) -> None:
+    documents = cleanup_documents()
+    documents[path] = remove_cleanup_marker(documents[path], marker)
+
+    failures = routes.merge_cleanup_contract_failures(REPO, documents.__getitem__)
+
+    assert f"Stage 8 merge-closeout contract missing {path} marker: {marker}." in failures
+
+
+@pytest.mark.parametrize(
+    ("path", "marker"),
+    (
+        ("AGENTS.md", "prohibit broad prune operations"),
+        ("docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md", "do not run broad prune operations"),
+    ),
+)
+def test_issue468_cleanup_contract_rejects_wrong_section_decoy(
+    path: str, marker: str,
+) -> None:
+    documents = cleanup_documents()
+    documents[path] = f"{remove_cleanup_marker(documents[path], marker)}\n\n## Decoy\n\n{marker}\n"
+
+    failures = routes.merge_cleanup_contract_failures(REPO, documents.__getitem__)
+
+    assert f"Stage 8 merge-closeout contract missing {path} marker: {marker}." in failures
+
+
+@pytest.mark.parametrize(
+    ("path", "old", "unsafe"),
+    (
+        ("AGENTS.md", "prohibit broad prune operations", "need not prohibit broad prune operations"),
+        ("AGENTS.md", "Merge cleanup must", 'Deprecated quotation: "Merge cleanup must'),
+        ("docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md", "do not run broad prune operations",
+         "disregard the instruction to do not run broad prune operations"),
+        ("docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md", "- do not run broad prune operations",
+         "- historical quotation: do not run broad prune operations"),
+    ),
+)
+def test_issue468_cleanup_contract_rejects_semantic_reversal_or_deprecation(
+    path: str, old: str, unsafe: str,
+) -> None:
+    documents = cleanup_documents()
+    documents[path] = documents[path].replace(old, unsafe, 1)
+
+    assert routes.merge_cleanup_contract_failures(REPO, documents.__getitem__)
+
+
+@pytest.mark.parametrize("mutation", ("comment", "fence", "subsection", "override"))
+def test_issue468_cleanup_contract_rejects_nonoperative_decoys_and_overrides(
+    mutation: str,
+) -> None:
+    documents = cleanup_documents()
+    if mutation == "override":
+        path, anchor = "AGENTS.md", "   absence for removed resources."
+        documents[path] = documents[path].replace(
+            anchor, anchor + "\n   This rule is deprecated; broad prune operations are allowed.", 1,
+        )
+    elif mutation == "comment":
+        path, start, end = "AGENTS.md", "   Merge cleanup must", "   absence for removed resources."
+        block = documents[path][documents[path].index(start):documents[path].index(end) + len(end)]
+        documents[path] = documents[path].replace(
+            block, f"<!-- obsolete example\n{block}\n-->\nBroad prune operations are authorized.", 1,
+        )
+    else:
+        path = "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md"
+        start, end = "- inventory every cleanup target", "  deletion is recoverable"
+        prefix = "```text\n" if mutation == "fence" else "#### Historical quotation\n\n"
+        suffix = "\n```" if mutation == "fence" else ""
+        documents[path] = documents[path].replace(start, prefix + start, 1).replace(
+            end, end + suffix + "\n\nBroad prune operations are allowed.", 1,
+        )
+
+    assert routes.merge_cleanup_contract_failures(REPO, documents.__getitem__)
+
+
+def test_issue468_playbook_prohibits_broad_prune_unconditionally() -> None:
+    playbook = cleanup_documents()["docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md"]
+    assert "recursive filesystem pruning; broad prune operations are prohibited" in playbook
+    assert "when ownership is unresolved" not in playbook
+
+
+@pytest.mark.parametrize("countermand", ("Broad prune operations are allowed.", "Broad prune operations are approved.", "Broad prune operations are sanctioned.", "It is permissible to run broad prune operations.", "Broad pruning is encouraged.", "Run broad prune operations.", "Do not prohibit broad prune operations.", "The prohibition on broad prune operations is waived.", "Broad prune operations are not disallowed.", "Broad pruning is prohibited until ownership is resolved.", "Broad-prune operations are allowed.", "Broad\u200b prune operations are allowed.", "Broad prunе operations are allowed.", "Broad " + "scope " * 24 + "prune operations are allowed."))
+def test_issue468_cleanup_contract_rejects_coherently_rehashed_countermand(monkeypatch: Any, countermand: str) -> None:
+    documents = cleanup_documents()
+    path, clause = "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md", f"\n{countermand}\n"
+    documents[path] += clause
+    real_sha256 = hashlib.sha256
+    monkeypatch.setattr(routes.hashlib, "sha256", lambda data: real_sha256(data.replace(clause.encode(), b"")))
+    assert "unsafe broad-prune authorization" in " ".join(routes.merge_cleanup_contract_failures(REPO, documents.__getitem__))
+
+
+def test_issue468_cleanup_contract_rejects_sibling_heading_override() -> None:
+    documents = cleanup_documents()
+    path = "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md"
+    documents[path] = documents[path].replace(
+        "\n## Stop Rules", "\n### Cleanup override\n\nBroad prune is allowed.\n\n## Stop Rules", 1,
+    )
+    assert routes.merge_cleanup_contract_failures(REPO, documents.__getitem__)
 
 
 def test_security_preflights_reject_duplicate_and_exact_byte_drift(tmp_path: Path) -> None:
@@ -2253,7 +2469,9 @@ def test_legacy_checker_caps_are_unchanged_and_executable() -> None:
     checker_text = checker.read_text(encoding="utf-8")
     assert len(checker_text.splitlines()) <= 500
     assert checker.stat().st_size <= 32_000
-    assert len((REPO / "tests/unit/test_stage8_quality_gate.py").read_text(encoding="utf-8").splitlines()) <= 250
+    legacy_test_lines = (REPO / "tests/unit/test_stage8_quality_gate.py").read_text(encoding="utf-8").splitlines()
+    assert len(legacy_test_lines) <= 250
+    assert max(map(len, legacy_test_lines), default=0) <= 120
     for relative in (
         "scripts/quality/stage8_brace_expansion_unblock.py",
         "scripts/quality/stage8_cache_pruning.py",

@@ -35,6 +35,11 @@ Before changing files, read:
    itself requires a new issue, branch, or pull request to stay within the
    no-direct-to-`main` workflow, open that follow-up governance work as part of
    closeout instead of treating the merge as fully complete.
+   Merge cleanup must resolve scoped resource ownership before deletion;
+   prohibit broad prune operations; preserve dirty work with before-and-after
+   hashes and status counts; verify main...origin/main is 0 ahead / 0 behind;
+   and publish a retained, deleted, and recoverability report with proof of
+   absence for removed resources.
 7. Do not start product implementation until Stage 0 and Stage 1 gates pass.
 8. Do not implement backend, frontend, RAG, avatar, provider, Docker, database, or runtime product code in Stage 0.
 9. Build only approved vertical slices after the gates allow implementation.

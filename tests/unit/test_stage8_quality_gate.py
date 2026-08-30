@@ -54,7 +54,7 @@ def test_cut1_routes_are_exact_stage8_and_not_preflight_owned(monkeypatch: Any, 
     assert {b for b in policy if b[:5] == "cut1-"} - set(SCOPES) == registered
     dispatcher:Any=load("scripts/quality/check_quality_stage.py","dispatcher");stage_file=tmp_path/"stage"
     status_file=tmp_path/"status";mode="| SSV1-MODE | repo-mode | Phase 1 Closure | phase1-closure | phase1-closure |\n"
-    stage_file.write_text("8\n"); status_file.write_text(mode)
+    stage_file.write_text("8\n"); status_file.write_text(mode);assert callable(r.merge_cleanup_contract_failures)
     calls: list[list[str]] = []; m.setattr(dispatcher, "run_recommended_review_item_check", lambda _stage: 0)
     m.setattr(dispatcher, "CURRENT_STAGE", stage_file); m.setattr(dispatcher, "STATUS_DOC", status_file)
     record:Any=lambda args,cwd:calls.__iadd__([args])and 0;m.setattr(dispatcher.subprocess,"call",record)
