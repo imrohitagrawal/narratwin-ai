@@ -241,12 +241,32 @@ ISSUE459_T05A_LINE_CAPS = {
     "docs/STATUS.md": 120,
     "docs/TRACEABILITY.md": 100,
 }
+ISSUE459_T05B_EXPECTED = {
+    "docs/governance/preflights/issue-459-t05b.json",
+    "backend/app/cut1_audio.py",
+    "backend/app/tts_provider.py",
+    "backend/app/stage6.py",
+    "tests/unit/test_cut1_audio.py",
+    "tests/unit/test_stage6_tts_provider.py",
+    "docs/ADR/0071-cut1-audio-caption-authority.md",
+    "scripts/quality/stage8_cut1_routes.py",
+    "tests/unit/test_stage8_cut1_routes.py",
+    "docs/QUALITY_GATES.md",
+    "docs/STAGE_ISSUE_PLAN.md",
+    "docs/STATUS.md",
+    "docs/TRACEABILITY.md",
+    "docs/DATA_MODEL.md",
+    "docs/SECURITY_AND_PRIVACY.md",
+    "docs/OBSERVABILITY_AND_COST.md",
+}
+ISSUE459_T05B_LINE_CAPS = {path: 3600 for path in ISSUE459_T05B_EXPECTED}
 
 
 EXPECTED = {
     "lane-a-cut1-459-controlled-presenter": ISSUE459_EXPECTED,
     "stage8-459-t03-presenter-derivatives": ISSUE459_T03_EXPECTED,
     "stage8-459-t05a-grounded-narration-handoff": ISSUE459_T05A_EXPECTED,
+    "stage8-459-t05b-audio-caption-authority": ISSUE459_T05B_EXPECTED,
     "security-460-semgrep-override-removal": ISSUE460_EXPECTED,
     "docs/cut1-acceptance-provider-contract-452": ISSUE452_EXPECTED,
     "docs/cut1-post-443-reconciliation-451": {
@@ -1661,6 +1681,94 @@ def test_issue459_t05a_rejects_authority_drift_and_rename(
         REPO, lambda _: renamed, branch, ISSUE459_T05A_EXPECTED, failures
     )
     assert failures == ["Issue #459 route forbids deleted, renamed, or copied paths."]
+
+
+def test_issue459_t05b_route_freezes_authority_scope_and_budgets() -> None:
+    branch = routes.ISSUE459_T05B_BRANCH
+    assert branch == "stage8-459-t05b-audio-caption-authority"
+    assert routes.ISSUE459_T05B_BASE == "bfb8487760dc6aeef8b05af95e0ecd40d0076f3a"
+    assert routes.ISSUE459_T05B_AUTHORITY_COMMENT == "5466871459"
+    assert routes.ISSUE459_T05B_AUTHORITY_SHA256 == (
+        "f53e919836ea5edd58620d789497d945f317c354d0b5405a88d49e570c778b28"
+    )
+    assert routes.ROUTES[branch] == ISSUE459_T05B_EXPECTED
+    assert routes.ROUTE_ISSUES[branch] == 459
+    assert routes.TOTAL_LIMITS[branch] == 3600
+    assert routes.TEXT_LIMITS[branch] == ISSUE459_T05B_LINE_CAPS
+    assert branch in stage8.EFFECTIVE_STAGE8_ROUTES
+
+
+def test_issue459_t05b_requires_exact_main_branch_point() -> None:
+    base = "bfb8487760dc6aeef8b05af95e0ecd40d0076f3a"
+
+    def good(args: list[str]) -> subprocess.CompletedProcess[str]:
+        return completed(args, out=base + "\n")
+
+    assert routes.route_base(good, routes.ISSUE459_T05B_BRANCH) == base
+    for command in ("rev-parse", "fixed-merge-base", "branch-point"):
+        calls = 0
+
+        def broken(
+            args: list[str], *, rejected: str = command
+        ) -> subprocess.CompletedProcess[str]:
+            nonlocal calls
+            calls += 1
+            if rejected == "rev-parse" and calls == 1:
+                return completed(args, code=128)
+            if rejected == "fixed-merge-base" and calls == 2:
+                return completed(args, out="0" * 40 + "\n")
+            if rejected == "branch-point" and calls == 3:
+                return completed(args, out="0" * 40 + "\n")
+            return good(args)
+
+        error = pytest.raises(
+            RuntimeError, routes.route_base, broken, routes.ISSUE459_T05B_BRANCH
+        )
+        assert "Issue #459 fixed base" in str(error.value)
+
+
+def test_issue459_t05b_rejects_authority_drift_and_destructive_paths(
+    monkeypatch: Any, tmp_path: Path,
+) -> None:
+    branch = routes.ISSUE459_T05B_BRANCH
+    monkeypatch.setattr(routes, "route_base", lambda *_: routes.ISSUE459_T05B_BASE)
+    monkeypatch.setattr(routes, "route_text_charges", lambda *_: (0, {}))
+    artifact = json.loads(
+        (REPO / "docs/governance/preflights/issue-459-t05b.json").read_text()
+    )
+    target = tmp_path / "docs/governance/preflights/issue-459-t05b.json"
+    target.parent.mkdir(parents=True)
+    drifted = copy.deepcopy(artifact)
+    drifted["objective"] = drifted["objective"].replace(
+        routes.ISSUE459_T05B_AUTHORITY_SHA256, "0" * 64
+    )
+    target.write_text(json.dumps(drifted))
+    failures: list[str] = []
+    routes.check_exact_route(
+        tmp_path, lambda _: completed([]), branch, ISSUE459_T05B_EXPECTED, failures
+    )
+    assert failures == ["Issue #459 T05B governance authority drifted."]
+
+    for status in ("D\0old\0", "R100\0old\0new\0", "C100\0old\0new\0"):
+        failures = []
+        routes.check_exact_route(
+            REPO,
+            lambda args, output=status: completed(args, out=output),
+            branch,
+            ISSUE459_T05B_EXPECTED,
+            failures,
+        )
+        assert failures == ["Issue #459 route forbids deleted, renamed, or copied paths."]
+
+
+def test_issue459_t05b_does_not_broaden_old_routes() -> None:
+    for branch in (
+        routes.ISSUE459_BRANCH,
+        routes.ISSUE459_T03_BRANCH,
+        routes.ISSUE459_T05A_BRANCH,
+    ):
+        assert "backend/app/cut1_audio.py" not in routes.ROUTES[branch]
+        assert "docs/governance/preflights/issue-459-t05b.json" not in routes.ROUTES[branch]
 
 
 def test_issue459_t03_requires_exact_main_branch_point() -> None:
