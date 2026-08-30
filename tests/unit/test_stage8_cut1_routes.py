@@ -2333,6 +2333,8 @@ def test_exact_route_completeness_lookalikes_and_budgets(monkeypatch: Any) -> No
             if "security" in branch
             else branch.replace("docs", "docѕ")
             if "docs" in branch
+            else branch.replace("governance", "governancе")
+            if "governance" in branch
             else branch.replace("lane", "lanе")
         )
         for lookalike in (branch + "-retry", branch.upper(), confusable):
