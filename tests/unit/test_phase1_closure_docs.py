@@ -8736,7 +8736,7 @@ def test_process_docs_rejects_agents_missing_scoped_cleanup_marker(
     flexible_marker = re.escape(marker).replace(r"\ ", r"\s+")
     failures = run_process_docs_check(
         monkeypatch,
-        branch="governance-468-scoped-merge-cleanup",
+        branch="stage8-468-scoped-merge-cleanup",
         changed=["AGENTS.md"],
         read_overrides={
             "AGENTS.md": re.sub(flexible_marker, replacement, original_agents, count=1)
@@ -8754,7 +8754,7 @@ def test_process_docs_rejects_agents_cleanup_marker_decoy_outside_workflow(
     agents_without_marker = original_agents.replace(marker, "clean up remaining resources")
     failures = run_process_docs_check(
         monkeypatch,
-        branch="governance-468-scoped-merge-cleanup",
+        branch="stage8-468-scoped-merge-cleanup",
         changed=["AGENTS.md"],
         read_overrides={"AGENTS.md": f"{agents_without_marker}\n\n## Decoy\n\n{marker}\n"},
     )
@@ -8784,7 +8784,7 @@ def test_process_docs_rejects_playbook_missing_scoped_cleanup_marker(
     flexible_marker = re.escape(marker).replace(r"\ ", r"\s+")
     failures = run_process_docs_check(
         monkeypatch,
-        branch="governance-468-scoped-merge-cleanup",
+        branch="stage8-468-scoped-merge-cleanup",
         changed=["docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md"],
         read_overrides={
             "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md": re.sub(
@@ -8810,7 +8810,7 @@ def test_process_docs_rejects_playbook_cleanup_marker_decoy_outside_gate8(
     playbook_without_marker = original_playbook.replace(marker, "clean up remaining resources")
     failures = run_process_docs_check(
         monkeypatch,
-        branch="governance-468-scoped-merge-cleanup",
+        branch="stage8-468-scoped-merge-cleanup",
         changed=["docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md"],
         read_overrides={
             "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md": (

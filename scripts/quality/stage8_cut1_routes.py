@@ -19,6 +19,7 @@ ISSUE459_BRANCH = "lane-a-cut1-459-controlled-presenter"
 ISSUE459_T03_BRANCH = "stage8-459-t03-presenter-derivatives"
 ISSUE459_T05A_BRANCH = "stage8-459-t05a-grounded-narration-handoff"
 ISSUE459_T05B_BRANCH = "stage8-459-t05b-audio-caption-authority"
+ISSUE468_BRANCH = "stage8-468-scoped-merge-cleanup"
 ISSUE386_BRANCH = "cut1-process-386-modular-route-enforcement"
 ISSUE413_BRANCH = "cut1-process-413-frontend-runtime-openssl"
 ISSUE405_BRANCH = "process-405-heartbeat2-main-reliability"
@@ -98,6 +99,16 @@ ISSUE460_HOSTED_SECURITY_PATHS = {
 ISSUE459_HOSTED_CORRECTION_PATHS = {".gitleaksignore", "scripts/ci/check_gitleaks_regression.py", "tests/unit/test_gitleaks_regression.py", "scripts/quality/check_stage8_docs.py", "tests/unit/test_stage8_quality_gate.py"}
 
 ROUTES = {
+    ISSUE468_BRANCH: {
+        "AGENTS.md",
+        "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md",
+        "scripts/quality/check_phase1_closure_docs.py",
+        "tests/unit/test_phase1_closure_docs.py",
+        "docs/governance/preflights/issue-468-scoped-merge-cleanup.json",
+        "docs/STATUS.md",
+        "scripts/quality/stage8_cut1_routes.py",
+        "tests/unit/test_stage8_cut1_routes.py",
+    },
     ISSUE459_T05B_BRANCH: {
         ".gitleaksignore",
         "docs/governance/preflights/issue-459-t05b.json",
@@ -538,10 +549,12 @@ ROUTE_ISSUES = {ISSUE452_BRANCH: 452, ISSUE451_BRANCH: 451, ISSUE150_BRANCH: 150
                 ISSUE386_BRANCH: 386, ISSUE385_BRANCH: 385,
                 ISSUE384_BRANCH: 384, ISSUE383_BRANCH: 383, ISSUE397_BRANCH: 397,
                 ISSUE393_BRANCH: 393, ISSUE382_BRANCH: 382, ISSUE367_BRANCH: 367}
+ROUTE_ISSUES[ISSUE468_BRANCH] = 468
 TOTAL_LIMITS = {ISSUE452_BRANCH: 3600, ISSUE451_BRANCH: 600, ISSUE150_BRANCH: 1000, ISSUE424_BRANCH: 8500, ISSUE421_BRANCH: 4000, ISSUE415_BRANCH: 5000, ISSUE415_CORRECTION_BRANCH: 800, ISSUE413_BRANCH: 5000, ISSUE368_ADAPTER_BRANCH: 5600, ISSUE368_IMPLEMENTATION_BRANCH: 3600, ISSUE368_QUOTA_FIX_BRANCH: 2800, ISSUE368_PROMPT_BRANCH: 1000, ISSUE368_BRANCH: 3200, ISSUE405_BRANCH: 800, ISSUE428_BRANCH: 500, ISSUE403_BRANCH: 650, ISSUE401_BRANCH: 600, ISSUE396_BRANCH: 500,
                 ISSUE386_BRANCH: 700, ISSUE385_BRANCH: 350,
                 ISSUE384_BRANCH: 500, ISSUE383_BRANCH: 700, ISSUE397_BRANCH: 500,
                 ISSUE393_BRANCH: 700, ISSUE382_BRANCH: 3200, ISSUE367_BRANCH: 2000}
+TOTAL_LIMITS[ISSUE468_BRANCH] = 1130
 ROUTE_ISSUES[ISSUE459_BRANCH] = 459
 TOTAL_LIMITS[ISSUE459_BRANCH] = 4300
 ROUTE_ISSUES[ISSUE459_T03_BRANCH] = 459
@@ -584,6 +597,16 @@ ISSUE459_EDITABLE_AUTHORITY_SHA256 = {
 }
 ISSUE459_BASE_SOURCE_SHA256 = {"docs/STATUS.md": "9045b595ca1622680f621dffa4dff88435e2fde0d13e3c061ced7eb6df9ae8bf", "docs/TRACEABILITY.md": "e597069e3d6b765a9d68e5336ff9597d6d7b809e5ea6f316f22312ca71ea136a", "docs/QUALITY_GATES.md": "9f628d22ec62075e560ef478820cf094d923cdf1cfded56a512291c61f6e542b", "docs/REPOSITORY_GUARDRAILS.md": "04f8b405bc7ba9b615cc1d5d7e489bcbf643b9de4bfc9b331e5a60c38629e82f"}
 TEXT_LIMITS = {
+    ISSUE468_BRANCH: {
+        "AGENTS.md": 70,
+        "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md": 180,
+        "scripts/quality/check_phase1_closure_docs.py": 130,
+        "tests/unit/test_phase1_closure_docs.py": 180,
+        "docs/governance/preflights/issue-468-scoped-merge-cleanup.json": 260,
+        "docs/STATUS.md": 90,
+        "scripts/quality/stage8_cut1_routes.py": 100,
+        "tests/unit/test_stage8_cut1_routes.py": 120,
+    },
     ISSUE459_T05B_BRANCH: {path: 3600 for path in ROUTES[ISSUE459_T05B_BRANCH]},
     ISSUE459_T05A_BRANCH: {
         "docs/governance/preflights/issue-459-t05a.json": 180,
@@ -1447,6 +1470,25 @@ def check_exact_route(
             failures.extend(f"Issue #460 governance preflight failed: {finding.code}" for finding in findings)
         except (OSError, UnicodeError, json.JSONDecodeError) as error:
             failures.append(f"Issue #460 governance preflight failed closed: {error}")
+    elif branch == ISSUE468_BRANCH:
+        try:
+            preflight = load_json_without_duplicate_members(
+                root / "docs/governance/preflights/issue-468-scoped-merge-cleanup.json"
+            )
+            findings = validate_governance_preflight(
+                preflight,
+                context={
+                    "issue_number": 468,
+                    "branch": branch,
+                    "changed_files": sorted(files),
+                },
+            )
+            failures.extend(
+                f"Issue #468 governance preflight failed: {finding.code}"
+                for finding in findings
+            )
+        except (OSError, ValueError, TypeError) as error:
+            failures.append(f"Issue #468 governance preflight failed closed: {error}")
     elif branch == ISSUE459_T05B_BRANCH:
         try:
             preflight = load_json_without_duplicate_members(

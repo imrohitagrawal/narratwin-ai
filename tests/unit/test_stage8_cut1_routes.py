@@ -263,9 +263,30 @@ ISSUE459_T05B_EXPECTED = {
     "tests/unit/test_gitleaks_regression.py",
 }
 ISSUE459_T05B_LINE_CAPS = {path: 3600 for path in ISSUE459_T05B_EXPECTED}
+ISSUE468_EXPECTED = {
+    "AGENTS.md",
+    "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md",
+    "scripts/quality/check_phase1_closure_docs.py",
+    "tests/unit/test_phase1_closure_docs.py",
+    "docs/governance/preflights/issue-468-scoped-merge-cleanup.json",
+    "docs/STATUS.md",
+    "scripts/quality/stage8_cut1_routes.py",
+    "tests/unit/test_stage8_cut1_routes.py",
+}
+ISSUE468_LINE_CAPS = {
+    "AGENTS.md": 70,
+    "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md": 180,
+    "scripts/quality/check_phase1_closure_docs.py": 130,
+    "tests/unit/test_phase1_closure_docs.py": 180,
+    "docs/governance/preflights/issue-468-scoped-merge-cleanup.json": 260,
+    "docs/STATUS.md": 90,
+    "scripts/quality/stage8_cut1_routes.py": 100,
+    "tests/unit/test_stage8_cut1_routes.py": 120,
+}
 
 
 EXPECTED = {
+    "stage8-468-scoped-merge-cleanup": ISSUE468_EXPECTED,
     "lane-a-cut1-459-controlled-presenter": ISSUE459_EXPECTED,
     "stage8-459-t03-presenter-derivatives": ISSUE459_T03_EXPECTED,
     "stage8-459-t05a-grounded-narration-handoff": ISSUE459_T05A_EXPECTED,
@@ -792,6 +813,31 @@ def test_routes_are_exact_pre_registered_and_issue386_preflight_matches() -> Non
     assert routes.security_preflight_failures(REPO, 150) == []
     assert routes.security_preflight_failures(REPO, 428) == []
     assert routes.security_preflight_failures(REPO, 460) == []
+
+
+def test_issue468_route_preflight_and_budgets_are_exact() -> None:
+    preflight = json.loads(
+        (
+            REPO
+            / "docs/governance/preflights/issue-468-scoped-merge-cleanup.json"
+        ).read_text(encoding="utf-8")
+    )
+    assert set(preflight) == {
+        "schema_version",
+        "issue_number",
+        "branch",
+        "objective",
+        "status_decision",
+        "scope",
+    }
+    assert preflight["schema_version"] == "GovernancePreflightV1"
+    assert preflight["issue_number"] == 468
+    assert preflight["branch"] == routes.ISSUE468_BRANCH
+    assert set(preflight["scope"]["required"]) == ISSUE468_EXPECTED
+    assert set(preflight["scope"]["allowed_prefixes"]) == ISSUE468_EXPECTED
+    assert routes.ROUTE_ISSUES[routes.ISSUE468_BRANCH] == 468
+    assert routes.TOTAL_LIMITS[routes.ISSUE468_BRANCH] == 1130
+    assert routes.TEXT_LIMITS[routes.ISSUE468_BRANCH] == ISSUE468_LINE_CAPS
 
 
 def test_security_preflights_reject_duplicate_and_exact_byte_drift(tmp_path: Path) -> None:

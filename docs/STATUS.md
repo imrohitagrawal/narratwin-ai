@@ -1692,6 +1692,22 @@ credential, egress, spend, media, asset, deployment, publication, release,
 public-availability, production-readiness, or presenter-acceptance authority is
 created by Issue #16.
 
+## Issue #468 scoped merge-closeout cleanup governance
+
+Issue `#468` is active on branch `stage8-468-scoped-merge-cleanup` as a
+separate, governance-only lane. It strengthens the existing merge-closeout
+contract with scoped resource ownership before deletion, explicit broad-prune
+prohibition, dirty local-main before-and-after hashes and status counts,
+`main...origin/main` zero-divergence evidence, proof of absence, and a retained,
+deleted, and recoverability report. Executable mutation tests bind the concise
+repository rule and the detailed reusable playbook checklist to their owning
+sections so duplicate wording elsewhere cannot create a false pass.
+
+This issue does not change product/runtime behavior and does not block or
+complete Issue `#459`, Issue `#368`, T05, T06, T07, or T08. It authorizes no
+provider, credential, egress, spend, media, deployment, publication, release,
+production-readiness, or Cut 1 acceptance claim.
+
 ## Issue #459 Lane A Cut 1 entry state
 
 PR `#458` merged and closed Issue `#16` at accepted main
