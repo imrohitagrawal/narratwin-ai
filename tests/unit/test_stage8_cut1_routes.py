@@ -314,7 +314,7 @@ def remove_cleanup_marker(text: str, marker: str) -> str:
 
 
 EXPECTED = {
-    "stage8-468-scoped-merge-cleanup": ISSUE468_EXPECTED,
+    "governance-468-scoped-merge-cleanup": ISSUE468_EXPECTED,
     "lane-a-cut1-459-controlled-presenter": ISSUE459_EXPECTED,
     "stage8-459-t03-presenter-derivatives": ISSUE459_T03_EXPECTED,
     "stage8-459-t05a-grounded-narration-handoff": ISSUE459_T05A_EXPECTED,

@@ -1694,7 +1694,7 @@ created by Issue #16.
 
 ## Issue #468 scoped merge-closeout cleanup governance
 
-Issue `#468` is active on branch `stage8-468-scoped-merge-cleanup` as a
+Issue `#468` is active on branch `governance-468-scoped-merge-cleanup` as a
 separate, governance-only lane. It strengthens the existing merge-closeout
 contract with scoped resource ownership before deletion, explicit broad-prune
 prohibition, dirty local-main before-and-after hashes and status counts,
