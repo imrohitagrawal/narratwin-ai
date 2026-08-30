@@ -1791,6 +1791,39 @@ def test_issue466_requires_exact_main_branch_point() -> None:
     assert "Issue #466 fixed base" in str(error.value)
 
 
+def test_issue466_requires_exact_reviewed_main_transition() -> None:
+    original = "7eb4b99d7bc2bcf11cfc8c959baacb6cf3a21e81"
+    frozen = "24c778b4b7ac99b8bdcd34b094f51d5513723958"
+    transition_base = "3b186af6f5787a47bbfa5f7aebaa2dc9661866ca"
+    transition_merge = "23a12d6845f9e441d37f322da3cd73251b6de191"
+    assert routes.ISSUE466_BASE == original
+    assert routes.ISSUE466_FROZEN_HEAD == frozen
+    assert routes.ISSUE466_TRANSITION_BASE == transition_base
+    assert routes.ISSUE466_TRANSITION_MERGE == transition_merge
+
+    def good(args: list[str]) -> subprocess.CompletedProcess[str]:
+        if args[:2] == ["git", "rev-parse"]:
+            return completed(args, out=args[2].removesuffix("^{commit}") + "\n")
+        if args[:3] == ["git", "merge-base", "--is-ancestor"]:
+            return completed(args)
+        if args[:4] == ["git", "show", "-s", "--format=%P"]:
+            return completed(args, out=f"{frozen} {transition_base}\n")
+        raise AssertionError(args)
+
+    assert routes.route_base(good, routes.ISSUE466_BRANCH) == transition_base
+
+    def forged_parent(args: list[str]) -> subprocess.CompletedProcess[str]:
+        result = good(args)
+        if args[:4] == ["git", "show", "-s", "--format=%P"]:
+            return completed(args, out=f"{frozen} {'0' * 40}\n")
+        return result
+
+    error = pytest.raises(
+        RuntimeError, routes.route_base, forged_parent, routes.ISSUE466_BRANCH
+    )
+    assert "Issue #466 reviewed transition" in str(error.value)
+
+
 def test_issue459_t05b_route_freezes_authority_scope_and_budgets() -> None:
     branch = routes.ISSUE459_T05B_BRANCH
     assert branch == "stage8-459-t05b-audio-caption-authority"
