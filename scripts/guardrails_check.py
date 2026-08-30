@@ -12,7 +12,9 @@ import os
 import re
 import subprocess
 import sys
+from hashlib import sha256 as _cleanup_authority_sha256
 from typing import Any
+from typing import Callable
 from typing import cast
 from typing import NamedTuple
 from urllib.error import HTTPError, URLError
@@ -26,6 +28,12 @@ if __package__ in {None, ""}:
 from scripts.governance_preflight_repository import validate_governance_preflight_repository
 
 ROOT = Path(__file__).resolve().parents[1]
+
+CLEANUP_AUTHORITY_SHA256 = {
+    "AGENTS.md": "7222909116385fe74cbc7df6bbccb759687d2e4a6bf0e0637465679434de33ab",
+    "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md":
+        "30ba0f8e7b736293c4b6c110cbe9ce46bf7639507b0441bd37cb222bb62ae94f",
+}
 
 EXCLUDED_DIRS = {
     ".git",
@@ -1944,6 +1952,33 @@ def read_text(path: Path) -> str:
         return ""
 
 
+def cleanup_authority_anchor_failures(
+    reader: Callable[[str], bytes] | None = None,
+) -> list[str]:
+    read_bytes = reader or (lambda path: (ROOT / path).read_bytes())
+    findings: list[str] = []
+    for path, expected in CLEANUP_AUTHORITY_SHA256.items():
+        try:
+            payload = read_bytes(path)
+        except OSError as error:
+            findings.append(f"Merge-cleanup authority anchor could not read {path}: {error}.")
+            continue
+        if not isinstance(payload, bytes) or _cleanup_authority_sha256(payload).hexdigest() != expected:
+            findings.append(f"Merge-cleanup authority anchor rejected {path} bytes.")
+    return findings
+
+
+def cleanup_authority_change_failures(
+    changes: list[str], reader: Callable[[str], bytes] | None = None,
+) -> list[str]:
+    if not set(changes) & CLEANUP_AUTHORITY_SHA256.keys():
+        return []
+    findings = cleanup_authority_anchor_failures(reader)
+    if "scripts/guardrails_check.py" in changes:
+        findings.append("Merge-cleanup authority and its anchor require separate reviewed pull requests.")
+    return findings
+
+
 def relative(path: Path) -> str:
     return path.relative_to(ROOT).as_posix()
 
@@ -2129,6 +2164,7 @@ def check_issue_linked_pull_request() -> None:
     ):
         failures.append("Pull request title/body/commit messages must not close non-canonical issues.")
     changes = changed_files()
+    failures.extend(cleanup_authority_change_failures(changes))
     reference_only_issue_39 = bool(
         head_ref
         and head_ref.startswith("phase-1-closure-39-")

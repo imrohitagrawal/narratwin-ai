@@ -133,6 +133,14 @@ def test_issue471_cleanup_authority_anchor_is_independent_of_route_hashlib(monke
     ]
 
 
+def test_issue471_cleanup_authority_and_anchor_cannot_change_together() -> None:
+    documents = issue471_intended_cleanup_documents()
+    assert guardrails.cleanup_authority_change_failures(
+        ["AGENTS.md", "scripts/guardrails_check.py"], documents.__getitem__
+    ) == ["Merge-cleanup authority and its anchor require separate reviewed pull requests."]
+    assert guardrails.cleanup_authority_change_failures(["docs/STATUS.md"], documents.__getitem__) == []
+
+
 def _issue435_adapter_fixture(monkeypatch: Any, branch: str, returncode: int, stdout: bytes, event: str = "") -> list[object]:
     calls: list[object] = []
     monkeypatch.setattr(guardrails, "run_git", lambda args: branch)
