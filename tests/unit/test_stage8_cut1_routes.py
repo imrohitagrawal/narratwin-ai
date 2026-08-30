@@ -2355,6 +2355,18 @@ def test_text_charges_fail_closed(
                                         run, "base", {"docs/file.md"}).value)
 
 
+def test_issue466_docs_do_not_expose_issue_references_as_atx_headings() -> None:
+    for relative in (
+        "docs/ADR/0072-cut1-presenter-source-integrity.md",
+        "docs/STATUS.md",
+    ):
+        bare_issue_lines = [
+            line for line in (REPO / relative).read_text(encoding="utf-8").splitlines()
+            if line.startswith("#") and line[1:2].isdigit()
+        ]
+        assert bare_issue_lines == [], f"{relative}: {bare_issue_lines}"
+
+
 def test_issue366_charge_uses_the_complete_fixed_base_snapshot() -> None:
     calls: list[list[str]] = []
 
