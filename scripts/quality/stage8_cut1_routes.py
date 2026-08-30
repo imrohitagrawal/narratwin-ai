@@ -1085,13 +1085,14 @@ def merge_cleanup_contract_failures(
         ),
     )
     exact_sha256 = {
-        "AGENTS.md": "fba373a99039557c67217f2670c82fa753a3db6a3283599071b6c4aae9f85438",
-        "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md": "af0d119a60105f41efd90dcee06b55a0f0882253f49850f0ef7d645f5e86b17b",
+        "AGENTS.md": "7222909116385fe74cbc7df6bbccb759687d2e4a6bf0e0637465679434de33ab",
+        "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md": "30ba0f8e7b736293c4b6c110cbe9ce46bf7639507b0441bd37cb222bb62ae94f",
     }
     failures: list[str] = []
     for path, heading, level, markers in specifications:
         try:
-            body = markdown_heading_body(read_document(path), heading, level)
+            document = read_document(path)
+            body = markdown_heading_body(document, heading, level)
         except (OSError, UnicodeError) as error:
             failures.append(f"Stage 8 merge-closeout contract unavailable: {path}: {error}.")
             continue
@@ -1100,7 +1101,7 @@ def merge_cleanup_contract_failures(
             f"Stage 8 merge-closeout contract missing {path} marker: {marker}."
             for marker in markers if marker not in normalized
         )
-        if hashlib.sha256(body.encode()).hexdigest() != exact_sha256[path]:
+        if hashlib.sha256(document.encode()).hexdigest() != exact_sha256[path]:
             failures.append(
                 f"Stage 8 merge-closeout contract lacks an exact operative clause: {path}."
             )
