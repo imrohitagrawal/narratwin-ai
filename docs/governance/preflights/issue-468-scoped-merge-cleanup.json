@@ -1,0 +1,120 @@
+{
+  "schema_version": "GovernancePreflightV1",
+  "issue_number": 468,
+  "branch": "governance-468-scoped-merge-cleanup",
+  "accepted_base": {
+    "commit": "7eb4b99d7bc2bcf11cfc8c959baacb6cf3a21e81",
+    "tree": "40e89a80f21755c671b2e549f4a05274ab736fae",
+    "ahead": 0,
+    "behind": 0
+  },
+  "objective": "Make the existing merge-closeout contract require scoped resource ownership before deletion, prohibit broad prune operations, preserve dirty local-main state with before-and-after hashes and status counts, prove local-main zero divergence, and report retained, deleted, and recoverability posture without changing product or runtime behavior.",
+  "classification": {
+    "severity": "REQUIRED_CONTRACT",
+    "root_cause": "The durable merge-closeout contract names default-branch synchronization and branch deletion but omits explicit ownership, scoped worktree and Docker cleanup, dirty-work preservation evidence, proof of absence, and recoverability reporting.",
+    "duplicates": [
+      "worktree cleanup omission",
+      "Docker resource cleanup omission",
+      "temporary resource cleanup omission",
+      "dirty-main evidence omission",
+      "zero-divergence evidence omission",
+      "cleanup reporting omission"
+    ]
+  },
+  "status_decision": "update-minimally",
+  "scope": {
+    "required": [
+      "AGENTS.md",
+      "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md",
+      "scripts/quality/check_phase1_closure_docs.py",
+      "tests/unit/test_phase1_closure_docs.py",
+      "docs/governance/preflights/issue-468-scoped-merge-cleanup.json",
+      "docs/STATUS.md"
+    ],
+    "allowed_prefixes": [
+      "AGENTS.md",
+      "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md",
+      "scripts/quality/check_phase1_closure_docs.py",
+      "tests/unit/test_phase1_closure_docs.py",
+      "docs/governance/preflights/issue-468-scoped-merge-cleanup.json",
+      "docs/STATUS.md"
+    ],
+    "forbidden": [
+      ".github/",
+      "backend/",
+      "frontend/",
+      "pyproject.toml",
+      "uv.lock",
+      "package.json",
+      "package-lock.json",
+      "docs/ADR/",
+      "docs/TRACEABILITY.md",
+      "docs/THIRD_PARTY_NOTICES.md"
+    ],
+    "charged_line_caps": {
+      "AGENTS.md": 70,
+      "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md": 180,
+      "scripts/quality/check_phase1_closure_docs.py": 130,
+      "tests/unit/test_phase1_closure_docs.py": 180,
+      "docs/governance/preflights/issue-468-scoped-merge-cleanup.json": 260,
+      "docs/STATUS.md": 90,
+      "aggregate": 910
+    }
+  },
+  "tdd": {
+    "red_commit": "b224811",
+    "red_result": "14 focused mutation cases failed because the existing checker accepted every absent cleanup marker.",
+    "required_negative_coverage": [
+      "unresolved cleanup ownership",
+      "broad prune wording",
+      "missing dirty-work before-and-after hashes",
+      "missing dirty-work status counts",
+      "local-main divergence",
+      "missing retained, deleted, and recoverability report",
+      "wrong-section decoy markers"
+    ]
+  },
+  "skills": {
+    "invoked": [
+      {
+        "name": "planning-and-task-breakdown",
+        "evidence": "Frozen six-path route, per-path caps, aggregate cap, invariants, and stop conditions in Issue #468 comment 5468440998."
+      },
+      {
+        "name": "test-driven-development",
+        "evidence": "Committed RED mutation suite at b224811 before checker or policy implementation."
+      },
+      {
+        "name": "code-review-and-quality",
+        "evidence": "Independent review required section-scoped checks and wrong-section decoy rejection before GREEN acceptance."
+      }
+    ],
+    "rejected": [
+      {
+        "name": "security-and-hardening",
+        "reason": "Not the primary implementation method for a governance-text and existing-checker lane; destructive-operation invariants remain mandatory evidence."
+      },
+      {
+        "name": "frontend-ui-engineering",
+        "reason": "No UI or product behavior is authorized."
+      },
+      {
+        "name": "browser-testing-with-devtools",
+        "reason": "No browser boundary is changed."
+      }
+    ]
+  },
+  "stop_conditions": [
+    "any edit outside the six owned paths",
+    "any product, runtime, provider, audio, presenter, or media change",
+    "any broad prune or deletion without resolved ownership",
+    "any mutation of the dirty primary checkout or preserved 638-entry worktree",
+    "any failed required hosted context",
+    "merge without eligible non-author approval"
+  ],
+  "non_claims": [
+    "No provider, credential, egress, spend, deployment, release, or production authority is created.",
+    "This lane does not complete or block T05, T06, T07, T08, Issue #368, or Issue #459.",
+    "A cleanup rule is not evidence that any particular resource has already been deleted."
+  ]
+}

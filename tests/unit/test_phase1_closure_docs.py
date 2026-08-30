@@ -8733,11 +8733,30 @@ def test_process_docs_rejects_agents_missing_scoped_cleanup_marker(
     replacement: str,
 ) -> None:
     original_agents = phase1.read("AGENTS.md")
+    flexible_marker = re.escape(marker).replace(r"\ ", r"\s+")
     failures = run_process_docs_check(
         monkeypatch,
         branch="governance-468-scoped-merge-cleanup",
         changed=["AGENTS.md"],
-        read_overrides={"AGENTS.md": original_agents.replace(marker, replacement)},
+        read_overrides={
+            "AGENTS.md": re.sub(flexible_marker, replacement, original_agents, count=1)
+        },
+    )
+
+    assert f"AGENTS.md missing scoped merge-closeout marker: {marker}" in failures
+
+
+def test_process_docs_rejects_agents_cleanup_marker_decoy_outside_workflow(
+    monkeypatch: Any,
+) -> None:
+    marker = "prohibit broad prune operations"
+    original_agents = phase1.read("AGENTS.md")
+    agents_without_marker = original_agents.replace(marker, "clean up remaining resources")
+    failures = run_process_docs_check(
+        monkeypatch,
+        branch="governance-468-scoped-merge-cleanup",
+        changed=["AGENTS.md"],
+        read_overrides={"AGENTS.md": f"{agents_without_marker}\n\n## Decoy\n\n{marker}\n"},
     )
 
     assert f"AGENTS.md missing scoped merge-closeout marker: {marker}" in failures
@@ -8762,14 +8781,40 @@ def test_process_docs_rejects_playbook_missing_scoped_cleanup_marker(
     replacement: str,
 ) -> None:
     original_playbook = phase1.read("docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md")
+    flexible_marker = re.escape(marker).replace(r"\ ", r"\s+")
     failures = run_process_docs_check(
         monkeypatch,
         branch="governance-468-scoped-merge-cleanup",
         changed=["docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md"],
         read_overrides={
-            "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md": original_playbook.replace(
-                marker,
+            "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md": re.sub(
+                flexible_marker,
                 replacement,
+                original_playbook,
+                count=1,
+            )
+        },
+    )
+
+    assert (
+        "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md missing scoped "
+        f"merge-closeout marker: {marker}"
+    ) in failures
+
+
+def test_process_docs_rejects_playbook_cleanup_marker_decoy_outside_gate8(
+    monkeypatch: Any,
+) -> None:
+    marker = "do not run broad prune operations"
+    original_playbook = phase1.read("docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md")
+    playbook_without_marker = original_playbook.replace(marker, "clean up remaining resources")
+    failures = run_process_docs_check(
+        monkeypatch,
+        branch="governance-468-scoped-merge-cleanup",
+        changed=["docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md"],
+        read_overrides={
+            "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md": (
+                f"{playbook_without_marker}\n\n## Decoy\n\n{marker}\n"
             )
         },
     )

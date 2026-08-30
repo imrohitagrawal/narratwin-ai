@@ -6849,6 +6849,11 @@ def check_process_docs(failures: list[str]) -> None:
         )
 
     agents = read("AGENTS.md")
+    normalized_agents = re.sub(
+        r"\s+",
+        " ",
+        section(agents, "Non-Negotiable Workflow"),
+    )
     for marker in (
         "docs/ENGINEERING_PROCESS_RCA.md",
         "docs/SKILL_SELECTION_AND_EVIDENCE.md",
@@ -6859,6 +6864,16 @@ def check_process_docs(failures: list[str]) -> None:
     ):
         if marker not in agents:
             fail(failures, f"AGENTS.md missing process marker: {marker}")
+    for marker in (
+        "resolve scoped resource ownership before deletion",
+        "prohibit broad prune operations",
+        "before-and-after hashes and status counts",
+        "main...origin/main is 0 ahead / 0 behind",
+        "retained, deleted, and recoverability report",
+        "proof of absence",
+    ):
+        if marker not in normalized_agents:
+            fail(failures, f"AGENTS.md missing scoped merge-closeout marker: {marker}")
 
     skill_execution_plan = read("docs/SKILL_EXECUTION_PLAN.md")
     normalized_skill_execution_plan = re.sub(r"\s+", " ", skill_execution_plan.lower())
@@ -7192,6 +7207,11 @@ def check_process_docs(failures: list[str]) -> None:
         ),
     )
     normalized_playbook = re.sub(r"\s+", " ", playbook)
+    normalized_merge_closeout = re.sub(
+        r"\s+",
+        " ",
+        section(playbook, "Gate 8: Proactive Next-Step Closeout"),
+    ).lower()
     for marker in (
         "merge closeout as the default continuation",
         "required workflow default, not proof that automation has already completed each post-merge step",
@@ -7202,6 +7222,22 @@ def check_process_docs(failures: list[str]) -> None:
                 failures,
                 "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md missing merge-closeout marker: "
                 f"{marker}",
+            )
+    for marker in (
+        "completed implementation and verification worktrees",
+        "PR-owned Docker containers, images, volumes, and networks",
+        "PR-owned temporary clones, files, and isolated dependencies",
+        "do not run broad prune operations",
+        "hash staged, unstaged, and untracked state before and after preservation",
+        "verify `main...origin/main` is `0` ahead and `0` behind",
+        "retained, deleted, and recoverability",
+        "prove scoped resources are absent",
+    ):
+        if marker.lower() not in normalized_merge_closeout:
+            fail(
+                failures,
+                "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md missing scoped "
+                f"merge-closeout marker: {marker}",
             )
 
     check_process_hardening_findings(
