@@ -86,6 +86,9 @@ ISSUE459_T05B_REVIEW_CORRECTION_SHA256 = "6f05484d33e69ede373841fbb57755ae3139e5
 ISSUE459_T05B_HOSTED_PROVENANCE_COMMENT = "5467552503"
 ISSUE459_T05B_HOSTED_PROVENANCE_SHA256 = "a00a8a8348303a82d46d3dcddddeeb0307d6af230118879a04fbda7ff4476ccb"
 ISSUE466_BASE = "7eb4b99d7bc2bcf11cfc8c959baacb6cf3a21e81"
+ISSUE466_FROZEN_HEAD = "24c778b4b7ac99b8bdcd34b094f51d5513723958"
+ISSUE466_TRANSITION_BASE = "3b186af6f5787a47bbfa5f7aebaa2dc9661866ca"
+ISSUE466_TRANSITION_MERGE = "23a12d6845f9e441d37f322da3cd73251b6de191"
 ISSUE466_AUTHORITY_REVISION = "issue:466@2026-08-30T09:44:54Z"
 ISSUE466_AUTHORITY_SHA256 = "3e4c9c483bdea609be70c46863a36f64a1900cac058615a22e213ea218c9212c"
 ISSUE466_SPAN_SHA256 = "6ed0e9270ca03d6940ecc11e3e174d8024a54aba306f18d5b8eedb1ed9241396"
@@ -1293,8 +1296,35 @@ def route_base(run: Callable[[list[str]], Any], branch: str) -> str:
                 str(parents.stdout).strip() != expected_parents):
             raise RuntimeError("Issue #459 reviewed transition evidence is unavailable or inconsistent.")
         return ISSUE459_TRANSITION_BASE
+    if branch == ISSUE466_BRANCH:
+        commits = (
+            ISSUE466_BASE,
+            ISSUE466_FROZEN_HEAD,
+            ISSUE466_TRANSITION_BASE,
+            ISSUE466_TRANSITION_MERGE,
+        )
+        resolved = [run(["git", "rev-parse", f"{commit}^{{commit}}"]) for commit in commits]
+        current = run(["git", "rev-parse", "origin/main^{commit}"])
+        edges = (
+            (ISSUE466_BASE, ISSUE466_FROZEN_HEAD),
+            (ISSUE466_FROZEN_HEAD, "HEAD"),
+            (ISSUE466_TRANSITION_BASE, "HEAD"),
+            (ISSUE466_TRANSITION_MERGE, "HEAD"),
+        )
+        ancestors = [run(["git", "merge-base", "--is-ancestor", *edge]) for edge in edges]
+        parents = run(["git", "show", "-s", "--format=%P", ISSUE466_TRANSITION_MERGE])
+        expected_parents = f"{ISSUE466_FROZEN_HEAD} {ISSUE466_TRANSITION_BASE}"
+        if (
+            any(result.returncode for result in [*resolved, current, *ancestors, parents])
+            or [str(result.stdout).strip() for result in resolved] != list(commits)
+            or str(current.stdout).strip() != ISSUE466_TRANSITION_BASE
+            or str(parents.stdout).strip() != expected_parents
+        ):
+            raise RuntimeError(
+                "Issue #466 reviewed transition evidence is unavailable or inconsistent."
+            )
+        return ISSUE466_TRANSITION_BASE
     fixed_routes = {
-        ISSUE466_BRANCH: (466, ISSUE466_BASE),
         ISSUE471_BRANCH: (471, ISSUE471_BASE),
         ISSUE459_T05B_BRANCH: (459, ISSUE459_T05B_BASE),
         ISSUE459_T05A_BRANCH: (459, ISSUE459_T05A_BASE),
@@ -1319,7 +1349,7 @@ def route_base(run: Callable[[list[str]], Any], branch: str) -> str:
         fixed_value = str(fixed.stdout).strip()
         common_value = str(common.stdout).strip()
         branch_point_invalid = False
-        if branch in {ISSUE466_BRANCH, ISSUE471_BRANCH, ISSUE459_T05B_BRANCH, ISSUE459_T05A_BRANCH, ISSUE459_T03_BRANCH, ISSUE460_BRANCH, ISSUE452_BRANCH, ISSUE451_BRANCH, ISSUE150_BRANCH, ISSUE424_BRANCH, ISSUE421_BRANCH, ISSUE368_IMPLEMENTATION_BRANCH,
+        if branch in {ISSUE471_BRANCH, ISSUE459_T05B_BRANCH, ISSUE459_T05A_BRANCH, ISSUE459_T03_BRANCH, ISSUE460_BRANCH, ISSUE452_BRANCH, ISSUE451_BRANCH, ISSUE150_BRANCH, ISSUE424_BRANCH, ISSUE421_BRANCH, ISSUE368_IMPLEMENTATION_BRANCH,
                       ISSUE368_QUOTA_FIX_BRANCH, ISSUE368_BRANCH,
                       ISSUE368_PROMPT_BRANCH}:
             branch_point = run(["git", "merge-base", "origin/main", "HEAD"])

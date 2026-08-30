@@ -1774,21 +1774,14 @@ def test_issue466_route_freezes_source_authority_scope_and_budgets() -> None:
     assert routes.TEXT_LIMITS[branch] == ISSUE466_LINE_CAPS
 
 
-def test_issue466_requires_exact_main_branch_point() -> None:
-    base = routes.ISSUE466_BASE
+def test_issue466_retains_original_source_authority_base() -> None:
+    assert routes.ISSUE466_BASE == "7eb4b99d7bc2bcf11cfc8c959baacb6cf3a21e81"
 
-    def good(args: list[str]) -> subprocess.CompletedProcess[str]:
-        if args[:2] == ["git", "rev-parse"]:
-            return completed(args, out=base + "\n")
-        assert args[:2] == ["git", "merge-base"]
-        return completed(args, out=base + "\n")
-
-    assert routes.route_base(good, routes.ISSUE466_BRANCH) == base
     def broken(args: list[str]) -> subprocess.CompletedProcess[str]:
         return completed(args, out="0" * 40 + "\n")
 
     error = pytest.raises(RuntimeError, routes.route_base, broken, routes.ISSUE466_BRANCH)
-    assert "Issue #466 fixed base" in str(error.value)
+    assert "Issue #466 reviewed transition" in str(error.value)
 
 
 def test_issue466_requires_exact_reviewed_main_transition() -> None:
@@ -1803,6 +1796,8 @@ def test_issue466_requires_exact_reviewed_main_transition() -> None:
 
     def good(args: list[str]) -> subprocess.CompletedProcess[str]:
         if args[:2] == ["git", "rev-parse"]:
+            if args[2] == "origin/main^{commit}":
+                return completed(args, out=transition_base + "\n")
             return completed(args, out=args[2].removesuffix("^{commit}") + "\n")
         if args[:3] == ["git", "merge-base", "--is-ancestor"]:
             return completed(args)
