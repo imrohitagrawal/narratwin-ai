@@ -118,6 +118,13 @@ def test_public_key_finding_commits_are_available() -> None:
         assert completed.returncode == 0
 
 
+def test_every_reviewed_fingerprint_uses_a_full_lowercase_commit_id() -> None:
+    for fingerprint in EXPECTED_FINGERPRINTS:
+        commit = fingerprint.split(":", 1)[0]
+        assert len(commit) == 40
+        assert all(character in "0123456789abcdef" for character in commit)
+
+
 def test_historical_dockerfile_public_key_provenance_is_exact() -> None:
     checker = _load_checker()
     for fingerprint in EXPECTED_PUBLIC_KEY_FINGERPRINTS:
