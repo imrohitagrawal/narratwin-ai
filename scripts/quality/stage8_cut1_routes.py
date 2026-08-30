@@ -19,6 +19,7 @@ ISSUE459_BRANCH = "lane-a-cut1-459-controlled-presenter"
 ISSUE459_T03_BRANCH = "stage8-459-t03-presenter-derivatives"
 ISSUE459_T05A_BRANCH = "stage8-459-t05a-grounded-narration-handoff"
 ISSUE459_T05B_BRANCH = "stage8-459-t05b-audio-caption-authority"
+ISSUE466_BRANCH = "cut1-466-t05a-presenter-source-integrity"
 ISSUE471_BRANCH = "governance-471-cleanup-authority-anchor"
 ISSUE386_BRANCH = "cut1-process-386-modular-route-enforcement"
 ISSUE413_BRANCH = "cut1-process-413-frontend-runtime-openssl"
@@ -84,6 +85,19 @@ ISSUE459_T05B_REVIEW_CORRECTION_COMMENT = "5467125295"
 ISSUE459_T05B_REVIEW_CORRECTION_SHA256 = "6f05484d33e69ede373841fbb57755ae3139e5c1e06280252b8bc1558d42b263"
 ISSUE459_T05B_HOSTED_PROVENANCE_COMMENT = "5467552503"
 ISSUE459_T05B_HOSTED_PROVENANCE_SHA256 = "a00a8a8348303a82d46d3dcddddeeb0307d6af230118879a04fbda7ff4476ccb"
+ISSUE466_BASE = "7eb4b99d7bc2bcf11cfc8c959baacb6cf3a21e81"
+ISSUE466_FROZEN_HEAD = "24c778b4b7ac99b8bdcd34b094f51d5513723958"
+ISSUE466_TRANSITION_BASE = "3b186af6f5787a47bbfa5f7aebaa2dc9661866ca"
+ISSUE466_TRANSITION_MERGE = "23a12d6845f9e441d37f322da3cd73251b6de191"
+ISSUE466_AUTHORITY_REVISION = "issue:466@2026-08-30T09:44:54Z"
+ISSUE466_AUTHORITY_SHA256 = "3e4c9c483bdea609be70c46863a36f64a1900cac058615a22e213ea218c9212c"
+ISSUE466_SPAN_SHA256 = "6ed0e9270ca03d6940ecc11e3e174d8024a54aba306f18d5b8eedb1ed9241396"
+ISSUE466_FREEZE_COMMENT = "5467958861"
+ISSUE466_FREEZE_SHA256 = "12699c91eaa0cb23dbd20622ef5aaf87238d9fca0cadba0d98d60cc349867fbf"
+ISSUE466_CORRECTION_COMMENT = "5468026907"
+ISSUE466_CORRECTION_SHA256 = "91682bed3814d7d89c70c635b690e5b6f47111d51fd5e800e82399e03fbc6398"
+ISSUE466_SKILL_LEDGER_COMMENT = "5468042606"
+ISSUE466_SKILL_LEDGER_SHA256 = "5a976b8a72f7df10f8bbfee746a7eb098293aae19e32e6abcab1c7e9a22ce0c1"
 SECURITY_PREFLIGHTS = {
     150: ("Issue150SecurityRenewalPreflightV1", "e6a569cb6254ef58c36fb44e9cdece26e0816b49c9f62ce08e9d90f3843c97e3"),
     428: ("Issue428NanoidSecurityPreflightV1", "0d8da352c98855bc481581f1ca13cc2d4e994838b1afb31d974ad2b17caf7a9b"),
@@ -104,6 +118,21 @@ ISSUE460_HOSTED_SECURITY_PATHS = {
 ISSUE459_HOSTED_CORRECTION_PATHS = {".gitleaksignore", "scripts/ci/check_gitleaks_regression.py", "tests/unit/test_gitleaks_regression.py", "scripts/quality/check_stage8_docs.py", "tests/unit/test_stage8_quality_gate.py"}
 
 ROUTES = {
+    ISSUE466_BRANCH: {
+        "docs/governance/preflights/issue-466.json",
+        "docs/governance/cut1-project-facts-v1.json",
+        "backend/app/cut1_grounding.py",
+        "tests/unit/test_cut1_atomic_grounding.py",
+        "tests/unit/test_cut1_narration.py",
+        "docs/ADR/0072-cut1-presenter-source-integrity.md",
+        "scripts/quality/stage8_cut1_routes.py",
+        "tests/unit/test_stage8_cut1_routes.py",
+        "tests/unit/test_stage8_quality_gate.py",
+        "docs/QUALITY_GATES.md",
+        "docs/STAGE_ISSUE_PLAN.md",
+        "docs/STATUS.md",
+        "docs/TRACEABILITY.md",
+    },
     ISSUE471_BRANCH: {
         "docs/governance/preflights/issue-471-cleanup-authority-anchor.json",
         "docs/STATUS.md",
@@ -564,6 +593,8 @@ ROUTE_ISSUES[ISSUE459_T05A_BRANCH] = 459
 TOTAL_LIMITS[ISSUE459_T05A_BRANCH] = 2200
 ROUTE_ISSUES[ISSUE459_T05B_BRANCH] = 459
 TOTAL_LIMITS[ISSUE459_T05B_BRANCH] = 3600
+ROUTE_ISSUES[ISSUE466_BRANCH] = 466
+TOTAL_LIMITS[ISSUE466_BRANCH] = 2000
 ROUTE_ISSUES[ISSUE460_BRANCH] = 460
 TOTAL_LIMITS[ISSUE460_BRANCH] = 2600
 ISSUE383_BINARY_FILES = {
@@ -598,6 +629,21 @@ ISSUE459_EDITABLE_AUTHORITY_SHA256 = {
 }
 ISSUE459_BASE_SOURCE_SHA256 = {"docs/STATUS.md": "9045b595ca1622680f621dffa4dff88435e2fde0d13e3c061ced7eb6df9ae8bf", "docs/TRACEABILITY.md": "e597069e3d6b765a9d68e5336ff9597d6d7b809e5ea6f316f22312ca71ea136a", "docs/QUALITY_GATES.md": "9f628d22ec62075e560ef478820cf094d923cdf1cfded56a512291c61f6e542b", "docs/REPOSITORY_GUARDRAILS.md": "04f8b405bc7ba9b615cc1d5d7e489bcbf643b9de4bfc9b331e5a60c38629e82f"}
 TEXT_LIMITS = {
+    ISSUE466_BRANCH: {
+        "docs/governance/preflights/issue-466.json": 320,
+        "docs/governance/cut1-project-facts-v1.json": 220,
+        "backend/app/cut1_grounding.py": 320,
+        "tests/unit/test_cut1_atomic_grounding.py": 520,
+        "tests/unit/test_cut1_narration.py": 240,
+        "docs/ADR/0072-cut1-presenter-source-integrity.md": 220,
+        "scripts/quality/stage8_cut1_routes.py": 140,
+        "tests/unit/test_stage8_cut1_routes.py": 240,
+        "tests/unit/test_stage8_quality_gate.py": 40,
+        "docs/QUALITY_GATES.md": 120,
+        "docs/STAGE_ISSUE_PLAN.md": 120,
+        "docs/STATUS.md": 180,
+        "docs/TRACEABILITY.md": 120,
+    },
     ISSUE471_BRANCH: {
         "docs/governance/preflights/issue-471-cleanup-authority-anchor.json": 240,
         "docs/STATUS.md": 100,
@@ -1250,6 +1296,34 @@ def route_base(run: Callable[[list[str]], Any], branch: str) -> str:
                 str(parents.stdout).strip() != expected_parents):
             raise RuntimeError("Issue #459 reviewed transition evidence is unavailable or inconsistent.")
         return ISSUE459_TRANSITION_BASE
+    if branch == ISSUE466_BRANCH:
+        commits = (
+            ISSUE466_BASE,
+            ISSUE466_FROZEN_HEAD,
+            ISSUE466_TRANSITION_BASE,
+            ISSUE466_TRANSITION_MERGE,
+        )
+        resolved = [run(["git", "rev-parse", f"{commit}^{{commit}}"]) for commit in commits]
+        current = run(["git", "rev-parse", "origin/main^{commit}"])
+        edges = (
+            (ISSUE466_BASE, ISSUE466_FROZEN_HEAD),
+            (ISSUE466_FROZEN_HEAD, "HEAD"),
+            (ISSUE466_TRANSITION_BASE, "HEAD"),
+            (ISSUE466_TRANSITION_MERGE, "HEAD"),
+        )
+        ancestors = [run(["git", "merge-base", "--is-ancestor", *edge]) for edge in edges]
+        parents = run(["git", "show", "-s", "--format=%P", ISSUE466_TRANSITION_MERGE])
+        expected_parents = f"{ISSUE466_FROZEN_HEAD} {ISSUE466_TRANSITION_BASE}"
+        if (
+            any(result.returncode for result in [*resolved, current, *ancestors, parents])
+            or [str(result.stdout).strip() for result in resolved] != list(commits)
+            or str(current.stdout).strip() != ISSUE466_TRANSITION_BASE
+            or str(parents.stdout).strip() != expected_parents
+        ):
+            raise RuntimeError(
+                "Issue #466 reviewed transition evidence is unavailable or inconsistent."
+            )
+        return ISSUE466_TRANSITION_BASE
     fixed_routes = {
         ISSUE471_BRANCH: (471, ISSUE471_BASE),
         ISSUE459_T05B_BRANCH: (459, ISSUE459_T05B_BASE),
@@ -1485,6 +1559,36 @@ def check_exact_route(
             failures.extend(f"Issue #460 governance preflight failed: {finding.code}" for finding in findings)
         except (OSError, UnicodeError, json.JSONDecodeError) as error:
             failures.append(f"Issue #460 governance preflight failed closed: {error}")
+    elif branch == ISSUE466_BRANCH:
+        try:
+            preflight = load_json_without_duplicate_members(
+                root / "docs/governance/preflights/issue-466.json"
+            )
+            findings = validate_governance_preflight(
+                preflight,
+                context={"issue_number": 466, "branch": branch, "changed_files": sorted(files)},
+            )
+            objective = preflight.get("objective") if isinstance(preflight, dict) else None
+            authority = (
+                ISSUE466_BASE,
+                ISSUE466_AUTHORITY_REVISION,
+                ISSUE466_AUTHORITY_SHA256,
+                ISSUE466_SPAN_SHA256,
+                ISSUE466_FREEZE_COMMENT,
+                ISSUE466_FREEZE_SHA256,
+                ISSUE466_CORRECTION_COMMENT,
+                ISSUE466_CORRECTION_SHA256,
+                ISSUE466_SKILL_LEDGER_COMMENT,
+                ISSUE466_SKILL_LEDGER_SHA256,
+            )
+            failures.extend(
+                f"Issue #466 governance preflight failed: {finding.code}"
+                for finding in findings
+            )
+            if not isinstance(objective, str) or any(value not in objective for value in authority):
+                failures.append("Issue #466 presenter-source authority drifted.")
+        except (OSError, ValueError, TypeError) as error:
+            failures.append(f"Issue #466 governance preflight failed closed: {error}")
     elif branch == ISSUE459_T05B_BRANCH:
         try:
             preflight = load_json_without_duplicate_members(
@@ -1600,11 +1704,11 @@ def check_exact_route(
     try:
         base = fixed_base if fixed_base is not None else route_base(run, branch)
         if branch in {ISSUE459_BRANCH, ISSUE459_T03_BRANCH, ISSUE459_T05A_BRANCH,
-                      ISSUE459_T05B_BRANCH}:
+                      ISSUE459_T05B_BRANCH, ISSUE466_BRANCH}:
             transition_base = ISSUE459_TRANSITION_BASE if branch == ISSUE459_BRANCH else base
             transitions = (
                 *(() if branch in {ISSUE459_T03_BRANCH, ISSUE459_T05A_BRANCH,
-                                   ISSUE459_T05B_BRANCH} else (
+                                   ISSUE459_T05B_BRANCH, ISSUE466_BRANCH} else (
                     run(["git", "diff", "--name-status", "-z", "--find-copies-harder",
                          ISSUE459_BASE, ISSUE459_FROZEN_HEAD, "--"]),
                 )),
@@ -1618,7 +1722,7 @@ def check_exact_route(
             if any(result.returncode for result in transitions):
                 raise RuntimeError("Issue #459 rename/copy evidence is unavailable.")
             if any(route_has_copy_or_rename(str(result.stdout)) for result in transitions):
-                failures.append("Issue #459 route forbids deleted, renamed, or copied paths.")
+                failures.append(f"Issue #{issue} route forbids deleted, renamed, or copied paths.")
         total, charges = route_text_charges(run, base, set(TEXT_LIMITS[branch]))
         if total > TOTAL_LIMITS[branch]:
             failures.append(f"Issue #{issue} charge {total} exceeds {TOTAL_LIMITS[branch]}.")

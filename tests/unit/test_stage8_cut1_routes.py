@@ -241,6 +241,36 @@ ISSUE459_T05A_LINE_CAPS = {
     "docs/STATUS.md": 120,
     "docs/TRACEABILITY.md": 100,
 }
+ISSUE466_EXPECTED = {
+    "docs/governance/preflights/issue-466.json",
+    "docs/governance/cut1-project-facts-v1.json",
+    "backend/app/cut1_grounding.py",
+    "tests/unit/test_cut1_atomic_grounding.py",
+    "tests/unit/test_cut1_narration.py",
+    "docs/ADR/0072-cut1-presenter-source-integrity.md",
+    "scripts/quality/stage8_cut1_routes.py",
+    "tests/unit/test_stage8_cut1_routes.py",
+    "tests/unit/test_stage8_quality_gate.py",
+    "docs/QUALITY_GATES.md",
+    "docs/STAGE_ISSUE_PLAN.md",
+    "docs/STATUS.md",
+    "docs/TRACEABILITY.md",
+}
+ISSUE466_LINE_CAPS = {
+    "docs/governance/preflights/issue-466.json": 320,
+    "docs/governance/cut1-project-facts-v1.json": 220,
+    "backend/app/cut1_grounding.py": 320,
+    "tests/unit/test_cut1_atomic_grounding.py": 520,
+    "tests/unit/test_cut1_narration.py": 240,
+    "docs/ADR/0072-cut1-presenter-source-integrity.md": 220,
+    "scripts/quality/stage8_cut1_routes.py": 140,
+    "tests/unit/test_stage8_cut1_routes.py": 240,
+    "tests/unit/test_stage8_quality_gate.py": 40,
+    "docs/QUALITY_GATES.md": 120,
+    "docs/STAGE_ISSUE_PLAN.md": 120,
+    "docs/STATUS.md": 180,
+    "docs/TRACEABILITY.md": 120,
+}
 ISSUE459_T05B_EXPECTED = {
     ".gitleaksignore",
     "docs/governance/preflights/issue-459-t05b.json",
@@ -266,6 +296,7 @@ ISSUE459_T05B_LINE_CAPS = {path: 3600 for path in ISSUE459_T05B_EXPECTED}
 
 
 EXPECTED = {
+    "cut1-466-t05a-presenter-source-integrity": ISSUE466_EXPECTED,
     "governance-471-cleanup-authority-anchor": {
         "docs/governance/preflights/issue-471-cleanup-authority-anchor.json",
         "docs/STATUS.md", "scripts/guardrails_check.py", "tests/unit/test_guardrails_check.py",
@@ -1714,6 +1745,80 @@ def test_issue459_t05a_rejects_authority_drift_and_rename(
     assert failures == ["Issue #459 route forbids deleted, renamed, or copied paths."]
 
 
+def test_issue466_route_freezes_source_authority_scope_and_budgets() -> None:
+    branch = routes.ISSUE466_BRANCH
+    assert branch == "cut1-466-t05a-presenter-source-integrity"
+    assert routes.ISSUE466_BASE == "7eb4b99d7bc2bcf11cfc8c959baacb6cf3a21e81"
+    assert routes.ISSUE466_AUTHORITY_REVISION == "issue:466@2026-08-30T09:44:54Z"
+    assert routes.ISSUE466_AUTHORITY_SHA256 == (
+        "3e4c9c483bdea609be70c46863a36f64a1900cac058615a22e213ea218c9212c"
+    )
+    assert routes.ISSUE466_SPAN_SHA256 == (
+        "6ed0e9270ca03d6940ecc11e3e174d8024a54aba306f18d5b8eedb1ed9241396"
+    )
+    assert routes.ISSUE466_FREEZE_COMMENT == "5467958861"
+    assert routes.ISSUE466_FREEZE_SHA256 == (
+        "12699c91eaa0cb23dbd20622ef5aaf87238d9fca0cadba0d98d60cc349867fbf"
+    )
+    assert routes.ISSUE466_CORRECTION_COMMENT == "5468026907"
+    assert routes.ISSUE466_CORRECTION_SHA256 == (
+        "91682bed3814d7d89c70c635b690e5b6f47111d51fd5e800e82399e03fbc6398"
+    )
+    assert routes.ISSUE466_SKILL_LEDGER_COMMENT == "5468042606"
+    assert routes.ISSUE466_SKILL_LEDGER_SHA256 == (
+        "5a976b8a72f7df10f8bbfee746a7eb098293aae19e32e6abcab1c7e9a22ce0c1"
+    )
+    assert routes.ROUTES[branch] == ISSUE466_EXPECTED
+    assert routes.ROUTE_ISSUES[branch] == 466
+    assert routes.TOTAL_LIMITS[branch] == 2000
+    assert routes.TEXT_LIMITS[branch] == ISSUE466_LINE_CAPS
+
+
+def test_issue466_retains_original_source_authority_base() -> None:
+    assert routes.ISSUE466_BASE == "7eb4b99d7bc2bcf11cfc8c959baacb6cf3a21e81"
+
+    def broken(args: list[str]) -> subprocess.CompletedProcess[str]:
+        return completed(args, out="0" * 40 + "\n")
+
+    error = pytest.raises(RuntimeError, routes.route_base, broken, routes.ISSUE466_BRANCH)
+    assert "Issue #466 reviewed transition" in str(error.value)
+
+
+def test_issue466_requires_exact_reviewed_main_transition() -> None:
+    original = "7eb4b99d7bc2bcf11cfc8c959baacb6cf3a21e81"
+    frozen = "24c778b4b7ac99b8bdcd34b094f51d5513723958"
+    transition_base = "3b186af6f5787a47bbfa5f7aebaa2dc9661866ca"
+    transition_merge = "23a12d6845f9e441d37f322da3cd73251b6de191"
+    assert routes.ISSUE466_BASE == original
+    assert routes.ISSUE466_FROZEN_HEAD == frozen
+    assert routes.ISSUE466_TRANSITION_BASE == transition_base
+    assert routes.ISSUE466_TRANSITION_MERGE == transition_merge
+
+    def good(args: list[str]) -> subprocess.CompletedProcess[str]:
+        if args[:2] == ["git", "rev-parse"]:
+            if args[2] == "origin/main^{commit}":
+                return completed(args, out=transition_base + "\n")
+            return completed(args, out=args[2].removesuffix("^{commit}") + "\n")
+        if args[:3] == ["git", "merge-base", "--is-ancestor"]:
+            return completed(args)
+        if args[:4] == ["git", "show", "-s", "--format=%P"]:
+            return completed(args, out=f"{frozen} {transition_base}\n")
+        raise AssertionError(args)
+
+    assert routes.route_base(good, routes.ISSUE466_BRANCH) == transition_base
+
+    def forged_parent(args: list[str]) -> subprocess.CompletedProcess[str]:
+        result = good(args)
+        if args[:4] == ["git", "show", "-s", "--format=%P"]:
+            return completed(args, out=f"{frozen} {'0' * 40}\n")
+        return result
+
+    error = pytest.raises(
+        RuntimeError, routes.route_base, forged_parent, routes.ISSUE466_BRANCH
+    )
+    assert "Issue #466 reviewed transition" in str(error.value)
+
+
 def test_issue459_t05b_route_freezes_authority_scope_and_budgets() -> None:
     branch = routes.ISSUE459_T05B_BRANCH
     assert branch == "stage8-459-t05b-audio-caption-authority"
@@ -2151,11 +2256,13 @@ def test_exact_route_completeness_lookalikes_and_budgets(monkeypatch: Any) -> No
             if "process" in branch
             else branch.replace("security", "securitу")
             if "security" in branch
-                else branch.replace("docs", "docѕ")
-                if "docs" in branch
-                else branch.replace("governance", "governancе")
-                if "governance" in branch
-                else branch.replace("lane", "lanе")
+            else branch.replace("docs", "docѕ")
+            if "docs" in branch
+            else branch.replace("governance", "governancе")
+            if "governance" in branch
+            else branch.replace("lane", "lanе")
+            if "lane" in branch
+            else branch.replace("cut1", "cutі")
         )
         for lookalike in (branch + "-retry", branch.upper(), confusable):
             failures = []
@@ -2304,6 +2411,18 @@ def test_text_charges_fail_closed(
 
     assert message in str(pytest.raises(RuntimeError, routes.route_text_charges,
                                         run, "base", {"docs/file.md"}).value)
+
+
+def test_issue466_docs_do_not_expose_issue_references_as_atx_headings() -> None:
+    for relative in (
+        "docs/ADR/0072-cut1-presenter-source-integrity.md",
+        "docs/STATUS.md",
+    ):
+        bare_issue_lines = [
+            line for line in (REPO / relative).read_text(encoding="utf-8").splitlines()
+            if line.startswith("#") and line[1:2].isdigit()
+        ]
+        assert bare_issue_lines == [], f"{relative}: {bare_issue_lines}"
 
 
 def test_issue366_charge_uses_the_complete_fixed_base_snapshot() -> None:

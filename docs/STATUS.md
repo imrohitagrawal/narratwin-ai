@@ -1760,8 +1760,9 @@ PR `#464` merged the T05A grounded-narration handoff at accepted main
 `bfb8487760dc6aeef8b05af95e0ecd40d0076f3a`; its post-merge quality run passed.
 Meera, Myra, and Raj can each produce separate current text-authority receipts.
 
-T05B is active under checkpoint `5466871459` on branch
-`stage8-459-t05b-audio-caption-authority` from that exact merge. Hosted-security
+PR `#465` merged the T05B offline audio/caption authority as accepted main
+`7eb4b99d7bc2bcf11cfc8c959baacb6cf3a21e81`; post-merge workflow
+`33302642924` passed and the completed feature branch was deleted. Hosted-security
 checkpoint `5466962967` expands its route from sixteen to nineteen paths under
 the unchanged 3,600-line cap for three exact historical false-positive
 fingerprints of the public CPython release-signing key. Provenance, wildcard
@@ -1786,3 +1787,22 @@ and exact SRT text/timing. Test fixtures are not acceptance evidence. Issue
 incident remains undisposed. No provider call, credential/environment lookup,
 egress, spend, synthesis, final audio/caption, T05 completion, T06 readiness,
 release, production, or Cut 1 acceptance is proven or authorized.
+
+Issue `#466` is the active pre-audio integrity correction from exact main
+`7eb4b99d7bc2bcf11cfc8c959baacb6cf3a21e81`. Independent reproduction showed
+that Myra and Raj claim 014 passed with `fact_013` even though its only owner
+source explicitly selected Meera. The finding is a `CRITICAL_BLOCKER` false
+acceptance, distinct from the historical Issue #368 wrong-style
+`REQUIRED_CONTRACT` failure.
+
+The Issue #466 body supplies the exact first-party authority span for all three
+controlled presenters. Preflight commit `7c359b5` and behavioral RED commit
+`e22151f` precede minimal source-contract correction `15230f2`. No new
+Issue #368 receipts are admissible until this route passes local and hosted gates,
+independent exact-head review, non-author approval, merge, and merged-main
+verification. Selected voice references remain immutable and screening-only;
+no full canonical narration audio currently exists.
+Full quality at exact head `38b025e` passed 5,347 tests and reproduced one
+central Stage 8 route-registry failure. Checkpoint `5468026907` classifies it as
+`REQUIRED_CONTRACT` and adds only the registry test as path thirteen under the
+unchanged cap; the complete gate must be rerun on the corrected head.

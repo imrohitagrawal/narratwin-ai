@@ -2966,3 +2966,27 @@ checks, independent exact-head review, eligible non-author approval, merge, and
 closeout. That historical route created no Lane A, product, provider,
 credential, egress,
 spend, media, deployment, publication, release, or production authority.
+
+## Issue #466 — T05A presenter-source integrity correction
+
+Issue `#466` is a serialized correction discovered before Issue `#368` could
+materialize new receipts. Exact current main falsely accepts Myra and Raj shared
+claim 014 from a Meera-only owner proposition. This is a `CRITICAL_BLOCKER`
+because passing evaluation and receipt lineage contradict their cited source.
+
+The exact thirteen-path route starts from
+`7eb4b99d7bc2bcf11cfc8c959baacb6cf3a21e81` on branch
+`cut1-466-t05a-presenter-source-integrity`. RED commit `e22151f` proves the
+source contradiction and coherent-rehash gap. The bounded correction replaces
+only the shared presenter proposition with the exact Issue #466 owner span,
+pins its semantic fields in code, and preserves generic grounding and all other
+T05A/T05B behavior.
+
+Issue #368 preparation may resume only after reviewed merge and merged-main
+verification. Provider calls, credentials, egress, spend, synthesis, listening,
+T05 completion, T06, deployment, release, production, and Cut 1 acceptance are
+not authorized by this correction.
+Hosted-parity checkpoint `5468026907` adds only
+`tests/unit/test_stage8_quality_gate.py` after the complete suite reproduced a
+stale central route-registry assertion; the base, budget, and product boundary
+remain unchanged.
