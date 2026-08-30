@@ -1,5 +1,5 @@
 # ruff: noqa: E302, E305, E401, E701, E702, E731
-import hashlib,importlib.util,json,subprocess as sp,unittest.mock as um;from pathlib import Path;from typing import Any
+import hashlib,importlib.util,json,re,subprocess as sp,unittest.mock as um;from pathlib import Path;from typing import Any
 import pytest; from scripts.guardrails_check import canonical_stage_issue
 from scripts.quality import stage8_a23b as a23b, stage8_cut1_routes as cut1_routes, issue427_architecture_reset as i
 from scripts.quality import check_stage8_docs as s8c;from scripts.quality.branch_identity import current_branch as cb
@@ -25,6 +25,87 @@ def load(relative: str, name: str) -> Any:
     spec=importlib.util.spec_from_file_location(name,Path(__file__).parents[2]/relative);assert spec and spec.loader
     module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module);return module
 stage8=load("scripts/quality/check_stage8_docs.py","s8"); stage2=load("scripts/quality/check_stage2_docs.py","s2")
+AGENT_CLEANUP_MARKERS = (
+    "resolve scoped resource ownership before deletion",
+    "prohibit broad prune operations",
+    "before-and-after hashes and status counts",
+    "main...origin/main is 0 ahead / 0 behind",
+    "retained, deleted, and recoverability report",
+    "proof of absence",
+)
+PLAYBOOK_CLEANUP_MARKERS = (
+    "completed implementation and verification worktrees",
+    "PR-owned Docker containers, images, volumes, and networks",
+    "PR-owned temporary clones, files, and isolated dependencies",
+    "do not run broad prune operations",
+    "hash staged, unstaged, and untracked state before and after preservation",
+    "verify `main...origin/main` is `0` ahead and `0` behind",
+    "retained, deleted, and recoverability",
+    "prove scoped resources are absent",
+)
+
+
+def without_marker(text: str, marker: str) -> str:
+    flexible = re.escape(marker).replace(r"\ ", r"\s+")
+    return re.sub(flexible, "removed cleanup marker", text, count=1)
+
+
+@pytest.mark.parametrize(
+    ("path", "marker"),
+    [
+        *(("AGENTS.md", marker) for marker in AGENT_CLEANUP_MARKERS),
+        *(("docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md", marker)
+          for marker in PLAYBOOK_CLEANUP_MARKERS),
+    ],
+)
+def test_merge_closeout_contract_rejects_each_marker_mutation(
+    monkeypatch: Any,
+    path: str,
+    marker: str,
+) -> None:
+    documents = {
+        "AGENTS.md": (REPO / "AGENTS.md").read_text(encoding="utf-8"),
+        "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md": (
+            REPO / "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md"
+        ).read_text(encoding="utf-8"),
+    }
+    documents[path] = without_marker(documents[path], marker)
+    monkeypatch.setattr(stage8, "read", documents.__getitem__)
+    failures: list[str] = []
+
+    stage8.check_merge_closeout_contract(failures)
+
+    assert f"Stage 8 merge-closeout contract missing {path} marker: {marker}." in failures
+
+
+@pytest.mark.parametrize(
+    ("path", "marker"),
+    (
+        ("AGENTS.md", "prohibit broad prune operations"),
+        (
+            "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md",
+            "do not run broad prune operations",
+        ),
+    ),
+)
+def test_merge_closeout_contract_rejects_wrong_section_decoy(
+    monkeypatch: Any,
+    path: str,
+    marker: str,
+) -> None:
+    documents = {
+        "AGENTS.md": (REPO / "AGENTS.md").read_text(encoding="utf-8"),
+        "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md": (
+            REPO / "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md"
+        ).read_text(encoding="utf-8"),
+    }
+    documents[path] = f"{without_marker(documents[path], marker)}\n\n## Decoy\n\n{marker}\n"
+    monkeypatch.setattr(stage8, "read", documents.__getitem__)
+    failures: list[str] = []
+
+    stage8.check_merge_closeout_contract(failures)
+
+    assert f"Stage 8 merge-closeout contract missing {path} marker: {marker}." in failures
 def git(r:Path,*a:str)->str:return sp.run(["git",*a],cwd=r,text=True,capture_output=True,check=True).stdout.strip()
 def put(r:Path,p:str,v:str)->None:t=r/p;t.parent.mkdir(parents=True,exist_ok=True);t.write_text(v)
 def route(m:Any,b:str,c:list[str])->list[str]:
