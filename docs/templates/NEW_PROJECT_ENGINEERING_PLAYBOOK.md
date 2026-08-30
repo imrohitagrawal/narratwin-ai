@@ -824,6 +824,8 @@ Rules:
 - Preserve negative claims explicitly when they matter, such as "this does not
   close the production blocker" or "this does not claim production readiness."
 
+### Mandatory Merge-Closeout Checklist
+
 When a PR becomes approved and merge-eligible, do not wait for the owner to
 restate routine hygiene. Treat merge closeout as the default continuation of
 the work unless an explicit human-only gate remains. This is a required

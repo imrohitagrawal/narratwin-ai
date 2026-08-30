@@ -7210,7 +7210,7 @@ def check_process_docs(failures: list[str]) -> None:
     normalized_merge_closeout = re.sub(
         r"\s+",
         " ",
-        section(playbook, "Gate 8: Proactive Next-Step Closeout"),
+        subsection(playbook, "Mandatory Merge-Closeout Checklist"),
     ).lower()
     for marker in (
         "merge closeout as the default continuation",
