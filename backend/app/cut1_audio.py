@@ -30,6 +30,7 @@ CONFIG_SCHEMA = "cut1-audio-config-v1"
 COMMITMENT_SCHEMA = "cut1-audio-commitment-v1"
 MANIFEST_SCHEMA = "cut1-audio-commitment-manifest-v1"
 MAX_AUTHORITIES = 3
+MAX_MANIFEST_SEQUENCE = 2_147_483_647
 MAX_AUDIO_BYTES = 6_000_000
 MAX_CAPTION_BYTES = 256_000
 MAX_STATE_BYTES = 24_000_000
@@ -379,6 +380,7 @@ class Cut1AudioAuthorityService:
         self._authorities: dict[str, Cut1AudioCaptionAuthority] = {}
         self._receipts: dict[str, TTSConsumptionReceipt] = {}
         self._rows: list[dict[str, Any]] = []
+        self._manifest: Cut1AudioCommitmentManifest | None = None
         self._lock = threading.RLock()
         self.quarantine_reason: str | None = None
         self._restore()
@@ -389,13 +391,18 @@ class Cut1AudioAuthorityService:
 
     def get_authority(self, receipt: TTSConsumptionReceipt) -> Cut1AudioCaptionAuthority:
         with self._lock:
+            if self.quarantine_reason is not None:
+                _fail("AUTHORITY_STATE_QUARANTINED", "Audio authority state is quarantined.")
             self._validate_receipt(receipt)
             authority = self._authorities.get(receipt.receipt_checksum)
             if authority is None or self._receipts.get(receipt.receipt_checksum) != receipt:
                 _fail("AUTHORITY_NOT_FOUND", "Current audio authority is unavailable.")
             manifest = self._trusted_manifest()
-            if audio_commitment(authority) not in manifest.commitments:
-                _fail("AUTHORITY_COMMITMENT_STALE", "Audio authority commitment is not current.")
+            stored_commitments = tuple(
+                audio_commitment(value) for value in self._authorities.values()
+            )
+            if self._manifest != manifest or stored_commitments != manifest.commitments:
+                _fail("AUTHORITY_COMMITMENT_STALE", "Audio authority set is not current.")
             return authority
 
     def evaluate_authority(
@@ -413,6 +420,7 @@ class Cut1AudioAuthorityService:
             if self.quarantine_reason is not None:
                 _fail("AUTHORITY_STATE_QUARANTINED", "Audio authority state is quarantined.")
             manifest = self._trusted_manifest()
+            self._validate_manifest_transition(manifest)
             if not candidates or len(candidates) != len(manifest.commitments):
                 _fail("AUTHORITY_SET_INCOMPLETE", "Audio authority set is incomplete.")
             authorities = tuple(self.evaluate_authority(candidate=value) for value in candidates)
@@ -431,6 +439,19 @@ class Cut1AudioAuthorityService:
                 for value, authority in zip(candidates, authorities, strict=True)
             ]
             self._persist(rows, manifest)
+            try:
+                for candidate in candidates:
+                    self._validate_receipt(candidate.receipt)
+                if self._trusted_manifest() != manifest:
+                    _fail(
+                        "AUTHORITY_COMMITMENT_STALE",
+                        "Audio commitment changed during admission.",
+                    )
+            except AudioCaptionAuthorityError:
+                self._authorities, self._receipts, self._rows = {}, {}, []
+                self._manifest = None
+                self.quarantine_reason = "STATE_INVALID"
+                raise
             self._rows = rows
             self._authorities = {
                 value.receipt.receipt_checksum: authority
@@ -439,7 +460,22 @@ class Cut1AudioAuthorityService:
             self._receipts = {
                 value.receipt.receipt_checksum: value.receipt for value in candidates
             }
+            self._manifest = manifest
             return authorities
+
+    def _validate_manifest_transition(
+        self, manifest: Cut1AudioCommitmentManifest
+    ) -> None:
+        current = self._manifest
+        if current is None:
+            return
+        if manifest.sequence < current.sequence or (
+            manifest.sequence == current.sequence and manifest != current
+        ):
+            self._authorities, self._receipts, self._rows = {}, {}, []
+            self._manifest = None
+            self.quarantine_reason = "STATE_INVALID"
+            _fail("AUTHORITY_COMMITMENT_STALE", "Audio commitment manifest regressed.")
 
     def _trusted_manifest(self) -> Cut1AudioCommitmentManifest:
         try:
@@ -456,7 +492,8 @@ class Cut1AudioAuthorityService:
         )
         if (
             manifest.schema_version != MANIFEST_SCHEMA
-            or manifest.sequence < 1
+            or type(manifest.sequence) is not int
+            or not 1 <= manifest.sequence <= MAX_MANIFEST_SEQUENCE
             or not 0 < len(commitments) <= MAX_AUTHORITIES
             or presenters != tuple(sorted(presenters))
             or len(set(presenters)) != len(presenters)
@@ -705,6 +742,7 @@ class Cut1AudioAuthorityService:
             self._authorities = restored
             self._receipts = restored_receipts
             self._rows = restored_rows
+            self._manifest = manifest
         except (
             OSError,
             UnicodeError,
@@ -716,6 +754,7 @@ class Cut1AudioAuthorityService:
             AudioCaptionAuthorityError,
         ):
             self._authorities, self._receipts, self._rows = {}, {}, []
+            self._manifest = None
             self.quarantine_reason = "STATE_INVALID"
 
     @staticmethod
