@@ -1747,11 +1747,33 @@ T03 closeout completed. The source registry, T04 controller, and all three
 original identity anchors remain unchanged. Raj/Myra controlled-local still
 derivatives are ready, and Meera remains `SOURCE_READY_NO_DERIVATIVE`.
 
-T05A is active under checkpoint `5465050919` on branch
-`stage8-459-t05a-grounded-narration-handoff` from exact T03 merge `0d70fa8e`.
-Its twelve-path, 2,200-line route permits only exact per-presenter grounding
-inference, separate narration receipts, fail-closed cross-presenter mutations,
-governance evidence, and tests. Issue `#368` retains real audio/caption
-ownership. Audio, video rendering, UI, providers, credentials, egress, spend,
-publication, release, production, and Cut 1 acceptance remain unproven and
-unauthorized.
+PR `#464` merged the T05A grounded-narration handoff at accepted main
+`bfb8487760dc6aeef8b05af95e0ecd40d0076f3a`; its post-merge quality run passed.
+Meera, Myra, and Raj can each produce separate current text-authority receipts.
+
+T05B is active under checkpoint `5466871459` on branch
+`stage8-459-t05b-audio-caption-authority` from that exact merge. Hosted-security
+checkpoint `5466962967` expands its route from sixteen to nineteen paths under
+the unchanged 3,600-line cap for three exact historical false-positive
+fingerprints of the public CPython release-signing key. Provenance, wildcard
+rejection, the real-secret canary, and full-history scanning remain mandatory.
+Checkpoint `5467038670` corrects one truncated fingerprint commit ID and adds a
+40-character lowercase invariant without changing route scope or budget.
+Hosted-provenance checkpoint `5467552503` binds the reproduced GitHub topology:
+the three finding commits are local-only, so absent hosted snapshots must use
+reachable immutable commit `d0da128657ed3acdb0c33fc29f4028c702ac52ab`
+to prove the same public-key digest and exact GPG verification context.
+Independent review rejected candidate `86544734`; checkpoint `5467125295`
+authorizes the in-route correction. Admission now accepts materialized results
+only, derives configuration identity, binds request/final-authority checksums
+and exact set order/completeness to an external immutable manifest, rechecks
+receipt currency before persistence and retrieval, and replaces superseded
+sets atomically. No provider or synthesis call exists in this boundary.
+The route otherwise permits only a typed approved-narration result and an
+offline, atomic, fail-closed audio/caption authority record. It validates exact
+receipt/source/evaluation/presenter/configuration lineage, bounded decoded WAV,
+and exact SRT text/timing. Test fixtures are not acceptance evidence. Issue
+`#368` retains genuine synthesis/listening ownership, and its prior egress
+incident remains undisposed. No provider call, credential/environment lookup,
+egress, spend, synthesis, final audio/caption, T05 completion, T06 readiness,
+release, production, or Cut 1 acceptance is proven or authorized.

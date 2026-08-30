@@ -529,10 +529,28 @@ class GoogleTTSTransport(Protocol):
         ...
 
 
+@dataclass(frozen=True)
+class ApprovedNarrationTTSResult:
+    """Provider-neutral result admitted to the Cut 1 audio authority boundary."""
+
+    provider: str
+    provider_mode: str
+    presenter_id: str
+    requested_voice: str
+    requested_locale: str
+    model_id: str
+    receipt_checksum: str
+    request_checksum: str
+    config_checksum: str
+    mime_type: str
+    artifact_checksum: str
+    audio_bytes: bytes
+
+
 class TTSProvider(Protocol):
     """Provider-neutral product boundary for approved narration synthesis."""
 
-    def synthesize(self, *, receipt: TTSConsumptionReceipt) -> object: ...
+    def synthesize(self, *, receipt: TTSConsumptionReceipt) -> ApprovedNarrationTTSResult: ...
 
 
 @dataclass(frozen=True)
@@ -550,22 +568,13 @@ class GoogleAudioMeasurements:
 
 
 @dataclass(frozen=True)
-class GoogleTTSResult:
-    provider: str
-    provider_mode: str
-    presenter_id: str
-    requested_voice: str
-    requested_locale: str
-    model_id: str
+class GoogleTTSResult(ApprovedNarrationTTSResult):
     endpoint_region: str
     effective_voice_verified: bool
     prompt_contract_version: str
     prompt_sha256: str
     request_fingerprint: str
-    request_checksum: str
-    config_checksum: str
     identity_evidence_sha256: str
-    receipt_checksum: str
     screening_policy_version: str
     screening_result: str
     screening_evidence_checksum: str
@@ -574,8 +583,6 @@ class GoogleTTSResult:
     reserved_cost_microusd: int
     actual_output_tokens: int
     actual_cost_microusd: int
-    artifact_checksum: str
-    audio_bytes: bytes
     measurements: GoogleAudioMeasurements
     spend_state: GoogleSpendState
     retention_state: str
@@ -905,6 +912,7 @@ class GoogleGeminiTTSProvider:
                     actual_output_tokens=actual_output_tokens,
                     actual_cost_microusd=actual_cost_microusd,
                     artifact_checksum="sha256:" + hashlib.sha256(audio).hexdigest(),
+                    mime_type="audio/wav",
                     audio_bytes=audio,
                     measurements=measurements,
                     spend_state="COMPLETED",
@@ -1984,6 +1992,7 @@ class GoogleGeminiTTSProvider:
             request_fingerprint=cast(str, value["requestFingerprint"]), request_checksum=cast(str, value["requestChecksum"]),
             config_checksum=cast(str, value["configChecksum"]), identity_evidence_sha256=cast(str, value["identityEvidenceSha256"]),
             receipt_checksum=cast(str, value["receiptChecksum"]), artifact_checksum=cast(str, value["artifactChecksum"]),
+            mime_type="audio/wav",
             screening_policy_version=cast(str, value["screeningPolicyVersion"]), screening_result=cast(str, value["screeningResult"]),
             screening_evidence_checksum=cast(str, value["screeningEvidenceChecksum"]),
             reserved_input_tokens=cast(int, value["reservedInputTokens"]), reserved_output_tokens=cast(int, value["reservedOutputTokens"]),

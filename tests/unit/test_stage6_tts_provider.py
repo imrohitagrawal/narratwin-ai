@@ -11,10 +11,11 @@ from dataclasses import dataclass, replace
 from pathlib import Path
 
 import pytest
-from typing import Any, cast
+from typing import Any, cast, get_type_hints
 
 import backend.app.tts_provider as tts_provider_module
 from backend.app.tts_provider import (
+    ApprovedNarrationTTSResult,
     ElevenLabsTTSProvider,
     InMemoryTTSQuotaLedger,
     TTSHTTPResponse,
@@ -27,16 +28,18 @@ from backend.app.tts_provider import (
     GoogleTTSHTTPResponse,
     GoogleTTSPreparedTransport,
     GoogleTransportError,
+    TTSProvider,
 )
 from backend.app.narration import TTSConsumptionReceipt
+from backend.app.stage6 import Stage6Service
 
 
 _GOOGLE_TEST_STATE_DIR = tempfile.TemporaryDirectory(prefix="narratwin-g368-")
 _GOOGLE_TEST_STATE_COUNTER = itertools.count()
 _GOOGLE_TEST_QUOTA_PROJECT = "quota-project"
-_GOOGLE_TEST_QUOTA_HASH = "sha256:" + hashlib.sha256(
-    _GOOGLE_TEST_QUOTA_PROJECT.encode()
-).hexdigest()
+_GOOGLE_TEST_QUOTA_HASH = (
+    "sha256:" + hashlib.sha256(_GOOGLE_TEST_QUOTA_PROJECT.encode()).hexdigest()
+)
 
 
 class FakeTransport:
@@ -462,6 +465,22 @@ def test_g368_quota_project_is_hash_bound_and_not_caller_controlled() -> None:
     assert "approved_quota_project_sha256" in fields
     assert "quota_project_id" not in fields
     assert set(GoogleGeminiTTSProvider.synthesize.__annotations__) == {"receipt", "return"}
+
+
+def test_t05b_approved_narration_provider_and_stage6_are_typed() -> None:
+    assert get_type_hints(TTSProvider.synthesize)["return"] is ApprovedNarrationTTSResult
+    assert (
+        get_type_hints(Stage6Service.synthesize_approved_narration)["return"]
+        is ApprovedNarrationTTSResult
+    )
+
+
+def test_t05b_google_result_satisfies_provider_neutral_audio_result() -> None:
+    result = google_provider(
+        FakeGoogleTransport([google_response()]), FakeGoogleIdentityProvider()
+    ).synthesize(receipt=receipt())
+    assert isinstance(result, ApprovedNarrationTTSResult)
+    assert result.mime_type == "audio/wav"
 
 
 def test_g368_provider_rejects_31_character_project_with_matching_hash() -> None:

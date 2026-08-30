@@ -1697,3 +1697,59 @@ This gate produces provider-neutral narration input authority only. It does not
 produce or validate audio, captions, video, providers, credentials, egress,
 spend, publication, release, production readiness, or Cut 1 acceptance.
 Issue `#368` retains the real audio/caption handoff.
+
+## Issue #459 T05B offline audio/caption authority gate
+
+Exact branch `stage8-459-t05b-audio-caption-authority` is pinned to merged
+T05A main `bfb8487760dc6aeef8b05af95e0ecd40d0076f3a` and checkpoint
+`5466871459` with exact body SHA-256
+`f53e919836ea5edd58620d789497d945f317c354d0b5405a88d49e570c778b28`.
+Correction checkpoint `5466962967`, body SHA-256
+`4d4cd204972abfa70b687f416813937b41329c930cf1676706ce278798579032`,
+expands the exact route to nineteen paths under the unchanged 3,600-line cap
+for three immutable public CPython signing-key false positives. Only exact
+fingerprints may be ignored; public-key blob/line/context provenance,
+missing/extra/wildcard drift, and the representative real-secret canary fail
+closed before the unchanged full-history scan. Wrong base,
+branch-point drift, missing or extra paths, authority/preflight drift,
+deletion/rename/copy drift, and aggregate or per-path overrun fail closed.
+Checkpoint `5467038670`, body SHA-256
+`41e41763e52382b3eeeea6f265dd42e2078293a3325e5df6c62f9e01d5bbc340`,
+corrects one truncated commit token and requires all fingerprint commits to be
+exactly 40 lowercase hexadecimal characters; it changes no scope or budget.
+Independent-review correction checkpoint `5467125295`, body SHA-256
+`6f05484d33e69ede373841fbb57755ae3139e5c1e06280252b8bc1558d42b263`,
+changes no path or budget. It removes synthesis capability from admission,
+derives configuration identity, requires a trusted external request/final-
+authority commitment manifest, binds exact record completeness/order, checks
+live receipt authority before persistence and retrieval, and atomically
+replaces a superseded authority set. Valid rehash, deletion, reorder, stale-
+during-admission, stale retrieval, manifest drift, and detached-checksum
+mutations fail closed.
+Hosted-provenance checkpoint `5467552503`, body SHA-256
+`a00a8a8348303a82d46d3dcddddeeb0307d6af230118879a04fbda7ff4476ccb`,
+reproduces that the three public-key commits exist only on local worktree refs.
+Available snapshots remain exact; hosted absence requires reachable immutable
+commit `d0da128657ed3acdb0c33fc29f4028c702ac52ab` to prove the same key digest
+and GPG receive/verify context. Partial availability or portable-snapshot drift
+fails closed; the ignore inventory, canary, and full-history scan are unchanged.
+
+The focused gate proves typed materialized results, current receipt/derived-
+configuration/immutable-manifest binding, independent WAV/SRT validation,
+atomic full-set persistence/replacement, replay rejection, and fail-closed
+restore/retrieval across all three presenters:
+
+```text
+uv run pytest -q tests/unit/test_cut1_audio.py tests/unit/test_stage6_tts_provider.py
+uv run pytest -q tests/unit/test_stage8_cut1_routes.py
+NARRATWIN_POLICY_ONLY=1 make quality
+uv run ruff check backend
+uv run mypy backend
+make quality
+bash scripts/ci/dependency-security.sh
+bash scripts/ci/backend-test.sh
+```
+
+Test WAV/SRT bytes are mutation stimuli only. This gate does not prove
+intelligibility, voice identity, real provider output, listening acceptance,
+T05 completion, T06 readiness, Cut 1 acceptance, release, or production.

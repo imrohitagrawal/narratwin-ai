@@ -1,6 +1,6 @@
 # Stage Issue Plan
 
-## Issue #459 Lane A Cut 1 T03/T04/T05A increments
+## Issue #459 Lane A Cut 1 T03/T04/T05A/T05B increments
 
 Issue `#459` starts from accepted main
 `ab97b6eecba6db9c66c37d19b29257c7398f3ab7` on exact branch
@@ -64,6 +64,44 @@ rejecting mixed, partial, stale, substituted, or cross-presenter evidence.
 Issue `#368` still owns real audio and captions; T05A performs no provider,
 credential, egress, spend, synthesis, rendering, publication, release, or
 production operation and does not complete T05 or Cut 1.
+
+PR `#464` merged T05A at accepted main `bfb8487760dc6aeef8b05af95e0ecd40d0076f3a`;
+post-merge main quality passed. Checkpoint `5466871459` starts the sixteen-path
+T05B offline audio/caption authority boundary from that exact merge on branch
+`stage8-459-t05b-audio-caption-authority`, capped at 3,600 charged text lines.
+It replaces the opaque approved-narration TTS return with a typed result and
+independently binds current receipt, source/evaluation/presenter/configuration,
+decoded WAV, and exact SRT evidence in fail-closed atomic state. Test fixtures
+are validation stimuli only. Issue `#368` still owns genuine synthesis and
+exact-hash listening; its historical egress incident is neither accepted nor
+superseded. No provider call, credential/environment lookup, egress, spend,
+synthesis, final media, T05 completion, or Cut 1 acceptance is authorized.
+
+The mandatory full-history security gate then reproduced three findings from
+immutable backend-image commits. Correction checkpoint `5466962967` classifies
+them as one duplicated false-positive root cause: the public CPython 3.12/3.13
+release-signing fingerprint used to verify downloaded source. The exact T05B
+route expands from sixteen to nineteen paths without changing its 3,600-line
+cap. Only the three commit/path/rule/line fingerprints are ignored; executable
+provenance, exact-inventory mutations, the representative real-secret canary,
+and the unchanged full-history scan fail closed.
+Fingerprint transcription correction checkpoint `5467038670` replaces one
+truncated 39-character commit token with the scanner's exact 40-character
+commit ID and adds a lowercase full-length invariant; scope and budget do not
+change.
+Hosted-provenance checkpoint `5467552503` records that all three public-key
+commits are local-only and unavailable in GitHub's checkout. Exact local blobs
+remain mandatory when present; hosted absence uses reachable immutable commit
+`d0da128657ed3acdb0c33fc29f4028c702ac52ab` to prove the identical public key
+and GPG verification context without fetching or weakening the scan.
+Independent exact-head review rejected candidate `86544734` after reproducing
+stale-authority acceptance, detached request/config commitments, coherent
+artifact/set rehash acceptance, and a synthesis call inside the admission
+module. Correction checkpoint `5467125295` keeps the same nineteen paths and
+3,600-line cap. T05B now admits only materialized typed results, derives config
+identity, requires an external immutable request/final-authority commitment
+manifest with exact completeness/order, revalidates receipt currency before
+persistence and retrieval, and atomically replaces superseded authority sets.
 
 ## Issue #460 completed Semgrep override removal
 
