@@ -1,4 +1,4 @@
-"""Fail-closed contract for the four reviewed Gitleaks false positives."""
+"""Fail-closed contract for the reviewed Gitleaks false positives."""
 
 from __future__ import annotations
 
@@ -17,12 +17,22 @@ FROZEN_BASE = "ab97b6eecba6db9c66c37d19b29257c7398f3ab7"
 SOURCE_HEAD = "570239effbcae3990a24ffdc809622f02364ff0d"
 SCAN_HEAD = "9644296da92bf3b3f373cd2afd2c7a64d6ca7c8c"
 EXPECTED_DIGEST = "910259f61acbbec4e3432c482d821fd56f2fe8b2073211c7ce112c3cd87405bf"
+EXPECTED_PUBLIC_KEY_SHA256 = (
+    "6c3b7674b58d9f7266cd8b823ecf469b0a03d1bf2c8c24df1d0121d8e818f1fa"
+)
+EXPECTED_DOCKERFILE_SHA256 = (
+    "27a75b496a53f07037bceadd7eb57ebdf3e07112df33bb554e674925b9e9dc16"
+)
 EXPECTED_FINGERPRINTS = (
     "77ebfc3218a003a06f7b43098624c30f2b43bf4e:scripts/quality/stage8_cut1_routes.py:generic-api-key:514",
     "8dd002589d45b41205a80dc004e7e6480bec901f:scripts/quality/stage8_cut1_routes.py:generic-api-key:515",
     "8dd002589d45b41205a80dc004e7e6480bec901f:tests/unit/test_stage8_cut1_routes.py:generic-api-key:1370",
     "9644296da92bf3b3f373cd2afd2c7a64d6ca7c8c:scripts/quality/stage8_cut1_routes.py:generic-api-key:509",
+    "66dabedecdce4ed51b8354e44f2d1c749c209898:backend/Dockerfile:generic-api-key:18",
+    "0cea00fd0a2cda457473c4fccf1d6ab2b2250bae:backend/Dockerfile:generic-api-key:18",
+    "dd1e2118dede2b5cf9060d69cace0a3c9ab8ae4:backend/Dockerfile:generic-api-key:18",
 )
+EXPECTED_PUBLIC_KEY_FINGERPRINTS = EXPECTED_FINGERPRINTS[-3:]
 
 
 def _load_checker() -> ModuleType:
@@ -40,6 +50,8 @@ def test_exact_reviewed_fingerprints_and_provenance_pass() -> None:
     assert checker.SOURCE_HEAD == SOURCE_HEAD
     assert checker.SCAN_HEAD == SCAN_HEAD
     assert checker.EXPECTED_DIGEST == EXPECTED_DIGEST
+    assert checker.EXPECTED_PUBLIC_KEY_SHA256 == EXPECTED_PUBLIC_KEY_SHA256
+    assert checker.EXPECTED_DOCKERFILE_SHA256 == EXPECTED_DOCKERFILE_SHA256
     assert checker.EXPECTED_FINGERPRINTS == EXPECTED_FINGERPRINTS
     assert checker.validate(ROOT) == []
 
@@ -73,7 +85,7 @@ def test_frozen_api_contract_bytes_match_the_reviewed_digest() -> None:
 
 
 def test_scan_head_contains_each_finding_commit() -> None:
-    for fingerprint in EXPECTED_FINGERPRINTS:
+    for fingerprint in EXPECTED_FINGERPRINTS[:4]:
         commit = fingerprint.split(":", 1)[0]
         completed = subprocess.run(
             ["git", "merge-base", "--is-ancestor", commit, SCAN_HEAD],
@@ -81,6 +93,32 @@ def test_scan_head_contains_each_finding_commit() -> None:
             check=False,
         )
         assert completed.returncode == 0
+
+
+def test_public_key_finding_commits_are_available() -> None:
+    for fingerprint in EXPECTED_PUBLIC_KEY_FINGERPRINTS:
+        commit = fingerprint.split(":", 1)[0]
+        completed = subprocess.run(
+            ["git", "cat-file", "-e", f"{commit}^{{commit}}"],
+            cwd=ROOT,
+            check=False,
+        )
+        assert completed.returncode == 0
+
+
+def test_historical_dockerfile_public_key_provenance_is_exact() -> None:
+    checker = _load_checker()
+    for fingerprint in EXPECTED_PUBLIC_KEY_FINGERPRINTS:
+        commit, path, _, _ = fingerprint.rsplit(":", 3)
+        assert path == "backend/Dockerfile"
+        assert checker.validate_public_signing_key_blob(
+            subprocess.run(
+                ["git", "show", f"{commit}:{path}"],
+                cwd=ROOT,
+                check=True,
+                capture_output=True,
+            ).stdout
+        ) == []
 
 
 def test_security_wrapper_runs_contract_canary_and_full_history_scan() -> None:

@@ -242,6 +242,7 @@ ISSUE459_T05A_LINE_CAPS = {
     "docs/TRACEABILITY.md": 100,
 }
 ISSUE459_T05B_EXPECTED = {
+    ".gitleaksignore",
     "docs/governance/preflights/issue-459-t05b.json",
     "backend/app/cut1_audio.py",
     "backend/app/tts_provider.py",
@@ -258,6 +259,8 @@ ISSUE459_T05B_EXPECTED = {
     "docs/DATA_MODEL.md",
     "docs/SECURITY_AND_PRIVACY.md",
     "docs/OBSERVABILITY_AND_COST.md",
+    "scripts/ci/check_gitleaks_regression.py",
+    "tests/unit/test_gitleaks_regression.py",
 }
 ISSUE459_T05B_LINE_CAPS = {path: 3600 for path in ISSUE459_T05B_EXPECTED}
 
@@ -1690,6 +1693,10 @@ def test_issue459_t05b_route_freezes_authority_scope_and_budgets() -> None:
     assert routes.ISSUE459_T05B_AUTHORITY_COMMENT == "5466871459"
     assert routes.ISSUE459_T05B_AUTHORITY_SHA256 == (
         "f53e919836ea5edd58620d789497d945f317c354d0b5405a88d49e570c778b28"
+    )
+    assert routes.ISSUE459_T05B_CORRECTION_COMMENT == "5466962967"
+    assert routes.ISSUE459_T05B_CORRECTION_SHA256 == (
+        "4d4cd204972abfa70b687f416813937b41329c930cf1676706ce278798579032"
     )
     assert routes.ROUTES[branch] == ISSUE459_T05B_EXPECTED
     assert routes.ROUTE_ISSUES[branch] == 459
