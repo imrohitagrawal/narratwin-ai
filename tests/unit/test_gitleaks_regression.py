@@ -16,12 +16,16 @@ CHECKER = ROOT / "scripts/ci/check_gitleaks_regression.py"
 FROZEN_BASE = "ab97b6eecba6db9c66c37d19b29257c7398f3ab7"
 SOURCE_HEAD = "570239effbcae3990a24ffdc809622f02364ff0d"
 SCAN_HEAD = "9644296da92bf3b3f373cd2afd2c7a64d6ca7c8c"
+PORTABLE_PUBLIC_KEY_HEAD = "d0da128657ed3acdb0c33fc29f4028c702ac52ab"
 EXPECTED_DIGEST = "910259f61acbbec4e3432c482d821fd56f2fe8b2073211c7ce112c3cd87405bf"
 EXPECTED_PUBLIC_KEY_SHA256 = (
     "6c3b7674b58d9f7266cd8b823ecf469b0a03d1bf2c8c24df1d0121d8e818f1fa"
 )
 EXPECTED_DOCKERFILE_SHA256 = (
     "27a75b496a53f07037bceadd7eb57ebdf3e07112df33bb554e674925b9e9dc16"
+)
+EXPECTED_PORTABLE_DOCKERFILE_SHA256 = (
+    "0e0f46b06a73eee744bcf94e730a0170b43783388bfe496c2f0f1ee5a171e2d8"
 )
 EXPECTED_FINGERPRINTS = (
     "77ebfc3218a003a06f7b43098624c30f2b43bf4e:scripts/quality/stage8_cut1_routes.py:generic-api-key:514",
@@ -49,9 +53,14 @@ def test_exact_reviewed_fingerprints_and_provenance_pass() -> None:
     assert checker.FROZEN_BASE == FROZEN_BASE
     assert checker.SOURCE_HEAD == SOURCE_HEAD
     assert checker.SCAN_HEAD == SCAN_HEAD
+    assert checker.PORTABLE_PUBLIC_KEY_HEAD == PORTABLE_PUBLIC_KEY_HEAD
     assert checker.EXPECTED_DIGEST == EXPECTED_DIGEST
     assert checker.EXPECTED_PUBLIC_KEY_SHA256 == EXPECTED_PUBLIC_KEY_SHA256
     assert checker.EXPECTED_DOCKERFILE_SHA256 == EXPECTED_DOCKERFILE_SHA256
+    assert (
+        checker.EXPECTED_PORTABLE_DOCKERFILE_SHA256
+        == EXPECTED_PORTABLE_DOCKERFILE_SHA256
+    )
     assert checker.EXPECTED_FINGERPRINTS == EXPECTED_FINGERPRINTS
     assert checker.validate(ROOT) == []
 
@@ -107,7 +116,8 @@ def test_scan_head_contains_each_finding_commit() -> None:
         assert completed.returncode == 0
 
 
-def test_public_key_finding_commits_are_available() -> None:
+def test_public_key_provenance_topology_is_complete() -> None:
+    availability: list[bool] = []
     for fingerprint in EXPECTED_PUBLIC_KEY_FINGERPRINTS:
         commit = fingerprint.split(":", 1)[0]
         completed = subprocess.run(
@@ -115,12 +125,29 @@ def test_public_key_finding_commits_are_available() -> None:
             cwd=ROOT,
             check=False,
         )
-        assert completed.returncode == 0
+        availability.append(completed.returncode == 0)
+    assert all(availability) or not any(availability)
+
+    portable = subprocess.run(
+        ["git", "cat-file", "-e", f"{PORTABLE_PUBLIC_KEY_HEAD}^{{commit}}"],
+        cwd=ROOT,
+        check=False,
+    )
+    ancestor = subprocess.run(
+        ["git", "merge-base", "--is-ancestor", PORTABLE_PUBLIC_KEY_HEAD, "HEAD"],
+        cwd=ROOT,
+        check=False,
+    )
+    assert portable.returncode == 0
+    assert ancestor.returncode == 0
 
 
 def test_every_reviewed_fingerprint_uses_a_full_lowercase_commit_id() -> None:
-    for fingerprint in EXPECTED_FINGERPRINTS:
-        commit = fingerprint.split(":", 1)[0]
+    commits = [
+        *(fingerprint.split(":", 1)[0] for fingerprint in EXPECTED_FINGERPRINTS),
+        PORTABLE_PUBLIC_KEY_HEAD,
+    ]
+    for commit in commits:
         assert len(commit) == 40
         assert all(character in "0123456789abcdef" for character in commit)
 
@@ -130,14 +157,21 @@ def test_historical_dockerfile_public_key_provenance_is_exact() -> None:
     for fingerprint in EXPECTED_PUBLIC_KEY_FINGERPRINTS:
         commit, path, _, _ = fingerprint.rsplit(":", 3)
         assert path == "backend/Dockerfile"
-        assert checker.validate_public_signing_key_blob(
-            subprocess.run(
-                ["git", "show", f"{commit}:{path}"],
-                cwd=ROOT,
-                check=True,
-                capture_output=True,
-            ).stdout
-        ) == []
+        completed = subprocess.run(
+            ["git", "show", f"{commit}:{path}"],
+            cwd=ROOT,
+            check=False,
+            capture_output=True,
+        )
+        if completed.returncode == 0:
+            assert checker.validate_public_signing_key_blob(completed.stdout) == []
+    portable = subprocess.run(
+        ["git", "show", f"{PORTABLE_PUBLIC_KEY_HEAD}:backend/Dockerfile"],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+    )
+    assert checker.validate_portable_public_signing_key_blob(portable.stdout) == []
 
 
 def test_hosted_checkout_uses_reachable_public_key_provenance(
@@ -165,15 +199,94 @@ def test_hosted_checkout_uses_reachable_public_key_provenance(
     assert checker.validate(ROOT) == []
 
 
-def test_public_signing_key_provenance_rejects_blob_and_context_drift() -> None:
+def test_hosted_checkout_rejects_missing_portable_provenance(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     checker = _load_checker()
-    commit, path, _, _ = EXPECTED_PUBLIC_KEY_FINGERPRINTS[0].rsplit(":", 3)
-    blob = subprocess.run(
-        ["git", "show", f"{commit}:{path}"],
+    original_git = checker._git
+    unavailable = {
+        *(fingerprint.split(":", 1)[0] for fingerprint in EXPECTED_PUBLIC_KEY_FINGERPRINTS),
+        PORTABLE_PUBLIC_KEY_HEAD,
+    }
+
+    def missing_git(root: Path, *args: str) -> subprocess.CompletedProcess[bytes]:
+        if len(args) >= 3 and args[:2] == ("cat-file", "-e"):
+            commit = args[2].removesuffix("^{commit}")
+            if commit in unavailable:
+                return subprocess.CompletedProcess(args, 128, b"", b"missing")
+        return original_git(root, *args)
+
+    monkeypatch.setattr(checker, "_git", missing_git)
+    assert "GITLEAKS.PROVENANCE.PUBLIC_KEY_PORTABLE_HISTORY" in checker.validate(
+        ROOT
+    )
+
+
+def test_partial_public_key_history_fails_closed(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    checker = _load_checker()
+    original_git = checker._git
+    missing_commit = EXPECTED_PUBLIC_KEY_FINGERPRINTS[0].split(":", 1)[0]
+
+    def partial_git(root: Path, *args: str) -> subprocess.CompletedProcess[bytes]:
+        if len(args) >= 3 and args[:2] == ("cat-file", "-e"):
+            commit = args[2].removesuffix("^{commit}")
+            if commit == missing_commit:
+                return subprocess.CompletedProcess(args, 128, b"", b"missing")
+            if commit in {
+                fingerprint.split(":", 1)[0]
+                for fingerprint in EXPECTED_PUBLIC_KEY_FINGERPRINTS
+            }:
+                return subprocess.CompletedProcess(args, 0, b"", b"")
+        return original_git(root, *args)
+
+    monkeypatch.setattr(checker, "_git", partial_git)
+    assert "GITLEAKS.PROVENANCE.PUBLIC_KEY_TOPOLOGY" in checker.validate(ROOT)
+
+
+def test_available_public_key_snapshot_failure_never_falls_back(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    checker = _load_checker()
+    original_git = checker._git
+    first_commit = EXPECTED_PUBLIC_KEY_FINGERPRINTS[0].split(":", 1)[0]
+
+    def unreadable_git(
+        root: Path, *args: str
+    ) -> subprocess.CompletedProcess[bytes]:
+        if len(args) >= 3 and args[:2] == ("cat-file", "-e"):
+            commit = args[2].removesuffix("^{commit}")
+            if commit in {
+                fingerprint.split(":", 1)[0]
+                for fingerprint in EXPECTED_PUBLIC_KEY_FINGERPRINTS
+            }:
+                return subprocess.CompletedProcess(args, 0, b"", b"")
+        if len(args) >= 2 and args[0] == "show" and args[1].startswith(
+            f"{first_commit}:"
+        ):
+            return subprocess.CompletedProcess(args, 128, b"", b"unreadable")
+        return original_git(root, *args)
+
+    monkeypatch.setattr(checker, "_git", unreadable_git)
+    assert "GITLEAKS.PROVENANCE.PUBLIC_KEY_SNAPSHOT" in checker.validate(ROOT)
+
+
+def test_public_signing_key_provenance_rejects_blob_and_context_drift(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    checker = _load_checker()
+    portable = subprocess.run(
+        ["git", "show", f"{PORTABLE_PUBLIC_KEY_HEAD}:backend/Dockerfile"],
         cwd=ROOT,
         check=True,
         capture_output=True,
     ).stdout
+    blob = portable.replace(b"python_gpg_fingerprint", b"python_gpg_key")
+    monkeypatch.setattr(
+        checker, "EXPECTED_DOCKERFILE_SHA256", hashlib.sha256(blob).hexdigest()
+    )
+    assert checker.validate_public_signing_key_blob(blob) == []
     assert checker.validate_public_signing_key_blob(
         blob.replace(b"python_gpg_key=", b"python_gpg_key=X", 1)
     )
@@ -182,8 +295,29 @@ def test_public_signing_key_provenance_rejects_blob_and_context_drift() -> None:
     )
 
 
+def test_portable_public_signing_key_provenance_rejects_drift() -> None:
+    checker = _load_checker()
+    blob = subprocess.run(
+        ["git", "show", f"{PORTABLE_PUBLIC_KEY_HEAD}:backend/Dockerfile"],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+    ).stdout
+    assert checker.validate_portable_public_signing_key_blob(blob) == []
+    assert checker.validate_portable_public_signing_key_blob(
+        blob.replace(b"python_gpg_fingerprint=", b"python_gpg_fingerprint=X", 1)
+    )
+    assert checker.validate_portable_public_signing_key_blob(
+        blob.replace(b"--recv-keys", b"--list-keys", 1)
+    )
+
+
 def test_security_wrapper_runs_contract_canary_and_full_history_scan() -> None:
     text = (ROOT / "scripts/ci/dependency-security.sh").read_text(encoding="utf-8")
-    assert "python3 scripts/ci/check_gitleaks_regression.py" in text
-    assert "gitleaks stdin" in text
-    assert "gitleaks detect --redact --source ." in text
+    contract = "python3 scripts/ci/check_gitleaks_regression.py"
+    canary = "gitleaks stdin"
+    history = "gitleaks detect --redact --source ."
+    assert text.index(contract) < text.index(canary) < text.index(history)
+    assert 'GITLEAKS_CANARY_STATUS}" -ne 86' in text
+    assert "--no-git" not in text
+    assert "|| true" not in text

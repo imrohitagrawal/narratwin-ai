@@ -1726,6 +1726,13 @@ live receipt authority before persistence and retrieval, and atomically
 replaces a superseded authority set. Valid rehash, deletion, reorder, stale-
 during-admission, stale retrieval, manifest drift, and detached-checksum
 mutations fail closed.
+Hosted-provenance checkpoint `5467552503`, body SHA-256
+`a00a8a8348303a82d46d3dcddddeeb0307d6af230118879a04fbda7ff4476ccb`,
+reproduces that the three public-key commits exist only on local worktree refs.
+Available snapshots remain exact; hosted absence requires reachable immutable
+commit `d0da128657ed3acdb0c33fc29f4028c702ac52ab` to prove the same key digest
+and GPG receive/verify context. Partial availability or portable-snapshot drift
+fails closed; the ignore inventory, canary, and full-history scan are unchanged.
 
 The focused gate proves typed materialized results, current receipt/derived-
 configuration/immutable-manifest binding, independent WAV/SRT validation,

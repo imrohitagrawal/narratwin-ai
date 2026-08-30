@@ -14,9 +14,13 @@ ROOT = Path(__file__).resolve().parents[2]
 FROZEN_BASE = "ab97b6eecba6db9c66c37d19b29257c7398f3ab7"
 SOURCE_HEAD = "570239effbcae3990a24ffdc809622f02364ff0d"
 SCAN_HEAD = "9644296da92bf3b3f373cd2afd2c7a64d6ca7c8c"
+PORTABLE_PUBLIC_KEY_HEAD = "d0da128657ed3acdb0c33fc29f4028c702ac52ab"
 EXPECTED_DIGEST = "910259f61acbbec4e3432c482d821fd56f2fe8b2073211c7ce112c3cd87405bf"
 EXPECTED_PUBLIC_KEY_SHA256 = "6c3b7674b58d9f7266cd8b823ecf469b0a03d1bf2c8c24df1d0121d8e818f1fa"
 EXPECTED_DOCKERFILE_SHA256 = "27a75b496a53f07037bceadd7eb57ebdf3e07112df33bb554e674925b9e9dc16"
+EXPECTED_PORTABLE_DOCKERFILE_SHA256 = (
+    "0e0f46b06a73eee744bcf94e730a0170b43783388bfe496c2f0f1ee5a171e2d8"
+)
 EXPECTED_FINGERPRINTS = (
     "77ebfc3218a003a06f7b43098624c30f2b43bf4e:scripts/quality/stage8_cut1_routes.py:generic-api-key:514",
     "8dd002589d45b41205a80dc004e7e6480bec901f:scripts/quality/stage8_cut1_routes.py:generic-api-key:515",
@@ -109,6 +113,50 @@ def validate_public_signing_key_blob(blob: bytes) -> list[str]:
     return failures
 
 
+def validate_portable_public_signing_key_blob(blob: bytes) -> list[str]:
+    """Prove a reachable immutable snapshot uses the value as a public key."""
+    failures: list[str] = []
+    if hashlib.sha256(blob).hexdigest() != EXPECTED_PORTABLE_DOCKERFILE_SHA256:
+        _append_once(failures, "GITLEAKS.PROVENANCE.PUBLIC_KEY_PORTABLE_BLOB")
+    try:
+        lines = blob.decode("utf-8").splitlines()
+        assignment = lines[17].strip()
+        match = re.match(r"python_gpg_fingerprint=([A-F0-9]{40}); \\\Z", assignment)
+        key = match.group(1) if match else ""
+        receive = lines[18].strip()
+        verify = lines[19].strip()
+    except (IndexError, UnicodeError):
+        _append_once(failures, "GITLEAKS.PROVENANCE.PUBLIC_KEY_PORTABLE_LINE")
+        return failures
+    if (
+        not match
+        or hashlib.sha256(key.encode("ascii")).hexdigest()
+        != EXPECTED_PUBLIC_KEY_SHA256
+    ):
+        _append_once(failures, "GITLEAKS.PROVENANCE.PUBLIC_KEY_PORTABLE_LINE")
+    if (
+        receive
+        != 'gpg --batch --keyserver hkps://keys.openpgp.org --recv-keys "$python_gpg_fingerprint"; \\'
+        or verify != "gpg --batch --verify python.tar.xz.asc python.tar.xz; \\"
+    ):
+        _append_once(failures, "GITLEAKS.PROVENANCE.PUBLIC_KEY_PORTABLE_CONTEXT")
+    return failures
+
+
+def _validate_portable_public_key_provenance(root: Path) -> list[str]:
+    head = _git(root, "cat-file", "-e", f"{PORTABLE_PUBLIC_KEY_HEAD}^{{commit}}")
+    ancestor = _git(
+        root, "merge-base", "--is-ancestor", PORTABLE_PUBLIC_KEY_HEAD, "HEAD"
+    )
+    if head.returncode != 0 or ancestor.returncode != 0:
+        return ["GITLEAKS.PROVENANCE.PUBLIC_KEY_PORTABLE_HISTORY"]
+    try:
+        blob = _blob(root, PORTABLE_PUBLIC_KEY_HEAD, "backend/Dockerfile")
+    except (OSError, subprocess.SubprocessError, RuntimeError):
+        return ["GITLEAKS.PROVENANCE.PUBLIC_KEY_PORTABLE_SNAPSHOT"]
+    return validate_portable_public_signing_key_blob(blob)
+
+
 def validate(root: Path = ROOT) -> list[str]:
     failures: list[str] = []
     failures.extend(validate_ignore_lines(_read_ignore(root, failures)))
@@ -125,9 +173,30 @@ def validate(root: Path = ROOT) -> list[str]:
     if any(result.returncode != 0 for result in history):
         _append_once(failures, "GITLEAKS.PROVENANCE.HISTORY")
 
+    public_key_availability = {
+        fingerprint: _git(
+            root,
+            "cat-file",
+            "-e",
+            f"{fingerprint.split(':', 1)[0]}^{{commit}}",
+        ).returncode
+        == 0
+        for fingerprint in PUBLIC_KEY_FINGERPRINTS
+    }
+    if any(public_key_availability.values()) and not all(
+        public_key_availability.values()
+    ):
+        _append_once(failures, "GITLEAKS.PROVENANCE.PUBLIC_KEY_TOPOLOGY")
+
+    portable_public_key_checked = False
     for fingerprint in EXPECTED_FINGERPRINTS:
         commit, path, rule, line_text = fingerprint.rsplit(":", 3)
         if fingerprint in PUBLIC_KEY_FINGERPRINTS:
+            if not public_key_availability[fingerprint]:
+                if not portable_public_key_checked:
+                    failures.extend(_validate_portable_public_key_provenance(root))
+                    portable_public_key_checked = True
+                continue
             try:
                 blob_bytes = _blob(root, commit, path)
                 line = blob_bytes.decode("utf-8").splitlines()[int(line_text) - 1]

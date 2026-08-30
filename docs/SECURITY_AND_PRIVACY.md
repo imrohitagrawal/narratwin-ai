@@ -682,8 +682,11 @@ Child C–F retain storage, acquisition, audit, reconciliation and integration.
 Three full-history `generic-api-key` findings are limited to an immutable
 public CPython release-signing fingerprint used for source verification. The
 exception inventory binds exact commits, path, rule, line, blob digest, key
-digest, and GPG receive/verify context. Any broader ignore, missing history,
-provenance drift, or representative real-secret false negative fails closed.
+digest, and GPG receive/verify context. The finding commits are local-only; an
+absent hosted snapshot is accepted only when reachable immutable commit
+`d0da128657ed3acdb0c33fc29f4028c702ac52ab` proves the same key and context.
+Partial availability, broader ignores, portable provenance drift, or a
+representative real-secret false negative fails closed.
 
 The T05B authority service treats receipt, provider result, WAV, SRT, and
 persisted JSON as untrusted. It bounds bytes before parsing, strictly rejects

@@ -1759,6 +1759,10 @@ fingerprints of the public CPython release-signing key. Provenance, wildcard
 rejection, the real-secret canary, and full-history scanning remain mandatory.
 Checkpoint `5467038670` corrects one truncated fingerprint commit ID and adds a
 40-character lowercase invariant without changing route scope or budget.
+Hosted-provenance checkpoint `5467552503` binds the reproduced GitHub topology:
+the three finding commits are local-only, so absent hosted snapshots must use
+reachable immutable commit `d0da128657ed3acdb0c33fc29f4028c702ac52ab`
+to prove the same public-key digest and exact GPG verification context.
 Independent review rejected candidate `86544734`; checkpoint `5467125295`
 authorizes the in-route correction. Admission now accepts materialized results
 only, derives configuration identity, binds request/final-authority checksums

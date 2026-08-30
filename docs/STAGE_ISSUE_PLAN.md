@@ -89,6 +89,11 @@ Fingerprint transcription correction checkpoint `5467038670` replaces one
 truncated 39-character commit token with the scanner's exact 40-character
 commit ID and adds a lowercase full-length invariant; scope and budget do not
 change.
+Hosted-provenance checkpoint `5467552503` records that all three public-key
+commits are local-only and unavailable in GitHub's checkout. Exact local blobs
+remain mandatory when present; hosted absence uses reachable immutable commit
+`d0da128657ed3acdb0c33fc29f4028c702ac52ab` to prove the identical public key
+and GPG verification context without fetching or weakening the scan.
 Independent exact-head review rejected candidate `86544734` after reproducing
 stale-authority acceptance, detached request/config commitments, coherent
 artifact/set rehash acceptance, and a synthesis call inside the admission
