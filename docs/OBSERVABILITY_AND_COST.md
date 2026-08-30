@@ -355,12 +355,12 @@ external-capable observation context is consulted.
 
 T05B exposes deterministic local outcomes only: authority count, quarantine
 state, typed failure code, presenter ID, receipt checksum, audio/caption
-checksums, decoded duration/format/signal measurements, configuration checksum,
-and authority checksum. Raw narration, audio, captions, provider payloads,
+checksums, decoded duration/format/signal measurements, derived configuration
+checksum, commitment-manifest sequence/checksum, and authority checksum. Raw narration, audio, captions, provider payloads,
 identity values, credentials, and private paths are excluded from logs.
 
 This increment performs zero credential/environment lookups, network requests,
-egress, synthesis attempts, retries, or spend. Test-only providers and WAV/SRT
-fixtures are validation stimuli, not provider or cost evidence. Issue #368
+egress, synthesis attempts, retries, or spend. Test-only materialized results
+and WAV/SRT fixtures are validation stimuli, not provider or cost evidence. Issue #368
 retains all paid-attempt, billable-unknown, listening, retention, and deletion
 accounting before any genuine artifact can advance.

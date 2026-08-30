@@ -1759,6 +1759,12 @@ fingerprints of the public CPython release-signing key. Provenance, wildcard
 rejection, the real-secret canary, and full-history scanning remain mandatory.
 Checkpoint `5467038670` corrects one truncated fingerprint commit ID and adds a
 40-character lowercase invariant without changing route scope or budget.
+Independent review rejected candidate `86544734`; checkpoint `5467125295`
+authorizes the in-route correction. Admission now accepts materialized results
+only, derives configuration identity, binds request/final-authority checksums
+and exact set order/completeness to an external immutable manifest, rechecks
+receipt currency before persistence and retrieval, and replaces superseded
+sets atomically. No provider or synthesis call exists in this boundary.
 The route otherwise permits only a typed approved-narration result and an
 offline, atomic, fail-closed audio/caption authority record. It validates exact
 receipt/source/evaluation/presenter/configuration lineage, bounded decoded WAV,

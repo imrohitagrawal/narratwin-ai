@@ -1717,10 +1717,20 @@ Checkpoint `5467038670`, body SHA-256
 `41e41763e52382b3eeeea6f265dd42e2078293a3325e5df6c62f9e01d5bbc340`,
 corrects one truncated commit token and requires all fingerprint commits to be
 exactly 40 lowercase hexadecimal characters; it changes no scope or budget.
+Independent-review correction checkpoint `5467125295`, body SHA-256
+`6f05484d33e69ede373841fbb57755ae3139e5c1e06280252b8bc1558d42b263`,
+changes no path or budget. It removes synthesis capability from admission,
+derives configuration identity, requires a trusted external request/final-
+authority commitment manifest, binds exact record completeness/order, checks
+live receipt authority before persistence and retrieval, and atomically
+replaces a superseded authority set. Valid rehash, deletion, reorder, stale-
+during-admission, stale retrieval, manifest drift, and detached-checksum
+mutations fail closed.
 
-The focused gate proves typed provider results, current receipt/configuration
-binding, independent WAV/SRT validation, atomic persistence, replay rejection,
-and fail-closed restore across all three presenters:
+The focused gate proves typed materialized results, current receipt/derived-
+configuration/immutable-manifest binding, independent WAV/SRT validation,
+atomic full-set persistence/replacement, replay rejection, and fail-closed
+restore/retrieval across all three presenters:
 
 ```text
 uv run pytest -q tests/unit/test_cut1_audio.py tests/unit/test_stage6_tts_provider.py

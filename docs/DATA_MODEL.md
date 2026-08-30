@@ -1026,12 +1026,17 @@ narration, approval, consumption, or receipt graph.
 
 `Cut1AudioCaptionAuthority` is a provider-neutral, immutable admission record.
 It binds the complete `TTSConsumptionReceipt` lineage; approved provider, mode,
-voice, locale, model and configuration checksum; independently decoded WAV
+voice, locale, model and derived configuration checksum; independently decoded WAV
 measurements and bytes checksum; canonical SRT bytes, exact spoken-text and
-timing checksums; and one authority checksum.
+timing checksums; and one authority checksum. `Cut1AudioCommitmentManifest`
+externally anchors the exact request and authority checksums, canonical
+presenter order, complete current receipt set, and monotonic manifest sequence.
 
-Optional state contains at most three records and retains the exact receipt,
+Optional state contains one to three records and retains the exact receipt,
 audio, captions, and authority projection needed for deterministic restore.
 Duplicate JSON members, unsafe paths, invalid root or record checksums, stale
-receipt authority, malformed media, and duplicate receipts quarantine the
-whole store. No record becomes visible until its atomic write succeeds.
+receipt authority, malformed media, duplicate receipts, coherent artifact
+rehashing, missing or reordered records, and manifest rollback quarantine the
+whole store. Retrieval revalidates current receipt and manifest authority. A
+new trusted manifest atomically replaces the complete set; no record becomes
+visible until its write succeeds.

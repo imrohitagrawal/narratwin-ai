@@ -692,9 +692,17 @@ signal, invalid caption timing/text, stale receipts, cross-presenter reuse,
 configuration substitution, replay, and state tampering. Restore is
 all-or-nothing and persistence precedes in-memory visibility.
 
+Mutable state checksums are not trust anchors. A separately governed immutable
+commitment resolver supplies the current sequence plus exact ordered
+presenter/receipt/request/final-authority commitments. Restore and retrieval
+must match it, so coherent rehashing, record deletion/reordering, and rollback
+fail closed. Configuration identity is independently derived from canonical
+fields, and receipt currency is rechecked immediately before persistence and
+on retrieval.
+
 The module has no provider SDK, credential/environment access, network client,
-socket, subprocess, synthesis, or media-generation path. The only provider
-operation is through an injected disabled-by-default protocol. Raw narration,
+socket, subprocess, synthesis, or media-generation path. It accepts only
+already-materialized typed candidates and contains no provider protocol. Raw narration,
 audio, captions, credentials, and provider payloads are not log fields. Test
 fixtures are never accepted as genuine media evidence. Issue #368 provider,
 privacy, retention, deletion, legal, egress, spend, and exact-listening gates

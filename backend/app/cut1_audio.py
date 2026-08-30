@@ -23,9 +23,12 @@ from typing import Any, Callable, Mapping, NoReturn, cast
 
 from backend.app.narration import TTSConsumptionReceipt, canonical_presenter_text
 from backend.app.storage import write_state
-from backend.app.tts_provider import ApprovedNarrationTTSResult, TTSProvider, TTSProviderError
+from backend.app.tts_provider import ApprovedNarrationTTSResult
 
 SCHEMA = "cut1-audio-caption-authority-v1"
+CONFIG_SCHEMA = "cut1-audio-config-v1"
+COMMITMENT_SCHEMA = "cut1-audio-commitment-v1"
+MANIFEST_SCHEMA = "cut1-audio-commitment-manifest-v1"
 MAX_AUTHORITIES = 3
 MAX_AUDIO_BYTES = 6_000_000
 MAX_CAPTION_BYTES = 256_000
@@ -68,6 +71,26 @@ def _pairs(values: list[tuple[str, Any]]) -> dict[str, Any]:
     return result
 
 
+def build_audio_config_checksum(
+    *,
+    provider: str,
+    provider_mode: str,
+    requested_locale: str,
+    model_id: str,
+    presenter_voices: Mapping[str, str],
+) -> str:
+    return _json_sha(
+        {
+            "schema": CONFIG_SCHEMA,
+            "provider": provider,
+            "providerMode": provider_mode,
+            "requestedLocale": requested_locale,
+            "modelId": model_id,
+            "presenterVoices": dict(sorted(presenter_voices.items())),
+        }
+    )
+
+
 @dataclass(frozen=True)
 class Cut1AudioConfig:
     provider: str
@@ -79,6 +102,13 @@ class Cut1AudioConfig:
 
     def __post_init__(self) -> None:
         voices = dict(self.presenter_voices)
+        expected_checksum = build_audio_config_checksum(
+            provider=self.provider,
+            provider_mode=self.provider_mode,
+            requested_locale=self.requested_locale,
+            model_id=self.model_id,
+            presenter_voices=voices,
+        )
         if (
             set(voices) != {"meera", "myra", "raj"}
             or any(not isinstance(value, str) or not value.strip() for value in voices.values())
@@ -91,10 +121,60 @@ class Cut1AudioConfig:
                     self.model_id,
                 )
             )
-            or CHECKSUM.fullmatch(self.config_checksum) is None
+            or self.config_checksum != expected_checksum
         ):
             raise ValueError("Cut 1 audio configuration is invalid.")
         object.__setattr__(self, "presenter_voices", MappingProxyType(voices))
+
+
+@dataclass(frozen=True)
+class Cut1AudioCommitment:
+    presenter_id: str
+    receipt_checksum: str
+    request_checksum: str
+    authority_checksum: str
+
+
+@dataclass(frozen=True)
+class Cut1AudioCommitmentManifest:
+    schema_version: str
+    sequence: int
+    commitments: tuple[Cut1AudioCommitment, ...]
+    manifest_checksum: str
+
+
+@dataclass(frozen=True)
+class Cut1AudioCandidate:
+    receipt: TTSConsumptionReceipt
+    result: ApprovedNarrationTTSResult
+    caption_bytes: bytes
+
+
+def _commitment_payload(commitment: Cut1AudioCommitment) -> dict[str, str]:
+    return {
+        "presenterId": commitment.presenter_id,
+        "receiptChecksum": commitment.receipt_checksum,
+        "requestChecksum": commitment.request_checksum,
+        "authorityChecksum": commitment.authority_checksum,
+    }
+
+
+def build_audio_commitment_manifest(
+    *, sequence: int, commitments: tuple[Cut1AudioCommitment, ...]
+) -> Cut1AudioCommitmentManifest:
+    checksum = _json_sha(
+        {
+            "schema": MANIFEST_SCHEMA,
+            "sequence": sequence,
+            "commitments": [_commitment_payload(value) for value in commitments],
+        }
+    )
+    return Cut1AudioCommitmentManifest(
+        schema_version=MANIFEST_SCHEMA,
+        sequence=sequence,
+        commitments=commitments,
+        manifest_checksum=checksum,
+    )
 
 
 @dataclass(frozen=True)
@@ -159,6 +239,15 @@ class Cut1AudioCaptionAuthority:
     caption_timing_checksum: str
     cues: tuple[CaptionCue, ...]
     authority_checksum: str
+
+
+def audio_commitment(authority: Cut1AudioCaptionAuthority) -> Cut1AudioCommitment:
+    return Cut1AudioCommitment(
+        presenter_id=authority.presenter_id,
+        receipt_checksum=authority.receipt_checksum,
+        request_checksum=authority.request_checksum,
+        authority_checksum=authority.authority_checksum,
+    )
 
 
 def _milliseconds(match: re.Match[str], prefix: str) -> int:
@@ -278,16 +367,17 @@ class Cut1AudioAuthorityService:
     def __init__(
         self,
         *,
-        provider: TTSProvider | None,
         receipt_validator: Callable[[TTSConsumptionReceipt], bool],
+        commitment_resolver: Callable[[], Cut1AudioCommitmentManifest],
         approved_config: Cut1AudioConfig,
         state_path: Path | None = None,
     ) -> None:
-        self.provider = provider
         self.receipt_validator = receipt_validator
+        self.commitment_resolver = commitment_resolver
         self.approved_config = approved_config
         self.state_path = state_path
         self._authorities: dict[str, Cut1AudioCaptionAuthority] = {}
+        self._receipts: dict[str, TTSConsumptionReceipt] = {}
         self._rows: list[dict[str, Any]] = []
         self._lock = threading.RLock()
         self.quarantine_reason: str | None = None
@@ -297,31 +387,96 @@ class Cut1AudioAuthorityService:
     def authority_count(self) -> int:
         return len(self._authorities)
 
-    def get_authority(self, receipt_checksum: str) -> Cut1AudioCaptionAuthority:
-        return self._authorities[receipt_checksum]
+    def get_authority(self, receipt: TTSConsumptionReceipt) -> Cut1AudioCaptionAuthority:
+        with self._lock:
+            self._validate_receipt(receipt)
+            authority = self._authorities.get(receipt.receipt_checksum)
+            if authority is None or self._receipts.get(receipt.receipt_checksum) != receipt:
+                _fail("AUTHORITY_NOT_FOUND", "Current audio authority is unavailable.")
+            manifest = self._trusted_manifest()
+            if audio_commitment(authority) not in manifest.commitments:
+                _fail("AUTHORITY_COMMITMENT_STALE", "Audio authority commitment is not current.")
+            return authority
 
-    def create_authority(
-        self, *, receipt: TTSConsumptionReceipt, caption_bytes: bytes
+    def evaluate_authority(
+        self, *, candidate: Cut1AudioCandidate
     ) -> Cut1AudioCaptionAuthority:
+        self._validate_receipt(candidate.receipt)
+        return self._validate_candidate(
+            candidate.receipt, candidate.result, candidate.caption_bytes
+        )
+
+    def admit_authorities(
+        self, *, candidates: tuple[Cut1AudioCandidate, ...]
+    ) -> tuple[Cut1AudioCaptionAuthority, ...]:
         with self._lock:
             if self.quarantine_reason is not None:
                 _fail("AUTHORITY_STATE_QUARANTINED", "Audio authority state is quarantined.")
-            self._validate_receipt(receipt)
-            if receipt.receipt_checksum in self._authorities:
+            manifest = self._trusted_manifest()
+            if not candidates or len(candidates) != len(manifest.commitments):
+                _fail("AUTHORITY_SET_INCOMPLETE", "Audio authority set is incomplete.")
+            authorities = tuple(self.evaluate_authority(candidate=value) for value in candidates)
+            commitments = tuple(audio_commitment(value) for value in authorities)
+            if commitments != manifest.commitments:
+                _fail("AUTHORITY_COMMITMENT_MISMATCH", "Audio authority set is not trusted.")
+            receipt_checksums = tuple(value.receipt.receipt_checksum for value in candidates)
+            if receipt_checksums == tuple(self._authorities) and self._authorities:
                 _fail("RECEIPT_REPLAYED", "Narration receipt was already bound.")
-            if self.provider is None:
-                _fail("TTS_PROVIDER_DISABLED", "Approved narration TTS is disabled.")
-            try:
-                result = self.provider.synthesize(receipt=receipt)
-            except TTSProviderError as error:
-                raise AudioCaptionAuthorityError(error.code, error.message) from error
-            authority = self._validate_candidate(receipt, result, caption_bytes)
-            row = self._row(receipt, result, caption_bytes, authority)
-            candidate_rows = [*self._rows, row]
-            self._persist(candidate_rows)
-            self._rows = candidate_rows
-            self._authorities[receipt.receipt_checksum] = authority
-            return authority
+            for candidate in candidates:
+                self._validate_receipt(candidate.receipt)
+            if self._trusted_manifest() != manifest:
+                _fail("AUTHORITY_COMMITMENT_STALE", "Audio commitment changed during admission.")
+            rows = [
+                self._row(value.receipt, value.result, value.caption_bytes, authority)
+                for value, authority in zip(candidates, authorities, strict=True)
+            ]
+            self._persist(rows, manifest)
+            self._rows = rows
+            self._authorities = {
+                value.receipt.receipt_checksum: authority
+                for value, authority in zip(candidates, authorities, strict=True)
+            }
+            self._receipts = {
+                value.receipt.receipt_checksum: value.receipt for value in candidates
+            }
+            return authorities
+
+    def _trusted_manifest(self) -> Cut1AudioCommitmentManifest:
+        try:
+            manifest = self.commitment_resolver()
+        except Exception:
+            _fail("AUTHORITY_COMMITMENT_UNAVAILABLE", "Trusted commitment is unavailable.")
+        if not isinstance(manifest, Cut1AudioCommitmentManifest):
+            _fail("AUTHORITY_COMMITMENT_INVALID", "Trusted commitment is invalid.")
+        commitments = manifest.commitments
+        presenters = tuple(value.presenter_id for value in commitments)
+        receipt_checksums = tuple(value.receipt_checksum for value in commitments)
+        expected = build_audio_commitment_manifest(
+            sequence=manifest.sequence, commitments=commitments
+        )
+        if (
+            manifest.schema_version != MANIFEST_SCHEMA
+            or manifest.sequence < 1
+            or not 0 < len(commitments) <= MAX_AUTHORITIES
+            or presenters != tuple(sorted(presenters))
+            or len(set(presenters)) != len(presenters)
+            or len(set(receipt_checksums)) != len(receipt_checksums)
+            or any(
+                value.presenter_id not in self.approved_config.presenter_voices
+                or any(
+                    CHECKSUM.fullmatch(checksum) is None
+                    for checksum in (
+                        value.receipt_checksum,
+                        value.request_checksum,
+                        value.authority_checksum,
+                    )
+                )
+                for value in commitments
+            )
+            or manifest.manifest_checksum != expected.manifest_checksum
+        ):
+            _fail("AUTHORITY_COMMITMENT_INVALID", "Trusted commitment is invalid.")
+        return manifest
 
     def _validate_receipt(self, receipt: TTSConsumptionReceipt) -> None:
         try:
@@ -477,10 +632,17 @@ class Cut1AudioAuthorityService:
             "authority": asdict(authority),
         }
 
-    def _persist(self, rows: list[dict[str, Any]]) -> None:
+    def _persist(
+        self, rows: list[dict[str, Any]], manifest: Cut1AudioCommitmentManifest
+    ) -> None:
         if self.state_path is None:
             return
-        core = {"schema": SCHEMA, "records": rows}
+        core = {
+            "schema": SCHEMA,
+            "manifestSequence": manifest.sequence,
+            "manifestChecksum": manifest.manifest_checksum,
+            "records": rows,
+        }
         write_state(self.state_path, {**core, "stateChecksum": _json_sha(core)})
 
     def _restore(self) -> None:
@@ -498,18 +660,33 @@ class Cut1AudioAuthorityService:
             )
             if not isinstance(payload, dict) or set(payload) != {
                 "schema",
+                "manifestSequence",
+                "manifestChecksum",
                 "records",
                 "stateChecksum",
             }:
                 raise ValueError("State schema.")
-            core = {"schema": payload["schema"], "records": payload["records"]}
+            core = {
+                "schema": payload["schema"],
+                "manifestSequence": payload["manifestSequence"],
+                "manifestChecksum": payload["manifestChecksum"],
+                "records": payload["records"],
+            }
             if payload["schema"] != SCHEMA or payload["stateChecksum"] != _json_sha(core):
                 raise ValueError("State checksum.")
+            manifest = self._trusted_manifest()
+            if (
+                payload["manifestSequence"] != manifest.sequence
+                or payload["manifestChecksum"] != manifest.manifest_checksum
+            ):
+                raise ValueError("State manifest.")
             records = payload["records"]
-            if not isinstance(records, list) or len(records) > MAX_AUTHORITIES:
+            if not isinstance(records, list) or len(records) != len(manifest.commitments):
                 raise ValueError("State count.")
             restored: dict[str, Cut1AudioCaptionAuthority] = {}
+            restored_receipts: dict[str, TTSConsumptionReceipt] = {}
             restored_rows: list[dict[str, Any]] = []
+            restored_commitments: list[Cut1AudioCommitment] = []
             for row in records:
                 receipt, result, captions, stored = self._decode_row(row)
                 self._validate_receipt(receipt)
@@ -520,8 +697,14 @@ class Cut1AudioAuthorityService:
                 ):
                     raise ValueError("Authority mismatch.")
                 restored[receipt.receipt_checksum] = authority
+                restored_receipts[receipt.receipt_checksum] = receipt
+                restored_commitments.append(audio_commitment(authority))
                 restored_rows.append(cast(dict[str, Any], row))
-            self._authorities, self._rows = restored, restored_rows
+            if tuple(restored_commitments) != manifest.commitments:
+                raise ValueError("State commitments.")
+            self._authorities = restored
+            self._receipts = restored_receipts
+            self._rows = restored_rows
         except (
             OSError,
             UnicodeError,
@@ -532,7 +715,7 @@ class Cut1AudioAuthorityService:
             ValueError,
             AudioCaptionAuthorityError,
         ):
-            self._authorities, self._rows = {}, []
+            self._authorities, self._receipts, self._rows = {}, {}, []
             self.quarantine_reason = "STATE_INVALID"
 
     @staticmethod

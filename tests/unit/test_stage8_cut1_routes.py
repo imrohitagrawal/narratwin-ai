@@ -1702,6 +1702,10 @@ def test_issue459_t05b_route_freezes_authority_scope_and_budgets() -> None:
     assert routes.ISSUE459_T05B_FINGERPRINT_CORRECTION_SHA256 == (
         "41e41763e52382b3eeeea6f265dd42e2078293a3325e5df6c62f9e01d5bbc340"
     )
+    assert routes.ISSUE459_T05B_REVIEW_CORRECTION_COMMENT == "5467125295"
+    assert routes.ISSUE459_T05B_REVIEW_CORRECTION_SHA256 == (
+        "6f05484d33e69ede373841fbb57755ae3139e5c1e06280252b8bc1558d42b263"
+    )
     assert routes.ROUTES[branch] == ISSUE459_T05B_EXPECTED
     assert routes.ROUTE_ISSUES[branch] == 459
     assert routes.TOTAL_LIMITS[branch] == 3600

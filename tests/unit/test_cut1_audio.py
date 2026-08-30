@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 import hashlib
 import importlib
 import importlib.util
@@ -7,7 +8,7 @@ import ast
 import inspect
 import json
 import struct
-from dataclasses import replace
+from dataclasses import asdict, replace
 from pathlib import Path
 from types import ModuleType
 from typing import Any, Callable, Mapping
@@ -22,7 +23,7 @@ from backend.app.narration import (
 
 PRESENTERS = ("meera", "myra", "raj")
 VOICE_PROFILES = {"meera": "meera-voice-v1", "myra": "myra-voice-v1", "raj": "raj-voice-v1"}
-CONFIG_CHECKSUM = "sha256:" + "3" * 64
+CONFIG_CHECKSUM = "sha256:19e8d9fda744c225ae616101df9b0a6c8f6b5334714fc321edc33473331cc793"
 
 
 @pytest.fixture(scope="module")
@@ -85,7 +86,7 @@ def _receipt(presenter_id: str = "meera", *, version: int = 1) -> TTSConsumption
         trace_id=f"trace_{presenter_id}_{version}",
         spoken_text=canonical_presenter_text(presenter_id),
         duration_requirement_seconds=(90, 120),
-        receipt_checksum="sha256:" + f"{version:x}" * 64,
+        receipt_checksum="sha256:" + prefix * 63 + f"{version:x}",
     )
 
 
@@ -152,47 +153,97 @@ def _result(
     return tts_provider.ApprovedNarrationTTSResult(**values)
 
 
-class _FakeProvider:
-    def __init__(self, result: Any) -> None:
-        self.result = result
+def _config(cut1_audio: ModuleType) -> Any:
+    return cut1_audio.Cut1AudioConfig(
+        provider="offline-test-provider",
+        provider_mode="LOCAL",
+        requested_locale="en-IN",
+        model_id="offline-test-v1",
+        presenter_voices=VOICE_PROFILES,
+        config_checksum=CONFIG_CHECKSUM,
+    )
 
-    def synthesize(self, *, receipt: TTSConsumptionReceipt) -> Any:
-        del receipt
-        return self.result
+
+def _candidate(
+    cut1_audio: ModuleType,
+    receipt: TTSConsumptionReceipt,
+    result: Any,
+    captions: bytes | None = None,
+) -> Any:
+    return cut1_audio.Cut1AudioCandidate(
+        receipt=receipt,
+        result=result,
+        caption_bytes=captions or _captions(receipt.spoken_text),
+    )
+
+
+def _manifest(
+    cut1_audio: ModuleType,
+    candidates: tuple[Any, ...],
+    *,
+    sequence: int = 1,
+) -> Any:
+    preview = cut1_audio.Cut1AudioAuthorityService(
+        receipt_validator=lambda _: True,
+        commitment_resolver=lambda: None,
+        approved_config=_config(cut1_audio),
+    )
+    authorities = tuple(
+        preview.evaluate_authority(candidate=value) for value in candidates
+    )
+    return cut1_audio.build_audio_commitment_manifest(
+        sequence=sequence,
+        commitments=tuple(cut1_audio.audio_commitment(value) for value in authorities),
+    )
 
 
 def _service(
     cut1_audio: ModuleType,
     *,
     state_path: Path,
-    receipt: TTSConsumptionReceipt,
-    provider: object | None,
+    current_receipts: tuple[TTSConsumptionReceipt, ...],
+    manifest: Any,
     validator: Callable[[TTSConsumptionReceipt], bool] | None = None,
+    manifest_resolver: Callable[[], Any] | None = None,
 ) -> Any:
     return cut1_audio.Cut1AudioAuthorityService(
-        provider=provider,
-        receipt_validator=validator or (lambda candidate: candidate == receipt),
-        approved_config=cut1_audio.Cut1AudioConfig(
-            provider="offline-test-provider",
-            provider_mode="LOCAL",
-            requested_locale="en-IN",
-            model_id="offline-test-v1",
-            presenter_voices=VOICE_PROFILES,
-            config_checksum=CONFIG_CHECKSUM,
-        ),
+        receipt_validator=validator
+        or (lambda candidate: candidate in current_receipts),
+        commitment_resolver=manifest_resolver or (lambda: manifest),
+        approved_config=_config(cut1_audio),
         state_path=state_path,
+    )
+
+
+def _service_for_candidate(
+    cut1_audio: ModuleType,
+    *,
+    state_path: Path,
+    current_receipt: TTSConsumptionReceipt,
+    anchor_candidate: Any,
+    validator: Callable[[TTSConsumptionReceipt], bool] | None = None,
+) -> tuple[Any, Any]:
+    manifest = _manifest(cut1_audio, (anchor_candidate,))
+    return (
+        _service(
+            cut1_audio,
+            state_path=state_path,
+            current_receipts=(current_receipt,),
+            manifest=manifest,
+            validator=validator,
+        ),
+        manifest,
     )
 
 
 def _assert_failure(
     cut1_audio: ModuleType,
     service: Any,
-    receipt: TTSConsumptionReceipt,
-    captions: bytes,
+    candidate: Any,
     code: str,
 ) -> None:
     with pytest.raises(cut1_audio.AudioCaptionAuthorityError) as caught:
-        service.create_authority(receipt=receipt, caption_bytes=captions)
+        service.admit_authorities(candidates=(candidate,))
     assert caught.value.code == code
     assert service.authority_count == 0
 
@@ -206,18 +257,17 @@ def test_t05b_binds_and_restores_each_presenter_without_provider_replay(
 ) -> None:
     receipt = _receipt(presenter_id)
     result = _result(tts_provider, receipt)
+    candidate = _candidate(cut1_audio, receipt, result)
+    manifest = _manifest(cut1_audio, (candidate,))
     state_path = tmp_path / f"{presenter_id}.json"
     service = _service(
         cut1_audio,
         state_path=state_path,
-        receipt=receipt,
-        provider=_FakeProvider(result),
+        current_receipts=(receipt,),
+        manifest=manifest,
     )
 
-    authority = service.create_authority(
-        receipt=receipt,
-        caption_bytes=_captions(receipt.spoken_text),
-    )
+    authority = service.admit_authorities(candidates=(candidate,))[0]
 
     assert authority.presenter_id == presenter_id
     assert authority.receipt_checksum == receipt.receipt_checksum
@@ -236,32 +286,20 @@ def test_t05b_binds_and_restores_each_presenter_without_provider_replay(
     restored = _service(
         cut1_audio,
         state_path=state_path,
-        receipt=receipt,
-        provider=None,
+        current_receipts=(receipt,),
+        manifest=manifest,
     )
     assert restored.authority_count == 1
-    assert restored.get_authority(receipt.receipt_checksum) == authority
+    assert restored.get_authority(receipt) == authority
 
 
-def test_t05b_provider_is_absent_and_disabled_by_default(
+def test_t05b_admission_has_no_provider_or_synthesis_capability(
     cut1_audio: ModuleType,
-    tmp_path: Path,
 ) -> None:
-    receipt = _receipt()
-    service = _service(
-        cut1_audio,
-        state_path=tmp_path / "disabled.json",
-        receipt=receipt,
-        provider=None,
-    )
-
-    _assert_failure(
-        cut1_audio,
-        service,
-        receipt,
-        _captions(receipt.spoken_text),
-        "TTS_PROVIDER_DISABLED",
-    )
+    constructor = inspect.signature(cut1_audio.Cut1AudioAuthorityService).parameters
+    source = inspect.getsource(cut1_audio.Cut1AudioAuthorityService)
+    assert "provider" not in constructor
+    assert ".synthesize(" not in source
 
 
 @pytest.mark.parametrize("presenter_id", PRESENTERS)
@@ -273,19 +311,19 @@ def test_t05b_rejects_cross_presenter_audio_binding(
 ) -> None:
     receipt = _receipt(presenter_id)
     other = next(value for value in PRESENTERS if value != presenter_id)
+    baseline = _candidate(cut1_audio, receipt, _result(tts_provider, receipt))
     result = _result(tts_provider, receipt, presenter_id=other)
-    service = _service(
+    service, _ = _service_for_candidate(
         cut1_audio,
         state_path=tmp_path / f"cross-{presenter_id}.json",
-        receipt=receipt,
-        provider=_FakeProvider(result),
+        current_receipt=receipt,
+        anchor_candidate=baseline,
     )
 
     _assert_failure(
         cut1_audio,
         service,
-        receipt,
-        _captions(receipt.spoken_text),
+        _candidate(cut1_audio, receipt, result),
         "PRESENTER_BINDING_MISMATCH",
     )
 
@@ -317,18 +355,18 @@ def test_t05b_rejects_stale_or_substituted_receipt_lineage(
         assert field == "narration_checksum"
         substituted = replace(current, narration_checksum=value)
     result = _result(tts_provider, substituted)
-    service = _service(
+    baseline = _candidate(cut1_audio, current, _result(tts_provider, current))
+    service, _ = _service_for_candidate(
         cut1_audio,
         state_path=tmp_path / f"receipt-{field}.json",
-        receipt=current,
-        provider=_FakeProvider(result),
+        current_receipt=current,
+        anchor_candidate=baseline,
     )
 
     _assert_failure(
         cut1_audio,
         service,
-        substituted,
-        _captions(substituted.spoken_text),
+        _candidate(cut1_audio, substituted, result),
         "NARRATION_AUTHORITY_STALE",
     )
 
@@ -354,19 +392,19 @@ def test_t05b_rejects_receipt_request_and_configuration_substitution(
     code: str,
 ) -> None:
     receipt = _receipt()
+    baseline = _candidate(cut1_audio, receipt, _result(tts_provider, receipt))
     result = _result(tts_provider, receipt, overrides=overrides)
-    service = _service(
+    service, _ = _service_for_candidate(
         cut1_audio,
         state_path=tmp_path / f"result-{code}.json",
-        receipt=receipt,
-        provider=_FakeProvider(result),
+        current_receipt=receipt,
+        anchor_candidate=baseline,
     )
 
     _assert_failure(
         cut1_audio,
         service,
-        receipt,
-        _captions(receipt.spoken_text),
+        _candidate(cut1_audio, receipt, result),
         code,
     )
 
@@ -393,18 +431,18 @@ def test_t05b_rejects_malformed_silent_wrong_duration_or_replaced_audio(
     receipt = _receipt()
     overrides = {} if checksum is None else {"artifact_checksum": checksum}
     result = _result(tts_provider, receipt, audio_bytes=audio, overrides=overrides)
-    service = _service(
+    baseline = _candidate(cut1_audio, receipt, _result(tts_provider, receipt))
+    service, _ = _service_for_candidate(
         cut1_audio,
         state_path=tmp_path / f"audio-{code}.json",
-        receipt=receipt,
-        provider=_FakeProvider(result),
+        current_receipt=receipt,
+        anchor_candidate=baseline,
     )
 
     _assert_failure(
         cut1_audio,
         service,
-        receipt,
-        _captions(receipt.spoken_text),
+        _candidate(cut1_audio, receipt, result),
         code,
     )
 
@@ -425,18 +463,19 @@ def test_t05b_rejects_wrong_partial_or_reordered_caption_text(
     else:
         paragraphs[0], paragraphs[1] = paragraphs[1], paragraphs[0]
     captions = _captions("\n\n".join(paragraphs))
-    service = _service(
+    result = _result(tts_provider, receipt)
+    baseline = _candidate(cut1_audio, receipt, result)
+    service, _ = _service_for_candidate(
         cut1_audio,
         state_path=tmp_path / f"caption-{mutation}.json",
-        receipt=receipt,
-        provider=_FakeProvider(_result(tts_provider, receipt)),
+        current_receipt=receipt,
+        anchor_candidate=baseline,
     )
 
     _assert_failure(
         cut1_audio,
         service,
-        receipt,
-        captions,
+        _candidate(cut1_audio, receipt, result, captions),
         "CAPTION_TEXT_MISMATCH",
     )
 
@@ -453,18 +492,24 @@ def test_t05b_rejects_caption_gaps_bounds_and_reversed_timing(
     end_ms: int,
 ) -> None:
     receipt = _receipt()
-    service = _service(
+    result = _result(tts_provider, receipt)
+    baseline = _candidate(cut1_audio, receipt, result)
+    service, _ = _service_for_candidate(
         cut1_audio,
         state_path=tmp_path / f"timing-{start_ms}-{end_ms}.json",
-        receipt=receipt,
-        provider=_FakeProvider(_result(tts_provider, receipt)),
+        current_receipt=receipt,
+        anchor_candidate=baseline,
     )
 
     _assert_failure(
         cut1_audio,
         service,
-        receipt,
-        _captions(receipt.spoken_text, start_ms=start_ms, end_ms=end_ms),
+        _candidate(
+            cut1_audio,
+            receipt,
+            result,
+            _captions(receipt.spoken_text, start_ms=start_ms, end_ms=end_ms),
+        ),
         "CAPTION_TIMING_INVALID",
     )
 
@@ -475,18 +520,20 @@ def test_t05b_rejects_citation_markers_in_spoken_and_caption_text(
     tmp_path: Path,
 ) -> None:
     receipt = replace(_receipt(), spoken_text=canonical_presenter_text("meera") + " [1]")
-    service = _service(
+    current = _receipt()
+    baseline = _candidate(cut1_audio, current, _result(tts_provider, current))
+    service, _ = _service_for_candidate(
         cut1_audio,
         state_path=tmp_path / "spoken-citation.json",
-        receipt=receipt,
-        provider=_FakeProvider(_result(tts_provider, receipt)),
+        current_receipt=current,
+        anchor_candidate=baseline,
+        validator=lambda candidate: candidate == receipt,
     )
 
     _assert_failure(
         cut1_audio,
         service,
-        receipt,
-        _captions(receipt.spoken_text),
+        _candidate(cut1_audio, receipt, _result(tts_provider, receipt)),
         "SPOKEN_CITATION_MARKER",
     )
 
@@ -498,19 +545,21 @@ def test_t05b_rejects_exact_receipt_replay_without_creating_a_second_record(
 ) -> None:
     receipt = _receipt()
     captions = _captions(receipt.spoken_text)
+    candidate = _candidate(cut1_audio, receipt, _result(tts_provider, receipt), captions)
+    manifest = _manifest(cut1_audio, (candidate,))
     service = _service(
         cut1_audio,
         state_path=tmp_path / "replay.json",
-        receipt=receipt,
-        provider=_FakeProvider(_result(tts_provider, receipt)),
+        current_receipts=(receipt,),
+        manifest=manifest,
     )
-    authority = service.create_authority(receipt=receipt, caption_bytes=captions)
+    authority = service.admit_authorities(candidates=(candidate,))[0]
 
     with pytest.raises(cut1_audio.AudioCaptionAuthorityError) as caught:
-        service.create_authority(receipt=receipt, caption_bytes=captions)
+        service.admit_authorities(candidates=(candidate,))
     assert caught.value.code == "RECEIPT_REPLAYED"
     assert service.authority_count == 1
-    assert service.get_authority(receipt.receipt_checksum) == authority
+    assert service.get_authority(receipt) == authority
 
 
 def _replace_first(value: Any, old: object, new: object) -> bool:
@@ -531,6 +580,104 @@ def _replace_first(value: Any, old: object, new: object) -> bool:
     return False
 
 
+def _refresh_state_checksum(payload: dict[str, Any]) -> None:
+    payload["stateChecksum"] = _json_sha(
+        {
+            "schema": payload["schema"],
+            "manifestSequence": payload["manifestSequence"],
+            "manifestChecksum": payload["manifestChecksum"],
+            "records": payload["records"],
+        }
+    )
+
+
+def test_t05b_rejects_valid_request_checksum_not_in_trusted_manifest(
+    cut1_audio: ModuleType,
+    tts_provider: ModuleType,
+    tmp_path: Path,
+) -> None:
+    receipt = _receipt()
+    baseline = _candidate(cut1_audio, receipt, _result(tts_provider, receipt))
+    service, _ = _service_for_candidate(
+        cut1_audio,
+        state_path=tmp_path / "request-commitment.json",
+        current_receipt=receipt,
+        anchor_candidate=baseline,
+    )
+    substituted = _candidate(
+        cut1_audio,
+        receipt,
+        _result(tts_provider, receipt, request_checksum="sha256:" + "9" * 64),
+    )
+
+    _assert_failure(
+        cut1_audio, service, substituted, "AUTHORITY_COMMITMENT_MISMATCH"
+    )
+
+
+def test_t05b_configuration_checksum_is_derived_from_canonical_content(
+    cut1_audio: ModuleType,
+) -> None:
+    with pytest.raises(ValueError, match="configuration is invalid"):
+        cut1_audio.Cut1AudioConfig(
+            provider="offline-test-provider",
+            provider_mode="LOCAL",
+            requested_locale="en-IN",
+            model_id="substituted-model",
+            presenter_voices=VOICE_PROFILES,
+            config_checksum=CONFIG_CHECKSUM,
+        )
+
+
+def test_t05b_revalidates_receipt_immediately_before_persistence(
+    cut1_audio: ModuleType,
+    tts_provider: ModuleType,
+    tmp_path: Path,
+) -> None:
+    receipt = _receipt()
+    candidate = _candidate(cut1_audio, receipt, _result(tts_provider, receipt))
+    calls = 0
+
+    def current(value: TTSConsumptionReceipt) -> bool:
+        nonlocal calls
+        calls += 1
+        return value == receipt and calls == 1
+
+    service, _ = _service_for_candidate(
+        cut1_audio,
+        state_path=tmp_path / "stale-before-persist.json",
+        current_receipt=receipt,
+        anchor_candidate=candidate,
+        validator=current,
+    )
+
+    _assert_failure(cut1_audio, service, candidate, "NARRATION_AUTHORITY_STALE")
+    assert not (tmp_path / "stale-before-persist.json").exists()
+
+
+def test_t05b_revalidates_receipt_on_retrieval(
+    cut1_audio: ModuleType,
+    tts_provider: ModuleType,
+    tmp_path: Path,
+) -> None:
+    receipt = _receipt()
+    candidate = _candidate(cut1_audio, receipt, _result(tts_provider, receipt))
+    is_current = True
+    service, _ = _service_for_candidate(
+        cut1_audio,
+        state_path=tmp_path / "stale-get.json",
+        current_receipt=receipt,
+        anchor_candidate=candidate,
+        validator=lambda value: is_current and value == receipt,
+    )
+    service.admit_authorities(candidates=(candidate,))
+    is_current = False
+
+    with pytest.raises(cut1_audio.AudioCaptionAuthorityError) as caught:
+        service.get_authority(receipt)
+    assert caught.value.code == "NARRATION_AUTHORITY_STALE"
+
+
 def test_t05b_restore_quarantines_persisted_tamper(
     cut1_audio: ModuleType,
     tts_provider: ModuleType,
@@ -538,29 +685,116 @@ def test_t05b_restore_quarantines_persisted_tamper(
 ) -> None:
     receipt = _receipt()
     state_path = tmp_path / "tamper.json"
+    candidate = _candidate(cut1_audio, receipt, _result(tts_provider, receipt))
+    manifest = _manifest(cut1_audio, (candidate,))
     service = _service(
         cut1_audio,
         state_path=state_path,
-        receipt=receipt,
-        provider=_FakeProvider(_result(tts_provider, receipt)),
+        current_receipts=(receipt,),
+        manifest=manifest,
     )
-    service.create_authority(receipt=receipt, caption_bytes=_captions(receipt.spoken_text))
+    service.admit_authorities(candidates=(candidate,))
     payload = json.loads(state_path.read_text(encoding="utf-8"))
     assert _replace_first(payload, receipt.presenter_id, "raj")
-    payload["stateChecksum"] = _json_sha(
-        {"schema": payload["schema"], "records": payload["records"]}
-    )
+    _refresh_state_checksum(payload)
     state_path.write_text(json.dumps(payload), encoding="utf-8")
 
     restored = _service(
         cut1_audio,
         state_path=state_path,
-        receipt=receipt,
-        provider=None,
+        current_receipts=(receipt,),
+        manifest=manifest,
     )
 
     assert restored.authority_count == 0
     assert restored.quarantine_reason
+
+
+def test_t05b_restore_rejects_fully_rechecksummed_audio_substitution(
+    cut1_audio: ModuleType,
+    tts_provider: ModuleType,
+    tmp_path: Path,
+) -> None:
+    receipt = _receipt()
+    state_path = tmp_path / "coherent-audio-tamper.json"
+    original = _candidate(cut1_audio, receipt, _result(tts_provider, receipt))
+    manifest = _manifest(cut1_audio, (original,))
+    service = _service(
+        cut1_audio,
+        state_path=state_path,
+        current_receipts=(receipt,),
+        manifest=manifest,
+    )
+    service.admit_authorities(candidates=(original,))
+
+    substituted_audio = bytearray(_speech_wav())
+    substituted_audio[44:46] = struct.pack("<h", 1234)
+    substituted_result = _result(
+        tts_provider, receipt, audio_bytes=bytes(substituted_audio)
+    )
+    substituted = _candidate(cut1_audio, receipt, substituted_result)
+    preview = cut1_audio.Cut1AudioAuthorityService(
+        receipt_validator=lambda _: True,
+        commitment_resolver=lambda: manifest,
+        approved_config=_config(cut1_audio),
+    )
+    substituted_authority = preview.evaluate_authority(candidate=substituted)
+
+    payload = json.loads(state_path.read_text(encoding="utf-8"))
+    result_row = payload["records"][0]["result"]
+    result_row["artifact_checksum"] = substituted_result.artifact_checksum
+    result_row["audioBase64"] = base64.b64encode(substituted_result.audio_bytes).decode()
+    payload["records"][0]["authority"] = asdict(substituted_authority)
+    _refresh_state_checksum(payload)
+    state_path.write_text(json.dumps(payload), encoding="utf-8")
+
+    restored = _service(
+        cut1_audio,
+        state_path=state_path,
+        current_receipts=(receipt,),
+        manifest=manifest,
+    )
+    assert restored.authority_count == 0
+    assert restored.quarantine_reason == "STATE_INVALID"
+
+
+@pytest.mark.parametrize("mutation", ("delete", "reverse"))
+def test_t05b_restore_rejects_rechecksummed_partial_or_reordered_record_set(
+    cut1_audio: ModuleType,
+    tts_provider: ModuleType,
+    tmp_path: Path,
+    mutation: str,
+) -> None:
+    receipts = tuple(_receipt(value) for value in PRESENTERS)
+    candidates = tuple(
+        _candidate(cut1_audio, receipt, _result(tts_provider, receipt))
+        for receipt in receipts
+    )
+    manifest = _manifest(cut1_audio, candidates)
+    state_path = tmp_path / f"record-{mutation}.json"
+    service = _service(
+        cut1_audio,
+        state_path=state_path,
+        current_receipts=receipts,
+        manifest=manifest,
+    )
+    service.admit_authorities(candidates=candidates)
+    payload = json.loads(state_path.read_text(encoding="utf-8"))
+    if mutation == "delete":
+        payload["records"].pop()
+    else:
+        payload["records"].reverse()
+    _refresh_state_checksum(payload)
+    state_path.write_text(json.dumps(payload), encoding="utf-8")
+
+    restored = _service(
+        cut1_audio,
+        state_path=state_path,
+        current_receipts=receipts,
+        manifest=manifest,
+    )
+    assert restored.authority_count == 0
+    assert restored.quarantine_reason == "STATE_INVALID"
 
 
 def test_t05b_restore_rejects_valid_but_rolled_back_narration_authority(
@@ -571,26 +805,71 @@ def test_t05b_restore_rejects_valid_but_rolled_back_narration_authority(
     old_receipt = _receipt(version=1)
     current_receipt = _receipt(version=2)
     state_path = tmp_path / "rollback.json"
+    old_candidate = _candidate(
+        cut1_audio, old_receipt, _result(tts_provider, old_receipt)
+    )
+    old_manifest = _manifest(cut1_audio, (old_candidate,), sequence=1)
     old_service = _service(
         cut1_audio,
         state_path=state_path,
-        receipt=old_receipt,
-        provider=_FakeProvider(_result(tts_provider, old_receipt)),
+        current_receipts=(old_receipt,),
+        manifest=old_manifest,
     )
-    old_service.create_authority(
-        receipt=old_receipt,
-        caption_bytes=_captions(old_receipt.spoken_text),
+    old_service.admit_authorities(candidates=(old_candidate,))
+    current_candidate = _candidate(
+        cut1_audio, current_receipt, _result(tts_provider, current_receipt)
     )
+    current_manifest = _manifest(cut1_audio, (current_candidate,), sequence=2)
 
     restored = _service(
         cut1_audio,
         state_path=state_path,
-        receipt=current_receipt,
-        provider=None,
+        current_receipts=(current_receipt,),
+        manifest=current_manifest,
     )
 
     assert restored.authority_count == 0
     assert restored.quarantine_reason
+
+
+def test_t05b_new_trusted_manifest_atomically_replaces_superseded_presenter(
+    cut1_audio: ModuleType,
+    tts_provider: ModuleType,
+    tmp_path: Path,
+) -> None:
+    old_receipt = _receipt(version=1)
+    new_receipt = _receipt(version=2)
+    old_candidate = _candidate(
+        cut1_audio, old_receipt, _result(tts_provider, old_receipt)
+    )
+    new_candidate = _candidate(
+        cut1_audio, new_receipt, _result(tts_provider, new_receipt)
+    )
+    manifest_box = {"value": _manifest(cut1_audio, (old_candidate,), sequence=1)}
+    current_box = {"value": old_receipt}
+    state_path = tmp_path / "supersede.json"
+    service = _service(
+        cut1_audio,
+        state_path=state_path,
+        current_receipts=(old_receipt,),
+        manifest=manifest_box["value"],
+        validator=lambda value: value == current_box["value"],
+        manifest_resolver=lambda: manifest_box["value"],
+    )
+    service.admit_authorities(candidates=(old_candidate,))
+
+    manifest_box["value"] = _manifest(cut1_audio, (new_candidate,), sequence=2)
+    current_box["value"] = new_receipt
+    new_authority = service.admit_authorities(candidates=(new_candidate,))[0]
+
+    assert service.authority_count == 1
+    assert service.get_authority(new_receipt) == new_authority
+    with pytest.raises(cut1_audio.AudioCaptionAuthorityError) as caught:
+        service.get_authority(old_receipt)
+    assert caught.value.code == "NARRATION_AUTHORITY_STALE"
+    payload = json.loads(state_path.read_text(encoding="utf-8"))
+    assert len(payload["records"]) == 1
+    assert payload["records"][0]["receipt"]["version"] == 2
 
 
 def test_t05b_persistence_failure_commits_no_partial_authority(
@@ -601,11 +880,13 @@ def test_t05b_persistence_failure_commits_no_partial_authority(
 ) -> None:
     receipt = _receipt()
     state_path = tmp_path / "write-failure.json"
+    candidate = _candidate(cut1_audio, receipt, _result(tts_provider, receipt))
+    manifest = _manifest(cut1_audio, (candidate,))
     service = _service(
         cut1_audio,
         state_path=state_path,
-        receipt=receipt,
-        provider=_FakeProvider(_result(tts_provider, receipt)),
+        current_receipts=(receipt,),
+        manifest=manifest,
     )
 
     def fail_write(_path: Path, _payload: object) -> None:
@@ -613,7 +894,7 @@ def test_t05b_persistence_failure_commits_no_partial_authority(
 
     monkeypatch.setattr(cut1_audio, "write_state", fail_write)
     with pytest.raises(OSError, match="bounded-test-write-failure"):
-        service.create_authority(receipt=receipt, caption_bytes=_captions(receipt.spoken_text))
+        service.admit_authorities(candidates=(candidate,))
     assert service.authority_count == 0
     assert not state_path.exists()
 

@@ -89,6 +89,14 @@ Fingerprint transcription correction checkpoint `5467038670` replaces one
 truncated 39-character commit token with the scanner's exact 40-character
 commit ID and adds a lowercase full-length invariant; scope and budget do not
 change.
+Independent exact-head review rejected candidate `86544734` after reproducing
+stale-authority acceptance, detached request/config commitments, coherent
+artifact/set rehash acceptance, and a synthesis call inside the admission
+module. Correction checkpoint `5467125295` keeps the same nineteen paths and
+3,600-line cap. T05B now admits only materialized typed results, derives config
+identity, requires an external immutable request/final-authority commitment
+manifest with exact completeness/order, revalidates receipt currency before
+persistence and retrieval, and atomically replaces superseded authority sets.
 
 ## Issue #460 completed Semgrep override removal
 
