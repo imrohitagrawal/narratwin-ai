@@ -1713,6 +1713,10 @@ missing/extra/wildcard drift, and the representative real-secret canary fail
 closed before the unchanged full-history scan. Wrong base,
 branch-point drift, missing or extra paths, authority/preflight drift,
 deletion/rename/copy drift, and aggregate or per-path overrun fail closed.
+Checkpoint `5467038670`, body SHA-256
+`41e41763e52382b3eeeea6f265dd42e2078293a3325e5df6c62f9e01d5bbc340`,
+corrects one truncated commit token and requires all fingerprint commits to be
+exactly 40 lowercase hexadecimal characters; it changes no scope or budget.
 
 The focused gate proves typed provider results, current receipt/configuration
 binding, independent WAV/SRT validation, atomic persistence, replay rejection,

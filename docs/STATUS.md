@@ -1757,6 +1757,8 @@ checkpoint `5466962967` expands its route from sixteen to nineteen paths under
 the unchanged 3,600-line cap for three exact historical false-positive
 fingerprints of the public CPython release-signing key. Provenance, wildcard
 rejection, the real-secret canary, and full-history scanning remain mandatory.
+Checkpoint `5467038670` corrects one truncated fingerprint commit ID and adds a
+40-character lowercase invariant without changing route scope or budget.
 The route otherwise permits only a typed approved-narration result and an
 offline, atomic, fail-closed audio/caption authority record. It validates exact
 receipt/source/evaluation/presenter/configuration lineage, bounded decoded WAV,

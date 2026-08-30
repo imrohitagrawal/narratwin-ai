@@ -85,6 +85,10 @@ route expands from sixteen to nineteen paths without changing its 3,600-line
 cap. Only the three commit/path/rule/line fingerprints are ignored; executable
 provenance, exact-inventory mutations, the representative real-secret canary,
 and the unchanged full-history scan fail closed.
+Fingerprint transcription correction checkpoint `5467038670` replaces one
+truncated 39-character commit token with the scanner's exact 40-character
+commit ID and adds a lowercase full-length invariant; scope and budget do not
+change.
 
 ## Issue #460 completed Semgrep override removal
 
