@@ -50,6 +50,7 @@ ISSUE368_IMPLEMENTATION_BASE = "6766da34d73e301358f84f8eefb0985927292a26"
 ISSUE368_QUOTA_FIX_BASE = "9c165f739788fb0f09b315673f9125d700d6a96b"
 ISSUE421_BASE = "a868137fab607ae75d4b272301e9fc52b898e15c"
 ISSUE424_BASE = "afcf0325c3ec925b68b770eda0bb8c839bcce4dd"
+ISSUE468_BASE = "7eb4b99d7bc2bcf11cfc8c959baacb6cf3a21e81"
 ISSUE150_BASE = "a02286240212ad8958915aec01aa5ebaf60fa705"
 ISSUE460_BASE = "ab97b6eecba6db9c66c37d19b29257c7398f3ab7"
 ISSUE451_BASE = "59db96aaab6c4e75b12d134dc9b02330c5a982ac"
@@ -605,9 +606,9 @@ TEXT_LIMITS = {
         "docs/STATUS.md": 90,
         "docs/agent-context/context-policy-manifest-v1.json": 200,
         "scripts/quality/check_stage8_docs.py": 80,
-        "scripts/quality/stage8_cut1_routes.py": 100,
+        "scripts/quality/stage8_cut1_routes.py": 180,
         "tests/unit/test_stage8_quality_gate.py": 160,
-        "tests/unit/test_stage8_cut1_routes.py": 120,
+        "tests/unit/test_stage8_cut1_routes.py": 220,
     },
     ISSUE459_T05B_BRANCH: {path: 3600 for path in ROUTES[ISSUE459_T05B_BRANCH]},
     ISSUE459_T05A_BRANCH: {
@@ -1071,6 +1072,7 @@ def merge_cleanup_contract_failures(
             "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md",
             "Mandatory Merge-Closeout Checklist", 3,
             (
+                "inventory every cleanup target and resolve its ownership to the completed PR before deletion",
                 "completed implementation and verification worktrees",
                 "PR-owned Docker containers, images, volumes, and networks",
                 "PR-owned temporary clones, files, and isolated dependencies",
@@ -1082,6 +1084,36 @@ def merge_cleanup_contract_failures(
             ),
         ),
     )
+    exact_blocks = {
+        "AGENTS.md": (
+            "   Merge cleanup must resolve scoped resource ownership before deletion;\n"
+            "   prohibit broad prune operations; preserve dirty work with before-and-after\n"
+            "   hashes and status counts; verify main...origin/main is 0 ahead / 0 behind;\n"
+            "   and publish a retained, deleted, and recoverability report with proof of\n"
+            "   absence for removed resources."
+        ),
+        "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md": (
+            "- inventory every cleanup target and resolve its ownership to the completed PR\n"
+            "  before deletion; retain anything whose ownership is unclear\n"
+            "- remove completed implementation and verification worktrees\n"
+            "- remove PR-owned Docker containers, images, volumes, and networks\n"
+            "- remove PR-owned temporary clones, files, and isolated dependencies\n"
+            "- do not run broad prune operations, including Docker system, image, builder,\n"
+            "  volume, network, cache, worktree, branch, or recursive filesystem pruning,\n"
+            "  when ownership is unresolved\n"
+            "- when local `main` owns dirty work, hash staged, unstaged, and untracked state\n"
+            "  before and after preservation; also record the status-entry count, preserve\n"
+            "  the exact index and files on a clearly named local branch, and reverify both\n"
+            "  hashes and count before recreating clean local `main`\n"
+            "- after synchronization, verify `main...origin/main` is `0` ahead and `0`\n"
+            "  behind\n"
+            "- prove scoped resources are absent after deletion without treating unrelated\n"
+            "  retained resources as cleanup failures\n"
+            "- publish a retained, deleted, and recoverability report that identifies each\n"
+            "  scoped resource, its ownership basis, disposition, reason, and whether the\n"
+            "  deletion is recoverable"
+        ),
+    }
     failures: list[str] = []
     for path, heading, level, markers in specifications:
         try:
@@ -1094,6 +1126,10 @@ def merge_cleanup_contract_failures(
             f"Stage 8 merge-closeout contract missing {path} marker: {marker}."
             for marker in markers if marker not in normalized
         )
+        if exact_blocks[path] not in body:
+            failures.append(
+                f"Stage 8 merge-closeout contract lacks an exact operative clause: {path}."
+            )
     return failures
 
 
@@ -1312,6 +1348,7 @@ def route_base(run: Callable[[list[str]], Any], branch: str) -> str:
             raise RuntimeError("Issue #459 reviewed transition evidence is unavailable or inconsistent.")
         return ISSUE459_TRANSITION_BASE
     fixed_routes = {
+        ISSUE468_BRANCH: (468, ISSUE468_BASE),
         ISSUE459_T05B_BRANCH: (459, ISSUE459_T05B_BASE),
         ISSUE459_T05A_BRANCH: (459, ISSUE459_T05A_BASE),
         ISSUE459_T03_BRANCH: (459, ISSUE459_T03_BASE),
@@ -1334,14 +1371,17 @@ def route_base(run: Callable[[list[str]], Any], branch: str) -> str:
         common = run(["git", "merge-base", base, "HEAD"])
         fixed_value = str(fixed.stdout).strip()
         common_value = str(common.stdout).strip()
+        fixed_invalid = (
+            fixed.returncode or common.returncode
+            or fixed_value != base or common_value != base
+        )
         branch_point_invalid = False
-        if branch in {ISSUE459_T05B_BRANCH, ISSUE459_T05A_BRANCH, ISSUE459_T03_BRANCH, ISSUE460_BRANCH, ISSUE452_BRANCH, ISSUE451_BRANCH, ISSUE150_BRANCH, ISSUE424_BRANCH, ISSUE421_BRANCH, ISSUE368_IMPLEMENTATION_BRANCH,
+        if not fixed_invalid and branch in {ISSUE468_BRANCH, ISSUE459_T05B_BRANCH, ISSUE459_T05A_BRANCH, ISSUE459_T03_BRANCH, ISSUE460_BRANCH, ISSUE452_BRANCH, ISSUE451_BRANCH, ISSUE150_BRANCH, ISSUE424_BRANCH, ISSUE421_BRANCH, ISSUE368_IMPLEMENTATION_BRANCH,
                       ISSUE368_QUOTA_FIX_BRANCH, ISSUE368_BRANCH,
                       ISSUE368_PROMPT_BRANCH}:
             branch_point = run(["git", "merge-base", "origin/main", "HEAD"])
             branch_point_invalid = branch_point.returncode != 0 or str(branch_point.stdout).strip() != base
-        if (fixed.returncode or common.returncode or fixed_value != base or common_value != base
-                or branch_point_invalid):
+        if fixed_invalid or branch_point_invalid:
             raise RuntimeError(f"Issue #{issue} fixed base evidence is unavailable or inconsistent.")
         return base
     current = run(["git", "rev-parse", "origin/main^{commit}"])
