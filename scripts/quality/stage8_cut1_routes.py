@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Any, Callable
 
 from scripts.governance_preflight_v1 import validate_governance_preflight
+from scripts.guardrails_check import cleanup_authority_anchor_failures
 
 ISSUE150_BRANCH = "cut1-process-150-semgrep-mcp-renewal"
 ISSUE460_BRANCH = "security-460-semgrep-override-removal"
@@ -53,7 +54,7 @@ ISSUE368_IMPLEMENTATION_BASE = "6766da34d73e301358f84f8eefb0985927292a26"
 ISSUE368_QUOTA_FIX_BASE = "9c165f739788fb0f09b315673f9125d700d6a96b"
 ISSUE421_BASE = "a868137fab607ae75d4b272301e9fc52b898e15c"
 ISSUE424_BASE = "afcf0325c3ec925b68b770eda0bb8c839bcce4dd"
-ISSUE468_BASE = "7eb4b99d7bc2bcf11cfc8c959baacb6cf3a21e81"
+ISSUE468_BASE = "55a0810e2ff327490d6dbadbf58580c06edef600"
 ISSUE150_BASE = "a02286240212ad8958915aec01aa5ebaf60fa705"
 ISSUE460_BASE = "ab97b6eecba6db9c66c37d19b29257c7398f3ab7"
 ISSUE451_BASE = "59db96aaab6c4e75b12d134dc9b02330c5a982ac"
@@ -1184,11 +1185,9 @@ def merge_cleanup_contract_failures(
             ),
         ),
     )
-    exact_sha256 = {
-        "AGENTS.md": "7222909116385fe74cbc7df6bbccb759687d2e4a6bf0e0637465679434de33ab",
-        "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md": "30ba0f8e7b736293c4b6c110cbe9ce46bf7639507b0441bd37cb222bb62ae94f",
-    }
-    failures: list[str] = []
+    failures = cleanup_authority_anchor_failures(
+        lambda path: read_document(path).encode("utf-8")
+    )
     for path, heading, level, markers in specifications:
         try:
             document = read_document(path)
@@ -1204,10 +1203,6 @@ def merge_cleanup_contract_failures(
         if has_unsafe_broad_prune_authorization(document):
             failures.append(
                 f"Stage 8 merge-closeout contract contains unsafe broad-prune authorization: {path}."
-            )
-        if hashlib.sha256(document.encode()).hexdigest() != exact_sha256[path]:
-            failures.append(
-                f"Stage 8 merge-closeout contract lacks an exact operative clause: {path}."
             )
     return failures
 
