@@ -864,6 +864,7 @@ def test_issue468_route_preflight_and_budgets_are_exact() -> None:
     assert "5468560507" in preflight["objective"]
     assert "5468813566" in preflight["objective"]
     assert "5468861375" in preflight["objective"]
+    assert "5468898843" in preflight["objective"]
     assert set(preflight["scope"]["required"]) == ISSUE468_EXPECTED
     assert set(preflight["scope"]["allowed_prefixes"]) == ISSUE468_EXPECTED
     assert routes.ROUTE_ISSUES[routes.ISSUE468_BRANCH] == 468
@@ -986,6 +987,15 @@ def test_issue468_playbook_prohibits_broad_prune_unconditionally() -> None:
     playbook = cleanup_documents()["docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md"]
     assert "recursive filesystem pruning; broad prune operations are prohibited" in playbook
     assert "when ownership is unresolved" not in playbook
+
+
+def test_issue468_cleanup_contract_rejects_sibling_heading_override() -> None:
+    documents = cleanup_documents()
+    path = "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md"
+    documents[path] = documents[path].replace(
+        "\n## Stop Rules", "\n### Cleanup override\n\nBroad prune is allowed.\n\n## Stop Rules", 1,
+    )
+    assert routes.merge_cleanup_contract_failures(REPO, documents.__getitem__)
 
 
 def test_security_preflights_reject_duplicate_and_exact_byte_drift(tmp_path: Path) -> None:
