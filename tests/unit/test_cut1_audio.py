@@ -181,7 +181,7 @@ def _manifest(
     cut1_audio: ModuleType,
     candidates: tuple[Any, ...],
     *,
-    sequence: int = 1,
+    sequence: Any = 1,
 ) -> Any:
     preview = cut1_audio.Cut1AudioAuthorityService(
         receipt_validator=lambda _: True,
@@ -200,7 +200,7 @@ def _manifest(
 def _service(
     cut1_audio: ModuleType,
     *,
-    state_path: Path,
+    state_path: Path | None = None,
     current_receipts: tuple[TTSConsumptionReceipt, ...],
     manifest: Any,
     validator: Callable[[TTSConsumptionReceipt], bool] | None = None,
@@ -870,6 +870,108 @@ def test_t05b_new_trusted_manifest_atomically_replaces_superseded_presenter(
     payload = json.loads(state_path.read_text(encoding="utf-8"))
     assert len(payload["records"]) == 1
     assert payload["records"][0]["receipt"]["version"] == 2
+
+
+@pytest.mark.parametrize("sequence", (True, 1.5))
+def test_t05b_rejects_non_integer_manifest_sequence(
+    cut1_audio: ModuleType,
+    tts_provider: ModuleType,
+    sequence: object,
+) -> None:
+    receipt = _receipt()
+    candidate = _candidate(cut1_audio, receipt, _result(tts_provider, receipt))
+    manifest = _manifest(cut1_audio, (candidate,), sequence=sequence)
+    service = _service(
+        cut1_audio,
+        current_receipts=(receipt,),
+        manifest=manifest,
+    )
+
+    _assert_failure(cut1_audio, service, candidate, "AUTHORITY_COMMITMENT_INVALID")
+
+
+@pytest.mark.parametrize("next_sequence", (1, 2))
+def test_t05b_rejects_manifest_rollback_or_same_sequence_substitution(
+    cut1_audio: ModuleType,
+    tts_provider: ModuleType,
+    next_sequence: int,
+) -> None:
+    old_receipt = _receipt(version=1)
+    new_receipt = _receipt(version=2)
+    old_candidate = _candidate(
+        cut1_audio, old_receipt, _result(tts_provider, old_receipt)
+    )
+    new_candidate = _candidate(
+        cut1_audio, new_receipt, _result(tts_provider, new_receipt)
+    )
+    manifest_box = {"value": _manifest(cut1_audio, (old_candidate,), sequence=2)}
+    service = _service(
+        cut1_audio,
+        current_receipts=(old_receipt, new_receipt),
+        manifest=manifest_box["value"],
+        manifest_resolver=lambda: manifest_box["value"],
+    )
+    service.admit_authorities(candidates=(old_candidate,))
+    manifest_box["value"] = _manifest(
+        cut1_audio, (new_candidate,), sequence=next_sequence
+    )
+
+    _assert_failure(
+        cut1_audio, service, new_candidate, "AUTHORITY_COMMITMENT_STALE"
+    )
+
+
+def test_t05b_retrieval_rejects_incomplete_set_after_manifest_advances(
+    cut1_audio: ModuleType,
+    tts_provider: ModuleType,
+) -> None:
+    receipts = (_receipt("meera"), _receipt("raj"))
+    candidates = tuple(
+        _candidate(cut1_audio, receipt, _result(tts_provider, receipt))
+        for receipt in receipts
+    )
+    manifest_box = {"value": _manifest(cut1_audio, candidates[:1], sequence=1)}
+    service = _service(
+        cut1_audio,
+        current_receipts=receipts,
+        manifest=manifest_box["value"],
+        manifest_resolver=lambda: manifest_box["value"],
+    )
+    service.admit_authorities(candidates=candidates[:1])
+    manifest_box["value"] = _manifest(cut1_audio, candidates, sequence=2)
+
+    with pytest.raises(cut1_audio.AudioCaptionAuthorityError) as caught:
+        service.get_authority(receipts[0])
+    assert caught.value.code == "AUTHORITY_COMMITMENT_STALE"
+
+
+def test_t05b_revalidates_receipt_after_state_write_before_publication(
+    cut1_audio: ModuleType,
+    tts_provider: ModuleType,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    receipt = _receipt()
+    candidate = _candidate(cut1_audio, receipt, _result(tts_provider, receipt))
+    current = {"value": True}
+    state_path = tmp_path / "stale-during-write.json"
+    service, _ = _service_for_candidate(
+        cut1_audio,
+        state_path=state_path,
+        current_receipt=receipt,
+        anchor_candidate=candidate,
+        validator=lambda value: current["value"] and value == receipt,
+    )
+    original_write = cut1_audio.write_state
+
+    def invalidate_after_write(path: Path, payload: object) -> None:
+        original_write(path, payload)
+        current["value"] = False
+
+    monkeypatch.setattr(cut1_audio, "write_state", invalidate_after_write)
+    _assert_failure(cut1_audio, service, candidate, "NARRATION_AUTHORITY_STALE")
+    assert service.authority_count == 0
+    assert service.quarantine_reason == "STATE_INVALID"
 
 
 def test_t05b_persistence_failure_commits_no_partial_authority(
