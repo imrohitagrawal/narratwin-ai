@@ -1458,7 +1458,7 @@ def check_exact_route(
             failures.extend(f"Issue #471 governance preflight failed: {item.code}" for item in findings)
             objective = preflight.get("objective") if isinstance(preflight, dict) else None
             if not isinstance(objective, str) or any(value not in objective for value in (
-                ISSUE471_BASE, "5469282050", "5469309499", *ISSUE471_AUTHORITY_SHA256
+                ISSUE471_BASE, "5469282050", "5469309499", "5469332843", *ISSUE471_AUTHORITY_SHA256
             )):
                 failures.append("Issue #471 cleanup authority evidence drifted.")
         except (OSError, ValueError, TypeError) as error:
