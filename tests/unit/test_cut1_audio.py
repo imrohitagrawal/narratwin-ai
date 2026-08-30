@@ -64,7 +64,11 @@ def _sha(value: bytes) -> str:
 
 
 def _json_sha(value: object) -> str:
-    return _sha(json.dumps(value, sort_keys=True, separators=(",", ":")).encode())
+    return _sha(
+        json.dumps(
+            value, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+        ).encode()
+    )
 
 
 def _receipt(presenter_id: str = "meera", *, version: int = 1) -> TTSConsumptionReceipt:
@@ -708,6 +712,42 @@ def test_t05b_restore_quarantines_persisted_tamper(
 
     assert restored.authority_count == 0
     assert restored.quarantine_reason
+
+
+@pytest.mark.parametrize(
+    "sequence",
+    (True, 1.0, 0, -1, 2_147_483_648),
+)
+def test_t05b_restore_rejects_noncanonical_manifest_sequence(
+    cut1_audio: ModuleType,
+    tts_provider: ModuleType,
+    tmp_path: Path,
+    sequence: object,
+) -> None:
+    receipt = _receipt()
+    state_path = tmp_path / f"sequence-{sequence!r}.json"
+    candidate = _candidate(cut1_audio, receipt, _result(tts_provider, receipt))
+    manifest = _manifest(cut1_audio, (candidate,))
+    service = _service(
+        cut1_audio,
+        state_path=state_path,
+        current_receipts=(receipt,),
+        manifest=manifest,
+    )
+    service.admit_authorities(candidates=(candidate,))
+    payload = json.loads(state_path.read_text(encoding="utf-8"))
+    payload["manifestSequence"] = sequence
+    _refresh_state_checksum(payload)
+    state_path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+
+    restored = _service(
+        cut1_audio,
+        state_path=state_path,
+        current_receipts=(receipt,),
+        manifest=manifest,
+    )
+    assert restored.authority_count == 0
+    assert restored.quarantine_reason == "STATE_INVALID"
 
 
 def test_t05b_restore_rejects_fully_rechecksummed_audio_substitution(
