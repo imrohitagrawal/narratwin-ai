@@ -178,6 +178,31 @@ def test_issue459_governed_fallback_presenter_creates_bound_narration_authority(
     assert draft.spoken_text == narration.canonical_presenter_text(presenter_id)
 
 
+@pytest.mark.parametrize("presenter_id", ["myra", "raj"])
+def test_issue466_fallback_receipt_resolves_truthful_shared_presenter_source(
+    narration: ModuleType, tmp_path: Path, presenter_id: str
+) -> None:
+    service, principal, binding, project_id = _service(narration, tmp_path, presenter_id)
+    run = service.stage4.walkthrough_runs["run_narration"]
+    draft = service.create_draft(
+        principal=principal,
+        project_id=project_id,
+        source_run_id=run.run_id,
+        presenter_binding=binding,
+        review_text=run.accepted_script_text,
+    )
+    evidence = json.loads(draft.claim_evidence_json)
+    support = next(row for row in evidence["supports"] if row["claim_id"] == "claim_014")
+    contract = load_cut1_grounding_contract(root=ROOT)
+    proposition = contract.propositions[support["proposition_ids"][0]]
+
+    assert proposition.statement == (
+        "OWNER_ASSERTED: For Cut 1, Meera, Myra, and Raj are each authorized controlled "
+        "presenters for an independently bound prepared walkthrough."
+    )
+    assert proposition.predicate_ids[-1] == "presenter.governed_cut1"
+
+
 def test_issue459_cross_presenter_run_and_binding_are_rejected(
     narration: ModuleType, tmp_path: Path
 ) -> None:
