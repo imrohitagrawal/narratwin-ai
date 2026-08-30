@@ -1757,7 +1757,7 @@ T05 completion, T06 readiness, Cut 1 acceptance, release, or production.
 ### Issue #475 T05B runtime/receipt binding correction
 
 Exact branch `cut1-475-t05b-runtime-receipt-binding` is pinned to accepted main
-`fb963f92057b8ccd5c0c070a3c9b5406ee9e884f`. Its twelve-path route permits at
+`fb963f92057b8ccd5c0c070a3c9b5406ee9e884f`. Its thirteen-path route permits at
 most 1,800 charged text lines and fails closed on base, path, preflight,
 rename/copy, per-path, or aggregate drift.
 
