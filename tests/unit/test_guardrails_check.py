@@ -83,6 +83,11 @@ ISSUE435_BRANCH = "governance-435-adversarial-convergence-framework-v1"
 
 
 def issue471_intended_cleanup_documents() -> dict[str, bytes]:
+    current = {
+        path: (ROOT / path).read_bytes() for path in guardrails.CLEANUP_AUTHORITY_SHA256
+    }
+    if guardrails.cleanup_authority_anchor_failures(current.__getitem__) == []:
+        return current
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8").replace(
         "   closeout instead of treating the merge as fully complete.\n",
         "   closeout instead of treating the merge as fully complete.\n"
