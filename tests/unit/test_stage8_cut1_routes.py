@@ -283,8 +283,7 @@ ISSUE468_LINE_CAPS = {
     "docs/agent-context/context-policy-manifest-v1.json": 200,
     "scripts/quality/check_stage8_docs.py": 80,
     "scripts/quality/stage8_cut1_routes.py": 180,
-    "tests/unit/test_stage8_quality_gate.py": 160,
-    "tests/unit/test_stage8_cut1_routes.py": 220,
+    "tests/unit/test_stage8_quality_gate.py": 160, "tests/unit/test_stage8_cut1_routes.py": 220,
 }
 ISSUE468_CLEANUP_CONTRACT = {
     "AGENTS.md": (
@@ -991,9 +990,10 @@ def test_issue468_playbook_prohibits_broad_prune_unconditionally() -> None:
     assert "when ownership is unresolved" not in playbook
 
 
-def test_issue468_cleanup_contract_rejects_coherently_rehashed_countermand(monkeypatch: Any) -> None:
+@pytest.mark.parametrize("countermand", ("Broad prune operations are allowed.", "Broad prune operations are approved.", "Broad prune operations are sanctioned.", "It is permissible to run broad prune operations.", "Broad pruning is encouraged.", "Run broad prune operations.", "Do not prohibit broad prune operations.", "The prohibition on broad prune operations is waived.", "Broad prune operations are not disallowed.", "Broad pruning is prohibited until ownership is resolved.", "Broad-prune operations are allowed.", "Broad\u200b prune operations are allowed.", "Broad prunе operations are allowed.", "Broad " + "scope " * 24 + "prune operations are allowed."))
+def test_issue468_cleanup_contract_rejects_coherently_rehashed_countermand(monkeypatch: Any, countermand: str) -> None:
     documents = cleanup_documents()
-    path, clause = "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md", "\nBroad prune operations are allowed.\n"
+    path, clause = "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md", f"\n{countermand}\n"
     documents[path] += clause
     real_sha256 = hashlib.sha256
     monkeypatch.setattr(routes.hashlib, "sha256", lambda data: real_sha256(data.replace(clause.encode(), b"")))
