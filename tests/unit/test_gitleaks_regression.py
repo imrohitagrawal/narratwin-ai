@@ -140,6 +140,31 @@ def test_historical_dockerfile_public_key_provenance_is_exact() -> None:
         ) == []
 
 
+def test_hosted_checkout_uses_reachable_public_key_provenance(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    checker = _load_checker()
+    original_git = checker._git
+    local_only_commits = {
+        fingerprint.split(":", 1)[0]
+        for fingerprint in EXPECTED_PUBLIC_KEY_FINGERPRINTS
+    }
+
+    def hosted_git(root: Path, *args: str) -> subprocess.CompletedProcess[bytes]:
+        if len(args) >= 3 and args[:2] == ("cat-file", "-e"):
+            commit = args[2].removesuffix("^{commit}")
+            if commit in local_only_commits:
+                return subprocess.CompletedProcess(args, 128, b"", b"missing")
+        if len(args) >= 2 and args[0] == "show":
+            commit = args[1].split(":", 1)[0]
+            if commit in local_only_commits:
+                return subprocess.CompletedProcess(args, 128, b"", b"missing")
+        return original_git(root, *args)
+
+    monkeypatch.setattr(checker, "_git", hosted_git)
+    assert checker.validate(ROOT) == []
+
+
 def test_public_signing_key_provenance_rejects_blob_and_context_drift() -> None:
     checker = _load_checker()
     commit, path, _, _ = EXPECTED_PUBLIC_KEY_FINGERPRINTS[0].rsplit(":", 3)
