@@ -294,6 +294,34 @@ ISSUE459_T05B_EXPECTED = {
     "tests/unit/test_gitleaks_regression.py",
 }
 ISSUE459_T05B_LINE_CAPS = {path: 3600 for path in ISSUE459_T05B_EXPECTED}
+ISSUE475_EXPECTED = {
+    "backend/app/cut1_audio.py",
+    "tests/unit/test_cut1_audio.py",
+    "docs/governance/preflights/issue-475.json",
+    "scripts/quality/stage8_cut1_routes.py",
+    "tests/unit/test_stage8_cut1_routes.py",
+    "docs/ADR/0071-cut1-audio-caption-authority.md",
+    "docs/API_CONTRACT.md",
+    "docs/DATA_MODEL.md",
+    "docs/SECURITY_AND_PRIVACY.md",
+    "docs/QUALITY_GATES.md",
+    "docs/STATUS.md",
+    "docs/TRACEABILITY.md",
+}
+ISSUE475_LINE_CAPS = {
+    "backend/app/cut1_audio.py": 340,
+    "tests/unit/test_cut1_audio.py": 600,
+    "docs/governance/preflights/issue-475.json": 260,
+    "scripts/quality/stage8_cut1_routes.py": 160,
+    "tests/unit/test_stage8_cut1_routes.py": 240,
+    "docs/ADR/0071-cut1-audio-caption-authority.md": 120,
+    "docs/API_CONTRACT.md": 60,
+    "docs/DATA_MODEL.md": 80,
+    "docs/SECURITY_AND_PRIVACY.md": 80,
+    "docs/QUALITY_GATES.md": 100,
+    "docs/STATUS.md": 100,
+    "docs/TRACEABILITY.md": 100,
+}
 ISSUE468_EXPECTED = {
     "AGENTS.md",
     "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md",
@@ -2091,6 +2119,56 @@ def test_issue459_t05b_route_freezes_authority_scope_and_budgets() -> None:
     assert routes.TOTAL_LIMITS[branch] == 3600
     assert routes.TEXT_LIMITS[branch] == ISSUE459_T05B_LINE_CAPS
     assert branch in stage8.EFFECTIVE_STAGE8_ROUTES
+
+
+def test_issue475_route_freezes_authority_scope_and_budgets() -> None:
+    branch = routes.ISSUE475_BRANCH
+    assert branch == "cut1-475-t05b-runtime-receipt-binding"
+    assert routes.ISSUE475_BASE == "fb963f92057b8ccd5c0c070a3c9b5406ee9e884f"
+    assert routes.ISSUE475_RUNTIME_COMMENT == "5470636741"
+    assert routes.ISSUE475_RUNTIME_SHA256 == (
+        "27b21d3db0ec01f310ac5db57260ea656b3f73bac50a40b78106a99d823159fe"
+    )
+    assert routes.ISSUE475_RECEIPT_COMMENT == "5470701562"
+    assert routes.ISSUE475_RECEIPT_SHA256 == (
+        "415139a73d27173eb406654ca66acd0ecf928f40b4eea0d3d71a7572558a49c1"
+    )
+    assert routes.ISSUE475_FREEZE_COMMENT == "5471056591"
+    assert routes.ISSUE475_FREEZE_SHA256 == (
+        "239c2dcd903e0e5a056a2af4d9abdb80b8b148430c107549984f0ac2bb627348"
+    )
+    assert routes.ROUTES[branch] == ISSUE475_EXPECTED
+    assert routes.ROUTE_ISSUES[branch] == 475
+    assert routes.TOTAL_LIMITS[branch] == 1800
+    assert routes.TEXT_LIMITS[branch] == ISSUE475_LINE_CAPS
+    assert branch in stage8.EFFECTIVE_STAGE8_ROUTES
+
+
+def test_issue475_requires_exact_main_branch_point() -> None:
+    base = "fb963f92057b8ccd5c0c070a3c9b5406ee9e884f"
+
+    def good(args: list[str]) -> subprocess.CompletedProcess[str]:
+        return completed(args, out=base + "\n")
+
+    assert routes.route_base(good, routes.ISSUE475_BRANCH) == base
+    for command in ("rev-parse", "fixed-merge-base", "branch-point"):
+        calls = 0
+
+        def broken(
+            args: list[str], *, rejected: str = command
+        ) -> subprocess.CompletedProcess[str]:
+            nonlocal calls
+            calls += 1
+            if rejected == "rev-parse" and calls == 1:
+                return completed(args, code=128)
+            if rejected == "fixed-merge-base" and calls == 2:
+                return completed(args, out="0" * 40 + "\n")
+            if rejected == "branch-point" and calls == 3:
+                return completed(args, out="0" * 40 + "\n")
+            return good(args)
+
+        error = pytest.raises(RuntimeError, routes.route_base, broken, routes.ISSUE475_BRANCH)
+        assert "Issue #475 fixed base" in str(error.value)
 
 
 def test_issue459_t05b_requires_exact_main_branch_point() -> None:
