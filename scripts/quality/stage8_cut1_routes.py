@@ -24,6 +24,7 @@ ISSUE459_T05B_BRANCH = "stage8-459-t05b-audio-caption-authority"
 ISSUE468_BRANCH = "governance-468-scoped-merge-cleanup"
 ISSUE466_BRANCH = "cut1-466-t05a-presenter-source-integrity"
 ISSUE471_BRANCH = "governance-471-cleanup-authority-anchor"
+ISSUE473_BRANCH = "governance-473-cleanup-anchor-consumer-fixture"
 ISSUE386_BRANCH = "cut1-process-386-modular-route-enforcement"
 ISSUE413_BRANCH = "cut1-process-413-frontend-runtime-openssl"
 ISSUE405_BRANCH = "process-405-heartbeat2-main-reliability"
@@ -54,7 +55,7 @@ ISSUE368_IMPLEMENTATION_BASE = "6766da34d73e301358f84f8eefb0985927292a26"
 ISSUE368_QUOTA_FIX_BASE = "9c165f739788fb0f09b315673f9125d700d6a96b"
 ISSUE421_BASE = "a868137fab607ae75d4b272301e9fc52b898e15c"
 ISSUE424_BASE = "afcf0325c3ec925b68b770eda0bb8c839bcce4dd"
-ISSUE468_BASE = "55a0810e2ff327490d6dbadbf58580c06edef600"
+ISSUE468_BASE = "35f7beddc9f5ad8c109011bce05eef077c8194f6"
 ISSUE150_BASE = "a02286240212ad8958915aec01aa5ebaf60fa705"
 ISSUE460_BASE = "ab97b6eecba6db9c66c37d19b29257c7398f3ab7"
 ISSUE451_BASE = "59db96aaab6c4e75b12d134dc9b02330c5a982ac"
@@ -75,6 +76,7 @@ ISSUE459_T05A_AUTHORITY_COMMENT = "5465050919"
 ISSUE459_T05A_AUTHORITY_SHA256 = "ab0d0b486bf77eac59db2b83c0d33bd0ae61bb52ed26b37b4d7a8402b2ec31c8"
 ISSUE459_T05B_BASE = "bfb8487760dc6aeef8b05af95e0ecd40d0076f3a"
 ISSUE471_BASE = "7eb4b99d7bc2bcf11cfc8c959baacb6cf3a21e81"
+ISSUE473_BASE = "55a0810e2ff327490d6dbadbf58580c06edef600"
 ISSUE471_AUTHORITY_SHA256 = (
     "7222909116385fe74cbc7df6bbccb759687d2e4a6bf0e0637465679434de33ab",
     "30ba0f8e7b736293c4b6c110cbe9ce46bf7639507b0441bd37cb222bb62ae94f",
@@ -153,6 +155,13 @@ ROUTES = {
         "docs/STATUS.md",
         "scripts/guardrails_check.py", "tests/unit/test_guardrails_check.py",
         "scripts/quality/stage8_cut1_routes.py", "tests/unit/test_stage8_cut1_routes.py",
+    },
+    ISSUE473_BRANCH: {
+        "tests/unit/test_guardrails_check.py",
+        "docs/governance/preflights/issue-473-cleanup-anchor-consumer.json",
+        "scripts/quality/stage8_cut1_routes.py",
+        "tests/unit/test_stage8_cut1_routes.py",
+        "docs/STATUS.md",
     },
     ISSUE459_T05B_BRANCH: {
         ".gitleaksignore",
@@ -602,6 +611,8 @@ TOTAL_LIMITS = {ISSUE452_BRANCH: 3600, ISSUE451_BRANCH: 600, ISSUE150_BRANCH: 10
 TOTAL_LIMITS[ISSUE468_BRANCH] = 1500
 ROUTE_ISSUES[ISSUE471_BRANCH] = 471
 TOTAL_LIMITS[ISSUE471_BRANCH] = 1400
+ROUTE_ISSUES[ISSUE473_BRANCH] = 473
+TOTAL_LIMITS[ISSUE473_BRANCH] = 580
 ROUTE_ISSUES[ISSUE459_BRANCH] = 459
 TOTAL_LIMITS[ISSUE459_BRANCH] = 4300
 ROUTE_ISSUES[ISSUE459_T03_BRANCH] = 459
@@ -677,6 +688,13 @@ TEXT_LIMITS = {
         "docs/STATUS.md": 100,
         "scripts/guardrails_check.py": 260, "tests/unit/test_guardrails_check.py": 360,
         "scripts/quality/stage8_cut1_routes.py": 180, "tests/unit/test_stage8_cut1_routes.py": 260,
+    },
+    ISSUE473_BRANCH: {
+        "tests/unit/test_guardrails_check.py": 80,
+        "docs/governance/preflights/issue-473-cleanup-anchor-consumer.json": 180,
+        "scripts/quality/stage8_cut1_routes.py": 100,
+        "tests/unit/test_stage8_cut1_routes.py": 140,
+        "docs/STATUS.md": 80,
     },
     ISSUE459_T05B_BRANCH: {path: 3600 for path in ROUTES[ISSUE459_T05B_BRANCH]},
     ISSUE459_T05A_BRANCH: {
@@ -1451,6 +1469,7 @@ def route_base(run: Callable[[list[str]], Any], branch: str) -> str:
         return ISSUE466_TRANSITION_BASE
     fixed_routes = {
         ISSUE468_BRANCH: (468, ISSUE468_BASE),
+        ISSUE473_BRANCH: (473, ISSUE473_BASE),
         ISSUE471_BRANCH: (471, ISSUE471_BASE),
         ISSUE459_T05B_BRANCH: (459, ISSUE459_T05B_BASE),
         ISSUE459_T05A_BRANCH: (459, ISSUE459_T05A_BASE),
@@ -1479,7 +1498,7 @@ def route_base(run: Callable[[list[str]], Any], branch: str) -> str:
             or fixed_value != base or common_value != base
         )
         branch_point_invalid = False
-        if not fixed_invalid and branch in {ISSUE468_BRANCH, ISSUE471_BRANCH, ISSUE459_T05B_BRANCH, ISSUE459_T05A_BRANCH, ISSUE459_T03_BRANCH, ISSUE460_BRANCH, ISSUE452_BRANCH, ISSUE451_BRANCH, ISSUE150_BRANCH, ISSUE424_BRANCH, ISSUE421_BRANCH, ISSUE368_IMPLEMENTATION_BRANCH,
+        if not fixed_invalid and branch in {ISSUE468_BRANCH, ISSUE473_BRANCH, ISSUE471_BRANCH, ISSUE459_T05B_BRANCH, ISSUE459_T05A_BRANCH, ISSUE459_T03_BRANCH, ISSUE460_BRANCH, ISSUE452_BRANCH, ISSUE451_BRANCH, ISSUE150_BRANCH, ISSUE424_BRANCH, ISSUE421_BRANCH, ISSUE368_IMPLEMENTATION_BRANCH,
                       ISSUE368_QUOTA_FIX_BRANCH, ISSUE368_BRANCH,
                       ISSUE368_PROMPT_BRANCH}:
             branch_point = run(["git", "merge-base", "origin/main", "HEAD"])
@@ -1649,7 +1668,24 @@ def check_exact_route(
         f"Issue #{issue} route is missing required path: {path}"
         for path in sorted(files - effective_changed)
     )
-    if branch == ISSUE471_BRANCH:
+    if branch == ISSUE473_BRANCH:
+        try:
+            preflight = load_json_without_duplicate_members(
+                root / "docs/governance/preflights/issue-473-cleanup-anchor-consumer.json"
+            )
+            findings = validate_governance_preflight(
+                preflight,
+                context={"issue_number": 473, "branch": branch, "changed_files": sorted(files)},
+            )
+            failures.extend(f"Issue #473 governance preflight failed: {item.code}" for item in findings)
+            objective = preflight.get("objective") if isinstance(preflight, dict) else None
+            if not isinstance(objective, str) or any(
+                value not in objective for value in (ISSUE473_BASE, "5470431030")
+            ):
+                failures.append("Issue #473 cleanup fixture evidence drifted.")
+        except (OSError, ValueError, TypeError) as error:
+            failures.append(f"Issue #473 governance preflight failed closed: {error}")
+    elif branch == ISSUE471_BRANCH:
         try:
             preflight = load_json_without_duplicate_members(
                 root / "docs/governance/preflights/issue-471-cleanup-authority-anchor.json"

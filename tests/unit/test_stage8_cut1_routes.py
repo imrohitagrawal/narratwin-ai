@@ -345,6 +345,13 @@ def remove_cleanup_marker(text: str, marker: str) -> str:
 EXPECTED = {
     "governance-468-scoped-merge-cleanup": ISSUE468_EXPECTED,
     "cut1-466-t05a-presenter-source-integrity": ISSUE466_EXPECTED,
+    "governance-473-cleanup-anchor-consumer-fixture": {
+        "tests/unit/test_guardrails_check.py",
+        "docs/governance/preflights/issue-473-cleanup-anchor-consumer.json",
+        "scripts/quality/stage8_cut1_routes.py",
+        "tests/unit/test_stage8_cut1_routes.py",
+        "docs/STATUS.md",
+    },
     "governance-471-cleanup-authority-anchor": {
         "docs/governance/preflights/issue-471-cleanup-authority-anchor.json",
         "docs/STATUS.md", "scripts/guardrails_check.py", "tests/unit/test_guardrails_check.py",
@@ -749,6 +756,26 @@ def test_issue471_cleanup_authority_anchor_route_is_exact() -> None:
     assert routes.route_base(good, branch) == base
 
 
+def test_issue473_cleanup_anchor_consumer_route_is_exact() -> None:
+    branch, base = routes.ISSUE473_BRANCH, routes.ISSUE473_BASE
+    expected = EXPECTED[branch]
+    assert routes.ROUTES[branch] == expected
+    assert routes.ROUTE_ISSUES[branch] == 473
+    assert routes.TOTAL_LIMITS[branch] == 580
+    assert routes.TEXT_LIMITS[branch] == {
+        "tests/unit/test_guardrails_check.py": 80,
+        "docs/governance/preflights/issue-473-cleanup-anchor-consumer.json": 180,
+        "scripts/quality/stage8_cut1_routes.py": 100,
+        "tests/unit/test_stage8_cut1_routes.py": 140,
+        "docs/STATUS.md": 80,
+    }
+
+    def good(args: list[str]) -> subprocess.CompletedProcess[str]:
+        return completed(args, out=base)
+
+    assert routes.route_base(good, branch) == base
+
+
 def issue459_run(args: list[str]) -> subprocess.CompletedProcess[str]:
     return completed(args, out="".join(f"{path}\0" for path in sorted(ISSUE459_FROZEN_EXPECTED if f"{routes.ISSUE459_BASE}..{routes.ISSUE459_FROZEN_HEAD}" in args else ISSUE459_EXPECTED)) if args[:4] == ["git", "diff", "--name-only", "-z"] else "")
 
@@ -912,10 +939,12 @@ def test_issue468_route_preflight_and_budgets_are_exact() -> None:
     assert preflight["issue_number"] == 468
     assert preflight["branch"] == routes.ISSUE468_BRANCH
     comments = {"5468560507", "5468813566", "5468861375", "5468898843",
-                "5468986974", "5469141049", "5470386759", "5470396865"}
+                "5468986974", "5469141049", "5470386759", "5470396865",
+                "5470664256"}
     assert comments <= set(re.findall(r"\d{10}", preflight["objective"]))
     assert {"0b9497679f12502276b15f759263bf32a803cf81",
             "55a0810e2ff327490d6dbadbf58580c06edef600",
+            "35f7beddc9f5ad8c109011bce05eef077c8194f6",
             "af960c9de16e0f648737f105bca275e38895a410"} <= set(preflight["objective"].split())
     assert set(preflight["scope"]["required"]) == ISSUE468_EXPECTED
     assert set(preflight["scope"]["allowed_prefixes"]) == ISSUE468_EXPECTED
@@ -925,7 +954,7 @@ def test_issue468_route_preflight_and_budgets_are_exact() -> None:
 
 
 def test_issue468_route_requires_exact_fixed_base_and_branch_point() -> None:
-    base = "55a0810e2ff327490d6dbadbf58580c06edef600"
+    base = "35f7beddc9f5ad8c109011bce05eef077c8194f6"
     assert getattr(routes, "ISSUE468_BASE", None) == base
     calls: list[list[str]] = []
 
