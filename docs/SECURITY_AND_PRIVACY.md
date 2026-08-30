@@ -676,5 +676,22 @@ Ed25519 public verification. The system-Python Stage 8 wrapper invokes the
 verifier through the frozen `uv` environment and never imports it. Activation
 is `NONE`, authority effect is `NO_AUTHORITY_EFFECT`, and release remains No-Go.
 Child C–F retain storage, acquisition, audit, reconciliation and integration.
+
+## Issue #459 T05B offline audio/caption admission
+
+The T05B authority service treats receipt, provider result, WAV, SRT, and
+persisted JSON as untrusted. It bounds bytes before parsing, strictly rejects
+duplicate JSON members, symlinks, wrong schemas, malformed RIFF chunks, silent
+signal, invalid caption timing/text, stale receipts, cross-presenter reuse,
+configuration substitution, replay, and state tampering. Restore is
+all-or-nothing and persistence precedes in-memory visibility.
+
+The module has no provider SDK, credential/environment access, network client,
+socket, subprocess, synthesis, or media-generation path. The only provider
+operation is through an injected disabled-by-default protocol. Raw narration,
+audio, captions, credentials, and provider payloads are not log fields. Test
+fixtures are never accepted as genuine media evidence. Issue #368 provider,
+privacy, retention, deletion, legal, egress, spend, and exact-listening gates
+remain separate and stopped.
 The live check reopens and verifies the pinned facts asset/source graph through
 the canonical Stage 4 evaluator; stored evidence equality alone is insufficient.

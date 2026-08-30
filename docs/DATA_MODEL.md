@@ -1005,8 +1005,9 @@ Each verified source span carries `OWNER_ASSERTED` or `REPOSITORY_SOURCE`, and
 that classification is included in the proposition evidence checksum and safe
 facts projection. A proposition cannot mix classifications. The three Issue
 Issue #421 owner facts remain first-party assertions, never externally corroborated
-facts. Cut 1 evaluation selects Meera; dormant Myra/Raj canonical narration
-variants do not establish selected-presenter authority.
+facts. Cut 1 evaluation identifies exactly one active governed presenter from
+the complete presenter-specific claim sequence. Meera, Myra, and Raj authority
+is independent; no presenter run or receipt substitutes for another.
 
 For `cut1-atomic-grounding-v1`, evaluation lineage also stores an ordered
 `groundingEvidence.claims` projection and its aggregate SHA-256. The source
@@ -1016,7 +1017,21 @@ single-use receipt form one restore-validated graph. Generic Stage 4 rows keep
 the existing model with empty optional fields.
 
 `CUT1_ATOMIC_FACTS_V1` and `cut1-atomic-grounding-v1` are a paired authority
-domain. A completed Cut 1 row has exactly eighteen selected-Meera claims and
+domain. A completed Cut 1 row has exactly eighteen presenter-matched claims and
 supports, with non-empty proposition IDs and checksums on every support. A
 failed Cut 1 row carries no supports. Generic-policy rows cannot enter the Cut 1
 narration, approval, consumption, or receipt graph.
+
+## Cut 1 audio/caption authority
+
+`Cut1AudioCaptionAuthority` is a provider-neutral, immutable admission record.
+It binds the complete `TTSConsumptionReceipt` lineage; approved provider, mode,
+voice, locale, model and configuration checksum; independently decoded WAV
+measurements and bytes checksum; canonical SRT bytes, exact spoken-text and
+timing checksums; and one authority checksum.
+
+Optional state contains at most three records and retains the exact receipt,
+audio, captions, and authority projection needed for deterministic restore.
+Duplicate JSON members, unsafe paths, invalid root or record checksums, stale
+receipt authority, malformed media, and duplicate receipts quarantine the
+whole store. No record becomes visible until its atomic write succeeds.

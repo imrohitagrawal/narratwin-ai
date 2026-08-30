@@ -1747,11 +1747,17 @@ T03 closeout completed. The source registry, T04 controller, and all three
 original identity anchors remain unchanged. Raj/Myra controlled-local still
 derivatives are ready, and Meera remains `SOURCE_READY_NO_DERIVATIVE`.
 
-T05A is active under checkpoint `5465050919` on branch
-`stage8-459-t05a-grounded-narration-handoff` from exact T03 merge `0d70fa8e`.
-Its twelve-path, 2,200-line route permits only exact per-presenter grounding
-inference, separate narration receipts, fail-closed cross-presenter mutations,
-governance evidence, and tests. Issue `#368` retains real audio/caption
-ownership. Audio, video rendering, UI, providers, credentials, egress, spend,
-publication, release, production, and Cut 1 acceptance remain unproven and
-unauthorized.
+PR `#464` merged the T05A grounded-narration handoff at accepted main
+`bfb8487760dc6aeef8b05af95e0ecd40d0076f3a`; its post-merge quality run passed.
+Meera, Myra, and Raj can each produce separate current text-authority receipts.
+
+T05B is active under checkpoint `5466871459` on branch
+`stage8-459-t05b-audio-caption-authority` from that exact merge. Its sixteen-
+path, 3,600-line route permits only a typed approved-narration result and an
+offline, atomic, fail-closed audio/caption authority record. It validates exact
+receipt/source/evaluation/presenter/configuration lineage, bounded decoded WAV,
+and exact SRT text/timing. Test fixtures are not acceptance evidence. Issue
+`#368` retains genuine synthesis/listening ownership, and its prior egress
+incident remains undisposed. No provider call, credential/environment lookup,
+egress, spend, synthesis, final audio/caption, T05 completion, T06 readiness,
+release, production, or Cut 1 acceptance is proven or authorized.

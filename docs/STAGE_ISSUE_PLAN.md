@@ -1,6 +1,6 @@
 # Stage Issue Plan
 
-## Issue #459 Lane A Cut 1 T03/T04/T05A increments
+## Issue #459 Lane A Cut 1 T03/T04/T05A/T05B increments
 
 Issue `#459` starts from accepted main
 `ab97b6eecba6db9c66c37d19b29257c7398f3ab7` on exact branch
@@ -64,6 +64,18 @@ rejecting mixed, partial, stale, substituted, or cross-presenter evidence.
 Issue `#368` still owns real audio and captions; T05A performs no provider,
 credential, egress, spend, synthesis, rendering, publication, release, or
 production operation and does not complete T05 or Cut 1.
+
+PR `#464` merged T05A at accepted main `bfb8487760dc6aeef8b05af95e0ecd40d0076f3a`;
+post-merge main quality passed. Checkpoint `5466871459` starts the sixteen-path
+T05B offline audio/caption authority boundary from that exact merge on branch
+`stage8-459-t05b-audio-caption-authority`, capped at 3,600 charged text lines.
+It replaces the opaque approved-narration TTS return with a typed result and
+independently binds current receipt, source/evaluation/presenter/configuration,
+decoded WAV, and exact SRT evidence in fail-closed atomic state. Test fixtures
+are validation stimuli only. Issue `#368` still owns genuine synthesis and
+exact-hash listening; its historical egress incident is neither accepted nor
+superseded. No provider call, credential/environment lookup, egress, spend,
+synthesis, final media, T05 completion, or Cut 1 acceptance is authorized.
 
 ## Issue #460 completed Semgrep override removal
 

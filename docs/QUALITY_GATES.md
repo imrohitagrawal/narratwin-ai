@@ -1697,3 +1697,32 @@ This gate produces provider-neutral narration input authority only. It does not
 produce or validate audio, captions, video, providers, credentials, egress,
 spend, publication, release, production readiness, or Cut 1 acceptance.
 Issue `#368` retains the real audio/caption handoff.
+
+## Issue #459 T05B offline audio/caption authority gate
+
+Exact branch `stage8-459-t05b-audio-caption-authority` is pinned to merged
+T05A main `bfb8487760dc6aeef8b05af95e0ecd40d0076f3a` and checkpoint
+`5466871459` with exact body SHA-256
+`f53e919836ea5edd58620d789497d945f317c354d0b5405a88d49e570c778b28`.
+Its exact sixteen-path route permits 3,600 charged text lines. Wrong base,
+branch-point drift, missing or extra paths, authority/preflight drift,
+deletion/rename/copy drift, and aggregate or per-path overrun fail closed.
+
+The focused gate proves typed provider results, current receipt/configuration
+binding, independent WAV/SRT validation, atomic persistence, replay rejection,
+and fail-closed restore across all three presenters:
+
+```text
+uv run pytest -q tests/unit/test_cut1_audio.py tests/unit/test_stage6_tts_provider.py
+uv run pytest -q tests/unit/test_stage8_cut1_routes.py
+NARRATWIN_POLICY_ONLY=1 make quality
+uv run ruff check backend
+uv run mypy backend
+make quality
+bash scripts/ci/dependency-security.sh
+bash scripts/ci/backend-test.sh
+```
+
+Test WAV/SRT bytes are mutation stimuli only. This gate does not prove
+intelligibility, voice identity, real provider output, listening acceptance,
+T05 completion, T06 readiness, Cut 1 acceptance, release, or production.

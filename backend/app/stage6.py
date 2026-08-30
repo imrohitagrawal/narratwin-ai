@@ -32,6 +32,7 @@ from backend.app.storage import load_state, resolve_state_file, write_state
 from backend.app.stage4 import contains_secret_like_content
 from backend.app.narration import TTSConsumptionReceipt
 from backend.app.tts_provider import (
+    ApprovedNarrationTTSResult,
     TTSProvider as ApprovedNarrationTTSProvider,
     ElevenLabsTTSProvider,
     ExternalTTSResult,
@@ -999,7 +1000,9 @@ class Stage6Service:
             self._clear_runtime_state()
             self._persist_locked()
 
-    def synthesize_approved_narration(self, *, receipt: TTSConsumptionReceipt) -> object:
+    def synthesize_approved_narration(
+        self, *, receipt: TTSConsumptionReceipt
+    ) -> ApprovedNarrationTTSResult:
         """Delegate an exact speech receipt without exposing adapter-native controls."""
         provider = self.approved_narration_tts_provider
         if provider is None:

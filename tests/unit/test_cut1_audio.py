@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import importlib
 import importlib.util
+import ast
 import json
 import struct
 from dataclasses import replace
@@ -43,6 +44,10 @@ def tts_provider() -> ModuleType:
 
 def _sha(value: bytes) -> str:
     return "sha256:" + hashlib.sha256(value).hexdigest()
+
+
+def _json_sha(value: object) -> str:
+    return _sha(json.dumps(value, sort_keys=True, separators=(",", ":")).encode())
 
 
 def _receipt(presenter_id: str = "meera", *, version: int = 1) -> TTSConsumptionReceipt:
@@ -99,9 +104,7 @@ def _captions(text: str, *, start_ms: int = 0, end_ms: int = 90_000) -> bytes:
     for index, paragraph in enumerate(paragraphs, start=1):
         cue_start = start_ms + ((index - 1) * width)
         cue_end = end_ms if index == len(paragraphs) else start_ms + (index * width)
-        blocks.append(
-            f"{index}\n{_timestamp(cue_start)} --> {_timestamp(cue_end)}\n{paragraph}"
-        )
+        blocks.append(f"{index}\n{_timestamp(cue_start)} --> {_timestamp(cue_end)}\n{paragraph}")
     return ("\n\n".join(blocks) + "\n").encode()
 
 
@@ -518,6 +521,9 @@ def test_t05b_restore_quarantines_persisted_tamper(
     service.create_authority(receipt=receipt, caption_bytes=_captions(receipt.spoken_text))
     payload = json.loads(state_path.read_text(encoding="utf-8"))
     assert _replace_first(payload, receipt.presenter_id, "raj")
+    payload["stateChecksum"] = _json_sha(
+        {"schema": payload["schema"], "records": payload["records"]}
+    )
     state_path.write_text(json.dumps(payload), encoding="utf-8")
 
     restored = _service(
@@ -559,3 +565,46 @@ def test_t05b_restore_rejects_valid_but_rolled_back_narration_authority(
 
     assert restored.authority_count == 0
     assert restored.quarantine_reason
+
+
+def test_t05b_persistence_failure_commits_no_partial_authority(
+    cut1_audio: ModuleType,
+    tts_provider: ModuleType,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    receipt = _receipt()
+    state_path = tmp_path / "write-failure.json"
+    service = _service(
+        cut1_audio,
+        state_path=state_path,
+        receipt=receipt,
+        provider=_FakeProvider(_result(tts_provider, receipt)),
+    )
+
+    def fail_write(_path: Path, _payload: object) -> None:
+        raise OSError("bounded-test-write-failure")
+
+    monkeypatch.setattr(cut1_audio, "write_state", fail_write)
+    with pytest.raises(OSError, match="bounded-test-write-failure"):
+        service.create_authority(receipt=receipt, caption_bytes=_captions(receipt.spoken_text))
+    assert service.authority_count == 0
+    assert not state_path.exists()
+
+
+def test_t05b_module_has_no_direct_credential_network_or_process_capability() -> None:
+    source = (Path(__file__).parents[2] / "backend/app/cut1_audio.py").read_text()
+    imported_roots = {
+        node.names[0].name.split(".")[0]
+        for node in ast.walk(ast.parse(source))
+        if isinstance(node, ast.Import)
+    }
+    imported_roots.update(
+        node.module.split(".")[0]
+        for node in ast.walk(ast.parse(source))
+        if isinstance(node, ast.ImportFrom) and node.module
+    )
+    assert imported_roots.isdisjoint(
+        {"os", "socket", "subprocess", "requests", "httpx", "urllib", "google"}
+    )
+    assert all(token not in source for token in ("getenv(", "environ["))
