@@ -1757,7 +1757,7 @@ T05 completion, T06 readiness, Cut 1 acceptance, release, or production.
 ## Issue #466 T05A presenter-source integrity gate
 
 Exact branch `cut1-466-t05a-presenter-source-integrity` is pinned to merged
-T05B main `7eb4b99d7bc2bcf11cfc8c959baacb6cf3a21e81`. Its twelve-path route
+T05B main `7eb4b99d7bc2bcf11cfc8c959baacb6cf3a21e81`. Its thirteen-path route
 permits at most 2,000 charged text lines. Wrong base, missing or extra paths,
 authority/preflight drift, rename/copy drift, and budget overrun fail closed.
 
@@ -1780,3 +1780,6 @@ bash scripts/ci/backend-test.sh
 The ordinary Stage 4 eighteen-unsupported-claim RED, self-grounding rejection,
 T05B boundary, provider-disabled defaults, and Issue #368 audio ownership remain
 unchanged. Green Issue #466 evidence is not audio or Cut 1 acceptance evidence.
+Hosted-parity correction `5468026907` adds only the central Stage 8 route
+registry test under the unchanged cap after full quality reproduced its stale
+registration assertion.

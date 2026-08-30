@@ -2,7 +2,7 @@
   "schema_version": "GovernancePreflightV1",
   "issue_number": 466,
   "branch": "cut1-466-t05a-presenter-source-integrity",
-  "objective": "From exact accepted main 7eb4b99d7bc2bcf11cfc8c959baacb6cf3a21e81, correct the reproduced Cut 1 T05A false acceptance in which Myra and Raj claim 014 can pass from a Meera-only OWNER_ASSERTED proposition. Bind the exact Issue #466 owner span at revision issue:466@2026-08-30T09:44:54Z, full-body SHA-256 3e4c9c483bdea609be70c46863a36f64a1900cac058615a22e213ea218c9212c and span SHA-256 6ed0e9270ca03d6940ecc11e3e174d8024a54aba306f18d5b8eedb1ed9241396. Preserve ordinary Stage 4 direct support, self-grounding rejection, presenter/run/receipt isolation, Issue #368 audio ownership, provider-disabled defaults, and T05B unchanged. Use exactly twelve paths and no more than 2000 charged text lines. Keep credentials, network, egress, spend, synthesis, audio, captions, video, deployment, publication, release, production, and Cut 1 acceptance out of scope. Stop on route, base, authority, source, semantic, budget, security, or hosted drift.",
+  "objective": "From exact accepted main 7eb4b99d7bc2bcf11cfc8c959baacb6cf3a21e81, correct the reproduced Cut 1 T05A false acceptance in which Myra and Raj claim 014 can pass from a Meera-only OWNER_ASSERTED proposition. Bind the exact Issue #466 owner span at revision issue:466@2026-08-30T09:44:54Z, full-body SHA-256 3e4c9c483bdea609be70c46863a36f64a1900cac058615a22e213ea218c9212c and span SHA-256 6ed0e9270ca03d6940ecc11e3e174d8024a54aba306f18d5b8eedb1ed9241396. Bind route-freeze comment 5467958861 at SHA-256 12699c91eaa0cb23dbd20622ef5aaf87238d9fca0cadba0d98d60cc349867fbf, hosted-parity correction comment 5468026907 at SHA-256 91682bed3814d7d89c70c635b690e5b6f47111d51fd5e800e82399e03fbc6398, and skill/test ledger comment 5468042606 at SHA-256 5a976b8a72f7df10f8bbfee746a7eb098293aae19e32e6abcab1c7e9a22ce0c1. Preserve ordinary Stage 4 direct support, self-grounding rejection, presenter/run/receipt isolation, Issue #368 audio ownership, provider-disabled defaults, and T05B unchanged. Use exactly thirteen paths and no more than 2000 charged text lines. Keep credentials, network, egress, spend, synthesis, audio, captions, video, deployment, publication, release, production, and Cut 1 acceptance out of scope. Stop on route, base, authority, source, semantic, budget, security, or hosted drift.",
   "status_decision": "update-minimally",
   "scope": {
     "required": [
@@ -14,6 +14,7 @@
       "docs/ADR/0072-cut1-presenter-source-integrity.md",
       "scripts/quality/stage8_cut1_routes.py",
       "tests/unit/test_stage8_cut1_routes.py",
+      "tests/unit/test_stage8_quality_gate.py",
       "docs/QUALITY_GATES.md",
       "docs/STAGE_ISSUE_PLAN.md",
       "docs/STATUS.md",
@@ -28,6 +29,7 @@
       "docs/ADR/0072-cut1-presenter-source-integrity.md",
       "scripts/quality/stage8_cut1_routes.py",
       "tests/unit/test_stage8_cut1_routes.py",
+      "tests/unit/test_stage8_quality_gate.py",
       "docs/QUALITY_GATES.md",
       "docs/STAGE_ISSUE_PLAN.md",
       "docs/STATUS.md",

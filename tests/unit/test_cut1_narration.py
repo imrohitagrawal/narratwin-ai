@@ -179,7 +179,7 @@ def test_issue459_governed_fallback_presenter_creates_bound_narration_authority(
 
 
 @pytest.mark.parametrize("presenter_id", ["myra", "raj"])
-def test_issue466_fallback_receipt_resolves_truthful_shared_presenter_source(
+def test_issue466_fallback_draft_resolves_truthful_shared_presenter_source(
     narration: ModuleType, tmp_path: Path, presenter_id: str
 ) -> None:
     service, principal, binding, project_id = _service(narration, tmp_path, presenter_id)

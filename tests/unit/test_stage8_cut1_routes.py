@@ -250,6 +250,7 @@ ISSUE466_EXPECTED = {
     "docs/ADR/0072-cut1-presenter-source-integrity.md",
     "scripts/quality/stage8_cut1_routes.py",
     "tests/unit/test_stage8_cut1_routes.py",
+    "tests/unit/test_stage8_quality_gate.py",
     "docs/QUALITY_GATES.md",
     "docs/STAGE_ISSUE_PLAN.md",
     "docs/STATUS.md",
@@ -264,6 +265,7 @@ ISSUE466_LINE_CAPS = {
     "docs/ADR/0072-cut1-presenter-source-integrity.md": 220,
     "scripts/quality/stage8_cut1_routes.py": 140,
     "tests/unit/test_stage8_cut1_routes.py": 240,
+    "tests/unit/test_stage8_quality_gate.py": 40,
     "docs/QUALITY_GATES.md": 120,
     "docs/STAGE_ISSUE_PLAN.md": 120,
     "docs/STATUS.md": 180,
@@ -1725,6 +1727,18 @@ def test_issue466_route_freezes_source_authority_scope_and_budgets() -> None:
     )
     assert routes.ISSUE466_SPAN_SHA256 == (
         "6ed0e9270ca03d6940ecc11e3e174d8024a54aba306f18d5b8eedb1ed9241396"
+    )
+    assert routes.ISSUE466_FREEZE_COMMENT == "5467958861"
+    assert routes.ISSUE466_FREEZE_SHA256 == (
+        "12699c91eaa0cb23dbd20622ef5aaf87238d9fca0cadba0d98d60cc349867fbf"
+    )
+    assert routes.ISSUE466_CORRECTION_COMMENT == "5468026907"
+    assert routes.ISSUE466_CORRECTION_SHA256 == (
+        "91682bed3814d7d89c70c635b690e5b6f47111d51fd5e800e82399e03fbc6398"
+    )
+    assert routes.ISSUE466_SKILL_LEDGER_COMMENT == "5468042606"
+    assert routes.ISSUE466_SKILL_LEDGER_SHA256 == (
+        "5a976b8a72f7df10f8bbfee746a7eb098293aae19e32e6abcab1c7e9a22ce0c1"
     )
     assert routes.ROUTES[branch] == ISSUE466_EXPECTED
     assert routes.ROUTE_ISSUES[branch] == 466

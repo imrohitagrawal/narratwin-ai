@@ -1751,8 +1751,9 @@ PR `#464` merged the T05A grounded-narration handoff at accepted main
 `bfb8487760dc6aeef8b05af95e0ecd40d0076f3a`; its post-merge quality run passed.
 Meera, Myra, and Raj can each produce separate current text-authority receipts.
 
-T05B is active under checkpoint `5466871459` on branch
-`stage8-459-t05b-audio-caption-authority` from that exact merge. Hosted-security
+PR `#465` merged the T05B offline audio/caption authority as accepted main
+`7eb4b99d7bc2bcf11cfc8c959baacb6cf3a21e81`; post-merge workflow
+`33302642924` passed and the completed feature branch was deleted. Hosted-security
 checkpoint `5466962967` expands its route from sixteen to nineteen paths under
 the unchanged 3,600-line cap for three exact historical false-positive
 fingerprints of the public CPython release-signing key. Provenance, wildcard
@@ -1792,3 +1793,7 @@ controlled presenters. Preflight commit `7c359b5` and behavioral RED commit
 independent exact-head review, non-author approval, merge, and merged-main
 verification. Selected voice references remain immutable and screening-only;
 no full canonical narration audio currently exists.
+Full quality at exact head `38b025e` passed 5,347 tests and reproduced one
+central Stage 8 route-registry failure. Checkpoint `5468026907` classifies it as
+`REQUIRED_CONTRACT` and adds only the registry test as path thirteen under the
+unchanged cap; the complete gate must be rerun on the corrected head.

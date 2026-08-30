@@ -83,6 +83,12 @@ ISSUE466_BASE = "7eb4b99d7bc2bcf11cfc8c959baacb6cf3a21e81"
 ISSUE466_AUTHORITY_REVISION = "issue:466@2026-08-30T09:44:54Z"
 ISSUE466_AUTHORITY_SHA256 = "3e4c9c483bdea609be70c46863a36f64a1900cac058615a22e213ea218c9212c"
 ISSUE466_SPAN_SHA256 = "6ed0e9270ca03d6940ecc11e3e174d8024a54aba306f18d5b8eedb1ed9241396"
+ISSUE466_FREEZE_COMMENT = "5467958861"
+ISSUE466_FREEZE_SHA256 = "12699c91eaa0cb23dbd20622ef5aaf87238d9fca0cadba0d98d60cc349867fbf"
+ISSUE466_CORRECTION_COMMENT = "5468026907"
+ISSUE466_CORRECTION_SHA256 = "91682bed3814d7d89c70c635b690e5b6f47111d51fd5e800e82399e03fbc6398"
+ISSUE466_SKILL_LEDGER_COMMENT = "5468042606"
+ISSUE466_SKILL_LEDGER_SHA256 = "5a976b8a72f7df10f8bbfee746a7eb098293aae19e32e6abcab1c7e9a22ce0c1"
 SECURITY_PREFLIGHTS = {
     150: ("Issue150SecurityRenewalPreflightV1", "e6a569cb6254ef58c36fb44e9cdece26e0816b49c9f62ce08e9d90f3843c97e3"),
     428: ("Issue428NanoidSecurityPreflightV1", "0d8da352c98855bc481581f1ca13cc2d4e994838b1afb31d974ad2b17caf7a9b"),
@@ -112,6 +118,7 @@ ROUTES = {
         "docs/ADR/0072-cut1-presenter-source-integrity.md",
         "scripts/quality/stage8_cut1_routes.py",
         "tests/unit/test_stage8_cut1_routes.py",
+        "tests/unit/test_stage8_quality_gate.py",
         "docs/QUALITY_GATES.md",
         "docs/STAGE_ISSUE_PLAN.md",
         "docs/STATUS.md",
@@ -614,6 +621,7 @@ TEXT_LIMITS = {
         "docs/ADR/0072-cut1-presenter-source-integrity.md": 220,
         "scripts/quality/stage8_cut1_routes.py": 140,
         "tests/unit/test_stage8_cut1_routes.py": 240,
+        "tests/unit/test_stage8_quality_gate.py": 40,
         "docs/QUALITY_GATES.md": 120,
         "docs/STAGE_ISSUE_PLAN.md": 120,
         "docs/STATUS.md": 180,
@@ -1498,6 +1506,12 @@ def check_exact_route(
                 ISSUE466_AUTHORITY_REVISION,
                 ISSUE466_AUTHORITY_SHA256,
                 ISSUE466_SPAN_SHA256,
+                ISSUE466_FREEZE_COMMENT,
+                ISSUE466_FREEZE_SHA256,
+                ISSUE466_CORRECTION_COMMENT,
+                ISSUE466_CORRECTION_SHA256,
+                ISSUE466_SKILL_LEDGER_COMMENT,
+                ISSUE466_SKILL_LEDGER_SHA256,
             )
             failures.extend(
                 f"Issue #466 governance preflight failed: {finding.code}"
