@@ -45,6 +45,15 @@ authorize implementation.
 
 ## Current Baseline
 
+- Issue `#471` is the separate governance prerequisite for Issue `#468` / PR
+  `#470`. It anchors the intended merge-cleanup authority hashes in the
+  repository guardrail before PR `#470` may consume them, preventing a
+  route-owned coherent document-and-pin rehash from fabricating acceptance.
+  The anchor does not merge PR `#470`, change Cut 1 product behavior, or grant
+  provider, audio, credential, egress, spending, deployment, release,
+  production-readiness, T05, or Cut 1 acceptance authority. Review, hosted
+  parity, eligible non-author approval, merge, and closeout remain required.
+
 - Issue `#434` is the current OWNER-approved, nonactivating Child B route under
   `#426`. Its original 89-commit history remains rooted at completed Child A
   Issue `#431` / merged PR `#433` commit

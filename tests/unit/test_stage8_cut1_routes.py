@@ -297,6 +297,11 @@ ISSUE459_T05B_LINE_CAPS = {path: 3600 for path in ISSUE459_T05B_EXPECTED}
 
 EXPECTED = {
     "cut1-466-t05a-presenter-source-integrity": ISSUE466_EXPECTED,
+    "governance-471-cleanup-authority-anchor": {
+        "docs/governance/preflights/issue-471-cleanup-authority-anchor.json",
+        "docs/STATUS.md", "scripts/guardrails_check.py", "tests/unit/test_guardrails_check.py",
+        "scripts/quality/stage8_cut1_routes.py", "tests/unit/test_stage8_cut1_routes.py",
+    },
     "lane-a-cut1-459-controlled-presenter": ISSUE459_EXPECTED,
     "stage8-459-t03-presenter-derivatives": ISSUE459_T03_EXPECTED,
     "stage8-459-t05a-grounded-narration-handoff": ISSUE459_T05A_EXPECTED,
@@ -671,6 +676,29 @@ EXPECTED = {
 
 def completed(args: list[str], code: int = 0, out: str = "", err: str = "") -> subprocess.CompletedProcess[str]:
     return subprocess.CompletedProcess(args, code, out, err)
+
+
+def test_issue471_cleanup_authority_anchor_route_is_exact() -> None:
+    branch, base = routes.ISSUE471_BRANCH, routes.ISSUE471_BASE
+    expected = {
+        "docs/governance/preflights/issue-471-cleanup-authority-anchor.json",
+        "docs/STATUS.md",
+        "scripts/guardrails_check.py", "tests/unit/test_guardrails_check.py",
+        "scripts/quality/stage8_cut1_routes.py", "tests/unit/test_stage8_cut1_routes.py",
+    }
+    assert routes.ROUTES[branch] == expected
+    assert routes.ROUTE_ISSUES[branch] == 471 and routes.TOTAL_LIMITS[branch] == 1400
+    assert routes.TEXT_LIMITS[branch] == {
+        "docs/governance/preflights/issue-471-cleanup-authority-anchor.json": 240,
+        "docs/STATUS.md": 100,
+        "scripts/guardrails_check.py": 260, "tests/unit/test_guardrails_check.py": 360,
+        "scripts/quality/stage8_cut1_routes.py": 180, "tests/unit/test_stage8_cut1_routes.py": 260,
+    }
+
+    def good(args: list[str]) -> subprocess.CompletedProcess[str]:
+        return completed(args, out=base)
+
+    assert routes.route_base(good, branch) == base
 
 
 def issue459_run(args: list[str]) -> subprocess.CompletedProcess[str]:
@@ -2202,6 +2230,8 @@ def test_exact_route_completeness_lookalikes_and_budgets(monkeypatch: Any) -> No
             if "security" in branch
             else branch.replace("docs", "docѕ")
             if "docs" in branch
+            else branch.replace("governance", "governancе")
+            if "governance" in branch
             else branch.replace("lane", "lanе")
             if "lane" in branch
             else branch.replace("cut1", "cutі")
