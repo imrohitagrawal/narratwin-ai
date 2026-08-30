@@ -293,6 +293,7 @@ ISSUE468_CLEANUP_CONTRACT = {
         "retained, deleted, and recoverability report", "proof of absence",
     ),
     "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md": (
+        "inventory every cleanup target and resolve its ownership to the completed PR before deletion",
         "completed implementation and verification worktrees",
         "PR-owned Docker containers, images, volumes, and networks",
         "PR-owned temporary clones, files, and isolated dependencies",
