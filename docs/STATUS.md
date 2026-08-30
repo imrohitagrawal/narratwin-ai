@@ -1788,7 +1788,7 @@ acceptance, distinct from the historical Issue #368 wrong-style
 
 The Issue #466 body supplies the exact first-party authority span for all three
 controlled presenters. Preflight commit `7c359b5` and behavioral RED commit
-`e22151f` precede minimal source-contract correction `15230f2`. No new Issue
+`e22151f` precede minimal source-contract correction `15230f2`. No new
 Issue #368 receipts are admissible until this route passes local and hosted gates,
 independent exact-head review, non-author approval, merge, and merged-main
 verification. Selected voice references remain immutable and screening-only;
