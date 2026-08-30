@@ -427,7 +427,7 @@ def test_reviewed_claim_propositions_bind_complete_independent_sources() -> None
     assert "turns approved project knowledge into audience-aware, grounded scripts" in prd_span["text"]
     assert "first usable product slice must prove the trust loop" in prd_span["text"]
     assert propositions["fact_013"]["sourceSpanIds"] == [
-        "src_owner_421_meera",
+        "src_owner_466_presenters",
     ]
 
 
@@ -440,6 +440,7 @@ def test_owner_asserted_facts_are_classified_and_separate_from_repository_source
         for span in source["spans"]
     }
     owner = sources["src_owner_5263752038"]
+    presenter_owner = sources["src_owner_466"]
 
     assert owner["sourceClassification"] == "OWNER_ASSERTED"
     assert owner["locator"].endswith("issues/421#issuecomment-5263752038")
@@ -447,6 +448,11 @@ def test_owner_asserted_facts_are_classified_and_separate_from_repository_source
         "src_owner_421_stackclimb",
         "src_owner_421_knowledge",
         "src_owner_421_meera",
+    }
+    assert presenter_owner["sourceClassification"] == "OWNER_ASSERTED"
+    assert presenter_owner["locator"].endswith("issues/466")
+    assert {span["spanId"] for span in presenter_owner["spans"]} == {
+        "src_owner_466_presenters",
     }
     assert all(
         source["sourceClassification"] == "REPOSITORY_SOURCE"
@@ -462,12 +468,55 @@ def test_owner_asserted_facts_are_classified_and_separate_from_repository_source
         assert classifications == {"OWNER_ASSERTED"}
 
 
+def test_issue466_shared_presenter_claim_binds_exact_three_presenter_owner_authority() -> None:
+    from backend.app.cut1_grounding import load_cut1_grounding_contract
+
+    contract = load_cut1_grounding_contract(root=ROOT)
+    mapping = contract.claim_mappings[13]
+    proposition = contract.propositions["fact_013"]
+
+    assert mapping.claim_id == "claim_014"
+    assert mapping.required_predicate_ids == (
+        "experience.prepared_walkthrough",
+        "experience.first_mode",
+        "presenter.governed_cut1",
+    )
+    assert proposition.statement == (
+        "OWNER_ASSERTED: For Cut 1, Meera, Myra, and Raj are each authorized controlled "
+        "presenters for an independently bound prepared walkthrough."
+    )
+    assert proposition.predicate_ids == mapping.required_predicate_ids
+    assert proposition.source_span_ids == ("src_owner_466_presenters",)
+
+
+def test_issue466_coherently_rehashed_presenter_statement_substitution_fails_closed(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import backend.app.cut1_grounding as cut1
+
+    payload = json.loads(FACTS_PATH.read_text(encoding="utf-8"))
+    proposition = next(
+        row for row in payload["propositions"] if row["propositionId"] == "fact_013"
+    )
+    proposition["statement"] = (
+        "OWNER_ASSERTED: A substituted presenter alone presents the prepared walkthrough."
+    )
+    raw = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()
+    monkeypatch.setattr(cut1, "EXPECTED_ASSET_SHA256", hashlib.sha256(raw).hexdigest())
+    monkeypatch.setattr(cut1, "_read_contract", lambda _: (raw, payload))
+
+    with pytest.raises(cut1.Cut1GroundingError):
+        cut1.load_cut1_grounding_contract(root=ROOT)
+
+
 @pytest.mark.parametrize("presenter_id", ["myra", "raj"])
 def test_cut1_governed_fallback_presenter_is_independently_grounded(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     presenter_id: str,
 ) -> None:
+    from backend.app.cut1_grounding import load_cut1_grounding_contract
+
     service, principal, project_id = _seed_public_stage4(
         tmp_path,
         monkeypatch,
@@ -484,6 +533,13 @@ def test_cut1_governed_fallback_presenter_is_independently_grounded(
     assert run.evaluation.unsupported_claim_count == 0
     assert len(run.evaluation.claim_supports) == 18
     assert all(support.proposition_ids for support in run.evaluation.claim_supports)
+    claim_014_support = next(
+        support for support in run.evaluation.claim_supports if support.claim_id == "claim_014"
+    )
+    contract = load_cut1_grounding_contract(root=ROOT)
+    proposition = contract.propositions[claim_014_support.proposition_ids[0]]
+    assert proposition.predicate_ids[-1] == "presenter.governed_cut1"
+    assert all(name in proposition.statement for name in ("Meera", "Myra", "Raj"))
 
 
 def test_cut1_mixed_presenter_claims_fail_closed(

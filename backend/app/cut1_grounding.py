@@ -26,7 +26,7 @@ CUT1_SCHEMA_VERSION = "cut1-project-facts-v1"
 FACTS_RELATIVE_PATH = Path("docs/governance/cut1-project-facts-v1.json")
 FACTS_SOURCE_FILENAME = "cut1-project-facts-v1.md"
 ACCEPTED_REVISION = "a868137fab607ae75d4b272301e9fc52b898e15c"
-EXPECTED_ASSET_SHA256 = "cb50de12ce2debb3d52308892428b9711e5efb41fe2ad59b175563809e7d314b"
+EXPECTED_ASSET_SHA256 = "901696a11b5711fd0e43ed2a103e3508998ba06a7d5de77c4fbfe98d5c5f93d9"
 MAX_CONTRACT_BYTES = 131_072
 MAX_SOURCES = 16
 MAX_SPANS = 64
@@ -54,6 +54,12 @@ OWNER_RECORDS = {
         "revision": "comment:5263752038@2026-08-12T07:36:47Z",
         "byteCount": 2068,
         "sha256": "a797084c6f2d6c20ceb33deeb54e1dc7104a65e4adba49a8aa3f4b04ed8f5644",
+    },
+    "src_owner_466": {
+        "locator": "https://github.com/imrohitagrawal/narratwin-ai/issues/466",
+        "revision": "issue:466@2026-08-30T09:44:54Z",
+        "byteCount": 3079,
+        "sha256": "3e4c9c483bdea609be70c46863a36f64a1900cac058615a22e213ea218c9212c",
     },
 }
 OWNER_RECORD_SPANS = {
@@ -86,6 +92,17 @@ OWNER_RECORD_SPANS = {
         "byteStart": 591, "byteEnd": 678, "byteCount": 87,
         "sha256": "e15d32954d30cb1160ff942fc862ea33c8a70b254d42db56931c487bd4b08719",
         "text": "“For Cut 1, Meera is the selected presenter and presents the prepared walkthrough.”",
+    },
+    "src_owner_466_presenters": {
+        "sourceId": "src_owner_466",
+        "byteStart": 1532,
+        "byteEnd": 1654,
+        "byteCount": 122,
+        "sha256": "6ed0e9270ca03d6940ecc11e3e174d8024a54aba306f18d5b8eedb1ed9241396",
+        "text": (
+            "For Cut 1, Meera, Myra, and Raj are each authorized controlled presenters "
+            "for an independently bound prepared walkthrough."
+        ),
     },
 }
 PRESENTERS = ("meera", "myra", "raj")
@@ -153,7 +170,7 @@ EXPECTED_REQUIRED_PREDICATES = (
         "explanation.decisions",
         "explanation.integrations",
     ),
-    ("experience.prepared_walkthrough", "experience.first_mode", "presenter.selected_meera"),
+    ("experience.prepared_walkthrough", "experience.first_mode", "presenter.governed_cut1"),
     ("interactive.future", "interactive.not_current_demo"),
     (
         "experience.stackclimb_product",
@@ -241,6 +258,18 @@ class Proposition:
     predicate_ids: tuple[str, ...]
     source_span_ids: tuple[str, ...]
     source_classification: str
+
+
+SHARED_PRESENTER_PROPOSITION = Proposition(
+    proposition_id="fact_013",
+    statement=(
+        "OWNER_ASSERTED: For Cut 1, Meera, Myra, and Raj are each authorized controlled "
+        "presenters for an independently bound prepared walkthrough."
+    ),
+    predicate_ids=EXPECTED_REQUIRED_PREDICATES[13],
+    source_span_ids=("src_owner_466_presenters",),
+    source_classification="OWNER_ASSERTED",
+)
 
 
 @dataclass(frozen=True)
@@ -520,6 +549,8 @@ def load_cut1_grounding_contract(*, root: Path) -> Cut1GroundingContract:
             proposition_id, statement, checked_predicates, checked_spans,
             next(iter(source_classifications)),
         )
+    if propositions.get("fact_013") != SHARED_PRESENTER_PROPOSITION:
+        _fail()
 
     mappings: list[ClaimMapping] = []
     used_propositions: set[str] = set()
