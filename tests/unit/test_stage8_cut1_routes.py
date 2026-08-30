@@ -282,9 +282,9 @@ ISSUE468_LINE_CAPS = {
     "docs/STATUS.md": 90,
     "docs/agent-context/context-policy-manifest-v1.json": 200,
     "scripts/quality/check_stage8_docs.py": 80,
-    "scripts/quality/stage8_cut1_routes.py": 100,
+    "scripts/quality/stage8_cut1_routes.py": 180,
     "tests/unit/test_stage8_quality_gate.py": 160,
-    "tests/unit/test_stage8_cut1_routes.py": 120,
+    "tests/unit/test_stage8_cut1_routes.py": 220,
 }
 ISSUE468_CLEANUP_CONTRACT = {
     "AGENTS.md": (
@@ -860,11 +860,43 @@ def test_issue468_route_preflight_and_budgets_are_exact() -> None:
     assert preflight["schema_version"] == "GovernancePreflightV1"
     assert preflight["issue_number"] == 468
     assert preflight["branch"] == routes.ISSUE468_BRANCH
+    assert "5468560507" in preflight["objective"]
+    assert "5468813566" in preflight["objective"]
     assert set(preflight["scope"]["required"]) == ISSUE468_EXPECTED
     assert set(preflight["scope"]["allowed_prefixes"]) == ISSUE468_EXPECTED
     assert routes.ROUTE_ISSUES[routes.ISSUE468_BRANCH] == 468
     assert routes.TOTAL_LIMITS[routes.ISSUE468_BRANCH] == 1500
     assert routes.TEXT_LIMITS[routes.ISSUE468_BRANCH] == ISSUE468_LINE_CAPS
+
+
+def test_issue468_route_requires_exact_fixed_base_and_branch_point() -> None:
+    base = "7eb4b99d7bc2bcf11cfc8c959baacb6cf3a21e81"
+    assert getattr(routes, "ISSUE468_BASE", None) == base
+    calls: list[list[str]] = []
+
+    def good(args: list[str]) -> subprocess.CompletedProcess[str]:
+        calls.append(args)
+        return completed(args, out=base + "\n")
+
+    assert routes.route_base(good, routes.ISSUE468_BRANCH) == base
+    assert calls == [
+        ["git", "rev-parse", f"{base}^{{commit}}"],
+        ["git", "merge-base", base, "HEAD"],
+        ["git", "merge-base", "origin/main", "HEAD"],
+    ]
+
+    later = "a" * 40
+    for results in (
+        (completed([], out=later + "\n"), completed([], out=later + "\n")),
+        (completed([], code=1), completed([], out=base + "\n")),
+        (completed([], out=base + "\n"), completed([], out=later + "\n"),
+         completed([], out=base + "\n")),
+    ):
+        error = pytest.raises(
+            RuntimeError, routes.route_base, lambda _, values=iter(results): next(values),
+            routes.ISSUE468_BRANCH,
+        )
+        assert "Issue #468 fixed base" in str(error.value)
 
 
 @pytest.mark.parametrize(
@@ -898,6 +930,26 @@ def test_issue468_cleanup_contract_rejects_wrong_section_decoy(
     failures = routes.merge_cleanup_contract_failures(REPO, documents.__getitem__)
 
     assert f"Stage 8 merge-closeout contract missing {path} marker: {marker}." in failures
+
+
+@pytest.mark.parametrize(
+    ("path", "old", "unsafe"),
+    (
+        ("AGENTS.md", "prohibit broad prune operations", "need not prohibit broad prune operations"),
+        ("AGENTS.md", "Merge cleanup must", 'Deprecated quotation: "Merge cleanup must'),
+        ("docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md", "do not run broad prune operations",
+         "disregard the instruction to do not run broad prune operations"),
+        ("docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md", "- do not run broad prune operations",
+         "- historical quotation: do not run broad prune operations"),
+    ),
+)
+def test_issue468_cleanup_contract_rejects_semantic_reversal_or_deprecation(
+    path: str, old: str, unsafe: str,
+) -> None:
+    documents = cleanup_documents()
+    documents[path] = documents[path].replace(old, unsafe, 1)
+
+    assert routes.merge_cleanup_contract_failures(REPO, documents.__getitem__)
 
 
 def test_security_preflights_reject_duplicate_and_exact_byte_drift(tmp_path: Path) -> None:
@@ -2199,7 +2251,9 @@ def test_legacy_checker_caps_are_unchanged_and_executable() -> None:
     checker_text = checker.read_text(encoding="utf-8")
     assert len(checker_text.splitlines()) <= 500
     assert checker.stat().st_size <= 32_000
-    assert len((REPO / "tests/unit/test_stage8_quality_gate.py").read_text(encoding="utf-8").splitlines()) <= 250
+    legacy_test_lines = (REPO / "tests/unit/test_stage8_quality_gate.py").read_text(encoding="utf-8").splitlines()
+    assert len(legacy_test_lines) <= 250
+    assert max(map(len, legacy_test_lines), default=0) <= 120
     for relative in (
         "scripts/quality/stage8_brace_expansion_unblock.py",
         "scripts/quality/stage8_cache_pruning.py",
