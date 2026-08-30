@@ -1049,6 +1049,36 @@ def markdown_heading_body(text: str, heading: str, level: int) -> str:
     return match.group("body") if match else ""
 
 
+def operative_markdown_text(document: str) -> str:
+    without_comments = re.sub(r"<!--.*?-->", "", document, flags=re.S)
+    operative: list[str] = []
+    fence: str | None = None
+    for line in without_comments.splitlines():
+        marker = re.match(r"^\s*(```|~~~)", line)
+        if marker:
+            if fence is None:
+                fence = marker.group(1)
+            elif fence == marker.group(1):
+                fence = None
+            continue
+        if fence is None:
+            operative.append(line)
+    return "\n".join(operative)
+
+
+def has_unsafe_broad_prune_authorization(document: str) -> bool:
+    operative = re.sub(r"\s+", " ", operative_markdown_text(document).lower())
+    patterns = (
+        r"\bbroad prun(?:e|ing)(?: operations?)?\b.{0,120}\b(?:allow|authoriz|permitt|acceptable|okay)\w*\b",
+        r"\bbroad prun(?:e|ing)(?: operations?)?\b.{0,120}\b(?:may|can|should) be (?:run|used|performed)\b",
+        r"\bbroad prun(?:e|ing)(?: operations?)?\b.{0,120}\b(?:not|need not be|no longer) prohibit\w*\b",
+        r"\b(?:allow|authoriz|permit|disregard|ignore|deprecat|supersed|historical quotation|may run|"
+        r"can run|may use|can use|need not prohibit|no longer prohibit)\w*.{0,120}\bbroad prun(?:e|ing)\b",
+        r"\bbroad prun(?:e|ing)(?: operations?)?\b.{0,120}\b(?:only if|only when|unless|except)\b",
+    )
+    return any(re.search(pattern, operative) for pattern in patterns)
+
+
 def merge_cleanup_contract_failures(
     root: Path,
     reader: Callable[[str], str] | None = None,
@@ -1101,6 +1131,10 @@ def merge_cleanup_contract_failures(
             f"Stage 8 merge-closeout contract missing {path} marker: {marker}."
             for marker in markers if marker not in normalized
         )
+        if has_unsafe_broad_prune_authorization(document):
+            failures.append(
+                f"Stage 8 merge-closeout contract contains unsafe broad-prune authorization: {path}."
+            )
         if hashlib.sha256(document.encode()).hexdigest() != exact_sha256[path]:
             failures.append(
                 f"Stage 8 merge-closeout contract lacks an exact operative clause: {path}."

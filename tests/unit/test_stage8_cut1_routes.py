@@ -866,7 +866,7 @@ def test_issue468_route_preflight_and_budgets_are_exact() -> None:
     assert "5468813566" in preflight["objective"]
     assert "5468861375" in preflight["objective"]
     assert "5468898843" in preflight["objective"]
-    assert "5468986974" in preflight["objective"]
+    assert {"5468986974", "5469141049"} <= set(re.findall(r"\d{10}", preflight["objective"]))
     assert set(preflight["scope"]["required"]) == ISSUE468_EXPECTED
     assert set(preflight["scope"]["allowed_prefixes"]) == ISSUE468_EXPECTED
     assert routes.ROUTE_ISSUES[routes.ISSUE468_BRANCH] == 468
