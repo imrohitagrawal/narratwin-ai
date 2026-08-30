@@ -703,6 +703,12 @@ class Cut1AudioAuthorityService:
                 "stateChecksum",
             }:
                 raise ValueError("State schema.")
+            persisted_sequence = payload["manifestSequence"]
+            if (
+                type(persisted_sequence) is not int
+                or not 1 <= persisted_sequence <= MAX_MANIFEST_SEQUENCE
+            ):
+                raise ValueError("State manifest sequence.")
             core = {
                 "schema": payload["schema"],
                 "manifestSequence": payload["manifestSequence"],
