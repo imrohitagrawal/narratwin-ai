@@ -7,6 +7,7 @@ import importlib.util
 import subprocess
 from pathlib import Path
 from types import ModuleType
+from typing import Callable, cast
 
 import pytest
 
@@ -178,7 +179,9 @@ def test_hosted_checkout_uses_reachable_public_key_provenance(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     checker = _load_checker()
-    original_git = checker._git
+    original_git = cast(
+        Callable[..., subprocess.CompletedProcess[bytes]], checker._git
+    )
     local_only_commits = {
         fingerprint.split(":", 1)[0]
         for fingerprint in EXPECTED_PUBLIC_KEY_FINGERPRINTS
@@ -203,7 +206,9 @@ def test_hosted_checkout_rejects_missing_portable_provenance(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     checker = _load_checker()
-    original_git = checker._git
+    original_git = cast(
+        Callable[..., subprocess.CompletedProcess[bytes]], checker._git
+    )
     unavailable = {
         *(fingerprint.split(":", 1)[0] for fingerprint in EXPECTED_PUBLIC_KEY_FINGERPRINTS),
         PORTABLE_PUBLIC_KEY_HEAD,
@@ -226,7 +231,9 @@ def test_partial_public_key_history_fails_closed(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     checker = _load_checker()
-    original_git = checker._git
+    original_git = cast(
+        Callable[..., subprocess.CompletedProcess[bytes]], checker._git
+    )
     missing_commit = EXPECTED_PUBLIC_KEY_FINGERPRINTS[0].split(":", 1)[0]
 
     def partial_git(root: Path, *args: str) -> subprocess.CompletedProcess[bytes]:
@@ -249,7 +256,9 @@ def test_available_public_key_snapshot_failure_never_falls_back(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     checker = _load_checker()
-    original_git = checker._git
+    original_git = cast(
+        Callable[..., subprocess.CompletedProcess[bytes]], checker._git
+    )
     first_commit = EXPECTED_PUBLIC_KEY_FINGERPRINTS[0].split(":", 1)[0]
 
     def unreadable_git(
