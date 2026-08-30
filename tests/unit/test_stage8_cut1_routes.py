@@ -371,6 +371,7 @@ def remove_cleanup_marker(text: str, marker: str) -> str:
 
 
 EXPECTED = {
+    "cut1-475-t05b-runtime-receipt-binding": ISSUE475_EXPECTED,
     "governance-468-scoped-merge-cleanup": ISSUE468_EXPECTED,
     "cut1-466-t05a-presenter-source-integrity": ISSUE466_EXPECTED,
     "governance-473-cleanup-anchor-consumer-fixture": {
@@ -2169,6 +2170,40 @@ def test_issue475_requires_exact_main_branch_point() -> None:
 
         error = pytest.raises(RuntimeError, routes.route_base, broken, routes.ISSUE475_BRANCH)
         assert "Issue #475 fixed base" in str(error.value)
+
+
+def test_issue475_rejects_authority_drift_and_destructive_paths(
+    monkeypatch: Any, tmp_path: Path,
+) -> None:
+    branch = routes.ISSUE475_BRANCH
+    monkeypatch.setattr(routes, "route_base", lambda *_: routes.ISSUE475_BASE)
+    monkeypatch.setattr(routes, "route_text_charges", lambda *_: (0, {}))
+    artifact = json.loads(
+        (REPO / "docs/governance/preflights/issue-475.json").read_text()
+    )
+    target = tmp_path / "docs/governance/preflights/issue-475.json"
+    target.parent.mkdir(parents=True)
+    drifted = copy.deepcopy(artifact)
+    drifted["objective"] = drifted["objective"].replace(
+        routes.ISSUE475_FREEZE_SHA256, "0" * 64
+    )
+    target.write_text(json.dumps(drifted))
+    failures: list[str] = []
+    routes.check_exact_route(
+        tmp_path, lambda _: completed([]), branch, ISSUE475_EXPECTED, failures
+    )
+    assert failures == ["Issue #475 T05B binding authority drifted."]
+
+    for status in ("D\0old\0", "R100\0old\0new\0", "C100\0old\0new\0"):
+        failures = []
+        routes.check_exact_route(
+            REPO,
+            lambda args, output=status: completed(args, out=output),
+            branch,
+            ISSUE475_EXPECTED,
+            failures,
+        )
+        assert failures == ["Issue #475 route forbids deleted, renamed, or copied paths."]
 
 
 def test_issue459_t05b_requires_exact_main_branch_point() -> None:

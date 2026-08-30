@@ -700,8 +700,17 @@ commitment resolver supplies the current sequence plus exact ordered
 presenter/receipt/request/final-authority commitments. Restore and retrieval
 must match it, so coherent rehashing, record deletion/reordering, and rollback
 fail closed. Configuration identity is independently derived from canonical
-fields, and receipt currency is rechecked immediately before persistence and
-on retrieval.
+fields. Issue #475 preserves that public checksum byte-for-byte and separately
+binds the hosted provider-runtime checksum through authority, state,
+commitment, and external manifest. Hosted values must be distinct and match
+the typed provider result; local/mock state records explicit `null` and cannot
+fabricate hosted runtime authority. The genuine narration receipt's presenter
+binding remains a bare 64-lowercase-hex digest. Receipt currency is rechecked
+immediately before persistence and on retrieval.
+
+Missing, malformed, substituted, stale, cross-presenter, partial, replayed,
+receipt-reused, and coherently rehashed combinations fail closed even when an
+attacker updates mutable state checksums consistently.
 
 The module has no provider SDK, credential/environment access, network client,
 socket, subprocess, synthesis, or media-generation path. It accepts only
@@ -710,5 +719,8 @@ audio, captions, credentials, and provider payloads are not log fields. Test
 fixtures are never accepted as genuine media evidence. Issue #368 provider,
 privacy, retention, deletion, legal, egress, spend, and exact-listening gates
 remain separate and stopped.
+
+Issue #475 invokes no provider, credentials, network, egress, spend, synthesis,
+audio generation, or listening. T05 remains incomplete and T06 remains blocked.
 The live check reopens and verifies the pinned facts asset/source graph through
 the canonical Stage 4 evaluator; stored evidence equality alone is insufficient.

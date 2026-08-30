@@ -1712,29 +1712,15 @@ created by Issue #16.
 
 ## Issue #468 scoped merge-closeout cleanup governance
 
-Issue `#468` is active on branch `governance-468-scoped-merge-cleanup` as a
-separate, governance-only lane. It strengthens the existing merge-closeout
-contract with scoped resource ownership before deletion, explicit broad-prune
-prohibition, dirty local-main before-and-after hashes and status counts,
-`main...origin/main` zero-divergence evidence, proof of absence, and a retained,
-deleted, and recoverability report. Executable mutation tests bind the concise
-repository rule and the detailed reusable playbook checklist to their owning
-sections so duplicate wording elsewhere cannot create a false pass.
-
-PR `#472` merged the independent Issue `#471` authority anchor at
-`3b186af6f5787a47bbfa5f7aebaa2dc9661866ca`. After PR `#467` merged and closed
-Issue `#466`, PR `#470` transitioned from prior head `0b949767` onto exact main
-`55a0810e2ff327490d6dbadbf58580c06edef600` through two-parent merge
-`af960c9de16e0f648737f105bca275e38895a410`. The active correction consumes the
-independent anchor so a route-local coherent document-and-pin rehash cannot
-fabricate cleanup-policy acceptance. Fresh exact-head hosted checks, review,
-approval, merge, and closeout remain required.
-
-PR `#474` then merged the consumer-safe anchor fixture at exact accepted main
-`35f7beddc9f5ad8c109011bce05eef077c8194f6`. Issue `#468` is transitioning by
-normal merge onto that reviewed base, preserving both the independent Issue
-`#471` authority anchor and the Issue `#473` fixture. Fresh direct-head and
-merge-topology validation remain required before PR `#470` can be reviewed.
+Issue `#468` is closed. PR `#470` merged approved head
+`3b2f9f2b4867c56c5d7ce7da36fa113b8e41c8dd` from accepted base
+`35f7beddc9f5ad8c109011bce05eef077c8194f6` as
+`fb963f92057b8ccd5c0c070a3c9b5406ee9e884f`; approved and merged trees are
+identical at `6382556038b8ee7bf0a573dbfba851bb62382a30`. Post-merge run
+`33333375436` passed. Scoped cleanup removed the completed branch, worktrees,
+verification ref, isolated dependencies, and enumerated temporary files;
+ownership-unclear Docker resources and unrelated dirty work were retained.
+Local `main...origin/main` was verified at zero ahead and zero behind.
 
 This issue does not change product/runtime behavior and does not block or
 complete Issue `#459`, Issue `#368`, T05, T06, T07, or T08. It authorizes no
@@ -1828,21 +1814,21 @@ incident remains undisposed. No provider call, credential/environment lookup,
 egress, spend, synthesis, final audio/caption, T05 completion, T06 readiness,
 release, production, or Cut 1 acceptance is proven or authorized.
 
-Issue `#466` is the active pre-audio integrity correction from exact main
-`7eb4b99d7bc2bcf11cfc8c959baacb6cf3a21e81`. Independent reproduction showed
-that Myra and Raj claim 014 passed with `fact_013` even though its only owner
-source explicitly selected Meera. The finding is a `CRITICAL_BLOCKER` false
-acceptance, distinct from the historical Issue #368 wrong-style
-`REQUIRED_CONTRACT` failure.
+Issue `#466` is closed. PR `#467` merged approved head
+`3643bb37aae0532c1eb2a92d53b32f9cce181f47` from accepted base
+`3b186af6f5787a47bbfa5f7aebaa2dc9661866ca` as
+`55a0810e2ff327490d6dbadbf58580c06edef600`; approved and merged trees are
+identical at `468276a4a1e8f197dafcfb26b356f5cb45f5cf08`. Post-merge run
+`33326998721` passed. The integrated correction binds the owner-authorized
+shared-presenter source proposition and rejects contradictory or coherently
+rehashed source state. It does not synthesize or accept audio.
 
-The Issue #466 body supplies the exact first-party authority span for all three
-controlled presenters. Preflight commit `7c359b5` and behavioral RED commit
-`e22151f` precede minimal source-contract correction `15230f2`. No new
-Issue #368 receipts are admissible until this route passes local and hosted gates,
-independent exact-head review, non-author approval, merge, and merged-main
-verification. Selected voice references remain immutable and screening-only;
-no full canonical narration audio currently exists.
-Full quality at exact head `38b025e` passed 5,347 tests and reproduced one
-central Stage 8 route-registry failure. Checkpoint `5468026907` classifies it as
-`REQUIRED_CONTRACT` and adds only the registry test as path thirteen under the
-unchanged cap; the complete gate must be rerun on the corrected head.
+Issue `#475` is the active T05B integration correction from exact main
+`fb963f92057b8ccd5c0c070a3c9b5406ee9e884f`. It admits the genuine bare
+presenter-binding digest, preserves the byte-identical public Cut 1
+configuration checksum, and separately binds the hosted provider-runtime
+checksum through authority/state/commitment/manifest v2; the configuration
+schema remains v1 and local/mock runtime identity is explicit `null`. RED/GREEN
+work is local-only: zero provider call, credential read, egress, spend,
+synthesis, audio generation, or listening acceptance. Issue `#475` is not
+merged; T05 remains incomplete and T06 remains blocked.

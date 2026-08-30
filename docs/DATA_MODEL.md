@@ -1026,17 +1026,28 @@ narration, approval, consumption, or receipt graph.
 
 `Cut1AudioCaptionAuthority` is a provider-neutral, immutable admission record.
 It binds the complete `TTSConsumptionReceipt` lineage; approved provider, mode,
-voice, locale, model and derived configuration checksum; independently decoded WAV
-measurements and bytes checksum; canonical SRT bytes, exact spoken-text and
-timing checksums; and one authority checksum. `Cut1AudioCommitmentManifest`
-externally anchors the exact request and authority checksums, canonical
-presenter order, complete current receipt set, and monotonic manifest sequence.
+voice, locale, model and byte-identical public configuration checksum; the
+distinct hosted provider-runtime configuration checksum, or explicit `null`
+for local/mock; independently decoded WAV measurements and bytes checksum;
+canonical SRT bytes, exact spoken-text and timing checksums; and one authority
+checksum. The receipt preserves its canonical bare 64-lowercase-hex presenter
+binding. `Cut1AudioCommitmentManifest` externally anchors both configuration
+identities plus the exact request and authority checksums, canonical presenter
+order, complete current receipt set, and monotonic manifest sequence.
+
+Issue #475 uses `cut1-audio-caption-authority-v2`,
+`cut1-audio-commitment-v2`, and `cut1-audio-commitment-manifest-v2` for this
+projection and stored state. `cut1-audio-config-v1` remains unchanged because
+its public preimage and checksum are unchanged. Both configuration identities
+are persisted, restored, included in authority hashing, and bound by the
+external commitment; hosted candidates cannot collapse them into one value.
 
 Optional state contains one to three records and retains the exact receipt,
 audio, captions, and authority projection needed for deterministic restore.
 Duplicate JSON members, unsafe paths, invalid root or record checksums, stale
 receipt authority, malformed media, duplicate receipts, coherent artifact
-rehashing, missing or reordered records, and manifest rollback quarantine the
-whole store. Retrieval revalidates current receipt and manifest authority. A
+rehashing, malformed configuration identities, missing or reordered records,
+and manifest rollback quarantine the whole store. Retrieval revalidates
+current receipt and manifest authority. A
 new trusted manifest atomically replaces the complete set; no record becomes
 visible until its write succeeds.

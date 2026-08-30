@@ -18,6 +18,14 @@ Issue #368 retains genuine synthesis and exact-hash listening ownership. Its
 historical non-TTS search-egress incident is not accepted or superseded here.
 No existing private screening or rejected artifact is final Cut 1 evidence.
 
+Issue #475 reproduced two integration defects without calling a provider. The
+public narration service emits `presenter_binding_checksum` as 64 lowercase
+hexadecimal characters without a `sha256:` prefix, while T05B expected the
+prefixed representation. Separately, a hosted provider result binds a private
+runtime configuration whose checksum is intentionally distinct from the
+public Cut 1 configuration checksum; treating those as one identity rejected a
+genuine candidate or invited the public contract to be overwritten.
+
 ## Decision
 
 `backend.app.tts_provider.ApprovedNarrationTTSResult` is the provider-neutral
@@ -28,9 +36,11 @@ extends it, while the provider remains optional and disabled unless injected.
 materialized typed candidates. It has no provider seam and never calls
 synthesis. Before persistence it:
 
-1. revalidates the exact T05A receipt;
-2. derives the approved configuration checksum and rejects receipt reuse,
-   cross-presenter substitution, and configuration substitution;
+1. revalidates the exact T05A receipt, including its genuine bare presenter
+   binding digest;
+2. preserves the byte-identical public configuration checksum and, for hosted
+   candidates only, requires a distinct provider-runtime configuration
+   checksum that matches the typed provider result;
 3. recomputes the audio checksum and independently decodes bounded RIFF/WAVE;
 4. requires mono PCM16 at 24 kHz, 90–120 seconds, and non-silent signal;
 5. strictly parses canonical UTF-8 SRT with continuous ordered timing;
@@ -50,6 +60,11 @@ reordering, rollback, duplicate members, unsafe files, stale receipt authority,
 or malformed artifacts quarantine the state and expose zero authority.
 Persistence completes before the replacement set becomes visible.
 
+Issue #475 advances the authority, state, commitment, and commitment-manifest
+schemas to v2 so both configuration identities are persisted, restored,
+hashed, and externally committed. `cut1-audio-config-v1` remains unchanged
+because the public configuration preimage and checksum do not change.
+
 ## Security and capability boundary
 
 The authority module imports no provider SDK, credential/environment facility,
@@ -59,7 +74,9 @@ accepted media, provider evidence, or Cut 1 evidence.
 
 Configuration is constructor-injected and exact: its checksum is derived from
 provider, mode, locale, model, and the full presenter-to-voice mapping. A
-result cannot self-select different configuration. Receipt currency is checked
+result cannot self-select different configuration. Hosted candidates require
+the separate runtime checksum; local/mock candidates record explicit `null`
+and cannot fabricate hosted runtime authority. Receipt currency is checked
 again immediately before persistence and on every retrieval. A new trusted
 manifest replaces the complete authority set atomically, leaving no stale
 presenter row. Raw narration, audio, and captions are not logged.
@@ -80,3 +97,7 @@ presenter row. Raw narration, audio, and captions are not logged.
 - No audio/caption artifact is committed or accepted by this increment. T05,
   T06, Cut 1, release, deployment, publication, and production readiness remain
   incomplete and No-Go.
+- Issue #475 performs zero provider calls, credential reads, egress, spend,
+  synthesis, audio generation, or listening acceptance. Missing, malformed,
+  substituted, stale, cross-presenter, partial, replayed, receipt-reused, and
+  coherently rehashed bindings continue to fail closed.

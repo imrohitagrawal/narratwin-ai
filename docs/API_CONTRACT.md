@@ -1894,6 +1894,24 @@ configuration binds only the approved project SHA-256 at the provider boundary;
 the runtime verifies the matching ADC project and constructs the exact outbound
 header. No Google project identifier is added to a provider-neutral response.
 
+### Issue #475 T05B configuration and receipt binding
+
+This remains an internal admission contract; no HTTP request or response gains
+provider-runtime fields. A T05B candidate carries the unchanged public
+`config_checksum` plus `provider_runtime_config_checksum`. Hosted candidates
+must supply a distinct prefixed SHA-256 runtime checksum matching the typed
+provider result. Local/mock candidates must supply explicit `null` and keep the
+provider result bound to the public checksum.
+
+The public `TTSConsumptionReceipt.presenter_binding_checksum` remains its
+canonical bare 64-lowercase-hex value; T05B must not rewrite it with a
+`sha256:` prefix. Authority/state/commitment/manifest v2 binds both
+configuration identities, while `cut1-audio-config-v1` and its public checksum
+remain byte-identical. Missing, malformed, substituted, stale, cross-presenter,
+partial, replayed, receipt-reused, or coherently rehashed records fail closed.
+This contract performs no provider call, egress, spend, synthesis, audio
+generation, or listening acceptance and does not complete T05 or unblock T06.
+
 ## R0C-A2.3a source-evaluation checksum v2
 
 Schema `stage7-source-evaluation-checksum-v2` is SHA-256 over compact sorted-key UTF-8 JSON

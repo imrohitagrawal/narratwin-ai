@@ -25,16 +25,18 @@ from backend.app.narration import TTSConsumptionReceipt, canonical_presenter_tex
 from backend.app.storage import write_state
 from backend.app.tts_provider import ApprovedNarrationTTSResult
 
-SCHEMA = "cut1-audio-caption-authority-v1"
+SCHEMA = "cut1-audio-caption-authority-v2"
 CONFIG_SCHEMA = "cut1-audio-config-v1"
-COMMITMENT_SCHEMA = "cut1-audio-commitment-v1"
-MANIFEST_SCHEMA = "cut1-audio-commitment-manifest-v1"
+COMMITMENT_SCHEMA = "cut1-audio-commitment-v2"
+MANIFEST_SCHEMA = "cut1-audio-commitment-manifest-v2"
 MAX_AUTHORITIES = 3
 MAX_MANIFEST_SEQUENCE = 2_147_483_647
 MAX_AUDIO_BYTES = 6_000_000
 MAX_CAPTION_BYTES = 256_000
 MAX_STATE_BYTES = 24_000_000
 CHECKSUM = re.compile(r"sha256:[0-9a-f]{64}\Z")
+BARE_CHECKSUM = re.compile(r"[0-9a-f]{64}\Z")
+LOCAL_PROVIDER_MODES = frozenset({"LOCAL", "MOCK"})
 CITATION = re.compile(r"\[(?:\d{1,3}(?:\s*,\s*\d{1,3})*)\]")
 TIMING = re.compile(
     r"(?P<sh>\d{2}):(?P<sm>\d{2}):(?P<ss>\d{2}),(?P<sms>\d{3})"
@@ -133,6 +135,8 @@ class Cut1AudioCommitment:
     presenter_id: str
     receipt_checksum: str
     request_checksum: str
+    config_checksum: str
+    provider_runtime_config_checksum: str | None
     authority_checksum: str
 
 
@@ -149,13 +153,18 @@ class Cut1AudioCandidate:
     receipt: TTSConsumptionReceipt
     result: ApprovedNarrationTTSResult
     caption_bytes: bytes
+    config_checksum: str
+    provider_runtime_config_checksum: str | None
 
 
-def _commitment_payload(commitment: Cut1AudioCommitment) -> dict[str, str]:
+def _commitment_payload(commitment: Cut1AudioCommitment) -> dict[str, str | None]:
     return {
+        "schema": COMMITMENT_SCHEMA,
         "presenterId": commitment.presenter_id,
         "receiptChecksum": commitment.receipt_checksum,
         "requestChecksum": commitment.request_checksum,
+        "configChecksum": commitment.config_checksum,
+        "providerRuntimeConfigChecksum": commitment.provider_runtime_config_checksum,
         "authorityChecksum": commitment.authority_checksum,
     }
 
@@ -224,6 +233,7 @@ class Cut1AudioCaptionAuthority:
     model_id: str
     request_checksum: str
     config_checksum: str
+    provider_runtime_config_checksum: str | None
     audio_checksum: str
     audio_byte_count: int
     duration_seconds: float
@@ -247,6 +257,8 @@ def audio_commitment(authority: Cut1AudioCaptionAuthority) -> Cut1AudioCommitmen
         presenter_id=authority.presenter_id,
         receipt_checksum=authority.receipt_checksum,
         request_checksum=authority.request_checksum,
+        config_checksum=authority.config_checksum,
+        provider_runtime_config_checksum=authority.provider_runtime_config_checksum,
         authority_checksum=authority.authority_checksum,
     )
 
@@ -410,7 +422,11 @@ class Cut1AudioAuthorityService:
     ) -> Cut1AudioCaptionAuthority:
         self._validate_receipt(candidate.receipt)
         return self._validate_candidate(
-            candidate.receipt, candidate.result, candidate.caption_bytes
+            candidate.receipt,
+            candidate.result,
+            candidate.caption_bytes,
+            candidate.config_checksum,
+            candidate.provider_runtime_config_checksum,
         )
 
     def admit_authorities(
@@ -435,7 +451,7 @@ class Cut1AudioAuthorityService:
             if self._trusted_manifest() != manifest:
                 _fail("AUTHORITY_COMMITMENT_STALE", "Audio commitment changed during admission.")
             rows = [
-                self._row(value.receipt, value.result, value.caption_bytes, authority)
+                self._row(value, authority)
                 for value, authority in zip(candidates, authorities, strict=True)
             ]
             self._persist(rows, manifest)
@@ -500,11 +516,25 @@ class Cut1AudioAuthorityService:
             or len(set(receipt_checksums)) != len(receipt_checksums)
             or any(
                 value.presenter_id not in self.approved_config.presenter_voices
+                or value.config_checksum != self.approved_config.config_checksum
+                or (
+                    self.approved_config.provider_mode in LOCAL_PROVIDER_MODES
+                    and value.provider_runtime_config_checksum is not None
+                )
+                or (
+                    self.approved_config.provider_mode not in LOCAL_PROVIDER_MODES
+                    and (
+                        not isinstance(value.provider_runtime_config_checksum, str)
+                        or CHECKSUM.fullmatch(value.provider_runtime_config_checksum) is None
+                        or value.provider_runtime_config_checksum == value.config_checksum
+                    )
+                )
                 or any(
-                    CHECKSUM.fullmatch(checksum) is None
+                    not isinstance(checksum, str) or CHECKSUM.fullmatch(checksum) is None
                     for checksum in (
                         value.receipt_checksum,
                         value.request_checksum,
+                        value.config_checksum,
                         value.authority_checksum,
                     )
                 )
@@ -524,7 +554,6 @@ class Cut1AudioAuthorityService:
             _fail("NARRATION_AUTHORITY_STALE", "Narration receipt is not current.")
         checksums = (
             receipt.narration_checksum,
-            receipt.presenter_binding_checksum,
             receipt.source_evaluation_checksum,
             receipt.evaluation_checksum,
             receipt.approval_checksum,
@@ -533,7 +562,12 @@ class Cut1AudioAuthorityService:
         if (
             receipt.presenter_id not in self.approved_config.presenter_voices
             or receipt.duration_requirement_seconds != (90, 120)
-            or any(CHECKSUM.fullmatch(value) is None for value in checksums)
+            or not isinstance(receipt.presenter_binding_checksum, str)
+            or BARE_CHECKSUM.fullmatch(receipt.presenter_binding_checksum) is None
+            or any(
+                not isinstance(value, str) or CHECKSUM.fullmatch(value) is None
+                for value in checksums
+            )
         ):
             _fail("NARRATION_AUTHORITY_STALE", "Narration receipt shape is invalid.")
         if CITATION.search(receipt.spoken_text):
@@ -546,6 +580,8 @@ class Cut1AudioAuthorityService:
         receipt: TTSConsumptionReceipt,
         result: ApprovedNarrationTTSResult,
         caption_bytes: bytes,
+        config_checksum: str,
+        provider_runtime_config_checksum: str | None,
     ) -> Cut1AudioCaptionAuthority:
         if result.presenter_id != receipt.presenter_id:
             _fail("PRESENTER_BINDING_MISMATCH", "Audio presenter does not match narration.")
@@ -553,7 +589,12 @@ class Cut1AudioAuthorityService:
             _fail("RECEIPT_BINDING_MISMATCH", "Audio receipt does not match narration.")
         if CHECKSUM.fullmatch(result.request_checksum) is None:
             _fail("REQUEST_BINDING_INVALID", "Audio request checksum is invalid.")
-        if CHECKSUM.fullmatch(result.config_checksum) is None:
+        if (
+            not isinstance(config_checksum, str)
+            or CHECKSUM.fullmatch(config_checksum) is None
+            or not isinstance(result.config_checksum, str)
+            or CHECKSUM.fullmatch(result.config_checksum) is None
+        ):
             _fail("CONFIG_BINDING_INVALID", "Audio configuration checksum is invalid.")
         config = self.approved_config
         expected = (
@@ -562,7 +603,6 @@ class Cut1AudioAuthorityService:
             config.presenter_voices[receipt.presenter_id],
             config.requested_locale,
             config.model_id,
-            config.config_checksum,
         )
         observed = (
             result.provider,
@@ -570,10 +610,41 @@ class Cut1AudioAuthorityService:
             result.requested_voice,
             result.requested_locale,
             result.model_id,
-            result.config_checksum,
         )
-        if observed != expected:
+        if observed != expected or config_checksum != config.config_checksum:
             _fail("CONFIG_BINDING_MISMATCH", "Audio configuration is not approved.")
+        if config.provider_mode in LOCAL_PROVIDER_MODES:
+            if provider_runtime_config_checksum is not None:
+                _fail(
+                    "PROVIDER_RUNTIME_CONFIG_FORBIDDEN",
+                    "Local audio must not fabricate hosted runtime authority.",
+                )
+            if result.config_checksum != config_checksum:
+                _fail("CONFIG_BINDING_MISMATCH", "Audio configuration is not approved.")
+        else:
+            if provider_runtime_config_checksum is None:
+                _fail(
+                    "PROVIDER_RUNTIME_CONFIG_REQUIRED",
+                    "Hosted audio runtime authority is required.",
+                )
+            if (
+                not isinstance(provider_runtime_config_checksum, str)
+                or CHECKSUM.fullmatch(provider_runtime_config_checksum) is None
+            ):
+                _fail(
+                    "PROVIDER_RUNTIME_CONFIG_INVALID",
+                    "Hosted audio runtime authority is invalid.",
+                )
+            if provider_runtime_config_checksum == config_checksum:
+                _fail(
+                    "PROVIDER_RUNTIME_CONFIG_NOT_DISTINCT",
+                    "Hosted runtime and public configurations must be distinct.",
+                )
+            if result.config_checksum != provider_runtime_config_checksum:
+                _fail(
+                    "PROVIDER_RUNTIME_CONFIG_MISMATCH",
+                    "Hosted audio runtime authority does not match the provider result.",
+                )
         if result.mime_type != "audio/wav" or not isinstance(result.audio_bytes, bytes):
             _fail("AUDIO_WAV_INVALID", "Audio artifact type is invalid.")
         audio_checksum = _sha(result.audio_bytes)
@@ -615,9 +686,10 @@ class Cut1AudioAuthorityService:
                     "requested_locale",
                     "model_id",
                     "request_checksum",
-                    "config_checksum",
                 )
             },
+            "config_checksum": config_checksum,
+            "provider_runtime_config_checksum": provider_runtime_config_checksum,
             "audio_checksum": audio_checksum,
             "audio_byte_count": len(result.audio_bytes),
             **asdict(measurements),
@@ -639,11 +711,11 @@ class Cut1AudioAuthorityService:
 
     @staticmethod
     def _row(
-        receipt: TTSConsumptionReceipt,
-        result: ApprovedNarrationTTSResult,
-        caption_bytes: bytes,
+        candidate: Cut1AudioCandidate,
         authority: Cut1AudioCaptionAuthority,
     ) -> dict[str, Any]:
+        receipt = candidate.receipt
+        result = candidate.result
         receipt_row = asdict(receipt)
         result_row = {
             name: getattr(result, name)
@@ -665,7 +737,9 @@ class Cut1AudioAuthorityService:
         return {
             "receipt": receipt_row,
             "result": result_row,
-            "captionBase64": base64.b64encode(caption_bytes).decode("ascii"),
+            "configChecksum": candidate.config_checksum,
+            "providerRuntimeConfigChecksum": candidate.provider_runtime_config_checksum,
+            "captionBase64": base64.b64encode(candidate.caption_bytes).decode("ascii"),
             "authority": asdict(authority),
         }
 
@@ -731,9 +805,16 @@ class Cut1AudioAuthorityService:
             restored_rows: list[dict[str, Any]] = []
             restored_commitments: list[Cut1AudioCommitment] = []
             for row in records:
-                receipt, result, captions, stored = self._decode_row(row)
+                candidate, stored = self._decode_row(row)
+                receipt = candidate.receipt
                 self._validate_receipt(receipt)
-                authority = self._validate_candidate(receipt, result, captions)
+                authority = self._validate_candidate(
+                    receipt,
+                    candidate.result,
+                    candidate.caption_bytes,
+                    candidate.config_checksum,
+                    candidate.provider_runtime_config_checksum,
+                )
                 if (
                     _json_sha(asdict(authority)) != _json_sha(stored)
                     or receipt.receipt_checksum in restored
@@ -766,14 +847,21 @@ class Cut1AudioAuthorityService:
     @staticmethod
     def _decode_row(
         value: Any,
-    ) -> tuple[TTSConsumptionReceipt, ApprovedNarrationTTSResult, bytes, dict[str, Any]]:
+    ) -> tuple[Cut1AudioCandidate, dict[str, Any]]:
         if not isinstance(value, dict) or set(value) != {
             "receipt",
             "result",
+            "configChecksum",
+            "providerRuntimeConfigChecksum",
             "captionBase64",
             "authority",
         }:
             raise ValueError("Record schema.")
+        if any(
+            not isinstance(value[name], dict)
+            for name in ("receipt", "result", "authority")
+        ):
+            raise ValueError("Record object schema.")
         receipt_row = cast(dict[str, Any], value["receipt"])
         receipt_row = dict(receipt_row)
         receipt_row["duration_requirement_seconds"] = tuple(
@@ -803,4 +891,13 @@ class Cut1AudioAuthorityService:
             audio_bytes=audio,
         )
         stored = cast(dict[str, Any], value["authority"])
-        return receipt, result, captions, stored
+        candidate = Cut1AudioCandidate(
+            receipt=receipt,
+            result=result,
+            caption_bytes=captions,
+            config_checksum=cast(str, value["configChecksum"]),
+            provider_runtime_config_checksum=cast(
+                str | None, value["providerRuntimeConfigChecksum"]
+            ),
+        )
+        return candidate, stored
