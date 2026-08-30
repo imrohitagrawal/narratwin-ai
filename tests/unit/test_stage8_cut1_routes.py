@@ -939,12 +939,10 @@ def test_issue468_route_preflight_and_budgets_are_exact() -> None:
     assert preflight["issue_number"] == 468
     assert preflight["branch"] == routes.ISSUE468_BRANCH
     comments = {"5468560507", "5468813566", "5468861375", "5468898843",
-                "5468986974", "5469141049", "5470386759", "5470396865",
-                "5470664256"}
+                "5468986974", "5469141049", "5470386759", "5470396865", "5470664256"}
     assert comments <= set(re.findall(r"\d{10}", preflight["objective"]))
     assert {"0b9497679f12502276b15f759263bf32a803cf81",
-            "55a0810e2ff327490d6dbadbf58580c06edef600",
-            "35f7beddc9f5ad8c109011bce05eef077c8194f6",
+            "55a0810e2ff327490d6dbadbf58580c06edef600", "35f7beddc9f5ad8c109011bce05eef077c8194f6",
             "af960c9de16e0f648737f105bca275e38895a410"} <= set(preflight["objective"].split())
     assert set(preflight["scope"]["required"]) == ISSUE468_EXPECTED
     assert set(preflight["scope"]["allowed_prefixes"]) == ISSUE468_EXPECTED
