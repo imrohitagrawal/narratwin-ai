@@ -87,7 +87,7 @@ def validate_public_signing_key_blob(blob: bytes) -> list[str]:
     try:
         lines = blob.decode("utf-8").splitlines()
         assignment = lines[17].strip()
-        match = re.fullmatch(r"python_gpg_key=([A-F0-9]{40}); \\", assignment)
+        match = re.match(r"python_gpg_key=([A-F0-9]{40}); \\\Z", assignment)
         key = match.group(1) if match else ""
         receive = lines[18].strip()
         verify = lines[19].strip()
