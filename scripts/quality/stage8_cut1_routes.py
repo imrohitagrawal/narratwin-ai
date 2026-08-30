@@ -1084,35 +1084,9 @@ def merge_cleanup_contract_failures(
             ),
         ),
     )
-    exact_blocks = {
-        "AGENTS.md": (
-            "   Merge cleanup must resolve scoped resource ownership before deletion;\n"
-            "   prohibit broad prune operations; preserve dirty work with before-and-after\n"
-            "   hashes and status counts; verify main...origin/main is 0 ahead / 0 behind;\n"
-            "   and publish a retained, deleted, and recoverability report with proof of\n"
-            "   absence for removed resources."
-        ),
-        "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md": (
-            "- inventory every cleanup target and resolve its ownership to the completed PR\n"
-            "  before deletion; retain anything whose ownership is unclear\n"
-            "- remove completed implementation and verification worktrees\n"
-            "- remove PR-owned Docker containers, images, volumes, and networks\n"
-            "- remove PR-owned temporary clones, files, and isolated dependencies\n"
-            "- do not run broad prune operations, including Docker system, image, builder,\n"
-            "  volume, network, cache, worktree, branch, or recursive filesystem pruning,\n"
-            "  when ownership is unresolved\n"
-            "- when local `main` owns dirty work, hash staged, unstaged, and untracked state\n"
-            "  before and after preservation; also record the status-entry count, preserve\n"
-            "  the exact index and files on a clearly named local branch, and reverify both\n"
-            "  hashes and count before recreating clean local `main`\n"
-            "- after synchronization, verify `main...origin/main` is `0` ahead and `0`\n"
-            "  behind\n"
-            "- prove scoped resources are absent after deletion without treating unrelated\n"
-            "  retained resources as cleanup failures\n"
-            "- publish a retained, deleted, and recoverability report that identifies each\n"
-            "  scoped resource, its ownership basis, disposition, reason, and whether the\n"
-            "  deletion is recoverable"
-        ),
+    exact_sha256 = {
+        "AGENTS.md": "fba373a99039557c67217f2670c82fa753a3db6a3283599071b6c4aae9f85438",
+        "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md": "af0d119a60105f41efd90dcee06b55a0f0882253f49850f0ef7d645f5e86b17b",
     }
     failures: list[str] = []
     for path, heading, level, markers in specifications:
@@ -1126,7 +1100,7 @@ def merge_cleanup_contract_failures(
             f"Stage 8 merge-closeout contract missing {path} marker: {marker}."
             for marker in markers if marker not in normalized
         )
-        if exact_blocks[path] not in body:
+        if hashlib.sha256(body.encode()).hexdigest() != exact_sha256[path]:
             failures.append(
                 f"Stage 8 merge-closeout contract lacks an exact operative clause: {path}."
             )

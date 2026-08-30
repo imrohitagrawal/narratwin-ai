@@ -188,7 +188,7 @@
       "moduleId": "review-independence",
       "schemaVersion": "ContextPolicyModuleV1",
       "location": "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md",
-      "sourceSha256": "5d2e79f7a054c936c99432e300133312a0c6d71acf7522fe4aa594e0a300ce57",
+      "sourceSha256": "30ba0f8e7b736293c4b6c110cbe9ce46bf7639507b0441bd37cb222bb62ae94f",
       "contentSha256": "2019708c272ffc0d2584237fade4f4e2052dfb890fbce7bc099e0ba1dcc29d3d",
       "authorityLevel": "review",
       "status": "active",

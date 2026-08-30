@@ -845,8 +845,8 @@ Minimum merge-closeout checklist:
 - remove PR-owned Docker containers, images, volumes, and networks
 - remove PR-owned temporary clones, files, and isolated dependencies
 - do not run broad prune operations, including Docker system, image, builder,
-  volume, network, cache, worktree, branch, or recursive filesystem pruning,
-  when ownership is unresolved
+  volume, network, cache, worktree, branch, or recursive filesystem pruning; broad prune operations are prohibited
+  even when every cleanup target has asserted ownership
 - when local `main` owns dirty work, hash staged, unstaged, and untracked state
   before and after preservation; also record the status-entry count, preserve
   the exact index and files on a clearly named local branch, and reverify both
