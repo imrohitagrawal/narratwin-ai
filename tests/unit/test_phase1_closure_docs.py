@@ -8716,6 +8716,70 @@ def test_process_docs_rejects_playbook_missing_merge_closeout_follow_up_marker(m
     ) in failures
 
 
+@pytest.mark.parametrize(
+    ("marker", "replacement"),
+    (
+        ("resolve scoped resource ownership before deletion", "delete completed resources"),
+        ("prohibit broad prune operations", "clean up remaining resources"),
+        ("before-and-after hashes and status counts", "preserve dirty work"),
+        ("main...origin/main is 0 ahead / 0 behind", "main is synchronized"),
+        ("retained, deleted, and recoverability report", "cleanup report"),
+        ("proof of absence", "cleanup confirmation"),
+    ),
+)
+def test_process_docs_rejects_agents_missing_scoped_cleanup_marker(
+    monkeypatch: Any,
+    marker: str,
+    replacement: str,
+) -> None:
+    original_agents = phase1.read("AGENTS.md")
+    failures = run_process_docs_check(
+        monkeypatch,
+        branch="governance-468-scoped-merge-cleanup",
+        changed=["AGENTS.md"],
+        read_overrides={"AGENTS.md": original_agents.replace(marker, replacement)},
+    )
+
+    assert f"AGENTS.md missing scoped merge-closeout marker: {marker}" in failures
+
+
+@pytest.mark.parametrize(
+    ("marker", "replacement"),
+    (
+        ("completed implementation and verification worktrees", "completed worktrees"),
+        ("PR-owned Docker containers, images, volumes, and networks", "Docker resources"),
+        ("PR-owned temporary clones, files, and isolated dependencies", "temporary resources"),
+        ("do not run broad prune operations", "clean up remaining resources"),
+        ("hash staged, unstaged, and untracked state before and after preservation", "preserve dirty state"),
+        ("verify `main...origin/main` is `0` ahead and `0` behind", "verify main is synchronized"),
+        ("retained, deleted, and recoverability", "cleanup summary"),
+        ("prove scoped resources are absent", "confirm cleanup"),
+    ),
+)
+def test_process_docs_rejects_playbook_missing_scoped_cleanup_marker(
+    monkeypatch: Any,
+    marker: str,
+    replacement: str,
+) -> None:
+    original_playbook = phase1.read("docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md")
+    failures = run_process_docs_check(
+        monkeypatch,
+        branch="governance-468-scoped-merge-cleanup",
+        changed=["docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md"],
+        read_overrides={
+            "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md": original_playbook.replace(
+                marker,
+                replacement,
+            )
+        },
+    )
+
+    assert (
+        "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md missing scoped "
+        f"merge-closeout marker: {marker}"
+    ) in failures
+
+
 def test_process_docs_rejects_open_medium_low_phf_register_status(monkeypatch: Any) -> None:
     original_findings = phase1.read("docs/reviews/PROCESS_HARDENING_FINDINGS.md")
     failures = run_process_docs_check(
