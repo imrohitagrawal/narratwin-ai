@@ -315,6 +315,25 @@
           "text": "“For Cut 1, Meera is the selected presenter and presents the prepared walkthrough.”"
         }
       ]
+    },
+    {
+      "sourceId": "src_owner_466",
+      "locatorType": "owner-record",
+      "sourceClassification": "OWNER_ASSERTED",
+      "locator": "https://github.com/imrohitagrawal/narratwin-ai/issues/466",
+      "revision": "issue:466@2026-08-30T09:44:54Z",
+      "byteCount": 3079,
+      "sha256": "3e4c9c483bdea609be70c46863a36f64a1900cac058615a22e213ea218c9212c",
+      "spans": [
+        {
+          "spanId": "src_owner_466_presenters",
+          "byteStart": 1532,
+          "byteEnd": 1654,
+          "byteCount": 122,
+          "sha256": "6ed0e9270ca03d6940ecc11e3e174d8024a54aba306f18d5b8eedb1ed9241396",
+          "text": "For Cut 1, Meera, Myra, and Raj are each authorized controlled presenters for an independently bound prepared walkthrough."
+        }
+      ]
     }
   ],
   "propositions": [
@@ -392,9 +411,9 @@
     },
     {
       "propositionId": "fact_013",
-      "statement": "OWNER_ASSERTED: For Cut 1, Meera is the selected presenter and presents the prepared walkthrough.",
-      "predicateIds": ["experience.prepared_walkthrough", "experience.first_mode", "presenter.selected_meera"],
-      "sourceSpanIds": ["src_owner_421_meera"]
+      "statement": "OWNER_ASSERTED: For Cut 1, Meera, Myra, and Raj are each authorized controlled presenters for an independently bound prepared walkthrough.",
+      "predicateIds": ["experience.prepared_walkthrough", "experience.first_mode", "presenter.governed_cut1"],
+      "sourceSpanIds": ["src_owner_466_presenters"]
     },
     {
       "propositionId": "fact_014",
@@ -553,7 +572,7 @@
         "myra": "8dd22a3a600230f05cb9dd78d93491d31a306531e0d075bdb8a5bc4cfcf36f2c",
         "raj": "8dd22a3a600230f05cb9dd78d93491d31a306531e0d075bdb8a5bc4cfcf36f2c"
       },
-      "requiredPredicateIds": ["experience.prepared_walkthrough", "experience.first_mode", "presenter.selected_meera"],
+      "requiredPredicateIds": ["experience.prepared_walkthrough", "experience.first_mode", "presenter.governed_cut1"],
       "propositionIds": ["fact_013"]
     },
     {

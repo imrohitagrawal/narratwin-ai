@@ -427,7 +427,7 @@ def test_reviewed_claim_propositions_bind_complete_independent_sources() -> None
     assert "turns approved project knowledge into audience-aware, grounded scripts" in prd_span["text"]
     assert "first usable product slice must prove the trust loop" in prd_span["text"]
     assert propositions["fact_013"]["sourceSpanIds"] == [
-        "src_owner_421_meera",
+        "src_owner_466_presenters",
     ]
 
 
@@ -440,6 +440,7 @@ def test_owner_asserted_facts_are_classified_and_separate_from_repository_source
         for span in source["spans"]
     }
     owner = sources["src_owner_5263752038"]
+    presenter_owner = sources["src_owner_466"]
 
     assert owner["sourceClassification"] == "OWNER_ASSERTED"
     assert owner["locator"].endswith("issues/421#issuecomment-5263752038")
@@ -447,6 +448,11 @@ def test_owner_asserted_facts_are_classified_and_separate_from_repository_source
         "src_owner_421_stackclimb",
         "src_owner_421_knowledge",
         "src_owner_421_meera",
+    }
+    assert presenter_owner["sourceClassification"] == "OWNER_ASSERTED"
+    assert presenter_owner["locator"].endswith("issues/466")
+    assert {span["spanId"] for span in presenter_owner["spans"]} == {
+        "src_owner_466_presenters",
     }
     assert all(
         source["sourceClassification"] == "REPOSITORY_SOURCE"
