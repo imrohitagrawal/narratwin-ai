@@ -28,7 +28,7 @@ authority span are pinned by revision, byte range, byte count, and SHA-256.
 
 The governed facts asset keeps the historical Meera-only span for audit but no
 longer uses it to support shared claim 014. `fact_013` instead cites the Issue
-#466 span and requires `presenter.governed_cut1`. The verifier code-pins the
+Issue #466 span and requires `presenter.governed_cut1`. The verifier code-pins the
 complete proposition identity, statement, predicates, source span, and
 classification in addition to the whole-asset digest. Rehashing a substituted
 statement therefore cannot create authority.
