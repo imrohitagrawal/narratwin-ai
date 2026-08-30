@@ -50,8 +50,8 @@ def test_cut1_routes_are_exact_stage8_and_not_preflight_owned(monkeypatch: Any, 
         {f"issue-{n}.json" for n in (346,335,349,351,358,372)} else ORIGINAL_READ(path,*a,**kw))
     policy = load("scripts/quality/check_stage8_docs.py", "reloaded").PROCESS_BRANCH_ALLOWED_FILES
     assert {b:policy[b] for b in SCOPES}==SCOPES;r=cut1_routes;c=stage8.issue431_authority_core.BRANCH
-    registered={getattr(r,f"ISSUE{i}_BRANCH") for i in (150,396,401,403,413,428)}|{c,r.ISSUE466_BRANCH}
-    assert {b for b in policy if b[:5] == "cut1-"} - set(SCOPES) == registered
+    reg={getattr(r,f"ISSUE{i}_BRANCH") for i in (150,396,401,403,413,428)}|{c,r.ISSUE466_BRANCH,r.ISSUE475_BRANCH}
+    assert {b for b in policy if b[:5] == "cut1-"} - set(SCOPES) == reg
     dispatcher:Any=load("scripts/quality/check_quality_stage.py","dispatcher");stage_file=tmp_path/"stage"
     status_file=tmp_path/"status";mode="| SSV1-MODE | repo-mode | Phase 1 Closure | phase1-closure | phase1-closure |\n"
     stage_file.write_text("8\n"); status_file.write_text(mode);assert callable(r.merge_cleanup_contract_failures)

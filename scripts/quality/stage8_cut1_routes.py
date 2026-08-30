@@ -85,6 +85,8 @@ ISSUE475_RECEIPT_COMMENT = "5470701562"
 ISSUE475_RECEIPT_SHA256 = "415139a73d27173eb406654ca66acd0ecf928f40b4eea0d3d71a7572558a49c1"
 ISSUE475_FREEZE_COMMENT = "5471056591"
 ISSUE475_FREEZE_SHA256 = "239c2dcd903e0e5a056a2af4d9abdb80b8b148430c107549984f0ac2bb627348"
+ISSUE475_HOSTED_COMMENT = "5471282345"
+ISSUE475_HOSTED_SHA256 = "0cac623417e1645403dca44b4cdc9fe09e4f23efd6c0acdb5b28af1f6dd9ffe1"
 ISSUE471_AUTHORITY_SHA256 = (
     "7222909116385fe74cbc7df6bbccb759687d2e4a6bf0e0637465679434de33ab",
     "30ba0f8e7b736293c4b6c110cbe9ce46bf7639507b0441bd37cb222bb62ae94f",
@@ -138,6 +140,7 @@ ROUTES = {
         "docs/governance/preflights/issue-475.json",
         "scripts/quality/stage8_cut1_routes.py",
         "tests/unit/test_stage8_cut1_routes.py",
+        "tests/unit/test_stage8_quality_gate.py",
         "docs/ADR/0071-cut1-audio-caption-authority.md",
         "docs/API_CONTRACT.md",
         "docs/DATA_MODEL.md",
@@ -687,6 +690,7 @@ TEXT_LIMITS = {
         "docs/governance/preflights/issue-475.json": 260,
         "scripts/quality/stage8_cut1_routes.py": 160,
         "tests/unit/test_stage8_cut1_routes.py": 240,
+        "tests/unit/test_stage8_quality_gate.py": 40,
         "docs/ADR/0071-cut1-audio-caption-authority.md": 120,
         "docs/API_CONTRACT.md": 60,
         "docs/DATA_MODEL.md": 80,
@@ -1801,6 +1805,8 @@ def check_exact_route(
                 ISSUE475_RECEIPT_SHA256,
                 ISSUE475_FREEZE_COMMENT,
                 ISSUE475_FREEZE_SHA256,
+                ISSUE475_HOSTED_COMMENT,
+                ISSUE475_HOSTED_SHA256,
             )
             failures.extend(
                 f"Issue #475 governance preflight failed: {finding.code}"
