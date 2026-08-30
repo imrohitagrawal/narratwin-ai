@@ -1041,6 +1041,62 @@ def load_json_without_duplicate_members(path: Path) -> Any:
     )
 
 
+def markdown_heading_body(text: str, heading: str, level: int) -> str:
+    prefix = "#" * level
+    pattern = rf"^{prefix} {re.escape(heading)}\s*\n(?P<body>.*?)(?=^#{{1,{level}}} |\Z)"
+    match = re.search(pattern, text, flags=re.M | re.S)
+    return match.group("body") if match else ""
+
+
+def merge_cleanup_contract_failures(
+    root: Path,
+    reader: Callable[[str], str] | None = None,
+) -> list[str]:
+    read_document = reader or (
+        lambda path: (root / path).read_text(encoding="utf-8")
+    )
+    specifications = (
+        (
+            "AGENTS.md", "Non-Negotiable Workflow", 2,
+            (
+                "resolve scoped resource ownership before deletion",
+                "prohibit broad prune operations",
+                "before-and-after hashes and status counts",
+                "main...origin/main is 0 ahead / 0 behind",
+                "retained, deleted, and recoverability report",
+                "proof of absence",
+            ),
+        ),
+        (
+            "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md",
+            "Mandatory Merge-Closeout Checklist", 3,
+            (
+                "completed implementation and verification worktrees",
+                "PR-owned Docker containers, images, volumes, and networks",
+                "PR-owned temporary clones, files, and isolated dependencies",
+                "do not run broad prune operations",
+                "hash staged, unstaged, and untracked state before and after preservation",
+                "verify `main...origin/main` is `0` ahead and `0` behind",
+                "retained, deleted, and recoverability",
+                "prove scoped resources are absent",
+            ),
+        ),
+    )
+    failures: list[str] = []
+    for path, heading, level, markers in specifications:
+        try:
+            body = markdown_heading_body(read_document(path), heading, level)
+        except (OSError, UnicodeError) as error:
+            failures.append(f"Stage 8 merge-closeout contract unavailable: {path}: {error}.")
+            continue
+        normalized = re.sub(r"\s+", " ", body)
+        failures.extend(
+            f"Stage 8 merge-closeout contract missing {path} marker: {marker}."
+            for marker in markers if marker not in normalized
+        )
+    return failures
+
+
 def security_preflight_failures(root: Path, issue: int) -> list[str]:
     path = root / f"docs/governance/preflights/issue-{issue}.json"
     schema, expected_sha = SECURITY_PREFLIGHTS[issue]

@@ -4,6 +4,7 @@ import copy
 import importlib.util
 import hashlib
 import json
+import re
 import shutil
 import subprocess
 from pathlib import Path
@@ -285,6 +286,30 @@ ISSUE468_LINE_CAPS = {
     "tests/unit/test_stage8_quality_gate.py": 160,
     "tests/unit/test_stage8_cut1_routes.py": 120,
 }
+ISSUE468_CLEANUP_CONTRACT = {
+    "AGENTS.md": (
+        "resolve scoped resource ownership before deletion", "prohibit broad prune operations",
+        "before-and-after hashes and status counts", "main...origin/main is 0 ahead / 0 behind",
+        "retained, deleted, and recoverability report", "proof of absence",
+    ),
+    "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md": (
+        "completed implementation and verification worktrees",
+        "PR-owned Docker containers, images, volumes, and networks",
+        "PR-owned temporary clones, files, and isolated dependencies",
+        "do not run broad prune operations",
+        "hash staged, unstaged, and untracked state before and after preservation",
+        "verify `main...origin/main` is `0` ahead and `0` behind",
+        "retained, deleted, and recoverability", "prove scoped resources are absent",
+    ),
+}
+
+
+def cleanup_documents() -> dict[str, str]:
+    return {path: (REPO / path).read_text(encoding="utf-8") for path in ISSUE468_CLEANUP_CONTRACT}
+
+
+def remove_cleanup_marker(text: str, marker: str) -> str:
+    return re.sub(re.escape(marker).replace(r"\ ", r"\s+"), "removed marker", text, count=1)
 
 
 EXPECTED = {
@@ -840,6 +865,39 @@ def test_issue468_route_preflight_and_budgets_are_exact() -> None:
     assert routes.ROUTE_ISSUES[routes.ISSUE468_BRANCH] == 468
     assert routes.TOTAL_LIMITS[routes.ISSUE468_BRANCH] == 1500
     assert routes.TEXT_LIMITS[routes.ISSUE468_BRANCH] == ISSUE468_LINE_CAPS
+
+
+@pytest.mark.parametrize(
+    ("path", "marker"),
+    [(path, marker) for path, markers in ISSUE468_CLEANUP_CONTRACT.items() for marker in markers],
+)
+def test_issue468_cleanup_contract_rejects_each_marker_mutation(
+    path: str, marker: str,
+) -> None:
+    documents = cleanup_documents()
+    documents[path] = remove_cleanup_marker(documents[path], marker)
+
+    failures = routes.merge_cleanup_contract_failures(REPO, documents.__getitem__)
+
+    assert f"Stage 8 merge-closeout contract missing {path} marker: {marker}." in failures
+
+
+@pytest.mark.parametrize(
+    ("path", "marker"),
+    (
+        ("AGENTS.md", "prohibit broad prune operations"),
+        ("docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md", "do not run broad prune operations"),
+    ),
+)
+def test_issue468_cleanup_contract_rejects_wrong_section_decoy(
+    path: str, marker: str,
+) -> None:
+    documents = cleanup_documents()
+    documents[path] = f"{remove_cleanup_marker(documents[path], marker)}\n\n## Decoy\n\n{marker}\n"
+
+    failures = routes.merge_cleanup_contract_failures(REPO, documents.__getitem__)
+
+    assert f"Stage 8 merge-closeout contract missing {path} marker: {marker}." in failures
 
 
 def test_security_preflights_reject_duplicate_and_exact_byte_drift(tmp_path: Path) -> None:
