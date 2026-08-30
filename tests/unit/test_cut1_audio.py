@@ -4,6 +4,7 @@ import hashlib
 import importlib
 import importlib.util
 import ast
+import inspect
 import json
 import struct
 from dataclasses import replace
@@ -35,6 +36,21 @@ def test_t05b_audio_caption_authority_module_exists() -> None:
     assert importlib.util.find_spec("backend.app.cut1_audio") is not None, (
         "Issue #459 T05B audio/caption authority module is absent"
     )
+
+
+def test_t05b_review_correction_requires_materialized_manifest_admission(
+    cut1_audio: ModuleType,
+) -> None:
+    assert hasattr(cut1_audio, "Cut1AudioCommitment")
+    assert hasattr(cut1_audio, "Cut1AudioCommitmentManifest")
+    assert hasattr(cut1_audio, "build_audio_commitment_manifest")
+    constructor = inspect.signature(cut1_audio.Cut1AudioAuthorityService).parameters
+    admission = inspect.signature(
+        cut1_audio.Cut1AudioAuthorityService.admit_authorities
+    ).parameters
+    assert "provider" not in constructor
+    assert "commitment_resolver" in constructor
+    assert "candidates" in admission
 
 
 @pytest.fixture(scope="module")
