@@ -102,11 +102,12 @@ ROUTES = {
     ISSUE468_BRANCH: {
         "AGENTS.md",
         "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md",
-        "scripts/quality/check_phase1_closure_docs.py",
-        "tests/unit/test_phase1_closure_docs.py",
         "docs/governance/preflights/issue-468-scoped-merge-cleanup.json",
         "docs/STATUS.md",
+        "docs/agent-context/context-policy-manifest-v1.json",
+        "scripts/quality/check_stage8_docs.py",
         "scripts/quality/stage8_cut1_routes.py",
+        "tests/unit/test_stage8_quality_gate.py",
         "tests/unit/test_stage8_cut1_routes.py",
     },
     ISSUE459_T05B_BRANCH: {
@@ -554,7 +555,7 @@ TOTAL_LIMITS = {ISSUE452_BRANCH: 3600, ISSUE451_BRANCH: 600, ISSUE150_BRANCH: 10
                 ISSUE386_BRANCH: 700, ISSUE385_BRANCH: 350,
                 ISSUE384_BRANCH: 500, ISSUE383_BRANCH: 700, ISSUE397_BRANCH: 500,
                 ISSUE393_BRANCH: 700, ISSUE382_BRANCH: 3200, ISSUE367_BRANCH: 2000}
-TOTAL_LIMITS[ISSUE468_BRANCH] = 1130
+TOTAL_LIMITS[ISSUE468_BRANCH] = 1500
 ROUTE_ISSUES[ISSUE459_BRANCH] = 459
 TOTAL_LIMITS[ISSUE459_BRANCH] = 4300
 ROUTE_ISSUES[ISSUE459_T03_BRANCH] = 459
@@ -600,11 +601,12 @@ TEXT_LIMITS = {
     ISSUE468_BRANCH: {
         "AGENTS.md": 70,
         "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md": 180,
-        "scripts/quality/check_phase1_closure_docs.py": 130,
-        "tests/unit/test_phase1_closure_docs.py": 180,
         "docs/governance/preflights/issue-468-scoped-merge-cleanup.json": 260,
         "docs/STATUS.md": 90,
+        "docs/agent-context/context-policy-manifest-v1.json": 200,
+        "scripts/quality/check_stage8_docs.py": 80,
         "scripts/quality/stage8_cut1_routes.py": 100,
+        "tests/unit/test_stage8_quality_gate.py": 160,
         "tests/unit/test_stage8_cut1_routes.py": 120,
     },
     ISSUE459_T05B_BRANCH: {path: 3600 for path in ROUTES[ISSUE459_T05B_BRANCH]},

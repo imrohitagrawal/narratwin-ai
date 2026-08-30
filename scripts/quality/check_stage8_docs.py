@@ -61,6 +61,7 @@ def issue324_allowed_files() -> set[str]:
     return set(json.loads((ROOT/"docs/governance/preflights/issue-324.json").read_text())["scope"]["required"])
 REQUIRED_FILES = [
     ".stage/current",".github/pull_request_template.md",".github/workflows/ci.yml",".github/workflows/security.yml",
+    "AGENTS.md",
     "Makefile", "README.md", "backend/app/main.py", "backend/app/stage4.py", "backend/app/stage6.py",
     "backend/Dockerfile",
     "frontend/Dockerfile", "frontend/package.json", "frontend/package-lock.json", "frontend/src/app/page.test.tsx",
@@ -75,6 +76,7 @@ REQUIRED_FILES = [
     "docs/RELEASE_READINESS_REVIEW.md","docs/REVIEW_RIGOR_RETROSPECTIVE.md","docs/RUNBOOK.md",
     "docs/SKILL_LOCK.md","docs/STAGE_ISSUE_PLAN.md","docs/STATUS.md","docs/THIRD_PARTY_NOTICES.md",
     "docs/TRACEABILITY.md","docs/demo/CONTROLLED_LOCAL_DEMO.md",
+    "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md",
 ];STAGE8_ALLOWED_FILES = set(REQUIRED_FILES) | {"tests/api/test_health_api.py","tests/unit/test_health_contract.py"}
 PROCESS_BRANCH_ALLOWED_FILES = {issue427_reset.BRANCH: set(issue427_reset.PATHS),
     issue431_authority_core.BRANCH: set(issue431_authority_core.PATHS),
@@ -140,6 +142,49 @@ def check_issue434_verifier(f:list[str])->None:
     f.extend(q+([]if not(r.returncode or s.returncode)else["I434 verify."]))
 def read(path:str)->str: return (ROOT/path).read_text(encoding="utf-8")
 def fail(message:str,failures:list[str])->None: failures.append(message)
+def markdown_heading_body(text: str, heading: str, level: int) -> str:
+    prefix = "#" * level
+    pattern = rf"^{prefix} {re.escape(heading)}\s*\n(?P<body>.*?)(?=^#{{1,{level}}} |\Z)"
+    match = re.search(pattern, text, flags=re.M | re.S)
+    return match.group("body") if match else ""
+def check_merge_closeout_contract(failures: list[str]) -> None:
+    contracts = (
+        (
+            "AGENTS.md",
+            markdown_heading_body(read("AGENTS.md"), "Non-Negotiable Workflow", 2),
+            (
+                "resolve scoped resource ownership before deletion",
+                "prohibit broad prune operations",
+                "before-and-after hashes and status counts",
+                "main...origin/main is 0 ahead / 0 behind",
+                "retained, deleted, and recoverability report",
+                "proof of absence",
+            ),
+        ),
+        (
+            "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md",
+            markdown_heading_body(
+                read("docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md"),
+                "Mandatory Merge-Closeout Checklist",
+                3,
+            ),
+            (
+                "completed implementation and verification worktrees",
+                "PR-owned Docker containers, images, volumes, and networks",
+                "PR-owned temporary clones, files, and isolated dependencies",
+                "do not run broad prune operations",
+                "hash staged, unstaged, and untracked state before and after preservation",
+                "verify `main...origin/main` is `0` ahead and `0` behind",
+                "retained, deleted, and recoverability",
+                "prove scoped resources are absent",
+            ),
+        ),
+    )
+    for path, body, markers in contracts:
+        normalized = re.sub(r"\s+", " ", body)
+        for marker in markers:
+            if marker not in normalized:
+                fail(f"Stage 8 merge-closeout contract missing {path} marker: {marker}.", failures)
 def changed_files_for_stage_scope() -> list[str]:
     head_result = run(["git", "rev-parse", "HEAD"])
     if head_result.returncode != 0 or not head_result.stdout.strip():
@@ -475,6 +520,7 @@ def check_docs(failures: list[str]) -> None:
 def main() -> int:
     failures: list[str] = []
     check_required_files(failures)
+    if not failures: check_merge_closeout_contract(failures)
     check_retrieval_strategy_v1_parity(ROOT, failures)
     check_evaluation_lineage_checksum_v2_contract(ROOT, failures)
     if not failures:

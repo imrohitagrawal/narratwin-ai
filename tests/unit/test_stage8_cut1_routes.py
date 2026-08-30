@@ -266,21 +266,23 @@ ISSUE459_T05B_LINE_CAPS = {path: 3600 for path in ISSUE459_T05B_EXPECTED}
 ISSUE468_EXPECTED = {
     "AGENTS.md",
     "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md",
-    "scripts/quality/check_phase1_closure_docs.py",
-    "tests/unit/test_phase1_closure_docs.py",
     "docs/governance/preflights/issue-468-scoped-merge-cleanup.json",
     "docs/STATUS.md",
+    "docs/agent-context/context-policy-manifest-v1.json",
+    "scripts/quality/check_stage8_docs.py",
     "scripts/quality/stage8_cut1_routes.py",
+    "tests/unit/test_stage8_quality_gate.py",
     "tests/unit/test_stage8_cut1_routes.py",
 }
 ISSUE468_LINE_CAPS = {
     "AGENTS.md": 70,
     "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md": 180,
-    "scripts/quality/check_phase1_closure_docs.py": 130,
-    "tests/unit/test_phase1_closure_docs.py": 180,
     "docs/governance/preflights/issue-468-scoped-merge-cleanup.json": 260,
     "docs/STATUS.md": 90,
+    "docs/agent-context/context-policy-manifest-v1.json": 200,
+    "scripts/quality/check_stage8_docs.py": 80,
     "scripts/quality/stage8_cut1_routes.py": 100,
+    "tests/unit/test_stage8_quality_gate.py": 160,
     "tests/unit/test_stage8_cut1_routes.py": 120,
 }
 
@@ -836,7 +838,7 @@ def test_issue468_route_preflight_and_budgets_are_exact() -> None:
     assert set(preflight["scope"]["required"]) == ISSUE468_EXPECTED
     assert set(preflight["scope"]["allowed_prefixes"]) == ISSUE468_EXPECTED
     assert routes.ROUTE_ISSUES[routes.ISSUE468_BRANCH] == 468
-    assert routes.TOTAL_LIMITS[routes.ISSUE468_BRANCH] == 1130
+    assert routes.TOTAL_LIMITS[routes.ISSUE468_BRANCH] == 1500
     assert routes.TEXT_LIMITS[routes.ISSUE468_BRANCH] == ISSUE468_LINE_CAPS
 
 
