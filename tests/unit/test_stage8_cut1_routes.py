@@ -297,6 +297,13 @@ ISSUE459_T05B_LINE_CAPS = {path: 3600 for path in ISSUE459_T05B_EXPECTED}
 
 EXPECTED = {
     "cut1-466-t05a-presenter-source-integrity": ISSUE466_EXPECTED,
+    "governance-473-cleanup-anchor-consumer-fixture": {
+        "tests/unit/test_guardrails_check.py",
+        "docs/governance/preflights/issue-473-cleanup-anchor-consumer.json",
+        "scripts/quality/stage8_cut1_routes.py",
+        "tests/unit/test_stage8_cut1_routes.py",
+        "docs/STATUS.md",
+    },
     "governance-471-cleanup-authority-anchor": {
         "docs/governance/preflights/issue-471-cleanup-authority-anchor.json",
         "docs/STATUS.md", "scripts/guardrails_check.py", "tests/unit/test_guardrails_check.py",
@@ -693,6 +700,26 @@ def test_issue471_cleanup_authority_anchor_route_is_exact() -> None:
         "docs/STATUS.md": 100,
         "scripts/guardrails_check.py": 260, "tests/unit/test_guardrails_check.py": 360,
         "scripts/quality/stage8_cut1_routes.py": 180, "tests/unit/test_stage8_cut1_routes.py": 260,
+    }
+
+    def good(args: list[str]) -> subprocess.CompletedProcess[str]:
+        return completed(args, out=base)
+
+    assert routes.route_base(good, branch) == base
+
+
+def test_issue473_cleanup_anchor_consumer_route_is_exact() -> None:
+    branch, base = routes.ISSUE473_BRANCH, routes.ISSUE473_BASE
+    expected = EXPECTED[branch]
+    assert routes.ROUTES[branch] == expected
+    assert routes.ROUTE_ISSUES[branch] == 473
+    assert routes.TOTAL_LIMITS[branch] == 580
+    assert routes.TEXT_LIMITS[branch] == {
+        "tests/unit/test_guardrails_check.py": 80,
+        "docs/governance/preflights/issue-473-cleanup-anchor-consumer.json": 180,
+        "scripts/quality/stage8_cut1_routes.py": 100,
+        "tests/unit/test_stage8_cut1_routes.py": 140,
+        "docs/STATUS.md": 80,
     }
 
     def good(args: list[str]) -> subprocess.CompletedProcess[str]:

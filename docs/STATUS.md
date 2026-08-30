@@ -45,6 +45,15 @@ authorize implementation.
 
 ## Current Baseline
 
+- Issue `#473` is the bounded test-fixture prerequisite for Issue `#468` / PR
+  `#470`. It makes the independently anchored Issue `#471` mutation fixture
+  preserve authority documents that already match the production anchor while
+  retaining pre-authority reconstruction coverage. It does not change the
+  cleanup authority, its hashes, product behavior, or any provider, audio,
+  credential, egress, spending, deployment, release, T05, or Cut 1 acceptance
+  authority. Review, hosted parity, non-author approval, merge, and closeout
+  remain required before PR `#470` can consume the correction.
+
 - Issue `#471` is the separate governance prerequisite for Issue `#468` / PR
   `#470`. It anchors the intended merge-cleanup authority hashes in the
   repository guardrail before PR `#470` may consume them, preventing a

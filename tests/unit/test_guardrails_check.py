@@ -83,6 +83,11 @@ ISSUE435_BRANCH = "governance-435-adversarial-convergence-framework-v1"
 
 
 def issue471_intended_cleanup_documents() -> dict[str, bytes]:
+    current = {
+        path: (ROOT / path).read_bytes() for path in guardrails.CLEANUP_AUTHORITY_SHA256
+    }
+    if guardrails.cleanup_authority_anchor_failures(current.__getitem__) == []:
+        return current
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8").replace(
         "   closeout instead of treating the merge as fully complete.\n",
         "   closeout instead of treating the merge as fully complete.\n"
@@ -138,6 +143,18 @@ def test_issue471_cleanup_authority_and_anchor_cannot_change_together() -> None:
         ["AGENTS.md", "scripts/guardrails_check.py"], documents.__getitem__
     ) == ["Merge-cleanup authority and its anchor require separate reviewed pull requests."]
     assert guardrails.cleanup_authority_change_failures(["docs/STATUS.md"], documents.__getitem__) == []
+
+
+def test_issue471_fixture_preserves_already_anchored_authority(
+    tmp_path: Path, monkeypatch: Any,
+) -> None:
+    intended = issue471_intended_cleanup_documents()
+    for path, payload in intended.items():
+        target = tmp_path / path
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(payload)
+    monkeypatch.setitem(issue471_intended_cleanup_documents.__globals__, "ROOT", tmp_path)
+    assert issue471_intended_cleanup_documents() == intended
 
 
 def _issue435_adapter_fixture(monkeypatch: Any, branch: str, returncode: int, stdout: bytes, event: str = "") -> list[object]:

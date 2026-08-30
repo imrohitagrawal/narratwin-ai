@@ -1,0 +1,35 @@
+{
+  "schema_version": "GovernancePreflightV1",
+  "issue_number": 473,
+  "branch": "governance-473-cleanup-anchor-consumer-fixture",
+  "objective": "From exact accepted main 55a0810e2ff327490d6dbadbf58580c06edef600 and route-freeze comment 5470431030, make the Issue #471 test fixture preserve already-anchored cleanup-authority bytes while retaining pre-authority synthesis coverage. Use exactly five paths with no more than 580 aggregate charged lines and per-path caps of 80, 180, 100, 140, and 80 in route order. Keep AGENTS.md, the playbook, scripts/guardrails_check.py, production anchor hashes, product/runtime code, provider behavior, audio/media, credentials, egress, spending, deployment, release, T05, and Cut 1 acceptance outside this route. Stop on base, path, budget, anchor, hosted, approval, ownership, or destructive-operation drift.",
+  "status_decision": "update-minimally",
+  "scope": {
+    "required": [
+      "tests/unit/test_guardrails_check.py",
+      "docs/governance/preflights/issue-473-cleanup-anchor-consumer.json",
+      "scripts/quality/stage8_cut1_routes.py",
+      "tests/unit/test_stage8_cut1_routes.py",
+      "docs/STATUS.md"
+    ],
+    "allowed_prefixes": [
+      "tests/unit/test_guardrails_check.py",
+      "docs/governance/preflights/issue-473-cleanup-anchor-consumer.json",
+      "scripts/quality/stage8_cut1_routes.py",
+      "tests/unit/test_stage8_cut1_routes.py",
+      "docs/STATUS.md"
+    ],
+    "forbidden": [
+      "AGENTS.md",
+      "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md",
+      "scripts/guardrails_check.py",
+      ".github/",
+      "backend/",
+      "frontend/",
+      "credentials",
+      "provider",
+      "audio",
+      "media"
+    ]
+  }
+}
