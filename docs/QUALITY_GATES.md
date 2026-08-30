@@ -1753,3 +1753,30 @@ bash scripts/ci/backend-test.sh
 Test WAV/SRT bytes are mutation stimuli only. This gate does not prove
 intelligibility, voice identity, real provider output, listening acceptance,
 T05 completion, T06 readiness, Cut 1 acceptance, release, or production.
+
+## Issue #466 T05A presenter-source integrity gate
+
+Exact branch `cut1-466-t05a-presenter-source-integrity` is pinned to merged
+T05B main `7eb4b99d7bc2bcf11cfc8c959baacb6cf3a21e81`. Its twelve-path route
+permits at most 2,000 charged text lines. Wrong base, missing or extra paths,
+authority/preflight drift, rename/copy drift, and budget overrun fail closed.
+
+The focused gate reproduces the previous Myra/Raj claim 014 false acceptance,
+then proves the exact Issue #466 owner body/span, shared-presenter proposition,
+code-owned predicate, runtime support, narration evidence, and coherent-rehash
+rejection:
+
+```text
+uv run pytest -q tests/unit/test_cut1_atomic_grounding.py tests/unit/test_cut1_narration.py
+uv run pytest -q tests/unit/test_stage8_cut1_routes.py
+NARRATWIN_POLICY_ONLY=1 make quality
+uv run ruff check backend tests
+uv run mypy backend tests
+make quality
+bash scripts/ci/dependency-security.sh
+bash scripts/ci/backend-test.sh
+```
+
+The ordinary Stage 4 eighteen-unsupported-claim RED, self-grounding rejection,
+T05B boundary, provider-disabled defaults, and Issue #368 audio ownership remain
+unchanged. Green Issue #466 evidence is not audio or Cut 1 acceptance evidence.

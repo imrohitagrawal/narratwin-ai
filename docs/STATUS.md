@@ -1777,3 +1777,18 @@ and exact SRT text/timing. Test fixtures are not acceptance evidence. Issue
 incident remains undisposed. No provider call, credential/environment lookup,
 egress, spend, synthesis, final audio/caption, T05 completion, T06 readiness,
 release, production, or Cut 1 acceptance is proven or authorized.
+
+Issue `#466` is the active pre-audio integrity correction from exact main
+`7eb4b99d7bc2bcf11cfc8c959baacb6cf3a21e81`. Independent reproduction showed
+that Myra and Raj claim 014 passed with `fact_013` even though its only owner
+source explicitly selected Meera. The finding is a `CRITICAL_BLOCKER` false
+acceptance, distinct from the historical Issue #368 wrong-style
+`REQUIRED_CONTRACT` failure.
+
+The Issue #466 body supplies the exact first-party authority span for all three
+controlled presenters. Preflight commit `7c359b5` and behavioral RED commit
+`e22151f` precede minimal source-contract correction `15230f2`. No new Issue
+#368 receipts are admissible until this route passes local and hosted gates,
+independent exact-head review, non-author approval, merge, and merged-main
+verification. Selected voice references remain immutable and screening-only;
+no full canonical narration audio currently exists.

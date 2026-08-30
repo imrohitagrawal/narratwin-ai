@@ -241,6 +241,34 @@ ISSUE459_T05A_LINE_CAPS = {
     "docs/STATUS.md": 120,
     "docs/TRACEABILITY.md": 100,
 }
+ISSUE466_EXPECTED = {
+    "docs/governance/preflights/issue-466.json",
+    "docs/governance/cut1-project-facts-v1.json",
+    "backend/app/cut1_grounding.py",
+    "tests/unit/test_cut1_atomic_grounding.py",
+    "tests/unit/test_cut1_narration.py",
+    "docs/ADR/0072-cut1-presenter-source-integrity.md",
+    "scripts/quality/stage8_cut1_routes.py",
+    "tests/unit/test_stage8_cut1_routes.py",
+    "docs/QUALITY_GATES.md",
+    "docs/STAGE_ISSUE_PLAN.md",
+    "docs/STATUS.md",
+    "docs/TRACEABILITY.md",
+}
+ISSUE466_LINE_CAPS = {
+    "docs/governance/preflights/issue-466.json": 320,
+    "docs/governance/cut1-project-facts-v1.json": 220,
+    "backend/app/cut1_grounding.py": 320,
+    "tests/unit/test_cut1_atomic_grounding.py": 520,
+    "tests/unit/test_cut1_narration.py": 240,
+    "docs/ADR/0072-cut1-presenter-source-integrity.md": 220,
+    "scripts/quality/stage8_cut1_routes.py": 140,
+    "tests/unit/test_stage8_cut1_routes.py": 240,
+    "docs/QUALITY_GATES.md": 120,
+    "docs/STAGE_ISSUE_PLAN.md": 120,
+    "docs/STATUS.md": 180,
+    "docs/TRACEABILITY.md": 120,
+}
 ISSUE459_T05B_EXPECTED = {
     ".gitleaksignore",
     "docs/governance/preflights/issue-459-t05b.json",
@@ -266,6 +294,7 @@ ISSUE459_T05B_LINE_CAPS = {path: 3600 for path in ISSUE459_T05B_EXPECTED}
 
 
 EXPECTED = {
+    "cut1-466-t05a-presenter-source-integrity": ISSUE466_EXPECTED,
     "lane-a-cut1-459-controlled-presenter": ISSUE459_EXPECTED,
     "stage8-459-t03-presenter-derivatives": ISSUE459_T03_EXPECTED,
     "stage8-459-t05a-grounded-narration-handoff": ISSUE459_T05A_EXPECTED,
@@ -1686,6 +1715,40 @@ def test_issue459_t05a_rejects_authority_drift_and_rename(
     assert failures == ["Issue #459 route forbids deleted, renamed, or copied paths."]
 
 
+def test_issue466_route_freezes_source_authority_scope_and_budgets() -> None:
+    branch = routes.ISSUE466_BRANCH
+    assert branch == "cut1-466-t05a-presenter-source-integrity"
+    assert routes.ISSUE466_BASE == "7eb4b99d7bc2bcf11cfc8c959baacb6cf3a21e81"
+    assert routes.ISSUE466_AUTHORITY_REVISION == "issue:466@2026-08-30T09:44:54Z"
+    assert routes.ISSUE466_AUTHORITY_SHA256 == (
+        "3e4c9c483bdea609be70c46863a36f64a1900cac058615a22e213ea218c9212c"
+    )
+    assert routes.ISSUE466_SPAN_SHA256 == (
+        "6ed0e9270ca03d6940ecc11e3e174d8024a54aba306f18d5b8eedb1ed9241396"
+    )
+    assert routes.ROUTES[branch] == ISSUE466_EXPECTED
+    assert routes.ROUTE_ISSUES[branch] == 466
+    assert routes.TOTAL_LIMITS[branch] == 2000
+    assert routes.TEXT_LIMITS[branch] == ISSUE466_LINE_CAPS
+
+
+def test_issue466_requires_exact_main_branch_point() -> None:
+    base = routes.ISSUE466_BASE
+
+    def good(args: list[str]) -> subprocess.CompletedProcess[str]:
+        if args[:2] == ["git", "rev-parse"]:
+            return completed(args, out=base + "\n")
+        assert args[:2] == ["git", "merge-base"]
+        return completed(args, out=base + "\n")
+
+    assert routes.route_base(good, routes.ISSUE466_BRANCH) == base
+    def broken(args: list[str]) -> subprocess.CompletedProcess[str]:
+        return completed(args, out="0" * 40 + "\n")
+
+    error = pytest.raises(RuntimeError, routes.route_base, broken, routes.ISSUE466_BRANCH)
+    assert "Issue #466 fixed base" in str(error.value)
+
+
 def test_issue459_t05b_route_freezes_authority_scope_and_budgets() -> None:
     branch = routes.ISSUE459_T05B_BRANCH
     assert branch == "stage8-459-t05b-audio-caption-authority"
@@ -2126,6 +2189,8 @@ def test_exact_route_completeness_lookalikes_and_budgets(monkeypatch: Any) -> No
             else branch.replace("docs", "docѕ")
             if "docs" in branch
             else branch.replace("lane", "lanе")
+            if "lane" in branch
+            else branch.replace("cut1", "cutі")
         )
         for lookalike in (branch + "-retry", branch.upper(), confusable):
             failures = []
