@@ -2268,6 +2268,10 @@ def test_issue479_route_freezes_t05c_authority_scope_and_budgets() -> None:
     assert routes.ISSUE479_BUDGET_SHA256 == (
         "6e71a7301a9e9f2eb7fb251a4d38b37f0101804f8cdfddd68f36f87d9961223e"
     )
+    assert routes.ISSUE479_TRANSITION_COMMENT == "5484097802"
+    assert routes.ISSUE479_TRANSITION_SHA256 == (
+        "3f1dac2e24bb52caea5db6cf8ea1a224a7f776277af490cee4189595c316bf57"
+    )
     assert routes.ROUTES[branch] == ISSUE479_EXPECTED
     assert routes.ROUTE_ISSUES[branch] == 479
     assert routes.TOTAL_LIMITS[branch] == 2600
@@ -2287,6 +2291,43 @@ def test_issue479_route_freezes_t05c_authority_scope_and_budgets() -> None:
         routes.ISSUE479_BUDGET_SHA256,
     }
     assert all(value in preflight["objective"] for value in authority)
+
+
+def test_issue479_requires_exact_reviewed_main_transition() -> None:
+    original = "98fa8b41ccea68c840b5462bd5377057f4a3eb14"
+    frozen = "773ba43e870a1a18785829c3093d8a74f4416078"
+    transition_base = "9b5472a53844495a9d54637167ce48a33a572e11"
+    transition_merge = "56f92e969c8de3d39bd452e6917cb8017a6abf98"
+    assert routes.ISSUE479_BASE == original
+    assert routes.ISSUE479_FROZEN_HEAD == frozen
+    assert routes.ISSUE479_TRANSITION_BASE == transition_base
+    assert routes.ISSUE479_TRANSITION_MERGE == transition_merge
+
+    def good(args: list[str]) -> subprocess.CompletedProcess[str]:
+        if args[:2] == ["git", "rev-parse"]:
+            value = transition_base if args[2] == "origin/main^{commit}" else args[2].removesuffix("^{commit}")
+            return completed(args, out=value + "\n")
+        if args[:3] == ["git", "merge-base", "--is-ancestor"]:
+            return completed(args)
+        if args[:4] == ["git", "show", "-s", "--format=%P"]:
+            return completed(args, out=f"{frozen} {transition_base}\n")
+        raise AssertionError(args)
+
+    assert routes.route_base(good, routes.ISSUE479_BRANCH) == transition_base
+    for rejected in ("object", "current-main", "ancestry", "parents"):
+        def broken(args: list[str], *, rejected: str = rejected) -> subprocess.CompletedProcess[str]:
+            if rejected == "object" and args[:2] == ["git", "rev-parse"] and args[2].startswith(frozen):
+                return completed(args, code=128)
+            if rejected == "current-main" and args[:2] == ["git", "rev-parse"] and args[2].startswith("origin/main"):
+                return completed(args, out="0" * 40 + "\n")
+            if rejected == "ancestry" and args[:3] == ["git", "merge-base", "--is-ancestor"]:
+                return completed(args, code=1)
+            if rejected == "parents" and args[:4] == ["git", "show", "-s", "--format=%P"]:
+                return completed(args, out=f"{transition_base} {frozen}\n")
+            return good(args)
+
+        error = pytest.raises(RuntimeError, routes.route_base, broken, routes.ISSUE479_BRANCH)
+        assert "Issue #479 reviewed transition" in str(error.value)
 
 
 @pytest.mark.parametrize(
