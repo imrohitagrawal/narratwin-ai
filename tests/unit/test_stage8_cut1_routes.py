@@ -324,6 +324,20 @@ ISSUE475_LINE_CAPS = {
     "docs/STATUS.md": 100,
     "docs/TRACEABILITY.md": 100,
 }
+ISSUE478_EXPECTED = {
+    "docs/STATUS.md",
+    "docs/governance/preflights/issue-478.json",
+    "scripts/quality/stage8_cut1_routes.py",
+    "tests/unit/test_stage8_cut1_routes.py",
+    "tests/unit/test_stage8_quality_gate.py",
+}
+ISSUE478_LINE_CAPS = {
+    "docs/STATUS.md": 100,
+    "docs/governance/preflights/issue-478.json": 220,
+    "scripts/quality/stage8_cut1_routes.py": 180,
+    "tests/unit/test_stage8_cut1_routes.py": 240,
+    "tests/unit/test_stage8_quality_gate.py": 60,
+}
 ISSUE468_EXPECTED = {
     "AGENTS.md",
     "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md",
@@ -373,6 +387,7 @@ def remove_cleanup_marker(text: str, marker: str) -> str:
 
 
 EXPECTED = {
+    "cut1-process-478-pr477-status-closeout": ISSUE478_EXPECTED,
     "cut1-475-t05b-runtime-receipt-binding": ISSUE475_EXPECTED,
     "governance-468-scoped-merge-cleanup": ISSUE468_EXPECTED,
     "cut1-466-t05a-presenter-source-integrity": ISSUE466_EXPECTED,
@@ -2149,6 +2164,73 @@ def test_issue475_route_freezes_authority_scope_and_budgets() -> None:
     assert routes.TOTAL_LIMITS[branch] == 1800
     assert routes.TEXT_LIMITS[branch] == ISSUE475_LINE_CAPS
     assert branch in stage8.EFFECTIVE_STAGE8_ROUTES
+
+
+def test_issue478_route_freezes_corrected_authority_scope_and_budgets() -> None:
+    branch = "cut1-process-478-pr477-status-closeout"
+    assert getattr(routes, "ISSUE478_BRANCH", None) == branch
+    assert routes.ISSUE478_BASE == "81c1884157502e8a911df63c1d9d0a1704964d63"
+    assert routes.ROUTES[branch] == ISSUE478_EXPECTED
+    assert routes.ROUTE_ISSUES[branch] == 478
+    assert routes.TOTAL_LIMITS[branch] == 800
+    assert routes.TEXT_LIMITS[branch] == ISSUE478_LINE_CAPS
+    assert branch in stage8.EFFECTIVE_STAGE8_ROUTES
+    preflight = json.loads((REPO / "docs/governance/preflights/issue-478.json").read_text())
+    assert preflight["issue_number"] == 478 and preflight["branch"] == branch
+    assert set(preflight["scope"]["required"]) == ISSUE478_EXPECTED
+    assert set(preflight["scope"]["allowed_prefixes"]) == ISSUE478_EXPECTED
+    assert {routes.ISSUE478_BASE, "5473694821", "5473718767"} <= set(preflight["objective"].split())
+
+
+def test_issue478_rejects_wrong_base_and_preflight_bindings(
+    monkeypatch: Any, tmp_path: Path,
+) -> None:
+    branch = routes.ISSUE478_BRANCH
+    base = routes.ISSUE478_BASE
+    good = lambda args: completed(args, out=base + "\n")
+    assert routes.route_base(good, branch) == base
+    for call in range(3):
+        count = 0
+        def broken(args: list[str], *, rejected: int = call) -> subprocess.CompletedProcess[str]:
+            nonlocal count
+            count += 1
+            return completed(args, out=("0" * 40 if count == rejected + 1 else base) + "\n")
+        assert "Issue #478 fixed base" in str(pytest.raises(RuntimeError, routes.route_base, broken, branch).value)
+    artifact = json.loads((REPO / "docs/governance/preflights/issue-478.json").read_text())
+    monkeypatch.setattr(routes, "route_base", lambda *_: base)
+    monkeypatch.setattr(routes, "route_text_charges", lambda *_: (0, {}))
+    target = tmp_path / "docs/governance/preflights/issue-478.json"
+    target.parent.mkdir(parents=True)
+    cases = (("branch", branch + "-retry", "BRANCH_MISMATCH"),
+             ("issue_number", 479, "ISSUE_MISMATCH"))
+    for field, value, code in cases:
+        drifted = copy.deepcopy(artifact); drifted[field] = value
+        target.write_text(json.dumps(drifted)); failures: list[str] = []
+        routes.check_exact_route(tmp_path, lambda _: completed([]), branch, ISSUE478_EXPECTED, failures)
+        assert any(code in failure for failure in failures)
+    drifted = copy.deepcopy(artifact)
+    drifted["scope"]["required"][0] = "wrong/path.md"
+    target.write_text(json.dumps(drifted)); failures = []
+    routes.check_exact_route(tmp_path, lambda _: completed([]), branch, ISSUE478_EXPECTED, failures)
+    assert any("SCOPE." in failure for failure in failures)
+
+
+def test_issue478_rejects_missing_and_budget_drift(monkeypatch: Any) -> None:
+    branch = routes.ISSUE478_BRANCH
+    monkeypatch.setattr(routes, "route_base", lambda *_: routes.ISSUE478_BASE)
+    missing = sorted(ISSUE478_EXPECTED)[0]
+    monkeypatch.setattr(routes, "route_text_charges", lambda *_: (0, {}))
+    failures: list[str] = []
+    routes.check_exact_route(REPO, lambda _: completed([]), branch, ISSUE478_EXPECTED - {missing}, failures)
+    assert failures == [f"Issue #478 route is missing required path: {missing}"]
+    path = "docs/STATUS.md"
+    for total, charges, expected in (
+        (801, {}, "Issue #478 charge 801 exceeds 800."),
+        (1, {path: 101}, f"Issue #478 charge for {path} exceeds 100."),
+    ):
+        monkeypatch.setattr(routes, "route_text_charges", lambda *_, values=(total, charges): values)
+        failures = []; routes.check_exact_route(REPO, lambda _: completed([]), branch, ISSUE478_EXPECTED, failures)
+        assert failures == [expected]
 
 
 def test_issue475_requires_exact_main_branch_point() -> None:
