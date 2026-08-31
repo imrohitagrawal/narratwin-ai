@@ -338,6 +338,40 @@ ISSUE478_LINE_CAPS = {
     "tests/unit/test_stage8_cut1_routes.py": 240,
     "tests/unit/test_stage8_quality_gate.py": 60,
 }
+ISSUE479_EXPECTED = {
+    "docs/governance/preflights/issue-479.json",
+    "backend/app/cut1_listening.py",
+    "tests/unit/test_cut1_listening.py",
+    "scripts/quality/stage8_cut1_routes.py",
+    "tests/unit/test_stage8_cut1_routes.py",
+    "tests/unit/test_stage8_quality_gate.py",
+    "docs/ADR/0073-cut1-exact-hash-listening-authority.md",
+    "docs/API_CONTRACT.md",
+    "docs/DATA_MODEL.md",
+    "docs/SECURITY_AND_PRIVACY.md",
+    "docs/OBSERVABILITY_AND_COST.md",
+    "docs/QUALITY_GATES.md",
+    "docs/STAGE_ISSUE_PLAN.md",
+    "docs/STATUS.md",
+    "docs/TRACEABILITY.md",
+}
+ISSUE479_LINE_CAPS = {
+    "docs/governance/preflights/issue-479.json": 220,
+    "backend/app/cut1_listening.py": 500,
+    "tests/unit/test_cut1_listening.py": 650,
+    "scripts/quality/stage8_cut1_routes.py": 160,
+    "tests/unit/test_stage8_cut1_routes.py": 260,
+    "tests/unit/test_stage8_quality_gate.py": 60,
+    "docs/ADR/0073-cut1-exact-hash-listening-authority.md": 140,
+    "docs/API_CONTRACT.md": 80,
+    "docs/DATA_MODEL.md": 80,
+    "docs/SECURITY_AND_PRIVACY.md": 80,
+    "docs/OBSERVABILITY_AND_COST.md": 60,
+    "docs/QUALITY_GATES.md": 80,
+    "docs/STAGE_ISSUE_PLAN.md": 80,
+    "docs/STATUS.md": 100,
+    "docs/TRACEABILITY.md": 50,
+}
 ISSUE468_EXPECTED = {
     "AGENTS.md",
     "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md",
@@ -387,6 +421,7 @@ def remove_cleanup_marker(text: str, marker: str) -> str:
 
 
 EXPECTED = {
+    "cut1-process-479-t05c-listening-authority": ISSUE479_EXPECTED,
     "cut1-process-478-pr477-status-closeout": ISSUE478_EXPECTED,
     "cut1-475-t05b-runtime-receipt-binding": ISSUE475_EXPECTED,
     "governance-468-scoped-merge-cleanup": ISSUE468_EXPECTED,
@@ -2194,6 +2229,37 @@ def test_issue478_route_freezes_corrected_authority_scope_and_budgets() -> None:
         routes.ISSUE478_BRANCH_SHA256,
         routes.ISSUE478_REVIEW_COMMENT,
         routes.ISSUE478_REVIEW_SHA256,
+    }
+    assert all(value in preflight["objective"] for value in authority)
+
+
+def test_issue479_route_freezes_t05c_authority_scope_and_budgets() -> None:
+    branch = "cut1-process-479-t05c-listening-authority"
+    assert getattr(routes, "ISSUE479_BRANCH", None) == branch
+    assert routes.ISSUE479_BASE == "98fa8b41ccea68c840b5462bd5377057f4a3eb14"
+    assert routes.ISSUE479_ROUTE_COMMENT == "5481284482"
+    assert routes.ISSUE479_ROUTE_SHA256 == (
+        "bc878f9886a1decc2fbab102d1d9be7e8e23ab870a9850d486445564813dc2b4"
+    )
+    assert routes.ISSUE479_CLARIFICATION_COMMENT == "5473637391"
+    assert routes.ISSUE479_CLARIFICATION_SHA256 == (
+        "9a08ee1c2ce085cec47ca3981ccfa8a9e79c700b75fc8ab1f66b301417e1a05f"
+    )
+    assert routes.ROUTES[branch] == ISSUE479_EXPECTED
+    assert routes.ROUTE_ISSUES[branch] == 479
+    assert routes.TOTAL_LIMITS[branch] == 2600
+    assert routes.TEXT_LIMITS[branch] == ISSUE479_LINE_CAPS
+    assert branch in stage8.EFFECTIVE_STAGE8_ROUTES
+    preflight = json.loads((REPO / "docs/governance/preflights/issue-479.json").read_text())
+    assert preflight["issue_number"] == 479 and preflight["branch"] == branch
+    assert set(preflight["scope"]["required"]) == ISSUE479_EXPECTED
+    assert set(preflight["scope"]["allowed_prefixes"]) == ISSUE479_EXPECTED
+    authority = {
+        routes.ISSUE479_BASE,
+        routes.ISSUE479_ROUTE_COMMENT,
+        routes.ISSUE479_ROUTE_SHA256,
+        routes.ISSUE479_CLARIFICATION_COMMENT,
+        routes.ISSUE479_CLARIFICATION_SHA256,
     }
     assert all(value in preflight["objective"] for value in authority)
 
