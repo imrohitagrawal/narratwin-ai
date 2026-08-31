@@ -1696,6 +1696,36 @@ def route_binary_sizes(root: Path, paths: set[str], encoding: str | None = None)
     return sizes
 
 
+def route_text_integrity(root: Path, run: Callable[[list[str]], Any], paths: set[str]) -> None:
+    route_binary_sizes(root, paths, "utf-8")
+    ordered = sorted(paths)
+    commands = (
+        (["git", "ls-tree", "-r", "-z", "HEAD", "--", *ordered],
+         r"([0-9]{6}) (blob|commit) ([0-9a-f]{40,64})\t(.+)", "HEAD"),
+        (["git", "ls-files", "--stage", "-z", "--", *ordered],
+         r"([0-9]{6}) ([0-9a-f]{40,64}) ([0-3])\t(.+)", "index"),
+    )
+    for command, pattern, label in commands:
+        result = run(command)
+        if result.returncode:
+            raise RuntimeError(result.stderr.strip() or f"Route text {label}-mode evidence failed.")
+        found: set[str] = set()
+        for record in parse_paths_z(str(result.stdout)):
+            match = re.fullmatch(pattern, record)
+            if match is None:
+                raise RuntimeError(f"Route text {label}-mode evidence is malformed.")
+            groups = match.groups()
+            mode, path = groups[0], groups[3]
+            kind = groups[1] if label == "HEAD" else groups[2]
+            if path not in paths or path in found:
+                raise RuntimeError(f"Route text {label}-mode evidence has an unexpected path.")
+            if mode != "100644" or kind not in {"blob", "0"}:
+                raise RuntimeError(f"Route text must be an ordinary tracked file: {path}")
+            found.add(path)
+        if found != paths:
+            raise RuntimeError(f"Route text {label}-mode evidence is missing: {sorted(paths - found)[0]}")
+
+
 def issue459_snapshot_failures(root: Path, commit: str, sources: dict[str, str], label: str) -> list[str]:
     try:
         text = (root / "docs/governance/ISSUE_459_CONTROLLED_PRESENTER_PREFLIGHT_V1.md").read_text(encoding="utf-8")
@@ -2082,7 +2112,9 @@ def check_exact_route(
             f"Issue #{issue} charge for {path} exceeds {limit}."
             for path, limit in TEXT_LIMITS[branch].items() if charges.get(path, 0) > limit
         )
-        if branch == ISSUE459_BRANCH:
+        if branch == ISSUE482_BRANCH:
+            route_text_integrity(root, run, files)
+        elif branch == ISSUE459_BRANCH:
             sizes = route_binary_sizes(root, files, "utf-8")
             failures.extend(
                 f"Issue #459 file {path} must be smaller than {limit} bytes."

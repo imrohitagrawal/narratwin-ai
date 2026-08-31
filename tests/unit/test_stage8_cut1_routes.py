@@ -2255,11 +2255,19 @@ def _issue482_route_root(tmp_path: Path) -> Path:
     return tmp_path
 
 
-def _issue482_mode_runner(gitlink: str | None = None) -> Any:
+def _issue482_mode_runner(gitlink: tuple[str, str] | None = None) -> Any:
     def run(args: list[str]) -> subprocess.CompletedProcess[str]:
+        if args[:2] == ["git", "ls-tree"]:
+            rows = "".join(
+                f"{'160000 commit' if gitlink == ('HEAD', path) else '100644 blob'} "
+                f"{'0' * 40}\t{path}\0"
+                for path in sorted(ISSUE482_EXPECTED)
+            )
+            return completed(args, out=rows)
         if args[:3] == ["git", "ls-files", "--stage"]:
             rows = "".join(
-                f"{'160000' if path == gitlink else '100644'} {'0' * 40} 0\t{path}\0"
+                f"{'160000' if gitlink == ('index', path) else '100644'} "
+                f"{'0' * 40} 0\t{path}\0"
                 for path in sorted(ISSUE482_EXPECTED)
             )
             return completed(args, out=rows)
@@ -2268,11 +2276,21 @@ def _issue482_mode_runner(gitlink: str | None = None) -> Any:
     return run
 
 
-def test_issue482_rejects_symlink_owned_path(monkeypatch: Any, tmp_path: Path) -> None:
+@pytest.mark.parametrize(
+    ("kind", "expected"),
+    (("symlink", "regular non-symlink"), ("directory", "regular non-symlink"),
+     ("missing", "is missing")),
+)
+def test_issue482_rejects_missing_or_nonregular_owned_path(
+    monkeypatch: Any, tmp_path: Path, kind: str, expected: str,
+) -> None:
     root = _issue482_route_root(tmp_path)
     target = root / "docs/STATUS.md"
     target.unlink()
-    target.symlink_to(REPO / "docs/STATUS.md")
+    if kind == "symlink":
+        target.symlink_to(REPO / "docs/STATUS.md")
+    elif kind == "directory":
+        target.mkdir()
     monkeypatch.setattr(routes, "route_base", lambda *_: routes.ISSUE482_BASE)
     monkeypatch.setattr(routes, "route_text_charges", lambda *_: (0, {}))
     failures: list[str] = []
@@ -2280,16 +2298,19 @@ def test_issue482_rejects_symlink_owned_path(monkeypatch: Any, tmp_path: Path) -
         root, _issue482_mode_runner(), routes.ISSUE482_BRANCH,
         ISSUE482_EXPECTED, failures,
     )
-    assert any("regular non-symlink" in failure for failure in failures)
+    assert any(expected in failure for failure in failures)
 
 
-def test_issue482_rejects_staged_gitlink(monkeypatch: Any, tmp_path: Path) -> None:
+@pytest.mark.parametrize("source", ("HEAD", "index"))
+def test_issue482_rejects_gitlink(
+    monkeypatch: Any, tmp_path: Path, source: str,
+) -> None:
     root = _issue482_route_root(tmp_path)
     monkeypatch.setattr(routes, "route_base", lambda *_: routes.ISSUE482_BASE)
     monkeypatch.setattr(routes, "route_text_charges", lambda *_: (0, {}))
     failures: list[str] = []
     routes.check_exact_route(
-        root, _issue482_mode_runner("uv.lock"), routes.ISSUE482_BRANCH,
+        root, _issue482_mode_runner((source, "uv.lock")), routes.ISSUE482_BRANCH,
         ISSUE482_EXPECTED, failures,
     )
     assert any("ordinary tracked file" in failure for failure in failures)
@@ -2853,6 +2874,7 @@ def test_legacy_checker_caps_are_unchanged_and_executable() -> None:
 def test_exact_route_completeness_lookalikes_and_budgets(monkeypatch: Any) -> None:
     monkeypatch.setattr(routes, "route_base", lambda *_: "base")
     monkeypatch.setattr(routes, "route_text_charges", lambda *_: (0, {}))
+    monkeypatch.setattr(routes, "route_text_integrity", lambda *_: None)
     monkeypatch.setattr(routes, "route_binary_sizes", lambda *_: {path: 1 for path in routes.ISSUE383_BINARY_FILES | set(routes.ISSUE452_BYTE_LIMITS) | set(routes.ISSUE459_BYTE_LIMITS) | set(routes.ISSUE459_T03_BYTE_LIMITS)})
     for branch, paths in EXPECTED.items():
         failures: list[str] = []
@@ -2890,6 +2912,7 @@ def test_exact_route_completeness_lookalikes_and_budgets(monkeypatch: Any) -> No
 def test_per_route_aggregate_per_file_and_binary_caps(monkeypatch: Any) -> None:
     monkeypatch.setattr(routes, "route_base", lambda *_: "base")
     monkeypatch.setattr(routes, "route_binary_sizes", lambda *_: {path: 1 for path in routes.ISSUE383_BINARY_FILES | set(routes.ISSUE452_BYTE_LIMITS) | set(routes.ISSUE459_BYTE_LIMITS) | set(routes.ISSUE459_T03_BYTE_LIMITS)})
+    monkeypatch.setattr(routes, "route_text_integrity", lambda *_: None)
     for branch, limit in routes.TOTAL_LIMITS.items():
         monkeypatch.setattr(routes, "route_text_charges", lambda *_, value=limit: (value + 1, {}))
         failures: list[str] = []
