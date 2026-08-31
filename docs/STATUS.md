@@ -1823,12 +1823,20 @@ identical at `468276a4a1e8f197dafcfb26b356f5cb45f5cf08`. Post-merge run
 shared-presenter source proposition and rejects contradictory or coherently
 rehashed source state. It does not synthesize or accept audio.
 
-Issue `#475` is the active T05B integration correction from exact main
-`fb963f92057b8ccd5c0c070a3c9b5406ee9e884f`. It admits the genuine bare
-presenter-binding digest, preserves the byte-identical public Cut 1
-configuration checksum, and separately binds the hosted provider-runtime
-checksum through authority/state/commitment/manifest v2; the configuration
-schema remains v1 and local/mock runtime identity is explicit `null`. RED/GREEN
-work is local-only: zero provider call, credential read, egress, spend,
-synthesis, audio generation, or listening acceptance. Issue `#475` is not
-merged; T05 remains incomplete and T06 remains blocked.
+Issue `#475` is closed. PR `#477` received eligible non-author approval at exact
+head `88c7db93fd25a47dcf08d0afc7551f70c70fd533` from accepted base
+`fb963f92057b8ccd5c0c070a3c9b5406ee9e884f`, then merged as
+`81c1884157502e8a911df63c1d9d0a1704964d63`. Approved-head and merged-tree
+continuity is exact at `2fbd7e474caa536809635789e4a13dd8a27388bb`.
+Post-merge `main` run `33356066771` passed. Closeout comment `5473594761`
+records scoped branch, worktree, replay-directory, and temporary-file cleanup;
+retained shared Docker images and unrelated dirty work; and local
+`main...origin/main` at zero ahead and zero behind.
+
+The merge establishes only the T05B receipt/runtime-configuration binding.
+Hosted providers remain disabled by default; no provider call, credential use,
+narration egress, spend, synthesis, audio generation, or listening acceptance
+occurred. T05 remains incomplete because no admissible 90–120 second full
+narration audio or exact-hash human listening acceptance exists, and T06 remains
+blocked. No deployment, publication, release, production-readiness, production,
+or Cut 1 acceptance claim is proven or authorized.
