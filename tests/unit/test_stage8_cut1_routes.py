@@ -2247,6 +2247,54 @@ def test_issue482_route_freezes_dependency_scope_and_budgets() -> None:
     ))
 
 
+def _issue482_route_root(tmp_path: Path) -> Path:
+    for relative in ISSUE482_EXPECTED:
+        target = tmp_path / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(REPO / relative, target)
+    return tmp_path
+
+
+def _issue482_mode_runner(gitlink: str | None = None) -> Any:
+    def run(args: list[str]) -> subprocess.CompletedProcess[str]:
+        if args[:3] == ["git", "ls-files", "--stage"]:
+            rows = "".join(
+                f"{'160000' if path == gitlink else '100644'} {'0' * 40} 0\t{path}\0"
+                for path in sorted(ISSUE482_EXPECTED)
+            )
+            return completed(args, out=rows)
+        return completed(args)
+
+    return run
+
+
+def test_issue482_rejects_symlink_owned_path(monkeypatch: Any, tmp_path: Path) -> None:
+    root = _issue482_route_root(tmp_path)
+    target = root / "docs/STATUS.md"
+    target.unlink()
+    target.symlink_to(REPO / "docs/STATUS.md")
+    monkeypatch.setattr(routes, "route_base", lambda *_: routes.ISSUE482_BASE)
+    monkeypatch.setattr(routes, "route_text_charges", lambda *_: (0, {}))
+    failures: list[str] = []
+    routes.check_exact_route(
+        root, _issue482_mode_runner(), routes.ISSUE482_BRANCH,
+        ISSUE482_EXPECTED, failures,
+    )
+    assert any("regular non-symlink" in failure for failure in failures)
+
+
+def test_issue482_rejects_staged_gitlink(monkeypatch: Any, tmp_path: Path) -> None:
+    root = _issue482_route_root(tmp_path)
+    monkeypatch.setattr(routes, "route_base", lambda *_: routes.ISSUE482_BASE)
+    monkeypatch.setattr(routes, "route_text_charges", lambda *_: (0, {}))
+    failures: list[str] = []
+    routes.check_exact_route(
+        root, _issue482_mode_runner("uv.lock"), routes.ISSUE482_BRANCH,
+        ISSUE482_EXPECTED, failures,
+    )
+    assert any("ordinary tracked file" in failure for failure in failures)
+
+
 @pytest.mark.parametrize(
     "name_status",
     (
