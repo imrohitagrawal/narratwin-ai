@@ -567,6 +567,27 @@ def test_security_wrapper_is_fail_closed_without_advisory_suppression() -> None:
     assert "--json-output \"${SCAN_RESULT}\"" in semgrep_wrapper
 
 
+def test_issue482_lock_refresh_is_exact_and_removes_vulnerable_versions() -> None:
+    packages = {
+        row["name"]: row["version"]
+        for row in tomllib.loads((ROOT / "uv.lock").read_text(encoding="utf-8"))["package"]
+    }
+    assert {
+        name: packages[name]
+        for name in ("aiohttp", "datasets", "setuptools", "torch", "cuda-toolkit")
+    } == {
+        "aiohttp": "3.14.3",
+        "datasets": "5.0.1",
+        "setuptools": "84.0.0",
+        "torch": "2.13.0",
+        "cuda-toolkit": "13.0.3.0",
+    }
+    assert not {
+        ("aiohttp", "3.14.1"), ("datasets", "5.0.0"),
+        ("setuptools", "81.0.0"), ("torch", "2.12.1"),
+    } & set(packages.items())
+
+
 def test_runtime_bypass_validator_covers_the_actual_audit_wrapper(tmp_path: Path) -> None:
     for relative_path in (
         "scripts/ci/dependency-audit.sh",
