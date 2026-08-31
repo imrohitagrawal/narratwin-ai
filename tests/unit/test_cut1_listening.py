@@ -4,7 +4,7 @@ import ast
 import hashlib
 from dataclasses import replace
 from pathlib import Path
-from typing import Any
+from typing import Any, NoReturn, cast
 
 import pytest
 
@@ -21,6 +21,7 @@ from backend.app.cut1_listening import (
     Cut1ListeningAuthorityService,
     Cut1ListeningDecision,
     Cut1ListeningDecisionCommitment,
+    Cut1ListeningDecisionManifest,
     ListeningAuthorityError,
     build_listening_commitment_manifest,
     decision_checksum,
@@ -146,7 +147,7 @@ def commitment_manifest(
     decisions: tuple[Cut1ListeningDecision, ...],
     *,
     revoked_ids: tuple[str, ...] = (),
-):
+) -> Cut1ListeningDecisionManifest:
     commitments = tuple(
         Cut1ListeningDecisionCommitment(
             presenter_id=value.binding.presenter_id,
@@ -279,7 +280,8 @@ def test_rejects_each_stale_or_substituted_t05b_binding(field: str) -> None:
     current = audio_set()
     decisions = accepted_decisions(current)
     first = decisions[0]
-    changed = replace(first.binding, **{field: checksum(f"mutated-{field}")})
+    mutation = cast(Any, {field: checksum(f"mutated-{field}")})
+    changed = replace(first.binding, **mutation)
     candidate = (rehash(replace(first, binding=changed)), *decisions[1:])
     assert_code(
         "AUDIO_AUTHORITY_MISMATCH",
@@ -369,7 +371,7 @@ def test_fails_closed_when_trusted_commitment_is_unavailable() -> None:
     current = audio_set()
     decisions = accepted_decisions(current)
 
-    def unavailable():
+    def unavailable() -> NoReturn:
         raise RuntimeError("offline registry")
 
     authority_service = Cut1ListeningAuthorityService(
@@ -388,7 +390,7 @@ def test_fails_closed_for_wrong_resolver_types() -> None:
     decisions = accepted_decisions(current)
     manifest = commitment_manifest(current, decisions)
     wrong_audio = Cut1ListeningAuthorityService(
-        audio_authority_resolver=lambda: object(),  # type: ignore[return-value]
+        audio_authority_resolver=cast(Any, lambda: object()),
         artifact_author_resolver=lambda: {},
         decision_commitment_resolver=lambda: manifest,
     )
@@ -399,7 +401,7 @@ def test_fails_closed_for_wrong_resolver_types() -> None:
     wrong_manifest = Cut1ListeningAuthorityService(
         audio_authority_resolver=lambda: current,
         artifact_author_resolver=lambda: {value: f"audio-author-{value}" for value in PRESENTERS},
-        decision_commitment_resolver=lambda: object(),  # type: ignore[return-value]
+        decision_commitment_resolver=cast(Any, lambda: object()),
     )
     assert_code(
         "DECISION_COMMITMENT_INVALID",
