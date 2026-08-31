@@ -338,6 +338,24 @@ ISSUE478_LINE_CAPS = {
     "tests/unit/test_stage8_cut1_routes.py": 240,
     "tests/unit/test_stage8_quality_gate.py": 60,
 }
+ISSUE482_EXPECTED = {
+    "docs/governance/preflights/issue-482.json", "uv.lock",
+    "tests/unit/test_dependency_security_contract.py",
+    "scripts/quality/stage8_cut1_routes.py", "tests/unit/test_stage8_cut1_routes.py",
+    "tests/unit/test_stage8_quality_gate.py", "docs/THIRD_PARTY_NOTICES.md",
+    "docs/QUALITY_GATES.md", "docs/STAGE_ISSUE_PLAN.md", "docs/STATUS.md",
+    "docs/TRACEABILITY.md",
+}
+ISSUE482_LINE_CAPS = {
+    "docs/governance/preflights/issue-482.json": 220, "uv.lock": 1800,
+    "tests/unit/test_dependency_security_contract.py": 240,
+    "scripts/quality/stage8_cut1_routes.py": 140,
+    "tests/unit/test_stage8_cut1_routes.py": 220,
+    "tests/unit/test_stage8_quality_gate.py": 40,
+    "docs/THIRD_PARTY_NOTICES.md": 100, "docs/QUALITY_GATES.md": 80,
+    "docs/STAGE_ISSUE_PLAN.md": 80, "docs/STATUS.md": 100,
+    "docs/TRACEABILITY.md": 60,
+}
 ISSUE468_EXPECTED = {
     "AGENTS.md",
     "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md",
@@ -387,6 +405,7 @@ def remove_cleanup_marker(text: str, marker: str) -> str:
 
 
 EXPECTED = {
+    "cut1-process-482-dependency-security-refresh": ISSUE482_EXPECTED,
     "cut1-process-478-pr477-status-closeout": ISSUE478_EXPECTED,
     "cut1-475-t05b-runtime-receipt-binding": ISSUE475_EXPECTED,
     "governance-468-scoped-merge-cleanup": ISSUE468_EXPECTED,
@@ -2196,6 +2215,36 @@ def test_issue478_route_freezes_corrected_authority_scope_and_budgets() -> None:
         routes.ISSUE478_REVIEW_SHA256,
     }
     assert all(value in preflight["objective"] for value in authority)
+
+
+def test_issue482_route_freezes_dependency_scope_and_budgets() -> None:
+    branch = "cut1-process-482-dependency-security-refresh"
+    assert routes.ISSUE482_BRANCH == branch
+    assert routes.ISSUE482_BASE == "98fa8b41ccea68c840b5462bd5377057f4a3eb14"
+    assert routes.ISSUE482_BODY_SHA256 == (
+        "736252b09e0b79a57e5ed8643f5b915feff7522693427fe2d48d4dba372c5289"
+    )
+    assert routes.ISSUE482_ROUTE_COMMENT == "5481998106"
+    assert routes.ISSUE482_ROUTE_SHA256 == (
+        "a006437d5b773fa2a6a555c0744b40b292d55224c4d60aa739fe9da5ab2af46f"
+    )
+    assert routes.ISSUE482_CORRECTION_COMMENT == "5482139606"
+    assert routes.ISSUE482_CORRECTION_SHA256 == (
+        "85ad9dbf5dcc91948f625a15c1b58c9306be2fc014c6e298e7ddb760a538e699"
+    )
+    assert routes.ROUTES[branch] == ISSUE482_EXPECTED
+    assert routes.ROUTE_ISSUES[branch] == 482
+    assert routes.TOTAL_LIMITS[branch] == 3200
+    assert routes.TEXT_LIMITS[branch] == ISSUE482_LINE_CAPS
+    assert branch in stage8.EFFECTIVE_STAGE8_ROUTES
+    preflight = json.loads((REPO / "docs/governance/preflights/issue-482.json").read_text())
+    assert set(preflight["scope"]["required"]) == ISSUE482_EXPECTED
+    assert set(preflight["scope"]["allowed_prefixes"]) == ISSUE482_EXPECTED
+    assert all(value in preflight["objective"] for value in (
+        routes.ISSUE482_BASE, routes.ISSUE482_BODY_SHA256,
+        routes.ISSUE482_ROUTE_COMMENT, routes.ISSUE482_ROUTE_SHA256,
+        routes.ISSUE482_CORRECTION_COMMENT, routes.ISSUE482_CORRECTION_SHA256,
+    ))
 
 
 @pytest.mark.parametrize(

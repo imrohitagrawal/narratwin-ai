@@ -1814,3 +1814,17 @@ unchanged. Green Issue #466 evidence is not audio or Cut 1 acceptance evidence.
 Hosted-parity correction `5468026907` adds only the central Stage 8 route
 registry test under the unchanged cap after full quality reproduced its stale
 registration assertion.
+
+## Issue #482 dependency-security prerequisite
+
+The exact lock refresh must resolve only `aiohttp` 3.14.3, `datasets` 5.0.1,
+`setuptools` 84.0.0, `torch` 2.13.0, and required transitive `cuda-toolkit`
+13.0.3.0. Correction `5482139606` additionally binds the unchanged
+`cuda-bindings` 13.3.1 record whose `cuda-pathfinder` marker is narrowed by
+the Torch resolver to Python below 3.15. All six full records are digest-bound.
+`uv lock --check`, frozen installation, exact-version tests,
+`pip-audit --strict`, the complete dependency-security wrapper, full
+`make quality`, direct-head/merge-checkout parity, hosted required contexts,
+and eligible non-author exact-head approval must pass. No ignore, suppression,
+dependency removal, direct-constraint change, unrelated resolution drift, or
+product/provider authority is accepted.
