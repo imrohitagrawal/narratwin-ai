@@ -618,7 +618,7 @@ def test_g368_03_05_all_activation_failures_precede_identity_and_transport(
             receipt=receipt()
         )
     assert caught.value.code == code
-    assert identity.calls == 0 and transport.calls == []
+    assert identity.calls == 0 and transport.prepare_calls == [] and transport.calls == []
 
 
 def test_g368_08_09_completed_replay_does_not_egress_and_ambiguous_timeout_is_held() -> None:
