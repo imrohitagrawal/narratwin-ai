@@ -724,3 +724,26 @@ Issue #475 invokes no provider, credentials, network, egress, spend, synthesis,
 audio generation, or listening. T05 remains incomplete and T06 remains blocked.
 The live check reopens and verifies the pinned facts asset/source graph through
 the canonical Stage 4 evaluator; stored evidence equality alone is insufficient.
+
+## Issue #479 exact-hash listening trust boundary
+
+Human decisions, persisted JSON, hashes, reviewer/author claims, and T05B
+projections are untrusted input. Candidate checksums cannot authenticate human
+authorship. T05C therefore requires three separate fail-closed trust inputs:
+the current exact T05B set, an independent artifact-author map, and an external
+decision commitment/revocation manifest.
+
+Validation rejects missing or extra presenters/criteria, non-literal booleans,
+duplicate IDs, reviewer-author equality, cross-presenter swaps, stale lineage,
+candidate author substitution, replay, revocation, manifest rollback or
+substitution, and coherent candidate/state rehashing. State is bounded,
+regular-file-only, non-symlink, duplicate-member-rejecting, atomic, and
+all-or-nothing on restore. Resolver failure and concurrent authority drift fail
+closed.
+
+The module imports no provider SDK, credential/environment access, network
+client, socket, subprocess, ASR, synthesis, or media-generation capability.
+State and diagnostics contain metadata and checksums only; raw audio, captions,
+narration, provider requests, credentials, and private configuration are
+excluded. Human listening and provider activation remain separate owner-only
+boundaries.

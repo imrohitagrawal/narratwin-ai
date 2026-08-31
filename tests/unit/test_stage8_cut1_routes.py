@@ -357,8 +357,8 @@ ISSUE479_EXPECTED = {
 }
 ISSUE479_LINE_CAPS = {
     "docs/governance/preflights/issue-479.json": 220,
-    "backend/app/cut1_listening.py": 500,
-    "tests/unit/test_cut1_listening.py": 650,
+    "backend/app/cut1_listening.py": 620,
+    "tests/unit/test_cut1_listening.py": 530,
     "scripts/quality/stage8_cut1_routes.py": 160,
     "tests/unit/test_stage8_cut1_routes.py": 260,
     "tests/unit/test_stage8_quality_gate.py": 60,
@@ -2245,6 +2245,10 @@ def test_issue479_route_freezes_t05c_authority_scope_and_budgets() -> None:
     assert routes.ISSUE479_CLARIFICATION_SHA256 == (
         "9a08ee1c2ce085cec47ca3981ccfa8a9e79c700b75fc8ab1f66b301417e1a05f"
     )
+    assert routes.ISSUE479_BUDGET_COMMENT == "5481522433"
+    assert routes.ISSUE479_BUDGET_SHA256 == (
+        "6e71a7301a9e9f2eb7fb251a4d38b37f0101804f8cdfddd68f36f87d9961223e"
+    )
     assert routes.ROUTES[branch] == ISSUE479_EXPECTED
     assert routes.ROUTE_ISSUES[branch] == 479
     assert routes.TOTAL_LIMITS[branch] == 2600
@@ -2260,8 +2264,74 @@ def test_issue479_route_freezes_t05c_authority_scope_and_budgets() -> None:
         routes.ISSUE479_ROUTE_SHA256,
         routes.ISSUE479_CLARIFICATION_COMMENT,
         routes.ISSUE479_CLARIFICATION_SHA256,
+        routes.ISSUE479_BUDGET_COMMENT,
+        routes.ISSUE479_BUDGET_SHA256,
     }
     assert all(value in preflight["objective"] for value in authority)
+
+
+@pytest.mark.parametrize(
+    "name_status",
+    (
+        "D\0backend/app/cut1_listening.py\0",
+        "R100\0backend/app/cut1_listening.py\0backend/app/listening.py\0",
+        "C100\0backend/app/cut1_listening.py\0backend/app/listening.py\0",
+    ),
+)
+def test_issue479_rejects_destructive_path_transitions(
+    monkeypatch: Any, name_status: str,
+) -> None:
+    monkeypatch.setattr(routes, "route_base", lambda *_: routes.ISSUE479_BASE)
+    monkeypatch.setattr(routes, "route_text_charges", lambda *_: (0, {}))
+    calls: list[list[str]] = []
+
+    def destructive(args: list[str]) -> subprocess.CompletedProcess[str]:
+        calls.append(args)
+        return completed(args, out=name_status)
+
+    failures: list[str] = []
+    routes.check_exact_route(
+        REPO, destructive, routes.ISSUE479_BRANCH, ISSUE479_EXPECTED, failures
+    )
+    assert len(calls) == 3
+    assert failures == ["Issue #479 route forbids deleted, renamed, or copied paths."]
+
+
+def test_issue479_rejects_missing_extra_and_budget_drift(monkeypatch: Any) -> None:
+    branch = routes.ISSUE479_BRANCH
+    monkeypatch.setattr(routes, "route_base", lambda *_: routes.ISSUE479_BASE)
+    monkeypatch.setattr(routes, "route_text_charges", lambda *_: (0, {}))
+    missing = sorted(ISSUE479_EXPECTED)[0]
+    failures: list[str] = []
+    routes.check_exact_route(
+        REPO, lambda _: completed([]), branch, ISSUE479_EXPECTED - {missing}, failures
+    )
+    assert failures == [f"Issue #479 route is missing required path: {missing}"]
+    monkeypatch.setattr(stage8, "current_branch", lambda: branch)
+    monkeypatch.setattr(stage8, "changed_files_for_stage_scope",
+                        lambda: [*ISSUE479_EXPECTED, "rogue.txt"])
+    monkeypatch.setattr(stage8.cut1_routes, "route_base", lambda *_: routes.ISSUE479_BASE)
+    monkeypatch.setattr(stage8.cut1_routes, "route_text_charges", lambda *_: (0, {}))
+    failures = []
+    stage8.check_stage_scope(failures)
+    assert failures == ["Stage 8 changed file outside the allowlist: rogue.txt"]
+    for total, charges, expected in (
+        (2601, {}, "Issue #479 charge 2601 exceeds 2600."),
+        (1, {"backend/app/cut1_listening.py": 621},
+         "Issue #479 charge for backend/app/cut1_listening.py exceeds 620."),
+        (1, {"tests/unit/test_cut1_listening.py": 531},
+         "Issue #479 charge for tests/unit/test_cut1_listening.py exceeds 530."),
+    ):
+        monkeypatch.setattr(routes, "route_text_charges",
+                            lambda *_, values=(total, charges): values)
+        failures = []
+        routes.check_exact_route(
+            REPO, lambda _: completed([]), branch, ISSUE479_EXPECTED, failures
+        )
+        assert failures == [expected]
+    for lookalike in (branch + "-retry", branch + "/child"):
+        assert lookalike not in routes.ROUTES
+        assert lookalike not in stage8.EFFECTIVE_STAGE8_ROUTES
 
 
 @pytest.mark.parametrize(

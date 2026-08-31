@@ -364,3 +364,16 @@ egress, synthesis attempts, retries, or spend. Test-only materialized results
 and WAV/SRT fixtures are validation stimuli, not provider or cost evidence. Issue #368
 retains all paid-attempt, billable-unknown, listening, retention, and deletion
 accounting before any genuine artifact can advance.
+
+## Issue #479 listening-authority observability
+
+T05C exposes bounded local outcomes through typed error codes and counts only:
+accepted decision count, presenter position, resolver/commitment failure class,
+replay/revocation, stale authority, and state quarantine. Reviewer IDs,
+artifact-author IDs, timestamps, raw media/text, provider payloads, credentials,
+and private configuration are not log or metric dimensions.
+
+Validation is local hashing, comparison, and bounded JSON persistence. It makes
+no network or provider call, reads no ambient credential/environment state, and
+creates no spend. A test pass or structural media result is never emitted as a
+human-listening acceptance observation.

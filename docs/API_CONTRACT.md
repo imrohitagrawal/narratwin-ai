@@ -1977,3 +1977,23 @@ Current means the Stage 4 canonical verifier can still reload the exact facts
 contract and reproduce the stored run; missing or tampered contract bytes fail
 evaluation, approval, consumption, and receipt validation in the live process
 as well as during restore.
+
+## Issue #479 T05C listening authority interface
+
+`Cut1ListeningAuthorityService` is an internal metadata-only API. Its three
+required resolvers provide the current complete T05B authority set, the trusted
+presenter-to-artifact-author map, and the exact listening-decision commitment
+manifest. `admit_decisions` accepts exactly one ordered Meera/Myra/Raj tuple;
+`get_authority` returns it only while all three external authorities remain
+current.
+
+Each `Cut1ListeningDecision` carries a unique decision ID, reviewer, claimed
+artifact author, canonical UTC review time, exact artifact binding, the nine
+named literal-boolean criteria, and a checksum. The external manifest binds the
+current T05B manifest, exact ordered decision commitments, monotonic sequence,
+and revocations. Resolver absence, replay, partial/reordered decisions,
+reviewer-author equality, substitution, or coherent rehash fails closed with a
+typed `ListeningAuthorityError`.
+
+This interface has no HTTP endpoint and accepts no media or narration bytes.
+It validates human-authored evidence; it never authors or infers acceptance.

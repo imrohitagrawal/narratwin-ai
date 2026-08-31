@@ -45,9 +45,7 @@ def authority(presenter_id: str) -> Cut1AudioCaptionAuthority:
         narration_checksum=checksum(f"narration-{presenter_id}"),
         presenter_id=presenter_id,
         presenter_version="cut1-v1",
-        presenter_binding_checksum=hashlib.sha256(
-            f"presenter-{presenter_id}".encode()
-        ).hexdigest(),
+        presenter_binding_checksum=hashlib.sha256(f"presenter-{presenter_id}".encode()).hexdigest(),
         source_run_id="stage4-run-cut1",
         source_evaluation_checksum=checksum("source-evaluation"),
         evaluation_checksum=checksum("evaluation"),
@@ -178,8 +176,9 @@ def service(
     manifest = commitment_manifest(current, decisions)
     return Cut1ListeningAuthorityService(
         audio_authority_resolver=lambda: current,
-        artifact_author_resolver=lambda: authors
-        or {value: f"audio-author-{value}" for value in PRESENTERS},
+        artifact_author_resolver=lambda: (
+            authors or {value: f"audio-author-{value}" for value in PRESENTERS}
+        ),
         decision_commitment_resolver=lambda: manifest,
         state_path=state_path,
     )
@@ -213,7 +212,11 @@ def test_admits_exact_three_independent_human_decisions() -> None:
         (lambda values: values[:2], "DECISION_SET_INCOMPLETE"),
         (lambda values: (values[1], values[0], values[2]), "DECISION_ORDER_INVALID"),
         (
-            lambda values: (values[0], values[1], replace(values[2], decision_id=values[0].decision_id)),
+            lambda values: (
+                values[0],
+                values[1],
+                replace(values[2], decision_id=values[0].decision_id),
+            ),
             "DECISION_ID_DUPLICATE",
         ),
         (
@@ -240,7 +243,8 @@ def test_admits_exact_three_independent_human_decisions() -> None:
     ),
 )
 def test_rejects_incomplete_reordered_duplicate_or_nonliteral_decisions(
-    mutate: Any, code: str,
+    mutate: Any,
+    code: str,
 ) -> None:
     current = audio_set()
     decisions = accepted_decisions(current)
@@ -304,23 +308,58 @@ def test_rejects_candidate_author_substitution_and_coherent_rehash() -> None:
     )
 
 
+@pytest.mark.parametrize(
+    "criteria",
+    (
+        {name: True for name in LISTENING_CRITERIA if name != "warmth"},
+        {**{name: True for name in LISTENING_CRITERIA}, "automatic_score": True},
+        {**{name: True for name in LISTENING_CRITERIA}, "warmth": "true"},
+        {**{name: True for name in LISTENING_CRITERIA}, "warmth": None},
+    ),
+)
+def test_rejects_missing_extra_or_non_boolean_criteria(criteria: Any) -> None:
+    current = audio_set()
+    decisions = accepted_decisions(current)
+    candidate = (rehash(replace(decisions[0], criteria=criteria)), *decisions[1:])
+    assert_code(
+        "LISTENING_CRITERIA_INVALID",
+        lambda: service(current, candidate).admit_decisions(decisions=candidate),
+    )
+
+
+def test_rejects_cross_presenter_binding_and_trusted_author_conflict() -> None:
+    current = audio_set()
+    decisions = accepted_decisions(current)
+    crossed = (
+        rehash(replace(decisions[0], binding=decisions[1].binding)),
+        rehash(replace(decisions[1], binding=decisions[0].binding)),
+        decisions[2],
+    )
+    assert_code(
+        "DECISION_ORDER_INVALID",
+        lambda: service(current, decisions).admit_decisions(decisions=crossed),
+    )
+    authors = {value: f"audio-author-{value}" for value in PRESENTERS}
+    authors["meera"] = decisions[0].reviewer_id
+    assert_code(
+        "ARTIFACT_AUTHOR_MISMATCH",
+        lambda: service(current, decisions, authors=authors).admit_decisions(decisions=decisions),
+    )
+
+
 def test_rejects_revocation_replay_and_current_t05b_drift() -> None:
     current = audio_set()
     decisions = accepted_decisions(current)
     manifest = commitment_manifest(current, decisions, revoked_ids=(decisions[0].decision_id,))
     revoked = Cut1ListeningAuthorityService(
         audio_authority_resolver=lambda: current,
-        artifact_author_resolver=lambda: {
-            value: f"audio-author-{value}" for value in PRESENTERS
-        },
+        artifact_author_resolver=lambda: {value: f"audio-author-{value}" for value in PRESENTERS},
         decision_commitment_resolver=lambda: manifest,
     )
     assert_code("DECISION_REVOKED", lambda: revoked.admit_decisions(decisions=decisions))
     authority_service = service(current, decisions)
     authority_service.admit_decisions(decisions=decisions)
-    assert_code(
-        "DECISION_REPLAYED", lambda: authority_service.admit_decisions(decisions=decisions)
-    )
+    assert_code("DECISION_REPLAYED", lambda: authority_service.admit_decisions(decisions=decisions))
     changed = replace(current, manifest_sequence=current.manifest_sequence + 1)
     authority_service.audio_authority_resolver = lambda: changed
     assert_code("AUDIO_AUTHORITY_STALE", authority_service.get_authority)
@@ -335,14 +374,36 @@ def test_fails_closed_when_trusted_commitment_is_unavailable() -> None:
 
     authority_service = Cut1ListeningAuthorityService(
         audio_authority_resolver=lambda: current,
-        artifact_author_resolver=lambda: {
-            value: f"audio-author-{value}" for value in PRESENTERS
-        },
+        artifact_author_resolver=lambda: {value: f"audio-author-{value}" for value in PRESENTERS},
         decision_commitment_resolver=unavailable,
     )
     assert_code(
         "DECISION_COMMITMENT_UNAVAILABLE",
         lambda: authority_service.admit_decisions(decisions=decisions),
+    )
+
+
+def test_fails_closed_for_wrong_resolver_types() -> None:
+    current = audio_set()
+    decisions = accepted_decisions(current)
+    manifest = commitment_manifest(current, decisions)
+    wrong_audio = Cut1ListeningAuthorityService(
+        audio_authority_resolver=lambda: object(),  # type: ignore[return-value]
+        artifact_author_resolver=lambda: {},
+        decision_commitment_resolver=lambda: manifest,
+    )
+    assert_code(
+        "AUDIO_AUTHORITY_INVALID",
+        lambda: wrong_audio.admit_decisions(decisions=decisions),
+    )
+    wrong_manifest = Cut1ListeningAuthorityService(
+        audio_authority_resolver=lambda: current,
+        artifact_author_resolver=lambda: {value: f"audio-author-{value}" for value in PRESENTERS},
+        decision_commitment_resolver=lambda: object(),  # type: ignore[return-value]
+    )
+    assert_code(
+        "DECISION_COMMITMENT_INVALID",
+        lambda: wrong_manifest.admit_decisions(decisions=decisions),
     )
 
 
@@ -355,12 +416,23 @@ def test_persists_metadata_only_and_quarantines_tampered_state(tmp_path: Path) -
     restored = service(current, decisions, state_path=state)
     assert restored.get_authority() == accepted
     text = state.read_text(encoding="utf-8")
-    for forbidden in ("audioBase64", "captionBase64", "spoken_text", "narration_text"):
+    for forbidden in ('"audioBase64"', '"captionBase64"', '"spokenText"', '"narrationText"'):
         assert forbidden not in text
     state.write_text(text.replace(decisions[0].reviewer_id, "tampered-reviewer"), encoding="utf-8")
     quarantined = service(current, decisions, state_path=state)
     assert quarantined.quarantine_reason == "STATE_INVALID"
     assert_code("AUTHORITY_STATE_QUARANTINED", quarantined.get_authority)
+
+
+def test_quarantines_symlink_state(tmp_path: Path) -> None:
+    current = audio_set()
+    decisions = accepted_decisions(current)
+    target = tmp_path / "target.json"
+    target.write_text("{}", encoding="utf-8")
+    state = tmp_path / "listening.json"
+    state.symlink_to(target)
+    quarantined = service(current, decisions, state_path=state)
+    assert quarantined.quarantine_reason == "STATE_INVALID"
 
 
 def test_module_has_no_provider_network_environment_or_acceptance_factory() -> None:
@@ -381,5 +453,7 @@ def test_module_has_no_provider_network_environment_or_acceptance_factory() -> N
     )
     names = {node.name.lower() for node in ast.walk(tree) if isinstance(node, ast.FunctionDef)}
     assert not any(
-        token in name for name in names for token in ("accept_decision", "infer_criteria", "listen_audio")
+        token in name
+        for name in names
+        for token in ("accept_decision", "infer_criteria", "listen_audio")
     )

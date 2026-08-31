@@ -1840,3 +1840,26 @@ occurred. T05 remains incomplete because no admissible 90–120 second full
 narration audio or exact-hash human listening acceptance exists, and T06 remains
 blocked. No deployment, publication, release, production-readiness, production,
 or Cut 1 acceptance claim is proven or authorized.
+
+## Cut 1 T05C repository authority
+
+Issue `#479` adds a provider-neutral exact-hash human-listening validator from
+accepted main `98fa8b41ccea68c840b5462bd5377057f4a3eb14`. The bounded route is
+`cut1-process-479-t05c-listening-authority`; comments `5481284482`,
+`5473637391`, and `5481522433` pin its scope, clarification, and no-growth
+budget redistribution.
+
+The validator requires exactly one unique decision for Meera, Myra, and Raj in
+canonical order, every defined criterion as literal `true`, reviewer-author
+separation, exact current T05B lineage, independent trusted artifact-author
+identity, and an external decision/revocation commitment. It rejects partial,
+reordered, substituted, cross-presenter, stale, replayed, revoked, malformed,
+or coherently rehashed evidence and restores bounded metadata state fail closed.
+
+This is validation capability only. No admissible 90–120-second full narration
+or independently authored exact-byte listening decision is recorded here. The
+reuse-first inventory found no reusable full artifact. No credential lookup,
+narration egress, provider call, spend, synthesis, audio/caption generation, or
+automatic listening occurs. T05 remains incomplete, T06 remains blocked, and
+deployment, publication, release, production readiness, and Cut 1 acceptance
+remain unproven and unauthorized.

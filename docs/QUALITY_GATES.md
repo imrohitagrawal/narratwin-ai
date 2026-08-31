@@ -1814,3 +1814,24 @@ unchanged. Green Issue #466 evidence is not audio or Cut 1 acceptance evidence.
 Hosted-parity correction `5468026907` adds only the central Stage 8 route
 registry test under the unchanged cap after full quality reproduced its stale
 registration assertion.
+
+## Issue #479 T05C exact-hash listening gate
+
+The T05C repository gate requires:
+
+- exactly three canonical presenter decisions with unique IDs;
+- all nine criteria present exactly once as literal `true`;
+- exact current T05B manifest and per-artifact lineage binding;
+- independent trusted artifact-author and decision commitments;
+- reviewer-author separation for each presenter;
+- stale, substituted, cross-presenter, coherent-rehash, replay, revocation,
+  malformed, partial, and persistence/restore mutation coverage;
+- metadata-only capability and negative checks for provider, credential,
+  environment, network, raw-media/text, ASR, and acceptance-factory surfaces;
+- exact Issue #479 base/branch/path/budget enforcement, policy-only gates,
+  focused/full tests, lint, type, security, direct-head/merge-checkout parity,
+  hosted required contexts, and eligible non-author exact-head approval.
+
+Passing this gate proves validator behavior only. Tests cannot prove listening.
+T05 and T06 remain blocked until three full admissible narrations and actual
+independently authored exact-byte decisions pass this authority.

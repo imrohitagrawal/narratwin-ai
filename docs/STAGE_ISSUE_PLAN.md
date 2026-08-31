@@ -2990,3 +2990,22 @@ Hosted-parity checkpoint `5468026907` adds only
 `tests/unit/test_stage8_quality_gate.py` after the complete suite reproduced a
 stale central route-registry assertion; the base, budget, and product boundary
 remain unchanged.
+
+### Issue #479 — T05C human-listening authority
+
+Issue `#479` owns only the remaining repository-side T05C validator. Its route
+starts at exact main `98fa8b41ccea68c840b5462bd5377057f4a3eb14` on
+`cut1-process-479-t05c-listening-authority`, with exactly fifteen paths and a
+2,600 charged-line ceiling. Route comment `5481284482`, clarification
+`5473637391`, and bounded budget correction `5481522433` pin the authority.
+
+The increment validates exactly three independently authored Meera/Myra/Raj
+decisions against current T05B metadata, independent artifact-author identity,
+and external decision commitments. It includes focused mutation/persistence
+tests and exact route/hosted-parity enforcement.
+
+It does not create listening evidence, audio, captions, narration, provider
+requests, credentials, egress, spend, ASR, frontend/T06 behavior, deployment,
+release, production, or Cut 1 acceptance. After repository merge, work stops at
+the human/provider activation boundary unless separately authorized full
+narration artifacts and exact-byte human decisions exist.

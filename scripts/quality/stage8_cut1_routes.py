@@ -27,6 +27,7 @@ ISSUE471_BRANCH = "governance-471-cleanup-authority-anchor"
 ISSUE473_BRANCH = "governance-473-cleanup-anchor-consumer-fixture"
 ISSUE475_BRANCH = "cut1-475-t05b-runtime-receipt-binding"
 ISSUE478_BRANCH = "cut1-process-478-pr477-status-closeout"
+ISSUE479_BRANCH = "cut1-process-479-t05c-listening-authority"
 ISSUE386_BRANCH = "cut1-process-386-modular-route-enforcement"
 ISSUE413_BRANCH = "cut1-process-413-frontend-runtime-openssl"
 ISSUE405_BRANCH = "process-405-heartbeat2-main-reliability"
@@ -87,6 +88,13 @@ ISSUE478_BRANCH_COMMENT = "5473718767"
 ISSUE478_BRANCH_SHA256 = "3c42143d50b21916cc9e063f9a06855b7d57b398310b19dfd64cb9309613e8f2"
 ISSUE478_REVIEW_COMMENT = "5474383480"
 ISSUE478_REVIEW_SHA256 = "444a43fcd953c961d31d3cdc3387e12a8c2fc3d297c1e6805eba21ba3e893b1f"
+ISSUE479_BASE = "98fa8b41ccea68c840b5462bd5377057f4a3eb14"
+ISSUE479_ROUTE_COMMENT = "5481284482"
+ISSUE479_ROUTE_SHA256 = "bc878f9886a1decc2fbab102d1d9be7e8e23ab870a9850d486445564813dc2b4"
+ISSUE479_CLARIFICATION_COMMENT = "5473637391"
+ISSUE479_CLARIFICATION_SHA256 = "9a08ee1c2ce085cec47ca3981ccfa8a9e79c700b75fc8ab1f66b301417e1a05f"
+ISSUE479_BUDGET_COMMENT = "5481522433"
+ISSUE479_BUDGET_SHA256 = "6e71a7301a9e9f2eb7fb251a4d38b37f0101804f8cdfddd68f36f87d9961223e"
 ISSUE475_RUNTIME_COMMENT = "5470636741"
 ISSUE475_RUNTIME_SHA256 = "27b21d3db0ec01f310ac5db57260ea656b3f73bac50a40b78106a99d823159fe"
 ISSUE475_RECEIPT_COMMENT = "5470701562"
@@ -142,6 +150,15 @@ ISSUE460_HOSTED_SECURITY_PATHS = {
 ISSUE459_HOSTED_CORRECTION_PATHS = {".gitleaksignore", "scripts/ci/check_gitleaks_regression.py", "tests/unit/test_gitleaks_regression.py", "scripts/quality/check_stage8_docs.py", "tests/unit/test_stage8_quality_gate.py"}
 
 ROUTES = {
+    ISSUE479_BRANCH: {
+        "docs/governance/preflights/issue-479.json", "backend/app/cut1_listening.py",
+        "tests/unit/test_cut1_listening.py", "scripts/quality/stage8_cut1_routes.py",
+        "tests/unit/test_stage8_cut1_routes.py", "tests/unit/test_stage8_quality_gate.py",
+        "docs/ADR/0073-cut1-exact-hash-listening-authority.md", "docs/API_CONTRACT.md",
+        "docs/DATA_MODEL.md", "docs/SECURITY_AND_PRIVACY.md",
+        "docs/OBSERVABILITY_AND_COST.md", "docs/QUALITY_GATES.md",
+        "docs/STAGE_ISSUE_PLAN.md", "docs/STATUS.md", "docs/TRACEABILITY.md",
+    },
     ISSUE478_BRANCH: {
         "docs/STATUS.md",
         "docs/governance/preflights/issue-478.json",
@@ -657,6 +674,8 @@ ROUTE_ISSUES[ISSUE475_BRANCH] = 475
 TOTAL_LIMITS[ISSUE475_BRANCH] = 1800
 ROUTE_ISSUES[ISSUE478_BRANCH] = 478
 TOTAL_LIMITS[ISSUE478_BRANCH] = 800
+ROUTE_ISSUES[ISSUE479_BRANCH] = 479
+TOTAL_LIMITS[ISSUE479_BRANCH] = 2600
 ROUTE_ISSUES[ISSUE459_BRANCH] = 459
 TOTAL_LIMITS[ISSUE459_BRANCH] = 4300
 ROUTE_ISSUES[ISSUE459_T03_BRANCH] = 459
@@ -701,6 +720,18 @@ ISSUE459_EDITABLE_AUTHORITY_SHA256 = {
 }
 ISSUE459_BASE_SOURCE_SHA256 = {"docs/STATUS.md": "9045b595ca1622680f621dffa4dff88435e2fde0d13e3c061ced7eb6df9ae8bf", "docs/TRACEABILITY.md": "e597069e3d6b765a9d68e5336ff9597d6d7b809e5ea6f316f22312ca71ea136a", "docs/QUALITY_GATES.md": "9f628d22ec62075e560ef478820cf094d923cdf1cfded56a512291c61f6e542b", "docs/REPOSITORY_GUARDRAILS.md": "04f8b405bc7ba9b615cc1d5d7e489bcbf643b9de4bfc9b331e5a60c38629e82f"}
 TEXT_LIMITS = {
+    ISSUE479_BRANCH: {
+        "docs/governance/preflights/issue-479.json": 220,
+        "backend/app/cut1_listening.py": 620, "tests/unit/test_cut1_listening.py": 530,
+        "scripts/quality/stage8_cut1_routes.py": 160,
+        "tests/unit/test_stage8_cut1_routes.py": 260,
+        "tests/unit/test_stage8_quality_gate.py": 60,
+        "docs/ADR/0073-cut1-exact-hash-listening-authority.md": 140,
+        "docs/API_CONTRACT.md": 80, "docs/DATA_MODEL.md": 80,
+        "docs/SECURITY_AND_PRIVACY.md": 80, "docs/OBSERVABILITY_AND_COST.md": 60,
+        "docs/QUALITY_GATES.md": 80, "docs/STAGE_ISSUE_PLAN.md": 80,
+        "docs/STATUS.md": 100, "docs/TRACEABILITY.md": 50,
+    },
     ISSUE478_BRANCH: {
         "docs/STATUS.md": 100,
         "docs/governance/preflights/issue-478.json": 220,
@@ -1534,6 +1565,7 @@ def route_base(run: Callable[[list[str]], Any], branch: str) -> str:
             )
         return ISSUE466_TRANSITION_BASE
     fixed_routes = {
+        ISSUE479_BRANCH: (479, ISSUE479_BASE),
         ISSUE478_BRANCH: (478, ISSUE478_BASE),
         ISSUE475_BRANCH: (475, ISSUE475_BASE),
         ISSUE468_BRANCH: (468, ISSUE468_BASE),
@@ -1566,7 +1598,7 @@ def route_base(run: Callable[[list[str]], Any], branch: str) -> str:
             or fixed_value != base or common_value != base
         )
         branch_point_invalid = False
-        if not fixed_invalid and branch in {ISSUE478_BRANCH, ISSUE475_BRANCH, ISSUE468_BRANCH, ISSUE473_BRANCH, ISSUE471_BRANCH, ISSUE459_T05B_BRANCH, ISSUE459_T05A_BRANCH, ISSUE459_T03_BRANCH, ISSUE460_BRANCH, ISSUE452_BRANCH, ISSUE451_BRANCH, ISSUE150_BRANCH, ISSUE424_BRANCH, ISSUE421_BRANCH, ISSUE368_IMPLEMENTATION_BRANCH,
+        if not fixed_invalid and branch in {ISSUE479_BRANCH, ISSUE478_BRANCH, ISSUE475_BRANCH, ISSUE468_BRANCH, ISSUE473_BRANCH, ISSUE471_BRANCH, ISSUE459_T05B_BRANCH, ISSUE459_T05A_BRANCH, ISSUE459_T03_BRANCH, ISSUE460_BRANCH, ISSUE452_BRANCH, ISSUE451_BRANCH, ISSUE150_BRANCH, ISSUE424_BRANCH, ISSUE421_BRANCH, ISSUE368_IMPLEMENTATION_BRANCH,
                       ISSUE368_QUOTA_FIX_BRANCH, ISSUE368_BRANCH,
                       ISSUE368_PROMPT_BRANCH}:
             branch_point = run(["git", "merge-base", "origin/main", "HEAD"])
@@ -1736,7 +1768,27 @@ def check_exact_route(
         f"Issue #{issue} route is missing required path: {path}"
         for path in sorted(files - effective_changed)
     )
-    if branch == ISSUE478_BRANCH:
+    if branch == ISSUE479_BRANCH:
+        try:
+            preflight = load_json_without_duplicate_members(
+                root / "docs/governance/preflights/issue-479.json"
+            )
+            findings = validate_governance_preflight(
+                preflight,
+                context={"issue_number": 479, "branch": branch, "changed_files": sorted(files)},
+            )
+            failures.extend(f"Issue #479 governance preflight failed: {item.code}" for item in findings)
+            objective = preflight.get("objective") if isinstance(preflight, dict) else None
+            authority = (
+                ISSUE479_BASE, ISSUE479_ROUTE_COMMENT, ISSUE479_ROUTE_SHA256,
+                ISSUE479_CLARIFICATION_COMMENT, ISSUE479_CLARIFICATION_SHA256,
+                ISSUE479_BUDGET_COMMENT, ISSUE479_BUDGET_SHA256,
+            )
+            if not isinstance(objective, str) or any(value not in objective for value in authority):
+                failures.append("Issue #479 T05C authority drifted.")
+        except (OSError, ValueError, TypeError) as error:
+            failures.append(f"Issue #479 governance preflight failed closed: {error}")
+    elif branch == ISSUE478_BRANCH:
         try:
             preflight = load_json_without_duplicate_members(
                 root / "docs/governance/preflights/issue-478.json"
@@ -2006,11 +2058,11 @@ def check_exact_route(
             failures.append(f"Issue #459 governance preflight failed closed: {error}")
     try:
         base = fixed_base if fixed_base is not None else route_base(run, branch)
-        if branch in {ISSUE478_BRANCH, ISSUE475_BRANCH, ISSUE459_BRANCH, ISSUE459_T03_BRANCH, ISSUE459_T05A_BRANCH,
+        if branch in {ISSUE479_BRANCH, ISSUE478_BRANCH, ISSUE475_BRANCH, ISSUE459_BRANCH, ISSUE459_T03_BRANCH, ISSUE459_T05A_BRANCH,
                       ISSUE459_T05B_BRANCH, ISSUE466_BRANCH}:
             transition_base = ISSUE459_TRANSITION_BASE if branch == ISSUE459_BRANCH else base
             transitions = (
-                *(() if branch in {ISSUE478_BRANCH, ISSUE475_BRANCH, ISSUE459_T03_BRANCH, ISSUE459_T05A_BRANCH,
+                *(() if branch in {ISSUE479_BRANCH, ISSUE478_BRANCH, ISSUE475_BRANCH, ISSUE459_T03_BRANCH, ISSUE459_T05A_BRANCH,
                                    ISSUE459_T05B_BRANCH, ISSUE466_BRANCH} else (
                     run(["git", "diff", "--name-status", "-z", "--find-copies-harder",
                          ISSUE459_BASE, ISSUE459_FROZEN_HEAD, "--"]),
