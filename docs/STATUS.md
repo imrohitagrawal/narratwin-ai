@@ -1863,3 +1863,19 @@ narration egress, provider call, spend, synthesis, audio/caption generation, or
 automatic listening occurs. T05 remains incomplete, T06 remains blocked, and
 deployment, publication, release, production readiness, and Cut 1 acceptance
 remain unproven and unauthorized.
+
+## Dependency-security prerequisite for Issue #479
+
+Issue `#482` owns the newly reproduced mandatory-gate failure in unchanged
+accepted-main dependencies: three aiohttp advisories plus one each affecting
+datasets, setuptools, and torch. The exact lock refresh resolves aiohttp
+3.14.3, datasets 5.0.1, setuptools 84.0.0, torch 2.13.0, and required
+cuda-toolkit 13.0.3.0 without changing direct constraints or suppressing an
+advisory. Correction `5482139606` records and binds the only extra lock
+collateral: unchanged cuda-bindings 13.3.1 narrows its cuda-pathfinder marker
+to Python below 3.15; all six resulting package records are digest-bound.
+
+Issue #479 remains paused and unpushed until this prerequisite is reviewed,
+hosted-green, merged, and closed out. No provider call, credential access,
+egress, spend, synthesis, media, deployment, release, production readiness, or
+Cut 1 acceptance is created.

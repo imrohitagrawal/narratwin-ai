@@ -3009,3 +3009,16 @@ requests, credentials, egress, spend, ASR, frontend/T06 behavior, deployment,
 release, production, or Cut 1 acceptance. After repository merge, work stops at
 the human/provider activation boundary unless separately authorized full
 narration artifacts and exact-byte human decisions exist.
+
+### Issue #482 — dependency-security refresh prerequisite
+
+Issue `#482` is a serialized prerequisite discovered by Issue #479 full
+quality. From exact main `98fa8b41`, it refreshes only four advisory-affected
+packages and required transitive `cuda-toolkit` under route comment
+`5481998106`. Correction `5482139606` binds the sole additional resolver
+collateral: unchanged `cuda-bindings` 13.3.1 with its Python-support marker
+narrowed to below 3.15. It owns eleven paths and a 3,200 charged-line cap.
+
+Merge and closeout must finish before Issue #479 resumes. The prerequisite
+changes no product, provider, credential, egress, spend, media, deployment,
+release, production-readiness, or Cut 1 acceptance behavior.
