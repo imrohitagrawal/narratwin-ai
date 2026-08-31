@@ -2225,7 +2225,14 @@ def test_issue478_rejects_destructive_path_transitions(
         ISSUE478_EXPECTED,
         failures,
     )
-    assert any("--name-status" in call for call in calls)
+    assert calls == [
+        ["git", "diff", "--name-status", "-z", "--find-copies-harder",
+         routes.ISSUE478_BASE, "HEAD", "--"],
+        ["git", "diff", "--cached", "--name-status", "-z",
+         "--find-copies-harder", routes.ISSUE478_BASE, "--"],
+        ["git", "diff", "--name-status", "-z", "--find-copies-harder",
+         routes.ISSUE478_BASE, "--"],
+    ]
     assert failures == ["Issue #478 route forbids deleted, renamed, or copied paths."]
 
 

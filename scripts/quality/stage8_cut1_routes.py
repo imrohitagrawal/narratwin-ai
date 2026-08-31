@@ -84,7 +84,9 @@ ISSUE478_BASE = "81c1884157502e8a911df63c1d9d0a1704964d63"
 ISSUE478_ROUTE_COMMENT = "5473694821"
 ISSUE478_ROUTE_SHA256 = "0b46e4d6bbf091906e82ca8a7d26c9f7b2195a2866d6e436932f9a1100f93fc7"
 ISSUE478_BRANCH_COMMENT = "5473718767"
-ISSUE478_BRANCH_SHA256 = "7df911c139583c9d30f48ebb89dc49c99274170355aaacd953e7aef9ea2661e3"
+ISSUE478_BRANCH_SHA256 = "3c42143d50b21916cc9e063f9a06855b7d57b398310b19dfd64cb9309613e8f2"
+ISSUE478_REVIEW_COMMENT = "5474383480"
+ISSUE478_REVIEW_SHA256 = "444a43fcd953c961d31d3cdc3387e12a8c2fc3d297c1e6805eba21ba3e893b1f"
 ISSUE475_RUNTIME_COMMENT = "5470636741"
 ISSUE475_RUNTIME_SHA256 = "27b21d3db0ec01f310ac5db57260ea656b3f73bac50a40b78106a99d823159fe"
 ISSUE475_RECEIPT_COMMENT = "5470701562"
@@ -1748,6 +1750,7 @@ def check_exact_route(
             if not isinstance(objective, str) or any(value not in objective for value in (
                 ISSUE478_BASE, ISSUE478_ROUTE_COMMENT, ISSUE478_ROUTE_SHA256,
                 ISSUE478_BRANCH_COMMENT, ISSUE478_BRANCH_SHA256,
+                ISSUE478_REVIEW_COMMENT, ISSUE478_REVIEW_SHA256,
             )):
                 failures.append("Issue #478 hosted-parity authority drifted.")
         except (OSError, ValueError, TypeError) as error:
@@ -2003,11 +2006,11 @@ def check_exact_route(
             failures.append(f"Issue #459 governance preflight failed closed: {error}")
     try:
         base = fixed_base if fixed_base is not None else route_base(run, branch)
-        if branch in {ISSUE475_BRANCH, ISSUE459_BRANCH, ISSUE459_T03_BRANCH, ISSUE459_T05A_BRANCH,
+        if branch in {ISSUE478_BRANCH, ISSUE475_BRANCH, ISSUE459_BRANCH, ISSUE459_T03_BRANCH, ISSUE459_T05A_BRANCH,
                       ISSUE459_T05B_BRANCH, ISSUE466_BRANCH}:
             transition_base = ISSUE459_TRANSITION_BASE if branch == ISSUE459_BRANCH else base
             transitions = (
-                *(() if branch in {ISSUE475_BRANCH, ISSUE459_T03_BRANCH, ISSUE459_T05A_BRANCH,
+                *(() if branch in {ISSUE478_BRANCH, ISSUE475_BRANCH, ISSUE459_T03_BRANCH, ISSUE459_T05A_BRANCH,
                                    ISSUE459_T05B_BRANCH, ISSUE466_BRANCH} else (
                     run(["git", "diff", "--name-status", "-z", "--find-copies-harder",
                          ISSUE459_BASE, ISSUE459_FROZEN_HEAD, "--"]),
@@ -2020,7 +2023,7 @@ def check_exact_route(
                      base, "--"]),
             )
             if any(result.returncode for result in transitions):
-                raise RuntimeError("Issue #459 rename/copy evidence is unavailable.")
+                raise RuntimeError(f"Issue #{issue} rename/copy evidence is unavailable.")
             if any(route_has_copy_or_rename(str(result.stdout)) for result in transitions):
                 failures.append(f"Issue #{issue} route forbids deleted, renamed, or copied paths.")
         total, charges = route_text_charges(run, base, set(TEXT_LIMITS[branch]))
