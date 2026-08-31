@@ -24,6 +24,7 @@ from backend.app.narration import (
 PRESENTERS = ("meera", "myra", "raj")
 VOICE_PROFILES = {"meera": "meera-voice-v1", "myra": "myra-voice-v1", "raj": "raj-voice-v1"}
 CONFIG_CHECKSUM = "sha256:19e8d9fda744c225ae616101df9b0a6c8f6b5334714fc321edc33473331cc793"
+HOSTED_RUNTIME_CHECKSUM = "sha256:" + "8" * 64
 
 
 @pytest.fixture(scope="module")
@@ -81,7 +82,7 @@ def _receipt(presenter_id: str = "meera", *, version: int = 1) -> TTSConsumption
         narration_checksum="sha256:" + prefix * 64,
         presenter_id=presenter_id,
         presenter_version="1.0.0",
-        presenter_binding_checksum="sha256:" + "b" * 64,
+        presenter_binding_checksum="b" * 64,
         source_run_id=f"run_{presenter_id}_{version}",
         source_evaluation_checksum="sha256:" + "c" * 64,
         evaluation_checksum="sha256:" + "d" * 64,
@@ -168,16 +169,40 @@ def _config(cut1_audio: ModuleType) -> Any:
     )
 
 
+def _hosted_config(cut1_audio: ModuleType) -> Any:
+    voices = {"meera": "Despina", "myra": "Leda", "raj": "Achird"}
+    checksum = cut1_audio.build_audio_config_checksum(
+        provider="google-cloud-text-to-speech",
+        provider_mode="OPTIONAL_EXTERNAL_DISABLED_DEFAULT",
+        requested_locale="en-IN",
+        model_id="gemini-2.5-pro-tts",
+        presenter_voices=voices,
+    )
+    return cut1_audio.Cut1AudioConfig(
+        provider="google-cloud-text-to-speech",
+        provider_mode="OPTIONAL_EXTERNAL_DISABLED_DEFAULT",
+        requested_locale="en-IN",
+        model_id="gemini-2.5-pro-tts",
+        presenter_voices=voices,
+        config_checksum=checksum,
+    )
+
+
 def _candidate(
     cut1_audio: ModuleType,
     receipt: TTSConsumptionReceipt,
     result: Any,
     captions: bytes | None = None,
+    *,
+    config_checksum: str = CONFIG_CHECKSUM,
+    provider_runtime_config_checksum: str | None = None,
 ) -> Any:
     return cut1_audio.Cut1AudioCandidate(
         receipt=receipt,
         result=result,
         caption_bytes=captions or _captions(receipt.spoken_text),
+        config_checksum=config_checksum,
+        provider_runtime_config_checksum=provider_runtime_config_checksum,
     )
 
 
@@ -186,11 +211,12 @@ def _manifest(
     candidates: tuple[Any, ...],
     *,
     sequence: Any = 1,
+    config: Any | None = None,
 ) -> Any:
     preview = cut1_audio.Cut1AudioAuthorityService(
         receipt_validator=lambda _: True,
         commitment_resolver=lambda: None,
-        approved_config=_config(cut1_audio),
+        approved_config=config or _config(cut1_audio),
     )
     authorities = tuple(
         preview.evaluate_authority(candidate=value) for value in candidates
@@ -209,12 +235,13 @@ def _service(
     manifest: Any,
     validator: Callable[[TTSConsumptionReceipt], bool] | None = None,
     manifest_resolver: Callable[[], Any] | None = None,
+    config: Any | None = None,
 ) -> Any:
     return cut1_audio.Cut1AudioAuthorityService(
         receipt_validator=validator
         or (lambda candidate: candidate in current_receipts),
         commitment_resolver=manifest_resolver or (lambda: manifest),
-        approved_config=_config(cut1_audio),
+        approved_config=config or _config(cut1_audio),
         state_path=state_path,
     )
 
@@ -250,6 +277,391 @@ def _assert_failure(
         service.admit_authorities(candidates=(candidate,))
     assert caught.value.code == code
     assert service.authority_count == 0
+
+
+def test_issue475_genuine_public_narration_receipt_reaches_duration_validation(
+    cut1_audio: ModuleType,
+    tts_provider: ModuleType,
+    tmp_path: Path,
+) -> None:
+    narration = importlib.import_module("backend.app.narration")
+    support_spec = importlib.util.spec_from_file_location(
+        "issue475_public_narration_support",
+        Path(__file__).with_name("test_cut1_narration.py"),
+    )
+    assert support_spec is not None and support_spec.loader is not None
+    support = importlib.util.module_from_spec(support_spec)
+    support_spec.loader.exec_module(support)
+    narration_service, principal, approved, project_id = support._approve(
+        narration, tmp_path / "public-narration"
+    )
+    receipt = narration_service.consume_for_tts(
+        principal=principal,
+        project_id=project_id,
+        narration_version=approved.version,
+        narration_checksum=approved.narration_checksum,
+        request_id="consume_issue475_public",
+        trace_id="trace_issue475_public",
+    )
+    assert len(receipt.presenter_binding_checksum) == 64
+    assert not receipt.presenter_binding_checksum.startswith("sha256:")
+    short_audio = _speech_wav(seconds=8)
+    candidate = _candidate(
+        cut1_audio,
+        receipt,
+        _result(tts_provider, receipt, audio_bytes=short_audio),
+        _captions(receipt.spoken_text, end_ms=8_000),
+    )
+    service = cut1_audio.Cut1AudioAuthorityService(
+        receipt_validator=lambda value: narration_service.validate_tts_consumption_receipt(
+            principal=principal, receipt=value
+        )
+        == value,
+        commitment_resolver=lambda: None,
+        approved_config=_config(cut1_audio),
+    )
+
+    with pytest.raises(cut1_audio.AudioCaptionAuthorityError) as caught:
+        service.evaluate_authority(candidate=candidate)
+    assert caught.value.code == "AUDIO_DURATION_INVALID"
+
+
+def test_issue475_hosted_candidate_binds_public_and_runtime_configuration_identities(
+    cut1_audio: ModuleType,
+    tts_provider: ModuleType,
+) -> None:
+    receipt = _receipt()
+    config = _hosted_config(cut1_audio)
+    result = _result(
+        tts_provider,
+        receipt,
+        provider=config.provider,
+        provider_mode=config.provider_mode,
+        requested_voice=config.presenter_voices[receipt.presenter_id],
+        requested_locale=config.requested_locale,
+        model_id=config.model_id,
+        config_checksum=HOSTED_RUNTIME_CHECKSUM,
+    )
+    candidate = _candidate(
+        cut1_audio,
+        receipt,
+        result,
+        config_checksum=config.config_checksum,
+        provider_runtime_config_checksum=HOSTED_RUNTIME_CHECKSUM,
+    )
+    service = cut1_audio.Cut1AudioAuthorityService(
+        receipt_validator=lambda value: value == receipt,
+        commitment_resolver=lambda: None,
+        approved_config=config,
+    )
+    authority = service.evaluate_authority(candidate=candidate)
+    commitment = cut1_audio.audio_commitment(authority)
+
+    assert authority.config_checksum == config.config_checksum
+    assert authority.provider_runtime_config_checksum == HOSTED_RUNTIME_CHECKSUM
+    assert commitment.config_checksum == config.config_checksum
+    assert commitment.provider_runtime_config_checksum == HOSTED_RUNTIME_CHECKSUM
+
+
+def _hosted_candidate(cut1_audio: ModuleType, tts_provider: ModuleType) -> tuple[Any, Any, Any]:
+    receipt = _receipt()
+    config = _hosted_config(cut1_audio)
+    result = _result(
+        tts_provider,
+        receipt,
+        provider=config.provider,
+        provider_mode=config.provider_mode,
+        requested_voice=config.presenter_voices[receipt.presenter_id],
+        requested_locale=config.requested_locale,
+        model_id=config.model_id,
+        config_checksum=HOSTED_RUNTIME_CHECKSUM,
+    )
+    return receipt, config, _candidate(
+        cut1_audio,
+        receipt,
+        result,
+        config_checksum=config.config_checksum,
+        provider_runtime_config_checksum=HOSTED_RUNTIME_CHECKSUM,
+    )
+
+
+def test_issue475_hosted_identities_persist_restore_and_commit_directly(
+    cut1_audio: ModuleType,
+    tts_provider: ModuleType,
+    tmp_path: Path,
+) -> None:
+    receipt, config, candidate = _hosted_candidate(cut1_audio, tts_provider)
+    manifest = _manifest(cut1_audio, (candidate,), config=config)
+    state_path = tmp_path / "hosted-v2.json"
+    service = _service(
+        cut1_audio,
+        state_path=state_path,
+        current_receipts=(receipt,),
+        manifest=manifest,
+        config=config,
+    )
+
+    authority = service.admit_authorities(candidates=(candidate,))[0]
+    payload = json.loads(state_path.read_text(encoding="utf-8"))
+    row = payload["records"][0]
+
+    assert authority.schema_version == "cut1-audio-caption-authority-v2"
+    assert manifest.schema_version == "cut1-audio-commitment-manifest-v2"
+    assert row["configChecksum"] == config.config_checksum
+    assert row["providerRuntimeConfigChecksum"] == HOSTED_RUNTIME_CHECKSUM
+    assert row["result"]["config_checksum"] == HOSTED_RUNTIME_CHECKSUM
+    assert manifest.commitments[0].config_checksum == config.config_checksum
+    assert manifest.commitments[0].provider_runtime_config_checksum == HOSTED_RUNTIME_CHECKSUM
+    assert cut1_audio._commitment_payload(manifest.commitments[0])["schema"] == (
+        "cut1-audio-commitment-v2"
+    )
+
+    restored = _service(
+        cut1_audio,
+        state_path=state_path,
+        current_receipts=(receipt,),
+        manifest=manifest,
+        config=config,
+    )
+    assert restored.get_authority(receipt) == authority
+
+
+@pytest.mark.parametrize(
+    "public_checksum,runtime_checksum,result_checksum,code",
+    [
+        ("not-a-checksum", HOSTED_RUNTIME_CHECKSUM, HOSTED_RUNTIME_CHECKSUM, "CONFIG_BINDING_INVALID"),
+        ("sha256:" + "7" * 64, HOSTED_RUNTIME_CHECKSUM, HOSTED_RUNTIME_CHECKSUM, "CONFIG_BINDING_MISMATCH"),
+        (None, HOSTED_RUNTIME_CHECKSUM, HOSTED_RUNTIME_CHECKSUM, "CONFIG_BINDING_INVALID"),
+        (CONFIG_CHECKSUM, None, HOSTED_RUNTIME_CHECKSUM, "PROVIDER_RUNTIME_CONFIG_REQUIRED"),
+        (CONFIG_CHECKSUM, "not-a-checksum", HOSTED_RUNTIME_CHECKSUM, "PROVIDER_RUNTIME_CONFIG_INVALID"),
+        (CONFIG_CHECKSUM, CONFIG_CHECKSUM, CONFIG_CHECKSUM, "PROVIDER_RUNTIME_CONFIG_NOT_DISTINCT"),
+        (CONFIG_CHECKSUM, "sha256:" + "7" * 64, HOSTED_RUNTIME_CHECKSUM, "PROVIDER_RUNTIME_CONFIG_MISMATCH"),
+    ],
+)
+def test_issue475_rejects_missing_malformed_or_substituted_hosted_identities(
+    cut1_audio: ModuleType,
+    tts_provider: ModuleType,
+    public_checksum: str | None,
+    runtime_checksum: str | None,
+    result_checksum: str,
+    code: str,
+) -> None:
+    receipt, config, candidate = _hosted_candidate(cut1_audio, tts_provider)
+    if public_checksum == CONFIG_CHECKSUM:
+        public_checksum = config.config_checksum
+    if runtime_checksum == CONFIG_CHECKSUM:
+        runtime_checksum = config.config_checksum
+    if result_checksum == CONFIG_CHECKSUM:
+        result_checksum = config.config_checksum
+    candidate = replace(
+        candidate,
+        config_checksum=public_checksum,
+        provider_runtime_config_checksum=runtime_checksum,
+        result=replace(candidate.result, config_checksum=result_checksum),
+    )
+    service = cut1_audio.Cut1AudioAuthorityService(
+        receipt_validator=lambda value: value == receipt,
+        commitment_resolver=lambda: None,
+        approved_config=config,
+    )
+
+    with pytest.raises(cut1_audio.AudioCaptionAuthorityError) as caught:
+        service.evaluate_authority(candidate=candidate)
+    assert caught.value.code == code
+
+
+def test_issue475_local_candidate_rejects_fabricated_runtime_authority(
+    cut1_audio: ModuleType,
+    tts_provider: ModuleType,
+) -> None:
+    receipt = _receipt()
+    candidate = _candidate(
+        cut1_audio,
+        receipt,
+        _result(tts_provider, receipt),
+        provider_runtime_config_checksum=HOSTED_RUNTIME_CHECKSUM,
+    )
+    service = cut1_audio.Cut1AudioAuthorityService(
+        receipt_validator=lambda value: value == receipt,
+        commitment_resolver=lambda: None,
+        approved_config=_config(cut1_audio),
+    )
+
+    with pytest.raises(cut1_audio.AudioCaptionAuthorityError) as caught:
+        service.evaluate_authority(candidate=candidate)
+    assert caught.value.code == "PROVIDER_RUNTIME_CONFIG_FORBIDDEN"
+
+
+def test_issue475_mock_candidate_keeps_public_identity_without_runtime_authority(
+    cut1_audio: ModuleType,
+    tts_provider: ModuleType,
+) -> None:
+    receipt = _receipt()
+    voices = dict(VOICE_PROFILES)
+    checksum = cut1_audio.build_audio_config_checksum(
+        provider="mock-test-provider",
+        provider_mode="MOCK",
+        requested_locale="en-IN",
+        model_id="mock-test-v1",
+        presenter_voices=voices,
+    )
+    config = cut1_audio.Cut1AudioConfig(
+        provider="mock-test-provider",
+        provider_mode="MOCK",
+        requested_locale="en-IN",
+        model_id="mock-test-v1",
+        presenter_voices=voices,
+        config_checksum=checksum,
+    )
+    result = _result(
+        tts_provider,
+        receipt,
+        provider=config.provider,
+        provider_mode=config.provider_mode,
+        model_id=config.model_id,
+        config_checksum=checksum,
+    )
+    candidate = _candidate(cut1_audio, receipt, result, config_checksum=checksum)
+    service = cut1_audio.Cut1AudioAuthorityService(
+        receipt_validator=lambda value: value == receipt,
+        commitment_resolver=lambda: None,
+        approved_config=config,
+    )
+
+    authority = service.evaluate_authority(candidate=candidate)
+    assert authority.config_checksum == checksum
+    assert authority.provider_runtime_config_checksum is None
+
+
+@pytest.mark.parametrize(
+    "binding",
+    (
+        "sha256:" + "b" * 64,
+        "b" * 63,
+        "B" * 64,
+        "not-a-checksum",
+    ),
+)
+def test_issue475_rejects_noncanonical_presenter_binding_shapes(
+    cut1_audio: ModuleType,
+    tts_provider: ModuleType,
+    binding: str,
+) -> None:
+    receipt = replace(_receipt(), presenter_binding_checksum=binding)
+    candidate = _candidate(cut1_audio, receipt, _result(tts_provider, receipt))
+    service = cut1_audio.Cut1AudioAuthorityService(
+        receipt_validator=lambda _: True,
+        commitment_resolver=lambda: None,
+        approved_config=_config(cut1_audio),
+    )
+
+    with pytest.raises(cut1_audio.AudioCaptionAuthorityError) as caught:
+        service.evaluate_authority(candidate=candidate)
+    assert caught.value.code == "NARRATION_AUTHORITY_STALE"
+
+
+def test_issue475_coherently_rehashed_runtime_state_cannot_escape_external_commitment(
+    cut1_audio: ModuleType,
+    tts_provider: ModuleType,
+    tmp_path: Path,
+) -> None:
+    receipt, config, candidate = _hosted_candidate(cut1_audio, tts_provider)
+    manifest = _manifest(cut1_audio, (candidate,), config=config)
+    state_path = tmp_path / "coherent-runtime-forgery.json"
+    service = _service(
+        cut1_audio,
+        state_path=state_path,
+        current_receipts=(receipt,),
+        manifest=manifest,
+        config=config,
+    )
+    service.admit_authorities(candidates=(candidate,))
+    payload = json.loads(state_path.read_text(encoding="utf-8"))
+    row = payload["records"][0]
+    forged = "sha256:" + "7" * 64
+    row["providerRuntimeConfigChecksum"] = forged
+    row["result"]["config_checksum"] = forged
+    row["authority"]["provider_runtime_config_checksum"] = forged
+    authority_core = dict(row["authority"])
+    authority_core.pop("authority_checksum")
+    row["authority"]["authority_checksum"] = _json_sha(
+        {"schema": cut1_audio.SCHEMA, "authority": authority_core}
+    )
+    _refresh_state_checksum(payload)
+    state_path.write_text(json.dumps(payload), encoding="utf-8")
+
+    restored = _service(
+        cut1_audio,
+        state_path=state_path,
+        current_receipts=(receipt,),
+        manifest=manifest,
+        config=config,
+    )
+    assert restored.authority_count == 0
+    assert restored.quarantine_reason == "STATE_INVALID"
+
+
+def test_issue475_restore_rejects_rehashed_receipt_list_of_pairs(
+    cut1_audio: ModuleType,
+    tts_provider: ModuleType,
+    tmp_path: Path,
+) -> None:
+    receipt = _receipt()
+    candidate = _candidate(cut1_audio, receipt, _result(tts_provider, receipt))
+    manifest = _manifest(cut1_audio, (candidate,))
+    state_path = tmp_path / "receipt-list-of-pairs.json"
+    service = _service(
+        cut1_audio,
+        state_path=state_path,
+        current_receipts=(receipt,),
+        manifest=manifest,
+    )
+    service.admit_authorities(candidates=(candidate,))
+    payload = json.loads(state_path.read_text(encoding="utf-8"))
+    receipt_row = payload["records"][0]["receipt"]
+    payload["records"][0]["receipt"] = list(receipt_row.items())
+    _refresh_state_checksum(payload)
+    state_path.write_text(json.dumps(payload), encoding="utf-8")
+
+    restored = _service(
+        cut1_audio,
+        state_path=state_path,
+        current_receipts=(receipt,),
+        manifest=manifest,
+    )
+    assert restored.authority_count == 0
+    assert restored.quarantine_reason == "STATE_INVALID"
+
+
+def test_issue475_restore_quarantines_v1_state_schema(
+    cut1_audio: ModuleType,
+    tts_provider: ModuleType,
+    tmp_path: Path,
+) -> None:
+    receipt = _receipt()
+    candidate = _candidate(cut1_audio, receipt, _result(tts_provider, receipt))
+    manifest = _manifest(cut1_audio, (candidate,))
+    state_path = tmp_path / "v1-state.json"
+    service = _service(
+        cut1_audio,
+        state_path=state_path,
+        current_receipts=(receipt,),
+        manifest=manifest,
+    )
+    service.admit_authorities(candidates=(candidate,))
+    payload = json.loads(state_path.read_text(encoding="utf-8"))
+    payload["schema"] = "cut1-audio-caption-authority-v1"
+    _refresh_state_checksum(payload)
+    state_path.write_text(json.dumps(payload), encoding="utf-8")
+
+    restored = _service(
+        cut1_audio,
+        state_path=state_path,
+        current_receipts=(receipt,),
+        manifest=manifest,
+    )
+    assert restored.authority_count == 0
+    assert restored.quarantine_reason == "STATE_INVALID"
 
 
 @pytest.mark.parametrize("presenter_id", PRESENTERS)

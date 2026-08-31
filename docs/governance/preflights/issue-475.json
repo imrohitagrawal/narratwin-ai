@@ -1,0 +1,60 @@
+{
+  "schema_version": "GovernancePreflightV1",
+  "issue_number": 475,
+  "branch": "cut1-475-t05b-runtime-receipt-binding",
+  "objective": "From exact accepted main fb963f92057b8ccd5c0c070a3c9b5406ee9e884f, implement only Issue #475 under local reproduction comment 5470636741 at SHA-256 27b21d3db0ec01f310ac5db57260ea656b3f73bac50a40b78106a99d823159fe, public-receipt amendment comment 5470701562 at SHA-256 415139a73d27173eb406654ca66acd0ecf928f40b4eea0d3d71a7572558a49c1, exact route-freeze comment 5471056591 at SHA-256 239c2dcd903e0e5a056a2af4d9abdb80b8b148430c107549984f0ac2bb627348, and hosted-parity correction comment 5471282345 at SHA-256 0cac623417e1645403dca44b4cdc9fe09e4f23efd6c0acdb5b28af1f6dd9ffe1. Repair the T05B boundary only: accept the genuine bare presenter-binding digest, preserve the byte-identical public Cut 1 configuration checksum, bind a distinct hosted provider-runtime configuration checksum, and carry both identities through validation, persistence, restoration, authority hashing, and the immutable external commitment. Preserve mock/local disabled-default behavior and reject missing, malformed, substituted, stale, cross-presenter, replayed, partial, receipt-reused, and coherently rehashed state. Use exactly thirteen paths and no more than 1800 charged text lines with the frozen per-path caps. Keep backend/app/tts_provider.py, providers, credentials, authentication state, environment lookup, network, egress, spend, synthesis, voice selection, reference regeneration or promotion, T06, deployment, publication, release, production, listening, T05 completion, and Cut 1 acceptance out of scope. Stop on route, base, authority, budget, receipt, public or runtime configuration, source, evaluation, presenter, persistence, commitment, replay, security, or hosted drift.",
+  "status_decision": "update-minimally",
+  "scope": {
+    "required": [
+      "backend/app/cut1_audio.py",
+      "tests/unit/test_cut1_audio.py",
+      "docs/governance/preflights/issue-475.json",
+      "scripts/quality/stage8_cut1_routes.py",
+      "tests/unit/test_stage8_cut1_routes.py",
+      "tests/unit/test_stage8_quality_gate.py",
+      "docs/ADR/0071-cut1-audio-caption-authority.md",
+      "docs/API_CONTRACT.md",
+      "docs/DATA_MODEL.md",
+      "docs/SECURITY_AND_PRIVACY.md",
+      "docs/QUALITY_GATES.md",
+      "docs/STATUS.md",
+      "docs/TRACEABILITY.md"
+    ],
+    "allowed_prefixes": [
+      "backend/app/cut1_audio.py",
+      "tests/unit/test_cut1_audio.py",
+      "docs/governance/preflights/issue-475.json",
+      "scripts/quality/stage8_cut1_routes.py",
+      "tests/unit/test_stage8_cut1_routes.py",
+      "tests/unit/test_stage8_quality_gate.py",
+      "docs/ADR/0071-cut1-audio-caption-authority.md",
+      "docs/API_CONTRACT.md",
+      "docs/DATA_MODEL.md",
+      "docs/SECURITY_AND_PRIVACY.md",
+      "docs/QUALITY_GATES.md",
+      "docs/STATUS.md",
+      "docs/TRACEABILITY.md"
+    ],
+    "forbidden": [
+      ".github/",
+      "Makefile",
+      "pyproject.toml",
+      "uv.lock",
+      "frontend/",
+      "backend/app/narration.py",
+      "backend/app/tts_provider.py",
+      "backend/app/google_tts_runtime.py",
+      "backend/app/stage6.py",
+      "backend/app/stage7.py",
+      "backend/app/presenter_registry.json",
+      "backend/app/presenter_registry.py",
+      "backend/app/cut1_grounding.py",
+      "docs/governance/cut1-project-facts-v1.json",
+      "docs/governance/cut1-presenter-derivatives-v1.json",
+      "docs/governance/cut1-presenter-live-binding-v2.json",
+      "docs/governance/cut1-all-presenter-acceptance-matrix-v1.json",
+      "data/",
+      "assets/"
+    ]
+  }
+}

@@ -25,6 +25,7 @@ ISSUE468_BRANCH = "governance-468-scoped-merge-cleanup"
 ISSUE466_BRANCH = "cut1-466-t05a-presenter-source-integrity"
 ISSUE471_BRANCH = "governance-471-cleanup-authority-anchor"
 ISSUE473_BRANCH = "governance-473-cleanup-anchor-consumer-fixture"
+ISSUE475_BRANCH = "cut1-475-t05b-runtime-receipt-binding"
 ISSUE386_BRANCH = "cut1-process-386-modular-route-enforcement"
 ISSUE413_BRANCH = "cut1-process-413-frontend-runtime-openssl"
 ISSUE405_BRANCH = "process-405-heartbeat2-main-reliability"
@@ -77,6 +78,15 @@ ISSUE459_T05A_AUTHORITY_SHA256 = "ab0d0b486bf77eac59db2b83c0d33bd0ae61bb52ed26b3
 ISSUE459_T05B_BASE = "bfb8487760dc6aeef8b05af95e0ecd40d0076f3a"
 ISSUE471_BASE = "7eb4b99d7bc2bcf11cfc8c959baacb6cf3a21e81"
 ISSUE473_BASE = "55a0810e2ff327490d6dbadbf58580c06edef600"
+ISSUE475_BASE = "fb963f92057b8ccd5c0c070a3c9b5406ee9e884f"
+ISSUE475_RUNTIME_COMMENT = "5470636741"
+ISSUE475_RUNTIME_SHA256 = "27b21d3db0ec01f310ac5db57260ea656b3f73bac50a40b78106a99d823159fe"
+ISSUE475_RECEIPT_COMMENT = "5470701562"
+ISSUE475_RECEIPT_SHA256 = "415139a73d27173eb406654ca66acd0ecf928f40b4eea0d3d71a7572558a49c1"
+ISSUE475_FREEZE_COMMENT = "5471056591"
+ISSUE475_FREEZE_SHA256 = "239c2dcd903e0e5a056a2af4d9abdb80b8b148430c107549984f0ac2bb627348"
+ISSUE475_HOSTED_COMMENT = "5471282345"
+ISSUE475_HOSTED_SHA256 = "0cac623417e1645403dca44b4cdc9fe09e4f23efd6c0acdb5b28af1f6dd9ffe1"
 ISSUE471_AUTHORITY_SHA256 = (
     "7222909116385fe74cbc7df6bbccb759687d2e4a6bf0e0637465679434de33ab",
     "30ba0f8e7b736293c4b6c110cbe9ce46bf7639507b0441bd37cb222bb62ae94f",
@@ -124,6 +134,21 @@ ISSUE460_HOSTED_SECURITY_PATHS = {
 ISSUE459_HOSTED_CORRECTION_PATHS = {".gitleaksignore", "scripts/ci/check_gitleaks_regression.py", "tests/unit/test_gitleaks_regression.py", "scripts/quality/check_stage8_docs.py", "tests/unit/test_stage8_quality_gate.py"}
 
 ROUTES = {
+    ISSUE475_BRANCH: {
+        "backend/app/cut1_audio.py",
+        "tests/unit/test_cut1_audio.py",
+        "docs/governance/preflights/issue-475.json",
+        "scripts/quality/stage8_cut1_routes.py",
+        "tests/unit/test_stage8_cut1_routes.py",
+        "tests/unit/test_stage8_quality_gate.py",
+        "docs/ADR/0071-cut1-audio-caption-authority.md",
+        "docs/API_CONTRACT.md",
+        "docs/DATA_MODEL.md",
+        "docs/SECURITY_AND_PRIVACY.md",
+        "docs/QUALITY_GATES.md",
+        "docs/STATUS.md",
+        "docs/TRACEABILITY.md",
+    },
     ISSUE468_BRANCH: {
         "AGENTS.md",
         "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md",
@@ -613,6 +638,8 @@ ROUTE_ISSUES[ISSUE471_BRANCH] = 471
 TOTAL_LIMITS[ISSUE471_BRANCH] = 1400
 ROUTE_ISSUES[ISSUE473_BRANCH] = 473
 TOTAL_LIMITS[ISSUE473_BRANCH] = 580
+ROUTE_ISSUES[ISSUE475_BRANCH] = 475
+TOTAL_LIMITS[ISSUE475_BRANCH] = 1800
 ROUTE_ISSUES[ISSUE459_BRANCH] = 459
 TOTAL_LIMITS[ISSUE459_BRANCH] = 4300
 ROUTE_ISSUES[ISSUE459_T03_BRANCH] = 459
@@ -657,6 +684,21 @@ ISSUE459_EDITABLE_AUTHORITY_SHA256 = {
 }
 ISSUE459_BASE_SOURCE_SHA256 = {"docs/STATUS.md": "9045b595ca1622680f621dffa4dff88435e2fde0d13e3c061ced7eb6df9ae8bf", "docs/TRACEABILITY.md": "e597069e3d6b765a9d68e5336ff9597d6d7b809e5ea6f316f22312ca71ea136a", "docs/QUALITY_GATES.md": "9f628d22ec62075e560ef478820cf094d923cdf1cfded56a512291c61f6e542b", "docs/REPOSITORY_GUARDRAILS.md": "04f8b405bc7ba9b615cc1d5d7e489bcbf643b9de4bfc9b331e5a60c38629e82f"}
 TEXT_LIMITS = {
+    ISSUE475_BRANCH: {
+        "backend/app/cut1_audio.py": 340,
+        "tests/unit/test_cut1_audio.py": 600,
+        "docs/governance/preflights/issue-475.json": 260,
+        "scripts/quality/stage8_cut1_routes.py": 160,
+        "tests/unit/test_stage8_cut1_routes.py": 240,
+        "tests/unit/test_stage8_quality_gate.py": 40,
+        "docs/ADR/0071-cut1-audio-caption-authority.md": 120,
+        "docs/API_CONTRACT.md": 60,
+        "docs/DATA_MODEL.md": 80,
+        "docs/SECURITY_AND_PRIVACY.md": 80,
+        "docs/QUALITY_GATES.md": 100,
+        "docs/STATUS.md": 100,
+        "docs/TRACEABILITY.md": 100,
+    },
     ISSUE468_BRANCH: {
         "AGENTS.md": 70,
         "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md": 180,
@@ -1468,6 +1510,7 @@ def route_base(run: Callable[[list[str]], Any], branch: str) -> str:
             )
         return ISSUE466_TRANSITION_BASE
     fixed_routes = {
+        ISSUE475_BRANCH: (475, ISSUE475_BASE),
         ISSUE468_BRANCH: (468, ISSUE468_BASE),
         ISSUE473_BRANCH: (473, ISSUE473_BASE),
         ISSUE471_BRANCH: (471, ISSUE471_BASE),
@@ -1498,7 +1541,7 @@ def route_base(run: Callable[[list[str]], Any], branch: str) -> str:
             or fixed_value != base or common_value != base
         )
         branch_point_invalid = False
-        if not fixed_invalid and branch in {ISSUE468_BRANCH, ISSUE473_BRANCH, ISSUE471_BRANCH, ISSUE459_T05B_BRANCH, ISSUE459_T05A_BRANCH, ISSUE459_T03_BRANCH, ISSUE460_BRANCH, ISSUE452_BRANCH, ISSUE451_BRANCH, ISSUE150_BRANCH, ISSUE424_BRANCH, ISSUE421_BRANCH, ISSUE368_IMPLEMENTATION_BRANCH,
+        if not fixed_invalid and branch in {ISSUE475_BRANCH, ISSUE468_BRANCH, ISSUE473_BRANCH, ISSUE471_BRANCH, ISSUE459_T05B_BRANCH, ISSUE459_T05A_BRANCH, ISSUE459_T03_BRANCH, ISSUE460_BRANCH, ISSUE452_BRANCH, ISSUE451_BRANCH, ISSUE150_BRANCH, ISSUE424_BRANCH, ISSUE421_BRANCH, ISSUE368_IMPLEMENTATION_BRANCH,
                       ISSUE368_QUOTA_FIX_BRANCH, ISSUE368_BRANCH,
                       ISSUE368_PROMPT_BRANCH}:
             branch_point = run(["git", "merge-base", "origin/main", "HEAD"])
@@ -1743,6 +1786,38 @@ def check_exact_route(
             )
         except (OSError, ValueError, TypeError) as error:
             failures.append(f"Issue #468 governance preflight failed closed: {error}")
+    elif branch == ISSUE475_BRANCH:
+        try:
+            preflight = load_json_without_duplicate_members(
+                root / "docs/governance/preflights/issue-475.json"
+            )
+            findings = validate_governance_preflight(
+                preflight,
+                context={"issue_number": 475, "branch": branch,
+                         "changed_files": sorted(files)},
+            )
+            objective = preflight.get("objective") if isinstance(preflight, dict) else None
+            issue475_authority = (
+                ISSUE475_BASE,
+                ISSUE475_RUNTIME_COMMENT,
+                ISSUE475_RUNTIME_SHA256,
+                ISSUE475_RECEIPT_COMMENT,
+                ISSUE475_RECEIPT_SHA256,
+                ISSUE475_FREEZE_COMMENT,
+                ISSUE475_FREEZE_SHA256,
+                ISSUE475_HOSTED_COMMENT,
+                ISSUE475_HOSTED_SHA256,
+            )
+            failures.extend(
+                f"Issue #475 governance preflight failed: {finding.code}"
+                for finding in findings
+            )
+            if not isinstance(objective, str) or any(
+                value not in objective for value in issue475_authority
+            ):
+                failures.append("Issue #475 T05B binding authority drifted.")
+        except (OSError, ValueError, TypeError) as error:
+            failures.append(f"Issue #475 governance preflight failed closed: {error}")
     elif branch == ISSUE466_BRANCH:
         try:
             preflight = load_json_without_duplicate_members(
@@ -1887,11 +1962,11 @@ def check_exact_route(
             failures.append(f"Issue #459 governance preflight failed closed: {error}")
     try:
         base = fixed_base if fixed_base is not None else route_base(run, branch)
-        if branch in {ISSUE459_BRANCH, ISSUE459_T03_BRANCH, ISSUE459_T05A_BRANCH,
+        if branch in {ISSUE475_BRANCH, ISSUE459_BRANCH, ISSUE459_T03_BRANCH, ISSUE459_T05A_BRANCH,
                       ISSUE459_T05B_BRANCH, ISSUE466_BRANCH}:
             transition_base = ISSUE459_TRANSITION_BASE if branch == ISSUE459_BRANCH else base
             transitions = (
-                *(() if branch in {ISSUE459_T03_BRANCH, ISSUE459_T05A_BRANCH,
+                *(() if branch in {ISSUE475_BRANCH, ISSUE459_T03_BRANCH, ISSUE459_T05A_BRANCH,
                                    ISSUE459_T05B_BRANCH, ISSUE466_BRANCH} else (
                     run(["git", "diff", "--name-status", "-z", "--find-copies-harder",
                          ISSUE459_BASE, ISSUE459_FROZEN_HEAD, "--"]),

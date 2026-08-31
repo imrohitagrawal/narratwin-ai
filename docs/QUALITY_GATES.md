@@ -1754,6 +1754,37 @@ Test WAV/SRT bytes are mutation stimuli only. This gate does not prove
 intelligibility, voice identity, real provider output, listening acceptance,
 T05 completion, T06 readiness, Cut 1 acceptance, release, or production.
 
+### Issue #475 T05B runtime/receipt binding correction
+
+Exact branch `cut1-475-t05b-runtime-receipt-binding` is pinned to accepted main
+`fb963f92057b8ccd5c0c070a3c9b5406ee9e884f`. Its thirteen-path route permits at
+most 1,800 charged text lines and fails closed on base, path, preflight,
+rename/copy, per-path, or aggregate drift.
+
+Committed RED evidence reproduces the genuine public receipt's bare presenter
+binding and the distinct hosted provider-runtime checksum. GREEN must preserve
+the public configuration checksum byte-for-byte, require and externally bind a
+distinct hosted runtime checksum, retain explicit `null` for local/mock, and
+advance only authority/state/commitment/manifest to v2 while configuration
+remains v1. Persistence, restore, authority hashing, and immutable commitments
+must reject missing, malformed, substituted, stale, cross-presenter, partial,
+replayed, receipt-reused, and coherently rehashed state.
+
+```text
+uv run pytest -q tests/unit/test_cut1_audio.py
+uv run pytest -q tests/unit/test_stage8_cut1_routes.py
+NARRATWIN_POLICY_ONLY=1 make quality
+uv run ruff check backend tests
+uv run mypy backend tests
+make quality
+bash scripts/ci/dependency-security.sh
+bash scripts/ci/backend-test.sh
+```
+
+This correction performs zero provider calls, credential reads, egress, spend,
+synthesis, audio generation, or listening. It does not complete T05 or unblock
+T06; genuine full narration and exact-hash human listening remain separate.
+
 ## Issue #466 T05A presenter-source integrity gate
 
 Exact branch `cut1-466-t05a-presenter-source-integrity` is pinned to merged
