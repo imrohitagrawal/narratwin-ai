@@ -94,6 +94,16 @@ The normative facts, blockers, invariants, matrices, test plan and exact future
 route are in
 `docs/reviews/ISSUE_368_GOOGLE_GEMINI_TTS_GOVERNANCE.md`.
 
+### Current T05A presenter-binding compatibility
+
+The current narration receipt deliberately carries `presenter_binding_checksum`
+as exactly 64 lowercase hexadecimal characters, while its narration, source
+evaluation, evaluation, approval, and receipt checksums remain `sha256:`-
+prefixed. The Google adapter validates those two shapes independently and
+rejects legacy-prefixed, uppercase, short, long, or non-hex presenter bindings
+before identity resolution or transport preparation. This compatibility repair
+does not change the provider, endpoint, voices, activation, or release posture.
+
 ## Consequences
 
 - The stale `local_tts.py`/eSpeak execution route is rejected, while its commit

@@ -652,6 +652,8 @@ EXPECTED = {
         "scripts/quality/stage8_cut1_routes.py",
         "tests/unit/test_stage8_cut1_routes.py",
         "docs/STATUS.md",
+        "docs/ADR/0056-cut1-google-gemini-tts.md",
+        "docs/TRACEABILITY.md",
     },
     "stage8-368-cut1-google-tts-prompt-contract": {
         "docs/governance/preflights/issue-368.json",
@@ -3220,7 +3222,7 @@ def test_issue368_binding_compat_route_is_exact_bounded_and_base_pinned() -> Non
     assert branch == "stage8-issue-368-google-presenter-binding-compat"
     assert set(artifact["scope"]["required"]) == EXPECTED[branch] == routes.ROUTES[branch]
     assert artifact["scope"]["required"] == artifact["scope"]["allowed_prefixes"]
-    assert routes.TOTAL_LIMITS[branch] == 590
+    assert routes.TOTAL_LIMITS[branch] == 800
     assert routes.TEXT_LIMITS[branch]["backend/app/tts_provider.py"] == 20
     assert routes.TEXT_LIMITS[branch]["docs/STATUS.md"] == 100
     calls: list[list[str]] = []

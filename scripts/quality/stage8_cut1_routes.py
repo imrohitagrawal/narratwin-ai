@@ -64,6 +64,7 @@ ISSUE368_BINDING_COMPAT_AUTHORITY = (
     "5485633036", "8ccd797c3fac7802923a04aff0ac82d64363d8d9d25366a5365eef98b5436bd2",
     "5485657599", "8bde1e31e0b3e9642f39d2847b07d6818ed1e5ad14d05b2eb6c0af17b1f2e084",
     "5485702633", "3654edbbbc295cf2ce5a3206a4856c5987529458fe5742cbc3fd544a71024ddc",
+    "5485891564", "6139a366e29d88affe418b9b912a7f31c10ca973f0ce0bf5ec3a8f93b2d131a5",
 )
 ISSUE421_BASE = "a868137fab607ae75d4b272301e9fc52b898e15c"
 ISSUE424_BASE = "afcf0325c3ec925b68b770eda0bb8c839bcce4dd"
@@ -501,6 +502,8 @@ ROUTES = {
         "scripts/quality/stage8_cut1_routes.py",
         "tests/unit/test_stage8_cut1_routes.py",
         "docs/STATUS.md",
+        "docs/ADR/0056-cut1-google-gemini-tts.md",
+        "docs/TRACEABILITY.md",
     },
     ISSUE368_PROMPT_BRANCH: {
         "docs/governance/preflights/issue-368.json",
@@ -727,7 +730,7 @@ TOTAL_LIMITS[ISSUE466_BRANCH] = 2000
 ROUTE_ISSUES[ISSUE460_BRANCH] = 460
 TOTAL_LIMITS[ISSUE460_BRANCH] = 2600
 ROUTE_ISSUES[ISSUE368_BINDING_COMPAT_BRANCH] = 368
-TOTAL_LIMITS[ISSUE368_BINDING_COMPAT_BRANCH] = 590
+TOTAL_LIMITS[ISSUE368_BINDING_COMPAT_BRANCH] = 800
 ISSUE383_BINARY_FILES = {
     "frontend/public/demo/myra-synthetic-presenter.webp",
     "frontend/public/demo/raj-synthetic-presenter.webp",
@@ -1055,10 +1058,12 @@ TEXT_LIMITS = {
     ISSUE368_BINDING_COMPAT_BRANCH: {
         "backend/app/tts_provider.py": 20,
         "tests/unit/test_stage6_tts_provider.py": 30,
-        "docs/governance/preflights/issue-368-provider-binding-compat.json": 180,
-        "scripts/quality/stage8_cut1_routes.py": 110,
-        "tests/unit/test_stage8_cut1_routes.py": 150,
+        "docs/governance/preflights/issue-368-provider-binding-compat.json": 200,
+        "scripts/quality/stage8_cut1_routes.py": 130,
+        "tests/unit/test_stage8_cut1_routes.py": 170,
         "docs/STATUS.md": 100,
+        "docs/ADR/0056-cut1-google-gemini-tts.md": 60,
+        "docs/TRACEABILITY.md": 80,
     },
     ISSUE368_PROMPT_BRANCH: {
         path: 260 if path == "tests/unit/test_stage8_cut1_routes.py"

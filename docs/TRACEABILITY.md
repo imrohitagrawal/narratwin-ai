@@ -583,6 +583,13 @@ durability, deployment, and release decisions remain outside this trace.
 | Issue comment `5256748344`, frozen fourteen-path preflight, and accepted zero-egress diagnostic | Authorize repair without treating the diagnostic rejection as final or widening provider/release authority | No branch provider call; Issue #368 remains open and release remains No-Go |
 | ADC runtime RED/GREEN tests | Require a valid 6–30-character configured project, exact approved hash, present/equal native credential project loaded without a masking override, and immediate pre-egress revalidation | Raw project, access token, credential material, and identity values are absent from representations, errors, and durable evidence |
 | Provider fingerprint/header mutation tests | Bind `quotaProjectRequired=true`, approved hash, and exact ordered Authorization/Content-Type/`x-goog-user-project` names; reject removal, value/order mutation, caller injection, or stale binding before send | No product/API Google vocabulary and no change to DNS/TLS/SNI/proxy/redirect, receipt, cost, duplicate-spend, timeout, or WAV controls |
+
+## Issue #368 current-receipt compatibility traceability
+
+| Requirement | Evidence | Boundary |
+|---|---|---|
+| Admit the exact current T05A presenter-binding shape at the optional Google boundary | RED commit `6a2a700`; GREEN commit `2244169`; all-presenter request test and five malformed-shape mutations | Presenter binding is exactly 64 lowercase hex; the other five lineage checksums remain prefixed SHA-256 |
+| Preserve fail-closed pre-egress behavior | Identity and transport fakes remain uncalled for prefixed, uppercase, short, long, and non-hex bindings | No real identity resolution, provider call, narration egress, synthesis, spend, or audio acceptance occurs on the correction branch |
 | Redacted official permission/config probes | Prove matching active/billing/ADC hashes and effective `serviceusage.services.use` plus `aiplatform.endpoints.predict` for the one intended project | Hashes and booleans only; no synthesis request, spend, identifier, token, or legal inference |
 
 ## Issue #413 frontend runtime OpenSSL traceability
