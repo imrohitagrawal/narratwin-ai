@@ -728,6 +728,23 @@ def test_g368_01_04_receipt_privacy_and_byte_checks_precede_identity(
 
 
 @pytest.mark.parametrize(
+    "binding",
+    ("sha256:" + "4" * 64, "A" * 64, "4" * 63, "4" * 65, "z" * 64),
+)
+def test_g368_current_presenter_binding_shape_fails_closed_before_identity(
+    binding: str,
+) -> None:
+    transport = FakeGoogleTransport([])
+    identity = FakeGoogleIdentityProvider()
+    with pytest.raises(TTSProviderError) as caught:
+        google_provider(transport, identity, receipt_validator=lambda _value: True).synthesize(
+            receipt=replace(receipt(), presenter_binding_checksum=binding)
+        )
+    assert caught.value.code == "GOOGLE_TTS_AUTHORITY_INVALID"
+    assert identity.calls == 0 and transport.calls == []
+
+
+@pytest.mark.parametrize(
     "response",
     [
         google_response(
