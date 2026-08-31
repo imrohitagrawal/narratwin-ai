@@ -27,6 +27,7 @@ ISSUE471_BRANCH = "governance-471-cleanup-authority-anchor"
 ISSUE473_BRANCH = "governance-473-cleanup-anchor-consumer-fixture"
 ISSUE475_BRANCH = "cut1-475-t05b-runtime-receipt-binding"
 ISSUE478_BRANCH = "cut1-process-478-pr477-status-closeout"
+ISSUE482_BRANCH = "cut1-process-482-dependency-security-refresh"
 ISSUE386_BRANCH = "cut1-process-386-modular-route-enforcement"
 ISSUE413_BRANCH = "cut1-process-413-frontend-runtime-openssl"
 ISSUE405_BRANCH = "process-405-heartbeat2-main-reliability"
@@ -87,6 +88,12 @@ ISSUE478_BRANCH_COMMENT = "5473718767"
 ISSUE478_BRANCH_SHA256 = "3c42143d50b21916cc9e063f9a06855b7d57b398310b19dfd64cb9309613e8f2"
 ISSUE478_REVIEW_COMMENT = "5474383480"
 ISSUE478_REVIEW_SHA256 = "444a43fcd953c961d31d3cdc3387e12a8c2fc3d297c1e6805eba21ba3e893b1f"
+ISSUE482_BASE = "98fa8b41ccea68c840b5462bd5377057f4a3eb14"
+ISSUE482_BODY_SHA256 = "736252b09e0b79a57e5ed8643f5b915feff7522693427fe2d48d4dba372c5289"
+ISSUE482_ROUTE_COMMENT = "5481998106"
+ISSUE482_ROUTE_SHA256 = "a006437d5b773fa2a6a555c0744b40b292d55224c4d60aa739fe9da5ab2af46f"
+ISSUE482_CORRECTION_COMMENT = "5482139606"
+ISSUE482_CORRECTION_SHA256 = "85ad9dbf5dcc91948f625a15c1b58c9306be2fc014c6e298e7ddb760a538e699"
 ISSUE475_RUNTIME_COMMENT = "5470636741"
 ISSUE475_RUNTIME_SHA256 = "27b21d3db0ec01f310ac5db57260ea656b3f73bac50a40b78106a99d823159fe"
 ISSUE475_RECEIPT_COMMENT = "5470701562"
@@ -142,6 +149,14 @@ ISSUE460_HOSTED_SECURITY_PATHS = {
 ISSUE459_HOSTED_CORRECTION_PATHS = {".gitleaksignore", "scripts/ci/check_gitleaks_regression.py", "tests/unit/test_gitleaks_regression.py", "scripts/quality/check_stage8_docs.py", "tests/unit/test_stage8_quality_gate.py"}
 
 ROUTES = {
+    ISSUE482_BRANCH: {
+        "docs/governance/preflights/issue-482.json", "uv.lock",
+        "tests/unit/test_dependency_security_contract.py",
+        "scripts/quality/stage8_cut1_routes.py", "tests/unit/test_stage8_cut1_routes.py",
+        "tests/unit/test_stage8_quality_gate.py", "docs/THIRD_PARTY_NOTICES.md",
+        "docs/QUALITY_GATES.md", "docs/STAGE_ISSUE_PLAN.md", "docs/STATUS.md",
+        "docs/TRACEABILITY.md",
+    },
     ISSUE478_BRANCH: {
         "docs/STATUS.md",
         "docs/governance/preflights/issue-478.json",
@@ -657,6 +672,8 @@ ROUTE_ISSUES[ISSUE475_BRANCH] = 475
 TOTAL_LIMITS[ISSUE475_BRANCH] = 1800
 ROUTE_ISSUES[ISSUE478_BRANCH] = 478
 TOTAL_LIMITS[ISSUE478_BRANCH] = 800
+ROUTE_ISSUES[ISSUE482_BRANCH] = 482
+TOTAL_LIMITS[ISSUE482_BRANCH] = 3200
 ROUTE_ISSUES[ISSUE459_BRANCH] = 459
 TOTAL_LIMITS[ISSUE459_BRANCH] = 4300
 ROUTE_ISSUES[ISSUE459_T03_BRANCH] = 459
@@ -701,6 +718,16 @@ ISSUE459_EDITABLE_AUTHORITY_SHA256 = {
 }
 ISSUE459_BASE_SOURCE_SHA256 = {"docs/STATUS.md": "9045b595ca1622680f621dffa4dff88435e2fde0d13e3c061ced7eb6df9ae8bf", "docs/TRACEABILITY.md": "e597069e3d6b765a9d68e5336ff9597d6d7b809e5ea6f316f22312ca71ea136a", "docs/QUALITY_GATES.md": "9f628d22ec62075e560ef478820cf094d923cdf1cfded56a512291c61f6e542b", "docs/REPOSITORY_GUARDRAILS.md": "04f8b405bc7ba9b615cc1d5d7e489bcbf643b9de4bfc9b331e5a60c38629e82f"}
 TEXT_LIMITS = {
+    ISSUE482_BRANCH: {
+        "docs/governance/preflights/issue-482.json": 220, "uv.lock": 1800,
+        "tests/unit/test_dependency_security_contract.py": 240,
+        "scripts/quality/stage8_cut1_routes.py": 140,
+        "tests/unit/test_stage8_cut1_routes.py": 220,
+        "tests/unit/test_stage8_quality_gate.py": 40,
+        "docs/THIRD_PARTY_NOTICES.md": 100, "docs/QUALITY_GATES.md": 80,
+        "docs/STAGE_ISSUE_PLAN.md": 80, "docs/STATUS.md": 100,
+        "docs/TRACEABILITY.md": 60,
+    },
     ISSUE478_BRANCH: {
         "docs/STATUS.md": 100,
         "docs/governance/preflights/issue-478.json": 220,
@@ -1534,6 +1561,7 @@ def route_base(run: Callable[[list[str]], Any], branch: str) -> str:
             )
         return ISSUE466_TRANSITION_BASE
     fixed_routes = {
+        ISSUE482_BRANCH: (482, ISSUE482_BASE),
         ISSUE478_BRANCH: (478, ISSUE478_BASE),
         ISSUE475_BRANCH: (475, ISSUE475_BASE),
         ISSUE468_BRANCH: (468, ISSUE468_BASE),
@@ -1566,7 +1594,7 @@ def route_base(run: Callable[[list[str]], Any], branch: str) -> str:
             or fixed_value != base or common_value != base
         )
         branch_point_invalid = False
-        if not fixed_invalid and branch in {ISSUE478_BRANCH, ISSUE475_BRANCH, ISSUE468_BRANCH, ISSUE473_BRANCH, ISSUE471_BRANCH, ISSUE459_T05B_BRANCH, ISSUE459_T05A_BRANCH, ISSUE459_T03_BRANCH, ISSUE460_BRANCH, ISSUE452_BRANCH, ISSUE451_BRANCH, ISSUE150_BRANCH, ISSUE424_BRANCH, ISSUE421_BRANCH, ISSUE368_IMPLEMENTATION_BRANCH,
+        if not fixed_invalid and branch in {ISSUE482_BRANCH, ISSUE478_BRANCH, ISSUE475_BRANCH, ISSUE468_BRANCH, ISSUE473_BRANCH, ISSUE471_BRANCH, ISSUE459_T05B_BRANCH, ISSUE459_T05A_BRANCH, ISSUE459_T03_BRANCH, ISSUE460_BRANCH, ISSUE452_BRANCH, ISSUE451_BRANCH, ISSUE150_BRANCH, ISSUE424_BRANCH, ISSUE421_BRANCH, ISSUE368_IMPLEMENTATION_BRANCH,
                       ISSUE368_QUOTA_FIX_BRANCH, ISSUE368_BRANCH,
                       ISSUE368_PROMPT_BRANCH}:
             branch_point = run(["git", "merge-base", "origin/main", "HEAD"])
@@ -1668,6 +1696,36 @@ def route_binary_sizes(root: Path, paths: set[str], encoding: str | None = None)
     return sizes
 
 
+def route_text_integrity(root: Path, run: Callable[[list[str]], Any], paths: set[str]) -> None:
+    route_binary_sizes(root, paths, "utf-8")
+    ordered = sorted(paths)
+    commands = (
+        (["git", "ls-tree", "-r", "-z", "HEAD", "--", *ordered],
+         r"([0-9]{6}) (blob|commit) ([0-9a-f]{40,64})\t(.+)", "HEAD"),
+        (["git", "ls-files", "--stage", "-z", "--", *ordered],
+         r"([0-9]{6}) ([0-9a-f]{40,64}) ([0-3])\t(.+)", "index"),
+    )
+    for command, pattern, label in commands:
+        result = run(command)
+        if result.returncode:
+            raise RuntimeError(result.stderr.strip() or f"Route text {label}-mode evidence failed.")
+        found: set[str] = set()
+        for record in parse_paths_z(str(result.stdout)):
+            match = re.fullmatch(pattern, record)
+            if match is None:
+                raise RuntimeError(f"Route text {label}-mode evidence is malformed.")
+            groups = match.groups()
+            mode, path = groups[0], groups[3]
+            kind = groups[1] if label == "HEAD" else groups[2]
+            if path not in paths or path in found:
+                raise RuntimeError(f"Route text {label}-mode evidence has an unexpected path.")
+            if mode != "100644" or kind not in {"blob", "0"}:
+                raise RuntimeError(f"Route text must be an ordinary tracked file: {path}")
+            found.add(path)
+        if found != paths:
+            raise RuntimeError(f"Route text {label}-mode evidence is missing: {sorted(paths - found)[0]}")
+
+
 def issue459_snapshot_failures(root: Path, commit: str, sources: dict[str, str], label: str) -> list[str]:
     try:
         text = (root / "docs/governance/ISSUE_459_CONTROLLED_PRESENTER_PREFLIGHT_V1.md").read_text(encoding="utf-8")
@@ -1736,7 +1794,28 @@ def check_exact_route(
         f"Issue #{issue} route is missing required path: {path}"
         for path in sorted(files - effective_changed)
     )
-    if branch == ISSUE478_BRANCH:
+    if branch == ISSUE482_BRANCH:
+        try:
+            preflight = load_json_without_duplicate_members(
+                root / "docs/governance/preflights/issue-482.json"
+            )
+            findings = validate_governance_preflight(
+                preflight,
+                context={"issue_number": 482, "branch": branch, "changed_files": sorted(files)},
+            )
+            failures.extend(f"Issue #482 governance preflight failed: {item.code}" for item in findings)
+            objective = preflight.get("objective") if isinstance(preflight, dict) else None
+            issue482_authority = (
+                ISSUE482_BASE, ISSUE482_BODY_SHA256, ISSUE482_ROUTE_COMMENT, ISSUE482_ROUTE_SHA256,
+                ISSUE482_CORRECTION_COMMENT, ISSUE482_CORRECTION_SHA256,
+            )
+            if not isinstance(objective, str) or any(
+                value not in objective for value in issue482_authority
+            ):
+                failures.append("Issue #482 dependency authority drifted.")
+        except (OSError, ValueError, TypeError) as error:
+            failures.append(f"Issue #482 governance preflight failed closed: {error}")
+    elif branch == ISSUE478_BRANCH:
         try:
             preflight = load_json_without_duplicate_members(
                 root / "docs/governance/preflights/issue-478.json"
@@ -2006,11 +2085,11 @@ def check_exact_route(
             failures.append(f"Issue #459 governance preflight failed closed: {error}")
     try:
         base = fixed_base if fixed_base is not None else route_base(run, branch)
-        if branch in {ISSUE478_BRANCH, ISSUE475_BRANCH, ISSUE459_BRANCH, ISSUE459_T03_BRANCH, ISSUE459_T05A_BRANCH,
+        if branch in {ISSUE482_BRANCH, ISSUE478_BRANCH, ISSUE475_BRANCH, ISSUE459_BRANCH, ISSUE459_T03_BRANCH, ISSUE459_T05A_BRANCH,
                       ISSUE459_T05B_BRANCH, ISSUE466_BRANCH}:
             transition_base = ISSUE459_TRANSITION_BASE if branch == ISSUE459_BRANCH else base
             transitions = (
-                *(() if branch in {ISSUE478_BRANCH, ISSUE475_BRANCH, ISSUE459_T03_BRANCH, ISSUE459_T05A_BRANCH,
+                *(() if branch in {ISSUE482_BRANCH, ISSUE478_BRANCH, ISSUE475_BRANCH, ISSUE459_T03_BRANCH, ISSUE459_T05A_BRANCH,
                                    ISSUE459_T05B_BRANCH, ISSUE466_BRANCH} else (
                     run(["git", "diff", "--name-status", "-z", "--find-copies-harder",
                          ISSUE459_BASE, ISSUE459_FROZEN_HEAD, "--"]),
@@ -2033,7 +2112,9 @@ def check_exact_route(
             f"Issue #{issue} charge for {path} exceeds {limit}."
             for path, limit in TEXT_LIMITS[branch].items() if charges.get(path, 0) > limit
         )
-        if branch == ISSUE459_BRANCH:
+        if branch == ISSUE482_BRANCH:
+            route_text_integrity(root, run, files)
+        elif branch == ISSUE459_BRANCH:
             sizes = route_binary_sizes(root, files, "utf-8")
             failures.extend(
                 f"Issue #459 file {path} must be smaller than {limit} bytes."

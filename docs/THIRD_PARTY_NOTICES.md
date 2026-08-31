@@ -339,3 +339,14 @@ This record grants no publication, distribution, provider/runtime activation,
 credential, egress, spend, human-study, release, production, or Cut 1 acceptance
 authority. The Meera, Raj, and Myra originals remain immutable, and no new Meera
 binary was generated or activated.
+
+## Issue #482 security refresh
+
+The resolved Python graph refreshes `aiohttp` to 3.14.3, `datasets` to 5.0.1,
+`setuptools` to 84.0.0, and `torch` to 2.13.0 to remove newly reported
+advisories. Torch resolution also updates `cuda-toolkit` to 13.0.3.0 and
+narrows the unchanged `cuda-bindings` 13.3.1 CUDA-pathfinder marker to Python
+below 3.15. Existing
+licenses, upstream sources, direct dependency intent, optional/local behavior,
+and notices remain applicable; no new provider, dataset, model, or media asset
+is introduced by this lock-only refresh.

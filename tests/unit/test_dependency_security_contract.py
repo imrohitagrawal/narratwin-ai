@@ -62,6 +62,14 @@ GOOGLE_AUTH_PACKAGES = {
     "pyasn1-modules": ("0.4.2", "6ca56d4d6b05cbc23d8920a3e91de1bac50e43b90e49439cc0d7aa7e143eb692", "677091de870a80aae844b1ca6134f54652fa2c8c5a52aa396440ac3106e941e6", "29253a9207ce32b64c3ac6600edc75368f98473906e8fd1043bd6b5b1de2c14a"),
     "pyasn1": ("0.6.4", "3ad96cec94414e068c189c877f0b9ffa701f05c7c1317874cf5dafff6a34130a", "9c447d8431c947fe4c8febc4ed9e760bc29011a5b01e5c74b67025bd9fb8ce81", "deda9277cfd454080ec40b207fb6df82206a3a2688735233cdcd8d3d565f088b"),
 }
+ISSUE482_PACKAGES = {
+    "aiohttp": ("3.14.3", "ad7a70c5426492328c2ddc0fadd6040332646c74ec5e53142387a59a7395b746"),
+    "cuda-bindings": ("13.3.1", "dcb0611f046b60cd6bd71096e04458faca2b53e0e517141643a57525bf44ff80"),
+    "cuda-toolkit": ("13.0.3.0", "7f0e7c6f154685fbc63dac8c900a605fa46de3f331018f7b651bb5aedf47cfdd"),
+    "datasets": ("5.0.1", "fed0d5c3a2eacd683ef71fb0cd2e233c933d004300c272aacf3328cd42be6f54"),
+    "setuptools": ("84.0.0", "40d7bb1469b8b97ed537a39c27fa445b44513df8d59c77247cdc925f44c53343"),
+    "torch": ("2.13.0", "25956554d432863f0207b50dc5f717d294723c4635a65700e4648f8aa2f5f112"),
+}
 def _normalize_issue434_project(project: dict[str, Any]) -> None:
     dev = project["dependency-groups"]["dev"]; assert dev.count("cryptography==50.0.0") == 1; dev.remove("cryptography==50.0.0")  # noqa: E702
 def _normalize_issue434_lock(lock: dict[str, Any]) -> None:
@@ -76,6 +84,19 @@ def _normalize_pip_security_delta(lock: dict[str, Any], base_lock: dict[str, Any
     assert package["wheels"][0]["hash"] == f"sha256:{PIP_SECURITY_WHEEL_SHA256}"
     index = next(i for i, item in enumerate(lock["package"]) if item["name"] == "pip")
     lock["package"][index] = next(item for item in base_lock["package"] if item["name"] == "pip")
+
+
+def _normalize_issue482_delta(lock: dict[str, Any], base_lock: dict[str, Any]) -> None:
+    for name, (version, digest) in ISSUE482_PACKAGES.items():
+        index = next(i for i, item in enumerate(lock["package"]) if item["name"] == name)
+        package = lock["package"][index]
+        assert package["version"] == version
+        assert hashlib.sha256(
+            json.dumps(package, sort_keys=True, separators=(",", ":")).encode()
+        ).hexdigest() == digest
+        lock["package"][index] = next(
+            item for item in base_lock["package"] if item["name"] == name
+        )
 
 
 def _normalize_t03_pillow_dev_delta(project: dict[str, Any], lock: dict[str, Any]) -> None:
@@ -130,6 +151,7 @@ def _assert_google_auth_delta(project: dict[str, Any], lock: dict[str, Any], bas
     normalized_lock["package"] = [package for package in normalized_lock["package"] if package["name"] not in GOOGLE_AUTH_PACKAGES]
     _normalize_issue434_lock(normalized_lock)
     _normalize_pip_security_delta(normalized_lock, base_lock)
+    _normalize_issue482_delta(normalized_lock, base_lock)
     assert normalized_lock == base_lock
 
 
@@ -196,6 +218,7 @@ def _assert_pypdf_615_contract(project_text: str, lock_text: str) -> None:
     normalized_lock["package"] = [package for package in normalized_lock["package"] if package["name"] not in GOOGLE_AUTH_PACKAGES]
     _normalize_issue434_lock(normalized_lock)
     _normalize_pip_security_delta(normalized_lock, base_lock)
+    _normalize_issue482_delta(normalized_lock, base_lock)
     _normalize_t03_pillow_dev_delta(normalized_project, normalized_lock)
     assert normalized_project == base_project
     assert normalized_lock == base_lock
@@ -565,6 +588,24 @@ def test_security_wrapper_is_fail_closed_without_advisory_suppression() -> None:
     assert "--error" in semgrep_wrapper
     assert "--metrics=off" in semgrep_wrapper
     assert "--json-output \"${SCAN_RESULT}\"" in semgrep_wrapper
+
+
+def test_issue482_lock_refresh_is_exact_and_removes_vulnerable_versions() -> None:
+    packages = {
+        row["name"]: row
+        for row in tomllib.loads((ROOT / "uv.lock").read_text(encoding="utf-8"))["package"]
+    }
+    assert {
+        name: packages[name]["version"] for name in ISSUE482_PACKAGES
+    } == {name: version for name, (version, _digest) in ISSUE482_PACKAGES.items()}
+    for name, (_version, digest) in ISSUE482_PACKAGES.items():
+        assert hashlib.sha256(
+            json.dumps(packages[name], sort_keys=True, separators=(",", ":")).encode()
+        ).hexdigest() == digest
+    assert not {
+        ("aiohttp", "3.14.1"), ("datasets", "5.0.0"),
+        ("setuptools", "81.0.0"), ("torch", "2.12.1"),
+    } & {(name, package["version"]) for name, package in packages.items()}
 
 
 def test_runtime_bypass_validator_covers_the_actual_audit_wrapper(tmp_path: Path) -> None:
