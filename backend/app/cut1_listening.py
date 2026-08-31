@@ -21,11 +21,10 @@ from backend.app.cut1_audio import (
 )
 from backend.app.storage import write_state
 
-SCHEMA = "cut1-listening-authority-v1"
-DECISION_SCHEMA = "cut1-human-listening-decision-v1"
-COMMITMENT_SCHEMA = "cut1-listening-decision-commitment-v1"
-MANIFEST_SCHEMA = "cut1-listening-decision-manifest-v1"
-PRESENTERS = ("meera", "myra", "raj")
+SCHEMA, DECISION_SCHEMA = "cut1-listening-authority-v1", "cut1-human-listening-decision-v1"
+COMMITMENT_SCHEMA, MANIFEST_SCHEMA = ("cut1-listening-decision-commitment-v1",
+                                      "cut1-listening-decision-manifest-v1")
+PRESENTERS, MAX_STATE_BYTES, MAX_SEQUENCE = ("meera", "myra", "raj"), 256_000, 2_147_483_647
 LISTENING_CRITERIA = (
     "intelligibility",
     "exact_spoken_words",
@@ -37,8 +36,6 @@ LISTENING_CRITERIA = (
     "pacing",
     "presenter_fit",
 )
-MAX_STATE_BYTES = 256_000
-MAX_SEQUENCE = 2_147_483_647
 CHECKSUM = re.compile(r"sha256:[0-9a-f]{64}\Z")
 IDENTIFIER = re.compile(r"[A-Za-z0-9][A-Za-z0-9._:@/-]{0,127}\Z")
 UTC_TIMESTAMP = re.compile(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z\Z")
@@ -293,6 +290,15 @@ class Cut1ListeningAuthorityService:
             authors = self._trusted_authors()
             manifest = self._trusted_manifest(audio)
             authority = self._validate(decisions, audio, authors, manifest)
+            if self.state_path is not None:
+                try:
+                    self.state_path.touch(mode=0o600, exist_ok=False)
+                except FileExistsError:
+                    self._restore()
+                    _fail("DECISION_REPLAYED" if self._authority else "AUTHORITY_STATE_QUARANTINED",
+                          "Listening state was already claimed.")
+                except OSError:
+                    _fail("AUTHORITY_STATE_QUARANTINED", "Listening state cannot be claimed.")
             self._persist(authority, "PREPARED")
             try:
                 if (
@@ -487,7 +493,7 @@ class Cut1ListeningAuthorityService:
             for value in (decision.decision_id, decision.reviewer_id, decision.artifact_author_id)
         ):
             _fail("DECISION_ID_INVALID", "Decision identities are invalid.")
-        if not UTC_TIMESTAMP.fullmatch(decision.reviewed_at):
+        if not isinstance(decision.reviewed_at, str) or not UTC_TIMESTAMP.fullmatch(decision.reviewed_at):
             _fail("DECISION_TIMESTAMP_INVALID", "Decision timestamp is not canonical UTC.")
         try:
             datetime.strptime(decision.reviewed_at, "%Y-%m-%dT%H:%M:%SZ")
@@ -507,9 +513,9 @@ class Cut1ListeningAuthorityService:
             _fail("REVIEWER_NOT_INDEPENDENT", "Reviewer must differ from artifact author.")
         if decision.binding != _binding(audio_authority, audio):
             _fail("AUDIO_AUTHORITY_MISMATCH", "Decision does not bind current T05B authority.")
-        if CHECKSUM.fullmatch(
-            decision.decision_checksum
-        ) is None or decision.decision_checksum != decision_checksum(decision):
+        if (not isinstance(decision.decision_checksum, str) or CHECKSUM.fullmatch(
+            decision.decision_checksum) is None
+                or decision.decision_checksum != decision_checksum(decision)):
             _fail("DECISION_CHECKSUM_INVALID", "Decision checksum is invalid.")
 
     def _persist(self, authority: Cut1ListeningAuthority, status: str) -> None:

@@ -1994,6 +1994,9 @@ current T05B manifest, exact ordered decision commitments, monotonic sequence,
 and revocations. Resolver absence, replay, partial/reordered decisions,
 reviewer-author equality, substitution, or coherent rehash fails closed with a
 typed `ListeningAuthorityError`.
+Non-string timestamps/checksums return their bounded timestamp/checksum codes;
+an existing shared state returns replay or quarantined-state authority, never raw
+runtime exceptions or a second acceptance.
 
 This interface has no HTTP endpoint and accepts no media or narration bytes.
 It validates human-authored evidence; it never authors or infers acceptance.

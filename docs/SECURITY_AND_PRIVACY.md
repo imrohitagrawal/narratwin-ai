@@ -740,6 +740,9 @@ substitution, and coherent candidate/state rehashing. State is bounded,
 regular-file-only, non-symlink, duplicate-member-rejecting, atomic, and
 all-or-nothing on restore. Resolver failure and concurrent authority drift fail
 closed.
+An exclusive initial state-file claim serializes competing instances. Existing
+committed state fails as replay; incomplete, unsafe, or tampered state is
+quarantined and cannot be overwritten by candidate evidence.
 
 The module imports no provider SDK, credential/environment access, network
 client, socket, subprocess, ASR, synthesis, or media-generation capability.

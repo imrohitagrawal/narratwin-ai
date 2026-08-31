@@ -40,6 +40,9 @@ paths, and restores all-or-nothing. Admission, restoration, and retrieval each
 revalidate current T05B, author, and decision commitments. Missing, malformed,
 partial, reordered, cross-presenter, substituted, stale, replayed, revoked, or
 coherently rehashed evidence fails closed.
+State-backed admission atomically creates the missing state file as its exclusive
+claim before persistence. A competing instance restores an existing committed
+state as replay, or quarantines incomplete/tampered state, without overwriting it.
 
 ## Consequences
 

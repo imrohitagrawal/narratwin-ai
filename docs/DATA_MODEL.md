@@ -1073,3 +1073,5 @@ revalidate all other authority on restore. Duplicate members, unsafe paths,
 tampering, stale external authority, or partial state quarantines the whole
 store. No audio, caption text, narration text, provider payload, or credential
 belongs in this model.
+The initially missing state file is exclusively created before the first write;
+another instance cannot replace that claim or a committed decision set.
