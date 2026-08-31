@@ -338,6 +338,40 @@ ISSUE478_LINE_CAPS = {
     "tests/unit/test_stage8_cut1_routes.py": 240,
     "tests/unit/test_stage8_quality_gate.py": 60,
 }
+ISSUE479_EXPECTED = {
+    "docs/governance/preflights/issue-479.json",
+    "backend/app/cut1_listening.py",
+    "tests/unit/test_cut1_listening.py",
+    "scripts/quality/stage8_cut1_routes.py",
+    "tests/unit/test_stage8_cut1_routes.py",
+    "tests/unit/test_stage8_quality_gate.py",
+    "docs/ADR/0073-cut1-exact-hash-listening-authority.md",
+    "docs/API_CONTRACT.md",
+    "docs/DATA_MODEL.md",
+    "docs/SECURITY_AND_PRIVACY.md",
+    "docs/OBSERVABILITY_AND_COST.md",
+    "docs/QUALITY_GATES.md",
+    "docs/STAGE_ISSUE_PLAN.md",
+    "docs/STATUS.md",
+    "docs/TRACEABILITY.md",
+}
+ISSUE479_LINE_CAPS = {
+    "docs/governance/preflights/issue-479.json": 220,
+    "backend/app/cut1_listening.py": 620,
+    "tests/unit/test_cut1_listening.py": 530,
+    "scripts/quality/stage8_cut1_routes.py": 160,
+    "tests/unit/test_stage8_cut1_routes.py": 260,
+    "tests/unit/test_stage8_quality_gate.py": 60,
+    "docs/ADR/0073-cut1-exact-hash-listening-authority.md": 140,
+    "docs/API_CONTRACT.md": 80,
+    "docs/DATA_MODEL.md": 80,
+    "docs/SECURITY_AND_PRIVACY.md": 80,
+    "docs/OBSERVABILITY_AND_COST.md": 60,
+    "docs/QUALITY_GATES.md": 80,
+    "docs/STAGE_ISSUE_PLAN.md": 80,
+    "docs/STATUS.md": 100,
+    "docs/TRACEABILITY.md": 50,
+}
 ISSUE482_EXPECTED = {
     "docs/governance/preflights/issue-482.json", "uv.lock",
     "tests/unit/test_dependency_security_contract.py",
@@ -405,6 +439,7 @@ def remove_cleanup_marker(text: str, marker: str) -> str:
 
 
 EXPECTED = {
+    "cut1-process-479-t05c-listening-authority": ISSUE479_EXPECTED,
     "cut1-process-482-dependency-security-refresh": ISSUE482_EXPECTED,
     "cut1-process-478-pr477-status-closeout": ISSUE478_EXPECTED,
     "cut1-475-t05b-runtime-receipt-binding": ISSUE475_EXPECTED,
@@ -2217,6 +2252,167 @@ def test_issue478_route_freezes_corrected_authority_scope_and_budgets() -> None:
     assert all(value in preflight["objective"] for value in authority)
 
 
+def test_issue479_route_freezes_t05c_authority_scope_and_budgets() -> None:
+    branch = "cut1-process-479-t05c-listening-authority"
+    assert getattr(routes, "ISSUE479_BRANCH", None) == branch
+    assert routes.ISSUE479_BASE == "98fa8b41ccea68c840b5462bd5377057f4a3eb14"
+    assert routes.ISSUE479_ROUTE_COMMENT == "5481284482"
+    assert routes.ISSUE479_ROUTE_SHA256 == (
+        "bc878f9886a1decc2fbab102d1d9be7e8e23ab870a9850d486445564813dc2b4"
+    )
+    assert routes.ISSUE479_CLARIFICATION_COMMENT == "5473637391"
+    assert routes.ISSUE479_CLARIFICATION_SHA256 == (
+        "9a08ee1c2ce085cec47ca3981ccfa8a9e79c700b75fc8ab1f66b301417e1a05f"
+    )
+    assert routes.ISSUE479_BUDGET_COMMENT == "5481522433"
+    assert routes.ISSUE479_BUDGET_SHA256 == (
+        "6e71a7301a9e9f2eb7fb251a4d38b37f0101804f8cdfddd68f36f87d9961223e"
+    )
+    assert routes.ISSUE479_TRANSITION_COMMENT == "5484097802"
+    assert routes.ISSUE479_TRANSITION_SHA256 == (
+        "3f1dac2e24bb52caea5db6cf8ea1a224a7f776277af490cee4189595c316bf57"
+    )
+    assert routes.ROUTES[branch] == ISSUE479_EXPECTED
+    assert routes.ROUTE_ISSUES[branch] == 479
+    assert routes.TOTAL_LIMITS[branch] == 2600
+    assert routes.TEXT_LIMITS[branch] == ISSUE479_LINE_CAPS
+    assert branch in stage8.EFFECTIVE_STAGE8_ROUTES
+    preflight = json.loads((REPO / "docs/governance/preflights/issue-479.json").read_text())
+    assert preflight["issue_number"] == 479 and preflight["branch"] == branch
+    assert set(preflight["scope"]["required"]) == ISSUE479_EXPECTED
+    assert set(preflight["scope"]["allowed_prefixes"]) == ISSUE479_EXPECTED
+    authority = {
+        routes.ISSUE479_BASE,
+        routes.ISSUE479_ROUTE_COMMENT,
+        routes.ISSUE479_ROUTE_SHA256,
+        routes.ISSUE479_CLARIFICATION_COMMENT,
+        routes.ISSUE479_CLARIFICATION_SHA256,
+        routes.ISSUE479_BUDGET_COMMENT,
+        routes.ISSUE479_BUDGET_SHA256,
+        routes.ISSUE479_FROZEN_HEAD,
+        routes.ISSUE479_TRANSITION_BASE,
+        routes.ISSUE479_TRANSITION_MERGE,
+        routes.ISSUE479_TRANSITION_COMMENT,
+        routes.ISSUE479_TRANSITION_SHA256,
+    }
+    assert all(value in preflight["objective"] for value in authority)
+
+
+def test_issue479_requires_exact_reviewed_main_transition() -> None:
+    original = "98fa8b41ccea68c840b5462bd5377057f4a3eb14"
+    frozen = "773ba43e870a1a18785829c3093d8a74f4416078"
+    transition_base = "9b5472a53844495a9d54637167ce48a33a572e11"
+    transition_merge = "56f92e969c8de3d39bd452e6917cb8017a6abf98"
+    assert routes.ISSUE479_BASE == original
+    assert routes.ISSUE479_FROZEN_HEAD == frozen
+    assert routes.ISSUE479_TRANSITION_BASE == transition_base
+    assert routes.ISSUE479_TRANSITION_MERGE == transition_merge
+
+    def good(args: list[str]) -> subprocess.CompletedProcess[str]:
+        if args[:2] == ["git", "rev-parse"]:
+            value = transition_base if args[2] == "origin/main^{commit}" else args[2].removesuffix("^{commit}")
+            return completed(args, out=value + "\n")
+        if args[:3] == ["git", "merge-base", "--is-ancestor"]:
+            return completed(args)
+        if args[:4] == ["git", "show", "-s", "--format=%P"]:
+            return completed(args, out=f"{frozen} {transition_base}\n")
+        raise AssertionError(args)
+
+    assert routes.route_base(good, routes.ISSUE479_BRANCH) == transition_base
+    for rejected in ("object", "current-main", "ancestry", "parents"):
+        def broken(args: list[str], *, rejected: str = rejected) -> subprocess.CompletedProcess[str]:
+            if rejected == "object" and args[:2] == ["git", "rev-parse"] and args[2].startswith(frozen):
+                return completed(args, code=128)
+            if rejected == "current-main" and args[:2] == ["git", "rev-parse"] and args[2].startswith("origin/main"):
+                return completed(args, out="0" * 40 + "\n")
+            if rejected == "ancestry" and args[:3] == ["git", "merge-base", "--is-ancestor"]:
+                return completed(args, code=1)
+            if rejected == "parents" and args[:4] == ["git", "show", "-s", "--format=%P"]:
+                return completed(args, out=f"{transition_base} {frozen}\n")
+            return good(args)
+
+        error = pytest.raises(RuntimeError, routes.route_base, broken, routes.ISSUE479_BRANCH)
+        assert "Issue #479 reviewed transition" in str(error.value)
+
+
+def _issue479_runner(
+    args: list[str], name_status: str = "",
+) -> subprocess.CompletedProcess[str]:
+    output = "\0".join(sorted(ISSUE479_EXPECTED)) + "\0" if "--name-only" in args else name_status
+    return completed(args, out=output)
+
+
+@pytest.mark.parametrize(
+    "name_status",
+    (
+        "D\0backend/app/cut1_listening.py\0",
+        "R100\0backend/app/cut1_listening.py\0backend/app/listening.py\0",
+        "C100\0backend/app/cut1_listening.py\0backend/app/listening.py\0",
+    ),
+)
+def test_issue479_rejects_destructive_path_transitions(
+    monkeypatch: Any, name_status: str,
+) -> None:
+    monkeypatch.setattr(routes, "route_base", lambda *_: routes.ISSUE479_TRANSITION_BASE)
+    monkeypatch.setattr(routes, "route_text_charges", lambda *_: (0, {}))
+    calls: list[list[str]] = []
+
+    def destructive(args: list[str]) -> subprocess.CompletedProcess[str]:
+        calls.append(args)
+        return _issue479_runner(args, name_status)
+
+    failures: list[str] = []
+    routes.check_exact_route(
+        REPO, destructive, routes.ISSUE479_BRANCH, ISSUE479_EXPECTED, failures
+    )
+    assert len(calls) == 6
+    assert failures == ["Issue #479 route forbids deleted, renamed, or copied paths."]
+
+
+def test_issue479_rejects_missing_extra_and_budget_drift(monkeypatch: Any) -> None:
+    branch = routes.ISSUE479_BRANCH
+    monkeypatch.setattr(routes, "route_base", lambda *_: routes.ISSUE479_TRANSITION_BASE)
+    monkeypatch.setattr(routes, "route_text_charges", lambda *_: (0, {}))
+    missing = sorted(ISSUE479_EXPECTED)[0]
+    snapshots = 0
+
+    def missing_snapshot(args: list[str]) -> subprocess.CompletedProcess[str]:
+        nonlocal snapshots
+        if "--name-only" not in args:
+            return completed(args)
+        snapshots += 1
+        paths = ISSUE479_EXPECTED - ({missing} if snapshots == 1 else set())
+        return completed(args, out="\0".join(sorted(paths)) + "\0")
+
+    failures: list[str] = []
+    routes.check_exact_route(REPO, missing_snapshot, branch, ISSUE479_EXPECTED, failures)
+    assert failures == [f"Issue #479 route snapshot is missing required path: {missing}"]
+    monkeypatch.setattr(stage8, "current_branch", lambda: branch)
+    monkeypatch.setattr(stage8, "changed_files_for_stage_scope",
+                        lambda: [*ISSUE479_EXPECTED, "rogue.txt"])
+    monkeypatch.setattr(stage8.cut1_routes, "route_base",
+                        lambda *_: routes.ISSUE479_TRANSITION_BASE)
+    monkeypatch.setattr(stage8.cut1_routes, "route_text_charges", lambda *_: (0, {}))
+    failures = []
+    stage8.check_stage_scope(failures)
+    assert failures == ["Stage 8 changed file outside the allowlist: rogue.txt"]
+    for total, charges, expected in (
+        (2601, {}, "Issue #479 charge 2601 exceeds 2600."),
+        (1, {"backend/app/cut1_listening.py": 621},
+         "Issue #479 charge for backend/app/cut1_listening.py exceeds 620."),
+        (1, {"tests/unit/test_cut1_listening.py": 531},
+         "Issue #479 charge for tests/unit/test_cut1_listening.py exceeds 530."),
+    ):
+        monkeypatch.setattr(routes, "route_text_charges",
+                            lambda *_, values=(total, charges): values)
+        failures = []
+        routes.check_exact_route(REPO, _issue479_runner, branch, ISSUE479_EXPECTED, failures)
+        assert failures == [expected]
+    for lookalike in (branch + "-retry", branch + "/child"):
+        assert lookalike not in routes.ROUTES
+        assert lookalike not in stage8.EFFECTIVE_STAGE8_ROUTES
+
+
 def test_issue482_route_freezes_dependency_scope_and_budgets() -> None:
     branch = "cut1-process-482-dependency-security-refresh"
     assert routes.ISSUE482_BRANCH == branch
@@ -2878,9 +3074,11 @@ def test_exact_route_completeness_lookalikes_and_budgets(monkeypatch: Any) -> No
     monkeypatch.setattr(routes, "route_binary_sizes", lambda *_: {path: 1 for path in routes.ISSUE383_BINARY_FILES | set(routes.ISSUE452_BYTE_LIMITS) | set(routes.ISSUE459_BYTE_LIMITS) | set(routes.ISSUE459_T03_BYTE_LIMITS)})
     for branch, paths in EXPECTED.items():
         failures: list[str] = []
-        routes.check_exact_route(REPO, issue459_run if branch == routes.ISSUE459_BRANCH else lambda _: completed([]), branch, set(paths), failures)
+        runner = (issue459_run if branch == routes.ISSUE459_BRANCH else
+                  _issue479_runner if branch == routes.ISSUE479_BRANCH else lambda _: completed([]))
+        routes.check_exact_route(REPO, runner, branch, set(paths), failures)
         assert failures == []
-        if branch == routes.ISSUE459_BRANCH:
+        if branch in {routes.ISSUE459_BRANCH, routes.ISSUE479_BRANCH}:
             continue
         missing = sorted(paths)[0]
         failures = []
@@ -2916,7 +3114,9 @@ def test_per_route_aggregate_per_file_and_binary_caps(monkeypatch: Any) -> None:
     for branch, limit in routes.TOTAL_LIMITS.items():
         monkeypatch.setattr(routes, "route_text_charges", lambda *_, value=limit: (value + 1, {}))
         failures: list[str] = []
-        routes.check_exact_route(REPO, issue459_run if branch == routes.ISSUE459_BRANCH else lambda _: completed([]), branch, EXPECTED[branch], failures)
+        runner = (issue459_run if branch == routes.ISSUE459_BRANCH else
+                  _issue479_runner if branch == routes.ISSUE479_BRANCH else lambda _: completed([]))
+        routes.check_exact_route(REPO, runner, branch, EXPECTED[branch], failures)
         assert failures == [f"Issue #{routes.ROUTE_ISSUES[branch]} charge {limit + 1} exceeds {limit}."]
     branch = routes.ISSUE383_BRANCH
     path = "tests/unit/test_cut1_presenter_assets.py"

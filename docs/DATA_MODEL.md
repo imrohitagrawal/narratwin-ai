@@ -1051,3 +1051,27 @@ and manifest rollback quarantine the whole store. Retrieval revalidates
 current receipt and manifest authority. A
 new trusted manifest atomically replaces the complete set; no record becomes
 visible until its write succeeds.
+
+## Cut 1 human-listening authority
+
+`CurrentCut1AudioAuthoritySet` projects the exact T05B manifest sequence,
+manifest checksum, and canonical three-authority tuple without raw media.
+`Cut1ListeningArtifactBinding` projects every exact identity needed to connect
+a human decision to its presenter, selected voice, narration/source/evaluation,
+approval/receipt/request/configuration, audio, captions, and T05B authority.
+
+`Cut1ListeningDecision` adds decision/reviewer/artifact-author identities,
+canonical UTC review time, all nine explicit criteria, and its checksum.
+`Cut1ListeningDecisionCommitment` and its external manifest authenticate the
+ordered decision set, current T05B manifest, sequence, and revocations.
+`Cut1ListeningAuthority` records the exact admitted audio and decision manifest
+identities plus the three decisions and aggregate authority checksum.
+
+Optional state is one bounded metadata-only JSON object. It stores the three
+decisions and authority/state checksums; current resolvers reconstruct and
+revalidate all other authority on restore. Duplicate members, unsafe paths,
+tampering, stale external authority, or partial state quarantines the whole
+store. No audio, caption text, narration text, provider payload, or credential
+belongs in this model.
+The initially missing state file is exclusively created before the first write;
+another instance cannot replace that claim or a committed decision set.
