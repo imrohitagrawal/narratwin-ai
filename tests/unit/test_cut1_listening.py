@@ -426,11 +426,15 @@ def test_persists_metadata_only_and_quarantines_tampered_state(tmp_path: Path) -
     assert_code("AUTHORITY_STATE_QUARANTINED", quarantined.get_authority)
 
 
-def test_quarantines_symlink_state(tmp_path: Path) -> None:
+@pytest.mark.parametrize("live_target", (True, False))
+def test_quarantines_live_and_dangling_symlink_state(
+    tmp_path: Path, live_target: bool,
+) -> None:
     current = audio_set()
     decisions = accepted_decisions(current)
     target = tmp_path / "target.json"
-    target.write_text("{}", encoding="utf-8")
+    if live_target:
+        target.write_text("{}", encoding="utf-8")
     state = tmp_path / "listening.json"
     state.symlink_to(target)
     quarantined = service(current, decisions, state_path=state)
@@ -459,3 +463,61 @@ def test_module_has_no_provider_network_environment_or_acceptance_factory() -> N
         for name in names
         for token in ("accept_decision", "infer_criteria", "listen_audio")
     )
+
+
+def test_rejects_forged_inner_t05b_authority_with_unchanged_outer_commitment() -> None:
+    current = audio_set()
+    forged = replace(current.authorities[0], audio_checksum=checksum("forged-audio"))
+    forged_set = replace(current, authorities=(forged, *current.authorities[1:]))
+    decisions = accepted_decisions(forged_set)
+    assert_code(
+        "AUDIO_AUTHORITY_INVALID",
+        lambda: service(forged_set, decisions).admit_decisions(decisions=decisions),
+    )
+
+
+def test_failed_post_write_recheck_never_restores_as_accepted(tmp_path: Path) -> None:
+    current = audio_set()
+    decisions = accepted_decisions(current)
+    manifest = commitment_manifest(current, decisions)
+    calls = 0
+
+    def changing_audio() -> CurrentCut1AudioAuthoritySet:
+        nonlocal calls
+        calls += 1
+        if calls > 1:
+            raise RuntimeError("authority changed")
+        return current
+
+    state = tmp_path / "listening.json"
+    candidate = Cut1ListeningAuthorityService(
+        audio_authority_resolver=changing_audio,
+        artifact_author_resolver=lambda: {
+            value: f"audio-author-{value}" for value in PRESENTERS
+        },
+        decision_commitment_resolver=lambda: manifest,
+        state_path=state,
+    )
+    assert_code("AUDIO_AUTHORITY_UNAVAILABLE",
+                lambda: candidate.admit_decisions(decisions=decisions))
+    restored = service(current, decisions, state_path=state)
+    assert restored.quarantine_reason == "STATE_INVALID"
+    assert_code("AUTHORITY_STATE_QUARANTINED", restored.get_authority)
+
+
+def test_malformed_nested_runtime_types_fail_with_bounded_codes() -> None:
+    current = audio_set()
+    decisions = accepted_decisions(current)
+    malformed = (replace(decisions[0], binding=cast(Any, object())), *decisions[1:])
+    assert_code("DECISION_SET_INVALID",
+                lambda: service(current, decisions).admit_decisions(decisions=malformed))
+    manifest = replace(commitment_manifest(current, decisions), commitments=cast(Any, None))
+    candidate = Cut1ListeningAuthorityService(
+        audio_authority_resolver=lambda: current,
+        artifact_author_resolver=lambda: {
+            value: f"audio-author-{value}" for value in PRESENTERS
+        },
+        decision_commitment_resolver=lambda: manifest,
+    )
+    assert_code("DECISION_COMMITMENT_INVALID",
+                lambda: candidate.admit_decisions(decisions=decisions))
