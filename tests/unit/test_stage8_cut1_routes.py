@@ -2179,7 +2179,9 @@ def test_issue478_route_freezes_corrected_authority_scope_and_budgets() -> None:
     assert preflight["issue_number"] == 478 and preflight["branch"] == branch
     assert set(preflight["scope"]["required"]) == ISSUE478_EXPECTED
     assert set(preflight["scope"]["allowed_prefixes"]) == ISSUE478_EXPECTED
-    assert {routes.ISSUE478_BASE, "5473694821", "5473718767"} <= set(preflight["objective"].split())
+    authority = {routes.ISSUE478_BASE, routes.ISSUE478_ROUTE_COMMENT, routes.ISSUE478_ROUTE_SHA256,
+                 routes.ISSUE478_BRANCH_COMMENT, routes.ISSUE478_BRANCH_SHA256}
+    assert all(value in preflight["objective"] for value in authority)
 
 
 def test_issue478_rejects_wrong_base_and_preflight_bindings(
@@ -2209,7 +2211,7 @@ def test_issue478_rejects_wrong_base_and_preflight_bindings(
         routes.check_exact_route(tmp_path, lambda _: completed([]), branch, ISSUE478_EXPECTED, failures)
         assert any(code in failure for failure in failures)
     drifted = copy.deepcopy(artifact)
-    drifted["scope"]["required"][0] = "wrong/path.md"
+    drifted["scope"]["required"][1] = "wrong/path.md"
     target.write_text(json.dumps(drifted)); failures = []
     routes.check_exact_route(tmp_path, lambda _: completed([]), branch, ISSUE478_EXPECTED, failures)
     assert any("SCOPE." in failure for failure in failures)
@@ -2223,6 +2225,13 @@ def test_issue478_rejects_missing_and_budget_drift(monkeypatch: Any) -> None:
     failures: list[str] = []
     routes.check_exact_route(REPO, lambda _: completed([]), branch, ISSUE478_EXPECTED - {missing}, failures)
     assert failures == [f"Issue #478 route is missing required path: {missing}"]
+    monkeypatch.setattr(stage8, "current_branch", lambda: branch)
+    monkeypatch.setattr(stage8, "changed_files_for_stage_scope",
+                        lambda: [*ISSUE478_EXPECTED, "rogue.txt"])
+    monkeypatch.setattr(stage8.cut1_routes, "route_base", lambda *_: routes.ISSUE478_BASE)
+    monkeypatch.setattr(stage8.cut1_routes, "route_text_charges", lambda *_: (0, {}))
+    failures = []; stage8.check_stage_scope(failures)
+    assert failures == ["Stage 8 changed file outside the allowlist: rogue.txt"]
     path = "docs/STATUS.md"
     for total, charges, expected in (
         (801, {}, "Issue #478 charge 801 exceeds 800."),

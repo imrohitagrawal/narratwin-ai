@@ -50,7 +50,7 @@ def test_cut1_routes_are_exact_stage8_and_not_preflight_owned(monkeypatch: Any, 
         {f"issue-{n}.json" for n in (346,335,349,351,358,372)} else ORIGINAL_READ(path,*a,**kw))
     policy = load("scripts/quality/check_stage8_docs.py", "reloaded").PROCESS_BRANCH_ALLOWED_FILES
     assert {b:policy[b] for b in SCOPES}==SCOPES;r=cut1_routes;c=stage8.issue431_authority_core.BRANCH
-    reg={getattr(r,f"ISSUE{i}_BRANCH") for i in (150,396,401,403,413,428)}|{c,r.ISSUE466_BRANCH,r.ISSUE475_BRANCH}
+    reg={getattr(r,f"ISSUE{i}_BRANCH") for i in (150,396,401,403,413,428,466,475,478)}|{c}
     assert {b for b in policy if b[:5] == "cut1-"} - set(SCOPES) == reg
     dispatcher:Any=load("scripts/quality/check_quality_stage.py","dispatcher");stage_file=tmp_path/"stage"
     status_file=tmp_path/"status";mode="| SSV1-MODE | repo-mode | Phase 1 Closure | phase1-closure | phase1-closure |\n"
@@ -183,14 +183,6 @@ def test_stage8_script_markers_match_mandatory_container_scanners() -> None:
 def test_unrouted_stage8_branch_is_rejected(monkeypatch:Any)->None:
     b="x";monkeypatch.setattr(stage8,"current_branch",lambda:b);f:list[str]=[];stage8.check_stage_marker_and_branch(f)
     assert f==[f"Stage 8 work must run on a stage8-* branch or main after merge; got {b}."]
-def test_issue478_hosted_route_rejects_extra_path(monkeypatch:Any)->None:
-    b="cut1-process-478-pr477-status-closeout";expected={"docs/STATUS.md","docs/governance/preflights/issue-478.json",
-        "scripts/quality/stage8_cut1_routes.py","tests/unit/test_stage8_cut1_routes.py","tests/unit/test_stage8_quality_gate.py"}
-    monkeypatch.setattr(cut1_routes,"route_base",lambda *_:"base")
-    monkeypatch.setattr(cut1_routes,"route_text_charges",lambda *_:(0,{}))
-    assert route(monkeypatch,b,sorted(expected))==[]
-    extra="forbidden/outside.txt";assert route(monkeypatch,b,sorted(expected|{extra}))==[
-        f"Stage 8 changed file outside the allowlist: {extra}"]
 A22_SOURCE,A22_DECL,A22_RUNTIME,A22_SELECT,A22_REFUSE=("Stage 2 retrieval-v1 accepted sources must retain the canonica"
     "l oracle.|Stage 2 retrievalStrategy must equal the canonical v1 machine declaration.|Stage 4 retrieval-v1 runtime "
     "constants must equal the canonical oracle.|Stage 4 retrieval selection must preserve canonical v1 control flow.|"

@@ -1,0 +1,33 @@
+{
+  "schema_version": "GovernancePreflightV1",
+  "issue_number": 478,
+  "branch": "cut1-process-478-pr477-status-closeout",
+  "objective": "From exact accepted main 81c1884157502e8a911df63c1d9d0a1704964d63, implement the Issue #478 hosted-parity correction authorized by comment 5473694821 with body SHA-256 0b46e4d6bbf091906e82ca8a7d26c9f7b2195a2866d6e436932f9a1100f93fc7 and branch correction comment 5473718767 with body SHA-256 7df911c139583c9d30f48ebb89dc49c99274170355aaacd953e7aef9ea2661e3: preserve the existing 26 charged lines in docs/STATUS.md and register this exact noncanonical branch as the bounded reference-only PR #477 closeout route. Use exactly five paths with no more than 800 aggregate charged lines and per-path caps of 100, 220, 180, 240, and 60 in route order. Preserve the approved PR #477 closeout facts, T05 incomplete, T06 blocked, providers disabled, and no credentials, egress, spend, synthesis, audio, listening, deployment, publication, release, production, or Cut 1 acceptance. Do not authorize product behavior, provider/media action, Issue #13 closure, force push, merge, release, or production action. Stop on branch, base, issue, path, missing-path, extra-path, budget, invariant, hosted, approval, or authority drift.",
+  "status_decision": "update-minimally",
+  "scope": {
+    "required": [
+      "docs/STATUS.md",
+      "docs/governance/preflights/issue-478.json",
+      "scripts/quality/stage8_cut1_routes.py",
+      "tests/unit/test_stage8_cut1_routes.py",
+      "tests/unit/test_stage8_quality_gate.py"
+    ],
+    "allowed_prefixes": [
+      "docs/STATUS.md",
+      "docs/governance/preflights/issue-478.json",
+      "scripts/quality/stage8_cut1_routes.py",
+      "tests/unit/test_stage8_cut1_routes.py",
+      "tests/unit/test_stage8_quality_gate.py"
+    ],
+    "forbidden": [
+      ".github/",
+      "backend/",
+      "frontend/",
+      "credentials/",
+      "providers/",
+      "media/",
+      "deployment/",
+      "release/"
+    ]
+  }
+}
