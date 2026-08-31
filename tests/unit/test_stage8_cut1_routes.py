@@ -2170,6 +2170,13 @@ def test_issue478_route_freezes_corrected_authority_scope_and_budgets() -> None:
     branch = "cut1-process-478-pr477-status-closeout"
     assert getattr(routes, "ISSUE478_BRANCH", None) == branch
     assert routes.ISSUE478_BASE == "81c1884157502e8a911df63c1d9d0a1704964d63"
+    assert routes.ISSUE478_BRANCH_SHA256 == (
+        "3c42143d50b21916cc9e063f9a06855b7d57b398310b19dfd64cb9309613e8f2"
+    )
+    assert routes.ISSUE478_REVIEW_COMMENT == "5474383480"
+    assert routes.ISSUE478_REVIEW_SHA256 == (
+        "444a43fcd953c961d31d3cdc3387e12a8c2fc3d297c1e6805eba21ba3e893b1f"
+    )
     assert routes.ROUTES[branch] == ISSUE478_EXPECTED
     assert routes.ROUTE_ISSUES[branch] == 478
     assert routes.TOTAL_LIMITS[branch] == 800
@@ -2185,8 +2192,41 @@ def test_issue478_route_freezes_corrected_authority_scope_and_budgets() -> None:
         routes.ISSUE478_ROUTE_SHA256,
         routes.ISSUE478_BRANCH_COMMENT,
         routes.ISSUE478_BRANCH_SHA256,
+        routes.ISSUE478_REVIEW_COMMENT,
+        routes.ISSUE478_REVIEW_SHA256,
     }
     assert all(value in preflight["objective"] for value in authority)
+
+
+@pytest.mark.parametrize(
+    "name_status",
+    (
+        "D\0docs/STATUS.md\0",
+        "R100\0docs/STATUS.md\0docs/STATUS-renamed.md\0",
+        "C100\0docs/STATUS.md\0docs/STATUS-copy.md\0",
+    ),
+)
+def test_issue478_rejects_destructive_path_transitions(
+    monkeypatch: Any, name_status: str,
+) -> None:
+    monkeypatch.setattr(routes, "route_base", lambda *_: routes.ISSUE478_BASE)
+    monkeypatch.setattr(routes, "route_text_charges", lambda *_: (0, {}))
+    calls: list[list[str]] = []
+
+    def destructive(args: list[str]) -> subprocess.CompletedProcess[str]:
+        calls.append(args)
+        return completed(args, out=name_status)
+
+    failures: list[str] = []
+    routes.check_exact_route(
+        REPO,
+        destructive,
+        routes.ISSUE478_BRANCH,
+        ISSUE478_EXPECTED,
+        failures,
+    )
+    assert any("--name-status" in call for call in calls)
+    assert failures == ["Issue #478 route forbids deleted, renamed, or copied paths."]
 
 
 def test_issue478_rejects_wrong_base_and_preflight_bindings(
