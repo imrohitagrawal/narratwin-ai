@@ -2179,8 +2179,13 @@ def test_issue478_route_freezes_corrected_authority_scope_and_budgets() -> None:
     assert preflight["issue_number"] == 478 and preflight["branch"] == branch
     assert set(preflight["scope"]["required"]) == ISSUE478_EXPECTED
     assert set(preflight["scope"]["allowed_prefixes"]) == ISSUE478_EXPECTED
-    authority = {routes.ISSUE478_BASE, routes.ISSUE478_ROUTE_COMMENT, routes.ISSUE478_ROUTE_SHA256,
-                 routes.ISSUE478_BRANCH_COMMENT, routes.ISSUE478_BRANCH_SHA256}
+    authority = {
+        routes.ISSUE478_BASE,
+        routes.ISSUE478_ROUTE_COMMENT,
+        routes.ISSUE478_ROUTE_SHA256,
+        routes.ISSUE478_BRANCH_COMMENT,
+        routes.ISSUE478_BRANCH_SHA256,
+    }
     assert all(value in preflight["objective"] for value in authority)
 
 
@@ -2189,14 +2194,19 @@ def test_issue478_rejects_wrong_base_and_preflight_bindings(
 ) -> None:
     branch = routes.ISSUE478_BRANCH
     base = routes.ISSUE478_BASE
-    good = lambda args: completed(args, out=base + "\n")
+
+    def good(args: list[str]) -> subprocess.CompletedProcess[str]:
+        return completed(args, out=base + "\n")
+
     assert routes.route_base(good, branch) == base
     for call in range(3):
         count = 0
+
         def broken(args: list[str], *, rejected: int = call) -> subprocess.CompletedProcess[str]:
             nonlocal count
             count += 1
             return completed(args, out=("0" * 40 if count == rejected + 1 else base) + "\n")
+
         assert "Issue #478 fixed base" in str(pytest.raises(RuntimeError, routes.route_base, broken, branch).value)
     artifact = json.loads((REPO / "docs/governance/preflights/issue-478.json").read_text())
     monkeypatch.setattr(routes, "route_base", lambda *_: base)
@@ -2206,13 +2216,16 @@ def test_issue478_rejects_wrong_base_and_preflight_bindings(
     cases = (("branch", branch + "-retry", "BRANCH_MISMATCH"),
              ("issue_number", 479, "ISSUE_MISMATCH"))
     for field, value, code in cases:
-        drifted = copy.deepcopy(artifact); drifted[field] = value
-        target.write_text(json.dumps(drifted)); failures: list[str] = []
+        drifted = copy.deepcopy(artifact)
+        drifted[field] = value
+        target.write_text(json.dumps(drifted))
+        failures: list[str] = []
         routes.check_exact_route(tmp_path, lambda _: completed([]), branch, ISSUE478_EXPECTED, failures)
         assert any(code in failure for failure in failures)
     drifted = copy.deepcopy(artifact)
     drifted["scope"]["required"][1] = "wrong/path.md"
-    target.write_text(json.dumps(drifted)); failures = []
+    target.write_text(json.dumps(drifted))
+    failures = []
     routes.check_exact_route(tmp_path, lambda _: completed([]), branch, ISSUE478_EXPECTED, failures)
     assert any("SCOPE." in failure for failure in failures)
 
@@ -2230,7 +2243,8 @@ def test_issue478_rejects_missing_and_budget_drift(monkeypatch: Any) -> None:
                         lambda: [*ISSUE478_EXPECTED, "rogue.txt"])
     monkeypatch.setattr(stage8.cut1_routes, "route_base", lambda *_: routes.ISSUE478_BASE)
     monkeypatch.setattr(stage8.cut1_routes, "route_text_charges", lambda *_: (0, {}))
-    failures = []; stage8.check_stage_scope(failures)
+    failures = []
+    stage8.check_stage_scope(failures)
     assert failures == ["Stage 8 changed file outside the allowlist: rogue.txt"]
     path = "docs/STATUS.md"
     for total, charges, expected in (
@@ -2238,7 +2252,10 @@ def test_issue478_rejects_missing_and_budget_drift(monkeypatch: Any) -> None:
         (1, {path: 101}, f"Issue #478 charge for {path} exceeds 100."),
     ):
         monkeypatch.setattr(routes, "route_text_charges", lambda *_, values=(total, charges): values)
-        failures = []; routes.check_exact_route(REPO, lambda _: completed([]), branch, ISSUE478_EXPECTED, failures)
+        failures = []
+        routes.check_exact_route(
+            REPO, lambda _: completed([]), branch, ISSUE478_EXPECTED, failures
+        )
         assert failures == [expected]
 
 
