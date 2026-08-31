@@ -1,0 +1,40 @@
+{
+  "schema_version": "GovernancePreflightV1",
+  "issue_number": 368,
+  "branch": "stage8-issue-368-google-presenter-binding-compat",
+  "objective": "From exact accepted main c41c35db811297fbeff0524dfe21ec49fa7c0de9 and tree 32a745479385ee89ab1530ffc7a08e50788e861d, correct only the reproduced current T05A-to-Google-provider presenter-binding shape mismatch under preflight 5485581802/c81d57d6adf081aaf6ec2bf8c94f4513ca7e363910a669efc3551d5b3b4eae3f, branch correction 5485633036/8ccd797c3fac7802923a04aff0ac82d64363d8d9d25366a5365eef98b5436bd2, route amendment 5485657599/8bde1e31e0b3e9642f39d2847b07d6818ed1e5ad14d05b2eb6c0af17b1f2e084, and final route 5485702633/3654edbbbc295cf2ce5a3206a4856c5987529458fe5742cbc3fd544a71024ddc. Accept exactly the current 64-lowercase-hex presenter-binding digest independently from the five prefixed SHA-256 lineage checksums; reject prefixed, uppercase, short, long, and non-hex shapes before identity or transport. Use exactly six paths and at most 590 charged lines. Preserve every credential, quota, EU transport, privacy, cost, request, response, audio, replay, and disabled-default control. No real identity resolution, provider call, narration egress, synthesis, spend, media, deployment, release, production-readiness, or Cut 1 completion claim is permitted. Stop on base, tree, issue, route, path, budget, checksum, identity-before-validation, transport-before-validation, security, hosted, approval, or authority drift.",
+  "status_decision": "update-minimally",
+  "scope": {
+    "required": [
+      "backend/app/tts_provider.py",
+      "tests/unit/test_stage6_tts_provider.py",
+      "docs/governance/preflights/issue-368-provider-binding-compat.json",
+      "scripts/quality/stage8_cut1_routes.py",
+      "tests/unit/test_stage8_cut1_routes.py",
+      "docs/STATUS.md"
+    ],
+    "allowed_prefixes": [
+      "backend/app/tts_provider.py",
+      "tests/unit/test_stage6_tts_provider.py",
+      "docs/governance/preflights/issue-368-provider-binding-compat.json",
+      "scripts/quality/stage8_cut1_routes.py",
+      "tests/unit/test_stage8_cut1_routes.py",
+      "docs/STATUS.md"
+    ],
+    "forbidden": [
+      ".github/",
+      "Makefile",
+      "pyproject.toml",
+      "uv.lock",
+      "frontend/",
+      "backend/app/google_tts_runtime.py",
+      "backend/app/narration.py",
+      "backend/app/cut1_audio.py",
+      "credentials/",
+      "providers/",
+      "media/",
+      "deployment/",
+      "release/"
+    ]
+  }
+}

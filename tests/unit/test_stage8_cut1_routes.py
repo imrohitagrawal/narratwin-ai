@@ -645,6 +645,14 @@ EXPECTED = {
         "docs/REPOSITORY_GUARDRAILS.md",
         "docs/agent-context/context-policy-manifest-v1.json",
     },
+    "stage8-issue-368-google-presenter-binding-compat": {
+        "backend/app/tts_provider.py",
+        "tests/unit/test_stage6_tts_provider.py",
+        "docs/governance/preflights/issue-368-provider-binding-compat.json",
+        "scripts/quality/stage8_cut1_routes.py",
+        "tests/unit/test_stage8_cut1_routes.py",
+        "docs/STATUS.md",
+    },
     "stage8-368-cut1-google-tts-prompt-contract": {
         "docs/governance/preflights/issue-368.json",
         "docs/governance/cut1-google-gemini-tts-style-prompts-v1.json",
@@ -3200,6 +3208,31 @@ def test_issue368_quota_fix_route_requires_exact_accepted_base() -> None:
     assert calls == [
         ["git", "rev-parse", f"{routes.ISSUE368_QUOTA_FIX_BASE}^{{commit}}"],
         ["git", "merge-base", routes.ISSUE368_QUOTA_FIX_BASE, "HEAD"],
+        ["git", "merge-base", "origin/main", "HEAD"],
+    ]
+
+
+def test_issue368_binding_compat_route_is_exact_bounded_and_base_pinned() -> None:
+    branch = routes.ISSUE368_BINDING_COMPAT_BRANCH
+    artifact = json.loads(
+        (REPO / "docs/governance/preflights/issue-368-provider-binding-compat.json").read_text()
+    )
+    assert branch == "stage8-issue-368-google-presenter-binding-compat"
+    assert set(artifact["scope"]["required"]) == EXPECTED[branch] == routes.ROUTES[branch]
+    assert artifact["scope"]["required"] == artifact["scope"]["allowed_prefixes"]
+    assert routes.TOTAL_LIMITS[branch] == 590
+    assert routes.TEXT_LIMITS[branch]["backend/app/tts_provider.py"] == 20
+    assert routes.TEXT_LIMITS[branch]["docs/STATUS.md"] == 100
+    calls: list[list[str]] = []
+
+    def good(args: list[str]) -> subprocess.CompletedProcess[str]:
+        calls.append(args)
+        return completed(args, out=routes.ISSUE368_BINDING_COMPAT_BASE + "\n")
+
+    assert routes.route_base(good, branch) == routes.ISSUE368_BINDING_COMPAT_BASE
+    assert calls == [
+        ["git", "rev-parse", f"{routes.ISSUE368_BINDING_COMPAT_BASE}^{{commit}}"],
+        ["git", "merge-base", routes.ISSUE368_BINDING_COMPAT_BASE, "HEAD"],
         ["git", "merge-base", "origin/main", "HEAD"],
     ]
 
