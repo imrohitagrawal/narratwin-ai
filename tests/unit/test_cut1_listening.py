@@ -97,10 +97,8 @@ def audio_set() -> CurrentCut1AudioAuthoritySet:
     )
 
 
-def binding(
-    item: Cut1AudioCaptionAuthority,
-    current: CurrentCut1AudioAuthoritySet,
-) -> Cut1ListeningArtifactBinding:
+def binding(item: Cut1AudioCaptionAuthority,
+            current: CurrentCut1AudioAuthoritySet) -> Cut1ListeningArtifactBinding:
     return Cut1ListeningArtifactBinding(
         audio_manifest_sequence=current.manifest_sequence,
         audio_manifest_checksum=current.manifest_checksum,
@@ -126,9 +124,8 @@ def binding(
     )
 
 
-def accepted_decisions(
-    current: CurrentCut1AudioAuthoritySet,
-) -> tuple[Cut1ListeningDecision, ...]:
+def accepted_decisions(current: CurrentCut1AudioAuthoritySet,
+                       ) -> tuple[Cut1ListeningDecision, ...]:
     decisions = []
     for item in current.authorities:
         decision = Cut1ListeningDecision(
@@ -351,7 +348,7 @@ def test_rejects_cross_presenter_binding_and_trusted_author_conflict() -> None:
     )
 
 
-def test_rejects_revocation_replay_and_current_t05b_drift() -> None:
+def test_rejects_revocation_replay_and_current_t05b_drift(tmp_path: Path) -> None:
     current = audio_set()
     decisions = accepted_decisions(current)
     manifest = commitment_manifest(current, decisions, revoked_ids=(decisions[0].decision_id,))
@@ -364,6 +361,10 @@ def test_rejects_revocation_replay_and_current_t05b_drift() -> None:
     authority_service = service(current, decisions)
     authority_service.admit_decisions(decisions=decisions)
     assert_code("DECISION_REPLAYED", lambda: authority_service.admit_decisions(decisions=decisions))
+    state = tmp_path / "shared-listening.json"
+    first, stale = service(current, decisions, state_path=state), service(current, decisions, state_path=state)
+    first.admit_decisions(decisions=decisions)
+    assert_code("DECISION_REPLAYED", lambda: stale.admit_decisions(decisions=decisions))
     changed = replace(current, manifest_sequence=current.manifest_sequence + 1)
     authority_service.audio_authority_resolver = lambda: changed
     assert_code("AUDIO_AUTHORITY_STALE", authority_service.get_authority)
@@ -523,3 +524,7 @@ def test_malformed_nested_runtime_types_fail_with_bounded_codes() -> None:
     )
     assert_code("DECISION_COMMITMENT_INVALID",
                 lambda: candidate.admit_decisions(decisions=decisions))
+    for field, code in (("reviewed_at", "DECISION_TIMESTAMP_INVALID"),
+                        ("decision_checksum", "DECISION_CHECKSUM_INVALID")):
+        malformed = (replace(decisions[0], **{field: cast(Any, None)}), *decisions[1:])
+        assert_code(code, lambda: service(current, decisions).admit_decisions(decisions=malformed))
