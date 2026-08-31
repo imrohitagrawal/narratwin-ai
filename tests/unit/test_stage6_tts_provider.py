@@ -741,7 +741,7 @@ def test_g368_current_presenter_binding_shape_fails_closed_before_identity(
             receipt=replace(receipt(), presenter_binding_checksum=binding)
         )
     assert caught.value.code == "GOOGLE_TTS_AUTHORITY_INVALID"
-    assert identity.calls == 0 and transport.calls == []
+    assert identity.calls == 0 and transport.prepare_calls == [] and transport.calls == []
 
 
 @pytest.mark.parametrize(
