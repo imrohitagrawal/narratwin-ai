@@ -15,6 +15,7 @@ from typing import Any, Callable, Mapping, NoReturn
 
 from backend.app.cut1_audio import (
     Cut1AudioCaptionAuthority,
+    _authority_checksum as canonical_audio_authority_checksum,
     audio_commitment,
     build_audio_commitment_manifest,
 )
@@ -292,14 +293,18 @@ class Cut1ListeningAuthorityService:
             authors = self._trusted_authors()
             manifest = self._trusted_manifest(audio)
             authority = self._validate(decisions, audio, authors, manifest)
-            self._persist(authority)
-            if (
-                self._trusted_audio() != audio
-                or self._trusted_authors() != authors
-                or self._trusted_manifest(audio) != manifest
-            ):
+            self._persist(authority, "PREPARED")
+            try:
+                if (
+                    self._trusted_audio() != audio
+                    or self._trusted_authors() != authors
+                    or self._trusted_manifest(audio) != manifest
+                ):
+                    _fail("DECISION_COMMITMENT_STALE", "Trusted authority changed during admission.")
+                self._persist(authority, "COMMITTED")
+            except (ListeningAuthorityError, OSError):
                 self.quarantine_reason = "STATE_INVALID"
-                _fail("DECISION_COMMITMENT_STALE", "Trusted authority changed during admission.")
+                raise
             self._authority, self._audio, self._manifest = authority, audio, manifest
             return authority
 
@@ -333,6 +338,7 @@ class Cut1ListeningAuthorityService:
                 sequence=current.manifest_sequence,
                 commitments=tuple(audio_commitment(value) for value in authorities),
             )
+            canonical = tuple(canonical_audio_authority_checksum(value) for value in authorities)
         except (AttributeError, TypeError, ValueError):
             _fail("AUDIO_AUTHORITY_INVALID", "Current T05B authority is invalid.")
         if (
@@ -340,6 +346,7 @@ class Cut1ListeningAuthorityService:
             or not 1 <= current.manifest_sequence <= MAX_SEQUENCE
             or not all(isinstance(value, Cut1AudioCaptionAuthority) for value in authorities)
             or tuple(value.presenter_id for value in authorities) != PRESENTERS
+            or tuple(value.authority_checksum for value in authorities) != canonical
             or current.manifest_checksum != manifest.manifest_checksum
         ):
             _fail("AUDIO_AUTHORITY_INVALID", "Current T05B authority is invalid.")
@@ -366,13 +373,26 @@ class Cut1ListeningAuthorityService:
             _fail("DECISION_COMMITMENT_UNAVAILABLE", "Trusted decisions are unavailable.")
         if not isinstance(manifest, Cut1ListeningDecisionManifest):
             _fail("DECISION_COMMITMENT_INVALID", "Trusted decision commitment is invalid.")
-        expected = build_listening_commitment_manifest(
-            sequence=manifest.sequence,
-            audio_manifest_sequence=manifest.audio_manifest_sequence,
-            audio_manifest_checksum=manifest.audio_manifest_checksum,
-            commitments=manifest.commitments,
-            revoked_decision_ids=manifest.revoked_decision_ids,
-        )
+        if (
+            not isinstance(manifest.commitments, tuple)
+            or not all(
+                isinstance(value, Cut1ListeningDecisionCommitment)
+                for value in manifest.commitments
+            )
+            or not isinstance(manifest.revoked_decision_ids, tuple)
+            or any(not _valid_id(value) for value in manifest.revoked_decision_ids)
+        ):
+            _fail("DECISION_COMMITMENT_INVALID", "Trusted decision commitment is invalid.")
+        try:
+            expected = build_listening_commitment_manifest(
+                sequence=manifest.sequence,
+                audio_manifest_sequence=manifest.audio_manifest_sequence,
+                audio_manifest_checksum=manifest.audio_manifest_checksum,
+                commitments=manifest.commitments,
+                revoked_decision_ids=manifest.revoked_decision_ids,
+            )
+        except (TypeError, ValueError):
+            _fail("DECISION_COMMITMENT_INVALID", "Trusted decision commitment is invalid.")
         commitments = manifest.commitments
         if (
             manifest.schema_version != MANIFEST_SCHEMA
@@ -384,7 +404,6 @@ class Cut1ListeningAuthorityService:
             or tuple(value.presenter_id for value in commitments) != PRESENTERS
             or len({value.decision_id for value in commitments}) != 3
             or len(set(manifest.revoked_decision_ids)) != len(manifest.revoked_decision_ids)
-            or any(not _valid_id(value) for value in manifest.revoked_decision_ids)
             or any(
                 not all(
                     isinstance(item, str)
@@ -419,6 +438,8 @@ class Cut1ListeningAuthorityService:
             isinstance(value, Cut1ListeningDecision) for value in decisions
         ):
             _fail("DECISION_SET_INVALID", "Listening decisions are invalid.")
+        if not all(isinstance(value.binding, Cut1ListeningArtifactBinding) for value in decisions):
+            _fail("DECISION_SET_INVALID", "Listening decision bindings are invalid.")
         if len(decisions) != 3:
             _fail("DECISION_SET_INCOMPLETE", "Exactly three decisions are required.")
         presenters = tuple(value.binding.presenter_id for value in decisions)
@@ -491,11 +512,12 @@ class Cut1ListeningAuthorityService:
         ) is None or decision.decision_checksum != decision_checksum(decision):
             _fail("DECISION_CHECKSUM_INVALID", "Decision checksum is invalid.")
 
-    def _persist(self, authority: Cut1ListeningAuthority) -> None:
+    def _persist(self, authority: Cut1ListeningAuthority, status: str) -> None:
         if self.state_path is None:
             return
         core = {
             "schema": SCHEMA,
+            "status": status,
             "decisions": [
                 _decision_payload(value) | {"decisionChecksum": value.decision_checksum}
                 for value in authority.decisions
@@ -505,10 +527,13 @@ class Cut1ListeningAuthorityService:
         write_state(self.state_path, core | {"stateChecksum": _json_sha(core)})
 
     def _restore(self) -> None:
-        if self.state_path is None or not self.state_path.exists():
+        if self.state_path is None:
             return
         try:
-            metadata = self.state_path.lstat()
+            try:
+                metadata = self.state_path.lstat()
+            except FileNotFoundError:
+                return
             if (
                 self.state_path.is_symlink()
                 or not stat.S_ISREG(metadata.st_mode)
@@ -518,11 +543,17 @@ class Cut1ListeningAuthorityService:
             payload = json.loads(
                 self.state_path.read_text(encoding="utf-8"), object_pairs_hook=_pairs
             )
-            expected_keys = {"schema", "decisions", "authorityChecksum", "stateChecksum"}
+            expected_keys = {
+                "schema", "status", "decisions", "authorityChecksum", "stateChecksum"
+            }
             if not isinstance(payload, dict) or set(payload) != expected_keys:
                 raise ValueError("State schema.")
             core = {key: payload[key] for key in expected_keys - {"stateChecksum"}}
-            if payload["schema"] != SCHEMA or payload["stateChecksum"] != _json_sha(core):
+            if (
+                payload["schema"] != SCHEMA
+                or payload["status"] != "COMMITTED"
+                or payload["stateChecksum"] != _json_sha(core)
+            ):
                 raise ValueError("State checksum.")
             rows = payload["decisions"]
             if not isinstance(rows, list) or len(rows) != 3:

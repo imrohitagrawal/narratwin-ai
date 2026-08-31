@@ -11,6 +11,7 @@ import pytest
 from backend.app.cut1_audio import (
     CaptionCue,
     Cut1AudioCaptionAuthority,
+    _authority_checksum as canonical_audio_authority_checksum,
     audio_commitment,
     build_audio_commitment_manifest,
 )
@@ -37,7 +38,7 @@ def checksum(label: str) -> str:
 
 
 def authority(presenter_id: str) -> Cut1AudioCaptionAuthority:
-    return Cut1AudioCaptionAuthority(
+    value = Cut1AudioCaptionAuthority(
         schema_version="cut1-audio-caption-authority-v2",
         tenant_id="tenant-cut1",
         actor_id="narration-actor",
@@ -80,6 +81,7 @@ def authority(presenter_id: str) -> Cut1AudioCaptionAuthority:
         cues=(CaptionCue(1, 0, 90_000, "metadata excluded from T05C"),),
         authority_checksum=checksum(f"authority-{presenter_id}"),
     )
+    return replace(value, authority_checksum=canonical_audio_authority_checksum(value))
 
 
 def audio_set() -> CurrentCut1AudioAuthoritySet:
