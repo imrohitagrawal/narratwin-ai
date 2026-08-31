@@ -1832,6 +1832,10 @@ The T05C repository gate requires:
   focused/full tests, lint, type, security, direct-head/merge-checkout parity,
   hosted required contexts, and eligible non-author exact-head approval.
 
+Protected-main transition `5484097802` retains frozen head `773ba43e`, binds
+main `9b5472a5` through ordered merge `56f92e9`, and checks both exact fifteen-
+path snapshots while charging only the post-prerequisite main boundary.
+
 Passing this gate proves validator behavior only. Tests cannot prove listening.
 T05 and T06 remain blocked until three full admissible narrations and actual
 independently authored exact-byte decisions pass this authority.

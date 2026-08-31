@@ -96,6 +96,11 @@ ISSUE479_CLARIFICATION_COMMENT = "5473637391"
 ISSUE479_CLARIFICATION_SHA256 = "9a08ee1c2ce085cec47ca3981ccfa8a9e79c700b75fc8ab1f66b301417e1a05f"
 ISSUE479_BUDGET_COMMENT = "5481522433"
 ISSUE479_BUDGET_SHA256 = "6e71a7301a9e9f2eb7fb251a4d38b37f0101804f8cdfddd68f36f87d9961223e"
+ISSUE479_FROZEN_HEAD = "773ba43e870a1a18785829c3093d8a74f4416078"
+ISSUE479_TRANSITION_BASE = "9b5472a53844495a9d54637167ce48a33a572e11"
+ISSUE479_TRANSITION_MERGE = "56f92e969c8de3d39bd452e6917cb8017a6abf98"
+ISSUE479_TRANSITION_COMMENT = "5484097802"
+ISSUE479_TRANSITION_SHA256 = "3f1dac2e24bb52caea5db6cf8ea1a224a7f776277af490cee4189595c316bf57"
 ISSUE482_BASE = "98fa8b41ccea68c840b5462bd5377057f4a3eb14"
 ISSUE482_BODY_SHA256 = "736252b09e0b79a57e5ed8643f5b915feff7522693427fe2d48d4dba372c5289"
 ISSUE482_ROUTE_COMMENT = "5481998106"
@@ -1591,8 +1596,32 @@ def route_base(run: Callable[[list[str]], Any], branch: str) -> str:
                 "Issue #466 reviewed transition evidence is unavailable or inconsistent."
             )
         return ISSUE466_TRANSITION_BASE
+    if branch == ISSUE479_BRANCH:
+        commits = (
+            ISSUE479_BASE, ISSUE479_FROZEN_HEAD,
+            ISSUE479_TRANSITION_BASE, ISSUE479_TRANSITION_MERGE,
+        )
+        resolved = [run(["git", "rev-parse", f"{commit}^{{commit}}"]) for commit in commits]
+        current = run(["git", "rev-parse", "origin/main^{commit}"])
+        edges = (
+            (ISSUE479_BASE, ISSUE479_FROZEN_HEAD),
+            (ISSUE479_FROZEN_HEAD, "HEAD"),
+            (ISSUE479_TRANSITION_BASE, "HEAD"),
+            (ISSUE479_TRANSITION_MERGE, "HEAD"),
+        )
+        ancestors = [run(["git", "merge-base", "--is-ancestor", *edge]) for edge in edges]
+        parents = run(["git", "show", "-s", "--format=%P", ISSUE479_TRANSITION_MERGE])
+        if (
+            any(result.returncode for result in [*resolved, current, *ancestors, parents])
+            or [str(result.stdout).strip() for result in resolved] != list(commits)
+            or str(current.stdout).strip() != ISSUE479_TRANSITION_BASE
+            or str(parents.stdout).strip() != f"{ISSUE479_FROZEN_HEAD} {ISSUE479_TRANSITION_BASE}"
+        ):
+            raise RuntimeError(
+                "Issue #479 reviewed transition evidence is unavailable or inconsistent."
+            )
+        return ISSUE479_TRANSITION_BASE
     fixed_routes = {
-        ISSUE479_BRANCH: (479, ISSUE479_BASE),
         ISSUE482_BRANCH: (482, ISSUE482_BASE),
         ISSUE478_BRANCH: (478, ISSUE478_BASE),
         ISSUE475_BRANCH: (475, ISSUE475_BASE),
@@ -1822,6 +1851,26 @@ def check_exact_route(
                                 for path in sorted(expected - paths))
         except RuntimeError as error:
             failures.append(str(error))
+    elif branch == ISSUE479_BRANCH:
+        try:
+            fixed_base = route_base(run, branch)
+            snapshots = (
+                run(["git", "diff", "--name-only", "-z", "--no-renames",
+                     f"{ISSUE479_BASE}..{ISSUE479_FROZEN_HEAD}", "--"]),
+                run(["git", "diff", "--name-only", "-z", "--no-renames",
+                     f"{ISSUE479_TRANSITION_BASE}..HEAD", "--"]),
+            )
+            if any(snapshot.returncode for snapshot in snapshots):
+                raise RuntimeError("Issue #479 transition route evidence is unavailable.")
+            for snapshot in snapshots:
+                paths = set(parse_paths_z(str(snapshot.stdout)))
+                effective_changed.update(paths)
+                failures.extend(f"Issue #479 route contains unauthorized path: {path}"
+                                for path in sorted(paths - files))
+                failures.extend(f"Issue #479 route snapshot is missing required path: {path}"
+                                for path in sorted(files - paths))
+        except RuntimeError as error:
+            failures.append(str(error))
     failures.extend(
         f"Issue #{issue} route is missing required path: {path}"
         for path in sorted(files - effective_changed)
@@ -1841,6 +1890,8 @@ def check_exact_route(
                 ISSUE479_BASE, ISSUE479_ROUTE_COMMENT, ISSUE479_ROUTE_SHA256,
                 ISSUE479_CLARIFICATION_COMMENT, ISSUE479_CLARIFICATION_SHA256,
                 ISSUE479_BUDGET_COMMENT, ISSUE479_BUDGET_SHA256,
+                ISSUE479_FROZEN_HEAD, ISSUE479_TRANSITION_BASE, ISSUE479_TRANSITION_MERGE,
+                ISSUE479_TRANSITION_COMMENT, ISSUE479_TRANSITION_SHA256,
             )
             if not isinstance(objective, str) or any(
                 value not in objective for value in issue479_authority
@@ -2143,8 +2194,10 @@ def check_exact_route(
                       ISSUE459_T05B_BRANCH, ISSUE466_BRANCH}:
             transition_base = ISSUE459_TRANSITION_BASE if branch == ISSUE459_BRANCH else base
             transitions = (
-                *(() if branch in {ISSUE479_BRANCH, ISSUE482_BRANCH, ISSUE478_BRANCH, ISSUE475_BRANCH, ISSUE459_T03_BRANCH, ISSUE459_T05A_BRANCH,
-                                   ISSUE459_T05B_BRANCH, ISSUE466_BRANCH} else (
+                *((run(["git", "diff", "--name-status", "-z", "--find-copies-harder",
+                        ISSUE479_BASE, ISSUE479_FROZEN_HEAD, "--"]),) if branch == ISSUE479_BRANCH
+                   else () if branch in {ISSUE482_BRANCH, ISSUE478_BRANCH, ISSUE475_BRANCH, ISSUE459_T03_BRANCH, ISSUE459_T05A_BRANCH,
+                                         ISSUE459_T05B_BRANCH, ISSUE466_BRANCH} else (
                     run(["git", "diff", "--name-status", "-z", "--find-copies-harder",
                          ISSUE459_BASE, ISSUE459_FROZEN_HEAD, "--"]),
                 )),

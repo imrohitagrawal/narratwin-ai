@@ -2289,6 +2289,11 @@ def test_issue479_route_freezes_t05c_authority_scope_and_budgets() -> None:
         routes.ISSUE479_CLARIFICATION_SHA256,
         routes.ISSUE479_BUDGET_COMMENT,
         routes.ISSUE479_BUDGET_SHA256,
+        routes.ISSUE479_FROZEN_HEAD,
+        routes.ISSUE479_TRANSITION_BASE,
+        routes.ISSUE479_TRANSITION_MERGE,
+        routes.ISSUE479_TRANSITION_COMMENT,
+        routes.ISSUE479_TRANSITION_SHA256,
     }
     assert all(value in preflight["objective"] for value in authority)
 
@@ -2330,6 +2335,13 @@ def test_issue479_requires_exact_reviewed_main_transition() -> None:
         assert "Issue #479 reviewed transition" in str(error.value)
 
 
+def _issue479_runner(
+    args: list[str], name_status: str = "",
+) -> subprocess.CompletedProcess[str]:
+    output = "\0".join(sorted(ISSUE479_EXPECTED)) + "\0" if "--name-only" in args else name_status
+    return completed(args, out=output)
+
+
 @pytest.mark.parametrize(
     "name_status",
     (
@@ -2341,36 +2353,45 @@ def test_issue479_requires_exact_reviewed_main_transition() -> None:
 def test_issue479_rejects_destructive_path_transitions(
     monkeypatch: Any, name_status: str,
 ) -> None:
-    monkeypatch.setattr(routes, "route_base", lambda *_: routes.ISSUE479_BASE)
+    monkeypatch.setattr(routes, "route_base", lambda *_: routes.ISSUE479_TRANSITION_BASE)
     monkeypatch.setattr(routes, "route_text_charges", lambda *_: (0, {}))
     calls: list[list[str]] = []
 
     def destructive(args: list[str]) -> subprocess.CompletedProcess[str]:
         calls.append(args)
-        return completed(args, out=name_status)
+        return _issue479_runner(args, name_status)
 
     failures: list[str] = []
     routes.check_exact_route(
         REPO, destructive, routes.ISSUE479_BRANCH, ISSUE479_EXPECTED, failures
     )
-    assert len(calls) == 3
+    assert len(calls) == 6
     assert failures == ["Issue #479 route forbids deleted, renamed, or copied paths."]
 
 
 def test_issue479_rejects_missing_extra_and_budget_drift(monkeypatch: Any) -> None:
     branch = routes.ISSUE479_BRANCH
-    monkeypatch.setattr(routes, "route_base", lambda *_: routes.ISSUE479_BASE)
+    monkeypatch.setattr(routes, "route_base", lambda *_: routes.ISSUE479_TRANSITION_BASE)
     monkeypatch.setattr(routes, "route_text_charges", lambda *_: (0, {}))
     missing = sorted(ISSUE479_EXPECTED)[0]
+    snapshots = 0
+
+    def missing_snapshot(args: list[str]) -> subprocess.CompletedProcess[str]:
+        nonlocal snapshots
+        if "--name-only" not in args:
+            return completed(args)
+        snapshots += 1
+        paths = ISSUE479_EXPECTED - ({missing} if snapshots == 1 else set())
+        return completed(args, out="\0".join(sorted(paths)) + "\0")
+
     failures: list[str] = []
-    routes.check_exact_route(
-        REPO, lambda _: completed([]), branch, ISSUE479_EXPECTED - {missing}, failures
-    )
-    assert failures == [f"Issue #479 route is missing required path: {missing}"]
+    routes.check_exact_route(REPO, missing_snapshot, branch, ISSUE479_EXPECTED, failures)
+    assert failures == [f"Issue #479 route snapshot is missing required path: {missing}"]
     monkeypatch.setattr(stage8, "current_branch", lambda: branch)
     monkeypatch.setattr(stage8, "changed_files_for_stage_scope",
                         lambda: [*ISSUE479_EXPECTED, "rogue.txt"])
-    monkeypatch.setattr(stage8.cut1_routes, "route_base", lambda *_: routes.ISSUE479_BASE)
+    monkeypatch.setattr(stage8.cut1_routes, "route_base",
+                        lambda *_: routes.ISSUE479_TRANSITION_BASE)
     monkeypatch.setattr(stage8.cut1_routes, "route_text_charges", lambda *_: (0, {}))
     failures = []
     stage8.check_stage_scope(failures)
@@ -2385,9 +2406,7 @@ def test_issue479_rejects_missing_extra_and_budget_drift(monkeypatch: Any) -> No
         monkeypatch.setattr(routes, "route_text_charges",
                             lambda *_, values=(total, charges): values)
         failures = []
-        routes.check_exact_route(
-            REPO, lambda _: completed([]), branch, ISSUE479_EXPECTED, failures
-        )
+        routes.check_exact_route(REPO, _issue479_runner, branch, ISSUE479_EXPECTED, failures)
         assert failures == [expected]
     for lookalike in (branch + "-retry", branch + "/child"):
         assert lookalike not in routes.ROUTES
@@ -3055,9 +3074,11 @@ def test_exact_route_completeness_lookalikes_and_budgets(monkeypatch: Any) -> No
     monkeypatch.setattr(routes, "route_binary_sizes", lambda *_: {path: 1 for path in routes.ISSUE383_BINARY_FILES | set(routes.ISSUE452_BYTE_LIMITS) | set(routes.ISSUE459_BYTE_LIMITS) | set(routes.ISSUE459_T03_BYTE_LIMITS)})
     for branch, paths in EXPECTED.items():
         failures: list[str] = []
-        routes.check_exact_route(REPO, issue459_run if branch == routes.ISSUE459_BRANCH else lambda _: completed([]), branch, set(paths), failures)
+        runner = (issue459_run if branch == routes.ISSUE459_BRANCH else
+                  _issue479_runner if branch == routes.ISSUE479_BRANCH else lambda _: completed([]))
+        routes.check_exact_route(REPO, runner, branch, set(paths), failures)
         assert failures == []
-        if branch == routes.ISSUE459_BRANCH:
+        if branch in {routes.ISSUE459_BRANCH, routes.ISSUE479_BRANCH}:
             continue
         missing = sorted(paths)[0]
         failures = []
@@ -3093,7 +3114,9 @@ def test_per_route_aggregate_per_file_and_binary_caps(monkeypatch: Any) -> None:
     for branch, limit in routes.TOTAL_LIMITS.items():
         monkeypatch.setattr(routes, "route_text_charges", lambda *_, value=limit: (value + 1, {}))
         failures: list[str] = []
-        routes.check_exact_route(REPO, issue459_run if branch == routes.ISSUE459_BRANCH else lambda _: completed([]), branch, EXPECTED[branch], failures)
+        runner = (issue459_run if branch == routes.ISSUE459_BRANCH else
+                  _issue479_runner if branch == routes.ISSUE479_BRANCH else lambda _: completed([]))
+        routes.check_exact_route(REPO, runner, branch, EXPECTED[branch], failures)
         assert failures == [f"Issue #{routes.ROUTE_ISSUES[branch]} charge {limit + 1} exceeds {limit}."]
     branch = routes.ISSUE383_BRANCH
     path = "tests/unit/test_cut1_presenter_assets.py"

@@ -1848,6 +1848,9 @@ accepted main `98fa8b41ccea68c840b5462bd5377057f4a3eb14`. The bounded route is
 `cut1-process-479-t05c-listening-authority`; comments `5481284482`,
 `5473637391`, and `5481522433` pin its scope, clarification, and no-growth
 budget redistribution.
+After PR `#483` closed the dependency prerequisite, transition comment
+`5484097802` bound frozen head `773ba43e`, current main `9b5472a5`, and ordered
+merge `56f92e9` without changing the fifteen-path route or its budgets.
 
 The validator requires exactly one unique decision for Meera, Myra, and Raj in
 canonical order, every defined criterion as literal `true`, reviewer-author
@@ -1875,7 +1878,7 @@ advisory. Correction `5482139606` records and binds the only extra lock
 collateral: unchanged cuda-bindings 13.3.1 narrows its cuda-pathfinder marker
 to Python below 3.15; all six resulting package records are digest-bound.
 
-Issue #479 remains paused and unpushed until this prerequisite is reviewed,
-hosted-green, merged, and closed out. No provider call, credential access,
-egress, spend, synthesis, media, deployment, release, production readiness, or
-Cut 1 acceptance is created.
+PR `#483` is exact-head approved, merged, post-merge green, cleaned, and Issue
+`#482` is closed. Issue #479 resumed through its separately pinned protected-
+main transition. No provider call, credential access, egress, spend, synthesis,
+media, deployment, release, production readiness, or Cut 1 acceptance resulted.
