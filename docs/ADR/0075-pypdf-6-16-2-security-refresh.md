@@ -24,6 +24,12 @@ security and quality checks; independent exact-head review; eligible non-author
 approval; and merged-main acceptance. Preserve Markdown/text ingestion and the
 explicit PDF rejection.
 
+Bind the complete canonical package record, not selected fields alone. The
+sdist and wheel URLs must exactly match their official `files.pythonhosted.org`
+paths recorded in `uv.lock`; the canonical parsed-record SHA-256 is
+`e8a5256eb981e4dc5c904fa425c0ba134e251343a500219df5a91ea0fcc99423`.
+Alternate hosts, dependency edges, and extra package-record keys fail closed.
+
 ## Alternatives and consequences
 
 Removal, vendoring, an alternate index, advisory suppression, and remaining on

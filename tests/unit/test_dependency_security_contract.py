@@ -61,6 +61,7 @@ ISSUE150_BASE = "a02286240212ad8958915aec01aa5ebaf60fa705"
 ISSUE460_BASE = "ab97b6eecba6db9c66c37d19b29257c7398f3ab7"
 PYPDF_WHEEL_SHA256 = "c8b09a59399062fb45a1b8156c18a787a10a3dae03ac9674397a226712c94604"
 PYPDF_SDIST_SHA256 = "595647f6191de6f402cfde1d0c455d6cbccbd509aac32b34783009c032de5d6e"
+PYPDF_PACKAGE_SHA256 = "e8a5256eb981e4dc5c904fa425c0ba134e251343a500219df5a91ea0fcc99423"
 PYPDF_SDIST_URL = "https://files.pythonhosted.org/packages/44/66/54212e75406afd9f3e933d0dda23072f6aecc55c5a273077dc2e0b028b23/pypdf-6.16.2.tar.gz"
 PYPDF_WHEEL_URL = "https://files.pythonhosted.org/packages/13/f1/a2da3b55acd4ab737bf728c97edaaed5ec1d3c1236acb639dcdfa97e42c7/pypdf-6.16.2-py3-none-any.whl"
 PIP_SECURITY_VERSION = "26.2.1"
@@ -220,14 +221,17 @@ def _assert_pypdf_6162_contract(project_text: str, lock_text: str) -> None:
     pypdf = [package for package in lock["package"] if package["name"] == "pypdf"]
     assert len(pypdf) == 1 and pypdf[0]["version"] == "6.16.2"
     assert pypdf[0]["source"] == {"registry": "https://pypi.org/simple"}
-    assert pypdf[0]["sdist"]["url"].endswith("/pypdf-6.16.2.tar.gz")
+    assert pypdf[0]["sdist"]["url"] == PYPDF_SDIST_URL
     assert pypdf[0]["sdist"]["hash"] == f"sha256:{PYPDF_SDIST_SHA256}"
     assert pypdf[0]["sdist"]["size"] == 7008996
     assert len(pypdf[0]["wheels"]) == 1
     wheel = pypdf[0]["wheels"][0]
-    assert wheel["url"].endswith("/pypdf-6.16.2-py3-none-any.whl")
+    assert wheel["url"] == PYPDF_WHEEL_URL
     assert wheel["hash"] == f"sha256:{PYPDF_WHEEL_SHA256}"
     assert wheel["size"] == 385060
+    assert hashlib.sha256(
+        json.dumps(pypdf[0], sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest() == PYPDF_PACKAGE_SHA256
 
     normalized_lock = copy.deepcopy(lock)
     root = next(package for package in normalized_lock["package"] if package["name"] == "narratwin-ai")
