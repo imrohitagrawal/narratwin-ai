@@ -390,6 +390,17 @@ ISSUE482_LINE_CAPS = {
     "docs/STAGE_ISSUE_PLAN.md": 80, "docs/STATUS.md": 100,
     "docs/TRACEABILITY.md": 60,
 }
+ISSUE495_EXPECTED = {
+    "frontend/package-lock.json",
+    "docs/governance/preflights/issue-495-browserslist-security-refresh.json",
+    "scripts/quality/stage8_cut1_routes.py",
+    "tests/unit/test_stage8_cut1_routes.py",
+    "tests/unit/test_dependency_security_contract.py",
+    "tests/unit/test_frontend_dependency_security_contract.py",
+    "docs/ADR/0074-browserslist-4-28-8-security-refresh.md",
+    "docs/STATUS.md",
+    "docs/TRACEABILITY.md",
+}
 ISSUE468_EXPECTED = {
     "AGENTS.md",
     "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md",
@@ -441,6 +452,7 @@ def remove_cleanup_marker(text: str, marker: str) -> str:
 EXPECTED = {
     "cut1-process-479-t05c-listening-authority": ISSUE479_EXPECTED,
     "cut1-process-482-dependency-security-refresh": ISSUE482_EXPECTED,
+    "stage8-495-browserslist-security-refresh": ISSUE495_EXPECTED,
     "cut1-process-478-pr477-status-closeout": ISSUE478_EXPECTED,
     "cut1-475-t05b-runtime-receipt-binding": ISSUE475_EXPECTED,
     "governance-468-scoped-merge-cleanup": ISSUE468_EXPECTED,
@@ -3775,3 +3787,67 @@ def test_binary_sizes_reject_missing_non_regular_empty_and_expose_oversize(tmp_p
     source.write_bytes(b"x")
     target.symlink_to(source)
     assert "regular" in str(pytest.raises(RuntimeError, routes.route_binary_sizes, tmp_path, {path}).value)
+
+
+def test_issue495_route_freezes_the_lockfile_only_security_refresh() -> None:
+    branch = "stage8-495-browserslist-security-refresh"
+    expected = {
+        "frontend/package-lock.json",
+        "docs/governance/preflights/issue-495-browserslist-security-refresh.json",
+        "scripts/quality/stage8_cut1_routes.py",
+        "tests/unit/test_stage8_cut1_routes.py",
+        "tests/unit/test_dependency_security_contract.py",
+        "tests/unit/test_frontend_dependency_security_contract.py",
+        "docs/ADR/0074-browserslist-4-28-8-security-refresh.md",
+        "docs/STATUS.md",
+        "docs/TRACEABILITY.md",
+    }
+    assert routes.ISSUE495_BRANCH == branch
+    assert routes.ISSUE495_BASE == "ca49843ada493162fa02ff7331b7c6adf3b505c9"
+    assert routes.ROUTES[branch] == expected
+    assert routes.ROUTE_ISSUES[branch] == 495
+    assert routes.TOTAL_LIMITS[branch] == 1300
+    assert routes.TEXT_LIMITS[branch] == {
+        "frontend/package-lock.json": 120,
+        "docs/governance/preflights/issue-495-browserslist-security-refresh.json": 220,
+        "scripts/quality/stage8_cut1_routes.py": 120,
+        "tests/unit/test_stage8_cut1_routes.py": 160,
+        "tests/unit/test_dependency_security_contract.py": 180,
+        "tests/unit/test_frontend_dependency_security_contract.py": 140,
+        "docs/ADR/0074-browserslist-4-28-8-security-refresh.md": 160,
+        "docs/STATUS.md": 80,
+        "docs/TRACEABILITY.md": 80,
+    }
+    preflight = json.loads(
+        (REPO / "docs/governance/preflights/issue-495-browserslist-security-refresh.json")
+        .read_text(encoding="utf-8")
+    )
+    assert set(preflight["scope"]["required"]) == expected
+    assert preflight["scope"]["required"] == preflight["scope"]["allowed_prefixes"]
+    assert branch in stage8.EFFECTIVE_STAGE8_ROUTES
+
+
+def test_issue495_lock_refresh_changes_only_six_transitive_records() -> None:
+    lock_path = "frontend/package-lock.json"
+    base_result = subprocess.run(
+        ["git", "show", f"{routes.ISSUE495_BASE}:{lock_path}"],
+        cwd=REPO,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    before = json.loads(base_result.stdout)["packages"]
+    after = json.loads((REPO / lock_path).read_text(encoding="utf-8"))["packages"]
+    expected = {
+        "baseline-browser-mapping": ("2.11.20", "sha512-H0ulySigv6icDJ1F7SjtdCD6PrhTpdYCmP0CactWy1+ekh0AFd0o1Wn5T8b+hnTmdBx19u9yhL6wvCylXMY7zw=="),
+        "browserslist": ("4.28.8", "sha512-V2NpofLblG64mfOtSgDhOJESZEGogzDMBv/q+W6oc4LXWP/q75eOXoOaaOu1EOadB9U4Bwx/e0yzbvwKH8zalA=="),
+        "caniuse-lite": ("1.0.30001810", "sha512-TITQPUkaz+aVk5GL6NhOdwk1aEaNTSDPsGFWrTuhKGtjTF70jL/Oht2W4c6rXUe5fu7Ie19VIahAXHIIiWWNeg=="),
+        "electron-to-chromium": ("1.5.419", "sha512-nHMPn8x4yCxCI0iSnL+LlHL5sUoUfjLXkcRIagZ4GBdrfFLFaiLNvzJWbJqZhFT9IAhw5tUSNlhggWN+otvp/A=="),
+        "node-releases": ("2.0.54", "sha512-YHs7BmmcsdAI5Ozuf8JZo6PT0mv2GIWC9vMfvUC3dp65M8hn7Ux8CPL+2oBI7juNuj9d0ndhTcznq2ODBps9cQ=="),
+        "update-browserslist-db": ("1.3.2", "sha512-UQ+MSxlhRm1bzjhU+DcuXfjFO1FzNtqhK5+9Yvlp90ItDLk5vT932A0rFu619nf7RVS+Y/VeaUW1jaRDqZ8VJw=="),
+    }
+    changed = {path for path in before | after if before.get(path) != after.get(path)}
+    assert changed == {f"node_modules/{name}" for name in expected}
+    for name, identity in expected.items():
+        record = after[f"node_modules/{name}"]
+        assert (record["version"], record["integrity"]) == identity

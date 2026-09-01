@@ -29,6 +29,7 @@ ISSUE475_BRANCH = "cut1-475-t05b-runtime-receipt-binding"
 ISSUE478_BRANCH = "cut1-process-478-pr477-status-closeout"
 ISSUE479_BRANCH = "cut1-process-479-t05c-listening-authority"
 ISSUE482_BRANCH = "cut1-process-482-dependency-security-refresh"
+ISSUE495_BRANCH = "stage8-495-browserslist-security-refresh"
 ISSUE386_BRANCH = "cut1-process-386-modular-route-enforcement"
 ISSUE413_BRANCH = "cut1-process-413-frontend-runtime-openssl"
 ISSUE405_BRANCH = "process-405-heartbeat2-main-reliability"
@@ -121,6 +122,13 @@ ISSUE479_TRANSITION_MERGE = "56f92e969c8de3d39bd452e6917cb8017a6abf98"
 ISSUE479_TRANSITION_COMMENT = "5484097802"
 ISSUE479_TRANSITION_SHA256 = "3f1dac2e24bb52caea5db6cf8ea1a224a7f776277af490cee4189595c316bf57"
 ISSUE482_BASE = "98fa8b41ccea68c840b5462bd5377057f4a3eb14"
+ISSUE495_BASE = "ca49843ada493162fa02ff7331b7c6adf3b505c9"
+ISSUE495_TREE = "13f79eb5db44249f635a619e1b283279f25ba9f0"
+ISSUE495_ROUTE_COMMENT = "5498387945"
+ISSUE495_CORRECTION_COMMENT = "5498411811"
+ISSUE495_HOSTED_CORRECTION_COMMENT = "5498589302"
+ISSUE495_GUARDRAIL_CORRECTION_COMMENT = "5498765949"
+ISSUE495_LOCK_SHA256 = "45b5f03df2b60ec9f10ade076507156a3c62d6fa7a7d2ca866a67396292d7c11"
 ISSUE482_BODY_SHA256 = "736252b09e0b79a57e5ed8643f5b915feff7522693427fe2d48d4dba372c5289"
 ISSUE482_ROUTE_COMMENT = "5481998106"
 ISSUE482_ROUTE_SHA256 = "a006437d5b773fa2a6a555c0744b40b292d55224c4d60aa739fe9da5ab2af46f"
@@ -196,6 +204,17 @@ ROUTES = {
         "scripts/quality/stage8_cut1_routes.py", "tests/unit/test_stage8_cut1_routes.py",
         "tests/unit/test_stage8_quality_gate.py", "docs/THIRD_PARTY_NOTICES.md",
         "docs/QUALITY_GATES.md", "docs/STAGE_ISSUE_PLAN.md", "docs/STATUS.md",
+        "docs/TRACEABILITY.md",
+    },
+    ISSUE495_BRANCH: {
+        "frontend/package-lock.json",
+        "docs/governance/preflights/issue-495-browserslist-security-refresh.json",
+        "scripts/quality/stage8_cut1_routes.py",
+        "tests/unit/test_stage8_cut1_routes.py",
+        "tests/unit/test_dependency_security_contract.py",
+        "tests/unit/test_frontend_dependency_security_contract.py",
+        "docs/ADR/0074-browserslist-4-28-8-security-refresh.md",
+        "docs/STATUS.md",
         "docs/TRACEABILITY.md",
     },
     ISSUE478_BRANCH: {
@@ -784,6 +803,8 @@ ROUTE_ISSUES[ISSUE479_BRANCH] = 479
 TOTAL_LIMITS[ISSUE479_BRANCH] = 2600
 ROUTE_ISSUES[ISSUE482_BRANCH] = 482
 TOTAL_LIMITS[ISSUE482_BRANCH] = 3200
+ROUTE_ISSUES[ISSUE495_BRANCH] = 495
+TOTAL_LIMITS[ISSUE495_BRANCH] = 1300
 ROUTE_ISSUES[ISSUE459_BRANCH] = 459
 TOTAL_LIMITS[ISSUE459_BRANCH] = 4300
 ROUTE_ISSUES[ISSUE459_T03_BRANCH] = 459
@@ -855,6 +876,17 @@ TEXT_LIMITS = {
         "docs/THIRD_PARTY_NOTICES.md": 100, "docs/QUALITY_GATES.md": 80,
         "docs/STAGE_ISSUE_PLAN.md": 80, "docs/STATUS.md": 100,
         "docs/TRACEABILITY.md": 60,
+    },
+    ISSUE495_BRANCH: {
+        "frontend/package-lock.json": 120,
+        "docs/governance/preflights/issue-495-browserslist-security-refresh.json": 220,
+        "scripts/quality/stage8_cut1_routes.py": 120,
+        "tests/unit/test_stage8_cut1_routes.py": 160,
+        "tests/unit/test_dependency_security_contract.py": 180,
+        "tests/unit/test_frontend_dependency_security_contract.py": 140,
+        "docs/ADR/0074-browserslist-4-28-8-security-refresh.md": 160,
+        "docs/STATUS.md": 80,
+        "docs/TRACEABILITY.md": 80,
     },
     ISSUE478_BRANCH: {
         "docs/STATUS.md": 100,
@@ -1775,6 +1807,7 @@ def route_base(run: Callable[[list[str]], Any], branch: str) -> str:
             )
         return ISSUE479_TRANSITION_BASE
     fixed_routes = {
+        ISSUE495_BRANCH: (495, ISSUE495_BASE),
         ISSUE482_BRANCH: (482, ISSUE482_BASE),
         ISSUE478_BRANCH: (478, ISSUE478_BASE),
         ISSUE475_BRANCH: (475, ISSUE475_BASE),
@@ -2077,7 +2110,29 @@ def check_exact_route(
                 failures.append("Issue #368 binding compatibility authority drifted.")
         except (OSError, ValueError, TypeError) as error:
             failures.append(f"Issue #368 binding compatibility preflight failed closed: {error}")
-    if branch == ISSUE482_BRANCH:
+    if branch == ISSUE495_BRANCH:
+        try:
+            preflight = load_json_without_duplicate_members(
+                root / "docs/governance/preflights/issue-495-browserslist-security-refresh.json"
+            )
+            findings = validate_governance_preflight(
+                preflight,
+                context={"issue_number": 495, "branch": branch, "changed_files": sorted(files)},
+            )
+            failures.extend(f"Issue #495 governance preflight failed: {item.code}" for item in findings)
+            objective = preflight.get("objective") if isinstance(preflight, dict) else None
+            issue495_authority = (
+                ISSUE495_BASE, ISSUE495_TREE, ISSUE495_ROUTE_COMMENT,
+                ISSUE495_CORRECTION_COMMENT, ISSUE495_HOSTED_CORRECTION_COMMENT,
+                ISSUE495_GUARDRAIL_CORRECTION_COMMENT, ISSUE495_LOCK_SHA256,
+            )
+            if not isinstance(objective, str) or any(
+                value not in objective for value in issue495_authority
+            ):
+                failures.append("Issue #495 dependency authority drifted.")
+        except (OSError, ValueError, TypeError) as error:
+            failures.append(f"Issue #495 governance preflight failed closed: {error}")
+    elif branch == ISSUE482_BRANCH:
         try:
             preflight = load_json_without_duplicate_members(
                 root / "docs/governance/preflights/issue-482.json"
@@ -2368,13 +2423,13 @@ def check_exact_route(
             failures.append(f"Issue #459 governance preflight failed closed: {error}")
     try:
         base = fixed_base if fixed_base is not None else route_base(run, branch)
-        if branch in {ISSUE479_BRANCH, ISSUE482_BRANCH, ISSUE478_BRANCH, ISSUE475_BRANCH, ISSUE459_BRANCH, ISSUE459_T03_BRANCH, ISSUE459_T05A_BRANCH,
+        if branch in {ISSUE495_BRANCH, ISSUE479_BRANCH, ISSUE482_BRANCH, ISSUE478_BRANCH, ISSUE475_BRANCH, ISSUE459_BRANCH, ISSUE459_T03_BRANCH, ISSUE459_T05A_BRANCH,
                       ISSUE459_T05B_BRANCH, ISSUE466_BRANCH}:
             transition_base = ISSUE459_TRANSITION_BASE if branch == ISSUE459_BRANCH else base
             transitions = (
                 *((run(["git", "diff", "--name-status", "-z", "--find-copies-harder",
                         ISSUE479_BASE, ISSUE479_FROZEN_HEAD, "--"]),) if branch == ISSUE479_BRANCH
-                   else () if branch in {ISSUE482_BRANCH, ISSUE478_BRANCH, ISSUE475_BRANCH, ISSUE459_T03_BRANCH, ISSUE459_T05A_BRANCH,
+                   else () if branch in {ISSUE495_BRANCH, ISSUE482_BRANCH, ISSUE478_BRANCH, ISSUE475_BRANCH, ISSUE459_T03_BRANCH, ISSUE459_T05A_BRANCH,
                                          ISSUE459_T05B_BRANCH, ISSUE466_BRANCH} else (
                     run(["git", "diff", "--name-status", "-z", "--find-copies-harder",
                          ISSUE459_BASE, ISSUE459_FROZEN_HEAD, "--"]),
