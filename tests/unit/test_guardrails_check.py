@@ -1308,7 +1308,7 @@ def test_product_context_rejects_none_with_arbitrary_non_reason_prose() -> None:
     contents = list(PRODUCT_CONTEXT_CONTENT)
     contents[3] = contents[3].replace(
         "No runtime call, network access, persistence, migration, compatibility change, new failure mode, or rollback action occurs.",
-        "None: alpha beta gamma delta epsilon zeta eta.",
+        "None: alpha beta runtime gamma delta epsilon zeta eta.",
     )
     assert guardrails.product_context_failures(product_context_body(tuple(contents))) == [
         "Reviewer impact summary must contain exactly 7 distinct labeled Markdown bullets."
@@ -1321,6 +1321,28 @@ def test_product_context_does_not_treat_nonetheless_as_none() -> None:
         "No runtime call, network access, persistence, migration, compatibility change, new failure mode, or rollback action occurs.",
         "Nonetheless, this governance change causes no runtime or external effects whatsoever.",
     )
+    assert guardrails.product_context_failures(product_context_body(tuple(contents))) == []
+
+
+@pytest.mark.parametrize(
+    ("target", "replacement"),
+    (
+        (
+            "It adds reviewer guidance and validation while adding no product content, media artifact, or runtime capability.",
+            "None: no artifacts or capabilities are added by this governance change.",
+        ),
+        (
+            "Authors and reviewers gain guidance and validation; runtime users, systems, and product data are unchanged.",
+            "None: users and systems remain unchanged because this change is documentation only.",
+        ),
+    ),
+)
+def test_product_context_accepts_none_with_ordinary_no_effect_reason(
+    target: str,
+    replacement: str,
+) -> None:
+    contents = list(PRODUCT_CONTEXT_CONTENT)
+    contents[3] = contents[3].replace(target, replacement)
     assert guardrails.product_context_failures(product_context_body(tuple(contents))) == []
 
 
