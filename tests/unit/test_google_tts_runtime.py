@@ -415,9 +415,14 @@ def test_transport_accepts_bounded_long_response_timeout() -> None:
     instance, sock, _, _ = transport()
 
     prepared = instance.prepare(url=GOOGLE_TTS_URL, timeout_seconds=180.0)
+    response = prepared.send(
+        headers={"Content-Type": "application/json"},
+        json_body={"input": {"text": "fake"}},
+        timeout_seconds=180.0,
+    )
 
     assert sock.timeout == 180.0
-    prepared.close()
+    assert response.status_code == 200
 
 
 @pytest.mark.parametrize(
