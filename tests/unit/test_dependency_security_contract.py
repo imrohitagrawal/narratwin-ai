@@ -48,6 +48,14 @@ JS_YAML_431_INTEGRITY = (
 BRACE_509_INTEGRITY = (
     "sha512-ScQ4IuvIEF1TMlP7Zt+vjJ//9zlPb2SDcxWxM3bk8s6t6GGdJ7KO1dCcTidOPJKePW30LE/2cT7wCyPho9/Wxg=="
 )
+ISSUE495_FRONTEND_PACKAGES = {
+    "baseline-browser-mapping": ("2.11.20", "sha512-H0ulySigv6icDJ1F7SjtdCD6PrhTpdYCmP0CactWy1+ekh0AFd0o1Wn5T8b+hnTmdBx19u9yhL6wvCylXMY7zw=="),
+    "browserslist": ("4.28.8", "sha512-V2NpofLblG64mfOtSgDhOJESZEGogzDMBv/q+W6oc4LXWP/q75eOXoOaaOu1EOadB9U4Bwx/e0yzbvwKH8zalA=="),
+    "caniuse-lite": ("1.0.30001810", "sha512-TITQPUkaz+aVk5GL6NhOdwk1aEaNTSDPsGFWrTuhKGtjTF70jL/Oht2W4c6rXUe5fu7Ie19VIahAXHIIiWWNeg=="),
+    "electron-to-chromium": ("1.5.419", "sha512-nHMPn8x4yCxCI0iSnL+LlHL5sUoUfjLXkcRIagZ4GBdrfFLFaiLNvzJWbJqZhFT9IAhw5tUSNlhggWN+otvp/A=="),
+    "node-releases": ("2.0.54", "sha512-YHs7BmmcsdAI5Ozuf8JZo6PT0mv2GIWC9vMfvUC3dp65M8hn7Ux8CPL+2oBI7juNuj9d0ndhTcznq2ODBps9cQ=="),
+    "update-browserslist-db": ("1.3.2", "sha512-UQ+MSxlhRm1bzjhU+DcuXfjFO1FzNtqhK5+9Yvlp90ItDLk5vT932A0rFu619nf7RVS+Y/VeaUW1jaRDqZ8VJw=="),
+}
 ISSUE150_BASE = "a02286240212ad8958915aec01aa5ebaf60fa705"
 ISSUE460_BASE = "ab97b6eecba6db9c66c37d19b29257c7398f3ab7"
 PYPDF_WHEEL_SHA256 = "14e001d6504822cb1ca9c7ed9a69bccb320f59b320730f55af804361abe4d5ee"
@@ -168,6 +176,20 @@ def _base_text(path: str) -> str:
 
 def _base_json(path: str) -> dict[str, Any]:
     return cast(dict[str, Any], json.loads(_base_text(path)))
+
+
+def _normalize_issue495_frontend_delta(
+    lock: dict[str, Any], base_lock: dict[str, Any]
+) -> None:
+    for name, (version, integrity) in ISSUE495_FRONTEND_PACKAGES.items():
+        path = f"node_modules/{name}"
+        record = lock["packages"][path]
+        assert (record["version"], record["resolved"], record["integrity"]) == (
+            version,
+            f"https://registry.npmjs.org/{name}/-/{name}-{version}.tgz",
+            integrity,
+        )
+        lock["packages"][path] = base_lock["packages"][path]
 
 
 def _assert_pypdf_615_contract(project_text: str, lock_text: str) -> None:
@@ -301,6 +323,7 @@ def _assert_js_yaml_431_contract(package_text: str, lock: dict[str, Any]) -> Non
     for path in (JS_YAML_PATH, NANOID_PATH):
         for field in ("version", "resolved", "integrity"):
             normalized["packages"][path][field] = base_lock["packages"][path][field]
+    _normalize_issue495_frontend_delta(normalized, base_lock)
     assert normalized == base_lock
 
 
@@ -353,6 +376,7 @@ def test_frontend_brace_expansion_override_and_lock_are_isolated_and_patched() -
     for path in (BRACE_PATH, JS_YAML_PATH, NANOID_PATH):
         for field in ("version", "resolved", "integrity"):
             normalized_lock["packages"][path][field] = base_lock["packages"][path][field]
+    _normalize_issue495_frontend_delta(normalized_lock, base_lock)
     assert normalized_lock == base_lock
 
 
