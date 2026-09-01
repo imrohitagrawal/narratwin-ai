@@ -2182,12 +2182,14 @@ def check_exact_route(
                 f"Issue #494 governance preflight failed: {item.code}" for item in findings
             )
             objective = preflight.get("objective") if isinstance(preflight, dict) else None
-            authority = (
+            issue494_authority = (
                 ISSUE494_BASE, ISSUE494_FROZEN_HEAD, ISSUE494_TRANSITION_BASE,
                 ISSUE494_TRANSITION_MERGE, ISSUE494_TRANSITION_COMMENT,
                 ISSUE494_TRANSITION_SHA256,
             )
-            if not isinstance(objective, str) or any(value not in objective for value in authority):
+            if not isinstance(objective, str) or any(
+                value not in objective for value in issue494_authority
+            ):
                 failures.append("Issue #494 transition authority drifted.")
         except (OSError, ValueError, TypeError) as error:
             failures.append(f"Issue #494 governance preflight failed closed: {error}")
