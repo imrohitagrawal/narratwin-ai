@@ -65,11 +65,14 @@ PRODUCT_CONTEXT_CONTENT = (
     "NarraTwin is progressing toward an end-to-end audience-aware multilingual demo and a separately approved production path.",
     "The repository blocks placeholder reviewer overviews, but it does not yet require self-contained product and end-goal context.",
     "Reviewers currently have to open nested issue and document links to reconstruct the product intent and expected outcome.",
-    "#### Plain-English behavior summary\n\n"
-    "- **Behavior:** It makes every non-trivial pull request explain its practical behavior before technical details.\n"
-    "- **Artifacts/capabilities:** It adds PR guidance and validation, but it adds no product content or media artifacts.\n"
-    "- **Runtime/external side effects:** It performs no provider calls, network access, spending, generation, deployment, or runtime work.\n"
-    "- **Blocker and remaining gap:** It removes a reviewer-understanding gap while product delivery and release work remain separate.\n\n"
+    "#### Reviewer impact summary\n\n"
+    "- **Purpose:** It gives reviewers a complete, concise explanation of why each non-trivial pull request matters.\n"
+    "- **Behavior before/after:** Reviewers previously reconstructed behavior from technical evidence; afterward they receive an explicit observable comparison.\n"
+    "- **Who and what is affected:** Authors and reviewers gain guidance and validation; runtime users, systems, and product data are unchanged.\n"
+    "- **Artifacts/capabilities:** It adds reviewer guidance and validation while adding no product content, media artifact, or runtime capability.\n"
+    "- **Operational impact:** No runtime call, network access, persistence, migration, compatibility change, new failure mode, or rollback action occurs.\n"
+    "- **Scope boundaries:** This governance change adds no voices, narration, audio, captions, avatars, deployment, release, or production-readiness capability.\n"
+    "- **End-to-end impact:** It removes a reviewer-context blocker while product delivery, release gates, and final acceptance remain separate.\n\n"
     "#### Technical change list\n\n"
     "This PR adds a product-context template, a local PR-body parser, negative tests, and matching governance documentation.",
     "After merge, policy-gates rejects non-trivial PRs that omit any required self-contained product-context field.",
@@ -155,9 +158,9 @@ def test_issue486_cleanup_authority_transition_accepts_only_current_or_pending_h
     monkeypatch: Any,
 ) -> None:
     pending = {
-        "AGENTS.md": "8c71ec2097d79736232c10283ebd4c6d65464a690bc66416291989551a63480c",
+        "AGENTS.md": "57ea2bdddd7f0f3df91c75ecb0e434e25aa0779a54d0a2603a7e32a87b5c9ca7",
         "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md": (
-            "2dcd399bb97a4aafc88dc1e7613944ac0b3929fddbddf46523d5c32df7ed5305"
+            "e70d7c3045a4fec6b8c4feeb276244ea963a778f872955670cc2e209c0b03e2d"
         ),
     }
     assert guardrails.CLEANUP_AUTHORITY_PENDING_SHA256 == pending
@@ -177,6 +180,25 @@ def test_issue486_cleanup_authority_transition_accepts_only_current_or_pending_h
         lambda payload: Digest(pending_by_payload.get(payload, "0" * 64)),
     )
     assert guardrails.cleanup_authority_anchor_failures(payloads.__getitem__) == []
+
+    superseded = {
+        "AGENTS.md": "8c71ec2097d79736232c10283ebd4c6d65464a690bc66416291989551a63480c",
+        "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md": (
+            "2dcd399bb97a4aafc88dc1e7613944ac0b3929fddbddf46523d5c32df7ed5305"
+        ),
+    }
+    superseded_by_payload = {
+        payloads[path]: digest for path, digest in superseded.items()
+    }
+    monkeypatch.setattr(
+        guardrails,
+        "_cleanup_authority_sha256",
+        lambda payload: Digest(superseded_by_payload.get(payload, "0" * 64)),
+    )
+    assert guardrails.cleanup_authority_anchor_failures(payloads.__getitem__) == [
+        "Merge-cleanup authority anchor rejected AGENTS.md bytes.",
+        "Merge-cleanup authority anchor rejected docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md bytes.",
+    ]
 
     monkeypatch.setattr(
         guardrails,
@@ -1076,7 +1098,8 @@ def test_product_context_accepts_complete_reviewer_impact_summary() -> None:
         "#### Reviewer impact summary\n\n"
         "- **Purpose:** It removes ambiguity about the practical effect of a pull request so reviewers can decide confidently.\n"
         "- **Behavior before/after:** Reviewers previously reconstructed behavior from technical evidence; after merge they receive a direct observable comparison.\n"
-        "- **Who and what is affected:** Pull-request authors and reviewers gain guidance and validation; runtime users, media, product data, and provider behavior are unchanged.\n"
+        "- **Who and what is affected:** Pull-request authors and reviewers gain guidance and validation; runtime users, systems, product data, and provider behavior are unchanged.\n"
+        "- **Artifacts/capabilities:** It adds reviewer guidance and validation while adding no voices, narration, audio, captions, avatars, or product capability.\n"
         "- **Operational impact:** No runtime call, network access, persistence, migration, compatibility change, new failure mode, or rollback action occurs.\n"
         "- **Scope boundaries:** This governance change adds no voices, narration, audio, captions, avatars, deployment, release, or production-readiness capability.\n"
         "- **End-to-end impact:** It removes a reviewer-context blocker while final narration, media cells, local review, and exact-artifact acceptance remain.\n\n"
@@ -1086,11 +1109,11 @@ def test_product_context_accepts_complete_reviewer_impact_summary() -> None:
     assert guardrails.product_context_failures(product_context_body(tuple(contents))) == []
 
 
-def test_product_context_rejects_missing_plain_english_behavior_summary() -> None:
+def test_product_context_rejects_missing_reviewer_impact_summary() -> None:
     contents = list(PRODUCT_CONTEXT_CONTENT)
     contents[3] = "This PR updates the template, parser, tests, and governance documentation."
     assert guardrails.product_context_failures(product_context_body(tuple(contents))) == [
-        "Product context point 4 must begin with a Plain-English behavior summary before the Technical change list."
+        "Product context point 4 must begin with a Reviewer impact summary before the Technical change list."
     ]
 
 
@@ -1099,12 +1122,12 @@ def test_product_context_rejects_behavior_summary_after_technical_change_list() 
     summary, technical = contents[3].split("#### Technical change list", maxsplit=1)
     contents[3] = f"#### Technical change list{technical}\n\n{summary}"
     assert guardrails.product_context_failures(product_context_body(tuple(contents))) == [
-        "Product context point 4 must begin with a Plain-English behavior summary before the Technical change list."
+        "Product context point 4 must begin with a Reviewer impact summary before the Technical change list."
     ]
 
 
-@pytest.mark.parametrize("bullet_count", (0, 1, 2, 3, 5, 6))
-def test_product_context_rejects_behavior_summary_outside_exactly_four_bullets(
+@pytest.mark.parametrize("bullet_count", (0, 1, 2, 3, 4, 5, 6, 8, 9))
+def test_product_context_rejects_reviewer_impact_summary_outside_exactly_seven_bullets(
     bullet_count: int,
 ) -> None:
     contents = list(PRODUCT_CONTEXT_CONTENT)
@@ -1113,25 +1136,25 @@ def test_product_context_rejects_behavior_summary_outside_exactly_four_bullets(
         for index in range(1, bullet_count + 1)
     )
     contents[3] = (
-        f"#### Plain-English behavior summary\n\n{bullets}\n\n"
+        f"#### Reviewer impact summary\n\n{bullets}\n\n"
         "#### Technical change list\n\nThe parser and template change together."
     )
     assert guardrails.product_context_failures(product_context_body(tuple(contents))) == [
-        "Plain-English behavior summary must contain exactly 4 distinct labeled Markdown bullets."
+        "Reviewer impact summary must contain exactly 7 distinct labeled Markdown bullets."
     ]
 
 
 @pytest.mark.parametrize("invalid_bullet", ("TODO", "Issue #486", "tests/unit/test_guardrails_check.py"))
-def test_product_context_rejects_placeholder_or_reference_only_behavior_bullets(
+def test_product_context_rejects_placeholder_or_reference_only_impact_bullets(
     invalid_bullet: str,
 ) -> None:
     contents = list(PRODUCT_CONTEXT_CONTENT)
     contents[3] = contents[3].replace(
-        "It adds PR guidance and validation, but it adds no product content or media artifacts.",
+        "This governance change adds no voices, narration, audio, captions, avatars, deployment, release, or production-readiness capability.",
         invalid_bullet,
     )
     assert guardrails.product_context_failures(product_context_body(tuple(contents))) == [
-        "Plain-English behavior summary must contain exactly 4 distinct labeled Markdown bullets."
+        "Reviewer impact summary must contain exactly 7 distinct labeled Markdown bullets."
     ]
 
 
@@ -1144,80 +1167,69 @@ def test_product_context_rejects_placeholder_or_reference_only_behavior_bullets(
             "It changes future pull request behavior by requiring a practical summary before technical details.",
         ),
         (
-            "Write three to five meaningful Markdown bullets before adding any technical details.",
-            "Explain what behavior this pull request enables or changes for reviewers and users.",
-            "Explain what blocker it removes and what remains after this pull request merges.",
+            "**Purpose:** Explain why this pull request matters to reviewers and users.",
+            "**Behavior before/after:** Describe the behavior before and after this pull request merges.",
+            "**Who and what is affected:** List who and what is affected including users, systems, and data.",
+            "**Artifacts/capabilities:** State what artifacts and capabilities are added, changed, removed, or absent.",
+            "**Operational impact:** State runtime, external, persistence, migration, compatibility, failure, and rollback effects.",
+            "**Scope boundaries:** State what this pull request deliberately excludes or does not authorize.",
+            "**End-to-end impact:** Explain the blocker removed, capability unlocked, and remaining gap.",
         ),
         (
-            "The guardrails script adds parser logic for the required summary section.",
-            "The pull request template adds headings for summary and technical changes.",
-            "The unit test file adds automated coverage for accepted and rejected inputs.",
-        ),
-        (
-            "**Behavior:** Required authors should write bullets explaining what behavior this pull request changes.",
-            "**Artifacts/capabilities:** Together the bullets explain what content or artifacts it adds or does not add.",
-            "**Runtime/external side effects:** For external provider network runtime spending and generation side effects state whether they occur.",
-            "**Blocker and remaining gap:** For the blocker it removes explain the remaining gap afterward.",
-        ),
-        (
-            "**Behavior:** The runtime guardrail file changes parser behavior for pull request bodies.",
-            "**Artifacts/capabilities:** The template file adds no product content artifacts capabilities or media.",
-            "**Runtime/external side effects:** The policy documentation file records no provider network spending generation deployment or release side effects.",
-            "**Blocker and remaining gap:** The status file removes the reviewer blocker and records the remaining gap afterward.",
+            "**Purpose:** The status file records why the pull request matters.",
+            "**Behavior before/after:** The guardrails script changes the before and after parser behavior.",
+            "**Who and what is affected:** The template file affects authors, reviewers, systems, and data.",
+            "**Artifacts/capabilities:** The documentation file lists artifacts and capabilities added, changed, removed, or absent.",
+            "**Operational impact:** The policy file records runtime, external, persistence, migration, compatibility, failure, and rollback effects.",
+            "**Scope boundaries:** The test file lists excluded provider, media, deployment, and release behavior.",
+            "**End-to-end impact:** The route file records the blocker, capability, and remaining gap.",
         ),
     ),
     ids=(
         "duplicate",
-        "copied-instructions",
-        "technical-file-list",
         "prefixed-copied-instructions",
         "keyword-stuffed-technical-file-list",
     ),
 )
-def test_product_context_rejects_non_behavioral_summary_false_passes(
+def test_product_context_rejects_non_specific_impact_summary_false_passes(
     summary_bullets: tuple[str, ...],
 ) -> None:
     contents = list(PRODUCT_CONTEXT_CONTENT)
     bullets = "\n".join(f"- {bullet}" for bullet in summary_bullets)
     contents[3] = (
-        f"#### Plain-English behavior summary\n\n{bullets}\n\n"
+        f"#### Reviewer impact summary\n\n{bullets}\n\n"
         "#### Technical change list\n\nThe parser and template change together."
     )
     assert guardrails.product_context_failures(product_context_body(tuple(contents))) == [
-        "Plain-English behavior summary must contain exactly 4 distinct labeled Markdown bullets."
+        "Reviewer impact summary must contain exactly 7 distinct labeled Markdown bullets."
     ]
 
 
 @pytest.mark.parametrize(
     "missing_index",
-    range(4),
-    ids=("behavior", "artifacts", "side-effects", "blocker-and-gap"),
+    range(7),
+    ids=("purpose", "before-after", "affected", "artifacts", "operations", "boundaries", "end-to-end"),
 )
-def test_product_context_requires_every_behavior_summary_category(
+def test_product_context_requires_every_reviewer_impact_category(
     missing_index: int,
 ) -> None:
     contents = list(PRODUCT_CONTEXT_CONTENT)
     summary, technical = contents[3].split("#### Technical change list", maxsplit=1)
     bullets = [line for line in summary.splitlines() if line.startswith("- ")]
     del bullets[missing_index]
-    if missing_index == 2:
-        bullets[-1] = bullets[-1].replace(
-            "product delivery and release work remain separate",
-            "later work remains separate",
-        )
     bullet_text = "\n".join(bullets)
     contents[3] = (
-        "#### Plain-English behavior summary\n\n"
+        "#### Reviewer impact summary\n\n"
         f"{bullet_text}\n\n"
         f"#### Technical change list{technical}"
     )
     assert guardrails.product_context_failures(product_context_body(tuple(contents))) == [
-        "Plain-English behavior summary must contain exactly 4 distinct labeled Markdown bullets."
+        "Reviewer impact summary must contain exactly 7 distinct labeled Markdown bullets."
     ]
 
 
 @pytest.mark.parametrize("mutation", ("reordered", "wrong-label", "duplicate-label"))
-def test_product_context_rejects_behavior_summary_label_mutations(
+def test_product_context_rejects_reviewer_impact_label_mutations(
     mutation: str,
 ) -> None:
     contents = list(PRODUCT_CONTEXT_CONTENT)
@@ -1226,21 +1238,21 @@ def test_product_context_rejects_behavior_summary_label_mutations(
     if mutation == "reordered":
         bullets[0], bullets[1] = bullets[1], bullets[0]
     elif mutation == "wrong-label":
-        bullets[0] = bullets[0].replace("**Behavior:**", "**Outcome:**")
+        bullets[0] = bullets[0].replace("**Purpose:**", "**Outcome:**")
     else:
-        bullets[1] = bullets[1].replace("**Artifacts/capabilities:**", "**Behavior:**")
+        bullets[1] = bullets[1].replace("**Behavior before/after:**", "**Purpose:**")
     bullet_text = "\n".join(bullets)
     contents[3] = (
-        "#### Plain-English behavior summary\n\n"
+        "#### Reviewer impact summary\n\n"
         f"{bullet_text}\n\n"
         f"#### Technical change list{technical}"
     )
     assert guardrails.product_context_failures(product_context_body(tuple(contents))) == [
-        "Plain-English behavior summary must contain exactly 4 distinct labeled Markdown bullets."
+        "Reviewer impact summary must contain exactly 7 distinct labeled Markdown bullets."
     ]
 
 
-def test_product_context_accepts_exactly_four_distinct_labeled_behavior_bullets() -> None:
+def test_product_context_accepts_exactly_seven_distinct_labeled_impact_bullets() -> None:
     contents = list(PRODUCT_CONTEXT_CONTENT)
     assert guardrails.product_context_failures(product_context_body(tuple(contents))) == []
 
@@ -1249,16 +1261,22 @@ def test_product_context_accepts_exactly_four_distinct_labeled_behavior_bullets(
     "summary_bullets",
     (
         (
-            "**Behavior:** The upload component changes user behavior by displaying a clear validation result.",
-            "**Artifacts/capabilities:** It adds documentation and a reviewer capability but no audio or media artifacts.",
-            "**Runtime/external side effects:** The provider module performs no network calls and changes no runtime side effects.",
-            "**Blocker and remaining gap:** It removes the reviewer blocker while the remaining delivery gap still requires human review.",
+            "**Purpose:** The change makes upload validation understandable to reviewers and product owners.",
+            "**Behavior before/after:** Upload failures were previously ambiguous; afterward users receive a clear validation result.",
+            "**Who and what is affected:** Upload users, reviewers, the validation system, and submitted document data are affected.",
+            "**Artifacts/capabilities:** It adds validation documentation and reviewer capability but no audio or media artifacts.",
+            "**Operational impact:** The provider module performs no network calls, migrations, persistence, or runtime side effects.",
+            "**Scope boundaries:** Deployment, release, provider activation, and production-readiness behavior remain excluded.",
+            "**End-to-end impact:** It removes the upload-review blocker while final human acceptance still remains.",
         ),
         (
-            "**Behavior:** It lets reviewers explain what behavior changes for users after this pull request merges.",
+            "**Purpose:** It lets reviewers understand why the governance change is necessary before examining implementation details.",
+            "**Behavior before/after:** Reviewers previously inferred behavior; afterward the pull request states the observable change directly.",
+            "**Who and what is affected:** Authors and reviewers are affected while runtime users, systems, and product data remain unchanged.",
             "**Artifacts/capabilities:** It adds clear guidance but no voices, narration, audio, captions, avatars, or media.",
-            "**Runtime/external side effects:** It changes no runtime behavior and causes no provider or network calls.",
-            "**Blocker and remaining gap:** It removes the clarity blocker while human truth review still remains.",
+            "**Operational impact:** None: this governance-only pull request causes no provider call, network access, migration, or runtime change.",
+            "**Scope boundaries:** It does not authorize synthesis, deployment, release, public access, or production readiness.",
+            "**End-to-end impact:** It removes the clarity blocker while human truth review and product delivery still remain.",
         ),
     ),
     ids=("ordinary-technical-nouns", "ordinary-explain-what-phrase"),
@@ -1269,10 +1287,21 @@ def test_product_context_accepts_truthful_labeled_summaries_with_ordinary_prose(
     contents = list(PRODUCT_CONTEXT_CONTENT)
     bullets = "\n".join(f"- {bullet}" for bullet in summary_bullets)
     contents[3] = (
-        f"#### Plain-English behavior summary\n\n{bullets}\n\n"
+        f"#### Reviewer impact summary\n\n{bullets}\n\n"
         "#### Technical change list\n\nThe parser and template change together."
     )
     assert guardrails.product_context_failures(product_context_body(tuple(contents))) == []
+
+
+def test_product_context_rejects_none_without_category_specific_reason() -> None:
+    contents = list(PRODUCT_CONTEXT_CONTENT)
+    contents[3] = contents[3].replace(
+        "No runtime call, network access, persistence, migration, compatibility change, new failure mode, or rollback action occurs.",
+        "None",
+    )
+    assert guardrails.product_context_failures(product_context_body(tuple(contents))) == [
+        "Reviewer impact summary must contain exactly 7 distinct labeled Markdown bullets."
+    ]
 
 
 def test_product_context_rejects_missing_section() -> None:
@@ -1421,13 +1450,16 @@ def test_product_context_contract_is_durable_across_rules_template_and_policy_do
     template = (root / ".github/pull_request_template.md").read_text(encoding="utf-8")
     for heading in ("## Product and reviewer context", *PRODUCT_CONTEXT_HEADINGS):
         assert heading in template
-    assert "#### Plain-English behavior summary" in template
+    assert "#### Reviewer impact summary" in template
     assert "#### Technical change list" in template
     for label in (
-        "**Behavior:**",
+        "**Purpose:**",
+        "**Behavior before/after:**",
+        "**Who and what is affected:**",
         "**Artifacts/capabilities:**",
-        "**Runtime/external side effects:**",
-        "**Blocker and remaining gap:**",
+        "**Operational impact:**",
+        "**Scope boundaries:**",
+        "**End-to-end impact:**",
     ):
         assert label in template
 
@@ -1441,20 +1473,26 @@ def test_product_context_contract_is_durable_across_rules_template_and_policy_do
             "Product and reviewer context",
             "issue-only",
             "policy-gates",
-            "exactly four distinct",
+            "exactly seven distinct",
+            "Behavior before/after",
+            "Who and what is affected",
             "Artifacts/capabilities",
-            "Runtime/external side effects",
-            "Blocker and remaining gap",
+            "Operational impact",
+            "Scope boundaries",
+            "End-to-end impact",
         ),
         "docs/QUALITY_GATES.md": (
             "Product and reviewer context",
             "production path",
             "product_context_failures",
-            "Plain-English behavior summary",
-            "exactly four distinct",
+            "Reviewer impact summary",
+            "exactly seven distinct",
+            "Behavior before/after",
+            "Who and what is affected",
             "Artifacts/capabilities",
-            "Runtime/external side effects",
-            "Blocker and remaining gap",
+            "Operational impact",
+            "Scope boundaries",
+            "End-to-end impact",
         ),
         "docs/SKILL_EXECUTION_PLAN.md": (
             "Issue 315",
@@ -1465,8 +1503,8 @@ def test_product_context_contract_is_durable_across_rules_template_and_policy_do
             "issue #315",
             "self-contained product and end-goal context",
             "runtime and production authorization remain unchanged",
-            "plain-English behavior summary",
-            "exactly four distinct",
+            "reviewer-impact summary",
+            "exactly seven distinct",
         ),
         "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md": (
             "End product goal",
