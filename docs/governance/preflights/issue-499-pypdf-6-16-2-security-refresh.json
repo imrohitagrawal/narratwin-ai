@@ -2,11 +2,7 @@
   "schema_version": "GovernancePreflightV1",
   "issue_number": 499,
   "branch": "stage8-499-pypdf-6-16-2-security-refresh",
-  "accepted_base_commit": "d1f5400f5c6dfec5d4b63eb3a83aa82e3330743f",
-  "accepted_base_tree": "905f562c17e66abf1839e673940f80aca4330cfc",
-  "authority_comment_id": 5500895575,
-  "authority_comment_sha256": "e0a4fcfadb274efa6ca36e7b076d096e4e8a228de9b9321f6eaa740255c27ae2",
-  "objective": "Restore the fail-closed dependency-security gate by replacing the sole direct and locked pypdf 6.15.0 resolution, now affected by CVE-2026-84309, CVE-2026-84310, and CVE-2026-84311, with exact official PyPI pypdf 6.16.2. Preserve unsupported-PDF rejection and every unrelated product, project, and lock behavior. This route adds no PDF, Google speech, provider, voice, narration, audio, caption, media, deployment, release, or production capability.",
+  "objective": "From exact accepted base d1f5400f5c6dfec5d4b63eb3a83aa82e3330743f and tree 905f562c17e66abf1839e673940f80aca4330cfc, under route comment 5500895575 with raw body SHA-256 e0a4fcfadb274efa6ca36e7b076d096e4e8a228de9b9321f6eaa740255c27ae2, restore the fail-closed dependency-security gate by replacing the sole direct and locked pypdf 6.15.0 resolution, now affected by CVE-2026-84309, CVE-2026-84310, and CVE-2026-84311, with exact official PyPI pypdf 6.16.2. Preserve unsupported-PDF rejection and every unrelated product, project, and lock behavior. This route adds no PDF, Google speech, provider, voice, narration, audio, caption, media, deployment, release, or production capability.",
   "status_decision": "update-minimally",
   "scope": {
     "required": [
@@ -51,58 +47,5 @@
       "tests/api/",
       "tools/"
     ]
-  },
-  "change_budget": {
-    "exact_paths": 10,
-    "maximum_additions_plus_deletions": 1000,
-    "deletions_grant_credit": false,
-    "per_file_charged_lines": {
-      "docs/governance/preflights/issue-499-pypdf-6-16-2-security-refresh.json": 220,
-      "pyproject.toml": 20,
-      "uv.lock": 100,
-      "scripts/quality/stage8_cut1_routes.py": 120,
-      "tests/unit/test_stage8_cut1_routes.py": 140,
-      "tests/unit/test_dependency_security_contract.py": 220,
-      "docs/ADR/0075-pypdf-6-16-2-security-refresh.md": 80,
-      "docs/STATUS.md": 40,
-      "docs/THIRD_PARTY_NOTICES.md": 40,
-      "docs/TRACEABILITY.md": 20
-    }
-  },
-  "dependency_authority": {
-    "requirement": "pypdf>=6.16.2",
-    "version": "6.16.2",
-    "registry": "https://pypi.org/simple",
-    "wheel": {
-      "filename": "pypdf-6.16.2-py3-none-any.whl",
-      "sha256": "c8b09a59399062fb45a1b8156c18a787a10a3dae03ac9674397a226712c94604",
-      "size": 385060
-    },
-    "sdist": {
-      "filename": "pypdf-6.16.2.tar.gz",
-      "sha256": "595647f6191de6f402cfde1d0c455d6cbccbd509aac32b34783009c032de5d6e",
-      "size": 7008996
-    }
-  },
-  "invariants": [
-    "Exactly one direct pypdf requirement and one locked official-PyPI resolution exist.",
-    "Unsupported PDF upload and parsing remain rejected; Markdown/text ingestion is unchanged.",
-    "Only the pypdf project requirement, root lock metadata, and sole package record may change semantically.",
-    "No advisory waiver, ignore, threshold reduction, alternate index, VCS reference, vendoring, or extra resolution is allowed.",
-    "Issue 498 remains isolated and no Google request or provider spending occurs in this route."
-  ],
-  "mutation_matrix": [
-    "missing, duplicate, weaker, or substituted direct requirement",
-    "pypdf 6.15.0, 6.16.0, or 6.16.1",
-    "wrong source, filename, size, wheel hash, or sdist hash",
-    "duplicate pypdf lock resolution",
-    "unrelated project or lock drift",
-    "weakened unsupported-PDF rejection",
-    "base, branch, path, or charged-line budget drift"
-  ],
-  "human_only_surfaces": [
-    "Independent exact-head correctness and security review",
-    "Eligible non-author exact-head GitHub approval"
-  ],
-  "stop_conditions": "Stop on base, branch, path, or budget drift; provenance or hash contradiction; incompatibility; unrelated dependency drift; new High/Critical finding; required context not green; stale or ineligible approval; merge discontinuity; or need for capability, policy, credential, egress, spend, deployment, release, or production authority outside this route."
+  }
 }

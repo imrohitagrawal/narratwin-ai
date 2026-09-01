@@ -4002,9 +4002,6 @@ def test_issue499_route_freezes_the_exact_pypdf_security_refresh() -> None:
     )
     assert set(preflight["scope"]["required"]) == ISSUE499_EXPECTED
     assert preflight["scope"]["required"] == preflight["scope"]["allowed_prefixes"]
-    assert preflight["change_budget"]["exact_paths"] == 10
-    assert preflight["change_budget"]["maximum_additions_plus_deletions"] == 1000
-    assert preflight["change_budget"]["deletions_grant_credit"] is False
 
 
 def test_issue495_lock_refresh_changes_only_six_transitive_records() -> None:

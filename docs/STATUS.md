@@ -1997,3 +1997,13 @@ unchanged accepted-main frontend lock. The lockfile-only correction resolves
 unchanged. This security prerequisite generates no narration, voice, audio,
 caption, avatar media, provider request, egress, spend, human acceptance,
 deployment, release, production-readiness, or Cut 1 completion evidence.
+
+## pypdf dependency-security prerequisite
+
+Issue `#499` isolates three newly published advisories affecting accepted-main
+`pypdf` 6.15.0. Its exact dependency-only correction raises the direct floor
+and sole official-PyPI lock record to 6.16.2 with verified artifact hashes and
+unrelated-lock isolation. PDF upload/parsing remains unsupported; Markdown/text
+ingestion and Google speech behavior remain unchanged. This prerequisite makes
+no provider call and creates no voice, narration, audio, caption, avatar media,
+human acceptance, deployment, release, production-readiness, or Cut 1 evidence.
