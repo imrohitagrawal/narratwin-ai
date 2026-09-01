@@ -1,0 +1,52 @@
+{
+  "schema_version": "GovernancePreflightV1",
+  "issue_number": 486,
+  "branch": "stage8-486-pr-behavior-summary",
+  "accepted_base": "4503abd71aed1f61caa85c6682df8f5b991d28ba",
+  "accepted_base_tree": "21e9cd0270abf14b762491313bf6f3c485d9330f",
+  "objective": "PR A of a three-PR authority transition requires every non-trivial pull request to begin Exact changes with exactly four distinct labeled bullets, ordered **Behavior:**, **Artifacts/capabilities:**, **Runtime/external side effects:**, and **Blocker and remaining gap:**, before its Technical change list. This PR adds the template, structural parser, frozen known-false-pass mutations, policy, tests, and exact Stage 8 governance route while independently pre-authorizing only the current cleanup-authority hashes plus exact planned future AGENTS and reusable-playbook hashes 8c71ec2097d79736232c10283ebd4c6d65464a690bc66416291989551a63480c and 2dcd399bb97a4aafc88dc1e7613944ac0b3929fddbddf46523d5c32df7ed5305. PR B changes those authority documents without editing their validator; PR C removes the old allowance. Automation proves the exact structure, distinctness, meaningful non-placeholder content, and frozen known false-pass classes; an eligible independent reviewer remains responsible for unrestricted semantic truth and clarity, including rejecting misleading, copied, keyword-stuffed, or technical-file-list prose. No runtime, provider, credential, network, media, dependency, workflow, deployment, release, production-readiness, T05, or Cut 1 completion change is authorized.",
+  "status_decision": "update-minimally",
+  "scope": {
+    "required": [
+      "docs/governance/preflights/issue-486.json",
+      ".github/pull_request_template.md",
+      "scripts/guardrails_check.py",
+      "tests/unit/test_guardrails_check.py",
+      "scripts/quality/stage8_cut1_routes.py",
+      "tests/unit/test_stage8_cut1_routes.py",
+      "docs/REPOSITORY_GUARDRAILS.md",
+      "docs/QUALITY_GATES.md",
+      "docs/agent-context/context-policy-manifest-v1.json",
+      "docs/STATUS.md"
+    ],
+    "allowed_prefixes": [
+      "docs/governance/preflights/issue-486.json",
+      ".github/pull_request_template.md",
+      "scripts/guardrails_check.py",
+      "tests/unit/test_guardrails_check.py",
+      "scripts/quality/stage8_cut1_routes.py",
+      "tests/unit/test_stage8_cut1_routes.py",
+      "docs/REPOSITORY_GUARDRAILS.md",
+      "docs/QUALITY_GATES.md",
+      "docs/agent-context/context-policy-manifest-v1.json",
+      "docs/STATUS.md"
+    ],
+    "forbidden": [
+      "backend/",
+      "frontend/",
+      ".github/workflows/",
+      "docker/",
+      "Dockerfile",
+      "pyproject.toml",
+      "uv.lock",
+      "package.json",
+      "package-lock.json",
+      "reports/",
+      "runtime product behavior, schema, API, or provider changes",
+      "deployment, hosting, public URL, release, or production-readiness claim",
+      "paid services, credentials, private data, or real/cloned media",
+      "T05, T06, T07, T08, release, or Cut 1 completion claim",
+      "unrelated issue, PR, branch, protected tracker, or forensic evidence mutation"
+    ]
+  }
+}

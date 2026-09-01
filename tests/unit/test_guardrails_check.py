@@ -65,6 +65,12 @@ PRODUCT_CONTEXT_CONTENT = (
     "NarraTwin is progressing toward an end-to-end audience-aware multilingual demo and a separately approved production path.",
     "The repository blocks placeholder reviewer overviews, but it does not yet require self-contained product and end-goal context.",
     "Reviewers currently have to open nested issue and document links to reconstruct the product intent and expected outcome.",
+    "#### Plain-English behavior summary\n\n"
+    "- **Behavior:** It makes every non-trivial pull request explain its practical behavior before technical details.\n"
+    "- **Artifacts/capabilities:** It adds PR guidance and validation, but it adds no product content or media artifacts.\n"
+    "- **Runtime/external side effects:** It performs no provider calls, network access, spending, generation, deployment, or runtime work.\n"
+    "- **Blocker and remaining gap:** It removes a reviewer-understanding gap while product delivery and release work remain separate.\n\n"
+    "#### Technical change list\n\n"
     "This PR adds a product-context template, a local PR-body parser, negative tests, and matching governance documentation.",
     "After merge, policy-gates rejects non-trivial PRs that omit any required self-contained product-context field.",
     "Reviewers can understand the change, product impact, expected result, and validation target directly from the PR body.",
@@ -143,6 +149,44 @@ def test_issue471_cleanup_authority_and_anchor_cannot_change_together() -> None:
         ["AGENTS.md", "scripts/guardrails_check.py"], documents.__getitem__
     ) == ["Merge-cleanup authority and its anchor require separate reviewed pull requests."]
     assert guardrails.cleanup_authority_change_failures(["docs/STATUS.md"], documents.__getitem__) == []
+
+
+def test_issue486_cleanup_authority_transition_accepts_only_current_or_pending_hashes(
+    monkeypatch: Any,
+) -> None:
+    pending = {
+        "AGENTS.md": "8c71ec2097d79736232c10283ebd4c6d65464a690bc66416291989551a63480c",
+        "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md": (
+            "2dcd399bb97a4aafc88dc1e7613944ac0b3929fddbddf46523d5c32df7ed5305"
+        ),
+    }
+    assert guardrails.CLEANUP_AUTHORITY_PENDING_SHA256 == pending
+
+    class Digest:
+        def __init__(self, value: str) -> None:
+            self.value = value
+
+        def hexdigest(self) -> str:
+            return self.value
+
+    payloads = {path: f"pending:{path}".encode() for path in pending}
+    pending_by_payload = {payloads[path]: digest for path, digest in pending.items()}
+    monkeypatch.setattr(
+        guardrails,
+        "_cleanup_authority_sha256",
+        lambda payload: Digest(pending_by_payload.get(payload, "0" * 64)),
+    )
+    assert guardrails.cleanup_authority_anchor_failures(payloads.__getitem__) == []
+
+    monkeypatch.setattr(
+        guardrails,
+        "_cleanup_authority_sha256",
+        lambda payload: Digest("0" * 64),
+    )
+    assert guardrails.cleanup_authority_anchor_failures(payloads.__getitem__) == [
+        "Merge-cleanup authority anchor rejected AGENTS.md bytes.",
+        "Merge-cleanup authority anchor rejected docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md bytes.",
+    ]
 
 
 def test_issue471_fixture_preserves_already_anchored_authority(
@@ -273,6 +317,11 @@ def product_context_body(
         if index != omit:
             rows.extend(("", f"### {heading}", "", content))
     return "\n".join(rows) + "\n"
+
+
+def exact_changes_with_summary(technical_changes: str) -> str:
+    summary = PRODUCT_CONTEXT_CONTENT[3].split("#### Technical change list", maxsplit=1)[0]
+    return f"{summary}#### Technical change list\n\n{technical_changes}"
 ISSUE39_SENSITIVE_ROW_CELLS = {
     "DUR-ACID-001": [
         "ACID/CAS durable metadata",
@@ -1021,6 +1070,195 @@ def test_product_context_accepts_complete_self_contained_pr_specific_content() -
     assert guardrails.product_context_failures(product_context_body()) == []
 
 
+def test_product_context_rejects_missing_plain_english_behavior_summary() -> None:
+    contents = list(PRODUCT_CONTEXT_CONTENT)
+    contents[3] = "This PR updates the template, parser, tests, and governance documentation."
+    assert guardrails.product_context_failures(product_context_body(tuple(contents))) == [
+        "Product context point 4 must begin with a Plain-English behavior summary before the Technical change list."
+    ]
+
+
+def test_product_context_rejects_behavior_summary_after_technical_change_list() -> None:
+    contents = list(PRODUCT_CONTEXT_CONTENT)
+    summary, technical = contents[3].split("#### Technical change list", maxsplit=1)
+    contents[3] = f"#### Technical change list{technical}\n\n{summary}"
+    assert guardrails.product_context_failures(product_context_body(tuple(contents))) == [
+        "Product context point 4 must begin with a Plain-English behavior summary before the Technical change list."
+    ]
+
+
+@pytest.mark.parametrize("bullet_count", (0, 1, 2, 3, 5, 6))
+def test_product_context_rejects_behavior_summary_outside_exactly_four_bullets(
+    bullet_count: int,
+) -> None:
+    contents = list(PRODUCT_CONTEXT_CONTENT)
+    bullets = "\n".join(
+        f"- Behavior outcome {index} is explained with concrete reviewer-specific words."
+        for index in range(1, bullet_count + 1)
+    )
+    contents[3] = (
+        f"#### Plain-English behavior summary\n\n{bullets}\n\n"
+        "#### Technical change list\n\nThe parser and template change together."
+    )
+    assert guardrails.product_context_failures(product_context_body(tuple(contents))) == [
+        "Plain-English behavior summary must contain exactly 4 distinct labeled Markdown bullets."
+    ]
+
+
+@pytest.mark.parametrize("invalid_bullet", ("TODO", "Issue #486", "tests/unit/test_guardrails_check.py"))
+def test_product_context_rejects_placeholder_or_reference_only_behavior_bullets(
+    invalid_bullet: str,
+) -> None:
+    contents = list(PRODUCT_CONTEXT_CONTENT)
+    contents[3] = contents[3].replace(
+        "It adds PR guidance and validation, but it adds no product content or media artifacts.",
+        invalid_bullet,
+    )
+    assert guardrails.product_context_failures(product_context_body(tuple(contents))) == [
+        "Plain-English behavior summary must contain exactly 4 distinct labeled Markdown bullets."
+    ]
+
+
+@pytest.mark.parametrize(
+    "summary_bullets",
+    (
+        (
+            "It changes future pull request behavior by requiring a practical summary before technical details.",
+            "It changes future pull request behavior by requiring a practical summary before technical details.",
+            "It changes future pull request behavior by requiring a practical summary before technical details.",
+        ),
+        (
+            "Write three to five meaningful Markdown bullets before adding any technical details.",
+            "Explain what behavior this pull request enables or changes for reviewers and users.",
+            "Explain what blocker it removes and what remains after this pull request merges.",
+        ),
+        (
+            "The guardrails script adds parser logic for the required summary section.",
+            "The pull request template adds headings for summary and technical changes.",
+            "The unit test file adds automated coverage for accepted and rejected inputs.",
+        ),
+        (
+            "**Behavior:** Required authors should write bullets explaining what behavior this pull request changes.",
+            "**Artifacts/capabilities:** Together the bullets explain what content or artifacts it adds or does not add.",
+            "**Runtime/external side effects:** For external provider network runtime spending and generation side effects state whether they occur.",
+            "**Blocker and remaining gap:** For the blocker it removes explain the remaining gap afterward.",
+        ),
+        (
+            "**Behavior:** The runtime guardrail file changes parser behavior for pull request bodies.",
+            "**Artifacts/capabilities:** The template file adds no product content artifacts capabilities or media.",
+            "**Runtime/external side effects:** The policy documentation file records no provider network spending generation deployment or release side effects.",
+            "**Blocker and remaining gap:** The status file removes the reviewer blocker and records the remaining gap afterward.",
+        ),
+    ),
+    ids=(
+        "duplicate",
+        "copied-instructions",
+        "technical-file-list",
+        "prefixed-copied-instructions",
+        "keyword-stuffed-technical-file-list",
+    ),
+)
+def test_product_context_rejects_non_behavioral_summary_false_passes(
+    summary_bullets: tuple[str, ...],
+) -> None:
+    contents = list(PRODUCT_CONTEXT_CONTENT)
+    bullets = "\n".join(f"- {bullet}" for bullet in summary_bullets)
+    contents[3] = (
+        f"#### Plain-English behavior summary\n\n{bullets}\n\n"
+        "#### Technical change list\n\nThe parser and template change together."
+    )
+    assert guardrails.product_context_failures(product_context_body(tuple(contents))) == [
+        "Plain-English behavior summary must contain exactly 4 distinct labeled Markdown bullets."
+    ]
+
+
+@pytest.mark.parametrize(
+    "missing_index",
+    range(4),
+    ids=("behavior", "artifacts", "side-effects", "blocker-and-gap"),
+)
+def test_product_context_requires_every_behavior_summary_category(
+    missing_index: int,
+) -> None:
+    contents = list(PRODUCT_CONTEXT_CONTENT)
+    summary, technical = contents[3].split("#### Technical change list", maxsplit=1)
+    bullets = [line for line in summary.splitlines() if line.startswith("- ")]
+    del bullets[missing_index]
+    if missing_index == 2:
+        bullets[-1] = bullets[-1].replace(
+            "product delivery and release work remain separate",
+            "later work remains separate",
+        )
+    bullet_text = "\n".join(bullets)
+    contents[3] = (
+        "#### Plain-English behavior summary\n\n"
+        f"{bullet_text}\n\n"
+        f"#### Technical change list{technical}"
+    )
+    assert guardrails.product_context_failures(product_context_body(tuple(contents))) == [
+        "Plain-English behavior summary must contain exactly 4 distinct labeled Markdown bullets."
+    ]
+
+
+@pytest.mark.parametrize("mutation", ("reordered", "wrong-label", "duplicate-label"))
+def test_product_context_rejects_behavior_summary_label_mutations(
+    mutation: str,
+) -> None:
+    contents = list(PRODUCT_CONTEXT_CONTENT)
+    summary, technical = contents[3].split("#### Technical change list", maxsplit=1)
+    bullets = [line for line in summary.splitlines() if line.startswith("- ")]
+    if mutation == "reordered":
+        bullets[0], bullets[1] = bullets[1], bullets[0]
+    elif mutation == "wrong-label":
+        bullets[0] = bullets[0].replace("**Behavior:**", "**Outcome:**")
+    else:
+        bullets[1] = bullets[1].replace("**Artifacts/capabilities:**", "**Behavior:**")
+    bullet_text = "\n".join(bullets)
+    contents[3] = (
+        "#### Plain-English behavior summary\n\n"
+        f"{bullet_text}\n\n"
+        f"#### Technical change list{technical}"
+    )
+    assert guardrails.product_context_failures(product_context_body(tuple(contents))) == [
+        "Plain-English behavior summary must contain exactly 4 distinct labeled Markdown bullets."
+    ]
+
+
+def test_product_context_accepts_exactly_four_distinct_labeled_behavior_bullets() -> None:
+    contents = list(PRODUCT_CONTEXT_CONTENT)
+    assert guardrails.product_context_failures(product_context_body(tuple(contents))) == []
+
+
+@pytest.mark.parametrize(
+    "summary_bullets",
+    (
+        (
+            "**Behavior:** The upload component changes user behavior by displaying a clear validation result.",
+            "**Artifacts/capabilities:** It adds documentation and a reviewer capability but no audio or media artifacts.",
+            "**Runtime/external side effects:** The provider module performs no network calls and changes no runtime side effects.",
+            "**Blocker and remaining gap:** It removes the reviewer blocker while the remaining delivery gap still requires human review.",
+        ),
+        (
+            "**Behavior:** It lets reviewers explain what behavior changes for users after this pull request merges.",
+            "**Artifacts/capabilities:** It adds clear guidance but no voices, narration, audio, captions, avatars, or media.",
+            "**Runtime/external side effects:** It changes no runtime behavior and causes no provider or network calls.",
+            "**Blocker and remaining gap:** It removes the clarity blocker while human truth review still remains.",
+        ),
+    ),
+    ids=("ordinary-technical-nouns", "ordinary-explain-what-phrase"),
+)
+def test_product_context_accepts_truthful_labeled_summaries_with_ordinary_prose(
+    summary_bullets: tuple[str, ...],
+) -> None:
+    contents = list(PRODUCT_CONTEXT_CONTENT)
+    bullets = "\n".join(f"- {bullet}" for bullet in summary_bullets)
+    contents[3] = (
+        f"#### Plain-English behavior summary\n\n{bullets}\n\n"
+        "#### Technical change list\n\nThe parser and template change together."
+    )
+    assert guardrails.product_context_failures(product_context_body(tuple(contents))) == []
+
+
 def test_product_context_rejects_missing_section() -> None:
     assert guardrails.product_context_failures(reviewer_overview_body()) == [
         "Non-trivial pull requests must include a Product and reviewer context section."
@@ -1071,7 +1309,7 @@ def test_product_context_rejects_counted_exact_changes_without_complete_enumerat
     unexpanded_claim: str,
 ) -> None:
     contents = list(PRODUCT_CONTEXT_CONTENT)
-    contents[3] = unexpanded_claim
+    contents[3] = exact_changes_with_summary(unexpanded_claim)
     assert guardrails.product_context_failures(product_context_body(tuple(contents))) == [
         "Product context point 4 must enumerate every item in a counted exact-change claim."
     ]
@@ -1079,8 +1317,12 @@ def test_product_context_rejects_counted_exact_changes_without_complete_enumerat
 
 def test_product_context_accepts_counted_exact_changes_with_complete_enumeration() -> None:
     contents = list(PRODUCT_CONTEXT_CONTENT)
-    contents[3] = "This PR adds ten mandatory product-context fields:\n" + "\n".join(
-        f"{index}. Field {index} has a distinct reviewer outcome." for index in range(1, 11)
+    contents[3] = exact_changes_with_summary(
+        "This PR adds ten mandatory product-context fields:\n"
+        + "\n".join(
+            f"{index}. Field {index} has a distinct reviewer outcome."
+            for index in range(1, 11)
+        )
     )
     assert guardrails.product_context_failures(product_context_body(tuple(contents))) == []
 
@@ -1097,8 +1339,11 @@ def test_product_context_rejects_duplicate_or_placeholder_counted_items(
     invalid_items: list[str],
 ) -> None:
     contents = list(PRODUCT_CONTEXT_CONTENT)
-    contents[3] = "This PR adds ten mandatory product-context fields:\n" + "\n".join(
-        f"{index}. {item}" for index, item in enumerate(invalid_items, start=1)
+    contents[3] = exact_changes_with_summary(
+        "This PR adds ten mandatory product-context fields:\n"
+        + "\n".join(
+            f"{index}. {item}" for index, item in enumerate(invalid_items, start=1)
+        )
     )
     assert guardrails.product_context_failures(product_context_body(tuple(contents))) == [
         "Product context point 4 must enumerate every item in a counted exact-change claim."
@@ -1107,7 +1352,7 @@ def test_product_context_rejects_duplicate_or_placeholder_counted_items(
 
 def test_product_context_does_not_reuse_one_enumeration_for_another_counted_claim() -> None:
     contents = list(PRODUCT_CONTEXT_CONTENT)
-    contents[3] = (
+    contents[3] = exact_changes_with_summary(
         "This PR adds two required controls:\n"
         "1. The author supplies exact product context.\n"
         "2. The reviewer checks explicit pass conditions.\n\n"
@@ -1160,6 +1405,15 @@ def test_product_context_contract_is_durable_across_rules_template_and_policy_do
     template = (root / ".github/pull_request_template.md").read_text(encoding="utf-8")
     for heading in ("## Product and reviewer context", *PRODUCT_CONTEXT_HEADINGS):
         assert heading in template
+    assert "#### Plain-English behavior summary" in template
+    assert "#### Technical change list" in template
+    for label in (
+        "**Behavior:**",
+        "**Artifacts/capabilities:**",
+        "**Runtime/external side effects:**",
+        "**Blocker and remaining gap:**",
+    ):
+        assert label in template
 
     required_markers = {
         "AGENTS.md": (
@@ -1171,11 +1425,20 @@ def test_product_context_contract_is_durable_across_rules_template_and_policy_do
             "Product and reviewer context",
             "issue-only",
             "policy-gates",
+            "exactly four distinct",
+            "Artifacts/capabilities",
+            "Runtime/external side effects",
+            "Blocker and remaining gap",
         ),
         "docs/QUALITY_GATES.md": (
             "Product and reviewer context",
             "production path",
             "product_context_failures",
+            "Plain-English behavior summary",
+            "exactly four distinct",
+            "Artifacts/capabilities",
+            "Runtime/external side effects",
+            "Blocker and remaining gap",
         ),
         "docs/SKILL_EXECUTION_PLAN.md": (
             "Issue 315",
@@ -1186,6 +1449,8 @@ def test_product_context_contract_is_durable_across_rules_template_and_policy_do
             "issue #315",
             "self-contained product and end-goal context",
             "runtime and production authorization remain unchanged",
+            "plain-English behavior summary",
+            "exactly four distinct",
         ),
         "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md": (
             "End product goal",

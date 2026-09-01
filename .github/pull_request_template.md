@@ -28,6 +28,22 @@ not substitutes for the explanation. -->
 <!-- Describe the user or product problem without relying on an issue number or link. -->
 
 ### 4. Exact changes in this PR
+
+#### Plain-English behavior summary
+<!-- Required: replace each instruction below with a distinct, PR-specific
+plain-English answer. Keep all four labels and their order. Automation verifies
+the structure and known false-pass mutations; the reviewer judges truth and
+clarity. -->
+
+- **Behavior:** <!-- What behavior does this PR enable or change? -->
+- **Artifacts/capabilities:** <!-- What content, artifacts, or capabilities does it add or explicitly not add? -->
+- **Runtime/external side effects:** <!-- Does it call providers/networks, spend, generate, persist, deploy, release, or otherwise change runtime behavior? Governance/docs-only PRs must say runtime behavior is unchanged. -->
+- **Blocker and remaining gap:** <!-- What blocker does it remove, and what still remains afterward? -->
+
+<!-- A file/test list, issue/link reference, implementation detail, copied
+instruction, or evidence table is not a substitute for truthful answers. -->
+
+#### Technical change list
 <!-- List the concrete behavior, documents, components, and boundaries changed by this PR.
 If this section claims a number of fields, changes, controls, checks, items,
 components, files, paths, rules, or requirements, enumerate every counted item

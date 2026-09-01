@@ -560,6 +560,18 @@ EXPECTED = {
         "tests/unit/test_pr_body_consistency.py",
         "tests/unit/test_stage8_cut1_routes.py",
     },
+    "stage8-486-pr-behavior-summary": {
+        "docs/governance/preflights/issue-486.json",
+        ".github/pull_request_template.md",
+        "scripts/guardrails_check.py",
+        "tests/unit/test_guardrails_check.py",
+        "scripts/quality/stage8_cut1_routes.py",
+        "tests/unit/test_stage8_cut1_routes.py",
+        "docs/REPOSITORY_GUARDRAILS.md",
+        "docs/QUALITY_GATES.md",
+        "docs/agent-context/context-policy-manifest-v1.json",
+        "docs/STATUS.md",
+    },
     "cut1-process-413-frontend-runtime-openssl": {
         "docs/governance/preflights/issue-413.json",
         "frontend/Dockerfile",
@@ -1730,6 +1742,112 @@ def test_issue415_correction_route_rejects_charge_801(monkeypatch: Any) -> None:
     failures: list[str] = []
     routes.check_exact_route(REPO, lambda _: completed([]), branch, EXPECTED[branch], failures)
     assert failures == ["Issue #415 charge 801 exceeds 800."]
+
+
+def test_issue486_route_is_frozen_to_exact_base_paths_and_budgets() -> None:
+    branch = "stage8-486-pr-behavior-summary"
+    expected = EXPECTED[branch]
+    artifact = json.loads(
+        (REPO / "docs/governance/preflights/issue-486.json").read_text(encoding="utf-8")
+    )
+    expected_limits = {
+        "docs/governance/preflights/issue-486.json": 260,
+        ".github/pull_request_template.md": 70,
+        "scripts/guardrails_check.py": 260,
+        "tests/unit/test_guardrails_check.py": 340,
+        "scripts/quality/stage8_cut1_routes.py": 200,
+        "tests/unit/test_stage8_cut1_routes.py": 240,
+        "docs/REPOSITORY_GUARDRAILS.md": 80,
+        "docs/QUALITY_GATES.md": 90,
+        "docs/agent-context/context-policy-manifest-v1.json": 40,
+        "docs/STATUS.md": 60,
+    }
+
+    assert routes.ISSUE486_BRANCH == branch
+    assert routes.ISSUE486_BASE == "4503abd71aed1f61caa85c6682df8f5b991d28ba"
+    assert routes.ROUTES[branch] == expected
+    assert routes.ROUTE_ISSUES[branch] == 486
+    assert routes.TOTAL_LIMITS[branch] == 1000
+    assert routes.TEXT_LIMITS[branch] == expected_limits
+    assert artifact["branch"] == branch
+    assert artifact["accepted_base"] == routes.ISSUE486_BASE
+    assert set(artifact["scope"]["required"]) == expected
+    objective = artifact["objective"]
+    for marker in (
+        "exactly four distinct labeled bullets",
+        "**Behavior:**",
+        "**Artifacts/capabilities:**",
+        "**Runtime/external side effects:**",
+        "**Blocker and remaining gap:**",
+        "8c71ec2097d79736232c10283ebd4c6d65464a690bc66416291989551a63480c",
+        "2dcd399bb97a4aafc88dc1e7613944ac0b3929fddbddf46523d5c32df7ed5305",
+    ):
+        assert marker in objective
+
+
+def test_issue486_route_rejects_lookalike_branch_and_forbidden_path(
+    monkeypatch: Any,
+) -> None:
+    branch = "stage8-486-pr-behavior-summary"
+    lookalike = f"{branch}-extra"
+    assert lookalike not in routes.ROUTES
+    assert lookalike not in stage8.EFFECTIVE_STAGE8_ROUTES
+
+    monkeypatch.setattr(stage8, "current_branch", lambda: branch)
+    monkeypatch.setattr(
+        stage8,
+        "changed_files_for_stage_scope",
+        lambda: [*EXPECTED[branch], "backend/app/main.py"],
+    )
+    failures: list[str] = []
+    stage8.check_stage_scope(failures)
+    assert failures == ["Stage 8 changed file outside the allowlist: backend/app/main.py"]
+
+
+def test_issue486_route_requires_exact_base_and_main_branch_point() -> None:
+    branch = routes.ISSUE486_BRANCH
+    base = routes.ISSUE486_BASE
+
+    def good(args: list[str]) -> subprocess.CompletedProcess[str]:
+        return completed(args, out=base + "\n")
+
+    assert routes.route_base(good, branch) == base
+    for rejected_call in range(3):
+        call_count = 0
+
+        def broken(
+            args: list[str], *, rejected: int = rejected_call
+        ) -> subprocess.CompletedProcess[str]:
+            nonlocal call_count
+            call_count += 1
+            value = "0" * 40 if call_count == rejected + 1 else base
+            return completed(args, out=value + "\n")
+
+        error = pytest.raises(RuntimeError, routes.route_base, broken, branch)
+        assert "Issue #486 fixed base" in str(error.value)
+
+
+def test_issue486_route_rejects_aggregate_and_each_per_path_budget(
+    monkeypatch: Any,
+) -> None:
+    branch = routes.ISSUE486_BRANCH
+    monkeypatch.setattr(routes, "route_base", lambda *_: routes.ISSUE486_BASE)
+    monkeypatch.setattr(routes, "route_text_charges", lambda *_: (1001, {}))
+    failures: list[str] = []
+    routes.check_exact_route(REPO, lambda _: completed([]), branch, EXPECTED[branch], failures)
+    assert failures == ["Issue #486 charge 1001 exceeds 1000."]
+
+    for path, limit in routes.TEXT_LIMITS[branch].items():
+        monkeypatch.setattr(
+            routes,
+            "route_text_charges",
+            lambda *_, path=path, limit=limit: (limit + 1, {path: limit + 1}),
+        )
+        failures = []
+        routes.check_exact_route(
+            REPO, lambda _: completed([]), branch, EXPECTED[branch], failures
+        )
+        assert failures == [f"Issue #486 charge for {path} exceeds {limit}."]
 
 
 def test_issue451_route_is_fixed_to_exact_base_paths_and_limits() -> None:

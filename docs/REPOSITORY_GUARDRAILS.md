@@ -238,6 +238,19 @@ item, component, file, path, rule, or requirement as a distinct, meaningful
 Markdown list entry; naming only the count, duplicating entries, or using
 placeholders is a false pass and blocks the PR.
 
+`Exact changes` must begin with `#### Plain-English behavior summary` and exactly
+four distinct Markdown bullets before `#### Technical change list`. In order,
+their exact bold labels are `**Behavior:**`, `**Artifacts/capabilities:**`,
+`**Runtime/external side effects:**`, and `**Blocker and remaining gap:**`.
+Each labeled body gives the PR-specific answer; governance/docs-only changes
+state explicitly that runtime behavior is unchanged. Missing, reordered,
+duplicated, placeholder, generic, or reference-only labeled bodies fail
+`policy-gates`, as do the repository's frozen copied-instruction and technical-
+list mutations. A file/test list, issue/link reference, implementation detail,
+or evidence table cannot substitute for truthful answers. Automation verifies
+structure and known false-pass classes; an independent reviewer rejects
+misleading, copied, or keyword-stuffed prose and still owns truth and clarity.
+
 Reviewer validation must separately name expected behavior, prohibited
 behavior, evidence, pass condition, and fail condition. Automation proves that
 the review contract is complete and rejects defined false-pass classes; the
