@@ -4027,6 +4027,41 @@ def test_issue499_route_rejects_branch_suffix_drift(monkeypatch: Any) -> None:
     ]
 
 
+def test_issue499_route_rejects_fixed_base_drift_and_every_path_cap(monkeypatch: Any) -> None:
+    outputs = iter(
+        (
+            completed([], out=routes.ISSUE499_BASE + "\n"),
+            completed([], out="a" * 40 + "\n"),
+        )
+    )
+    error = pytest.raises(
+        RuntimeError,
+        routes.route_base,
+        lambda _: next(outputs),
+        routes.ISSUE499_BRANCH,
+    )
+    assert "Issue #499 fixed base" in str(error.value)
+    monkeypatch.setattr(routes, "route_base", lambda *_: "base")
+    for path, limit in routes.TEXT_LIMITS[routes.ISSUE499_BRANCH].items():
+        monkeypatch.setattr(
+            routes,
+            "route_text_charges",
+            lambda *_, value_path=path, value_limit=limit: (
+                value_limit + 1,
+                {value_path: value_limit + 1},
+            ),
+        )
+        failures: list[str] = []
+        routes.check_exact_route(
+            REPO,
+            lambda _: completed([]),
+            routes.ISSUE499_BRANCH,
+            ISSUE499_EXPECTED,
+            failures,
+        )
+        assert f"Issue #499 charge for {path} exceeds {limit}." in failures
+
+
 def test_issue495_lock_refresh_changes_only_six_transitive_records() -> None:
     lock_path = "frontend/package-lock.json"
     base_result = subprocess.run(

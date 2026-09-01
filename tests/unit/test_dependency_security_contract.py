@@ -39,6 +39,7 @@ ROOT = Path(__file__).resolve().parents[2]
 ISSUE360_BASE = "b9a2a8cd4aa05328116565990fc30ae44592c875"
 ISSUE396_BASE = "9ee3f4a4d3b8cf1e78b5a878904748b60d557a76"
 ISSUE401_BASE = "9cf6e01f9d0c32f25c229b5adf38c6eb716ca9a0"
+ISSUE499_BASE = "d1f5400f5c6dfec5d4b63eb3a83aa82e3330743f"
 BRACE_PATH = "node_modules/brace-expansion"
 JS_YAML_PATH = "node_modules/js-yaml"
 NANOID_PATH = "node_modules/nanoid"
@@ -60,6 +61,8 @@ ISSUE150_BASE = "a02286240212ad8958915aec01aa5ebaf60fa705"
 ISSUE460_BASE = "ab97b6eecba6db9c66c37d19b29257c7398f3ab7"
 PYPDF_WHEEL_SHA256 = "c8b09a59399062fb45a1b8156c18a787a10a3dae03ac9674397a226712c94604"
 PYPDF_SDIST_SHA256 = "595647f6191de6f402cfde1d0c455d6cbccbd509aac32b34783009c032de5d6e"
+PYPDF_SDIST_URL = "https://files.pythonhosted.org/packages/44/66/54212e75406afd9f3e933d0dda23072f6aecc55c5a273077dc2e0b028b23/pypdf-6.16.2.tar.gz"
+PYPDF_WHEEL_URL = "https://files.pythonhosted.org/packages/13/f1/a2da3b55acd4ab737bf728c97edaaed5ec1d3c1236acb639dcdfa97e42c7/pypdf-6.16.2-py3-none-any.whl"
 PIP_SECURITY_VERSION = "26.2.1"
 PIP_SECURITY_WHEEL_SHA256 = "71138adf1f4ca900cdb7d289c21b7494329f2332b6d85f0e1c42108c0384ed3e"
 PIP_SECURITY_SDIST_SHA256 = "f6ad667e89a1fe78046c8f13232b247200f5258d7828f3f7883d660878e0813f"
@@ -276,6 +279,48 @@ def test_pypdf_contract_rejects_vulnerable_hash_and_unrelated_drift() -> None:
     for candidate_project, candidate_lock in mutations:
         with pytest.raises(AssertionError):
             _assert_pypdf_6162_contract(candidate_project, candidate_lock)
+
+
+def test_pypdf_contract_rejects_complete_provenance_and_graph_mutations() -> None:
+    project_text = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
+    lock_text = (ROOT / "uv.lock").read_text(encoding="utf-8")
+    pypdf_header = 'name = "pypdf"\nversion = "6.16.2"'
+    pypdf_source = pypdf_header + '\nsource = { registry = "https://pypi.org/simple" }'
+    pypdf_block_start = lock_text.index("[[package]]\n" + pypdf_header)
+    pypdf_block_end = lock_text.index("\n[[package]]", pypdf_block_start + 1)
+    pypdf_block = lock_text[pypdf_block_start:pypdf_block_end]
+    project_mutations = (
+        project_text.replace('    "pypdf>=6.16.2",\n', ""),
+        project_text.replace('    "pypdf>=6.16.2",', '    "pypdf>=6.16.2",\n    "pypdf>=6.16.2",'),
+        project_text.replace("pypdf>=6.16.2", "pypdf>=6"),
+        project_text.replace("pypdf>=6.16.2", "pypdf==6.16.2"),
+    )
+    lock_mutations = (
+        lock_text.replace(pypdf_source, pypdf_header + '\nsource = { registry = "https://example.invalid/simple" }'),
+        lock_text.replace(PYPDF_SDIST_URL, "https://example.invalid/untrusted/pypdf-6.16.2.tar.gz"),
+        lock_text.replace(PYPDF_WHEEL_URL, "https://example.invalid/untrusted/pypdf-6.16.2-py3-none-any.whl"),
+        lock_text.replace("pypdf-6.16.2.tar.gz", "pypdf-6.16.2-forged.tar.gz", 1),
+        lock_text.replace("pypdf-6.16.2-py3-none-any.whl", "pypdf-6.16.2-forged.whl", 1),
+        lock_text.replace("size = 7008996", "size = 7008997", 1),
+        lock_text.replace("size = 385060", "size = 385061", 1),
+        lock_text.replace(pypdf_header, pypdf_header + '\ndependencies = [{ name = "google-auth" }]', 1),
+        lock_text.replace(pypdf_header, pypdf_header + '\nforged = "extra-field"', 1),
+        lock_text[:pypdf_block_end] + "\n" + pypdf_block + lock_text[pypdf_block_end:],
+    )
+    for candidate_project in project_mutations:
+        with pytest.raises(AssertionError):
+            _assert_pypdf_6162_contract(candidate_project, lock_text)
+    for candidate_lock in lock_mutations:
+        with pytest.raises(AssertionError):
+            _assert_pypdf_6162_contract(project_text, candidate_lock)
+
+
+def test_pypdf_refresh_preserves_unsupported_pdf_runtime_boundary() -> None:
+    for path in ("backend/app/stage4.py", "tests/api/test_stage4_slice_api.py"):
+        assert (ROOT / path).read_text(encoding="utf-8") == _text_at(ISSUE499_BASE, path)
+    api_test = (ROOT / "tests/api/test_stage4_slice_api.py").read_text(encoding="utf-8")
+    assert '("application/pdf" if case == "mime" else "text/markdown")' in api_test
+    assert 'expected = "UNSUPPORTED_MEDIA_TYPE" if case in {"mime", "archive"}' in api_test
 
 
 def test_google_auth_contract_rejects_direct_transitive_and_artifact_drift() -> None:
