@@ -1119,19 +1119,50 @@ def test_product_context_rejects_placeholder_or_reference_only_behavior_bullets(
     ]
 
 
+@pytest.mark.parametrize(
+    "summary_bullets",
+    (
+        (
+            "It changes future pull request behavior by requiring a practical summary before technical details.",
+            "It changes future pull request behavior by requiring a practical summary before technical details.",
+            "It changes future pull request behavior by requiring a practical summary before technical details.",
+        ),
+        (
+            "Write three to five meaningful Markdown bullets before adding any technical details.",
+            "Explain what behavior this pull request enables or changes for reviewers and users.",
+            "Explain what blocker it removes and what remains after this pull request merges.",
+        ),
+        (
+            "The guardrails script adds parser logic for the required summary section.",
+            "The pull request template adds headings for summary and technical changes.",
+            "The unit test file adds automated coverage for accepted and rejected inputs.",
+        ),
+    ),
+    ids=("duplicate", "copied-instructions", "technical-file-list"),
+)
+def test_product_context_rejects_non_behavioral_summary_false_passes(
+    summary_bullets: tuple[str, ...],
+) -> None:
+    contents = list(PRODUCT_CONTEXT_CONTENT)
+    bullets = "\n".join(f"- {bullet}" for bullet in summary_bullets)
+    contents[3] = (
+        f"#### Plain-English behavior summary\n\n{bullets}\n\n"
+        "#### Technical change list\n\nThe parser and template change together."
+    )
+    assert guardrails.product_context_failures(product_context_body(tuple(contents))) == [
+        "Plain-English behavior summary must contain 3 to 5 meaningful Markdown bullets."
+    ]
+
+
 @pytest.mark.parametrize("bullet_count", (3, 5))
 def test_product_context_accepts_three_to_five_meaningful_behavior_bullets(
     bullet_count: int,
 ) -> None:
     contents = list(PRODUCT_CONTEXT_CONTENT)
-    bullets = "\n".join(
-        f"- Concrete behavior outcome {index} explains what a reviewer should expect after merge."
-        for index in range(1, bullet_count + 1)
-    )
-    contents[3] = (
-        f"#### Plain-English behavior summary\n\n{bullets}\n\n"
-        "#### Technical change list\n\nThe parser and template change together."
-    )
+    summary = PRODUCT_CONTEXT_CONTENT[3].split("#### Technical change list", maxsplit=1)[0]
+    if bullet_count == 5:
+        summary += "- It lets reviewers validate the practical outcome before reading implementation details.\n\n"
+    contents[3] = f"{summary}#### Technical change list\n\nThe parser and template change together."
     assert guardrails.product_context_failures(product_context_body(tuple(contents))) == []
 
 

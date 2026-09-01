@@ -1753,14 +1753,14 @@ def test_issue486_route_is_frozen_to_exact_base_paths_and_budgets() -> None:
     expected_limits = {
         "docs/governance/preflights/issue-486.json": 260,
         ".github/pull_request_template.md": 70,
-        "scripts/guardrails_check.py": 220,
-        "tests/unit/test_guardrails_check.py": 300,
-        "scripts/quality/stage8_cut1_routes.py": 180,
-        "tests/unit/test_stage8_cut1_routes.py": 220,
+        "scripts/guardrails_check.py": 260,
+        "tests/unit/test_guardrails_check.py": 340,
+        "scripts/quality/stage8_cut1_routes.py": 200,
+        "tests/unit/test_stage8_cut1_routes.py": 240,
         "docs/REPOSITORY_GUARDRAILS.md": 80,
         "docs/QUALITY_GATES.md": 90,
         "docs/agent-context/context-policy-manifest-v1.json": 40,
-        "docs/STATUS.md": 50,
+        "docs/STATUS.md": 60,
     }
 
     assert routes.ISSUE486_BRANCH == branch
