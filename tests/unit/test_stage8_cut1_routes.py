@@ -3751,6 +3751,51 @@ def test_issue494_failure_diagnostic_route_is_exact_bounded_and_base_pinned() ->
     ]
 
 
+def test_issue494_requires_exact_reviewed_main_transition() -> None:
+    original = "ca49843ada493162fa02ff7331b7c6adf3b505c9"
+    frozen = "c217a088af84f62138f874a164bdbb75cc0f5987"
+    transition_base = "99f1d6a46bf9ee42d28aa04f46792ea56f392ab2"
+    transition_merge = "97671772b7ab8ef2c583cecde98f35a9e472457b"
+    assert routes.ISSUE494_BASE == original
+    assert routes.ISSUE494_FROZEN_HEAD == frozen
+    assert routes.ISSUE494_TRANSITION_BASE == transition_base
+    assert routes.ISSUE494_TRANSITION_MERGE == transition_merge
+    assert routes.ISSUE494_TRANSITION_COMMENT == "5499248540"
+    assert routes.ISSUE494_TRANSITION_SHA256 == (
+        "3c0968ef0827dfa314a8591230e410b4dd5a4b4092223b5f76fdc72499bbe9a3"
+    )
+
+    def good(args: list[str]) -> subprocess.CompletedProcess[str]:
+        if args[:2] == ["git", "rev-parse"]:
+            value = (
+                transition_base
+                if args[2] == "origin/main^{commit}"
+                else args[2].removesuffix("^{commit}")
+            )
+            return completed(args, out=value + "\n")
+        if args[:3] == ["git", "show", "-s"]:
+            return completed(args, out=f"{frozen} {transition_base}\n")
+        return completed(args)
+
+    assert routes.route_base(good, routes.ISSUE494_BRANCH) == transition_base
+
+    def drifted_main(args: list[str]) -> subprocess.CompletedProcess[str]:
+        if args == ["git", "rev-parse", "origin/main^{commit}"]:
+            return completed(args, out=original + "\n")
+        return good(args)
+
+    def forged_parents(args: list[str]) -> subprocess.CompletedProcess[str]:
+        if args[:3] == ["git", "show", "-s"]:
+            return completed(args, out=f"{transition_base} {frozen}\n")
+        return good(args)
+
+    for broken in (drifted_main, forged_parents):
+        error = pytest.raises(
+            RuntimeError, routes.route_base, broken, routes.ISSUE494_BRANCH
+        )
+        assert "Issue #494 reviewed transition" in str(error.value)
+
+
 def test_issue368_prompt_route_requires_exact_merged_governance_base() -> None:
     calls: list[list[str]] = []
 
