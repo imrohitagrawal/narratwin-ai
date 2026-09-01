@@ -114,6 +114,31 @@ def test_missing_google_auth_fails_closed_without_network(monkeypatch: pytest.Mo
     assert ACCESS_VALUE not in str(error.value)
 
 
+def test_default_refresh_factory_uses_supported_requests_transport(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    imports: list[str] = []
+
+    class PublicRequest:
+        pass
+
+    class PublicTransportModule:
+        Request = PublicRequest
+
+    def load_public_transport(name: str) -> object:
+        imports.append(name)
+        if name != "google.auth.transport.requests":
+            raise ModuleNotFoundError(name)
+        return PublicTransportModule
+
+    monkeypatch.setattr(importlib, "import_module", load_public_transport)
+
+    factory = ADCGoogleIdentityProvider._load_request_factory()
+
+    assert factory is PublicRequest
+    assert imports == ["google.auth.transport.requests"]
+
+
 def test_adc_resolution_binds_exact_scope_and_identity_checksum() -> None:
     calls: list[dict[str, object]] = []
     credentials = FakeCredentials()

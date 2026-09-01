@@ -104,6 +104,16 @@ rejects legacy-prefixed, uppercase, short, long, or non-hex presenter bindings
 before identity resolution or transport preparation. This compatibility repair
 does not change the provider, endpoint, voices, activation, or release posture.
 
+### Supported ADC refresh transport
+
+The optional runtime lazily creates the documented public
+`google.auth.transport.requests.Request` for ADC refresh. It does not depend on
+Google Auth's private `_http_client` module. Missing optional transport support
+still fails closed as `GOOGLE_TTS_DEPENDENCY_UNAVAILABLE`, and injected test
+factories remain available for zero-network validation. This correction changes
+neither credentials nor the provider request transport, endpoint, model, voice
+mapping, activation, budget, privacy, or release posture.
+
 ## Consequences
 
 - The stale `local_tts.py`/eSpeak execution route is rejected, while its commit

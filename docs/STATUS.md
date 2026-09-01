@@ -1523,6 +1523,21 @@ required.
 - This correction does not synthesize or accept audio. T05 remains incomplete,
   T06 remains blocked, and release and Cut 1 acceptance remain No-Go.
 
+## Issue #368 Google Auth refresh-transport correction (2026-09-01)
+
+- The authorized activation-v3 operation passed its redacted control-plane and
+  zero-egress plan gates, then stopped before the first provider request because
+  the runtime selected Google Auth's private `_http_client` refresh transport.
+- The same governed credential refreshed through the documented public
+  `google.auth.transport.requests.Request`; request state, egress, attempts,
+  spend, WAVs, and captions remained zero.
+- Branch `stage8-368-google-auth-public-transport-fix` from exact main
+  `92e7666df46e5dcc3eea80d17b87026d4aa4dc5c` changes only that lazy transport
+  import and adds fake-only regression and exact-route coverage.
+- This correction adds no voice, narration, audio, captions, avatar speech, or
+  human acceptance. A provider retry requires a new immutable operation package
+  after merge; T05, T06, release, and Cut 1 acceptance remain incomplete/No-Go.
+
 ## Issue #486 PR reviewer-impact-summary governance (2026-09-01)
 
 - Issue #486 freezes a docs/gates/tests-only route requiring every non-trivial

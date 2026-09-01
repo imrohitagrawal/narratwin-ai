@@ -1,0 +1,43 @@
+{
+  "schema_version": "GovernancePreflightV1",
+  "issue_number": 368,
+  "branch": "stage8-368-google-auth-public-transport-fix",
+  "objective": "From exact accepted main 92e7666df46e5dcc3eea80d17b87026d4aa4dc5c and tree df6154a1676a1e397dba1e862f7376e9c136429b, correct only the reproduced pre-egress credential-refresh failure under Issue #368 route freeze 5495025249 with body SHA-256 23220c33830706cd0dcacd821d29b8ef32aeb3089d3fea9f60b069c11edd4632. Replace the private google.auth.transport._http_client Request factory with the documented public google.auth.transport.requests Request factory, preserving lazy loading and existing normalized dependency failure. Use exactly eight paths and at most 900 charged lines. Tests use fakes only. No real credentials, network, provider request, narration egress, synthesis, spend, media, human acceptance, deployment, release, production-readiness, or Cut 1 completion claim is permitted. Stop on base, tree, issue, route, path, budget, dependency, provider behavior, credential, secret, network-test, security, hosted, approval, or authority drift.",
+  "status_decision": "update-minimally",
+  "scope": {
+    "required": [
+      "backend/app/google_tts_runtime.py",
+      "tests/unit/test_google_tts_runtime.py",
+      "docs/governance/preflights/issue-368-auth-transport.json",
+      "scripts/quality/stage8_cut1_routes.py",
+      "tests/unit/test_stage8_cut1_routes.py",
+      "docs/STATUS.md",
+      "docs/ADR/0056-cut1-google-gemini-tts.md",
+      "docs/TRACEABILITY.md"
+    ],
+    "allowed_prefixes": [
+      "backend/app/google_tts_runtime.py",
+      "tests/unit/test_google_tts_runtime.py",
+      "docs/governance/preflights/issue-368-auth-transport.json",
+      "scripts/quality/stage8_cut1_routes.py",
+      "tests/unit/test_stage8_cut1_routes.py",
+      "docs/STATUS.md",
+      "docs/ADR/0056-cut1-google-gemini-tts.md",
+      "docs/TRACEABILITY.md"
+    ],
+    "forbidden": [
+      ".github/",
+      "frontend/",
+      "backend/app/tts_provider.py",
+      "backend/app/narration.py",
+      "backend/app/cut1_audio.py",
+      "pyproject.toml",
+      "uv.lock",
+      "credentials/",
+      "providers/",
+      "media/",
+      "deployment/",
+      "release/"
+    ]
+  }
+}
