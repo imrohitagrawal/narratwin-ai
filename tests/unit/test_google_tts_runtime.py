@@ -420,7 +420,9 @@ def test_transport_accepts_bounded_long_response_timeout() -> None:
     prepared.close()
 
 
-@pytest.mark.parametrize("timeout", [0, -1, 180.001, True, "180", None])
+@pytest.mark.parametrize(
+    "timeout", [0, -1, 180.001, float("nan"), float("inf"), True, "180", None]
+)
 def test_transport_rejects_invalid_or_unbounded_timeout(timeout: object) -> None:
     instance, _, _, _ = transport()
 

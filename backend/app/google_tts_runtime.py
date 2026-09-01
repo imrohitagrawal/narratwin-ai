@@ -16,6 +16,7 @@ import importlib
 import ipaddress
 import json
 import logging
+import math
 import re
 import socket
 import ssl
@@ -25,6 +26,7 @@ from typing import Any, Protocol, cast
 from urllib.parse import SplitResult, urlsplit
 
 from backend.app.tts_provider import (
+    GOOGLE_TTS_MAX_TIMEOUT_SECONDS,
     GOOGLE_TTS_SCOPE,
     GOOGLE_TTS_URL,
     GoogleIdentity,
@@ -42,6 +44,15 @@ _DEFAULT_MAX_RESPONSE_BYTES = 6_000_000
 _READ_CHUNK_BYTES = 64 * 1024
 _HEADER_NAME = re.compile(r"[!#$%&'*+.^_`|~0-9A-Za-z-]+\Z")
 _PROJECT_ID = re.compile(r"[a-z][a-z0-9-]{4,28}[a-z0-9]\Z")
+
+
+def _valid_timeout(value: object) -> bool:
+    return (
+        isinstance(value, (int, float))
+        and not isinstance(value, bool)
+        and math.isfinite(value)
+        and 0 < value <= GOOGLE_TTS_MAX_TIMEOUT_SECONDS
+    )
 
 
 class GoogleRuntimeError(RuntimeError):
@@ -234,7 +245,7 @@ class RegionalGoogleTTSTransport:
     def prepare(self, *, url: str, timeout_seconds: float) -> _PreparedGoogleSession:
         self._validate_activation()
         parsed = self._parse_url(url)
-        if timeout_seconds <= 0 or timeout_seconds > 30:
+        if not _valid_timeout(timeout_seconds):
             raise GoogleRuntimeError("GOOGLE_TTS_TIMEOUT_INVALID", "Google TTS timeout is invalid.")
         try:
             answers = list(self._resolver(parsed.hostname or "", _PORT, type=socket.SOCK_STREAM))
@@ -391,7 +402,7 @@ class _PreparedGoogleSession:
             raise GoogleRuntimeError(
                 "GOOGLE_TTS_SESSION_INVALID", "Google TTS prepared session is not reusable."
             )
-        if timeout_seconds <= 0 or timeout_seconds > 30:
+        if not _valid_timeout(timeout_seconds):
             raise GoogleRuntimeError("GOOGLE_TTS_TIMEOUT_INVALID", "Google TTS timeout is invalid.")
         self._used = True
         try:

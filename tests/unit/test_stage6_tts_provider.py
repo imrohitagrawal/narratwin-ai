@@ -631,7 +631,9 @@ def test_g368_bounded_long_response_timeout_is_valid() -> None:
     provider._validate_config()
 
 
-@pytest.mark.parametrize("timeout", [0, -1, 180.001, True, "180", None])
+@pytest.mark.parametrize(
+    "timeout", [0, -1, 180.001, float("nan"), float("inf"), True, "180", None]
+)
 def test_g368_invalid_or_unbounded_response_timeout_fails_closed(
     timeout: object,
 ) -> None:
