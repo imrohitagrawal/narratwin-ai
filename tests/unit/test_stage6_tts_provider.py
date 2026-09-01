@@ -621,18 +621,30 @@ def test_g368_03_05_all_activation_failures_precede_identity_and_transport(
     assert identity.calls == 0 and transport.prepare_calls == [] and transport.calls == []
 
 
-def test_g368_configured_finite_long_response_timeout_is_valid() -> None:
+@pytest.mark.parametrize("timeout", [600.0, threading.TIMEOUT_MAX])
+def test_g368_configured_finite_long_response_timeout_is_valid(timeout: float) -> None:
     provider = google_provider(
         FakeGoogleTransport([]),
         FakeGoogleIdentityProvider(),
-        config_value=google_config(timeout_seconds=600.0),
+        config_value=google_config(timeout_seconds=timeout),
     )
 
     provider._validate_config()
 
 
 @pytest.mark.parametrize(
-    "timeout", [0, -1, float("nan"), float("inf"), True, "180", None]
+    "timeout",
+    [
+        0,
+        -1,
+        threading.TIMEOUT_MAX + 1,
+        10**1000,
+        float("nan"),
+        float("inf"),
+        True,
+        "180",
+        None,
+    ],
 )
 def test_g368_invalid_response_timeout_fails_closed(
     timeout: object,
