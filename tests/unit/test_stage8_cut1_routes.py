@@ -560,6 +560,19 @@ EXPECTED = {
         "tests/unit/test_pr_body_consistency.py",
         "tests/unit/test_stage8_cut1_routes.py",
     },
+    "stage8-486-pr-behavior-summary": {
+        "docs/governance/preflights/issue-486.json",
+        "AGENTS.md",
+        ".github/pull_request_template.md",
+        "scripts/guardrails_check.py",
+        "tests/unit/test_guardrails_check.py",
+        "scripts/quality/stage8_cut1_routes.py",
+        "tests/unit/test_stage8_cut1_routes.py",
+        "docs/REPOSITORY_GUARDRAILS.md",
+        "docs/QUALITY_GATES.md",
+        "docs/STATUS.md",
+        "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md",
+    },
     "cut1-process-413-frontend-runtime-openssl": {
         "docs/governance/preflights/issue-413.json",
         "frontend/Dockerfile",
@@ -1730,6 +1743,56 @@ def test_issue415_correction_route_rejects_charge_801(monkeypatch: Any) -> None:
     failures: list[str] = []
     routes.check_exact_route(REPO, lambda _: completed([]), branch, EXPECTED[branch], failures)
     assert failures == ["Issue #415 charge 801 exceeds 800."]
+
+
+def test_issue486_route_is_frozen_to_exact_base_paths_and_budgets() -> None:
+    branch = "stage8-486-pr-behavior-summary"
+    expected = EXPECTED[branch]
+    artifact = json.loads(
+        (REPO / "docs/governance/preflights/issue-486.json").read_text(encoding="utf-8")
+    )
+    expected_limits = {
+        "docs/governance/preflights/issue-486.json": 260,
+        "AGENTS.md": 50,
+        ".github/pull_request_template.md": 70,
+        "scripts/guardrails_check.py": 220,
+        "tests/unit/test_guardrails_check.py": 300,
+        "scripts/quality/stage8_cut1_routes.py": 180,
+        "tests/unit/test_stage8_cut1_routes.py": 220,
+        "docs/REPOSITORY_GUARDRAILS.md": 80,
+        "docs/QUALITY_GATES.md": 90,
+        "docs/STATUS.md": 50,
+        "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md": 80,
+    }
+
+    assert routes.ISSUE486_BRANCH == branch
+    assert routes.ISSUE486_BASE == "4503abd71aed1f61caa85c6682df8f5b991d28ba"
+    assert routes.ROUTES[branch] == expected
+    assert routes.ROUTE_ISSUES[branch] == 486
+    assert routes.TOTAL_LIMITS[branch] == 1000
+    assert routes.TEXT_LIMITS[branch] == expected_limits
+    assert artifact["branch"] == branch
+    assert artifact["accepted_base"] == routes.ISSUE486_BASE
+    assert set(artifact["scope"]["required"]) == expected
+
+
+def test_issue486_route_rejects_lookalike_branch_and_forbidden_path(
+    monkeypatch: Any,
+) -> None:
+    branch = "stage8-486-pr-behavior-summary"
+    lookalike = f"{branch}-extra"
+    assert lookalike not in routes.ROUTES
+    assert lookalike not in stage8.EFFECTIVE_STAGE8_ROUTES
+
+    monkeypatch.setattr(stage8, "current_branch", lambda: branch)
+    monkeypatch.setattr(
+        stage8,
+        "changed_files_for_stage_scope",
+        lambda: [*EXPECTED[branch], "backend/app/main.py"],
+    )
+    failures: list[str] = []
+    stage8.check_stage_scope(failures)
+    assert failures == ["Stage 8 changed file outside the allowlist: backend/app/main.py"]
 
 
 def test_issue451_route_is_fixed_to_exact_base_paths_and_limits() -> None:
