@@ -1964,3 +1964,13 @@ PR `#483` is exact-head approved, merged, post-merge green, cleaned, and Issue
 `#482` is closed. Issue #479 resumed through its separately pinned protected-
 main transition. No provider call, credential access, egress, spend, synthesis,
 media, deployment, release, production readiness, or Cut 1 acceptance resulted.
+
+## Browserslist dependency-security prerequisite
+
+Issue `#495` isolates a newly published high-severity audit failure in the
+unchanged accepted-main frontend lock. The lockfile-only correction resolves
+`browserslist` 4.28.8 plus its five required browser-data transitive records;
+`package.json`, direct dependency intent, and application/provider behavior stay
+unchanged. This security prerequisite generates no narration, voice, audio,
+caption, avatar media, provider request, egress, spend, human acceptance,
+deployment, release, production-readiness, or Cut 1 completion evidence.
