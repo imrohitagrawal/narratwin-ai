@@ -66,10 +66,10 @@ PRODUCT_CONTEXT_CONTENT = (
     "The repository blocks placeholder reviewer overviews, but it does not yet require self-contained product and end-goal context.",
     "Reviewers currently have to open nested issue and document links to reconstruct the product intent and expected outcome.",
     "#### Plain-English behavior summary\n\n"
-    "- It makes every non-trivial pull request explain its practical behavior before technical details.\n"
-    "- It adds PR guidance and validation, but it adds no product content or media artifacts.\n"
-    "- It performs no provider calls, network access, spending, generation, deployment, or runtime work.\n"
-    "- It removes a reviewer-understanding gap while product delivery and release work remain separate.\n\n"
+    "- **Behavior:** It makes every non-trivial pull request explain its practical behavior before technical details.\n"
+    "- **Artifacts/capabilities:** It adds PR guidance and validation, but it adds no product content or media artifacts.\n"
+    "- **Runtime/external side effects:** It performs no provider calls, network access, spending, generation, deployment, or runtime work.\n"
+    "- **Blocker and remaining gap:** It removes a reviewer-understanding gap while product delivery and release work remain separate.\n\n"
     "#### Technical change list\n\n"
     "This PR adds a product-context template, a local PR-body parser, negative tests, and matching governance documentation.",
     "After merge, policy-gates rejects non-trivial PRs that omit any required self-contained product-context field.",
@@ -155,9 +155,9 @@ def test_issue486_cleanup_authority_transition_accepts_only_current_or_pending_h
     monkeypatch: Any,
 ) -> None:
     pending = {
-        "AGENTS.md": "472cca025538a12696794fc698869059a5d96598d3efef1782d73fd0f82cd7f5",
+        "AGENTS.md": "8c71ec2097d79736232c10283ebd4c6d65464a690bc66416291989551a63480c",
         "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md": (
-            "4676a97a8afb5535a23ab67dd4b71ee5148f43c2b905e2da01592cac4cf10042"
+            "2dcd399bb97a4aafc88dc1e7613944ac0b3929fddbddf46523d5c32df7ed5305"
         ),
     }
     assert guardrails.CLEANUP_AUTHORITY_PENDING_SHA256 == pending
@@ -1087,8 +1087,8 @@ def test_product_context_rejects_behavior_summary_after_technical_change_list() 
     ]
 
 
-@pytest.mark.parametrize("bullet_count", (0, 1, 2, 6))
-def test_product_context_rejects_behavior_summary_outside_three_to_five_bullets(
+@pytest.mark.parametrize("bullet_count", (0, 1, 2, 3, 5, 6))
+def test_product_context_rejects_behavior_summary_outside_exactly_four_bullets(
     bullet_count: int,
 ) -> None:
     contents = list(PRODUCT_CONTEXT_CONTENT)
@@ -1101,7 +1101,7 @@ def test_product_context_rejects_behavior_summary_outside_three_to_five_bullets(
         "#### Technical change list\n\nThe parser and template change together."
     )
     assert guardrails.product_context_failures(product_context_body(tuple(contents))) == [
-        "Plain-English behavior summary must contain 3 to 5 meaningful Markdown bullets."
+        "Plain-English behavior summary must contain exactly 4 distinct labeled Markdown bullets."
     ]
 
 
@@ -1115,7 +1115,7 @@ def test_product_context_rejects_placeholder_or_reference_only_behavior_bullets(
         invalid_bullet,
     )
     assert guardrails.product_context_failures(product_context_body(tuple(contents))) == [
-        "Plain-English behavior summary must contain 3 to 5 meaningful Markdown bullets."
+        "Plain-English behavior summary must contain exactly 4 distinct labeled Markdown bullets."
     ]
 
 
@@ -1137,8 +1137,26 @@ def test_product_context_rejects_placeholder_or_reference_only_behavior_bullets(
             "The pull request template adds headings for summary and technical changes.",
             "The unit test file adds automated coverage for accepted and rejected inputs.",
         ),
+        (
+            "**Behavior:** Required authors should write bullets explaining what behavior this pull request changes.",
+            "**Artifacts/capabilities:** Together the bullets explain what content or artifacts it adds or does not add.",
+            "**Runtime/external side effects:** For external provider network runtime spending and generation side effects state whether they occur.",
+            "**Blocker and remaining gap:** For the blocker it removes explain the remaining gap afterward.",
+        ),
+        (
+            "**Behavior:** The runtime guardrail file changes parser behavior for pull request bodies.",
+            "**Artifacts/capabilities:** The template file adds no product content artifacts capabilities or media.",
+            "**Runtime/external side effects:** The policy documentation file records no provider network spending generation deployment or release side effects.",
+            "**Blocker and remaining gap:** The status file removes the reviewer blocker and records the remaining gap afterward.",
+        ),
     ),
-    ids=("duplicate", "copied-instructions", "technical-file-list"),
+    ids=(
+        "duplicate",
+        "copied-instructions",
+        "technical-file-list",
+        "prefixed-copied-instructions",
+        "keyword-stuffed-technical-file-list",
+    ),
 )
 def test_product_context_rejects_non_behavioral_summary_false_passes(
     summary_bullets: tuple[str, ...],
@@ -1150,7 +1168,7 @@ def test_product_context_rejects_non_behavioral_summary_false_passes(
         "#### Technical change list\n\nThe parser and template change together."
     )
     assert guardrails.product_context_failures(product_context_body(tuple(contents))) == [
-        "Plain-English behavior summary must contain 3 to 5 meaningful Markdown bullets."
+        "Plain-English behavior summary must contain exactly 4 distinct labeled Markdown bullets."
     ]
 
 
@@ -1178,19 +1196,36 @@ def test_product_context_requires_every_behavior_summary_category(
         f"#### Technical change list{technical}"
     )
     assert guardrails.product_context_failures(product_context_body(tuple(contents))) == [
-        "Plain-English behavior summary must contain 3 to 5 meaningful Markdown bullets."
+        "Plain-English behavior summary must contain exactly 4 distinct labeled Markdown bullets."
     ]
 
 
-@pytest.mark.parametrize("bullet_count", (3, 5))
-def test_product_context_accepts_three_to_five_meaningful_behavior_bullets(
-    bullet_count: int,
+@pytest.mark.parametrize("mutation", ("reordered", "wrong-label", "duplicate-label"))
+def test_product_context_rejects_behavior_summary_label_mutations(
+    mutation: str,
 ) -> None:
     contents = list(PRODUCT_CONTEXT_CONTENT)
-    summary = PRODUCT_CONTEXT_CONTENT[3].split("#### Technical change list", maxsplit=1)[0]
-    if bullet_count == 5:
-        summary += "- It lets reviewers validate the practical outcome before reading implementation details.\n\n"
-    contents[3] = f"{summary}#### Technical change list\n\nThe parser and template change together."
+    summary, technical = contents[3].split("#### Technical change list", maxsplit=1)
+    bullets = [line for line in summary.splitlines() if line.startswith("- ")]
+    if mutation == "reordered":
+        bullets[0], bullets[1] = bullets[1], bullets[0]
+    elif mutation == "wrong-label":
+        bullets[0] = bullets[0].replace("**Behavior:**", "**Outcome:**")
+    else:
+        bullets[1] = bullets[1].replace("**Artifacts/capabilities:**", "**Behavior:**")
+    bullet_text = "\n".join(bullets)
+    contents[3] = (
+        "#### Plain-English behavior summary\n\n"
+        f"{bullet_text}\n\n"
+        f"#### Technical change list{technical}"
+    )
+    assert guardrails.product_context_failures(product_context_body(tuple(contents))) == [
+        "Plain-English behavior summary must contain exactly 4 distinct labeled Markdown bullets."
+    ]
+
+
+def test_product_context_accepts_exactly_four_distinct_labeled_behavior_bullets() -> None:
+    contents = list(PRODUCT_CONTEXT_CONTENT)
     assert guardrails.product_context_failures(product_context_body(tuple(contents))) == []
 
 
@@ -1342,6 +1377,13 @@ def test_product_context_contract_is_durable_across_rules_template_and_policy_do
         assert heading in template
     assert "#### Plain-English behavior summary" in template
     assert "#### Technical change list" in template
+    for label in (
+        "**Behavior:**",
+        "**Artifacts/capabilities:**",
+        "**Runtime/external side effects:**",
+        "**Blocker and remaining gap:**",
+    ):
+        assert label in template
 
     required_markers = {
         "AGENTS.md": (
@@ -1353,13 +1395,20 @@ def test_product_context_contract_is_durable_across_rules_template_and_policy_do
             "Product and reviewer context",
             "issue-only",
             "policy-gates",
-            "3–5 meaningful Markdown bullets",
+            "exactly four distinct",
+            "Artifacts/capabilities",
+            "Runtime/external side effects",
+            "Blocker and remaining gap",
         ),
         "docs/QUALITY_GATES.md": (
             "Product and reviewer context",
             "production path",
             "product_context_failures",
             "Plain-English behavior summary",
+            "exactly four distinct",
+            "Artifacts/capabilities",
+            "Runtime/external side effects",
+            "Blocker and remaining gap",
         ),
         "docs/SKILL_EXECUTION_PLAN.md": (
             "Issue 315",
@@ -1371,6 +1420,7 @@ def test_product_context_contract_is_durable_across_rules_template_and_policy_do
             "self-contained product and end-goal context",
             "runtime and production authorization remain unchanged",
             "plain-English behavior summary",
+            "exactly four distinct",
         ),
         "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md": (
             "End product goal",

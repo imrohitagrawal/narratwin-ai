@@ -1772,6 +1772,17 @@ def test_issue486_route_is_frozen_to_exact_base_paths_and_budgets() -> None:
     assert artifact["branch"] == branch
     assert artifact["accepted_base"] == routes.ISSUE486_BASE
     assert set(artifact["scope"]["required"]) == expected
+    objective = artifact["objective"]
+    for marker in (
+        "exactly four distinct labeled bullets",
+        "**Behavior:**",
+        "**Artifacts/capabilities:**",
+        "**Runtime/external side effects:**",
+        "**Blocker and remaining gap:**",
+        "8c71ec2097d79736232c10283ebd4c6d65464a690bc66416291989551a63480c",
+        "2dcd399bb97a4aafc88dc1e7613944ac0b3929fddbddf46523d5c32df7ed5305",
+    ):
+        assert marker in objective
 
 
 def test_issue486_route_rejects_lookalike_branch_and_forbidden_path(
