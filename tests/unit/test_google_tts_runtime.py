@@ -411,6 +411,28 @@ def test_transport_accepts_only_pinned_eu_https_url_and_port() -> None:
         assert error.value.code == "GOOGLE_TTS_ENDPOINT_INVALID"
 
 
+def test_transport_accepts_bounded_long_response_timeout() -> None:
+    instance, sock, _, _ = transport()
+
+    prepared = instance.prepare(url=GOOGLE_TTS_URL, timeout_seconds=180.0)
+
+    assert sock.timeout == 180.0
+    prepared.close()
+
+
+@pytest.mark.parametrize("timeout", [0, -1, 180.001, True, "180", None])
+def test_transport_rejects_invalid_or_unbounded_timeout(timeout: object) -> None:
+    instance, _, _, _ = transport()
+
+    with pytest.raises(GoogleRuntimeError) as error:
+        instance.prepare(
+            url=GOOGLE_TTS_URL,
+            timeout_seconds=cast(float, timeout),
+        )
+
+    assert error.value.code == "GOOGLE_TTS_TIMEOUT_INVALID"
+
+
 @pytest.mark.parametrize("address", ["127.0.0.1", "10.0.0.1", "169.254.1.1", "224.0.0.1", "0.0.0.0", "192.0.2.1", "::1", "fc00::1", "fe80::1"])
 def test_all_prohibited_dns_answers_are_rejected(address: str) -> None:
     instance, _, _, _ = transport(addresses=("8.8.8.8", address))
