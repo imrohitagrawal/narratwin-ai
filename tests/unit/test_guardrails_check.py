@@ -65,6 +65,12 @@ PRODUCT_CONTEXT_CONTENT = (
     "NarraTwin is progressing toward an end-to-end audience-aware multilingual demo and a separately approved production path.",
     "The repository blocks placeholder reviewer overviews, but it does not yet require self-contained product and end-goal context.",
     "Reviewers currently have to open nested issue and document links to reconstruct the product intent and expected outcome.",
+    "#### Plain-English behavior summary\n\n"
+    "- It makes every non-trivial pull request explain its practical behavior before technical details.\n"
+    "- It adds PR guidance and validation, but it adds no product content or media artifacts.\n"
+    "- It performs no provider calls, network access, spending, generation, deployment, or runtime work.\n"
+    "- It removes a reviewer-understanding gap while product delivery and release work remain separate.\n\n"
+    "#### Technical change list\n\n"
     "This PR adds a product-context template, a local PR-body parser, negative tests, and matching governance documentation.",
     "After merge, policy-gates rejects non-trivial PRs that omit any required self-contained product-context field.",
     "Reviewers can understand the change, product impact, expected result, and validation target directly from the PR body.",
@@ -1021,6 +1027,71 @@ def test_product_context_accepts_complete_self_contained_pr_specific_content() -
     assert guardrails.product_context_failures(product_context_body()) == []
 
 
+def test_product_context_rejects_missing_plain_english_behavior_summary() -> None:
+    contents = list(PRODUCT_CONTEXT_CONTENT)
+    contents[3] = "This PR updates the template, parser, tests, and governance documentation."
+    assert guardrails.product_context_failures(product_context_body(tuple(contents))) == [
+        "Product context point 4 must begin with a Plain-English behavior summary before the Technical change list."
+    ]
+
+
+def test_product_context_rejects_behavior_summary_after_technical_change_list() -> None:
+    contents = list(PRODUCT_CONTEXT_CONTENT)
+    summary, technical = contents[3].split("#### Technical change list", maxsplit=1)
+    contents[3] = f"#### Technical change list{technical}\n\n{summary}"
+    assert guardrails.product_context_failures(product_context_body(tuple(contents))) == [
+        "Product context point 4 must begin with a Plain-English behavior summary before the Technical change list."
+    ]
+
+
+@pytest.mark.parametrize("bullet_count", (0, 1, 2, 6))
+def test_product_context_rejects_behavior_summary_outside_three_to_five_bullets(
+    bullet_count: int,
+) -> None:
+    contents = list(PRODUCT_CONTEXT_CONTENT)
+    bullets = "\n".join(
+        f"- Behavior outcome {index} is explained with concrete reviewer-specific words."
+        for index in range(1, bullet_count + 1)
+    )
+    contents[3] = (
+        f"#### Plain-English behavior summary\n\n{bullets}\n\n"
+        "#### Technical change list\n\nThe parser and template change together."
+    )
+    assert guardrails.product_context_failures(product_context_body(tuple(contents))) == [
+        "Plain-English behavior summary must contain 3 to 5 meaningful Markdown bullets."
+    ]
+
+
+@pytest.mark.parametrize("invalid_bullet", ("TODO", "Issue #486", "tests/unit/test_guardrails_check.py"))
+def test_product_context_rejects_placeholder_or_reference_only_behavior_bullets(
+    invalid_bullet: str,
+) -> None:
+    contents = list(PRODUCT_CONTEXT_CONTENT)
+    contents[3] = contents[3].replace(
+        "It adds PR guidance and validation, but it adds no product content or media artifacts.",
+        invalid_bullet,
+    )
+    assert guardrails.product_context_failures(product_context_body(tuple(contents))) == [
+        "Plain-English behavior summary must contain 3 to 5 meaningful Markdown bullets."
+    ]
+
+
+@pytest.mark.parametrize("bullet_count", (3, 5))
+def test_product_context_accepts_three_to_five_meaningful_behavior_bullets(
+    bullet_count: int,
+) -> None:
+    contents = list(PRODUCT_CONTEXT_CONTENT)
+    bullets = "\n".join(
+        f"- Concrete behavior outcome {index} explains what a reviewer should expect after merge."
+        for index in range(1, bullet_count + 1)
+    )
+    contents[3] = (
+        f"#### Plain-English behavior summary\n\n{bullets}\n\n"
+        "#### Technical change list\n\nThe parser and template change together."
+    )
+    assert guardrails.product_context_failures(product_context_body(tuple(contents))) == []
+
+
 def test_product_context_rejects_missing_section() -> None:
     assert guardrails.product_context_failures(reviewer_overview_body()) == [
         "Non-trivial pull requests must include a Product and reviewer context section."
@@ -1160,22 +1231,27 @@ def test_product_context_contract_is_durable_across_rules_template_and_policy_do
     template = (root / ".github/pull_request_template.md").read_text(encoding="utf-8")
     for heading in ("## Product and reviewer context", *PRODUCT_CONTEXT_HEADINGS):
         assert heading in template
+    assert "#### Plain-English behavior summary" in template
+    assert "#### Technical change list" in template
 
     required_markers = {
         "AGENTS.md": (
             "self-contained plain English",
             "end product goal",
             "issue references and links are supplemental",
+            "Plain-English behavior summary",
         ),
         "docs/REPOSITORY_GUARDRAILS.md": (
             "Product and reviewer context",
             "issue-only",
             "policy-gates",
+            "3–5 meaningful Markdown bullets",
         ),
         "docs/QUALITY_GATES.md": (
             "Product and reviewer context",
             "production path",
             "product_context_failures",
+            "Plain-English behavior summary",
         ),
         "docs/SKILL_EXECUTION_PLAN.md": (
             "Issue 315",
@@ -1186,12 +1262,14 @@ def test_product_context_contract_is_durable_across_rules_template_and_policy_do
             "issue #315",
             "self-contained product and end-goal context",
             "runtime and production authorization remain unchanged",
+            "plain-English behavior summary",
         ),
         "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md": (
             "End product goal",
             "Exact changes",
             "enumerate every counted item",
             "independent reviewer",
+            "Plain-English behavior summary",
         ),
     }
     for relative_path, markers in required_markers.items():

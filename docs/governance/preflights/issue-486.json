@@ -1,0 +1,52 @@
+{
+  "schema_version": "GovernancePreflightV1",
+  "issue_number": 486,
+  "branch": "phase-1-closure-process-486-pr-behavior-summary",
+  "objective": "Require every non-trivial pull request to begin Exact changes with a three-to-five-bullet plain-English behavior summary before its technical change list. The summary must explain observable enablement, added or absent artifacts and capabilities, external or runtime side effects, and the removed blocker plus remaining gap. File lists, tests, links, issue references, placeholders, copied instructions, or generic prose cannot substitute for the summary. Durable policy must remain aligned across the repository agent contract, pull request template, repository guardrails, quality-gate documentation, reusable new-project playbook, executable pull-request body guardrails, exact Phase 1 route, tests, and status. Automation proves structure and known false-pass classes while an independent reviewer remains responsible for truth and clarity. No runtime, provider, credential, network, media, dependency, workflow, deployment, release, production-readiness, T05, or Cut 1 completion change is authorized.",
+  "status_decision": "update-minimally",
+  "scope": {
+    "required": [
+      "docs/governance/preflights/issue-486.json",
+      "AGENTS.md",
+      ".github/pull_request_template.md",
+      "scripts/guardrails_check.py",
+      "tests/unit/test_guardrails_check.py",
+      "scripts/quality/check_phase1_closure_docs.py",
+      "tests/unit/test_phase1_closure_docs.py",
+      "docs/REPOSITORY_GUARDRAILS.md",
+      "docs/QUALITY_GATES.md",
+      "docs/STATUS.md",
+      "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md"
+    ],
+    "allowed_prefixes": [
+      "docs/governance/preflights/issue-486.json",
+      "AGENTS.md",
+      ".github/pull_request_template.md",
+      "scripts/guardrails_check.py",
+      "tests/unit/test_guardrails_check.py",
+      "scripts/quality/check_phase1_closure_docs.py",
+      "tests/unit/test_phase1_closure_docs.py",
+      "docs/REPOSITORY_GUARDRAILS.md",
+      "docs/QUALITY_GATES.md",
+      "docs/STATUS.md",
+      "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md"
+    ],
+    "forbidden": [
+      "backend/",
+      "frontend/",
+      ".github/workflows/",
+      "docker/",
+      "Dockerfile",
+      "pyproject.toml",
+      "uv.lock",
+      "package.json",
+      "package-lock.json",
+      "reports/",
+      "runtime product behavior, schema, API, or provider changes",
+      "deployment, hosting, public URL, release, or production-readiness claim",
+      "paid services, credentials, private data, or real/cloned media",
+      "T05, T06, T07, T08, release, or Cut 1 completion claim",
+      "unrelated issue, PR, branch, protected tracker, or forensic evidence mutation"
+    ]
+  }
+}

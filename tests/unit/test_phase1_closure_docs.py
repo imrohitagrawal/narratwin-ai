@@ -3547,6 +3547,57 @@ def test_issue315_charged_line_cap_fails_closed(monkeypatch: Any) -> None:
     ]
 
 
+def test_issue486_branch_scope_and_budget_are_exact() -> None:
+    expected = {
+        "docs/governance/preflights/issue-486.json",
+        "AGENTS.md",
+        ".github/pull_request_template.md",
+        "scripts/guardrails_check.py",
+        "tests/unit/test_guardrails_check.py",
+        "scripts/quality/check_phase1_closure_docs.py",
+        "tests/unit/test_phase1_closure_docs.py",
+        "docs/REPOSITORY_GUARDRAILS.md",
+        "docs/QUALITY_GATES.md",
+        "docs/STATUS.md",
+        "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md",
+    }
+
+    assert phase1.ISSUE_486_BRANCH == "phase-1-closure-process-486-pr-behavior-summary"
+    assert phase1.ISSUE_486_ALLOWED_CHANGED_FILES == expected
+    assert phase1.ISSUE_486_LINE_CAP == 1000
+
+
+def test_issue486_scope_gate_fails_closed(monkeypatch: Any) -> None:
+    monkeypatch.setattr(phase1, "charged_lines", lambda base: 0)
+    assert run_changed_files_check(
+        monkeypatch,
+        branch=phase1.ISSUE_486_BRANCH,
+        files=sorted(phase1.ISSUE_486_ALLOWED_CHANGED_FILES),
+    ) == []
+    near_match = f"{phase1.ISSUE_486_BRANCH}-extra"
+    assert run_changed_files_check(monkeypatch, branch=near_match, files=["docs/STATUS.md"]) == [
+        f"Phase 1 Closure branch {near_match} may not change docs/STATUS.md."
+    ]
+    for path in (
+        ".github/workflows/quality-gates.yml",
+        "backend/app/main.py",
+        "frontend/src/app/page.tsx",
+        "pyproject.toml",
+    ):
+        assert run_changed_files_check(
+            monkeypatch, branch=phase1.ISSUE_486_BRANCH, files=[path]
+        ) == [f"Phase 1 Closure branch {phase1.ISSUE_486_BRANCH} may not change {path}."]
+
+
+def test_issue486_charged_line_cap_fails_closed(monkeypatch: Any) -> None:
+    monkeypatch.setattr(phase1, "resolve_base", lambda: "branch-base")
+    monkeypatch.setattr(phase1, "charged_lines", lambda base: 1001)
+
+    assert run_changed_files_check(monkeypatch, branch=phase1.ISSUE_486_BRANCH, files=[]) == [
+        f"Phase 1 Closure branch {phase1.ISSUE_486_BRANCH} exceeds its 1000-line cap."
+    ]
+
+
 def test_issue317_scope_budget_and_surface_contract_are_exact(monkeypatch: Any) -> None:
     assert phase1.ISSUE_317_BRANCH == "phase-1-closure-317-issue280-semantic-repair-slice1"
     assert len(phase1.ISSUE_317_ALLOWED_CHANGED_FILES) == 18
