@@ -114,6 +114,24 @@ factories remain available for zero-network validation. This correction changes
 neither credentials nor the provider request transport, endpoint, model, voice
 mapping, activation, budget, privacy, or release posture.
 
+### Bounded synchronous response window
+
+Google documents `text:synthesize` as synchronous: callers receive the result
+only after all input has been processed. The first governed full-narration POST
+returned no bytes within the former hard 30-second socket window and was
+correctly retained as billable unknown. For the required 90–120-second Cut 1
+artifact, the optional Google provider and regional transport therefore share
+one explicit 180-second maximum timeout constant. The default remains 3
+seconds; only server-owned configuration can select the longer window.
+
+The validator rejects boolean, non-numeric, non-finite, non-positive, and
+above-ceiling values. This bounded window does not change the exact endpoint,
+single-use connection, one-request concurrency, maximum response bytes,
+activation, budget, attempt ledger, or ambiguity behavior. A timeout after
+possible egress remains `BILLABLE_UNKNOWN` and is never retried automatically.
+The source contract is the official
+[synchronous synthesis method](https://cloud.google.com/text-to-speech/docs/reference/rest/v1/text/synthesize).
+
 ## Consequences
 
 - The stale `local_tts.py`/eSpeak execution route is rejected, while its commit

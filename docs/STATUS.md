@@ -1538,6 +1538,31 @@ required.
   human acceptance. A provider retry requires a new immutable operation package
   after merge; T05, T06, release, and Cut 1 acceptance remain incomplete/No-Go.
 
+PR `#491` subsequently merged that correction as
+`26258de9131c7a92b8a94ab949a57727b125dee5`; its merged tree is identical to
+the approved head tree and post-merge main quality passed.
+
+## Issue #368 bounded long-response timeout correction (2026-09-01)
+
+- Fresh immutable package 11 passed current-main receipt restoration,
+  reuse-first, short-reference rejection, redacted control-plane, and zero-
+  egress plan gates. Its first Meera/Despina POST returned no bytes before the
+  hard 30-second response window and was durably classified
+  `GOOGLE_TTS_BILLABLE_UNKNOWN`; one attempt is consumed, Myra and Raj were not
+  called, and no WAV, SRT, T05B authority, or listening decision was created.
+- Google documents `text:synthesize` as synchronous: the response arrives only
+  after all text is processed. Branch
+  `stage8-368-google-tts-long-response-timeout` from exact main `26258de9`
+  raises only the explicit Google timeout ceiling to 180 seconds through one
+  shared provider/runtime constant. The existing default remains unchanged.
+- Invalid, boolean, non-finite, non-numeric, non-positive, or above-ceiling
+  values fail closed. Exact endpoint, DNS/IP/TLS/peer/header/response bounds,
+  one-request concurrency, activation/privacy/policy/budget/quota gates,
+  durable attempt state, and non-retryable billable-unknown behavior remain.
+- This correction cannot retry package 11 or generate media. A fresh package
+  and explicit OWNER retry authority are still required after merge. T05, T06,
+  release, and Cut 1 acceptance remain incomplete/No-Go.
+
 ## Issue #486 PR reviewer-impact-summary governance (2026-09-01)
 
 - Issue #486 freezes a docs/gates/tests-only route requiring every non-trivial
