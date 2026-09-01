@@ -1166,6 +1166,11 @@ def test_product_context_requires_every_behavior_summary_category(
     summary, technical = contents[3].split("#### Technical change list", maxsplit=1)
     bullets = [line for line in summary.splitlines() if line.startswith("- ")]
     del bullets[missing_index]
+    if missing_index == 2:
+        bullets[-1] = bullets[-1].replace(
+            "product delivery and release work remain separate",
+            "later work remains separate",
+        )
     bullet_text = "\n".join(bullets)
     contents[3] = (
         "#### Plain-English behavior summary\n\n"

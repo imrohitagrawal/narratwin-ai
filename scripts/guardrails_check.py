@@ -1514,6 +1514,10 @@ def product_context_failures(body: str) -> list[str]:
                 for line in summary_text.splitlines()
                 if (match := re.match(r"^[ \t]*[-*+][ \t]+(\S.*)$", line)) is not None
             ]
+            normalized_bullets = [normalized_prose(item) for item in summary_bullets]
+            instruction_start = re.compile(
+                r"^(?:write|explain|describe|state|list|include|provide|mention|complete|replace)\b"
+            )
 
             def meaningful_summary_bullet(value: str) -> bool:
                 normalized = normalized_prose(value)
@@ -1524,13 +1528,25 @@ def product_context_failures(body: str) -> list[str]:
                 return (
                     reference_only is None
                     and normalized not in generic_or_instruction_text
+                    and instruction_start.search(normalized) is None
                     and len(normalized.split()) >= 6
                     and len(normalized) >= 35
                 )
 
-            if not 3 <= len(summary_bullets) <= 5 or not all(
-                meaningful_summary_bullet(item) for item in summary_bullets
-            ):
+            coverage_text = " ".join(normalized_bullets)
+            required_coverage = (
+                r"\b(?:behaviors?|enables?|changes?|allows?|requires?|lets?|makes?)\b",
+                r"\b(?:content|artifacts?|capabilit(?:y|ies)|voices?|narration|audio|captions?|avatars?|media|data|documents?|screens?|endpoints?|apis?|features?)\b",
+                r"\b(?:side effects?|runtime|providers?|network|spend|spending|generation|persistence|deployment|release|external calls?|writes?)\b",
+                r"\b(?:blockers?|gaps?|remains?|remaining|unblocks?|removes?|follow ups?|next|afterward|still)\b",
+            )
+            valid_summary = (
+                3 <= len(summary_bullets) <= 5
+                and len(set(normalized_bullets)) == len(normalized_bullets)
+                and all(meaningful_summary_bullet(item) for item in summary_bullets)
+                and all(re.search(pattern, coverage_text) for pattern in required_coverage)
+            )
+            if not valid_summary:
                 result.append(
                     "Plain-English behavior summary must contain 3 to 5 meaningful Markdown bullets."
                 )

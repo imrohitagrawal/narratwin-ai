@@ -1793,6 +1793,52 @@ def test_issue486_route_rejects_lookalike_branch_and_forbidden_path(
     assert failures == ["Stage 8 changed file outside the allowlist: backend/app/main.py"]
 
 
+def test_issue486_route_requires_exact_base_and_main_branch_point() -> None:
+    branch = routes.ISSUE486_BRANCH
+    base = routes.ISSUE486_BASE
+
+    def good(args: list[str]) -> subprocess.CompletedProcess[str]:
+        return completed(args, out=base + "\n")
+
+    assert routes.route_base(good, branch) == base
+    for rejected_call in range(3):
+        call_count = 0
+
+        def broken(
+            args: list[str], *, rejected: int = rejected_call
+        ) -> subprocess.CompletedProcess[str]:
+            nonlocal call_count
+            call_count += 1
+            value = "0" * 40 if call_count == rejected + 1 else base
+            return completed(args, out=value + "\n")
+
+        error = pytest.raises(RuntimeError, routes.route_base, broken, branch)
+        assert "Issue #486 fixed base" in str(error.value)
+
+
+def test_issue486_route_rejects_aggregate_and_each_per_path_budget(
+    monkeypatch: Any,
+) -> None:
+    branch = routes.ISSUE486_BRANCH
+    monkeypatch.setattr(routes, "route_base", lambda *_: routes.ISSUE486_BASE)
+    monkeypatch.setattr(routes, "route_text_charges", lambda *_: (1001, {}))
+    failures: list[str] = []
+    routes.check_exact_route(REPO, lambda _: completed([]), branch, EXPECTED[branch], failures)
+    assert failures == ["Issue #486 charge 1001 exceeds 1000."]
+
+    for path, limit in routes.TEXT_LIMITS[branch].items():
+        monkeypatch.setattr(
+            routes,
+            "route_text_charges",
+            lambda *_, path=path, limit=limit: (limit + 1, {path: limit + 1}),
+        )
+        failures = []
+        routes.check_exact_route(
+            REPO, lambda _: completed([]), branch, EXPECTED[branch], failures
+        )
+        assert failures == [f"Issue #486 charge for {path} exceeds {limit}."]
+
+
 def test_issue451_route_is_fixed_to_exact_base_paths_and_limits() -> None:
     branch = "docs/cut1-post-443-reconciliation-451"
     expected = EXPECTED[branch]
