@@ -1,0 +1,44 @@
+{
+  "schema_version": "GovernancePreflightV1",
+  "issue_number": 494,
+  "branch": "stage8-494-google-tts-failure-diagnostics",
+  "objective": "From exact accepted main ca49843ada493162fa02ff7331b7c6adf3b505c9 and tree 13f79eb5db44249f635a619e1b283279f25ba9f0, correct only the reproduced loss of upstream Google TTS non-success diagnostics under Issue #494 route freeze 5498082542 with LF-normalized body SHA-256 ecc5ebd49d3df8c24cf1903786552d8709c00fabd68d02d9861971e0267da973. Retain a typed, bounded, privacy-safe diagnostic containing the numeric upstream status, response byte count and SHA-256, allowlisted structured Google error code/status, hashes of allowlisted request/trace identifiers, and explicit raw-data non-retention flags. Preserve the generic public error, failed-billable accounting, single-use transport, zero retry, response bounds, and every existing authority/security control. Retain no raw provider body/message/header, narration, prompt, credential, token, principal, project identifier, or private path. Use exactly eight paths and at most 1420 charged lines. Tests use injected fakes only. This route authorizes no credential use, provider request, egress, spend, media, human acceptance, deployment, release, production-readiness, or Cut 1 completion claim. Stop on base, tree, issue, route, path, budget, disclosure, status, billing, retry, provider, endpoint, security, hosted, approval, or authority drift.",
+  "status_decision": "update-minimally",
+  "scope": {
+    "required": [
+      "backend/app/tts_provider.py",
+      "tests/unit/test_stage6_tts_provider.py",
+      "docs/governance/preflights/issue-494-google-tts-failure-diagnostics.json",
+      "scripts/quality/stage8_cut1_routes.py",
+      "tests/unit/test_stage8_cut1_routes.py",
+      "docs/STATUS.md",
+      "docs/ADR/0056-cut1-google-gemini-tts.md",
+      "docs/TRACEABILITY.md"
+    ],
+    "allowed_prefixes": [
+      "backend/app/tts_provider.py",
+      "tests/unit/test_stage6_tts_provider.py",
+      "docs/governance/preflights/issue-494-google-tts-failure-diagnostics.json",
+      "scripts/quality/stage8_cut1_routes.py",
+      "tests/unit/test_stage8_cut1_routes.py",
+      "docs/STATUS.md",
+      "docs/ADR/0056-cut1-google-gemini-tts.md",
+      "docs/TRACEABILITY.md"
+    ],
+    "forbidden": [
+      ".github/",
+      "frontend/",
+      "backend/app/google_tts_runtime.py",
+      "backend/app/narration.py",
+      "backend/app/cut1_audio.py",
+      "backend/app/cut1_listening.py",
+      "pyproject.toml",
+      "uv.lock",
+      "credentials/",
+      "providers/",
+      "media/",
+      "deployment/",
+      "release/"
+    ]
+  }
+}

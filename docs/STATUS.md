@@ -1567,6 +1567,29 @@ the approved head tree and post-merge main quality passed.
   and explicit OWNER retry authority are still required after merge. T05, T06,
   release, and Cut 1 acceptance remain incomplete/No-Go.
 
+## Issue #494 Google TTS failure-diagnostic correction (2026-09-01)
+
+- After PR #492 merged, OWNER-authorized package 12 made one Meera/Despina POST.
+  Google returned a definite non-success response; the adapter marked it
+  `GOOGLE_TTS_PROVIDER_FAILURE`, `FAILED_BILLABLE`, consumed the attempt and
+  stopped without calling Myra or Raj. No WAV, SRT, T05B authority or T05C
+  decision was created. Together with package 11, two global attempts and a
+  conservative 126,604 micro-USD are charged; no remaining attempt is
+  authorized.
+- The response boundary retained only the adapter's generic 502 and discarded
+  the upstream status, preventing reliable separation of request validation,
+  quota, authorization and provider-service failures. Issue #494 and branch
+  `stage8-494-google-tts-failure-diagnostics` add only typed privacy-safe
+  non-success metadata: upstream status, bounded body count/hash, allowlisted
+  Google code/status, hashed request/trace identifiers, and explicit raw-data
+  non-retention flags.
+- The correction retains no provider response text, raw header/identifier,
+  narration, prompt, credential, token, principal, project identifier or
+  private path. Generic public errors, failed-billable accounting, zero retry,
+  provider/endpoint/configuration and every existing security/authority gate
+  remain unchanged. Tests use fakes only and authorize no provider call,
+  egress, spend, media, human acceptance, release or Cut 1 completion claim.
+
 ## Issue #486 PR reviewer-impact-summary governance (2026-09-01)
 
 - Issue #486 freezes a docs/gates/tests-only route requiring every non-trivial

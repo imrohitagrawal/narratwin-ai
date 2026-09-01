@@ -109,6 +109,7 @@ class TTSProviderError(Exception):
         *,
         retryable: bool = False,
         billable: bool = False,
+        provider_diagnostics: GoogleTTSFailureDiagnostics | None = None,
     ) -> None:
         super().__init__(message)
         self.status_code = status_code
@@ -116,6 +117,7 @@ class TTSProviderError(Exception):
         self.message = message
         self.retryable = retryable
         self.billable = billable
+        self.provider_diagnostics = provider_diagnostics
 
 
 class InMemoryTTSQuotaLedger:
@@ -500,6 +502,34 @@ class GoogleTTSHTTPResponse:
     peer_port: int = 0
 
 
+@dataclass(frozen=True)
+class GoogleTTSFailureDiagnostics:
+    """Bounded non-success metadata that cannot retain provider content or identifiers."""
+
+    upstream_status_code: int
+    response_byte_count: int
+    response_body_sha256: str
+    provider_error_code: int | None
+    provider_error_status: str | None
+    provider_request_id_sha256: str | None
+    provider_trace_id_sha256: str | None
+    raw_response_retained: bool = field(default=False, init=False)
+    raw_headers_retained: bool = field(default=False, init=False)
+
+    def as_safe_dict(self) -> dict[str, int | str | bool | None]:
+        return {
+            "upstreamStatusCode": self.upstream_status_code,
+            "responseByteCount": self.response_byte_count,
+            "responseBodySha256": self.response_body_sha256,
+            "providerErrorCode": self.provider_error_code,
+            "providerErrorStatus": self.provider_error_status,
+            "providerRequestIdSha256": self.provider_request_id_sha256,
+            "providerTraceIdSha256": self.provider_trace_id_sha256,
+            "rawResponseRetained": self.raw_response_retained,
+            "rawHeadersRetained": self.raw_headers_retained,
+        }
+
+
 class GoogleTTSPreparedTransport(Protocol):
     """Opaque, connection-bound capability returned by the injected transport."""
 
@@ -624,9 +654,100 @@ def _google_sha(value: object) -> str:
 
 
 def _google_error(
-    code: str, message: str, *, status: int = 422, billable: bool = False
+    code: str,
+    message: str,
+    *,
+    status: int = 422,
+    billable: bool = False,
+    provider_diagnostics: GoogleTTSFailureDiagnostics | None = None,
 ) -> TTSProviderError:
-    return TTSProviderError(status, code, message, retryable=False, billable=billable)
+    return TTSProviderError(
+        status,
+        code,
+        message,
+        retryable=False,
+        billable=billable,
+        provider_diagnostics=provider_diagnostics,
+    )
+
+
+_GOOGLE_ERROR_STATUS_ALLOWLIST = frozenset(
+    {
+        "ABORTED",
+        "ALREADY_EXISTS",
+        "CANCELLED",
+        "DATA_LOSS",
+        "DEADLINE_EXCEEDED",
+        "FAILED_PRECONDITION",
+        "INTERNAL",
+        "INVALID_ARGUMENT",
+        "NOT_FOUND",
+        "OUT_OF_RANGE",
+        "PERMISSION_DENIED",
+        "RESOURCE_EXHAUSTED",
+        "UNAUTHENTICATED",
+        "UNAVAILABLE",
+        "UNIMPLEMENTED",
+        "UNKNOWN",
+    }
+)
+_GOOGLE_REQUEST_ID_HEADERS = frozenset(
+    {"x-goog-request-id", "x-google-request-id", "x-request-id"}
+)
+_GOOGLE_TRACE_ID_HEADERS = frozenset(
+    {"x-cloud-trace-context", "x-google-gfe-request-trace"}
+)
+_GOOGLE_DIAGNOSTIC_IDENTIFIER_MAX_BYTES = 512
+
+
+def _google_header_digest(headers: dict[str, str], names: frozenset[str]) -> str | None:
+    selected = [
+        value
+        for name, value in headers.items()
+        if isinstance(name, str) and name.lower() in names
+    ]
+    if len(selected) != 1:
+        return None
+    encoded = selected[0].encode("utf-8")
+    if not encoded or len(encoded) > _GOOGLE_DIAGNOSTIC_IDENTIFIER_MAX_BYTES:
+        return None
+    return "sha256:" + hashlib.sha256(encoded).hexdigest()
+
+
+def _google_failure_diagnostics(response: GoogleTTSHTTPResponse) -> GoogleTTSFailureDiagnostics:
+    provider_code: int | None = None
+    provider_status: str | None = None
+    content_type = response.headers.get("content-type", "").lower().replace(" ", "")
+    if response.body and content_type in {"application/json", "application/json;charset=utf-8"}:
+        try:
+            payload = json.loads(
+                response.body.decode("utf-8"), object_pairs_hook=_google_json_object
+            )
+            error = payload.get("error") if isinstance(payload, dict) else None
+            code = error.get("code") if isinstance(error, dict) else None
+            status = error.get("status") if isinstance(error, dict) else None
+            if (
+                isinstance(code, int)
+                and not isinstance(code, bool)
+                and code == response.status_code
+                and isinstance(status, str)
+                and status in _GOOGLE_ERROR_STATUS_ALLOWLIST
+            ):
+                provider_code = code
+                provider_status = status
+        except (UnicodeDecodeError, ValueError):
+            pass
+    return GoogleTTSFailureDiagnostics(
+        upstream_status_code=response.status_code,
+        response_byte_count=len(response.body),
+        response_body_sha256="sha256:" + hashlib.sha256(response.body).hexdigest(),
+        provider_error_code=provider_code,
+        provider_error_status=provider_status,
+        provider_request_id_sha256=_google_header_digest(
+            response.headers, _GOOGLE_REQUEST_ID_HEADERS
+        ),
+        provider_trace_id_sha256=_google_header_digest(response.headers, _GOOGLE_TRACE_ID_HEADERS),
+    )
 
 
 class GoogleGeminiTTSProvider:
@@ -1511,6 +1632,7 @@ class GoogleGeminiTTSProvider:
             not isinstance(response, GoogleTTSHTTPResponse)
             or not isinstance(response.status_code, int)
             or isinstance(response.status_code, bool)
+            or not 100 <= response.status_code <= 599
             or not isinstance(response.headers, dict)
             or any(
                 not isinstance(key, str) or not isinstance(value, str)
@@ -1527,12 +1649,20 @@ class GoogleGeminiTTSProvider:
                 billable=True,
             )
         self._validate_transport_evidence(response, prepared)
+        if len(response.body) > GOOGLE_MAX_RESPONSE_BYTES:
+            raise _google_error(
+                "GOOGLE_TTS_RESPONSE_SIZE_INVALID",
+                "Google TTS response size is invalid.",
+                status=502,
+                billable=True,
+            )
         if not 200 <= response.status_code < 300:
             raise _google_error(
                 "GOOGLE_TTS_PROVIDER_FAILURE",
                 "Google TTS returned a non-success status.",
                 status=502,
                 billable=True,
+                provider_diagnostics=_google_failure_diagnostics(response),
             )
         content_type = response.headers.get("content-type", "").lower().replace(" ", "")
         if content_type not in {"application/json", "application/json;charset=utf-8"}:
@@ -1542,7 +1672,7 @@ class GoogleGeminiTTSProvider:
                 status=502,
                 billable=True,
             )
-        if not response.body or len(response.body) > GOOGLE_MAX_RESPONSE_BYTES:
+        if not response.body:
             raise _google_error(
                 "GOOGLE_TTS_RESPONSE_SIZE_INVALID",
                 "Google TTS response size is invalid.",

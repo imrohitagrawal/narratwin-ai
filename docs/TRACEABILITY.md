@@ -605,6 +605,16 @@ durability, deployment, and release decisions remain outside this trace.
 |---|---|---|
 | Permit a full synchronous narration response without an indefinite socket wait | Package 11’s immutable 30-second `BILLABLE_UNKNOWN` stop; official synchronous `text:synthesize` contract; RED commits; provider/runtime tests at 600 seconds and the platform-derived `threading.TIMEOUT_MAX`; response-read socket proof | The existing 3-second default remains; the operation selects and binds an exact finite positive runtime-representable duration; streaming, asynchronous synthesis, endpoint changes, and automatic retry remain out of scope |
 | Reject malformed timeout configuration without hard-coding operational policy | Zero, negative, boolean, string, null, NaN, infinity, above-platform, and enormous-integer mutations in both provider and regional transport tests | Invalid values fail before identity/transport egress; no coercion, indefinite/non-representable timeout, or generic-environment provider authority |
+
+## Issue #494 privacy-safe Google failure-diagnostic traceability
+
+| Requirement | Evidence | Preserved boundary |
+|---|---|---|
+| Distinguish upstream non-success classes without raw provider content | Fake 400/429/500 responses; exact upstream status, body count/hash and allowlisted code/status assertions | Public error remains generic 502; no provider message/body retention or user-facing disclosure |
+| Bind request correlation without retaining identifiers | Single allowlisted request/trace header SHA-256 assertions; duplicate aliases, empty and oversized identifier mutations | No raw header map, value, account, project, token or credential is retained |
+| Fail closed on malformed diagnostics | Boolean/out-of-range HTTP status, oversized/empty body, invalid UTF-8, duplicate JSON keys, mismatched code, non-allowlisted status and malformed error-object tests | Existing response schema/size gates remain; unsafe structured values become absent, never trusted |
+| Preserve spend and retry safety | Exact `FAILED_BILLABLE`, billable true, retryable false, one transport call and durable-state assertions | No automatic retry, credential use, provider request, egress, spend or operation authority is added by Issue #494 |
+| Enable bounded private stop evidence | Immutable `GoogleTTSFailureDiagnostics.as_safe_dict()` key-set and raw-retention-false assertions | Repository code exposes safe typed data only; private package creation and any future retry remain separately governed |
 | Preserve ambiguity and spend safety | Existing single-use session and durable `BILLABLE_UNKNOWN` replay tests plus package 11 stop record | Package 11 is not reset or retried; a fresh package and explicit OWNER retry authority remain required |
 | Preserve provider/security scope | Exact ten-path preflight and route mutation; existing EU endpoint, DNS/IP/TLS/peer, no-proxy/redirect, header, response-size, concurrency, activation/privacy/policy/budget/quota tests | No provider call in branch tests; no voice/text/media/listening/deployment/release/Cut 1 acceptance authority |
 

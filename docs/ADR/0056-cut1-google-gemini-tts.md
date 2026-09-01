@@ -138,6 +138,27 @@ grant provider, egress, retry, or spend authority.
 The source contract is the official
 [synchronous synthesis method](https://cloud.google.com/text-to-speech/docs/reference/rest/v1/text/synthesize).
 
+### Privacy-safe non-success diagnostics
+
+The package-12 Meera request received a definite non-success response, but the
+adapter retained only its generic public 502. A typed provider diagnostic now
+preserves the numeric upstream status, bounded response byte count and SHA-256,
+an allowlisted structured Google error numeric code/status pair, and SHA-256
+values for at most one allowlisted request identifier and trace identifier.
+The exception keeps its existing generic code, status and message, remains
+billable and non-retryable, and still transitions durable state to
+`FAILED_BILLABLE`.
+
+Raw provider response bodies, error messages, headers and identifiers are never
+retained in the diagnostic. Structured fields are omitted when JSON is
+malformed or duplicated, code/status values disagree, status vocabulary is not
+allowlisted, or identifier aliases are conflicting, empty or oversized.
+Out-of-range HTTP status and oversized response bodies continue to fail through
+the existing response-schema/size boundaries without a diagnostic. The safe
+mapping is available to a private operation driver for an immutable bounded
+stop record; repository code does not write private operation evidence or
+authorize a retry.
+
 ## Consequences
 
 - The stale `local_tts.py`/eSpeak execution route is rejected, while its commit
