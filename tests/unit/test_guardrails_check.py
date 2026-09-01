@@ -1304,6 +1304,26 @@ def test_product_context_rejects_none_without_category_specific_reason() -> None
     ]
 
 
+def test_product_context_rejects_none_with_arbitrary_non_reason_prose() -> None:
+    contents = list(PRODUCT_CONTEXT_CONTENT)
+    contents[3] = contents[3].replace(
+        "No runtime call, network access, persistence, migration, compatibility change, new failure mode, or rollback action occurs.",
+        "None: alpha beta gamma delta epsilon zeta eta.",
+    )
+    assert guardrails.product_context_failures(product_context_body(tuple(contents))) == [
+        "Reviewer impact summary must contain exactly 7 distinct labeled Markdown bullets."
+    ]
+
+
+def test_product_context_does_not_treat_nonetheless_as_none() -> None:
+    contents = list(PRODUCT_CONTEXT_CONTENT)
+    contents[3] = contents[3].replace(
+        "No runtime call, network access, persistence, migration, compatibility change, new failure mode, or rollback action occurs.",
+        "Nonetheless, this governance change causes no runtime or external effects whatsoever.",
+    )
+    assert guardrails.product_context_failures(product_context_body(tuple(contents))) == []
+
+
 def test_product_context_rejects_missing_section() -> None:
     assert guardrails.product_context_failures(reviewer_overview_body()) == [
         "Non-trivial pull requests must include a Product and reviewer context section."
