@@ -585,6 +585,13 @@ durability, deployment, and release decisions remain outside this trace.
 | Provider fingerprint/header mutation tests | Bind `quotaProjectRequired=true`, approved hash, and exact ordered Authorization/Content-Type/`x-goog-user-project` names; reject removal, value/order mutation, caller injection, or stale binding before send | No product/API Google vocabulary and no change to DNS/TLS/SNI/proxy/redirect, receipt, cost, duplicate-spend, timeout, or WAV controls |
 | Redacted official permission/config probes | Prove matching active/billing/ADC hashes and effective `serviceusage.services.use` plus `aiplatform.endpoints.predict` for the one intended project | Hashes and booleans only; no synthesis request, spend, identifier, token, or legal inference |
 
+## Issue #368 current-receipt compatibility traceability
+
+| Requirement | Evidence | Boundary |
+|---|---|---|
+| Admit the exact current T05A presenter-binding shape at the optional Google boundary | RED commit `6a2a700`; GREEN commit `2244169`; all-presenter request test and five malformed-shape mutations | Presenter binding is exactly 64 lowercase hex; the other five lineage checksums remain prefixed SHA-256 |
+| Preserve fail-closed pre-egress behavior | Identity and transport fakes remain uncalled for prefixed, uppercase, short, long, and non-hex bindings | No real identity resolution, provider call, narration egress, synthesis, spend, or audio acceptance occurs on the correction branch |
+
 ## Issue #413 frontend runtime OpenSSL traceability
 
 | Evidence | Requirement | Preserved boundary |

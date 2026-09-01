@@ -430,6 +430,7 @@ GOOGLE_EGRESS_SCREEN_POLICY_VERSION = "cut1-google-tts-egress-screen-v1"
 GOOGLE_INPUT_PRICE_MICROUSD_PER_MILLION_TOKENS = 1_000_000
 GOOGLE_OUTPUT_PRICE_MICROUSD_PER_MILLION_TOKENS = 20_000_000
 GOOGLE_CHECKSUM_PATTERN = re.compile(r"sha256:[0-9a-f]{64}\Z")
+GOOGLE_PRESENTER_BINDING_PATTERN = re.compile(r"[0-9a-f]{64}\Z")
 GOOGLE_LOGGER = logging.getLogger(__name__ + ".google")
 
 
@@ -1108,15 +1109,21 @@ class GoogleGeminiTTSProvider:
             )
         receipt_checksums = (
             receipt.narration_checksum,
-            receipt.presenter_binding_checksum,
             receipt.source_evaluation_checksum,
             receipt.evaluation_checksum,
             receipt.approval_checksum,
             receipt.receipt_checksum,
         )
-        if any(
-            not isinstance(value, str) or GOOGLE_CHECKSUM_PATTERN.fullmatch(value) is None
-            for value in receipt_checksums
+        if (
+            any(
+                not isinstance(value, str) or GOOGLE_CHECKSUM_PATTERN.fullmatch(value) is None
+                for value in receipt_checksums
+            )
+            or not isinstance(receipt.presenter_binding_checksum, str)
+            or GOOGLE_PRESENTER_BINDING_PATTERN.fullmatch(
+                receipt.presenter_binding_checksum
+            )
+            is None
         ):
             raise _google_error(
                 "GOOGLE_TTS_AUTHORITY_INVALID", "TTS receipt authority is malformed.", status=409

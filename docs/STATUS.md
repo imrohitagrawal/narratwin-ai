@@ -1510,6 +1510,19 @@ required.
   deployment, public/commercial distribution, and release remain unproved;
   release posture remains No-Go.
 
+## Issue #368 current-receipt provider compatibility correction (2026-09-01)
+
+- The authorized final-audio pre-egress dry run restored all three current T05A
+  receipts, then reproduced `GOOGLE_TTS_AUTHORITY_INVALID` before identity or
+  transport because the provider still required the obsolete prefixed
+  presenter-binding shape. Calls, narration egress, and spend remain zero.
+- Branch `stage8-issue-368-google-presenter-binding-compat` from exact main
+  `c41c35db811297fbeff0524dfe21ec49fa7c0de9` separates the current bare
+  presenter-binding digest from the five prefixed lineage checksums and rejects
+  malformed or legacy shapes before identity or transport.
+- This correction does not synthesize or accept audio. T05 remains incomplete,
+  T06 remains blocked, and release and Cut 1 acceptance remain No-Go.
+
 ## Issue #413 independent frontend runtime security state (2026-08-11)
 
 - PR #414 merged at `6766da34d73e301358f84f8eefb0985927292a26`; Issue #413 is closed.

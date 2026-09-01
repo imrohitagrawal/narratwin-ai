@@ -335,7 +335,7 @@ def receipt(presenter_id: str = "meera") -> TTSConsumptionReceipt:
         narration_checksum="sha256:" + "3" * 64,
         presenter_id=presenter_id,
         presenter_version="1.0.0",
-        presenter_binding_checksum="sha256:" + "4" * 64,
+        presenter_binding_checksum="4" * 64,
         source_run_id="run_narration",
         source_evaluation_checksum="sha256:" + "5" * 64,
         evaluation_checksum="sha256:" + "6" * 64,
@@ -618,7 +618,7 @@ def test_g368_03_05_all_activation_failures_precede_identity_and_transport(
             receipt=receipt()
         )
     assert caught.value.code == code
-    assert identity.calls == 0 and transport.calls == []
+    assert identity.calls == 0 and transport.prepare_calls == [] and transport.calls == []
 
 
 def test_g368_08_09_completed_replay_does_not_egress_and_ambiguous_timeout_is_held() -> None:
@@ -725,6 +725,23 @@ def test_g368_01_04_receipt_privacy_and_byte_checks_precede_identity(
         )
     assert caught.value.code == code
     assert identity.calls == 0 and transport.calls == []
+
+
+@pytest.mark.parametrize(
+    "binding",
+    ("sha256:" + "4" * 64, "A" * 64, "4" * 63, "4" * 65, "z" * 64),
+)
+def test_g368_current_presenter_binding_shape_fails_closed_before_identity(
+    binding: str,
+) -> None:
+    transport = FakeGoogleTransport([])
+    identity = FakeGoogleIdentityProvider()
+    with pytest.raises(TTSProviderError) as caught:
+        google_provider(transport, identity, receipt_validator=lambda _value: True).synthesize(
+            receipt=replace(receipt(), presenter_binding_checksum=binding)
+        )
+    assert caught.value.code == "GOOGLE_TTS_AUTHORITY_INVALID"
+    assert identity.calls == 0 and transport.prepare_calls == [] and transport.calls == []
 
 
 @pytest.mark.parametrize(

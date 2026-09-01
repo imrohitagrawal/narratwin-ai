@@ -48,6 +48,7 @@ ISSUE368_PROMPT_BRANCH = "stage8-368-cut1-google-tts-prompt-contract"
 ISSUE368_ADAPTER_BRANCH = "stage8-368-cut1-google-tts-adapter-implementation"
 ISSUE368_IMPLEMENTATION_BRANCH = "stage8-368-cut1-google-tts-runtime-transport"
 ISSUE368_QUOTA_FIX_BRANCH = "stage8-368-google-tts-quota-project-binding-fix"
+ISSUE368_BINDING_COMPAT_BRANCH = "stage8-issue-368-google-presenter-binding-compat"
 ISSUE415_BRANCH = "stage8-415-pr-body-live-state-reconciliation"
 ISSUE415_CORRECTION_BRANCH = "stage8-415-pr-body-consistency-canary-fix"
 ISSUE421_BRANCH = "stage8-421-cut1-atomic-project-facts"
@@ -57,6 +58,14 @@ ISSUE368_BASE = "ef9cabc23762560912d99f10831241b8a65b869c"
 ISSUE368_PROMPT_BASE = "ba77d59b193da8064d67261e13fb50756c2bd9e8"
 ISSUE368_IMPLEMENTATION_BASE = "6766da34d73e301358f84f8eefb0985927292a26"
 ISSUE368_QUOTA_FIX_BASE = "9c165f739788fb0f09b315673f9125d700d6a96b"
+ISSUE368_BINDING_COMPAT_BASE = "c41c35db811297fbeff0524dfe21ec49fa7c0de9"
+ISSUE368_BINDING_COMPAT_AUTHORITY = (
+    "5485581802", "c81d57d6adf081aaf6ec2bf8c94f4513ca7e363910a669efc3551d5b3b4eae3f",
+    "5485633036", "8ccd797c3fac7802923a04aff0ac82d64363d8d9d25366a5365eef98b5436bd2",
+    "5485657599", "8bde1e31e0b3e9642f39d2847b07d6818ed1e5ad14d05b2eb6c0af17b1f2e084",
+    "5485702633", "3654edbbbc295cf2ce5a3206a4856c5987529458fe5742cbc3fd544a71024ddc",
+    "5485891564", "6139a366e29d88affe418b9b912a7f31c10ca973f0ce0bf5ec3a8f93b2d131a5",
+)
 ISSUE421_BASE = "a868137fab607ae75d4b272301e9fc52b898e15c"
 ISSUE424_BASE = "afcf0325c3ec925b68b770eda0bb8c839bcce4dd"
 ISSUE468_BASE = "35f7beddc9f5ad8c109011bce05eef077c8194f6"
@@ -486,6 +495,16 @@ ROUTES = {
         "docs/REPOSITORY_GUARDRAILS.md",
         "docs/agent-context/context-policy-manifest-v1.json",
     },
+    ISSUE368_BINDING_COMPAT_BRANCH: {
+        "backend/app/tts_provider.py",
+        "tests/unit/test_stage6_tts_provider.py",
+        "docs/governance/preflights/issue-368-provider-binding-compat.json",
+        "scripts/quality/stage8_cut1_routes.py",
+        "tests/unit/test_stage8_cut1_routes.py",
+        "docs/STATUS.md",
+        "docs/ADR/0056-cut1-google-gemini-tts.md",
+        "docs/TRACEABILITY.md",
+    },
     ISSUE368_PROMPT_BRANCH: {
         "docs/governance/preflights/issue-368.json",
         "docs/governance/cut1-google-gemini-tts-style-prompts-v1.json",
@@ -710,6 +729,8 @@ ROUTE_ISSUES[ISSUE466_BRANCH] = 466
 TOTAL_LIMITS[ISSUE466_BRANCH] = 2000
 ROUTE_ISSUES[ISSUE460_BRANCH] = 460
 TOTAL_LIMITS[ISSUE460_BRANCH] = 2600
+ROUTE_ISSUES[ISSUE368_BINDING_COMPAT_BRANCH] = 368
+TOTAL_LIMITS[ISSUE368_BINDING_COMPAT_BRANCH] = 800
 ISSUE383_BINARY_FILES = {
     "frontend/public/demo/myra-synthetic-presenter.webp",
     "frontend/public/demo/raj-synthetic-presenter.webp",
@@ -1033,6 +1054,16 @@ TEXT_LIMITS = {
             "docs/agent-context/context-policy-manifest-v1.json": 10,
         }[path]
         for path in ROUTES[ISSUE368_QUOTA_FIX_BRANCH]
+    },
+    ISSUE368_BINDING_COMPAT_BRANCH: {
+        "backend/app/tts_provider.py": 20,
+        "tests/unit/test_stage6_tts_provider.py": 30,
+        "docs/governance/preflights/issue-368-provider-binding-compat.json": 200,
+        "scripts/quality/stage8_cut1_routes.py": 130,
+        "tests/unit/test_stage8_cut1_routes.py": 170,
+        "docs/STATUS.md": 100,
+        "docs/ADR/0056-cut1-google-gemini-tts.md": 60,
+        "docs/TRACEABILITY.md": 80,
     },
     ISSUE368_PROMPT_BRANCH: {
         path: 260 if path == "tests/unit/test_stage8_cut1_routes.py"
@@ -1639,6 +1670,7 @@ def route_base(run: Callable[[list[str]], Any], branch: str) -> str:
         ISSUE421_BRANCH: (421, ISSUE421_BASE),
         ISSUE368_IMPLEMENTATION_BRANCH: (368, ISSUE368_IMPLEMENTATION_BASE),
         ISSUE368_QUOTA_FIX_BRANCH: (368, ISSUE368_QUOTA_FIX_BASE),
+        ISSUE368_BINDING_COMPAT_BRANCH: (368, ISSUE368_BINDING_COMPAT_BASE),
         ISSUE368_PROMPT_BRANCH: (368, ISSUE368_PROMPT_BASE),
         ISSUE368_BRANCH: (368, ISSUE368_BASE),
         ISSUE386_BRANCH: (386, ISSUE386_BASE),
@@ -1655,7 +1687,7 @@ def route_base(run: Callable[[list[str]], Any], branch: str) -> str:
             or fixed_value != base or common_value != base
         )
         branch_point_invalid = False
-        if not fixed_invalid and branch in {ISSUE479_BRANCH, ISSUE482_BRANCH, ISSUE478_BRANCH, ISSUE475_BRANCH, ISSUE468_BRANCH, ISSUE473_BRANCH, ISSUE471_BRANCH, ISSUE459_T05B_BRANCH, ISSUE459_T05A_BRANCH, ISSUE459_T03_BRANCH, ISSUE460_BRANCH, ISSUE452_BRANCH, ISSUE451_BRANCH, ISSUE150_BRANCH, ISSUE424_BRANCH, ISSUE421_BRANCH, ISSUE368_IMPLEMENTATION_BRANCH,
+        if not fixed_invalid and branch in {ISSUE479_BRANCH, ISSUE482_BRANCH, ISSUE478_BRANCH, ISSUE475_BRANCH, ISSUE468_BRANCH, ISSUE473_BRANCH, ISSUE471_BRANCH, ISSUE459_T05B_BRANCH, ISSUE459_T05A_BRANCH, ISSUE459_T03_BRANCH, ISSUE460_BRANCH, ISSUE452_BRANCH, ISSUE451_BRANCH, ISSUE150_BRANCH, ISSUE424_BRANCH, ISSUE421_BRANCH, ISSUE368_IMPLEMENTATION_BRANCH, ISSUE368_BINDING_COMPAT_BRANCH,
                       ISSUE368_QUOTA_FIX_BRANCH, ISSUE368_BRANCH,
                       ISSUE368_PROMPT_BRANCH}:
             branch_point = run(["git", "merge-base", "origin/main", "HEAD"])
@@ -1899,6 +1931,25 @@ def check_exact_route(
                 failures.append("Issue #479 T05C authority drifted.")
         except (OSError, ValueError, TypeError) as error:
             failures.append(f"Issue #479 governance preflight failed closed: {error}")
+    if branch == ISSUE368_BINDING_COMPAT_BRANCH:
+        try:
+            preflight = load_json_without_duplicate_members(
+                root / "docs/governance/preflights/issue-368-provider-binding-compat.json"
+            )
+            findings = validate_governance_preflight(
+                preflight,
+                context={"issue_number": 368, "branch": branch, "changed_files": sorted(files)},
+            )
+            failures.extend(
+                f"Issue #368 binding compatibility preflight failed: {item.code}"
+                for item in findings
+            )
+            objective = preflight.get("objective") if isinstance(preflight, dict) else None
+            required = (ISSUE368_BINDING_COMPAT_BASE, *ISSUE368_BINDING_COMPAT_AUTHORITY)
+            if not isinstance(objective, str) or any(value not in objective for value in required):
+                failures.append("Issue #368 binding compatibility authority drifted.")
+        except (OSError, ValueError, TypeError) as error:
+            failures.append(f"Issue #368 binding compatibility preflight failed closed: {error}")
     if branch == ISSUE482_BRANCH:
         try:
             preflight = load_json_without_duplicate_members(
