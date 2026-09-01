@@ -208,7 +208,7 @@
       "moduleId": "merge-closeout",
       "schemaVersion": "ContextPolicyModuleV1",
       "location": "docs/REPOSITORY_GUARDRAILS.md",
-      "sourceSha256": "04f8b405bc7ba9b615cc1d5d7e489bcbf643b9de4bfc9b331e5a60c38629e82f",
+      "sourceSha256": "1a073041d72f19a37588118b270d7c58aa1c479bd06f549d91ba8d872978cc2b",
       "contentSha256": "87f78279cb3293c241e53f95daeca4a3e0bf48108284b14e5eee337e4e86e9ec",
       "authorityLevel": "merge",
       "status": "active",

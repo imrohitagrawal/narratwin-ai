@@ -16,6 +16,7 @@
       "tests/unit/test_stage8_cut1_routes.py",
       "docs/REPOSITORY_GUARDRAILS.md",
       "docs/QUALITY_GATES.md",
+      "docs/agent-context/context-policy-manifest-v1.json",
       "docs/STATUS.md"
     ],
     "allowed_prefixes": [
@@ -27,6 +28,7 @@
       "tests/unit/test_stage8_cut1_routes.py",
       "docs/REPOSITORY_GUARDRAILS.md",
       "docs/QUALITY_GATES.md",
+      "docs/agent-context/context-policy-manifest-v1.json",
       "docs/STATUS.md"
     ],
     "forbidden": [

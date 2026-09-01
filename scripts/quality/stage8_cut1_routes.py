@@ -421,6 +421,7 @@ ROUTES = {
         "tests/unit/test_stage8_cut1_routes.py",
         "docs/REPOSITORY_GUARDRAILS.md",
         "docs/QUALITY_GATES.md",
+        "docs/agent-context/context-policy-manifest-v1.json",
         "docs/STATUS.md",
     },
     ISSUE413_BRANCH: {
@@ -842,6 +843,7 @@ TEXT_LIMITS = {
         "tests/unit/test_stage8_cut1_routes.py": 220,
         "docs/REPOSITORY_GUARDRAILS.md": 80,
         "docs/QUALITY_GATES.md": 90,
+        "docs/agent-context/context-policy-manifest-v1.json": 40,
         "docs/STATUS.md": 50,
     },
     ISSUE466_BRANCH: {

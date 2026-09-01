@@ -1532,7 +1532,9 @@ required.
   quality-gate documentation, and exact route; missing, misplaced, incorrectly
   sized, or non-meaningful summaries fail closed. Its bounded two-hash anchor
   transition permits only current authority bytes and the exact planned future
-  agent/playbook bytes.
+  agent/playbook bytes. The cold-review context manifest binds the resulting
+  repository-guardrail source hash without changing its merge-closeout content
+  hash.
 - PR B must update the repository agent contract and reusable new-project
   playbook without editing their validator; PR C must then remove the old hash
   allowance. Issue #486 remains open until both follow-ups merge.

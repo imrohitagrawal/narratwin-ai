@@ -569,6 +569,7 @@ EXPECTED = {
         "tests/unit/test_stage8_cut1_routes.py",
         "docs/REPOSITORY_GUARDRAILS.md",
         "docs/QUALITY_GATES.md",
+        "docs/agent-context/context-policy-manifest-v1.json",
         "docs/STATUS.md",
     },
     "cut1-process-413-frontend-runtime-openssl": {
@@ -1758,6 +1759,7 @@ def test_issue486_route_is_frozen_to_exact_base_paths_and_budgets() -> None:
         "tests/unit/test_stage8_cut1_routes.py": 220,
         "docs/REPOSITORY_GUARDRAILS.md": 80,
         "docs/QUALITY_GATES.md": 90,
+        "docs/agent-context/context-policy-manifest-v1.json": 40,
         "docs/STATUS.md": 50,
     }
 
