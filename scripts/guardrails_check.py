@@ -1551,7 +1551,7 @@ def product_context_failures(body: str) -> list[str]:
                     r"(?i)^none\b\s+(?:because|since|as)\s+\S", value.strip()
                 )
                 explains_no_effect = explicit_cause or re.search(
-                    r"\b(?:because|since|as|no|not|without|unchanged|unaffected|excluded|absent|neither|nor)\b",
+                    r"\b(?:because|since|as|no|not|without|unchanged|unaffected|excluded|absent|neither|nor|only|solely|merely|exclusively)\b",
                     normalized_reason,
                 )
                 none_without_reason = none_prefix is not None and (
