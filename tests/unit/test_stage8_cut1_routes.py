@@ -4004,6 +4004,23 @@ def test_issue499_route_freezes_the_exact_pypdf_security_refresh() -> None:
     assert preflight["scope"]["required"] == preflight["scope"]["allowed_prefixes"]
 
 
+def test_issue499_route_rejects_branch_suffix_drift(monkeypatch: Any) -> None:
+    branch = routes.ISSUE499_BRANCH + "-retry"
+    assert branch not in stage8.EFFECTIVE_STAGE8_ROUTES
+    assert stage8.STAGE8_BRANCH_PATTERN.match(branch)
+    monkeypatch.setattr(stage8, "current_branch", lambda: branch)
+    monkeypatch.setattr(
+        stage8,
+        "changed_files_for_stage_scope",
+        lambda: ["pyproject.toml", "uv.lock"],
+    )
+    failures: list[str] = []
+    stage8.check_stage_scope(failures)
+    assert failures == [
+        f"Stage 8 branch collides with exact reviewed route {routes.ISSUE499_BRANCH}: {branch}."
+    ]
+
+
 def test_issue495_lock_refresh_changes_only_six_transitive_records() -> None:
     lock_path = "frontend/package-lock.json"
     base_result = subprocess.run(
