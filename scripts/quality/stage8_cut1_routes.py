@@ -69,6 +69,11 @@ ISSUE368_BINDING_COMPAT_BASE = "c41c35db811297fbeff0524dfe21ec49fa7c0de9"
 ISSUE368_REFRESH_TRANSPORT_BASE = "92e7666df46e5dcc3eea80d17b87026d4aa4dc5c"
 ISSUE368_TIMEOUT_BASE = "26258de9131c7a92b8a94ab949a57727b125dee5"
 ISSUE494_BASE = "ca49843ada493162fa02ff7331b7c6adf3b505c9"
+ISSUE494_FROZEN_HEAD = "c217a088af84f62138f874a164bdbb75cc0f5987"
+ISSUE494_TRANSITION_BASE = "99f1d6a46bf9ee42d28aa04f46792ea56f392ab2"
+ISSUE494_TRANSITION_MERGE = "97671772b7ab8ef2c583cecde98f35a9e472457b"
+ISSUE494_TRANSITION_COMMENT = "5499248540"
+ISSUE494_TRANSITION_SHA256 = "3c0968ef0827dfa314a8591230e410b4dd5a4b4092223b5f76fdc72499bbe9a3"
 ISSUE368_BINDING_COMPAT_AUTHORITY = (
     "5485581802", "c81d57d6adf081aaf6ec2bf8c94f4513ca7e363910a669efc3551d5b3b4eae3f",
     "5485633036", "8ccd797c3fac7802923a04aff0ac82d64363d8d9d25366a5365eef98b5436bd2",
@@ -1830,6 +1835,34 @@ def route_base(run: Callable[[list[str]], Any], branch: str) -> str:
                 "Issue #479 reviewed transition evidence is unavailable or inconsistent."
             )
         return ISSUE479_TRANSITION_BASE
+    if branch == ISSUE494_BRANCH:
+        commits = (
+            ISSUE494_BASE, ISSUE494_FROZEN_HEAD,
+            ISSUE494_TRANSITION_BASE, ISSUE494_TRANSITION_MERGE,
+        )
+        resolved = [run(["git", "rev-parse", f"{commit}^{{commit}}"])
+                    for commit in commits]
+        current = run(["git", "rev-parse", "origin/main^{commit}"])
+        edges = (
+            (ISSUE494_BASE, ISSUE494_FROZEN_HEAD),
+            (ISSUE494_FROZEN_HEAD, "HEAD"),
+            (ISSUE494_TRANSITION_BASE, "HEAD"),
+            (ISSUE494_TRANSITION_MERGE, "HEAD"),
+        )
+        ancestors = [run(["git", "merge-base", "--is-ancestor", *edge])
+                     for edge in edges]
+        parents = run(["git", "show", "-s", "--format=%P", ISSUE494_TRANSITION_MERGE])
+        if (
+            any(result.returncode for result in [*resolved, current, *ancestors, parents])
+            or [str(result.stdout).strip() for result in resolved] != list(commits)
+            or str(current.stdout).strip() != ISSUE494_TRANSITION_BASE
+            or str(parents.stdout).strip()
+            != f"{ISSUE494_FROZEN_HEAD} {ISSUE494_TRANSITION_BASE}"
+        ):
+            raise RuntimeError(
+                "Issue #494 reviewed transition evidence is unavailable or inconsistent."
+            )
+        return ISSUE494_TRANSITION_BASE
     fixed_routes = {
         ISSUE495_BRANCH: (495, ISSUE495_BASE),
         ISSUE482_BRANCH: (482, ISSUE482_BASE),
@@ -1852,7 +1885,6 @@ def route_base(run: Callable[[list[str]], Any], branch: str) -> str:
         ISSUE368_BINDING_COMPAT_BRANCH: (368, ISSUE368_BINDING_COMPAT_BASE),
         ISSUE368_AUTH_TRANSPORT_BRANCH: (368, ISSUE368_REFRESH_TRANSPORT_BASE),
         ISSUE368_TIMEOUT_BRANCH: (368, ISSUE368_TIMEOUT_BASE),
-        ISSUE494_BRANCH: (494, ISSUE494_BASE),
         ISSUE368_PROMPT_BRANCH: (368, ISSUE368_PROMPT_BASE),
         ISSUE368_BRANCH: (368, ISSUE368_BASE),
         ISSUE386_BRANCH: (386, ISSUE386_BASE),
@@ -1872,7 +1904,7 @@ def route_base(run: Callable[[list[str]], Any], branch: str) -> str:
             or fixed_value != base or common_value != base
         )
         branch_point_invalid = False
-        if not fixed_invalid and branch in {ISSUE479_BRANCH, ISSUE482_BRANCH, ISSUE478_BRANCH, ISSUE475_BRANCH, ISSUE468_BRANCH, ISSUE486_BRANCH, ISSUE486_PROTECTED_BRANCH, ISSUE486_HASH_CLEANUP_BRANCH, ISSUE473_BRANCH, ISSUE471_BRANCH, ISSUE459_T05B_BRANCH, ISSUE459_T05A_BRANCH, ISSUE459_T03_BRANCH, ISSUE460_BRANCH, ISSUE452_BRANCH, ISSUE451_BRANCH, ISSUE150_BRANCH, ISSUE424_BRANCH, ISSUE421_BRANCH, ISSUE368_IMPLEMENTATION_BRANCH, ISSUE368_BINDING_COMPAT_BRANCH, ISSUE368_AUTH_TRANSPORT_BRANCH, ISSUE368_TIMEOUT_BRANCH, ISSUE494_BRANCH,
+        if not fixed_invalid and branch in {ISSUE479_BRANCH, ISSUE482_BRANCH, ISSUE478_BRANCH, ISSUE475_BRANCH, ISSUE468_BRANCH, ISSUE486_BRANCH, ISSUE486_PROTECTED_BRANCH, ISSUE486_HASH_CLEANUP_BRANCH, ISSUE473_BRANCH, ISSUE471_BRANCH, ISSUE459_T05B_BRANCH, ISSUE459_T05A_BRANCH, ISSUE459_T03_BRANCH, ISSUE460_BRANCH, ISSUE452_BRANCH, ISSUE451_BRANCH, ISSUE150_BRANCH, ISSUE424_BRANCH, ISSUE421_BRANCH, ISSUE368_IMPLEMENTATION_BRANCH, ISSUE368_BINDING_COMPAT_BRANCH, ISSUE368_AUTH_TRANSPORT_BRANCH, ISSUE368_TIMEOUT_BRANCH,
                       ISSUE368_QUOTA_FIX_BRANCH, ISSUE368_BRANCH,
                       ISSUE368_PROMPT_BRANCH}:
             branch_point = run(["git", "merge-base", "origin/main", "HEAD"])
@@ -2088,6 +2120,26 @@ def check_exact_route(
                                 for path in sorted(files - paths))
         except RuntimeError as error:
             failures.append(str(error))
+    elif branch == ISSUE494_BRANCH:
+        try:
+            fixed_base = route_base(run, branch)
+            snapshots = (
+                run(["git", "diff", "--name-only", "-z", "--no-renames",
+                     f"{ISSUE494_BASE}..{ISSUE494_FROZEN_HEAD}", "--"]),
+                run(["git", "diff", "--name-only", "-z", "--no-renames",
+                     f"{ISSUE494_TRANSITION_BASE}..HEAD", "--"]),
+            )
+            if any(snapshot.returncode for snapshot in snapshots):
+                raise RuntimeError("Issue #494 transition route evidence is unavailable.")
+            for snapshot in snapshots:
+                paths = set(parse_paths_z(str(snapshot.stdout)))
+                effective_changed.update(paths)
+                failures.extend(f"Issue #494 route contains unauthorized path: {path}"
+                                for path in sorted(paths - files))
+                failures.extend(f"Issue #494 route snapshot is missing required path: {path}"
+                                for path in sorted(files - paths))
+        except RuntimeError as error:
+            failures.append(str(error))
     failures.extend(
         f"Issue #{issue} route is missing required path: {path}"
         for path in sorted(files - effective_changed)
@@ -2116,6 +2168,29 @@ def check_exact_route(
                 failures.append("Issue #479 T05C authority drifted.")
         except (OSError, ValueError, TypeError) as error:
             failures.append(f"Issue #479 governance preflight failed closed: {error}")
+    if branch == ISSUE494_BRANCH:
+        try:
+            preflight = load_json_without_duplicate_members(
+                root / "docs/governance/preflights/issue-494-google-tts-failure-diagnostics.json"
+            )
+            findings = validate_governance_preflight(
+                preflight,
+                context={"issue_number": 494, "branch": branch,
+                         "changed_files": sorted(files)},
+            )
+            failures.extend(
+                f"Issue #494 governance preflight failed: {item.code}" for item in findings
+            )
+            objective = preflight.get("objective") if isinstance(preflight, dict) else None
+            authority = (
+                ISSUE494_BASE, ISSUE494_FROZEN_HEAD, ISSUE494_TRANSITION_BASE,
+                ISSUE494_TRANSITION_MERGE, ISSUE494_TRANSITION_COMMENT,
+                ISSUE494_TRANSITION_SHA256,
+            )
+            if not isinstance(objective, str) or any(value not in objective for value in authority):
+                failures.append("Issue #494 transition authority drifted.")
+        except (OSError, ValueError, TypeError) as error:
+            failures.append(f"Issue #494 governance preflight failed closed: {error}")
     if branch == ISSUE368_BINDING_COMPAT_BRANCH:
         try:
             preflight = load_json_without_duplicate_members(
@@ -2449,11 +2524,14 @@ def check_exact_route(
     try:
         base = fixed_base if fixed_base is not None else route_base(run, branch)
         if branch in {ISSUE495_BRANCH, ISSUE479_BRANCH, ISSUE482_BRANCH, ISSUE478_BRANCH, ISSUE475_BRANCH, ISSUE459_BRANCH, ISSUE459_T03_BRANCH, ISSUE459_T05A_BRANCH,
-                      ISSUE459_T05B_BRANCH, ISSUE466_BRANCH}:
+                      ISSUE459_T05B_BRANCH, ISSUE466_BRANCH, ISSUE494_BRANCH}:
             transition_base = ISSUE459_TRANSITION_BASE if branch == ISSUE459_BRANCH else base
             transitions = (
                 *((run(["git", "diff", "--name-status", "-z", "--find-copies-harder",
                         ISSUE479_BASE, ISSUE479_FROZEN_HEAD, "--"]),) if branch == ISSUE479_BRANCH
+                   else (run(["git", "diff", "--name-status", "-z", "--find-copies-harder",
+                              ISSUE494_BASE, ISSUE494_FROZEN_HEAD, "--"]),)
+                   if branch == ISSUE494_BRANCH
                    else () if branch in {ISSUE495_BRANCH, ISSUE482_BRANCH, ISSUE478_BRANCH, ISSUE475_BRANCH, ISSUE459_T03_BRANCH, ISSUE459_T05A_BRANCH,
                                          ISSUE459_T05B_BRANCH, ISSUE466_BRANCH} else (
                     run(["git", "diff", "--name-status", "-z", "--find-copies-harder",

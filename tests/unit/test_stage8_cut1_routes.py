@@ -2719,6 +2719,14 @@ def _issue479_runner(
     return completed(args, out=output)
 
 
+def _issue494_runner(
+    args: list[str], name_status: str = "",
+) -> subprocess.CompletedProcess[str]:
+    output = "\0".join(sorted(EXPECTED[routes.ISSUE494_BRANCH])) + "\0" \
+        if "--name-only" in args else name_status
+    return completed(args, out=output)
+
+
 @pytest.mark.parametrize(
     "name_status",
     (
@@ -3452,10 +3460,14 @@ def test_exact_route_completeness_lookalikes_and_budgets(monkeypatch: Any) -> No
     for branch, paths in EXPECTED.items():
         failures: list[str] = []
         runner = (issue459_run if branch == routes.ISSUE459_BRANCH else
-                  _issue479_runner if branch == routes.ISSUE479_BRANCH else lambda _: completed([]))
+                  _issue479_runner if branch == routes.ISSUE479_BRANCH else
+                  _issue494_runner if branch == routes.ISSUE494_BRANCH else
+                  lambda _: completed([]))
         routes.check_exact_route(REPO, runner, branch, set(paths), failures)
         assert failures == []
-        if branch in {routes.ISSUE459_BRANCH, routes.ISSUE479_BRANCH}:
+        if branch in {
+            routes.ISSUE459_BRANCH, routes.ISSUE479_BRANCH, routes.ISSUE494_BRANCH,
+        }:
             continue
         missing = sorted(paths)[0]
         failures = []
@@ -3492,7 +3504,9 @@ def test_per_route_aggregate_per_file_and_binary_caps(monkeypatch: Any) -> None:
         monkeypatch.setattr(routes, "route_text_charges", lambda *_, value=limit: (value + 1, {}))
         failures: list[str] = []
         runner = (issue459_run if branch == routes.ISSUE459_BRANCH else
-                  _issue479_runner if branch == routes.ISSUE479_BRANCH else lambda _: completed([]))
+                  _issue479_runner if branch == routes.ISSUE479_BRANCH else
+                  _issue494_runner if branch == routes.ISSUE494_BRANCH else
+                  lambda _: completed([]))
         routes.check_exact_route(REPO, runner, branch, EXPECTED[branch], failures)
         assert failures == [f"Issue #{routes.ROUTE_ISSUES[branch]} charge {limit + 1} exceeds {limit}."]
     branch = routes.ISSUE383_BRANCH
@@ -3736,19 +3750,17 @@ def test_issue494_failure_diagnostic_route_is_exact_bounded_and_base_pinned() ->
         finding.code
         for finding in routes.validate_governance_preflight(artifact, context=mutated)
     ] == ["GPF.SCOPE.CHANGE_FORBIDDEN"]
-
-    calls: list[list[str]] = []
-
-    def good(args: list[str]) -> subprocess.CompletedProcess[str]:
-        calls.append(args)
-        return completed(args, out=routes.ISSUE494_BASE + "\n")
-
-    assert routes.route_base(good, branch) == routes.ISSUE494_BASE
-    assert calls == [
-        ["git", "rev-parse", f"{routes.ISSUE494_BASE}^{{commit}}"],
-        ["git", "merge-base", routes.ISSUE494_BASE, "HEAD"],
-        ["git", "merge-base", "origin/main", "HEAD"],
-    ]
+    assert all(
+        value in artifact["objective"]
+        for value in (
+            routes.ISSUE494_BASE,
+            routes.ISSUE494_FROZEN_HEAD,
+            routes.ISSUE494_TRANSITION_BASE,
+            routes.ISSUE494_TRANSITION_MERGE,
+            routes.ISSUE494_TRANSITION_COMMENT,
+            routes.ISSUE494_TRANSITION_SHA256,
+        )
+    )
 
 
 def test_issue494_requires_exact_reviewed_main_transition() -> None:
@@ -3794,6 +3806,29 @@ def test_issue494_requires_exact_reviewed_main_transition() -> None:
             RuntimeError, routes.route_base, broken, routes.ISSUE494_BRANCH
         )
         assert "Issue #494 reviewed transition" in str(error.value)
+
+
+def test_issue494_rejects_transition_snapshot_drift_and_rename(monkeypatch: Any) -> None:
+    branch = routes.ISSUE494_BRANCH
+    expected = EXPECTED[branch]
+    missing = "backend/app/tts_provider.py"
+    monkeypatch.setattr(routes, "route_base", lambda *_: routes.ISSUE494_TRANSITION_BASE)
+    monkeypatch.setattr(routes, "route_text_charges", lambda *_: (0, {}))
+
+    def drifted(args: list[str]) -> subprocess.CompletedProcess[str]:
+        if "--name-only" in args:
+            return completed(args, out="\0".join(sorted(expected - {missing})) + "\0")
+        if "--name-status" in args:
+            return completed(
+                args,
+                out="R100\0backend/app/tts_provider.py\0backend/app/tts_diagnostic.py\0",
+            )
+        return completed(args)
+
+    failures: list[str] = []
+    routes.check_exact_route(REPO, drifted, branch, expected, failures)
+    assert f"Issue #494 route snapshot is missing required path: {missing}" in failures
+    assert "Issue #494 route forbids deleted, renamed, or copied paths." in failures
 
 
 def test_issue368_prompt_route_requires_exact_merged_governance_base() -> None:
