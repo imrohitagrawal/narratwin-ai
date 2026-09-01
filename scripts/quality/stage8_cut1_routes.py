@@ -2113,11 +2113,13 @@ def check_exact_route(
             )
             failures.extend(f"Issue #495 governance preflight failed: {item.code}" for item in findings)
             objective = preflight.get("objective") if isinstance(preflight, dict) else None
-            authority = (
+            issue495_authority = (
                 ISSUE495_BASE, ISSUE495_TREE, ISSUE495_ROUTE_COMMENT,
                 ISSUE495_CORRECTION_COMMENT, ISSUE495_LOCK_SHA256,
             )
-            if not isinstance(objective, str) or any(value not in objective for value in authority):
+            if not isinstance(objective, str) or any(
+                value not in objective for value in issue495_authority
+            ):
                 failures.append("Issue #495 dependency authority drifted.")
         except (OSError, ValueError, TypeError) as error:
             failures.append(f"Issue #495 governance preflight failed closed: {error}")
