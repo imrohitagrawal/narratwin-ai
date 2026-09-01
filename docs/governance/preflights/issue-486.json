@@ -4,12 +4,11 @@
   "branch": "stage8-486-pr-behavior-summary",
   "accepted_base": "4503abd71aed1f61caa85c6682df8f5b991d28ba",
   "accepted_base_tree": "21e9cd0270abf14b762491313bf6f3c485d9330f",
-  "objective": "Require every non-trivial pull request to begin Exact changes with a three-to-five-bullet plain-English behavior summary before its technical change list. The summary must explain observable enablement, added or absent artifacts and capabilities, external or runtime side effects, and the removed blocker plus remaining gap. File lists, tests, links, issue references, placeholders, copied instructions, or generic prose cannot substitute for the summary. Durable policy must remain aligned across the repository agent contract, pull request template, repository guardrails, quality-gate documentation, reusable new-project playbook, executable pull-request body guardrails, exact Stage 8 governance route, tests, and status. Automation proves structure and known false-pass classes while an independent reviewer remains responsible for truth and clarity. No runtime, provider, credential, network, media, dependency, workflow, deployment, release, production-readiness, T05, or Cut 1 completion change is authorized.",
+  "objective": "PR A of a three-PR authority transition requires every non-trivial pull request to begin Exact changes with a three-to-five-bullet plain-English behavior summary before its technical change list. This PR adds the template, parser, policy, tests, and exact Stage 8 governance route while independently pre-authorizing only the current cleanup-authority hashes plus exact planned future AGENTS and reusable-playbook hashes 472cca025538a12696794fc698869059a5d96598d3efef1782d73fd0f82cd7f5 and 4676a97a8afb5535a23ab67dd4b71ee5148f43c2b905e2da01592cac4cf10042. PR B changes those authority documents without editing their validator; PR C removes the old allowance. File lists, tests, links, issue references, placeholders, copied instructions, generic prose, and arbitrary authority bytes remain rejected. Automation proves structure and known false-pass classes while an independent reviewer remains responsible for truth and clarity. No runtime, provider, credential, network, media, dependency, workflow, deployment, release, production-readiness, T05, or Cut 1 completion change is authorized.",
   "status_decision": "update-minimally",
   "scope": {
     "required": [
       "docs/governance/preflights/issue-486.json",
-      "AGENTS.md",
       ".github/pull_request_template.md",
       "scripts/guardrails_check.py",
       "tests/unit/test_guardrails_check.py",
@@ -17,12 +16,10 @@
       "tests/unit/test_stage8_cut1_routes.py",
       "docs/REPOSITORY_GUARDRAILS.md",
       "docs/QUALITY_GATES.md",
-      "docs/STATUS.md",
-      "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md"
+      "docs/STATUS.md"
     ],
     "allowed_prefixes": [
       "docs/governance/preflights/issue-486.json",
-      "AGENTS.md",
       ".github/pull_request_template.md",
       "scripts/guardrails_check.py",
       "tests/unit/test_guardrails_check.py",
@@ -30,8 +27,7 @@
       "tests/unit/test_stage8_cut1_routes.py",
       "docs/REPOSITORY_GUARDRAILS.md",
       "docs/QUALITY_GATES.md",
-      "docs/STATUS.md",
-      "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md"
+      "docs/STATUS.md"
     ],
     "forbidden": [
       "backend/",

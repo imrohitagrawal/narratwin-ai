@@ -151,6 +151,44 @@ def test_issue471_cleanup_authority_and_anchor_cannot_change_together() -> None:
     assert guardrails.cleanup_authority_change_failures(["docs/STATUS.md"], documents.__getitem__) == []
 
 
+def test_issue486_cleanup_authority_transition_accepts_only_current_or_pending_hashes(
+    monkeypatch: Any,
+) -> None:
+    pending = {
+        "AGENTS.md": "472cca025538a12696794fc698869059a5d96598d3efef1782d73fd0f82cd7f5",
+        "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md": (
+            "4676a97a8afb5535a23ab67dd4b71ee5148f43c2b905e2da01592cac4cf10042"
+        ),
+    }
+    assert guardrails.CLEANUP_AUTHORITY_PENDING_SHA256 == pending
+
+    class Digest:
+        def __init__(self, value: str) -> None:
+            self.value = value
+
+        def hexdigest(self) -> str:
+            return self.value
+
+    payloads = {path: f"pending:{path}".encode() for path in pending}
+    pending_by_payload = {payloads[path]: digest for path, digest in pending.items()}
+    monkeypatch.setattr(
+        guardrails,
+        "_cleanup_authority_sha256",
+        lambda payload: Digest(pending_by_payload.get(payload, "0" * 64)),
+    )
+    assert guardrails.cleanup_authority_anchor_failures(payloads.__getitem__) == []
+
+    monkeypatch.setattr(
+        guardrails,
+        "_cleanup_authority_sha256",
+        lambda payload: Digest("0" * 64),
+    )
+    assert guardrails.cleanup_authority_anchor_failures(payloads.__getitem__) == [
+        "Merge-cleanup authority anchor rejected AGENTS.md bytes.",
+        "Merge-cleanup authority anchor rejected docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md bytes.",
+    ]
+
+
 def test_issue471_fixture_preserves_already_anchored_authority(
     tmp_path: Path, monkeypatch: Any,
 ) -> None:
@@ -279,6 +317,11 @@ def product_context_body(
         if index != omit:
             rows.extend(("", f"### {heading}", "", content))
     return "\n".join(rows) + "\n"
+
+
+def exact_changes_with_summary(technical_changes: str) -> str:
+    summary = PRODUCT_CONTEXT_CONTENT[3].split("#### Technical change list", maxsplit=1)[0]
+    return f"{summary}#### Technical change list\n\n{technical_changes}"
 ISSUE39_SENSITIVE_ROW_CELLS = {
     "DUR-ACID-001": [
         "ACID/CAS durable metadata",
@@ -1142,7 +1185,7 @@ def test_product_context_rejects_counted_exact_changes_without_complete_enumerat
     unexpanded_claim: str,
 ) -> None:
     contents = list(PRODUCT_CONTEXT_CONTENT)
-    contents[3] = unexpanded_claim
+    contents[3] = exact_changes_with_summary(unexpanded_claim)
     assert guardrails.product_context_failures(product_context_body(tuple(contents))) == [
         "Product context point 4 must enumerate every item in a counted exact-change claim."
     ]
@@ -1150,8 +1193,12 @@ def test_product_context_rejects_counted_exact_changes_without_complete_enumerat
 
 def test_product_context_accepts_counted_exact_changes_with_complete_enumeration() -> None:
     contents = list(PRODUCT_CONTEXT_CONTENT)
-    contents[3] = "This PR adds ten mandatory product-context fields:\n" + "\n".join(
-        f"{index}. Field {index} has a distinct reviewer outcome." for index in range(1, 11)
+    contents[3] = exact_changes_with_summary(
+        "This PR adds ten mandatory product-context fields:\n"
+        + "\n".join(
+            f"{index}. Field {index} has a distinct reviewer outcome."
+            for index in range(1, 11)
+        )
     )
     assert guardrails.product_context_failures(product_context_body(tuple(contents))) == []
 
@@ -1168,8 +1215,11 @@ def test_product_context_rejects_duplicate_or_placeholder_counted_items(
     invalid_items: list[str],
 ) -> None:
     contents = list(PRODUCT_CONTEXT_CONTENT)
-    contents[3] = "This PR adds ten mandatory product-context fields:\n" + "\n".join(
-        f"{index}. {item}" for index, item in enumerate(invalid_items, start=1)
+    contents[3] = exact_changes_with_summary(
+        "This PR adds ten mandatory product-context fields:\n"
+        + "\n".join(
+            f"{index}. {item}" for index, item in enumerate(invalid_items, start=1)
+        )
     )
     assert guardrails.product_context_failures(product_context_body(tuple(contents))) == [
         "Product context point 4 must enumerate every item in a counted exact-change claim."
@@ -1178,7 +1228,7 @@ def test_product_context_rejects_duplicate_or_placeholder_counted_items(
 
 def test_product_context_does_not_reuse_one_enumeration_for_another_counted_claim() -> None:
     contents = list(PRODUCT_CONTEXT_CONTENT)
-    contents[3] = (
+    contents[3] = exact_changes_with_summary(
         "This PR adds two required controls:\n"
         "1. The author supplies exact product context.\n"
         "2. The reviewer checks explicit pass conditions.\n\n"
