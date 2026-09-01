@@ -1339,6 +1339,10 @@ def test_product_context_does_not_treat_nonetheless_as_none() -> None:
             "No runtime call, network access, persistence, migration, compatibility change, new failure mode, or rollback action occurs.",
             "None because this governance change has no runtime or provider behavior.",
         ),
+        (
+            "No runtime call, network access, persistence, migration, compatibility change, new failure mode, or rollback action occurs.",
+            "None: this pull request only changes repository documentation and governance instructions.",
+        ),
     ),
 )
 def test_product_context_accepts_none_with_ordinary_no_effect_reason(
