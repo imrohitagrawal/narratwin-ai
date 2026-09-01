@@ -52,6 +52,7 @@ ISSUE368_BINDING_COMPAT_BRANCH = "stage8-issue-368-google-presenter-binding-comp
 ISSUE415_BRANCH = "stage8-415-pr-body-live-state-reconciliation"
 ISSUE415_CORRECTION_BRANCH = "stage8-415-pr-body-consistency-canary-fix"
 ISSUE486_BRANCH = "stage8-486-reviewer-impact-summary"
+ISSUE486_PROTECTED_BRANCH = "stage8-486-reviewer-impact-protected-sources"
 ISSUE421_BRANCH = "stage8-421-cut1-atomic-project-facts"
 ISSUE424_BRANCH = "stage8-424-master-program-authority-prelog"
 ISSUE386_BASE = "48fc32a2689c9bbc03742d774f3eadb8a500dafc"
@@ -70,6 +71,7 @@ ISSUE368_BINDING_COMPAT_AUTHORITY = (
 ISSUE421_BASE = "a868137fab607ae75d4b272301e9fc52b898e15c"
 ISSUE424_BASE = "afcf0325c3ec925b68b770eda0bb8c839bcce4dd"
 ISSUE486_BASE = "01857dc1ffa322700179d301925b444a04f166fa"
+ISSUE486_PROTECTED_BASE = "f55f39bea1e009050c9d3f5e2f829cc8557f11d5"
 ISSUE468_BASE = "35f7beddc9f5ad8c109011bce05eef077c8194f6"
 ISSUE150_BASE = "a02286240212ad8958915aec01aa5ebaf60fa705"
 ISSUE460_BASE = "ab97b6eecba6db9c66c37d19b29257c7398f3ab7"
@@ -424,6 +426,15 @@ ROUTES = {
         "docs/agent-context/context-policy-manifest-v1.json",
         "docs/STATUS.md",
     },
+    ISSUE486_PROTECTED_BRANCH: {
+        "AGENTS.md",
+        "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md",
+        "docs/agent-context/context-policy-manifest-v1.json",
+        "docs/governance/preflights/issue-486-protected-reviewer-impact.json",
+        "docs/STATUS.md",
+        "scripts/quality/stage8_cut1_routes.py",
+        "tests/unit/test_stage8_cut1_routes.py",
+    },
     ISSUE413_BRANCH: {
         "docs/governance/preflights/issue-413.json",
         "frontend/Dockerfile",
@@ -715,12 +726,14 @@ ROUTE_ISSUES = {ISSUE452_BRANCH: 452, ISSUE451_BRANCH: 451, ISSUE150_BRANCH: 150
                 ISSUE393_BRANCH: 393, ISSUE382_BRANCH: 382, ISSUE367_BRANCH: 367}
 ROUTE_ISSUES[ISSUE468_BRANCH] = 468
 ROUTE_ISSUES[ISSUE486_BRANCH] = 486
+ROUTE_ISSUES[ISSUE486_PROTECTED_BRANCH] = 486
 TOTAL_LIMITS = {ISSUE452_BRANCH: 3600, ISSUE451_BRANCH: 600, ISSUE150_BRANCH: 1000, ISSUE424_BRANCH: 8500, ISSUE421_BRANCH: 4000, ISSUE415_BRANCH: 5000, ISSUE415_CORRECTION_BRANCH: 800, ISSUE413_BRANCH: 5000, ISSUE368_ADAPTER_BRANCH: 5600, ISSUE368_IMPLEMENTATION_BRANCH: 3600, ISSUE368_QUOTA_FIX_BRANCH: 2800, ISSUE368_PROMPT_BRANCH: 1000, ISSUE368_BRANCH: 3200, ISSUE405_BRANCH: 800, ISSUE428_BRANCH: 500, ISSUE403_BRANCH: 650, ISSUE401_BRANCH: 600, ISSUE396_BRANCH: 500,
                 ISSUE386_BRANCH: 700, ISSUE385_BRANCH: 350,
                 ISSUE384_BRANCH: 500, ISSUE383_BRANCH: 700, ISSUE397_BRANCH: 500,
                 ISSUE393_BRANCH: 700, ISSUE382_BRANCH: 3200, ISSUE367_BRANCH: 2000}
 TOTAL_LIMITS[ISSUE468_BRANCH] = 1500
 TOTAL_LIMITS[ISSUE486_BRANCH] = 1400
+TOTAL_LIMITS[ISSUE486_PROTECTED_BRANCH] = 700
 ROUTE_ISSUES[ISSUE471_BRANCH] = 471
 TOTAL_LIMITS[ISSUE471_BRANCH] = 1400
 ROUTE_ISSUES[ISSUE473_BRANCH] = 473
@@ -845,6 +858,15 @@ TEXT_LIMITS = {
         "docs/QUALITY_GATES.md": 120,
         "docs/agent-context/context-policy-manifest-v1.json": 40,
         "docs/STATUS.md": 100,
+    },
+    ISSUE486_PROTECTED_BRANCH: {
+        "AGENTS.md": 40,
+        "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md": 40,
+        "docs/agent-context/context-policy-manifest-v1.json": 50,
+        "docs/governance/preflights/issue-486-protected-reviewer-impact.json": 260,
+        "docs/STATUS.md": 20,
+        "scripts/quality/stage8_cut1_routes.py": 80,
+        "tests/unit/test_stage8_cut1_routes.py": 160,
     },
     ISSUE466_BRANCH: {
         "docs/governance/preflights/issue-466.json": 320,
@@ -1704,6 +1726,7 @@ def route_base(run: Callable[[list[str]], Any], branch: str) -> str:
         ISSUE386_BRANCH: (386, ISSUE386_BASE),
         ISSUE415_CORRECTION_BRANCH: (415, "20c1f4f19ee20e613f87bbfa6339f17ebb0ad205"),
         ISSUE486_BRANCH: (486, ISSUE486_BASE),
+        ISSUE486_PROTECTED_BRANCH: (486, ISSUE486_PROTECTED_BASE),
     }
     if branch in fixed_routes:
         issue, base = fixed_routes[branch]
@@ -1716,7 +1739,7 @@ def route_base(run: Callable[[list[str]], Any], branch: str) -> str:
             or fixed_value != base or common_value != base
         )
         branch_point_invalid = False
-        if not fixed_invalid and branch in {ISSUE479_BRANCH, ISSUE482_BRANCH, ISSUE478_BRANCH, ISSUE475_BRANCH, ISSUE468_BRANCH, ISSUE486_BRANCH, ISSUE473_BRANCH, ISSUE471_BRANCH, ISSUE459_T05B_BRANCH, ISSUE459_T05A_BRANCH, ISSUE459_T03_BRANCH, ISSUE460_BRANCH, ISSUE452_BRANCH, ISSUE451_BRANCH, ISSUE150_BRANCH, ISSUE424_BRANCH, ISSUE421_BRANCH, ISSUE368_IMPLEMENTATION_BRANCH, ISSUE368_BINDING_COMPAT_BRANCH,
+        if not fixed_invalid and branch in {ISSUE479_BRANCH, ISSUE482_BRANCH, ISSUE478_BRANCH, ISSUE475_BRANCH, ISSUE468_BRANCH, ISSUE486_BRANCH, ISSUE486_PROTECTED_BRANCH, ISSUE473_BRANCH, ISSUE471_BRANCH, ISSUE459_T05B_BRANCH, ISSUE459_T05A_BRANCH, ISSUE459_T03_BRANCH, ISSUE460_BRANCH, ISSUE452_BRANCH, ISSUE451_BRANCH, ISSUE150_BRANCH, ISSUE424_BRANCH, ISSUE421_BRANCH, ISSUE368_IMPLEMENTATION_BRANCH, ISSUE368_BINDING_COMPAT_BRANCH,
                       ISSUE368_QUOTA_FIX_BRANCH, ISSUE368_BRANCH,
                       ISSUE368_PROMPT_BRANCH}:
             branch_point = run(["git", "merge-base", "origin/main", "HEAD"])
