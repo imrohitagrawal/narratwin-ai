@@ -1154,6 +1154,29 @@ def test_product_context_rejects_non_behavioral_summary_false_passes(
     ]
 
 
+@pytest.mark.parametrize(
+    "missing_index",
+    range(4),
+    ids=("behavior", "artifacts", "side-effects", "blocker-and-gap"),
+)
+def test_product_context_requires_every_behavior_summary_category(
+    missing_index: int,
+) -> None:
+    contents = list(PRODUCT_CONTEXT_CONTENT)
+    summary, technical = contents[3].split("#### Technical change list", maxsplit=1)
+    bullets = [line for line in summary.splitlines() if line.startswith("- ")]
+    del bullets[missing_index]
+    bullet_text = "\n".join(bullets)
+    contents[3] = (
+        "#### Plain-English behavior summary\n\n"
+        f"{bullet_text}\n\n"
+        f"#### Technical change list{technical}"
+    )
+    assert guardrails.product_context_failures(product_context_body(tuple(contents))) == [
+        "Plain-English behavior summary must contain 3 to 5 meaningful Markdown bullets."
+    ]
+
+
 @pytest.mark.parametrize("bullet_count", (3, 5))
 def test_product_context_accepts_three_to_five_meaningful_behavior_bullets(
     bullet_count: int,
