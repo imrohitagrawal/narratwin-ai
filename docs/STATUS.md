@@ -1553,10 +1553,12 @@ the approved head tree and post-merge main quality passed.
 - Google documents `text:synthesize` as synchronous: the response arrives only
   after all text is processed. Branch
   `stage8-368-google-tts-long-response-timeout` from exact main `26258de9`
-  raises only the explicit Google timeout ceiling to 180 seconds through one
-  shared provider/runtime constant. The existing default remains unchanged.
-- Invalid, boolean, non-finite, non-numeric, non-positive, or above-ceiling
-  values fail closed. Exact endpoint, DNS/IP/TLS/peer/header/response bounds,
+  makes the existing server-owned timeout input accept any numeric, finite,
+  strictly positive duration through shared provider/runtime validation. The
+  existing 3-second default remains unchanged, while each governed operation
+  binds its exact selected duration without another implementation change.
+- Invalid, boolean, non-finite, non-numeric, or non-positive values fail closed.
+  Exact endpoint, DNS/IP/TLS/peer/header/response bounds,
   one-request concurrency, activation/privacy/policy/budget/quota gates,
   durable attempt state, and non-retryable billable-unknown behavior remain.
 - This correction cannot retry package 11 or generate media. A fresh package

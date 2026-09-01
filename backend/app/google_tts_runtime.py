@@ -26,7 +26,6 @@ from typing import Any, Protocol, cast
 from urllib.parse import SplitResult, urlsplit
 
 from backend.app.tts_provider import (
-    GOOGLE_TTS_MAX_TIMEOUT_SECONDS,
     GOOGLE_TTS_SCOPE,
     GOOGLE_TTS_URL,
     GoogleIdentity,
@@ -51,7 +50,7 @@ def _valid_timeout(value: object) -> bool:
         isinstance(value, (int, float))
         and not isinstance(value, bool)
         and math.isfinite(value)
-        and 0 < value <= GOOGLE_TTS_MAX_TIMEOUT_SECONDS
+        and value > 0
     )
 
 

@@ -120,15 +120,19 @@ Google documents `text:synthesize` as synchronous: callers receive the result
 only after all input has been processed. The first governed full-narration POST
 returned no bytes within the former hard 30-second socket window and was
 correctly retained as billable unknown. For the required 90–120-second Cut 1
-artifact, the optional Google provider and regional transport therefore share
-one explicit 180-second maximum timeout constant. The default remains 3
-seconds; only server-owned configuration can select the longer window.
+artifact, the optional Google provider and regional transport therefore accept
+one explicitly configured, numeric, finite, positive timeout. The default
+remains 3 seconds; only server-owned configuration can select a longer window,
+and the governed operation package binds the exact selected value.
 
-The validator rejects boolean, non-numeric, non-finite, non-positive, and
-above-ceiling values. This bounded window does not change the exact endpoint,
+The validator rejects boolean, non-numeric, non-finite, and non-positive
+values. This finite configured window does not change the exact endpoint,
 single-use connection, one-request concurrency, maximum response bytes,
 activation, budget, attempt ledger, or ambiguity behavior. A timeout after
 possible egress remains `BILLABLE_UNKNOWN` and is never retried automatically.
+The finite-timeout invariant is code-enforced; the operational duration is not
+a hard-coded business ceiling. Generic environment configuration alone does not
+grant provider, egress, retry, or spend authority.
 The source contract is the official
 [synchronous synthesis method](https://cloud.google.com/text-to-speech/docs/reference/rest/v1/text/synthesize).
 

@@ -429,7 +429,6 @@ GOOGLE_STATE_SCHEMA = "cut1-google-gemini-tts-state-v1"
 GOOGLE_EGRESS_SCREEN_POLICY_VERSION = "cut1-google-tts-egress-screen-v1"
 GOOGLE_INPUT_PRICE_MICROUSD_PER_MILLION_TOKENS = 1_000_000
 GOOGLE_OUTPUT_PRICE_MICROUSD_PER_MILLION_TOKENS = 20_000_000
-GOOGLE_TTS_MAX_TIMEOUT_SECONDS = 180.0
 GOOGLE_CHECKSUM_PATTERN = re.compile(r"sha256:[0-9a-f]{64}\Z")
 GOOGLE_PRESENTER_BINDING_PATTERN = re.compile(r"[0-9a-f]{64}\Z")
 GOOGLE_LOGGER = logging.getLogger(__name__ + ".google")
@@ -1281,7 +1280,8 @@ class GoogleGeminiTTSProvider:
             )
         if (
             self.config.max_concurrent_requests != 1
-            or not 0 < self.config.timeout_seconds <= GOOGLE_TTS_MAX_TIMEOUT_SECONDS
+            or not math.isfinite(self.config.timeout_seconds)
+            or self.config.timeout_seconds <= 0
         ):
             raise _google_error("GOOGLE_TTS_CONFIG_INVALID", "Google TTS configuration is invalid.")
 
