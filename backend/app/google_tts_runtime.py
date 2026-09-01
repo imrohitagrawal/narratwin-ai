@@ -16,10 +16,10 @@ import importlib
 import ipaddress
 import json
 import logging
-import math
 import re
 import socket
 import ssl
+import threading
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Any, Protocol, cast
@@ -49,8 +49,7 @@ def _valid_timeout(value: object) -> bool:
     return (
         isinstance(value, (int, float))
         and not isinstance(value, bool)
-        and math.isfinite(value)
-        and value > 0
+        and 0 < value <= threading.TIMEOUT_MAX
     )
 
 

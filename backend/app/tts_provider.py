@@ -1280,8 +1280,7 @@ class GoogleGeminiTTSProvider:
             )
         if (
             self.config.max_concurrent_requests != 1
-            or not math.isfinite(self.config.timeout_seconds)
-            or self.config.timeout_seconds <= 0
+            or not 0 < self.config.timeout_seconds <= threading.TIMEOUT_MAX
         ):
             raise _google_error("GOOGLE_TTS_CONFIG_INVALID", "Google TTS configuration is invalid.")
 

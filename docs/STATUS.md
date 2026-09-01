@@ -1554,10 +1554,12 @@ the approved head tree and post-merge main quality passed.
   after all text is processed. Branch
   `stage8-368-google-tts-long-response-timeout` from exact main `26258de9`
   makes the existing server-owned timeout input accept any numeric, finite,
-  strictly positive duration through shared provider/runtime validation. The
+  strictly positive, runtime-representable duration up to Python's derived
+  `threading.TIMEOUT_MAX` through shared provider/runtime validation. The
   existing 3-second default remains unchanged, while each governed operation
   binds its exact selected duration without another implementation change.
-- Invalid, boolean, non-finite, non-numeric, or non-positive values fail closed.
+- Invalid, boolean, non-finite, non-numeric, non-positive, or
+  non-representable values fail closed.
   Exact endpoint, DNS/IP/TLS/peer/header/response bounds,
   one-request concurrency, activation/privacy/policy/budget/quota gates,
   durable attempt state, and non-retryable billable-unknown behavior remain.

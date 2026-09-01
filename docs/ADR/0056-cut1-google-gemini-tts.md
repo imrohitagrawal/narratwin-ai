@@ -121,12 +121,14 @@ only after all input has been processed. The first governed full-narration POST
 returned no bytes within the former hard 30-second socket window and was
 correctly retained as billable unknown. For the required 90–120-second Cut 1
 artifact, the optional Google provider and regional transport therefore accept
-one explicitly configured, numeric, finite, positive timeout. The default
-remains 3 seconds; only server-owned configuration can select a longer window,
-and the governed operation package binds the exact selected value.
+one explicitly configured, numeric, finite, positive, runtime-representable
+timeout up to Python's platform-derived `threading.TIMEOUT_MAX`. This is a
+runtime capability, not a hard-coded business ceiling. The default remains 3
+seconds; only server-owned configuration can select a longer window, and the
+governed operation package binds the exact selected value.
 
-The validator rejects boolean, non-numeric, non-finite, and non-positive
-values. This finite configured window does not change the exact endpoint,
+The validator rejects boolean, non-numeric, non-finite, non-positive, and
+non-representable values. This finite configured window does not change the exact endpoint,
 single-use connection, one-request concurrency, maximum response bytes,
 activation, budget, attempt ledger, or ambiguity behavior. A timeout after
 possible egress remains `BILLABLE_UNKNOWN` and is never retried automatically.
