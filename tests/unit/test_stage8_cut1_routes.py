@@ -401,6 +401,18 @@ ISSUE495_EXPECTED = {
     "docs/STATUS.md",
     "docs/TRACEABILITY.md",
 }
+ISSUE499_EXPECTED = {
+    "docs/governance/preflights/issue-499-pypdf-6-16-2-security-refresh.json",
+    "pyproject.toml",
+    "uv.lock",
+    "scripts/quality/stage8_cut1_routes.py",
+    "tests/unit/test_stage8_cut1_routes.py",
+    "tests/unit/test_dependency_security_contract.py",
+    "docs/ADR/0075-pypdf-6-16-2-security-refresh.md",
+    "docs/STATUS.md",
+    "docs/THIRD_PARTY_NOTICES.md",
+    "docs/TRACEABILITY.md",
+}
 ISSUE468_EXPECTED = {
     "AGENTS.md",
     "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md",
@@ -910,6 +922,7 @@ EXPECTED = {
         "docs/THIRD_PARTY_NOTICES.md",
     },
 }
+EXPECTED["stage8-499-pypdf-6-16-2-security-refresh"] = ISSUE499_EXPECTED
 
 
 def completed(args: list[str], code: int = 0, out: str = "", err: str = "") -> subprocess.CompletedProcess[str]:
@@ -3962,6 +3975,36 @@ def test_issue495_route_freezes_the_lockfile_only_security_refresh() -> None:
     assert set(preflight["scope"]["required"]) == expected
     assert preflight["scope"]["required"] == preflight["scope"]["allowed_prefixes"]
     assert branch in stage8.EFFECTIVE_STAGE8_ROUTES
+
+
+def test_issue499_route_freezes_the_exact_pypdf_security_refresh() -> None:
+    branch = "stage8-499-pypdf-6-16-2-security-refresh"
+    assert routes.ISSUE499_BRANCH == branch
+    assert routes.ISSUE499_BASE == "d1f5400f5c6dfec5d4b63eb3a83aa82e3330743f"
+    assert routes.ROUTES[branch] == ISSUE499_EXPECTED
+    assert routes.ROUTE_ISSUES[branch] == 499
+    assert routes.TOTAL_LIMITS[branch] == 1000
+    assert routes.TEXT_LIMITS[branch] == {
+        "docs/governance/preflights/issue-499-pypdf-6-16-2-security-refresh.json": 220,
+        "pyproject.toml": 20,
+        "uv.lock": 100,
+        "scripts/quality/stage8_cut1_routes.py": 120,
+        "tests/unit/test_stage8_cut1_routes.py": 140,
+        "tests/unit/test_dependency_security_contract.py": 220,
+        "docs/ADR/0075-pypdf-6-16-2-security-refresh.md": 80,
+        "docs/STATUS.md": 40,
+        "docs/THIRD_PARTY_NOTICES.md": 40,
+        "docs/TRACEABILITY.md": 20,
+    }
+    preflight = json.loads(
+        (REPO / "docs/governance/preflights/issue-499-pypdf-6-16-2-security-refresh.json")
+        .read_text(encoding="utf-8")
+    )
+    assert set(preflight["scope"]["required"]) == ISSUE499_EXPECTED
+    assert preflight["scope"]["required"] == preflight["scope"]["allowed_prefixes"]
+    assert preflight["change_budget"]["exact_paths"] == 10
+    assert preflight["change_budget"]["maximum_additions_plus_deletions"] == 1000
+    assert preflight["change_budget"]["deletions_grant_credit"] is False
 
 
 def test_issue495_lock_refresh_changes_only_six_transitive_records() -> None:

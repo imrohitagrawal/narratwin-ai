@@ -58,8 +58,8 @@ ISSUE495_FRONTEND_PACKAGES = {
 }
 ISSUE150_BASE = "a02286240212ad8958915aec01aa5ebaf60fa705"
 ISSUE460_BASE = "ab97b6eecba6db9c66c37d19b29257c7398f3ab7"
-PYPDF_WHEEL_SHA256 = "14e001d6504822cb1ca9c7ed9a69bccb320f59b320730f55af804361abe4d5ee"
-PYPDF_SDIST_SHA256 = "d39c4d955a76409284a905e2d65b40076d77ab76129e0faaeeb6612403ecfc79"
+PYPDF_WHEEL_SHA256 = "c8b09a59399062fb45a1b8156c18a787a10a3dae03ac9674397a226712c94604"
+PYPDF_SDIST_SHA256 = "595647f6191de6f402cfde1d0c455d6cbccbd509aac32b34783009c032de5d6e"
 PIP_SECURITY_VERSION = "26.2.1"
 PIP_SECURITY_WHEEL_SHA256 = "71138adf1f4ca900cdb7d289c21b7494329f2332b6d85f0e1c42108c0384ed3e"
 PIP_SECURITY_SDIST_SHA256 = "f6ad667e89a1fe78046c8f13232b247200f5258d7828f3f7883d660878e0813f"
@@ -192,14 +192,14 @@ def _normalize_issue495_frontend_delta(
         lock["packages"][path] = base_lock["packages"][path]
 
 
-def _assert_pypdf_615_contract(project_text: str, lock_text: str) -> None:
+def _assert_pypdf_6162_contract(project_text: str, lock_text: str) -> None:
     project, lock = tomllib.loads(project_text), tomllib.loads(lock_text)
     base_project = tomllib.loads(_text_at(ISSUE401_BASE, "pyproject.toml"))
     base_lock = tomllib.loads(_text_at(ISSUE401_BASE, "uv.lock"))
     dependencies = project["project"]["dependencies"]
-    assert [value for value in dependencies if value.startswith("pypdf")] == ["pypdf>=6.15.0"]
+    assert [value for value in dependencies if value.startswith("pypdf")] == ["pypdf>=6.16.2"]
     google_project = copy.deepcopy(project)
-    google_project["project"]["dependencies"][dependencies.index("pypdf>=6.15.0")] = "pypdf>=6.14.2"
+    google_project["project"]["dependencies"][dependencies.index("pypdf>=6.16.2")] = "pypdf>=6.14.2"
     google_lock = copy.deepcopy(lock)
     google_root = next(package for package in google_lock["package"] if package["name"] == "narratwin-ai")
     google_pypdf_metadata = next(item for item in google_root["metadata"]["requires-dist"] if item["name"] == "pypdf")
@@ -209,22 +209,22 @@ def _assert_pypdf_615_contract(project_text: str, lock_text: str) -> None:
     _normalize_t03_pillow_dev_delta(google_project, google_lock)
     _assert_google_auth_delta(google_project, google_lock, base_project, base_lock)
     normalized_project = copy.deepcopy(project)
-    index = dependencies.index("pypdf>=6.15.0")
+    index = dependencies.index("pypdf>=6.16.2")
     normalized_project["project"]["dependencies"][index] = "pypdf>=6.14.2"
     normalized_project["project"]["optional-dependencies"]["providers"] = base_project["project"]["optional-dependencies"]["providers"]
     _normalize_issue434_project(normalized_project)
 
     pypdf = [package for package in lock["package"] if package["name"] == "pypdf"]
-    assert len(pypdf) == 1 and pypdf[0]["version"] == "6.15.0"
+    assert len(pypdf) == 1 and pypdf[0]["version"] == "6.16.2"
     assert pypdf[0]["source"] == {"registry": "https://pypi.org/simple"}
-    assert pypdf[0]["sdist"]["url"].endswith("/pypdf-6.15.0.tar.gz")
+    assert pypdf[0]["sdist"]["url"].endswith("/pypdf-6.16.2.tar.gz")
     assert pypdf[0]["sdist"]["hash"] == f"sha256:{PYPDF_SDIST_SHA256}"
-    assert pypdf[0]["sdist"]["size"] == 6993794
+    assert pypdf[0]["sdist"]["size"] == 7008996
     assert len(pypdf[0]["wheels"]) == 1
     wheel = pypdf[0]["wheels"][0]
-    assert wheel["url"].endswith("/pypdf-6.15.0-py3-none-any.whl")
+    assert wheel["url"].endswith("/pypdf-6.16.2-py3-none-any.whl")
     assert wheel["hash"] == f"sha256:{PYPDF_WHEEL_SHA256}"
-    assert wheel["size"] == 378123
+    assert wheel["size"] == 385060
 
     normalized_lock = copy.deepcopy(lock)
     root = next(package for package in normalized_lock["package"] if package["name"] == "narratwin-ai")
@@ -247,7 +247,7 @@ def _assert_pypdf_615_contract(project_text: str, lock_text: str) -> None:
 
 
 def test_root_pypdf_resolution_is_exact_isolated_and_patched() -> None:
-    _assert_pypdf_615_contract(
+    _assert_pypdf_6162_contract(
         (ROOT / "pyproject.toml").read_text(encoding="utf-8"),
         (ROOT / "uv.lock").read_text(encoding="utf-8"),
     )
@@ -257,7 +257,9 @@ def test_pypdf_contract_rejects_vulnerable_hash_and_unrelated_drift() -> None:
     project_text = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
     lock_text = (ROOT / "uv.lock").read_text(encoding="utf-8")
     mutations = (
-        (project_text.replace("pypdf>=6.15.0", "pypdf>=6.14.2"), lock_text),
+        (project_text.replace("pypdf>=6.16.2", "pypdf>=6.15.0"), lock_text),
+        (project_text.replace("pypdf>=6.16.2", "pypdf>=6.16.0"), lock_text),
+        (project_text.replace("pypdf>=6.16.2", "pypdf>=6.16.1"), lock_text),
         (project_text.replace('"cryptography==50.0.0"', '"cryptography==49.0.0"'), lock_text),
         (project_text.replace('    "pillow>=12.3.0",\n', ""), lock_text),
         (project_text.replace('"pillow>=12.3.0"', '"pillow>=12.2.0"'), lock_text),
@@ -273,7 +275,7 @@ def test_pypdf_contract_rejects_vulnerable_hash_and_unrelated_drift() -> None:
     )
     for candidate_project, candidate_lock in mutations:
         with pytest.raises(AssertionError):
-            _assert_pypdf_615_contract(candidate_project, candidate_lock)
+            _assert_pypdf_6162_contract(candidate_project, candidate_lock)
 
 
 def test_google_auth_contract_rejects_direct_transitive_and_artifact_drift() -> None:
@@ -283,7 +285,7 @@ def test_google_auth_contract_rejects_direct_transitive_and_artifact_drift() -> 
         (project_text.replace('"google-auth==2.56.3",\n', ""), lock_text),
         (
             project_text.replace('    "google-auth==2.56.3",\n', "").replace(
-                '    "pypdf>=6.15.0",', '    "google-auth==2.56.3",\n    "pypdf>=6.15.0",'
+                '    "pypdf>=6.16.2",', '    "google-auth==2.56.3",\n    "pypdf>=6.16.2",'
             ),
             lock_text,
         ),
@@ -301,7 +303,7 @@ def test_google_auth_contract_rejects_direct_transitive_and_artifact_drift() -> 
     )
     for candidate_project, candidate_lock in mutations:
         with pytest.raises(AssertionError):
-            _assert_pypdf_615_contract(candidate_project, candidate_lock)
+            _assert_pypdf_6162_contract(candidate_project, candidate_lock)
 
 
 def _assert_js_yaml_431_contract(package_text: str, lock: dict[str, Any]) -> None:
