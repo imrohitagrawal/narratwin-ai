@@ -827,6 +827,63 @@ def test_g368_06_silent_near_silent_fixed_tone_and_clipped_audio_fail_closed(
     assert caught.value.code == code
 
 
+def test_g494_non_success_retains_only_privacy_safe_diagnostics(tmp_path: Path) -> None:
+    secret_message = "private-provider-message-must-not-survive"
+    request_identifier = "raw-request-identifier-must-not-survive"
+    trace_identifier = "raw-trace-identifier-must-not-survive"
+    body = json.dumps(
+        {
+            "error": {
+                "code": 429,
+                "message": secret_message,
+                "status": "RESOURCE_EXHAUSTED",
+            }
+        }
+    ).encode()
+    response = google_response(
+        status_code=429,
+        body=body,
+        headers={
+            "content-type": "application/json; charset=utf-8",
+            "x-request-id": request_identifier,
+            "x-cloud-trace-context": trace_identifier,
+        },
+    )
+    state_path = tmp_path / "state.json"
+    provider = google_provider(
+        FakeGoogleTransport([response]),
+        FakeGoogleIdentityProvider(),
+        state_path=state_path,
+    )
+
+    with pytest.raises(TTSProviderError) as caught:
+        provider.synthesize(receipt=receipt())
+
+    assert caught.value.code == "GOOGLE_TTS_PROVIDER_FAILURE"
+    assert caught.value.status_code == 502
+    assert caught.value.billable is True and caught.value.retryable is False
+    diagnostics = getattr(caught.value, "provider_diagnostics", None)
+    assert diagnostics is not None
+    assert diagnostics.upstream_status_code == 429
+    assert diagnostics.response_byte_count == len(body)
+    assert diagnostics.response_body_sha256 == "sha256:" + hashlib.sha256(body).hexdigest()
+    assert diagnostics.provider_error_code == 429
+    assert diagnostics.provider_error_status == "RESOURCE_EXHAUSTED"
+    assert diagnostics.provider_request_id_sha256 == (
+        "sha256:" + hashlib.sha256(request_identifier.encode()).hexdigest()
+    )
+    assert diagnostics.provider_trace_id_sha256 == (
+        "sha256:" + hashlib.sha256(trace_identifier.encode()).hexdigest()
+    )
+    assert diagnostics.raw_response_retained is False
+    assert diagnostics.raw_headers_retained is False
+    retained = repr(caught.value) + str(caught.value) + repr(diagnostics) + state_path.read_text()
+    assert secret_message not in retained
+    assert request_identifier not in retained
+    assert trace_identifier not in retained
+    assert provider.request_state(receipt()) == "FAILED_BILLABLE"
+
+
 def test_g368_07_completed_artifact_restores_replays_and_tombstones_monotonically(
     tmp_path: Path,
 ) -> None:
