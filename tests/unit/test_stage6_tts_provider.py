@@ -255,6 +255,7 @@ class FakePreparedGoogleTransport:
     peer_port: int = 443
     redirects_disabled: bool = True
     dns_pinned: bool = True
+    transport_kind: str = "REST_HTTP_1_1"
 
     def send(
         self,
@@ -913,16 +914,82 @@ def test_g494_safe_diagnostic_supports_bounded_google_error_classes(
     assert diagnostics.provider_error_code == upstream_status
     assert diagnostics.provider_error_status == provider_status
     assert set(diagnostics.as_safe_dict()) == {
+        "transportKind",
         "upstreamStatusCode",
         "responseByteCount",
         "responseBodySha256",
         "providerErrorCode",
         "providerErrorStatus",
+        "grpcStatus",
         "providerRequestIdSha256",
         "providerTraceIdSha256",
         "rawResponseRetained",
         "rawHeadersRetained",
     }
+
+
+def test_g498_grpc_failure_is_billable_unknown_with_only_allowlisted_status() -> None:
+    private_detail = "private-upstream-debug-detail"
+    transport = FakeGoogleTransport(
+        [
+            GoogleTransportError(
+                egress_possible=True,
+                grpc_status="DEADLINE_EXCEEDED",
+                raw_detail=private_detail,
+            )
+        ]
+    )
+    provider = google_provider(transport, FakeGoogleIdentityProvider())
+
+    with pytest.raises(TTSProviderError) as caught:
+        provider.synthesize(receipt=receipt())
+
+    assert caught.value.code == "GOOGLE_TTS_BILLABLE_UNKNOWN"
+    assert caught.value.billable is True and caught.value.retryable is False
+    diagnostics = caught.value.provider_diagnostics
+    assert diagnostics is not None
+    assert diagnostics.transport_kind == "OFFICIAL_GRPC_UNARY"
+    assert diagnostics.grpc_status == "DEADLINE_EXCEEDED"
+    assert diagnostics.upstream_status_code is None
+    assert diagnostics.response_byte_count == 0
+    assert diagnostics.response_body_sha256 is None
+    assert diagnostics.provider_error_code is None
+    assert diagnostics.provider_error_status is None
+    retained = repr(caught.value) + str(caught.value) + repr(diagnostics)
+    assert private_detail not in retained
+    assert provider.request_state(receipt()) == "BILLABLE_UNKNOWN"
+    assert len(transport.calls) == 1
+
+
+@pytest.mark.parametrize(
+    "unsafe_status",
+    ("PRIVATE_INTERNAL_CODE", "deadline_exceeded", "DEADLINE EXCEEDED", "", None),
+)
+def test_g498_unknown_or_malformed_grpc_status_is_not_promoted(
+    unsafe_status: str | None,
+) -> None:
+    transport_error = GoogleTransportError(
+        egress_possible=True,
+        grpc_status=unsafe_status,
+        raw_detail="private-detail",
+    )
+    assert transport_error.grpc_status is None
+    assert "private-detail" not in repr(transport_error)
+    assert "private-detail" not in str(transport_error)
+
+
+def test_g498_transport_kind_mutation_fails_closed_without_weakening_rest() -> None:
+    provider = google_provider(FakeGoogleTransport([]), FakeGoogleIdentityProvider())
+    prepared = FakePreparedGoogleTransport(
+        owner=FakeGoogleTransport([]),
+        url="https://eu-texttospeech.googleapis.com/v1/text:synthesize",
+    )
+    prepared.transport_kind = "FORGED_TRANSPORT"
+
+    with pytest.raises(TTSProviderError) as caught:
+        provider._validate_prepared_transport(cast(Any, prepared))
+
+    assert caught.value.code == "GOOGLE_TTS_TRANSPORT_POLICY_INVALID"
 
 
 @pytest.mark.parametrize(

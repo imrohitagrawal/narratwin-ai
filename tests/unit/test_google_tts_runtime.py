@@ -1,12 +1,13 @@
 from __future__ import annotations
 
+import base64
 import hashlib
 import json
 import importlib
 import socket
 import ssl
 import threading
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from typing import Any, cast
 
 import pytest
@@ -15,6 +16,7 @@ from backend.app.google_tts_runtime import (
     ADCGoogleIdentityProvider,
     GoogleADCConfig,
     GoogleRuntimeError,
+    OfficialUnaryGoogleTTSTransport,
     RegionalGoogleTTSTransport,
 )
 from backend.app.tts_provider import (
@@ -543,6 +545,157 @@ def test_response_size_is_strictly_bounded() -> None:
     with pytest.raises(GoogleRuntimeError) as error:
         prepared.send(headers={}, json_body={}, timeout_seconds=1)
     assert error.value.code == "GOOGLE_TTS_RESPONSE_TOO_LARGE"
+
+
+class FakeOfficialGrpcBindings:
+    def __init__(self, *, audio: bytes = b"RIFF-fake", failure: Exception | None = None) -> None:
+        self.audio = audio
+        self.failure = failure
+        self.open_calls: list[tuple[str, str]] = []
+        self.synthesis_calls: list[dict[str, object]] = []
+        self.closed: list[object] = []
+
+    def open_client(self, *, target_ip: str, hostname: str) -> tuple[object, object]:
+        self.open_calls.append((target_ip, hostname))
+        return object(), object()
+
+    def synthesize(
+        self,
+        *,
+        client: object,
+        json_body: Mapping[str, object],
+        headers: Mapping[str, str],
+        timeout_seconds: float,
+    ) -> bytes:
+        self.synthesis_calls.append(
+            {
+                "client": client,
+                "json_body": json_body,
+                "headers": headers,
+                "timeout_seconds": timeout_seconds,
+            }
+        )
+        if self.failure is not None:
+            raise self.failure
+        return self.audio
+
+    def failure_status(self, error: Exception) -> str | None:
+        return str(error)
+
+    def close(self, channel: object) -> None:
+        self.closed.append(channel)
+
+
+def official_grpc_transport(
+    bindings: FakeOfficialGrpcBindings,
+    *,
+    enabled: bool = True,
+    addresses: tuple[str, ...] = ("8.8.8.8",),
+    max_response_bytes: int = 6_000_000,
+) -> tuple[OfficialUnaryGoogleTTSTransport, list[tuple[str, int]]]:
+    resolutions: list[tuple[str, int]] = []
+
+    def resolver(
+        host: str, port: int, **_: object
+    ) -> list[tuple[object, object, int, str, tuple[str, int]]]:
+        resolutions.append((host, port))
+        return [
+            (socket.AF_INET, socket.SOCK_STREAM, 6, "", (address, port))
+            for address in addresses
+        ]
+
+    return (
+        OfficialUnaryGoogleTTSTransport(
+            enabled=enabled,
+            activation_evidence_sha256=CHECKSUM if enabled else "",
+            resolver=resolver,
+            bindings_factory=lambda: bindings,
+            max_response_bytes=max_response_bytes,
+        ),
+        resolutions,
+    )
+
+
+def test_official_grpc_disabled_never_imports_resolves_or_opens_channel() -> None:
+    bindings = FakeOfficialGrpcBindings()
+    instance, resolutions = official_grpc_transport(bindings, enabled=False)
+
+    with pytest.raises(GoogleRuntimeError) as caught:
+        instance.prepare(url=GOOGLE_TTS_URL, timeout_seconds=600)
+
+    assert caught.value.code == "GOOGLE_TTS_DISABLED"
+    assert resolutions == [] and bindings.open_calls == []
+
+
+def test_official_grpc_uses_exact_pinned_unary_contract_and_wraps_audio() -> None:
+    bindings = FakeOfficialGrpcBindings(audio=b"RIFF-exact-audio")
+    instance, resolutions = official_grpc_transport(bindings)
+    prepared = instance.prepare(url=GOOGLE_TTS_URL, timeout_seconds=600)
+    request = {
+        "input": {"text": "canonical narration", "prompt": "governed style"},
+        "voice": {
+            "languageCode": "en-IN",
+            "modelName": "gemini-2.5-pro-tts",
+            "name": "Despina",
+        },
+        "audioConfig": {"audioEncoding": "LINEAR16", "sampleRateHertz": 24000},
+    }
+    headers = {
+        "Authorization": f"Bearer {ACCESS_VALUE}",
+        "Content-Type": "application/json; charset=utf-8",
+        "x-goog-user-project": QUOTA_PROJECT,
+    }
+
+    response = prepared.send(
+        headers=headers,
+        json_body=request,
+        timeout_seconds=600,
+    )
+
+    assert prepared.transport_kind == "OFFICIAL_GRPC_UNARY"
+    assert prepared.dns_pinned is True and prepared.proxy_used is False
+    assert prepared.redirects_disabled is True and prepared.tls_verified is True
+    assert prepared.tls_server_name == "eu-texttospeech.googleapis.com"
+    assert prepared.peer_ip == "8.8.8.8" and prepared.peer_port == 443
+    assert resolutions == [("eu-texttospeech.googleapis.com", 443)]
+    assert bindings.open_calls == [("8.8.8.8", "eu-texttospeech.googleapis.com")]
+    assert bindings.synthesis_calls[0]["json_body"] == request
+    assert bindings.synthesis_calls[0]["headers"] == headers
+    assert bindings.synthesis_calls[0]["timeout_seconds"] == 600
+    assert response.transport_kind == "OFFICIAL_GRPC_UNARY"
+    assert response.status_code == 200
+    assert base64.b64decode(json.loads(response.body)["audioContent"]) == b"RIFF-exact-audio"
+    assert response.resolved_addresses == ("8.8.8.8",) and response.peer_ip == "8.8.8.8"
+    assert len(bindings.closed) == 1
+
+
+def test_official_grpc_is_single_use_and_bounds_raw_audio() -> None:
+    bindings = FakeOfficialGrpcBindings(audio=b"12345")
+    instance, _ = official_grpc_transport(bindings, max_response_bytes=4)
+    prepared = instance.prepare(url=GOOGLE_TTS_URL, timeout_seconds=600)
+
+    with pytest.raises(GoogleRuntimeError) as oversized:
+        prepared.send(headers={}, json_body={}, timeout_seconds=600)
+    assert oversized.value.code == "GOOGLE_TTS_RESPONSE_TOO_LARGE"
+
+    with pytest.raises(GoogleRuntimeError) as replay:
+        prepared.send(headers={}, json_body={}, timeout_seconds=600)
+    assert replay.value.code == "GOOGLE_TTS_SESSION_INVALID"
+
+
+def test_official_grpc_failure_retains_only_allowlisted_status() -> None:
+    private_detail = "DEADLINE_EXCEEDED"
+    bindings = FakeOfficialGrpcBindings(failure=RuntimeError(private_detail))
+    instance, _ = official_grpc_transport(bindings)
+    prepared = instance.prepare(url=GOOGLE_TTS_URL, timeout_seconds=600)
+
+    with pytest.raises(GoogleTransportError) as caught:
+        prepared.send(headers={}, json_body={}, timeout_seconds=600)
+
+    assert caught.value.egress_possible is True
+    assert caught.value.grpc_status == "DEADLINE_EXCEEDED"
+    assert private_detail not in str(caught.value)
+    assert len(bindings.closed) == 1
 
 
 @pytest.mark.parametrize(
