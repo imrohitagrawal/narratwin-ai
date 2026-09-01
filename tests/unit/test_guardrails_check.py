@@ -1070,6 +1070,22 @@ def test_product_context_accepts_complete_self_contained_pr_specific_content() -
     assert guardrails.product_context_failures(product_context_body()) == []
 
 
+def test_product_context_accepts_complete_reviewer_impact_summary() -> None:
+    contents = list(PRODUCT_CONTEXT_CONTENT)
+    contents[3] = (
+        "#### Reviewer impact summary\n\n"
+        "- **Purpose:** It removes ambiguity about the practical effect of a pull request so reviewers can decide confidently.\n"
+        "- **Behavior before/after:** Reviewers previously reconstructed behavior from technical evidence; after merge they receive a direct observable comparison.\n"
+        "- **Who and what is affected:** Pull-request authors and reviewers gain guidance and validation; runtime users, media, product data, and provider behavior are unchanged.\n"
+        "- **Operational impact:** No runtime call, network access, persistence, migration, compatibility change, new failure mode, or rollback action occurs.\n"
+        "- **Scope boundaries:** This governance change adds no voices, narration, audio, captions, avatars, deployment, release, or production-readiness capability.\n"
+        "- **End-to-end impact:** It removes a reviewer-context blocker while final narration, media cells, local review, and exact-artifact acceptance remain.\n\n"
+        "#### Technical change list\n\n"
+        "The template, validator, tests, governance policy, route, and context binding change together."
+    )
+    assert guardrails.product_context_failures(product_context_body(tuple(contents))) == []
+
+
 def test_product_context_rejects_missing_plain_english_behavior_summary() -> None:
     contents = list(PRODUCT_CONTEXT_CONTENT)
     contents[3] = "This PR updates the template, parser, tests, and governance documentation."
