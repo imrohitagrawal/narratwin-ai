@@ -1070,16 +1070,16 @@ entries. A bare count, duplicated entries, or placeholder entries therefore
 cannot pass as a complete explanation.
 
 Point 4 also has a required two-layer shape. It begins with
-`#### Plain-English behavior summary`, containing 3–5 meaningful Markdown
-bullets, followed by `#### Technical change list`. The bullets collectively
-state observable enablement, added or absent content/artifacts/capabilities,
-external or runtime side effects, and the removed blocker plus remaining gap.
-`product_context_failures` rejects a missing or misplaced heading, fewer than
-three or more than five bullets, and placeholder, generic, path-only, link-only,
-or issue-only bullets. File and test lists remain technical evidence rather
-than a behavior summary. For governance/docs-only PRs, the author explicitly
-states that runtime behavior is unchanged; reviewers remain responsible for
-semantic truth and understandability.
+`#### Plain-English behavior summary`, containing exactly four distinct labeled
+Markdown bullets, followed by `#### Technical change list`. Their required order
+is `**Behavior:**`, `**Artifacts/capabilities:**`, `**Runtime/external side
+effects:**`, then `**Blocker and remaining gap:**`. `product_context_failures`
+rejects missing, misplaced, reordered, duplicated, placeholder, generic, path-
+only, link-only, issue-only, and frozen copied-instruction/technical-list
+mutations. For governance/docs-only PRs, the side-effects bullet explicitly
+states that runtime behavior is unchanged. Automation verifies this structure
+and known false-pass classes; reviewers remain responsible for semantic truth,
+keyword stuffing, and understandability.
 
 This gate connects each contribution to the end-to-end demo and eventual
 production path without treating that direction as production authorization.

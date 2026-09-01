@@ -30,14 +30,18 @@ not substitutes for the explanation. -->
 ### 4. Exact changes in this PR
 
 #### Plain-English behavior summary
-<!-- Required: write 3–5 meaningful Markdown bullets before technical details.
-Together, explain what behavior this PR enables or changes; what content,
-artifacts, or capabilities it adds or does not add; whether it causes provider,
-network, spend, generation, persistence, deployment, or other runtime side
-effects; and what blocker it removes plus what remains afterward. For a
-governance/docs-only PR, explicitly state that runtime behavior is unchanged.
-A file list, test list, issue/link reference, or evidence table is not a
-substitute. -->
+<!-- Required: replace each instruction below with a distinct, PR-specific
+plain-English answer. Keep all four labels and their order. Automation verifies
+the structure and known false-pass mutations; the reviewer judges truth and
+clarity. -->
+
+- **Behavior:** <!-- What behavior does this PR enable or change? -->
+- **Artifacts/capabilities:** <!-- What content, artifacts, or capabilities does it add or explicitly not add? -->
+- **Runtime/external side effects:** <!-- Does it call providers/networks, spend, generate, persist, deploy, release, or otherwise change runtime behavior? Governance/docs-only PRs must say runtime behavior is unchanged. -->
+- **Blocker and remaining gap:** <!-- What blocker does it remove, and what still remains afterward? -->
+
+<!-- A file/test list, issue/link reference, implementation detail, copied
+instruction, or evidence table is not a substitute for truthful answers. -->
 
 #### Technical change list
 <!-- List the concrete behavior, documents, components, and boundaries changed by this PR.

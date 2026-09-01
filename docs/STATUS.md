@@ -1526,8 +1526,9 @@ required.
 ## Issue #486 PR plain-English behavior-summary governance (2026-09-01)
 
 - Issue #486 freezes a docs/gates/tests-only route requiring every non-trivial
-  PR to begin `Exact changes` with a 3–5-bullet plain-English behavior summary
-  before its technical change list.
+  PR to begin `Exact changes` with a plain-English behavior summary containing
+  exactly four distinct, ordered, labeled bullets before its technical change
+  list.
 - PR A adds the PR template, executable PR-body guardrail, repository policy,
   quality-gate documentation, and exact route; missing, misplaced, incorrectly
   sized, or non-meaningful summaries fail closed. Its bounded two-hash anchor

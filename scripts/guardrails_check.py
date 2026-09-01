@@ -35,9 +35,9 @@ CLEANUP_AUTHORITY_SHA256 = {
         "30ba0f8e7b736293c4b6c110cbe9ce46bf7639507b0441bd37cb222bb62ae94f",
 }
 CLEANUP_AUTHORITY_PENDING_SHA256 = {
-    "AGENTS.md": "472cca025538a12696794fc698869059a5d96598d3efef1782d73fd0f82cd7f5",
+    "AGENTS.md": "8c71ec2097d79736232c10283ebd4c6d65464a690bc66416291989551a63480c",
     "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md":
-        "4676a97a8afb5535a23ab67dd4b71ee5148f43c2b905e2da01592cac4cf10042",
+        "2dcd399bb97a4aafc88dc1e7613944ac0b3929fddbddf46523d5c32df7ed5305",
 }
 
 EXCLUDED_DIRS = {
@@ -1446,7 +1446,8 @@ def product_context_failures(body: str) -> list[str]:
     ]
 
     def normalized_prose(value: str) -> str:
-        without_links = re.sub(r"\[[^\]]*\]\([^)]*\)", " ", value)
+        without_links = re.sub(r"<!--.*?-->", " ", value, flags=re.S)
+        without_links = re.sub(r"\[[^\]]*\]\([^)]*\)", " ", without_links)
         without_links = re.sub(r"https?://\S+", " ", without_links)
         without_links = re.sub(r"(?i)\b(?:issue|refs?|pull request|pr)?\s*#\d+\b", " ", without_links)
         return re.sub(r"[^a-z0-9]+", " ", without_links.lower()).strip()
@@ -1514,9 +1515,30 @@ def product_context_failures(body: str) -> list[str]:
                 for line in summary_text.splitlines()
                 if (match := re.match(r"^[ \t]*[-*+][ \t]+(\S.*)$", line)) is not None
             ]
-            normalized_bullets = [normalized_prose(item) for item in summary_bullets]
-            instruction_start = re.compile(
-                r"^(?:write|explain|describe|state|list|include|provide|mention|complete|replace)\b"
+            expected_labels = (
+                "Behavior",
+                "Artifacts/capabilities",
+                "Runtime/external side effects",
+                "Blocker and remaining gap",
+            )
+            summary_bodies: list[str] = []
+            if len(summary_bullets) == len(expected_labels):
+                for bullet, label in zip(summary_bullets, expected_labels, strict=True):
+                    match = re.fullmatch(rf"\*\*{re.escape(label)}:\*\*[ \t]+(\S.*)", bullet)
+                    if match is None:
+                        summary_bodies = []
+                        break
+                    summary_bodies.append(match.group(1))
+
+            instruction_syntax = re.compile(
+                r"(?:\b(?:authors?|reviewers?)\s+(?:should|must)\b.*\b"
+                r"(?:write|explain|describe|state|list|include|provide|mention)\b|"
+                r"\b(?:bullets?|summary)\s+(?:must|should|explain|describe|state|list|include)\b|"
+                r"\b(?:write|explain|describe|state|list|include|provide|mention)\s+"
+                r"(?:what|whether|how|the|three|four|five|bullets?)\b)"
+            )
+            technical_subject = re.compile(
+                r"\b(?:files?|scripts?|modules?|tests?|templates?|documentation|docs?|paths?|components?)\b"
             )
 
             def meaningful_summary_bullet(value: str) -> bool:
@@ -1528,27 +1550,31 @@ def product_context_failures(body: str) -> list[str]:
                 return (
                     reference_only is None
                     and normalized not in generic_or_instruction_text
-                    and instruction_start.search(normalized) is None
+                    and instruction_syntax.search(normalized) is None
                     and len(normalized.split()) >= 6
                     and len(normalized) >= 35
                 )
 
-            coverage_text = " ".join(normalized_bullets)
             required_coverage = (
                 r"\b(?:behaviors?|enables?|changes?|allows?|requires?|lets?|makes?)\b",
                 r"\b(?:content|artifacts?|capabilit(?:y|ies)|voices?|narration|audio|captions?|avatars?|media|data|documents?|screens?|endpoints?|apis?|features?)\b",
                 r"\b(?:side effects?|runtime|providers?|network|spend|spending|generation|persistence|deployment|release|external calls?|writes?)\b",
                 r"\b(?:blockers?|gaps?|remains?|remaining|unblocks?|removes?|follow ups?|next|afterward|still)\b",
             )
+            normalized_bodies = [normalized_prose(item) for item in summary_bodies]
             valid_summary = (
-                3 <= len(summary_bullets) <= 5
-                and len(set(normalized_bullets)) == len(normalized_bullets)
-                and all(meaningful_summary_bullet(item) for item in summary_bullets)
-                and all(re.search(pattern, coverage_text) for pattern in required_coverage)
+                len(summary_bodies) == 4
+                and len(set(normalized_bodies)) == 4
+                and all(meaningful_summary_bullet(item) for item in summary_bodies)
+                and all(
+                    re.search(pattern, body)
+                    for pattern, body in zip(required_coverage, normalized_bodies, strict=True)
+                )
+                and sum(technical_subject.search(body) is None for body in normalized_bodies) >= 2
             )
             if not valid_summary:
                 result.append(
-                    "Plain-English behavior summary must contain 3 to 5 meaningful Markdown bullets."
+                    "Plain-English behavior summary must contain exactly 4 distinct labeled Markdown bullets."
                 )
 
     count_words = {
