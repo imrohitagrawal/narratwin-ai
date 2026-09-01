@@ -694,6 +694,18 @@ EXPECTED = {
         "docs/ADR/0056-cut1-google-gemini-tts.md",
         "docs/TRACEABILITY.md",
     },
+    "stage8-368-google-tts-long-response-timeout": {
+        "backend/app/google_tts_runtime.py",
+        "backend/app/tts_provider.py",
+        "tests/unit/test_google_tts_runtime.py",
+        "tests/unit/test_stage6_tts_provider.py",
+        "docs/governance/preflights/issue-368-google-tts-timeout.json",
+        "scripts/quality/stage8_cut1_routes.py",
+        "tests/unit/test_stage8_cut1_routes.py",
+        "docs/STATUS.md",
+        "docs/ADR/0056-cut1-google-gemini-tts.md",
+        "docs/TRACEABILITY.md",
+    },
     "stage8-368-cut1-google-tts-prompt-contract": {
         "docs/governance/preflights/issue-368.json",
         "docs/governance/cut1-google-gemini-tts-style-prompts-v1.json",
@@ -3616,6 +3628,56 @@ def test_issue368_auth_transport_route_is_exact_bounded_and_base_pinned() -> Non
     assert calls == [
         ["git", "rev-parse", f"{routes.ISSUE368_REFRESH_TRANSPORT_BASE}^{{commit}}"],
         ["git", "merge-base", routes.ISSUE368_REFRESH_TRANSPORT_BASE, "HEAD"],
+        ["git", "merge-base", "origin/main", "HEAD"],
+    ]
+
+
+def test_issue368_timeout_route_is_exact_bounded_and_base_pinned() -> None:
+    branch = routes.ISSUE368_TIMEOUT_BRANCH
+    artifact = json.loads(
+        (REPO / "docs/governance/preflights/issue-368-google-tts-timeout.json").read_text()
+    )
+    expected = EXPECTED[branch]
+    assert branch == "stage8-368-google-tts-long-response-timeout"
+    assert set(artifact["scope"]["required"]) == expected == routes.ROUTES[branch]
+    assert artifact["scope"]["required"] == artifact["scope"]["allowed_prefixes"]
+    assert routes.ROUTE_ISSUES[branch] == 368
+    assert routes.TOTAL_LIMITS[branch] == 1220
+    assert routes.TEXT_LIMITS[branch] == {
+        "backend/app/google_tts_runtime.py": 40,
+        "backend/app/tts_provider.py": 40,
+        "tests/unit/test_google_tts_runtime.py": 100,
+        "tests/unit/test_stage6_tts_provider.py": 120,
+        "docs/governance/preflights/issue-368-google-tts-timeout.json": 260,
+        "scripts/quality/stage8_cut1_routes.py": 160,
+        "tests/unit/test_stage8_cut1_routes.py": 220,
+        "docs/STATUS.md": 100,
+        "docs/ADR/0056-cut1-google-gemini-tts.md": 100,
+        "docs/TRACEABILITY.md": 80,
+    }
+    context = {
+        "issue_number": 368,
+        "branch": branch,
+        "changed_files": artifact["scope"]["required"],
+    }
+    assert routes.validate_governance_preflight(artifact, context=context) == []
+    mutated = copy.deepcopy(context)
+    mutated["changed_files"] = [*mutated["changed_files"], "frontend/package.json"]
+    assert [
+        finding.code
+        for finding in routes.validate_governance_preflight(artifact, context=mutated)
+    ] == ["GPF.SCOPE.CHANGE_FORBIDDEN"]
+
+    calls: list[list[str]] = []
+
+    def good(args: list[str]) -> subprocess.CompletedProcess[str]:
+        calls.append(args)
+        return completed(args, out=routes.ISSUE368_TIMEOUT_BASE + "\n")
+
+    assert routes.route_base(good, branch) == routes.ISSUE368_TIMEOUT_BASE
+    assert calls == [
+        ["git", "rev-parse", f"{routes.ISSUE368_TIMEOUT_BASE}^{{commit}}"],
+        ["git", "merge-base", routes.ISSUE368_TIMEOUT_BASE, "HEAD"],
         ["git", "merge-base", "origin/main", "HEAD"],
     ]
 

@@ -1278,7 +1278,10 @@ class GoogleGeminiTTSProvider:
             raise _google_error(
                 "GOOGLE_TTS_QUOTA_BLOCKED", "Google TTS quota is unavailable.", status=429
             )
-        if self.config.max_concurrent_requests != 1 or not 0 < self.config.timeout_seconds <= 30:
+        if (
+            self.config.max_concurrent_requests != 1
+            or not 0 < self.config.timeout_seconds <= threading.TIMEOUT_MAX
+        ):
             raise _google_error("GOOGLE_TTS_CONFIG_INVALID", "Google TTS configuration is invalid.")
 
     def _load_profile(self, presenter_id: str) -> dict[str, Any]:

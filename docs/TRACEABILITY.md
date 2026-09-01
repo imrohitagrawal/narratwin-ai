@@ -599,6 +599,15 @@ durability, deployment, and release decisions remain outside this trace.
 | Use Google Auth's supported public refresh transport | Issue checkpoint `5495025249`; RED commit `579cbfa`; focused factory test; one-line lazy import correction | The request factory is `google.auth.transport.requests.Request`; private `_http_client` is not a runtime dependency |
 | Preserve fail-closed optional-provider behavior | Missing-module normalization and the full ADC/runtime fake suite; exact eight-path route and forbidden-path mutation | No real credentials or network in tests; no provider request, narration egress, attempt, spend, audio, caption, or human acceptance evidence is created by this PR |
 
+## Issue #368 bounded long-response timeout traceability
+
+| Requirement | Evidence | Boundary |
+|---|---|---|
+| Permit a full synchronous narration response without an indefinite socket wait | Package 11’s immutable 30-second `BILLABLE_UNKNOWN` stop; official synchronous `text:synthesize` contract; RED commits; provider/runtime tests at 600 seconds and the platform-derived `threading.TIMEOUT_MAX`; response-read socket proof | The existing 3-second default remains; the operation selects and binds an exact finite positive runtime-representable duration; streaming, asynchronous synthesis, endpoint changes, and automatic retry remain out of scope |
+| Reject malformed timeout configuration without hard-coding operational policy | Zero, negative, boolean, string, null, NaN, infinity, above-platform, and enormous-integer mutations in both provider and regional transport tests | Invalid values fail before identity/transport egress; no coercion, indefinite/non-representable timeout, or generic-environment provider authority |
+| Preserve ambiguity and spend safety | Existing single-use session and durable `BILLABLE_UNKNOWN` replay tests plus package 11 stop record | Package 11 is not reset or retried; a fresh package and explicit OWNER retry authority remain required |
+| Preserve provider/security scope | Exact ten-path preflight and route mutation; existing EU endpoint, DNS/IP/TLS/peer, no-proxy/redirect, header, response-size, concurrency, activation/privacy/policy/budget/quota tests | No provider call in branch tests; no voice/text/media/listening/deployment/release/Cut 1 acceptance authority |
+
 ## Issue #413 frontend runtime OpenSSL traceability
 
 | Evidence | Requirement | Preserved boundary |

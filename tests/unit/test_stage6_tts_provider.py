@@ -621,6 +621,46 @@ def test_g368_03_05_all_activation_failures_precede_identity_and_transport(
     assert identity.calls == 0 and transport.prepare_calls == [] and transport.calls == []
 
 
+@pytest.mark.parametrize("timeout", [600.0, threading.TIMEOUT_MAX])
+def test_g368_configured_finite_long_response_timeout_is_valid(timeout: float) -> None:
+    provider = google_provider(
+        FakeGoogleTransport([]),
+        FakeGoogleIdentityProvider(),
+        config_value=google_config(timeout_seconds=timeout),
+    )
+
+    provider._validate_config()
+
+
+@pytest.mark.parametrize(
+    "timeout",
+    [
+        0,
+        -1,
+        threading.TIMEOUT_MAX + 1,
+        10**1000,
+        float("nan"),
+        float("inf"),
+        True,
+        "180",
+        None,
+    ],
+)
+def test_g368_invalid_response_timeout_fails_closed(
+    timeout: object,
+) -> None:
+    provider = google_provider(
+        FakeGoogleTransport([]),
+        FakeGoogleIdentityProvider(),
+        config_value=google_config(timeout_seconds=timeout),
+    )
+
+    with pytest.raises(TTSProviderError) as caught:
+        provider._validate_config()
+
+    assert caught.value.code == "GOOGLE_TTS_CONFIG_INVALID"
+
+
 def test_g368_08_09_completed_replay_does_not_egress_and_ambiguous_timeout_is_held() -> None:
     transport = FakeGoogleTransport([google_response()])
     identity = FakeGoogleIdentityProvider()
