@@ -127,6 +127,7 @@ ISSUE495_TREE = "13f79eb5db44249f635a619e1b283279f25ba9f0"
 ISSUE495_ROUTE_COMMENT = "5498387945"
 ISSUE495_CORRECTION_COMMENT = "5498411811"
 ISSUE495_HOSTED_CORRECTION_COMMENT = "5498589302"
+ISSUE495_GUARDRAIL_CORRECTION_COMMENT = "5498765949"
 ISSUE495_LOCK_SHA256 = "45b5f03df2b60ec9f10ade076507156a3c62d6fa7a7d2ca866a67396292d7c11"
 ISSUE482_BODY_SHA256 = "736252b09e0b79a57e5ed8643f5b915feff7522693427fe2d48d4dba372c5289"
 ISSUE482_ROUTE_COMMENT = "5481998106"
@@ -212,6 +213,7 @@ ROUTES = {
         "tests/unit/test_stage8_cut1_routes.py",
         "tests/unit/test_dependency_security_contract.py",
         "tests/unit/test_frontend_dependency_security_contract.py",
+        "docs/ADR/0074-browserslist-4-28-8-security-refresh.md",
         "docs/STATUS.md",
         "docs/TRACEABILITY.md",
     },
@@ -802,7 +804,7 @@ TOTAL_LIMITS[ISSUE479_BRANCH] = 2600
 ROUTE_ISSUES[ISSUE482_BRANCH] = 482
 TOTAL_LIMITS[ISSUE482_BRANCH] = 3200
 ROUTE_ISSUES[ISSUE495_BRANCH] = 495
-TOTAL_LIMITS[ISSUE495_BRANCH] = 1100
+TOTAL_LIMITS[ISSUE495_BRANCH] = 1300
 ROUTE_ISSUES[ISSUE459_BRANCH] = 459
 TOTAL_LIMITS[ISSUE459_BRANCH] = 4300
 ROUTE_ISSUES[ISSUE459_T03_BRANCH] = 459
@@ -882,6 +884,7 @@ TEXT_LIMITS = {
         "tests/unit/test_stage8_cut1_routes.py": 160,
         "tests/unit/test_dependency_security_contract.py": 180,
         "tests/unit/test_frontend_dependency_security_contract.py": 140,
+        "docs/ADR/0074-browserslist-4-28-8-security-refresh.md": 160,
         "docs/STATUS.md": 80,
         "docs/TRACEABILITY.md": 80,
     },
@@ -2121,7 +2124,7 @@ def check_exact_route(
             issue495_authority = (
                 ISSUE495_BASE, ISSUE495_TREE, ISSUE495_ROUTE_COMMENT,
                 ISSUE495_CORRECTION_COMMENT, ISSUE495_HOSTED_CORRECTION_COMMENT,
-                ISSUE495_LOCK_SHA256,
+                ISSUE495_GUARDRAIL_CORRECTION_COMMENT, ISSUE495_LOCK_SHA256,
             )
             if not isinstance(objective, str) or any(
                 value not in objective for value in issue495_authority
