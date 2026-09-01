@@ -1533,28 +1533,7 @@ def product_context_failures(body: str) -> list[str]:
                         break
                     summary_bodies.append(match.group(1))
 
-            none_reason_terms = {
-                "Purpose": {"purpose", "goal", "need", "reason", "matter"},
-                "Behavior before/after": {"behavior", "change", "observable", "before", "after"},
-                "Who and what is affected": {"affected", "user", "reviewer", "system", "data"},
-                "Artifacts/capabilities": {"artifact", "capability", "file", "audio", "media"},
-                "Operational impact": {
-                    "runtime",
-                    "external",
-                    "network",
-                    "provider",
-                    "persistence",
-                    "migration",
-                    "compatibility",
-                    "failure",
-                    "rollback",
-                    "deployment",
-                },
-                "Scope boundaries": {"scope", "behavior", "authorize", "exclude", "boundary"},
-                "End-to-end impact": {"blocker", "capability", "gap", "end-to-end", "cut"},
-            }
-
-            def meaningful_summary_bullet(label: str, value: str) -> bool:
+            def meaningful_summary_bullet(value: str) -> bool:
                 normalized = normalized_prose(value)
                 reference_only = re.fullmatch(
                     r"(?:https?://\S+|(?:[A-Za-z0-9_.-]+/)+[A-Za-z0-9_.-]+)",
@@ -1565,12 +1544,18 @@ def product_context_failures(body: str) -> list[str]:
                     r"(?i)^none\b(?:\s*[-:;—]\s*|\s+(?:because|since|as)\s+)(\S.*)",
                     value.strip(),
                 )
+                normalized_reason = (
+                    normalized_prose(none_reason.group(1)) if none_reason is not None else ""
+                )
+                explicit_cause = re.match(
+                    r"(?i)^none\b\s+(?:because|since|as)\s+\S", value.strip()
+                )
+                explains_no_effect = explicit_cause or re.search(
+                    r"\b(?:because|since|as|no|not|without|unchanged|unaffected|excluded|absent|neither|nor)\b",
+                    normalized_reason,
+                )
                 none_without_reason = none_prefix is not None and (
-                    none_reason is None
-                    or not (
-                        set(normalized_prose(none_reason.group(1)).split())
-                        & none_reason_terms[label]
-                    )
+                    none_reason is None or explains_no_effect is None
                 )
                 return (
                     reference_only is None
@@ -1604,10 +1589,7 @@ def product_context_failures(body: str) -> list[str]:
             valid_summary = (
                 len(summary_bodies) == 7
                 and len(set(normalized_bodies)) == 7
-                and all(
-                    meaningful_summary_bullet(label, item)
-                    for label, item in zip(expected_labels, summary_bodies, strict=True)
-                )
+                and all(meaningful_summary_bullet(item) for item in summary_bodies)
                 and tuple(normalized_bodies) not in known_non_behavioral_summaries
             )
             if not valid_summary:

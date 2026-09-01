@@ -1335,6 +1335,10 @@ def test_product_context_does_not_treat_nonetheless_as_none() -> None:
             "Authors and reviewers gain guidance and validation; runtime users, systems, and product data are unchanged.",
             "None: users and systems remain unchanged because this change is documentation only.",
         ),
+        (
+            "No runtime call, network access, persistence, migration, compatibility change, new failure mode, or rollback action occurs.",
+            "None because this governance change has no runtime or provider behavior.",
+        ),
     ),
 )
 def test_product_context_accepts_none_with_ordinary_no_effect_reason(
