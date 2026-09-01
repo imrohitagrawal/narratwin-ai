@@ -12,6 +12,7 @@ from typing import Any, cast
 
 import pytest
 
+import backend.app.google_tts_runtime as google_tts_runtime_module
 from backend.app.google_tts_runtime import (
     ADCGoogleIdentityProvider,
     GoogleADCConfig,
@@ -206,9 +207,7 @@ def test_adc_rejects_wrong_scope_and_unbound_quota_project() -> None:
     assert quota_error.value.code == "GOOGLE_TTS_QUOTA_PROJECT_INVALID"
 
 
-@pytest.mark.parametrize(
-    "configured", [None, "", "bad", "UPPER-project"]
-)
+@pytest.mark.parametrize("configured", [None, "", "bad", "UPPER-project"])
 def test_enabled_adc_requires_nonempty_well_formed_configured_quota_project(
     configured: str | None,
 ) -> None:
@@ -370,9 +369,13 @@ def transport(
     context = FakeTLSContext(sock, error=tls_error)
     resolutions: list[object] = []
 
-    def resolver(host: str, port: int, **_: object) -> list[tuple[object, object, int, str, tuple[str, int]]]:
+    def resolver(
+        host: str, port: int, **_: object
+    ) -> list[tuple[object, object, int, str, tuple[str, int]]]:
         resolutions.append((host, port))
-        return [(socket.AF_INET, socket.SOCK_STREAM, 6, "", (address, port)) for address in addresses]
+        return [
+            (socket.AF_INET, socket.SOCK_STREAM, 6, "", (address, port)) for address in addresses
+        ]
 
     def socket_factory(*_: object) -> FakeSocket:
         return sock
@@ -390,6 +393,7 @@ def transport(
 
 def test_disabled_transport_never_resolves_or_opens_socket() -> None:
     calls: list[object] = []
+
     def resolver(*_: object, **__: object) -> list[tuple[Any, ...]]:
         calls.append(object())
         return []
@@ -455,7 +459,20 @@ def test_transport_rejects_invalid_timeout(timeout: object) -> None:
     assert error.value.code == "GOOGLE_TTS_TIMEOUT_INVALID"
 
 
-@pytest.mark.parametrize("address", ["127.0.0.1", "10.0.0.1", "169.254.1.1", "224.0.0.1", "0.0.0.0", "192.0.2.1", "::1", "fc00::1", "fe80::1"])
+@pytest.mark.parametrize(
+    "address",
+    [
+        "127.0.0.1",
+        "10.0.0.1",
+        "169.254.1.1",
+        "224.0.0.1",
+        "0.0.0.0",
+        "192.0.2.1",
+        "::1",
+        "fc00::1",
+        "fe80::1",
+    ],
+)
 def test_all_prohibited_dns_answers_are_rejected(address: str) -> None:
     instance, _, _, _ = transport(addresses=("8.8.8.8", address))
     with pytest.raises(GoogleRuntimeError) as error:
@@ -508,7 +525,9 @@ def test_peer_mismatch_and_tls_failures_fail_closed() -> None:
 
 
 def test_redirect_is_reported_without_following() -> None:
-    sock = FakeSocket(b"HTTP/1.1 302 Found\r\nLocation: https://example.invalid\r\nContent-Length: 0\r\n\r\n")
+    sock = FakeSocket(
+        b"HTTP/1.1 302 Found\r\nLocation: https://example.invalid\r\nContent-Length: 0\r\n\r\n"
+    )
     instance, _, _, _ = transport(socket_value=sock)
     prepared = instance.prepare(url=GOOGLE_TTS_URL, timeout_seconds=1)
     with pytest.raises(GoogleRuntimeError) as error:
@@ -548,15 +567,24 @@ def test_response_size_is_strictly_bounded() -> None:
 
 
 class FakeOfficialGrpcBindings:
-    def __init__(self, *, audio: bytes = b"RIFF-fake", failure: Exception | None = None) -> None:
+    def __init__(
+        self,
+        *,
+        audio: bytes = b"RIFF-fake",
+        failure: Exception | None = None,
+        grpc_status: str | None = None,
+    ) -> None:
         self.audio = audio
         self.failure = failure
-        self.open_calls: list[tuple[str, str]] = []
+        self.grpc_status = grpc_status
+        self.open_calls: list[tuple[str, str, float]] = []
         self.synthesis_calls: list[dict[str, object]] = []
         self.closed: list[object] = []
 
-    def open_client(self, *, target_ip: str, hostname: str) -> tuple[object, object]:
-        self.open_calls.append((target_ip, hostname))
+    def open_client(
+        self, *, target_ip: str, hostname: str, timeout_seconds: float
+    ) -> tuple[object, object]:
+        self.open_calls.append((target_ip, hostname, timeout_seconds))
         return object(), object()
 
     def synthesize(
@@ -580,7 +608,7 @@ class FakeOfficialGrpcBindings:
         return self.audio
 
     def failure_status(self, error: Exception) -> str | None:
-        return str(error)
+        return self.grpc_status if self.grpc_status is not None else str(error)
 
     def close(self, channel: object) -> None:
         self.closed.append(channel)
@@ -600,8 +628,7 @@ def official_grpc_transport(
     ) -> list[tuple[object, object, int, str, tuple[str, int]]]:
         resolutions.append((host, port))
         return [
-            (socket.AF_INET, socket.SOCK_STREAM, 6, "", (address, port))
-            for address in addresses
+            (socket.AF_INET, socket.SOCK_STREAM, 6, "", (address, port)) for address in addresses
         ]
 
     return (
@@ -625,6 +652,44 @@ def test_official_grpc_disabled_never_imports_resolves_or_opens_channel() -> Non
 
     assert caught.value.code == "GOOGLE_TTS_DISABLED"
     assert resolutions == [] and bindings.open_calls == []
+
+
+def test_official_grpc_missing_dependency_fails_before_dns() -> None:
+    resolutions: list[object] = []
+
+    def missing() -> FakeOfficialGrpcBindings:
+        raise GoogleRuntimeError(
+            "GOOGLE_TTS_DEPENDENCY_UNAVAILABLE",
+            "Google TTS optional dependency is unavailable.",
+        )
+
+    def resolver(*_args: object, **_kwargs: object) -> list[tuple[Any, ...]]:
+        resolutions.append(object())
+        return []
+
+    instance = OfficialUnaryGoogleTTSTransport(
+        enabled=True,
+        activation_evidence_sha256=CHECKSUM,
+        resolver=resolver,
+        bindings_factory=missing,
+    )
+
+    with pytest.raises(GoogleRuntimeError) as caught:
+        instance.prepare(url=GOOGLE_TTS_URL, timeout_seconds=600)
+
+    assert caught.value.code == "GOOGLE_TTS_DEPENDENCY_UNAVAILABLE"
+    assert resolutions == []
+
+
+def test_official_grpc_rejects_private_dns_before_opening_channel() -> None:
+    bindings = FakeOfficialGrpcBindings()
+    instance, _ = official_grpc_transport(bindings, addresses=("10.0.0.1",))
+
+    with pytest.raises(GoogleRuntimeError) as caught:
+        instance.prepare(url=GOOGLE_TTS_URL, timeout_seconds=600)
+
+    assert caught.value.code == "GOOGLE_TTS_ADDRESS_INVALID"
+    assert bindings.open_calls == []
 
 
 def test_official_grpc_uses_exact_pinned_unary_contract_and_wraps_audio() -> None:
@@ -658,7 +723,7 @@ def test_official_grpc_uses_exact_pinned_unary_contract_and_wraps_audio() -> Non
     assert prepared.tls_server_name == "eu-texttospeech.googleapis.com"
     assert prepared.peer_ip == "8.8.8.8" and prepared.peer_port == 443
     assert resolutions == [("eu-texttospeech.googleapis.com", 443)]
-    assert bindings.open_calls == [("8.8.8.8", "eu-texttospeech.googleapis.com")]
+    assert bindings.open_calls == [("8.8.8.8", "eu-texttospeech.googleapis.com", 600)]
     assert bindings.synthesis_calls[0]["json_body"] == request
     assert bindings.synthesis_calls[0]["headers"] == headers
     assert bindings.synthesis_calls[0]["timeout_seconds"] == 600
@@ -667,6 +732,217 @@ def test_official_grpc_uses_exact_pinned_unary_contract_and_wraps_audio() -> Non
     assert base64.b64decode(json.loads(response.body)["audioContent"]) == b"RIFF-exact-audio"
     assert response.resolved_addresses == ("8.8.8.8",) and response.peer_ip == "8.8.8.8"
     assert len(bindings.closed) == 1
+
+
+def test_official_sdk_binding_builds_exact_public_request_without_network() -> None:
+    from google.cloud import texttospeech_v1 as texttospeech
+
+    captured: dict[str, object] = {}
+
+    class FakeClient:
+        def synthesize_speech(self, **kwargs: object) -> object:
+            captured.update(kwargs)
+            return type("Response", (), {"audio_content": b"RIFF-sdk"})()
+
+    binding = google_tts_runtime_module._OfficialGoogleGrpcBindings(
+        grpc_module=object(),
+        tts_module=texttospeech,
+        transport_type=object(),
+    )
+    body = {
+        "input": {"text": "canonical narration", "prompt": "governed style"},
+        "voice": {
+            "languageCode": "en-IN",
+            "modelName": "gemini-2.5-pro-tts",
+            "name": "Despina",
+        },
+        "audioConfig": {"audioEncoding": "LINEAR16", "sampleRateHertz": 24000},
+    }
+    headers = {
+        "Authorization": f"Bearer {ACCESS_VALUE}",
+        "Content-Type": "application/json; charset=utf-8",
+        "x-goog-user-project": QUOTA_PROJECT,
+    }
+
+    assert (
+        binding.synthesize(
+            client=FakeClient(),
+            json_body=body,
+            headers=headers,
+            timeout_seconds=600,
+        )
+        == b"RIFF-sdk"
+    )
+
+    request = cast(Any, captured["request"])
+    assert request.input.text == "canonical narration"
+    assert request.input.prompt == "governed style"
+    assert request.voice.language_code == "en-IN"
+    assert request.voice.model_name == "gemini-2.5-pro-tts"
+    assert request.voice.name == "Despina"
+    assert request.audio_config.audio_encoding == texttospeech.AudioEncoding.LINEAR16
+    assert request.audio_config.sample_rate_hertz == 24000
+    assert captured["retry"] is None and captured["timeout"] == 600
+    assert captured["metadata"] == (
+        ("authorization", f"Bearer {ACCESS_VALUE}"),
+        ("x-goog-user-project", QUOTA_PROJECT),
+    )
+
+
+def test_official_sdk_binding_pins_tls_channel_and_disables_proxy() -> None:
+    captured: dict[str, object] = {}
+
+    class FakeChannel:
+        def close(self) -> None:
+            captured["closed"] = True
+
+    class FakeReady:
+        def result(self, *, timeout: float) -> None:
+            captured["ready_timeout"] = timeout
+
+    class FakeGrpc:
+        @staticmethod
+        def ssl_channel_credentials() -> str:
+            return "tls-credentials"
+
+        @staticmethod
+        def secure_channel(
+            target: str, credentials: object, *, options: tuple[tuple[str, object], ...]
+        ) -> FakeChannel:
+            captured.update(target=target, credentials=credentials, options=options)
+            return FakeChannel()
+
+        @staticmethod
+        def channel_ready_future(channel: object) -> FakeReady:
+            captured["ready_channel"] = channel
+            return FakeReady()
+
+    class FakeTransport:
+        def __init__(self, *, channel: object) -> None:
+            captured["transport_channel"] = channel
+
+    class FakeTTS:
+        @staticmethod
+        def TextToSpeechClient(*, transport: object) -> object:
+            captured["client_transport"] = transport
+            return object()
+
+    binding = google_tts_runtime_module._OfficialGoogleGrpcBindings(
+        grpc_module=FakeGrpc,
+        tts_module=FakeTTS,
+        transport_type=FakeTransport,
+    )
+    client, channel = binding.open_client(
+        target_ip="8.8.8.8",
+        hostname="eu-texttospeech.googleapis.com",
+        timeout_seconds=600,
+    )
+
+    assert client is not None and channel is captured["ready_channel"]
+    assert captured["target"] == "ipv4:8.8.8.8:443"
+    assert captured["credentials"] == "tls-credentials"
+    assert captured["options"] == (
+        ("grpc.ssl_target_name_override", "eu-texttospeech.googleapis.com"),
+        ("grpc.default_authority", "eu-texttospeech.googleapis.com"),
+        ("grpc.enable_http_proxy", 0),
+    )
+    assert captured["ready_timeout"] == 600
+    assert captured.get("closed") is None
+
+
+def test_official_sdk_binding_closes_channel_when_readiness_fails() -> None:
+    captured: dict[str, object] = {}
+
+    class FakeChannel:
+        def close(self) -> None:
+            captured["closed"] = True
+
+    class FakeReady:
+        def result(self, *, timeout: float) -> None:
+            captured["timeout"] = timeout
+            raise TimeoutError("private-channel-detail")
+
+    class FakeGrpc:
+        ssl_channel_credentials = staticmethod(object)
+        secure_channel = staticmethod(lambda *_args, **_kwargs: FakeChannel())
+        channel_ready_future = staticmethod(lambda _channel: FakeReady())
+
+    binding = google_tts_runtime_module._OfficialGoogleGrpcBindings(
+        grpc_module=FakeGrpc,
+        tts_module=object(),
+        transport_type=object(),
+    )
+
+    with pytest.raises(TimeoutError):
+        binding.open_client(
+            target_ip="8.8.8.8",
+            hostname="eu-texttospeech.googleapis.com",
+            timeout_seconds=600,
+        )
+
+    assert captured == {"timeout": 600, "closed": True}
+
+
+@pytest.mark.parametrize(
+    ("body_mutation", "header_mutation"),
+    (
+        (("voice", "modelName", "alternate-model"), None),
+        (("voice", "languageCode", "en-US"), None),
+        (("audioConfig", "sampleRateHertz", 22_050), None),
+        (("audioConfig", "audioEncoding", "MP3"), None),
+        (("input", "prompt", ""), None),
+        (None, ("Content-Type", "application/json")),
+        (None, ("Authorization", "Bearer fake\nInjected: yes")),
+        (None, ("x-goog-user-project", "UPPER-project")),
+        (None, ("X-Injected", "forbidden")),
+    ),
+)
+def test_official_sdk_binding_rejects_request_and_metadata_mutations_before_call(
+    body_mutation: tuple[str, str, object] | None,
+    header_mutation: tuple[str, str] | None,
+) -> None:
+    from google.cloud import texttospeech_v1 as texttospeech
+
+    class RejectCallClient:
+        def synthesize_speech(self, **_: object) -> object:
+            raise AssertionError("invalid request reached the official client")
+
+    binding = google_tts_runtime_module._OfficialGoogleGrpcBindings(
+        grpc_module=object(),
+        tts_module=texttospeech,
+        transport_type=object(),
+    )
+    body: dict[str, object] = {
+        "input": {"text": "canonical narration", "prompt": "governed style"},
+        "voice": {
+            "languageCode": "en-IN",
+            "modelName": "gemini-2.5-pro-tts",
+            "name": "Despina",
+        },
+        "audioConfig": {"audioEncoding": "LINEAR16", "sampleRateHertz": 24000},
+    }
+    headers = {
+        "Authorization": f"Bearer {ACCESS_VALUE}",
+        "Content-Type": "application/json; charset=utf-8",
+        "x-goog-user-project": QUOTA_PROJECT,
+    }
+    if body_mutation is not None:
+        parent, leaf, value = body_mutation
+        cast(dict[str, object], body[parent])[leaf] = value
+    if header_mutation is not None:
+        name, value = header_mutation
+        headers[name] = value
+
+    with pytest.raises(GoogleRuntimeError) as caught:
+        binding.synthesize(
+            client=RejectCallClient(),
+            json_body=body,
+            headers=headers,
+            timeout_seconds=600,
+        )
+
+    assert caught.value.code == "GOOGLE_TTS_REQUEST_INVALID"
+    assert caught.value.egress_possible is False
 
 
 def test_official_grpc_is_single_use_and_bounds_raw_audio() -> None:
@@ -684,8 +960,11 @@ def test_official_grpc_is_single_use_and_bounds_raw_audio() -> None:
 
 
 def test_official_grpc_failure_retains_only_allowlisted_status() -> None:
-    private_detail = "DEADLINE_EXCEEDED"
-    bindings = FakeOfficialGrpcBindings(failure=RuntimeError(private_detail))
+    private_detail = "private-provider-debug-detail"
+    bindings = FakeOfficialGrpcBindings(
+        failure=RuntimeError(private_detail),
+        grpc_status="DEADLINE_EXCEEDED",
+    )
     instance, _ = official_grpc_transport(bindings)
     prepared = instance.prepare(url=GOOGLE_TTS_URL, timeout_seconds=600)
 
@@ -695,6 +974,13 @@ def test_official_grpc_failure_retains_only_allowlisted_status() -> None:
     assert caught.value.egress_possible is True
     assert caught.value.grpc_status == "DEADLINE_EXCEEDED"
     assert private_detail not in str(caught.value)
+    frames: list[str] = []
+    traceback = caught.value.__traceback__
+    while traceback is not None:
+        if traceback.tb_frame.f_code.co_name == "send":
+            frames.append(repr(traceback.tb_frame.f_locals))
+        traceback = traceback.tb_next
+    assert frames and private_detail not in "".join(frames)
     assert len(bindings.closed) == 1
 
 

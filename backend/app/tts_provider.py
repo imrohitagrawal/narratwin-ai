@@ -439,6 +439,7 @@ GOOGLE_LOGGER = logging.getLogger(__name__ + ".google")
 GoogleSpendState = Literal[
     "PENDING", "COMPLETED", "FAILED_BILLABLE", "BILLABLE_UNKNOWN", "TOMBSTONED"
 ]
+GoogleTransportKind = Literal["REST_HTTP_1_1", "OFFICIAL_GRPC_UNARY"]
 
 
 @dataclass(frozen=True)
@@ -481,10 +482,43 @@ class GoogleEgressScreening:
     evidence_checksum: str
 
 
+_GOOGLE_GRPC_STATUS_ALLOWLIST = frozenset(
+    {
+        "OK",
+        "CANCELLED",
+        "UNKNOWN",
+        "INVALID_ARGUMENT",
+        "DEADLINE_EXCEEDED",
+        "NOT_FOUND",
+        "ALREADY_EXISTS",
+        "PERMISSION_DENIED",
+        "RESOURCE_EXHAUSTED",
+        "FAILED_PRECONDITION",
+        "ABORTED",
+        "OUT_OF_RANGE",
+        "UNIMPLEMENTED",
+        "INTERNAL",
+        "UNAVAILABLE",
+        "DATA_LOSS",
+        "UNAUTHENTICATED",
+    }
+)
+
+
 class GoogleTransportError(Exception):
-    def __init__(self, *, egress_possible: bool) -> None:
+    def __init__(
+        self,
+        *,
+        egress_possible: bool,
+        grpc_status: str | None = None,
+        raw_detail: object | None = None,
+    ) -> None:
         super().__init__("Google TTS transport failed.")
         self.egress_possible = egress_possible
+        self.grpc_status = grpc_status if grpc_status in _GOOGLE_GRPC_STATUS_ALLOWLIST else None
+        # `raw_detail` is accepted only so a boundary caller can explicitly
+        # discard it. It is never retained on the exception or diagnostics.
+        del raw_detail
 
 
 @dataclass(frozen=True)
@@ -500,29 +534,34 @@ class GoogleTTSHTTPResponse:
     tls_verified: bool = False
     tls_server_name: str = ""
     peer_port: int = 0
+    transport_kind: GoogleTransportKind = "REST_HTTP_1_1"
 
 
 @dataclass(frozen=True)
 class GoogleTTSFailureDiagnostics:
     """Bounded non-success metadata that cannot retain provider content or identifiers."""
 
-    upstream_status_code: int
+    upstream_status_code: int | None
     response_byte_count: int
-    response_body_sha256: str
+    response_body_sha256: str | None
     provider_error_code: int | None
     provider_error_status: str | None
     provider_request_id_sha256: str | None
     provider_trace_id_sha256: str | None
+    transport_kind: GoogleTransportKind = "REST_HTTP_1_1"
+    grpc_status: str | None = None
     raw_response_retained: bool = field(default=False, init=False)
     raw_headers_retained: bool = field(default=False, init=False)
 
     def as_safe_dict(self) -> dict[str, int | str | bool | None]:
         return {
+            "transportKind": self.transport_kind,
             "upstreamStatusCode": self.upstream_status_code,
             "responseByteCount": self.response_byte_count,
             "responseBodySha256": self.response_body_sha256,
             "providerErrorCode": self.provider_error_code,
             "providerErrorStatus": self.provider_error_status,
+            "grpcStatus": self.grpc_status,
             "providerRequestIdSha256": self.provider_request_id_sha256,
             "providerTraceIdSha256": self.provider_trace_id_sha256,
             "rawResponseRetained": self.raw_response_retained,
@@ -542,6 +581,7 @@ class GoogleTTSPreparedTransport(Protocol):
     peer_port: int
     redirects_disabled: bool
     dns_pinned: bool
+    transport_kind: GoogleTransportKind
 
     def send(
         self,
@@ -691,20 +731,14 @@ _GOOGLE_ERROR_STATUS_ALLOWLIST = frozenset(
         "UNKNOWN",
     }
 )
-_GOOGLE_REQUEST_ID_HEADERS = frozenset(
-    {"x-goog-request-id", "x-google-request-id", "x-request-id"}
-)
-_GOOGLE_TRACE_ID_HEADERS = frozenset(
-    {"x-cloud-trace-context", "x-google-gfe-request-trace"}
-)
+_GOOGLE_REQUEST_ID_HEADERS = frozenset({"x-goog-request-id", "x-google-request-id", "x-request-id"})
+_GOOGLE_TRACE_ID_HEADERS = frozenset({"x-cloud-trace-context", "x-google-gfe-request-trace"})
 _GOOGLE_DIAGNOSTIC_IDENTIFIER_MAX_BYTES = 512
 
 
 def _google_header_digest(headers: dict[str, str], names: frozenset[str]) -> str | None:
     selected = [
-        value
-        for name, value in headers.items()
-        if isinstance(name, str) and name.lower() in names
+        value for name, value in headers.items() if isinstance(name, str) and name.lower() in names
     ]
     if len(selected) != 1:
         return None
@@ -747,6 +781,24 @@ def _google_failure_diagnostics(response: GoogleTTSHTTPResponse) -> GoogleTTSFai
             response.headers, _GOOGLE_REQUEST_ID_HEADERS
         ),
         provider_trace_id_sha256=_google_header_digest(response.headers, _GOOGLE_TRACE_ID_HEADERS),
+    )
+
+
+def _google_grpc_failure_diagnostics(
+    error: GoogleTransportError,
+) -> GoogleTTSFailureDiagnostics | None:
+    if error.grpc_status is None:
+        return None
+    return GoogleTTSFailureDiagnostics(
+        upstream_status_code=None,
+        response_byte_count=0,
+        response_body_sha256=None,
+        provider_error_code=None,
+        provider_error_status=None,
+        provider_request_id_sha256=None,
+        provider_trace_id_sha256=None,
+        transport_kind="OFFICIAL_GRPC_UNARY",
+        grpc_status=error.grpc_status,
     )
 
 
@@ -966,6 +1018,7 @@ class GoogleGeminiTTSProvider:
                     timeout_seconds=self.config.timeout_seconds,
                 )
             except GoogleTransportError as exc:
+                diagnostics = _google_grpc_failure_diagnostics(exc)
                 if exc.egress_possible:
                     self._set_state(fingerprint, "BILLABLE_UNKNOWN")
                     raise _google_error(
@@ -973,12 +1026,14 @@ class GoogleGeminiTTSProvider:
                         "TTS billing state requires reconciliation.",
                         status=504,
                         billable=True,
+                        provider_diagnostics=diagnostics,
                     ) from None
                 self._drop_pre_egress(fingerprint)
                 raise _google_error(
                     "GOOGLE_TTS_PRE_EGRESS_FAILURE",
                     "TTS transport failed before egress.",
                     status=503,
+                    provider_diagnostics=diagnostics,
                 ) from None
             except Exception:
                 self._set_state(fingerprint, "BILLABLE_UNKNOWN")
@@ -1241,9 +1296,7 @@ class GoogleGeminiTTSProvider:
                 for value in receipt_checksums
             )
             or not isinstance(receipt.presenter_binding_checksum, str)
-            or GOOGLE_PRESENTER_BINDING_PATTERN.fullmatch(
-                receipt.presenter_binding_checksum
-            )
+            or GOOGLE_PRESENTER_BINDING_PATTERN.fullmatch(receipt.presenter_binding_checksum)
             is None
         ):
             raise _google_error(
@@ -1335,12 +1388,8 @@ class GoogleGeminiTTSProvider:
             raise _google_error("GOOGLE_TTS_CONFIG_INVALID", "Google TTS configuration is invalid.")
         if not self.config.enabled:
             raise _google_error("GOOGLE_TTS_DISABLED", "Google TTS is disabled.", status=403)
-        if not GOOGLE_CHECKSUM_PATTERN.fullmatch(
-            self.config.approved_quota_project_sha256
-        ):
-            raise _google_error(
-                "GOOGLE_TTS_CONFIG_INVALID", "Google TTS configuration is invalid."
-            )
+        if not GOOGLE_CHECKSUM_PATTERN.fullmatch(self.config.approved_quota_project_sha256):
+            raise _google_error("GOOGLE_TTS_CONFIG_INVALID", "Google TTS configuration is invalid.")
         if self.state_path is None:
             raise _google_error(
                 "GOOGLE_TTS_DURABLE_STATE_REQUIRED",
@@ -1586,8 +1635,7 @@ class GoogleGeminiTTSProvider:
             )
             or not hmac.compare_digest(
                 identity.quota_project_sha256,
-                "sha256:"
-                + hashlib.sha256(identity.quota_project_id.encode("utf-8")).hexdigest(),
+                "sha256:" + hashlib.sha256(identity.quota_project_id.encode("utf-8")).hexdigest(),
             )
         ):
             raise _google_error(
@@ -1601,9 +1649,7 @@ class GoogleGeminiTTSProvider:
             "x-goog-user-project": identity.quota_project_id,
         }
 
-    def _validate_request_headers(
-        self, headers: dict[str, str], identity: GoogleIdentity
-    ) -> None:
+    def _validate_request_headers(self, headers: dict[str, str], identity: GoogleIdentity) -> None:
         expected_names = ("Authorization", "Content-Type", "x-goog-user-project")
         quota_value = headers.get("x-goog-user-project")
         if (
@@ -1732,6 +1778,15 @@ class GoogleGeminiTTSProvider:
         return audio
 
     def _validate_prepared_transport(self, prepared: GoogleTTSPreparedTransport) -> None:
+        if getattr(prepared, "transport_kind", None) not in {
+            "REST_HTTP_1_1",
+            "OFFICIAL_GRPC_UNARY",
+        }:
+            raise _google_error(
+                "GOOGLE_TTS_TRANSPORT_POLICY_INVALID",
+                "Google TTS transport policy evidence is invalid.",
+                status=502,
+            )
         self._validate_network_evidence(
             url=prepared.url,
             resolved_addresses=prepared.resolved_addresses,
@@ -1759,7 +1814,9 @@ class GoogleGeminiTTSProvider:
         prepared: GoogleTTSPreparedTransport,
     ) -> None:
         if (
-            response.resolved_addresses != prepared.resolved_addresses
+            response.transport_kind != prepared.transport_kind
+            or response.transport_kind not in {"REST_HTTP_1_1", "OFFICIAL_GRPC_UNARY"}
+            or response.resolved_addresses != prepared.resolved_addresses
             or response.peer_ip != prepared.peer_ip
         ):
             raise _google_error(

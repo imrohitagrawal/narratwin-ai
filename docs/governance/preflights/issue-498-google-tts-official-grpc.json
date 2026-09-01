@@ -1,0 +1,53 @@
+{
+  "schema_version": "GovernancePreflightV1",
+  "issue_number": 498,
+  "branch": "stage8-498-google-tts-official-grpc",
+  "objective": "From exact accepted main d1f5400f5c6dfec5d4b63eb3a83aa82e3330743f and tree 905f562c17e66abf1839e673940f80aca4330cfc, correct only the reproduced package 13/14 long-request failure through freeze 5500521261 / fafc0f0a8ae18c9cc08d9dbab668235546f652aa780256792d5d1cb0e8f9f58b and amendment 5500539931 / 30faa0f1062545413efaa7b6e9bc38f9b2cd82f2554078f666aac04e4f8ef843. Add explicitly selected google-cloud-texttospeech 2.37.0 synchronous unary gRPC at the exact EU hostname while retaining direct REST unchanged with no fallback or retry. Screen DNS, pin the TLS channel target/SNI/authority, disable proxy, require readiness before identity/content, translate only the existing request, use ephemeral bearer/quota metadata, retry=None, and operation-configured timeout/response bounds. Re-enter audio through unchanged response/WAV/durable/T05B/T05C gates. Retain only allowlisted gRPC status and billable-unknown state; retain no raw message, metadata, request, narration, prompt, credential, project, token, path, or response. Lock only the exact five-package optional-provider delta. Use fourteen paths and at most 5200 charged lines with no deletion credit. Tests use fakes and real SDK types with zero credentials, provider calls, egress or spend. Preserve presenter/text/voice/model/locale/EU/LINEAR16/privacy/human-listening rules. No audio, caption, avatar, deployment, release, production or Cut 1 claim. Stop on any authority, base, tree, route, dependency, network, metadata, response, ledger, hosted or approval drift.",
+  "status_decision": "update-minimally",
+  "scope": {
+    "required": [
+      "backend/app/google_tts_runtime.py",
+      "backend/app/tts_provider.py",
+      "tests/unit/test_google_tts_runtime.py",
+      "tests/unit/test_stage6_tts_provider.py",
+      "tests/unit/test_dependency_security_contract.py",
+      "pyproject.toml",
+      "uv.lock",
+      "docs/governance/preflights/issue-498-google-tts-official-grpc.json",
+      "scripts/quality/stage8_cut1_routes.py",
+      "tests/unit/test_stage8_cut1_routes.py",
+      "docs/ADR/0056-cut1-google-gemini-tts.md",
+      "docs/STATUS.md",
+      "docs/THIRD_PARTY_NOTICES.md",
+      "docs/TRACEABILITY.md"
+    ],
+    "allowed_prefixes": [
+      "backend/app/google_tts_runtime.py",
+      "backend/app/tts_provider.py",
+      "tests/unit/test_google_tts_runtime.py",
+      "tests/unit/test_stage6_tts_provider.py",
+      "tests/unit/test_dependency_security_contract.py",
+      "pyproject.toml",
+      "uv.lock",
+      "docs/governance/preflights/issue-498-google-tts-official-grpc.json",
+      "scripts/quality/stage8_cut1_routes.py",
+      "tests/unit/test_stage8_cut1_routes.py",
+      "docs/ADR/0056-cut1-google-gemini-tts.md",
+      "docs/STATUS.md",
+      "docs/THIRD_PARTY_NOTICES.md",
+      "docs/TRACEABILITY.md"
+    ],
+    "forbidden": [
+      ".github/",
+      "frontend/",
+      "backend/app/narration.py",
+      "backend/app/cut1_audio.py",
+      "backend/app/cut1_listening.py",
+      "docs/governance/cut1-google-gemini-tts-style-prompts-v1.json",
+      "credentials/",
+      "media/",
+      "deployment/",
+      "release/"
+    ]
+  }
+}

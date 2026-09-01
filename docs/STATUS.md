@@ -1590,6 +1590,44 @@ the approved head tree and post-merge main quality passed.
   remain unchanged. Tests use fakes only and authorize no provider call,
   egress, spend, media, human acceptance, release or Cut 1 completion claim.
 
+PR `#497` merged the exact-head diagnostic correction as
+`d1f5400f5c6dfec5d4b63eb3a83aa82e3330743f`; its merged tree is identical to
+the approved head tree and post-merge main quality passed.
+
+## Issue #498 Google TTS official unary gRPC correction (2026-09-02)
+
+- Fresh packages 13 and 14 each passed authority, receipt restoration,
+  reuse-first and redacted control-plane gates before sending one exact
+  Meera/Despina request through the direct HTTP/1.1 REST transport. Both
+  received the same 1,613-byte upstream 502 body hash after approximately
+  62.2 seconds. Each stopped `FAILED_BILLABLE`; Myra and Raj were not called,
+  and no WAV, SRT, T05B admission or T05C decision was created.
+- The repeated timing and response fingerprint support, but do not prove, a
+  REST gateway/backend deadline. They do not demonstrate text, voice, model,
+  locale, credential, quota, billing, privacy or EU-endpoint rejection. Google
+  supplied no usable structured internal cause or correlation identifier.
+- Issue `#498` adds an explicitly selected official synchronous unary gRPC
+  path using locked `google-cloud-texttospeech==2.37.0`. It preserves the exact
+  EU hostname, screened DNS, pinned TLS channel target/SNI/authority, disabled
+  proxy, no redirects, one request, `retry=None`, operation-configured timeout,
+  exact existing Gemini request fields and unchanged response/WAV/T05B/T05C
+  validation. The direct REST path remains available and is never an automatic
+  fallback.
+- This PR adds transport capability only. It contains no voices, narration
+  text, audio, captions or speaking avatars; it makes no provider call and
+  cannot establish listening acceptance. Tests use injected fakes plus real SDK
+  request types with zero credentials, egress and spend.
+- OWNER amendment `5500512956` authorizes twelve additional deliberate
+  attempts and revises the total global envelope to US$8.00. Four attempts and
+  253,208 microUSD are conservatively consumed, leaving fifteen attempts and
+  7,746,792 microUSD. No automatic retry is authorized. A fresh immutable
+  package may explicitly select gRPC only after Issue #498 exact-head review,
+  hosted CI, eligible approval, merge and post-merge verification.
+- T05 remains incomplete until three admissible exact audio/caption artifacts
+  and independently authored exact-byte listening decisions exist. T06–T08,
+  deployment, publication, release, production readiness and Cut 1 acceptance
+  remain incomplete and unproven.
+
 ## Issue #486 PR reviewer-impact-summary governance (2026-09-01)
 
 - Issue #486 freezes a docs/gates/tests-only route requiring every non-trivial

@@ -413,6 +413,27 @@ ISSUE499_EXPECTED = {
     "docs/THIRD_PARTY_NOTICES.md",
     "docs/TRACEABILITY.md",
 }
+ISSUE498_EXPECTED = {
+    "backend/app/google_tts_runtime.py", "backend/app/tts_provider.py",
+    "tests/unit/test_google_tts_runtime.py", "tests/unit/test_stage6_tts_provider.py",
+    "tests/unit/test_dependency_security_contract.py", "pyproject.toml", "uv.lock",
+    "docs/governance/preflights/issue-498-google-tts-official-grpc.json",
+    "scripts/quality/stage8_cut1_routes.py", "tests/unit/test_stage8_cut1_routes.py",
+    "docs/ADR/0056-cut1-google-gemini-tts.md", "docs/STATUS.md",
+    "docs/THIRD_PARTY_NOTICES.md", "docs/TRACEABILITY.md",
+}
+ISSUE498_LINE_CAPS = {
+    "backend/app/google_tts_runtime.py": 500, "backend/app/tts_provider.py": 350,
+    "tests/unit/test_google_tts_runtime.py": 850,
+    "tests/unit/test_stage6_tts_provider.py": 450,
+    "tests/unit/test_dependency_security_contract.py": 500, "pyproject.toml": 10,
+    "uv.lock": 1000,
+    "docs/governance/preflights/issue-498-google-tts-official-grpc.json": 340,
+    "scripts/quality/stage8_cut1_routes.py": 240,
+    "tests/unit/test_stage8_cut1_routes.py": 320,
+    "docs/ADR/0056-cut1-google-gemini-tts.md": 180, "docs/STATUS.md": 140,
+    "docs/THIRD_PARTY_NOTICES.md": 180, "docs/TRACEABILITY.md": 140,
+}
 ISSUE468_EXPECTED = {
     "AGENTS.md",
     "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md",
@@ -465,6 +486,7 @@ EXPECTED = {
     "cut1-process-479-t05c-listening-authority": ISSUE479_EXPECTED,
     "cut1-process-482-dependency-security-refresh": ISSUE482_EXPECTED,
     "stage8-495-browserslist-security-refresh": ISSUE495_EXPECTED,
+    "stage8-498-google-tts-official-grpc": ISSUE498_EXPECTED,
     "cut1-process-478-pr477-status-closeout": ISSUE478_EXPECTED,
     "cut1-475-t05b-runtime-receipt-binding": ISSUE475_EXPECTED,
     "governance-468-scoped-merge-cleanup": ISSUE468_EXPECTED,
@@ -3848,6 +3870,54 @@ def test_issue494_rejects_transition_snapshot_drift_and_rename(monkeypatch: Any)
     routes.check_exact_route(REPO, drifted, branch, expected, failures)
     assert f"Issue #494 route snapshot is missing required path: {missing}" in failures
     assert "Issue #494 route forbids deleted, renamed, or copied paths." in failures
+
+
+def test_issue498_official_grpc_route_is_exact_bounded_and_base_pinned() -> None:
+    branch = routes.ISSUE498_BRANCH
+    artifact = json.loads((REPO / "docs/governance/preflights/issue-498-google-tts-official-grpc.json").read_text())
+    assert branch == "stage8-498-google-tts-official-grpc"
+    assert routes.ISSUE498_BASE == "d1f5400f5c6dfec5d4b63eb3a83aa82e3330743f"
+    assert routes.ISSUE498_TREE == "905f562c17e66abf1839e673940f80aca4330cfc"
+    assert routes.ISSUE498_FREEZE_COMMENT == "5500521261"
+    assert routes.ISSUE498_FREEZE_SHA256 == "fafc0f0a8ae18c9cc08d9dbab668235546f652aa780256792d5d1cb0e8f9f58b"
+    assert routes.ISSUE498_AMENDMENT_COMMENT == "5500539931"
+    assert routes.ISSUE498_AMENDMENT_SHA256 == "30faa0f1062545413efaa7b6e9bc38f9b2cd82f2554078f666aac04e4f8ef843"
+    assert set(artifact["scope"]["required"]) == ISSUE498_EXPECTED == routes.ROUTES[branch]
+    assert artifact["scope"]["required"] == artifact["scope"]["allowed_prefixes"]
+    assert routes.ROUTE_ISSUES[branch] == 498
+    assert routes.TOTAL_LIMITS[branch] == 5200
+    assert routes.TEXT_LIMITS[branch] == ISSUE498_LINE_CAPS
+    context = {"issue_number": 498, "branch": branch,
+               "changed_files": artifact["scope"]["required"]}
+    assert routes.validate_governance_preflight(artifact, context=context) == []
+    mutated = copy.deepcopy(context)
+    mutated["changed_files"] = [*mutated["changed_files"], "backend/app/narration.py"]
+    assert [finding.code for finding in routes.validate_governance_preflight(
+        artifact, context=mutated)] == ["GPF.SCOPE.CHANGE_FORBIDDEN"]
+    assert all(value in artifact["objective"] for value in (
+        routes.ISSUE498_BASE, routes.ISSUE498_TREE, routes.ISSUE498_FREEZE_COMMENT,
+        routes.ISSUE498_FREEZE_SHA256, routes.ISSUE498_AMENDMENT_COMMENT,
+        routes.ISSUE498_AMENDMENT_SHA256,
+    ))
+
+
+def test_issue498_requires_exact_current_main_branch_point() -> None:
+    base = routes.ISSUE498_BASE
+
+    def good(args: list[str]) -> subprocess.CompletedProcess[str]:
+        if args[:2] in (["git", "rev-parse"], ["git", "merge-base"]):
+            return completed(args, out=base + "\n")
+        return completed(args)
+
+    assert routes.route_base(good, routes.ISSUE498_BRANCH) == base
+
+    def drifted(args: list[str]) -> subprocess.CompletedProcess[str]:
+        if args == ["git", "merge-base", "origin/main", "HEAD"]:
+            return completed(args, out="0" * 40 + "\n")
+        return good(args)
+
+    with pytest.raises(RuntimeError, match="Issue #498 fixed base evidence"):
+        routes.route_base(drifted, routes.ISSUE498_BRANCH)
 
 
 def test_issue368_prompt_route_requires_exact_merged_governance_base() -> None:

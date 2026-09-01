@@ -74,6 +74,13 @@ GOOGLE_AUTH_PACKAGES = {
     "pyasn1-modules": ("0.4.2", "6ca56d4d6b05cbc23d8920a3e91de1bac50e43b90e49439cc0d7aa7e143eb692", "677091de870a80aae844b1ca6134f54652fa2c8c5a52aa396440ac3106e941e6", "29253a9207ce32b64c3ac6600edc75368f98473906e8fd1043bd6b5b1de2c14a"),
     "pyasn1": ("0.6.4", "3ad96cec94414e068c189c877f0b9ffa701f05c7c1317874cf5dafff6a34130a", "9c447d8431c947fe4c8febc4ed9e760bc29011a5b01e5c74b67025bd9fb8ce81", "deda9277cfd454080ec40b207fb6df82206a3a2688735233cdcd8d3d565f088b"),
 }
+GOOGLE_TTS_SDK_PACKAGES = {
+    "google-api-core": ("2.34.0", "bd0f8a92d1d135f9124df336cd04fc9996338b89f4068fd92328cf2c85f5561b"),
+    "google-cloud-texttospeech": ("2.37.0", "e9f1ec5135f7c117f5d2a7867bdbd010232bd97a5e03012aba93ab7a0ef5e9fa"),
+    "grpcio": ("1.83.1", "ea2d7c05099f31f1c64c08dd4499638c21dfb2ef8d56ba1257f5b408db5c816d"),
+    "grpcio-status": ("1.83.1", "6f74d58d37ea66bb4ef67603e10d010c782e3f9da886a67c13a7ba8cd941406a"),
+    "proto-plus": ("1.28.4", "47e989662a427b6b2ed647e788005eb440f9ac57d08a8bf953a4e56728045f58"),
+}
 ISSUE482_PACKAGES = {
     "aiohttp": ("3.14.3", "ad7a70c5426492328c2ddc0fadd6040332646c74ec5e53142387a59a7395b746"),
     "cuda-bindings": ("13.3.1", "dcb0611f046b60cd6bd71096e04458faca2b53e0e517141643a57525bf44ff80"),
@@ -136,10 +143,10 @@ def _normalize_t03_pillow_dev_delta(project: dict[str, Any], lock: dict[str, Any
 def _assert_google_auth_delta(project: dict[str, Any], lock: dict[str, Any], base_project: dict[str, Any], base_lock: dict[str, Any]) -> None:
     providers = project["project"]["optional-dependencies"]["providers"]
     base_providers = base_project["project"]["optional-dependencies"]["providers"]
-    assert providers == ["google-auth==2.56.3", *base_providers]
+    assert providers == ["google-auth==2.56.3", "google-cloud-texttospeech==2.37.0", *base_providers]
     packages = {package["name"]: package for package in lock["package"]}
     base_packages = {package["name"]: package for package in base_lock["package"]}
-    assert set(packages) == set(base_packages) | set(GOOGLE_AUTH_PACKAGES)
+    assert set(packages) == set(base_packages) | set(GOOGLE_AUTH_PACKAGES) | set(GOOGLE_TTS_SDK_PACKAGES)
     assert packages["cffi"] == base_packages["cffi"]
     assert packages["pycparser"] == base_packages["pycparser"]
     for name, (version, digest, sdist_hash, wheel_hash) in GOOGLE_AUTH_PACKAGES.items():
@@ -148,10 +155,18 @@ def _assert_google_auth_delta(project: dict[str, Any], lock: dict[str, Any], bas
         assert package["sdist"]["hash"] == f"sha256:{sdist_hash}"
         assert package["wheels"][0]["hash"] == f"sha256:{wheel_hash}"
         assert hashlib.sha256(json.dumps(package, sort_keys=True, separators=(",", ":")).encode()).hexdigest() == digest
+    for name, (version, digest) in GOOGLE_TTS_SDK_PACKAGES.items():
+        package = packages[name]
+        assert package["version"] == version and package["source"] == {"registry": "https://pypi.org/simple"}
+        assert str(package["sdist"]["hash"]).startswith("sha256:")
+        assert all(str(wheel["hash"]).startswith("sha256:") for wheel in package["wheels"])
+        assert hashlib.sha256(json.dumps(package, sort_keys=True, separators=(",", ":")).encode()).hexdigest() == digest
     root = next(package for package in lock["package"] if package["name"] == "narratwin-ai")
-    assert [item["name"] for item in root["optional-dependencies"]["providers"]] == ["google-auth", "litellm", "openai", "sentence-transformers"]
+    assert [item["name"] for item in root["optional-dependencies"]["providers"]] == ["google-auth", "google-cloud-texttospeech", "litellm", "openai", "sentence-transformers"]
     google_metadata = [item for item in root["metadata"]["requires-dist"] if item["name"] == "google-auth"]
     assert google_metadata == [{"name": "google-auth", "marker": "extra == 'providers'", "specifier": "==2.56.3"}]
+    tts_metadata = [item for item in root["metadata"]["requires-dist"] if item["name"] == "google-cloud-texttospeech"]
+    assert tts_metadata == [{"name": "google-cloud-texttospeech", "marker": "extra == 'providers'", "specifier": "==2.37.0"}]
     normalized_project = copy.deepcopy(project)
     normalized_project["project"]["optional-dependencies"]["providers"] = base_providers
     _normalize_issue434_project(normalized_project)
@@ -160,7 +175,9 @@ def _assert_google_auth_delta(project: dict[str, Any], lock: dict[str, Any], bas
     normalized_root = next(package for package in normalized_lock["package"] if package["name"] == "narratwin-ai")
     normalized_root["optional-dependencies"]["providers"].remove({"name": "google-auth"})
     normalized_root["metadata"]["requires-dist"].remove(google_metadata[0])
-    normalized_lock["package"] = [package for package in normalized_lock["package"] if package["name"] not in GOOGLE_AUTH_PACKAGES]
+    normalized_root["optional-dependencies"]["providers"].remove({"name": "google-cloud-texttospeech"})
+    normalized_root["metadata"]["requires-dist"].remove(tts_metadata[0])
+    normalized_lock["package"] = [package for package in normalized_lock["package"] if package["name"] not in GOOGLE_AUTH_PACKAGES and package["name"] not in GOOGLE_TTS_SDK_PACKAGES]
     _normalize_issue434_lock(normalized_lock)
     _normalize_pip_security_delta(normalized_lock, base_lock)
     _normalize_issue482_delta(normalized_lock, base_lock)
@@ -238,13 +255,16 @@ def _assert_pypdf_6162_contract(project_text: str, lock_text: str) -> None:
     root["optional-dependencies"]["providers"].remove({"name": "google-auth"})
     google_metadata = next(item for item in root["metadata"]["requires-dist"] if item["name"] == "google-auth")
     root["metadata"]["requires-dist"].remove(google_metadata)
+    root["optional-dependencies"]["providers"].remove({"name": "google-cloud-texttospeech"})
+    tts_metadata = next(item for item in root["metadata"]["requires-dist"] if item["name"] == "google-cloud-texttospeech")
+    root["metadata"]["requires-dist"].remove(tts_metadata)
     root_metadata = next(item for item in root["metadata"]["requires-dist"] if item["name"] == "pypdf")
     root_metadata["specifier"] = ">=6.14.2"
     pypdf_index = next(i for i, package in enumerate(normalized_lock["package"]) if package["name"] == "pypdf")
     normalized_lock["package"][pypdf_index] = next(
         package for package in base_lock["package"] if package["name"] == "pypdf"
     )
-    normalized_lock["package"] = [package for package in normalized_lock["package"] if package["name"] not in GOOGLE_AUTH_PACKAGES]
+    normalized_lock["package"] = [package for package in normalized_lock["package"] if package["name"] not in GOOGLE_AUTH_PACKAGES and package["name"] not in GOOGLE_TTS_SDK_PACKAGES]
     _normalize_issue434_lock(normalized_lock)
     _normalize_pip_security_delta(normalized_lock, base_lock)
     _normalize_issue482_delta(normalized_lock, base_lock)
@@ -339,6 +359,8 @@ def test_google_auth_contract_rejects_direct_transitive_and_artifact_drift() -> 
             lock_text,
         ),
         (project_text.replace('"google-auth==2.56.3",', '"google-auth==2.56.2",'), lock_text),
+        (project_text.replace('    "google-cloud-texttospeech==2.37.0",\n', ""), lock_text),
+        (project_text.replace('"google-cloud-texttospeech==2.37.0",', '"google-cloud-texttospeech==2.36.0",'), lock_text),
         (project_text.replace('"google-auth==2.56.3",', '"google-auth==2.56.3",\n    "unexpected-provider>=1.0",'), lock_text),
         (project_text.replace('"google-auth==2.56.3",', '"google-auth==2.56.3",'), lock_text.replace('name = "pyasn1"\nversion = "0.6.4"', 'name = "unexpected-transitive"\nversion = "0.6.4"')),
         (project_text, lock_text.replace('version = "2.56.3"', 'version = "2.56.2"', 1)),
@@ -348,6 +370,8 @@ def test_google_auth_contract_rejects_direct_transitive_and_artifact_drift() -> 
         (project_text, lock_text.replace('sha256:031e2d5dd4bb9caa3ca9c82e5a197fd8ae680232cee62603d1a813f3f07e3d03', 'sha256:' + '3' * 64)),
         (project_text, lock_text.replace('sha256:9c447d8431c947fe4c8febc4ed9e760bc29011a5b01e5c74b67025bd9fb8ce81', 'sha256:' + '1' * 64)),
         (project_text, lock_text.replace('name = "pyasn1-modules"\nversion = "0.4.2"', 'name = "pyasn1-modules"\nversion = "0.4.1"')),
+        (project_text, lock_text.replace('name = "google-cloud-texttospeech"\nversion = "2.37.0"', 'name = "google-cloud-texttospeech"\nversion = "2.36.0"')),
+        (project_text, lock_text.replace('sha256:911f42f327027975d7781efcace1993afdf311b692b95b6814b71085750cc38a', 'sha256:' + '6' * 64)),
         (project_text, lock_text.replace(f'sha256:{PYPDF_SDIST_SHA256}', 'sha256:' + '4' * 64)),
     )
     for candidate_project, candidate_lock in mutations:

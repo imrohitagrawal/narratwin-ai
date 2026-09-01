@@ -1,6 +1,6 @@
 # ADR 0056: Govern optional Google Gemini-TTS behind the existing TTS boundary
 
-- Status: Runtime identity/transport implemented behind a disabled boundary; activation not authorized
+- Status: Runtime identity plus direct REST and official unary gRPC transports implemented behind a disabled boundary; activation remains package-governed
 - Date: 2026-08-11
 - Issue: #368
 - Authority: [OWNER runtime authorization](https://github.com/imrohitagrawal/narratwin-ai/issues/368#issuecomment-5245861950)
@@ -159,6 +159,41 @@ mapping is available to a private operation driver for an immutable bounded
 stop record; repository code does not write private operation evidence or
 authorize a retry.
 
+### Explicit official unary gRPC transport
+
+Two fresh, independently frozen full-Meera packages sent the same authorized
+request through the direct HTTP/1.1 REST transport. Both received the same
+1,613-byte upstream 502 response with the same body hash after approximately
+62.2 seconds. Credentials, quota project, billing, EU endpoint, privacy screen,
+text, voice and configuration preflights had passed. The repeated timing and
+response fingerprint support, but do not prove, a REST gateway/backend deadline;
+Google supplied no usable request identifier or structured internal cause.
+
+Issue #498 therefore adds a second, explicitly selected transport using
+`google-cloud-texttospeech==2.37.0` and its public synchronous unary gRPC client.
+It does not replace the existing REST transport and never falls back between
+them. Before identity or narration is supplied, the new path resolves and
+screens every EU-host address, opens a TLS channel pinned to one screened IP,
+sets the exact EU hostname as SNI and authority, disables gRPC HTTP-proxy use,
+and requires channel readiness. The SDK call receives the already validated
+request as typed `SynthesisInput`, `VoiceSelectionParams`, and `AudioConfig`,
+passes the ephemeral bearer and quota-project values only as per-call metadata,
+sets `retry=None`, and uses the operation-configured finite timeout.
+
+The returned raw audio is bounded, wrapped only for compatibility with the
+existing internal response validator, and then follows the unchanged WAV,
+durable ledger, T05B admission and T05C listening path. A failed call retains
+only an allowlisted canonical gRPC status and generic billable-unknown error;
+raw exception messages, details, debug strings, metadata, request content,
+credentials, project identity and response payloads are discarded. Tests use
+injected channels/clients plus real SDK request types and make no provider call.
+
+This capability does not contain narration text, voice assets, audio, captions
+or speaking avatars and does not itself call Google. After merge, a separately
+frozen and authorized private operation package may explicitly select it for
+the existing Meera, Myra and Raj mappings. Successful transport would still
+prove neither spoken correctness nor human acceptance.
+
 ## Consequences
 
 - The stale `local_tts.py`/eSpeak execution route is rejected, while its commit
@@ -174,8 +209,8 @@ authorize a retry.
 - Output remains nondeterministic; selected screening hashes are reference
   evidence only, and final 90–120-second narration requires validation and OWNER
   listening.
-- The implementation adds a provider-owned optional runtime and a pinned
-  optional dependency, but no credential, generated audio, frontend choice,
+- The implementation adds a provider-owned optional runtime and pinned optional
+  dependencies, but no credential, generated audio, frontend choice, automatic
   provider activation, deployment, distribution or release.
 - The injected transport is two phase: it must return an opaque send capability
   bound to an already-established session that attests pinned

@@ -28,6 +28,7 @@ from backend.app.tts_provider import (
     GoogleTTSHTTPResponse,
     GoogleTTSPreparedTransport,
     GoogleTransportError,
+    GoogleTransportKind,
     TTSProvider,
 )
 from backend.app.narration import TTSConsumptionReceipt
@@ -255,7 +256,7 @@ class FakePreparedGoogleTransport:
     peer_port: int = 443
     redirects_disabled: bool = True
     dns_pinned: bool = True
-    transport_kind: str = "REST_HTTP_1_1"
+    transport_kind: GoogleTransportKind = "REST_HTTP_1_1"
 
     def send(
         self,
@@ -984,7 +985,7 @@ def test_g498_transport_kind_mutation_fails_closed_without_weakening_rest() -> N
         owner=FakeGoogleTransport([]),
         url="https://eu-texttospeech.googleapis.com/v1/text:synthesize",
     )
-    prepared.transport_kind = "FORGED_TRANSPORT"
+    setattr(cast(Any, prepared), "transport_kind", "FORGED_TRANSPORT")
 
     with pytest.raises(TTSProviderError) as caught:
         provider._validate_prepared_transport(cast(Any, prepared))
@@ -1041,7 +1042,12 @@ def test_g494_oversized_error_body_and_conflicting_identifiers_fail_closed() -> 
     with pytest.raises(TTSProviderError) as oversized:
         google_provider(
             FakeGoogleTransport(
-                [google_response(status_code=500, body=b"x" * (tts_provider_module.GOOGLE_MAX_RESPONSE_BYTES + 1))]
+                [
+                    google_response(
+                        status_code=500,
+                        body=b"x" * (tts_provider_module.GOOGLE_MAX_RESPONSE_BYTES + 1),
+                    )
+                ]
             ),
             FakeGoogleIdentityProvider(),
         ).synthesize(receipt=receipt())
