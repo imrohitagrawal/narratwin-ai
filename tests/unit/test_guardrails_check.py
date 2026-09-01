@@ -154,16 +154,17 @@ def test_issue471_cleanup_authority_and_anchor_cannot_change_together() -> None:
     assert guardrails.cleanup_authority_change_failures(["docs/STATUS.md"], documents.__getitem__) == []
 
 
-def test_issue486_cleanup_authority_transition_accepts_only_current_or_pending_hashes(
+def test_issue486_cleanup_authority_accepts_only_final_hashes(
     monkeypatch: Any,
 ) -> None:
-    pending = {
+    final = {
         "AGENTS.md": "57ea2bdddd7f0f3df91c75ecb0e434e25aa0779a54d0a2603a7e32a87b5c9ca7",
         "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md": (
             "e70d7c3045a4fec6b8c4feeb276244ea963a778f872955670cc2e209c0b03e2d"
         ),
     }
-    assert guardrails.CLEANUP_AUTHORITY_PENDING_SHA256 == pending
+    assert guardrails.CLEANUP_AUTHORITY_SHA256 == final
+    assert not hasattr(guardrails, "CLEANUP_AUTHORITY_PENDING_SHA256")
 
     class Digest:
         def __init__(self, value: str) -> None:
@@ -172,28 +173,40 @@ def test_issue486_cleanup_authority_transition_accepts_only_current_or_pending_h
         def hexdigest(self) -> str:
             return self.value
 
-    payloads = {path: f"pending:{path}".encode() for path in pending}
-    pending_by_payload = {payloads[path]: digest for path, digest in pending.items()}
+    payloads = {path: f"final:{path}".encode() for path in final}
+    final_by_payload = {payloads[path]: digest for path, digest in final.items()}
     monkeypatch.setattr(
         guardrails,
         "_cleanup_authority_sha256",
-        lambda payload: Digest(pending_by_payload.get(payload, "0" * 64)),
+        lambda payload: Digest(final_by_payload.get(payload, "0" * 64)),
     )
     assert guardrails.cleanup_authority_anchor_failures(payloads.__getitem__) == []
 
-    superseded = {
-        "AGENTS.md": "8c71ec2097d79736232c10283ebd4c6d65464a690bc66416291989551a63480c",
+    old = {
+        "AGENTS.md": "7222909116385fe74cbc7df6bbccb759687d2e4a6bf0e0637465679434de33ab",
         "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md": (
-            "2dcd399bb97a4aafc88dc1e7613944ac0b3929fddbddf46523d5c32df7ed5305"
+            "30ba0f8e7b736293c4b6c110cbe9ce46bf7639507b0441bd37cb222bb62ae94f"
         ),
     }
-    superseded_by_payload = {
-        payloads[path]: digest for path, digest in superseded.items()
+    old_by_payload = {payloads[path]: digest for path, digest in old.items()}
+    monkeypatch.setattr(
+        guardrails,
+        "_cleanup_authority_sha256",
+        lambda payload: Digest(old_by_payload.get(payload, "0" * 64)),
+    )
+    assert guardrails.cleanup_authority_anchor_failures(payloads.__getitem__) == [
+        "Merge-cleanup authority anchor rejected AGENTS.md bytes.",
+        "Merge-cleanup authority anchor rejected docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md bytes.",
+    ]
+
+    swapped_by_payload = {
+        payloads["AGENTS.md"]: final["docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md"],
+        payloads["docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md"]: final["AGENTS.md"],
     }
     monkeypatch.setattr(
         guardrails,
         "_cleanup_authority_sha256",
-        lambda payload: Digest(superseded_by_payload.get(payload, "0" * 64)),
+        lambda payload: Digest(swapped_by_payload.get(payload, "0" * 64)),
     )
     assert guardrails.cleanup_authority_anchor_failures(payloads.__getitem__) == [
         "Merge-cleanup authority anchor rejected AGENTS.md bytes.",
@@ -208,6 +221,23 @@ def test_issue486_cleanup_authority_transition_accepts_only_current_or_pending_h
     assert guardrails.cleanup_authority_anchor_failures(payloads.__getitem__) == [
         "Merge-cleanup authority anchor rejected AGENTS.md bytes.",
         "Merge-cleanup authority anchor rejected docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md bytes.",
+    ]
+
+    assert guardrails.cleanup_authority_anchor_failures(lambda _: None) == [
+        "Merge-cleanup authority anchor rejected AGENTS.md bytes.",
+        "Merge-cleanup authority anchor rejected docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md bytes.",
+    ]
+
+    def unreadable(path: str) -> bytes:
+        raise OSError(f"blocked {path}")
+
+    assert guardrails.cleanup_authority_anchor_failures(unreadable) == [
+        "Merge-cleanup authority anchor could not read AGENTS.md: blocked AGENTS.md.",
+        (
+            "Merge-cleanup authority anchor could not read "
+            "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md: blocked "
+            "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md."
+        ),
     ]
 
 

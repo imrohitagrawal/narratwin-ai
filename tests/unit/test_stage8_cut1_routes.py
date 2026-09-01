@@ -581,6 +581,14 @@ EXPECTED = {
         "scripts/quality/stage8_cut1_routes.py",
         "tests/unit/test_stage8_cut1_routes.py",
     },
+    "stage8-486-reviewer-impact-hash-cleanup": {
+        "scripts/guardrails_check.py",
+        "tests/unit/test_guardrails_check.py",
+        "docs/governance/preflights/issue-486-protected-hash-cleanup.json",
+        "docs/STATUS.md",
+        "scripts/quality/stage8_cut1_routes.py",
+        "tests/unit/test_stage8_cut1_routes.py",
+    },
     "cut1-process-413-frontend-runtime-openssl": {
         "docs/governance/preflights/issue-413.json",
         "frontend/Dockerfile",
@@ -1941,6 +1949,100 @@ def test_issue486_protected_source_route_rejects_drift(monkeypatch: Any) -> None
     assert failures == ["Issue #486 charge 701 exceeds 700."]
 
     for path, limit in routes.TEXT_LIMITS[branch].items():
+        monkeypatch.setattr(
+            routes,
+            "route_text_charges",
+            lambda *_, path=path, limit=limit: (limit + 1, {path: limit + 1}),
+        )
+        failures = []
+        routes.check_exact_route(
+            REPO, lambda _: completed([]), branch, routes.ROUTES[branch], failures
+        )
+        assert failures == [f"Issue #486 charge for {path} exceeds {limit}."]
+
+
+def test_issue486_hash_cleanup_route_is_exact_and_budgeted() -> None:
+    branch = "stage8-486-reviewer-impact-hash-cleanup"
+    expected = EXPECTED[branch]
+    expected_limits = {
+        "scripts/guardrails_check.py": 40,
+        "tests/unit/test_guardrails_check.py": 120,
+        "docs/governance/preflights/issue-486-protected-hash-cleanup.json": 220,
+        "docs/STATUS.md": 20,
+        "scripts/quality/stage8_cut1_routes.py": 80,
+        "tests/unit/test_stage8_cut1_routes.py": 180,
+    }
+
+    assert routes.ISSUE486_HASH_CLEANUP_BRANCH == branch
+    assert routes.ISSUE486_HASH_CLEANUP_BASE == "a2a9dfd044610b2bd51b37c0d914e09c1b3837b9"
+    assert routes.ROUTES[branch] == expected
+    assert stage8.EFFECTIVE_STAGE8_ROUTES[branch] == expected
+    assert routes.ROUTE_ISSUES[branch] == 486
+    assert routes.TOTAL_LIMITS[branch] == 700
+    assert routes.TEXT_LIMITS[branch] == expected_limits
+
+    artifact = json.loads(
+        (REPO / "docs/governance/preflights/issue-486-protected-hash-cleanup.json")
+        .read_text(encoding="utf-8")
+    )
+    assert set(artifact["scope"]["required"]) == expected
+    assert set(artifact["scope"]["allowed_prefixes"]) == expected
+    assert artifact["charged_line_budgets"] == {**expected_limits, "aggregate": 700}
+    assert artifact["route_authority"] == {
+        "freeze": "https://github.com/imrohitagrawal/narratwin-ai/issues/486#issuecomment-5493662538"
+    }
+
+
+def test_issue486_hash_cleanup_route_rejects_drift(monkeypatch: Any) -> None:
+    branch = "stage8-486-reviewer-impact-hash-cleanup"
+    base = "a2a9dfd044610b2bd51b37c0d914e09c1b3837b9"
+
+    def good(args: list[str]) -> subprocess.CompletedProcess[str]:
+        return completed(args, out=base + "\n")
+
+    assert routes.route_base(good, branch) == base
+    for rejected_call in range(3):
+        call_count = 0
+
+        def broken(
+            args: list[str], *, rejected: int = rejected_call
+        ) -> subprocess.CompletedProcess[str]:
+            nonlocal call_count
+            call_count += 1
+            value = "0" * 40 if call_count == rejected + 1 else base
+            return completed(args, out=value + "\n")
+
+        error = pytest.raises(RuntimeError, routes.route_base, broken, branch)
+        assert "Issue #486 fixed base" in str(error.value)
+
+    lookalike = branch + "-extra"
+    assert lookalike not in routes.ROUTES
+    assert lookalike not in stage8.EFFECTIVE_STAGE8_ROUTES
+
+    monkeypatch.setattr(stage8, "current_branch", lambda: branch)
+    monkeypatch.setattr(
+        stage8,
+        "changed_files_for_stage_scope",
+        lambda: [*routes.ROUTES[branch], "backend/app/main.py"],
+    )
+    failures: list[str] = []
+    stage8.check_stage_scope(failures)
+    assert failures == ["Stage 8 changed file outside the allowlist: backend/app/main.py"]
+
+    monkeypatch.setattr(routes, "route_base", lambda *_: base)
+    monkeypatch.setattr(routes, "route_text_charges", lambda *_: (701, {}))
+    failures = []
+    routes.check_exact_route(REPO, lambda _: completed([]), branch, routes.ROUTES[branch], failures)
+    assert failures == ["Issue #486 charge 701 exceeds 700."]
+
+    for path, limit in {
+        "scripts/guardrails_check.py": 40,
+        "tests/unit/test_guardrails_check.py": 120,
+        "docs/governance/preflights/issue-486-protected-hash-cleanup.json": 220,
+        "docs/STATUS.md": 20,
+        "scripts/quality/stage8_cut1_routes.py": 80,
+        "tests/unit/test_stage8_cut1_routes.py": 180,
+    }.items():
         monkeypatch.setattr(
             routes,
             "route_text_charges",

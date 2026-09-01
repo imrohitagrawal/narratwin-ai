@@ -30,11 +30,6 @@ from scripts.governance_preflight_repository import validate_governance_prefligh
 ROOT = Path(__file__).resolve().parents[1]
 
 CLEANUP_AUTHORITY_SHA256 = {
-    "AGENTS.md": "7222909116385fe74cbc7df6bbccb759687d2e4a6bf0e0637465679434de33ab",
-    "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md":
-        "30ba0f8e7b736293c4b6c110cbe9ce46bf7639507b0441bd37cb222bb62ae94f",
-}
-CLEANUP_AUTHORITY_PENDING_SHA256 = {
     "AGENTS.md": "57ea2bdddd7f0f3df91c75ecb0e434e25aa0779a54d0a2603a7e32a87b5c9ca7",
     "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md":
         "e70d7c3045a4fec6b8c4feeb276244ea963a778f872955670cc2e209c0b03e2d",
@@ -2080,10 +2075,9 @@ def cleanup_authority_anchor_failures(
         except OSError as error:
             findings.append(f"Merge-cleanup authority anchor could not read {path}: {error}.")
             continue
-        accepted = {expected, CLEANUP_AUTHORITY_PENDING_SHA256.get(path)}
         if (
             not isinstance(payload, bytes)
-            or _cleanup_authority_sha256(payload).hexdigest() not in accepted
+            or _cleanup_authority_sha256(payload).hexdigest() != expected
         ):
             findings.append(f"Merge-cleanup authority anchor rejected {path} bytes.")
     return findings

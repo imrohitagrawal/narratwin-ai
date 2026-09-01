@@ -1542,8 +1542,9 @@ required.
   playbook sources unchanged while binding only their newly frozen future bytes.
 - PR B applies the exact seven-field contract to the repository agent contract
   and reusable new-project playbook, rebinds their dependent context hashes,
-  and leaves the transitional validator unchanged. PR C must then remove the
-  old hash allowance. Issue #486 remains open until that follow-up merges.
+  and leaves the transitional validator unchanged. PR C removes the old hash
+  allowance so only the final protected-source bytes remain accepted and the
+  Issue #486 governance transition is complete after that PR merges.
 - This governance work changes no runtime behavior and does not call providers,
   generate or accept media, deploy, release, complete T05, or accept Cut 1.
 

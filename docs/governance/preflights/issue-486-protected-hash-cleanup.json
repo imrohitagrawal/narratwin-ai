@@ -1,0 +1,96 @@
+{
+  "schema_version": "GovernancePreflightV1",
+  "issue_number": 486,
+  "branch": "stage8-486-reviewer-impact-hash-cleanup",
+  "accepted_base": "a2a9dfd044610b2bd51b37c0d914e09c1b3837b9",
+  "accepted_base_tree": "b487084028708307038eb96b708bea4bbfb49489",
+  "objective": "Remove the obsolete transitional protected-source hash allowance so the cleanup-authority validator accepts only the final merged AGENTS.md and reusable playbook bytes. This closes the governance transition without changing protected sources, runtime behavior, narration, voice, audio, captions, avatar media, provider access, credentials, deployment, release, or Cut 1 readiness.",
+  "route_authority": {
+    "freeze": "https://github.com/imrohitagrawal/narratwin-ai/issues/486#issuecomment-5493662538"
+  },
+  "scope": {
+    "required": [
+      "scripts/guardrails_check.py",
+      "tests/unit/test_guardrails_check.py",
+      "docs/governance/preflights/issue-486-protected-hash-cleanup.json",
+      "docs/STATUS.md",
+      "scripts/quality/stage8_cut1_routes.py",
+      "tests/unit/test_stage8_cut1_routes.py"
+    ],
+    "allowed_prefixes": [
+      "scripts/guardrails_check.py",
+      "tests/unit/test_guardrails_check.py",
+      "docs/governance/preflights/issue-486-protected-hash-cleanup.json",
+      "docs/STATUS.md",
+      "scripts/quality/stage8_cut1_routes.py",
+      "tests/unit/test_stage8_cut1_routes.py"
+    ],
+    "forbidden": [
+      "AGENTS.md",
+      "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md",
+      "docs/agent-context/context-policy-manifest-v1.json",
+      "backend/",
+      "frontend/",
+      ".github/workflows/",
+      "dependency or runtime changes",
+      "provider calls, credentials, egress, spending, or private evidence",
+      "media, deployment, release, production-readiness, or Cut 1 completion claims"
+    ]
+  },
+  "charged_line_budgets": {
+    "scripts/guardrails_check.py": 40,
+    "tests/unit/test_guardrails_check.py": 120,
+    "docs/governance/preflights/issue-486-protected-hash-cleanup.json": 220,
+    "docs/STATUS.md": 20,
+    "scripts/quality/stage8_cut1_routes.py": 80,
+    "tests/unit/test_stage8_cut1_routes.py": 180,
+    "aggregate": 700
+  },
+  "final_protected_hashes": {
+    "AGENTS.md": "57ea2bdddd7f0f3df91c75ecb0e434e25aa0779a54d0a2603a7e32a87b5c9ca7",
+    "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md": "e70d7c3045a4fec6b8c4feeb276244ea963a778f872955670cc2e209c0b03e2d"
+  },
+  "rejected_transitional_hashes": {
+    "AGENTS.md": "7222909116385fe74cbc7df6bbccb759687d2e4a6bf0e0637465679434de33ab",
+    "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md": "30ba0f8e7b736293c4b6c110cbe9ce46bf7639507b0441bd37cb222bb62ae94f"
+  },
+  "invariants": [
+    "Only the final protected-source hash for each exact path is accepted.",
+    "Old, swapped, cross-file, arbitrary, unreadable, and non-byte evidence fails closed.",
+    "The exact base, branch, six owned paths, per-path caps, and aggregate cap are enforced.",
+    "Protected sources, context bindings, runtime, workflows, dependencies, and private evidence remain unchanged.",
+    "Repository status records only the completed governance transition and no Cut 1 product advance."
+  ],
+  "tdd": {
+    "validator_red_commit": "7ed21f8695fab08bbc31fc9ce52185f8b664a4db",
+    "route_red_commit": "c82427e253a16f1dd23b228fc59e9d8458020759",
+    "failure": "Focused tests proved the validator still accepted superseded protected-source hashes and the cleanup branch had no exact fixed-base route, owned-path allowlist, or charged-line budget.",
+    "green": "Accept only the final per-path hash, preserve fail-closed mutation behavior, and register the exact six-path route from the accepted main base."
+  },
+  "skills": {
+    "invoked": [
+      "git-workflow-and-versioning: exact base, dedicated branch/worktree, RED and GREEN commits, exact-head and merge topology",
+      "ci-cd-and-automation: hosted command/context parity and post-merge verification",
+      "test-driven-development: executable validator and route RED evidence before the smallest GREEN",
+      "security-and-hardening: fail-closed hash, scope, mutation, secret, and provider boundaries",
+      "incremental-implementation: validator cleanup isolated from protected-source PR B",
+      "code-review-and-quality: independent exact-head multi-axis review and finding classification",
+      "documentation-and-adrs: bounded status and durable preflight evidence"
+    ],
+    "rejected": [
+      "frontend-ui-engineering: no UI boundary changes",
+      "api-and-interface-design: no runtime API or schema changes",
+      "performance-optimization: no runtime path changes",
+      "shipping-and-launch: deployment, release, and production claims are prohibited"
+    ]
+  },
+  "stop_conditions": [
+    "final protected-source hash mismatch",
+    "old or cross-file hash acceptance",
+    "owned-path or charged-line budget breach",
+    "protected-source, context, runtime, workflow, dependency, or private-evidence mutation",
+    "failed, pending, skipped, or cancelled required context",
+    "approval not bound to the exact pushed head"
+  ],
+  "remaining_gap": "Cut 1 still requires admissible final audio and independently authored exact-hash human listening decisions, six T06 media cells, the T07 local reviewer, and T08 exact-artifact acceptance."
+}
