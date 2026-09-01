@@ -748,7 +748,7 @@ class _OfficialGoogleGrpcBindings:
             try:
                 close()
             except Exception:
-                pass
+                LOGGER.debug("Google TTS channel close was unsuccessful.")
 
 
 def _load_official_grpc_bindings() -> _GrpcBindings:
