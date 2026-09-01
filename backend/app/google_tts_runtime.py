@@ -197,7 +197,7 @@ class ADCGoogleIdentityProvider:
     @staticmethod
     def _load_request_factory() -> Callable[[], object]:
         try:
-            module = importlib.import_module("google.auth.transport._http_client")
+            module = importlib.import_module("google.auth.transport.requests")
             request_type = getattr(module, "Request")
         except (ImportError, AttributeError):
             raise GoogleRuntimeError(

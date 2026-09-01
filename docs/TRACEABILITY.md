@@ -592,6 +592,13 @@ durability, deployment, and release decisions remain outside this trace.
 | Admit the exact current T05A presenter-binding shape at the optional Google boundary | RED commit `6a2a700`; GREEN commit `2244169`; all-presenter request test and five malformed-shape mutations | Presenter binding is exactly 64 lowercase hex; the other five lineage checksums remain prefixed SHA-256 |
 | Preserve fail-closed pre-egress behavior | Identity and transport fakes remain uncalled for prefixed, uppercase, short, long, and non-hex bindings | No real identity resolution, provider call, narration egress, synthesis, spend, or audio acceptance occurs on the correction branch |
 
+## Issue #368 ADC refresh-transport traceability
+
+| Requirement | Evidence | Boundary |
+|---|---|---|
+| Use Google Auth's supported public refresh transport | Issue checkpoint `5495025249`; RED commit `579cbfa`; focused factory test; one-line lazy import correction | The request factory is `google.auth.transport.requests.Request`; private `_http_client` is not a runtime dependency |
+| Preserve fail-closed optional-provider behavior | Missing-module normalization and the full ADC/runtime fake suite; exact eight-path route and forbidden-path mutation | No real credentials or network in tests; no provider request, narration egress, attempt, spend, audio, caption, or human acceptance evidence is created by this PR |
+
 ## Issue #413 frontend runtime OpenSSL traceability
 
 | Evidence | Requirement | Preserved boundary |

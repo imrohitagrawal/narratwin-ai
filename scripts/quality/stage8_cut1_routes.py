@@ -49,6 +49,7 @@ ISSUE368_ADAPTER_BRANCH = "stage8-368-cut1-google-tts-adapter-implementation"
 ISSUE368_IMPLEMENTATION_BRANCH = "stage8-368-cut1-google-tts-runtime-transport"
 ISSUE368_QUOTA_FIX_BRANCH = "stage8-368-google-tts-quota-project-binding-fix"
 ISSUE368_BINDING_COMPAT_BRANCH = "stage8-issue-368-google-presenter-binding-compat"
+ISSUE368_AUTH_TRANSPORT_BRANCH = "stage8-368-google-auth-public-transport-fix"
 ISSUE415_BRANCH = "stage8-415-pr-body-live-state-reconciliation"
 ISSUE415_CORRECTION_BRANCH = "stage8-415-pr-body-consistency-canary-fix"
 ISSUE486_BRANCH = "stage8-486-reviewer-impact-summary"
@@ -62,6 +63,7 @@ ISSUE368_PROMPT_BASE = "ba77d59b193da8064d67261e13fb50756c2bd9e8"
 ISSUE368_IMPLEMENTATION_BASE = "6766da34d73e301358f84f8eefb0985927292a26"
 ISSUE368_QUOTA_FIX_BASE = "9c165f739788fb0f09b315673f9125d700d6a96b"
 ISSUE368_BINDING_COMPAT_BASE = "c41c35db811297fbeff0524dfe21ec49fa7c0de9"
+ISSUE368_REFRESH_TRANSPORT_BASE = "92e7666df46e5dcc3eea80d17b87026d4aa4dc5c"
 ISSUE368_BINDING_COMPAT_AUTHORITY = (
     "5485581802", "c81d57d6adf081aaf6ec2bf8c94f4513ca7e363910a669efc3551d5b3b4eae3f",
     "5485633036", "8ccd797c3fac7802923a04aff0ac82d64363d8d9d25366a5365eef98b5436bd2",
@@ -540,6 +542,16 @@ ROUTES = {
         "docs/ADR/0056-cut1-google-gemini-tts.md",
         "docs/TRACEABILITY.md",
     },
+    ISSUE368_AUTH_TRANSPORT_BRANCH: {
+        "backend/app/google_tts_runtime.py",
+        "tests/unit/test_google_tts_runtime.py",
+        "docs/governance/preflights/issue-368-auth-transport.json",
+        "scripts/quality/stage8_cut1_routes.py",
+        "tests/unit/test_stage8_cut1_routes.py",
+        "docs/STATUS.md",
+        "docs/ADR/0056-cut1-google-gemini-tts.md",
+        "docs/TRACEABILITY.md",
+    },
     ISSUE368_PROMPT_BRANCH: {
         "docs/governance/preflights/issue-368.json",
         "docs/governance/cut1-google-gemini-tts-style-prompts-v1.json",
@@ -772,6 +784,8 @@ ROUTE_ISSUES[ISSUE460_BRANCH] = 460
 TOTAL_LIMITS[ISSUE460_BRANCH] = 2600
 ROUTE_ISSUES[ISSUE368_BINDING_COMPAT_BRANCH] = 368
 TOTAL_LIMITS[ISSUE368_BINDING_COMPAT_BRANCH] = 800
+ROUTE_ISSUES[ISSUE368_AUTH_TRANSPORT_BRANCH] = 368
+TOTAL_LIMITS[ISSUE368_AUTH_TRANSPORT_BRANCH] = 900
 ISSUE383_BINARY_FILES = {
     "frontend/public/demo/myra-synthetic-presenter.webp",
     "frontend/public/demo/raj-synthetic-presenter.webp",
@@ -1131,6 +1145,16 @@ TEXT_LIMITS = {
         "docs/governance/preflights/issue-368-provider-binding-compat.json": 200,
         "scripts/quality/stage8_cut1_routes.py": 130,
         "tests/unit/test_stage8_cut1_routes.py": 170,
+        "docs/STATUS.md": 100,
+        "docs/ADR/0056-cut1-google-gemini-tts.md": 60,
+        "docs/TRACEABILITY.md": 80,
+    },
+    ISSUE368_AUTH_TRANSPORT_BRANCH: {
+        "backend/app/google_tts_runtime.py": 20,
+        "tests/unit/test_google_tts_runtime.py": 80,
+        "docs/governance/preflights/issue-368-auth-transport.json": 220,
+        "scripts/quality/stage8_cut1_routes.py": 140,
+        "tests/unit/test_stage8_cut1_routes.py": 200,
         "docs/STATUS.md": 100,
         "docs/ADR/0056-cut1-google-gemini-tts.md": 60,
         "docs/TRACEABILITY.md": 80,
@@ -1741,6 +1765,7 @@ def route_base(run: Callable[[list[str]], Any], branch: str) -> str:
         ISSUE368_IMPLEMENTATION_BRANCH: (368, ISSUE368_IMPLEMENTATION_BASE),
         ISSUE368_QUOTA_FIX_BRANCH: (368, ISSUE368_QUOTA_FIX_BASE),
         ISSUE368_BINDING_COMPAT_BRANCH: (368, ISSUE368_BINDING_COMPAT_BASE),
+        ISSUE368_AUTH_TRANSPORT_BRANCH: (368, ISSUE368_REFRESH_TRANSPORT_BASE),
         ISSUE368_PROMPT_BRANCH: (368, ISSUE368_PROMPT_BASE),
         ISSUE368_BRANCH: (368, ISSUE368_BASE),
         ISSUE386_BRANCH: (386, ISSUE386_BASE),
@@ -1760,7 +1785,7 @@ def route_base(run: Callable[[list[str]], Any], branch: str) -> str:
             or fixed_value != base or common_value != base
         )
         branch_point_invalid = False
-        if not fixed_invalid and branch in {ISSUE479_BRANCH, ISSUE482_BRANCH, ISSUE478_BRANCH, ISSUE475_BRANCH, ISSUE468_BRANCH, ISSUE486_BRANCH, ISSUE486_PROTECTED_BRANCH, ISSUE486_HASH_CLEANUP_BRANCH, ISSUE473_BRANCH, ISSUE471_BRANCH, ISSUE459_T05B_BRANCH, ISSUE459_T05A_BRANCH, ISSUE459_T03_BRANCH, ISSUE460_BRANCH, ISSUE452_BRANCH, ISSUE451_BRANCH, ISSUE150_BRANCH, ISSUE424_BRANCH, ISSUE421_BRANCH, ISSUE368_IMPLEMENTATION_BRANCH, ISSUE368_BINDING_COMPAT_BRANCH,
+        if not fixed_invalid and branch in {ISSUE479_BRANCH, ISSUE482_BRANCH, ISSUE478_BRANCH, ISSUE475_BRANCH, ISSUE468_BRANCH, ISSUE486_BRANCH, ISSUE486_PROTECTED_BRANCH, ISSUE486_HASH_CLEANUP_BRANCH, ISSUE473_BRANCH, ISSUE471_BRANCH, ISSUE459_T05B_BRANCH, ISSUE459_T05A_BRANCH, ISSUE459_T03_BRANCH, ISSUE460_BRANCH, ISSUE452_BRANCH, ISSUE451_BRANCH, ISSUE150_BRANCH, ISSUE424_BRANCH, ISSUE421_BRANCH, ISSUE368_IMPLEMENTATION_BRANCH, ISSUE368_BINDING_COMPAT_BRANCH, ISSUE368_AUTH_TRANSPORT_BRANCH,
                       ISSUE368_QUOTA_FIX_BRANCH, ISSUE368_BRANCH,
                       ISSUE368_PROMPT_BRANCH}:
             branch_point = run(["git", "merge-base", "origin/main", "HEAD"])
