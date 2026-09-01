@@ -1069,6 +1069,18 @@ same section must contain at least that many distinct, meaningful Markdown list
 entries. A bare count, duplicated entries, or placeholder entries therefore
 cannot pass as a complete explanation.
 
+Point 4 also has a required two-layer shape. It begins with
+`#### Plain-English behavior summary`, containing 3–5 meaningful Markdown
+bullets, followed by `#### Technical change list`. The bullets collectively
+state observable enablement, added or absent content/artifacts/capabilities,
+external or runtime side effects, and the removed blocker plus remaining gap.
+`product_context_failures` rejects a missing or misplaced heading, fewer than
+three or more than five bullets, and placeholder, generic, path-only, link-only,
+or issue-only bullets. File and test lists remain technical evidence rather
+than a behavior summary. For governance/docs-only PRs, the author explicitly
+states that runtime behavior is unchanged; reviewers remain responsible for
+semantic truth and understandability.
+
 This gate connects each contribution to the end-to-end demo and eventual
 production path without treating that direction as production authorization.
 CI can verify section shape and known false-pass classes; the independent

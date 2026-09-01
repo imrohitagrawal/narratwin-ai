@@ -1289,7 +1289,6 @@ def test_product_context_contract_is_durable_across_rules_template_and_policy_do
             "self-contained plain English",
             "end product goal",
             "issue references and links are supplemental",
-            "Plain-English behavior summary",
         ),
         "docs/REPOSITORY_GUARDRAILS.md": (
             "Product and reviewer context",
@@ -1319,7 +1318,6 @@ def test_product_context_contract_is_durable_across_rules_template_and_policy_do
             "Exact changes",
             "enumerate every counted item",
             "independent reviewer",
-            "Plain-English behavior summary",
         ),
     }
     for relative_path, markers in required_markers.items():

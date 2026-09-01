@@ -1523,6 +1523,22 @@ required.
 - This correction does not synthesize or accept audio. T05 remains incomplete,
   T06 remains blocked, and release and Cut 1 acceptance remain No-Go.
 
+## Issue #486 PR plain-English behavior-summary governance (2026-09-01)
+
+- Issue #486 freezes a docs/gates/tests-only route requiring every non-trivial
+  PR to begin `Exact changes` with a 3–5-bullet plain-English behavior summary
+  before its technical change list.
+- PR A adds the PR template, executable PR-body guardrail, repository policy,
+  quality-gate documentation, and exact route; missing, misplaced, incorrectly
+  sized, or non-meaningful summaries fail closed. Its bounded two-hash anchor
+  transition permits only current authority bytes and the exact planned future
+  agent/playbook bytes.
+- PR B must update the repository agent contract and reusable new-project
+  playbook without editing their validator; PR C must then remove the old hash
+  allowance. Issue #486 remains open until both follow-ups merge.
+- This governance work changes no runtime behavior and does not call providers,
+  generate or accept media, deploy, release, complete T05, or accept Cut 1.
+
 ## Issue #413 independent frontend runtime security state (2026-08-11)
 
 - PR #414 merged at `6766da34d73e301358f84f8eefb0985927292a26`; Issue #413 is closed.

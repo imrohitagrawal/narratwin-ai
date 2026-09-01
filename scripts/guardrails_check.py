@@ -34,6 +34,11 @@ CLEANUP_AUTHORITY_SHA256 = {
     "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md":
         "30ba0f8e7b736293c4b6c110cbe9ce46bf7639507b0441bd37cb222bb62ae94f",
 }
+CLEANUP_AUTHORITY_PENDING_SHA256 = {
+    "AGENTS.md": "472cca025538a12696794fc698869059a5d96598d3efef1782d73fd0f82cd7f5",
+    "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md":
+        "4676a97a8afb5535a23ab67dd4b71ee5148f43c2b905e2da01592cac4cf10042",
+}
 
 EXCLUDED_DIRS = {
     ".git",
@@ -1480,6 +1485,56 @@ def product_context_failures(body: str) -> list[str]:
             )
 
     exact_changes = point_content.get(3, "")
+    if exact_changes:
+        summary_heading = re.search(
+            r"(?im)^[ \t]*####[ \t]+plain-english behavior summary[ \t]*#*[ \t]*$",
+            exact_changes,
+        )
+        technical_heading = re.search(
+            r"(?im)^[ \t]*####[ \t]+technical change list[ \t]*#*[ \t]*$",
+            exact_changes,
+        )
+        summary_is_first = bool(
+            summary_heading
+            and technical_heading
+            and summary_heading.start() < technical_heading.start()
+            and not exact_changes[: summary_heading.start()].strip()
+        )
+        if not summary_is_first:
+            result.append(
+                "Product context point 4 must begin with a Plain-English behavior summary "
+                "before the Technical change list."
+            )
+        else:
+            assert summary_heading is not None
+            assert technical_heading is not None
+            summary_text = exact_changes[summary_heading.end() : technical_heading.start()]
+            summary_bullets = [
+                match.group(1)
+                for line in summary_text.splitlines()
+                if (match := re.match(r"^[ \t]*[-*+][ \t]+(\S.*)$", line)) is not None
+            ]
+
+            def meaningful_summary_bullet(value: str) -> bool:
+                normalized = normalized_prose(value)
+                reference_only = re.fullmatch(
+                    r"(?:https?://\S+|(?:[A-Za-z0-9_.-]+/)+[A-Za-z0-9_.-]+)",
+                    value.strip(),
+                )
+                return (
+                    reference_only is None
+                    and normalized not in generic_or_instruction_text
+                    and len(normalized.split()) >= 6
+                    and len(normalized) >= 35
+                )
+
+            if not 3 <= len(summary_bullets) <= 5 or not all(
+                meaningful_summary_bullet(item) for item in summary_bullets
+            ):
+                result.append(
+                    "Plain-English behavior summary must contain 3 to 5 meaningful Markdown bullets."
+                )
+
     count_words = {
         word: count
         for count, word in enumerate(
@@ -1963,7 +2018,11 @@ def cleanup_authority_anchor_failures(
         except OSError as error:
             findings.append(f"Merge-cleanup authority anchor could not read {path}: {error}.")
             continue
-        if not isinstance(payload, bytes) or _cleanup_authority_sha256(payload).hexdigest() != expected:
+        accepted = {expected, CLEANUP_AUTHORITY_PENDING_SHA256.get(path)}
+        if (
+            not isinstance(payload, bytes)
+            or _cleanup_authority_sha256(payload).hexdigest() not in accepted
+        ):
             findings.append(f"Merge-cleanup authority anchor rejected {path} bytes.")
     return findings
 

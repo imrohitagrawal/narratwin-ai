@@ -238,6 +238,17 @@ item, component, file, path, rule, or requirement as a distinct, meaningful
 Markdown list entry; naming only the count, duplicating entries, or using
 placeholders is a false pass and blocks the PR.
 
+`Exact changes` must begin with `#### Plain-English behavior summary` and 3–5
+meaningful Markdown bullets before `#### Technical change list`. Collectively,
+the bullets explain observable enablement, added or absent content/artifacts/
+capabilities, provider/network/spend/generation/persistence/deployment or other
+runtime side effects, and the removed blocker plus remaining gap. A technical
+file list, test list, issue/link reference, implementation detail, or evidence
+table cannot substitute for this summary. Governance/docs-only changes state
+explicitly that runtime behavior is unchanged. Missing, misplaced, undersized,
+oversized, placeholder, generic, or reference-only summaries fail
+`policy-gates`; an independent reviewer still judges truth and clarity.
+
 Reviewer validation must separately name expected behavior, prohibited
 behavior, evidence, pass condition, and fail condition. Automation proves that
 the review contract is complete and rejects defined false-pass classes; the

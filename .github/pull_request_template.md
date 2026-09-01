@@ -28,6 +28,18 @@ not substitutes for the explanation. -->
 <!-- Describe the user or product problem without relying on an issue number or link. -->
 
 ### 4. Exact changes in this PR
+
+#### Plain-English behavior summary
+<!-- Required: write 3–5 meaningful Markdown bullets before technical details.
+Together, explain what behavior this PR enables or changes; what content,
+artifacts, or capabilities it adds or does not add; whether it causes provider,
+network, spend, generation, persistence, deployment, or other runtime side
+effects; and what blocker it removes plus what remains afterward. For a
+governance/docs-only PR, explicitly state that runtime behavior is unchanged.
+A file list, test list, issue/link reference, or evidence table is not a
+substitute. -->
+
+#### Technical change list
 <!-- List the concrete behavior, documents, components, and boundaries changed by this PR.
 If this section claims a number of fields, changes, controls, checks, items,
 components, files, paths, rules, or requirements, enumerate every counted item

@@ -562,7 +562,6 @@ EXPECTED = {
     },
     "stage8-486-pr-behavior-summary": {
         "docs/governance/preflights/issue-486.json",
-        "AGENTS.md",
         ".github/pull_request_template.md",
         "scripts/guardrails_check.py",
         "tests/unit/test_guardrails_check.py",
@@ -571,7 +570,6 @@ EXPECTED = {
         "docs/REPOSITORY_GUARDRAILS.md",
         "docs/QUALITY_GATES.md",
         "docs/STATUS.md",
-        "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md",
     },
     "cut1-process-413-frontend-runtime-openssl": {
         "docs/governance/preflights/issue-413.json",
@@ -1753,7 +1751,6 @@ def test_issue486_route_is_frozen_to_exact_base_paths_and_budgets() -> None:
     )
     expected_limits = {
         "docs/governance/preflights/issue-486.json": 260,
-        "AGENTS.md": 50,
         ".github/pull_request_template.md": 70,
         "scripts/guardrails_check.py": 220,
         "tests/unit/test_guardrails_check.py": 300,
@@ -1762,7 +1759,6 @@ def test_issue486_route_is_frozen_to_exact_base_paths_and_budgets() -> None:
         "docs/REPOSITORY_GUARDRAILS.md": 80,
         "docs/QUALITY_GATES.md": 90,
         "docs/STATUS.md": 50,
-        "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md": 80,
     }
 
     assert routes.ISSUE486_BRANCH == branch
