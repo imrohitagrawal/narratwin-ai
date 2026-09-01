@@ -1229,6 +1229,36 @@ def test_product_context_accepts_exactly_four_distinct_labeled_behavior_bullets(
     assert guardrails.product_context_failures(product_context_body(tuple(contents))) == []
 
 
+@pytest.mark.parametrize(
+    "summary_bullets",
+    (
+        (
+            "**Behavior:** The upload component changes user behavior by displaying a clear validation result.",
+            "**Artifacts/capabilities:** It adds documentation and a reviewer capability but no audio or media artifacts.",
+            "**Runtime/external side effects:** The provider module performs no network calls and changes no runtime side effects.",
+            "**Blocker and remaining gap:** It removes the reviewer blocker while the remaining delivery gap still requires human review.",
+        ),
+        (
+            "**Behavior:** It lets reviewers explain what behavior changes for users after this pull request merges.",
+            "**Artifacts/capabilities:** It adds clear guidance but no voices, narration, audio, captions, avatars, or media.",
+            "**Runtime/external side effects:** It changes no runtime behavior and causes no provider or network calls.",
+            "**Blocker and remaining gap:** It removes the clarity blocker while human truth review still remains.",
+        ),
+    ),
+    ids=("ordinary-technical-nouns", "ordinary-explain-what-phrase"),
+)
+def test_product_context_accepts_truthful_labeled_summaries_with_ordinary_prose(
+    summary_bullets: tuple[str, ...],
+) -> None:
+    contents = list(PRODUCT_CONTEXT_CONTENT)
+    bullets = "\n".join(f"- {bullet}" for bullet in summary_bullets)
+    contents[3] = (
+        f"#### Plain-English behavior summary\n\n{bullets}\n\n"
+        "#### Technical change list\n\nThe parser and template change together."
+    )
+    assert guardrails.product_context_failures(product_context_body(tuple(contents))) == []
+
+
 def test_product_context_rejects_missing_section() -> None:
     assert guardrails.product_context_failures(reviewer_overview_body()) == [
         "Non-trivial pull requests must include a Product and reviewer context section."
