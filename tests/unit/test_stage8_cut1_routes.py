@@ -3775,3 +3775,35 @@ def test_binary_sizes_reject_missing_non_regular_empty_and_expose_oversize(tmp_p
     source.write_bytes(b"x")
     target.symlink_to(source)
     assert "regular" in str(pytest.raises(RuntimeError, routes.route_binary_sizes, tmp_path, {path}).value)
+
+
+def test_issue495_route_freezes_the_lockfile_only_security_refresh() -> None:
+    branch = "stage8-495-browserslist-security-refresh"
+    expected = {
+        "frontend/package-lock.json",
+        "docs/governance/preflights/issue-495-browserslist-security-refresh.json",
+        "scripts/quality/stage8_cut1_routes.py",
+        "tests/unit/test_stage8_cut1_routes.py",
+        "docs/STATUS.md",
+        "docs/TRACEABILITY.md",
+    }
+    assert routes.ISSUE495_BRANCH == branch
+    assert routes.ISSUE495_BASE == "ca49843ada493162fa02ff7331b7c6adf3b505c9"
+    assert routes.ROUTES[branch] == expected
+    assert routes.ROUTE_ISSUES[branch] == 495
+    assert routes.TOTAL_LIMITS[branch] == 780
+    assert routes.TEXT_LIMITS[branch] == {
+        "frontend/package-lock.json": 120,
+        "docs/governance/preflights/issue-495-browserslist-security-refresh.json": 220,
+        "scripts/quality/stage8_cut1_routes.py": 120,
+        "tests/unit/test_stage8_cut1_routes.py": 160,
+        "docs/STATUS.md": 80,
+        "docs/TRACEABILITY.md": 80,
+    }
+    preflight = json.loads(
+        (REPO / "docs/governance/preflights/issue-495-browserslist-security-refresh.json")
+        .read_text(encoding="utf-8")
+    )
+    assert set(preflight["scope"]["required"]) == expected
+    assert preflight["scope"]["required"] == preflight["scope"]["allowed_prefixes"]
+    assert branch in stage8.EFFECTIVE_STAGE8_ROUTES
