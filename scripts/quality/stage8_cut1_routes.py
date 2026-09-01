@@ -2102,6 +2102,18 @@ def check_exact_route(
     root: Path, run: Callable[[list[str]], Any], branch: str, changed: set[str], failures: list[str]
 ) -> None:
     if branch not in ROUTES:
+        collision = next(
+            (
+                exact
+                for exact in sorted(ROUTES, key=len, reverse=True)
+                if branch.startswith(f"{exact}-")
+            ),
+            None,
+        )
+        if collision is not None:
+            failures.append(
+                f"Stage 8 branch collides with exact reviewed route {collision}: {branch}."
+            )
         return
     issue = ROUTE_ISSUES[branch]
     files = ROUTES[branch]

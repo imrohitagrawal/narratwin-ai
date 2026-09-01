@@ -3502,7 +3502,13 @@ def test_exact_route_completeness_lookalikes_and_budgets(monkeypatch: Any) -> No
             if "lane" in branch
             else branch.replace("cut1", "cutі")
         )
-        for lookalike in (branch + "-retry", branch.upper(), confusable):
+        suffix = branch + "-retry"
+        failures = []
+        routes.check_exact_route(REPO, lambda _: completed([]), suffix, set(paths), failures)
+        assert failures == [
+            f"Stage 8 branch collides with exact reviewed route {branch}: {suffix}."
+        ]
+        for lookalike in (branch.upper(), confusable):
             failures = []
             routes.check_exact_route(REPO, lambda _: completed([]), lookalike, set(paths), failures)
             assert failures == []
