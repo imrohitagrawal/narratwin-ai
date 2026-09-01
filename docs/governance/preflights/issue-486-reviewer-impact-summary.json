@@ -1,0 +1,74 @@
+{
+  "schema_version": "GovernancePreflightV1",
+  "issue_number": 486,
+  "branch": "stage8-486-reviewer-impact-summary",
+  "accepted_base": "01857dc1ffa322700179d301925b444a04f166fa",
+  "accepted_base_tree": "23dd8130c2bd5b095583c1ed0c831e69937ff22a",
+  "objective": "PR A2 replaces the instructional summary heading introduced by PR A with Reviewer impact summary and requires exactly seven distinct ordered labels: **Purpose:**, **Behavior before/after:**, **Who and what is affected:**, **Artifacts/capabilities:**, **Operational impact:**, **Scope boundaries:**, and **End-to-end impact:** before the Technical change list. The answers cover why the change matters, observable before/after behavior, affected users/systems/data, added or absent artifacts/capabilities, operational and compatibility effects, explicit exclusions, and the blocker removed, capability unlocked, and remaining gap. None requires a PR-specific reason. Automation proves structure and frozen false-pass classes; an eligible reviewer owns unrestricted semantic truth, completeness, and clarity. PR A2 leaves protected authority sources unchanged and accepts only their current bytes plus exact planned future hashes 57ea2bdddd7f0f3df91c75ecb0e434e25aa0779a54d0a2603a7e32a87b5c9ca7 and e70d7c3045a4fec6b8c4feeb276244ea963a778f872955670cc2e209c0b03e2d. PR B changes those protected sources without editing their validator; PR C removes the old allowance. No runtime, provider, credential, network, media, dependency, workflow, deployment, release, production-readiness, T05, or Cut 1 completion change is authorized.",
+  "status_decision": "update-minimally",
+  "research_sources": [
+    {
+      "name": "GitHub: Helping others review your changes",
+      "url": "https://docs.github.com/en/pull-requests/concepts/helping-others-review-your-changes",
+      "accessed": "2026-09-01",
+      "decision": "Require a focused statement of the problem, approach, result, and reviewer focus."
+    },
+    {
+      "name": "Google Engineering Practices: Writing good CL descriptions",
+      "url": "https://google.github.io/eng-practices/review/developer/cl-descriptions.html",
+      "accessed": "2026-09-01",
+      "decision": "Require what changed, why, contextual decisions, shortcomings, and remaining direction."
+    },
+    {
+      "name": "Microsoft Engineering Fundamentals: Author and reviewer guidance",
+      "url": "https://microsoft.github.io/code-with-engineering-playbook/code-reviews/process-guidance/author-guidance/",
+      "accessed": "2026-09-01",
+      "decision": "Require what and why while keeping user-facing, design, error, and validation concerns reviewable."
+    }
+  ],
+  "scope": {
+    "required": [
+      "docs/governance/preflights/issue-486-reviewer-impact-summary.json",
+      ".github/pull_request_template.md",
+      "scripts/guardrails_check.py",
+      "tests/unit/test_guardrails_check.py",
+      "scripts/quality/stage8_cut1_routes.py",
+      "tests/unit/test_stage8_cut1_routes.py",
+      "docs/REPOSITORY_GUARDRAILS.md",
+      "docs/QUALITY_GATES.md",
+      "docs/agent-context/context-policy-manifest-v1.json",
+      "docs/STATUS.md"
+    ],
+    "allowed_prefixes": [
+      "docs/governance/preflights/issue-486-reviewer-impact-summary.json",
+      ".github/pull_request_template.md",
+      "scripts/guardrails_check.py",
+      "tests/unit/test_guardrails_check.py",
+      "scripts/quality/stage8_cut1_routes.py",
+      "tests/unit/test_stage8_cut1_routes.py",
+      "docs/REPOSITORY_GUARDRAILS.md",
+      "docs/QUALITY_GATES.md",
+      "docs/agent-context/context-policy-manifest-v1.json",
+      "docs/STATUS.md"
+    ],
+    "forbidden": [
+      "AGENTS.md",
+      "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md",
+      "backend/",
+      "frontend/",
+      ".github/workflows/",
+      "docker/",
+      "Dockerfile",
+      "pyproject.toml",
+      "uv.lock",
+      "package.json",
+      "package-lock.json",
+      "reports/",
+      "runtime product behavior, schema, API, or provider changes",
+      "deployment, hosting, public URL, release, or production-readiness claim",
+      "paid services, credentials, private data, or real/cloned media",
+      "T05, T06, T07, T08, release, or Cut 1 completion claim",
+      "unrelated issue, PR, branch, protected tracker, or forensic evidence mutation"
+    ]
+  }
+}

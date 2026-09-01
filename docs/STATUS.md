@@ -1523,12 +1523,11 @@ required.
 - This correction does not synthesize or accept audio. T05 remains incomplete,
   T06 remains blocked, and release and Cut 1 acceptance remain No-Go.
 
-## Issue #486 PR plain-English behavior-summary governance (2026-09-01)
+## Issue #486 PR reviewer-impact-summary governance (2026-09-01)
 
 - Issue #486 freezes a docs/gates/tests-only route requiring every non-trivial
-  PR to begin `Exact changes` with a plain-English behavior summary containing
-  exactly four distinct, ordered, labeled bullets before its technical change
-  list.
+  PR to begin `Exact changes` with a reviewer-impact summary containing exactly
+  seven distinct, ordered, labeled bullets before its technical change list.
 - PR A adds the PR template, executable PR-body guardrail, repository policy,
   quality-gate documentation, and exact route; missing, misplaced, incorrectly
   sized, or non-meaningful summaries fail closed. Its bounded two-hash anchor
@@ -1536,9 +1535,14 @@ required.
   agent/playbook bytes. The cold-review context manifest binds the resulting
   repository-guardrail source hash without changing its merge-closeout content
   hash.
+- PR A2 replaces the initial instructional heading with `Reviewer impact
+  summary` and expands the compact contract to purpose, before/after behavior,
+  affected users/systems/data, artifacts/capabilities, operational impact, scope
+  boundaries, and end-to-end impact. It leaves the protected agent and reusable
+  playbook sources unchanged while binding only their newly frozen future bytes.
 - PR B must update the repository agent contract and reusable new-project
   playbook without editing their validator; PR C must then remove the old hash
-  allowance. Issue #486 remains open until both follow-ups merge.
+  allowance. Issue #486 remains open until those follow-ups merge.
 - This governance work changes no runtime behavior and does not call providers,
   generate or accept media, deploy, release, complete T05, or accept Cut 1.
 

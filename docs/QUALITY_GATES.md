@@ -1070,16 +1070,20 @@ entries. A bare count, duplicated entries, or placeholder entries therefore
 cannot pass as a complete explanation.
 
 Point 4 also has a required two-layer shape. It begins with
-`#### Plain-English behavior summary`, containing exactly four distinct labeled
+`#### Reviewer impact summary`, containing exactly seven distinct labeled
 Markdown bullets, followed by `#### Technical change list`. Their required order
-is `**Behavior:**`, `**Artifacts/capabilities:**`, `**Runtime/external side
-effects:**`, then `**Blocker and remaining gap:**`. `product_context_failures`
-rejects missing, misplaced, reordered, duplicated, placeholder, generic, path-
-only, link-only, issue-only, and frozen copied-instruction/technical-list
-mutations. For governance/docs-only PRs, the side-effects bullet explicitly
-states that runtime behavior is unchanged. Automation verifies this structure
-and known false-pass classes; reviewers remain responsible for semantic truth,
-keyword stuffing, and understandability.
+is `**Purpose:**`, `**Behavior before/after:**`, `**Who and what is affected:**`,
+`**Artifacts/capabilities:**`, `**Operational impact:**`, `**Scope boundaries:**`,
+then `**End-to-end impact:**`. `product_context_failures` rejects missing,
+misplaced, reordered, duplicated, placeholder, generic, path-only, link-only,
+issue-only, unexplained-`None`, and frozen copied-instruction/technical-list
+mutations. The seven answers cover why the change matters; observable behavior;
+affected people, systems, workflows, interfaces, and data; artifacts and
+capabilities; runtime, external, persistence, migration, compatibility, failure,
+rollback, and rollout effects; explicit exclusions; and the blocker removed,
+capability unlocked, and remaining gap. Automation verifies this structure and
+known false-pass classes; reviewers remain responsible for semantic truth,
+completeness, keyword stuffing, and understandability.
 
 This gate connects each contribution to the end-to-end demo and eventual
 production path without treating that direction as production authorization.

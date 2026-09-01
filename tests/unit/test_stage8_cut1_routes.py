@@ -560,8 +560,8 @@ EXPECTED = {
         "tests/unit/test_pr_body_consistency.py",
         "tests/unit/test_stage8_cut1_routes.py",
     },
-    "stage8-486-pr-behavior-summary": {
-        "docs/governance/preflights/issue-486.json",
+    "stage8-486-reviewer-impact-summary": {
+        "docs/governance/preflights/issue-486-reviewer-impact-summary.json",
         ".github/pull_request_template.md",
         "scripts/guardrails_check.py",
         "tests/unit/test_guardrails_check.py",
@@ -1745,42 +1745,45 @@ def test_issue415_correction_route_rejects_charge_801(monkeypatch: Any) -> None:
 
 
 def test_issue486_route_is_frozen_to_exact_base_paths_and_budgets() -> None:
-    branch = "stage8-486-pr-behavior-summary"
+    branch = "stage8-486-reviewer-impact-summary"
     expected = EXPECTED[branch]
     artifact = json.loads(
-        (REPO / "docs/governance/preflights/issue-486.json").read_text(encoding="utf-8")
+        (REPO / "docs/governance/preflights/issue-486-reviewer-impact-summary.json").read_text(encoding="utf-8")
     )
     expected_limits = {
-        "docs/governance/preflights/issue-486.json": 260,
-        ".github/pull_request_template.md": 70,
-        "scripts/guardrails_check.py": 260,
-        "tests/unit/test_guardrails_check.py": 340,
-        "scripts/quality/stage8_cut1_routes.py": 200,
-        "tests/unit/test_stage8_cut1_routes.py": 240,
-        "docs/REPOSITORY_GUARDRAILS.md": 80,
-        "docs/QUALITY_GATES.md": 90,
+        "docs/governance/preflights/issue-486-reviewer-impact-summary.json": 320,
+        ".github/pull_request_template.md": 100,
+        "scripts/guardrails_check.py": 360,
+        "tests/unit/test_guardrails_check.py": 480,
+        "scripts/quality/stage8_cut1_routes.py": 260,
+        "tests/unit/test_stage8_cut1_routes.py": 320,
+        "docs/REPOSITORY_GUARDRAILS.md": 120,
+        "docs/QUALITY_GATES.md": 120,
         "docs/agent-context/context-policy-manifest-v1.json": 40,
-        "docs/STATUS.md": 60,
+        "docs/STATUS.md": 100,
     }
 
     assert routes.ISSUE486_BRANCH == branch
-    assert routes.ISSUE486_BASE == "4503abd71aed1f61caa85c6682df8f5b991d28ba"
+    assert routes.ISSUE486_BASE == "01857dc1ffa322700179d301925b444a04f166fa"
     assert routes.ROUTES[branch] == expected
     assert routes.ROUTE_ISSUES[branch] == 486
-    assert routes.TOTAL_LIMITS[branch] == 1000
+    assert routes.TOTAL_LIMITS[branch] == 1400
     assert routes.TEXT_LIMITS[branch] == expected_limits
     assert artifact["branch"] == branch
     assert artifact["accepted_base"] == routes.ISSUE486_BASE
     assert set(artifact["scope"]["required"]) == expected
     objective = artifact["objective"]
     for marker in (
-        "exactly four distinct labeled bullets",
-        "**Behavior:**",
+        "exactly seven distinct ordered labels",
+        "**Purpose:**",
+        "**Behavior before/after:**",
+        "**Who and what is affected:**",
         "**Artifacts/capabilities:**",
-        "**Runtime/external side effects:**",
-        "**Blocker and remaining gap:**",
-        "8c71ec2097d79736232c10283ebd4c6d65464a690bc66416291989551a63480c",
-        "2dcd399bb97a4aafc88dc1e7613944ac0b3929fddbddf46523d5c32df7ed5305",
+        "**Operational impact:**",
+        "**Scope boundaries:**",
+        "**End-to-end impact:**",
+        "57ea2bdddd7f0f3df91c75ecb0e434e25aa0779a54d0a2603a7e32a87b5c9ca7",
+        "e70d7c3045a4fec6b8c4feeb276244ea963a778f872955670cc2e209c0b03e2d",
     ):
         assert marker in objective
 
@@ -1788,7 +1791,7 @@ def test_issue486_route_is_frozen_to_exact_base_paths_and_budgets() -> None:
 def test_issue486_route_rejects_lookalike_branch_and_forbidden_path(
     monkeypatch: Any,
 ) -> None:
-    branch = "stage8-486-pr-behavior-summary"
+    branch = "stage8-486-reviewer-impact-summary"
     lookalike = f"{branch}-extra"
     assert lookalike not in routes.ROUTES
     assert lookalike not in stage8.EFFECTIVE_STAGE8_ROUTES
@@ -1832,10 +1835,10 @@ def test_issue486_route_rejects_aggregate_and_each_per_path_budget(
 ) -> None:
     branch = routes.ISSUE486_BRANCH
     monkeypatch.setattr(routes, "route_base", lambda *_: routes.ISSUE486_BASE)
-    monkeypatch.setattr(routes, "route_text_charges", lambda *_: (1001, {}))
+    monkeypatch.setattr(routes, "route_text_charges", lambda *_: (1401, {}))
     failures: list[str] = []
     routes.check_exact_route(REPO, lambda _: completed([]), branch, EXPECTED[branch], failures)
-    assert failures == ["Issue #486 charge 1001 exceeds 1000."]
+    assert failures == ["Issue #486 charge 1401 exceeds 1400."]
 
     for path, limit in routes.TEXT_LIMITS[branch].items():
         monkeypatch.setattr(

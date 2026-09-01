@@ -29,16 +29,19 @@ not substitutes for the explanation. -->
 
 ### 4. Exact changes in this PR
 
-#### Plain-English behavior summary
+#### Reviewer impact summary
 <!-- Required: replace each instruction below with a distinct, PR-specific
-plain-English answer. Keep all four labels and their order. Automation verifies
-the structure and known false-pass mutations; the reviewer judges truth and
-clarity. -->
+answer. Keep all seven labels and their order. Use `None` only with a specific
+reason. Automation verifies structure and known false-pass mutations; the
+reviewer judges truth, completeness, and clarity. -->
 
-- **Behavior:** <!-- What behavior does this PR enable or change? -->
-- **Artifacts/capabilities:** <!-- What content, artifacts, or capabilities does it add or explicitly not add? -->
-- **Runtime/external side effects:** <!-- Does it call providers/networks, spend, generate, persist, deploy, release, or otherwise change runtime behavior? Governance/docs-only PRs must say runtime behavior is unchanged. -->
-- **Blocker and remaining gap:** <!-- What blocker does it remove, and what still remains afterward? -->
+- **Purpose:** <!-- Why does this change matter now? State the reviewer/user/product need. -->
+- **Behavior before/after:** <!-- What observable behavior or governed state existed before, and what will exist after merge? -->
+- **Who and what is affected:** <!-- Name affected users, operators, reviewers, systems, interfaces, workflows, and data. State what is unchanged. -->
+- **Artifacts/capabilities:** <!-- What content, media, outputs, files, evidence, or capabilities are added, changed, removed, or explicitly absent? -->
+- **Operational impact:** <!-- State runtime/provider/network/spend/persistence effects, migrations, compatibility, failure behavior, rollback, and rollout needs. Governance/docs-only PRs must explain why these are unchanged. -->
+- **Scope boundaries:** <!-- What does this PR deliberately not change, authorize, prove, deploy, release, or make production-ready? -->
+- **End-to-end impact:** <!-- What blocker is removed, what later capability is unlocked, and what gap or gate remains? -->
 
 <!-- A file/test list, issue/link reference, implementation detail, copied
 instruction, or evidence table is not a substitute for truthful answers. -->

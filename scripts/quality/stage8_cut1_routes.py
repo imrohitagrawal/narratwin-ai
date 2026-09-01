@@ -51,7 +51,7 @@ ISSUE368_QUOTA_FIX_BRANCH = "stage8-368-google-tts-quota-project-binding-fix"
 ISSUE368_BINDING_COMPAT_BRANCH = "stage8-issue-368-google-presenter-binding-compat"
 ISSUE415_BRANCH = "stage8-415-pr-body-live-state-reconciliation"
 ISSUE415_CORRECTION_BRANCH = "stage8-415-pr-body-consistency-canary-fix"
-ISSUE486_BRANCH = "stage8-486-pr-behavior-summary"
+ISSUE486_BRANCH = "stage8-486-reviewer-impact-summary"
 ISSUE421_BRANCH = "stage8-421-cut1-atomic-project-facts"
 ISSUE424_BRANCH = "stage8-424-master-program-authority-prelog"
 ISSUE386_BASE = "48fc32a2689c9bbc03742d774f3eadb8a500dafc"
@@ -69,7 +69,7 @@ ISSUE368_BINDING_COMPAT_AUTHORITY = (
 )
 ISSUE421_BASE = "a868137fab607ae75d4b272301e9fc52b898e15c"
 ISSUE424_BASE = "afcf0325c3ec925b68b770eda0bb8c839bcce4dd"
-ISSUE486_BASE = "4503abd71aed1f61caa85c6682df8f5b991d28ba"
+ISSUE486_BASE = "01857dc1ffa322700179d301925b444a04f166fa"
 ISSUE468_BASE = "35f7beddc9f5ad8c109011bce05eef077c8194f6"
 ISSUE150_BASE = "a02286240212ad8958915aec01aa5ebaf60fa705"
 ISSUE460_BASE = "ab97b6eecba6db9c66c37d19b29257c7398f3ab7"
@@ -413,7 +413,7 @@ ROUTES = {
         "tests/unit/test_stage8_cut1_routes.py",
     },
     ISSUE486_BRANCH: {
-        "docs/governance/preflights/issue-486.json",
+        "docs/governance/preflights/issue-486-reviewer-impact-summary.json",
         ".github/pull_request_template.md",
         "scripts/guardrails_check.py",
         "tests/unit/test_guardrails_check.py",
@@ -720,7 +720,7 @@ TOTAL_LIMITS = {ISSUE452_BRANCH: 3600, ISSUE451_BRANCH: 600, ISSUE150_BRANCH: 10
                 ISSUE384_BRANCH: 500, ISSUE383_BRANCH: 700, ISSUE397_BRANCH: 500,
                 ISSUE393_BRANCH: 700, ISSUE382_BRANCH: 3200, ISSUE367_BRANCH: 2000}
 TOTAL_LIMITS[ISSUE468_BRANCH] = 1500
-TOTAL_LIMITS[ISSUE486_BRANCH] = 1000
+TOTAL_LIMITS[ISSUE486_BRANCH] = 1400
 ROUTE_ISSUES[ISSUE471_BRANCH] = 471
 TOTAL_LIMITS[ISSUE471_BRANCH] = 1400
 ROUTE_ISSUES[ISSUE473_BRANCH] = 473
@@ -835,16 +835,16 @@ TEXT_LIMITS = {
         "tests/unit/test_stage8_cut1_routes.py": 220,
     },
     ISSUE486_BRANCH: {
-        "docs/governance/preflights/issue-486.json": 260,
-        ".github/pull_request_template.md": 70,
-        "scripts/guardrails_check.py": 260,
-        "tests/unit/test_guardrails_check.py": 340,
-        "scripts/quality/stage8_cut1_routes.py": 200,
-        "tests/unit/test_stage8_cut1_routes.py": 240,
-        "docs/REPOSITORY_GUARDRAILS.md": 80,
-        "docs/QUALITY_GATES.md": 90,
+        "docs/governance/preflights/issue-486-reviewer-impact-summary.json": 320,
+        ".github/pull_request_template.md": 100,
+        "scripts/guardrails_check.py": 360,
+        "tests/unit/test_guardrails_check.py": 480,
+        "scripts/quality/stage8_cut1_routes.py": 260,
+        "tests/unit/test_stage8_cut1_routes.py": 320,
+        "docs/REPOSITORY_GUARDRAILS.md": 120,
+        "docs/QUALITY_GATES.md": 120,
         "docs/agent-context/context-policy-manifest-v1.json": 40,
-        "docs/STATUS.md": 60,
+        "docs/STATUS.md": 100,
     },
     ISSUE466_BRANCH: {
         "docs/governance/preflights/issue-466.json": 320,

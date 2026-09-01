@@ -35,9 +35,9 @@ CLEANUP_AUTHORITY_SHA256 = {
         "30ba0f8e7b736293c4b6c110cbe9ce46bf7639507b0441bd37cb222bb62ae94f",
 }
 CLEANUP_AUTHORITY_PENDING_SHA256 = {
-    "AGENTS.md": "8c71ec2097d79736232c10283ebd4c6d65464a690bc66416291989551a63480c",
+    "AGENTS.md": "57ea2bdddd7f0f3df91c75ecb0e434e25aa0779a54d0a2603a7e32a87b5c9ca7",
     "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md":
-        "2dcd399bb97a4aafc88dc1e7613944ac0b3929fddbddf46523d5c32df7ed5305",
+        "e70d7c3045a4fec6b8c4feeb276244ea963a778f872955670cc2e209c0b03e2d",
 }
 
 EXCLUDED_DIRS = {
@@ -1488,7 +1488,7 @@ def product_context_failures(body: str) -> list[str]:
     exact_changes = point_content.get(3, "")
     if exact_changes:
         summary_heading = re.search(
-            r"(?im)^[ \t]*####[ \t]+plain-english behavior summary[ \t]*#*[ \t]*$",
+            r"(?im)^[ \t]*####[ \t]+reviewer impact summary[ \t]*#*[ \t]*$",
             exact_changes,
         )
         technical_heading = re.search(
@@ -1503,7 +1503,7 @@ def product_context_failures(body: str) -> list[str]:
         )
         if not summary_is_first:
             result.append(
-                "Product context point 4 must begin with a Plain-English behavior summary "
+                "Product context point 4 must begin with a Reviewer impact summary "
                 "before the Technical change list."
             )
         else:
@@ -1516,10 +1516,13 @@ def product_context_failures(body: str) -> list[str]:
                 if (match := re.match(r"^[ \t]*[-*+][ \t]+(\S.*)$", line)) is not None
             ]
             expected_labels = (
-                "Behavior",
+                "Purpose",
+                "Behavior before/after",
+                "Who and what is affected",
                 "Artifacts/capabilities",
-                "Runtime/external side effects",
-                "Blocker and remaining gap",
+                "Operational impact",
+                "Scope boundaries",
+                "End-to-end impact",
             )
             summary_bodies: list[str] = []
             if len(summary_bullets) == len(expected_labels):
@@ -1536,8 +1539,27 @@ def product_context_failures(body: str) -> list[str]:
                     r"(?:https?://\S+|(?:[A-Za-z0-9_.-]+/)+[A-Za-z0-9_.-]+)",
                     value.strip(),
                 )
+                none_prefix = re.match(r"(?i)^none\b", value.strip())
+                none_reason = re.match(
+                    r"(?i)^none\b(?:\s*[-:;—]\s*|\s+(?:because|since|as)\s+)(\S.*)",
+                    value.strip(),
+                )
+                normalized_reason = (
+                    normalized_prose(none_reason.group(1)) if none_reason is not None else ""
+                )
+                explicit_cause = re.match(
+                    r"(?i)^none\b\s+(?:because|since|as)\s+\S", value.strip()
+                )
+                explains_no_effect = explicit_cause or re.search(
+                    r"\b(?:because|since|as|no|not|without|unchanged|unaffected|excluded|absent|neither|nor|only|solely|merely|exclusively)\b",
+                    normalized_reason,
+                )
+                none_without_reason = none_prefix is not None and (
+                    none_reason is None or explains_no_effect is None
+                )
                 return (
                     reference_only is None
+                    and not none_without_reason
                     and normalized not in generic_or_instruction_text
                     and len(normalized.split()) >= 6
                     and len(normalized) >= 35
@@ -1546,27 +1568,33 @@ def product_context_failures(body: str) -> list[str]:
             normalized_bodies = [normalized_prose(item) for item in summary_bodies]
             known_non_behavioral_summaries = {
                 (
-                    "required authors should write bullets explaining what behavior this pull request changes",
-                    "together the bullets explain what content or artifacts it adds or does not add",
-                    "for external provider network runtime spending and generation side effects state whether they occur",
-                    "for the blocker it removes explain the remaining gap afterward",
+                    "explain why this pull request matters to reviewers and users",
+                    "describe the behavior before and after this pull request merges",
+                    "list who and what is affected including users systems and data",
+                    "state what artifacts and capabilities are added changed removed or absent",
+                    "state runtime external persistence migration compatibility failure and rollback effects",
+                    "state what this pull request deliberately excludes or does not authorize",
+                    "explain the blocker removed capability unlocked and remaining gap",
                 ),
                 (
-                    "the runtime guardrail file changes parser behavior for pull request bodies",
-                    "the template file adds no product content artifacts capabilities or media",
-                    "the policy documentation file records no provider network spending generation deployment or release side effects",
-                    "the status file removes the reviewer blocker and records the remaining gap afterward",
+                    "the status file records why the pull request matters",
+                    "the guardrails script changes the before and after parser behavior",
+                    "the template file affects authors reviewers systems and data",
+                    "the documentation file lists artifacts and capabilities added changed removed or absent",
+                    "the policy file records runtime external persistence migration compatibility failure and rollback effects",
+                    "the test file lists excluded provider media deployment and release behavior",
+                    "the route file records the blocker capability and remaining gap",
                 ),
             }
             valid_summary = (
-                len(summary_bodies) == 4
-                and len(set(normalized_bodies)) == 4
+                len(summary_bodies) == 7
+                and len(set(normalized_bodies)) == 7
                 and all(meaningful_summary_bullet(item) for item in summary_bodies)
                 and tuple(normalized_bodies) not in known_non_behavioral_summaries
             )
             if not valid_summary:
                 result.append(
-                    "Plain-English behavior summary must contain exactly 4 distinct labeled Markdown bullets."
+                    "Reviewer impact summary must contain exactly 7 distinct labeled Markdown bullets."
                 )
 
     count_words = {
