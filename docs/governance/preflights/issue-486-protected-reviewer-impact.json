@@ -1,0 +1,106 @@
+{
+  "schema_version": "GovernancePreflightV1",
+  "issue_number": 486,
+  "branch": "stage8-486-reviewer-impact-protected-sources",
+  "accepted_base": "f55f39bea1e009050c9d3f5e2f829cc8557f11d5",
+  "accepted_base_tree": "18eea40473143d9d793860aa40b916f7de788cad",
+  "objective": "Apply the exact seven-field reviewer-impact contract to the repository and reusable engineering playbook authority sources, then rebind dependent context modules without changing the transitional validator. This makes the holistic reviewer explanation durable for this repository and future projects that adopt the playbook. It adds no product/runtime behavior, narration, voice, audio, captions, avatar media, provider call, credential access, deployment, release, or Cut 1 completion claim.",
+  "route_authority": {
+    "freeze": "https://github.com/imrohitagrawal/narratwin-ai/issues/486#issuecomment-5492539437",
+    "ordered_amendments": [
+      "https://github.com/imrohitagrawal/narratwin-ai/issues/486#issuecomment-5492585578",
+      "https://github.com/imrohitagrawal/narratwin-ai/issues/486#issuecomment-5492618746"
+    ]
+  },
+  "scope": {
+    "required": [
+      "AGENTS.md",
+      "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md",
+      "docs/agent-context/context-policy-manifest-v1.json",
+      "docs/governance/preflights/issue-486-protected-reviewer-impact.json",
+      "docs/STATUS.md",
+      "scripts/quality/stage8_cut1_routes.py",
+      "tests/unit/test_stage8_cut1_routes.py"
+    ],
+    "allowed_prefixes": [
+      "AGENTS.md",
+      "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md",
+      "docs/agent-context/context-policy-manifest-v1.json",
+      "docs/governance/preflights/issue-486-protected-reviewer-impact.json",
+      "docs/STATUS.md",
+      "scripts/quality/stage8_cut1_routes.py",
+      "tests/unit/test_stage8_cut1_routes.py"
+    ],
+    "forbidden": [
+      "scripts/guardrails_check.py",
+      "backend/",
+      "frontend/",
+      ".github/workflows/",
+      "provider calls, credentials, egress, spending, or private evidence",
+      "runtime, media, deployment, release, production-readiness, or Cut 1 completion claims"
+    ]
+  },
+  "charged_line_budgets": {
+    "AGENTS.md": 40,
+    "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md": 40,
+    "docs/agent-context/context-policy-manifest-v1.json": 50,
+    "docs/governance/preflights/issue-486-protected-reviewer-impact.json": 260,
+    "docs/STATUS.md": 20,
+    "scripts/quality/stage8_cut1_routes.py": 80,
+    "tests/unit/test_stage8_cut1_routes.py": 160,
+    "aggregate": 700
+  },
+  "protected_hashes": {
+    "AGENTS.md": "57ea2bdddd7f0f3df91c75ecb0e434e25aa0779a54d0a2603a7e32a87b5c9ca7",
+    "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md": "e70d7c3045a4fec6b8c4feeb276244ea963a778f872955670cc2e209c0b03e2d"
+  },
+  "context_bindings": {
+    "repo-constitution": {
+      "source_sha256": "57ea2bdddd7f0f3df91c75ecb0e434e25aa0779a54d0a2603a7e32a87b5c9ca7",
+      "content_sha256": "73a0582a8b69f2df0125a1184ce7355af4cba897b3a3929d26f27d9cbdb9354d"
+    },
+    "stage-authority": {
+      "source_sha256": "57ea2bdddd7f0f3df91c75ecb0e434e25aa0779a54d0a2603a7e32a87b5c9ca7",
+      "content_sha256": "92cf990f70e51d5e1820a54b24f3885525e2656a4dcd63100d6c2bda6086e5dd"
+    },
+    "delegation": {
+      "source_sha256": "57ea2bdddd7f0f3df91c75ecb0e434e25aa0779a54d0a2603a7e32a87b5c9ca7",
+      "content_sha256": "73a0582a8b69f2df0125a1184ce7355af4cba897b3a3929d26f27d9cbdb9354d"
+    },
+    "review-independence": {
+      "source_sha256": "e70d7c3045a4fec6b8c4feeb276244ea963a778f872955670cc2e209c0b03e2d",
+      "content_sha256": "2019708c272ffc0d2584237fade4f4e2052dfb890fbce7bc099e0ba1dcc29d3d"
+    }
+  },
+  "tdd": {
+    "red_commit": "30f1cbf6f5ea913f09e606bf18ab9fab6bba2366",
+    "failure": "Focused context routing failed closed with CTX.MODULE.SOURCE_HASH_MISMATCH and CTX.MODULE.HASH_MISMATCH after exact protected bytes changed while the context manifest remained stale.",
+    "green": "Update only the four dependent source bindings and the two changed section-content bindings, then prove the same focused suites pass."
+  },
+  "skills": {
+    "invoked": [
+      "git-workflow-and-versioning: exact base, dedicated branch/worktree, RED and GREEN commits, exact-head and merge topology",
+      "ci-cd-and-automation: hosted command/context parity and post-merge verification",
+      "test-driven-development: executable stale-manifest RED before the minimal GREEN binding update",
+      "security-and-hardening: fail-closed scope, hash, mutation, and secret-boundary checks",
+      "incremental-implementation: protected-source PR B separated from validator PR C",
+      "code-review-and-quality: independent exact-head multi-axis review and finding classification",
+      "documentation-and-adrs: durable repository and reusable-project governance wording"
+    ],
+    "rejected": [
+      "frontend-ui-engineering: no UI boundary changes",
+      "api-and-interface-design: no runtime API or schema changes",
+      "performance-optimization: no runtime path changes",
+      "shipping-and-launch: deployment, release, and production claims are prohibited"
+    ]
+  },
+  "stop_conditions": [
+    "protected-source hash mismatch",
+    "owned-path or charged-line budget breach",
+    "cleanup validator or test mutation",
+    "context false acceptance or unexpected binding drift",
+    "failed, pending, skipped, or cancelled required context",
+    "approval not bound to the exact pushed head"
+  ],
+  "remaining_gap": "PR C must remove the old protected-hash allowance. Cut 1 still requires admissible final audio and exact-hash human listening decisions, six T06 media cells, the T07 reviewer, and T08 exact-artifact acceptance."
+}
