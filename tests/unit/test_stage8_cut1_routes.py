@@ -395,6 +395,8 @@ ISSUE495_EXPECTED = {
     "docs/governance/preflights/issue-495-browserslist-security-refresh.json",
     "scripts/quality/stage8_cut1_routes.py",
     "tests/unit/test_stage8_cut1_routes.py",
+    "tests/unit/test_dependency_security_contract.py",
+    "tests/unit/test_frontend_dependency_security_contract.py",
     "docs/STATUS.md",
     "docs/TRACEABILITY.md",
 }
@@ -3793,6 +3795,8 @@ def test_issue495_route_freezes_the_lockfile_only_security_refresh() -> None:
         "docs/governance/preflights/issue-495-browserslist-security-refresh.json",
         "scripts/quality/stage8_cut1_routes.py",
         "tests/unit/test_stage8_cut1_routes.py",
+        "tests/unit/test_dependency_security_contract.py",
+        "tests/unit/test_frontend_dependency_security_contract.py",
         "docs/STATUS.md",
         "docs/TRACEABILITY.md",
     }
@@ -3800,12 +3804,14 @@ def test_issue495_route_freezes_the_lockfile_only_security_refresh() -> None:
     assert routes.ISSUE495_BASE == "ca49843ada493162fa02ff7331b7c6adf3b505c9"
     assert routes.ROUTES[branch] == expected
     assert routes.ROUTE_ISSUES[branch] == 495
-    assert routes.TOTAL_LIMITS[branch] == 780
+    assert routes.TOTAL_LIMITS[branch] == 1100
     assert routes.TEXT_LIMITS[branch] == {
         "frontend/package-lock.json": 120,
         "docs/governance/preflights/issue-495-browserslist-security-refresh.json": 220,
         "scripts/quality/stage8_cut1_routes.py": 120,
         "tests/unit/test_stage8_cut1_routes.py": 160,
+        "tests/unit/test_dependency_security_contract.py": 180,
+        "tests/unit/test_frontend_dependency_security_contract.py": 140,
         "docs/STATUS.md": 80,
         "docs/TRACEABILITY.md": 80,
     }

@@ -2,7 +2,7 @@
   "schema_version": "GovernancePreflightV1",
   "issue_number": 495,
   "branch": "stage8-495-browserslist-security-refresh",
-  "objective": "From exact accepted main ca49843ada493162fa02ff7331b7c6adf3b505c9 and tree 13f79eb5db44249f635a619e1b283279f25ba9f0, correct only the newly reproduced frontend dependency-security failure under route-freeze comment 5498387945 and resolver-collateral correction 5498411811. Replace vulnerable transitive browserslist 4.28.4 with 4.28.8 and only its resolver-required baseline-browser-mapping 2.11.20, caniuse-lite 1.0.30001810, electron-to-chromium 1.5.419, node-releases 2.0.54, and update-browserslist-db 1.3.2 records. Bind exact resulting frontend/package-lock.json SHA-256 45b5f03df2b60ec9f10ade076507156a3c62d6fa7a7d2ca866a67396292d7c11. Use exactly six paths and no more than 780 charged lines. Preserve package.json, direct dependency intent, application and provider behavior, and strict audit enforcement. Reject advisory suppression, direct dependency addition, unrelated lock churn, wrong route/base, and budget excess. Keep credentials, provider calls, egress, spend, synthesis, media, human acceptance, deployment, publication, release, production readiness, and Cut 1 acceptance out of scope. Stop on dependency resolution, advisory, compatibility, route, budget, security, hosted, approval, or authority drift.",
+  "objective": "From exact accepted main ca49843ada493162fa02ff7331b7c6adf3b505c9 and tree 13f79eb5db44249f635a619e1b283279f25ba9f0, correct only the newly reproduced frontend dependency-security failure under route-freeze comment 5498387945, resolver-collateral correction 5498411811, and hosted-parity correction 5498589302. Replace vulnerable transitive browserslist 4.28.4 with 4.28.8 and only its resolver-required baseline-browser-mapping 2.11.20, caniuse-lite 1.0.30001810, electron-to-chromium 1.5.419, node-releases 2.0.54, and update-browserslist-db 1.3.2 records. Bind exact resulting frontend/package-lock.json SHA-256 45b5f03df2b60ec9f10ade076507156a3c62d6fa7a7d2ca866a67396292d7c11. Use exactly eight paths and no more than 1100 charged lines. Preserve package.json, direct dependency intent, application and provider behavior, and strict audit enforcement. Historical lock-isolation tests must validate and normalize only these six exact records before rejecting every unrelated drift. Reject advisory suppression, direct dependency addition, unrelated lock churn, wrong route/base, and budget excess. Keep credentials, provider calls, egress, spend, synthesis, media, human acceptance, deployment, publication, release, production readiness, and Cut 1 acceptance out of scope. Stop on dependency resolution, advisory, compatibility, route, budget, security, hosted, approval, or authority drift.",
   "status_decision": "update-minimally",
   "scope": {
     "required": [
@@ -10,6 +10,8 @@
       "docs/governance/preflights/issue-495-browserslist-security-refresh.json",
       "scripts/quality/stage8_cut1_routes.py",
       "tests/unit/test_stage8_cut1_routes.py",
+      "tests/unit/test_dependency_security_contract.py",
+      "tests/unit/test_frontend_dependency_security_contract.py",
       "docs/STATUS.md",
       "docs/TRACEABILITY.md"
     ],
@@ -18,6 +20,8 @@
       "docs/governance/preflights/issue-495-browserslist-security-refresh.json",
       "scripts/quality/stage8_cut1_routes.py",
       "tests/unit/test_stage8_cut1_routes.py",
+      "tests/unit/test_dependency_security_contract.py",
+      "tests/unit/test_frontend_dependency_security_contract.py",
       "docs/STATUS.md",
       "docs/TRACEABILITY.md"
     ],
