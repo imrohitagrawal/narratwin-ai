@@ -411,24 +411,24 @@ def test_transport_accepts_only_pinned_eu_https_url_and_port() -> None:
         assert error.value.code == "GOOGLE_TTS_ENDPOINT_INVALID"
 
 
-def test_transport_accepts_bounded_long_response_timeout() -> None:
+def test_transport_accepts_configured_finite_long_response_timeout() -> None:
     instance, sock, _, _ = transport()
 
-    prepared = instance.prepare(url=GOOGLE_TTS_URL, timeout_seconds=180.0)
+    prepared = instance.prepare(url=GOOGLE_TTS_URL, timeout_seconds=600.0)
     response = prepared.send(
         headers={"Content-Type": "application/json"},
         json_body={"input": {"text": "fake"}},
-        timeout_seconds=180.0,
+        timeout_seconds=600.0,
     )
 
-    assert sock.timeout == 180.0
+    assert sock.timeout == 600.0
     assert response.status_code == 200
 
 
 @pytest.mark.parametrize(
-    "timeout", [0, -1, 180.001, float("nan"), float("inf"), True, "180", None]
+    "timeout", [0, -1, float("nan"), float("inf"), True, "180", None]
 )
-def test_transport_rejects_invalid_or_unbounded_timeout(timeout: object) -> None:
+def test_transport_rejects_invalid_timeout(timeout: object) -> None:
     instance, _, _, _ = transport()
 
     with pytest.raises(GoogleRuntimeError) as error:
