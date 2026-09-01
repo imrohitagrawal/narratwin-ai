@@ -67,6 +67,20 @@ Before changing files, read:
     number of fields, changes, controls, checks, items, components, files,
     paths, rules, or requirements, enumerate every counted item as a distinct,
     meaningful Markdown list entry.
+    Under `Exact changes`, begin with `#### Reviewer impact summary` followed
+    by exactly seven distinct labeled bullets in this order: `**Purpose:**`,
+    `**Behavior before/after:**`, `**Who and what is affected:**`,
+    `**Artifacts/capabilities:**`, `**Operational impact:**`, `**Scope
+    boundaries:**`, and `**End-to-end impact:**`. Put `#### Technical change
+    list` after those bullets. Each bullet must state the PR-specific answer, not
+    repeat template instructions, file/test lists, issue references, or evidence.
+    Cover why the change matters; observable before/after behavior; affected users,
+    systems, and data; added, changed, removed, or explicitly absent artifacts and
+    capabilities; runtime or external calls, persistence, migration, compatibility,
+    failure, and rollback effects; excluded behavior; and the blocker removed,
+    capability unlocked, and remaining gap. Use an explicit `None` with a reason
+    when a category has no effect. Automation verifies structure and known false-
+    pass mutations; an eligible reviewer owns truth and clarity.
 
 ## Approved Build Stages
 

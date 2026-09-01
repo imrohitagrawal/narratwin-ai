@@ -746,6 +746,18 @@ not the explanation. Put these ten fields before detailed evidence:
    governance gap being removed.
 4. **Exact changes:** the concrete behaviors, contracts, files, or controls
    changed in this PR.
+   Begin this field with `#### Reviewer impact summary` and exactly seven
+   distinct labeled bullets in order: `**Purpose:**`, `**Behavior
+   before/after:**`, `**Who and what is affected:**`, `**Artifacts/capabilities:**`,
+   `**Operational impact:**`, `**Scope boundaries:**`, and `**End-to-end
+   impact:**`; then add `#### Technical change list`. Give the PR-specific
+   purpose, observable before/after behavior, affected users/systems/data, added
+   or absent artifacts/capabilities, operational and compatibility effects,
+   explicit exclusions, and the blocker removed, capability unlocked, and
+   remaining gap. Use an explicit `None` with a reason when a category has no
+   effect. Do not substitute template instructions, file/test lists, issue
+   references, or evidence. Automation verifies structure and known false-pass
+   mutations; an eligible reviewer owns truth and clarity.
 5. **What is complete after merge:** the specific capability or governance
    state that this PR finishes.
 6. **Expected outcome:** the observable result that should occur.
