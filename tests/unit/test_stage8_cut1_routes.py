@@ -718,6 +718,16 @@ EXPECTED = {
         "docs/ADR/0056-cut1-google-gemini-tts.md",
         "docs/TRACEABILITY.md",
     },
+    "stage8-494-google-tts-failure-diagnostics": {
+        "backend/app/tts_provider.py",
+        "tests/unit/test_stage6_tts_provider.py",
+        "docs/governance/preflights/issue-494-google-tts-failure-diagnostics.json",
+        "scripts/quality/stage8_cut1_routes.py",
+        "tests/unit/test_stage8_cut1_routes.py",
+        "docs/STATUS.md",
+        "docs/ADR/0056-cut1-google-gemini-tts.md",
+        "docs/TRACEABILITY.md",
+    },
     "stage8-368-cut1-google-tts-prompt-contract": {
         "docs/governance/preflights/issue-368.json",
         "docs/governance/cut1-google-gemini-tts-style-prompts-v1.json",
@@ -2709,6 +2719,14 @@ def _issue479_runner(
     return completed(args, out=output)
 
 
+def _issue494_runner(
+    args: list[str], name_status: str = "",
+) -> subprocess.CompletedProcess[str]:
+    output = "\0".join(sorted(EXPECTED[routes.ISSUE494_BRANCH])) + "\0" \
+        if "--name-only" in args else name_status
+    return completed(args, out=output)
+
+
 @pytest.mark.parametrize(
     "name_status",
     (
@@ -3442,10 +3460,14 @@ def test_exact_route_completeness_lookalikes_and_budgets(monkeypatch: Any) -> No
     for branch, paths in EXPECTED.items():
         failures: list[str] = []
         runner = (issue459_run if branch == routes.ISSUE459_BRANCH else
-                  _issue479_runner if branch == routes.ISSUE479_BRANCH else lambda _: completed([]))
+                  _issue479_runner if branch == routes.ISSUE479_BRANCH else
+                  _issue494_runner if branch == routes.ISSUE494_BRANCH else
+                  lambda _: completed([]))
         routes.check_exact_route(REPO, runner, branch, set(paths), failures)
         assert failures == []
-        if branch in {routes.ISSUE459_BRANCH, routes.ISSUE479_BRANCH}:
+        if branch in {
+            routes.ISSUE459_BRANCH, routes.ISSUE479_BRANCH, routes.ISSUE494_BRANCH,
+        }:
             continue
         missing = sorted(paths)[0]
         failures = []
@@ -3482,7 +3504,9 @@ def test_per_route_aggregate_per_file_and_binary_caps(monkeypatch: Any) -> None:
         monkeypatch.setattr(routes, "route_text_charges", lambda *_, value=limit: (value + 1, {}))
         failures: list[str] = []
         runner = (issue459_run if branch == routes.ISSUE459_BRANCH else
-                  _issue479_runner if branch == routes.ISSUE479_BRANCH else lambda _: completed([]))
+                  _issue479_runner if branch == routes.ISSUE479_BRANCH else
+                  _issue494_runner if branch == routes.ISSUE494_BRANCH else
+                  lambda _: completed([]))
         routes.check_exact_route(REPO, runner, branch, EXPECTED[branch], failures)
         assert failures == [f"Issue #{routes.ROUTE_ISSUES[branch]} charge {limit + 1} exceeds {limit}."]
     branch = routes.ISSUE383_BRANCH
@@ -3692,6 +3716,119 @@ def test_issue368_timeout_route_is_exact_bounded_and_base_pinned() -> None:
         ["git", "merge-base", routes.ISSUE368_TIMEOUT_BASE, "HEAD"],
         ["git", "merge-base", "origin/main", "HEAD"],
     ]
+
+
+def test_issue494_failure_diagnostic_route_is_exact_bounded_and_base_pinned() -> None:
+    branch = routes.ISSUE494_BRANCH
+    artifact = json.loads(
+        (
+            REPO
+            / "docs/governance/preflights/issue-494-google-tts-failure-diagnostics.json"
+        ).read_text()
+    )
+    expected = EXPECTED[branch]
+    assert branch == "stage8-494-google-tts-failure-diagnostics"
+    assert set(artifact["scope"]["required"]) == expected == routes.ROUTES[branch]
+    assert artifact["scope"]["required"] == artifact["scope"]["allowed_prefixes"]
+    assert routes.ROUTE_ISSUES[branch] == 494
+    assert routes.TOTAL_LIMITS[branch] == 1420
+    assert routes.TEXT_LIMITS[branch] == {
+        "backend/app/tts_provider.py": 180,
+        "tests/unit/test_stage6_tts_provider.py": 260,
+        "docs/governance/preflights/issue-494-google-tts-failure-diagnostics.json": 260,
+        "scripts/quality/stage8_cut1_routes.py": 160,
+        "tests/unit/test_stage8_cut1_routes.py": 220,
+        "docs/STATUS.md": 120,
+        "docs/ADR/0056-cut1-google-gemini-tts.md": 120,
+        "docs/TRACEABILITY.md": 100,
+    }
+    context = {"issue_number": 494, "branch": branch, "changed_files": list(expected)}
+    assert routes.validate_governance_preflight(artifact, context=context) == []
+    mutated = copy.deepcopy(context)
+    mutated["changed_files"] = [*mutated["changed_files"], "backend/app/google_tts_runtime.py"]
+    assert [
+        finding.code
+        for finding in routes.validate_governance_preflight(artifact, context=mutated)
+    ] == ["GPF.SCOPE.CHANGE_FORBIDDEN"]
+    assert all(
+        value in artifact["objective"]
+        for value in (
+            routes.ISSUE494_BASE,
+            routes.ISSUE494_FROZEN_HEAD,
+            routes.ISSUE494_TRANSITION_BASE,
+            routes.ISSUE494_TRANSITION_MERGE,
+            routes.ISSUE494_TRANSITION_COMMENT,
+            routes.ISSUE494_TRANSITION_SHA256,
+        )
+    )
+
+
+def test_issue494_requires_exact_reviewed_main_transition() -> None:
+    original = "ca49843ada493162fa02ff7331b7c6adf3b505c9"
+    frozen = "c217a088af84f62138f874a164bdbb75cc0f5987"
+    transition_base = "99f1d6a46bf9ee42d28aa04f46792ea56f392ab2"
+    transition_merge = "97671772b7ab8ef2c583cecde98f35a9e472457b"
+    assert routes.ISSUE494_BASE == original
+    assert routes.ISSUE494_FROZEN_HEAD == frozen
+    assert routes.ISSUE494_TRANSITION_BASE == transition_base
+    assert routes.ISSUE494_TRANSITION_MERGE == transition_merge
+    assert routes.ISSUE494_TRANSITION_COMMENT == "5499248540"
+    assert routes.ISSUE494_TRANSITION_SHA256 == (
+        "3c0968ef0827dfa314a8591230e410b4dd5a4b4092223b5f76fdc72499bbe9a3"
+    )
+
+    def good(args: list[str]) -> subprocess.CompletedProcess[str]:
+        if args[:2] == ["git", "rev-parse"]:
+            value = (
+                transition_base
+                if args[2] == "origin/main^{commit}"
+                else args[2].removesuffix("^{commit}")
+            )
+            return completed(args, out=value + "\n")
+        if args[:3] == ["git", "show", "-s"]:
+            return completed(args, out=f"{frozen} {transition_base}\n")
+        return completed(args)
+
+    assert routes.route_base(good, routes.ISSUE494_BRANCH) == transition_base
+
+    def drifted_main(args: list[str]) -> subprocess.CompletedProcess[str]:
+        if args == ["git", "rev-parse", "origin/main^{commit}"]:
+            return completed(args, out=original + "\n")
+        return good(args)
+
+    def forged_parents(args: list[str]) -> subprocess.CompletedProcess[str]:
+        if args[:3] == ["git", "show", "-s"]:
+            return completed(args, out=f"{transition_base} {frozen}\n")
+        return good(args)
+
+    for broken in (drifted_main, forged_parents):
+        error = pytest.raises(
+            RuntimeError, routes.route_base, broken, routes.ISSUE494_BRANCH
+        )
+        assert "Issue #494 reviewed transition" in str(error.value)
+
+
+def test_issue494_rejects_transition_snapshot_drift_and_rename(monkeypatch: Any) -> None:
+    branch = routes.ISSUE494_BRANCH
+    expected = EXPECTED[branch]
+    missing = "backend/app/tts_provider.py"
+    monkeypatch.setattr(routes, "route_base", lambda *_: routes.ISSUE494_TRANSITION_BASE)
+    monkeypatch.setattr(routes, "route_text_charges", lambda *_: (0, {}))
+
+    def drifted(args: list[str]) -> subprocess.CompletedProcess[str]:
+        if "--name-only" in args:
+            return completed(args, out="\0".join(sorted(expected - {missing})) + "\0")
+        if "--name-status" in args:
+            return completed(
+                args,
+                out="R100\0backend/app/tts_provider.py\0backend/app/tts_diagnostic.py\0",
+            )
+        return completed(args)
+
+    failures: list[str] = []
+    routes.check_exact_route(REPO, drifted, branch, expected, failures)
+    assert f"Issue #494 route snapshot is missing required path: {missing}" in failures
+    assert "Issue #494 route forbids deleted, renamed, or copied paths." in failures
 
 
 def test_issue368_prompt_route_requires_exact_merged_governance_base() -> None:

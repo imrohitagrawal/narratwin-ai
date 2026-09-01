@@ -827,6 +827,179 @@ def test_g368_06_silent_near_silent_fixed_tone_and_clipped_audio_fail_closed(
     assert caught.value.code == code
 
 
+def test_g494_non_success_retains_only_privacy_safe_diagnostics(tmp_path: Path) -> None:
+    secret_message = "private-provider-message-must-not-survive"
+    request_identifier = "raw-request-identifier-must-not-survive"
+    trace_identifier = "raw-trace-identifier-must-not-survive"
+    body = json.dumps(
+        {
+            "error": {
+                "code": 429,
+                "message": secret_message,
+                "status": "RESOURCE_EXHAUSTED",
+            }
+        }
+    ).encode()
+    response = google_response(
+        status_code=429,
+        body=body,
+        headers={
+            "content-type": "application/json; charset=utf-8",
+            "x-request-id": request_identifier,
+            "x-cloud-trace-context": trace_identifier,
+        },
+    )
+    state_path = tmp_path / "state.json"
+    provider = google_provider(
+        FakeGoogleTransport([response]),
+        FakeGoogleIdentityProvider(),
+        state_path=state_path,
+    )
+
+    with pytest.raises(TTSProviderError) as caught:
+        provider.synthesize(receipt=receipt())
+
+    assert caught.value.code == "GOOGLE_TTS_PROVIDER_FAILURE"
+    assert caught.value.status_code == 502
+    assert caught.value.billable is True and caught.value.retryable is False
+    diagnostics = getattr(caught.value, "provider_diagnostics", None)
+    assert diagnostics is not None
+    assert diagnostics.upstream_status_code == 429
+    assert diagnostics.response_byte_count == len(body)
+    assert diagnostics.response_body_sha256 == "sha256:" + hashlib.sha256(body).hexdigest()
+    assert diagnostics.provider_error_code == 429
+    assert diagnostics.provider_error_status == "RESOURCE_EXHAUSTED"
+    assert diagnostics.provider_request_id_sha256 == (
+        "sha256:" + hashlib.sha256(request_identifier.encode()).hexdigest()
+    )
+    assert diagnostics.provider_trace_id_sha256 == (
+        "sha256:" + hashlib.sha256(trace_identifier.encode()).hexdigest()
+    )
+    assert diagnostics.raw_response_retained is False
+    assert diagnostics.raw_headers_retained is False
+    retained = repr(caught.value) + str(caught.value) + repr(diagnostics) + state_path.read_text()
+    assert secret_message not in retained
+    assert request_identifier not in retained
+    assert trace_identifier not in retained
+    assert provider.request_state(receipt()) == "FAILED_BILLABLE"
+
+
+@pytest.mark.parametrize(
+    ("upstream_status", "provider_status"),
+    ((400, "INVALID_ARGUMENT"), (429, "RESOURCE_EXHAUSTED"), (500, "INTERNAL")),
+)
+def test_g494_safe_diagnostic_supports_bounded_google_error_classes(
+    upstream_status: int, provider_status: str
+) -> None:
+    body = json.dumps(
+        {"error": {"code": upstream_status, "message": "discard-me", "status": provider_status}}
+    ).encode()
+    with pytest.raises(TTSProviderError) as caught:
+        google_provider(
+            FakeGoogleTransport(
+                [
+                    google_response(
+                        status_code=upstream_status,
+                        body=body,
+                        headers={"content-type": "application/json"},
+                    )
+                ]
+            ),
+            FakeGoogleIdentityProvider(),
+        ).synthesize(receipt=receipt())
+
+    diagnostics = caught.value.provider_diagnostics
+    assert diagnostics is not None
+    assert diagnostics.provider_error_code == upstream_status
+    assert diagnostics.provider_error_status == provider_status
+    assert set(diagnostics.as_safe_dict()) == {
+        "upstreamStatusCode",
+        "responseByteCount",
+        "responseBodySha256",
+        "providerErrorCode",
+        "providerErrorStatus",
+        "providerRequestIdSha256",
+        "providerTraceIdSha256",
+        "rawResponseRetained",
+        "rawHeadersRetained",
+    }
+
+
+@pytest.mark.parametrize(
+    "body",
+    (
+        b'{"error":{"code":429,"code":429,"status":"RESOURCE_EXHAUSTED"}}',
+        b'{"error":{"code":400,"status":"RESOURCE_EXHAUSTED"}}',
+        b'{"error":{"code":429,"status":"PRIVATE_UNALLOWLISTED_VALUE"}}',
+        b'{"error":[{"code":429,"status":"RESOURCE_EXHAUSTED"}]}',
+        b"\xff\xfeprivate-invalid-utf8",
+    ),
+)
+def test_g494_malformed_or_unsafe_google_error_fields_are_not_promoted(body: bytes) -> None:
+    with pytest.raises(TTSProviderError) as caught:
+        google_provider(
+            FakeGoogleTransport(
+                [
+                    google_response(
+                        status_code=429,
+                        body=body,
+                        headers={"content-type": "application/json"},
+                    )
+                ]
+            ),
+            FakeGoogleIdentityProvider(),
+        ).synthesize(receipt=receipt())
+
+    diagnostics = caught.value.provider_diagnostics
+    assert diagnostics is not None
+    assert diagnostics.provider_error_code is None
+    assert diagnostics.provider_error_status is None
+    assert diagnostics.response_body_sha256 == "sha256:" + hashlib.sha256(body).hexdigest()
+    assert body.decode("utf-8", errors="ignore") not in repr(diagnostics)
+
+
+@pytest.mark.parametrize("status", (True, 99, 600))
+def test_g494_invalid_http_status_has_no_provider_diagnostic(status: object) -> None:
+    with pytest.raises(TTSProviderError) as caught:
+        google_provider(
+            FakeGoogleTransport([google_response(status_code=status)]),
+            FakeGoogleIdentityProvider(),
+        ).synthesize(receipt=receipt())
+
+    assert caught.value.code == "GOOGLE_TTS_RESPONSE_SCHEMA_INVALID"
+    assert caught.value.provider_diagnostics is None
+
+
+def test_g494_oversized_error_body_and_conflicting_identifiers_fail_closed() -> None:
+    with pytest.raises(TTSProviderError) as oversized:
+        google_provider(
+            FakeGoogleTransport(
+                [google_response(status_code=500, body=b"x" * (tts_provider_module.GOOGLE_MAX_RESPONSE_BYTES + 1))]
+            ),
+            FakeGoogleIdentityProvider(),
+        ).synthesize(receipt=receipt())
+    assert oversized.value.code == "GOOGLE_TTS_RESPONSE_SIZE_INVALID"
+    assert oversized.value.provider_diagnostics is None
+
+    headers = {
+        "content-type": "application/json",
+        "x-request-id": "first-private-id",
+        "x-goog-request-id": "second-private-id",
+        "x-cloud-trace-context": "x" * 513,
+    }
+    with pytest.raises(TTSProviderError) as conflicted:
+        google_provider(
+            FakeGoogleTransport([google_response(status_code=500, body=b"", headers=headers)]),
+            FakeGoogleIdentityProvider(),
+        ).synthesize(receipt=receipt())
+    diagnostics = conflicted.value.provider_diagnostics
+    assert diagnostics is not None
+    assert diagnostics.response_byte_count == 0
+    assert diagnostics.provider_request_id_sha256 is None
+    assert diagnostics.provider_trace_id_sha256 is None
+    assert "private-id" not in repr(diagnostics)
+
+
 def test_g368_07_completed_artifact_restores_replays_and_tombstones_monotonically(
     tmp_path: Path,
 ) -> None:
