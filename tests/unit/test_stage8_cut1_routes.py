@@ -1889,6 +1889,13 @@ def test_issue486_protected_source_route_is_exact_and_budgeted() -> None:
     assert set(artifact["scope"]["required"]) == expected
     assert set(artifact["scope"]["allowed_prefixes"]) == expected
     assert artifact["charged_line_budgets"] == {**expected_limits, "aggregate": 700}
+    assert artifact["route_authority"] == {
+        "freeze": "https://github.com/imrohitagrawal/narratwin-ai/issues/486#issuecomment-5492539437",
+        "ordered_amendments": [
+            "https://github.com/imrohitagrawal/narratwin-ai/issues/486#issuecomment-5492585578",
+            "https://github.com/imrohitagrawal/narratwin-ai/issues/486#issuecomment-5492618746",
+        ],
+    }
 
 
 def test_issue486_protected_source_route_rejects_drift(monkeypatch: Any) -> None:
@@ -1899,6 +1906,20 @@ def test_issue486_protected_source_route_rejects_drift(monkeypatch: Any) -> None
         return completed(args, out=base + "\n")
 
     assert routes.route_base(good, branch) == base
+    for rejected_call in range(3):
+        call_count = 0
+
+        def broken(
+            args: list[str], *, rejected: int = rejected_call
+        ) -> subprocess.CompletedProcess[str]:
+            nonlocal call_count
+            call_count += 1
+            value = "0" * 40 if call_count == rejected + 1 else base
+            return completed(args, out=value + "\n")
+
+        error = pytest.raises(RuntimeError, routes.route_base, broken, branch)
+        assert "Issue #486 fixed base" in str(error.value)
+
     lookalike = branch + "-extra"
     assert lookalike not in routes.ROUTES
     assert lookalike not in stage8.EFFECTIVE_STAGE8_ROUTES
@@ -1918,6 +1939,18 @@ def test_issue486_protected_source_route_rejects_drift(monkeypatch: Any) -> None
     failures = []
     routes.check_exact_route(REPO, lambda _: completed([]), branch, routes.ROUTES[branch], failures)
     assert failures == ["Issue #486 charge 701 exceeds 700."]
+
+    for path, limit in routes.TEXT_LIMITS[branch].items():
+        monkeypatch.setattr(
+            routes,
+            "route_text_charges",
+            lambda *_, path=path, limit=limit: (limit + 1, {path: limit + 1}),
+        )
+        failures = []
+        routes.check_exact_route(
+            REPO, lambda _: completed([]), branch, routes.ROUTES[branch], failures
+        )
+        assert failures == [f"Issue #486 charge for {path} exceeds {limit}."]
 
 
 def test_issue451_route_is_fixed_to_exact_base_paths_and_limits() -> None:

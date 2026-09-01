@@ -5,7 +5,13 @@
   "accepted_base": "f55f39bea1e009050c9d3f5e2f829cc8557f11d5",
   "accepted_base_tree": "18eea40473143d9d793860aa40b916f7de788cad",
   "objective": "Apply the exact seven-field reviewer-impact contract to the repository and reusable engineering playbook authority sources, then rebind dependent context modules without changing the transitional validator. This makes the holistic reviewer explanation durable for this repository and future projects that adopt the playbook. It adds no product/runtime behavior, narration, voice, audio, captions, avatar media, provider call, credential access, deployment, release, or Cut 1 completion claim.",
-  "route_authority": "https://github.com/imrohitagrawal/narratwin-ai/issues/486#issuecomment-5492539437",
+  "route_authority": {
+    "freeze": "https://github.com/imrohitagrawal/narratwin-ai/issues/486#issuecomment-5492539437",
+    "ordered_amendments": [
+      "https://github.com/imrohitagrawal/narratwin-ai/issues/486#issuecomment-5492585578",
+      "https://github.com/imrohitagrawal/narratwin-ai/issues/486#issuecomment-5492618746"
+    ]
+  },
   "scope": {
     "required": [
       "AGENTS.md",
