@@ -572,6 +572,15 @@ EXPECTED = {
         "docs/agent-context/context-policy-manifest-v1.json",
         "docs/STATUS.md",
     },
+    "stage8-486-reviewer-impact-protected-sources": {
+        "AGENTS.md",
+        "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md",
+        "docs/agent-context/context-policy-manifest-v1.json",
+        "docs/governance/preflights/issue-486-protected-reviewer-impact.json",
+        "docs/STATUS.md",
+        "scripts/quality/stage8_cut1_routes.py",
+        "tests/unit/test_stage8_cut1_routes.py",
+    },
     "cut1-process-413-frontend-runtime-openssl": {
         "docs/governance/preflights/issue-413.json",
         "frontend/Dockerfile",
@@ -1855,15 +1864,7 @@ def test_issue486_route_rejects_aggregate_and_each_per_path_budget(
 
 def test_issue486_protected_source_route_is_exact_and_budgeted() -> None:
     branch = "stage8-486-reviewer-impact-protected-sources"
-    expected = {
-        "AGENTS.md",
-        "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md",
-        "docs/agent-context/context-policy-manifest-v1.json",
-        "docs/governance/preflights/issue-486-protected-reviewer-impact.json",
-        "docs/STATUS.md",
-        "scripts/quality/stage8_cut1_routes.py",
-        "tests/unit/test_stage8_cut1_routes.py",
-    }
+    expected = EXPECTED[branch]
     expected_limits = {
         "AGENTS.md": 40,
         "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md": 40,
