@@ -2,18 +2,24 @@
   "schema_version": "GovernancePreflightV1",
   "issue_number": 507,
   "branch": "stage8-507-google-api-core-grpc-status",
-  "objective": "From accepted base 615298647609d2656d5e597209a8247467c71e78 and tree 1e4834ff96bf1cdc9a6ffb353de5e97ad68dc0fc, correct the reproduced Issue #507 REQUIRED_CONTRACT under freeze comment 5511779065. Preserve the allowlisted symbolic gRPC status from both raw grpc.RpcError code() and the google.api_core wrapper grpc_status_code while rejecting malformed or hostile shapes and retaining no raw exception data. Preserve billing, retry, accounting, provider, model, voice, narration, timeout, transport, activation, and disabled-default behavior. Prohibit provider calls, credential access, network egress, spend, raw exception persistence, new diagnostic fields, audio, captions, T05B/T05C acceptance, deployment, release, production-readiness, and Cut 1 claims. Use exactly three paths and at most 170 aggregate charged lines; stop on scope, budget, authority, privacy, behavior, evidence, or approval drift.",
-  "status_decision": "no-change",
+  "objective": "From accepted base 615298647609d2656d5e597209a8247467c71e78 and tree 1e4834ff96bf1cdc9a6ffb353de5e97ad68dc0fc, correct the reproduced Issue #507 REQUIRED_CONTRACT under freeze comment 5511779065, route amendment 5511888548, and status amendment 5511933453. Preserve the allowlisted symbolic gRPC status from both raw grpc.RpcError code() and the google.api_core wrapper grpc_status_code while rejecting malformed or hostile shapes and retaining no raw exception data. Preserve billing, retry, accounting, provider, model, voice, narration, timeout, transport, activation, and disabled-default behavior. Prohibit provider calls, credential access, network egress, spend, raw exception persistence, new diagnostic fields, audio, captions, T05B/T05C acceptance, deployment, release, production-readiness, and Cut 1 claims. Use exactly six paths and at most 440 aggregate charged lines; stop on scope, budget, authority, privacy, behavior, evidence, or approval drift.",
+  "status_decision": "update-minimally",
   "scope": {
     "required": [
       "backend/app/google_tts_runtime.py",
       "tests/unit/test_google_tts_runtime.py",
-      "docs/governance/preflights/issue-507.json"
+      "docs/governance/preflights/issue-507.json",
+      "scripts/quality/stage8_cut1_routes.py",
+      "tests/unit/test_stage8_cut1_routes.py",
+      "docs/STATUS.md"
     ],
     "allowed_prefixes": [
       "backend/app/google_tts_runtime.py",
       "tests/unit/test_google_tts_runtime.py",
-      "docs/governance/preflights/issue-507.json"
+      "docs/governance/preflights/issue-507.json",
+      "scripts/quality/stage8_cut1_routes.py",
+      "tests/unit/test_stage8_cut1_routes.py",
+      "docs/STATUS.md"
     ],
     "forbidden": [
       "frontend/",

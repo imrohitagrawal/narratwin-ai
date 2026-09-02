@@ -111,6 +111,7 @@ ISSUE452_EXPECTED = {
     "tests/unit/test_quality_dispatcher.py",
     "scripts/quality/stage8_cut1_routes.py",
     "tests/unit/test_stage8_cut1_routes.py",
+    "docs/STATUS.md",
     "docs/ADR/0065-cut1-all-presenter-acceptance-provider-bakeoff.md",
     "docs/PRODUCT_CONTRACTS/CUT1_PRESENTER_CONTRACT.md",
     "docs/AI_QUALITY_AND_EVALUATION_CONTRACT.md",
@@ -457,6 +458,22 @@ ISSUE502_LINE_CAPS = {
     "docs/STATUS.md": 120,
     "docs/TRACEABILITY.md": 120,
 }
+ISSUE507_EXPECTED = {
+    "backend/app/google_tts_runtime.py",
+    "tests/unit/test_google_tts_runtime.py",
+    "docs/governance/preflights/issue-507.json",
+    "scripts/quality/stage8_cut1_routes.py",
+    "tests/unit/test_stage8_cut1_routes.py",
+    "docs/STATUS.md",
+}
+ISSUE507_LINE_CAPS = {
+    "backend/app/google_tts_runtime.py": 20,
+    "tests/unit/test_google_tts_runtime.py": 100,
+    "docs/governance/preflights/issue-507.json": 50,
+    "scripts/quality/stage8_cut1_routes.py": 100,
+    "tests/unit/test_stage8_cut1_routes.py": 120,
+    "docs/STATUS.md": 50,
+}
 ISSUE498_EXPECTED = {
     "backend/app/google_tts_runtime.py", "backend/app/tts_provider.py",
     "tests/unit/test_google_tts_runtime.py", "tests/unit/test_stage6_tts_provider.py",
@@ -527,6 +544,7 @@ def remove_cleanup_marker(text: str, marker: str) -> str:
 
 
 EXPECTED = {
+    "stage8-507-google-api-core-grpc-status": ISSUE507_EXPECTED,
     "stage8-502-frontend-musl-runtime-security": ISSUE502_EXPECTED,
     "cut1-process-479-t05c-listening-authority": ISSUE479_EXPECTED,
     "cut1-process-482-dependency-security-refresh": ISSUE482_EXPECTED,
@@ -1027,6 +1045,34 @@ def test_issue502_musl_runtime_route_is_exact_bounded_and_authority_pinned() -> 
         routes.ISSUE502_ROUTE_SHA256,
     ):
         assert value in artifact["objective"]
+
+
+def test_issue507_google_api_core_grpc_status_route_is_exact_and_bounded() -> None:
+    branch = "stage8-507-google-api-core-grpc-status"
+    artifact = json.loads(
+        (REPO / "docs/governance/preflights/issue-507.json").read_text(encoding="utf-8")
+    )
+    assert routes.ISSUE507_BRANCH == branch
+    assert routes.ISSUE507_BASE == "615298647609d2656d5e597209a8247467c71e78"
+    assert routes.ISSUE507_TREE == "1e4834ff96bf1cdc9a6ffb353de5e97ad68dc0fc"
+    assert routes.ROUTES[branch] == ISSUE507_EXPECTED
+    assert routes.ROUTE_ISSUES[branch] == 507
+    assert routes.TOTAL_LIMITS[branch] == 440
+    assert routes.TEXT_LIMITS[branch] == ISSUE507_LINE_CAPS
+    assert set(artifact["scope"]["required"]) == ISSUE507_EXPECTED
+    assert artifact["scope"]["required"] == artifact["scope"]["allowed_prefixes"]
+    context = {"issue_number": 507, "branch": branch, "changed_files": list(ISSUE507_EXPECTED)}
+    assert routes.validate_governance_preflight(artifact, context=context) == []
+    assert all(
+        value in artifact["objective"]
+        for value in (
+            routes.ISSUE507_BASE,
+            routes.ISSUE507_TREE,
+            routes.ISSUE507_ROUTE_COMMENT,
+            routes.ISSUE507_ROUTE_AMENDMENT_COMMENT,
+            routes.ISSUE507_STATUS_AMENDMENT_COMMENT,
+        )
+    )
 
 
 def test_issue502_requires_exact_current_main_branch_point() -> None:
