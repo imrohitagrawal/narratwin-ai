@@ -1409,13 +1409,14 @@ def resource_lifecycle_failures(body: str) -> list[str]:
         r"workspace[- ]wide|host[- ]wide)"
     )
     unresolved_or_ambiguous_target = re.compile(
-        r"(?:\$\(|\$(?:\{[^}\n|]+\}|[A-Za-z_][A-Za-z0-9_]*)|"
+        r"(?:[<>]\(|\$\(|\$(?:\{[^}\n|]+\}|[A-Za-z_][A-Za-z0-9_]*)|"
         r"%[A-Za-z_][A-Za-z0-9_]*%|"
         r"(?<!\S)~(?:[/\s]|$)|(?<!\S)\.\.(?:[/\s]|$)|"
         r"(?<!\S)[\"']?/[\"']?(?=\s|$)|[^\s|]*[*?][^\s|]*)"
     )
-    shell_backtick_target = re.compile(
-        r"(?i)\b(?:git|docker|rm)\b[^`\n]*`[^`\n]+`"
+    unsafe_command_prefix = re.compile(
+        r"(?i)(?:\b(?:sudo|env|command|xargs)\s+(?:git|docker|rm)\b|"
+        r"(?:^|\s)[A-Za-z_][A-Za-z0-9_]*=\S+\s+(?:git|docker|rm)\b)"
     )
 
     def has_short_flag(tokens: list[str], flag: str) -> bool:
@@ -1480,7 +1481,10 @@ def resource_lifecycle_failures(body: str) -> list[str]:
                         or any(
                             value.startswith("-")
                             and not value.startswith("--")
-                            and ("f" in value[1:].lower() or "D" in value[1:])
+                            and (
+                                "f" in value[1:].lower()
+                                or any(alias in value[1:] for alias in "DMC")
+                            )
                             for value in arguments
                         )
                     ):
@@ -1497,7 +1501,8 @@ def resource_lifecycle_failures(body: str) -> list[str]:
                         if subcommand == "prune":
                             return True
                         if subcommand == "remove" and (
-                            has_long_flag(arguments[1:], "--force")
+                            len(arguments) < 2
+                            or has_long_flag(arguments[1:], "--force")
                             or has_short_flag(arguments[1:], "f")
                         ):
                             return True
@@ -1505,7 +1510,10 @@ def resource_lifecycle_failures(body: str) -> list[str]:
                     index = command_index(
                         tokens,
                         position + 1,
-                        {"-c", "--context", "--host", "-h", "--config"},
+                        {
+                            "-c", "--context", "--host", "-h", "--config",
+                            "-l", "--log-level", "--tlscacert", "--tlscert", "--tlskey",
+                        },
                     )
                     if index >= len(tokens):
                         continue
@@ -1556,14 +1564,16 @@ def resource_lifecycle_failures(body: str) -> list[str]:
                         continue
                     targets = [value for value in arguments if not value.startswith("-")]
                     if len(targets) != 1 or re.fullmatch(
-                        r"/(?:private/)?tmp/[A-Za-z0-9][A-Za-z0-9._-]{7,}", targets[0]
+                        r"/(?:private/)?tmp/[A-Za-z0-9][A-Za-z0-9._-]*"
+                        r"(?:/[A-Za-z0-9][A-Za-z0-9._-]*)*/?",
+                        targets[0],
                     ) is None:
                         return True
         return buildx_prune_count > 1
     if not rows:
         return [invalid]
     for cells in rows:
-        if len(cells) < 5:
+        if len(cells) != 5:
             return [invalid]
         resource, ownership, retention, cleanup, evidence = cells[:5]
         values = (resource, ownership, retention, cleanup, evidence)
@@ -1574,7 +1584,7 @@ def resource_lifecycle_failures(body: str) -> list[str]:
         if (
             broad_cleanup.search(cleanup)
             or unresolved_or_ambiguous_target.search(cleanup)
-            or shell_backtick_target.search(cleanup)
+            or unsafe_command_prefix.search(cleanup)
             or unsafe_shell_cleanup(cleanup)
         ):
             return [invalid]
