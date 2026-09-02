@@ -1159,6 +1159,15 @@ def test_resource_lifecycle_accepts_complete_owned_resource_row() -> None:
     assert guardrails.resource_lifecycle_failures(resource_lifecycle_body()) == []
 
 
+def test_resource_lifecycle_accepts_one_exact_buildx_cache_id_selector() -> None:
+    row = (
+        "| cache 0123456789abcdefghijklmnop | created by issue 391 after a zero-cache baseline | "
+        "success-clean | docker buildx prune --filter id=0123456789abcdefghijklmnop | "
+        "docker buildx du proves that exact ID absent |"
+    )
+    assert guardrails.resource_lifecycle_failures(resource_lifecycle_body(row=row)) == []
+
+
 def test_resource_lifecycle_rejects_missing_section() -> None:
     assert guardrails.resource_lifecycle_failures(product_context_body()) == [
         MISSING_RESOURCE_LIFECYCLE
