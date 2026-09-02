@@ -1497,7 +1497,8 @@ def resource_lifecycle_failures(body: str) -> list[str]:
                 and shell_command.search(outside_code) is None
                 and re.search(
                     r"(?i)(?:&&|\|\||[;&|]|\b(?:sudo|doas|env|eval|nice|nohup|"
-                    r"command|xargs|bash|sh|zsh|ksh|ssh|find|chroot|timeout)\b)",
+                    r"command|xargs|bash|sh|zsh|ksh|ssh|find|chroot|timeout)\b|"
+                    r"(?:^|\s)[A-Za-z_][A-Za-z0-9_]*=\S+)",
                     outside_code,
                 )
                 is None
@@ -1520,6 +1521,8 @@ def resource_lifecycle_failures(body: str) -> list[str]:
                     operation = lowered[index]
                     arguments = tokens[index + 1 :]
                     lower_arguments = lowered[index + 1 :]
+                    if index > position + 1:
+                        return True
                     if operation in {"clean", "reset", "switch", "checkout", "restore"}:
                         return True
                     if operation == "branch" and (
@@ -1566,6 +1569,8 @@ def resource_lifecycle_failures(body: str) -> list[str]:
                     operation = lowered[index]
                     arguments = tokens[index + 1 :]
                     lower_arguments = lowered[index + 1 :]
+                    if index > position + 1:
+                        return True
                     if operation in {
                         "system", "image", "volume", "network", "container",
                     } and "prune" in lower_arguments:
@@ -1596,6 +1601,8 @@ def resource_lifecycle_failures(body: str) -> list[str]:
                         and lower_arguments[:1] == ["rm"]
                         or operation == "buildx" and lower_arguments[:1] == ["rm"]
                     )
+                    if deletion and has_long_flag(arguments, "--all-inactive"):
+                        return True
                     if deletion and (
                         has_long_flag(arguments, "--force")
                         or has_short_flag(arguments, "f")
