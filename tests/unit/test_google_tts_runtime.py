@@ -789,6 +789,18 @@ def test_official_sdk_binding_builds_exact_public_request_without_network() -> N
     )
 
 
+def test_official_sdk_binding_extracts_google_api_core_grpc_status() -> None:
+    from google.api_core import exceptions
+
+    private_detail = "private-upstream-detail-DO-NOT-RETAIN"
+    error = exceptions.DeadlineExceeded(private_detail)
+
+    status = google_tts_runtime_module._OfficialGoogleGrpcBindings.failure_status(error)
+
+    assert status == "DEADLINE_EXCEEDED"
+    assert private_detail not in repr(status)
+
+
 def test_official_sdk_binding_pins_tls_channel_and_disables_proxy() -> None:
     captured: dict[str, object] = {}
 
