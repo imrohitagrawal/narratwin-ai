@@ -98,6 +98,9 @@ ISSUE498_MERGE_PARITY_COMMENT = "5504929555"
 ISSUE498_MERGE_PARITY_SHA256 = (
     "ec19733768f13672b8d322ae262c19fd8316c69a91ce197784f7cd5783b0b95c"
 )
+ISSUE498_APPROVED_HEAD = "e8a0ab585d8bb95625646fb626b4fe3980926d14"
+ISSUE498_SQUASH_MERGE = "e1fe126372d5c5a06dc7d2f9c76cb205da8643e7"
+ISSUE498_MERGED_TREE = "76495e566a78a7951c33314ac742606c85ee92e5"
 ISSUE498_COMMIT_TOPOLOGY: tuple[tuple[str | None, str], ...] = (
     ("5245393b2237cf8bcc25a652d885186b4d1c18f1", "test(tts): freeze official gRPC transport RED (#498)"),
     ("e8a0d9b7290d2f8af01994bdd9a1fd12851734cc", "feat(tts): add governed official unary gRPC transport (#498)"),
@@ -114,7 +117,7 @@ ISSUE498_COMMIT_TOPOLOGY: tuple[tuple[str | None, str], ...] = (
     ("23da78cc8807ab590bdc94a15ea94a6a31cd4c71", "fix(tts): discard grpc traceback inputs (#498)"),
     ("0f90f196f3992c487608476fe74767271b116ee6", "fix(tts): bind final grpc traceback correction (#498)"),
     ("233576f798b42cf09874e7d7ea896932886751c9", "test(stage8): freeze Issue498 merge topology parity (#498)"),
-    (None, "fix(stage8): validate Issue498 direct and merge heads (#498)"),
+    (ISSUE498_APPROVED_HEAD, "fix(stage8): validate Issue498 direct and merge heads (#498)"),
 )
 ISSUE368_BINDING_COMPAT_AUTHORITY = (
     "5485581802", "c81d57d6adf081aaf6ec2bf8c94f4513ca7e363910a669efc3551d5b3b4eae3f",
@@ -2175,20 +2178,38 @@ def issue459_base_source_failures(root: Path) -> list[str]:
 
 
 def issue498_commit_topology_failures(run: Callable[[list[str]], Any]) -> list[str]:
-    parents_result = run(["git", "show", "-s", "--format=%P", "HEAD"])
-    if parents_result.returncode:
-        return ["Issue #498 exact TDD commit topology drifted."]
-    parents = str(parents_result.stdout).strip().split()
-    if len(parents) == 1 and re.fullmatch(r"[0-9a-f]{40}", parents[0]):
-        candidate = "HEAD"
-    elif (
-        len(parents) == 2
-        and parents[0] == ISSUE498_BASE
-        and re.fullmatch(r"[0-9a-f]{40}", parents[1])
-    ):
-        candidate = parents[1]
+    failure = ["Issue #498 exact TDD commit topology drifted."]
+    head_result = run(["git", "rev-parse", "HEAD"])
+    head = str(head_result.stdout).strip()
+    if head_result.returncode or re.fullmatch(r"[0-9a-f]{40}", head) is None:
+        return failure
+
+    if head == ISSUE498_APPROVED_HEAD:
+        candidate = head
     else:
-        return ["Issue #498 exact TDD commit topology drifted."]
+        anchor_result = run(
+            [
+                "git", "show", "-s", "--format=%P%x00%T", ISSUE498_SQUASH_MERGE,
+            ]
+        )
+        anchor_fields = str(anchor_result.stdout).strip().split("\0")
+        if (
+            anchor_result.returncode == 0
+            and anchor_fields == [ISSUE498_BASE, ISSUE498_MERGED_TREE]
+        ):
+            ancestry = run(
+                ["git", "merge-base", "--is-ancestor", ISSUE498_SQUASH_MERGE, head]
+            )
+            if ancestry.returncode == 0:
+                return []
+        parents_result = run(["git", "show", "-s", "--format=%P", "HEAD"])
+        parents = str(parents_result.stdout).strip().split()
+        if (
+            parents_result.returncode
+            or parents != [ISSUE498_BASE, ISSUE498_APPROVED_HEAD]
+        ):
+            return failure
+        candidate = ISSUE498_APPROVED_HEAD
     result = run(
         [
             "git",
@@ -2200,22 +2221,22 @@ def issue498_commit_topology_failures(run: Callable[[list[str]], Any]) -> list[s
         ]
     )
     if result.returncode:
-        return ["Issue #498 exact TDD commit topology drifted."]
+        return failure
     fields = str(result.stdout).split("\0")
     if fields and fields[-1] == "":
         fields.pop()
     if len(fields) != len(ISSUE498_COMMIT_TOPOLOGY) * 2:
-        return ["Issue #498 exact TDD commit topology drifted."]
+        return failure
     actual = list(zip(fields[::2], fields[1::2], strict=True))
     for (commit, subject), (expected_commit, expected_subject) in zip(
         actual, ISSUE498_COMMIT_TOPOLOGY, strict=True
     ):
         if (
             re.fullmatch(r"[0-9a-f]{40}", commit) is None
-            or (expected_commit is not None and commit != expected_commit)
+            or commit != expected_commit
             or subject != expected_subject
         ):
-            return ["Issue #498 exact TDD commit topology drifted."]
+            return failure
     return []
 
 

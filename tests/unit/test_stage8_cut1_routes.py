@@ -3990,8 +3990,12 @@ def test_issue498_tdd_topology_mutations_fail_closed(mutation: str) -> None:
     )
 
     def run(args: list[str]) -> subprocess.CompletedProcess[str]:
-        if args == ["git", "show", "-s", "--format=%P", "HEAD"]:
-            return completed(args, 1 if mutation == "command" else 0, "a" * 40 + "\n")
+        if args == ["git", "rev-parse", "HEAD"]:
+            return completed(
+                args,
+                1 if mutation == "command" else 0,
+                routes.ISSUE498_APPROVED_HEAD + "\n",
+            )
         return completed(args, out=output)
 
     assert routes.issue498_commit_topology_failures(run) == [
@@ -4007,6 +4011,8 @@ def test_issue498_tdd_topology_accepts_exact_two_parent_hosted_merge() -> None:
     )
 
     def run(args: list[str]) -> subprocess.CompletedProcess[str]:
+        if args == ["git", "rev-parse", "HEAD"]:
+            return completed(args, out="a" * 40 + "\n")
         if args == ["git", "show", "-s", "--format=%P", "HEAD"]:
             return completed(args, out=f"{routes.ISSUE498_BASE} {feature_head}\n")
         if args[-1] == f"{routes.ISSUE498_BASE}..{feature_head}":
@@ -4098,6 +4104,8 @@ def test_issue498_tdd_topology_rejects_invalid_merge_parents(parents: str) -> No
     )
 
     def run(args: list[str]) -> subprocess.CompletedProcess[str]:
+        if args == ["git", "rev-parse", "HEAD"]:
+            return completed(args, out="a" * 40 + "\n")
         if args == ["git", "show", "-s", "--format=%P", "HEAD"]:
             return completed(args, out=parents + "\n")
         return completed(args, out=output)
