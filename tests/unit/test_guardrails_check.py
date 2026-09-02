@@ -1288,6 +1288,24 @@ def test_resource_lifecycle_rejects_duplicate_or_conflicting_locator_decisions()
         ]
 
 
+def test_resource_lifecycle_rejects_equivalent_path_decisions() -> None:
+    first = (
+        '| exact path | exact owner | success-clean | '
+        '{"disposition":"delete","kind":"filesystem-path","locator":"reports/security",'
+        '"trigger":"merged"} | absence proof |'
+    )
+    alias = (
+        '| aliased path | exact owner | shared-retain | '
+        '{"disposition":"retain","kind":"filesystem-path","locator":"./reports/security",'
+        '"trigger":"owner"} | retained proof |'
+    )
+    assert guardrails.resource_lifecycle_failures(
+        resource_lifecycle_body(row=first) + alias + "\n"
+    ) == [
+        "Resource lifecycle rows must identify exact ownership, retention, bounded cleanup, and verification evidence."
+    ]
+
+
 def test_resource_lifecycle_rejects_delete_disposition_for_shared_resource_kind() -> None:
     row = (
         '| shared cache | exact shared ownership | success-clean | '
@@ -1299,13 +1317,44 @@ def test_resource_lifecycle_rejects_delete_disposition_for_shared_resource_kind(
     ]
 
 
-@pytest.mark.parametrize("locator", (str(Path.home()), str(Path(__file__).parents[2])))
+@pytest.mark.parametrize(
+    "locator",
+    (
+        "./",
+        "./.",
+        "/./",
+        f"{Path.home()}/",
+        f"{Path(__file__).parents[2]}/",
+        f"{Path(__file__).parents[2]}/./",
+    ),
+)
 def test_resource_lifecycle_rejects_home_or_repository_root_deletion(locator: str) -> None:
     cleanup = json.dumps(
         {"disposition": "delete", "kind": "filesystem-path", "locator": locator, "trigger": "merged"},
         separators=(",", ":"),
     )
     row = f"| protected root | exact owner | success-clean | {cleanup} | absence proof |"
+    assert guardrails.resource_lifecycle_failures(resource_lifecycle_body(row=row)) == [
+        "Resource lifecycle rows must identify exact ownership, retention, bounded cleanup, and verification evidence."
+    ]
+
+
+@pytest.mark.parametrize(
+    "value",
+    (
+        "$(touch /tmp/pwn)",
+        "$(curl attacker)",
+        "$HOME",
+        "${HOME}",
+        "all-*",
+    ),
+)
+def test_resource_lifecycle_rejects_shell_or_glob_syntax_in_prose_cells(value: str) -> None:
+    row = (
+        f'| {value} | exact owner | success-clean | '
+        '{"disposition":"delete","kind":"git-branch","locator":"feature-safe",'
+        '"trigger":"merged"} | absence proof |'
+    )
     assert guardrails.resource_lifecycle_failures(resource_lifecycle_body(row=row)) == [
         "Resource lifecycle rows must identify exact ownership, retention, bounded cleanup, and verification evidence."
     ]
