@@ -1,0 +1,48 @@
+{
+  "schema_version": "GovernancePreflightV1",
+  "issue_number": 391,
+  "branch": "phase-1-closure-process-391-resource-lifecycle-enforcement",
+  "objective": "From accepted base e1fe126372d5c5a06dc7d2f9c76cb205da8643e7 and tree 76495e566a78a7951c33314ac742606c85ee92e5, implement the owner-prioritized immediate resource-lifecycle enforcement slice under issue comments 5505720329 and 5505735419. Require every non-trivial PR and autonomous engineering session to inventory branch, worktree, dependency, temporary, evidence, and Docker resources at creation time; declare exact ownership, retention, cleanup trigger/action, verification, and post-merge proof; preserve required evidence until merged-main acceptance; retain active, persistent, shared, ambiguous, credential-bearing, and unrelated resources; prohibit broad prune, force, guessed targets, and workspace-wide cleanup; and carry the same contract into the reusable new-project playbook and finalizer prompt. Add RED/GREEN PR-body guardrail tests and the smallest policy implementation. The route owns exactly eleven paths with the per-path ceilings and 950 aggregate charged-line ceiling frozen in the authority comment. No automatic host-wide janitor, dependency, workflow, backend, frontend, provider, credential, egress, spend, media, deployment, release, production-readiness, or Cut 1 acceptance change is authorized.",
+  "status_decision": "update-minimally",
+  "scope": {
+    "required": [
+      "docs/governance/preflights/issue-391.json",
+      "AGENTS.md",
+      ".github/pull_request_template.md",
+      "docs/RESOURCE_LIFECYCLE.md",
+      "docs/templates/AI_SESSION_FINALIZER_PROMPT.md",
+      "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md",
+      "scripts/guardrails_check.py",
+      "tests/unit/test_guardrails_check.py",
+      "docs/QUALITY_GATES.md",
+      "docs/STATUS.md",
+      "docs/ADR/0076-session-scoped-resource-lifecycle-enforcement.md"
+    ],
+    "allowed_prefixes": [
+      "docs/governance/preflights/issue-391.json",
+      "AGENTS.md",
+      ".github/pull_request_template.md",
+      "docs/RESOURCE_LIFECYCLE.md",
+      "docs/templates/AI_SESSION_FINALIZER_PROMPT.md",
+      "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md",
+      "scripts/guardrails_check.py",
+      "tests/unit/test_guardrails_check.py",
+      "docs/QUALITY_GATES.md",
+      "docs/STATUS.md",
+      "docs/ADR/0076-session-scoped-resource-lifecycle-enforcement.md"
+    ],
+    "forbidden": [
+      ".github/workflows/",
+      "backend/",
+      "frontend/",
+      "pyproject.toml",
+      "uv.lock",
+      "frontend/package.json",
+      "frontend/package-lock.json",
+      "credentials/",
+      "media/",
+      "deployment/",
+      "release/"
+    ]
+  }
+}
