@@ -789,6 +789,75 @@ def test_official_sdk_binding_builds_exact_public_request_without_network() -> N
     )
 
 
+def test_official_sdk_binding_extracts_google_api_core_grpc_status() -> None:
+    from google.api_core import exceptions
+
+    private_detail = "private-upstream-detail-DO-NOT-RETAIN"
+    error = cast(Any, exceptions.DeadlineExceeded)(private_detail)
+    binding = google_tts_runtime_module._OfficialGoogleGrpcBindings(
+        grpc_module=importlib.import_module("grpc"),
+        tts_module=object(),
+        transport_type=object(),
+    )
+
+    status = binding.failure_status(error)
+
+    assert status == "DEADLINE_EXCEEDED"
+    assert private_detail not in repr(status)
+
+
+def test_official_sdk_binding_preserves_raw_grpc_status() -> None:
+    grpc_module = importlib.import_module("grpc")
+
+    class RawGrpcError(Exception):
+        @staticmethod
+        def code() -> object:
+            return grpc_module.StatusCode.UNAVAILABLE
+
+    binding = google_tts_runtime_module._OfficialGoogleGrpcBindings(
+        grpc_module=grpc_module, tts_module=object(), transport_type=object(),
+    )
+    assert binding.failure_status(RawGrpcError()) == "UNAVAILABLE"
+
+
+@pytest.mark.parametrize(
+    "error",
+    (
+        Exception("private-detail"),
+        type("StringStatus", (Exception,), {"grpc_status_code": "DEADLINE_EXCEEDED"})(),
+        type("ForgedStatus", (Exception,), {"grpc_status_code": type("S", (), {"name": "DEADLINE_EXCEEDED"})()})(),
+        type("UnknownStatus", (Exception,), {"grpc_status_code": type("S", (), {"name": "BAD"})()})(),
+        type("ForgedRawStatus", (Exception,), {"code": lambda self: type("S", (), {"name": "UNAVAILABLE"})()})(),
+        type("UnknownRawStatus", (Exception,), {"code": lambda self: type("S", (), {"name": "BAD"})()})(),
+    ),
+)
+def test_official_sdk_binding_rejects_malformed_status_shapes(error: Exception) -> None:
+    binding = google_tts_runtime_module._OfficialGoogleGrpcBindings(
+        grpc_module=importlib.import_module("grpc"),
+        tts_module=object(),
+        transport_type=object(),
+    )
+    assert binding.failure_status(error) is None
+
+
+def test_official_sdk_binding_rejects_hostile_status_access() -> None:
+    class HostileError(Exception):
+        @property
+        def grpc_status_code(self) -> object:
+            raise RuntimeError("private-property-detail")
+
+        @staticmethod
+        def code() -> object:
+            raise RuntimeError("private-call-detail")
+
+    binding = google_tts_runtime_module._OfficialGoogleGrpcBindings(
+        grpc_module=importlib.import_module("grpc"),
+        tts_module=object(),
+        transport_type=object(),
+    )
+    assert binding.failure_status(HostileError()) is None
+
+
 def test_official_sdk_binding_pins_tls_channel_and_disables_proxy() -> None:
     captured: dict[str, object] = {}
 

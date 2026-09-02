@@ -2070,3 +2070,16 @@ human acceptance, deployment, release, production-readiness, or Cut 1 evidence.
   captions, avatar media, deployment, release, production readiness, or Cut 1
   acceptance. T05 still requires three exact audio artifacts and independent
   exact-byte human listening decisions.
+
+## Issue #507 official-client gRPC status preservation (2026-09-02)
+
+- Package 17 selected official unary gRPC and stopped after one Meera request
+  became `BILLABLE_UNKNOWN`; it produced no audio, captions, or T05 evidence.
+- The installed Google client exposes wrapped failures through
+  `grpc_status_code`, while the runtime recognized only raw callable `code()`.
+  Issue #507 preserves only the allowlisted symbolic status across both shapes
+  and rejects malformed or hostile values without retaining raw provider data.
+- This correction changes no billing, retry, timeout, transport, provider,
+  model, voice, narration, credential, activation, or attempt-accounting
+  behavior. T05 still requires three valid audio artifacts and independently
+  authored exact-hash human-listening acceptance before T06 can start.

@@ -194,6 +194,17 @@ frozen and authorized private operation package may explicitly select it for
 the existing Meera, Myra and Raj mappings. Successful transport would still
 prove neither spoken correctness nor human acceptance.
 
+### Official-client failure-status compatibility
+
+Issue #507 preserves the existing privacy-safe symbolic gRPC status when the
+official client translates an RPC failure into a `google.api_core` exception.
+The extractor accepts either the wrapper's `grpc_status_code` or the existing
+raw callable `code()` shape only when the result is the binding's real gRPC
+status enum, then reuses the fixed provider allowlist. Crafted, unknown,
+malformed or throwing values become absent. Raw exception/provider data is not
+retained, and billing, retry, timeout, transport and request behavior do not
+change.
+
 ## Consequences
 
 - The stale `local_tts.py`/eSpeak execution route is rejected, while its commit

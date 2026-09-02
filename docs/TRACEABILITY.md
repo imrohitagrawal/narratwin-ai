@@ -631,6 +631,14 @@ durability, deployment, and release decisions remain outside this trace.
 | Bind optional dependency supply chain | `google-cloud-texttospeech==2.37.0`; exact five-package lock delta/digests; license notice; strict `pip-audit` | Optional runtime providers extra plus exact development/test pin for hosted default tests; no gcloud binary, credential, model, voice asset or unrelated dependency drift |
 | Bind route and remaining work | Fourteen-path/5,200-line preflight and route mutations; OWNER amendment `5500512956` | Fifteen deliberate attempts and 7,746,792 microUSD remain; fresh post-merge package required; T05–T08 and Cut 1 remain incomplete |
 
+## Issue #507 official-client gRPC status traceability
+
+| Requirement | Evidence | Preserved boundary |
+|---|---|---|
+| Preserve upstream status across official-client wrapping | Dependency-backed API-core deadline RED/GREEN test and raw callable-code regression | Both shapes require the binding's real gRPC status enum and existing allowlist; matching crafted names fail |
+| Reject forged or privacy-unsafe failure shapes | Unknown, string, crafted and hostile property/call mutations plus raw-detail non-retention assertion | No raw exception, metadata, header, identifier, request, response, credential, narration or audio retention |
+| Preserve operation semantics and remaining gates | Exact Issue #507 route/budget tests and unchanged durable provider-state tests | No billing, retry, timeout, transport, request, provider-call or spend change; three audio artifacts and T05C decisions remain required |
+
 ## Issue #413 frontend runtime OpenSSL traceability
 
 | Evidence | Requirement | Preserved boundary |
