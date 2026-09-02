@@ -2326,7 +2326,7 @@ def check_exact_route(
             if any(snapshot.returncode for snapshot in snapshots):
                 raise RuntimeError("Issue #459 transition route evidence is unavailable.")
             for paths, expected in zip((set(parse_paths_z(str(snapshot.stdout))) | (effective_changed & ISSUE459_HOSTED_CORRECTION_PATHS if index else set()) for index, snapshot in enumerate(snapshots)), (files - ISSUE459_HOSTED_CORRECTION_PATHS, files), strict=True):
-                effective_changed.update(paths)
+                effective_changed.update(paths & files)
                 failures.extend(
                     f"Issue #459 route contains unauthorized path: {path}"
                     for path in sorted(paths - expected)

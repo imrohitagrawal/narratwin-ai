@@ -103,6 +103,22 @@ def test_issue502_musl_closure_and_real_sharp_transform_fail_closed() -> None:
     assert all(not security.frontend_node_image_valid(candidate) for candidate in mutations)
 
 
+def test_issue502_security_workflow_runs_both_frontend_architectures_in_one_context() -> None:
+    workflow = stage8.read(".github/workflows/security.yml")
+    assert workflow.count("name: security / docker build") == 1
+    assert "docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130" in workflow
+    assert "platforms: arm64" in workflow
+    for architecture in ("amd64", "arm64"):
+        assert f"REPORT_DIR: reports/security/{architecture}" in workflow
+        assert f"FRONTEND_ARCH: {architecture}" in workflow
+        assert f"SESSION: issue502-hosted-{architecture}" in workflow
+        assert f"narratwin-ai-frontend:ci-{architecture}" in workflow
+        assert f"narratwin-ai-frontend-build:ci-{architecture}" in workflow
+        assert f"narratwin-ai-frontend:repro-ci-{architecture}" in workflow
+    assert workflow.count("bash scripts/ci/docker-image-scan.sh") == 2
+    assert "path: reports/security" in workflow
+
+
 def test_issue376_shell_free_dependency_builder_contract_fails_closed() -> None:
     dockerfile = stage8.read("frontend/Dockerfile")
     assert security.issue376_frontend_builder_valid(dockerfile)

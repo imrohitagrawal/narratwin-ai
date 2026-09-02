@@ -413,16 +413,8 @@ def check_dependencies_and_scripts(failures: list[str]) -> None:
     ):
         if marker not in scripts:
             fail(f"Stage 8 scripts must include {marker}.", failures)
-    for marker in (
-        "security / docker build",
-        "docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130",
-        "reports/security/amd64",
-        "reports/security/arm64",
-        "FRONTEND_ARCH: amd64",
-        "FRONTEND_ARCH: arm64",
-        "docker-image-scan.sh",
-        "upload-artifact",
-    ):
+    for marker in ("security / docker build", "setup-qemu-action", "reports/security/",
+                   "FRONTEND_ARCH:", "docker-image-scan.sh", "upload-artifact"):
         if marker not in security_workflow:
             fail(f"Stage 8 security workflow must include {marker}.", failures)
     for marker in (
