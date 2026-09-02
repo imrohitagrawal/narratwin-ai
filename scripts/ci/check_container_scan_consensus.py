@@ -240,13 +240,18 @@ def _package_identities(component: dict[str, Any]) -> set[str]:
     identities = {str(component.get("name", "")).casefold()}
     for field in ("purl", "bom-ref"):
         value = str(component.get(field, ""))
-        if value.startswith("pkg:"):
-            identities.add(
-                unquote(urlsplit(value).path).rsplit("/", 1)[-1].split("@", 1)[0].casefold()
-            )
+        parsed = urlsplit(value)
+        identity_path = parsed.path if parsed.scheme.casefold() == "pkg" else value
+        identities.add(
+            unquote(identity_path).split("?", 1)[0].split("#", 1)[0]
+            .rstrip("/").rsplit("/", 1)[-1].split("@", 1)[0].casefold()
+        )
     cpe = str(component.get("cpe", ""))
-    if cpe.startswith("cpe:2.3:") and len(cpe.split(":")) > 4:
-        identities.add(unquote(cpe.split(":")[4]).casefold())
+    cpe_parts = cpe.split(":")
+    if cpe.casefold().startswith("cpe:2.3:") and len(cpe_parts) > 4:
+        identities.add(unquote(cpe_parts[4]).casefold())
+    elif cpe.casefold().startswith("cpe:/") and len(cpe_parts) > 3:
+        identities.add(unquote(cpe_parts[3]).casefold())
     for prop in component.get("properties", []):
         if not isinstance(prop, dict):
             continue
