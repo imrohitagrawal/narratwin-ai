@@ -413,6 +413,27 @@ ISSUE499_EXPECTED = {
     "docs/THIRD_PARTY_NOTICES.md",
     "docs/TRACEABILITY.md",
 }
+ISSUE498_EXPECTED = {
+    "backend/app/google_tts_runtime.py", "backend/app/tts_provider.py",
+    "tests/unit/test_google_tts_runtime.py", "tests/unit/test_stage6_tts_provider.py",
+    "tests/unit/test_dependency_security_contract.py", "pyproject.toml", "uv.lock",
+    "docs/governance/preflights/issue-498-google-tts-official-grpc.json",
+    "scripts/quality/stage8_cut1_routes.py", "tests/unit/test_stage8_cut1_routes.py",
+    "docs/ADR/0056-cut1-google-gemini-tts.md", "docs/STATUS.md",
+    "docs/THIRD_PARTY_NOTICES.md", "docs/TRACEABILITY.md",
+}
+ISSUE498_LINE_CAPS = {
+    "backend/app/google_tts_runtime.py": 650, "backend/app/tts_provider.py": 350,
+    "tests/unit/test_google_tts_runtime.py": 850,
+    "tests/unit/test_stage6_tts_provider.py": 450,
+    "tests/unit/test_dependency_security_contract.py": 500, "pyproject.toml": 10,
+    "uv.lock": 1000,
+    "docs/governance/preflights/issue-498-google-tts-official-grpc.json": 340,
+    "scripts/quality/stage8_cut1_routes.py": 240,
+    "tests/unit/test_stage8_cut1_routes.py": 320,
+    "docs/ADR/0056-cut1-google-gemini-tts.md": 180, "docs/STATUS.md": 140,
+    "docs/THIRD_PARTY_NOTICES.md": 180, "docs/TRACEABILITY.md": 140,
+}
 ISSUE468_EXPECTED = {
     "AGENTS.md",
     "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md",
@@ -465,6 +486,7 @@ EXPECTED = {
     "cut1-process-479-t05c-listening-authority": ISSUE479_EXPECTED,
     "cut1-process-482-dependency-security-refresh": ISSUE482_EXPECTED,
     "stage8-495-browserslist-security-refresh": ISSUE495_EXPECTED,
+    "stage8-498-google-tts-official-grpc": ISSUE498_EXPECTED,
     "cut1-process-478-pr477-status-closeout": ISSUE478_EXPECTED,
     "cut1-475-t05b-runtime-receipt-binding": ISSUE475_EXPECTED,
     "governance-468-scoped-merge-cleanup": ISSUE468_EXPECTED,
@@ -2740,6 +2762,14 @@ def _issue494_runner(
     return completed(args, out=output)
 
 
+def _issue498_runner(args: list[str]) -> subprocess.CompletedProcess[str]:
+    if args[:3] == ["git", "log", "--reverse"] or args == [
+        "git", "show", "-s", "--format=%P", "HEAD"
+    ]:
+        return subprocess.run(args, cwd=REPO, check=False, capture_output=True, text=True)
+    return completed(args)
+
+
 @pytest.mark.parametrize(
     "name_status",
     (
@@ -3475,6 +3505,7 @@ def test_exact_route_completeness_lookalikes_and_budgets(monkeypatch: Any) -> No
         runner = (issue459_run if branch == routes.ISSUE459_BRANCH else
                   _issue479_runner if branch == routes.ISSUE479_BRANCH else
                   _issue494_runner if branch == routes.ISSUE494_BRANCH else
+                  _issue498_runner if branch == routes.ISSUE498_BRANCH else
                   lambda _: completed([]))
         routes.check_exact_route(REPO, runner, branch, set(paths), failures)
         assert failures == []
@@ -3484,7 +3515,7 @@ def test_exact_route_completeness_lookalikes_and_budgets(monkeypatch: Any) -> No
             continue
         missing = sorted(paths)[0]
         failures = []
-        routes.check_exact_route(REPO, lambda _: completed([]), branch, paths - {missing}, failures)
+        routes.check_exact_route(REPO, runner, branch, paths - {missing}, failures)
         issue = routes.ROUTE_ISSUES[branch]
         assert failures == [f"Issue #{issue} route is missing required path: {missing}"]
         confusable = (
@@ -3525,6 +3556,7 @@ def test_per_route_aggregate_per_file_and_binary_caps(monkeypatch: Any) -> None:
         runner = (issue459_run if branch == routes.ISSUE459_BRANCH else
                   _issue479_runner if branch == routes.ISSUE479_BRANCH else
                   _issue494_runner if branch == routes.ISSUE494_BRANCH else
+                  _issue498_runner if branch == routes.ISSUE498_BRANCH else
                   lambda _: completed([]))
         routes.check_exact_route(REPO, runner, branch, EXPECTED[branch], failures)
         assert failures == [f"Issue #{routes.ROUTE_ISSUES[branch]} charge {limit + 1} exceeds {limit}."]
@@ -3848,6 +3880,164 @@ def test_issue494_rejects_transition_snapshot_drift_and_rename(monkeypatch: Any)
     routes.check_exact_route(REPO, drifted, branch, expected, failures)
     assert f"Issue #494 route snapshot is missing required path: {missing}" in failures
     assert "Issue #494 route forbids deleted, renamed, or copied paths." in failures
+
+
+def test_issue498_official_grpc_route_is_exact_bounded_and_base_pinned() -> None:
+    branch = routes.ISSUE498_BRANCH
+    artifact = json.loads((REPO / "docs/governance/preflights/issue-498-google-tts-official-grpc.json").read_text())
+    assert branch == "stage8-498-google-tts-official-grpc"
+    assert routes.ISSUE498_BASE == "8fb9b6d143515a6e5cfe3c395477e51696fe782b"
+    assert routes.ISSUE498_TREE == "21b5c26355262482b02554d4115fc5567b6fb253"
+    assert routes.ISSUE498_FREEZE_COMMENT == "5500521261"
+    assert routes.ISSUE498_FREEZE_SHA256 == "fafc0f0a8ae18c9cc08d9dbab668235546f652aa780256792d5d1cb0e8f9f58b"
+    assert routes.ISSUE498_AMENDMENT_COMMENT == "5500539931"
+    assert routes.ISSUE498_AMENDMENT_SHA256 == "30faa0f1062545413efaa7b6e9bc38f9b2cd82f2554078f666aac04e4f8ef843"
+    assert routes.ISSUE498_BASE_AMENDMENT_COMMENT == "5504413401"
+    assert routes.ISSUE498_BASE_AMENDMENT_SHA256 == "f575ac4c5eb75a2d7e45740e90b4652d08cd5601837a29a2dffe477279e604e9"
+    assert set(artifact["scope"]["required"]) == ISSUE498_EXPECTED == routes.ROUTES[branch]
+    assert artifact["scope"]["required"] == artifact["scope"]["allowed_prefixes"]
+    assert routes.ROUTE_ISSUES[branch] == 498
+    assert routes.TOTAL_LIMITS[branch] == 5200
+    assert routes.TEXT_LIMITS[branch] == ISSUE498_LINE_CAPS
+    context = {"issue_number": 498, "branch": branch,
+               "changed_files": artifact["scope"]["required"]}
+    assert routes.validate_governance_preflight(artifact, context=context) == []
+    mutated = copy.deepcopy(context)
+    mutated["changed_files"] = [*mutated["changed_files"], "backend/app/narration.py"]
+    assert [finding.code for finding in routes.validate_governance_preflight(
+        artifact, context=mutated)] == ["GPF.SCOPE.CHANGE_FORBIDDEN"]
+    assert all(value in artifact["objective"] for value in (
+        routes.ISSUE498_BASE, routes.ISSUE498_TREE, routes.ISSUE498_FREEZE_COMMENT,
+        routes.ISSUE498_FREEZE_SHA256, routes.ISSUE498_AMENDMENT_COMMENT,
+        routes.ISSUE498_AMENDMENT_SHA256, routes.ISSUE498_BASE_AMENDMENT_COMMENT,
+        routes.ISSUE498_BASE_AMENDMENT_SHA256,
+    ))
+
+
+def test_issue498_requires_exact_current_main_branch_point() -> None:
+    base = routes.ISSUE498_BASE
+
+    def good(args: list[str]) -> subprocess.CompletedProcess[str]:
+        if args[:2] in (["git", "rev-parse"], ["git", "merge-base"]):
+            return completed(args, out=base + "\n")
+        return completed(args)
+
+    assert routes.route_base(good, routes.ISSUE498_BRANCH) == base
+
+    def drifted(args: list[str]) -> subprocess.CompletedProcess[str]:
+        if args == ["git", "merge-base", "origin/main", "HEAD"]:
+            return completed(args, out="0" * 40 + "\n")
+        return good(args)
+
+    with pytest.raises(RuntimeError, match="Issue #498 fixed base evidence"):
+        routes.route_base(drifted, routes.ISSUE498_BRANCH)
+
+
+def test_issue498_requires_exact_sixteen_commit_tdd_topology_and_final_authority() -> None:
+    artifact = json.loads(
+        (REPO / "docs/governance/preflights/issue-498-google-tts-official-grpc.json").read_text()
+    )
+    assert routes.ISSUE498_TOPOLOGY_COMMENT == "5504600826"
+    assert routes.ISSUE498_TOPOLOGY_SHA256 == (
+        "ec2477cfc8ce73eb624ce3e4b154b34336859fb100997dcfb6202234f191205f"
+    )
+    assert routes.ISSUE498_REVIEW_CORRECTION_COMMENT == "5504653805"
+    assert routes.ISSUE498_REVIEW_CORRECTION_SHA256 == (
+        "a5cea09fcf3964caabd34ea7ea3a1ff991bc79599a2442b3680b960f5b8c7b5e"
+    )
+    assert routes.ISSUE498_TRACEBACK_CORRECTION_COMMENT == "5504746823"
+    assert routes.ISSUE498_TRACEBACK_CORRECTION_SHA256 == (
+        "9a179acb4bdc513cb2a6d122ebe271885ee927baf4972e8113f8ca66f1137217"
+    )
+    assert routes.ISSUE498_MERGE_PARITY_COMMENT == "5504929555"
+    assert routes.ISSUE498_MERGE_PARITY_SHA256 == (
+        "ec19733768f13672b8d322ae262c19fd8316c69a91ce197784f7cd5783b0b95c"
+    )
+    assert all(
+        value in artifact["objective"]
+        for value in (
+            routes.ISSUE498_TOPOLOGY_COMMENT,
+            routes.ISSUE498_TOPOLOGY_SHA256,
+            routes.ISSUE498_REVIEW_CORRECTION_COMMENT,
+            routes.ISSUE498_REVIEW_CORRECTION_SHA256,
+            routes.ISSUE498_TRACEBACK_CORRECTION_COMMENT,
+            routes.ISSUE498_TRACEBACK_CORRECTION_SHA256,
+            routes.ISSUE498_MERGE_PARITY_COMMENT,
+            routes.ISSUE498_MERGE_PARITY_SHA256,
+        )
+    )
+
+    def run(args: list[str]) -> subprocess.CompletedProcess[str]:
+        return subprocess.run(args, cwd=REPO, check=False, capture_output=True, text=True)
+
+    assert routes.issue498_commit_topology_failures(run) == []
+
+
+@pytest.mark.parametrize("mutation", ["missing", "extra", "old-hash", "subject", "command"])
+def test_issue498_tdd_topology_mutations_fail_closed(mutation: str) -> None:
+    records = list(routes.ISSUE498_COMMIT_TOPOLOGY)
+    if mutation == "missing":
+        records.pop()
+    elif mutation == "extra":
+        records.append(("f" * 40, "fix(tts): unauthorized extra commit (#498)"))
+    elif mutation == "old-hash":
+        records[0] = ("0" * 40, records[0][1])
+    elif mutation == "subject":
+        records[-1] = (records[-1][0], "fix(tts): changed subject (#498)")
+    output = "".join(
+        f"{commit if commit is not None else 'a' * 40}\0{subject}\0"
+        for commit, subject in records
+    )
+
+    def run(args: list[str]) -> subprocess.CompletedProcess[str]:
+        if args == ["git", "show", "-s", "--format=%P", "HEAD"]:
+            return completed(args, 1 if mutation == "command" else 0, "a" * 40 + "\n")
+        return completed(args, out=output)
+
+    assert routes.issue498_commit_topology_failures(run) == [
+        "Issue #498 exact TDD commit topology drifted."
+    ]
+
+
+def test_issue498_tdd_topology_accepts_exact_two_parent_hosted_merge() -> None:
+    feature_head = "f" * 40
+    output = "".join(
+        f"{commit if commit is not None else feature_head}\0{subject}\0"
+        for commit, subject in routes.ISSUE498_COMMIT_TOPOLOGY
+    )
+
+    def run(args: list[str]) -> subprocess.CompletedProcess[str]:
+        if args == ["git", "show", "-s", "--format=%P", "HEAD"]:
+            return completed(args, out=f"{routes.ISSUE498_BASE} {feature_head}\n")
+        if args[-1] == f"{routes.ISSUE498_BASE}..{feature_head}":
+            return completed(args, out=output)
+        return completed(args, code=1)
+
+    assert routes.issue498_commit_topology_failures(run) == []
+
+
+@pytest.mark.parametrize(
+    "parents",
+    (
+        f"{'0' * 40} {'f' * 40}",
+        f"{routes.ISSUE498_BASE} {'f' * 40} {'e' * 40}",
+        "",
+    ),
+)
+def test_issue498_tdd_topology_rejects_invalid_merge_parents(parents: str) -> None:
+    output = "".join(
+        f"{commit if commit is not None else 'f' * 40}\0{subject}\0"
+        for commit, subject in routes.ISSUE498_COMMIT_TOPOLOGY
+    )
+
+    def run(args: list[str]) -> subprocess.CompletedProcess[str]:
+        if args == ["git", "show", "-s", "--format=%P", "HEAD"]:
+            return completed(args, out=parents + "\n")
+        return completed(args, out=output)
+
+    assert routes.issue498_commit_topology_failures(run) == [
+        "Issue #498 exact TDD commit topology drifted."
+    ]
 
 
 def test_issue368_prompt_route_requires_exact_merged_governance_base() -> None:

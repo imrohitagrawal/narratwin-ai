@@ -248,17 +248,17 @@ Blocked for Slice 1:
 
 Issue #368 selects Google Cloud Text-to-Speech `gemini-2.5-pro-tts` as an
 optional hosted adapter using `en-IN` and the Europe endpoint. This repository
-implementation uses only Python standard-library validation plus injected fake
-protocols. It installs no Google SDK, contains no Google binary/model/voice asset,
-makes no provider call, and grants no redistribution, commercial-use,
-indemnification or output-right conclusion.
+implementation contains Python standard-library validation, the optional
+official Google Cloud Text-to-Speech SDK, and injected fake protocols. It
+contains no Google binary/model/voice asset, makes no provider call during tests
+or ordinary disabled-default execution, and grants no redistribution,
+commercial-use, indemnification or output-right conclusion.
 
 Applicable first-party product documentation, pricing, service terms,
 acceptable-use/prohibited-use policies, data-location terms and deprecation
 policy are recorded with exact URLs and unresolved blockers in the Issue #368
-governance review. Any future SDK or dependency requires a separate license,
-supply-chain, credential and lockfile decision before addition. Private screening
-references and generated audio are not third-party assets committed to Git.
+governance review. Private screening references and generated audio are not
+third-party assets committed to Git.
 The optional runtime adds `google-auth==2.56.3` from official PyPI under
 Apache-2.0. Its locked closure is `cryptography==50.0.0` (Apache-2.0 OR
 BSD-3-Clause), `pyasn1-modules==0.4.2` (BSD-2-Clause), `pyasn1==0.6.4`
@@ -266,10 +266,17 @@ BSD-3-Clause), `pyasn1-modules==0.4.2` (BSD-2-Clause), `pyasn1==0.6.4`
 The corresponding source/wheel hashes are recorded in `uv.lock`; the canonical
 google-auth wheel hash is
 `8ec438808f813ad034535000261eed1067475d229d05bbf4216e78c3f2362e53`.
-No Google Cloud TTS SDK, requests extra, gcloud binary, API key or service
-account JSON is added. The runtime remains disabled and activation still
-requires fresh terms, privacy, account, IAM, billing, quota, endpoint-policy
-and effective-output review. Sources: [google-auth PyPI](https://pypi.org/project/google-auth/2.56.3/), [cryptography PyPI](https://pypi.org/project/cryptography/50.0.0/), [pyasn1 PyPI](https://pypi.org/project/pyasn1/0.6.4/), [pyasn1-modules PyPI](https://pypi.org/project/pyasn1-modules/0.4.2/), [cffi PyPI](https://pypi.org/project/cffi/2.0.0/), [pycparser PyPI](https://pypi.org/project/pycparser/3.0/).
+Issue #498 adds `google-cloud-texttospeech==2.37.0` under Apache-2.0 in the
+optional runtime `providers` extra and the exact development/test dependency group
+used by default hosted checks. Its newly materialized locked delta is
+`google-api-core==2.34.0` (Apache-2.0), `grpcio==1.83.1` (Apache-2.0),
+`grpcio-status==1.83.1` (Apache-2.0), and `proto-plus==1.28.4` (Apache-2.0);
+their exact source and wheel hashes are recorded in `uv.lock`. Existing
+`googleapis-common-protos`, `protobuf`, `requests`, and authentication closure
+records are reused without version drift. No gcloud binary, API key, service
+account JSON, credential, model, voice asset, or generated media is added. The
+runtime remains disabled by default and hosted activation remains separately
+governed. Sources: [Google Cloud TTS SDK PyPI](https://pypi.org/project/google-cloud-texttospeech/2.37.0/), [Google API Core PyPI](https://pypi.org/project/google-api-core/2.34.0/), [gRPC Python PyPI](https://pypi.org/project/grpcio/1.83.1/), [gRPC status PyPI](https://pypi.org/project/grpcio-status/1.83.1/), [proto-plus PyPI](https://pypi.org/project/proto-plus/1.28.4/), [google-auth PyPI](https://pypi.org/project/google-auth/2.56.3/), [cryptography PyPI](https://pypi.org/project/cryptography/50.0.0/), [pyasn1 PyPI](https://pypi.org/project/pyasn1/0.6.4/), [pyasn1-modules PyPI](https://pypi.org/project/pyasn1-modules/0.4.2/), [cffi PyPI](https://pypi.org/project/cffi/2.0.0/), [pycparser PyPI](https://pypi.org/project/pycparser/3.0/).
 
 ## Authority-evidence public verification
 

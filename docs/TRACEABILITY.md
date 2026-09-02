@@ -619,6 +619,18 @@ durability, deployment, and release decisions remain outside this trace.
 | Preserve ambiguity and spend safety | Existing single-use session and durable `BILLABLE_UNKNOWN` replay tests plus package 11 stop record | Package 11 is not reset or retried; a fresh package and explicit OWNER retry authority remain required |
 | Preserve provider/security scope | Exact ten-path preflight and route mutation; existing EU endpoint, DNS/IP/TLS/peer, no-proxy/redirect, header, response-size, concurrency, activation/privacy/policy/budget/quota tests | No provider call in branch tests; no voice/text/media/listening/deployment/release/Cut 1 acceptance authority |
 
+## Issue #498 official unary gRPC transport traceability
+
+| Requirement | Evidence | Preserved boundary |
+|---|---|---|
+| Correct the reproduced long-request REST failure without changing product content | Package 13/14 identical ~62.2-second 502 fingerprint; Issue #498 freeze/amendment; official `TextToSpeechClient` typed-request tests | Diagnosis is an inference, not a claimed Google root cause; exact text, Despina/Leda/Achird, model, `en-IN`, EU endpoint and LINEAR16 remain |
+| Make transport selection explicit and fail closed | Separate `OfficialUnaryGoogleTTSTransport`; legacy REST regression; no-fallback/no-retry assertions; disabled-import test | Mock/local remains default; repository tests and this PR make zero credential, provider, egress or spend calls |
+| Preserve network and privacy controls | Screened DNS answers, pinned IP channel target, exact TLS SNI/authority, proxy-disable channel option, readiness-before-identity, single-use close, bounded response, metadata/request mutations | No redirect, proxy, alternate endpoint, arbitrary metadata, raw token/project/exception/request/response retention or automatic retry |
+| Preserve exact request and downstream admission | Real SDK `SynthesizeSpeechRequest` field assertions; `retry=None`; operation timeout; audio wrapped into existing response validator | No new narration, voice, audio, caption or avatar artifact; WAV validation, durable ledger, T05B and exact-byte T05C remain mandatory |
+| Retain truthful bounded failures | Fixed canonical gRPC status allowlist, unknown/malformed status mutations, generic public error and `BILLABLE_UNKNOWN` state | No invented HTTP status, raw gRPC detail/debug/metadata, correlation value, retry or refund |
+| Bind optional dependency supply chain | `google-cloud-texttospeech==2.37.0`; exact five-package lock delta/digests; license notice; strict `pip-audit` | Optional runtime providers extra plus exact development/test pin for hosted default tests; no gcloud binary, credential, model, voice asset or unrelated dependency drift |
+| Bind route and remaining work | Fourteen-path/5,200-line preflight and route mutations; OWNER amendment `5500512956` | Fifteen deliberate attempts and 7,746,792 microUSD remain; fresh post-merge package required; T05–T08 and Cut 1 remain incomplete |
+
 ## Issue #413 frontend runtime OpenSSL traceability
 
 | Evidence | Requirement | Preserved boundary |

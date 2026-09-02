@@ -54,6 +54,7 @@ ISSUE368_BINDING_COMPAT_BRANCH = "stage8-issue-368-google-presenter-binding-comp
 ISSUE368_AUTH_TRANSPORT_BRANCH = "stage8-368-google-auth-public-transport-fix"
 ISSUE368_TIMEOUT_BRANCH = "stage8-368-google-tts-long-response-timeout"
 ISSUE494_BRANCH = "stage8-494-google-tts-failure-diagnostics"
+ISSUE498_BRANCH = "stage8-498-google-tts-official-grpc"
 ISSUE415_BRANCH = "stage8-415-pr-body-live-state-reconciliation"
 ISSUE415_CORRECTION_BRANCH = "stage8-415-pr-body-consistency-canary-fix"
 ISSUE486_BRANCH = "stage8-486-reviewer-impact-summary"
@@ -75,6 +76,46 @@ ISSUE494_TRANSITION_BASE = "99f1d6a46bf9ee42d28aa04f46792ea56f392ab2"
 ISSUE494_TRANSITION_MERGE = "97671772b7ab8ef2c583cecde98f35a9e472457b"
 ISSUE494_TRANSITION_COMMENT = "5499248540"
 ISSUE494_TRANSITION_SHA256 = "3c0968ef0827dfa314a8591230e410b4dd5a4b4092223b5f76fdc72499bbe9a3"
+ISSUE498_BASE = "8fb9b6d143515a6e5cfe3c395477e51696fe782b"
+ISSUE498_TREE = "21b5c26355262482b02554d4115fc5567b6fb253"
+ISSUE498_FREEZE_COMMENT = "5500521261"
+ISSUE498_FREEZE_SHA256 = "fafc0f0a8ae18c9cc08d9dbab668235546f652aa780256792d5d1cb0e8f9f58b"
+ISSUE498_AMENDMENT_COMMENT = "5500539931"
+ISSUE498_AMENDMENT_SHA256 = "30faa0f1062545413efaa7b6e9bc38f9b2cd82f2554078f666aac04e4f8ef843"
+ISSUE498_BASE_AMENDMENT_COMMENT = "5504413401"
+ISSUE498_BASE_AMENDMENT_SHA256 = "f575ac4c5eb75a2d7e45740e90b4652d08cd5601837a29a2dffe477279e604e9"
+ISSUE498_TOPOLOGY_COMMENT = "5504600826"
+ISSUE498_TOPOLOGY_SHA256 = "ec2477cfc8ce73eb624ce3e4b154b34336859fb100997dcfb6202234f191205f"
+ISSUE498_REVIEW_CORRECTION_COMMENT = "5504653805"
+ISSUE498_REVIEW_CORRECTION_SHA256 = (
+    "a5cea09fcf3964caabd34ea7ea3a1ff991bc79599a2442b3680b960f5b8c7b5e"
+)
+ISSUE498_TRACEBACK_CORRECTION_COMMENT = "5504746823"
+ISSUE498_TRACEBACK_CORRECTION_SHA256 = (
+    "9a179acb4bdc513cb2a6d122ebe271885ee927baf4972e8113f8ca66f1137217"
+)
+ISSUE498_MERGE_PARITY_COMMENT = "5504929555"
+ISSUE498_MERGE_PARITY_SHA256 = (
+    "ec19733768f13672b8d322ae262c19fd8316c69a91ce197784f7cd5783b0b95c"
+)
+ISSUE498_COMMIT_TOPOLOGY: tuple[tuple[str | None, str], ...] = (
+    ("5245393b2237cf8bcc25a652d885186b4d1c18f1", "test(tts): freeze official gRPC transport RED (#498)"),
+    ("e8a0d9b7290d2f8af01994bdd9a1fd12851734cc", "feat(tts): add governed official unary gRPC transport (#498)"),
+    ("6fcb1b28f3991f07d38924654fa812ede5381f06", "chore(tts): make channel-close failure observable (#498)"),
+    ("3fd77f31f01ffbb4919e6ec0b8cdded300fade4a", "test(tts): bind grpc route to security-correct base (#498)"),
+    ("d942c738c341b3357e4f1b41d28606f5ca755157", "fix(tts): advance grpc route after security prerequisite (#498)"),
+    ("d59e8b6c9d389aa82566b541fb4fa57c7530bd97", "test(tts): require hosted SDK test dependency (#498)"),
+    ("2adb5107d181b475a752174e4200c0d396ccdc88", "fix(tts): install official SDK for hosted tests (#498)"),
+    ("91bdda7ae542118b9caa4b002eab3ae5bb25ec89", "test(tts): enforce exact grpc TDD topology (#498)"),
+    ("149b98ddadfbd4adb8e5532c9b2c892a03eba5f1", "test(tts): freeze grpc boundary corrections (#498)"),
+    ("94e9dab839fab39f8d526467bcc6a351f92e14e1", "fix(tts): close grpc security and truth gaps (#498)"),
+    ("c6a973b09152d9fe4c59f08f13fb937e2e191600", "fix(tts): bind final grpc review corrections (#498)"),
+    ("f452791a96e4ed394e37d44869080293dcf59567", "test(tts): freeze grpc traceback redaction (#498)"),
+    ("23da78cc8807ab590bdc94a15ea94a6a31cd4c71", "fix(tts): discard grpc traceback inputs (#498)"),
+    ("0f90f196f3992c487608476fe74767271b116ee6", "fix(tts): bind final grpc traceback correction (#498)"),
+    ("233576f798b42cf09874e7d7ea896932886751c9", "test(stage8): freeze Issue498 merge topology parity (#498)"),
+    (None, "fix(stage8): validate Issue498 direct and merge heads (#498)"),
+)
 ISSUE368_BINDING_COMPAT_AUTHORITY = (
     "5485581802", "c81d57d6adf081aaf6ec2bf8c94f4513ca7e363910a669efc3551d5b3b4eae3f",
     "5485633036", "8ccd797c3fac7802923a04aff0ac82d64363d8d9d25366a5365eef98b5436bd2",
@@ -619,6 +660,22 @@ ROUTES = {
         "docs/ADR/0056-cut1-google-gemini-tts.md",
         "docs/TRACEABILITY.md",
     },
+    ISSUE498_BRANCH: {
+        "backend/app/google_tts_runtime.py",
+        "backend/app/tts_provider.py",
+        "tests/unit/test_google_tts_runtime.py",
+        "tests/unit/test_stage6_tts_provider.py",
+        "tests/unit/test_dependency_security_contract.py",
+        "pyproject.toml",
+        "uv.lock",
+        "docs/governance/preflights/issue-498-google-tts-official-grpc.json",
+        "scripts/quality/stage8_cut1_routes.py",
+        "tests/unit/test_stage8_cut1_routes.py",
+        "docs/ADR/0056-cut1-google-gemini-tts.md",
+        "docs/STATUS.md",
+        "docs/THIRD_PARTY_NOTICES.md",
+        "docs/TRACEABILITY.md",
+    },
     ISSUE368_PROMPT_BRANCH: {
         "docs/governance/preflights/issue-368.json",
         "docs/governance/cut1-google-gemini-tts-style-prompts-v1.json",
@@ -861,6 +918,8 @@ ROUTE_ISSUES[ISSUE368_TIMEOUT_BRANCH] = 368
 TOTAL_LIMITS[ISSUE368_TIMEOUT_BRANCH] = 1220
 ROUTE_ISSUES[ISSUE494_BRANCH] = 494
 TOTAL_LIMITS[ISSUE494_BRANCH] = 1420
+ROUTE_ISSUES[ISSUE498_BRANCH] = 498
+TOTAL_LIMITS[ISSUE498_BRANCH] = 5200
 ISSUE383_BINARY_FILES = {
     "frontend/public/demo/myra-synthetic-presenter.webp",
     "frontend/public/demo/raj-synthetic-presenter.webp",
@@ -1278,6 +1337,22 @@ TEXT_LIMITS = {
         "docs/STATUS.md": 120,
         "docs/ADR/0056-cut1-google-gemini-tts.md": 120,
         "docs/TRACEABILITY.md": 100,
+    },
+    ISSUE498_BRANCH: {
+        "backend/app/google_tts_runtime.py": 650,
+        "backend/app/tts_provider.py": 350,
+        "tests/unit/test_google_tts_runtime.py": 850,
+        "tests/unit/test_stage6_tts_provider.py": 450,
+        "tests/unit/test_dependency_security_contract.py": 500,
+        "pyproject.toml": 10,
+        "uv.lock": 1000,
+        "docs/governance/preflights/issue-498-google-tts-official-grpc.json": 340,
+        "scripts/quality/stage8_cut1_routes.py": 240,
+        "tests/unit/test_stage8_cut1_routes.py": 320,
+        "docs/ADR/0056-cut1-google-gemini-tts.md": 180,
+        "docs/STATUS.md": 140,
+        "docs/THIRD_PARTY_NOTICES.md": 180,
+        "docs/TRACEABILITY.md": 140,
     },
     ISSUE368_PROMPT_BRANCH: {
         path: 260 if path == "tests/unit/test_stage8_cut1_routes.py"
@@ -1917,6 +1992,7 @@ def route_base(run: Callable[[list[str]], Any], branch: str) -> str:
         ISSUE368_BINDING_COMPAT_BRANCH: (368, ISSUE368_BINDING_COMPAT_BASE),
         ISSUE368_AUTH_TRANSPORT_BRANCH: (368, ISSUE368_REFRESH_TRANSPORT_BASE),
         ISSUE368_TIMEOUT_BRANCH: (368, ISSUE368_TIMEOUT_BASE),
+        ISSUE498_BRANCH: (498, ISSUE498_BASE),
         ISSUE368_PROMPT_BRANCH: (368, ISSUE368_PROMPT_BASE),
         ISSUE368_BRANCH: (368, ISSUE368_BASE),
         ISSUE386_BRANCH: (386, ISSUE386_BASE),
@@ -1937,7 +2013,7 @@ def route_base(run: Callable[[list[str]], Any], branch: str) -> str:
         )
         branch_point_invalid = False
         if not fixed_invalid and branch in {ISSUE479_BRANCH, ISSUE482_BRANCH, ISSUE478_BRANCH, ISSUE475_BRANCH, ISSUE468_BRANCH, ISSUE486_BRANCH, ISSUE486_PROTECTED_BRANCH, ISSUE486_HASH_CLEANUP_BRANCH, ISSUE473_BRANCH, ISSUE471_BRANCH, ISSUE459_T05B_BRANCH, ISSUE459_T05A_BRANCH, ISSUE459_T03_BRANCH, ISSUE460_BRANCH, ISSUE452_BRANCH, ISSUE451_BRANCH, ISSUE150_BRANCH, ISSUE424_BRANCH, ISSUE421_BRANCH, ISSUE368_IMPLEMENTATION_BRANCH, ISSUE368_BINDING_COMPAT_BRANCH, ISSUE368_AUTH_TRANSPORT_BRANCH, ISSUE368_TIMEOUT_BRANCH,
-                      ISSUE368_QUOTA_FIX_BRANCH, ISSUE368_BRANCH,
+                      ISSUE368_QUOTA_FIX_BRANCH, ISSUE498_BRANCH, ISSUE368_BRANCH,
                       ISSUE368_PROMPT_BRANCH}:
             branch_point = run(["git", "merge-base", "origin/main", "HEAD"])
             branch_point_invalid = branch_point.returncode != 0 or str(branch_point.stdout).strip() != base
@@ -2098,6 +2174,51 @@ def issue459_base_source_failures(root: Path) -> list[str]:
     return issue459_snapshot_failures(root, ISSUE459_BASE, ISSUE459_BASE_SOURCE_SHA256, "base source")
 
 
+def issue498_commit_topology_failures(run: Callable[[list[str]], Any]) -> list[str]:
+    parents_result = run(["git", "show", "-s", "--format=%P", "HEAD"])
+    if parents_result.returncode:
+        return ["Issue #498 exact TDD commit topology drifted."]
+    parents = str(parents_result.stdout).strip().split()
+    if len(parents) == 1 and re.fullmatch(r"[0-9a-f]{40}", parents[0]):
+        candidate = "HEAD"
+    elif (
+        len(parents) == 2
+        and parents[0] == ISSUE498_BASE
+        and re.fullmatch(r"[0-9a-f]{40}", parents[1])
+    ):
+        candidate = parents[1]
+    else:
+        return ["Issue #498 exact TDD commit topology drifted."]
+    result = run(
+        [
+            "git",
+            "log",
+            "--reverse",
+            "-z",
+            "--format=%H%x00%s",
+            f"{ISSUE498_BASE}..{candidate}",
+        ]
+    )
+    if result.returncode:
+        return ["Issue #498 exact TDD commit topology drifted."]
+    fields = str(result.stdout).split("\0")
+    if fields and fields[-1] == "":
+        fields.pop()
+    if len(fields) != len(ISSUE498_COMMIT_TOPOLOGY) * 2:
+        return ["Issue #498 exact TDD commit topology drifted."]
+    actual = list(zip(fields[::2], fields[1::2], strict=True))
+    for (commit, subject), (expected_commit, expected_subject) in zip(
+        actual, ISSUE498_COMMIT_TOPOLOGY, strict=True
+    ):
+        if (
+            re.fullmatch(r"[0-9a-f]{40}", commit) is None
+            or (expected_commit is not None and commit != expected_commit)
+            or subject != expected_subject
+        ):
+            return ["Issue #498 exact TDD commit topology drifted."]
+    return []
+
+
 def check_exact_route(
     root: Path, run: Callable[[list[str]], Any], branch: str, changed: set[str], failures: list[str]
 ) -> None:
@@ -2119,6 +2240,8 @@ def check_exact_route(
     files = ROUTES[branch]
     effective_changed = set(changed)
     fixed_base: str | None = None
+    if branch == ISSUE498_BRANCH:
+        failures.extend(issue498_commit_topology_failures(run))
     if branch == ISSUE459_BRANCH:
         try:
             fixed_base = route_base(run, branch)
