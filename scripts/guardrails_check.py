@@ -1395,7 +1395,14 @@ def resource_lifecycle_failures(body: str) -> list[str]:
     if not section:
         return [missing]
     table_lines = [line.strip() for line in section.splitlines() if line.strip().startswith("|")]
-    if any(line.startswith("||") or line.endswith("||") for line in table_lines):
+    if any(
+        not line.startswith("|")
+        or not line.endswith("|")
+        or line.startswith("||")
+        or line.endswith("||")
+        or len(line[1:-1].split("|")) != 5
+        for line in table_lines
+    ):
         return [invalid]
     rows = markdown_table_rows(body, "Resource lifecycle and cleanup")
     retention_classes = {
@@ -1429,7 +1436,21 @@ def resource_lifecycle_failures(body: str) -> list[str]:
     )
     literal_code_target = re.compile(r"[A-Za-z0-9/._:@+-]+")
     delegated_cleanup = re.compile(
-        r"(?i)\b(?:listed|described|shown|specified)\s+in\s+(?:the\s+)?evidence\b"
+        r"(?i)(?:\b(?:command|action|cleanup)\b.*\b(?:evidence|verification|proof|"
+        r"column|field)\b|\b(?:evidence|verification|proof|column|field)\b.*\b"
+        r"(?:command|action|cleanup)\b)"
+    )
+    bounded_command = re.compile(
+        r"(?i)(?:docker buildx prune --filter id=[a-z0-9]{20,64}|"
+        r"rm (?:-r|--recursive) /(?:private/)?tmp/[A-Za-z0-9][A-Za-z0-9._/-]*|"
+        r"git branch -d (?:issue|pr)[-_]\d+[A-Za-z0-9._/-]*|"
+        r"git worktree remove /(?:private/)?tmp/[A-Za-z0-9._/-]*(?:issue|pr)[-_]\d+[A-Za-z0-9._/-]*|"
+        r"docker (?:image|container|volume|network|builder|buildx) rm "
+        r"[A-Za-z0-9._/@:-]*(?:issue|pr)[-_]\d+[A-Za-z0-9._/@:-]*)"
+    )
+    verification_marker = re.compile(
+        r"(?i)\b(?:absence|absent|proof|verif(?:y|ied|ication)|remain|retained|"
+        r"hash|identity|count|size|delta|healthy|recheck|inventory|status|comment)\b|https://"
     )
     executable_names = {
         "bash", "chroot", "command", "doas", "docker", "env", "eval", "find",
@@ -1489,6 +1510,21 @@ def resource_lifecycle_failures(body: str) -> list[str]:
             for token in re.findall(r'"[^"\n]*"|\'[^\'\n]*\'|\S+', fragment)
             if token.strip("`\"'(),.")
         ]
+
+    def bounded_cleanup_shape(cleanup: str) -> bool:
+        normalized = re.sub(r"`([^`\n]+)`", r"\1", cleanup).strip()
+        commands = list(bounded_command.finditer(normalized))
+        remainder = bounded_command.sub(" ", normalized)
+        shell_residue = re.search(
+            r"(?i)(?:&&|\|\||[;&|]|(?:^|\s)[A-Za-z_][A-Za-z0-9_]*=\S+|"
+            r"\b(?:git|docker|rm|find|sudo|doas|export|cd|pushd|popd)\b)",
+            remainder,
+        )
+        if commands:
+            return len(commands) == 1 and shell_residue is None
+        return shell_residue is None and re.search(
+            r"(?i)\b(?:retain|keep|remov(?:e|ed|ing)|delet(?:e|ed|ing))\b", normalized
+        ) is not None
 
     def unsafe_shell_cleanup(cleanup: str) -> bool:
         code_spans = re.findall(r"`([^`\n]+)`", cleanup)
@@ -1655,9 +1691,12 @@ def resource_lifecycle_failures(body: str) -> list[str]:
             broad_cleanup.search(cleanup)
             or unresolved_or_ambiguous_target.search(cleanup)
             or delegated_cleanup.search(cleanup)
+            or not bounded_cleanup_shape(cleanup)
             or unsafe_command_prefix.search(cleanup)
             or unsafe_shell_cleanup(cleanup)
+            or verification_marker.search(evidence) is None
             or broad_cleanup.search(evidence)
+            or unsafe_command_prefix.search(evidence)
             or unsafe_shell_cleanup(evidence)
         ):
             return [invalid]
