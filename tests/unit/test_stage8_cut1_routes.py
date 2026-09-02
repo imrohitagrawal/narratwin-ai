@@ -4023,12 +4023,14 @@ def test_issue498_tdd_topology_mutations_fail_closed(mutation: str) -> None:
 
 def test_issue498_tdd_topology_accepts_exact_two_parent_hosted_merge() -> None:
     feature_head = "e8a0ab585d8bb95625646fb626b4fe3980926d14"
+    calls: list[list[str]] = []
     output = "".join(
         f"{commit if commit is not None else feature_head}\0{subject}\0"
         for commit, subject in routes.ISSUE498_COMMIT_TOPOLOGY
     )
 
     def run(args: list[str]) -> subprocess.CompletedProcess[str]:
+        calls.append(args)
         if args == ["git", "rev-parse", "HEAD"]:
             return completed(args, out="a" * 40 + "\n")
         if args == ["git", "show", "-s", "--format=%P", "HEAD"]:
@@ -4038,6 +4040,7 @@ def test_issue498_tdd_topology_accepts_exact_two_parent_hosted_merge() -> None:
         return completed(args, code=1)
 
     assert routes.issue498_commit_topology_failures(run) == []
+    assert ["git", "show", "-s", "--format=%P%x00%T", routes.ISSUE498_SQUASH_MERGE] not in calls
 
 
 @pytest.mark.parametrize(
@@ -4056,6 +4059,8 @@ def test_issue498_tdd_topology_accepts_exact_squash_anchor_and_descendant(
     def run(args: list[str]) -> subprocess.CompletedProcess[str]:
         if args == ["git", "rev-parse", "HEAD"]:
             return completed(args, out=head + "\n")
+        if args == ["git", "show", "-s", "--format=%P", "HEAD"]:
+            return completed(args, out=routes.ISSUE498_BASE + "\n")
         if args == ["git", "show", "-s", "--format=%P%x00%T", squash]:
             return completed(args, out=f"{routes.ISSUE498_BASE}\0{tree}\n")
         if args == ["git", "merge-base", "--is-ancestor", squash, head]:
