@@ -1,0 +1,51 @@
+{
+  "schema_version": "GovernancePreflightV1",
+  "issue_number": 499,
+  "branch": "stage8-499-pypdf-6-16-2-security-refresh",
+  "objective": "From exact accepted base d1f5400f5c6dfec5d4b63eb3a83aa82e3330743f and tree 905f562c17e66abf1839e673940f80aca4330cfc, under route comment 5500895575 with raw body SHA-256 e0a4fcfadb274efa6ca36e7b076d096e4e8a228de9b9321f6eaa740255c27ae2, restore the fail-closed dependency-security gate by replacing the sole direct and locked pypdf 6.15.0 resolution, now affected by CVE-2026-84309, CVE-2026-84310, and CVE-2026-84311, with exact official PyPI pypdf 6.16.2. Preserve unsupported-PDF rejection and every unrelated product, project, and lock behavior. This route adds no PDF, Google speech, provider, voice, narration, audio, caption, media, deployment, release, or production capability.",
+  "status_decision": "update-minimally",
+  "scope": {
+    "required": [
+      "docs/governance/preflights/issue-499-pypdf-6-16-2-security-refresh.json",
+      "pyproject.toml",
+      "uv.lock",
+      "scripts/quality/stage8_cut1_routes.py",
+      "tests/unit/test_stage8_cut1_routes.py",
+      "tests/unit/test_dependency_security_contract.py",
+      "docs/ADR/0075-pypdf-6-16-2-security-refresh.md",
+      "docs/STATUS.md",
+      "docs/THIRD_PARTY_NOTICES.md",
+      "docs/TRACEABILITY.md"
+    ],
+    "allowed_prefixes": [
+      "docs/governance/preflights/issue-499-pypdf-6-16-2-security-refresh.json",
+      "pyproject.toml",
+      "uv.lock",
+      "scripts/quality/stage8_cut1_routes.py",
+      "tests/unit/test_stage8_cut1_routes.py",
+      "tests/unit/test_dependency_security_contract.py",
+      "docs/ADR/0075-pypdf-6-16-2-security-refresh.md",
+      "docs/STATUS.md",
+      "docs/THIRD_PARTY_NOTICES.md",
+      "docs/TRACEABILITY.md"
+    ],
+    "forbidden": [
+      ".github/",
+      "AGENTS.md",
+      "Makefile",
+      "README.md",
+      "backend/",
+      "demo/",
+      "evals/",
+      "frontend/",
+      "infra/",
+      "perf/",
+      "portfolio/",
+      "scripts/ci/",
+      "scripts/guardrails_check.py",
+      "tests/acceptance/",
+      "tests/api/",
+      "tools/"
+    ]
+  }
+}
