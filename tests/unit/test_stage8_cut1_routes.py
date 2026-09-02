@@ -3923,6 +3923,46 @@ def test_issue498_requires_exact_current_main_branch_point() -> None:
         routes.route_base(drifted, routes.ISSUE498_BRANCH)
 
 
+def test_issue498_requires_exact_nine_commit_tdd_topology_and_final_authority() -> None:
+    artifact = json.loads(
+        (REPO / "docs/governance/preflights/issue-498-google-tts-official-grpc.json").read_text()
+    )
+    assert routes.ISSUE498_TOPOLOGY_COMMENT == "5504600826"
+    assert routes.ISSUE498_TOPOLOGY_SHA256 == (
+        "ec2477cfc8ce73eb624ce3e4b154b34336859fb100997dcfb6202234f191205f"
+    )
+    assert all(
+        value in artifact["objective"]
+        for value in (routes.ISSUE498_TOPOLOGY_COMMENT, routes.ISSUE498_TOPOLOGY_SHA256)
+    )
+
+    def run(args: list[str]) -> subprocess.CompletedProcess[str]:
+        return subprocess.run(args, cwd=REPO, check=False, capture_output=True, text=True)
+
+    assert routes.issue498_commit_topology_failures(run) == []
+
+
+@pytest.mark.parametrize("mutation", ["missing", "extra", "old-hash", "subject", "command"])
+def test_issue498_tdd_topology_mutations_fail_closed(mutation: str) -> None:
+    records = list(routes.ISSUE498_COMMIT_TOPOLOGY)
+    if mutation == "missing":
+        records.pop()
+    elif mutation == "extra":
+        records.append(("f" * 40, "fix(tts): unauthorized extra commit (#498)"))
+    elif mutation == "old-hash":
+        records[0] = ("0" * 40, records[0][1])
+    elif mutation == "subject":
+        records[-1] = (records[-1][0], "fix(tts): changed subject (#498)")
+    output = "".join(f"{commit}\0{subject}\0" for commit, subject in records)
+
+    def run(args: list[str]) -> subprocess.CompletedProcess[str]:
+        return completed(args, 1 if mutation == "command" else 0, output)
+
+    assert routes.issue498_commit_topology_failures(run) == [
+        "Issue #498 exact TDD commit topology drifted."
+    ]
+
+
 def test_issue368_prompt_route_requires_exact_merged_governance_base() -> None:
     calls: list[list[str]] = []
 
