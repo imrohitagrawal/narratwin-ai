@@ -1178,6 +1178,12 @@ def test_resource_lifecycle_rejects_missing_section() -> None:
         "| issue-391 branch | owner | success-clean | git branch -D main | issue comment |",
         "| issue-391 worktree | owner | success-clean | git worktree remove --force issue-391 | issue comment |",
         "| issue-391 image | owner | success-clean | docker image rm --force issue-391:ci | issue comment |",
+        '| issue-391 directory | owner | success-clean | rm -r -f "$HOME" | issue comment |',
+        '| issue-391 directory | owner | success-clean | rm --recursive -f "$HOME" | issue comment |',
+        "| issue-391 branch | owner | success-clean | git reset --hard | issue comment |",
+        "| issue-391 branch | owner | success-clean | git switch main | issue comment |",
+        "| issue-391 reports | owner | success-clean | remove reports/security/* | issue comment |",
+        "| issue-391 directory | owner | success-clean | rm -r / | issue comment |",
     ),
 )
 def test_resource_lifecycle_rejects_partial_placeholder_na_or_broad_cleanup_row(
