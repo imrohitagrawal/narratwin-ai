@@ -3989,6 +3989,47 @@ def test_issue498_tdd_topology_mutations_fail_closed(mutation: str) -> None:
     ]
 
 
+def test_issue498_tdd_topology_accepts_exact_two_parent_hosted_merge() -> None:
+    feature_head = "f" * 40
+    output = "".join(
+        f"{commit if commit is not None else feature_head}\0{subject}\0"
+        for commit, subject in routes.ISSUE498_COMMIT_TOPOLOGY
+    )
+
+    def run(args: list[str]) -> subprocess.CompletedProcess[str]:
+        if args == ["git", "show", "-s", "--format=%P", "HEAD"]:
+            return completed(args, out=f"{routes.ISSUE498_BASE} {feature_head}\n")
+        if args[-1] == f"{routes.ISSUE498_BASE}..{feature_head}":
+            return completed(args, out=output)
+        return completed(args, code=1)
+
+    assert routes.issue498_commit_topology_failures(run) == []
+
+
+@pytest.mark.parametrize(
+    "parents",
+    (
+        f"{'0' * 40} {'f' * 40}",
+        f"{routes.ISSUE498_BASE} {'f' * 40} {'e' * 40}",
+        "",
+    ),
+)
+def test_issue498_tdd_topology_rejects_invalid_merge_parents(parents: str) -> None:
+    output = "".join(
+        f"{commit if commit is not None else 'f' * 40}\0{subject}\0"
+        for commit, subject in routes.ISSUE498_COMMIT_TOPOLOGY
+    )
+
+    def run(args: list[str]) -> subprocess.CompletedProcess[str]:
+        if args == ["git", "show", "-s", "--format=%P", "HEAD"]:
+            return completed(args, out=parents + "\n")
+        return completed(args, out=output)
+
+    assert routes.issue498_commit_topology_failures(run) == [
+        "Issue #498 exact TDD commit topology drifted."
+    ]
+
+
 def test_issue368_prompt_route_requires_exact_merged_governance_base() -> None:
     calls: list[list[str]] = []
 
