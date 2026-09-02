@@ -1405,7 +1405,16 @@ def resource_lifecycle_failures(body: str) -> list[str]:
     }
     broad_cleanup = re.compile(
         r"(?i)(?:broad\s+(?:docker\s+)?prune|docker\s+(?:system|image|volume|network)\s+prune|"
-        r"git\s+(?:clean|worktree\s+prune)|rm\s+-rf|workspace[- ]wide|host[- ]wide)"
+        r"docker\s+(?:builder|buildx|cache)\s+prune|git\s+(?:clean|worktree\s+prune)|"
+        r"rm\s+(?:-[a-z]*r[a-z]*f[a-z]*|-[a-z]*f[a-z]*r[a-z]*|"
+        r"[^\n|]*--recursive[^\n|]*--force|[^\n|]*--force[^\n|]*--recursive)|"
+        r"workspace[- ]wide|host[- ]wide)"
+    )
+    force_cleanup = re.compile(
+        r"(?:git\s+branch\s+-D\b|"
+        r"(?i:git\s+(?:branch|push|worktree\s+remove)[^\n|]*(?:--force(?:-with-lease)?|-f)\b)|"
+        r"(?i:docker\s+(?:image\s+rm|rmi|rm|volume\s+rm|network\s+rm|"
+        r"builder\s+rm|buildx\s+rm)[^\n|]*(?:--force|-f)\b))"
     )
     if not rows:
         return [invalid]
@@ -1418,7 +1427,7 @@ def resource_lifecycle_failures(body: str) -> list[str]:
             return [invalid]
         if retention.strip().lower() not in retention_classes:
             return [invalid]
-        if broad_cleanup.search(cleanup):
+        if broad_cleanup.search(cleanup) or force_cleanup.search(cleanup):
             return [invalid]
     return []
 
