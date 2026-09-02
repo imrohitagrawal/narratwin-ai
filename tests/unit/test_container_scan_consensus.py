@@ -236,6 +236,12 @@ def test_frontend_sbom_requires_architecture_specific_sharp_and_forbids_glibc() 
             "bom-ref": f"sharp-linuxmusl-{new}@0.35.3",
         })
         assert not validator(hidden_bom_ref, FRONTEND_CONFIG, required, architecture)
+        nested_sharp = copy.deepcopy(sbom)
+        nested_sharp["components"][0]["components"] = [{
+            "type": "library", "name": f"sharp-linuxmusl-{new}", "version": "0.35.3",
+            "purl": f"pkg:npm/%40img/sharp-linuxmusl-{new}@0.35.3",
+        }]
+        assert not validator(nested_sharp, FRONTEND_CONFIG, required, architecture)
         forbidden = copy.deepcopy(sbom)
         forbidden["components"].append({
             "type": "library", "name": "glibc", "version": "2.43-r12",
@@ -259,6 +265,7 @@ def test_frontend_sbom_requires_architecture_specific_sharp_and_forbids_glibc() 
         for property_name, value in (
             ("aquasecurity:trivy:PkgID", "glibc@2.43-r12"),
             ("aquasecurity:trivy:SrcName", "gcompat"),
+            ("aquasecurity:trivy:PkgID", f"@img/sharp-linuxmusl-{new}@0.35.3"),
         ):
             hidden = copy.deepcopy(sbom)
             hidden["components"].append({
@@ -267,6 +274,12 @@ def test_frontend_sbom_requires_architecture_specific_sharp_and_forbids_glibc() 
                 "properties": [{"name": property_name, "value": value}],
             })
             assert not validator(hidden, FRONTEND_CONFIG, required, architecture)
+        nested_glibc = copy.deepcopy(sbom)
+        nested_glibc["components"][0]["components"] = [{
+            "type": "library", "name": "glibc", "version": "2.43-r12",
+            "purl": "pkg:generic/glibc@2.43-r12",
+        }]
+        assert not validator(nested_glibc, FRONTEND_CONFIG, required, architecture)
 
 
 @pytest.mark.parametrize("fake_now", [0.0, 946_684_800.0])
