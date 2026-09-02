@@ -1284,6 +1284,14 @@ def test_resource_lifecycle_rejects_missing_section() -> None:
         "| issue-391 image | owner | success-clean | export DOCKER_HOST=tcp://remote; docker image rm exact-owned | issue comment |",
         "| issue-391 branch | owner | success-clean | cd /other/repository && git branch -d exact-owned | issue comment |",
         "| issue-391 image | owner | success-clean | docker context use remote && docker image rm exact-owned | issue comment |",
+        "| issue-391 cache | owner | success-clean | BUILDX_BUILDER=remote `docker buildx prune --filter id=0123456789abcdefghijklmnop` | issue comment |",
+        "| issue-391 branch | owner | success-clean | git branch -d `hostname` | issue comment |",
+        "| issue-391 image | owner | success-clean | docker image rm `whoami` | issue comment |",
+        "| issue-391 branch | owner | success-clean | git branch -d `uuidgen` | issue comment |",
+        "| issue-391 resource | owner | success-clean | Execute the exact cleanup command listed in evidence | docker system prune |",
+        "| issue-391 resource | owner | success-clean | Execute the command specified in evidence | git branch -D main |",
+        "|| issue-391 resource | owner | success-clean | remove exact resource | proof |",
+        "| issue-391 resource | owner | success-clean | remove exact resource | proof ||",
     ),
 )
 def test_resource_lifecycle_rejects_partial_placeholder_na_or_broad_cleanup_row(
