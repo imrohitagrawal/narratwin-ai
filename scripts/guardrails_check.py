@@ -10,6 +10,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import shlex
 import subprocess
 import sys
 from hashlib import sha256 as _cleanup_authority_sha256
@@ -1408,28 +1409,122 @@ def resource_lifecycle_failures(body: str) -> list[str]:
         r"docker\s+(?:builder|cache)\s+prune|git\s+(?:clean|worktree\s+prune)|"
         r"workspace[- ]wide|host[- ]wide)"
     )
-    recursive_rm = re.compile(
-        r"(?i)\brm\b[^\n|]*(?:--recursive\b|-(?=[a-z]*r)[a-z]+\b)"
-    )
     unresolved_or_ambiguous_target = re.compile(
-        r"(?:\$(?:\{[^}\n|]+\}|[A-Za-z_][A-Za-z0-9_]*)|%[A-Za-z_][A-Za-z0-9_]*%|"
+        r"(?:\$\(|\$(?:\{[^}\n|]+\}|[A-Za-z_][A-Za-z0-9_]*)|"
+        r"%[A-Za-z_][A-Za-z0-9_]*%|"
         r"(?<!\S)~(?:[/\s]|$)|(?<!\S)\.\.(?:[/\s]|$)|"
         r"(?<!\S)[\"']?/[\"']?(?=\s|$)|[^\s|]*[*?][^\s|]*)"
     )
-    git_state_change = re.compile(
-        r"(?i)\bgit\s+(?:reset|switch|checkout|restore)\b"
-    )
-    buildx_prune = re.compile(r"(?i)\bdocker\s+buildx\s+prune\b")
-    buildx_exact_id = re.compile(
-        r"(?i)--filter\s+([\"']?)id={1,2}([a-z0-9]{20,64})\1(?=\s|$)"
-    )
-    buildx_any_filter = re.compile(r"(?i)--filter\b")
-    force_cleanup = re.compile(
-        r"(?:git\s+branch\s+-D\b|"
-        r"(?i:git\s+(?:branch|push|worktree\s+remove)[^\n|]*(?:--force(?:-with-lease)?|-f)\b)|"
-        r"(?i:docker\s+(?:image\s+rm|rmi|rm|volume\s+rm|network\s+rm|"
-        r"builder\s+rm|buildx\s+rm|buildx\s+prune)[^\n|]*(?:--force|-f)\b))"
-    )
+
+    def has_short_flag(tokens: list[str], flag: str) -> bool:
+        return any(
+            token.startswith("-")
+            and not token.startswith("--")
+            and flag in token[1:]
+            for token in tokens
+        )
+
+    def command_index(tokens: list[str], start: int, valued_options: set[str]) -> int:
+        index = start
+        while index < len(tokens) and tokens[index].startswith("-"):
+            option = tokens[index].lower()
+            index += 1
+            if option in valued_options and index < len(tokens):
+                index += 1
+        return index
+
+    def unsafe_shell_cleanup(cleanup: str) -> bool:
+        buildx_prune_count = 0
+        for raw_clause in re.split(r"\s*(?:&&|\|\||;|\n)\s*", cleanup):
+            clause = raw_clause.strip().strip("`").strip()
+            if not clause:
+                continue
+            try:
+                tokens = shlex.split(clause)
+            except ValueError:
+                return True
+            lowered = [token.lower() for token in tokens]
+            for position, command in enumerate(lowered):
+                if command == "git":
+                    index = command_index(tokens, position + 1, {"-c", "-C", "--git-dir", "--work-tree", "--namespace"})
+                    if index >= len(tokens):
+                        continue
+                    operation = lowered[index]
+                    arguments = tokens[index + 1 :]
+                    lower_arguments = lowered[index + 1 :]
+                    if operation in {"clean", "reset", "switch", "checkout", "restore"}:
+                        return True
+                    if operation == "branch" and (
+                        "-D" in arguments
+                        or "--force" in lower_arguments
+                        or ("--delete" in lower_arguments and "--force" in lower_arguments)
+                    ):
+                        return True
+                    if operation == "push" and any(
+                        value == "--force"
+                        or value.startswith("--force-with-lease")
+                        or (value.startswith("-") and not value.startswith("--") and "f" in value[1:])
+                        for value in arguments
+                    ):
+                        return True
+                    if operation == "worktree" and lower_arguments:
+                        subcommand = lower_arguments[0]
+                        if subcommand == "prune":
+                            return True
+                        if subcommand == "remove" and (
+                            "--force" in lower_arguments[1:]
+                            or has_short_flag(arguments[1:], "f")
+                        ):
+                            return True
+                elif command == "docker":
+                    index = command_index(tokens, position + 1, {"--context", "--host", "-h", "--config"})
+                    if index >= len(tokens):
+                        continue
+                    operation = lowered[index]
+                    arguments = tokens[index + 1 :]
+                    lower_arguments = lowered[index + 1 :]
+                    if operation in {"system", "image", "volume", "network"} and "prune" in lower_arguments:
+                        return True
+                    if operation in {"builder", "cache"} and "prune" in lower_arguments:
+                        return True
+                    if operation == "buildx" and lower_arguments[:1] == ["prune"]:
+                        buildx_prune_count += 1
+                        expected = [
+                            "docker",
+                            "buildx",
+                            "prune",
+                            "--filter",
+                        ]
+                        if (
+                            position != 0
+                            or tokens[:4] != expected
+                            or len(tokens) != 5
+                            or re.fullmatch(r"id=[a-z0-9]{20,64}", tokens[4]) is None
+                        ):
+                            return True
+                    deletion = (
+                        operation in {"rm", "rmi"}
+                        or operation in {"image", "volume", "network", "builder"}
+                        and lower_arguments[:1] == ["rm"]
+                        or operation == "buildx" and lower_arguments[:1] == ["rm"]
+                    )
+                    if deletion and (
+                        "--force" in lower_arguments or has_short_flag(arguments, "f")
+                    ):
+                        return True
+                elif command == "rm" and "docker" not in lowered[:position]:
+                    arguments = tokens[position + 1 :]
+                    recursive = "--recursive" in arguments or has_short_flag(arguments, "r")
+                    if not recursive:
+                        continue
+                    if "--force" in arguments or has_short_flag(arguments, "f"):
+                        return True
+                    targets = [value for value in arguments if not value.startswith("-")]
+                    if len(targets) != 1 or re.fullmatch(
+                        r"/(?:private/)?tmp/[A-Za-z0-9][A-Za-z0-9._-]{7,}", targets[0]
+                    ) is None:
+                        return True
+        return buildx_prune_count > 1
     if not rows:
         return [invalid]
     for cells in rows:
@@ -1441,20 +1536,10 @@ def resource_lifecycle_failures(body: str) -> list[str]:
             return [invalid]
         if retention.strip().lower() not in retention_classes:
             return [invalid]
-        buildx_match = buildx_prune.search(cleanup)
-        buildx_ids = buildx_exact_id.findall(cleanup)
-        unsafe_buildx_prune = buildx_match is not None and (
-            len(buildx_ids) != 1
-            or len(buildx_any_filter.findall(cleanup)) != 1
-            or re.search(r"(?i)(?:--all\b|(?<!\S)-a\b)", cleanup) is not None
-        )
         if (
             broad_cleanup.search(cleanup)
-            or recursive_rm.search(cleanup)
             or unresolved_or_ambiguous_target.search(cleanup)
-            or git_state_change.search(cleanup)
-            or force_cleanup.search(cleanup)
-            or unsafe_buildx_prune
+            or unsafe_shell_cleanup(cleanup)
         ):
             return [invalid]
     return []
