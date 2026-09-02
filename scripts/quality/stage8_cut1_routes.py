@@ -2902,7 +2902,7 @@ def check_exact_route(
             f"Issue #{issue} charge for {path} exceeds {limit}."
             for path, limit in TEXT_LIMITS[branch].items() if charges.get(path, 0) > limit
         )
-        if branch == ISSUE482_BRANCH:
+        if branch in {ISSUE482_BRANCH, ISSUE507_BRANCH}:
             route_text_integrity(root, run, files)
         elif branch == ISSUE459_BRANCH:
             sizes = route_binary_sizes(root, files, "utf-8")

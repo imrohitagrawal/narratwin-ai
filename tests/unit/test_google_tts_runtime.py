@@ -794,26 +794,30 @@ def test_official_sdk_binding_extracts_google_api_core_grpc_status() -> None:
 
     private_detail = "private-upstream-detail-DO-NOT-RETAIN"
     error = cast(Any, exceptions.DeadlineExceeded)(private_detail)
+    binding = google_tts_runtime_module._OfficialGoogleGrpcBindings(
+        grpc_module=importlib.import_module("grpc"),
+        tts_module=object(),
+        transport_type=object(),
+    )
 
-    status = google_tts_runtime_module._OfficialGoogleGrpcBindings.failure_status(error)
+    status = binding.failure_status(error)
 
     assert status == "DEADLINE_EXCEEDED"
     assert private_detail not in repr(status)
 
 
 def test_official_sdk_binding_preserves_raw_grpc_status() -> None:
-    class RawStatus:
-        name = "UNAVAILABLE"
+    grpc_module = importlib.import_module("grpc")
 
     class RawGrpcError(Exception):
         @staticmethod
         def code() -> object:
-            return RawStatus()
+            return grpc_module.StatusCode.UNAVAILABLE
 
-    assert (
-        google_tts_runtime_module._OfficialGoogleGrpcBindings.failure_status(RawGrpcError())
-        == "UNAVAILABLE"
+    binding = google_tts_runtime_module._OfficialGoogleGrpcBindings(
+        grpc_module=grpc_module, tts_module=object(), transport_type=object(),
     )
+    assert binding.failure_status(RawGrpcError()) == "UNAVAILABLE"
 
 
 @pytest.mark.parametrize(
@@ -828,7 +832,12 @@ def test_official_sdk_binding_preserves_raw_grpc_status() -> None:
     ),
 )
 def test_official_sdk_binding_rejects_malformed_status_shapes(error: Exception) -> None:
-    assert google_tts_runtime_module._OfficialGoogleGrpcBindings.failure_status(error) is None
+    binding = google_tts_runtime_module._OfficialGoogleGrpcBindings(
+        grpc_module=importlib.import_module("grpc"),
+        tts_module=object(),
+        transport_type=object(),
+    )
+    assert binding.failure_status(error) is None
 
 
 def test_official_sdk_binding_rejects_hostile_status_access() -> None:
@@ -841,7 +850,12 @@ def test_official_sdk_binding_rejects_hostile_status_access() -> None:
         def code() -> object:
             raise RuntimeError("private-call-detail")
 
-    assert google_tts_runtime_module._OfficialGoogleGrpcBindings.failure_status(HostileError()) is None
+    binding = google_tts_runtime_module._OfficialGoogleGrpcBindings(
+        grpc_module=importlib.import_module("grpc"),
+        tts_module=object(),
+        transport_type=object(),
+    )
+    assert binding.failure_status(HostileError()) is None
 
 
 def test_official_sdk_binding_pins_tls_channel_and_disables_proxy() -> None:
