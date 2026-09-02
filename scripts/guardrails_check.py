@@ -1484,10 +1484,30 @@ def resource_lifecycle_failures(body: str) -> list[str]:
 
     seen_resources: set[tuple[str, str]] = set()
     path_resource_kinds = {"filesystem-path", "node-modules", "python-venv", "temporary-file"}
+    protected_branch_names = {"develop", "development", "main", "master", "trunk"}
+    protected_path_prefixes = {
+        ".aws", ".azure", ".config/gcloud", ".docker", ".git", ".kube", ".ssh"
+    }
+    protected_paths = {*CLEANUP_AUTHORITY_SHA256, ".github/pull_request_template.md"}
     protected_delete_locators = {
         str(Path.home().resolve()),
         str(ROOT.resolve()),
     }
+
+    def is_protected_delete_target(kind: str, locator: str) -> bool:
+        branch = locator.removeprefix("refs/heads/")
+        remote_branch = locator.removeprefix("refs/remotes/").removeprefix("origin/")
+        path_protected = locator in protected_paths or any(
+            locator == prefix or locator.startswith(f"{prefix}/")
+            for prefix in protected_path_prefixes
+        )
+        return (
+            locator.startswith("/")
+            or kind == "git-branch" and branch in protected_branch_names
+            or kind == "git-remote-branch" and remote_branch in protected_branch_names
+            or kind == "git-worktree" and locator in {"worktree:main", "worktree:primary"}
+            or kind in path_resource_kinds and path_protected
+        )
     for row in parsed_rows[2:]:
         assert row is not None
         resource, ownership, retention, cleanup, evidence = row
@@ -1533,6 +1553,7 @@ def resource_lifecycle_failures(body: str) -> list[str]:
             or locator != canonical_locator
             or kind == "shared-resource" and disposition != "retain"
             or disposition == "delete" and canonical_locator in protected_delete_locators
+            or disposition == "delete" and is_protected_delete_target(kind, canonical_locator)
             or identity in seen_resources
             or verification_marker.search(evidence) is None
         ):

@@ -37,7 +37,7 @@ The pull-request table records data, never an executable command. Use one
 compact JSON object with exactly four string fields:
 
 ```json
-{"disposition":"delete","kind":"git-worktree","locator":"/private/tmp/issue-391","trigger":"merged-main-green"}
+{"disposition":"delete","kind":"git-worktree","locator":"worktree:issue-391","trigger":"merged-main-green"}
 ```
 
 - `disposition` is `delete` or `retain` and must agree with the retention
@@ -59,9 +59,12 @@ compact JSON object with exactly four string fields:
 
 Stable resource kinds and safety semantics remain code-controlled; project
 needs such as exact identities and lifecycle events remain data-configurable.
-Each `kind`/`locator` identity appears exactly once, so duplicate or
-conflicting retain/delete decisions fail closed. `shared-resource` is always
-retain-only.
+Each physical path identity appears exactly once across every path-like kind,
+and every other `kind`/`locator` identity appears exactly once, so duplicate
+or conflicting retain/delete decisions fail closed. Protected branches,
+worktrees, repository metadata/governance sources, credential locations, and
+absolute machine paths are not valid delete targets. `shared-resource` is
+always retain-only.
 The contract never grants execution authority. At cleanup time the operator
 must re-resolve ownership and activity read-only, then select the repository-
 approved operation for exactly that kind and locator.

@@ -391,7 +391,7 @@ def product_context_body(
 def resource_lifecycle_body(*, row: str | None = None) -> str:
     lifecycle_row = row or (
         "| issue-391 worktree | dedicated issue worktree created by this PR | success-clean | "
-        '{"disposition":"delete","kind":"git-worktree","locator":"/tmp/issue-391",'
+        '{"disposition":"delete","kind":"git-worktree","locator":"worktree:issue-391",'
         '"trigger":"merged-main-green"} | '
         "PR and issue closeout comments with absence and reclaimed-space proof |"
     )
