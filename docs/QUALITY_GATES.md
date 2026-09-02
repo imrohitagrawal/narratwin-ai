@@ -1046,6 +1046,22 @@ Process-critical governance docs and process-review registers stay in the
 non-trivial category even for text-only edits because those files define future
 automation behavior and review-loop prevention.
 
+Every non-trivial PR must also include a `Resource lifecycle and cleanup`
+table. `resource_lifecycle_failures` requires at least one material resource row
+and exact values for resource identity, ownership proof, retention class,
+cleanup trigger/action, and verification evidence. The accepted retention
+classes are `always-clean`, `success-clean`, `failure-retain`,
+`evidence-until-merged-main`, `persistent`, and `shared-retain`. Missing,
+partial, placeholder, copied N/A, and broad-cleanup rows fail the required
+policy gate. This is creation-time and planned-finalization evidence; actual
+post-merge deletion, retained reasons, protected-resource survival, and
+reclaimed-space proof remain closeout evidence in the linked PR and issue.
+
+The guardrail does not grant destructive authority. The operator must follow
+`docs/RESOURCE_LIFECYCLE.md`, preserve evidence through merged-main acceptance,
+target only exact inactive exclusively owned resources, and retain anything
+active, persistent, shared, ambiguous, unrelated, or credential-bearing.
+
 Issue `#300` makes `make issue280-output-correctness` negative-only. Its verifier
 exits `1` with `ISSUE_280_NOT_FIXED`; stale, malformed, and contradictory evidence
 have distinct nonzero exits. It is not a required green CI job; CI may run its

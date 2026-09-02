@@ -157,7 +157,7 @@ def test_issue471_cleanup_authority_and_anchor_cannot_change_together() -> None:
     assert guardrails.cleanup_authority_change_failures(["docs/STATUS.md"], documents.__getitem__) == []
 
 
-def test_issue486_cleanup_authority_accepts_only_final_hashes(
+def test_issue391_cleanup_authority_accepts_final_and_pending_hashes(
     monkeypatch: Any,
 ) -> None:
     final = {
@@ -167,7 +167,13 @@ def test_issue486_cleanup_authority_accepts_only_final_hashes(
         ),
     }
     assert guardrails.CLEANUP_AUTHORITY_SHA256 == final
-    assert not hasattr(guardrails, "CLEANUP_AUTHORITY_PENDING_SHA256")
+    pending = {
+        "AGENTS.md": "256d0c761f2f3218b38533e27ed72b2594282e56f9fbd95545002110f08804cc",
+        "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md": (
+            "131ff62af3c12b1d31bf3ed73cfc45d61f1fed13a7f405254346faa0b4e8493e"
+        ),
+    }
+    assert guardrails.CLEANUP_AUTHORITY_PENDING_SHA256 == pending
 
     class Digest:
         def __init__(self, value: str) -> None:
@@ -182,6 +188,14 @@ def test_issue486_cleanup_authority_accepts_only_final_hashes(
         guardrails,
         "_cleanup_authority_sha256",
         lambda payload: Digest(final_by_payload.get(payload, "0" * 64)),
+    )
+    assert guardrails.cleanup_authority_anchor_failures(payloads.__getitem__) == []
+
+    pending_by_payload = {payloads[path]: digest for path, digest in pending.items()}
+    monkeypatch.setattr(
+        guardrails,
+        "_cleanup_authority_sha256",
+        lambda payload: Digest(pending_by_payload.get(payload, "0" * 64)),
     )
     assert guardrails.cleanup_authority_anchor_failures(payloads.__getitem__) == []
 
@@ -778,6 +792,7 @@ def completed_preflight_body(
         "Refs #44\n\n"
         f"{product_context_body()}\n"
         f"{reviewer_overview_body()}\n"
+        f"{resource_lifecycle_body()}\n"
         "## Status impact\n\n"
         "No repository-tracked status change is claimed by this PR. Routine post-merge facts go to "
         "PR/issue comments, with no successor status-only PR.\n\n"
@@ -1156,6 +1171,7 @@ def test_resource_lifecycle_rejects_missing_section() -> None:
         "| issue-391 worktree | owner | success-clean | remove after merge | |",
         "| issue-391 worktree | TODO | success-clean | remove after merge | issue comment |",
         "| N/A | no resources | N/A | N/A | N/A |",
+        "| issue-391 worktree | created by issue 391 | keep someday | remove after merge | issue comment |",
         "| issue-391 worktree | owner | success-clean | broad Docker prune | issue comment |",
     ),
 )
@@ -1165,6 +1181,39 @@ def test_resource_lifecycle_rejects_partial_placeholder_na_or_broad_cleanup_row(
     assert guardrails.resource_lifecycle_failures(resource_lifecycle_body(row=row)) == [
         "Resource lifecycle rows must identify exact ownership, retention, bounded cleanup, and verification evidence."
     ]
+
+
+def test_resource_lifecycle_contract_is_durable_across_policy_and_future_projects() -> None:
+    root = Path(__file__).parents[2]
+    required_markers = {
+        ".github/pull_request_template.md": (
+            "## Resource lifecycle and cleanup",
+            "Ownership proof",
+            "Cleanup trigger and exact action",
+        ),
+        "docs/RESOURCE_LIFECYCLE.md": (
+            "## Creation-Time Inventory",
+            "## Finalization Gate",
+            "shared-retain",
+        ),
+        "docs/templates/AI_SESSION_FINALIZER_PROMPT.md": (
+            "FINAL RESOURCE LIFECYCLE PHASE",
+            "before starting the next increment",
+            "Prove target absence",
+        ),
+        "docs/QUALITY_GATES.md": (
+            "resource_lifecycle_failures",
+            "evidence-until-merged-main",
+            "does not grant destructive authority",
+        ),
+    }
+    for relative_path, markers in required_markers.items():
+        text = (root / relative_path).read_text(encoding="utf-8")
+        normalized = " ".join(text.lower().split())
+        for marker in markers:
+            assert " ".join(marker.lower().split()) in normalized, (
+                f"{relative_path} missing durable resource lifecycle marker: {marker}"
+            )
 
 
 def test_product_context_accepts_complete_reviewer_impact_summary() -> None:

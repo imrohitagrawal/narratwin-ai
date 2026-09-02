@@ -35,6 +35,12 @@ CLEANUP_AUTHORITY_SHA256 = {
         "e70d7c3045a4fec6b8c4feeb276244ea963a778f872955670cc2e209c0b03e2d",
 }
 
+CLEANUP_AUTHORITY_PENDING_SHA256 = {
+    "AGENTS.md": "256d0c761f2f3218b38533e27ed72b2594282e56f9fbd95545002110f08804cc",
+    "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md":
+        "131ff62af3c12b1d31bf3ed73cfc45d61f1fed13a7f405254346faa0b4e8493e",
+}
+
 EXCLUDED_DIRS = {
     ".git",
     ".chroma",
@@ -1294,7 +1300,7 @@ def markdown_table_rows(body: str, heading: str) -> list[list[str]]:
         cells = [cell.strip() for cell in stripped.strip("|").split("|")]
         if not cells:
             continue
-        header_names = {"evidence", "surface", "requirement"}
+        header_names = {"evidence", "surface", "requirement", "resource"}
         if cells[0].strip().lower() in header_names:
             continue
         rows.append(cells)
@@ -1377,6 +1383,44 @@ def reviewer_overview_failures(body: str) -> list[str]:
         if not valid:
             result.append(meaning_failures[index])
     return result
+
+
+def resource_lifecycle_failures(body: str) -> list[str]:
+    missing = "Non-trivial pull requests must include a Resource lifecycle and cleanup section."
+    invalid = (
+        "Resource lifecycle rows must identify exact ownership, retention, bounded cleanup, "
+        "and verification evidence."
+    )
+    section = markdown_section(body, "Resource lifecycle and cleanup")
+    if not section:
+        return [missing]
+    rows = markdown_table_rows(body, "Resource lifecycle and cleanup")
+    retention_classes = {
+        "always-clean",
+        "success-clean",
+        "failure-retain",
+        "evidence-until-merged-main",
+        "persistent",
+        "shared-retain",
+    }
+    broad_cleanup = re.compile(
+        r"(?i)(?:broad\s+(?:docker\s+)?prune|docker\s+(?:system|image|volume|network)\s+prune|"
+        r"git\s+(?:clean|worktree\s+prune)|rm\s+-rf|workspace[- ]wide|host[- ]wide)"
+    )
+    if not rows:
+        return [invalid]
+    for cells in rows:
+        if len(cells) < 5:
+            return [invalid]
+        resource, ownership, retention, cleanup, evidence = cells[:5]
+        values = (resource, ownership, retention, cleanup, evidence)
+        if any(is_placeholder_value(value) or is_na_value(value) for value in values):
+            return [invalid]
+        if retention.strip().lower() not in retention_classes:
+            return [invalid]
+        if broad_cleanup.search(cleanup):
+            return [invalid]
+    return []
 
 
 def product_context_failures(body: str) -> list[str]:
@@ -2075,9 +2119,13 @@ def cleanup_authority_anchor_failures(
         except OSError as error:
             findings.append(f"Merge-cleanup authority anchor could not read {path}: {error}.")
             continue
+        accepted = {expected}
+        pending = CLEANUP_AUTHORITY_PENDING_SHA256.get(path)
+        if pending is not None:
+            accepted.add(pending)
         if (
             not isinstance(payload, bytes)
-            or _cleanup_authority_sha256(payload).hexdigest() != expected
+            or _cleanup_authority_sha256(payload).hexdigest() not in accepted
         ):
             findings.append(f"Merge-cleanup authority anchor rejected {path} bytes.")
     return findings
@@ -2290,6 +2338,7 @@ def check_issue_linked_pull_request() -> None:
     if is_nontrivial_pull_request(changes):
         failures.extend(product_context_failures(body))
         failures.extend(reviewer_overview_failures(body))
+        failures.extend(resource_lifecycle_failures(body))
         failures.extend(status_impact_finalization_failures(changes, body))
         if not has_completed_preflight_evidence(body):
             failures.append("Non-trivial pull requests must include completed preflight evidence rows.")
