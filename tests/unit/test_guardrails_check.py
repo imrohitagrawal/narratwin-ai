@@ -24,6 +24,9 @@ ROOT = Path(__file__).parents[2]
 ISSUE_39_REFERENCE_ONLY_FAILURE = "Issue #39 pull requests must use reference-only wording and must not auto-close #39."
 PREFLIGHT_FAILURE = "Non-trivial pull requests must include completed preflight evidence rows."
 MISSING_REVIEWER_OVERVIEW = "Non-trivial pull requests must include a Reviewer overview section."
+MISSING_RESOURCE_LIFECYCLE = (
+    "Non-trivial pull requests must include a Resource lifecycle and cleanup section."
+)
 REVIEWER_OVERVIEW_ORDER = (
     "Reviewer overview must appear before detailed governance and evidence sections."
 )
@@ -369,6 +372,21 @@ def product_context_body(
         if index != omit:
             rows.extend(("", f"### {heading}", "", content))
     return "\n".join(rows) + "\n"
+
+
+def resource_lifecycle_body(*, row: str | None = None) -> str:
+    lifecycle_row = row or (
+        "| issue-391 branch and worktree | dedicated issue branch/worktree created by this PR | "
+        "success-clean | after merged-main acceptance, remove exact branch/worktree | "
+        "PR and issue closeout comments with absence and reclaimed-space proof |"
+    )
+    return (
+        "## Resource lifecycle and cleanup\n\n"
+        "| Resource | Ownership proof | Retention class | Cleanup trigger and exact action | "
+        "Verification evidence |\n"
+        "|---|---|---|---|---|\n"
+        f"{lifecycle_row}\n"
+    )
 
 
 def exact_changes_with_summary(technical_changes: str) -> str:
@@ -1120,6 +1138,33 @@ def test_reviewer_overview_does_not_change_nontrivial_detection_or_add_external_
 
 def test_product_context_accepts_complete_self_contained_pr_specific_content() -> None:
     assert guardrails.product_context_failures(product_context_body()) == []
+
+
+def test_resource_lifecycle_accepts_complete_owned_resource_row() -> None:
+    assert guardrails.resource_lifecycle_failures(resource_lifecycle_body()) == []
+
+
+def test_resource_lifecycle_rejects_missing_section() -> None:
+    assert guardrails.resource_lifecycle_failures(product_context_body()) == [
+        MISSING_RESOURCE_LIFECYCLE
+    ]
+
+
+@pytest.mark.parametrize(
+    "row",
+    (
+        "| issue-391 worktree | owner | success-clean | remove after merge | |",
+        "| issue-391 worktree | TODO | success-clean | remove after merge | issue comment |",
+        "| N/A | no resources | N/A | N/A | N/A |",
+        "| issue-391 worktree | owner | success-clean | broad Docker prune | issue comment |",
+    ),
+)
+def test_resource_lifecycle_rejects_partial_placeholder_na_or_broad_cleanup_row(
+    row: str,
+) -> None:
+    assert guardrails.resource_lifecycle_failures(resource_lifecycle_body(row=row)) == [
+        "Resource lifecycle rows must identify exact ownership, retention, bounded cleanup, and verification evidence."
+    ]
 
 
 def test_product_context_accepts_complete_reviewer_impact_summary() -> None:
