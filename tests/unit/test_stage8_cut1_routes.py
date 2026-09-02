@@ -96,6 +96,16 @@ ISSUE460_LINE_CAPS = {
     "tests/unit/test_gitleaks_regression.py": 260,
 }
 
+ISSUE504_EXPECTED = {
+    "docs/governance/preflights/issue-504.json",
+    "scripts/quality/stage8_cut1_routes.py",
+    "tests/unit/test_stage8_cut1_routes.py",
+    "docs/QUALITY_GATES.md",
+    "docs/STAGE_ISSUE_PLAN.md",
+    "docs/STATUS.md",
+    "docs/TRACEABILITY.md",
+}
+
 ISSUE452_EXPECTED = {
     "docs/governance/preflights/issue-452.json",
     "docs/governance/schemas/cut1-human-realism-evaluation-v1.schema.json",
@@ -483,6 +493,7 @@ def remove_cleanup_marker(text: str, marker: str) -> str:
 
 
 EXPECTED = {
+    "stage8-504-issue498-post-squash-topology": ISSUE504_EXPECTED,
     "cut1-process-479-t05c-listening-authority": ISSUE479_EXPECTED,
     "cut1-process-482-dependency-security-refresh": ISSUE482_EXPECTED,
     "stage8-495-browserslist-security-refresh": ISSUE495_EXPECTED,
@@ -4087,6 +4098,22 @@ def test_issue498_tdd_topology_rejects_post_squash_mutations(mutation: str) -> N
     assert routes.issue498_commit_topology_failures(run) == [
         "Issue #498 exact TDD commit topology drifted."
     ]
+
+
+def test_issue504_route_binds_exact_scope_base_and_budgets() -> None:
+    assert routes.ISSUE504_BRANCH == "stage8-504-issue498-post-squash-topology"
+    assert routes.ROUTES[routes.ISSUE504_BRANCH] == ISSUE504_EXPECTED
+    assert routes.ROUTE_ISSUES[routes.ISSUE504_BRANCH] == 504
+    assert routes.TOTAL_LIMITS[routes.ISSUE504_BRANCH] == 1080
+    assert routes.TEXT_LIMITS[routes.ISSUE504_BRANCH] == {
+        "docs/governance/preflights/issue-504.json": 240,
+        "scripts/quality/stage8_cut1_routes.py": 180,
+        "tests/unit/test_stage8_cut1_routes.py": 300,
+        "docs/QUALITY_GATES.md": 80,
+        "docs/STAGE_ISSUE_PLAN.md": 80,
+        "docs/STATUS.md": 120,
+        "docs/TRACEABILITY.md": 80,
+    }
 
 
 @pytest.mark.parametrize(
