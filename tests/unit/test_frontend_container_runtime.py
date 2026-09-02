@@ -8,26 +8,17 @@ from types import ModuleType
 ROOT = Path(__file__).resolve().parents[2]
 DOCKERFILE = ROOT / "frontend/Dockerfile"
 CONSENSUS = ROOT / "scripts/ci/check_container_scan_consensus.py"
-INDEX_DIGEST = "sha256:eaec65b25f35619be16f4992e7bae1128eafcf63c114f2859b800a7020c1ef70"
+INDEX_DIGEST = "sha256:aadf416b2cdce311a8811ba3f0608a61b77dbf997500e2eafe781b51f6a0b019"
 PLATFORM_DIGESTS = {
-    "amd64": "sha256:f95c554213997aeb84b4c146819f08481e99a6f9b0a7a7524cdcc02632cfac5d",
-    "arm64": "sha256:4edabf15b30c80cc70a24d0614a6f911d306f58a1613d72a653a0e135eccdde8",
+    "amd64": "sha256:b4fea132199070b0c8ea9ac66f363fe2cd6d1e4f994e61d8c87976c2157a1b8a",
+    "arm64": "sha256:d778881fd638833a2a0ed0fbb30577718729ab08112776dea4555eb5551826da",
 }
-NODE_SOURCE_INDEX = "sha256:cd565714d4da3e84bfd341e31448f81d47c6362198f152345297c9c1154e6341"
-NODE_SOURCE_PLATFORM_DIGESTS = {
-    "amd64": "sha256:c00614442a3c693109886209462dd1b15462f6726347fa9cb9fc0125ca26f275",
-    "arm64": "sha256:9e7720738fbcb12e8122beb5194cfa58ab0029c78c3ed39f8986aa68713e31bc",
-}
-ATOMIC_SOURCE_INDEX = "sha256:8cfe0b01dcf3ad08aa8d51811175749f7390228be059497ddc6d94551a68f66e"
-ATOMIC_SOURCE_PLATFORM_DIGESTS = {
-    "amd64": "sha256:9ea374ada3432e4877777fbef5cfe7c5e23047b8aaf247cc609ffe0564542794",
-    "arm64": "sha256:c88d6308aa590caf0e5591934f9d7802b12108d6124601b3015626b6bab70421",
-}
+NODE_SOURCE_INDEX = INDEX_DIGEST
+NODE_SOURCE_PLATFORM_DIGESTS = PLATFORM_DIGESTS
 RUNTIME_PACKAGES = {
-    "ca-certificates-bundle": "20260413-r0", "glibc": "2.43-r12",
-    "glibc-locale-posix": "2.43-r12", "ld-linux": "2.43-r12",
-    "libatomic": "16.1.0-r4", "libgcc": "16.1.0-r4", "libstdc++": "16.1.0-r4",
-    "wolfi-baselayout": "20230201-r29",
+    "alpine-keys": "2.6-r0", "alpine-release": "3.24.1-r0",
+    "ca-certificates-bundle": "20260611-r0", "libgcc": "15.2.0-r5",
+    "libstdc++": "15.2.0-r5", "musl": "1.2.6-r2",
 }
 
 
@@ -41,10 +32,10 @@ def load_consensus() -> ModuleType:
 
 def test_runtime_pins_the_reviewed_node_source_and_minimal_final_stage() -> None:
     source = DOCKERFILE.read_text(encoding="utf-8")
-    assert f"FROM node:26.7.0-bookworm-slim@{NODE_SOURCE_INDEX} AS node-source" in source
-    assert f"FROM cgr.dev/chainguard/gcc-glibc@{ATOMIC_SOURCE_INDEX} AS atomic-source" in source
-    assert f"FROM cgr.dev/chainguard/glibc-dynamic@{INDEX_DIGEST} AS build" in source
-    assert ":latest" not in source.split(" AS build", 1)[0].rsplit("FROM ", 1)[1]
+    assert f"FROM node:26.7.0-alpine3.24@{NODE_SOURCE_INDEX} AS node-source" in source
+    assert source.count("FROM scratch AS") == 2
+    assert "FROM scratch AS deps" in source and "FROM scratch AS build" in source
+    assert all(value not in source.lower() for value in ("glibc", "gcompat", "libatomic"))
 
 
 def test_runtime_contract_binds_platform_manifests_and_unaffected_openssl() -> None:
@@ -53,8 +44,6 @@ def test_runtime_contract_binds_platform_manifests_and_unaffected_openssl() -> N
     assert module.FRONTEND_RUNTIME_PLATFORM_DIGESTS == PLATFORM_DIGESTS
     assert module.FRONTEND_NODE_SOURCE_INDEX == NODE_SOURCE_INDEX
     assert module.FRONTEND_NODE_SOURCE_PLATFORM_DIGESTS == NODE_SOURCE_PLATFORM_DIGESTS
-    assert module.FRONTEND_ATOMIC_SOURCE_INDEX == ATOMIC_SOURCE_INDEX
-    assert module.FRONTEND_ATOMIC_SOURCE_PLATFORM_DIGESTS == ATOMIC_SOURCE_PLATFORM_DIGESTS
     assert module.FRONTEND_RUNTIME_PACKAGES == RUNTIME_PACKAGES
     assert module.FRONTEND_RUNTIME_OPENSSL_VERSION == "3.5.7"
     assert module.frontend_openssl_is_acceptable("3.5.7")
@@ -65,12 +54,11 @@ def test_runtime_contract_binds_platform_manifests_and_unaffected_openssl() -> N
 def test_runtime_preserves_package_identity_while_removing_tools() -> None:
     source = DOCKERFILE.read_text(encoding="utf-8")
     final = source.split(" AS build", 1)[1]
-    assert "COPY --from=node-source --chown=0:0 /usr/local/bin/node /usr/bin/node" in final
-    assert "COPY --from=atomic-source --chown=0:0 /runtime/ /" in final
+    assert "COPY --from=node-source /runtime/ /" in final
     assert "ENTRYPOINT [\"/usr/bin/node\"]" in final
     assert "USER 65532:65532" in final
-    assert "fs.appendFileSync(p" in final
-    assert "fs.rmSync('/usr/lib/apk/db/installed')" not in final
+    assert "apk" not in final and "/bin/sh" not in final
+    assert "/lib/apk/db/installed" in source
 
 
 def test_scan_contract_requires_runtime_package_metadata_and_openssl_identity() -> None:
