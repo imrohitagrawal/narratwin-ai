@@ -18,7 +18,8 @@ For each resource record:
 - exact identity;
 - ownership proof;
 - retention class;
-- cleanup trigger and exact bounded action;
+- non-executable cleanup contract with disposition, stable resource kind,
+  literal exact locator, and trigger;
 - verification and closeout-evidence destination.
 
 After the required merge and merged-main acceptance, or at an authorized stop,
@@ -40,6 +41,11 @@ Git clean/worktree prune, force deletion, unresolved variables or globs,
 workspace/home-root recursive cleanup, or filename guessing. Stop and request
 exact authorization when ownership, activity, evidence retention, or scope is
 uncertain.
+
+Do not store shell commands in the inventory. Re-resolve live ownership and
+activity read-only at finalization, then derive the approved operation for the
+declared kind and one exact literal locator. The inventory is evidence and
+intent, not executable authority.
 ```
 
 The finalizer is an operator checklist, not deletion authority and not a

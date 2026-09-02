@@ -2054,7 +2054,8 @@ freeze accepted main `e1fe126372d5c5a06dc7d2f9c76cb205da8643e7`, the corrected
 `phase-1-closure-process-391-resource-lifecycle-enforcement` route, eleven owned
 paths, charged-line budgets, failure matrix, and stop conditions. This first
 transition PR makes lifecycle evidence mandatory for non-trivial PRs, publishes
-the reusable contract and finalizer, and preauthorizes the exact protected
+the reusable non-executable structured JSON contract and finalizer, and
+preauthorizes the exact protected
 source bytes for a follow-up PR. That follow-up will make creation-time
 inventory and bounded finalization mandatory in `AGENTS.md` and the reusable
 future-project playbook. Neither step adds an automatic host-wide janitor.

@@ -1049,7 +1049,12 @@ automation behavior and review-loop prevention.
 Every non-trivial PR must also include a `Resource lifecycle and cleanup`
 table. `resource_lifecycle_failures` requires at least one material resource row
 and exact values for resource identity, ownership proof, retention class,
-cleanup trigger/action, and verification evidence. The accepted retention
+structured JSON cleanup contract, and verification evidence. The cleanup
+contract accepts exactly `disposition`, `kind`, `locator`, and `trigger`
+string fields; rejects shell commands, extra keys, duplicate keys, variables,
+globs, root/parent paths, multiple targets, and unknown kinds; and requires
+retention/disposition consistency. Exact locators and triggers are PR data,
+while the stable resource-kind and safety vocabulary remains policy. The accepted retention
 classes are `always-clean`, `success-clean`, `failure-retain`,
 `evidence-until-merged-main`, `persistent`, and `shared-retain`. Missing,
 partial, placeholder, copied N/A, and broad-cleanup rows fail the required

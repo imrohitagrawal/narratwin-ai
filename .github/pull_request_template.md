@@ -106,9 +106,13 @@ Fail condition: <!-- State the exact outcome that must block approval. -->
 environment, temporary/evidence path, Docker resource, or other material local
 resource created or reused by this work. Use exact identities and one of:
 always-clean, success-clean, failure-retain, evidence-until-merged-main,
-persistent, or shared-retain. A generic N/A row is not accepted. -->
+persistent, or shared-retain. The Cleanup contract is compact JSON with exactly
+four string fields: {"disposition":"delete|retain","kind":"closed-vocabulary-kind",
+"locator":"literal-exact-identity","trigger":"event-slug"}. Do not put shell
+commands, variables, globs, multiple resources, or delegated instructions in
+that field. A generic N/A row is not accepted. -->
 
-| Resource | Ownership proof | Retention class | Cleanup trigger and exact action | Verification evidence |
+| Resource | Ownership proof | Retention class | Cleanup contract | Verification evidence |
 |---|---|---|---|---|
 |  |  |  |  |  |
 

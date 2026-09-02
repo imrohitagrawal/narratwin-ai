@@ -20,7 +20,7 @@ material resource. Record each resource when it is created or first reused:
 | Resource | Exact path, Git ref, Docker name/ID, cache ID, or other stable identity |
 | Ownership proof | Why this issue/session exclusively owns it, or why it is shared |
 | Retention class | One class from the closed vocabulary below |
-| Cleanup trigger and exact action | The event and bounded operation that removes or retains it |
+| Cleanup contract | Non-executable structured data declaring disposition, kind, literal locator, and trigger |
 | Verification evidence | Where absence, retention reason, and reclaimed space will be recorded |
 
 Inventory at least:
@@ -30,6 +30,34 @@ Inventory at least:
 - temporary files, reports, screenshots, replay directories, and review evidence;
 - Docker images, builders, cache records, containers, volumes, and networks;
 - generated artifacts or private evidence that must survive for review.
+
+## Cleanup Contract
+
+The pull-request table records data, never an executable command. Use one
+compact JSON object with exactly four string fields:
+
+```json
+{"disposition":"delete","kind":"git-worktree","locator":"/private/tmp/issue-391","trigger":"merged-main-green"}
+```
+
+- `disposition` is `delete` or `retain` and must agree with the retention
+  class.
+- `kind` is one stable operation category: `git-branch`,
+  `git-remote-branch`, `git-worktree`, `filesystem-path`,
+  `temporary-file`, `python-venv`, `node-modules`, `docker-image`,
+  `docker-container`, `docker-volume`, `docker-network`,
+  `docker-builder`, `buildkit-cache-record`, or `shared-resource`.
+- `locator` is one literal exact identity. Path kinds require an absolute
+  path. Variables, globs, root paths, parent traversal, options, multiple
+  targets, and shell syntax are invalid.
+- `trigger` is a compact event slug selected for the PR, such as
+  `merged-main-green`, `session-end`, or `owner-verified`.
+
+Stable resource kinds and safety semantics remain code-controlled; project
+needs such as exact identities and lifecycle events remain data-configurable.
+The contract never grants execution authority. At cleanup time the operator
+must re-resolve ownership and activity read-only, then select the repository-
+approved operation for exactly that kind and locator.
 
 ## Retention Classes
 

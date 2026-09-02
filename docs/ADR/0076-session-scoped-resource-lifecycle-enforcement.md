@@ -21,7 +21,11 @@ Resource lifecycle is a mandatory delivery gate:
 - every autonomous engineering prompt carries a bounded finalization phase;
 - each session inventories material resources at creation or reuse time;
 - every non-trivial PR declares exact resource ownership, retention class,
-  cleanup trigger/action, and verification destination;
+  a non-executable structured cleanup contract, and verification destination;
+- the cleanup contract separates stable policy-controlled resource kinds and
+  safety semantics from PR-configurable exact locators and lifecycle triggers;
+- shell commands are derived only after cleanup-time read-only re-resolution;
+  the PR-body inventory never becomes executable authority;
 - exclusively owned disposable resources are removed after their evidence
   obligation ends and before the next increment;
 - active, persistent, shared, ambiguous, unrelated, and credential-bearing
