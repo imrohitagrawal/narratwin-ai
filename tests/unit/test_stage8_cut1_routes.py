@@ -1072,11 +1072,11 @@ def test_issue502_route_path_mutations_fail_closed(
         return completed(args)
 
     failures: list[str] = []
-    routes.check_exact_route(REPO, run, branch, ISSUE502_EXPECTED, failures)
+    routes.check_exact_route(REPO, run, branch, changed, failures)
     if mutation == "missing":
-        assert "Stage 8 issue #502 branch is missing required scoped files: frontend/Dockerfile" in failures
+        assert "Issue #502 route is missing required path: frontend/Dockerfile" in failures
     else:
-        assert "Stage 8 issue #502 branch changed unexpected files: frontend/package-lock.json" in failures
+        assert "Issue #502 route changed unexpected path: frontend/package-lock.json" in failures
 
 
 def test_issue471_cleanup_authority_anchor_route_is_exact() -> None:
