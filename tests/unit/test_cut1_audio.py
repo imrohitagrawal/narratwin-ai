@@ -72,7 +72,12 @@ def _json_sha(value: object) -> str:
     )
 
 
-def _receipt(presenter_id: str = "meera", *, version: int = 1) -> TTSConsumptionReceipt:
+def _receipt(
+    presenter_id: str = "meera",
+    *,
+    version: int = 1,
+    duration_requirement_seconds: tuple[int, int] = (90, 120),
+) -> TTSConsumptionReceipt:
     prefix = {"meera": "a", "myra": "b", "raj": "c"}[presenter_id]
     return TTSConsumptionReceipt(
         tenant_id="tenant_local",
@@ -90,7 +95,7 @@ def _receipt(presenter_id: str = "meera", *, version: int = 1) -> TTSConsumption
         request_id=f"consume_{presenter_id}_{version}",
         trace_id=f"trace_{presenter_id}_{version}",
         spoken_text=canonical_presenter_text(presenter_id),
-        duration_requirement_seconds=(90, 120),
+        duration_requirement_seconds=duration_requirement_seconds,
         receipt_checksum="sha256:" + prefix * 63 + f"{version:x}",
     )
 
@@ -324,6 +329,53 @@ def test_issue475_genuine_public_narration_receipt_reaches_duration_validation(
     with pytest.raises(cut1_audio.AudioCaptionAuthorityError) as caught:
         service.evaluate_authority(candidate=candidate)
     assert caught.value.code == "AUDIO_DURATION_INVALID"
+
+
+def test_issue509_explicit_receipt_range_accepts_natural_duration_above_old_caps(
+    cut1_audio: ModuleType,
+    tts_provider: ModuleType,
+) -> None:
+    receipt = _receipt(duration_requirement_seconds=(90, 135))
+    audio = _speech_wav(seconds=128)
+    candidate = _candidate(
+        cut1_audio,
+        receipt,
+        _result(tts_provider, receipt, audio_bytes=audio),
+        _captions(receipt.spoken_text, end_ms=128_000),
+    )
+    service = cut1_audio.Cut1AudioAuthorityService(
+        receipt_validator=lambda value: value == receipt,
+        commitment_resolver=lambda: None,
+        approved_config=_config(cut1_audio),
+    )
+
+    authority = service.evaluate_authority(candidate=candidate)
+
+    assert authority.duration_seconds == 128
+    assert authority.audio_byte_count == len(audio) == 6_144_044
+
+
+def test_issue509_default_range_still_rejects_same_natural_duration(
+    cut1_audio: ModuleType,
+    tts_provider: ModuleType,
+) -> None:
+    receipt = _receipt()
+    audio = _speech_wav(seconds=128)
+    candidate = _candidate(
+        cut1_audio,
+        receipt,
+        _result(tts_provider, receipt, audio_bytes=audio),
+        _captions(receipt.spoken_text, end_ms=128_000),
+    )
+    service = cut1_audio.Cut1AudioAuthorityService(
+        receipt_validator=lambda value: value == receipt,
+        commitment_resolver=lambda: None,
+        approved_config=_config(cut1_audio),
+    )
+
+    with pytest.raises(cut1_audio.AudioCaptionAuthorityError) as caught:
+        service.evaluate_authority(candidate=candidate)
+    assert caught.value.code == "AUDIO_WAV_INVALID"
 
 
 def test_issue475_hosted_candidate_binds_public_and_runtime_configuration_identities(
