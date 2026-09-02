@@ -963,6 +963,14 @@ def test_official_grpc_is_single_use_and_bounds_raw_audio() -> None:
 
 def test_official_grpc_failure_retains_only_allowlisted_status() -> None:
     private_detail = "private-provider-debug-detail"
+    narration = "canonical narration DO-NOT-RETAIN"
+    prompt = "governed style prompt DO-NOT-RETAIN"
+    headers = {
+        "Authorization": f"Bearer {ACCESS_VALUE}",
+        "Content-Type": "application/json; charset=utf-8",
+        "x-goog-user-project": QUOTA_PROJECT,
+    }
+    request = {"input": {"text": narration, "prompt": prompt}}
     bindings = FakeOfficialGrpcBindings(
         failure=RuntimeError(private_detail),
         grpc_status="DEADLINE_EXCEEDED",
@@ -971,7 +979,7 @@ def test_official_grpc_failure_retains_only_allowlisted_status() -> None:
     prepared = instance.prepare(url=GOOGLE_TTS_URL, timeout_seconds=600)
 
     with pytest.raises(GoogleTransportError) as caught:
-        prepared.send(headers={}, json_body={}, timeout_seconds=600)
+        prepared.send(headers=headers, json_body=request, timeout_seconds=600)
 
     assert caught.value.egress_possible is True
     assert caught.value.grpc_status == "DEADLINE_EXCEEDED"
@@ -983,7 +991,12 @@ def test_official_grpc_failure_retains_only_allowlisted_status() -> None:
         if traceback.tb_frame.f_code.co_name == "send":
             frames.append(repr(traceback.tb_frame.f_locals))
         traceback = traceback.tb_next
-    assert frames and private_detail not in "".join(frames)
+    retained = "".join(frames)
+    assert frames
+    assert all(
+        value not in retained
+        for value in (private_detail, ACCESS_VALUE, QUOTA_PROJECT, narration, prompt)
+    )
     assert len(bindings.closed) == 1
 
 
