@@ -1292,12 +1292,38 @@ def test_resource_lifecycle_rejects_missing_section() -> None:
         "| issue-391 resource | owner | success-clean | Execute the command specified in evidence | git branch -D main |",
         "|| issue-391 resource | owner | success-clean | remove exact resource | proof |",
         "| issue-391 resource | owner | success-clean | remove exact resource | proof ||",
+        "| issue-391 image | owner | success-clean | export DOCKER_HOST=tcp://remote && docker image rm exact-owned | issue comment |",
+        "| issue-391 branch | owner | success-clean | export GIT_DIR=/other/.git && git branch -d issue-391-safe | issue comment |",
+        "| issue-391 builder | owner | success-clean | docker buildx use remote && docker buildx rm issue-391-builder | issue comment |",
+        "| issue-391 compose | owner | success-clean | docker compose down --volumes --remove-orphans | issue comment |",
+        "| issue-391 network | owner | success-clean | docker network disconnect --force shared-net shared-container | issue comment |",
+        "| issue-391 ref | owner | success-clean | git update-ref -d refs/heads/main | issue comment |",
+        "| issue-391 reflog | owner | success-clean | git reflog expire --expire=now --all | issue comment |",
+        "| issue-391 objects | owner | success-clean | git gc --prune=now | issue comment |",
+        "| issue-391 files | owner | success-clean | find /tmp -delete | issue comment |",
+        "| issue-391 resource | owner | success-clean | Run the cleanup action from the final column | sudo docker image rm exact-owned |",
+        "| issue-391 resource | owner | success-clean | Use the command under verification | docker image rm exact-owned |",
+        "| issue-391 resource | owner | success-clean | Perform cleanup per the proof field | git branch -D main |",
     ),
 )
 def test_resource_lifecycle_rejects_partial_placeholder_na_or_broad_cleanup_row(
     row: str,
 ) -> None:
     assert guardrails.resource_lifecycle_failures(resource_lifecycle_body(row=row)) == [
+        "Resource lifecycle rows must identify exact ownership, retention, bounded cleanup, and verification evidence."
+    ]
+
+
+@pytest.mark.parametrize(
+    ("old", "new"),
+    (
+        ("| Resource | Ownership proof | Retention class | Cleanup trigger and exact action | Verification evidence |", "| Resource | Extra | Ownership proof | Retention class | Cleanup trigger and exact action | Verification evidence |"),
+        ("|---|---|---|---|---|", "|---|---|---|---|---|---|"),
+    ),
+)
+def test_resource_lifecycle_rejects_six_cell_header_or_separator(old: str, new: str) -> None:
+    body = resource_lifecycle_body().replace(old, new)
+    assert guardrails.resource_lifecycle_failures(body) == [
         "Resource lifecycle rows must identify exact ownership, retention, bounded cleanup, and verification evidence."
     ]
 
