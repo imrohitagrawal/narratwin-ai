@@ -1231,6 +1231,10 @@ def test_resource_lifecycle_rejects_missing_section() -> None:
         "| issue-391 branch | owner | success-clean | after merge run `git branch -D main` and verify absence | issue comment |",
         "| issue-391 cache | owner | success-clean | run `docker buildx prune --all` and verify absence | issue comment |",
         "| issue-391 cache | owner | success-clean | (docker buildx prune --all) | issue comment |",
+        "| issue-391 worktree | owner | success-clean | git worktree remove `pwd` | issue comment |",
+        "| issue-391 branch | owner | success-clean | git branch --force=true main | issue comment |",
+        "| issue-391 image | owner | success-clean | docker image rm --force=true shared:ci | issue comment |",
+        "| issue-391 file | owner | success-clean | rm --force=true /private/tmp/exact-owned-file | issue comment |",
     ),
 )
 def test_resource_lifecycle_rejects_partial_placeholder_na_or_broad_cleanup_row(
