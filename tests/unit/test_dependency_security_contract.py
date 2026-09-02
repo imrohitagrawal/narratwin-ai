@@ -202,6 +202,13 @@ def _text_at(ref: str, path: str) -> str:
     return result.stdout
 
 
+def test_issue498_dependency_docs_distinguish_runtime_and_hosted_test_placement() -> None:
+    notices = (ROOT / "docs/THIRD_PARTY_NOTICES.md").read_text(encoding="utf-8")
+    traceability = (ROOT / "docs/TRACEABILITY.md").read_text(encoding="utf-8")
+    assert "optional runtime `providers` extra and the exact development/test dependency group" in notices
+    assert "Optional runtime providers extra plus exact development/test pin" in traceability
+
+
 def _base_text(path: str) -> str:
     return _text_at(ISSUE360_BASE, path)
 

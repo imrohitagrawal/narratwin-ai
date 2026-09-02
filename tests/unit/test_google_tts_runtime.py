@@ -845,6 +845,7 @@ def test_official_sdk_binding_pins_tls_channel_and_disables_proxy() -> None:
         ("grpc.ssl_target_name_override", "eu-texttospeech.googleapis.com"),
         ("grpc.default_authority", "eu-texttospeech.googleapis.com"),
         ("grpc.enable_http_proxy", 0),
+        ("grpc.enable_retries", 0),
     )
     assert captured["ready_timeout"] == 600
     assert captured.get("closed") is None
@@ -973,6 +974,7 @@ def test_official_grpc_failure_retains_only_allowlisted_status() -> None:
 
     assert caught.value.egress_possible is True
     assert caught.value.grpc_status == "DEADLINE_EXCEEDED"
+    assert caught.value.__context__ is None
     assert private_detail not in str(caught.value)
     frames: list[str] = []
     traceback = caught.value.__traceback__
@@ -982,6 +984,45 @@ def test_official_grpc_failure_retains_only_allowlisted_status() -> None:
         traceback = traceback.tb_next
     assert frames and private_detail not in "".join(frames)
     assert len(bindings.closed) == 1
+
+
+def test_official_grpc_prepare_discards_raw_exception_context() -> None:
+    private_detail = "private-channel-detail-DO-NOT-RETAIN"
+
+    class FailingOpenBindings(FakeOfficialGrpcBindings):
+        def open_client(
+            self, *, target_ip: str, hostname: str, timeout_seconds: float
+        ) -> tuple[object, object]:
+            raise RuntimeError(private_detail)
+
+    instance, _ = official_grpc_transport(FailingOpenBindings())
+    with pytest.raises(GoogleRuntimeError) as caught:
+        instance.prepare(url=GOOGLE_TTS_URL, timeout_seconds=600)
+
+    assert caught.value.code == "GOOGLE_TTS_CONNECT_FAILED"
+    assert caught.value.__context__ is None
+    assert private_detail not in repr(caught.value)
+
+
+@pytest.mark.parametrize("egress_possible", [False, True])
+def test_official_grpc_normalizes_runtime_failure_with_exact_egress_state(
+    egress_possible: bool,
+) -> None:
+    bindings = FakeOfficialGrpcBindings(
+        failure=GoogleRuntimeError(
+            "GOOGLE_TTS_REQUEST_INVALID" if not egress_possible else "GOOGLE_TTS_RESPONSE_INVALID",
+            "bounded runtime failure",
+            egress_possible=egress_possible,
+        )
+    )
+    instance, _ = official_grpc_transport(bindings)
+    prepared = instance.prepare(url=GOOGLE_TTS_URL, timeout_seconds=600)
+
+    with pytest.raises(GoogleTransportError) as caught:
+        prepared.send(headers={}, json_body={}, timeout_seconds=600)
+
+    assert caught.value.egress_possible is egress_possible
+    assert caught.value.__context__ is None
 
 
 @pytest.mark.parametrize(

@@ -962,6 +962,19 @@ def test_g498_grpc_failure_is_billable_unknown_with_only_allowlisted_status() ->
     assert len(transport.calls) == 1
 
 
+def test_g498_definite_pre_egress_grpc_failure_is_not_marked_billable() -> None:
+    transport = FakeGoogleTransport([GoogleTransportError(egress_possible=False)])
+    provider = google_provider(transport, FakeGoogleIdentityProvider())
+
+    with pytest.raises(TTSProviderError) as caught:
+        provider.synthesize(receipt=receipt())
+
+    assert caught.value.code == "GOOGLE_TTS_PRE_EGRESS_FAILURE"
+    assert caught.value.billable is False and caught.value.retryable is False
+    assert provider.request_state(receipt()) is None
+    assert len(transport.calls) == 1
+
+
 @pytest.mark.parametrize(
     "unsafe_status",
     ("PRIVATE_INTERNAL_CODE", "deadline_exceeded", "DEADLINE EXCEEDED", "", None),
