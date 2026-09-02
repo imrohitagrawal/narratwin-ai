@@ -4000,7 +4000,7 @@ def test_issue498_tdd_topology_mutations_fail_closed(mutation: str) -> None:
 
 
 def test_issue498_tdd_topology_accepts_exact_two_parent_hosted_merge() -> None:
-    feature_head = "f" * 40
+    feature_head = "e8a0ab585d8bb95625646fb626b4fe3980926d14"
     output = "".join(
         f"{commit if commit is not None else feature_head}\0{subject}\0"
         for commit, subject in routes.ISSUE498_COMMIT_TOPOLOGY
@@ -4014,6 +4014,73 @@ def test_issue498_tdd_topology_accepts_exact_two_parent_hosted_merge() -> None:
         return completed(args, code=1)
 
     assert routes.issue498_commit_topology_failures(run) == []
+
+
+@pytest.mark.parametrize(
+    "head",
+    (
+        "e1fe126372d5c5a06dc7d2f9c76cb205da8643e7",
+        "d" * 40,
+    ),
+)
+def test_issue498_tdd_topology_accepts_exact_squash_anchor_and_descendant(
+    head: str,
+) -> None:
+    squash = "e1fe126372d5c5a06dc7d2f9c76cb205da8643e7"
+    tree = "76495e566a78a7951c33314ac742606c85ee92e5"
+
+    def run(args: list[str]) -> subprocess.CompletedProcess[str]:
+        if args == ["git", "rev-parse", "HEAD"]:
+            return completed(args, out=head + "\n")
+        if args == ["git", "show", "-s", "--format=%P%x00%T", squash]:
+            return completed(args, out=f"{routes.ISSUE498_BASE}\0{tree}\n")
+        if args == ["git", "merge-base", "--is-ancestor", squash, head]:
+            return completed(args)
+        return completed(args, code=1)
+
+    assert routes.issue498_commit_topology_failures(run) == []
+
+
+def test_issue498_tdd_topology_rejects_substituted_synthetic_feature_parent() -> None:
+    feature_head = "f" * 40
+    output = "".join(
+        f"{commit if commit is not None else feature_head}\0{subject}\0"
+        for commit, subject in routes.ISSUE498_COMMIT_TOPOLOGY
+    )
+
+    def run(args: list[str]) -> subprocess.CompletedProcess[str]:
+        if args == ["git", "rev-parse", "HEAD"]:
+            return completed(args, out="a" * 40 + "\n")
+        if args == ["git", "show", "-s", "--format=%P", "HEAD"]:
+            return completed(args, out=f"{routes.ISSUE498_BASE} {feature_head}\n")
+        if args[-1] == f"{routes.ISSUE498_BASE}..{feature_head}":
+            return completed(args, out=output)
+        return completed(args, code=1)
+
+    assert routes.issue498_commit_topology_failures(run) == [
+        "Issue #498 exact TDD commit topology drifted."
+    ]
+
+
+@pytest.mark.parametrize("mutation", ["parent", "tree", "ancestry", "command"])
+def test_issue498_tdd_topology_rejects_post_squash_mutations(mutation: str) -> None:
+    squash = "e1fe126372d5c5a06dc7d2f9c76cb205da8643e7"
+    head = "d" * 40
+    parent = "0" * 40 if mutation == "parent" else routes.ISSUE498_BASE
+    tree = "0" * 40 if mutation == "tree" else "76495e566a78a7951c33314ac742606c85ee92e5"
+
+    def run(args: list[str]) -> subprocess.CompletedProcess[str]:
+        if args == ["git", "rev-parse", "HEAD"]:
+            return completed(args, code=1 if mutation == "command" else 0, out=head + "\n")
+        if args == ["git", "show", "-s", "--format=%P%x00%T", squash]:
+            return completed(args, out=f"{parent}\0{tree}\n")
+        if args == ["git", "merge-base", "--is-ancestor", squash, head]:
+            return completed(args, code=1 if mutation == "ancestry" else 0)
+        return completed(args, code=1)
+
+    assert routes.issue498_commit_topology_failures(run) == [
+        "Issue #498 exact TDD commit topology drifted."
+    ]
 
 
 @pytest.mark.parametrize(
