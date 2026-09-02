@@ -218,12 +218,61 @@ def test_frontend_sbom_requires_architecture_specific_sharp_and_forbids_glibc() 
                 component["name"] = component["name"].replace(old, new)
                 component["purl"] = component["purl"].replace(old, new)
         assert not validator(wrong_architecture, FRONTEND_CONFIG, required, architecture)
+        for hidden_purl in (
+            f"pkg:npm/%40img/sharp-linuxmusl-{old}@0.35.3",
+            f"pkg:npm/%40img/sharp-linuxmusl-{new}@0.35.3",
+            f"pkg:npm/%40img/sharp-libvips-linuxmusl-{new}@1.3.2",
+        ):
+            hidden = copy.deepcopy(sbom)
+            hidden["components"].append({
+                "type": "library", "name": "benign-native", "version": "1.0.0", "purl": hidden_purl,
+            })
+            assert not validator(hidden, FRONTEND_CONFIG, required, architecture)
         forbidden = copy.deepcopy(sbom)
         forbidden["components"].append({
             "type": "library", "name": "glibc", "version": "2.43-r12",
             "purl": "pkg:generic/glibc@2.43-r12", "licenses": [{"license": {"id": "LGPL-2.1-or-later"}}],
         })
         assert not validator(forbidden, FRONTEND_CONFIG, required, architecture)
+        for field, value in (
+            ("cpe", "cpe:2.3:a:gnu:glibc:2.43:*:*:*:*:*:*:*"),
+            ("bom-ref", "pkg:apk/alpine/gcompat@1.1.0-r4"),
+        ):
+            hidden = copy.deepcopy(sbom)
+            hidden["components"].append({
+                "type": "library", "name": "benign-native", "version": "1.0.0",
+                "purl": "pkg:generic/benign-native@1.0.0", field: value,
+            })
+            assert not validator(hidden, FRONTEND_CONFIG, required, architecture)
+        for property_name, value in (
+            ("aquasecurity:trivy:PkgID", "glibc@2.43-r12"),
+            ("aquasecurity:trivy:SrcName", "gcompat"),
+        ):
+            hidden = copy.deepcopy(sbom)
+            hidden["components"].append({
+                "type": "library", "name": "benign-native", "version": "1.0.0",
+                "purl": "pkg:generic/benign-native@1.0.0",
+                "properties": [{"name": property_name, "value": value}],
+            })
+            assert not validator(hidden, FRONTEND_CONFIG, required, architecture)
+
+
+@pytest.mark.parametrize("fake_now", [0.0, 946_684_800.0])
+def test_cli_binds_scan_freshness_to_the_verifier_clock(tmp_path: Path, fake_now: float) -> None:
+    case = _case()
+    delta = case["now"] - fake_now
+    case["now"] = fake_now
+    for envelope in case["envelopes"].values():
+        envelope["started_at"] -= delta
+        envelope["completed_at"] -= delta
+    case_path = tmp_path / "stale-case.json"
+    case_path.write_text(json.dumps(case), encoding="utf-8")
+    completed = subprocess.run(
+        [sys.executable, str(ROOT / "scripts/ci/check_container_scan_consensus.py"), "--case", str(case_path)],
+        cwd=ROOT, text=True, capture_output=True, check=False,
+    )
+    assert completed.returncode == 1
+    assert "SCAN_SESSION_INVALID" in completed.stdout
 
 
 def test_frontend_runtime_medium_findings_fail_closed() -> None:
