@@ -1454,9 +1454,13 @@ def resource_lifecycle_failures(body: str) -> list[str]:
     }
     safe_locator = re.compile(r"/?[A-Za-z0-9.][A-Za-z0-9/._:@+-]*")
     safe_trigger = re.compile(r"[a-z0-9][a-z0-9._:-]*")
-    unsafe_prose_syntax = re.compile(r"[$*?{}\[\]~\\]|[<>]\(|\|\||[;&`]")
+    unsafe_prose_syntax = re.compile(
+        r"[$*?{}\[\]~\\]|[<>]\(|\|\||[;&`]|%[A-Za-z_][A-Za-z0-9_]*%"
+    )
     unsafe_table_instruction = re.compile(
-        r"(?i)(?:\b(?:run|execute|invoke|eval|sudo|doas|bash|sh|zsh|fish|xargs|find)\b"
+        r"(?i)(?:\b(?:run|execute|invoke|eval|sudo|doas|bash|sh|zsh|fish|xargs|find|"
+        r"curl|wget|python\d*)\b|"
+        r"\b(?:run|execute|invoke|eval|sudo|doas|bash|sh|zsh|fish|xargs|find)\b"
         r".{0,80}\b(?:docker|git|rm|prune|delete|remove)\b|"
         r"\bdocker\s+(?:system|image|container|volume|network|builder|buildx|compose)"
         r"\s+(?:prune|rm|rmi|remove|down|disconnect)\b|"
@@ -1479,6 +1483,7 @@ def resource_lifecycle_failures(body: str) -> list[str]:
         return result
 
     seen_resources: set[tuple[str, str]] = set()
+    path_resource_kinds = {"filesystem-path", "node-modules", "python-venv", "temporary-file"}
     protected_delete_locators = {
         str(Path.home().resolve()),
         str(ROOT.resolve()),
@@ -1517,7 +1522,7 @@ def resource_lifecycle_failures(body: str) -> list[str]:
         locator = contract["locator"]
         trigger = contract["trigger"]
         canonical_locator = os.path.normpath(locator)
-        identity = (kind, canonical_locator)
+        identity = ("path", canonical_locator) if kind in path_resource_kinds else (kind, canonical_locator)
         if (
             disposition != retention_dispositions[retention]
             or kind not in resource_kinds
