@@ -1415,10 +1415,21 @@ def resource_lifecycle_failures(body: str) -> list[str]:
         r"(?<!\S)[\"']?/[\"']?(?=\s|$)|[^\s|]*[*?][^\s|]*)"
     )
     unsafe_command_prefix = re.compile(
-        r"(?i)(?:\b(?:sudo|doas|env|eval|nice|nohup|command|xargs|bash|sh|zsh|ksh)\b"
+        r"(?i)(?:\b(?:sudo|doas|env|eval|nice|nohup|command|xargs|bash|sh|zsh|ksh|"
+        r"ssh|find|chroot|timeout)\b"
         r"[^;&|\n`]*\b(?:git|docker|rm)\b|"
         r"(?:^|\s)[A-Za-z_][A-Za-z0-9_]*=\S+\s+(?:git|docker|rm)\b)"
     )
+    shell_command = re.compile(r"(?i)(?<![\w-])(?:git|docker|rm)\b")
+    exact_buildx_prune = re.compile(
+        r"docker buildx prune --filter id=[a-z0-9]{20,64}"
+    )
+    literal_code_target = re.compile(r"[A-Za-z0-9/._:@+-]+")
+    executable_names = {
+        "bash", "chroot", "command", "doas", "docker", "env", "eval", "find",
+        "git", "ksh", "nice", "nohup", "printf", "pwd", "rm", "sh", "ssh",
+        "sudo", "timeout", "xargs", "zsh",
+    }
 
     def has_short_flag(tokens: list[str], flag: str) -> bool:
         return any(
@@ -1444,10 +1455,21 @@ def resource_lifecycle_failures(body: str) -> list[str]:
         return index
 
     def command_fragments(cleanup: str) -> list[str]:
-        fragments = re.findall(r"`([^`\n]+)`", cleanup)
-        plain = re.sub(r"`[^`\n]+`", " ", cleanup)
+        fragments: list[str] = []
+
+        def replace_code_span(match: re.Match[str]) -> str:
+            value = match.group(1)
+            if (
+                literal_code_target.fullmatch(value)
+                and value.lower() not in executable_names
+            ):
+                return value
+            fragments.append(value)
+            return " "
+
+        plain = re.sub(r"`([^`\n]+)`", replace_code_span, cleanup)
         for clause in re.split(r"\s*(?:&&|\|\||[;&|]|\n)\s*", plain):
-            starts = list(re.finditer(r"(?i)(?<![\w-])(?:git|docker|rm)\b", clause))
+            starts = list(shell_command.finditer(clause))
             fragments.extend(clause[match.start() :] for match in starts)
         return fragments
 
@@ -1459,6 +1481,29 @@ def resource_lifecycle_failures(body: str) -> list[str]:
         ]
 
     def unsafe_shell_cleanup(cleanup: str) -> bool:
+        code_spans = re.findall(r"`([^`\n]+)`", cleanup)
+        outside_code = re.sub(r"`[^`\n]+`", " ", cleanup)
+        if shell_command.search(outside_code) and any(
+            literal_code_target.fullmatch(value) is None
+            or value.lower() in executable_names
+            for value in code_spans
+        ):
+            return True
+        if re.search(r"(?i)docker\s+buildx\s+prune\b", cleanup):
+            exact_raw = exact_buildx_prune.fullmatch(cleanup.strip()) is not None
+            exact_markdown = (
+                len(code_spans) == 1
+                and exact_buildx_prune.fullmatch(code_spans[0]) is not None
+                and shell_command.search(outside_code) is None
+                and re.search(
+                    r"(?i)(?:&&|\|\||[;&|]|\b(?:sudo|doas|env|eval|nice|nohup|"
+                    r"command|xargs|bash|sh|zsh|ksh|ssh|find|chroot|timeout)\b)",
+                    outside_code,
+                )
+                is None
+            )
+            if not exact_raw and not exact_markdown:
+                return True
         buildx_prune_count = 0
         for fragment in command_fragments(cleanup):
             tokens = fragment_tokens(fragment)
