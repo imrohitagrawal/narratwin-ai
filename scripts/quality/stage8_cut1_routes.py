@@ -90,6 +90,10 @@ ISSUE498_REVIEW_CORRECTION_COMMENT = "5504653805"
 ISSUE498_REVIEW_CORRECTION_SHA256 = (
     "a5cea09fcf3964caabd34ea7ea3a1ff991bc79599a2442b3680b960f5b8c7b5e"
 )
+ISSUE498_TRACEBACK_CORRECTION_COMMENT = "5504746823"
+ISSUE498_TRACEBACK_CORRECTION_SHA256 = (
+    "9a179acb4bdc513cb2a6d122ebe271885ee927baf4972e8113f8ca66f1137217"
+)
 ISSUE498_COMMIT_TOPOLOGY: tuple[tuple[str | None, str], ...] = (
     ("5245393b2237cf8bcc25a652d885186b4d1c18f1", "test(tts): freeze official gRPC transport RED (#498)"),
     ("e8a0d9b7290d2f8af01994bdd9a1fd12851734cc", "feat(tts): add governed official unary gRPC transport (#498)"),
@@ -101,7 +105,10 @@ ISSUE498_COMMIT_TOPOLOGY: tuple[tuple[str | None, str], ...] = (
     ("91bdda7ae542118b9caa4b002eab3ae5bb25ec89", "test(tts): enforce exact grpc TDD topology (#498)"),
     ("149b98ddadfbd4adb8e5532c9b2c892a03eba5f1", "test(tts): freeze grpc boundary corrections (#498)"),
     ("94e9dab839fab39f8d526467bcc6a351f92e14e1", "fix(tts): close grpc security and truth gaps (#498)"),
-    (None, "fix(tts): bind final grpc review corrections (#498)"),
+    ("c6a973b09152d9fe4c59f08f13fb937e2e191600", "fix(tts): bind final grpc review corrections (#498)"),
+    ("f452791a96e4ed394e37d44869080293dcf59567", "test(tts): freeze grpc traceback redaction (#498)"),
+    ("23da78cc8807ab590bdc94a15ea94a6a31cd4c71", "fix(tts): discard grpc traceback inputs (#498)"),
+    (None, "fix(tts): bind final grpc traceback correction (#498)"),
 )
 ISSUE368_BINDING_COMPAT_AUTHORITY = (
     "5485581802", "c81d57d6adf081aaf6ec2bf8c94f4513ca7e363910a669efc3551d5b3b4eae3f",

@@ -3931,7 +3931,7 @@ def test_issue498_requires_exact_current_main_branch_point() -> None:
         routes.route_base(drifted, routes.ISSUE498_BRANCH)
 
 
-def test_issue498_requires_exact_eleven_commit_tdd_topology_and_final_authority() -> None:
+def test_issue498_requires_exact_fourteen_commit_tdd_topology_and_final_authority() -> None:
     artifact = json.loads(
         (REPO / "docs/governance/preflights/issue-498-google-tts-official-grpc.json").read_text()
     )
@@ -3943,6 +3943,10 @@ def test_issue498_requires_exact_eleven_commit_tdd_topology_and_final_authority(
     assert routes.ISSUE498_REVIEW_CORRECTION_SHA256 == (
         "a5cea09fcf3964caabd34ea7ea3a1ff991bc79599a2442b3680b960f5b8c7b5e"
     )
+    assert routes.ISSUE498_TRACEBACK_CORRECTION_COMMENT == "5504746823"
+    assert routes.ISSUE498_TRACEBACK_CORRECTION_SHA256 == (
+        "9a179acb4bdc513cb2a6d122ebe271885ee927baf4972e8113f8ca66f1137217"
+    )
     assert all(
         value in artifact["objective"]
         for value in (
@@ -3950,6 +3954,8 @@ def test_issue498_requires_exact_eleven_commit_tdd_topology_and_final_authority(
             routes.ISSUE498_TOPOLOGY_SHA256,
             routes.ISSUE498_REVIEW_CORRECTION_COMMENT,
             routes.ISSUE498_REVIEW_CORRECTION_SHA256,
+            routes.ISSUE498_TRACEBACK_CORRECTION_COMMENT,
+            routes.ISSUE498_TRACEBACK_CORRECTION_SHA256,
         )
     )
 
