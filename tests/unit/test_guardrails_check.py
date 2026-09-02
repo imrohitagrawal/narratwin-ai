@@ -1192,6 +1192,7 @@ def test_resource_lifecycle_accepts_possessive_prose_without_shell_parsing() -> 
         "After merge, run git branch -d `issue-391-safe-branch` and verify absence",
         "rm -r /tmp/exact",
         "rm -r /private/tmp/exact-issue-391-directory/",
+        "rm -r `/private/tmp/issue-391-directory`",
     ),
 )
 def test_resource_lifecycle_accepts_bounded_cleanup_variants(cleanup: str) -> None:
@@ -1264,6 +1265,14 @@ def test_resource_lifecycle_rejects_missing_section() -> None:
         "| issue-391 worktree | owner | success-clean | git worktree remove <(pwd) | issue comment |",
         "| issue-391 resource | owner | success-clean | remove exact resource | docker buildx prune --all | evidence |",
         r"| issue-391 resource | owner | success-clean | remove exact resource \| docker buildx prune --all | evidence |",
+        "| issue-391 branch | owner | success-clean | git branch -d `printf main` | issue comment |",
+        "| issue-391 image | owner | success-clean | docker image rm `docker images -q` | issue comment |",
+        "| issue-391 file | owner | success-clean | rm `find /tmp -type f` | issue comment |",
+        "| issue-391 cache | owner | success-clean | docker context use remote && docker buildx prune --filter id=0123456789abcdefghijklmnop | issue comment |",
+        "| issue-391 cache | owner | success-clean | ssh host docker buildx prune --filter id=0123456789abcdefghijklmnop | issue comment |",
+        "| issue-391 cache | owner | success-clean | find /tmp -exec docker buildx prune --filter id=0123456789abcdefghijklmnop ; | issue comment |",
+        "| issue-391 cache | owner | success-clean | chroot /private/tmp/root docker buildx prune --filter id=0123456789abcdefghijklmnop | issue comment |",
+        "| issue-391 cache | owner | success-clean | timeout 30 docker buildx prune --filter id=0123456789abcdefghijklmnop | issue comment |",
     ),
 )
 def test_resource_lifecycle_rejects_partial_placeholder_na_or_broad_cleanup_row(
