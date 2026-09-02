@@ -94,6 +94,10 @@ ISSUE498_TRACEBACK_CORRECTION_COMMENT = "5504746823"
 ISSUE498_TRACEBACK_CORRECTION_SHA256 = (
     "9a179acb4bdc513cb2a6d122ebe271885ee927baf4972e8113f8ca66f1137217"
 )
+ISSUE498_MERGE_PARITY_COMMENT = "5504929555"
+ISSUE498_MERGE_PARITY_SHA256 = (
+    "ec19733768f13672b8d322ae262c19fd8316c69a91ce197784f7cd5783b0b95c"
+)
 ISSUE498_COMMIT_TOPOLOGY: tuple[tuple[str | None, str], ...] = (
     ("5245393b2237cf8bcc25a652d885186b4d1c18f1", "test(tts): freeze official gRPC transport RED (#498)"),
     ("e8a0d9b7290d2f8af01994bdd9a1fd12851734cc", "feat(tts): add governed official unary gRPC transport (#498)"),
@@ -108,7 +112,9 @@ ISSUE498_COMMIT_TOPOLOGY: tuple[tuple[str | None, str], ...] = (
     ("c6a973b09152d9fe4c59f08f13fb937e2e191600", "fix(tts): bind final grpc review corrections (#498)"),
     ("f452791a96e4ed394e37d44869080293dcf59567", "test(tts): freeze grpc traceback redaction (#498)"),
     ("23da78cc8807ab590bdc94a15ea94a6a31cd4c71", "fix(tts): discard grpc traceback inputs (#498)"),
-    (None, "fix(tts): bind final grpc traceback correction (#498)"),
+    ("0f90f196f3992c487608476fe74767271b116ee6", "fix(tts): bind final grpc traceback correction (#498)"),
+    ("233576f798b42cf09874e7d7ea896932886751c9", "test(stage8): freeze Issue498 merge topology parity (#498)"),
+    (None, "fix(stage8): validate Issue498 direct and merge heads (#498)"),
 )
 ISSUE368_BINDING_COMPAT_AUTHORITY = (
     "5485581802", "c81d57d6adf081aaf6ec2bf8c94f4513ca7e363910a669efc3551d5b3b4eae3f",
@@ -2169,6 +2175,20 @@ def issue459_base_source_failures(root: Path) -> list[str]:
 
 
 def issue498_commit_topology_failures(run: Callable[[list[str]], Any]) -> list[str]:
+    parents_result = run(["git", "show", "-s", "--format=%P", "HEAD"])
+    if parents_result.returncode:
+        return ["Issue #498 exact TDD commit topology drifted."]
+    parents = str(parents_result.stdout).strip().split()
+    if len(parents) == 1 and re.fullmatch(r"[0-9a-f]{40}", parents[0]):
+        candidate = "HEAD"
+    elif (
+        len(parents) == 2
+        and parents[0] == ISSUE498_BASE
+        and re.fullmatch(r"[0-9a-f]{40}", parents[1])
+    ):
+        candidate = parents[1]
+    else:
+        return ["Issue #498 exact TDD commit topology drifted."]
     result = run(
         [
             "git",
@@ -2176,7 +2196,7 @@ def issue498_commit_topology_failures(run: Callable[[list[str]], Any]) -> list[s
             "--reverse",
             "-z",
             "--format=%H%x00%s",
-            f"{ISSUE498_BASE}..HEAD",
+            f"{ISSUE498_BASE}..{candidate}",
         ]
     )
     if result.returncode:

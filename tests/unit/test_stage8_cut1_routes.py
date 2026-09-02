@@ -2763,7 +2763,9 @@ def _issue494_runner(
 
 
 def _issue498_runner(args: list[str]) -> subprocess.CompletedProcess[str]:
-    if args[:3] == ["git", "log", "--reverse"]:
+    if args[:3] == ["git", "log", "--reverse"] or args == [
+        "git", "show", "-s", "--format=%P", "HEAD"
+    ]:
         return subprocess.run(args, cwd=REPO, check=False, capture_output=True, text=True)
     return completed(args)
 
@@ -3931,7 +3933,7 @@ def test_issue498_requires_exact_current_main_branch_point() -> None:
         routes.route_base(drifted, routes.ISSUE498_BRANCH)
 
 
-def test_issue498_requires_exact_fourteen_commit_tdd_topology_and_final_authority() -> None:
+def test_issue498_requires_exact_sixteen_commit_tdd_topology_and_final_authority() -> None:
     artifact = json.loads(
         (REPO / "docs/governance/preflights/issue-498-google-tts-official-grpc.json").read_text()
     )
@@ -3947,6 +3949,10 @@ def test_issue498_requires_exact_fourteen_commit_tdd_topology_and_final_authorit
     assert routes.ISSUE498_TRACEBACK_CORRECTION_SHA256 == (
         "9a179acb4bdc513cb2a6d122ebe271885ee927baf4972e8113f8ca66f1137217"
     )
+    assert routes.ISSUE498_MERGE_PARITY_COMMENT == "5504929555"
+    assert routes.ISSUE498_MERGE_PARITY_SHA256 == (
+        "ec19733768f13672b8d322ae262c19fd8316c69a91ce197784f7cd5783b0b95c"
+    )
     assert all(
         value in artifact["objective"]
         for value in (
@@ -3956,6 +3962,8 @@ def test_issue498_requires_exact_fourteen_commit_tdd_topology_and_final_authorit
             routes.ISSUE498_REVIEW_CORRECTION_SHA256,
             routes.ISSUE498_TRACEBACK_CORRECTION_COMMENT,
             routes.ISSUE498_TRACEBACK_CORRECTION_SHA256,
+            routes.ISSUE498_MERGE_PARITY_COMMENT,
+            routes.ISSUE498_MERGE_PARITY_SHA256,
         )
     )
 
@@ -3982,7 +3990,9 @@ def test_issue498_tdd_topology_mutations_fail_closed(mutation: str) -> None:
     )
 
     def run(args: list[str]) -> subprocess.CompletedProcess[str]:
-        return completed(args, 1 if mutation == "command" else 0, output)
+        if args == ["git", "show", "-s", "--format=%P", "HEAD"]:
+            return completed(args, 1 if mutation == "command" else 0, "a" * 40 + "\n")
+        return completed(args, out=output)
 
     assert routes.issue498_commit_topology_failures(run) == [
         "Issue #498 exact TDD commit topology drifted."
