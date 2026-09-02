@@ -46,12 +46,20 @@ def _digest(value: Any) -> tuple[str, int]:
 
 def _sarif(tool: str, cves: tuple[str, ...] = TARGET_CVES, severity: str = "8.0", purl: str = "pkg:generic/python@3.13.14") -> dict[str, Any]:
     rules = [{"id": f"{cve}-python" if tool == "grype" else cve, "helpUri": f"https://nvd.nist.gov/vuln/detail/{cve}", "properties": {"purls": [purl], "security-severity": severity}} for cve in cves]
-    return {"version": "2.1.0", "runs": [{"tool": {"driver": {"name": tool, "rules": rules}}, "results": [{"ruleId": rule["id"]} for rule in rules]}]}
+    driver = "Trivy" if tool == "trivy" else tool
+    return {"version": "2.1.0", "runs": [{"tool": {"driver": {"name": driver, "rules": rules}}, "results": [{"ruleId": rule["id"]} for rule in rules]}]}
 
 
-def _sbom(target: str, *, frontend: bool) -> dict[str, Any]:
+def _sbom(target: str, *, frontend: bool, architecture: str = "amd64") -> dict[str, Any]:
     packages = (("alpine-keys", "2.6-r0", ("MIT",), "alpine", "3.24.1"), ("alpine-release", "3.24.1-r0", ("MIT",), "alpine", "3.24.1"), ("ca-certificates-bundle", "20260611-r0", ("MIT", "MPL-2.0"), "alpine", "3.24.1"), ("libgcc", "15.2.0-r5", ("GPL-2.0-or-later", "LGPL-2.1-or-later"), "alpine", "3.24.1"), ("libstdc++", "15.2.0-r5", ("GPL-2.0-or-later", "LGPL-2.1-or-later"), "alpine", "3.24.1"), ("musl", "1.2.6-r2", ("MIT",), "alpine", "3.24.1")) if frontend else (("python", "3.13.14", ("PSF-2.0",), "wolfi", "20230201"),)
     components = [{"type": "library", "name": name, "version": version, "purl": f"pkg:apk/{namespace}/{quote(name, safe='')}@{version}?arch=x86_64&distro={distro}", "licenses": [{"expression": license_id} if " WITH " in license_id else {"license": {"id": license_id}} for license_id in licenses]} for name, version, licenses, namespace, distro in packages]
+    if frontend:
+        suffix = "x64" if architecture == "amd64" else "arm64"
+        components.extend([
+            {"type": "library", "name": "sharp", "version": "0.35.3", "purl": "pkg:npm/sharp@0.35.3"},
+            {"type": "library", "name": f"sharp-linuxmusl-{suffix}", "version": "0.35.3", "purl": f"pkg:npm/%40img/sharp-linuxmusl-{suffix}@0.35.3"},
+            {"type": "library", "name": f"sharp-libvips-linuxmusl-{suffix}", "version": "1.3.2", "purl": f"pkg:npm/%40img/sharp-libvips-linuxmusl-{suffix}@1.3.2"},
+        ])
     return {"bomFormat": "CycloneDX", "specVersion": "1.7", "metadata": {"component": {"type": "container", "properties": [{"name": "aquasecurity:trivy:ImageID", "value": target}]}}, "components": components}
 
 
@@ -136,6 +144,78 @@ def test_single_faults_fail_closed(mutation: Callable[[dict[str, Any]], None], e
             if name in candidate["reports"] and name in candidate["envelopes"]:
                 _rehash(candidate, name)
     assert _evaluate(candidate)["findings"] == expected
+
+
+@pytest.mark.parametrize("name", ["frontend-trivy", "frontend-grype"])
+@pytest.mark.parametrize("mutation", [
+    lambda r: r.update(runs=[]),
+    lambda r: r["runs"].append(copy.deepcopy(r["runs"][0])),
+    lambda r: r["runs"][0].update(tool={"driver": {}}),
+    lambda r: r["runs"][0]["tool"]["driver"].update(name="wrong-scanner"),
+    lambda r: r["runs"][0].update(results={}),
+    lambda r: r["runs"][0]["tool"]["driver"].update(rules={}),
+])
+def test_malformed_or_unidentified_sarif_fails_closed(
+    name: str, mutation: Callable[[dict[str, Any]], None]
+) -> None:
+    case = _case()
+    mutation(case["reports"][name])
+    _rehash(case, name)
+    assert _evaluate(case)["findings"] == ["SCANNER_REPORT_MALFORMED"]
+
+
+@pytest.mark.parametrize("severity", ["NaN", "-1", "11", "not-a-score"])
+def test_invalid_sarif_severity_fails_closed(severity: str) -> None:
+    case = _case()
+    case["reports"]["frontend-trivy"] = _sarif("trivy", ("CVE-MEDIUM",), severity)
+    _rehash(case, "frontend-trivy")
+    assert _evaluate(case)["findings"] == ["SCANNER_REPORT_MALFORMED"]
+
+
+@pytest.mark.parametrize("name,mutation", [
+    ("frontend-trivy", lambda e: e.update(schema_version="Bogus")),
+    ("frontend-trivy", lambda e: e.update(name="frontend-grype")),
+    ("frontend-trivy", lambda e: e.update(tool="grype")),
+    ("frontend-trivy", lambda e: e.update(argv=["trivy", "sha256:" + "0" * 64])),
+    ("frontend-trivy", lambda e: e.update(artifact_path="reports/security/other.raw.sarif.json")),
+    ("frontend-trivy", lambda e: e.update(started_at=NOW - 60, completed_at=NOW - 120)),
+    ("frontend-trivy", lambda e: e.update(started_at="not-a-time")),
+    ("frontend-trivy", lambda e: e.update(exit_code=1)),
+    ("frontend-grype", lambda e: e.update(exit_code=2)),
+])
+def test_scanner_envelope_identity_and_execution_fail_closed(
+    name: str, mutation: Callable[[dict[str, Any]], None]
+) -> None:
+    case = _case()
+    mutation(case["envelopes"][name])
+    assert _evaluate(case)["findings"] == ["SCANNER_EXECUTION_INVALID"]
+
+
+def test_frontend_sbom_requires_architecture_specific_sharp_and_forbids_glibc() -> None:
+    validator = _load()._valid_cyclonedx_sbom
+    required = _load().FRONTEND_SBOM_COMPONENTS
+    for architecture in ("amd64", "arm64"):
+        sbom = _sbom(FRONTEND_CONFIG, frontend=True, architecture=architecture)
+        assert validator(sbom, FRONTEND_CONFIG, required, architecture)
+        without_sharp = copy.deepcopy(sbom)
+        without_sharp["components"] = [c for c in without_sharp["components"] if "sharp" not in c["name"]]
+        assert not validator(without_sharp, FRONTEND_CONFIG, required, architecture)
+        duplicate = copy.deepcopy(sbom)
+        duplicate["components"].append(copy.deepcopy(duplicate["components"][-1]))
+        assert not validator(duplicate, FRONTEND_CONFIG, required, architecture)
+        wrong_architecture = copy.deepcopy(sbom)
+        old, new = (("x64", "arm64") if architecture == "amd64" else ("arm64", "x64"))
+        for component in wrong_architecture["components"]:
+            if "sharp" in component["name"]:
+                component["name"] = component["name"].replace(old, new)
+                component["purl"] = component["purl"].replace(old, new)
+        assert not validator(wrong_architecture, FRONTEND_CONFIG, required, architecture)
+        forbidden = copy.deepcopy(sbom)
+        forbidden["components"].append({
+            "type": "library", "name": "glibc", "version": "2.43-r12",
+            "purl": "pkg:generic/glibc@2.43-r12", "licenses": [{"license": {"id": "LGPL-2.1-or-later"}}],
+        })
+        assert not validator(forbidden, FRONTEND_CONFIG, required, architecture)
 
 
 def test_frontend_runtime_medium_findings_fail_closed() -> None:
