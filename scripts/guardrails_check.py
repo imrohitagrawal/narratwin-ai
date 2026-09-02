@@ -1394,6 +1394,9 @@ def resource_lifecycle_failures(body: str) -> list[str]:
     section = markdown_section(body, "Resource lifecycle and cleanup")
     if not section:
         return [missing]
+    table_lines = [line.strip() for line in section.splitlines() if line.strip().startswith("|")]
+    if any(line.startswith("||") or line.endswith("||") for line in table_lines):
+        return [invalid]
     rows = markdown_table_rows(body, "Resource lifecycle and cleanup")
     retention_classes = {
         "always-clean",
@@ -1425,6 +1428,9 @@ def resource_lifecycle_failures(body: str) -> list[str]:
         r"docker buildx prune --filter id=[a-z0-9]{20,64}"
     )
     literal_code_target = re.compile(r"[A-Za-z0-9/._:@+-]+")
+    delegated_cleanup = re.compile(
+        r"(?i)\b(?:listed|described|shown|specified)\s+in\s+(?:the\s+)?evidence\b"
+    )
     executable_names = {
         "bash", "chroot", "command", "doas", "docker", "env", "eval", "find",
         "git", "ksh", "nice", "nohup", "printf", "pwd", "rm", "sh", "ssh",
@@ -1457,12 +1463,16 @@ def resource_lifecycle_failures(body: str) -> list[str]:
     def command_fragments(cleanup: str) -> list[str]:
         fragments: list[str] = []
 
-        def replace_code_span(match: re.Match[str]) -> str:
-            value = match.group(1)
-            if (
+        def is_literal_target(value: str) -> bool:
+            return bool(
                 literal_code_target.fullmatch(value)
                 and value.lower() not in executable_names
-            ):
+                and re.search(r"(?i)(?:issue|pr)[-_]\d+", value)
+            )
+
+        def replace_code_span(match: re.Match[str]) -> str:
+            value = match.group(1)
+            if is_literal_target(value):
                 return value
             fragments.append(value)
             return " "
@@ -1486,7 +1496,12 @@ def resource_lifecycle_failures(body: str) -> list[str]:
         if shell_command.search(outside_code) and any(
             literal_code_target.fullmatch(value) is None
             or value.lower() in executable_names
+            or re.search(r"(?i)(?:issue|pr)[-_]\d+", value) is None
             for value in code_spans
+        ):
+            return True
+        if shell_command.search(cleanup) and re.search(
+            r"(?i)(?:^|[;&|]\s*)(?:cd|pushd|popd)\b", cleanup
         ):
             return True
         if re.search(r"(?i)docker\s+buildx\s+prune\b", cleanup):
@@ -1571,6 +1586,8 @@ def resource_lifecycle_failures(body: str) -> list[str]:
                     lower_arguments = lowered[index + 1 :]
                     if index > position + 1:
                         return True
+                    if operation == "context":
+                        return True
                     if operation in {
                         "system", "image", "volume", "network", "container",
                     } and "prune" in lower_arguments:
@@ -1637,8 +1654,11 @@ def resource_lifecycle_failures(body: str) -> list[str]:
         if (
             broad_cleanup.search(cleanup)
             or unresolved_or_ambiguous_target.search(cleanup)
+            or delegated_cleanup.search(cleanup)
             or unsafe_command_prefix.search(cleanup)
             or unsafe_shell_cleanup(cleanup)
+            or broad_cleanup.search(evidence)
+            or unsafe_shell_cleanup(evidence)
         ):
             return [invalid]
     return []
