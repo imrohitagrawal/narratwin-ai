@@ -1869,3 +1869,18 @@ the Torch resolver to Python below 3.15. All six full records are digest-bound.
 and eligible non-author exact-head approval must pass. No ignore, suppression,
 dependency removal, direct-constraint change, unrelated resolution drift, or
 product/provider authority is accepted.
+
+## Issue #504 post-squash route-parity gate
+
+Issue `#504` corrects the Issue `#498` topology gate after approved PR `#501`
+was squash-merged. The gate still validates all sixteen frozen source commits at
+the approved source head and the exact two-parent synthetic merge topology. On
+merged main or a later branch, it accepts only when Git proves immutable squash
+commit `e1fe126372d5c5a06dc7d2f9c76cb205da8643e7` is an ancestor and that commit
+has exact parent `8fb9b6d143515a6e5cfe3c395477e51696fe782b` and exact tree
+`76495e566a78a7951c33314ac742606c85ee92e5`.
+
+Wrong parent, tree, hash, ancestry, source topology, extra or missing source
+commit, octopus merge, and Git failures remain fail-closed. This is an offline
+governance-topology correction only; it adds no provider, audio, listening,
+media, release, production, or Cut 1 capability or authority.

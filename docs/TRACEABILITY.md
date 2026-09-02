@@ -52,6 +52,15 @@ older presenter wording are historical implementation evidence unless they are
 explicitly linked to the Issue #440 contracts. They do not override the current
 Cut 1 presenter, AI-quality, or enterprise-readiness policy.
 
+## Issue #504 governance-topology traceability
+
+| Requirement | Evidence | Preserved boundary |
+|---|---|---|
+| Preserve reviewed Issue #498 source topology | Approved PR #501 head and frozen sixteen-commit hash/subject sequence | Direct source-head validation remains exact; no branch ref or GitHub API dependency |
+| Accept the legitimate squash merge and descendants | Immutable squash `e1fe1263`, parent `8fb9b6d1`, tree `76495e56`, and Git ancestry proof | Tree identity alone cannot establish acceptance |
+| Reject topology substitution | Wrong parent/tree/hash, absent ancestry, synthetic-parent, octopus, source-sequence, and Git-failure mutation tests | No permissive fallback or rewritten-history acceptance |
+| Preserve Cut 1 boundaries | Issue #504 preflight, route tests, status, quality gates, and stage plan | Governance only; no provider, audio, listening, media, release, production, or Cut 1 authority |
+
 ## Stage 1 Product Traceability
 
 | Artifact | Requirement coverage | Stage / issue | Status |

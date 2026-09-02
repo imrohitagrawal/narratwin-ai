@@ -1628,6 +1628,21 @@ the approved head tree and post-merge main quality passed.
   deployment, publication, release, production readiness and Cut 1 acceptance
   remain incomplete and unproven.
 
+## Issue #504 post-squash topology correction (2026-09-02)
+
+- PR `#501` squash-merged the reviewed Issue `#498` source head as main
+  `e1fe126372d5c5a06dc7d2f9c76cb205da8643e7`, after which the frozen
+  source-topology validator falsely rejected legitimate descendants. The same
+  three failures reproduce in local full tests and PR `#503` hosted CI.
+- Issue `#504` retains exact sixteen-commit source-head and exact two-parent
+  synthetic-merge checks, and adds an immutable squash-anchor path requiring
+  the exact merge parent, tree, and proven ancestry. Wrong anchors and rewritten
+  histories remain rejected.
+- This governance-only correction is pending exact-head review, hosted CI,
+  eligible non-author approval, merge, and merged-main acceptance. It changes
+  no transport, provider, credential, egress, spend, narration, audio,
+  listening, media, release, production, or Cut 1 behavior or authority.
+
 ## Issue #486 PR reviewer-impact-summary governance (2026-09-01)
 
 - Issue #486 freezes a docs/gates/tests-only route requiring every non-trivial

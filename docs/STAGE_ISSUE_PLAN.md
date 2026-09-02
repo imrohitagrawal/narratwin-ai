@@ -3025,3 +3025,19 @@ narrowed to below 3.15. It owns eleven paths and a 3,200 charged-line cap.
 PR `#483` merged and closed out before Issue #479 resumed. The prerequisite
 changed no product, provider, credential, egress, spend, media, deployment,
 release, production-readiness, or Cut 1 acceptance behavior.
+
+### Issue #504 — Issue #498 post-squash topology correction
+
+Issue `#504` is the serialized governance correction discovered after PR `#501`
+squash-merged Issue `#498`. Its exact seven-path route starts from accepted main
+`e1fe126372d5c5a06dc7d2f9c76cb205da8643e7` and changes only route validation,
+tests, and affected governance ledgers.
+
+The correction preserves exact sixteen-commit validation for the approved PR
+source head and exact two-parent validation for synthetic merge checkouts. It
+adds a distinct post-merge path that requires the immutable squash commit's
+exact parent and tree plus proven ancestry to the current head. Issue `#391`
+and later Cut 1 work may rely on the full suite only after this correction
+passes exact-head review, hosted CI, approval, merge, and merged-main checks.
+No product, provider, audio, human-listening, media, deployment, release,
+production, or Cut 1 behavior is added.
