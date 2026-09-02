@@ -390,13 +390,14 @@ def product_context_body(
 
 def resource_lifecycle_body(*, row: str | None = None) -> str:
     lifecycle_row = row or (
-        "| issue-391 branch and worktree | dedicated issue branch/worktree created by this PR | "
-        "success-clean | after merged-main acceptance, remove exact branch/worktree | "
+        "| issue-391 worktree | dedicated issue worktree created by this PR | success-clean | "
+        '{"disposition":"delete","kind":"git-worktree","locator":"/tmp/issue-391",'
+        '"trigger":"merged-main-green"} | '
         "PR and issue closeout comments with absence and reclaimed-space proof |"
     )
     return (
         "## Resource lifecycle and cleanup\n\n"
-        "| Resource | Ownership proof | Retention class | Cleanup trigger and exact action | "
+        "| Resource | Ownership proof | Retention class | Cleanup contract | "
         "Verification evidence |\n"
         "|---|---|---|---|---|\n"
         f"{lifecycle_row}\n"
@@ -1162,7 +1163,8 @@ def test_resource_lifecycle_accepts_complete_owned_resource_row() -> None:
 def test_resource_lifecycle_accepts_one_exact_buildx_cache_id_selector() -> None:
     row = (
         "| cache 0123456789abcdefghijklmnop | created by issue 391 after a zero-cache baseline | "
-        "success-clean | docker buildx prune --filter id=0123456789abcdefghijklmnop | "
+        'success-clean | {"disposition":"delete","kind":"buildkit-cache-record",'
+        '"locator":"0123456789abcdefghijklmnop","trigger":"merged-main-green"} | '
         "docker buildx du proves that exact ID absent |"
     )
     assert guardrails.resource_lifecycle_failures(resource_lifecycle_body(row=row)) == []
@@ -1171,33 +1173,31 @@ def test_resource_lifecycle_accepts_one_exact_buildx_cache_id_selector() -> None
 def test_resource_lifecycle_accepts_one_exact_recursive_temporary_path() -> None:
     row = (
         "| /private/tmp/exact-issue-391-directory | created only for issue 391 | "
-        "always-clean | rm -r /private/tmp/exact-issue-391-directory | "
+        'always-clean | {"disposition":"delete","kind":"filesystem-path",'
+        '"locator":"/private/tmp/exact-issue-391-directory","trigger":"session-end"} | '
         "test -e proves the exact path absent |"
     )
     assert guardrails.resource_lifecycle_failures(resource_lifecycle_body(row=row)) == []
 
 
-def test_resource_lifecycle_accepts_possessive_prose_without_shell_parsing() -> None:
-    row = (
-        "| issue-391 worktree | created only for issue 391 | success-clean | "
-        "After the PR's merged-main checks pass, remove the exact worktree by its verified registration | "
-        "git worktree list proves the registered path absent |"
-    )
-    assert guardrails.resource_lifecycle_failures(resource_lifecycle_body(row=row)) == []
-
-
 @pytest.mark.parametrize(
-    "cleanup",
+    ("kind", "locator", "disposition", "retention"),
     (
-        "After merge, run git branch -d `issue-391-safe-branch` and verify absence",
-        "rm -r /tmp/exact",
-        "rm -r /private/tmp/exact-issue-391-directory/",
-        "rm -r `/private/tmp/issue-391-directory`",
+        ("git-branch", "feature-safe", "delete", "success-clean"),
+        ("docker-image", "sha256:0123456789abcdef", "delete", "always-clean"),
+        ("docker-image", "narratwin-ai:repro-issue151-123", "delete", "always-clean"),
+        ("docker-container", "citevyn-db", "retain", "persistent"),
     ),
 )
-def test_resource_lifecycle_accepts_bounded_cleanup_variants(cleanup: str) -> None:
+def test_resource_lifecycle_accepts_structured_exact_locators(
+    kind: str, locator: str, disposition: str, retention: str,
+) -> None:
+    cleanup = json.dumps(
+        {"disposition": disposition, "kind": kind, "locator": locator, "trigger": "owner-verified"},
+        separators=(",", ":"),
+    )
     row = (
-        "| exact issue-391 resource | created only for issue 391 | always-clean | "
+        f"| exact governed resource | independently inventoried ownership | {retention} | "
         f"{cleanup} | exact absence proof |"
     )
     assert guardrails.resource_lifecycle_failures(resource_lifecycle_body(row=row)) == []
@@ -1206,6 +1206,33 @@ def test_resource_lifecycle_accepts_bounded_cleanup_variants(cleanup: str) -> No
 def test_resource_lifecycle_rejects_missing_section() -> None:
     assert guardrails.resource_lifecycle_failures(product_context_body()) == [
         MISSING_RESOURCE_LIFECYCLE
+    ]
+
+
+@pytest.mark.parametrize(
+    ("cleanup", "retention"),
+    (
+        ("{}", "success-clean"),
+        ('{"disposition":"delete","kind":"git-branch","locator":"feature-safe"}', "success-clean"),
+        ('{"disposition":"delete","kind":"git-branch","locator":"feature-safe","trigger":"merged","command":"git branch -d feature-safe"}', "success-clean"),
+        ('{"disposition":"purge","kind":"git-branch","locator":"feature-safe","trigger":"merged"}', "success-clean"),
+        ('{"disposition":"delete","kind":"shell-command","locator":"feature-safe","trigger":"merged"}', "success-clean"),
+        ('{"disposition":"delete","kind":"filesystem-path","locator":"/tmp/*","trigger":"merged"}', "success-clean"),
+        ('{"disposition":"delete","kind":"filesystem-path","locator":"$HOME","trigger":"merged"}', "success-clean"),
+        ('{"disposition":"delete","disposition":"retain","kind":"git-branch","locator":"feature-safe","trigger":"merged"}', "success-clean"),
+        ('{"disposition":"delete","kind":"filesystem-path","locator":"/","trigger":"merged"}', "success-clean"),
+        ('{"disposition":"delete","kind":"git-branch","locator":"feature-safe","trigger":"merged;rm"}', "success-clean"),
+        ('{"disposition":"delete","kind":"docker-container","locator":"citevyn-db","trigger":"owner"}', "persistent"),
+        ('{"disposition":"retain","kind":"git-branch","locator":"feature-safe","trigger":"merged"}', "success-clean"),
+        ("not-json", "success-clean"),
+    ),
+)
+def test_resource_lifecycle_rejects_invalid_structured_cleanup_contract(
+    cleanup: str, retention: str,
+) -> None:
+    row = f"| exact resource | exact ownership proof | {retention} | {cleanup} | exact proof |"
+    assert guardrails.resource_lifecycle_failures(resource_lifecycle_body(row=row)) == [
+        "Resource lifecycle rows must identify exact ownership, retention, bounded cleanup, and verification evidence."
     ]
 
 
@@ -1317,11 +1344,14 @@ def test_resource_lifecycle_rejects_partial_placeholder_na_or_broad_cleanup_row(
 @pytest.mark.parametrize(
     ("old", "new"),
     (
-        ("| Resource | Ownership proof | Retention class | Cleanup trigger and exact action | Verification evidence |", "| Resource | Extra | Ownership proof | Retention class | Cleanup trigger and exact action | Verification evidence |"),
+        ("| Resource | Ownership proof | Retention class | Cleanup contract | Verification evidence |", "| Resource | Extra | Ownership proof | Retention class | Cleanup contract | Verification evidence |"),
+        ("| Resource | Ownership proof | Retention class | Cleanup contract | Verification evidence |", "| Item | Ownership | Retention | Cleanup | Evidence |"),
         ("|---|---|---|---|---|", "|---|---|---|---|---|---|"),
+        ("|---|---|---|---|---|", "|---x|---|---|---|---|"),
+        ("|---|---|---|---|---|\n", ""),
     ),
 )
-def test_resource_lifecycle_rejects_six_cell_header_or_separator(old: str, new: str) -> None:
+def test_resource_lifecycle_rejects_malformed_header_or_separator(old: str, new: str) -> None:
     body = resource_lifecycle_body().replace(old, new)
     assert guardrails.resource_lifecycle_failures(body) == [
         "Resource lifecycle rows must identify exact ownership, retention, bounded cleanup, and verification evidence."
