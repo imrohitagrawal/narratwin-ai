@@ -112,8 +112,11 @@ four string fields: {"disposition":"delete|retain","kind":"closed-vocabulary-kin
 commands, variables, globs, multiple resources, or delegated instructions in
 any table cell. Use a public-safe context-relative locator instead of a private
 machine path. Locators must be canonical, without dot aliases or trailing
-separators. Each kind/locator pair must appear exactly once; shared-resource
-is retain-only. A generic N/A row is not accepted. -->
+separators. Each physical path must appear exactly once across path-like kinds;
+every other kind/locator pair must appear exactly once. Shared-resource is
+retain-only. Do not target absolute machine paths, protected branches, primary
+worktrees, repository metadata/governance sources, credential locations,
+home/workspace roots, or parent traversal. A generic N/A row is not accepted. -->
 
 | Resource | Ownership proof | Retention class | Cleanup contract | Verification evidence |
 |---|---|---|---|---|

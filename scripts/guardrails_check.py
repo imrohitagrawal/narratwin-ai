@@ -1459,7 +1459,7 @@ def resource_lifecycle_failures(body: str) -> list[str]:
     )
     unsafe_table_instruction = re.compile(
         r"(?i)(?:\b(?:run|execute|invoke|eval|sudo|doas|bash|sh|zsh|fish|xargs|find|"
-        r"curl|wget|python\d*)\b|"
+        r"curl|wget)\b|\bpython\d*\s+(?:-m\b|[A-Za-z0-9_./-]+\.py\b)|"
         r"\b(?:run|execute|invoke|eval|sudo|doas|bash|sh|zsh|fish|xargs|find)\b"
         r".{0,80}\b(?:docker|git|rm|prune|delete|remove)\b|"
         r"\bdocker\s+(?:system|image|container|volume|network|builder|buildx|compose)"
