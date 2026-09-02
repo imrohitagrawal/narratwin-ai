@@ -4139,27 +4139,6 @@ def test_process_only_phase1_branch_allows_governance_guardrail_files(monkeypatc
     assert failures == []
 
 
-def test_issue391_resource_lifecycle_route_allows_only_its_exact_docs(
-    monkeypatch: Any,
-) -> None:
-    branch = "phase-1-closure-process-391-resource-lifecycle-enforcement"
-    allowed = phase1.ISSUE_391_RESOURCE_LIFECYCLE_ALLOWED_CHANGED_FILES
-
-    assert run_changed_files_check(
-        monkeypatch,
-        branch=branch,
-        files=sorted(allowed),
-    ) == []
-    near_match = "phase-1-closure-process-392-resource-lifecycle-enforcement"
-    assert run_changed_files_check(
-        monkeypatch,
-        branch=near_match,
-        files=["docs/RESOURCE_LIFECYCLE.md"],
-    ) == [
-        f"Phase 1 Closure branch {near_match} may not change docs/RESOURCE_LIFECYCLE.md."
-    ]
-
-
 def test_issue181_process_branch_allows_only_lighthouse_maintenance_files(monkeypatch: Any) -> None:
     branch = "phase-1-closure-process-181-lighthouse-browser-selection"
 

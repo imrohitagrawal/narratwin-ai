@@ -169,7 +169,11 @@ def test_issue391_route_validates_exact_scope_without_mutating_frozen_legacy(
     branch = "phase-1-closure-process-391-resource-lifecycle-enforcement"
     monkeypatch.setattr(runner, "current_branch", lambda root: branch)
     monkeypatch.setattr(runner, "_head", lambda: "b" * 40)
-    monkeypatch.setattr(runner, "_changed_paths", lambda base, head: frozenset({"owned"}))
+    monkeypatch.setattr(
+        runner,
+        "_changed_paths",
+        lambda head, base: runner.ISSUE391_PATHS,
+    )
     monkeypatch.setattr(
         runner,
         "validate_governance_preflight_repository",
@@ -191,3 +195,44 @@ def test_issue391_route_validates_exact_scope_without_mutating_frozen_legacy(
 
     assert runner.run_preserved_contracts() == 0
     assert calls == ["branch", "required", "preserved"]
+
+
+def test_issue391_preflight_or_extra_path_blocks_preserved_checks(
+    monkeypatch: Any,
+) -> None:
+    branch = runner.ISSUE391_BRANCH
+    monkeypatch.setattr(runner, "current_branch", lambda root: branch)
+    monkeypatch.setattr(runner, "_head", lambda: "b" * 40)
+    monkeypatch.setattr(
+        runner.legacy,
+        "_load_checker",
+        lambda: (_ for _ in ()).throw(AssertionError("must not run")),
+    )
+    monkeypatch.setattr(runner.legacy, "_print_result", lambda failures: 1)
+
+    monkeypatch.setattr(
+        runner,
+        "validate_governance_preflight_repository",
+        lambda *args, **kwargs: [object()],
+    )
+    assert runner.run_preserved_contracts() == 1
+
+    monkeypatch.setattr(
+        runner,
+        "validate_governance_preflight_repository",
+        lambda *args, **kwargs: [],
+    )
+    monkeypatch.setattr(
+        runner,
+        "_changed_paths",
+        lambda head, base: runner.ISSUE391_PATHS | {"extra/path"},
+    )
+    assert runner.run_preserved_contracts() == 1
+
+
+def test_issue391_near_match_retains_frozen_legacy_scope(monkeypatch: Any) -> None:
+    near_match = "phase-1-closure-process-392-resource-lifecycle-enforcement"
+    monkeypatch.setattr(runner, "current_branch", lambda root: near_match)
+    monkeypatch.setattr(runner.legacy, "run_preserved_contracts", lambda: 37)
+
+    assert runner.run_preserved_contracts() == 37
