@@ -929,12 +929,16 @@ class _PreparedGoogleGrpcSession:
                 except Exception:
                     grpc_status = None
             if failed:
-                raise GoogleTransportError(
+                sanitized_error = GoogleTransportError(
                     egress_possible=failure_egress_possible,
                     grpc_status=grpc_status,
                 )
+                del headers, json_body, audio
+                raise sanitized_error
             if not audio or len(audio) > self._max_response_bytes:
-                raise GoogleTransportError(egress_possible=True)
+                sanitized_error = GoogleTransportError(egress_possible=True)
+                del headers, json_body, audio
+                raise sanitized_error
             body = json.dumps(
                 {"audioContent": base64.b64encode(audio).decode("ascii")},
                 separators=(",", ":"),
