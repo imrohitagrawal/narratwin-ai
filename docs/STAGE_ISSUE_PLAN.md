@@ -3043,3 +3043,17 @@ substitution or Git error. PR #505 is reassessed only after Issue #502 merge.
 This prerequisite changes no frontend product behavior and creates no
 provider, credential, media, deployment, release, production, or Cut 1
 acceptance authority.
+
+### Issue #509 — configurable T05 audio-duration authority
+
+Issue #509 is a narrow Cut 1 critical-path child of #493. From exact main
+0f608af3, it replaces the duplicated fixed 90–120/6,000,000-byte admission
+policy with one typed, checksum-bound duration pair and a derived canonical WAV
+size. The default remains 90–120; Issue #368 may inject 90–135 after merge to
+admit the exact owner-approved natural-cadence bytes.
+
+The route owns exactly fifteen paths and at most 2,400 charged lines. It
+performs no audio transformation, provider call, credential lookup, egress,
+spend, listening inference, T06 work, deployment, release, production, or Cut
+1 acceptance. Parent #493 retains the broader configuration architecture and
+hard-coded-value inventory.

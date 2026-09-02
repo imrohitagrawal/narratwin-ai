@@ -2000,3 +2000,13 @@ runtime exceptions or a second acceptance.
 
 This interface has no HTTP endpoint and accepts no media or narration bytes.
 It validates human-authored evidence; it never authors or infers acceptance.
+
+## Cut 1 narration duration configuration
+
+NarrationService accepts duration_requirement_seconds=(minimum, maximum) as a
+pair of positive ordered integer seconds and defaults to (90, 120). The exact
+effective pair is included in narration and TTS receipt checksums and must
+match on restore. T05B consumes that receipt-owned authority and derives the
+largest canonical 24-kHz mono PCM16 WAV size from the upper bound. Invalid
+types, boolean values, reversed bounds, stale policy, and audio outside the
+pair fail closed; the interface never transforms audio.

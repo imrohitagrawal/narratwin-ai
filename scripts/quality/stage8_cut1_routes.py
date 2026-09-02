@@ -33,6 +33,7 @@ ISSUE495_BRANCH = "stage8-495-browserslist-security-refresh"
 ISSUE499_BRANCH = "stage8-499-pypdf-6-16-2-security-refresh"
 ISSUE502_BRANCH = "stage8-502-frontend-musl-runtime-security"
 ISSUE507_BRANCH = "stage8-507-google-api-core-grpc-status"
+ISSUE509_BRANCH = "stage8-509-configurable-audio-duration"
 ISSUE386_BRANCH = "cut1-process-386-modular-route-enforcement"
 ISSUE413_BRANCH = "cut1-process-413-frontend-runtime-openssl"
 ISSUE405_BRANCH = "process-405-heartbeat2-main-reliability"
@@ -191,6 +192,10 @@ ISSUE507_ROUTE_COMMENT = "5511779065"
 ISSUE507_ROUTE_AMENDMENT_COMMENT = "5511888548"
 ISSUE507_STATUS_AMENDMENT_COMMENT = "5511933453"
 ISSUE507_HOSTED_AMENDMENT_COMMENT = "5512191367"
+ISSUE509_BASE = "0f608af347e89c749fcb5bd6ca17a63ceccd56e7"
+ISSUE509_TREE = "9418e5b13a1a1acc00371bbf51a4ec78ac50eccc"
+ISSUE509_ROUTE_COMMENT = "5515713754"
+ISSUE509_BODY_SHA256 = "079852878ecc9890430fe5c8de7246ec4852eb10407d4057631b38abd6b6b5a2"
 ISSUE495_TREE = "13f79eb5db44249f635a619e1b283279f25ba9f0"
 ISSUE495_ROUTE_COMMENT = "5498387945"
 ISSUE495_CORRECTION_COMMENT = "5498411811"
@@ -257,6 +262,23 @@ ISSUE460_HOSTED_SECURITY_PATHS = {
 ISSUE459_HOSTED_CORRECTION_PATHS = {".gitleaksignore", "scripts/ci/check_gitleaks_regression.py", "tests/unit/test_gitleaks_regression.py", "scripts/quality/check_stage8_docs.py", "tests/unit/test_stage8_quality_gate.py"}
 
 ROUTES = {
+    ISSUE509_BRANCH: {
+        "docs/governance/preflights/issue-509.json",
+        "backend/app/narration.py",
+        "backend/app/cut1_audio.py",
+        "tests/unit/test_cut1_narration.py",
+        "tests/unit/test_cut1_audio.py",
+        "scripts/quality/stage8_cut1_routes.py",
+        "tests/unit/test_stage8_cut1_routes.py",
+        "docs/ADR/0078-cut1-configurable-audio-duration.md",
+        "docs/QUALITY_GATES.md",
+        "docs/STAGE_ISSUE_PLAN.md",
+        "docs/STATUS.md",
+        "docs/TRACEABILITY.md",
+        "docs/SECURITY_AND_PRIVACY.md",
+        "docs/OBSERVABILITY_AND_COST.md",
+        "docs/API_CONTRACT.md",
+    },
     ISSUE507_BRANCH: {
         "backend/app/google_tts_runtime.py",
         "tests/unit/test_google_tts_runtime.py",
@@ -949,6 +971,8 @@ ROUTE_ISSUES[ISSUE502_BRANCH] = 502
 TOTAL_LIMITS[ISSUE502_BRANCH] = 4660
 ROUTE_ISSUES[ISSUE507_BRANCH] = 507
 TOTAL_LIMITS[ISSUE507_BRANCH] = 610
+ROUTE_ISSUES[ISSUE509_BRANCH] = 509
+TOTAL_LIMITS[ISSUE509_BRANCH] = 2400
 ROUTE_ISSUES[ISSUE459_BRANCH] = 459
 TOTAL_LIMITS[ISSUE459_BRANCH] = 4300
 ROUTE_ISSUES[ISSUE459_T03_BRANCH] = 459
@@ -1003,6 +1027,23 @@ ISSUE459_EDITABLE_AUTHORITY_SHA256 = {
 }
 ISSUE459_BASE_SOURCE_SHA256 = {"docs/STATUS.md": "9045b595ca1622680f621dffa4dff88435e2fde0d13e3c061ced7eb6df9ae8bf", "docs/TRACEABILITY.md": "e597069e3d6b765a9d68e5336ff9597d6d7b809e5ea6f316f22312ca71ea136a", "docs/QUALITY_GATES.md": "9f628d22ec62075e560ef478820cf094d923cdf1cfded56a512291c61f6e542b", "docs/REPOSITORY_GUARDRAILS.md": "04f8b405bc7ba9b615cc1d5d7e489bcbf643b9de4bfc9b331e5a60c38629e82f"}
 TEXT_LIMITS = {
+    ISSUE509_BRANCH: {
+        "docs/governance/preflights/issue-509.json": 240,
+        "backend/app/narration.py": 180,
+        "backend/app/cut1_audio.py": 100,
+        "tests/unit/test_cut1_narration.py": 260,
+        "tests/unit/test_cut1_audio.py": 300,
+        "scripts/quality/stage8_cut1_routes.py": 180,
+        "tests/unit/test_stage8_cut1_routes.py": 300,
+        "docs/ADR/0078-cut1-configurable-audio-duration.md": 160,
+        "docs/QUALITY_GATES.md": 100,
+        "docs/STAGE_ISSUE_PLAN.md": 100,
+        "docs/STATUS.md": 100,
+        "docs/TRACEABILITY.md": 60,
+        "docs/SECURITY_AND_PRIVACY.md": 80,
+        "docs/OBSERVABILITY_AND_COST.md": 60,
+        "docs/API_CONTRACT.md": 80,
+    },
     ISSUE507_BRANCH: {
         "backend/app/google_tts_runtime.py": 20,
         "tests/unit/test_google_tts_runtime.py": 100,
@@ -2053,6 +2094,7 @@ def route_base(run: Callable[[list[str]], Any], branch: str) -> str:
             )
         return ISSUE494_TRANSITION_BASE
     fixed_routes = {
+        ISSUE509_BRANCH: (509, ISSUE509_BASE),
         ISSUE507_BRANCH: (507, ISSUE507_BASE),
         ISSUE502_BRANCH: (502, ISSUE502_BASE),
         ISSUE499_BRANCH: (499, ISSUE499_BASE),
@@ -2097,7 +2139,7 @@ def route_base(run: Callable[[list[str]], Any], branch: str) -> str:
             or fixed_value != base or common_value != base
         )
         branch_point_invalid = False
-        if not fixed_invalid and branch in {ISSUE507_BRANCH, ISSUE502_BRANCH, ISSUE479_BRANCH, ISSUE482_BRANCH, ISSUE478_BRANCH, ISSUE475_BRANCH, ISSUE468_BRANCH, ISSUE486_BRANCH, ISSUE486_PROTECTED_BRANCH, ISSUE486_HASH_CLEANUP_BRANCH, ISSUE473_BRANCH, ISSUE471_BRANCH, ISSUE459_T05B_BRANCH, ISSUE459_T05A_BRANCH, ISSUE459_T03_BRANCH, ISSUE460_BRANCH, ISSUE452_BRANCH, ISSUE451_BRANCH, ISSUE150_BRANCH, ISSUE424_BRANCH, ISSUE421_BRANCH, ISSUE368_IMPLEMENTATION_BRANCH, ISSUE368_BINDING_COMPAT_BRANCH, ISSUE368_AUTH_TRANSPORT_BRANCH, ISSUE368_TIMEOUT_BRANCH,
+        if not fixed_invalid and branch in {ISSUE509_BRANCH, ISSUE507_BRANCH, ISSUE502_BRANCH, ISSUE479_BRANCH, ISSUE482_BRANCH, ISSUE478_BRANCH, ISSUE475_BRANCH, ISSUE468_BRANCH, ISSUE486_BRANCH, ISSUE486_PROTECTED_BRANCH, ISSUE486_HASH_CLEANUP_BRANCH, ISSUE473_BRANCH, ISSUE471_BRANCH, ISSUE459_T05B_BRANCH, ISSUE459_T05A_BRANCH, ISSUE459_T03_BRANCH, ISSUE460_BRANCH, ISSUE452_BRANCH, ISSUE451_BRANCH, ISSUE150_BRANCH, ISSUE424_BRANCH, ISSUE421_BRANCH, ISSUE368_IMPLEMENTATION_BRANCH, ISSUE368_BINDING_COMPAT_BRANCH, ISSUE368_AUTH_TRANSPORT_BRANCH, ISSUE368_TIMEOUT_BRANCH,
                       ISSUE368_QUOTA_FIX_BRANCH, ISSUE498_BRANCH, ISSUE368_BRANCH,
                       ISSUE368_PROMPT_BRANCH}:
             branch_point = run(["git", "merge-base", "origin/main", "HEAD"])
@@ -2413,7 +2455,30 @@ def check_exact_route(
         f"Issue #{issue} route changed unexpected path: {path}"
         for path in sorted(effective_changed - files)
     )
-    if branch == ISSUE507_BRANCH:
+    if branch == ISSUE509_BRANCH:
+        try:
+            preflight = load_json_without_duplicate_members(
+                root / "docs/governance/preflights/issue-509.json"
+            )
+            findings = validate_governance_preflight(
+                preflight,
+                context={"issue_number": 509, "branch": branch, "changed_files": sorted(files)},
+            )
+            failures.extend(
+                f"Issue #509 governance preflight failed: {item.code}" for item in findings
+            )
+            objective = preflight.get("objective") if isinstance(preflight, dict) else None
+            authority = (
+                ISSUE509_BASE,
+                ISSUE509_TREE,
+                ISSUE509_ROUTE_COMMENT,
+                ISSUE509_BODY_SHA256,
+            )
+            if not isinstance(objective, str) or any(value not in objective for value in authority):
+                failures.append("Issue #509 authority drifted.")
+        except (OSError, ValueError, TypeError) as error:
+            failures.append(f"Issue #509 governance preflight failed closed: {error}")
+    elif branch == ISSUE507_BRANCH:
         try:
             preflight = load_json_without_duplicate_members(
                 root / "docs/governance/preflights/issue-507.json"
@@ -2902,7 +2967,7 @@ def check_exact_route(
             f"Issue #{issue} charge for {path} exceeds {limit}."
             for path, limit in TEXT_LIMITS[branch].items() if charges.get(path, 0) > limit
         )
-        if branch in {ISSUE482_BRANCH, ISSUE507_BRANCH}:
+        if branch in {ISSUE482_BRANCH, ISSUE507_BRANCH, ISSUE509_BRANCH}:
             route_text_integrity(root, run, files)
         elif branch == ISSUE459_BRANCH:
             sizes = route_binary_sizes(root, files, "utf-8")

@@ -785,3 +785,12 @@ remain separate gates.
 | Preserve reproducibility and provenance | Two builds per architecture; normalized inventory/build identity; immutable index and platform digests | No floating source, cross-architecture substitution, concealed component, or reproducible byte-image overclaim |
 | Remove the post-squash CI cycle | Exact PR #501 approved head, squash commit/parent/tree, descendant ancestry, synthetic topology, and Git-failure tests | PR #505 may be superseded only after merged Issue #502 proves the same contract; no weakening of the sixteen-commit source topology |
 | Bind delivery route | Issue #502 preflight, exact twenty paths, per-file caps and 4,660 aggregate ceiling | Hosted CI, independent exact-head review, eligible approval, merge, and closeout remain mandatory |
+
+## Issue #509 configurable audio-duration traceability
+
+| Requirement | Evidence | Preserved boundary |
+|---|---|---|
+| Tune duration without code edits | Constructor-injected positive ordered pair; 90–120 default; ADR 0078 | A value change is configuration, not provider or listening authority |
+| Bind the effective value | Narration checksum, evaluation/approval lineage, receipt checksum, persisted state, and restore mutations | Stale or coherently rehashed policy substitution rejects |
+| Avoid duplicate byte tuning | Canonical RIFF size derived from upper seconds × 24,000 × two bytes plus 44-byte header | Format, signal, duration, caption, and exact-hash gates remain |
+| Preserve approved media | 127.661917-second / 6,127,816-byte regression; explicit prohibition on transform | No shortening, acceleration, compression, trimming, resampling, or regeneration |
