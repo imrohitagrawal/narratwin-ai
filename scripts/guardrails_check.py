@@ -1405,16 +1405,30 @@ def resource_lifecycle_failures(body: str) -> list[str]:
     }
     broad_cleanup = re.compile(
         r"(?i)(?:broad\s+(?:docker\s+)?prune|docker\s+(?:system|image|volume|network)\s+prune|"
-        r"docker\s+(?:builder|buildx|cache)\s+prune|git\s+(?:clean|worktree\s+prune)|"
-        r"rm\s+(?:-[a-z]*r[a-z]*f[a-z]*|-[a-z]*f[a-z]*r[a-z]*|"
-        r"[^\n|]*--recursive[^\n|]*--force|[^\n|]*--force[^\n|]*--recursive)|"
+        r"docker\s+(?:builder|cache)\s+prune|git\s+(?:clean|worktree\s+prune)|"
         r"workspace[- ]wide|host[- ]wide)"
     )
+    recursive_rm = re.compile(
+        r"(?i)\brm\b[^\n|]*(?:--recursive\b|-(?=[a-z]*r)[a-z]+\b)"
+    )
+    unresolved_or_ambiguous_target = re.compile(
+        r"(?:\$(?:\{[^}\n|]+\}|[A-Za-z_][A-Za-z0-9_]*)|%[A-Za-z_][A-Za-z0-9_]*%|"
+        r"(?<!\S)~(?:[/\s]|$)|(?<!\S)\.\.(?:[/\s]|$)|"
+        r"(?<!\S)[\"']?/[\"']?(?=\s|$)|[^\s|]*[*?][^\s|]*)"
+    )
+    git_state_change = re.compile(
+        r"(?i)\bgit\s+(?:reset|switch|checkout|restore)\b"
+    )
+    buildx_prune = re.compile(r"(?i)\bdocker\s+buildx\s+prune\b")
+    buildx_exact_id = re.compile(
+        r"(?i)--filter\s+([\"']?)id={1,2}([a-z0-9]{20,64})\1(?=\s|$)"
+    )
+    buildx_any_filter = re.compile(r"(?i)--filter\b")
     force_cleanup = re.compile(
         r"(?:git\s+branch\s+-D\b|"
         r"(?i:git\s+(?:branch|push|worktree\s+remove)[^\n|]*(?:--force(?:-with-lease)?|-f)\b)|"
         r"(?i:docker\s+(?:image\s+rm|rmi|rm|volume\s+rm|network\s+rm|"
-        r"builder\s+rm|buildx\s+rm)[^\n|]*(?:--force|-f)\b))"
+        r"builder\s+rm|buildx\s+rm|buildx\s+prune)[^\n|]*(?:--force|-f)\b))"
     )
     if not rows:
         return [invalid]
@@ -1427,7 +1441,21 @@ def resource_lifecycle_failures(body: str) -> list[str]:
             return [invalid]
         if retention.strip().lower() not in retention_classes:
             return [invalid]
-        if broad_cleanup.search(cleanup) or force_cleanup.search(cleanup):
+        buildx_match = buildx_prune.search(cleanup)
+        buildx_ids = buildx_exact_id.findall(cleanup)
+        unsafe_buildx_prune = buildx_match is not None and (
+            len(buildx_ids) != 1
+            or len(buildx_any_filter.findall(cleanup)) != 1
+            or re.search(r"(?i)(?:--all\b|(?<!\S)-a\b)", cleanup) is not None
+        )
+        if (
+            broad_cleanup.search(cleanup)
+            or recursive_rm.search(cleanup)
+            or unresolved_or_ambiguous_target.search(cleanup)
+            or git_state_change.search(cleanup)
+            or force_cleanup.search(cleanup)
+            or unsafe_buildx_prune
+        ):
             return [invalid]
     return []
 
