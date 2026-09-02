@@ -67,12 +67,11 @@ image_config() {
 }
 
 verify_frontend_runtime() {
-  local image="$1" output_variable="$2" config container port http_code actual_architecture actual_inventory runtime_identity
+  local image="$1" output_variable="$2" config container port http_code actual_architecture actual_inventory runtime_identity sharp_identity
   config="$(docker image inspect "${image}" --format '{{json .Config}}')"
   python3 - 3<<<"${config}" <<'PY'
 import json, sys
 from scripts.ci.check_container_scan_consensus import (
-    FRONTEND_ATOMIC_SOURCE_INDEX, FRONTEND_ATOMIC_SOURCE_PLATFORM_DIGESTS,
     FRONTEND_NODE_SOURCE_INDEX, FRONTEND_NODE_SOURCE_PLATFORM_DIGESTS,
     FRONTEND_RUNTIME_INDEX, FRONTEND_RUNTIME_PLATFORM_DIGESTS, canonical_frontend_config,
 )
@@ -81,24 +80,21 @@ expected = {
   "User": "65532:65532", "ExposedPorts": {"3000/tcp": {}},
   "Env": [
     "PATH=/usr/local/sbin:/usr/local/bin:/usr/bin:/usr/sbin:/sbin:/bin",
-    "SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt", "NODE_VERSION=26.7.0",
+    "NODE_VERSION=26.7.0",
     "NODE_ENV=production", "NEXT_TELEMETRY_DISABLED=1",
     "NARRATWIN_API_PROXY_TARGET=http://127.0.0.1:8000", "HOSTNAME=0.0.0.0", "PORT=3000",
+    "SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt",
   ],
   "Entrypoint": ["/usr/bin/node"], "Cmd": ["server.js"], "WorkingDir": "/app",
   "Labels": {
-    "dev.chainguard.image.title": "glibc-dynamic", "dev.chainguard.package.main": "",
-    "org.opencontainers.image.authors": "Chainguard Team https://www.chainguard.dev/",
-    "org.opencontainers.image.created": "2026-08-07T21:12:55Z",
-    "org.opencontainers.image.source": "https://github.com/chainguard-images/images/tree/main/images/glibc-dynamic",
-    "org.opencontainers.image.title": "glibc-dynamic",
-    "org.opencontainers.image.url": "https://images.chainguard.dev/directory/image/glibc-dynamic/overview",
-    "org.opencontainers.image.vendor": "Chainguard",
+    "org.opencontainers.image.source": "https://github.com/imrohitagrawal/narratwin-ai",
+    "org.opencontainers.image.title": "NarraTwin AI frontend runtime",
+    "org.opencontainers.image.vendor": "NarraTwin AI",
   },
   "ArgsEscaped": True,
 }
 
-if config != expected or len(FRONTEND_RUNTIME_INDEX) != 71 or len(FRONTEND_NODE_SOURCE_INDEX) != 71 or len(FRONTEND_ATOMIC_SOURCE_INDEX) != 71 or set(FRONTEND_RUNTIME_PLATFORM_DIGESTS) != {"amd64", "arm64"} or set(FRONTEND_NODE_SOURCE_PLATFORM_DIGESTS) != {"amd64", "arm64"} or set(FRONTEND_ATOMIC_SOURCE_PLATFORM_DIGESTS) != {"amd64", "arm64"}:
+if config != expected or FRONTEND_RUNTIME_INDEX != FRONTEND_NODE_SOURCE_INDEX or len(FRONTEND_NODE_SOURCE_INDEX) != 71 or set(FRONTEND_RUNTIME_PLATFORM_DIGESTS) != {"amd64", "arm64"} or FRONTEND_RUNTIME_PLATFORM_DIGESTS != FRONTEND_NODE_SOURCE_PLATFORM_DIGESTS:
   raise SystemExit("Frontend runtime config does not match the reviewed contract.")
 PY
   actual_architecture="$(docker image inspect "${image}" --format '{{.Architecture}}')"
@@ -113,13 +109,15 @@ for (const d of ["/bin","/sbin","/usr/bin","/usr/sbin"]) if (fs.existsSync(d)) {
 }
 const forbidden=["/usr/lib/node_modules","/usr/local/lib/node_modules","/usr/local/bin"];
 const status=fs.readFileSync("/proc/self/status","utf8"),trusted=["/usr/bin/node","/etc/ssl/certs/ca-certificates.crt"],unsafe=[];
-const installed=fs.readFileSync("/usr/lib/apk/db/installed","utf8"),packages={};
+const installed=fs.readFileSync("/lib/apk/db/installed","utf8"),packages={};
 for(const record of installed.split("\n\n")){const name=/^P:(.+)$/m.exec(record),version=/^V:(.+)$/m.exec(record);if(name&&version)packages[name[1]]=version[1];}
 function secureTree(d) { const s=fs.lstatSync(d); if(s.uid!==0||s.gid!==0||(s.mode&0o022)!==0) unsafe.push(d);
   if(s.isDirectory()) for(const n of fs.readdirSync(d)) secureTree(d+"/"+n); }
 secureTree("/app");
+const arch=process.arch==="arm64"?"aarch64":"x86_64",loader=`/lib/ld-musl-${arch}.so.1`;
 if (process.version!=="v26.7.0"||process.getuid()!==65532||process.getgid()!==65532||
     extras.length||forbidden.some(fs.existsSync)||!/^CapEff:\s+0+$/m.test(status)||
+    !fs.existsSync(loader)||["/bin/sh","/sbin/apk","/lib64/ld-linux-x86-64.so.2","/lib/ld-linux-aarch64.so.1"].some(fs.existsSync)||
     unsafe.length||trusted.some(p=>{const s=fs.statSync(p);return s.uid!==0||s.gid!==0||(s.mode&0o022)!==0}))
   throw new Error(JSON.stringify({extras,version:process.version}));
 console.log(JSON.stringify({node:process.version,openssl:process.versions.openssl,packages}));')"
@@ -136,6 +134,13 @@ if identity != {"node": "v26.7.0", "openssl": FRONTEND_RUNTIME_OPENSSL_VERSION,
 if not frontend_openssl_is_acceptable(identity["openssl"]):
     raise SystemExit("Frontend runtime OpenSSL version is not acceptable.")
 PY
+  sharp_identity="$(docker run --rm --env NODE_OPTIONS= --env NODE_PATH= --env LD_PRELOAD= \
+    --entrypoint /usr/bin/node "${image}" -e '
+const sharp=require("sharp"),input=Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=","base64");
+sharp(input).resize(2,2).png().toBuffer({resolveWithObject:true}).then(({info,data})=>{
+if(info.width!==2||info.height!==2||info.format!=="png"||data.length<60)throw new Error("Sharp transform invalid");
+console.log(`${info.width}x${info.height}:${info.format}`);});')"
+  [ "${sharp_identity}" = "2x2:png" ] || return 1
   actual_inventory="$(docker run --rm --user 0:0 --env NODE_OPTIONS= --env NODE_PATH= --env LD_PRELOAD= \
     --entrypoint /usr/bin/node "${image}" -e '
 const crypto=require("crypto"),fs=require("fs"),records=[],B=Buffer.from,slash=B("/"),empty=Buffer.alloc(0);

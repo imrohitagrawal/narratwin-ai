@@ -49,39 +49,31 @@ FRONTEND_ENGINE_CONFIG_DEFAULTS = {
     "Tty": False,
     "Volumes": None,
 }
-FRONTEND_INVENTORY_RECORD_BOUNDS = {"amd64": (1600, 1700), "arm64": (1600, 1700)}
+FRONTEND_INVENTORY_RECORD_BOUNDS = {"amd64": (1580, 1620), "arm64": (1580, 1620)}
 FRONTEND_INVENTORY_PATTERN = re.compile(r"^(?P<records>[1-9]\d{0,4}):(?P<digest>[0-9a-f]{64})$")
-FRONTEND_RUNTIME_INDEX = "sha256:eaec65b25f35619be16f4992e7bae1128eafcf63c114f2859b800a7020c1ef70"
+FRONTEND_RUNTIME_INDEX = "sha256:aadf416b2cdce311a8811ba3f0608a61b77dbf997500e2eafe781b51f6a0b019"
 FRONTEND_RUNTIME_PLATFORM_DIGESTS = {
-    "amd64": "sha256:f95c554213997aeb84b4c146819f08481e99a6f9b0a7a7524cdcc02632cfac5d",
-    "arm64": "sha256:4edabf15b30c80cc70a24d0614a6f911d306f58a1613d72a653a0e135eccdde8",
+    "amd64": "sha256:b4fea132199070b0c8ea9ac66f363fe2cd6d1e4f994e61d8c87976c2157a1b8a",
+    "arm64": "sha256:d778881fd638833a2a0ed0fbb30577718729ab08112776dea4555eb5551826da",
 }
-FRONTEND_NODE_SOURCE_INDEX = "sha256:cd565714d4da3e84bfd341e31448f81d47c6362198f152345297c9c1154e6341"
+FRONTEND_NODE_SOURCE_INDEX = FRONTEND_RUNTIME_INDEX
 FRONTEND_NODE_SOURCE_PLATFORM_DIGESTS = {
-    "amd64": "sha256:c00614442a3c693109886209462dd1b15462f6726347fa9cb9fc0125ca26f275",
-    "arm64": "sha256:9e7720738fbcb12e8122beb5194cfa58ab0029c78c3ed39f8986aa68713e31bc",
-}
-FRONTEND_ATOMIC_SOURCE_INDEX = "sha256:8cfe0b01dcf3ad08aa8d51811175749f7390228be059497ddc6d94551a68f66e"
-FRONTEND_ATOMIC_SOURCE_PLATFORM_DIGESTS = {
-    "amd64": "sha256:9ea374ada3432e4877777fbef5cfe7c5e23047b8aaf247cc609ffe0564542794",
-    "arm64": "sha256:c88d6308aa590caf0e5591934f9d7802b12108d6124601b3015626b6bab70421",
+    "amd64": "sha256:b4fea132199070b0c8ea9ac66f363fe2cd6d1e4f994e61d8c87976c2157a1b8a",
+    "arm64": "sha256:d778881fd638833a2a0ed0fbb30577718729ab08112776dea4555eb5551826da",
 }
 FRONTEND_RUNTIME_OPENSSL_VERSION = "3.5.7"
 FRONTEND_RUNTIME_PACKAGES = {
-    "ca-certificates-bundle": "20260413-r0", "glibc": "2.43-r12",
-    "glibc-locale-posix": "2.43-r12", "ld-linux": "2.43-r12",
-    "libatomic": "16.1.0-r4", "libgcc": "16.1.0-r4", "libstdc++": "16.1.0-r4",
-    "wolfi-baselayout": "20230201-r29",
+    "alpine-keys": "2.6-r0", "alpine-release": "3.24.1-r0",
+    "ca-certificates-bundle": "20260611-r0", "libgcc": "15.2.0-r5",
+    "libstdc++": "15.2.0-r5", "musl": "1.2.6-r2",
 }
 FRONTEND_SBOM_COMPONENTS = {
-    "ca-certificates-bundle": ("20260413-r0", ("MIT", "MPL-2.0"), "wolfi", "20230201"),
-    "glibc": ("2.43-r12", ("LGPL-2.1-or-later",), "wolfi", "20230201"),
-    "glibc-locale-posix": ("2.43-r12", ("LGPL-2.1-or-later",), "wolfi", "20230201"),
-    "ld-linux": ("2.43-r12", ("LGPL-2.1-or-later",), "wolfi", "20230201"),
-    "libatomic": ("16.1.0-r4", ("GPL-3.0-or-later WITH GCC-exception-3.1",), "wolfi", "20230201"),
-    "libgcc": ("16.1.0-r4", ("GPL-3.0-or-later WITH GCC-exception-3.1",), "wolfi", "20230201"),
-    "libstdc++": ("16.1.0-r4", ("GPL-3.0-or-later WITH GCC-exception-3.1",), "wolfi", "20230201"),
-    "wolfi-baselayout": ("20230201-r29", ("MIT",), "wolfi", "20230201"),
+    "alpine-keys": ("2.6-r0", ("MIT",), "alpine", "3.24.1"),
+    "alpine-release": ("3.24.1-r0", ("MIT",), "alpine", "3.24.1"),
+    "ca-certificates-bundle": ("20260611-r0", ("MIT", "MPL-2.0"), "alpine", "3.24.1"),
+    "libgcc": ("15.2.0-r5", ("GPL-2.0-or-later", "LGPL-2.1-or-later"), "alpine", "3.24.1"),
+    "libstdc++": ("15.2.0-r5", ("GPL-2.0-or-later", "LGPL-2.1-or-later"), "alpine", "3.24.1"),
+    "musl": ("1.2.6-r2", ("MIT",), "alpine", "3.24.1"),
 }
 
 
@@ -155,6 +147,13 @@ def _valid_cyclonedx_sbom(report: dict[str, Any], target: str, required: dict[st
     image_ids = {p.get("value") for p in metadata.get("properties", []) if isinstance(p, dict) and p.get("name") == "aquasecurity:trivy:ImageID"}
     if image_ids != {target}:
         return False
+    if required:
+        apk_components = [
+            component for component in components
+            if isinstance(component, dict) and str(component.get("purl", "")).startswith("pkg:apk/")
+        ]
+        if len(apk_components) != len(required) or {item.get("name") for item in apk_components} != set(required):
+            return False
     expected_arch = {"amd64": "x86_64", "arm64": "aarch64"}.get(architecture)
     for name, (version, expected_licenses, namespace, distro) in required.items():
         matches = [c for c in components if isinstance(c, dict) and c.get("name") == name]

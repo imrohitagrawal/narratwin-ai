@@ -53,17 +53,13 @@ ISSUE376_SECURITY_FILES = {
 }
 I376_ROUTES = {ISSUE376_SECURITY_BRANCH: ISSUE376_SECURITY_FILES}
 FRONTEND_NODE_RUNTIME_IMAGE = (
-    "cgr.dev/chainguard/glibc-dynamic@sha256:"
-    "eaec65b25f35619be16f4992e7bae1128eafcf63c114f2859b800a7020c1ef70"
+    "node:26.7.0-alpine3.24@sha256:"
+    "aadf416b2cdce311a8811ba3f0608a61b77dbf997500e2eafe781b51f6a0b019"
 )
-FRONTEND_NODE_BUILD_IMAGE = FRONTEND_NODE_RUNTIME_IMAGE
+FRONTEND_NODE_BUILD_IMAGE = "scratch"
 FRONTEND_NODE_SOURCE_IMAGE = (
-    "node:26.7.0-bookworm-slim@sha256:"
-    "cd565714d4da3e84bfd341e31448f81d47c6362198f152345297c9c1154e6341"
-)
-FRONTEND_ATOMIC_SOURCE_IMAGE = (
-    "cgr.dev/chainguard/gcc-glibc@sha256:"
-    "8cfe0b01dcf3ad08aa8d51811175749f7390228be059497ddc6d94551a68f66e"
+    "node:26.7.0-alpine3.24@sha256:"
+    "aadf416b2cdce311a8811ba3f0608a61b77dbf997500e2eafe781b51f6a0b019"
 )
 ISSUE389_VULNERABLE_RUNTIME_IMAGE = (
     "cgr.dev/chainguard/node:latest@sha256:"
@@ -71,10 +67,9 @@ ISSUE389_VULNERABLE_RUNTIME_IMAGE = (
 )
 FRONTEND_RUNTIME_NODE_VERSION = "26.7.0"
 FRONTEND_RUNTIME_PACKAGES = {
-    "ca-certificates-bundle": "20260413-r0", "glibc": "2.43-r12",
-    "glibc-locale-posix": "2.43-r12", "ld-linux": "2.43-r12",
-    "libatomic": "16.1.0-r4", "libgcc": "16.1.0-r4",
-    "libstdc++": "16.1.0-r4", "wolfi-baselayout": "20230201-r29",
+    "alpine-keys": "2.6-r0", "alpine-release": "3.24.1-r0",
+    "ca-certificates-bundle": "20260611-r0", "libgcc": "15.2.0-r5",
+    "libstdc++": "15.2.0-r5", "musl": "1.2.6-r2",
 }
 FRONTEND_BUILD_ARCHIVE_SHA512 = {
     "npm@12.0.2": (
@@ -113,9 +108,8 @@ FRONTEND_NODE_IMAGE_FAILURE = (
 def frontend_node_image_valid(dockerfile: str) -> bool:
     expected = [
         f"FROM {FRONTEND_NODE_SOURCE_IMAGE} AS node-source",
-        f"FROM {FRONTEND_ATOMIC_SOURCE_IMAGE} AS atomic-source",
-        f"FROM {FRONTEND_NODE_BUILD_IMAGE} AS deps",
-        f"FROM {FRONTEND_NODE_RUNTIME_IMAGE} AS build",
+        "FROM scratch AS deps",
+        "FROM scratch AS build",
     ]
     actual = [
         line.strip()
@@ -125,14 +119,17 @@ def frontend_node_image_valid(dockerfile: str) -> bool:
     return (
         actual == expected
         and ISSUE389_VULNERABLE_RUNTIME_IMAGE not in dockerfile
-        and dockerfile.count("COPY --from=node-source --chown=0:0 /usr/local/bin/node /usr/bin/node") == 2
+        and dockerfile.count("COPY --from=node-source /runtime/ /") == 2
         and "process.config.variables.node_use_quic!==false" in dockerfile
         and "process.config.variables.node_shared_openssl!==false" in dockerfile
-        and dockerfile.count("COPY --from=atomic-source --chown=0:0 /runtime/ /") == 2
-        and dockerfile.count("fs.appendFileSync(p") == 2
-        and "P:libatomic" in dockerfile and r"V:16\\.1\\.0-r4" in dockerfile
-        and dockerfile.count("/runtime/libatomic-record") == 1
-        and dockerfile.count("/runtime/var/lib/db/sbom/") == 1
+        and dockerfile.count("apk add --root /runtime --initdb --no-cache --no-scripts") == 1
+        and all(
+            dockerfile.count(f"{name}={version}") == 1
+            for name, version in FRONTEND_RUNTIME_PACKAGES.items()
+        )
+        and "test -s /runtime/lib/apk/db/installed" in dockerfile
+        and "chmod 1777 /runtime/tmp" in dockerfile
+        and dockerfile.count("libvips-cpp.so.8.18.3") == 1
         and "COPY scripts/ci/prepare_frontend_npm.mjs /tmp/prepare_frontend_npm.mjs" in dockerfile
         and '["/usr/bin/node", "/tmp/prepare_frontend_npm.mjs"]' in dockerfile
         and '["/usr/bin/node", "/usr/local/lib/node_modules/npm/bin/npm-cli.js", "ci", "--ignore-scripts"]' in dockerfile
@@ -145,7 +142,7 @@ def frontend_node_image_valid(dockerfile: str) -> bool:
             for filename, digest in FRONTEND_BUILD_ARCHIVE_SHA256.items()
         )
         and all(marker not in dockerfile.lower() for marker in (
-            "/bin/sh", "apk add", "apt-get", "sha512sum", "npm ci --", "libcrypto", "libssl", "busybox",
+            "glibc", "gcompat", "libatomic", "apt-get", "sha512sum", "npm ci --", "libcrypto", "libssl", "busybox",
             "narratwin-build-nonce", "from deps as build", " as runner",
         ))
     )
