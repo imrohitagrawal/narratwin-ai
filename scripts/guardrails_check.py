@@ -1414,12 +1414,21 @@ def resource_lifecycle_failures(body: str) -> list[str]:
         r"(?<!\S)~(?:[/\s]|$)|(?<!\S)\.\.(?:[/\s]|$)|"
         r"(?<!\S)[\"']?/[\"']?(?=\s|$)|[^\s|]*[*?][^\s|]*)"
     )
+    shell_backtick_target = re.compile(
+        r"(?i)\b(?:git|docker|rm)\b[^`\n]*`[^`\n]+`"
+    )
 
     def has_short_flag(tokens: list[str], flag: str) -> bool:
         return any(
             token.startswith("-")
             and not token.startswith("--")
             and flag.lower() in token[1:].lower()
+            for token in tokens
+        )
+
+    def has_long_flag(tokens: list[str], flag: str) -> bool:
+        return any(
+            token.lower() == flag or token.lower().startswith(f"{flag}=")
             for token in tokens
         )
 
@@ -1467,7 +1476,7 @@ def resource_lifecycle_failures(body: str) -> list[str]:
                     if operation in {"clean", "reset", "switch", "checkout", "restore"}:
                         return True
                     if operation == "branch" and (
-                        "--force" in lower_arguments
+                        has_long_flag(arguments, "--force")
                         or any(
                             value.startswith("-")
                             and not value.startswith("--")
@@ -1488,7 +1497,7 @@ def resource_lifecycle_failures(body: str) -> list[str]:
                         if subcommand == "prune":
                             return True
                         if subcommand == "remove" and (
-                            "--force" in lower_arguments[1:]
+                            has_long_flag(arguments[1:], "--force")
                             or has_short_flag(arguments[1:], "f")
                         ):
                             return True
@@ -1534,12 +1543,13 @@ def resource_lifecycle_failures(body: str) -> list[str]:
                         or operation == "buildx" and lower_arguments[:1] == ["rm"]
                     )
                     if deletion and (
-                        "--force" in lower_arguments or has_short_flag(arguments, "f")
+                        has_long_flag(arguments, "--force")
+                        or has_short_flag(arguments, "f")
                     ):
                         return True
                 elif command == "rm" and "docker" not in lowered[:position]:
                     arguments = tokens[position + 1 :]
-                    if "--force" in arguments or has_short_flag(arguments, "f"):
+                    if has_long_flag(arguments, "--force") or has_short_flag(arguments, "f"):
                         return True
                     recursive = "--recursive" in arguments or has_short_flag(arguments, "r")
                     if not recursive:
@@ -1564,6 +1574,7 @@ def resource_lifecycle_failures(body: str) -> list[str]:
         if (
             broad_cleanup.search(cleanup)
             or unresolved_or_ambiguous_target.search(cleanup)
+            or shell_backtick_target.search(cleanup)
             or unsafe_shell_cleanup(cleanup)
         ):
             return [invalid]
