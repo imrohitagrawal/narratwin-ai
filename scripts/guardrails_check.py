@@ -10,7 +10,6 @@ from __future__ import annotations
 import json
 import os
 import re
-import shlex
 import subprocess
 import sys
 from hashlib import sha256 as _cleanup_authority_sha256
@@ -1405,7 +1404,7 @@ def resource_lifecycle_failures(body: str) -> list[str]:
         "shared-retain",
     }
     broad_cleanup = re.compile(
-        r"(?i)(?:broad\s+(?:docker\s+)?prune|docker\s+(?:system|image|volume|network)\s+prune|"
+        r"(?i)(?:broad\s+(?:docker\s+)?prune|docker\s+(?:system|image|volume|network|container)\s+prune|"
         r"docker\s+(?:builder|cache)\s+prune|git\s+(?:clean|worktree\s+prune)|"
         r"workspace[- ]wide|host[- ]wide)"
     )
@@ -1420,7 +1419,7 @@ def resource_lifecycle_failures(body: str) -> list[str]:
         return any(
             token.startswith("-")
             and not token.startswith("--")
-            and flag in token[1:]
+            and flag.lower() in token[1:].lower()
             for token in tokens
         )
 
@@ -1433,20 +1432,33 @@ def resource_lifecycle_failures(body: str) -> list[str]:
                 index += 1
         return index
 
+    def command_fragments(cleanup: str) -> list[str]:
+        fragments = re.findall(r"`([^`\n]+)`", cleanup)
+        plain = re.sub(r"`[^`\n]+`", " ", cleanup)
+        for clause in re.split(r"\s*(?:&&|\|\||[;&|]|\n)\s*", plain):
+            starts = list(re.finditer(r"(?i)(?<![\w-])(?:git|docker|rm)\b", clause))
+            fragments.extend(clause[match.start() :] for match in starts)
+        return fragments
+
+    def fragment_tokens(fragment: str) -> list[str]:
+        return [
+            token.strip("`\"'(),.")
+            for token in re.findall(r'"[^"\n]*"|\'[^\'\n]*\'|\S+', fragment)
+            if token.strip("`\"'(),.")
+        ]
+
     def unsafe_shell_cleanup(cleanup: str) -> bool:
         buildx_prune_count = 0
-        for raw_clause in re.split(r"\s*(?:&&|\|\||;|\n)\s*", cleanup):
-            clause = raw_clause.strip().strip("`").strip()
-            if not clause:
-                continue
-            try:
-                tokens = shlex.split(clause)
-            except ValueError:
-                return True
+        for fragment in command_fragments(cleanup):
+            tokens = fragment_tokens(fragment)
             lowered = [token.lower() for token in tokens]
             for position, command in enumerate(lowered):
                 if command == "git":
-                    index = command_index(tokens, position + 1, {"-c", "-C", "--git-dir", "--work-tree", "--namespace"})
+                    index = command_index(
+                        tokens,
+                        position + 1,
+                        {"-c", "--git-dir", "--work-tree", "--namespace"},
+                    )
                     if index >= len(tokens):
                         continue
                     operation = lowered[index]
@@ -1455,9 +1467,13 @@ def resource_lifecycle_failures(body: str) -> list[str]:
                     if operation in {"clean", "reset", "switch", "checkout", "restore"}:
                         return True
                     if operation == "branch" and (
-                        "-D" in arguments
-                        or "--force" in lower_arguments
-                        or ("--delete" in lower_arguments and "--force" in lower_arguments)
+                        "--force" in lower_arguments
+                        or any(
+                            value.startswith("-")
+                            and not value.startswith("--")
+                            and ("f" in value[1:].lower() or "D" in value[1:])
+                            for value in arguments
+                        )
                     ):
                         return True
                     if operation == "push" and any(
@@ -1477,13 +1493,19 @@ def resource_lifecycle_failures(body: str) -> list[str]:
                         ):
                             return True
                 elif command == "docker":
-                    index = command_index(tokens, position + 1, {"--context", "--host", "-h", "--config"})
+                    index = command_index(
+                        tokens,
+                        position + 1,
+                        {"-c", "--context", "--host", "-h", "--config"},
+                    )
                     if index >= len(tokens):
                         continue
                     operation = lowered[index]
                     arguments = tokens[index + 1 :]
                     lower_arguments = lowered[index + 1 :]
-                    if operation in {"system", "image", "volume", "network"} and "prune" in lower_arguments:
+                    if operation in {
+                        "system", "image", "volume", "network", "container",
+                    } and "prune" in lower_arguments:
                         return True
                     if operation in {"builder", "cache"} and "prune" in lower_arguments:
                         return True
@@ -1496,15 +1518,18 @@ def resource_lifecycle_failures(body: str) -> list[str]:
                             "--filter",
                         ]
                         if (
-                            position != 0
-                            or tokens[:4] != expected
-                            or len(tokens) != 5
-                            or re.fullmatch(r"id=[a-z0-9]{20,64}", tokens[4]) is None
+                            tokens[position : position + 4] != expected
+                            or len(tokens[position:]) != 5
+                            or re.fullmatch(
+                                r"id=[a-z0-9]{20,64}", tokens[position + 4]
+                            ) is None
                         ):
                             return True
                     deletion = (
                         operation in {"rm", "rmi"}
-                        or operation in {"image", "volume", "network", "builder"}
+                        or operation in {
+                            "image", "volume", "network", "container", "builder",
+                        }
                         and lower_arguments[:1] == ["rm"]
                         or operation == "buildx" and lower_arguments[:1] == ["rm"]
                     )
@@ -1514,11 +1539,11 @@ def resource_lifecycle_failures(body: str) -> list[str]:
                         return True
                 elif command == "rm" and "docker" not in lowered[:position]:
                     arguments = tokens[position + 1 :]
+                    if "--force" in arguments or has_short_flag(arguments, "f"):
+                        return True
                     recursive = "--recursive" in arguments or has_short_flag(arguments, "r")
                     if not recursive:
                         continue
-                    if "--force" in arguments or has_short_flag(arguments, "f"):
-                        return True
                     targets = [value for value in arguments if not value.startswith("-")]
                     if len(targets) != 1 or re.fullmatch(
                         r"/(?:private/)?tmp/[A-Za-z0-9][A-Za-z0-9._-]{7,}", targets[0]
