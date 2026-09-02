@@ -2024,6 +2024,7 @@ providers = [
 dev = [
     { name = "bandit" },
     { name = "cryptography" },
+    { name = "google-cloud-texttospeech" },
     { name = "httpx" },
     { name = "httpx2" },
     { name = "locust" },
@@ -2077,6 +2078,7 @@ provides-extras = ["eval", "providers"]
 dev = [
     { name = "bandit", specifier = ">=1.9.4" },
     { name = "cryptography", specifier = "==50.0.0" },
+    { name = "google-cloud-texttospeech", specifier = "==2.37.0" },
     { name = "httpx", specifier = ">=0.28.1" },
     { name = "httpx2", specifier = ">=2.5.0" },
     { name = "locust", specifier = ">=2.44.4" },
