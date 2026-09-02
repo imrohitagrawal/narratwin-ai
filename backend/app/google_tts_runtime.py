@@ -732,15 +732,21 @@ class _OfficialGoogleGrpcBindings:
 
     @staticmethod
     def failure_status(error: Exception) -> str | None:
-        code = getattr(error, "code", None)
-        if not callable(code):
-            return None
         try:
-            value = code()
+            value = getattr(error, "grpc_status_code", None)
+            if value is None:
+                code = getattr(error, "code", None)
+                if not callable(code):
+                    return None
+                value = code()
+            name = getattr(value, "name", None)
         except Exception:
             return None
-        name = getattr(value, "name", None)
-        return name if isinstance(name, str) else None
+        return (
+            GoogleTransportError(egress_possible=True, grpc_status=name).grpc_status
+            if isinstance(name, str)
+            else None
+        )
 
     @staticmethod
     def close(channel: object) -> None:
