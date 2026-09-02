@@ -111,7 +111,8 @@ four string fields: {"disposition":"delete|retain","kind":"closed-vocabulary-kin
 "locator":"literal-exact-identity","trigger":"event-slug"}. Do not put shell
 commands, variables, globs, multiple resources, or delegated instructions in
 any table cell. Use a public-safe context-relative locator instead of a private
-machine path. Each kind/locator pair must appear exactly once; shared-resource
+machine path. Locators must be canonical, without dot aliases or trailing
+separators. Each kind/locator pair must appear exactly once; shared-resource
 is retain-only. A generic N/A row is not accepted. -->
 
 | Resource | Ownership proof | Retention class | Cleanup contract | Verification evidence |

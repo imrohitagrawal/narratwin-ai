@@ -51,7 +51,8 @@ compact JSON object with exactly four string fields:
   context-relative identity such as `.venv`, `frontend/node_modules`, or
   `worktree:feature-safe`; resolve it only inside the separately declared
   branch/worktree/session context. Private machine paths must not be copied
-  into public PR bodies. Variables, globs, home/workspace roots, parent
+  into public PR bodies. Locators must already be canonical: dot aliases,
+  trailing separators, variables, globs, home/workspace roots, parent
   traversal, options, multiple targets, and shell syntax are invalid.
 - `trigger` is a compact event slug selected for the PR, such as
   `merged-main-green`, `session-end`, or `owner-verified`.

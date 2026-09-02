@@ -1454,9 +1454,9 @@ def resource_lifecycle_failures(body: str) -> list[str]:
     }
     safe_locator = re.compile(r"/?[A-Za-z0-9.][A-Za-z0-9/._:@+-]*")
     safe_trigger = re.compile(r"[a-z0-9][a-z0-9._:-]*")
+    unsafe_prose_syntax = re.compile(r"[$*?{}\[\]~\\]|[<>]\(|\|\||[;&`]")
     unsafe_table_instruction = re.compile(
-        r"(?i)(?:[;&`]|$\(|[<>]\(|\|\||"
-        r"\b(?:run|execute|invoke|eval|sudo|doas|bash|sh|zsh|fish|xargs|find)\b"
+        r"(?i)(?:\b(?:run|execute|invoke|eval|sudo|doas|bash|sh|zsh|fish|xargs|find)\b"
         r".{0,80}\b(?:docker|git|rm|prune|delete|remove)\b|"
         r"\bdocker\s+(?:system|image|container|volume|network|builder|buildx|compose)"
         r"\s+(?:prune|rm|rmi|remove|down|disconnect)\b|"
@@ -1487,9 +1487,14 @@ def resource_lifecycle_failures(body: str) -> list[str]:
         assert row is not None
         resource, ownership, retention, cleanup, evidence = row
         values = (resource, ownership, retention, cleanup, evidence)
+        prose_values = (resource, ownership, evidence)
         if (
             any(is_placeholder_value(value) or is_na_value(value) for value in values)
-            or any(unsafe_table_instruction.search(value) for value in values)
+            or any(
+                unsafe_prose_syntax.search(value)
+                or unsafe_table_instruction.search(value)
+                for value in prose_values
+            )
         ):
             return [invalid]
 
@@ -1511,7 +1516,8 @@ def resource_lifecycle_failures(body: str) -> list[str]:
         kind = contract["kind"]
         locator = contract["locator"]
         trigger = contract["trigger"]
-        identity = (kind, locator)
+        canonical_locator = os.path.normpath(locator)
+        identity = (kind, canonical_locator)
         if (
             disposition != retention_dispositions[retention]
             or kind not in resource_kinds
@@ -1519,8 +1525,9 @@ def resource_lifecycle_failures(body: str) -> list[str]:
             or safe_trigger.fullmatch(trigger) is None
             or locator in {".", "..", "/"}
             or ".." in locator.split("/")
+            or locator != canonical_locator
             or kind == "shared-resource" and disposition != "retain"
-            or disposition == "delete" and locator in protected_delete_locators
+            or disposition == "delete" and canonical_locator in protected_delete_locators
             or identity in seen_resources
             or verification_marker.search(evidence) is None
         ):
