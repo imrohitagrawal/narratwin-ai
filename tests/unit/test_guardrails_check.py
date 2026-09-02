@@ -1281,6 +1281,9 @@ def test_resource_lifecycle_rejects_missing_section() -> None:
         "| issue-391 builder | owner | success-clean | docker builder rm --all-inactive | issue comment |",
         "| issue-391 cache | owner | success-clean | DOCKER_HOST=tcp://remote `docker buildx prune --filter id=0123456789abcdefghijklmnop` | issue comment |",
         "| issue-391 cache | owner | success-clean | DOCKER_CONTEXT=remote `docker buildx prune --filter id=0123456789abcdefghijklmnop` | issue comment |",
+        "| issue-391 image | owner | success-clean | export DOCKER_HOST=tcp://remote; docker image rm exact-owned | issue comment |",
+        "| issue-391 branch | owner | success-clean | cd /other/repository && git branch -d exact-owned | issue comment |",
+        "| issue-391 image | owner | success-clean | docker context use remote && docker image rm exact-owned | issue comment |",
     ),
 )
 def test_resource_lifecycle_rejects_partial_placeholder_na_or_broad_cleanup_row(
