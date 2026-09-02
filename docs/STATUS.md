@@ -2045,3 +2045,28 @@ unrelated-lock isolation. PDF upload/parsing remains unsupported; Markdown/text
 ingestion and Google speech behavior remain unchanged. This prerequisite makes
 no provider call and creates no voice, narration, audio, caption, avatar media,
 human acceptance, deployment, release, production-readiness, or Cut 1 evidence.
+
+## Issue #502 frontend musl runtime security correction (2026-09-02)
+
+- PR `#501` merged the official unary gRPC transport as squash commit
+  `e1fe126372d5c5a06dc7d2f9c76cb205da8643e7`, tree
+  `76495e566a78a7951c33314ac742606c85ee92e5`. It generated no audio.
+- Accepted main's frontend scanner gate is blocked by Grype Medium
+  `CVE-2026-18374` in Wolfi `glibc 2.43-r12`; no official fixed package was
+  available. Suppression, threshold reduction, hidden metadata, and
+  unsupported VEX are prohibited.
+- The bounded correction replaces only the final runtime with a scratch image
+  assembled from immutable Node 26.7.0 Alpine 3.24 and exactly six pinned musl
+  runtime packages. Application behavior, Node/OpenSSL identity, direct entry
+  point, non-root execution, package visibility, and Sharp are preserved.
+- Local AMD64 and ARM64 evidence builds, starts, performs a real Sharp resize,
+  reproduces normalized inventory, and reports zero Medium-or-higher frontend
+  findings in both Trivy and Grype. Hosted CI must repeat both architectures in
+  the existing `security / docker build` required context.
+- The branch also validates the immutable PR #501 squash parent/tree and later
+  ancestry, removing the PR #505 security/topology cycle. PR #505 remains open
+  pending post-merge supersession review.
+- Issue #502 creates no provider call, credential use, narration, voice, audio,
+  captions, avatar media, deployment, release, production readiness, or Cut 1
+  acceptance. T05 still requires three exact audio artifacts and independent
+  exact-byte human listening decisions.

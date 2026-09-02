@@ -1869,3 +1869,21 @@ the Torch resolver to Python below 3.15. All six full records are digest-bound.
 and eligible non-author exact-head approval must pass. No ignore, suppression,
 dependency removal, direct-constraint change, unrelated resolution drift, or
 product/provider authority is accepted.
+
+## Issue #502 frontend musl runtime security gate
+
+The required `security / docker build` context executes separate AMD64 and
+QEMU-emulated ARM64 lanes without renaming the required context. Each lane
+must build and run the scratch frontend, complete a real Sharp PNG transform,
+prove exact six-package musl identity, non-root/no-capability/no-shell
+minimization, HTTP behavior, normalized two-build reproducibility, truthful
+CycloneDX output, and zero Medium-or-higher frontend findings in both Trivy and
+Grype. Reports are isolated under `reports/security/<architecture>` and
+uploaded together.
+
+Focused runtime, scanner-consensus, route, negative, and mutation tests must
+pass before full quality. Wrong source/digest, architecture, package, loader,
+SBOM, config, inventory, privilege, scanner result, route, or hosted topology
+fails closed. The exact post-squash PR #501 anchor/tree must also validate on
+later heads. Passing proves only the container/security boundary; no provider,
+audio, listening, media, deployment, production, or Cut 1 acceptance claim.

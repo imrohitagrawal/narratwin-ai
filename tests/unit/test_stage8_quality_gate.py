@@ -51,7 +51,7 @@ def test_cut1_routes_are_exact_stage8_and_not_preflight_owned(monkeypatch: Any, 
     policy = load("scripts/quality/check_stage8_docs.py", "reloaded").PROCESS_BRANCH_ALLOWED_FILES
     assert {b:policy[b] for b in SCOPES}==SCOPES;r=cut1_routes;c=stage8.issue431_authority_core.BRANCH
     reg={getattr(r,f"ISSUE{i}_BRANCH") for i in (150,396,401,403,413,428,466,475,478,479,482)}|{c}
-    assert {b for b in policy if b[:5] == "cut1-"} - set(SCOPES) == reg
+    assert {b for b in policy if b[:5] == "cut1-"} - set(SCOPES) == reg;assert r.ISSUE502_BRANCH in policy
     dispatcher:Any=load("scripts/quality/check_quality_stage.py","dispatcher");stage_file=tmp_path/"stage"
     status_file=tmp_path/"status";mode="| SSV1-MODE | repo-mode | Phase 1 Closure | phase1-closure | phase1-closure |\n"
     stage_file.write_text("8\n"); status_file.write_text(mode);assert callable(r.merge_cleanup_contract_failures)
