@@ -190,6 +190,7 @@ ISSUE507_TREE = "1e4834ff96bf1cdc9a6ffb353de5e97ad68dc0fc"
 ISSUE507_ROUTE_COMMENT = "5511779065"
 ISSUE507_ROUTE_AMENDMENT_COMMENT = "5511888548"
 ISSUE507_STATUS_AMENDMENT_COMMENT = "5511933453"
+ISSUE507_HOSTED_AMENDMENT_COMMENT = "5512191367"
 ISSUE495_TREE = "13f79eb5db44249f635a619e1b283279f25ba9f0"
 ISSUE495_ROUTE_COMMENT = "5498387945"
 ISSUE495_CORRECTION_COMMENT = "5498411811"
@@ -263,6 +264,8 @@ ROUTES = {
         "scripts/quality/stage8_cut1_routes.py",
         "tests/unit/test_stage8_cut1_routes.py",
         "docs/STATUS.md",
+        "docs/ADR/0056-cut1-google-gemini-tts.md",
+        "docs/TRACEABILITY.md",
     },
     ISSUE502_BRANCH: {
         "docs/governance/preflights/issue-502.json",
@@ -945,7 +948,7 @@ TOTAL_LIMITS[ISSUE499_BRANCH] = 1000
 ROUTE_ISSUES[ISSUE502_BRANCH] = 502
 TOTAL_LIMITS[ISSUE502_BRANCH] = 4660
 ROUTE_ISSUES[ISSUE507_BRANCH] = 507
-TOTAL_LIMITS[ISSUE507_BRANCH] = 440
+TOTAL_LIMITS[ISSUE507_BRANCH] = 610
 ROUTE_ISSUES[ISSUE459_BRANCH] = 459
 TOTAL_LIMITS[ISSUE459_BRANCH] = 4300
 ROUTE_ISSUES[ISSUE459_T03_BRANCH] = 459
@@ -1003,10 +1006,12 @@ TEXT_LIMITS = {
     ISSUE507_BRANCH: {
         "backend/app/google_tts_runtime.py": 20,
         "tests/unit/test_google_tts_runtime.py": 100,
-        "docs/governance/preflights/issue-507.json": 50,
-        "scripts/quality/stage8_cut1_routes.py": 100,
-        "tests/unit/test_stage8_cut1_routes.py": 120,
+        "docs/governance/preflights/issue-507.json": 60,
+        "scripts/quality/stage8_cut1_routes.py": 120,
+        "tests/unit/test_stage8_cut1_routes.py": 140,
         "docs/STATUS.md": 50,
+        "docs/ADR/0056-cut1-google-gemini-tts.md": 60,
+        "docs/TRACEABILITY.md": 60,
     },
     ISSUE502_BRANCH: {
         "docs/governance/preflights/issue-502.json": 320,
@@ -2427,6 +2432,7 @@ def check_exact_route(
                 ISSUE507_ROUTE_COMMENT,
                 ISSUE507_ROUTE_AMENDMENT_COMMENT,
                 ISSUE507_STATUS_AMENDMENT_COMMENT,
+                ISSUE507_HOSTED_AMENDMENT_COMMENT,
             )
             if not isinstance(objective, str) or any(
                 value not in objective for value in issue507_authority

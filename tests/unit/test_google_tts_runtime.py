@@ -821,7 +821,9 @@ def test_official_sdk_binding_preserves_raw_grpc_status() -> None:
     (
         Exception("private-detail"),
         type("StringStatus", (Exception,), {"grpc_status_code": "DEADLINE_EXCEEDED"})(),
+        type("ForgedStatus", (Exception,), {"grpc_status_code": type("S", (), {"name": "DEADLINE_EXCEEDED"})()})(),
         type("UnknownStatus", (Exception,), {"grpc_status_code": type("S", (), {"name": "BAD"})()})(),
+        type("ForgedRawStatus", (Exception,), {"code": lambda self: type("S", (), {"name": "UNAVAILABLE"})()})(),
         type("UnknownRawStatus", (Exception,), {"code": lambda self: type("S", (), {"name": "BAD"})()})(),
     ),
 )

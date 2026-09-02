@@ -465,14 +465,18 @@ ISSUE507_EXPECTED = {
     "scripts/quality/stage8_cut1_routes.py",
     "tests/unit/test_stage8_cut1_routes.py",
     "docs/STATUS.md",
+    "docs/ADR/0056-cut1-google-gemini-tts.md",
+    "docs/TRACEABILITY.md",
 }
 ISSUE507_LINE_CAPS = {
     "backend/app/google_tts_runtime.py": 20,
     "tests/unit/test_google_tts_runtime.py": 100,
-    "docs/governance/preflights/issue-507.json": 50,
-    "scripts/quality/stage8_cut1_routes.py": 100,
-    "tests/unit/test_stage8_cut1_routes.py": 120,
+    "docs/governance/preflights/issue-507.json": 60,
+    "scripts/quality/stage8_cut1_routes.py": 120,
+    "tests/unit/test_stage8_cut1_routes.py": 140,
     "docs/STATUS.md": 50,
+    "docs/ADR/0056-cut1-google-gemini-tts.md": 60,
+    "docs/TRACEABILITY.md": 60,
 }
 ISSUE498_EXPECTED = {
     "backend/app/google_tts_runtime.py", "backend/app/tts_provider.py",
@@ -1057,7 +1061,7 @@ def test_issue507_google_api_core_grpc_status_route_is_exact_and_bounded() -> No
     assert routes.ISSUE507_TREE == "1e4834ff96bf1cdc9a6ffb353de5e97ad68dc0fc"
     assert routes.ROUTES[branch] == ISSUE507_EXPECTED
     assert routes.ROUTE_ISSUES[branch] == 507
-    assert routes.TOTAL_LIMITS[branch] == 440
+    assert routes.TOTAL_LIMITS[branch] == 610
     assert routes.TEXT_LIMITS[branch] == ISSUE507_LINE_CAPS
     assert set(artifact["scope"]["required"]) == ISSUE507_EXPECTED
     assert artifact["scope"]["required"] == artifact["scope"]["allowed_prefixes"]
@@ -1071,6 +1075,7 @@ def test_issue507_google_api_core_grpc_status_route_is_exact_and_bounded() -> No
             routes.ISSUE507_ROUTE_COMMENT,
             routes.ISSUE507_ROUTE_AMENDMENT_COMMENT,
             routes.ISSUE507_STATUS_AMENDMENT_COMMENT,
+            routes.ISSUE507_HOSTED_AMENDMENT_COMMENT,
         )
     )
 
