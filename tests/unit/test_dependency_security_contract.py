@@ -144,6 +144,8 @@ def _assert_google_auth_delta(project: dict[str, Any], lock: dict[str, Any], bas
     providers = project["project"]["optional-dependencies"]["providers"]
     base_providers = base_project["project"]["optional-dependencies"]["providers"]
     assert providers == ["google-auth==2.56.3", "google-cloud-texttospeech==2.37.0", *base_providers]
+    dev = project["dependency-groups"]["dev"]
+    assert dev.count("google-cloud-texttospeech==2.37.0") == 1
     packages = {package["name"]: package for package in lock["package"]}
     base_packages = {package["name"]: package for package in base_lock["package"]}
     assert set(packages) == set(base_packages) | set(GOOGLE_AUTH_PACKAGES) | set(GOOGLE_TTS_SDK_PACKAGES)
@@ -167,8 +169,13 @@ def _assert_google_auth_delta(project: dict[str, Any], lock: dict[str, Any], bas
     assert google_metadata == [{"name": "google-auth", "marker": "extra == 'providers'", "specifier": "==2.56.3"}]
     tts_metadata = [item for item in root["metadata"]["requires-dist"] if item["name"] == "google-cloud-texttospeech"]
     assert tts_metadata == [{"name": "google-cloud-texttospeech", "marker": "extra == 'providers'", "specifier": "==2.37.0"}]
+    assert root["dev-dependencies"]["dev"].count({"name": "google-cloud-texttospeech"}) == 1
+    assert root["metadata"]["requires-dev"]["dev"].count(
+        {"name": "google-cloud-texttospeech", "specifier": "==2.37.0"}
+    ) == 1
     normalized_project = copy.deepcopy(project)
     normalized_project["project"]["optional-dependencies"]["providers"] = base_providers
+    normalized_project["dependency-groups"]["dev"].remove("google-cloud-texttospeech==2.37.0")
     _normalize_issue434_project(normalized_project)
     assert normalized_project == base_project
     normalized_lock = copy.deepcopy(lock)
@@ -177,6 +184,10 @@ def _assert_google_auth_delta(project: dict[str, Any], lock: dict[str, Any], bas
     normalized_root["metadata"]["requires-dist"].remove(google_metadata[0])
     normalized_root["optional-dependencies"]["providers"].remove({"name": "google-cloud-texttospeech"})
     normalized_root["metadata"]["requires-dist"].remove(tts_metadata[0])
+    normalized_root["dev-dependencies"]["dev"].remove({"name": "google-cloud-texttospeech"})
+    normalized_root["metadata"]["requires-dev"]["dev"].remove(
+        {"name": "google-cloud-texttospeech", "specifier": "==2.37.0"}
+    )
     normalized_lock["package"] = [package for package in normalized_lock["package"] if package["name"] not in GOOGLE_AUTH_PACKAGES and package["name"] not in GOOGLE_TTS_SDK_PACKAGES]
     _normalize_issue434_lock(normalized_lock)
     _normalize_pip_security_delta(normalized_lock, base_lock)
@@ -233,6 +244,7 @@ def _assert_pypdf_6162_contract(project_text: str, lock_text: str) -> None:
     index = dependencies.index("pypdf>=6.16.2")
     normalized_project["project"]["dependencies"][index] = "pypdf>=6.14.2"
     normalized_project["project"]["optional-dependencies"]["providers"] = base_project["project"]["optional-dependencies"]["providers"]
+    normalized_project["dependency-groups"]["dev"].remove("google-cloud-texttospeech==2.37.0")
     _normalize_issue434_project(normalized_project)
 
     pypdf = [package for package in lock["package"] if package["name"] == "pypdf"]
@@ -258,6 +270,10 @@ def _assert_pypdf_6162_contract(project_text: str, lock_text: str) -> None:
     root["optional-dependencies"]["providers"].remove({"name": "google-cloud-texttospeech"})
     tts_metadata = next(item for item in root["metadata"]["requires-dist"] if item["name"] == "google-cloud-texttospeech")
     root["metadata"]["requires-dist"].remove(tts_metadata)
+    root["dev-dependencies"]["dev"].remove({"name": "google-cloud-texttospeech"})
+    root["metadata"]["requires-dev"]["dev"].remove(
+        {"name": "google-cloud-texttospeech", "specifier": "==2.37.0"}
+    )
     root_metadata = next(item for item in root["metadata"]["requires-dist"] if item["name"] == "pypdf")
     root_metadata["specifier"] = ">=6.14.2"
     pypdf_index = next(i for i, package in enumerate(normalized_lock["package"]) if package["name"] == "pypdf")
