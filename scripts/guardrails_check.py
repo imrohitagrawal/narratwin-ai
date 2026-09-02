@@ -1394,310 +1394,120 @@ def resource_lifecycle_failures(body: str) -> list[str]:
     section = markdown_section(body, "Resource lifecycle and cleanup")
     if not section:
         return [missing]
-    table_lines = [line.strip() for line in section.splitlines() if line.strip().startswith("|")]
-    if any(
-        not line.startswith("|")
-        or not line.endswith("|")
-        or line.startswith("||")
-        or line.endswith("||")
-        or len(line[1:-1].split("|")) != 5
-        for line in table_lines
+
+    table_lines = [
+        line.strip()
+        for line in section.splitlines()
+        if line.strip().startswith("|")
+    ]
+
+    def table_cells(line: str) -> tuple[str, ...] | None:
+        if (
+            not line.startswith("|")
+            or not line.endswith("|")
+            or line.startswith("||")
+            or line.endswith("||")
+        ):
+            return None
+        cells = tuple(cell.strip() for cell in line[1:-1].split("|"))
+        return cells if len(cells) == 5 else None
+
+    parsed_rows = [table_cells(line) for line in table_lines]
+    expected_header = (
+        "Resource",
+        "Ownership proof",
+        "Retention class",
+        "Cleanup contract",
+        "Verification evidence",
+    )
+    if (
+        len(parsed_rows) < 3
+        or any(row is None for row in parsed_rows)
+        or parsed_rows[0] != expected_header
+        or parsed_rows[1] != ("---", "---", "---", "---", "---")
     ):
         return [invalid]
-    rows = markdown_table_rows(body, "Resource lifecycle and cleanup")
-    retention_classes = {
-        "always-clean",
-        "success-clean",
-        "failure-retain",
-        "evidence-until-merged-main",
-        "persistent",
-        "shared-retain",
+
+    retention_dispositions = {
+        "always-clean": "delete",
+        "success-clean": "delete",
+        "failure-retain": "retain",
+        "evidence-until-merged-main": "delete",
+        "persistent": "retain",
+        "shared-retain": "retain",
     }
-    broad_cleanup = re.compile(
-        r"(?i)(?:broad\s+(?:docker\s+)?prune|docker\s+(?:system|image|volume|network|container)\s+prune|"
-        r"docker\s+(?:builder|cache)\s+prune|git\s+(?:clean|worktree\s+prune)|"
-        r"workspace[- ]wide|host[- ]wide)"
-    )
-    unresolved_or_ambiguous_target = re.compile(
-        r"(?:[<>]\(|\$\(|\$(?:\{[^}\n|]+\}|[A-Za-z_][A-Za-z0-9_]*)|"
-        r"%[A-Za-z_][A-Za-z0-9_]*%|"
-        r"(?<!\S)~(?:[/\s]|$)|(?<!\S)\.\.(?:[/\s]|$)|"
-        r"(?<!\S)[\"']?/[\"']?(?=\s|$)|[^\s|]*[*?][^\s|]*)"
-    )
-    unsafe_command_prefix = re.compile(
-        r"(?i)(?:\b(?:sudo|doas|env|eval|nice|nohup|command|xargs|bash|sh|zsh|ksh|"
-        r"ssh|find|chroot|timeout)\b"
-        r"[^;&|\n`]*\b(?:git|docker|rm)\b|"
-        r"(?:^|\s)[A-Za-z_][A-Za-z0-9_]*=\S+\s+(?:git|docker|rm)\b)"
-    )
-    shell_command = re.compile(r"(?i)(?<![\w-])(?:git|docker|rm)\b")
-    exact_buildx_prune = re.compile(
-        r"docker buildx prune --filter id=[a-z0-9]{20,64}"
-    )
-    literal_code_target = re.compile(r"[A-Za-z0-9/._:@+-]+")
-    delegated_cleanup = re.compile(
-        r"(?i)(?:\b(?:command|action|cleanup)\b.*\b(?:evidence|verification|proof|"
-        r"column|field)\b|\b(?:evidence|verification|proof|column|field)\b.*\b"
-        r"(?:command|action|cleanup)\b)"
-    )
-    bounded_command = re.compile(
-        r"(?i)(?:docker buildx prune --filter id=[a-z0-9]{20,64}|"
-        r"rm (?:-r|--recursive) /(?:private/)?tmp/[A-Za-z0-9][A-Za-z0-9._/-]*|"
-        r"git branch -d (?:issue|pr)[-_]\d+[A-Za-z0-9._/-]*|"
-        r"git worktree remove /(?:private/)?tmp/[A-Za-z0-9._/-]*(?:issue|pr)[-_]\d+[A-Za-z0-9._/-]*|"
-        r"docker (?:image|container|volume|network|builder|buildx) rm "
-        r"[A-Za-z0-9._/@:-]*(?:issue|pr)[-_]\d+[A-Za-z0-9._/@:-]*)"
-    )
+    resource_kinds = {
+        "buildkit-cache-record",
+        "docker-builder",
+        "docker-container",
+        "docker-image",
+        "docker-network",
+        "docker-volume",
+        "filesystem-path",
+        "git-branch",
+        "git-remote-branch",
+        "git-worktree",
+        "node-modules",
+        "python-venv",
+        "shared-resource",
+        "temporary-file",
+    }
+    path_kinds = {
+        "filesystem-path",
+        "git-worktree",
+        "node-modules",
+        "python-venv",
+        "temporary-file",
+    }
+    safe_locator = re.compile(r"/?[A-Za-z0-9][A-Za-z0-9/._:@+-]*")
+    safe_trigger = re.compile(r"[a-z0-9][a-z0-9._:-]*")
     verification_marker = re.compile(
         r"(?i)\b(?:absence|absent|proof|verif(?:y|ied|ication)|remain|retained|"
         r"hash|identity|count|size|delta|healthy|recheck|inventory|status|comment)\b|https://"
     )
-    executable_names = {
-        "bash", "chroot", "command", "doas", "docker", "env", "eval", "find",
-        "git", "ksh", "nice", "nohup", "printf", "pwd", "rm", "sh", "ssh",
-        "sudo", "timeout", "xargs", "zsh",
-    }
 
-    def has_short_flag(tokens: list[str], flag: str) -> bool:
-        return any(
-            token.startswith("-")
-            and not token.startswith("--")
-            and flag.lower() in token[1:].lower()
-            for token in tokens
-        )
+    def unique_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+        result: dict[str, Any] = {}
+        for key, value in pairs:
+            if key in result:
+                raise ValueError("duplicate cleanup-contract key")
+            result[key] = value
+        return result
 
-    def has_long_flag(tokens: list[str], flag: str) -> bool:
-        return any(
-            token.lower() == flag or token.lower().startswith(f"{flag}=")
-            for token in tokens
-        )
-
-    def command_index(tokens: list[str], start: int, valued_options: set[str]) -> int:
-        index = start
-        while index < len(tokens) and tokens[index].startswith("-"):
-            option = tokens[index].lower()
-            index += 1
-            if option in valued_options and index < len(tokens):
-                index += 1
-        return index
-
-    def command_fragments(cleanup: str) -> list[str]:
-        fragments: list[str] = []
-
-        def is_literal_target(value: str) -> bool:
-            return bool(
-                literal_code_target.fullmatch(value)
-                and value.lower() not in executable_names
-                and re.search(r"(?i)(?:issue|pr)[-_]\d+", value)
-            )
-
-        def replace_code_span(match: re.Match[str]) -> str:
-            value = match.group(1)
-            if is_literal_target(value):
-                return value
-            fragments.append(value)
-            return " "
-
-        plain = re.sub(r"`([^`\n]+)`", replace_code_span, cleanup)
-        for clause in re.split(r"\s*(?:&&|\|\||[;&|]|\n)\s*", plain):
-            starts = list(shell_command.finditer(clause))
-            fragments.extend(clause[match.start() :] for match in starts)
-        return fragments
-
-    def fragment_tokens(fragment: str) -> list[str]:
-        return [
-            token.strip("`\"'(),.")
-            for token in re.findall(r'"[^"\n]*"|\'[^\'\n]*\'|\S+', fragment)
-            if token.strip("`\"'(),.")
-        ]
-
-    def bounded_cleanup_shape(cleanup: str) -> bool:
-        normalized = re.sub(r"`([^`\n]+)`", r"\1", cleanup).strip()
-        commands = list(bounded_command.finditer(normalized))
-        remainder = bounded_command.sub(" ", normalized)
-        shell_residue = re.search(
-            r"(?i)(?:&&|\|\||[;&|]|(?:^|\s)[A-Za-z_][A-Za-z0-9_]*=\S+|"
-            r"\b(?:git|docker|rm|find|sudo|doas|export|cd|pushd|popd)\b)",
-            remainder,
-        )
-        if commands:
-            return len(commands) == 1 and shell_residue is None
-        return shell_residue is None and re.search(
-            r"(?i)\b(?:retain|keep|remov(?:e|ed|ing)|delet(?:e|ed|ing))\b", normalized
-        ) is not None
-
-    def unsafe_shell_cleanup(cleanup: str) -> bool:
-        code_spans = re.findall(r"`([^`\n]+)`", cleanup)
-        outside_code = re.sub(r"`[^`\n]+`", " ", cleanup)
-        if shell_command.search(outside_code) and any(
-            literal_code_target.fullmatch(value) is None
-            or value.lower() in executable_names
-            or re.search(r"(?i)(?:issue|pr)[-_]\d+", value) is None
-            for value in code_spans
-        ):
-            return True
-        if shell_command.search(cleanup) and re.search(
-            r"(?i)(?:^|[;&|]\s*)(?:cd|pushd|popd)\b", cleanup
-        ):
-            return True
-        if re.search(r"(?i)docker\s+buildx\s+prune\b", cleanup):
-            exact_raw = exact_buildx_prune.fullmatch(cleanup.strip()) is not None
-            exact_markdown = (
-                len(code_spans) == 1
-                and exact_buildx_prune.fullmatch(code_spans[0]) is not None
-                and shell_command.search(outside_code) is None
-                and re.search(
-                    r"(?i)(?:&&|\|\||[;&|]|\b(?:sudo|doas|env|eval|nice|nohup|"
-                    r"command|xargs|bash|sh|zsh|ksh|ssh|find|chroot|timeout)\b|"
-                    r"(?:^|\s)[A-Za-z_][A-Za-z0-9_]*=\S+)",
-                    outside_code,
-                )
-                is None
-            )
-            if not exact_raw and not exact_markdown:
-                return True
-        buildx_prune_count = 0
-        for fragment in command_fragments(cleanup):
-            tokens = fragment_tokens(fragment)
-            lowered = [token.lower() for token in tokens]
-            for position, command in enumerate(lowered):
-                if command == "git":
-                    index = command_index(
-                        tokens,
-                        position + 1,
-                        {"-c", "--git-dir", "--work-tree", "--namespace"},
-                    )
-                    if index >= len(tokens):
-                        continue
-                    operation = lowered[index]
-                    arguments = tokens[index + 1 :]
-                    lower_arguments = lowered[index + 1 :]
-                    if index > position + 1:
-                        return True
-                    if operation in {"clean", "reset", "switch", "checkout", "restore"}:
-                        return True
-                    if operation == "branch" and (
-                        has_long_flag(arguments, "--force")
-                        or any(
-                            value.startswith("-")
-                            and not value.startswith("--")
-                            and (
-                                "f" in value[1:].lower()
-                                or any(alias in value[1:] for alias in "DMC")
-                            )
-                            for value in arguments
-                        )
-                    ):
-                        return True
-                    if operation == "push" and any(
-                        value == "--force"
-                        or value.startswith("--force-with-lease")
-                        or (value.startswith("-") and not value.startswith("--") and "f" in value[1:])
-                        for value in arguments
-                    ):
-                        return True
-                    if operation == "worktree" and lower_arguments:
-                        subcommand = lower_arguments[0]
-                        if subcommand == "prune":
-                            return True
-                        if subcommand == "remove" and (
-                            len(arguments) < 2
-                            or has_long_flag(arguments[1:], "--force")
-                            or has_short_flag(arguments[1:], "f")
-                        ):
-                            return True
-                elif command == "docker":
-                    index = command_index(
-                        tokens,
-                        position + 1,
-                        {
-                            "-c", "--context", "--host", "-h", "--config",
-                            "-l", "--log-level", "--tlscacert", "--tlscert", "--tlskey",
-                        },
-                    )
-                    if index >= len(tokens):
-                        continue
-                    operation = lowered[index]
-                    arguments = tokens[index + 1 :]
-                    lower_arguments = lowered[index + 1 :]
-                    if index > position + 1:
-                        return True
-                    if operation == "context":
-                        return True
-                    if operation in {
-                        "system", "image", "volume", "network", "container",
-                    } and "prune" in lower_arguments:
-                        return True
-                    if operation in {"builder", "cache"} and "prune" in lower_arguments:
-                        return True
-                    if operation == "buildx" and lower_arguments[:1] == ["prune"]:
-                        buildx_prune_count += 1
-                        expected = [
-                            "docker",
-                            "buildx",
-                            "prune",
-                            "--filter",
-                        ]
-                        if (
-                            tokens[position : position + 4] != expected
-                            or len(tokens[position:]) != 5
-                            or re.fullmatch(
-                                r"id=[a-z0-9]{20,64}", tokens[position + 4]
-                            ) is None
-                        ):
-                            return True
-                    deletion = (
-                        operation in {"rm", "rmi"}
-                        or operation in {
-                            "image", "volume", "network", "container", "builder",
-                        }
-                        and lower_arguments[:1] == ["rm"]
-                        or operation == "buildx" and lower_arguments[:1] == ["rm"]
-                    )
-                    if deletion and has_long_flag(arguments, "--all-inactive"):
-                        return True
-                    if deletion and (
-                        has_long_flag(arguments, "--force")
-                        or has_short_flag(arguments, "f")
-                    ):
-                        return True
-                elif command == "rm" and "docker" not in lowered[:position]:
-                    arguments = tokens[position + 1 :]
-                    if has_long_flag(arguments, "--force") or has_short_flag(arguments, "f"):
-                        return True
-                    recursive = "--recursive" in arguments or has_short_flag(arguments, "r")
-                    if not recursive:
-                        continue
-                    targets = [value for value in arguments if not value.startswith("-")]
-                    if len(targets) != 1 or re.fullmatch(
-                        r"/(?:private/)?tmp/[A-Za-z0-9][A-Za-z0-9._-]*"
-                        r"(?:/[A-Za-z0-9][A-Za-z0-9._-]*)*/?",
-                        targets[0],
-                    ) is None:
-                        return True
-        return buildx_prune_count > 1
-    if not rows:
-        return [invalid]
-    for cells in rows:
-        if len(cells) != 5:
-            return [invalid]
-        resource, ownership, retention, cleanup, evidence = cells[:5]
+    for row in parsed_rows[2:]:
+        assert row is not None
+        resource, ownership, retention, cleanup, evidence = row
         values = (resource, ownership, retention, cleanup, evidence)
         if any(is_placeholder_value(value) or is_na_value(value) for value in values):
             return [invalid]
-        if retention.strip().lower() not in retention_classes:
+
+        retention = retention.lower()
+        if retention not in retention_dispositions:
+            return [invalid]
+        try:
+            contract = json.loads(cleanup, object_pairs_hook=unique_object)
+        except (json.JSONDecodeError, ValueError):
             return [invalid]
         if (
-            broad_cleanup.search(cleanup)
-            or unresolved_or_ambiguous_target.search(cleanup)
-            or delegated_cleanup.search(cleanup)
-            or not bounded_cleanup_shape(cleanup)
-            or unsafe_command_prefix.search(cleanup)
-            or unsafe_shell_cleanup(cleanup)
+            not isinstance(contract, dict)
+            or set(contract) != {"disposition", "kind", "locator", "trigger"}
+            or any(not isinstance(value, str) for value in contract.values())
+        ):
+            return [invalid]
+
+        disposition = contract["disposition"]
+        kind = contract["kind"]
+        locator = contract["locator"]
+        trigger = contract["trigger"]
+        if (
+            disposition != retention_dispositions[retention]
+            or kind not in resource_kinds
+            or safe_locator.fullmatch(locator) is None
+            or safe_trigger.fullmatch(trigger) is None
+            or locator in {".", "..", "/"}
+            or ".." in locator.split("/")
+            or (kind in path_kinds) != locator.startswith("/")
             or verification_marker.search(evidence) is None
-            or broad_cleanup.search(evidence)
-            or unsafe_command_prefix.search(evidence)
-            or unsafe_shell_cleanup(evidence)
         ):
             return [invalid]
     return []
