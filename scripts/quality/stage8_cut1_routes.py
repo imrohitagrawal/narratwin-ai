@@ -2210,29 +2210,27 @@ def issue498_commit_topology_failures(run: Callable[[list[str]], Any]) -> list[s
     if head == ISSUE498_APPROVED_HEAD:
         candidate = head
     else:
-        anchor_result = run(
-            [
-                "git", "show", "-s", "--format=%P%x00%T", ISSUE498_SQUASH_MERGE,
-            ]
-        )
-        anchor_fields = str(anchor_result.stdout).strip().split("\0")
-        if (
-            anchor_result.returncode == 0
-            and anchor_fields == [ISSUE498_BASE, ISSUE498_MERGED_TREE]
-        ):
+        parents_result = run(["git", "show", "-s", "--format=%P", "HEAD"])
+        parents = str(parents_result.stdout).strip().split()
+        if parents_result.returncode:
+            return failure
+        if parents == [ISSUE498_BASE, ISSUE498_APPROVED_HEAD]:
+            candidate = ISSUE498_APPROVED_HEAD
+        else:
+            anchor_result = run(
+                ["git", "show", "-s", "--format=%P%x00%T", ISSUE498_SQUASH_MERGE]
+            )
+            anchor_fields = str(anchor_result.stdout).strip().split("\0")
+            if anchor_result.returncode or anchor_fields != [
+                ISSUE498_BASE, ISSUE498_MERGED_TREE,
+            ]:
+                return failure
             ancestry = run(
                 ["git", "merge-base", "--is-ancestor", ISSUE498_SQUASH_MERGE, head]
             )
-            if ancestry.returncode == 0:
-                return []
-        parents_result = run(["git", "show", "-s", "--format=%P", "HEAD"])
-        parents = str(parents_result.stdout).strip().split()
-        if (
-            parents_result.returncode
-            or parents != [ISSUE498_BASE, ISSUE498_APPROVED_HEAD]
-        ):
-            return failure
-        candidate = ISSUE498_APPROVED_HEAD
+            if ancestry.returncode:
+                return failure
+            return []
     result = run(
         [
             "git",
