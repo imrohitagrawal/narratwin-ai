@@ -1170,11 +1170,11 @@ def test_resource_lifecycle_accepts_one_exact_buildx_cache_id_selector() -> None
     assert guardrails.resource_lifecycle_failures(resource_lifecycle_body(row=row)) == []
 
 
-def test_resource_lifecycle_accepts_one_exact_recursive_temporary_path() -> None:
+def test_resource_lifecycle_accepts_one_context_relative_temporary_path() -> None:
     row = (
-        "| /private/tmp/exact-issue-391-directory | created only for issue 391 | "
+        "| temp/exact-issue-391-directory | created only for issue 391 | "
         'always-clean | {"disposition":"delete","kind":"filesystem-path",'
-        '"locator":"/private/tmp/exact-issue-391-directory","trigger":"session-end"} | '
+        '"locator":"temp/exact-issue-391-directory","trigger":"session-end"} | '
         "test -e proves the exact path absent |"
     )
     assert guardrails.resource_lifecycle_failures(resource_lifecycle_body(row=row)) == []
@@ -1320,6 +1320,32 @@ def test_resource_lifecycle_rejects_equivalent_path_decisions() -> None:
     ]
 
 
+@pytest.mark.parametrize(
+    ("kind", "locator"),
+    (
+        ("git-branch", "main"),
+        ("git-remote-branch", "origin/main"),
+        ("filesystem-path", ".git"),
+        ("temporary-file", ".git/config"),
+        ("filesystem-path", "AGENTS.md"),
+        ("git-worktree", "worktree:primary"),
+        ("filesystem-path", "/etc"),
+        ("filesystem-path", "/root/.ssh"),
+    ),
+)
+def test_resource_lifecycle_rejects_protected_structured_cleanup_targets(
+    kind: str, locator: str,
+) -> None:
+    cleanup = json.dumps(
+        {"disposition": "delete", "kind": kind, "locator": locator, "trigger": "merged"},
+        separators=(",", ":"),
+    )
+    row = f"| protected resource | claimed owner | success-clean | {cleanup} | absence proof |"
+    assert guardrails.resource_lifecycle_failures(resource_lifecycle_body(row=row)) == [
+        "Resource lifecycle rows must identify exact ownership, retention, bounded cleanup, and verification evidence."
+    ]
+
+
 def test_resource_lifecycle_rejects_delete_disposition_for_shared_resource_kind() -> None:
     row = (
         '| shared cache | exact shared ownership | success-clean | '
@@ -1338,6 +1364,7 @@ def test_resource_lifecycle_rejects_delete_disposition_for_shared_resource_kind(
         "./.",
         "/./",
         f"{Path.home()}/",
+        "/root/.ssh",
         f"{Path(__file__).parents[2]}/",
         f"{Path(__file__).parents[2]}/./",
     ),
