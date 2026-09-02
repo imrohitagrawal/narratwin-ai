@@ -1168,6 +1168,15 @@ def test_resource_lifecycle_accepts_one_exact_buildx_cache_id_selector() -> None
     assert guardrails.resource_lifecycle_failures(resource_lifecycle_body(row=row)) == []
 
 
+def test_resource_lifecycle_accepts_one_exact_recursive_temporary_path() -> None:
+    row = (
+        "| /private/tmp/exact-issue-391-directory | created only for issue 391 | "
+        "always-clean | rm -r /private/tmp/exact-issue-391-directory | "
+        "test -e proves the exact path absent |"
+    )
+    assert guardrails.resource_lifecycle_failures(resource_lifecycle_body(row=row)) == []
+
+
 def test_resource_lifecycle_rejects_missing_section() -> None:
     assert guardrails.resource_lifecycle_failures(product_context_body()) == [
         MISSING_RESOURCE_LIFECYCLE
@@ -1193,6 +1202,16 @@ def test_resource_lifecycle_rejects_missing_section() -> None:
         "| issue-391 branch | owner | success-clean | git switch main | issue comment |",
         "| issue-391 reports | owner | success-clean | remove reports/security/* | issue comment |",
         "| issue-391 directory | owner | success-clean | rm -r / | issue comment |",
+        "| issue-391 cache | owner | success-clean | docker buildx prune --filter id=ABCDEFGHIJKLMNOPQRST | issue comment |",
+        "| issue-391 cache | owner | success-clean | docker buildx prune --filter id==0123456789abcdefghijklmnop | issue comment |",
+        "| issue-391 cache | owner | success-clean | docker buildx prune --filter id=0123456789abcdefghijklmnop -af | issue comment |",
+        "| issue-391 cache | owner | success-clean | docker buildx prune --filter id=0123456789abcdefghijklmnop -fa | issue comment |",
+        "| issue-391 cache | owner | success-clean | docker buildx prune --filter id=0123456789abcdefghijklmnop && docker buildx prune | issue comment |",
+        "| issue-391 cache | owner | success-clean | docker buildx prune --filter id=0123456789abcdefghijklmnop ; docker buildx prune | issue comment |",
+        "| issue-391 branch | owner | success-clean | git -C /tmp/repo reset --hard | issue comment |",
+        "| issue-391 branch | owner | success-clean | Git branch -D main | issue comment |",
+        "| issue-391 image | owner | success-clean | docker --context default image rm -f shared:ci | issue comment |",
+        '| issue-391 worktree | owner | success-clean | git worktree remove "$(pwd)" | issue comment |',
     ),
 )
 def test_resource_lifecycle_rejects_partial_placeholder_na_or_broad_cleanup_row(
