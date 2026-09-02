@@ -50,7 +50,7 @@ def _sarif(tool: str, cves: tuple[str, ...] = TARGET_CVES, severity: str = "8.0"
 
 
 def _sbom(target: str, *, frontend: bool) -> dict[str, Any]:
-    packages = (("ca-certificates-bundle", "20260413-r0", ("MIT", "MPL-2.0"), "wolfi", "20230201"), ("glibc", "2.43-r12", ("LGPL-2.1-or-later",), "wolfi", "20230201"), ("glibc-locale-posix", "2.43-r12", ("LGPL-2.1-or-later",), "wolfi", "20230201"), ("ld-linux", "2.43-r12", ("LGPL-2.1-or-later",), "wolfi", "20230201"), ("libatomic", "16.1.0-r4", ("GPL-3.0-or-later WITH GCC-exception-3.1",), "wolfi", "20230201"), ("libgcc", "16.1.0-r4", ("GPL-3.0-or-later WITH GCC-exception-3.1",), "wolfi", "20230201"), ("libstdc++", "16.1.0-r4", ("GPL-3.0-or-later WITH GCC-exception-3.1",), "wolfi", "20230201"), ("wolfi-baselayout", "20230201-r29", ("MIT",), "wolfi", "20230201")) if frontend else (("python", "3.13.14", ("PSF-2.0",), "wolfi", "20230201"),)
+    packages = (("alpine-keys", "2.6-r0", ("MIT",), "alpine", "3.24.1"), ("alpine-release", "3.24.1-r0", ("MIT",), "alpine", "3.24.1"), ("ca-certificates-bundle", "20260611-r0", ("MIT", "MPL-2.0"), "alpine", "3.24.1"), ("libgcc", "15.2.0-r5", ("GPL-2.0-or-later", "LGPL-2.1-or-later"), "alpine", "3.24.1"), ("libstdc++", "15.2.0-r5", ("GPL-2.0-or-later", "LGPL-2.1-or-later"), "alpine", "3.24.1"), ("musl", "1.2.6-r2", ("MIT",), "alpine", "3.24.1")) if frontend else (("python", "3.13.14", ("PSF-2.0",), "wolfi", "20230201"),)
     components = [{"type": "library", "name": name, "version": version, "purl": f"pkg:apk/{namespace}/{quote(name, safe='')}@{version}?arch=x86_64&distro={distro}", "licenses": [{"expression": license_id} if " WITH " in license_id else {"license": {"id": license_id}} for license_id in licenses]} for name, version, licenses, namespace, distro in packages]
     return {"bomFormat": "CycloneDX", "specVersion": "1.7", "metadata": {"component": {"type": "container", "properties": [{"name": "aquasecurity:trivy:ImageID", "value": target}]}}, "components": components}
 
@@ -159,11 +159,12 @@ def test_issue389_npm12_findings_fail_consensus() -> None:
 @pytest.mark.parametrize("mutation", [lambda s:s.clear(), lambda s:s.update(components=[]),
     lambda s:s["metadata"]["component"]["properties"][0].update(value="sha256:"+"0"*64),
     lambda s:s["components"][0].update(version="stale"), lambda s:s["components"][1].update(version="stale"),
-    lambda s:s["components"][1].update(licenses=[{"license":{"id":"MIT"}}]),
-    lambda s:s["components"][0].update(purl="pkg:apk/wolfi/ca-certificates-bundle@20260413-r0"),
-    lambda s:s["components"][0].update(purl="pkg:apk/wolfi/ca-certificates-bundle@20260413-r0?arch=evil&distro=ubuntu"),
-    lambda s:s["components"][0].update(purl="pkg:apk/wolfi/ca-certificates-bundle@20260413-r0?arch=x86_64&arch=aarch64&distro=20230201"),
-    lambda s:s["components"][0].update(purl="pkg:apk/wolfi/ca-certificates-bundle@20260413-r0?arch=x86_64&distro=20230201&foreign=yes")])
+    lambda s:s["components"][2].update(licenses=[{"license":{"id":"MIT"}}]),
+    lambda s:s["components"][0].update(purl="pkg:apk/alpine/alpine-keys@2.6-r0"),
+    lambda s:s["components"][0].update(purl="pkg:apk/alpine/alpine-keys@2.6-r0?arch=evil&distro=ubuntu"),
+    lambda s:s["components"][0].update(purl="pkg:apk/alpine/alpine-keys@2.6-r0?arch=x86_64&arch=aarch64&distro=3.24.1"),
+    lambda s:s["components"][0].update(purl="pkg:apk/alpine/alpine-keys@2.6-r0?arch=x86_64&distro=3.24.1&foreign=yes"),
+    lambda s:s["components"].append({"type":"library","name":"glibc","version":"2.43-r12","purl":"pkg:apk/wolfi/glibc@2.43-r12?arch=x86_64&distro=20230201","licenses":[{"license":{"id":"LGPL-2.1-or-later"}}]})])
 def test_frontend_sbom_identity_packages_and_licenses_fail_closed(mutation: Callable[[dict[str, Any]], None]) -> None:
     sbom = _sbom(FRONTEND_CONFIG, frontend=True)
     mutation(sbom)
@@ -183,7 +184,7 @@ def test_frontend_reproduction_requires_stable_build_id_and_fresh_secrets() -> N
     primary = {
         "buildId": "source-bound",
         "architecture": "amd64",
-        "inventory": "1645:f868cddbe615d21fb965633253098ada945041edfb5ab7325956a669554ceecd",
+        "inventory": "1596:f868cddbe615d21fb965633253098ada945041edfb5ab7325956a669554ceecd",
         "previewModeId": "1" * 32,
         "previewModeSigningKey": "2" * 64,
         "previewModeEncryptionKey": "3" * 64,
@@ -199,7 +200,7 @@ def test_frontend_reproduction_requires_stable_build_id_and_fresh_secrets() -> N
         "serverActionKey": "B" * 43 + "=",
     }
     assert validator(primary, reproduction) == []
-    reproduction["inventory"] = "1644:" + "0" * 64
+    reproduction["inventory"] = "1595:" + "0" * 64
     assert validator(primary, reproduction) == ["FRONTEND_RUNTIME_INVENTORY_CHANGED"]
     reproduction["inventory"] = primary["inventory"]
     for bad_inventory in (None, "", "unreviewed"):
@@ -350,12 +351,12 @@ def test_frontend_config_is_not_passed_in_python_argv(tmp_path: Path) -> None:
 def test_frontend_inventory_contract_is_bounded_and_architecture_bound() -> None:
     module = _load()
     matches = module.frontend_inventory_matches
-    amd64 = "1645:f868cddbe615d21fb965633253098ada945041edfb5ab7325956a669554ceecd"
-    arm64 = "1643:18df82960aa5cbd5b17217eb918a6c50cc450e608a75ac6bf6c70c230ac0a784"
-    assert module.FRONTEND_INVENTORY_RECORD_BOUNDS == {"amd64": (1600, 1700), "arm64": (1600, 1700)}
+    amd64 = "1596:f868cddbe615d21fb965633253098ada945041edfb5ab7325956a669554ceecd"
+    arm64 = "1596:18df82960aa5cbd5b17217eb918a6c50cc450e608a75ac6bf6c70c230ac0a784"
+    assert module.FRONTEND_INVENTORY_RECORD_BOUNDS == {"amd64": (1580, 1620), "arm64": (1580, 1620)}
     assert matches("amd64", amd64)
     assert matches("arm64", arm64)
-    assert matches("amd64", "1643:92e816bae28c8e5dcfe7d955f26952f58b932206005556f81598128e2276f152")
+    assert matches("amd64", "1595:92e816bae28c8e5dcfe7d955f26952f58b932206005556f81598128e2276f152")
     assert not matches("unknown", amd64)
     for stale in (
         "1805:9a18413ff9fefd9c665595ab2564c72bb706dcf81b490fffd59b23653ad73858",
@@ -368,7 +369,7 @@ def test_frontend_inventory_contract_is_bounded_and_architecture_bound() -> None
     ):
         assert not matches("amd64", stale)
         assert not matches("arm64", stale)
-    for malformed in ("1599:" + "0" * 64, "1701:" + "0" * 64, "1643:" + "G" * 64, "1643:short"):
+    for malformed in ("1579:" + "0" * 64, "1621:" + "0" * 64, "1596:" + "G" * 64, "1596:short"):
         assert not matches("amd64", malformed)
 
 
