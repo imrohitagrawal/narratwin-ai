@@ -1364,20 +1364,25 @@ def test_resource_lifecycle_contract_is_durable_across_policy_and_future_project
         ".github/pull_request_template.md": (
             "## Resource lifecycle and cleanup",
             "Ownership proof",
-            "Cleanup trigger and exact action",
+            "Cleanup contract",
+            '"disposition"',
+            '"locator"',
         ),
         "docs/RESOURCE_LIFECYCLE.md": (
             "## Creation-Time Inventory",
+            "## Cleanup Contract",
             "## Finalization Gate",
             "shared-retain",
         ),
         "docs/templates/AI_SESSION_FINALIZER_PROMPT.md": (
             "FINAL RESOURCE LIFECYCLE PHASE",
+            "non-executable cleanup contract",
             "before starting the next increment",
             "Prove target absence",
         ),
         "docs/QUALITY_GATES.md": (
             "resource_lifecycle_failures",
+            "structured JSON cleanup contract",
             "evidence-until-merged-main",
             "does not grant destructive authority",
         ),
