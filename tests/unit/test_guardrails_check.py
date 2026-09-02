@@ -1181,6 +1181,26 @@ def test_resource_lifecycle_accepts_one_exact_recursive_temporary_path() -> None
 
 
 @pytest.mark.parametrize(
+    ("kind", "locator"),
+    (
+        ("git-worktree", "worktree:feature-safe"),
+        ("python-venv", ".venv"),
+        ("node-modules", "frontend/node_modules"),
+        ("filesystem-path", "reports/security"),
+    ),
+)
+def test_resource_lifecycle_accepts_public_safe_context_relative_locators(
+    kind: str, locator: str,
+) -> None:
+    cleanup = json.dumps(
+        {"disposition": "retain", "kind": kind, "locator": locator, "trigger": "owner-verified"},
+        separators=(",", ":"),
+    )
+    row = f"| exact resource | exact ownership proof | shared-retain | {cleanup} | retained proof |"
+    assert guardrails.resource_lifecycle_failures(resource_lifecycle_body(row=row)) == []
+
+
+@pytest.mark.parametrize(
     ("kind", "locator", "disposition", "retention"),
     (
         ("git-branch", "feature-safe", "delete", "success-clean"),
@@ -1231,6 +1251,61 @@ def test_resource_lifecycle_rejects_invalid_structured_cleanup_contract(
     cleanup: str, retention: str,
 ) -> None:
     row = f"| exact resource | exact ownership proof | {retention} | {cleanup} | exact proof |"
+    assert guardrails.resource_lifecycle_failures(resource_lifecycle_body(row=row)) == [
+        "Resource lifecycle rows must identify exact ownership, retention, bounded cleanup, and verification evidence."
+    ]
+
+
+@pytest.mark.parametrize(
+    "row",
+    (
+        '| Run docker system prune | exact owner | success-clean | {"disposition":"delete","kind":"git-branch","locator":"feature-safe","trigger":"merged"} | absence proof |',
+        '| exact resource | Execute git branch -D main | success-clean | {"disposition":"delete","kind":"git-branch","locator":"feature-safe","trigger":"merged"} | absence proof |',
+        '| exact resource | exact owner | success-clean | {"disposition":"delete","kind":"git-branch","locator":"feature-safe","trigger":"merged"} | Run docker system prune; exact absence proof |',
+    ),
+)
+def test_resource_lifecycle_rejects_cross_cell_command_injection(row: str) -> None:
+    assert guardrails.resource_lifecycle_failures(resource_lifecycle_body(row=row)) == [
+        "Resource lifecycle rows must identify exact ownership, retention, bounded cleanup, and verification evidence."
+    ]
+
+
+def test_resource_lifecycle_rejects_duplicate_or_conflicting_locator_decisions() -> None:
+    first = (
+        '| exact path | exact owner | success-clean | '
+        '{"disposition":"delete","kind":"filesystem-path","locator":"reports/security",'
+        '"trigger":"merged"} | absence proof |'
+    )
+    second = (
+        '| same exact path | exact owner | shared-retain | '
+        '{"disposition":"retain","kind":"filesystem-path","locator":"reports/security",'
+        '"trigger":"owner"} | retained proof |'
+    )
+    for duplicate in (first, second):
+        body = resource_lifecycle_body(row=first) + duplicate + "\n"
+        assert guardrails.resource_lifecycle_failures(body) == [
+            "Resource lifecycle rows must identify exact ownership, retention, bounded cleanup, and verification evidence."
+        ]
+
+
+def test_resource_lifecycle_rejects_delete_disposition_for_shared_resource_kind() -> None:
+    row = (
+        '| shared cache | exact shared ownership | success-clean | '
+        '{"disposition":"delete","kind":"shared-resource","locator":"shared-cache",'
+        '"trigger":"merged"} | absence proof |'
+    )
+    assert guardrails.resource_lifecycle_failures(resource_lifecycle_body(row=row)) == [
+        "Resource lifecycle rows must identify exact ownership, retention, bounded cleanup, and verification evidence."
+    ]
+
+
+@pytest.mark.parametrize("locator", (str(Path.home()), str(Path(__file__).parents[2])))
+def test_resource_lifecycle_rejects_home_or_repository_root_deletion(locator: str) -> None:
+    cleanup = json.dumps(
+        {"disposition": "delete", "kind": "filesystem-path", "locator": locator, "trigger": "merged"},
+        separators=(",", ":"),
+    )
+    row = f"| protected root | exact owner | success-clean | {cleanup} | absence proof |"
     assert guardrails.resource_lifecycle_failures(resource_lifecycle_body(row=row)) == [
         "Resource lifecycle rows must identify exact ownership, retention, bounded cleanup, and verification evidence."
     ]
