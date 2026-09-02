@@ -2774,9 +2774,12 @@ def _issue494_runner(
 
 
 def _issue498_runner(args: list[str]) -> subprocess.CompletedProcess[str]:
-    if args[:3] == ["git", "log", "--reverse"] or args == [
-        "git", "show", "-s", "--format=%P", "HEAD"
-    ]:
+    if tuple(args[:2]) in {
+        ("git", "log"),
+        ("git", "show"),
+        ("git", "rev-parse"),
+        ("git", "merge-base"),
+    }:
         return subprocess.run(args, cwd=REPO, check=False, capture_output=True, text=True)
     return completed(args)
 
@@ -3516,7 +3519,9 @@ def test_exact_route_completeness_lookalikes_and_budgets(monkeypatch: Any) -> No
         runner = (issue459_run if branch == routes.ISSUE459_BRANCH else
                   _issue479_runner if branch == routes.ISSUE479_BRANCH else
                   _issue494_runner if branch == routes.ISSUE494_BRANCH else
-                  _issue498_runner if branch == routes.ISSUE498_BRANCH else
+                  _issue498_runner if branch in {
+                      routes.ISSUE498_BRANCH, routes.ISSUE504_BRANCH,
+                  } else
                   lambda _: completed([]))
         routes.check_exact_route(REPO, runner, branch, set(paths), failures)
         assert failures == []
@@ -3567,7 +3572,9 @@ def test_per_route_aggregate_per_file_and_binary_caps(monkeypatch: Any) -> None:
         runner = (issue459_run if branch == routes.ISSUE459_BRANCH else
                   _issue479_runner if branch == routes.ISSUE479_BRANCH else
                   _issue494_runner if branch == routes.ISSUE494_BRANCH else
-                  _issue498_runner if branch == routes.ISSUE498_BRANCH else
+                  _issue498_runner if branch in {
+                      routes.ISSUE498_BRANCH, routes.ISSUE504_BRANCH,
+                  } else
                   lambda _: completed([]))
         routes.check_exact_route(REPO, runner, branch, EXPECTED[branch], failures)
         assert failures == [f"Issue #{routes.ROUTE_ISSUES[branch]} charge {limit + 1} exceeds {limit}."]

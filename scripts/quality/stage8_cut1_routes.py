@@ -55,6 +55,7 @@ ISSUE368_AUTH_TRANSPORT_BRANCH = "stage8-368-google-auth-public-transport-fix"
 ISSUE368_TIMEOUT_BRANCH = "stage8-368-google-tts-long-response-timeout"
 ISSUE494_BRANCH = "stage8-494-google-tts-failure-diagnostics"
 ISSUE498_BRANCH = "stage8-498-google-tts-official-grpc"
+ISSUE504_BRANCH = "stage8-504-issue498-post-squash-topology"
 ISSUE415_BRANCH = "stage8-415-pr-body-live-state-reconciliation"
 ISSUE415_CORRECTION_BRANCH = "stage8-415-pr-body-consistency-canary-fix"
 ISSUE486_BRANCH = "stage8-486-reviewer-impact-summary"
@@ -77,6 +78,7 @@ ISSUE494_TRANSITION_MERGE = "97671772b7ab8ef2c583cecde98f35a9e472457b"
 ISSUE494_TRANSITION_COMMENT = "5499248540"
 ISSUE494_TRANSITION_SHA256 = "3c0968ef0827dfa314a8591230e410b4dd5a4b4092223b5f76fdc72499bbe9a3"
 ISSUE498_BASE = "8fb9b6d143515a6e5cfe3c395477e51696fe782b"
+ISSUE504_BASE = "e1fe126372d5c5a06dc7d2f9c76cb205da8643e7"
 ISSUE498_TREE = "21b5c26355262482b02554d4115fc5567b6fb253"
 ISSUE498_FREEZE_COMMENT = "5500521261"
 ISSUE498_FREEZE_SHA256 = "fafc0f0a8ae18c9cc08d9dbab668235546f652aa780256792d5d1cb0e8f9f58b"
@@ -679,6 +681,15 @@ ROUTES = {
         "docs/THIRD_PARTY_NOTICES.md",
         "docs/TRACEABILITY.md",
     },
+    ISSUE504_BRANCH: {
+        "docs/governance/preflights/issue-504.json",
+        "scripts/quality/stage8_cut1_routes.py",
+        "tests/unit/test_stage8_cut1_routes.py",
+        "docs/QUALITY_GATES.md",
+        "docs/STAGE_ISSUE_PLAN.md",
+        "docs/STATUS.md",
+        "docs/TRACEABILITY.md",
+    },
     ISSUE368_PROMPT_BRANCH: {
         "docs/governance/preflights/issue-368.json",
         "docs/governance/cut1-google-gemini-tts-style-prompts-v1.json",
@@ -923,6 +934,8 @@ ROUTE_ISSUES[ISSUE494_BRANCH] = 494
 TOTAL_LIMITS[ISSUE494_BRANCH] = 1420
 ROUTE_ISSUES[ISSUE498_BRANCH] = 498
 TOTAL_LIMITS[ISSUE498_BRANCH] = 5200
+ROUTE_ISSUES[ISSUE504_BRANCH] = 504
+TOTAL_LIMITS[ISSUE504_BRANCH] = 1080
 ISSUE383_BINARY_FILES = {
     "frontend/public/demo/myra-synthetic-presenter.webp",
     "frontend/public/demo/raj-synthetic-presenter.webp",
@@ -1356,6 +1369,15 @@ TEXT_LIMITS = {
         "docs/STATUS.md": 140,
         "docs/THIRD_PARTY_NOTICES.md": 180,
         "docs/TRACEABILITY.md": 140,
+    },
+    ISSUE504_BRANCH: {
+        "docs/governance/preflights/issue-504.json": 240,
+        "scripts/quality/stage8_cut1_routes.py": 180,
+        "tests/unit/test_stage8_cut1_routes.py": 300,
+        "docs/QUALITY_GATES.md": 80,
+        "docs/STAGE_ISSUE_PLAN.md": 80,
+        "docs/STATUS.md": 120,
+        "docs/TRACEABILITY.md": 80,
     },
     ISSUE368_PROMPT_BRANCH: {
         path: 260 if path == "tests/unit/test_stage8_cut1_routes.py"
@@ -1996,6 +2018,7 @@ def route_base(run: Callable[[list[str]], Any], branch: str) -> str:
         ISSUE368_AUTH_TRANSPORT_BRANCH: (368, ISSUE368_REFRESH_TRANSPORT_BASE),
         ISSUE368_TIMEOUT_BRANCH: (368, ISSUE368_TIMEOUT_BASE),
         ISSUE498_BRANCH: (498, ISSUE498_BASE),
+        ISSUE504_BRANCH: (504, ISSUE504_BASE),
         ISSUE368_PROMPT_BRANCH: (368, ISSUE368_PROMPT_BASE),
         ISSUE368_BRANCH: (368, ISSUE368_BASE),
         ISSUE386_BRANCH: (386, ISSUE386_BASE),
@@ -2016,7 +2039,7 @@ def route_base(run: Callable[[list[str]], Any], branch: str) -> str:
         )
         branch_point_invalid = False
         if not fixed_invalid and branch in {ISSUE479_BRANCH, ISSUE482_BRANCH, ISSUE478_BRANCH, ISSUE475_BRANCH, ISSUE468_BRANCH, ISSUE486_BRANCH, ISSUE486_PROTECTED_BRANCH, ISSUE486_HASH_CLEANUP_BRANCH, ISSUE473_BRANCH, ISSUE471_BRANCH, ISSUE459_T05B_BRANCH, ISSUE459_T05A_BRANCH, ISSUE459_T03_BRANCH, ISSUE460_BRANCH, ISSUE452_BRANCH, ISSUE451_BRANCH, ISSUE150_BRANCH, ISSUE424_BRANCH, ISSUE421_BRANCH, ISSUE368_IMPLEMENTATION_BRANCH, ISSUE368_BINDING_COMPAT_BRANCH, ISSUE368_AUTH_TRANSPORT_BRANCH, ISSUE368_TIMEOUT_BRANCH,
-                      ISSUE368_QUOTA_FIX_BRANCH, ISSUE498_BRANCH, ISSUE368_BRANCH,
+                      ISSUE368_QUOTA_FIX_BRANCH, ISSUE498_BRANCH, ISSUE504_BRANCH, ISSUE368_BRANCH,
                       ISSUE368_PROMPT_BRANCH}:
             branch_point = run(["git", "merge-base", "origin/main", "HEAD"])
             branch_point_invalid = branch_point.returncode != 0 or str(branch_point.stdout).strip() != base
@@ -2261,7 +2284,7 @@ def check_exact_route(
     files = ROUTES[branch]
     effective_changed = set(changed)
     fixed_base: str | None = None
-    if branch == ISSUE498_BRANCH:
+    if branch in {ISSUE498_BRANCH, ISSUE504_BRANCH}:
         failures.extend(issue498_commit_topology_failures(run))
     if branch == ISSUE459_BRANCH:
         try:
