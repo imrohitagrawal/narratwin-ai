@@ -1080,6 +1080,61 @@ def test_issue507_google_api_core_grpc_status_route_is_exact_and_bounded() -> No
     )
 
 
+def _issue507_route_root(tmp_path: Path) -> Path:
+    for relative in ISSUE507_EXPECTED:
+        target = tmp_path / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(REPO / relative, target)
+    return tmp_path
+
+
+def _issue507_mode_runner(gitlink: tuple[str, str] | None = None) -> Any:
+    def run(args: list[str]) -> subprocess.CompletedProcess[str]:
+        if args[:2] == ["git", "ls-tree"]:
+            rows = "".join(
+                f"{'160000 commit' if gitlink == ('HEAD', path) else '100644 blob'} "
+                f"{'0' * 40}\t{path}\0" for path in sorted(ISSUE507_EXPECTED)
+            )
+            return completed(args, out=rows)
+        if args[:3] == ["git", "ls-files", "--stage"]:
+            rows = "".join(
+                f"{'160000' if gitlink == ('index', path) else '100644'} "
+                f"{'0' * 40} 0\t{path}\0" for path in sorted(ISSUE507_EXPECTED)
+            )
+            return completed(args, out=rows)
+        return completed(args)
+
+    return run
+
+
+def test_issue507_rejects_non_utf8_owned_path(monkeypatch: Any, tmp_path: Path) -> None:
+    root = _issue507_route_root(tmp_path)
+    (root / "docs/STATUS.md").write_bytes(b"\xff")
+    monkeypatch.setattr(routes, "route_base", lambda *_: routes.ISSUE507_BASE)
+    monkeypatch.setattr(routes, "route_text_charges", lambda *_: (0, {}))
+    failures: list[str] = []
+    routes.check_exact_route(
+        root, _issue507_mode_runner(), routes.ISSUE507_BRANCH,
+        ISSUE507_EXPECTED, failures,
+    )
+    assert any("valid utf-8" in failure for failure in failures)
+
+
+@pytest.mark.parametrize("source", ("HEAD", "index"))
+def test_issue507_rejects_gitlink(
+    monkeypatch: Any, tmp_path: Path, source: str,
+) -> None:
+    root = _issue507_route_root(tmp_path)
+    monkeypatch.setattr(routes, "route_base", lambda *_: routes.ISSUE507_BASE)
+    monkeypatch.setattr(routes, "route_text_charges", lambda *_: (0, {}))
+    failures: list[str] = []
+    routes.check_exact_route(
+        root, _issue507_mode_runner((source, "docs/STATUS.md")),
+        routes.ISSUE507_BRANCH, ISSUE507_EXPECTED, failures,
+    )
+    assert any("ordinary tracked file" in failure for failure in failures)
+
+
 def test_issue502_requires_exact_current_main_branch_point() -> None:
     base = "e1fe126372d5c5a06dc7d2f9c76cb205da8643e7"
 
