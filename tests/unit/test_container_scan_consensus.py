@@ -222,12 +222,20 @@ def test_frontend_sbom_requires_architecture_specific_sharp_and_forbids_glibc() 
             f"pkg:npm/%40img/sharp-linuxmusl-{old}@0.35.3",
             f"pkg:npm/%40img/sharp-linuxmusl-{new}@0.35.3",
             f"pkg:npm/%40img/sharp-libvips-linuxmusl-{new}@1.3.2",
+            f"PKG:npm/%40img/sharp-linuxmusl-{new}@0.35.3",
         ):
             hidden = copy.deepcopy(sbom)
             hidden["components"].append({
                 "type": "library", "name": "benign-native", "version": "1.0.0", "purl": hidden_purl,
             })
             assert not validator(hidden, FRONTEND_CONFIG, required, architecture)
+        hidden_bom_ref = copy.deepcopy(sbom)
+        hidden_bom_ref["components"].append({
+            "type": "library", "name": "benign-native", "version": "1.0.0",
+            "purl": "pkg:generic/benign-native@1.0.0",
+            "bom-ref": f"sharp-linuxmusl-{new}@0.35.3",
+        })
+        assert not validator(hidden_bom_ref, FRONTEND_CONFIG, required, architecture)
         forbidden = copy.deepcopy(sbom)
         forbidden["components"].append({
             "type": "library", "name": "glibc", "version": "2.43-r12",
@@ -236,7 +244,11 @@ def test_frontend_sbom_requires_architecture_specific_sharp_and_forbids_glibc() 
         assert not validator(forbidden, FRONTEND_CONFIG, required, architecture)
         for field, value in (
             ("cpe", "cpe:2.3:a:gnu:glibc:2.43:*:*:*:*:*:*:*"),
+            ("cpe", "CPE:2.3:a:gnu:glibc:2.43:*:*:*:*:*:*:*"),
+            ("cpe", "cpe:/a:adelie_linux:gcompat:1.1"),
+            ("purl", "PKG:generic/glibc@2.43-r12"),
             ("bom-ref", "pkg:apk/alpine/gcompat@1.1.0-r4"),
+            ("bom-ref", "glibc@2.43-r12"),
         ):
             hidden = copy.deepcopy(sbom)
             hidden["components"].append({
