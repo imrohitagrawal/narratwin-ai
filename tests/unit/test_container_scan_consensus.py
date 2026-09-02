@@ -27,6 +27,12 @@ PATCH_SHA256 = {
     "CVE-2026-15308": "c78e38322aa131f9b8b95ae96a796262990d12051dfcd418543142608c5deac2",
 }
 ARTIFACTS = ("backend-trivy", "backend-grype", "frontend-trivy", "frontend-grype", "backend-sbom", "frontend-sbom", "backend-cpython-regressions")
+ARTIFACT_TOOLS = {
+    "backend-trivy": "trivy", "backend-grype": "grype",
+    "frontend-trivy": "trivy", "frontend-grype": "grype",
+    "backend-sbom": "trivy-cyclonedx", "frontend-sbom": "trivy-cyclonedx",
+    "backend-cpython-regressions": "cpython-regressions",
+}
 
 
 def _load() -> ModuleType:
@@ -52,7 +58,8 @@ def _sarif(tool: str, cves: tuple[str, ...] = TARGET_CVES, severity: str = "8.0"
 
 def _sbom(target: str, *, frontend: bool, architecture: str = "amd64") -> dict[str, Any]:
     packages = (("alpine-keys", "2.6-r0", ("MIT",), "alpine", "3.24.1"), ("alpine-release", "3.24.1-r0", ("MIT",), "alpine", "3.24.1"), ("ca-certificates-bundle", "20260611-r0", ("MIT", "MPL-2.0"), "alpine", "3.24.1"), ("libgcc", "15.2.0-r5", ("GPL-2.0-or-later", "LGPL-2.1-or-later"), "alpine", "3.24.1"), ("libstdc++", "15.2.0-r5", ("GPL-2.0-or-later", "LGPL-2.1-or-later"), "alpine", "3.24.1"), ("musl", "1.2.6-r2", ("MIT",), "alpine", "3.24.1")) if frontend else (("python", "3.13.14", ("PSF-2.0",), "wolfi", "20230201"),)
-    components = [{"type": "library", "name": name, "version": version, "purl": f"pkg:apk/{namespace}/{quote(name, safe='')}@{version}?arch=x86_64&distro={distro}", "licenses": [{"expression": license_id} if " WITH " in license_id else {"license": {"id": license_id}} for license_id in licenses]} for name, version, licenses, namespace, distro in packages]
+    package_arch = "x86_64" if architecture == "amd64" else "aarch64"
+    components = [{"type": "library", "name": name, "version": version, "purl": f"pkg:apk/{namespace}/{quote(name, safe='')}@{version}?arch={package_arch}&distro={distro}", "licenses": [{"expression": license_id} if " WITH " in license_id else {"license": {"id": license_id}} for license_id in licenses]} for name, version, licenses, namespace, distro in packages]
     if frontend:
         suffix = "x64" if architecture == "amd64" else "arm64"
         components.extend([
@@ -65,9 +72,10 @@ def _sbom(target: str, *, frontend: bool, architecture: str = "amd64") -> dict[s
 
 def _envelope(name: str, payload: dict[str, Any], target: str, tool: str) -> dict[str, Any]:
     digest, size = _digest(payload)
+    suffix = ".raw.sarif.json" if name.endswith(("trivy", "grype")) else ".raw.json"
     return {
         "schema_version": "ContainerScanEvidenceV1", "name": name, "session": SESSION, "tool": tool,
-        "argv": ["scanner", target], "artifact_path": f"reports/security/{name}.raw.json", "target": target,
+        "argv": [tool, target], "artifact_path": f"reports/security/{name}{suffix}", "target": target,
         "config_digest": target, "architecture": "amd64",
         "started_at": NOW - 120, "completed_at": NOW - 60, "artifact_sha256": digest, "artifact_size": size, "exit_code": 0,
     }
@@ -84,7 +92,7 @@ def _case() -> dict[str, Any]:
         "backend-cpython-regressions": {"status": "pass", "config_digest": BACKEND_CONFIG, "patch_sha256": PATCH_SHA256, "checks": {c: {"status": "pass", "seconds": 0.01} for c in TARGET_CVES}},
     }
     envelopes = {
-        name: _envelope(name, reports[name], BACKEND_CONFIG if name.startswith("backend") else FRONTEND_CONFIG, name.split("-", 1)[1])
+        name: _envelope(name, reports[name], BACKEND_CONFIG if name.startswith("backend") else FRONTEND_CONFIG, ARTIFACT_TOOLS[name])
         for name in ARTIFACTS
     }
     return {
@@ -131,7 +139,7 @@ def test_fixed_cve_case_is_green_with_exact_vex_and_all_raw_artifacts() -> None:
         (lambda c: c["envelopes"]["backend-grype"].update(artifact_sha256="0" * 64), ["ARTIFACT_INTEGRITY_INVALID"], False),
         (lambda c: c["patch_manifest"].update(schema_version="bad"), ["PATCH_EVIDENCE_INVALID"], True),
         (lambda c: c["reports"]["backend-cpython-regressions"].update(status="fail"), ["REGRESSION_INVALID"], True),
-        (lambda c: c["reports"]["backend-grype"]["runs"][0]["results"].append({"ruleId": "CVE-OTHER"}), ["UNRELATED_HIGH_CRITICAL"], True),
+        (lambda c: c["reports"].update({"backend-grype": _sarif("grype", ("CVE-OTHER",))}), ["UNRELATED_HIGH_CRITICAL"], True),
     ],
 )
 def test_single_faults_fail_closed(mutation: Callable[[dict[str, Any]], None], expected: list[str], rehash: bool) -> None:
@@ -172,23 +180,23 @@ def test_invalid_sarif_severity_fails_closed(severity: str) -> None:
     assert _evaluate(case)["findings"] == ["SCANNER_REPORT_MALFORMED"]
 
 
-@pytest.mark.parametrize("name,mutation", [
-    ("frontend-trivy", lambda e: e.update(schema_version="Bogus")),
-    ("frontend-trivy", lambda e: e.update(name="frontend-grype")),
-    ("frontend-trivy", lambda e: e.update(tool="grype")),
-    ("frontend-trivy", lambda e: e.update(argv=["trivy", "sha256:" + "0" * 64])),
-    ("frontend-trivy", lambda e: e.update(artifact_path="reports/security/other.raw.sarif.json")),
-    ("frontend-trivy", lambda e: e.update(started_at=NOW - 60, completed_at=NOW - 120)),
-    ("frontend-trivy", lambda e: e.update(started_at="not-a-time")),
-    ("frontend-trivy", lambda e: e.update(exit_code=1)),
-    ("frontend-grype", lambda e: e.update(exit_code=2)),
+@pytest.mark.parametrize("name,mutation,expected", [
+    ("frontend-trivy", lambda e: e.update(schema_version="Bogus"), "SCANNER_EXECUTION_INVALID"),
+    ("frontend-trivy", lambda e: e.update(name="frontend-grype"), "SCANNER_EXECUTION_INVALID"),
+    ("frontend-trivy", lambda e: e.update(tool="grype"), "SCANNER_EXECUTION_INVALID"),
+    ("frontend-trivy", lambda e: e.update(argv=["trivy", "sha256:" + "0" * 64]), "SCANNER_EXECUTION_INVALID"),
+    ("frontend-trivy", lambda e: e.update(artifact_path="reports/security/other.raw.sarif.json"), "SCANNER_EXECUTION_INVALID"),
+    ("frontend-trivy", lambda e: e.update(started_at=NOW - 60, completed_at=NOW - 120), "SCAN_SESSION_INVALID"),
+    ("frontend-trivy", lambda e: e.update(started_at="not-a-time"), "SCAN_SESSION_INVALID"),
+    ("frontend-trivy", lambda e: e.update(exit_code=1), "SCANNER_EXECUTION_INVALID"),
+    ("frontend-grype", lambda e: e.update(exit_code=2), "SCANNER_EXECUTION_INVALID"),
 ])
 def test_scanner_envelope_identity_and_execution_fail_closed(
-    name: str, mutation: Callable[[dict[str, Any]], None]
+    name: str, mutation: Callable[[dict[str, Any]], None], expected: str
 ) -> None:
     case = _case()
     mutation(case["envelopes"][name])
-    assert _evaluate(case)["findings"] == ["SCANNER_EXECUTION_INVALID"]
+    assert _evaluate(case)["findings"] == [expected]
 
 
 def test_frontend_sbom_requires_architecture_specific_sharp_and_forbids_glibc() -> None:

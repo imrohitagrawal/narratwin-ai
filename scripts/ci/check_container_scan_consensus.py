@@ -4,11 +4,12 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import math
 import re
 import sys
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Any
-from urllib.parse import parse_qs, quote, urlsplit
+from urllib.parse import parse_qs, quote, unquote, urlsplit
 
 
 TARGET_CVES = ("CVE-2026-11940", "CVE-2026-11972", "CVE-2026-15308")
@@ -75,6 +76,25 @@ FRONTEND_SBOM_COMPONENTS = {
     "libstdc++": ("15.2.0-r5", ("GPL-2.0-or-later", "LGPL-2.1-or-later"), "alpine", "3.24.1"),
     "musl": ("1.2.6-r2", ("MIT",), "alpine", "3.24.1"),
 }
+FRONTEND_SHARP_COMPONENTS = {
+    "amd64": {
+        ("sharp", "0.35.3", "pkg:npm/sharp@0.35.3"),
+        ("sharp-linuxmusl-x64", "0.35.3", "pkg:npm/%40img/sharp-linuxmusl-x64@0.35.3"),
+        ("sharp-libvips-linuxmusl-x64", "1.3.2", "pkg:npm/%40img/sharp-libvips-linuxmusl-x64@1.3.2"),
+    },
+    "arm64": {
+        ("sharp", "0.35.3", "pkg:npm/sharp@0.35.3"),
+        ("sharp-linuxmusl-arm64", "0.35.3", "pkg:npm/%40img/sharp-linuxmusl-arm64@0.35.3"),
+        ("sharp-libvips-linuxmusl-arm64", "1.3.2", "pkg:npm/%40img/sharp-libvips-linuxmusl-arm64@1.3.2"),
+    },
+}
+ARTIFACT_TOOLS = {
+    "backend-trivy": "trivy", "backend-grype": "grype",
+    "frontend-trivy": "trivy", "frontend-grype": "grype",
+    "backend-sbom": "trivy-cyclonedx", "frontend-sbom": "trivy-cyclonedx",
+    "backend-cpython-regressions": "cpython-regressions",
+}
+SARIF_DRIVERS = {"trivy": "Trivy", "grype": "grype"}
 
 
 def frontend_openssl_is_acceptable(version: str) -> bool:
@@ -114,12 +134,53 @@ def _add(findings: list[str], code: str) -> None:
         findings.append(code)
 
 
+def _valid_sarif_report(report: Any, expected_tool: str) -> bool:
+    if not isinstance(report, dict) or report.get("version") != "2.1.0":
+        return False
+    runs = report.get("runs")
+    if not isinstance(runs, list) or len(runs) != 1 or not isinstance(runs[0], dict):
+        return False
+    run = runs[0]
+    driver = run.get("tool", {}).get("driver", {}) if isinstance(run.get("tool"), dict) else {}
+    results = run.get("results")
+    if not isinstance(driver, dict) or driver.get("name") != SARIF_DRIVERS.get(expected_tool):
+        return False
+    if not isinstance(results, list) or any(not isinstance(result, dict) for result in results):
+        return False
+    rules = driver.get("rules")
+    if rules is None and expected_tool == "grype" and not results:
+        rules = []
+    if not isinstance(rules, list) or any(not isinstance(rule, dict) for rule in rules):
+        return False
+    rule_ids = [rule.get("id") for rule in rules]
+    if any(not isinstance(rule_id, str) or not rule_id for rule_id in rule_ids):
+        return False
+    if len(rule_ids) != len(set(rule_ids)):
+        return False
+    rules_by_id = dict(zip(rule_ids, rules, strict=True))
+    for result in results:
+        rule_id = result.get("ruleId")
+        if not isinstance(rule_id, str) or rule_id not in rules_by_id:
+            return False
+        properties = rules_by_id[rule_id].get("properties")
+        if not isinstance(properties, dict):
+            return False
+        severity_value = properties.get("security-severity")
+        if isinstance(severity_value, bool) or not isinstance(severity_value, (str, int, float)):
+            return False
+        try:
+            severity = float(severity_value)
+        except (TypeError, ValueError):
+            return False
+        if not math.isfinite(severity) or not 0.0 <= severity <= 10.0:
+            return False
+    return True
+
+
 def _sarif_results(report: dict[str, Any]) -> list[tuple[str, float, str]]:
-    if report.get("version") != "2.1.0" or not isinstance(report.get("runs"), list):
-        return [("MALFORMED", 10.0, "")]
     result_ids: list[tuple[str, float, str]] = []
     for run in report["runs"]:
-        rules = {rule.get("id"): rule for rule in run.get("tool", {}).get("driver", {}).get("rules", [])}
+        rules = {rule.get("id"): rule for rule in run.get("tool", {}).get("driver", {}).get("rules") or []}
         for result in run.get("results", []):
             rule_id = result.get("ruleId", "")
             rule = rules.get(rule_id, {})
@@ -128,6 +189,41 @@ def _sarif_results(report: dict[str, Any]) -> list[tuple[str, float, str]]:
             cve = rule_id if rule_id in TARGET_CVES else str(rule.get("helpUri", "")).rsplit("/", 1)[-1]
             result_ids.append((cve if cve in TARGET_CVES else rule_id, float(properties.get("security-severity", 10.0)), purls[0] if isinstance(purls, list) and purls else ""))
     return result_ids
+
+
+def _valid_envelope(name: str, envelope: Any, target: Any, architecture: Any) -> bool:
+    if not isinstance(envelope, dict) or not isinstance(target, str) or not isinstance(architecture, str):
+        return False
+    tool = ARTIFACT_TOOLS[name]
+    exit_code = envelope.get("exit_code")
+    if not isinstance(exit_code, int) or isinstance(exit_code, bool):
+        return False
+    artifact_path = envelope.get("artifact_path")
+    suffix = ".raw.sarif.json" if name.endswith(("trivy", "grype")) else ".raw.json"
+    if not isinstance(artifact_path, str) or artifact_path.startswith("/"):
+        return False
+    path = PurePosixPath(artifact_path)
+    if ".." in path.parts or path.name != f"{name}{suffix}":
+        return False
+    allowed_exit_codes = (0,) if name.startswith("frontend-") or name not in ARTIFACTS[:4] else ((0, 2) if tool == "grype" else (0, 1))
+    return (
+        envelope.get("schema_version") == "ContainerScanEvidenceV1"
+        and envelope.get("name") == name
+        and envelope.get("tool") == tool
+        and envelope.get("argv") == [tool, target]
+        and exit_code in allowed_exit_codes
+    )
+
+
+def _valid_envelope_time(envelope: Any, now: float) -> bool:
+    if not isinstance(envelope, dict):
+        return False
+    started_at, completed_at = envelope.get("started_at"), envelope.get("completed_at")
+    if isinstance(started_at, bool) or not isinstance(started_at, (int, float)):
+        return False
+    if isinstance(completed_at, bool) or not isinstance(completed_at, (int, float)):
+        return False
+    return bool(now - 720 <= started_at <= completed_at <= now)
 
 
 def _valid_vex(vex: dict[str, Any], backend_config: str, component_purl: str) -> bool:
@@ -142,17 +238,34 @@ def _valid_vex(vex: dict[str, Any], backend_config: str, component_purl: str) ->
 def _valid_cyclonedx_sbom(report: dict[str, Any], target: str, required: dict[str, tuple[str, tuple[str, ...], str, str]], architecture: str) -> bool:
     metadata = report.get("metadata", {}).get("component", {})
     components = report.get("components")
-    if (report.get("bomFormat"), report.get("specVersion"), metadata.get("type")) != ("CycloneDX", "1.7", "container") or not isinstance(components, list) or not 0 < len(components) <= 5000:
+    if (report.get("bomFormat"), report.get("specVersion"), metadata.get("type")) != ("CycloneDX", "1.7", "container") or not isinstance(components, list) or not 0 < len(components) <= 5000 or any(not isinstance(component, dict) for component in components):
         return False
     image_ids = {p.get("value") for p in metadata.get("properties", []) if isinstance(p, dict) and p.get("name") == "aquasecurity:trivy:ImageID"}
     if image_ids != {target}:
         return False
     if required:
+        for component in components:
+            name = str(component.get("name", "")).casefold()
+            purl_name = unquote(urlsplit(str(component.get("purl", ""))).path).rsplit("/", 1)[-1].split("@", 1)[0].casefold()
+            if name in {"glibc", "gcompat"} or purl_name in {"glibc", "gcompat"}:
+                return False
         apk_components = [
             component for component in components
             if isinstance(component, dict) and str(component.get("purl", "")).startswith("pkg:apk/")
         ]
         if len(apk_components) != len(required) or {item.get("name") for item in apk_components} != set(required):
+            return False
+        expected_sharp = FRONTEND_SHARP_COMPONENTS.get(architecture)
+        sharp_components = [
+            component for component in components
+            if str(component.get("name", "")) == "sharp"
+            or str(component.get("name", "")).startswith("sharp-")
+        ]
+        actual_sharp = {
+            (str(component.get("name", "")), str(component.get("version", "")), str(component.get("purl", "")))
+            for component in sharp_components
+        }
+        if expected_sharp is None or len(sharp_components) != len(expected_sharp) or actual_sharp != expected_sharp:
             return False
     expected_arch = {"amd64": "x86_64", "arm64": "aarch64"}.get(architecture)
     for name, (version, expected_licenses, namespace, distro) in required.items():
@@ -228,12 +341,12 @@ def evaluate_consensus(
             _add(findings, "IMAGE_IDENTITY_INVALID")
         if envelope.get("architecture") != identity.get("architecture"):
             _add(findings, "IMAGE_IDENTITY_INVALID")
-        if envelope.get("started_at", now) < now - 720 or envelope.get("completed_at", 0) > now:
+        if not _valid_envelope(name, envelope, target, identity.get("architecture")):
+            _add(findings, "SCANNER_EXECUTION_INVALID")
+        if not _valid_envelope_time(envelope, now):
             _add(findings, "SCAN_SESSION_INVALID")
         if envelope.get("artifact_sha256") != digest or envelope.get("artifact_size") != size:
             _add(findings, "ARTIFACT_INTEGRITY_INVALID")
-        if name in ARTIFACTS[:4] and envelope.get("exit_code") not in ((0, 2) if envelope.get("tool") == "grype" else (0, 1)):
-            _add(findings, "SCANNER_EXECUTION_INVALID")
 
     if "IMAGE_IDENTITY_INVALID" in findings:
         return {"status": "fail", "fixed": [], "findings": findings, "artifacts": list(ARTIFACTS), "raw_artifacts": raw_artifacts}
@@ -263,16 +376,22 @@ def evaluate_consensus(
         if regression.get("checks", {}).get(cve, {}).get("status") != "pass":
             _add(findings, "REGRESSION_INVALID")
 
-    if len(reports["backend-grype"].get("runs", [{}])[0].get("results", [])) > 1000:
+    valid_sarif: set[str] = set()
+    for name in ARTIFACTS[:4]:
+        if _valid_sarif_report(reports[name], ARTIFACT_TOOLS[name]):
+            valid_sarif.add(name)
+        else:
+            _add(findings, "SCANNER_REPORT_MALFORMED")
+    if "backend-grype" in valid_sarif and len(reports["backend-grype"]["runs"][0]["results"]) > 1000:
         _add(findings, "REPORT_RESOURCE_LIMIT")
     for name in ARTIFACTS[:4]:
         if "TOKEN-SECRET" in json.dumps(reports[name]):
             _add(findings, "SECRET_DISCLOSURE")
     for name in ("backend-trivy", "backend-grype", "frontend-trivy", "frontend-grype"):
+        if name not in valid_sarif:
+            continue
         for rule_id, severity, purl in _sarif_results(reports[name]):
-            if rule_id == "MALFORMED":
-                _add(findings, "SCANNER_REPORT_MALFORMED")
-            elif name.startswith("backend") and rule_id in TARGET_CVES and purl == component_purl:
+            if name.startswith("backend") and rule_id in TARGET_CVES and purl == component_purl:
                 continue
             elif name.startswith("frontend") and rule_id and severity >= 4.0:
                 _add(findings, "FRONTEND_RUNTIME_MEDIUM_OR_HIGHER")
