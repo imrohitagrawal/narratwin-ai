@@ -617,6 +617,7 @@ class _OfficialGoogleGrpcBindings:
                 ("grpc.ssl_target_name_override", hostname),
                 ("grpc.default_authority", hostname),
                 ("grpc.enable_http_proxy", 0),
+                ("grpc.enable_retries", 0),
             ),
         )
         try:
@@ -760,14 +761,16 @@ def _load_official_grpc_bindings() -> _GrpcBindings:
         )
         transport_type = getattr(transport_module, "TextToSpeechGrpcTransport")
     except (ImportError, AttributeError):
-        raise GoogleRuntimeError(
-            "GOOGLE_TTS_DEPENDENCY_UNAVAILABLE",
-            "Google TTS optional dependency is unavailable.",
-        ) from None
-    return _OfficialGoogleGrpcBindings(
-        grpc_module=grpc_module,
-        tts_module=tts_module,
-        transport_type=transport_type,
+        pass
+    else:
+        return _OfficialGoogleGrpcBindings(
+            grpc_module=grpc_module,
+            tts_module=tts_module,
+            transport_type=transport_type,
+        )
+    raise GoogleRuntimeError(
+        "GOOGLE_TTS_DEPENDENCY_UNAVAILABLE",
+        "Google TTS optional dependency is unavailable.",
     )
 
 
@@ -803,24 +806,25 @@ class OfficialUnaryGoogleTTSTransport:
         addresses = self._resolved_addresses()
         peer_ip = addresses[0]
         try:
-            client, channel = bindings.open_client(
+            connection = bindings.open_client(
                 target_ip=peer_ip,
                 hostname=_HOSTNAME,
                 timeout_seconds=timeout_seconds,
             )
-        except GoogleRuntimeError:
-            raise
         except Exception:
-            raise GoogleRuntimeError(
-                "GOOGLE_TTS_CONNECT_FAILED", "Google TTS connection failed before egress."
-            ) from None
-        return _PreparedGoogleGrpcSession(
-            bindings=bindings,
-            client=client,
-            channel=channel,
-            resolved_addresses=addresses,
-            peer_ip=peer_ip,
-            max_response_bytes=self._max_response_bytes,
+            pass
+        else:
+            client, channel = connection
+            return _PreparedGoogleGrpcSession(
+                bindings=bindings,
+                client=client,
+                channel=channel,
+                resolved_addresses=addresses,
+                peer_ip=peer_ip,
+                max_response_bytes=self._max_response_bytes,
+            )
+        raise GoogleRuntimeError(
+            "GOOGLE_TTS_CONNECT_FAILED", "Google TTS connection failed before egress."
         )
 
     def _resolved_addresses(self) -> tuple[str, ...]:
@@ -828,28 +832,29 @@ class OfficialUnaryGoogleTTSTransport:
             answers = list(self._resolver(_HOSTNAME, _PORT, type=socket.SOCK_STREAM))
             addresses = tuple(str(ipaddress.ip_address(str(answer[4][0]))) for answer in answers)
         except Exception:
-            raise GoogleRuntimeError(
-                "GOOGLE_TTS_DNS_FAILED", "Google TTS DNS resolution failed."
-            ) from None
-        if not addresses:
-            raise GoogleRuntimeError(
-                "GOOGLE_TTS_ADDRESS_INVALID", "Google TTS resolved address policy failed."
-            )
-        for raw in addresses:
-            address = ipaddress.ip_address(raw)
-            if (
-                not address.is_global
-                or address.is_private
-                or address.is_loopback
-                or address.is_link_local
-                or address.is_multicast
-                or address.is_unspecified
-                or address.is_reserved
-            ):
+            pass
+        else:
+            if not addresses:
                 raise GoogleRuntimeError(
                     "GOOGLE_TTS_ADDRESS_INVALID", "Google TTS resolved address policy failed."
                 )
-        return addresses
+            for raw in addresses:
+                address = ipaddress.ip_address(raw)
+                if (
+                    not address.is_global
+                    or address.is_private
+                    or address.is_loopback
+                    or address.is_link_local
+                    or address.is_multicast
+                    or address.is_unspecified
+                    or address.is_reserved
+                ):
+                    raise GoogleRuntimeError(
+                        "GOOGLE_TTS_ADDRESS_INVALID",
+                        "Google TTS resolved address policy failed.",
+                    )
+            return addresses
+        raise GoogleRuntimeError("GOOGLE_TTS_DNS_FAILED", "Google TTS DNS resolution failed.")
 
 
 class _PreparedGoogleGrpcSession:
@@ -903,6 +908,10 @@ class _PreparedGoogleGrpcSession:
             raise GoogleRuntimeError("GOOGLE_TTS_TIMEOUT_INVALID", "Google TTS timeout is invalid.")
         self._used = True
         try:
+            failed = False
+            failure_egress_possible = True
+            grpc_status: str | None = None
+            audio: bytes | None = None
             try:
                 audio = self._bindings.synthesize(
                     client=self._client,
@@ -910,23 +919,22 @@ class _PreparedGoogleGrpcSession:
                     headers=headers,
                     timeout_seconds=timeout_seconds,
                 )
-            except GoogleRuntimeError:
-                raise
+            except GoogleRuntimeError as error:
+                failed = True
+                failure_egress_possible = error.egress_possible
             except Exception as error:
-                status = self._bindings.failure_status(error)
-                del error
+                failed = True
+                try:
+                    grpc_status = self._bindings.failure_status(error)
+                except Exception:
+                    grpc_status = None
+            if failed:
                 raise GoogleTransportError(
-                    egress_possible=True,
-                    grpc_status=status,
-                ) from None
-            if not audio or len(audio) > self._max_response_bytes:
-                raise GoogleRuntimeError(
-                    "GOOGLE_TTS_RESPONSE_TOO_LARGE" if audio else "GOOGLE_TTS_RESPONSE_INVALID",
-                    "Google TTS response exceeds its byte limit."
-                    if audio
-                    else "Google TTS response is malformed.",
-                    egress_possible=True,
+                    egress_possible=failure_egress_possible,
+                    grpc_status=grpc_status,
                 )
+            if not audio or len(audio) > self._max_response_bytes:
+                raise GoogleTransportError(egress_possible=True)
             body = json.dumps(
                 {"audioContent": base64.b64encode(audio).decode("ascii")},
                 separators=(",", ":"),

@@ -951,9 +951,10 @@ def test_official_grpc_is_single_use_and_bounds_raw_audio() -> None:
     instance, _ = official_grpc_transport(bindings, max_response_bytes=4)
     prepared = instance.prepare(url=GOOGLE_TTS_URL, timeout_seconds=600)
 
-    with pytest.raises(GoogleRuntimeError) as oversized:
+    with pytest.raises(GoogleTransportError) as oversized:
         prepared.send(headers={}, json_body={}, timeout_seconds=600)
-    assert oversized.value.code == "GOOGLE_TTS_RESPONSE_TOO_LARGE"
+    assert oversized.value.egress_possible is True
+    assert oversized.value.__context__ is None
 
     with pytest.raises(GoogleRuntimeError) as replay:
         prepared.send(headers={}, json_body={}, timeout_seconds=600)

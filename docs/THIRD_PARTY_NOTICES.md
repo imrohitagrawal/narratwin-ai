@@ -266,8 +266,9 @@ BSD-3-Clause), `pyasn1-modules==0.4.2` (BSD-2-Clause), `pyasn1==0.6.4`
 The corresponding source/wheel hashes are recorded in `uv.lock`; the canonical
 google-auth wheel hash is
 `8ec438808f813ad034535000261eed1067475d229d05bbf4216e78c3f2362e53`.
-Issue #498 adds `google-cloud-texttospeech==2.37.0` under Apache-2.0 only
-inside the optional `providers` extra. Its newly materialized locked delta is
+Issue #498 adds `google-cloud-texttospeech==2.37.0` under Apache-2.0 in the
+optional runtime `providers` extra and the exact development/test dependency group
+used by default hosted checks. Its newly materialized locked delta is
 `google-api-core==2.34.0` (Apache-2.0), `grpcio==1.83.1` (Apache-2.0),
 `grpcio-status==1.83.1` (Apache-2.0), and `proto-plus==1.28.4` (Apache-2.0);
 their exact source and wheel hashes are recorded in `uv.lock`. Existing
