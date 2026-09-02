@@ -35,6 +35,12 @@ CLEANUP_AUTHORITY_SHA256 = {
         "e70d7c3045a4fec6b8c4feeb276244ea963a778f872955670cc2e209c0b03e2d",
 }
 
+CLEANUP_AUTHORITY_PENDING_SHA256 = {
+    "AGENTS.md": "256d0c761f2f3218b38533e27ed72b2594282e56f9fbd95545002110f08804cc",
+    "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md":
+        "131ff62af3c12b1d31bf3ed73cfc45d61f1fed13a7f405254346faa0b4e8493e",
+}
+
 EXCLUDED_DIRS = {
     ".git",
     ".chroma",
@@ -1294,7 +1300,7 @@ def markdown_table_rows(body: str, heading: str) -> list[list[str]]:
         cells = [cell.strip() for cell in stripped.strip("|").split("|")]
         if not cells:
             continue
-        header_names = {"evidence", "surface", "requirement"}
+        header_names = {"evidence", "surface", "requirement", "resource"}
         if cells[0].strip().lower() in header_names:
             continue
         rows.append(cells)
@@ -1377,6 +1383,183 @@ def reviewer_overview_failures(body: str) -> list[str]:
         if not valid:
             result.append(meaning_failures[index])
     return result
+
+
+def resource_lifecycle_failures(body: str) -> list[str]:
+    missing = "Non-trivial pull requests must include a Resource lifecycle and cleanup section."
+    invalid = (
+        "Resource lifecycle rows must identify exact ownership, retention, bounded cleanup, "
+        "and verification evidence."
+    )
+    section = markdown_section(body, "Resource lifecycle and cleanup")
+    if not section:
+        return [missing]
+
+    table_lines = [
+        line.strip()
+        for line in section.splitlines()
+        if line.strip().startswith("|")
+    ]
+
+    def table_cells(line: str) -> tuple[str, ...] | None:
+        if (
+            not line.startswith("|")
+            or not line.endswith("|")
+            or line.startswith("||")
+            or line.endswith("||")
+        ):
+            return None
+        cells = tuple(cell.strip() for cell in line[1:-1].split("|"))
+        return cells if len(cells) == 5 else None
+
+    parsed_rows = [table_cells(line) for line in table_lines]
+    expected_header = (
+        "Resource",
+        "Ownership proof",
+        "Retention class",
+        "Cleanup contract",
+        "Verification evidence",
+    )
+    if (
+        len(parsed_rows) < 3
+        or any(row is None for row in parsed_rows)
+        or parsed_rows[0] != expected_header
+        or parsed_rows[1] != ("---", "---", "---", "---", "---")
+    ):
+        return [invalid]
+
+    retention_dispositions = {
+        "always-clean": "delete",
+        "success-clean": "delete",
+        "failure-retain": "retain",
+        "evidence-until-merged-main": "delete",
+        "persistent": "retain",
+        "shared-retain": "retain",
+    }
+    resource_kinds = {
+        "buildkit-cache-record",
+        "docker-builder",
+        "docker-container",
+        "docker-image",
+        "docker-network",
+        "docker-volume",
+        "filesystem-path",
+        "git-branch",
+        "git-remote-branch",
+        "git-worktree",
+        "node-modules",
+        "python-venv",
+        "shared-resource",
+        "temporary-file",
+    }
+    safe_locator = re.compile(r"/?[A-Za-z0-9.][A-Za-z0-9/._:@+-]*")
+    safe_trigger = re.compile(r"[a-z0-9][a-z0-9._:-]*")
+    unsafe_prose_syntax = re.compile(
+        r"[$*?{}\[\]~\\]|[<>]\(|\|\||[;&`]|%[A-Za-z_][A-Za-z0-9_]*%"
+    )
+    unsafe_table_instruction = re.compile(
+        r"(?i)(?:\b(?:run|execute|invoke|eval|sudo|doas|bash|sh|zsh|fish|xargs|find|"
+        r"curl|wget)\b|\bpython\d*\s+(?:-m\b|[A-Za-z0-9_./-]+\.py\b)|"
+        r"\b(?:run|execute|invoke|eval|sudo|doas|bash|sh|zsh|fish|xargs|find)\b"
+        r".{0,80}\b(?:docker|git|rm|prune|delete|remove)\b|"
+        r"\bdocker\s+(?:system|image|container|volume|network|builder|buildx|compose)"
+        r"\s+(?:prune|rm|rmi|remove|down|disconnect)\b|"
+        r"\bgit\s+(?:branch|worktree|clean|reset|switch|checkout|restore|push|"
+        r"update-ref|reflog|gc)\s+(?:-[A-Za-z]|--|prune|remove|expire)\b|"
+        r"\brm\s+(?:-[A-Za-z]|--)|"
+        r"\b(?:delete|remove)\b.{0,40}\b(?:all|every|entire|workspace|machine|host)\b)"
+    )
+    verification_marker = re.compile(
+        r"(?i)\b(?:absence|absent|proof|verif(?:y|ied|ication)|remain|retained|"
+        r"hash|identity|count|size|delta|healthy|recheck|inventory|status|comment)\b|https://"
+    )
+
+    def unique_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+        result: dict[str, Any] = {}
+        for key, value in pairs:
+            if key in result:
+                raise ValueError("duplicate cleanup-contract key")
+            result[key] = value
+        return result
+
+    seen_resources: set[tuple[str, str]] = set()
+    path_resource_kinds = {"filesystem-path", "node-modules", "python-venv", "temporary-file"}
+    protected_branch_names = {"develop", "development", "main", "master", "trunk"}
+    protected_path_prefixes = {
+        ".aws", ".azure", ".config/gcloud", ".docker", ".git", ".kube", ".ssh"
+    }
+    protected_paths = {*CLEANUP_AUTHORITY_SHA256, ".github/pull_request_template.md"}
+    protected_delete_locators = {
+        str(Path.home().resolve()),
+        str(ROOT.resolve()),
+    }
+
+    def is_protected_delete_target(kind: str, locator: str) -> bool:
+        branch = locator.removeprefix("refs/heads/")
+        remote_branch = locator.removeprefix("refs/remotes/").removeprefix("origin/")
+        path_protected = locator in protected_paths or any(
+            locator == prefix or locator.startswith(f"{prefix}/")
+            for prefix in protected_path_prefixes
+        )
+        return (
+            locator.startswith("/")
+            or kind == "git-branch" and branch in protected_branch_names
+            or kind == "git-remote-branch" and remote_branch in protected_branch_names
+            or kind == "git-worktree" and locator in {"worktree:main", "worktree:primary"}
+            or kind in path_resource_kinds and path_protected
+        )
+    for row in parsed_rows[2:]:
+        assert row is not None
+        resource, ownership, retention, cleanup, evidence = row
+        values = (resource, ownership, retention, cleanup, evidence)
+        prose_values = (resource, ownership, evidence)
+        if (
+            any(is_placeholder_value(value) or is_na_value(value) for value in values)
+            or any(
+                unsafe_prose_syntax.search(value)
+                or unsafe_table_instruction.search(value)
+                for value in prose_values
+            )
+        ):
+            return [invalid]
+
+        retention = retention.lower()
+        if retention not in retention_dispositions:
+            return [invalid]
+        try:
+            contract = json.loads(cleanup, object_pairs_hook=unique_object)
+        except (json.JSONDecodeError, ValueError):
+            return [invalid]
+        if (
+            not isinstance(contract, dict)
+            or set(contract) != {"disposition", "kind", "locator", "trigger"}
+            or any(not isinstance(value, str) for value in contract.values())
+        ):
+            return [invalid]
+
+        disposition = contract["disposition"]
+        kind = contract["kind"]
+        locator = contract["locator"]
+        trigger = contract["trigger"]
+        canonical_locator = os.path.normpath(locator)
+        identity = ("path", canonical_locator) if kind in path_resource_kinds else (kind, canonical_locator)
+        if (
+            disposition != retention_dispositions[retention]
+            or kind not in resource_kinds
+            or safe_locator.fullmatch(locator) is None
+            or safe_trigger.fullmatch(trigger) is None
+            or locator in {".", "..", "/"}
+            or ".." in locator.split("/")
+            or locator != canonical_locator
+            or kind == "shared-resource" and disposition != "retain"
+            or disposition == "delete" and canonical_locator in protected_delete_locators
+            or disposition == "delete" and is_protected_delete_target(kind, canonical_locator)
+            or identity in seen_resources
+            or verification_marker.search(evidence) is None
+        ):
+            return [invalid]
+        seen_resources.add(identity)
+    return []
 
 
 def product_context_failures(body: str) -> list[str]:
@@ -2075,9 +2258,13 @@ def cleanup_authority_anchor_failures(
         except OSError as error:
             findings.append(f"Merge-cleanup authority anchor could not read {path}: {error}.")
             continue
+        accepted = {expected}
+        pending = CLEANUP_AUTHORITY_PENDING_SHA256.get(path)
+        if pending is not None:
+            accepted.add(pending)
         if (
             not isinstance(payload, bytes)
-            or _cleanup_authority_sha256(payload).hexdigest() != expected
+            or _cleanup_authority_sha256(payload).hexdigest() not in accepted
         ):
             findings.append(f"Merge-cleanup authority anchor rejected {path} bytes.")
     return findings
@@ -2290,6 +2477,7 @@ def check_issue_linked_pull_request() -> None:
     if is_nontrivial_pull_request(changes):
         failures.extend(product_context_failures(body))
         failures.extend(reviewer_overview_failures(body))
+        failures.extend(resource_lifecycle_failures(body))
         failures.extend(status_impact_finalization_failures(changes, body))
         if not has_completed_preflight_evidence(body):
             failures.append("Non-trivial pull requests must include completed preflight evidence rows.")

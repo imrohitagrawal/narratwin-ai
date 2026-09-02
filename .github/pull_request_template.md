@@ -100,6 +100,28 @@ Fail condition: <!-- State the exact outcome that must block approval. -->
 ### 5. Validation, limitations, and residual risks
 <!-- Summarize tests and checks, known limitations, remaining risks, and human-only decisions. -->
 
+## Resource lifecycle and cleanup
+
+<!-- Required for non-trivial PRs. Record each branch, worktree, dependency
+environment, temporary/evidence path, Docker resource, or other material local
+resource created or reused by this work. Use exact identities and one of:
+always-clean, success-clean, failure-retain, evidence-until-merged-main,
+persistent, or shared-retain. The Cleanup contract is compact JSON with exactly
+four string fields: {"disposition":"delete|retain","kind":"closed-vocabulary-kind",
+"locator":"literal-exact-identity","trigger":"event-slug"}. Do not put shell
+commands, variables, globs, multiple resources, or delegated instructions in
+any table cell. Use a public-safe context-relative locator instead of a private
+machine path. Locators must be canonical, without dot aliases or trailing
+separators. Each physical path must appear exactly once across path-like kinds;
+every other kind/locator pair must appear exactly once. Shared-resource is
+retain-only. Do not target absolute machine paths, protected branches, primary
+worktrees, repository metadata/governance sources, credential locations,
+home/workspace roots, or parent traversal. A generic N/A row is not accepted. -->
+
+| Resource | Ownership proof | Retention class | Cleanup contract | Verification evidence |
+|---|---|---|---|---|
+|  |  |  |  |  |
+
 ## Human verification checklist
 
 For non-trivial PRs, turn the reviewer-focus points above and every changed
@@ -156,6 +178,7 @@ and final merge-message wording.
 - [ ] Non-trivial reviewer-focus points and changed high-risk surfaces are captured in the Human verification checklist with exact data/source/artifact references, official URL and verified/accessed date where facts can change, pass/fail criteria, and residual-risk owner.
 - [ ] Preinstalled repo docs/approved skills were checked first; no custom skill/plugin was created or used unless the gap, rejected existing options, approval, `docs/SKILL_LOCK.md`, and `docs/THIRD_PARTY_NOTICES.md` updates are linked.
 - [ ] Repeated-review stop rule was evaluated; if a fresh review found a new defect class after a fix, implementation paused for contract rewrite before another bug-fix loop.
+- [ ] Resource ownership was recorded at creation time; the PR body lists exact retention and finalization for every material local resource, with no broad prune or ambiguous deletion.
 - [ ] Process/durability/governance work considered whether `docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md` should receive reusable lessons for future projects/apps.
 - [ ] Implementation or release-readiness changes completed invariant, exploit-matrix, and contract/gate review per `docs/REVIEW_RIGOR_RETROSPECTIVE.md`.
 - [ ] PR title, body, branch commit messages, and final merge/squash message plan were checked for automation-sensitive wording such as issue-closing keywords.

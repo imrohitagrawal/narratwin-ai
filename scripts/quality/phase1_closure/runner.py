@@ -30,6 +30,21 @@ ISSUE456_PATHS = frozenset({
     "docs/STATUS.md",
     "docs/TRACEABILITY.md",
 })
+ISSUE391_BRANCH = "phase-1-closure-process-391-resource-lifecycle-enforcement"
+ISSUE391_BASE = "e1fe126372d5c5a06dc7d2f9c76cb205da8643e7"
+ISSUE391_PATHS = frozenset({
+    ".github/pull_request_template.md",
+    "docs/ADR/0076-session-scoped-resource-lifecycle-enforcement.md",
+    "docs/QUALITY_GATES.md",
+    "docs/RESOURCE_LIFECYCLE.md",
+    "docs/STATUS.md",
+    "docs/governance/preflights/issue-391.json",
+    "docs/templates/AI_SESSION_FINALIZER_PROMPT.md",
+    "scripts/guardrails_check.py",
+    "scripts/quality/phase1_closure/runner.py",
+    "tests/unit/phase1_closure/test_runner.py",
+    "tests/unit/test_guardrails_check.py",
+})
 
 
 def _git(*args: str) -> bytes | None:
@@ -52,8 +67,8 @@ def _head() -> str:
         return ""
 
 
-def _changed_paths(head: str) -> frozenset[str]:
-    raw = _git("diff", "--name-only", "-z", ISSUE456_BASE, head, "--")
+def _changed_paths(head: str, base: str = ISSUE456_BASE) -> frozenset[str]:
+    raw = _git("diff", "--name-only", "-z", base, head, "--")
     try:
         return frozenset(raw.decode("utf-8").rstrip("\0").split("\0")) if raw else frozenset()
     except UnicodeError:
@@ -66,14 +81,25 @@ def check_cut1_presenter_contract() -> int:
 
 def run_preserved_contracts() -> int:
     branch = current_branch(ROOT)
-    if branch != ISSUE456_BRANCH:
+    if branch == ISSUE456_BRANCH:
+        base = ISSUE456_BASE
+        issue = 456
+        paths = ISSUE456_PATHS
+    elif branch == ISSUE391_BRANCH:
+        base = ISSUE391_BASE
+        issue = 391
+        paths = ISSUE391_PATHS
+    else:
         return legacy.run_preserved_contracts()
     head = _head()
     findings = validate_governance_preflight_repository(
-        ROOT, base_sha=ISSUE456_BASE, head_sha=head, issue_number=456, branch=branch,
+        ROOT, base_sha=base, head_sha=head, issue_number=issue, branch=branch,
     )
-    if findings or _changed_paths(head) != ISSUE456_PATHS:
-        return legacy._print_result(["Issue #456 exact governance preflight scope failed."])
+    changed_paths = _changed_paths(head) if issue == 456 else _changed_paths(head, base)
+    if findings or changed_paths != paths:
+        return legacy._print_result(
+            [f"Issue #{issue} exact governance preflight scope failed."]
+        )
     checker = legacy._load_checker()
     failures = legacy.legacy_parity_failures(checker)
     checker.check_branch(failures)

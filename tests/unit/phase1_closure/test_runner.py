@@ -150,3 +150,89 @@ def test_other_branch_retains_frozen_legacy_scope(monkeypatch: Any) -> None:
     monkeypatch.setattr(runner.legacy, "run_preserved_contracts", lambda: 31)
 
     assert runner.run_preserved_contracts() == 31
+
+
+def test_issue391_route_validates_exact_scope_without_mutating_frozen_legacy(
+    monkeypatch: Any,
+) -> None:
+    calls: list[str] = []
+
+    def record(name: str) -> Any:
+        return lambda failures: calls.append(name)
+
+    checker = SimpleNamespace(
+        check_branch=record("branch"),
+        check_required_files=record("required"),
+        check_changed_files=record("prohibited-legacy-scope"),
+        check_final_review_baseline=record("preserved"),
+    )
+    branch = "phase-1-closure-process-391-resource-lifecycle-enforcement"
+    monkeypatch.setattr(runner, "current_branch", lambda root: branch)
+    monkeypatch.setattr(runner, "_head", lambda: "b" * 40)
+    monkeypatch.setattr(
+        runner,
+        "_changed_paths",
+        lambda head, base: runner.ISSUE391_PATHS,
+    )
+    monkeypatch.setattr(
+        runner,
+        "validate_governance_preflight_repository",
+        lambda *args, **kwargs: [],
+    )
+    monkeypatch.setattr(runner.legacy, "_load_checker", lambda: checker)
+    monkeypatch.setattr(runner.legacy, "legacy_parity_failures", lambda value: [])
+    monkeypatch.setattr(
+        runner.legacy,
+        "PRESERVED_CHECKS",
+        ("check_final_review_baseline",),
+    )
+    monkeypatch.setattr(runner.legacy, "_print_result", lambda failures: 1 if failures else 0)
+    monkeypatch.setattr(
+        runner.legacy,
+        "run_preserved_contracts",
+        lambda: (_ for _ in ()).throw(AssertionError("must use exact Issue #391 route")),
+    )
+
+    assert runner.run_preserved_contracts() == 0
+    assert calls == ["branch", "required", "preserved"]
+
+
+def test_issue391_preflight_or_extra_path_blocks_preserved_checks(
+    monkeypatch: Any,
+) -> None:
+    branch = runner.ISSUE391_BRANCH
+    monkeypatch.setattr(runner, "current_branch", lambda root: branch)
+    monkeypatch.setattr(runner, "_head", lambda: "b" * 40)
+    monkeypatch.setattr(
+        runner.legacy,
+        "_load_checker",
+        lambda: (_ for _ in ()).throw(AssertionError("must not run")),
+    )
+    monkeypatch.setattr(runner.legacy, "_print_result", lambda failures: 1)
+
+    monkeypatch.setattr(
+        runner,
+        "validate_governance_preflight_repository",
+        lambda *args, **kwargs: [object()],
+    )
+    assert runner.run_preserved_contracts() == 1
+
+    monkeypatch.setattr(
+        runner,
+        "validate_governance_preflight_repository",
+        lambda *args, **kwargs: [],
+    )
+    monkeypatch.setattr(
+        runner,
+        "_changed_paths",
+        lambda head, base: runner.ISSUE391_PATHS | {"extra/path"},
+    )
+    assert runner.run_preserved_contracts() == 1
+
+
+def test_issue391_near_match_retains_frozen_legacy_scope(monkeypatch: Any) -> None:
+    near_match = "phase-1-closure-process-392-resource-lifecycle-enforcement"
+    monkeypatch.setattr(runner, "current_branch", lambda root: near_match)
+    monkeypatch.setattr(runner.legacy, "run_preserved_contracts", lambda: 37)
+
+    assert runner.run_preserved_contracts() == 37

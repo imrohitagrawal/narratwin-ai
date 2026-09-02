@@ -1046,6 +1046,32 @@ Process-critical governance docs and process-review registers stay in the
 non-trivial category even for text-only edits because those files define future
 automation behavior and review-loop prevention.
 
+Every non-trivial PR must also include a `Resource lifecycle and cleanup`
+table. `resource_lifecycle_failures` requires at least one material resource row
+and exact values for resource identity, ownership proof, retention class,
+structured JSON cleanup contract, and verification evidence. The cleanup
+contract accepts exactly `disposition`, `kind`, `locator`, and `trigger`
+string fields; rejects shell commands, extra keys, duplicate keys, variables,
+globs, root/parent paths, multiple targets, and unknown kinds; and requires
+retention/disposition consistency. Duplicate or conflicting physical-path or
+kind/locator identities, deletable shared-resource rows, cross-cell command
+instructions, private machine paths in public evidence, protected branches,
+worktrees, repository metadata/governance sources, credential locations, and
+home/workspace-root deletion all
+fail closed. Exact context-relative locators and triggers are PR data,
+while the stable resource-kind and safety vocabulary remains policy. The accepted retention
+classes are `always-clean`, `success-clean`, `failure-retain`,
+`evidence-until-merged-main`, `persistent`, and `shared-retain`. Missing,
+partial, placeholder, copied N/A, and broad-cleanup rows fail the required
+policy gate. This is creation-time and planned-finalization evidence; actual
+post-merge deletion, retained reasons, protected-resource survival, and
+reclaimed-space proof remain closeout evidence in the linked PR and issue.
+
+The guardrail does not grant destructive authority. The operator must follow
+`docs/RESOURCE_LIFECYCLE.md`, preserve evidence through merged-main acceptance,
+target only exact inactive exclusively owned resources, and retain anything
+active, persistent, shared, ambiguous, unrelated, or credential-bearing.
+
 Issue `#300` makes `make issue280-output-correctness` negative-only. Its verifier
 exits `1` with `ISSUE_280_NOT_FIXED`; stale, malformed, and contradictory evidence
 have distinct nonzero exits. It is not a required green CI job; CI may run its

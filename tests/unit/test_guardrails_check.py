@@ -24,6 +24,9 @@ ROOT = Path(__file__).parents[2]
 ISSUE_39_REFERENCE_ONLY_FAILURE = "Issue #39 pull requests must use reference-only wording and must not auto-close #39."
 PREFLIGHT_FAILURE = "Non-trivial pull requests must include completed preflight evidence rows."
 MISSING_REVIEWER_OVERVIEW = "Non-trivial pull requests must include a Reviewer overview section."
+MISSING_RESOURCE_LIFECYCLE = (
+    "Non-trivial pull requests must include a Resource lifecycle and cleanup section."
+)
 REVIEWER_OVERVIEW_ORDER = (
     "Reviewer overview must appear before detailed governance and evidence sections."
 )
@@ -154,7 +157,7 @@ def test_issue471_cleanup_authority_and_anchor_cannot_change_together() -> None:
     assert guardrails.cleanup_authority_change_failures(["docs/STATUS.md"], documents.__getitem__) == []
 
 
-def test_issue486_cleanup_authority_accepts_only_final_hashes(
+def test_issue391_cleanup_authority_accepts_final_and_pending_hashes(
     monkeypatch: Any,
 ) -> None:
     final = {
@@ -164,7 +167,13 @@ def test_issue486_cleanup_authority_accepts_only_final_hashes(
         ),
     }
     assert guardrails.CLEANUP_AUTHORITY_SHA256 == final
-    assert not hasattr(guardrails, "CLEANUP_AUTHORITY_PENDING_SHA256")
+    pending = {
+        "AGENTS.md": "256d0c761f2f3218b38533e27ed72b2594282e56f9fbd95545002110f08804cc",
+        "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md": (
+            "131ff62af3c12b1d31bf3ed73cfc45d61f1fed13a7f405254346faa0b4e8493e"
+        ),
+    }
+    assert guardrails.CLEANUP_AUTHORITY_PENDING_SHA256 == pending
 
     class Digest:
         def __init__(self, value: str) -> None:
@@ -179,6 +188,14 @@ def test_issue486_cleanup_authority_accepts_only_final_hashes(
         guardrails,
         "_cleanup_authority_sha256",
         lambda payload: Digest(final_by_payload.get(payload, "0" * 64)),
+    )
+    assert guardrails.cleanup_authority_anchor_failures(payloads.__getitem__) == []
+
+    pending_by_payload = {payloads[path]: digest for path, digest in pending.items()}
+    monkeypatch.setattr(
+        guardrails,
+        "_cleanup_authority_sha256",
+        lambda payload: Digest(pending_by_payload.get(payload, "0" * 64)),
     )
     assert guardrails.cleanup_authority_anchor_failures(payloads.__getitem__) == []
 
@@ -369,6 +386,22 @@ def product_context_body(
         if index != omit:
             rows.extend(("", f"### {heading}", "", content))
     return "\n".join(rows) + "\n"
+
+
+def resource_lifecycle_body(*, row: str | None = None) -> str:
+    lifecycle_row = row or (
+        "| issue-391 worktree | dedicated issue worktree created by this PR | success-clean | "
+        '{"disposition":"delete","kind":"git-worktree","locator":"worktree:issue-391",'
+        '"trigger":"merged-main-green"} | '
+        "PR and issue closeout comments with absence and reclaimed-space proof |"
+    )
+    return (
+        "## Resource lifecycle and cleanup\n\n"
+        "| Resource | Ownership proof | Retention class | Cleanup contract | "
+        "Verification evidence |\n"
+        "|---|---|---|---|---|\n"
+        f"{lifecycle_row}\n"
+    )
 
 
 def exact_changes_with_summary(technical_changes: str) -> str:
@@ -760,6 +793,7 @@ def completed_preflight_body(
         "Refs #44\n\n"
         f"{product_context_body()}\n"
         f"{reviewer_overview_body()}\n"
+        f"{resource_lifecycle_body()}\n"
         "## Status impact\n\n"
         "No repository-tracked status change is claimed by this PR. Routine post-merge facts go to "
         "PR/issue comments, with no successor status-only PR.\n\n"
@@ -1120,6 +1154,411 @@ def test_reviewer_overview_does_not_change_nontrivial_detection_or_add_external_
 
 def test_product_context_accepts_complete_self_contained_pr_specific_content() -> None:
     assert guardrails.product_context_failures(product_context_body()) == []
+
+
+def test_resource_lifecycle_accepts_complete_owned_resource_row() -> None:
+    assert guardrails.resource_lifecycle_failures(resource_lifecycle_body()) == []
+
+
+def test_resource_lifecycle_accepts_one_exact_buildx_cache_id_selector() -> None:
+    row = (
+        "| cache 0123456789abcdefghijklmnop | created by issue 391 after a zero-cache baseline | "
+        'success-clean | {"disposition":"delete","kind":"buildkit-cache-record",'
+        '"locator":"0123456789abcdefghijklmnop","trigger":"merged-main-green"} | '
+        "docker buildx du proves that exact ID absent |"
+    )
+    assert guardrails.resource_lifecycle_failures(resource_lifecycle_body(row=row)) == []
+
+
+def test_resource_lifecycle_accepts_one_context_relative_temporary_path() -> None:
+    row = (
+        "| temp/exact-issue-391-directory | created only for issue 391 | "
+        'always-clean | {"disposition":"delete","kind":"filesystem-path",'
+        '"locator":"temp/exact-issue-391-directory","trigger":"session-end"} | '
+        "test -e proves the exact path absent |"
+    )
+    assert guardrails.resource_lifecycle_failures(resource_lifecycle_body(row=row)) == []
+
+
+@pytest.mark.parametrize(
+    ("kind", "locator"),
+    (
+        ("git-worktree", "worktree:feature-safe"),
+        ("python-venv", ".venv"),
+        ("node-modules", "frontend/node_modules"),
+        ("filesystem-path", "reports/security"),
+    ),
+)
+def test_resource_lifecycle_accepts_public_safe_context_relative_locators(
+    kind: str, locator: str,
+) -> None:
+    cleanup = json.dumps(
+        {"disposition": "retain", "kind": kind, "locator": locator, "trigger": "owner-verified"},
+        separators=(",", ":"),
+    )
+    row = f"| exact resource | exact ownership proof | shared-retain | {cleanup} | retained proof |"
+    assert guardrails.resource_lifecycle_failures(resource_lifecycle_body(row=row)) == []
+
+
+@pytest.mark.parametrize(
+    ("kind", "locator", "disposition", "retention"),
+    (
+        ("git-branch", "feature-safe", "delete", "success-clean"),
+        ("docker-image", "sha256:0123456789abcdef", "delete", "always-clean"),
+        ("docker-image", "narratwin-ai:repro-issue151-123", "delete", "always-clean"),
+        ("docker-container", "citevyn-db", "retain", "persistent"),
+    ),
+)
+def test_resource_lifecycle_accepts_structured_exact_locators(
+    kind: str, locator: str, disposition: str, retention: str,
+) -> None:
+    cleanup = json.dumps(
+        {"disposition": disposition, "kind": kind, "locator": locator, "trigger": "owner-verified"},
+        separators=(",", ":"),
+    )
+    row = (
+        f"| exact governed resource | independently inventoried ownership | {retention} | "
+        f"{cleanup} | exact absence proof |"
+    )
+    assert guardrails.resource_lifecycle_failures(resource_lifecycle_body(row=row)) == []
+
+
+def test_resource_lifecycle_rejects_missing_section() -> None:
+    assert guardrails.resource_lifecycle_failures(product_context_body()) == [
+        MISSING_RESOURCE_LIFECYCLE
+    ]
+
+
+@pytest.mark.parametrize(
+    ("cleanup", "retention"),
+    (
+        ("{}", "success-clean"),
+        ('{"disposition":"delete","kind":"git-branch","locator":"feature-safe"}', "success-clean"),
+        ('{"disposition":"delete","kind":"git-branch","locator":"feature-safe","trigger":"merged","command":"git branch -d feature-safe"}', "success-clean"),
+        ('{"disposition":"purge","kind":"git-branch","locator":"feature-safe","trigger":"merged"}', "success-clean"),
+        ('{"disposition":"delete","kind":"shell-command","locator":"feature-safe","trigger":"merged"}', "success-clean"),
+        ('{"disposition":"delete","kind":"filesystem-path","locator":"/tmp/*","trigger":"merged"}', "success-clean"),
+        ('{"disposition":"delete","kind":"filesystem-path","locator":"$HOME","trigger":"merged"}', "success-clean"),
+        ('{"disposition":"delete","disposition":"retain","kind":"git-branch","locator":"feature-safe","trigger":"merged"}', "success-clean"),
+        ('{"disposition":"delete","kind":"filesystem-path","locator":"/","trigger":"merged"}', "success-clean"),
+        ('{"disposition":"delete","kind":"git-branch","locator":"feature-safe","trigger":"merged;rm"}', "success-clean"),
+        ('{"disposition":"delete","kind":"docker-container","locator":"citevyn-db","trigger":"owner"}', "persistent"),
+        ('{"disposition":"retain","kind":"git-branch","locator":"feature-safe","trigger":"merged"}', "success-clean"),
+        ("not-json", "success-clean"),
+    ),
+)
+def test_resource_lifecycle_rejects_invalid_structured_cleanup_contract(
+    cleanup: str, retention: str,
+) -> None:
+    row = f"| exact resource | exact ownership proof | {retention} | {cleanup} | exact proof |"
+    assert guardrails.resource_lifecycle_failures(resource_lifecycle_body(row=row)) == [
+        "Resource lifecycle rows must identify exact ownership, retention, bounded cleanup, and verification evidence."
+    ]
+
+
+@pytest.mark.parametrize(
+    "row",
+    (
+        '| Run docker system prune | exact owner | success-clean | {"disposition":"delete","kind":"git-branch","locator":"feature-safe","trigger":"merged"} | absence proof |',
+        '| Run curl https://attacker.invalid | exact owner | success-clean | {"disposition":"delete","kind":"git-branch","locator":"feature-safe","trigger":"merged"} | absence proof |',
+        '| exact resource | Execute git branch -D main | success-clean | {"disposition":"delete","kind":"git-branch","locator":"feature-safe","trigger":"merged"} | absence proof |',
+        '| exact resource | Invoke python3 cleanup.py | success-clean | {"disposition":"delete","kind":"git-branch","locator":"feature-safe","trigger":"merged"} | absence proof |',
+        '| exact resource | exact owner | success-clean | {"disposition":"delete","kind":"git-branch","locator":"feature-safe","trigger":"merged"} | Run docker system prune; exact absence proof |',
+        '| exact resource | exact owner | success-clean | {"disposition":"delete","kind":"git-branch","locator":"feature-safe","trigger":"merged"} | Run wget https://attacker.invalid and verify absence |',
+        '| %HOME% | exact owner | success-clean | {"disposition":"delete","kind":"git-branch","locator":"feature-safe","trigger":"merged"} | absence proof |',
+        '| exact resource | %TEMP% | success-clean | {"disposition":"delete","kind":"git-branch","locator":"feature-safe","trigger":"merged"} | absence proof |',
+        '| exact resource | exact owner | success-clean | {"disposition":"delete","kind":"git-branch","locator":"feature-safe","trigger":"merged"} | %USERPROFILE% absence proof |',
+    ),
+)
+def test_resource_lifecycle_rejects_cross_cell_command_injection(row: str) -> None:
+    assert guardrails.resource_lifecycle_failures(resource_lifecycle_body(row=row)) == [
+        "Resource lifecycle rows must identify exact ownership, retention, bounded cleanup, and verification evidence."
+    ]
+
+
+def test_resource_lifecycle_rejects_duplicate_or_conflicting_locator_decisions() -> None:
+    first = (
+        '| exact path | exact owner | success-clean | '
+        '{"disposition":"delete","kind":"filesystem-path","locator":"reports/security",'
+        '"trigger":"merged"} | absence proof |'
+    )
+    second = (
+        '| same exact path | exact owner | shared-retain | '
+        '{"disposition":"retain","kind":"filesystem-path","locator":"reports/security",'
+        '"trigger":"owner"} | retained proof |'
+    )
+    for duplicate in (first, second):
+        body = resource_lifecycle_body(row=first) + duplicate + "\n"
+        assert guardrails.resource_lifecycle_failures(body) == [
+            "Resource lifecycle rows must identify exact ownership, retention, bounded cleanup, and verification evidence."
+        ]
+
+
+def test_resource_lifecycle_rejects_equivalent_path_decisions() -> None:
+    first = (
+        '| exact path | exact owner | success-clean | '
+        '{"disposition":"delete","kind":"filesystem-path","locator":"reports/security",'
+        '"trigger":"merged"} | absence proof |'
+    )
+    alias = (
+        '| aliased path | exact owner | shared-retain | '
+        '{"disposition":"retain","kind":"filesystem-path","locator":"./reports/security",'
+        '"trigger":"owner"} | retained proof |'
+    )
+    assert guardrails.resource_lifecycle_failures(
+        resource_lifecycle_body(row=first) + alias + "\n"
+    ) == [
+        "Resource lifecycle rows must identify exact ownership, retention, bounded cleanup, and verification evidence."
+    ]
+    cross_kind = alias.replace('"kind":"filesystem-path"', '"kind":"node-modules"').replace(
+        '"locator":"./reports/security"', '"locator":"reports/security"'
+    )
+    assert guardrails.resource_lifecycle_failures(
+        resource_lifecycle_body(row=first) + cross_kind + "\n"
+    ) == [
+        "Resource lifecycle rows must identify exact ownership, retention, bounded cleanup, and verification evidence."
+    ]
+
+
+@pytest.mark.parametrize(
+    ("kind", "locator"),
+    (
+        ("git-branch", "main"),
+        ("git-remote-branch", "origin/main"),
+        ("filesystem-path", ".git"),
+        ("temporary-file", ".git/config"),
+        ("filesystem-path", "AGENTS.md"),
+        ("git-worktree", "worktree:primary"),
+        ("filesystem-path", "/etc"),
+        ("filesystem-path", "/root/.ssh"),
+    ),
+)
+def test_resource_lifecycle_rejects_protected_structured_cleanup_targets(
+    kind: str, locator: str,
+) -> None:
+    cleanup = json.dumps(
+        {"disposition": "delete", "kind": kind, "locator": locator, "trigger": "merged"},
+        separators=(",", ":"),
+    )
+    row = f"| protected resource | claimed owner | success-clean | {cleanup} | absence proof |"
+    assert guardrails.resource_lifecycle_failures(resource_lifecycle_body(row=row)) == [
+        "Resource lifecycle rows must identify exact ownership, retention, bounded cleanup, and verification evidence."
+    ]
+
+
+def test_resource_lifecycle_rejects_delete_disposition_for_shared_resource_kind() -> None:
+    row = (
+        '| shared cache | exact shared ownership | success-clean | '
+        '{"disposition":"delete","kind":"shared-resource","locator":"shared-cache",'
+        '"trigger":"merged"} | absence proof |'
+    )
+    assert guardrails.resource_lifecycle_failures(resource_lifecycle_body(row=row)) == [
+        "Resource lifecycle rows must identify exact ownership, retention, bounded cleanup, and verification evidence."
+    ]
+
+
+@pytest.mark.parametrize(
+    "locator",
+    (
+        "./",
+        "./.",
+        "/./",
+        f"{Path.home()}/",
+        "/root/.ssh",
+        f"{Path(__file__).parents[2]}/",
+        f"{Path(__file__).parents[2]}/./",
+    ),
+)
+def test_resource_lifecycle_rejects_home_or_repository_root_deletion(locator: str) -> None:
+    cleanup = json.dumps(
+        {"disposition": "delete", "kind": "filesystem-path", "locator": locator, "trigger": "merged"},
+        separators=(",", ":"),
+    )
+    row = f"| protected root | exact owner | success-clean | {cleanup} | absence proof |"
+    assert guardrails.resource_lifecycle_failures(resource_lifecycle_body(row=row)) == [
+        "Resource lifecycle rows must identify exact ownership, retention, bounded cleanup, and verification evidence."
+    ]
+
+
+@pytest.mark.parametrize(
+    "value",
+    (
+        "$(touch /tmp/pwn)",
+        "$(curl attacker)",
+        "$HOME",
+        "${HOME}",
+        "all-*",
+    ),
+)
+def test_resource_lifecycle_rejects_shell_or_glob_syntax_in_prose_cells(value: str) -> None:
+    row = (
+        f'| {value} | exact owner | success-clean | '
+        '{"disposition":"delete","kind":"git-branch","locator":"feature-safe",'
+        '"trigger":"merged"} | absence proof |'
+    )
+    assert guardrails.resource_lifecycle_failures(resource_lifecycle_body(row=row)) == [
+        "Resource lifecycle rows must identify exact ownership, retention, bounded cleanup, and verification evidence."
+    ]
+
+
+@pytest.mark.parametrize(
+    "row",
+    (
+        "| issue-391 worktree | owner | success-clean | remove after merge | |",
+        "| issue-391 worktree | TODO | success-clean | remove after merge | issue comment |",
+        "| N/A | no resources | N/A | N/A | N/A |",
+        "| issue-391 worktree | created by issue 391 | keep someday | remove after merge | issue comment |",
+        "| issue-391 worktree | owner | success-clean | broad Docker prune | issue comment |",
+        "| issue-391 cache | owner | success-clean | docker builder prune --all | issue comment |",
+        "| issue-391 cache | owner | success-clean | docker buildx prune --all | issue comment |",
+        "| issue-391 branch | owner | success-clean | git branch -D main | issue comment |",
+        "| issue-391 worktree | owner | success-clean | git worktree remove --force issue-391 | issue comment |",
+        "| issue-391 image | owner | success-clean | docker image rm --force issue-391:ci | issue comment |",
+        '| issue-391 directory | owner | success-clean | rm -r -f "$HOME" | issue comment |',
+        '| issue-391 directory | owner | success-clean | rm --recursive -f "$HOME" | issue comment |',
+        "| issue-391 branch | owner | success-clean | git reset --hard | issue comment |",
+        "| issue-391 branch | owner | success-clean | git switch main | issue comment |",
+        "| issue-391 reports | owner | success-clean | remove reports/security/* | issue comment |",
+        "| issue-391 directory | owner | success-clean | rm -r / | issue comment |",
+        "| issue-391 cache | owner | success-clean | docker buildx prune --filter id=ABCDEFGHIJKLMNOPQRST | issue comment |",
+        "| issue-391 cache | owner | success-clean | docker buildx prune --filter id==0123456789abcdefghijklmnop | issue comment |",
+        "| issue-391 cache | owner | success-clean | docker buildx prune --filter id=0123456789abcdefghijklmnop -af | issue comment |",
+        "| issue-391 cache | owner | success-clean | docker buildx prune --filter id=0123456789abcdefghijklmnop -fa | issue comment |",
+        "| issue-391 cache | owner | success-clean | docker buildx prune --filter id=0123456789abcdefghijklmnop && docker buildx prune | issue comment |",
+        "| issue-391 cache | owner | success-clean | docker buildx prune --filter id=0123456789abcdefghijklmnop ; docker buildx prune | issue comment |",
+        "| issue-391 branch | owner | success-clean | git -C /tmp/repo reset --hard | issue comment |",
+        "| issue-391 branch | owner | success-clean | Git branch -D main | issue comment |",
+        "| issue-391 image | owner | success-clean | docker --context default image rm -f shared:ci | issue comment |",
+        '| issue-391 worktree | owner | success-clean | git worktree remove "$(pwd)" | issue comment |',
+        "| issue-391 branch | owner | success-clean | git branch -df main | issue comment |",
+        "| issue-391 branch | owner | success-clean | git branch -f -d main | issue comment |",
+        "| issue-391 branch | owner | success-clean | git branch -Dmain | issue comment |",
+        "| issue-391 image | owner | success-clean | docker -c default image rm -f shared:ci | issue comment |",
+        "| issue-391 container | owner | success-clean | docker container rm -f shared-container | issue comment |",
+        "| issue-391 container | owner | success-clean | docker container prune | issue comment |",
+        "| issue-391 file | owner | success-clean | rm -f /private/tmp/exact-owned-file | issue comment |",
+        "| issue-391 branch | owner | success-clean | after merge run `git branch -D main` and verify absence | issue comment |",
+        "| issue-391 cache | owner | success-clean | run `docker buildx prune --all` and verify absence | issue comment |",
+        "| issue-391 cache | owner | success-clean | (docker buildx prune --all) | issue comment |",
+        "| issue-391 worktree | owner | success-clean | git worktree remove `pwd` | issue comment |",
+        "| issue-391 branch | owner | success-clean | git branch --force=true main | issue comment |",
+        "| issue-391 image | owner | success-clean | docker image rm --force=true shared:ci | issue comment |",
+        "| issue-391 file | owner | success-clean | rm --force=true /private/tmp/exact-owned-file | issue comment |",
+        "| issue-391 branch | owner | success-clean | git branch -M old main | issue comment |",
+        "| issue-391 branch | owner | success-clean | git branch -C source main | issue comment |",
+        "| issue-391 container | owner | success-clean | docker --log-level debug container prune | issue comment |",
+        "| issue-391 container | owner | success-clean | docker --tlscert cert.pem container prune | issue comment |",
+        "| issue-391 cache | owner | success-clean | DOCKER_HOST=tcp://remote docker buildx prune --filter id=0123456789abcdefghijklmnop | issue comment |",
+        "| issue-391 cache | owner | success-clean | sudo docker buildx prune --filter id=0123456789abcdefghijklmnop | issue comment |",
+        "| issue-391 cache | owner | success-clean | sudo -n docker buildx prune --filter id=0123456789abcdefghijklmnop | issue comment |",
+        "| issue-391 cache | owner | success-clean | doas docker buildx prune --filter id=0123456789abcdefghijklmnop | issue comment |",
+        "| issue-391 cache | owner | success-clean | eval docker buildx prune --filter id=0123456789abcdefghijklmnop | issue comment |",
+        "| issue-391 cache | owner | success-clean | bash -c 'docker buildx prune --filter id=0123456789abcdefghijklmnop' | issue comment |",
+        "| issue-391 worktree | owner | success-clean | git worktree remove <(pwd) | issue comment |",
+        "| issue-391 resource | owner | success-clean | remove exact resource | docker buildx prune --all | evidence |",
+        r"| issue-391 resource | owner | success-clean | remove exact resource \| docker buildx prune --all | evidence |",
+        "| issue-391 branch | owner | success-clean | git branch -d `printf main` | issue comment |",
+        "| issue-391 image | owner | success-clean | docker image rm `docker images -q` | issue comment |",
+        "| issue-391 file | owner | success-clean | rm `find /tmp -type f` | issue comment |",
+        "| issue-391 cache | owner | success-clean | docker context use remote && docker buildx prune --filter id=0123456789abcdefghijklmnop | issue comment |",
+        "| issue-391 cache | owner | success-clean | ssh host docker buildx prune --filter id=0123456789abcdefghijklmnop | issue comment |",
+        "| issue-391 cache | owner | success-clean | find /tmp -exec docker buildx prune --filter id=0123456789abcdefghijklmnop ; | issue comment |",
+        "| issue-391 cache | owner | success-clean | chroot /private/tmp/root docker buildx prune --filter id=0123456789abcdefghijklmnop | issue comment |",
+        "| issue-391 cache | owner | success-clean | timeout 30 docker buildx prune --filter id=0123456789abcdefghijklmnop | issue comment |",
+        "| issue-391 image | owner | success-clean | docker --context remote image rm exact-owned | issue comment |",
+        "| issue-391 image | owner | success-clean | docker -H tcp://remote image rm exact-owned | issue comment |",
+        "| issue-391 branch | owner | success-clean | git -C /other/repository branch -d exact-owned | issue comment |",
+        "| issue-391 branch | owner | success-clean | git --git-dir=/other/repository/.git branch -d exact-owned | issue comment |",
+        "| issue-391 builder | owner | success-clean | docker buildx rm --all-inactive | issue comment |",
+        "| issue-391 builder | owner | success-clean | docker builder rm --all-inactive | issue comment |",
+        "| issue-391 cache | owner | success-clean | DOCKER_HOST=tcp://remote `docker buildx prune --filter id=0123456789abcdefghijklmnop` | issue comment |",
+        "| issue-391 cache | owner | success-clean | DOCKER_CONTEXT=remote `docker buildx prune --filter id=0123456789abcdefghijklmnop` | issue comment |",
+        "| issue-391 image | owner | success-clean | export DOCKER_HOST=tcp://remote; docker image rm exact-owned | issue comment |",
+        "| issue-391 branch | owner | success-clean | cd /other/repository && git branch -d exact-owned | issue comment |",
+        "| issue-391 image | owner | success-clean | docker context use remote && docker image rm exact-owned | issue comment |",
+        "| issue-391 cache | owner | success-clean | BUILDX_BUILDER=remote `docker buildx prune --filter id=0123456789abcdefghijklmnop` | issue comment |",
+        "| issue-391 branch | owner | success-clean | git branch -d `hostname` | issue comment |",
+        "| issue-391 image | owner | success-clean | docker image rm `whoami` | issue comment |",
+        "| issue-391 branch | owner | success-clean | git branch -d `uuidgen` | issue comment |",
+        "| issue-391 resource | owner | success-clean | Execute the exact cleanup command listed in evidence | docker system prune |",
+        "| issue-391 resource | owner | success-clean | Execute the command specified in evidence | git branch -D main |",
+        "|| issue-391 resource | owner | success-clean | remove exact resource | proof |",
+        "| issue-391 resource | owner | success-clean | remove exact resource | proof ||",
+        "| issue-391 image | owner | success-clean | export DOCKER_HOST=tcp://remote && docker image rm exact-owned | issue comment |",
+        "| issue-391 branch | owner | success-clean | export GIT_DIR=/other/.git && git branch -d issue-391-safe | issue comment |",
+        "| issue-391 builder | owner | success-clean | docker buildx use remote && docker buildx rm issue-391-builder | issue comment |",
+        "| issue-391 compose | owner | success-clean | docker compose down --volumes --remove-orphans | issue comment |",
+        "| issue-391 network | owner | success-clean | docker network disconnect --force shared-net shared-container | issue comment |",
+        "| issue-391 ref | owner | success-clean | git update-ref -d refs/heads/main | issue comment |",
+        "| issue-391 reflog | owner | success-clean | git reflog expire --expire=now --all | issue comment |",
+        "| issue-391 objects | owner | success-clean | git gc --prune=now | issue comment |",
+        "| issue-391 files | owner | success-clean | find /tmp -delete | issue comment |",
+        "| issue-391 resource | owner | success-clean | Run the cleanup action from the final column | sudo docker image rm exact-owned |",
+        "| issue-391 resource | owner | success-clean | Use the command under verification | docker image rm exact-owned |",
+        "| issue-391 resource | owner | success-clean | Perform cleanup per the proof field | git branch -D main |",
+    ),
+)
+def test_resource_lifecycle_rejects_partial_placeholder_na_or_broad_cleanup_row(
+    row: str,
+) -> None:
+    assert guardrails.resource_lifecycle_failures(resource_lifecycle_body(row=row)) == [
+        "Resource lifecycle rows must identify exact ownership, retention, bounded cleanup, and verification evidence."
+    ]
+
+
+@pytest.mark.parametrize(
+    ("old", "new"),
+    (
+        ("| Resource | Ownership proof | Retention class | Cleanup contract | Verification evidence |", "| Resource | Extra | Ownership proof | Retention class | Cleanup contract | Verification evidence |"),
+        ("| Resource | Ownership proof | Retention class | Cleanup contract | Verification evidence |", "| Item | Ownership | Retention | Cleanup | Evidence |"),
+        ("|---|---|---|---|---|", "|---|---|---|---|---|---|"),
+        ("|---|---|---|---|---|", "|---x|---|---|---|---|"),
+        ("|---|---|---|---|---|\n", ""),
+    ),
+)
+def test_resource_lifecycle_rejects_malformed_header_or_separator(old: str, new: str) -> None:
+    body = resource_lifecycle_body().replace(old, new)
+    assert guardrails.resource_lifecycle_failures(body) == [
+        "Resource lifecycle rows must identify exact ownership, retention, bounded cleanup, and verification evidence."
+    ]
+
+
+def test_resource_lifecycle_contract_is_durable_across_policy_and_future_projects() -> None:
+    root = Path(__file__).parents[2]
+    required_markers = {
+        ".github/pull_request_template.md": (
+            "## Resource lifecycle and cleanup",
+            "Ownership proof",
+            "Cleanup contract",
+            '"disposition"',
+            '"locator"',
+        ),
+        "docs/RESOURCE_LIFECYCLE.md": (
+            "## Creation-Time Inventory",
+            "## Cleanup Contract",
+            "## Finalization Gate",
+            "shared-retain",
+        ),
+        "docs/templates/AI_SESSION_FINALIZER_PROMPT.md": (
+            "FINAL RESOURCE LIFECYCLE PHASE",
+            "non-executable cleanup contract",
+            "before starting the next increment",
+            "Prove target absence",
+        ),
+        "docs/QUALITY_GATES.md": (
+            "resource_lifecycle_failures",
+            "structured JSON cleanup contract",
+            "evidence-until-merged-main",
+            "does not grant destructive authority",
+        ),
+    }
+    for relative_path, markers in required_markers.items():
+        text = (root / relative_path).read_text(encoding="utf-8")
+        normalized = " ".join(text.lower().split())
+        for marker in markers:
+            assert " ".join(marker.lower().split()) in normalized, (
+                f"{relative_path} missing durable resource lifecycle marker: {marker}"
+            )
 
 
 def test_product_context_accepts_complete_reviewer_impact_summary() -> None:

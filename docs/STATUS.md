@@ -2045,3 +2045,24 @@ unrelated-lock isolation. PDF upload/parsing remains unsupported; Markdown/text
 ingestion and Google speech behavior remain unchanged. This prerequisite makes
 no provider call and creates no voice, narration, audio, caption, avatar media,
 human acceptance, deployment, release, production-readiness, or Cut 1 evidence.
+
+## Issue #391 immediate resource lifecycle enforcement
+
+Verified disk exhaustion reprioritized the bounded enforcement slice of Issue
+`#391` before further Cut 1 work. Owner comments `5505720329` and `5505735419`
+freeze accepted main `e1fe126372d5c5a06dc7d2f9c76cb205da8643e7`, the corrected
+`phase-1-closure-process-391-resource-lifecycle-enforcement` route, eleven owned
+paths, charged-line budgets, failure matrix, and stop conditions. This first
+transition PR makes lifecycle evidence mandatory for non-trivial PRs, publishes
+the reusable non-executable structured JSON contract and finalizer, and
+preauthorizes the exact protected
+source bytes for a follow-up PR. That follow-up will make creation-time
+inventory and bounded finalization mandatory in `AGENTS.md` and the reusable
+future-project playbook. Neither step adds an automatic host-wide janitor.
+
+After this PR merges, Issue #391 remains open for separately authorized
+manifest-backed start, audit, dry-run, and finalize automation. The next Cut 1
+product action remains admissible final-audio work under Issue #368; no provider
+call, credential use, egress, spend, audio, listening acceptance, media,
+deployment, release, production-readiness, or Cut 1 acceptance is supplied by
+this governance slice.
