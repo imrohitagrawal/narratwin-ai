@@ -1,0 +1,52 @@
+{
+  "schema_version": "GovernancePreflightV1",
+  "issue_number": 509,
+  "branch": "stage8-509-configurable-audio-duration",
+  "objective": "From accepted base 0f608af347e89c749fcb5bd6ca17a63ceccd56e7 and tree 9418e5b13a1a1acc00371bbf51a4ec78ac50eccc, correct the reproduced Issue #509 REQUIRED_CONTRACT under freeze comment 5515713754 and issue body SHA-256 079852878ecc9890430fe5c8de7246ec4852eb10407d4057631b38abd6b6b5a2. Preserve the exact owner-approved audio bytes. Replace the hard-coded narration duration and duplicate WAV byte ceilings with a typed constructor-injected, checksum-bound duration policy whose upper bound derives the canonical 24-kHz mono PCM16 byte bound. Preserve the 90-120 default and all exact presenter, text, source/evaluation, approval, receipt, provider/runtime configuration, audio, caption, commitment, replay, persistence, and security gates. Use exactly fifteen paths and at most 2400 aggregate charged lines. Prohibit audio modification, provider calls, credentials, environment lookup, network egress, spend, synthesis, inferred human acceptance, T06, deployment, release, production-readiness, and Cut 1 claims. Stop on route, base, authority, policy, checksum, persistence, security, hosted, review, or approval drift.",
+  "status_decision": "update-minimally",
+  "scope": {
+    "required": [
+      "docs/governance/preflights/issue-509.json",
+      "backend/app/narration.py",
+      "backend/app/cut1_audio.py",
+      "tests/unit/test_cut1_narration.py",
+      "tests/unit/test_cut1_audio.py",
+      "scripts/quality/stage8_cut1_routes.py",
+      "tests/unit/test_stage8_cut1_routes.py",
+      "docs/ADR/0078-cut1-configurable-audio-duration.md",
+      "docs/QUALITY_GATES.md",
+      "docs/STAGE_ISSUE_PLAN.md",
+      "docs/STATUS.md",
+      "docs/TRACEABILITY.md",
+      "docs/SECURITY_AND_PRIVACY.md",
+      "docs/OBSERVABILITY_AND_COST.md",
+      "docs/API_CONTRACT.md"
+    ],
+    "allowed_prefixes": [
+      "docs/governance/preflights/issue-509.json",
+      "backend/app/narration.py",
+      "backend/app/cut1_audio.py",
+      "tests/unit/test_cut1_narration.py",
+      "tests/unit/test_cut1_audio.py",
+      "scripts/quality/stage8_cut1_routes.py",
+      "tests/unit/test_stage8_cut1_routes.py",
+      "docs/ADR/0078-cut1-configurable-audio-duration.md",
+      "docs/QUALITY_GATES.md",
+      "docs/STAGE_ISSUE_PLAN.md",
+      "docs/STATUS.md",
+      "docs/TRACEABILITY.md",
+      "docs/SECURITY_AND_PRIVACY.md",
+      "docs/OBSERVABILITY_AND_COST.md",
+      "docs/API_CONTRACT.md"
+    ],
+    "forbidden": [
+      "frontend/",
+      "pyproject.toml",
+      "uv.lock",
+      "credentials/",
+      "media/",
+      "deployment/",
+      "release/"
+    ]
+  }
+}
