@@ -357,3 +357,18 @@ below 3.15. Existing
 licenses, upstream sources, direct dependency intent, optional/local behavior,
 and notices remain applicable; no new provider, dataset, model, or media asset
 is introduced by this lock-only refresh.
+
+## Issue #502 musl scratch frontend runtime
+
+Issue #502 replaces the final Wolfi/glibc composition with the immutable
+Docker Official `node:26.7.0-alpine3.24` source. The scratch final image retains
+Node.js under MIT and exact Alpine records for `alpine-keys` (MIT),
+`alpine-release` (MIT), `ca-certificates-bundle` (MPL-2.0 and MIT), `libgcc`
+and `libstdc++` (GPL-2.0-or-later and LGPL-2.1-or-later runtime terms), and
+`musl` (MIT). Sharp and its locked musl libvips package remain existing
+application dependencies; no package version or lockfile changes here.
+
+Source: [Docker Official Node image](https://hub.docker.com/_/node) and
+[Node Docker Alpine variant guidance](https://github.com/nodejs/docker-node#image-variants).
+This notice does not authorize redistribution beyond applicable licenses,
+deployment, public availability, release, or production use.

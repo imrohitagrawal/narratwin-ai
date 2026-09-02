@@ -750,3 +750,20 @@ State and diagnostics contain metadata and checksums only; raw audio, captions,
 narration, provider requests, credentials, and private configuration are
 excluded. Human listening and provider activation remain separate owner-only
 boundaries.
+
+## Issue #502 frontend musl runtime boundary
+
+The Issue #502 frontend final image is assembled from an immutable Docker
+Official Node 26.7.0 Alpine 3.24 source into `scratch`. It retains truthful APK
+records for exactly six pinned runtime packages and contains musl, Node,
+libstdc++, libgcc, and the CA bundle required by the application. It excludes
+glibc, gcompat, a shell, package manager, npm, compiler, headers, and effective
+capabilities; the trusted application tree is root-owned and non-writable.
+
+AMD64 and QEMU-emulated ARM64 independently prove exact architecture, non-root
+startup, HTTP behavior, a real Sharp PNG transform, normalized reproducibility,
+CycloneDX identity, and zero Medium-or-higher frontend findings from both Trivy
+and Grype. Package metadata remains scanner-visible. Failure, disagreement,
+missing evidence, or architecture substitution rejects the gate. This is
+container capability isolation only and creates no provider, media,
+deployment, release, production, or Cut 1 acceptance authority.

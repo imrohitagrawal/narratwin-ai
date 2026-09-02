@@ -31,6 +31,7 @@ ISSUE479_BRANCH = "cut1-process-479-t05c-listening-authority"
 ISSUE482_BRANCH = "cut1-process-482-dependency-security-refresh"
 ISSUE495_BRANCH = "stage8-495-browserslist-security-refresh"
 ISSUE499_BRANCH = "stage8-499-pypdf-6-16-2-security-refresh"
+ISSUE502_BRANCH = "stage8-502-frontend-musl-runtime-security"
 ISSUE386_BRANCH = "cut1-process-386-modular-route-enforcement"
 ISSUE413_BRANCH = "cut1-process-413-frontend-runtime-openssl"
 ISSUE405_BRANCH = "process-405-heartbeat2-main-reliability"
@@ -98,6 +99,9 @@ ISSUE498_MERGE_PARITY_COMMENT = "5504929555"
 ISSUE498_MERGE_PARITY_SHA256 = (
     "ec19733768f13672b8d322ae262c19fd8316c69a91ce197784f7cd5783b0b95c"
 )
+ISSUE498_APPROVED_HEAD = "e8a0ab585d8bb95625646fb626b4fe3980926d14"
+ISSUE498_SQUASH_MERGE = "e1fe126372d5c5a06dc7d2f9c76cb205da8643e7"
+ISSUE498_MERGED_TREE = "76495e566a78a7951c33314ac742606c85ee92e5"
 ISSUE498_COMMIT_TOPOLOGY: tuple[tuple[str | None, str], ...] = (
     ("5245393b2237cf8bcc25a652d885186b4d1c18f1", "test(tts): freeze official gRPC transport RED (#498)"),
     ("e8a0d9b7290d2f8af01994bdd9a1fd12851734cc", "feat(tts): add governed official unary gRPC transport (#498)"),
@@ -114,7 +118,7 @@ ISSUE498_COMMIT_TOPOLOGY: tuple[tuple[str | None, str], ...] = (
     ("23da78cc8807ab590bdc94a15ea94a6a31cd4c71", "fix(tts): discard grpc traceback inputs (#498)"),
     ("0f90f196f3992c487608476fe74767271b116ee6", "fix(tts): bind final grpc traceback correction (#498)"),
     ("233576f798b42cf09874e7d7ea896932886751c9", "test(stage8): freeze Issue498 merge topology parity (#498)"),
-    (None, "fix(stage8): validate Issue498 direct and merge heads (#498)"),
+    (ISSUE498_APPROVED_HEAD, "fix(stage8): validate Issue498 direct and merge heads (#498)"),
 )
 ISSUE368_BINDING_COMPAT_AUTHORITY = (
     "5485581802", "c81d57d6adf081aaf6ec2bf8c94f4513ca7e363910a669efc3551d5b3b4eae3f",
@@ -176,6 +180,10 @@ ISSUE499_BASE = "d1f5400f5c6dfec5d4b63eb3a83aa82e3330743f"
 ISSUE499_TREE = "905f562c17e66abf1839e673940f80aca4330cfc"
 ISSUE499_ROUTE_COMMENT = "5500895575"
 ISSUE499_ROUTE_SHA256 = "e0a4fcfadb274efa6ca36e7b076d096e4e8a228de9b9321f6eaa740255c27ae2"
+ISSUE502_BASE = "e1fe126372d5c5a06dc7d2f9c76cb205da8643e7"
+ISSUE502_TREE = "76495e566a78a7951c33314ac742606c85ee92e5"
+ISSUE502_ROUTE_COMMENT = "5507883668"
+ISSUE502_ROUTE_SHA256 = "c114a3f11ac2a52f0834ac9f67119605c1f9d1623f6511eb42fd4c1426e6476f"
 ISSUE495_TREE = "13f79eb5db44249f635a619e1b283279f25ba9f0"
 ISSUE495_ROUTE_COMMENT = "5498387945"
 ISSUE495_CORRECTION_COMMENT = "5498411811"
@@ -242,6 +250,28 @@ ISSUE460_HOSTED_SECURITY_PATHS = {
 ISSUE459_HOSTED_CORRECTION_PATHS = {".gitleaksignore", "scripts/ci/check_gitleaks_regression.py", "tests/unit/test_gitleaks_regression.py", "scripts/quality/check_stage8_docs.py", "tests/unit/test_stage8_quality_gate.py"}
 
 ROUTES = {
+    ISSUE502_BRANCH: {
+        "docs/governance/preflights/issue-502.json",
+        "frontend/Dockerfile",
+        ".github/workflows/security.yml",
+        "scripts/ci/docker-image-scan.sh",
+        "scripts/ci/check_container_scan_consensus.py",
+        "scripts/quality/stage8_node_security.py",
+        "scripts/quality/check_stage8_docs.py",
+        "scripts/quality/stage8_cut1_routes.py",
+        "tests/unit/test_frontend_container_runtime.py",
+        "tests/unit/test_stage8_node_security.py",
+        "tests/unit/test_container_scan_consensus.py",
+        "tests/unit/test_stage8_quality_gate.py",
+        "tests/unit/test_stage8_cut1_routes.py",
+        "docs/ADR/0077-frontend-musl-scratch-runtime.md",
+        "docs/SECURITY_AND_PRIVACY.md",
+        "docs/THIRD_PARTY_NOTICES.md",
+        "docs/QUALITY_GATES.md",
+        "docs/STAGE_ISSUE_PLAN.md",
+        "docs/STATUS.md",
+        "docs/TRACEABILITY.md",
+    },
     ISSUE479_BRANCH: {
         "docs/governance/preflights/issue-479.json", "backend/app/cut1_listening.py",
         "tests/unit/test_cut1_listening.py", "scripts/quality/stage8_cut1_routes.py",
@@ -898,6 +928,8 @@ ROUTE_ISSUES[ISSUE495_BRANCH] = 495
 TOTAL_LIMITS[ISSUE495_BRANCH] = 1300
 ROUTE_ISSUES[ISSUE499_BRANCH] = 499
 TOTAL_LIMITS[ISSUE499_BRANCH] = 1000
+ROUTE_ISSUES[ISSUE502_BRANCH] = 502
+TOTAL_LIMITS[ISSUE502_BRANCH] = 4660
 ROUTE_ISSUES[ISSUE459_BRANCH] = 459
 TOTAL_LIMITS[ISSUE459_BRANCH] = 4300
 ROUTE_ISSUES[ISSUE459_T03_BRANCH] = 459
@@ -952,6 +984,28 @@ ISSUE459_EDITABLE_AUTHORITY_SHA256 = {
 }
 ISSUE459_BASE_SOURCE_SHA256 = {"docs/STATUS.md": "9045b595ca1622680f621dffa4dff88435e2fde0d13e3c061ced7eb6df9ae8bf", "docs/TRACEABILITY.md": "e597069e3d6b765a9d68e5336ff9597d6d7b809e5ea6f316f22312ca71ea136a", "docs/QUALITY_GATES.md": "9f628d22ec62075e560ef478820cf094d923cdf1cfded56a512291c61f6e542b", "docs/REPOSITORY_GUARDRAILS.md": "04f8b405bc7ba9b615cc1d5d7e489bcbf643b9de4bfc9b331e5a60c38629e82f"}
 TEXT_LIMITS = {
+    ISSUE502_BRANCH: {
+        "docs/governance/preflights/issue-502.json": 320,
+        "frontend/Dockerfile": 360,
+        ".github/workflows/security.yml": 80,
+        "scripts/ci/docker-image-scan.sh": 360,
+        "scripts/ci/check_container_scan_consensus.py": 320,
+        "scripts/quality/stage8_node_security.py": 300,
+        "scripts/quality/check_stage8_docs.py": 80,
+        "scripts/quality/stage8_cut1_routes.py": 240,
+        "tests/unit/test_frontend_container_runtime.py": 420,
+        "tests/unit/test_stage8_node_security.py": 380,
+        "tests/unit/test_container_scan_consensus.py": 360,
+        "tests/unit/test_stage8_quality_gate.py": 160,
+        "tests/unit/test_stage8_cut1_routes.py": 280,
+        "docs/ADR/0077-frontend-musl-scratch-runtime.md": 220,
+        "docs/SECURITY_AND_PRIVACY.md": 140,
+        "docs/THIRD_PARTY_NOTICES.md": 100,
+        "docs/QUALITY_GATES.md": 180,
+        "docs/STAGE_ISSUE_PLAN.md": 120,
+        "docs/STATUS.md": 120,
+        "docs/TRACEABILITY.md": 120,
+    },
     ISSUE479_BRANCH: {
         "docs/governance/preflights/issue-479.json": 220,
         "backend/app/cut1_listening.py": 620, "tests/unit/test_cut1_listening.py": 530,
@@ -1970,6 +2024,7 @@ def route_base(run: Callable[[list[str]], Any], branch: str) -> str:
             )
         return ISSUE494_TRANSITION_BASE
     fixed_routes = {
+        ISSUE502_BRANCH: (502, ISSUE502_BASE),
         ISSUE499_BRANCH: (499, ISSUE499_BASE),
         ISSUE495_BRANCH: (495, ISSUE495_BASE),
         ISSUE482_BRANCH: (482, ISSUE482_BASE),
@@ -2012,7 +2067,7 @@ def route_base(run: Callable[[list[str]], Any], branch: str) -> str:
             or fixed_value != base or common_value != base
         )
         branch_point_invalid = False
-        if not fixed_invalid and branch in {ISSUE479_BRANCH, ISSUE482_BRANCH, ISSUE478_BRANCH, ISSUE475_BRANCH, ISSUE468_BRANCH, ISSUE486_BRANCH, ISSUE486_PROTECTED_BRANCH, ISSUE486_HASH_CLEANUP_BRANCH, ISSUE473_BRANCH, ISSUE471_BRANCH, ISSUE459_T05B_BRANCH, ISSUE459_T05A_BRANCH, ISSUE459_T03_BRANCH, ISSUE460_BRANCH, ISSUE452_BRANCH, ISSUE451_BRANCH, ISSUE150_BRANCH, ISSUE424_BRANCH, ISSUE421_BRANCH, ISSUE368_IMPLEMENTATION_BRANCH, ISSUE368_BINDING_COMPAT_BRANCH, ISSUE368_AUTH_TRANSPORT_BRANCH, ISSUE368_TIMEOUT_BRANCH,
+        if not fixed_invalid and branch in {ISSUE502_BRANCH, ISSUE479_BRANCH, ISSUE482_BRANCH, ISSUE478_BRANCH, ISSUE475_BRANCH, ISSUE468_BRANCH, ISSUE486_BRANCH, ISSUE486_PROTECTED_BRANCH, ISSUE486_HASH_CLEANUP_BRANCH, ISSUE473_BRANCH, ISSUE471_BRANCH, ISSUE459_T05B_BRANCH, ISSUE459_T05A_BRANCH, ISSUE459_T03_BRANCH, ISSUE460_BRANCH, ISSUE452_BRANCH, ISSUE451_BRANCH, ISSUE150_BRANCH, ISSUE424_BRANCH, ISSUE421_BRANCH, ISSUE368_IMPLEMENTATION_BRANCH, ISSUE368_BINDING_COMPAT_BRANCH, ISSUE368_AUTH_TRANSPORT_BRANCH, ISSUE368_TIMEOUT_BRANCH,
                       ISSUE368_QUOTA_FIX_BRANCH, ISSUE498_BRANCH, ISSUE368_BRANCH,
                       ISSUE368_PROMPT_BRANCH}:
             branch_point = run(["git", "merge-base", "origin/main", "HEAD"])
@@ -2175,20 +2230,33 @@ def issue459_base_source_failures(root: Path) -> list[str]:
 
 
 def issue498_commit_topology_failures(run: Callable[[list[str]], Any]) -> list[str]:
-    parents_result = run(["git", "show", "-s", "--format=%P", "HEAD"])
-    if parents_result.returncode:
-        return ["Issue #498 exact TDD commit topology drifted."]
-    parents = str(parents_result.stdout).strip().split()
-    if len(parents) == 1 and re.fullmatch(r"[0-9a-f]{40}", parents[0]):
-        candidate = "HEAD"
-    elif (
-        len(parents) == 2
-        and parents[0] == ISSUE498_BASE
-        and re.fullmatch(r"[0-9a-f]{40}", parents[1])
-    ):
-        candidate = parents[1]
+    failure = ["Issue #498 exact TDD commit topology drifted."]
+    anchor_result = run(
+        ["git", "show", "-s", "--format=%P%x00%T", ISSUE498_SQUASH_MERGE]
+    )
+    anchor_fields = str(anchor_result.stdout).strip().split("\0")
+    if anchor_result.returncode or anchor_fields != [ISSUE498_BASE, ISSUE498_MERGED_TREE]:
+        return failure
+    head_result = run(["git", "rev-parse", "HEAD"])
+    head = str(head_result.stdout).strip()
+    if head_result.returncode or re.fullmatch(r"[0-9a-f]{40}", head) is None:
+        return failure
+    if head == ISSUE498_APPROVED_HEAD:
+        candidate = head
     else:
-        return ["Issue #498 exact TDD commit topology drifted."]
+        parents_result = run(["git", "show", "-s", "--format=%P", "HEAD"])
+        parents = str(parents_result.stdout).strip().split()
+        if parents_result.returncode:
+            return failure
+        if parents == [ISSUE498_BASE, ISSUE498_APPROVED_HEAD]:
+            candidate = ISSUE498_APPROVED_HEAD
+        else:
+            ancestry = run(
+                ["git", "merge-base", "--is-ancestor", ISSUE498_SQUASH_MERGE, head]
+            )
+            if ancestry.returncode:
+                return failure
+            return []
     result = run(
         [
             "git",
@@ -2200,22 +2268,22 @@ def issue498_commit_topology_failures(run: Callable[[list[str]], Any]) -> list[s
         ]
     )
     if result.returncode:
-        return ["Issue #498 exact TDD commit topology drifted."]
+        return failure
     fields = str(result.stdout).split("\0")
     if fields and fields[-1] == "":
         fields.pop()
     if len(fields) != len(ISSUE498_COMMIT_TOPOLOGY) * 2:
-        return ["Issue #498 exact TDD commit topology drifted."]
+        return failure
     actual = list(zip(fields[::2], fields[1::2], strict=True))
     for (commit, subject), (expected_commit, expected_subject) in zip(
         actual, ISSUE498_COMMIT_TOPOLOGY, strict=True
     ):
         if (
             re.fullmatch(r"[0-9a-f]{40}", commit) is None
-            or (expected_commit is not None and commit != expected_commit)
+            or commit != expected_commit
             or subject != expected_subject
         ):
-            return ["Issue #498 exact TDD commit topology drifted."]
+            return failure
     return []
 
 
@@ -2258,7 +2326,7 @@ def check_exact_route(
             if any(snapshot.returncode for snapshot in snapshots):
                 raise RuntimeError("Issue #459 transition route evidence is unavailable.")
             for paths, expected in zip((set(parse_paths_z(str(snapshot.stdout))) | (effective_changed & ISSUE459_HOSTED_CORRECTION_PATHS if index else set()) for index, snapshot in enumerate(snapshots)), (files - ISSUE459_HOSTED_CORRECTION_PATHS, files), strict=True):
-                effective_changed.update(paths)
+                effective_changed.update(paths & files)
                 failures.extend(
                     f"Issue #459 route contains unauthorized path: {path}"
                     for path in sorted(paths - expected)
@@ -2311,7 +2379,37 @@ def check_exact_route(
         f"Issue #{issue} route is missing required path: {path}"
         for path in sorted(files - effective_changed)
     )
-    if branch == ISSUE479_BRANCH:
+    failures.extend(
+        f"Issue #{issue} route changed unexpected path: {path}"
+        for path in sorted(effective_changed - files)
+    )
+    if branch == ISSUE502_BRANCH:
+        try:
+            preflight = load_json_without_duplicate_members(
+                root / "docs/governance/preflights/issue-502.json"
+            )
+            findings = validate_governance_preflight(
+                preflight,
+                context={"issue_number": 502, "branch": branch, "changed_files": sorted(files)},
+            )
+            failures.extend(
+                f"Issue #502 governance preflight failed: {item.code}"
+                for item in findings
+            )
+            objective = preflight.get("objective") if isinstance(preflight, dict) else None
+            issue502_authority = (
+                ISSUE502_BASE,
+                ISSUE502_TREE,
+                ISSUE502_ROUTE_COMMENT,
+                ISSUE502_ROUTE_SHA256,
+            )
+            if not isinstance(objective, str) or any(
+                value not in objective for value in issue502_authority
+            ):
+                failures.append("Issue #502 security authority drifted.")
+        except (OSError, ValueError, TypeError) as error:
+            failures.append(f"Issue #502 governance preflight failed closed: {error}")
+    elif branch == ISSUE479_BRANCH:
         try:
             preflight = load_json_without_duplicate_members(
                 root / "docs/governance/preflights/issue-479.json"

@@ -70,9 +70,38 @@ jobs:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           persist-credentials: false
+      - name: Install ARM64 emulation
+        uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3
+        with:
+          platforms: arm64
       - name: Docker build compatibility context
+        env:
+          BACKEND_IMAGE: narratwin-ai-backend:ci
+          FRONTEND_IMAGE: narratwin-ai-frontend:ci-amd64
         run: bash scripts/ci/docker-build.sh
-      - name: Docker image vulnerability scan
+      - name: Docker image vulnerability scan (AMD64)
+        env:
+          REPORT_DIR: reports/security/amd64
+          BACKEND_IMAGE: narratwin-ai-backend:ci
+          BACKEND_ARCH: amd64
+          FRONTEND_IMAGE: narratwin-ai-frontend:ci-amd64
+          FRONTEND_BUILD_IMAGE: narratwin-ai-frontend-build:ci-amd64
+          FRONTEND_REPRO_IMAGE: narratwin-ai-frontend:repro-ci-amd64
+          FRONTEND_ARCH: amd64
+          SESSION: issue502-hosted-amd64
+        run: bash scripts/ci/docker-image-scan.sh
+      - name: Build frontend runtime (ARM64)
+        run: docker build --platform linux/arm64 -f frontend/Dockerfile -t narratwin-ai-frontend:ci-arm64 .
+      - name: Docker image vulnerability scan (ARM64)
+        env:
+          REPORT_DIR: reports/security/arm64
+          BACKEND_IMAGE: narratwin-ai-backend:ci
+          BACKEND_ARCH: amd64
+          FRONTEND_IMAGE: narratwin-ai-frontend:ci-arm64
+          FRONTEND_BUILD_IMAGE: narratwin-ai-frontend-build:ci-arm64
+          FRONTEND_REPRO_IMAGE: narratwin-ai-frontend:repro-ci-arm64
+          FRONTEND_ARCH: arm64
+          SESSION: issue502-hosted-arm64
         run: bash scripts/ci/docker-image-scan.sh
       - name: Upload Docker image scan reports
         if: always()

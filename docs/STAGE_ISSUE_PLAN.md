@@ -3025,3 +3025,21 @@ narrowed to below 3.15. It owns eleven paths and a 3,200 charged-line cap.
 PR `#483` merged and closed out before Issue #479 resumed. The prerequisite
 changed no product, provider, credential, egress, spend, media, deployment,
 release, production-readiness, or Cut 1 acceptance behavior.
+
+### Issue #502 frontend musl runtime security prerequisite
+
+Issue #502 starts from exact accepted main `e1fe126372d5c5a06dc7d2f9c76cb205da8643e7`
+on `stage8-502-frontend-musl-runtime-security`, owns exactly twenty paths, and
+is capped at 4,660 charged lines. It replaces only the vulnerable final
+Wolfi/glibc frontend boundary with an immutable Node 26.7.0 Alpine source and a
+six-package musl scratch runtime. AMD64 and emulated ARM64 must each build,
+run, transform with Sharp, reproduce, emit truthful SBOMs, and pass Trivy plus
+Grype through Medium in the unchanged required hosted context.
+
+The existing route files also absorb the smallest exact-main Issue #504
+topology correction to remove the PR #505/Issue #502 CI cycle: exact PR #501
+approved head, squash parent/tree, and descendant ancestry fail closed on any
+substitution or Git error. PR #505 is reassessed only after Issue #502 merge.
+This prerequisite changes no frontend product behavior and creates no
+provider, credential, media, deployment, release, production, or Cut 1
+acceptance authority.

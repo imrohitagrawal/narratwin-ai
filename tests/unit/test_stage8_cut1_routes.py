@@ -413,6 +413,50 @@ ISSUE499_EXPECTED = {
     "docs/THIRD_PARTY_NOTICES.md",
     "docs/TRACEABILITY.md",
 }
+ISSUE502_EXPECTED = {
+    "docs/governance/preflights/issue-502.json",
+    "frontend/Dockerfile",
+    ".github/workflows/security.yml",
+    "scripts/ci/docker-image-scan.sh",
+    "scripts/ci/check_container_scan_consensus.py",
+    "scripts/quality/stage8_node_security.py",
+    "scripts/quality/check_stage8_docs.py",
+    "scripts/quality/stage8_cut1_routes.py",
+    "tests/unit/test_frontend_container_runtime.py",
+    "tests/unit/test_stage8_node_security.py",
+    "tests/unit/test_container_scan_consensus.py",
+    "tests/unit/test_stage8_quality_gate.py",
+    "tests/unit/test_stage8_cut1_routes.py",
+    "docs/ADR/0077-frontend-musl-scratch-runtime.md",
+    "docs/SECURITY_AND_PRIVACY.md",
+    "docs/THIRD_PARTY_NOTICES.md",
+    "docs/QUALITY_GATES.md",
+    "docs/STAGE_ISSUE_PLAN.md",
+    "docs/STATUS.md",
+    "docs/TRACEABILITY.md",
+}
+ISSUE502_LINE_CAPS = {
+    "docs/governance/preflights/issue-502.json": 320,
+    "frontend/Dockerfile": 360,
+    ".github/workflows/security.yml": 80,
+    "scripts/ci/docker-image-scan.sh": 360,
+    "scripts/ci/check_container_scan_consensus.py": 320,
+    "scripts/quality/stage8_node_security.py": 300,
+    "scripts/quality/check_stage8_docs.py": 80,
+    "scripts/quality/stage8_cut1_routes.py": 240,
+    "tests/unit/test_frontend_container_runtime.py": 420,
+    "tests/unit/test_stage8_node_security.py": 380,
+    "tests/unit/test_container_scan_consensus.py": 360,
+    "tests/unit/test_stage8_quality_gate.py": 160,
+    "tests/unit/test_stage8_cut1_routes.py": 280,
+    "docs/ADR/0077-frontend-musl-scratch-runtime.md": 220,
+    "docs/SECURITY_AND_PRIVACY.md": 140,
+    "docs/THIRD_PARTY_NOTICES.md": 100,
+    "docs/QUALITY_GATES.md": 180,
+    "docs/STAGE_ISSUE_PLAN.md": 120,
+    "docs/STATUS.md": 120,
+    "docs/TRACEABILITY.md": 120,
+}
 ISSUE498_EXPECTED = {
     "backend/app/google_tts_runtime.py", "backend/app/tts_provider.py",
     "tests/unit/test_google_tts_runtime.py", "tests/unit/test_stage6_tts_provider.py",
@@ -483,6 +527,7 @@ def remove_cleanup_marker(text: str, marker: str) -> str:
 
 
 EXPECTED = {
+    "stage8-502-frontend-musl-runtime-security": ISSUE502_EXPECTED,
     "cut1-process-479-t05c-listening-authority": ISSUE479_EXPECTED,
     "cut1-process-482-dependency-security-refresh": ISSUE482_EXPECTED,
     "stage8-495-browserslist-security-refresh": ISSUE495_EXPECTED,
@@ -949,6 +994,89 @@ EXPECTED["stage8-499-pypdf-6-16-2-security-refresh"] = ISSUE499_EXPECTED
 
 def completed(args: list[str], code: int = 0, out: str = "", err: str = "") -> subprocess.CompletedProcess[str]:
     return subprocess.CompletedProcess(args, code, out, err)
+
+
+def test_issue502_musl_runtime_route_is_exact_bounded_and_authority_pinned() -> None:
+    branch = "stage8-502-frontend-musl-runtime-security"
+    artifact = json.loads(
+        (REPO / "docs/governance/preflights/issue-502.json").read_text(encoding="utf-8")
+    )
+    assert routes.ISSUE502_BRANCH == branch
+    assert routes.ISSUE502_BASE == "e1fe126372d5c5a06dc7d2f9c76cb205da8643e7"
+    assert routes.ISSUE502_TREE == "76495e566a78a7951c33314ac742606c85ee92e5"
+    assert routes.ISSUE502_ROUTE_COMMENT == "5507883668"
+    assert routes.ISSUE502_ROUTE_SHA256 == (
+        "c114a3f11ac2a52f0834ac9f67119605c1f9d1623f6511eb42fd4c1426e6476f"
+    )
+    assert routes.ROUTES[branch] == ISSUE502_EXPECTED
+    assert routes.ROUTE_ISSUES[branch] == 502
+    assert routes.TOTAL_LIMITS[branch] == 4660
+    assert routes.TEXT_LIMITS[branch] == ISSUE502_LINE_CAPS
+    assert set(artifact["scope"]["required"]) == ISSUE502_EXPECTED
+    assert artifact["scope"]["required"] == artifact["scope"]["allowed_prefixes"]
+    context = {
+        "issue_number": 502,
+        "branch": branch,
+        "changed_files": artifact["scope"]["required"],
+    }
+    assert routes.validate_governance_preflight(artifact, context=context) == []
+    for value in (
+        routes.ISSUE502_BASE,
+        routes.ISSUE502_TREE,
+        routes.ISSUE502_ROUTE_COMMENT,
+        routes.ISSUE502_ROUTE_SHA256,
+    ):
+        assert value in artifact["objective"]
+
+
+def test_issue502_requires_exact_current_main_branch_point() -> None:
+    base = "e1fe126372d5c5a06dc7d2f9c76cb205da8643e7"
+
+    def good(args: list[str]) -> subprocess.CompletedProcess[str]:
+        if args[:2] in (["git", "rev-parse"], ["git", "merge-base"]):
+            return completed(args, out=base + "\n")
+        return completed(args)
+
+    assert routes.route_base(good, "stage8-502-frontend-musl-runtime-security") == base
+
+    def drifted(args: list[str]) -> subprocess.CompletedProcess[str]:
+        if args == ["git", "merge-base", "origin/main", "HEAD"]:
+            return completed(args, out="0" * 40 + "\n")
+        return good(args)
+
+    with pytest.raises(RuntimeError, match="Issue #502 fixed base evidence"):
+        routes.route_base(drifted, "stage8-502-frontend-musl-runtime-security")
+
+
+@pytest.mark.parametrize("mutation", ["missing", "extra"])
+def test_issue502_route_path_mutations_fail_closed(
+    monkeypatch: Any, mutation: str,
+) -> None:
+    branch = "stage8-502-frontend-musl-runtime-security"
+    changed = set(ISSUE502_EXPECTED)
+    if mutation == "missing":
+        changed.remove("frontend/Dockerfile")
+    else:
+        changed.add("frontend/package-lock.json")
+    monkeypatch.setattr(routes, "route_base", lambda *_: routes.ISSUE502_BASE)
+    monkeypatch.setattr(routes, "route_text_charges", lambda *_: (0, {}))
+
+    def run(args: list[str]) -> subprocess.CompletedProcess[str]:
+        if "--name-only" in args:
+            return completed(args, out="\0".join(sorted(changed)) + "\0")
+        if "--name-status" in args:
+            return completed(
+                args,
+                out="".join(f"M\0{path}\0" for path in sorted(changed)),
+            )
+        return completed(args)
+
+    failures: list[str] = []
+    routes.check_exact_route(REPO, run, branch, changed, failures)
+    if mutation == "missing":
+        assert "Issue #502 route is missing required path: frontend/Dockerfile" in failures
+    else:
+        assert "Issue #502 route changed unexpected path: frontend/package-lock.json" in failures
 
 
 def test_issue471_cleanup_authority_anchor_route_is_exact() -> None:
@@ -2763,9 +2891,12 @@ def _issue494_runner(
 
 
 def _issue498_runner(args: list[str]) -> subprocess.CompletedProcess[str]:
-    if args[:3] == ["git", "log", "--reverse"] or args == [
-        "git", "show", "-s", "--format=%P", "HEAD"
-    ]:
+    if tuple(args[:2]) in {
+        ("git", "log"),
+        ("git", "show"),
+        ("git", "rev-parse"),
+        ("git", "merge-base"),
+    }:
         return subprocess.run(args, cwd=REPO, check=False, capture_output=True, text=True)
     return completed(args)
 
@@ -3990,8 +4121,12 @@ def test_issue498_tdd_topology_mutations_fail_closed(mutation: str) -> None:
     )
 
     def run(args: list[str]) -> subprocess.CompletedProcess[str]:
-        if args == ["git", "show", "-s", "--format=%P", "HEAD"]:
-            return completed(args, 1 if mutation == "command" else 0, "a" * 40 + "\n")
+        if args == ["git", "rev-parse", "HEAD"]:
+            return completed(
+                args,
+                1 if mutation == "command" else 0,
+                "e8a0ab585d8bb95625646fb626b4fe3980926d14\n",
+            )
         return completed(args, out=output)
 
     assert routes.issue498_commit_topology_failures(run) == [
@@ -4000,13 +4135,17 @@ def test_issue498_tdd_topology_mutations_fail_closed(mutation: str) -> None:
 
 
 def test_issue498_tdd_topology_accepts_exact_two_parent_hosted_merge() -> None:
-    feature_head = "f" * 40
+    feature_head = "e8a0ab585d8bb95625646fb626b4fe3980926d14"
     output = "".join(
         f"{commit if commit is not None else feature_head}\0{subject}\0"
         for commit, subject in routes.ISSUE498_COMMIT_TOPOLOGY
     )
 
     def run(args: list[str]) -> subprocess.CompletedProcess[str]:
+        if args == ["git", "show", "-s", "--format=%P%x00%T", "e1fe126372d5c5a06dc7d2f9c76cb205da8643e7"]:
+            return completed(args, out=f"{routes.ISSUE498_BASE}\0{'76495e566a78a7951c33314ac742606c85ee92e5'}\n")
+        if args == ["git", "rev-parse", "HEAD"]:
+            return completed(args, out="a" * 40 + "\n")
         if args == ["git", "show", "-s", "--format=%P", "HEAD"]:
             return completed(args, out=f"{routes.ISSUE498_BASE} {feature_head}\n")
         if args[-1] == f"{routes.ISSUE498_BASE}..{feature_head}":
@@ -4014,6 +4153,65 @@ def test_issue498_tdd_topology_accepts_exact_two_parent_hosted_merge() -> None:
         return completed(args, code=1)
 
     assert routes.issue498_commit_topology_failures(run) == []
+
+
+@pytest.mark.parametrize("head", ["e1fe126372d5c5a06dc7d2f9c76cb205da8643e7", "d" * 40])
+def test_issue498_tdd_topology_accepts_exact_squash_anchor_and_descendant(head: str) -> None:
+    squash = "e1fe126372d5c5a06dc7d2f9c76cb205da8643e7"
+    tree = "76495e566a78a7951c33314ac742606c85ee92e5"
+
+    def run(args: list[str]) -> subprocess.CompletedProcess[str]:
+        if args == ["git", "show", "-s", "--format=%P%x00%T", squash]:
+            return completed(args, out=f"{routes.ISSUE498_BASE}\0{tree}\n")
+        if args == ["git", "rev-parse", "HEAD"]:
+            return completed(args, out=head + "\n")
+        if args == ["git", "show", "-s", "--format=%P", "HEAD"]:
+            return completed(args, out=routes.ISSUE498_BASE + "\n")
+        if args == ["git", "merge-base", "--is-ancestor", squash, head]:
+            return completed(args)
+        return completed(args, code=1)
+
+    assert routes.issue498_commit_topology_failures(run) == []
+
+
+@pytest.mark.parametrize("mutation", ["parent", "tree", "ancestry", "anchor-command"])
+def test_issue498_tdd_topology_rejects_post_squash_mutations(mutation: str) -> None:
+    squash = "e1fe126372d5c5a06dc7d2f9c76cb205da8643e7"
+    head = "d" * 40
+    parent = "0" * 40 if mutation == "parent" else routes.ISSUE498_BASE
+    tree = "0" * 40 if mutation == "tree" else "76495e566a78a7951c33314ac742606c85ee92e5"
+
+    def run(args: list[str]) -> subprocess.CompletedProcess[str]:
+        if args == ["git", "show", "-s", "--format=%P%x00%T", squash]:
+            return completed(args, code=1 if mutation == "anchor-command" else 0, out=f"{parent}\0{tree}\n")
+        if args == ["git", "rev-parse", "HEAD"]:
+            return completed(args, out=head + "\n")
+        if args == ["git", "show", "-s", "--format=%P", "HEAD"]:
+            return completed(args, out=routes.ISSUE498_BASE + "\n")
+        if args == ["git", "merge-base", "--is-ancestor", squash, head]:
+            return completed(args, code=1 if mutation == "ancestry" else 0)
+        return completed(args, code=1)
+
+    assert routes.issue498_commit_topology_failures(run) == [
+        "Issue #498 exact TDD commit topology drifted."
+    ]
+
+
+def test_issue498_tdd_topology_rejects_synthetic_merge_when_anchor_is_unavailable() -> None:
+    feature_head = "e8a0ab585d8bb95625646fb626b4fe3980926d14"
+
+    def run(args: list[str]) -> subprocess.CompletedProcess[str]:
+        if args == ["git", "show", "-s", "--format=%P%x00%T", "e1fe126372d5c5a06dc7d2f9c76cb205da8643e7"]:
+            return completed(args, code=1)
+        if args == ["git", "rev-parse", "HEAD"]:
+            return completed(args, out="a" * 40 + "\n")
+        if args == ["git", "show", "-s", "--format=%P", "HEAD"]:
+            return completed(args, out=f"{routes.ISSUE498_BASE} {feature_head}\n")
+        return completed(args)
+
+    assert routes.issue498_commit_topology_failures(run) == [
+        "Issue #498 exact TDD commit topology drifted."
+    ]
 
 
 @pytest.mark.parametrize(

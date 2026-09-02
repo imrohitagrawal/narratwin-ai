@@ -39,11 +39,7 @@ def test_issue374_scope_and_pinned_images_fail_closed(monkeypatch: Any) -> None:
             security.FRONTEND_NODE_SOURCE_IMAGE[:-1] + "0",
         ),
         dockerfile.replace(
-            security.FRONTEND_ATOMIC_SOURCE_IMAGE,
-            security.FRONTEND_ATOMIC_SOURCE_IMAGE[:-1] + "0",
-        ),
-        dockerfile.replace(
-                f"FROM {security.FRONTEND_NODE_RUNTIME_IMAGE} AS build",
+                "FROM scratch AS build",
                 f"FROM {prior} AS build",
         ),
     ]
@@ -84,41 +80,69 @@ def test_issue374_reproducibility_and_runtime_policy_markers() -> None:
 
 
 def test_issue389_fixed_runtime_pin_and_package_contract_fail_closed() -> None:
-    expected_runtime = "cgr.dev/chainguard/glibc-dynamic@sha256:eaec65b25f35619be16f4992e7bae1128eafcf63c114f2859b800a7020c1ef70"
+    expected_runtime = "node:26.7.0-alpine3.24@sha256:aadf416b2cdce311a8811ba3f0608a61b77dbf997500e2eafe781b51f6a0b019"
     dockerfile = stage8.read("frontend/Dockerfile")
     scan = stage8.read("scripts/ci/docker-image-scan.sh")
-    assert security.FRONTEND_NODE_RUNTIME_IMAGE == expected_runtime and f"FROM {expected_runtime} AS build" in dockerfile
-    assert 'process.version!=="v26.7.0"' in scan and '"org.opencontainers.image.created": "2026-08-07T21:12:55Z"' in scan
+    assert security.FRONTEND_NODE_RUNTIME_IMAGE == expected_runtime and f"FROM {expected_runtime} AS node-source" in dockerfile
+    assert 'process.version!=="v26.7.0"' in scan and "Sharp transform invalid" in scan
     assert security.FRONTEND_RUNTIME_NODE_VERSION == "26.7.0"
-    assert security.FRONTEND_RUNTIME_PACKAGES == {"ca-certificates-bundle":"20260413-r0","glibc":"2.43-r12","glibc-locale-posix":"2.43-r12","ld-linux":"2.43-r12","libatomic":"16.1.0-r4","libgcc":"16.1.0-r4","libstdc++":"16.1.0-r4","wolfi-baselayout":"20230201-r29"}
-    for mutation in (dockerfile.replace(expected_runtime, expected_runtime[:-1]+"1"), dockerfile.replace(expected_runtime, "cgr.dev/chainguard/glibc-dynamic:latest"), dockerfile.replace(expected_runtime, security.ISSUE389_VULNERABLE_RUNTIME_IMAGE), dockerfile.replace("fs.appendFileSync(p", "REMOVED")):
+    assert security.FRONTEND_RUNTIME_PACKAGES == {"alpine-keys":"2.6-r0","alpine-release":"3.24.1-r0","ca-certificates-bundle":"20260611-r0","libgcc":"15.2.0-r5","libstdc++":"15.2.0-r5","musl":"1.2.6-r2"}
+    for mutation in (dockerfile.replace(expected_runtime, expected_runtime[:-1]+"1"), dockerfile.replace(expected_runtime, "node:26.7.0-alpine3.24:latest"), dockerfile.replace("FROM scratch AS build", f"FROM {security.ISSUE389_VULNERABLE_RUNTIME_IMAGE} AS build"), dockerfile.replace("/lib/apk/db/installed", "REMOVED")):
         assert not security.frontend_node_image_valid(mutation)
+
+
+def test_issue502_musl_closure_and_real_sharp_transform_fail_closed() -> None:
+    dockerfile = stage8.read("frontend/Dockerfile")
+    scan = stage8.read("scripts/ci/docker-image-scan.sh")
+    pins = tuple(f"{name}={version}" for name, version in security.FRONTEND_RUNTIME_PACKAGES.items())
+    assert all(dockerfile.count(pin) == 1 for pin in pins)
+    assert "libvips-cpp.so.8.18.3" in dockerfile
+    assert all(marker in scan for marker in ("sharp(input).resize(2,2).png()", "Sharp transform invalid", "2x2:png"))
+    mutations = [dockerfile.replace(pin, "REMOVED", 1) for pin in pins]
+    mutations += [dockerfile.replace(pins[0], f"{pins[0]} {pins[0]}", 1), dockerfile.replace("libvips-cpp.so.8.18.3", "REMOVED", 1)]
+    assert all(not security.frontend_node_image_valid(candidate) for candidate in mutations)
+
+
+def test_issue502_security_workflow_runs_both_frontend_architectures_in_one_context() -> None:
+    workflow = stage8.read(".github/workflows/security.yml")
+    assert workflow.count("name: security / docker build") == 1
+    assert "docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130" in workflow
+    assert "platforms: arm64" in workflow
+    for architecture in ("amd64", "arm64"):
+        assert f"REPORT_DIR: reports/security/{architecture}" in workflow
+        assert f"FRONTEND_ARCH: {architecture}" in workflow
+        assert f"SESSION: issue502-hosted-{architecture}" in workflow
+        assert f"narratwin-ai-frontend:ci-{architecture}" in workflow
+        assert f"narratwin-ai-frontend-build:ci-{architecture}" in workflow
+        assert f"narratwin-ai-frontend:repro-ci-{architecture}" in workflow
+    assert workflow.count("bash scripts/ci/docker-image-scan.sh") == 2
+    assert "path: reports/security" in workflow
 
 
 def test_issue376_shell_free_dependency_builder_contract_fails_closed() -> None:
     dockerfile = stage8.read("frontend/Dockerfile")
     assert security.issue376_frontend_builder_valid(dockerfile)
-    assert security.FRONTEND_NODE_BUILD_IMAGE == security.FRONTEND_NODE_RUNTIME_IMAGE
+    assert security.FRONTEND_NODE_BUILD_IMAGE == "scratch"
     required = (
-        "AS deps",
+        "FROM scratch AS deps",
         "prepare_frontend_npm.mjs",
         '"ci", "--ignore-scripts"',
-        "/runtime/libatomic-record",
-        "/runtime/var/lib/db/sbom/",
+        "/runtime/lib/apk/db/installed",
+        "musl=1.2.6-r2",
         "process.config.variables.node_use_quic!==false",
         "--mount=from=deps,source=/app,target=/mnt/deps,readonly",
         "assembleFrontendRuntime",
     )
-    prohibited = ("/bin/sh", "apk ", "apt-get", "sha512sum", "npm ci --", "libcrypto3", "libssl3", "busybox", "narratwin-build-nonce")
+    prohibited = ("glibc", "gcompat", "libatomic", "apt-get", "sha512sum", "npm ci --", "libcrypto3", "libssl3", "busybox", "narratwin-build-nonce")
     assert all(marker in dockerfile for marker in required)
     assert all(marker not in dockerfile.lower() for marker in prohibited)
     mutations = [
         dockerfile.replace("--ignore-scripts", "--strict-allow-scripts=true"),
         dockerfile.replace("prepare_frontend_npm.mjs", "missing.mjs", 1),
-        dockerfile.replace(security.FRONTEND_NODE_RUNTIME_IMAGE, "cgr.dev/chainguard/glibc-dynamic:latest", 1),
-        dockerfile + "\nRUN apk add openssl\n",
+        dockerfile.replace(security.FRONTEND_NODE_RUNTIME_IMAGE, "node:26.7.0-alpine3.24:latest", 1),
+        dockerfile + "\nFROM alpine AS bypass\n",
         dockerfile + "\nCOPY --from=node-source /lib/libssl.so.3 /lib/\n",
-        dockerfile.replace("/runtime/libatomic-record", "/tmp/libatomic-record", 1),
+        dockerfile.replace("/runtime/lib/apk/db/installed", "/tmp/installed", 1),
         dockerfile.replace("process.config.variables.node_use_quic!==false", "true"),
         dockerfile.replace("assembleFrontendRuntime", "removedAssembler"),
     ]
