@@ -1,0 +1,38 @@
+{
+  "schema_version": "GovernancePreflightV1",
+  "issue_number": 504,
+  "branch": "stage8-504-issue498-post-squash-topology",
+  "objective": "From accepted base e1fe126372d5c5a06dc7d2f9c76cb205da8643e7 and tree 76495e566a78a7951c33314ac742606c85ee92e5, correct the Issue #498 post-squash topology false rejection under immutable freeze comment 5506868766 with raw-body SHA-256 105487a06d6e17365004ec53e42e31d7bdce5c1a653fd44c2a0d879cb338acc3. Preserve exact sixteen-commit validation for approved PR #501 source head e8a0ab585d8bb95625646fb626b4fe3980926d14 and exact accepted-base/feature-parent synthetic merge validation. Bind only immutable PR #501 squash merge e1fe126372d5c5a06dc7d2f9c76cb205da8643e7 and tree 76495e566a78a7951c33314ac742606c85ee92e5 as the post-merge anchor; permit later heads only when Git proves that exact anchor is their ancestor. Fail closed for wrong commit, tree, parent, ancestry, source topology, extra or missing source commits, octopus merges, and Git command failures. Use exactly seven paths with 1080 aggregate charged lines and no deletion credit. Tests remain deterministic, local, offline, and independent of deleted branch refs or GitHub API access. This changes governance topology only: no transport, dependency, provider, credential, egress, spend, narration, voice, audio, caption, avatar, deployment, release, production, or Cut 1 behavior or claim.",
+  "status_decision": "update-minimally",
+  "scope": {
+    "required": [
+      "docs/governance/preflights/issue-504.json",
+      "scripts/quality/stage8_cut1_routes.py",
+      "tests/unit/test_stage8_cut1_routes.py",
+      "docs/QUALITY_GATES.md",
+      "docs/STAGE_ISSUE_PLAN.md",
+      "docs/STATUS.md",
+      "docs/TRACEABILITY.md"
+    ],
+    "allowed_prefixes": [
+      "docs/governance/preflights/issue-504.json",
+      "scripts/quality/stage8_cut1_routes.py",
+      "tests/unit/test_stage8_cut1_routes.py",
+      "docs/QUALITY_GATES.md",
+      "docs/STAGE_ISSUE_PLAN.md",
+      "docs/STATUS.md",
+      "docs/TRACEABILITY.md"
+    ],
+    "forbidden": [
+      ".github/",
+      "backend/",
+      "frontend/",
+      "pyproject.toml",
+      "uv.lock",
+      "credentials/",
+      "media/",
+      "deployment/",
+      "release/"
+    ]
+  }
+}
