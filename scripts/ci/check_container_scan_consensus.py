@@ -7,6 +7,7 @@ import json
 import math
 import re
 import sys
+import time
 from pathlib import Path, PurePosixPath
 from typing import Any
 from urllib.parse import parse_qs, quote, unquote, urlsplit
@@ -235,6 +236,28 @@ def _valid_vex(vex: dict[str, Any], backend_config: str, component_purl: str) ->
     }
 
 
+def _package_identities(component: dict[str, Any]) -> set[str]:
+    identities = {str(component.get("name", "")).casefold()}
+    for field in ("purl", "bom-ref"):
+        value = str(component.get(field, ""))
+        if value.startswith("pkg:"):
+            identities.add(
+                unquote(urlsplit(value).path).rsplit("/", 1)[-1].split("@", 1)[0].casefold()
+            )
+    cpe = str(component.get("cpe", ""))
+    if cpe.startswith("cpe:2.3:") and len(cpe.split(":")) > 4:
+        identities.add(unquote(cpe.split(":")[4]).casefold())
+    for prop in component.get("properties", []):
+        if not isinstance(prop, dict):
+            continue
+        name, value = prop.get("name"), str(prop.get("value", ""))
+        if name == "aquasecurity:trivy:PkgID":
+            identities.add(value.split("@", 1)[0].casefold())
+        elif name == "aquasecurity:trivy:SrcName":
+            identities.add(value.casefold())
+    return identities
+
+
 def _valid_cyclonedx_sbom(report: dict[str, Any], target: str, required: dict[str, tuple[str, tuple[str, ...], str, str]], architecture: str) -> bool:
     metadata = report.get("metadata", {}).get("component", {})
     components = report.get("components")
@@ -245,9 +268,7 @@ def _valid_cyclonedx_sbom(report: dict[str, Any], target: str, required: dict[st
         return False
     if required:
         for component in components:
-            name = str(component.get("name", "")).casefold()
-            purl_name = unquote(urlsplit(str(component.get("purl", ""))).path).rsplit("/", 1)[-1].split("@", 1)[0].casefold()
-            if name in {"glibc", "gcompat"} or purl_name in {"glibc", "gcompat"}:
+            if _package_identities(component) & {"glibc", "gcompat"}:
                 return False
         apk_components = [
             component for component in components
@@ -258,8 +279,8 @@ def _valid_cyclonedx_sbom(report: dict[str, Any], target: str, required: dict[st
         expected_sharp = FRONTEND_SHARP_COMPONENTS.get(architecture)
         sharp_components = [
             component for component in components
-            if str(component.get("name", "")) == "sharp"
-            or str(component.get("name", "")).startswith("sharp-")
+            if any(identity == "sharp" or identity.startswith("sharp-")
+                   for identity in _package_identities(component))
         ]
         actual_sharp = {
             (str(component.get("name", "")), str(component.get("version", "")), str(component.get("purl", "")))
@@ -427,7 +448,9 @@ def main() -> int:
         return 1 if findings else 0
     if args.case is None:
         parser.error("--case is required unless verifying frontend reproduction")
-    result = evaluate_consensus(**_load_json(args.case))
+    case = _load_json(args.case)
+    case["now"] = time.time()
+    result = evaluate_consensus(**case)
     print(json.dumps(result, sort_keys=True))
     return 0 if result["status"] == "pass" else 1
 
