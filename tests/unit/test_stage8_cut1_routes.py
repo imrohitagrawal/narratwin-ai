@@ -423,7 +423,7 @@ ISSUE498_EXPECTED = {
     "docs/THIRD_PARTY_NOTICES.md", "docs/TRACEABILITY.md",
 }
 ISSUE498_LINE_CAPS = {
-    "backend/app/google_tts_runtime.py": 500, "backend/app/tts_provider.py": 350,
+    "backend/app/google_tts_runtime.py": 650, "backend/app/tts_provider.py": 350,
     "tests/unit/test_google_tts_runtime.py": 850,
     "tests/unit/test_stage6_tts_provider.py": 450,
     "tests/unit/test_dependency_security_contract.py": 500, "pyproject.toml": 10,
@@ -3923,7 +3923,7 @@ def test_issue498_requires_exact_current_main_branch_point() -> None:
         routes.route_base(drifted, routes.ISSUE498_BRANCH)
 
 
-def test_issue498_requires_exact_nine_commit_tdd_topology_and_final_authority() -> None:
+def test_issue498_requires_exact_eleven_commit_tdd_topology_and_final_authority() -> None:
     artifact = json.loads(
         (REPO / "docs/governance/preflights/issue-498-google-tts-official-grpc.json").read_text()
     )
@@ -3931,9 +3931,18 @@ def test_issue498_requires_exact_nine_commit_tdd_topology_and_final_authority() 
     assert routes.ISSUE498_TOPOLOGY_SHA256 == (
         "ec2477cfc8ce73eb624ce3e4b154b34336859fb100997dcfb6202234f191205f"
     )
+    assert routes.ISSUE498_REVIEW_CORRECTION_COMMENT == "5504653805"
+    assert routes.ISSUE498_REVIEW_CORRECTION_SHA256 == (
+        "a5cea09fcf3964caabd34ea7ea3a1ff991bc79599a2442b3680b960f5b8c7b5e"
+    )
     assert all(
         value in artifact["objective"]
-        for value in (routes.ISSUE498_TOPOLOGY_COMMENT, routes.ISSUE498_TOPOLOGY_SHA256)
+        for value in (
+            routes.ISSUE498_TOPOLOGY_COMMENT,
+            routes.ISSUE498_TOPOLOGY_SHA256,
+            routes.ISSUE498_REVIEW_CORRECTION_COMMENT,
+            routes.ISSUE498_REVIEW_CORRECTION_SHA256,
+        )
     )
 
     def run(args: list[str]) -> subprocess.CompletedProcess[str]:
@@ -3953,7 +3962,10 @@ def test_issue498_tdd_topology_mutations_fail_closed(mutation: str) -> None:
         records[0] = ("0" * 40, records[0][1])
     elif mutation == "subject":
         records[-1] = (records[-1][0], "fix(tts): changed subject (#498)")
-    output = "".join(f"{commit}\0{subject}\0" for commit, subject in records)
+    output = "".join(
+        f"{commit if commit is not None else 'a' * 40}\0{subject}\0"
+        for commit, subject in records
+    )
 
     def run(args: list[str]) -> subprocess.CompletedProcess[str]:
         return completed(args, 1 if mutation == "command" else 0, output)

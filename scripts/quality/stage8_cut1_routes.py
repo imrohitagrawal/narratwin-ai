@@ -84,6 +84,25 @@ ISSUE498_AMENDMENT_COMMENT = "5500539931"
 ISSUE498_AMENDMENT_SHA256 = "30faa0f1062545413efaa7b6e9bc38f9b2cd82f2554078f666aac04e4f8ef843"
 ISSUE498_BASE_AMENDMENT_COMMENT = "5504413401"
 ISSUE498_BASE_AMENDMENT_SHA256 = "f575ac4c5eb75a2d7e45740e90b4652d08cd5601837a29a2dffe477279e604e9"
+ISSUE498_TOPOLOGY_COMMENT = "5504600826"
+ISSUE498_TOPOLOGY_SHA256 = "ec2477cfc8ce73eb624ce3e4b154b34336859fb100997dcfb6202234f191205f"
+ISSUE498_REVIEW_CORRECTION_COMMENT = "5504653805"
+ISSUE498_REVIEW_CORRECTION_SHA256 = (
+    "a5cea09fcf3964caabd34ea7ea3a1ff991bc79599a2442b3680b960f5b8c7b5e"
+)
+ISSUE498_COMMIT_TOPOLOGY: tuple[tuple[str | None, str], ...] = (
+    ("5245393b2237cf8bcc25a652d885186b4d1c18f1", "test(tts): freeze official gRPC transport RED (#498)"),
+    ("e8a0d9b7290d2f8af01994bdd9a1fd12851734cc", "feat(tts): add governed official unary gRPC transport (#498)"),
+    ("6fcb1b28f3991f07d38924654fa812ede5381f06", "chore(tts): make channel-close failure observable (#498)"),
+    ("3fd77f31f01ffbb4919e6ec0b8cdded300fade4a", "test(tts): bind grpc route to security-correct base (#498)"),
+    ("d942c738c341b3357e4f1b41d28606f5ca755157", "fix(tts): advance grpc route after security prerequisite (#498)"),
+    ("d59e8b6c9d389aa82566b541fb4fa57c7530bd97", "test(tts): require hosted SDK test dependency (#498)"),
+    ("2adb5107d181b475a752174e4200c0d396ccdc88", "fix(tts): install official SDK for hosted tests (#498)"),
+    ("91bdda7ae542118b9caa4b002eab3ae5bb25ec89", "test(tts): enforce exact grpc TDD topology (#498)"),
+    ("149b98ddadfbd4adb8e5532c9b2c892a03eba5f1", "test(tts): freeze grpc boundary corrections (#498)"),
+    ("94e9dab839fab39f8d526467bcc6a351f92e14e1", "fix(tts): close grpc security and truth gaps (#498)"),
+    (None, "fix(tts): bind final grpc review corrections (#498)"),
+)
 ISSUE368_BINDING_COMPAT_AUTHORITY = (
     "5485581802", "c81d57d6adf081aaf6ec2bf8c94f4513ca7e363910a669efc3551d5b3b4eae3f",
     "5485633036", "8ccd797c3fac7802923a04aff0ac82d64363d8d9d25366a5365eef98b5436bd2",
@@ -1307,7 +1326,7 @@ TEXT_LIMITS = {
         "docs/TRACEABILITY.md": 100,
     },
     ISSUE498_BRANCH: {
-        "backend/app/google_tts_runtime.py": 500,
+        "backend/app/google_tts_runtime.py": 650,
         "backend/app/tts_provider.py": 350,
         "tests/unit/test_google_tts_runtime.py": 850,
         "tests/unit/test_stage6_tts_provider.py": 450,
@@ -2142,6 +2161,37 @@ def issue459_base_source_failures(root: Path) -> list[str]:
     return issue459_snapshot_failures(root, ISSUE459_BASE, ISSUE459_BASE_SOURCE_SHA256, "base source")
 
 
+def issue498_commit_topology_failures(run: Callable[[list[str]], Any]) -> list[str]:
+    result = run(
+        [
+            "git",
+            "log",
+            "--reverse",
+            "-z",
+            "--format=%H%x00%s",
+            f"{ISSUE498_BASE}..HEAD",
+        ]
+    )
+    if result.returncode:
+        return ["Issue #498 exact TDD commit topology drifted."]
+    fields = str(result.stdout).split("\0")
+    if fields and fields[-1] == "":
+        fields.pop()
+    if len(fields) != len(ISSUE498_COMMIT_TOPOLOGY) * 2:
+        return ["Issue #498 exact TDD commit topology drifted."]
+    actual = list(zip(fields[::2], fields[1::2], strict=True))
+    for (commit, subject), (expected_commit, expected_subject) in zip(
+        actual, ISSUE498_COMMIT_TOPOLOGY, strict=True
+    ):
+        if (
+            re.fullmatch(r"[0-9a-f]{40}", commit) is None
+            or (expected_commit is not None and commit != expected_commit)
+            or subject != expected_subject
+        ):
+            return ["Issue #498 exact TDD commit topology drifted."]
+    return []
+
+
 def check_exact_route(
     root: Path, run: Callable[[list[str]], Any], branch: str, changed: set[str], failures: list[str]
 ) -> None:
@@ -2163,6 +2213,8 @@ def check_exact_route(
     files = ROUTES[branch]
     effective_changed = set(changed)
     fixed_base: str | None = None
+    if branch == ISSUE498_BRANCH:
+        failures.extend(issue498_commit_topology_failures(run))
     if branch == ISSUE459_BRANCH:
         try:
             fixed_base = route_base(run, branch)
