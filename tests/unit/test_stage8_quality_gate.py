@@ -248,3 +248,19 @@ def test_a23a_contract_gate_rejects_every_frozen_marker_mutation(tmp_path: Path)
     api=documents["docs/API_CONTRACT.md"]; preimage=api.rsplit("```json\n",1)[1].split("\n```",1)[0]
     f=a23b.semantic_detector_self_test; assert "sha256:" + hashlib.sha256(preimage.encode()).hexdigest() == (
         "sha256:a956a969f4f147fb020fa06b71722d8fcf76ad850f0c5f6be8d78bbbadb81377") and f(tmp_path)
+
+
+def test_issue502_security_workflow_runs_both_frontend_architectures_in_one_context() -> None:
+    workflow = (REPO / ".github/workflows/security.yml").read_text(encoding="utf-8")
+    assert workflow.count("name: security / docker build") == 1
+    assert "docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130" in workflow
+    assert "platforms: arm64" in workflow
+    for architecture in ("amd64", "arm64"):
+        assert f"REPORT_DIR: reports/security/{architecture}" in workflow
+        assert f"FRONTEND_ARCH: {architecture}" in workflow
+        assert f"SESSION: issue502-hosted-{architecture}" in workflow
+        assert f"narratwin-ai-frontend:ci-{architecture}" in workflow
+        assert f"narratwin-ai-frontend-build:ci-{architecture}" in workflow
+        assert f"narratwin-ai-frontend:repro-ci-{architecture}" in workflow
+    assert workflow.count("bash scripts/ci/docker-image-scan.sh") == 2
+    assert "path: reports/security" in workflow
