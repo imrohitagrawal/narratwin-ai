@@ -4143,19 +4143,7 @@ def test_issue391_resource_lifecycle_route_allows_only_its_exact_docs(
     monkeypatch: Any,
 ) -> None:
     branch = "phase-1-closure-process-391-resource-lifecycle-enforcement"
-    allowed = {
-        ".github/pull_request_template.md",
-        "docs/ADR/0076-session-scoped-resource-lifecycle-enforcement.md",
-        "docs/QUALITY_GATES.md",
-        "docs/RESOURCE_LIFECYCLE.md",
-        "docs/STATUS.md",
-        "docs/governance/preflights/issue-391.json",
-        "docs/templates/AI_SESSION_FINALIZER_PROMPT.md",
-        "scripts/guardrails_check.py",
-        "scripts/quality/check_phase1_closure_docs.py",
-        "tests/unit/test_guardrails_check.py",
-        "tests/unit/test_phase1_closure_docs.py",
-    }
+    allowed = phase1.ISSUE_391_RESOURCE_LIFECYCLE_ALLOWED_CHANGED_FILES
 
     assert run_changed_files_check(
         monkeypatch,
