@@ -1415,7 +1415,8 @@ def resource_lifecycle_failures(body: str) -> list[str]:
         r"(?<!\S)[\"']?/[\"']?(?=\s|$)|[^\s|]*[*?][^\s|]*)"
     )
     unsafe_command_prefix = re.compile(
-        r"(?i)(?:\b(?:sudo|env|command|xargs)\s+(?:git|docker|rm)\b|"
+        r"(?i)(?:\b(?:sudo|doas|env|eval|nice|nohup|command|xargs|bash|sh|zsh|ksh)\b"
+        r"[^;&|\n`]*\b(?:git|docker|rm)\b|"
         r"(?:^|\s)[A-Za-z_][A-Za-z0-9_]*=\S+\s+(?:git|docker|rm)\b)"
     )
 
