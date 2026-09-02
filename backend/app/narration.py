@@ -24,7 +24,7 @@ SCHEMA = "cut1-narration-state-v1"
 CHECKSUM_SCHEMA = "cut1-narration-checksum-v1"
 EVALUATION_SCHEMA = "cut1-narration-evaluation-v1"
 APPROVAL_SCHEMA = "cut1-speech-approval-v1"
-RECEIPT_SCHEMA = "cut1-tts-text-authority-v1"
+RECEIPT_SCHEMA = "cut1-tts-text-authority-v2"
 MAX_TEXT_BYTES = 16_384
 MAX_STATE_BYTES = 4_194_304
 MAX_PROJECTS = 64
@@ -108,6 +108,7 @@ class NarrationVersion:
     context_ref_ids: tuple[str, ...]
     citation_indexes: tuple[int, ...]
     claim_support_ids: tuple[str, ...]
+    duration_requirement_seconds: tuple[int, int]
     narration_checksum: str
     state: NarrationState
     evaluation: NarrationEvaluation | None = None
@@ -141,7 +142,10 @@ class NarrationVersion:
                 "lineageJson": self.source_lineage_json, "requestChecksum": self.source_request_checksum,
                 "runId": self.source_run_id, "traceId": self.source_trace_id,
             },
-            "downstream": {"measuredAudioSeconds": [90, 120], "status": "REQUIREMENT_ONLY"},
+            "downstream": {
+                "measuredAudioSeconds": list(self.duration_requirement_seconds),
+                "status": "REQUIREMENT_ONLY",
+            },
         }
 @dataclass(frozen=True)
 class TTSConsumptionReceipt:
@@ -242,11 +246,25 @@ def _current_timestamp(clock: Callable[[], datetime]) -> str:
     if value.tzinfo is None or value.utcoffset() != UTC.utcoffset(value):
         _fail("TIMESTAMP_INVALID", "Approval clock must produce UTC.")
     return value.isoformat()
+def validate_duration_requirement(value: object) -> tuple[int, int]:
+    if (
+        not isinstance(value, (tuple, list))
+        or len(value) != 2
+        or any(type(item) is not int for item in value)
+        or value[0] <= 0
+        or value[0] > value[1]
+    ):
+        raise ValueError("Narration duration requirement is invalid.")
+    return cast(tuple[int, int], tuple(value))
 class NarrationService:
     def __init__(self, *, stage4: Stage4Service, registry: PresenterRegistry,
-                 state_path: Path | None = None, clock: Callable[[], datetime] | None = None) -> None:
+                 state_path: Path | None = None, clock: Callable[[], datetime] | None = None,
+                 duration_requirement_seconds: tuple[int, int] = DURATION_REQUIREMENT_SECONDS) -> None:
         self.stage4, self.registry, self.state_path = stage4, registry, state_path
         self.clock = clock or (lambda: datetime.now(UTC))
+        self.duration_requirement_seconds = validate_duration_requirement(
+            duration_requirement_seconds
+        )
         self._versions: dict[str, list[NarrationVersion]] = {}
         self._receipts: list[TTSConsumptionReceipt] = []
         self._lock = RLock()
@@ -325,7 +343,8 @@ class NarrationService:
             binding.presenter_id, binding.presenter_version, binding, binding.registry_sha256,
             review, spoken, run.run_id, _checksum(run.request_checksum),
             _identifier(run.trace_id), lineage_json, claim_evidence_json, _identifier(evaluation.evaluation_id), source_checksum,
-            context_ids, indexes, support_ids, "", NarrationState.DRAFT,
+            context_ids, indexes, support_ids, self.duration_requirement_seconds, "",
+            NarrationState.DRAFT,
             invalidated_authorities=invalidations, invalidated_version=invalidated_version,
             invalidated_checksum=invalidated_checksum,
         )
@@ -401,13 +420,14 @@ class NarrationService:
                 "sourceEvaluationChecksum": row.source_evaluation_checksum, "sourceRunId": row.source_run_id,
                 "spokenText": row.spoken_text, "tenantId": row.tenant_id, "actorId": row.actor_id,
                 "traceId": trace, "version": row.version,
+                "durationRequirementSeconds": list(row.duration_requirement_seconds),
             }
             receipt = TTSConsumptionReceipt(
                 row.tenant_id, row.actor_id, row.project_id, row.version, row.narration_checksum,
                 row.presenter_id, row.presenter_version, row.presenter_binding.binding_sha256,
                 row.source_run_id, row.source_evaluation_checksum, evaluation.checksum,
                 approval.checksum, request, trace, row.spoken_text,
-                DURATION_REQUIREMENT_SECONDS, _sha(payload),
+                row.duration_requirement_seconds, _sha(payload),
             )
             consumed = replace(row, state=NarrationState.CONSUMED_BY_TTS)
             self._replace(consumed)
@@ -442,6 +462,8 @@ class NarrationService:
                 _fail("AUTHORITY_MISMATCH", "TTS receipt authority is stale or incomplete.")
             if receipt not in self._receipts or not _receipt_matches_version(receipt, row):
                 _fail("AUTHORITY_MISMATCH", "TTS receipt is stale or mismatched.")
+            if receipt.duration_requirement_seconds != self.duration_requirement_seconds:
+                _fail("AUTHORITY_MISMATCH", "TTS duration authority is stale.")
             if _receipt_checksum(receipt) != receipt.receipt_checksum:
                 _fail("AUTHORITY_MISMATCH", "TTS receipt checksum is invalid.")
             return receipt
@@ -605,8 +627,14 @@ class NarrationService:
             if root["schema"] != SCHEMA or not isinstance(root["versions"], list) \
                     or not isinstance(root["receipts"], list):
                 raise ValueError("Narration state schema mismatch.")
-            versions = [_version_from_row(row) for row in root["versions"]]
-            receipts = [_receipt_from_row(row) for row in root["receipts"]]
+            versions = [
+                _version_from_row(row, self.duration_requirement_seconds)
+                for row in root["versions"]
+            ]
+            receipts = [
+                _receipt_from_row(row, self.duration_requirement_seconds)
+                for row in root["receipts"]
+            ]
             if len({row.project_id for row in versions}) > MAX_PROJECTS \
                     or max(len(versions), len(receipts)) > MAX_PROJECTS * MAX_VERSIONS_PER_PROJECT:
                 raise ValueError("Narration state count exceeded.")
@@ -649,13 +677,20 @@ def _version_to_row(row: NarrationVersion) -> dict[str, Any]:
             "state": row.state, "evaluation": asdict(row.evaluation) if row.evaluation else None,
             "approval": asdict(row.approval) if row.approval else None,
             "invalidatedAuthorities": list(row.invalidated_authorities)}
-def _version_from_row(value: Any) -> NarrationVersion:
+def _version_from_row(
+    value: Any, expected_duration_requirement: tuple[int, int]
+) -> NarrationVersion:
     row = _object(value, {"content", "narrationChecksum", "state", "evaluation", "approval",
                           "invalidatedAuthorities"})
     content = _object(row["content"], {"schema", "brand", "scope", "presenter", "narration",
                                       "source", "downstream"})
+    downstream = _object(content["downstream"], {"measuredAudioSeconds", "status"})
+    duration_requirement = validate_duration_requirement(
+        downstream["measuredAudioSeconds"]
+    )
     if content["schema"] != CHECKSUM_SCHEMA or content["brand"] != {"domain": BRAND_DOMAIN, "name": BRAND_NAME} \
-            or content["downstream"] != {"measuredAudioSeconds": [90, 120], "status": "REQUIREMENT_ONLY"}:
+            or downstream["status"] != "REQUIREMENT_ONLY" \
+            or duration_requirement != expected_duration_requirement:
         raise ValueError("Narration content contract drifted.")
     scope = _object(content["scope"], {"actorId", "projectId", "tenantId"})
     narration = _object(content["narration"], {"presenterId", "presenterVersion", "registrySha256",
@@ -705,7 +740,8 @@ def _version_from_row(value: Any) -> NarrationVersion:
         binding, _checksum(narration["registrySha256"], bare=True), review, spoken,
         _identifier(source["runId"]), _checksum(source["requestChecksum"]), _identifier(source["traceId"]),
         lineage_json, cast(str, source["claimEvidenceJson"]), _identifier(source["evaluationId"]), _checksum(source["evaluationChecksum"]),
-        contexts, tuple(indexes), supports, _checksum(row["narrationChecksum"]), state,
+        contexts, tuple(indexes), supports, duration_requirement,
+        _checksum(row["narrationChecksum"]), state,
         evaluation, approval, tuple(invalidations), invalidated_version,
         _checksum(invalidated_checksum) if invalidated_checksum is not None else None,
     )
@@ -784,10 +820,13 @@ def _approval_current(row: NarrationVersion) -> bool:
     ) == (row.actor_id, row.narration_checksum, evaluation.checksum, _sha(payload))
 def _receipt_to_row(row: TTSConsumptionReceipt) -> dict[str, Any]:
     return asdict(row)
-def _receipt_from_row(value: Any) -> TTSConsumptionReceipt:
+def _receipt_from_row(
+    value: Any, expected_duration_requirement: tuple[int, int]
+) -> TTSConsumptionReceipt:
     row = _object(value, set(TTSConsumptionReceipt.__dataclass_fields__))
     duration = row["duration_requirement_seconds"]
-    if duration != [90, 120]:
+    parsed_duration = validate_duration_requirement(duration)
+    if parsed_duration != expected_duration_requirement:
         raise ValueError("Narration duration requirement drifted.")
     return TTSConsumptionReceipt(
         _identifier(row["tenant_id"]), _identifier(row["actor_id"]), _identifier(row["project_id"]),
@@ -797,7 +836,7 @@ def _receipt_from_row(value: Any) -> TTSConsumptionReceipt:
         _identifier(row["source_run_id"]), _checksum(row["source_evaluation_checksum"]),
         _checksum(row["evaluation_checksum"]), _checksum(row["approval_checksum"]),
         _identifier(row["request_id"]), _identifier(row["trace_id"]), _text(row["spoken_text"]),
-        DURATION_REQUIREMENT_SECONDS, _checksum(row["receipt_checksum"]),
+        parsed_duration, _checksum(row["receipt_checksum"]),
     )
 def _receipt_checksum(row: TTSConsumptionReceipt) -> str:
     payload = {"approvalChecksum": row.approval_checksum, "evaluationChecksum": row.evaluation_checksum,
@@ -806,7 +845,8 @@ def _receipt_checksum(row: TTSConsumptionReceipt) -> str:
         "projectId": row.project_id, "requestId": row.request_id, "schema": RECEIPT_SCHEMA,
         "sourceEvaluationChecksum": row.source_evaluation_checksum, "sourceRunId": row.source_run_id,
         "spokenText": row.spoken_text, "tenantId": row.tenant_id, "actorId": row.actor_id,
-        "traceId": row.trace_id, "version": row.version}
+        "traceId": row.trace_id, "version": row.version,
+        "durationRequirementSeconds": list(row.duration_requirement_seconds)}
     return _sha(payload)
 def _receipt_matches_version(receipt: TTSConsumptionReceipt, row: NarrationVersion) -> bool:
     evaluation, approval = row.evaluation, row.approval
@@ -815,9 +855,10 @@ def _receipt_matches_version(receipt: TTSConsumptionReceipt, row: NarrationVersi
         receipt.narration_checksum, receipt.presenter_id, receipt.presenter_version,
         receipt.presenter_binding_checksum, receipt.source_run_id, receipt.source_evaluation_checksum,
         receipt.evaluation_checksum, receipt.approval_checksum, receipt.spoken_text,
+        receipt.duration_requirement_seconds,
     ) == (
         row.tenant_id, row.actor_id, row.project_id, row.version, row.narration_checksum,
         row.presenter_id, row.presenter_version, row.presenter_binding.binding_sha256,
         row.source_run_id, row.source_evaluation_checksum, evaluation.checksum,
-        approval.checksum, row.spoken_text,
+        approval.checksum, row.spoken_text, row.duration_requirement_seconds,
     )

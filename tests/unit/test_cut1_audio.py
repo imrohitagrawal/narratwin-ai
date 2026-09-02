@@ -375,7 +375,7 @@ def test_issue509_default_range_still_rejects_same_natural_duration(
 
     with pytest.raises(cut1_audio.AudioCaptionAuthorityError) as caught:
         service.evaluate_authority(candidate=candidate)
-    assert caught.value.code == "AUDIO_WAV_INVALID"
+    assert caught.value.code == "AUDIO_DURATION_INVALID"
 
 
 def test_issue475_hosted_candidate_binds_public_and_runtime_configuration_identities(

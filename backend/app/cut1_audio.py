@@ -21,7 +21,11 @@ from pathlib import Path
 from types import MappingProxyType
 from typing import Any, Callable, Mapping, NoReturn, cast
 
-from backend.app.narration import TTSConsumptionReceipt, canonical_presenter_text
+from backend.app.narration import (
+    TTSConsumptionReceipt,
+    canonical_presenter_text,
+    validate_duration_requirement,
+)
 from backend.app.storage import write_state
 from backend.app.tts_provider import ApprovedNarrationTTSResult
 
@@ -31,7 +35,6 @@ COMMITMENT_SCHEMA = "cut1-audio-commitment-v2"
 MANIFEST_SCHEMA = "cut1-audio-commitment-manifest-v2"
 MAX_AUTHORITIES = 3
 MAX_MANIFEST_SEQUENCE = 2_147_483_647
-MAX_AUDIO_BYTES = 6_000_000
 MAX_CAPTION_BYTES = 256_000
 MAX_STATE_BYTES = 24_000_000
 CHECKSUM = re.compile(r"sha256:[0-9a-f]{64}\Z")
@@ -316,9 +319,15 @@ def _validate_captions(
 
 
 def _validate_wav(audio: bytes, duration_bounds: tuple[int, int]) -> AudioMeasurements:
+    try:
+        _, maximum_seconds = validate_duration_requirement(duration_bounds)
+    except ValueError:
+        _fail("AUDIO_DURATION_INVALID", "Audio duration authority is invalid.")
+    maximum_audio_bytes = 44 + maximum_seconds * 24_000 * 2
+    if len(audio) > maximum_audio_bytes:
+        _fail("AUDIO_DURATION_INVALID", "Audio duration is outside the narration authority.")
     if (
         len(audio) < 44
-        or len(audio) > MAX_AUDIO_BYTES
         or audio[:4] != b"RIFF"
         or audio[8:12] != b"WAVE"
     ):
@@ -559,9 +568,12 @@ class Cut1AudioAuthorityService:
             receipt.approval_checksum,
             receipt.receipt_checksum,
         )
+        try:
+            validate_duration_requirement(receipt.duration_requirement_seconds)
+        except ValueError:
+            _fail("NARRATION_AUTHORITY_STALE", "Narration receipt shape is invalid.")
         if (
             receipt.presenter_id not in self.approved_config.presenter_voices
-            or receipt.duration_requirement_seconds != (90, 120)
             or not isinstance(receipt.presenter_binding_checksum, str)
             or BARE_CHECKSUM.fullmatch(receipt.presenter_binding_checksum) is None
             or any(
