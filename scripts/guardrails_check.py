@@ -1452,15 +1452,19 @@ def resource_lifecycle_failures(body: str) -> list[str]:
         "shared-resource",
         "temporary-file",
     }
-    path_kinds = {
-        "filesystem-path",
-        "git-worktree",
-        "node-modules",
-        "python-venv",
-        "temporary-file",
-    }
-    safe_locator = re.compile(r"/?[A-Za-z0-9][A-Za-z0-9/._:@+-]*")
+    safe_locator = re.compile(r"/?[A-Za-z0-9.][A-Za-z0-9/._:@+-]*")
     safe_trigger = re.compile(r"[a-z0-9][a-z0-9._:-]*")
+    unsafe_table_instruction = re.compile(
+        r"(?i)(?:[;&`]|$\(|[<>]\(|\|\||"
+        r"\b(?:run|execute|invoke|eval|sudo|doas|bash|sh|zsh|fish|xargs|find)\b"
+        r".{0,80}\b(?:docker|git|rm|prune|delete|remove)\b|"
+        r"\bdocker\s+(?:system|image|container|volume|network|builder|buildx|compose)"
+        r"\s+(?:prune|rm|rmi|remove|down|disconnect)\b|"
+        r"\bgit\s+(?:branch|worktree|clean|reset|switch|checkout|restore|push|"
+        r"update-ref|reflog|gc)\s+(?:-[A-Za-z]|--|prune|remove|expire)\b|"
+        r"\brm\s+(?:-[A-Za-z]|--)|"
+        r"\b(?:delete|remove)\b.{0,40}\b(?:all|every|entire|workspace|machine|host)\b)"
+    )
     verification_marker = re.compile(
         r"(?i)\b(?:absence|absent|proof|verif(?:y|ied|ication)|remain|retained|"
         r"hash|identity|count|size|delta|healthy|recheck|inventory|status|comment)\b|https://"
@@ -1474,11 +1478,19 @@ def resource_lifecycle_failures(body: str) -> list[str]:
             result[key] = value
         return result
 
+    seen_resources: set[tuple[str, str]] = set()
+    protected_delete_locators = {
+        str(Path.home().resolve()),
+        str(ROOT.resolve()),
+    }
     for row in parsed_rows[2:]:
         assert row is not None
         resource, ownership, retention, cleanup, evidence = row
         values = (resource, ownership, retention, cleanup, evidence)
-        if any(is_placeholder_value(value) or is_na_value(value) for value in values):
+        if (
+            any(is_placeholder_value(value) or is_na_value(value) for value in values)
+            or any(unsafe_table_instruction.search(value) for value in values)
+        ):
             return [invalid]
 
         retention = retention.lower()
@@ -1499,6 +1511,7 @@ def resource_lifecycle_failures(body: str) -> list[str]:
         kind = contract["kind"]
         locator = contract["locator"]
         trigger = contract["trigger"]
+        identity = (kind, locator)
         if (
             disposition != retention_dispositions[retention]
             or kind not in resource_kinds
@@ -1506,10 +1519,13 @@ def resource_lifecycle_failures(body: str) -> list[str]:
             or safe_trigger.fullmatch(trigger) is None
             or locator in {".", "..", "/"}
             or ".." in locator.split("/")
-            or (kind in path_kinds) != locator.startswith("/")
+            or kind == "shared-resource" and disposition != "retain"
+            or disposition == "delete" and locator in protected_delete_locators
+            or identity in seen_resources
             or verification_marker.search(evidence) is None
         ):
             return [invalid]
+        seen_resources.add(identity)
     return []
 
 

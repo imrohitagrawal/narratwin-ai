@@ -45,7 +45,9 @@ uncertain.
 Do not store shell commands in the inventory. Re-resolve live ownership and
 activity read-only at finalization, then derive the approved operation for the
 declared kind and one exact literal locator. The inventory is evidence and
-intent, not executable authority.
+intent, not executable authority. Public PR evidence uses context-relative
+identities and never discloses private machine paths; a kind/locator identity
+appears once and shared-resource remains retain-only.
 ```
 
 The finalizer is an operator checklist, not deletion authority and not a

@@ -110,7 +110,9 @@ persistent, or shared-retain. The Cleanup contract is compact JSON with exactly
 four string fields: {"disposition":"delete|retain","kind":"closed-vocabulary-kind",
 "locator":"literal-exact-identity","trigger":"event-slug"}. Do not put shell
 commands, variables, globs, multiple resources, or delegated instructions in
-that field. A generic N/A row is not accepted. -->
+any table cell. Use a public-safe context-relative locator instead of a private
+machine path. Each kind/locator pair must appear exactly once; shared-resource
+is retain-only. A generic N/A row is not accepted. -->
 
 | Resource | Ownership proof | Retention class | Cleanup contract | Verification evidence |
 |---|---|---|---|---|

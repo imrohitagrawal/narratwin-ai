@@ -1053,7 +1053,10 @@ structured JSON cleanup contract, and verification evidence. The cleanup
 contract accepts exactly `disposition`, `kind`, `locator`, and `trigger`
 string fields; rejects shell commands, extra keys, duplicate keys, variables,
 globs, root/parent paths, multiple targets, and unknown kinds; and requires
-retention/disposition consistency. Exact locators and triggers are PR data,
+retention/disposition consistency. Duplicate or conflicting kind/locator
+identities, deletable shared-resource rows, cross-cell command instructions,
+private machine paths in public evidence, and home/workspace-root deletion all
+fail closed. Exact context-relative locators and triggers are PR data,
 while the stable resource-kind and safety vocabulary remains policy. The accepted retention
 classes are `always-clean`, `success-clean`, `failure-retain`,
 `evidence-until-merged-main`, `persistent`, and `shared-retain`. Missing,

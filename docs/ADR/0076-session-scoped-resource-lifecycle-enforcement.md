@@ -26,6 +26,9 @@ Resource lifecycle is a mandatory delivery gate:
   safety semantics from PR-configurable exact locators and lifecycle triggers;
 - shell commands are derived only after cleanup-time read-only re-resolution;
   the PR-body inventory never becomes executable authority;
+- public PRs use exact context-relative identities rather than exposing private
+  machine paths; duplicate/conflicting identities and deletable shared-resource
+  rows fail closed;
 - exclusively owned disposable resources are removed after their evidence
   obligation ends and before the next increment;
 - active, persistent, shared, ambiguous, unrelated, and credential-bearing

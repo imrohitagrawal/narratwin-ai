@@ -47,14 +47,20 @@ compact JSON object with exactly four string fields:
   `temporary-file`, `python-venv`, `node-modules`, `docker-image`,
   `docker-container`, `docker-volume`, `docker-network`,
   `docker-builder`, `buildkit-cache-record`, or `shared-resource`.
-- `locator` is one literal exact identity. Path kinds require an absolute
-  path. Variables, globs, root paths, parent traversal, options, multiple
-  targets, and shell syntax are invalid.
+- `locator` is one literal exact identity. Prefer a public-safe,
+  context-relative identity such as `.venv`, `frontend/node_modules`, or
+  `worktree:feature-safe`; resolve it only inside the separately declared
+  branch/worktree/session context. Private machine paths must not be copied
+  into public PR bodies. Variables, globs, home/workspace roots, parent
+  traversal, options, multiple targets, and shell syntax are invalid.
 - `trigger` is a compact event slug selected for the PR, such as
   `merged-main-green`, `session-end`, or `owner-verified`.
 
 Stable resource kinds and safety semantics remain code-controlled; project
 needs such as exact identities and lifecycle events remain data-configurable.
+Each `kind`/`locator` identity appears exactly once, so duplicate or
+conflicting retain/delete decisions fail closed. `shared-resource` is always
+retain-only.
 The contract never grants execution authority. At cleanup time the operator
 must re-resolve ownership and activity read-only, then select the repository-
 approved operation for exactly that kind and locator.
