@@ -2468,13 +2468,15 @@ def check_exact_route(
                 f"Issue #509 governance preflight failed: {item.code}" for item in findings
             )
             objective = preflight.get("objective") if isinstance(preflight, dict) else None
-            authority = (
+            issue509_authority = (
                 ISSUE509_BASE,
                 ISSUE509_TREE,
                 ISSUE509_ROUTE_COMMENT,
                 ISSUE509_BODY_SHA256,
             )
-            if not isinstance(objective, str) or any(value not in objective for value in authority):
+            if not isinstance(objective, str) or any(
+                value not in objective for value in issue509_authority
+            ):
                 failures.append("Issue #509 authority drifted.")
         except (OSError, ValueError, TypeError) as error:
             failures.append(f"Issue #509 governance preflight failed closed: {error}")
