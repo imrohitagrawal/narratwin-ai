@@ -236,16 +236,19 @@ def _valid_vex(vex: dict[str, Any], backend_config: str, component_purl: str) ->
     }
 
 
+def _terminal_package_identity(value: Any) -> str:
+    text = str(value)
+    parsed = urlsplit(text)
+    identity_path = parsed.path if parsed.scheme.casefold() == "pkg" else text
+    return (
+        unquote(identity_path).split("?", 1)[0].split("#", 1)[0]
+        .rstrip("/").rsplit("/", 1)[-1].split("@", 1)[0].casefold()
+    )
+
+
 def _package_identities(component: dict[str, Any]) -> set[str]:
     identities = {str(component.get("name", "")).casefold()}
-    for field in ("purl", "bom-ref"):
-        value = str(component.get(field, ""))
-        parsed = urlsplit(value)
-        identity_path = parsed.path if parsed.scheme.casefold() == "pkg" else value
-        identities.add(
-            unquote(identity_path).split("?", 1)[0].split("#", 1)[0]
-            .rstrip("/").rsplit("/", 1)[-1].split("@", 1)[0].casefold()
-        )
+    identities.update(_terminal_package_identity(component.get(field, "")) for field in ("purl", "bom-ref"))
     cpe = str(component.get("cpe", ""))
     cpe_parts = cpe.split(":")
     if cpe.casefold().startswith("cpe:2.3:") and len(cpe_parts) > 4:
@@ -257,16 +260,35 @@ def _package_identities(component: dict[str, Any]) -> set[str]:
             continue
         name, value = prop.get("name"), str(prop.get("value", ""))
         if name == "aquasecurity:trivy:PkgID":
-            identities.add(value.split("@", 1)[0].casefold())
+            identities.add(_terminal_package_identity(value))
         elif name == "aquasecurity:trivy:SrcName":
             identities.add(value.casefold())
     return identities
 
 
+def _bounded_components(value: Any) -> list[dict[str, Any]] | None:
+    if not isinstance(value, list) or not value:
+        return None
+    pending = list(value)
+    flattened: list[dict[str, Any]] = []
+    while pending:
+        component = pending.pop()
+        if not isinstance(component, dict):
+            return None
+        flattened.append(component)
+        if len(flattened) > 5000:
+            return None
+        nested = component.get("components", [])
+        if not isinstance(nested, list):
+            return None
+        pending.extend(nested)
+    return flattened
+
+
 def _valid_cyclonedx_sbom(report: dict[str, Any], target: str, required: dict[str, tuple[str, tuple[str, ...], str, str]], architecture: str) -> bool:
     metadata = report.get("metadata", {}).get("component", {})
-    components = report.get("components")
-    if (report.get("bomFormat"), report.get("specVersion"), metadata.get("type")) != ("CycloneDX", "1.7", "container") or not isinstance(components, list) or not 0 < len(components) <= 5000 or any(not isinstance(component, dict) for component in components):
+    components = _bounded_components(report.get("components"))
+    if (report.get("bomFormat"), report.get("specVersion"), metadata.get("type")) != ("CycloneDX", "1.7", "container") or components is None:
         return False
     image_ids = {p.get("value") for p in metadata.get("properties", []) if isinstance(p, dict) and p.get("name") == "aquasecurity:trivy:ImageID"}
     if image_ids != {target}:
