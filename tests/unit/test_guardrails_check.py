@@ -1186,6 +1186,22 @@ def test_resource_lifecycle_accepts_possessive_prose_without_shell_parsing() -> 
     assert guardrails.resource_lifecycle_failures(resource_lifecycle_body(row=row)) == []
 
 
+@pytest.mark.parametrize(
+    "cleanup",
+    (
+        "After merge, run git branch -d `issue-391-safe-branch` and verify absence",
+        "rm -r /tmp/exact",
+        "rm -r /private/tmp/exact-issue-391-directory/",
+    ),
+)
+def test_resource_lifecycle_accepts_bounded_cleanup_variants(cleanup: str) -> None:
+    row = (
+        "| exact issue-391 resource | created only for issue 391 | always-clean | "
+        f"{cleanup} | exact absence proof |"
+    )
+    assert guardrails.resource_lifecycle_failures(resource_lifecycle_body(row=row)) == []
+
+
 def test_resource_lifecycle_rejects_missing_section() -> None:
     assert guardrails.resource_lifecycle_failures(product_context_body()) == [
         MISSING_RESOURCE_LIFECYCLE
@@ -1235,6 +1251,15 @@ def test_resource_lifecycle_rejects_missing_section() -> None:
         "| issue-391 branch | owner | success-clean | git branch --force=true main | issue comment |",
         "| issue-391 image | owner | success-clean | docker image rm --force=true shared:ci | issue comment |",
         "| issue-391 file | owner | success-clean | rm --force=true /private/tmp/exact-owned-file | issue comment |",
+        "| issue-391 branch | owner | success-clean | git branch -M old main | issue comment |",
+        "| issue-391 branch | owner | success-clean | git branch -C source main | issue comment |",
+        "| issue-391 container | owner | success-clean | docker --log-level debug container prune | issue comment |",
+        "| issue-391 container | owner | success-clean | docker --tlscert cert.pem container prune | issue comment |",
+        "| issue-391 cache | owner | success-clean | DOCKER_HOST=tcp://remote docker buildx prune --filter id=0123456789abcdefghijklmnop | issue comment |",
+        "| issue-391 cache | owner | success-clean | sudo docker buildx prune --filter id=0123456789abcdefghijklmnop | issue comment |",
+        "| issue-391 worktree | owner | success-clean | git worktree remove <(pwd) | issue comment |",
+        "| issue-391 resource | owner | success-clean | remove exact resource | docker buildx prune --all | evidence |",
+        r"| issue-391 resource | owner | success-clean | remove exact resource \| docker buildx prune --all | evidence |",
     ),
 )
 def test_resource_lifecycle_rejects_partial_placeholder_na_or_broad_cleanup_row(
