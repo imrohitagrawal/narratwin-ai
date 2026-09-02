@@ -3876,12 +3876,14 @@ def test_issue498_official_grpc_route_is_exact_bounded_and_base_pinned() -> None
     branch = routes.ISSUE498_BRANCH
     artifact = json.loads((REPO / "docs/governance/preflights/issue-498-google-tts-official-grpc.json").read_text())
     assert branch == "stage8-498-google-tts-official-grpc"
-    assert routes.ISSUE498_BASE == "d1f5400f5c6dfec5d4b63eb3a83aa82e3330743f"
-    assert routes.ISSUE498_TREE == "905f562c17e66abf1839e673940f80aca4330cfc"
+    assert routes.ISSUE498_BASE == "8fb9b6d143515a6e5cfe3c395477e51696fe782b"
+    assert routes.ISSUE498_TREE == "21b5c26355262482b02554d4115fc5567b6fb253"
     assert routes.ISSUE498_FREEZE_COMMENT == "5500521261"
     assert routes.ISSUE498_FREEZE_SHA256 == "fafc0f0a8ae18c9cc08d9dbab668235546f652aa780256792d5d1cb0e8f9f58b"
     assert routes.ISSUE498_AMENDMENT_COMMENT == "5500539931"
     assert routes.ISSUE498_AMENDMENT_SHA256 == "30faa0f1062545413efaa7b6e9bc38f9b2cd82f2554078f666aac04e4f8ef843"
+    assert routes.ISSUE498_BASE_AMENDMENT_COMMENT == "5504413401"
+    assert routes.ISSUE498_BASE_AMENDMENT_SHA256 == "f575ac4c5eb75a2d7e45740e90b4652d08cd5601837a29a2dffe477279e604e9"
     assert set(artifact["scope"]["required"]) == ISSUE498_EXPECTED == routes.ROUTES[branch]
     assert artifact["scope"]["required"] == artifact["scope"]["allowed_prefixes"]
     assert routes.ROUTE_ISSUES[branch] == 498
@@ -3897,7 +3899,8 @@ def test_issue498_official_grpc_route_is_exact_bounded_and_base_pinned() -> None
     assert all(value in artifact["objective"] for value in (
         routes.ISSUE498_BASE, routes.ISSUE498_TREE, routes.ISSUE498_FREEZE_COMMENT,
         routes.ISSUE498_FREEZE_SHA256, routes.ISSUE498_AMENDMENT_COMMENT,
-        routes.ISSUE498_AMENDMENT_SHA256,
+        routes.ISSUE498_AMENDMENT_SHA256, routes.ISSUE498_BASE_AMENDMENT_COMMENT,
+        routes.ISSUE498_BASE_AMENDMENT_SHA256,
     ))
 
 
