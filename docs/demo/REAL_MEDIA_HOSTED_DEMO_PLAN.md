@@ -5,7 +5,7 @@
 - Version: 0.1
 - Issue: `#225`; Checkpoint 1 PR 1 issue `#229`; Checkpoint 1 PR 2 issue `#235`; Checkpoint 1 PR 3 issue `#237`; Checkpoint 1 PR 4 issue `#241`; Checkpoint 1 PR 5 issue `#243`; Checkpoint 1 acceptance hardening issue `#245`; Checkpoint 3A planning/guardrails issue `#249`
 - Status: Demo Phase 0 complete; Checkpoint 1 is accepted as local/fake disabled-default reviewer evidence only through PRs `#230`, `#236`, `#238`, `#242`, `#244`, `#246`, and `#248`; issue `#249` defines public-safe Checkpoint 3A planning/guardrails before product-faithful implementation starts
-- Last updated: 2026-07-22
+- Last updated: 2026-09-03
 
 ## Purpose
 
@@ -65,6 +65,22 @@ Required boundary controls before a hosted demo URL exists:
 
 The fastest path for the hosted demo is provider-backed real media with
 mock/local fallback retained for tests.
+
+### Cut 1 T06 research refresh
+
+The dated, official-source comparison in
+`docs/governance/CUT1_T06_VIDEO_PROVIDER_LANDSCAPE_2026-09-03.md` is the current
+provider-research checkpoint for Issue `#512`. It expands this plan's earlier
+HeyGen/D-ID/Tavus snapshot to a four-route shortlist: HeyGen Avatar IV Photo,
+VEED Fabric 1.0 Fast through Hedra, Colossyan NEO/Instant Avatar, and optional
+LongCat-Video-Avatar 1.5 as an open-model benchmark. It also records rejected,
+baseline, exploratory, and future-only routes.
+
+That refresh does not select or activate a provider. It requires a small,
+separately labelled compatibility demo before any adapter code, followed by a
+full-duration Myra landscape/portrait test before selection. The immutable v1
+bake-off contract remains unchanged and provider facts must be refreshed again
+for the exact account and tier before credentials, egress, calls, or spend.
 
 ### Provider-Backed Path
 

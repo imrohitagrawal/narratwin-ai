@@ -2096,3 +2096,23 @@ human acceptance, deployment, release, production-readiness, or Cut 1 evidence.
 - T05B/T05C materialization is still pending this correction. T06, T07, T08,
   release, deployment, production readiness, and Cut 1 acceptance remain
   incomplete.
+
+## Issue #512 T06 provider research checkpoint (2026-09-03)
+
+- Private Packages 42 and 43 subsequently completed exact-byte T05B and
+  exact-hash T05C for Meera, Myra, and Raj at accepted main
+  `60198a86b5558df5dec42c0f90cb3343f67bb286`; T05 is complete and T06 is
+  unblocked. The source and result are Issue `#368` comments `5521410237` and
+  `5521588438`. No accepted audio bytes changed.
+- Issue `#512` preserves a refreshed official-source provider landscape and a
+  demo-before-code ladder. HeyGen is the recommended first test, with VEED
+  Fabric through Hedra and Colossyan as direct challengers and LongCat 1.5 as
+  an optional open-model benchmark. No final provider is selected.
+- The next external step is zero-network account/privacy/terms/SecretRef/cost
+  readiness, then an explicitly authorized short compatibility demo. A passing
+  short demo must be followed by full-duration Myra landscape and portrait
+  evidence before adapter code or final six-cell generation.
+- This checkpoint makes no provider call, uses no credential, performs no
+  egress or spend, generates no video, and changes no runtime. T06, T07, T08,
+  deployment, publication, release, production readiness, and Cut 1 acceptance
+  remain incomplete and unproven.
