@@ -2083,3 +2083,16 @@ human acceptance, deployment, release, production-readiness, or Cut 1 evidence.
   model, voice, narration, credential, activation, or attempt-accounting
   behavior. T05 still requires three valid audio artifacts and independently
   authored exact-hash human-listening acceptance before T06 can start.
+
+## Issue #509 configurable T05 audio-duration correction (2026-09-03)
+
+- The owner approved exact Meera 177b2755…c7c7c, Myra
+  cd9b7a81…664c, and existing Raj 92c58076…216e listening candidates.
+- Their audio bytes remain immutable. Myra is 127.661917 seconds and 6,127,816
+  bytes, reproducing fixed 120-second and 6,000,000-byte T05B blockers.
+- Issue #509 makes the duration pair constructor-injected and checksum-bound
+  and derives the WAV byte ceiling from it. The default remains 90–120;
+  Issue #368 will use 90–135 only after merge.
+- T05B/T05C materialization is still pending this correction. T06, T07, T08,
+  release, deployment, production readiness, and Cut 1 acceptance remain
+  incomplete.

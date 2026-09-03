@@ -151,13 +151,20 @@ def _registry_binding(presenter_id: str = "meera") -> tuple[Any, Any]:
     return registry, binding
 
 
-def _service(narration: ModuleType, tmp_path: Path, presenter_id: str = "meera", text: str | None = None) -> tuple[Any, Any, Any, str]:
+def _service(
+    narration: ModuleType,
+    tmp_path: Path,
+    presenter_id: str = "meera",
+    text: str | None = None,
+    duration_requirement_seconds: tuple[int, int] = (90, 120),
+) -> tuple[Any, Any, Any, str]:
     selected = MEERA_TEXT.replace("Meera", presenter_id.title()) if text is None else text
     stage4, principal, project_id = _stage4(selected)
     registry, binding = _registry_binding(presenter_id)
     service = narration.NarrationService(
         stage4=stage4, registry=registry, state_path=tmp_path / "narration.json",
         clock=lambda: datetime(2026, 8, 8, 18, 10, tzinfo=UTC),
+        duration_requirement_seconds=duration_requirement_seconds,
     )
     return service, principal, binding, project_id
 
@@ -527,6 +534,90 @@ def test_f382_18_19_consumption_is_latest_single_use_bound_text_receipt(narratio
         principal=principal, project_id=project_id, narration_version=approved.version,
         narration_checksum=approved.narration_checksum, request_id="consume_1", trace_id="trace_tts_1",
     ))
+
+
+def test_issue509_explicit_duration_policy_is_checksum_bound_and_restorable(
+    narration: ModuleType, tmp_path: Path
+) -> None:
+    service, principal, binding, project_id = _service(
+        narration, tmp_path, duration_requirement_seconds=(90, 135)
+    )
+    run = service.stage4.walkthrough_runs["run_narration"]
+    draft = service.create_draft(
+        principal=principal,
+        project_id=project_id,
+        source_run_id=run.run_id,
+        presenter_binding=binding,
+        review_text=run.accepted_script_text,
+    )
+    requested = service.request_evaluation(
+        principal=principal,
+        project_id=project_id,
+        narration_version=draft.version,
+        narration_checksum=draft.narration_checksum,
+    )
+    evaluated = service.evaluate(
+        principal=principal,
+        project_id=project_id,
+        narration_version=requested.version,
+        narration_checksum=requested.narration_checksum,
+    )
+    approved = service.approve_for_speech(
+        principal=principal,
+        project_id=project_id,
+        narration_version=evaluated.version,
+        narration_checksum=evaluated.narration_checksum,
+        approver_id=principal.actor_id,
+    )
+    receipt = service.consume_for_tts(
+        principal=principal,
+        project_id=project_id,
+        narration_version=approved.version,
+        narration_checksum=approved.narration_checksum,
+        request_id="consume_issue509",
+        trace_id="trace_issue509",
+    )
+
+    assert receipt.duration_requirement_seconds == (90, 135)
+    assert service.validate_tts_consumption_receipt(principal=principal, receipt=receipt) == receipt
+    restored = narration.NarrationService(
+        stage4=service.stage4,
+        registry=service.registry,
+        state_path=service.state_path,
+        duration_requirement_seconds=(90, 135),
+    )
+    assert restored.validate_tts_consumption_receipt(principal=principal, receipt=receipt) == receipt
+    stale = narration.NarrationService(
+        stage4=service.stage4,
+        registry=service.registry,
+        state_path=service.state_path,
+    )
+    assert stale.authority_count == 0 and stale.receipt_count == 0
+
+
+@pytest.mark.parametrize(
+    "duration_requirement_seconds",
+    [
+        (0, 135),
+        (136, 135),
+        (90, True),
+        (90.0, 135),
+    ],
+)
+def test_issue509_invalid_duration_policy_fails_closed(
+    narration: ModuleType,
+    tmp_path: Path,
+    duration_requirement_seconds: Any,
+) -> None:
+    stage4, _, _ = _stage4()
+    registry, _ = _registry_binding()
+    with pytest.raises(ValueError):
+        narration.NarrationService(
+            stage4=stage4,
+            registry=registry,
+            state_path=tmp_path / "invalid.json",
+            duration_requirement_seconds=duration_requirement_seconds,
+        )
 
 
 def test_f382_06_19_evaluation_approval_and_receipt_chains_reject_tampering(

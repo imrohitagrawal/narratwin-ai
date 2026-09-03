@@ -458,6 +458,40 @@ ISSUE502_LINE_CAPS = {
     "docs/STATUS.md": 120,
     "docs/TRACEABILITY.md": 120,
 }
+ISSUE509_EXPECTED = {
+    "docs/governance/preflights/issue-509.json",
+    "backend/app/narration.py",
+    "backend/app/cut1_audio.py",
+    "tests/unit/test_cut1_narration.py",
+    "tests/unit/test_cut1_audio.py",
+    "scripts/quality/stage8_cut1_routes.py",
+    "tests/unit/test_stage8_cut1_routes.py",
+    "docs/ADR/0078-cut1-configurable-audio-duration.md",
+    "docs/QUALITY_GATES.md",
+    "docs/STAGE_ISSUE_PLAN.md",
+    "docs/STATUS.md",
+    "docs/TRACEABILITY.md",
+    "docs/SECURITY_AND_PRIVACY.md",
+    "docs/OBSERVABILITY_AND_COST.md",
+    "docs/API_CONTRACT.md",
+}
+ISSUE509_LINE_CAPS = {
+    "docs/governance/preflights/issue-509.json": 240,
+    "backend/app/narration.py": 180,
+    "backend/app/cut1_audio.py": 100,
+    "tests/unit/test_cut1_narration.py": 260,
+    "tests/unit/test_cut1_audio.py": 300,
+    "scripts/quality/stage8_cut1_routes.py": 180,
+    "tests/unit/test_stage8_cut1_routes.py": 300,
+    "docs/ADR/0078-cut1-configurable-audio-duration.md": 160,
+    "docs/QUALITY_GATES.md": 100,
+    "docs/STAGE_ISSUE_PLAN.md": 100,
+    "docs/STATUS.md": 100,
+    "docs/TRACEABILITY.md": 60,
+    "docs/SECURITY_AND_PRIVACY.md": 80,
+    "docs/OBSERVABILITY_AND_COST.md": 60,
+    "docs/API_CONTRACT.md": 80,
+}
 ISSUE507_EXPECTED = {
     "backend/app/google_tts_runtime.py",
     "tests/unit/test_google_tts_runtime.py",
@@ -548,6 +582,7 @@ def remove_cleanup_marker(text: str, marker: str) -> str:
 
 
 EXPECTED = {
+    "stage8-509-configurable-audio-duration": ISSUE509_EXPECTED,
     "stage8-507-google-api-core-grpc-status": ISSUE507_EXPECTED,
     "stage8-502-frontend-musl-runtime-security": ISSUE502_EXPECTED,
     "cut1-process-479-t05c-listening-authority": ISSUE479_EXPECTED,
@@ -1076,6 +1111,33 @@ def test_issue507_google_api_core_grpc_status_route_is_exact_and_bounded() -> No
             routes.ISSUE507_ROUTE_AMENDMENT_COMMENT,
             routes.ISSUE507_STATUS_AMENDMENT_COMMENT,
             routes.ISSUE507_HOSTED_AMENDMENT_COMMENT,
+        )
+    )
+
+
+def test_issue509_configurable_audio_duration_route_is_exact_and_bounded() -> None:
+    branch = "stage8-509-configurable-audio-duration"
+    artifact = json.loads(
+        (REPO / "docs/governance/preflights/issue-509.json").read_text(encoding="utf-8")
+    )
+    assert routes.ISSUE509_BRANCH == branch
+    assert routes.ISSUE509_BASE == "0f608af347e89c749fcb5bd6ca17a63ceccd56e7"
+    assert routes.ISSUE509_TREE == "9418e5b13a1a1acc00371bbf51a4ec78ac50eccc"
+    assert routes.ROUTES[branch] == ISSUE509_EXPECTED
+    assert routes.ROUTE_ISSUES[branch] == 509
+    assert routes.TOTAL_LIMITS[branch] == 2400
+    assert routes.TEXT_LIMITS[branch] == ISSUE509_LINE_CAPS
+    assert set(artifact["scope"]["required"]) == ISSUE509_EXPECTED
+    assert artifact["scope"]["required"] == artifact["scope"]["allowed_prefixes"]
+    context = {"issue_number": 509, "branch": branch, "changed_files": list(ISSUE509_EXPECTED)}
+    assert routes.validate_governance_preflight(artifact, context=context) == []
+    assert all(
+        value in artifact["objective"]
+        for value in (
+            routes.ISSUE509_BASE,
+            routes.ISSUE509_TREE,
+            routes.ISSUE509_ROUTE_COMMENT,
+            routes.ISSUE509_BODY_SHA256,
         )
     )
 

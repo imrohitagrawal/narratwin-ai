@@ -377,3 +377,12 @@ Validation is local hashing, comparison, and bounded JSON persistence. It makes
 no network or provider call, reads no ambient credential/environment state, and
 creates no spend. A test pass or structural media result is never emitted as a
 human-listening acceptance observation.
+
+## Issue #509 duration-policy observability
+
+The effective minimum/maximum seconds are present in checksum-bound narration
+and receipt evidence. Validation reports existing bounded failure classes for
+invalid/stale narration authority, WAV duration, and state quarantine; raw
+audio and narration are not logged. This offline correction performs zero
+provider calls, egress attempts, retries, or spend and never changes media
+bytes to meet a configured bound.

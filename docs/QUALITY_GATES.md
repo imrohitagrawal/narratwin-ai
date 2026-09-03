@@ -1887,3 +1887,17 @@ SBOM, config, inventory, privilege, scanner result, route, or hosted topology
 fails closed. The exact post-squash PR #501 anchor/tree must also validate on
 later heads. Passing proves only the container/security boundary; no provider,
 audio, listening, media, deployment, production, or Cut 1 acceptance claim.
+
+## Issue #509 configurable audio-duration authority gate
+
+The 90–120-second default must remain, while an explicit positive ordered
+integer pair is constructor-injected and checksum-bound through narration,
+approval, receipt, persistence, and T05B. The canonical WAV byte ceiling must
+be derived from the configured upper duration and fixed 24-kHz mono PCM16
+format. Policy substitution, malformed values, stale/coherently rehashed
+state, and audio outside the effective pair fail closed.
+
+The exact 127.661917-second, 6,127,816-byte regression shape must pass only
+under explicit 90–135 authority and fail under the default. No test or
+configuration may modify audio cadence or bytes, infer listening, call a
+provider, or claim T05/Cut 1 completion.

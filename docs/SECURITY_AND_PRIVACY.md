@@ -767,3 +767,13 @@ and Grype. Package metadata remains scanner-visible. Failure, disagreement,
 missing evidence, or architecture substitution rejects the gate. This is
 container capability isolation only and creates no provider, media,
 deployment, release, production, or Cut 1 acceptance authority.
+
+## Issue #509 duration-policy trust boundary
+
+Duration configuration is untrusted until validated as exactly two
+non-boolean positive ordered integers. The effective pair is checksum-bound to
+narration and receipt state; loading under a different pair fails closed.
+T05B derives its maximum canonical WAV bytes from the upper duration before
+sample iteration, retaining a finite resource bound without an independently
+drifting product constant. No environment, secret, credential, provider, or
+network surface is added.
