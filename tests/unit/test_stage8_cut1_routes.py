@@ -1217,6 +1217,16 @@ def test_issue512_provider_research_preserves_panel_corrections() -> None:
     ):
         assert required in landscape
     assert "https://developers.heygen.com/docs/pricing" not in landscape
+    heygen_hard_fit = next(
+        line
+        for line in landscape.splitlines()
+        if line.startswith("| HeyGen Avatar IV Photo |")
+    )
+    assert heygen_hard_fit.startswith(
+        "| HeyGen Avatar IV Photo | `CONDITIONAL`: accepted WebP"
+    )
+    assert "exact accepted WebP compatibility" in landscape
+    assert "lossless PNG derivative" in landscape
     for required in (
         "direct VEED Fabric through fal.ai",
         "Runway Avatar Video API",
@@ -1224,6 +1234,7 @@ def test_issue512_provider_research_preserves_panel_corrections() -> None:
         "immutable 24 kHz",
         "public fal CDN",
         "activation-blocked quality/API challengers",
+        "accepted WebP compatibility is unproved",
     ):
         assert required in demo_plan
     assert "https://developers.heygen.com/docs/pricing" not in demo_plan
