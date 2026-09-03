@@ -1227,6 +1227,17 @@ def test_issue512_provider_research_preserves_panel_corrections() -> None:
     )
     assert "exact accepted WebP compatibility" in landscape
     assert "lossless PNG derivative" in landscape
+    for required in (
+        "direct VEED Fabric through fal.ai",
+        "Runway Avatar Video API",
+        "five-minute",
+        "immutable 24 kHz",
+        "public fal CDN",
+        "activation-blocked quality/API challengers",
+        "accepted WebP compatibility is unproved",
+    ):
+        assert required in demo_plan
+    assert "https://developers.heygen.com/docs/pricing" not in demo_plan
 
 
 def test_issue514_video_research_amendment_is_exact_and_bounded() -> None:
@@ -1295,17 +1306,6 @@ def test_issue514_research_records_cost_flow_and_precode_plan() -> None:
         "future product-owner Digital Twin",
     ):
         assert required in landscape
-    for required in (
-        "direct VEED Fabric through fal.ai",
-        "Runway Avatar Video API",
-        "five-minute",
-        "immutable 24 kHz",
-        "public fal CDN",
-        "activation-blocked quality/API challengers",
-        "accepted WebP compatibility is unproved",
-    ):
-        assert required in demo_plan
-    assert "https://developers.heygen.com/docs/pricing" not in demo_plan
 
 
 def _issue507_route_root(tmp_path: Path) -> Path:

@@ -2124,3 +2124,22 @@ human acceptance, deployment, release, production-readiness, or Cut 1 evidence.
   egress or spend, generates no video, and changes no runtime. T06, T07, T08,
   deployment, publication, release, production readiness, and Cut 1 acceptance
   remain incomplete and unproven.
+
+## Issue #514 T06 provider research amendment (2026-09-03)
+
+- Issue `#514` appends the exact observed HeyGen, VEED Fabric, and Creatify
+  Aurora diagnostic costs and preserves the owner's rejection of all three
+  outputs. Headline price is not provider selection evidence.
+- Google Flow is retained, not dismissed: it is eligible for a separately
+  authorized free/low-cost visual concept and B-roll benchmark. Current Gemini
+  Omni/Veo APIs cannot use the exact accepted WAV as the audio driver and
+  current clips are materially shorter than the canonical tracks, so Flow is
+  not yet an admissible T06 exact-audio presenter adapter.
+- The next route is one optimized HeyGen Avatar IV diagnostic under a new exact
+  package, followed only on failure by preflighted Sync-3, OmniHuman, or
+  consented-performance Act-Two checks. Capability manifests, a provider-neutral
+  compositor, configurable runtime policy, immutable safety gates, full-duration
+  proof, TDD, CI, and human review are required before six-cell generation.
+- This documentation route adds no provider selection, credentials, upload,
+  egress, call, spend, media, runtime behavior, deployment, release, production
+  readiness, or Cut 1 completion authority.

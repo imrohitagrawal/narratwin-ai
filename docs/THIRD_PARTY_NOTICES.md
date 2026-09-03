@@ -332,6 +332,15 @@ Runway self-service input/output training and licensing terms and Creatify's
 direct media-retention/training ambiguity are explicit activation stops; only
 an applicable exact-account contract and privacy review may clear them.
 
+Issue `#514` appends the exact observed HeyGen/VEED/Aurora diagnostic costs and
+refreshes Google Flow, Gemini Omni Flash, and Veo from official Google product,
+API, model-matrix, Character, Avatar, and data-use documentation accessed
+2026-09-03. Flow is retained as a visual concept/B-roll and future consented
+Digital Twin candidate. Current public API limits do not preserve the accepted
+WAV as an uploaded audio driver or provide the required 117–128-second
+presenter contract, so no Google adapter, SDK, upload, call, spend, model,
+output, account, credential, or activation is added.
+
 ## Issue #459 T03 controlled-local presenter derivatives
 
 Issue #459 uses OpenAI's built-in `gpt-image-2.0` image-edit capability on
