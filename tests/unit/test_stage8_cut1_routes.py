@@ -1192,6 +1192,33 @@ def test_issue512_video_provider_landscape_route_is_exact_and_bounded() -> None:
     )
 
 
+def test_issue512_provider_research_preserves_panel_corrections() -> None:
+    landscape = (
+        REPO / "docs/governance/CUT1_T06_VIDEO_PROVIDER_LANDSCAPE_2026-09-03.md"
+    ).read_text(encoding="utf-8")
+    demo_plan = (REPO / "docs/demo/REAL_MEDIA_HOSTED_DEMO_PLAN.md").read_text(
+        encoding="utf-8"
+    )
+
+    for required in (
+        "VEED Fabric 1.0 through fal.ai",
+        "Runway Avatar Video API",
+        "older indexed copies",
+        "44.1 kHz",
+        "`BILLABLE_UNKNOWN`",
+        "public CDN",
+    ):
+        assert required in landscape
+    for required in (
+        "direct VEED Fabric through fal.ai",
+        "Runway Avatar Video API",
+        "five-minute",
+        "immutable 24 kHz",
+        "public fal CDN",
+    ):
+        assert required in demo_plan
+
+
 def _issue507_route_root(tmp_path: Path) -> Path:
     for relative in ISSUE507_EXPECTED:
         target = tmp_path / relative
