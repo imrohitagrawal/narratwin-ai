@@ -89,6 +89,9 @@ self-service terms permit training and broad input/output licensing; Creatify's
 direct privacy/rights controls are insufficiently bounded; JoggAI has not
 proved unchanged immutable 24 kHz input; and Hedra's contract stop applies only
 to Hedra-hosted access. Accepted media must never use a public fal CDN input.
+HeyGen's accepted WebP compatibility is unproved because its current guides list
+PNG/JPEG; any lossless PNG derivative needs separate authorization, checksum
+lineage, and review rather than a silent format conversion.
 The immutable v1 bake-off contract remains unchanged, and exact-account facts
 must be refreshed before credentials, egress, calls, or spend.
 

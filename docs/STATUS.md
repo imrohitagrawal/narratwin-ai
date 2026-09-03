@@ -2114,6 +2114,8 @@ human acceptance, deployment, release, production-readiness, or Cut 1 evidence.
   Runway self-service permits training and broad input/output licensing, and
   Creatify's direct privacy/rights controls remain insufficiently bounded; both
   require exact-account governance proof before activation.
+  HeyGen's current guides list PNG/JPEG rather than the exact accepted WebPs, so
+  its still compatibility is conditional; no ungoverned conversion is allowed.
 - The next external step is zero-network account/privacy/terms/SecretRef/cost
   readiness, then an explicitly authorized short compatibility demo. A passing
   short demo must be followed by full-duration Myra landscape and portrait
