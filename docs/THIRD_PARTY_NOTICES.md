@@ -315,6 +315,23 @@ Sources and provider-specific constraints are enumerated in
 `docs/governance/cut1-provider-bakeoff-contract-v1.json` and must be refreshed
 before any later experiment.
 
+Issue `#512` refreshes the batch-video research on 2026-09-03 in
+`docs/governance/CUT1_T06_VIDEO_PROVIDER_LANDSCAPE_2026-09-03.md`. The record
+adds official-source evaluation of HeyGen Avatar IV Photo, JoggAI v2 Photo
+Avatar, Colossyan NEO/Instant Avatar, Creatify Aurora, direct VEED Fabric and
+LongCat-Video-Avatar 1.5 through fal.ai, Hedra-hosted VEED, Hedra Avatar, D-ID,
+Sync, Higgsfield, ImagineArt, Google Veo/Flow/Pomelli, Seedance, OmniHuman,
+Runway's Avatar Video API and web tools, Synthesia, ElevenLabs, Tavus, and
+Superhuman's HeyGen connector. These are
+researched providers, tools, models, or adjacent integration surfaces only:
+none is installed, selected, activated, called, or approved for credentials,
+egress, spend, media generation, publication, or release. Exact terms,
+pricing, license, training, retention, deletion, region, and API facts remain
+refresh-required for the selected account before any demonstration.
+Runway self-service input/output training and licensing terms and Creatify's
+direct media-retention/training ambiguity are explicit activation stops; only
+an applicable exact-account contract and privacy review may clear them.
+
 ## Issue #459 T03 controlled-local presenter derivatives
 
 Issue #459 uses OpenAI's built-in `gpt-image-2.0` image-edit capability on

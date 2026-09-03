@@ -492,6 +492,26 @@ ISSUE509_LINE_CAPS = {
     "docs/OBSERVABILITY_AND_COST.md": 60,
     "docs/API_CONTRACT.md": 80,
 }
+ISSUE512_EXPECTED = {
+    "docs/governance/preflights/issue-512.json",
+    "docs/governance/CUT1_T06_VIDEO_PROVIDER_LANDSCAPE_2026-09-03.md",
+    "docs/demo/REAL_MEDIA_HOSTED_DEMO_PLAN.md",
+    "docs/THIRD_PARTY_NOTICES.md",
+    "docs/TRACEABILITY.md",
+    "docs/STATUS.md",
+    "scripts/quality/stage8_cut1_routes.py",
+    "tests/unit/test_stage8_cut1_routes.py",
+}
+ISSUE512_LINE_CAPS = {
+    "docs/governance/preflights/issue-512.json": 180,
+    "docs/governance/CUT1_T06_VIDEO_PROVIDER_LANDSCAPE_2026-09-03.md": 650,
+    "docs/demo/REAL_MEDIA_HOSTED_DEMO_PLAN.md": 40,
+    "docs/THIRD_PARTY_NOTICES.md": 40,
+    "docs/TRACEABILITY.md": 30,
+    "docs/STATUS.md": 30,
+    "scripts/quality/stage8_cut1_routes.py": 120,
+    "tests/unit/test_stage8_cut1_routes.py": 180,
+}
 ISSUE507_EXPECTED = {
     "backend/app/google_tts_runtime.py",
     "tests/unit/test_google_tts_runtime.py",
@@ -582,6 +602,7 @@ def remove_cleanup_marker(text: str, marker: str) -> str:
 
 
 EXPECTED = {
+    "stage8-512-video-provider-landscape": ISSUE512_EXPECTED,
     "stage8-509-configurable-audio-duration": ISSUE509_EXPECTED,
     "stage8-507-google-api-core-grpc-status": ISSUE507_EXPECTED,
     "stage8-502-frontend-musl-runtime-security": ISSUE502_EXPECTED,
@@ -1140,6 +1161,83 @@ def test_issue509_configurable_audio_duration_route_is_exact_and_bounded() -> No
             routes.ISSUE509_BODY_SHA256,
         )
     )
+
+
+def test_issue512_video_provider_landscape_route_is_exact_and_bounded() -> None:
+    branch = "stage8-512-video-provider-landscape"
+    artifact = json.loads(
+        (REPO / "docs/governance/preflights/issue-512.json").read_text(encoding="utf-8")
+    )
+    assert routes.ISSUE512_BRANCH == branch
+    assert routes.ISSUE512_BASE == "60198a86b5558df5dec42c0f90cb3343f67bb286"
+    assert routes.ISSUE512_TREE == "f58f42b1b1f069ba23d9b754988e4c023d872706"
+    assert routes.ROUTES[branch] == ISSUE512_EXPECTED
+    assert routes.ROUTE_ISSUES[branch] == 512
+    assert routes.TOTAL_LIMITS[branch] == 1270
+    assert routes.TEXT_LIMITS[branch] == ISSUE512_LINE_CAPS
+    assert set(artifact["scope"]["required"]) == ISSUE512_EXPECTED
+    assert artifact["scope"]["required"] == artifact["scope"]["allowed_prefixes"]
+    context = {"issue_number": 512, "branch": branch, "changed_files": list(ISSUE512_EXPECTED)}
+    assert routes.validate_governance_preflight(artifact, context=context) == []
+    assert all(
+        value in artifact["objective"]
+        for value in (
+            routes.ISSUE512_BASE,
+            routes.ISSUE512_TREE,
+            routes.ISSUE512_FREEZE_COMMENT,
+            routes.ISSUE512_IMMUTABLE_CORRECTION_COMMENT,
+            routes.ISSUE512_BRANCH_CORRECTION_COMMENT,
+            routes.ISSUE512_ROUTE_AMENDMENT_COMMENT,
+        )
+    )
+
+
+def test_issue512_provider_research_preserves_panel_corrections() -> None:
+    landscape = (
+        REPO / "docs/governance/CUT1_T06_VIDEO_PROVIDER_LANDSCAPE_2026-09-03.md"
+    ).read_text(encoding="utf-8")
+    demo_plan = (REPO / "docs/demo/REAL_MEDIA_HOSTED_DEMO_PLAN.md").read_text(
+        encoding="utf-8"
+    )
+
+    for required in (
+        "VEED Fabric 1.0 through fal.ai",
+        "Runway Avatar Video API",
+        "older indexed copies",
+        "44.1 kHz",
+        "`BILLABLE_UNKNOWN`",
+        "public CDN",
+        "API_CHALLENGER_ACTIVATION_BLOCKED",
+        "FULL_LENGTH_QUALITY_CHALLENGER_ACTIVATION_BLOCKED",
+        "https://runway.com/terms-of-use",
+        "https://runway.com/enterprise",
+        "https://creatify.ai/privacy",
+        "direct Creatify, and Runway Enterprise",
+        "https://developers.heygen.com/docs/enterprise-pricing",
+    ):
+        assert required in landscape
+    assert "https://developers.heygen.com/docs/pricing" not in landscape
+    heygen_hard_fit = next(
+        line
+        for line in landscape.splitlines()
+        if line.startswith("| HeyGen Avatar IV Photo |")
+    )
+    assert heygen_hard_fit.startswith(
+        "| HeyGen Avatar IV Photo | `CONDITIONAL`: accepted WebP"
+    )
+    assert "exact accepted WebP compatibility" in landscape
+    assert "lossless PNG derivative" in landscape
+    for required in (
+        "direct VEED Fabric through fal.ai",
+        "Runway Avatar Video API",
+        "five-minute",
+        "immutable 24 kHz",
+        "public fal CDN",
+        "activation-blocked quality/API challengers",
+        "accepted WebP compatibility is unproved",
+    ):
+        assert required in demo_plan
+    assert "https://developers.heygen.com/docs/pricing" not in demo_plan
 
 
 def _issue507_route_root(tmp_path: Path) -> Path:

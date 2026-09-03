@@ -794,3 +794,14 @@ remain separate gates.
 | Bind the effective value | Narration checksum, evaluation/approval lineage, receipt checksum, persisted state, and restore mutations | Stale or coherently rehashed policy substitution rejects |
 | Avoid duplicate byte tuning | Canonical RIFF size derived from upper seconds × 24,000 × two bytes plus 44-byte header | Format, signal, duration, caption, and exact-hash gates remain |
 | Preserve approved media | 127.661917-second / 6,127,816-byte regression; explicit prohibition on transform | No shortening, acceleration, compression, trimming, resampling, or regeneration |
+
+## Issue #512 T06 provider-landscape traceability
+
+| Requirement | Canonical evidence | Preserved boundary |
+|---|---|---|
+| Broad, source-backed provider comparison | `docs/governance/CUT1_T06_VIDEO_PROVIDER_LANDSCAPE_2026-09-03.md`; official URLs accessed 2026-09-03 | Serious dedicated-platform, hosted-model, cinematic, real-time, and local routes are classified; no claim of literally exhaustive global enumeration |
+| Demo before adapter implementation | Issue `#512`; five-gate demo ladder in the landscape | A 10–15-second diagnostic excerpt can reject incompatibility but cannot replace exact audio, prove full duration, or become a T06 cell |
+| Exact T05 inputs remain immutable | Package 43 authority and three exact WAV hashes in the landscape | No trimming, acceleration, compression, resampling, regeneration, media generation, or audio-authority substitution |
+| Provider choice remains human/evidence owned | Role-based shortlist and explicit unresolved privacy, duration, quality, cost, deletion, identity, contract, and account-access questions | No provider selected/activated; immutable v1 bake-off contract remains byte-identical |
+| Panel findings remain reviewable | Independent technical, governance/security, and product/cost review; executable assertions preserve the corrected provider distinctions | Capability, hosting terms, private-input handling, and activation authority cannot be collapsed into one marketing score |
+| T06 progression remains bounded | Full-duration Myra landscape/portrait test, primary/fallback selection, then TDD and six-cell generation | No account, credential, SecretRef resolution, egress, call, spend, code, deployment, release, production-readiness, or Cut 1 authority |
