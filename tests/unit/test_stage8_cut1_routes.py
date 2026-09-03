@@ -602,6 +602,15 @@ def remove_cleanup_marker(text: str, marker: str) -> str:
 
 
 EXPECTED = {
+    "stage8-514-video-research-amendment": {
+        "docs/governance/preflights/issue-514.json",
+        "docs/governance/CUT1_T06_VIDEO_PROVIDER_LANDSCAPE_2026-09-03.md",
+        "docs/THIRD_PARTY_NOTICES.md",
+        "docs/TRACEABILITY.md",
+        "docs/STATUS.md",
+        "scripts/quality/stage8_cut1_routes.py",
+        "tests/unit/test_stage8_cut1_routes.py",
+    },
     "stage8-512-video-provider-landscape": ISSUE512_EXPECTED,
     "stage8-509-configurable-audio-duration": ISSUE509_EXPECTED,
     "stage8-507-google-api-core-grpc-status": ISSUE507_EXPECTED,
