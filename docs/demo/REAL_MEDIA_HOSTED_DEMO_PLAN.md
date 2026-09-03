@@ -74,7 +74,7 @@ provider-research checkpoint for Issue `#512`. It expands this plan's earlier
 HeyGen/D-ID/Tavus snapshot into a role-based shortlist: HeyGen Avatar IV Photo
 for first compatibility; direct VEED Fabric through fal.ai for the clearest
 pay-as-you-go five-minute route; Creatify Aurora and the new
-Runway Avatar Video API as conditional quality/API challengers; JoggAI v2 Photo Avatar as a strong
+Runway Avatar Video API as activation-blocked quality/API challengers; JoggAI v2 Photo Avatar as a strong
 technical but activation-blocked route; Colossyan Enterprise for governance;
 and LongCat 1.5 as an optional open-model benchmark. It also classifies
 Synthesia, Hedra-hosted VEED, Higgsfield, ImagineArt, ElevenLabs, and Superhuman
@@ -84,7 +84,9 @@ That refresh does not select or activate a provider. It requires a small,
 separately labelled compatibility demo before any adapter code, followed by a
 full-duration Myra landscape/portrait test on a one-job-capable route before
 selection. Aurora's live five-minute documentation conflicts with older
-official-index copies; Runway's duration/aspects remain unknown; JoggAI has not
+official-index copies; Runway's duration/aspects remain unknown and its
+self-service terms permit training and broad input/output licensing; Creatify's
+direct privacy/rights controls are insufficiently bounded; JoggAI has not
 proved unchanged immutable 24 kHz input; and Hedra's contract stop applies only
 to Hedra-hosted access. Accepted media must never use a public fal CDN input.
 The immutable v1 bake-off contract remains unchanged, and exact-account facts
@@ -104,7 +106,7 @@ Candidate source facts to review:
 | Voice clone | ElevenLabs | `https://help.elevenlabs.io/hc/en-us/articles/36842751624209-Can-I-create-a-Professional-Voice-Clone-of-someone-else-s-voice` | own-voice verification requirement and restriction on cloning another person's voice |
 | Voice policy | ElevenLabs | `https://elevenlabs.io/use-policy` | prohibited impersonation, consent, disclosure, harmful use, and election/political limits |
 | Avatar/video | HeyGen | `https://www.heygen.com/api-pricing` | pay-as-you-go minimum, API wallet behavior, and API billing pool |
-| Avatar/video | HeyGen | `https://developers.heygen.com/docs/pricing` | model-specific per-second costs for Avatar III, Avatar IV, Avatar V, Video Agent, lipsync, and TTS |
+| Avatar/video | HeyGen | `https://developers.heygen.com/docs/enterprise-pricing` | model-specific per-second or per-operation credit costs and the USD 0.50-per-credit conversion |
 | Avatar consent | HeyGen | `https://developers.heygen.com/docs/avatar-consent` | digital twin consent requirements and enterprise-only consent bypass constraints |
 | Avatar/video | D-ID | `https://www.d-id.com/pricing/api/` | API plan, credits, trial, output limitations |
 | Avatar/video | D-ID | `https://www.d-id.com/faqs/` | credit-to-video-duration mapping and public-use constraints |
@@ -317,7 +319,7 @@ dashboards, making real provider test calls, or enabling any provider call.
 | `SRC-ELEVEN-TTS-002` | ElevenLabs TTS model limits | `https://elevenlabs.io/text-to-speech-api` | Public TTS page describes model-specific language support, character limits, and approximate per-minute costs. | The TTS PR must cap script length and selected languages before audio generation. |
 | `SRC-ELEVEN-CLONE-001` | ElevenLabs voice cloning | `https://elevenlabs.io/docs/eleven-api/guides/how-to/voices/professional-voice-cloning` and `https://help.elevenlabs.io/hc/en-us/articles/36842751624209-Can-I-create-a-Professional-Voice-Clone-of-someone-else-s-voice` | Professional Voice Cloning requires verification, and ElevenLabs help states a user can create a Professional Voice Clone only of their own voice; another person must create, verify, and privately share their own clone from their own account. | Checkpoint 1 must avoid cloned identity. Checkpoint 2 consent is necessary but not sufficient for ElevenLabs PVC: third-party PVC enrollment is excluded unless the subject owns the verified clone and privately shares it under a recorded scope. |
 | `SRC-ELEVEN-POLICY-001` | ElevenLabs use policy | `https://elevenlabs.io/use-policy` | Policy prohibits unauthorized, deceptive, or harmful impersonation, including replicating another person's voice without consent or legal right. | Consent, disclosure, and no-deceptive-impersonation gates are mandatory before any voice clone path. |
-| `SRC-HEYGEN-PRICE-001` | HeyGen API pricing | `https://www.heygen.com/api-pricing` and `https://developers.heygen.com/docs/pricing` | Public API pricing says pay-as-you-go starts around `$5`, Direct API usage is deducted from a separate API dashboard balance, and developer pricing is model-specific per second or per operation. | The avatar/video PR must select one explicit model, convert seconds to expected dollars, include wallet/minimum-spend behavior, and block unbounded generation. |
+| `SRC-HEYGEN-PRICE-001` | HeyGen API pricing | `https://www.heygen.com/api-pricing` and `https://developers.heygen.com/docs/enterprise-pricing` | Public API pricing says pay-as-you-go starts around `$5`, Direct API usage is deducted from a separate API dashboard balance, and Enterprise pricing converts model-specific credits at `$0.50` per credit. | The avatar/video PR must select one explicit model, convert seconds to expected dollars, include wallet/minimum-spend behavior, and block unbounded generation. |
 | `SRC-HEYGEN-VIDEO-001` | HeyGen create video API | `https://developers.heygen.com/reference/create-video` | Create Video supports avatar/image based video and scripts or pre-recorded audio, with selectable avatar engines. | The avatar/video PR must bind the selected source run, TTS audio, script, citations, eval, provider model, and artifact manifest. |
 | `SRC-HEYGEN-CONSENT-001` | HeyGen avatar consent | `https://developers.heygen.com/docs/avatar-consent` | Digital twin generation requires consent for the depicted person; photo avatars and prompt-to-avatar characters are documented as not requiring digital-twin consent only when they do not depict a real identifiable person. | Checkpoint 1 must use provider-stock, synthetic, or non-identifiable identity assets by default; any real-person photo, face, likeness, or training asset requires explicit rights, consent, source-asset deletion, and audit evidence before provider egress. Digital twin or cloned identity must wait for Checkpoint 2. |
 | `SRC-DID-PRICE-001` | D-ID API pricing | `https://www.d-id.com/pricing/api/` and `https://www.d-id.com/faqs/` | D-ID API plans use credits; FAQ states each credit is worth up to 15 seconds of video and API minutes draw from the same balance as the web product. | D-ID remains viable only with strict per-run credit reservation and a hard monthly budget stop. |

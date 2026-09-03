@@ -1207,16 +1207,26 @@ def test_issue512_provider_research_preserves_panel_corrections() -> None:
         "44.1 kHz",
         "`BILLABLE_UNKNOWN`",
         "public CDN",
+        "API_CHALLENGER_ACTIVATION_BLOCKED",
+        "FULL_LENGTH_QUALITY_CHALLENGER_ACTIVATION_BLOCKED",
+        "https://runway.com/terms-of-use",
+        "https://runway.com/enterprise",
+        "https://creatify.ai/privacy",
+        "direct Creatify, and Runway Enterprise",
+        "https://developers.heygen.com/docs/enterprise-pricing",
     ):
         assert required in landscape
+    assert "https://developers.heygen.com/docs/pricing" not in landscape
     for required in (
         "direct VEED Fabric through fal.ai",
         "Runway Avatar Video API",
         "five-minute",
         "immutable 24 kHz",
         "public fal CDN",
+        "activation-blocked quality/API challengers",
     ):
         assert required in demo_plan
+    assert "https://developers.heygen.com/docs/pricing" not in demo_plan
 
 
 def _issue507_route_root(tmp_path: Path) -> Path:

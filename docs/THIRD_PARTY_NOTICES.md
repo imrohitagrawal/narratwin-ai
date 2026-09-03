@@ -328,6 +328,9 @@ none is installed, selected, activated, called, or approved for credentials,
 egress, spend, media generation, publication, or release. Exact terms,
 pricing, license, training, retention, deletion, region, and API facts remain
 refresh-required for the selected account before any demonstration.
+Runway self-service input/output training and licensing terms and Creatify's
+direct media-retention/training ambiguity are explicit activation stops; only
+an applicable exact-account contract and privacy review may clear them.
 
 ## Issue #459 T03 controlled-local presenter derivatives
 

@@ -2107,10 +2107,13 @@ human acceptance, deployment, release, production-readiness, or Cut 1 evidence.
 - Issue `#512` preserves a refreshed official-source provider landscape and a
   demo-before-code ladder. HeyGen is the recommended first compatibility test;
   direct VEED/fal is the pay-as-you-go full-length challenger; Aurora and the
-  new Runway Avatar Video API are conditional challengers; JoggAI is technically
+  new Runway Avatar Video API are activation-blocked challengers; JoggAI is technically
   strong but activation-blocked; Colossyan is Enterprise-governance-only; and
   LongCat 1.5 remains optional. No provider is selected. Hedra-hosted access is
   contract-blocked, while fal routes require private-input and deletion proof.
+  Runway self-service permits training and broad input/output licensing, and
+  Creatify's direct privacy/rights controls remain insufficiently bounded; both
+  require exact-account governance proof before activation.
 - The next external step is zero-network account/privacy/terms/SecretRef/cost
   readiness, then an explicitly authorized short compatibility demo. A passing
   short demo must be followed by full-duration Myra landscape and portrait
