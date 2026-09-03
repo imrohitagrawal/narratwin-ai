@@ -2105,9 +2105,12 @@ human acceptance, deployment, release, production-readiness, or Cut 1 evidence.
   unblocked. The source and result are Issue `#368` comments `5521410237` and
   `5521588438`. No accepted audio bytes changed.
 - Issue `#512` preserves a refreshed official-source provider landscape and a
-  demo-before-code ladder. HeyGen is the recommended first test, with VEED
-  Fabric through Hedra and Colossyan as direct challengers and LongCat 1.5 as
-  an optional open-model benchmark. No final provider is selected.
+  demo-before-code ladder. HeyGen is the recommended first compatibility test;
+  direct VEED/fal is the pay-as-you-go full-length challenger; Aurora and the
+  new Runway Avatar Video API are conditional challengers; JoggAI is technically
+  strong but activation-blocked; Colossyan is Enterprise-governance-only; and
+  LongCat 1.5 remains optional. No provider is selected. Hedra-hosted access is
+  contract-blocked, while fal routes require private-input and deletion proof.
 - The next external step is zero-network account/privacy/terms/SecretRef/cost
   readiness, then an explicitly authorized short compatibility demo. A passing
   short demo must be followed by full-duration Myra landscape and portrait

@@ -71,16 +71,24 @@ mock/local fallback retained for tests.
 The dated, official-source comparison in
 `docs/governance/CUT1_T06_VIDEO_PROVIDER_LANDSCAPE_2026-09-03.md` is the current
 provider-research checkpoint for Issue `#512`. It expands this plan's earlier
-HeyGen/D-ID/Tavus snapshot to a four-route shortlist: HeyGen Avatar IV Photo,
-VEED Fabric 1.0 Fast through Hedra, Colossyan NEO/Instant Avatar, and optional
-LongCat-Video-Avatar 1.5 as an open-model benchmark. It also records rejected,
-baseline, exploratory, and future-only routes.
+HeyGen/D-ID/Tavus snapshot into a role-based shortlist: HeyGen Avatar IV Photo
+for first compatibility; direct VEED Fabric through fal.ai for the clearest
+pay-as-you-go five-minute route; Creatify Aurora and the new
+Runway Avatar Video API as conditional quality/API challengers; JoggAI v2 Photo Avatar as a strong
+technical but activation-blocked route; Colossyan Enterprise for governance;
+and LongCat 1.5 as an optional open-model benchmark. It also classifies
+Synthesia, Hedra-hosted VEED, Higgsfield, ImagineArt, ElevenLabs, and Superhuman
+without treating every adjacent tool as an equivalent video provider.
 
 That refresh does not select or activate a provider. It requires a small,
 separately labelled compatibility demo before any adapter code, followed by a
-full-duration Myra landscape/portrait test before selection. The immutable v1
-bake-off contract remains unchanged and provider facts must be refreshed again
-for the exact account and tier before credentials, egress, calls, or spend.
+full-duration Myra landscape/portrait test on a one-job-capable route before
+selection. Aurora's live five-minute documentation conflicts with older
+official-index copies; Runway's duration/aspects remain unknown; JoggAI has not
+proved unchanged immutable 24 kHz input; and Hedra's contract stop applies only
+to Hedra-hosted access. Accepted media must never use a public fal CDN input.
+The immutable v1 bake-off contract remains unchanged, and exact-account facts
+must be refreshed before credentials, egress, calls, or spend.
 
 ### Provider-Backed Path
 

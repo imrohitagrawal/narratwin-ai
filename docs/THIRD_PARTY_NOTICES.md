@@ -317,14 +317,17 @@ before any later experiment.
 
 Issue `#512` refreshes the batch-video research on 2026-09-03 in
 `docs/governance/CUT1_T06_VIDEO_PROVIDER_LANDSCAPE_2026-09-03.md`. The record
-adds official-source evaluation of HeyGen Avatar IV Photo, VEED Fabric through
-Hedra, Colossyan NEO/Instant Avatar, LongCat-Video-Avatar 1.5 and fal.ai, Hedra
-Avatar, D-ID, Sync, Higgsfield, Google Veo/Flow/Pomelli, Seedance, OmniHuman,
-Runway Act-Two, Synthesia, and Tavus. These are researched providers, tools, or
-models only: none is installed, selected, activated, called, or approved for
-credentials, egress, spend, media generation, publication, or release. Exact
-terms, pricing, license, training, retention, deletion, region, and API facts
-remain refresh-required for the selected account before any demonstration.
+adds official-source evaluation of HeyGen Avatar IV Photo, JoggAI v2 Photo
+Avatar, Colossyan NEO/Instant Avatar, Creatify Aurora, direct VEED Fabric and
+LongCat-Video-Avatar 1.5 through fal.ai, Hedra-hosted VEED, Hedra Avatar, D-ID,
+Sync, Higgsfield, ImagineArt, Google Veo/Flow/Pomelli, Seedance, OmniHuman,
+Runway's Avatar Video API and web tools, Synthesia, ElevenLabs, Tavus, and
+Superhuman's HeyGen connector. These are
+researched providers, tools, models, or adjacent integration surfaces only:
+none is installed, selected, activated, called, or approved for credentials,
+egress, spend, media generation, publication, or release. Exact terms,
+pricing, license, training, retention, deletion, region, and API facts remain
+refresh-required for the selected account before any demonstration.
 
 ## Issue #459 T03 controlled-local presenter derivatives
 
