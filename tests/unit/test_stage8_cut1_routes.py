@@ -602,6 +602,15 @@ def remove_cleanup_marker(text: str, marker: str) -> str:
 
 
 EXPECTED = {
+    "stage8-514-video-research-amendment": {
+        "docs/governance/preflights/issue-514.json",
+        "docs/governance/CUT1_T06_VIDEO_PROVIDER_LANDSCAPE_2026-09-03.md",
+        "docs/THIRD_PARTY_NOTICES.md",
+        "docs/TRACEABILITY.md",
+        "docs/STATUS.md",
+        "scripts/quality/stage8_cut1_routes.py",
+        "tests/unit/test_stage8_cut1_routes.py",
+    },
     "stage8-512-video-provider-landscape": ISSUE512_EXPECTED,
     "stage8-509-configurable-audio-duration": ISSUE509_EXPECTED,
     "stage8-507-google-api-core-grpc-status": ISSUE507_EXPECTED,
@@ -1238,6 +1247,74 @@ def test_issue512_provider_research_preserves_panel_corrections() -> None:
     ):
         assert required in demo_plan
     assert "https://developers.heygen.com/docs/pricing" not in demo_plan
+
+
+def test_issue514_video_research_amendment_is_exact_and_bounded() -> None:
+    branch = "stage8-514-video-research-amendment"
+    expected = {
+        "docs/governance/preflights/issue-514.json",
+        "docs/governance/CUT1_T06_VIDEO_PROVIDER_LANDSCAPE_2026-09-03.md",
+        "docs/THIRD_PARTY_NOTICES.md",
+        "docs/TRACEABILITY.md",
+        "docs/STATUS.md",
+        "scripts/quality/stage8_cut1_routes.py",
+        "tests/unit/test_stage8_cut1_routes.py",
+    }
+    caps = {
+        "docs/governance/preflights/issue-514.json": 180,
+        "docs/governance/CUT1_T06_VIDEO_PROVIDER_LANDSCAPE_2026-09-03.md": 400,
+        "docs/THIRD_PARTY_NOTICES.md": 30,
+        "docs/TRACEABILITY.md": 30,
+        "docs/STATUS.md": 30,
+        "scripts/quality/stage8_cut1_routes.py": 120,
+        "tests/unit/test_stage8_cut1_routes.py": 200,
+    }
+    artifact = json.loads(
+        (REPO / "docs/governance/preflights/issue-514.json").read_text(encoding="utf-8")
+    )
+
+    assert routes.ISSUE514_BRANCH == branch
+    assert routes.ISSUE514_BASE == "e15beee4f520ad5786a61effd8ce2eba8f51319c"
+    assert routes.ISSUE514_TREE == "bf0775a43bf5af60f2230b3bd9a7cdd3541f3a8c"
+    assert routes.ISSUE514_ROUTE_COMMENT == "5527274671"
+    assert routes.ROUTES[branch] == expected
+    assert routes.ROUTE_ISSUES[branch] == 514
+    assert routes.TOTAL_LIMITS[branch] == 990
+    assert routes.TEXT_LIMITS[branch] == caps
+    assert set(artifact["scope"]["required"]) == expected
+    assert artifact["scope"]["required"] == artifact["scope"]["allowed_prefixes"]
+    context = {"issue_number": 514, "branch": branch, "changed_files": list(expected)}
+    assert routes.validate_governance_preflight(artifact, context=context) == []
+    assert all(
+        value in artifact["objective"]
+        for value in (
+            routes.ISSUE514_BASE,
+            routes.ISSUE514_TREE,
+            routes.ISSUE514_ROUTE_COMMENT,
+        )
+    )
+
+
+def test_issue514_research_records_cost_flow_and_precode_plan() -> None:
+    landscape = (
+        REPO / "docs/governance/CUT1_T06_VIDEO_PROVIDER_LANDSCAPE_2026-09-03.md"
+    ).read_text(encoding="utf-8")
+
+    for required in (
+        "Exact observed three-provider diagnostic",
+        "USD 0.55",
+        "USD 2.208",
+        "USD 2.10",
+        "Uploading audio references is unsupported",
+        "visual concept and B-roll benchmark",
+        "ProviderCapabilityManifest",
+        "VideoCompositor",
+        "Sync-3",
+        "OmniHuman v1.5",
+        "Runway Act-Two",
+        "future product-owner Digital Twin",
+    ):
+        assert required in landscape
 
 
 def _issue507_route_root(tmp_path: Path) -> Path:

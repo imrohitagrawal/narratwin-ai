@@ -369,3 +369,159 @@ security, cost, deletion, or provenance rules. A short demo can eliminate an
 incompatible option; it cannot select the final provider by itself. The
 full-duration two-aspect test and human review are mandatory before code or the
 six-cell generation route is frozen.
+
+## Issue #514 evidence amendment: observed cost and actual output
+
+This section appends evidence gathered after the original research freeze. It
+does not replace the exact-account price preflight required before another paid
+call. All three providers received the same 14.747-second Meera diagnostic
+image/audio pair.
+
+### Exact observed three-provider diagnostic
+
+| Route | Exact or estimated cost | Observed output | Human disposition |
+|---|---:|---|---|
+| HeyGen Avatar IV image route | **USD 0.55 exact wallet delta** | 1280×720; 14.76 s | Best relative lip result, but still unacceptable; head cropped, weakest clarity, synthetic background |
+| VEED Fabric through fal.ai | **USD 2.208 public-rate estimate** | 1152×768; 14.72 s; 28 reported billable units | Best clarity, but lip and motion realism unacceptable; exact account line item unavailable |
+| Creatify Aurora through fal.ai | **USD 2.10 exact authenticated calculation** | 1216×768; 14.76 s | Best body movement, but lips and realism unacceptable; omitted 48.995 ms of non-silent audio tail |
+
+The aggregate was USD 4.858 when the VEED public-rate estimate is used. The
+owner rejected every output for final use. A learned SyncNet metric was
+supporting diagnostic evidence only and did not override visible phoneme,
+co-articulation, expression, framing, identity, or background-realism defects.
+
+The result does **not** mean that fal.ai is inherently expensive or HeyGen is
+always cheapest. fal.ai is a model marketplace and serving layer; VEED Fabric,
+Aurora, Sync, and OmniHuman each set different output-second rates and rounding
+rules. For this exact short workload, current list rates explain the direction:
+HeyGen Avatar IV Photo 720p/1080p is USD 0.05 per output second plus USD 1 for a
+reusable Photo Avatar creation; VEED Fabric 720p is USD 0.15 per output second;
+Aurora 720p is USD 0.14 per output second with upward-second rounding; Sync-3
+is approximately USD 0.1333 per output second; and OmniHuman v1.5 is USD 0.16
+per output second. These are dated discovery figures, not activation authority.
+
+## Google Flow and Gemini Omni: corrected capability decision
+
+Google Flow is not rejected as a video-generation product. As of 2026-09-03,
+Google describes Flow as a creative studio using Gemini Omni and Veo, with
+text/image/video inputs, Characters, Avatars, both portrait and landscape, and
+50 daily credits on the free tier. It is a meaningful visual-quality candidate.
+
+The current roadblock is narrower: Flow/Gemini Omni does not meet NarraTwin's
+**exact-artifact presenter contract** today.
+
+1. The Gemini Omni API limitation states: “Uploading audio references is unsupported”
+   in the current API. Audio in a video reference is ignored and
+   voice editing is unsupported. Veo and Omni generate their own audio. They
+   therefore cannot use the exact human-approved Meera, Myra, and Raj WAV bytes
+   as the governing lip-sync driver.
+2. Current Flow generation lengths are 4, 6, 8, or 10 seconds depending on the
+   model and operation. The accepted narration tracks are 117.981917,
+   127.661917, and 117.701917 seconds. Segmenting and extending generated clips
+   would introduce identity, motion, audio, dialogue, continuity, and joining
+   risks and would still not preserve the exact accepted WAV.
+3. Flow Characters can preserve an appearance from one or two images and use a
+   selected or custom generated voice. That is valuable for concept work, but a
+   generated voice is not the exact accepted T05 artifact.
+4. Flow's `@me` Avatar represents the account owner's own visual and audio
+   likeness after mobile capture. It is a future product-owner Digital Twin
+   candidate, not the fictional synthetic Meera/Myra/Raj route.
+5. The Flow web product is a human-operated creative interface. A NarraTwin
+   server adapter requires a stable, provider-native API contract with request,
+   receipt, retry, billing, output, deletion, and exact-artifact behavior.
+6. Before any upload, the exact account must disable “Help improve Google Flow”
+   when required and pass privacy, reviewer-access, retention, deletion, region,
+   terms, and input-rights review. Free credits do not grant egress authority.
+
+### Permitted exploration role
+
+Google Flow may be explored as a **visual concept and B-roll benchmark** after a
+separate zero-network privacy and input-rights preflight. A free-credit,
+human-operated comparison may evaluate a fictional synthetic character's
+background, lighting, framing, camera language, body motion, and scene realism.
+Its generated speech must be ignored and the result labelled non-admissible for
+T06. It may inform a future `CinematicVideoProvider` or `BrollProvider`; it must
+not masquerade as the exact-audio `AvatarProvider`.
+
+Revisit the presenter-adapter decision when an official API demonstrates all
+of: exact uploaded-audio reference support, full accepted duration or governed
+lossless continuity, both aspects, identity consistency, explicit audio-output
+behavior, programmatic lifecycle controls, and acceptable account terms. At
+that point a thin `GoogleOmniAvatarAdapter` may enter the same contract test
+suite; no domain or acceptance logic should change merely to add it.
+
+Official sources verified 2026-09-03:
+
+- Flow product, capabilities, free credits, and plans:
+  <https://labs.google/fx/tools/flow>
+- Flow model, aspect, and clip-duration matrix:
+  <https://support.google.com/flow/answer/16352836>
+- Flow Characters and selected/custom voice behavior:
+  <https://support.google.com/flow/answer/16935308>
+- Flow personal Avatar and deletion controls:
+  <https://support.google.com/flow/answer/17102997>
+- Gemini Omni API and exact current audio-reference limitations:
+  <https://ai.google.dev/gemini-api/docs/omni>
+- Veo API native generation behavior:
+  <https://ai.google.dev/gemini-api/docs/veo>
+- Flow interaction, upload, output, improvement, reviewer, and deletion posture:
+  <https://support.google.com/labs/answer/17025472>
+
+## Binding pre-implementation plan
+
+These recommendations are gates for the next implementation route, not optional
+notes. A later issue may change them only with newer reproduced evidence and an
+explicitly frozen correction.
+
+1. **Preserve inputs.** Keep all accepted presenter and audio bytes immutable.
+   For Meera, preserve the `SOURCE_READY_NO_DERIVATIVE` anchor and use a
+   separately rights-cleared photographed environment through composition.
+2. **Run one optimized diagnostic before code.** The fastest current route is
+   HeyGen Avatar IV Photo at 1080p with explicit `fit=contain`, full headroom,
+   provider-side background removal/composition, exact accepted Meera audio,
+   conservative motion, concurrency one, and no automatic retry. It needs a
+   new exact package because the prior create authority is exhausted.
+3. **Apply the complete quality matrix.** Reject on audio loss or drift, poor
+   phoneme/mouth realism, identity instability, face/hand defects, temporal
+   flicker, unnatural gaze/blink/breathing/posture/gesture behavior, head crop,
+   matting halo, background/lighting/depth mismatch, codec incompatibility,
+   unsafe lifecycle behavior, unbounded cost, or failed blind human review.
+4. **Use a bounded fallback ladder.** If the optimized HeyGen output fails,
+   preflight Sync-3 as the lip/facial challenger, then OmniHuman v1.5 as the
+   motion challenger. Use Runway Act-Two only when a separately consented human
+   driving-performance recording is authorized; it is not a same-input route.
+   Do not repeat the unchanged rejected VEED Fabric or Aurora configurations.
+5. **Require a `ProviderCapabilityManifest`.** Each implemented adapter must
+   declare exact input types, duration/aspect/resolution limits, audio handling,
+   retry/idempotency semantics, pricing basis, privacy/storage/deletion
+   behavior, real-video support, and evidence version. Preflight rejects an
+   incompatible job before upload or spend.
+6. **Separate composition.** A provider-neutral `VideoCompositor` owns approved
+   background plates, layout, captions, aspect packaging, and final remuxing.
+   Presenter-generation adapters own only their provider-native render job.
+7. **Make policy configurable without weakening invariants.** Resolution,
+   aspect, duration, attempt and spend envelopes, timeouts, and provider choice
+   are validated runtime policy/configuration. Consent, allowed-host/egress,
+   duplicate-spend, disclosure, exact-hash provenance, media-structure, and
+   deletion requirements remain fail-closed code invariants.
+8. **Implement only after evidence selects a route.** Freeze an issue, base,
+   branch, owned paths, budgets, manifest schema, mutation matrix, human-only
+   surfaces, and stop conditions; commit RED contract tests; then add only the
+   selected thin adapter. Mock/local remains the default. No provider SDK or
+   branch-specific domain logic enters the core.
+9. **Prove full duration before six cells.** A good short diagnostic eliminates
+   incompatibility but never proves a canonical track. The selected route must
+   pass full-duration landscape and portrait evidence before six-cell T06
+   generation, T07 review, or T08 acceptance.
+
+The repository is therefore provider-neutral by intent, but not magically
+provider-complete: runtime switching is plug-and-play only among adapters that
+already have a reviewed capability manifest and contract tests. Adding a new
+provider requires a small adapter PR because its API and legal/security
+semantics differ; it must not require changing product/domain behavior.
+
+The future product-owner Digital Twin remains a separate path. HeyGen Avatar V,
+Google Flow `@me`, Tavus Phoenix, and Synthesia Personal/Studio Avatar warrant a
+fresh consented-likeness/voice-cloning, capture-quality, DPA/no-training,
+retention/deletion, revocation, disclosure, pricing, and human-acceptance study.
+Nothing in the fictional-presenter diagnostic authorizes that identity route.

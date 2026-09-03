@@ -805,3 +805,13 @@ remain separate gates.
 | Provider choice remains human/evidence owned | Role-based shortlist and explicit unresolved privacy, duration, quality, cost, deletion, identity, contract, and account-access questions | No provider selected/activated; immutable v1 bake-off contract remains byte-identical |
 | Panel findings remain reviewable | Independent technical, governance/security, and product/cost review; executable assertions preserve the corrected provider distinctions | Capability, hosting terms, private-input handling, and activation authority cannot be collapsed into one marketing score |
 | T06 progression remains bounded | Full-duration Myra landscape/portrait test, primary/fallback selection, then TDD and six-cell generation | No account, credential, SecretRef resolution, egress, call, spend, code, deployment, release, production-readiness, or Cut 1 authority |
+
+## Issue #514 T06 research-amendment traceability
+
+| Requirement | Canonical evidence | Preserved boundary |
+|---|---|---|
+| Preserve actual diagnostic economics and verdict | Exact observed/estimated cost table and human dispositions in the Issue #514 amendment to the provider landscape | No route is selected from headline price or machine metrics; all three prior outputs remain rejected |
+| Classify Google Flow accurately | Official Flow/Omni/Veo capability, duration, audio-reference, Character, Avatar, and data-use sources verified 2026-09-03 | Flow may benchmark visual concept/B-roll; it cannot supply exact-audio T06 evidence under current public API behavior |
+| Bind recommendations before implementation | Nine-step pre-implementation plan, quality matrix, capability manifest, compositor split, and fallback ladder | No adapter code precedes a passing diagnostic, full-duration proof, frozen route, executable RED, and human review |
+| Preserve provider portability | `ProviderCapabilityManifest`, thin provider-native adapters, provider-neutral domain contract and `VideoCompositor` | Runtime configuration switches only reviewed adapters; safety/provenance invariants remain fail-closed code controls |
+| Separate owner Digital Twin from fictional presenters | Future identity route explicitly names consent, voice, DPA/no-training, deletion, revocation, disclosure, and acceptance gates | Current synthetic-presenter work grants no owner-likeness or voice-cloning authority |
