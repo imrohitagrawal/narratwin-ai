@@ -1,7 +1,7 @@
 {
   "schema_version": "GovernancePreflightV1",
   "issue_number": 512,
-  "branch": "cut1-512-video-provider-landscape",
+  "branch": "stage8-512-video-provider-landscape",
   "objective": "From accepted base 60198a86b5558df5dec42c0f90cb3343f67bb286 and tree f58f42b1b1f069ba23d9b754988e4c023d872706, preserve the 2026-09-03 official-source Cut 1 T06 video-provider landscape under freeze comment 5522069340 and route correction 5522092317, replace the stale HeyGen-only first-candidate assumption with a shortlist and demo-before-code decision ladder, and keep every provider disabled and unselected. Use exactly six paths and at most 970 aggregate charged lines. Preserve the immutable v1 provider contract and exact approved presenter and audio bytes. Prohibit provider selection or activation, accounts, credentials, egress, spend, provider calls, media generation, adapter/runtime/code changes, deployment, release, production-readiness, and Cut 1 completion claims. Stop on base, route, scope, source, privacy or terms, authority, hosted-check, review, or approval drift.",
   "status_decision": "update-minimally",
   "scope": {
