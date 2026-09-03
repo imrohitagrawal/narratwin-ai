@@ -1,0 +1,38 @@
+{
+  "schema_version": "GovernancePreflightV1",
+  "issue_number": 514,
+  "branch": "stage8-514-video-research-amendment",
+  "objective": "From accepted base e15beee4f520ad5786a61effd8ce2eba8f51319c and tree bf0775a43bf5af60f2230b3bd9a7cdd3541f3a8c, amend the Cut 1 T06 provider research under route-freeze comment 5527274671. Preserve exact observed diagnostic costs, distinguish estimates, correct Google Flow and Gemini Omni capability boundaries, and make the provider-portability and demo-before-code recommendations explicit plan gates. Use exactly seven paths and at most 990 aggregate charged lines. Preserve approved presenter/audio bytes and the human rejection of all three prior diagnostics. Permit only fail-closed Issue #514 route enforcement outside documentation. Prohibit provider selection or activation, account or credential use, upload, egress, spend, provider calls, media generation, adapter/runtime changes, deployment, release, production-readiness, and Cut 1 completion claims. Stop on base, scope, source, capability, privacy or terms, authority, hosted-check, review, or approval drift.",
+  "status_decision": "update-minimally",
+  "scope": {
+    "required": [
+      "docs/governance/preflights/issue-514.json",
+      "docs/governance/CUT1_T06_VIDEO_PROVIDER_LANDSCAPE_2026-09-03.md",
+      "docs/THIRD_PARTY_NOTICES.md",
+      "docs/TRACEABILITY.md",
+      "docs/STATUS.md",
+      "scripts/quality/stage8_cut1_routes.py",
+      "tests/unit/test_stage8_cut1_routes.py"
+    ],
+    "allowed_prefixes": [
+      "docs/governance/preflights/issue-514.json",
+      "docs/governance/CUT1_T06_VIDEO_PROVIDER_LANDSCAPE_2026-09-03.md",
+      "docs/THIRD_PARTY_NOTICES.md",
+      "docs/TRACEABILITY.md",
+      "docs/STATUS.md",
+      "scripts/quality/stage8_cut1_routes.py",
+      "tests/unit/test_stage8_cut1_routes.py"
+    ],
+    "forbidden": [
+      "backend/",
+      "frontend/",
+      "pyproject.toml",
+      "uv.lock",
+      ".github/workflows/",
+      "credentials/",
+      "media/",
+      "deployment/",
+      "release/"
+    ]
+  }
+}
