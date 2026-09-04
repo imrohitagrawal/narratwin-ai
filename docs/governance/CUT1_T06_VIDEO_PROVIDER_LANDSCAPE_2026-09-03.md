@@ -409,8 +409,12 @@ per output second. These are dated discovery figures, not activation authority.
 
 Google Flow is not rejected as a video-generation product. As of 2026-09-03,
 Google describes Flow as a creative studio using Gemini Omni and Veo, with
-text/image/video inputs, Characters, Avatars, both portrait and landscape, and
-50 daily credits on the free tier. It is a meaningful visual-quality candidate.
+text/image/video inputs, Characters, Avatars, and both portrait and landscape.
+Its credit page says non-subscribers receive 50 daily credits, while its current
+get-started page says access requires Plus, Pro, Ultra, or a qualifying
+Workspace plan. That official access documentation currently conflicts, so an
+exact account check—not a generic “free tier” assumption—must decide access.
+It remains a meaningful visual-quality candidate.
 
 The current roadblock is narrower: Flow/Gemini Omni does not meet NarraTwin's
 **exact-artifact presenter contract** today.
@@ -437,6 +441,11 @@ The current roadblock is narrower: Flow/Gemini Omni does not meet NarraTwin's
 6. Before any upload, the exact account must disable “Help improve Google Flow”
    when required and pass privacy, reviewer-access, retention, deletion, region,
    terms, and input-rights review. Free credits do not grant egress authority.
+7. Google states that a visible watermark is applied automatically for residents
+   of India, South Korea, or Vietnam. A visible watermark fails professional T06
+   media. For the current India-resident account, Flow is **concept-only** unless
+   exact-account evidence proves the output is not visibly watermarked; never
+   remove, conceal, or crop a required watermark.
 
 ### Permitted exploration role
 
@@ -564,10 +573,12 @@ recommendation:
   realism in HeyGen. A materially different model can be tested, but marketing
   examples do not prove natural hands, body motion, lip sync, environment
   integration, identity, or human credibility for Meera/Myra/Raj.
-- Current Hedra product pages conflict with older Hedra file/FAQ guidance about
-  full-duration 1080p. The older material describes a 30-second 1080p limit;
-  the live model page says 600 seconds. Exact account/model admission must be
-  checked without spend before a package is proposed.
+- The live model page currently publishes a 600-second maximum and includes
+  1080p in the same Character-3 surface. A previously indexed legacy duration
+  page is no longer reproducible and is not relied upon. The **published
+  600-second/1080p surface** is still a mutable product claim, so exact
+  account/model admission must be checked without spend before a package is
+  proposed.
 - Hedra's current standard API terms prohibit integrating the API into a
   product and permit Customer Content use for model training/improvement. Its
   biometric policy also needs an exact applicability and retention decision.
@@ -623,7 +634,9 @@ in this plan:
   the presenter is not visibly forming the narrated words.
 - Flow may switch a request to a compatible model; every job must record the
   requested and realized model/credit delta. Flow outputs carry invisible
-  SynthID, and any visible watermark fails professional T06 media.
+  SynthID, and any visible watermark fails professional T06 media. Its access
+  and watermark rules require an exact-account residency/subscription check;
+  mandatory visible-watermark output is concept-only, never T06 evidence.
 - Generated product screens, numbers, citations, diagrams, captions, or UI
   states are never evidence. Real capture and deterministic rendering own
   those surfaces.
@@ -641,14 +654,15 @@ T06 evidence.
 ## Multi-reference character pack (`PresenterReferencePackV1`)
 
 The proposed **Multi-reference character pack** is a versioned source library,
-not a bag of every image sent to every model. More references help only when
-they are consistent and the provider accepts their declared role. Conflicting
+not a bag of every image sent to every model. Its angles and motion lengths are
+design hypotheses for later validation, not provider guarantees. More references
+help only when they are consistent and the provider accepts their declared role. Conflicting
 dresses, glasses, lighting, camera lenses, ages, or expressions can be blended
 into an unstable face, body, wardrobe, or skin tone.
 
 | Layer | Recommended content | Purpose and rule |
 |---|---|---|
-| `IDENTITY_CORE_V1` | Neutral front, approximately 30-degree left, and approximately 30-degree right, captured in one session | Same lens, distance, light, hair, attire, jewellery and glasses state; facial identity only |
+| `IDENTITY_CORE_V1` | Neutral front, approximately 30-degree left, and approximately 30-degree right | For future real capture, use one consistent session. For fictional presenters, create separately governed synthetic derivatives under one look constraint. Same lens, distance, light, hair, attire, jewellery and glasses state; facial identity only |
 | `PERFORMANCE_V1` | One 6–10-second chest/waist-up rights-cleared clip with blink, breath, small head turn and one restrained gesture | **motion reference**, not identity or voice authority; still images alone do not teach timing |
 | `LOOK_<id>` | A complete, internally consistent pack for one dress, hairstyle, jewellery and glasses state | Keep all look variants separate; never mix look IDs in one request |
 | `EXPRESSION_<id>` | Neutral, light smile, or serious stored separately | Select only what the shot needs; laughing/sad/numb extremes are not identity anchors |
@@ -693,7 +707,7 @@ Hedra currently lists USD 0.025/s at 540p, USD 0.05/s at 720p, and USD
 0.0625/s at 1080p. For 726.691502 total seconds across all six aspects, the
 video-only estimates are **USD 18.17**, **USD 36.33**, and **USD 45.42**
 respectively. The 1080p figure is conditional because of the conflicting
-duration documentation described above. A ten-second elimination diagnostic is
+account/model admission described above. A ten-second elimination diagnostic is
 USD 0.50 at 720p or USD 0.625 at 1080p before any account minimum.
 If the existing three-distinct-output bake-off requirement were applied to
 complete six-cell sets, the 720p inference estimate would be **USD 109.00**.
@@ -704,7 +718,10 @@ before spend; this document does not infer a cheaper interpretation.
 
 Runway currently prices Seedance 2.5 at USD 0.30/output-second for 720p.
 Reference images and audio are free, but input/reference video is another USD
-0.15/second and each generation has an USD 0.80 minimum. Sync-3 is approximately
+0.15/second and each generation has an USD 0.80 minimum. The current request
+contract uses whole-second request durations, and the stricter current source
+says combined reference video and audio duration must stay under 30 seconds.
+Sync-3 is approximately
 USD 8/minute, or USD 0.133333/second, and is a separate video-to-video pass.
 The “combined” column therefore models a Seedance visual plus dedicated Sync-3
 for every visibly speaking presenter second; non-speaking visuals do not need
@@ -716,33 +733,56 @@ other.
 |---|---:|---:|---:|---:|
 | 15 seconds per cell | 90.000000 | USD 27.00 | USD 12.00 | **USD 39.00** |
 | 30 seconds per cell | 180.000000 | USD 54.00 | USD 24.00 | **USD 78.00** |
-| 25% of final running time | 181.672876 | USD 54.50 | USD 24.22 | **USD 78.72** |
-| 50% of final running time | 363.345751 | USD 109.00 | USD 48.45 | **USD 157.45** |
-| 100% of final running time | 726.691502 | USD 218.01 | USD 96.89 | **USD 314.90** |
+| 25% of final running time | 184 billable / 181.672876 speaking | USD 55.20 | USD 24.22 | **USD 79.42** |
+| 50% of final running time | 364 billable / 363.345751 speaking | USD 109.20 | USD 48.45 | **USD 157.65** |
+| 100% of final running time | 728 billable / 726.691502 speaking | USD 218.40 | USD 96.89 | **USD 315.29** |
+
+Fractional coverage is rounded up independently for each presenter/aspect cell:
+184, 364, and 728 are conservative billable lower bounds before sentence-boundary
+segmentation. Sync-3 remains based on exact visibly speaking time; padding or
+additional lip-sync shots can increase it.
 
 At 1080p, Seedance alone is USD 0.68/output-second: USD 61.20 for 90
-seconds, USD 122.40 for 180 seconds, and USD 494.15 for all 726.691502
+seconds, USD 122.40 for 180 seconds, and USD 495.04 for the 728 rounded
 seconds before lip sync. Runway documents 1080p for the current route, but
 resolution support does not prove authenticity, exact audio, or T06 acceptance.
-Three complete 720p Seedance-only sets would estimate **USD 654.02** before
+Three complete 720p Seedance-only sets would estimate **USD 655.20** before
 lip sync, reference-video charges, failures, or editing.
 
 Real product recording, local deterministic graphics, and local composition
 have zero marginal provider-generation charge. They still require engineering,
 editing, review, storage, and compute, so this table does not call them free.
 
+### Cash-to-start versus marginal inference
+
+Marginal arithmetic is not the amount a new account must pay before the first
+job. As verified 2026-09-04:
+
+| Route | Marginal estimate used above | Current cash/access floor | Economic caution |
+|---|---:|---:|---|
+| Hedra Character-3 | USD 0.05/s at 720p | Basic is USD 15/month with 1,500 monthly credits | Monthly credits do not roll over; the standard API terms still block NarraTwin product integration, so purchasing a plan would not clear the contract stop |
+| Runway Seedance 2.5 | USD 0.30/s at 720p | USD 10 minimum credit purchase; credits are priced at USD 0.01 each | A small diagnostic can consume less than USD 10 while still requiring the full minimum purchase; remaining-credit treatment and exact account balance must be checked before activation |
+| Google Flow | Credits per generation | Exact qualifying subscription, Workspace entitlement, or exact-account daily-credit access | Official access pages conflict, India-resident output is visibly watermarked, and subscription cost cannot truthfully be allocated to one render without the account facts |
+| Local capture/composition | No provider-generation charge | Existing capture/editing hardware and staff time | Not economically free: engineering, recording, editing, review, storage and compute remain real costs |
+
+Neither a subscription, a wallet balance, nor unused credits constitute upload,
+egress, spend, provider-selection, or acceptance authority.
+
 ### Plan B Google Flow credit scenarios
 
 Flow uses credits per generation rather than a stable USD-per-second price.
-As verified 2026-09-04, free accounts receive **50 daily credits**; Plus, Pro,
-and the two Ultra tiers receive 200, 1,000, 10,000, or 25,000 monthly credits.
+As verified 2026-09-04, the credit page says non-subscribers receive **50 daily
+credits**, but the get-started page requires a qualifying subscription or
+Workspace plan; exact-account access must resolve that official conflict. Plus,
+Pro, and the two Ultra tiers receive 200, 1,000, 10,000, or 25,000 monthly credits.
 Veo 3.1 Lite costs 10 credits per 4/6/8-second generation for non-Ultra users
-(5 for Ultra); Omni Flash costs 15/20/25/30 credits for 4/6/8/10 seconds.
+(5 for Ultra); **Omni Flash 720p costs 7/10/12/15 credits** for 4/6/8/10
+seconds, while 360p costs 4/5/6/7.
 Quality costs 100 credits for an 8-second generation. Paid subscribers receive
 1080p upscaling at zero additional credits; it is unavailable to non-subscribers.
 
 For six independent cells, 15 seconds per cell needs at least 12 ten-second
-Omni generations, or 360 credits; 30 seconds per cell needs 18, or 540 credits.
+Omni generations, or **180 credits**; 30 seconds per cell needs 18, or **270 credits**.
 Using eight-second Veo Lite, those same plans need at least 12 generations/120
 non-Ultra credits and 24/240. Full six-cell coverage would need at least 92
 Veo Lite generations/920 non-Ultra credits because each cell rounds separately;
@@ -781,18 +821,23 @@ Official sources verified 2026-09-04:
 - Hedra Character-3 model and API:
   <https://www.hedra.com/models/video/hedra/character-3> and
   <https://www.hedra.com/develop/models/video/hedra-character-3>
-- Hedra terms and conflicting file guidance:
-  <https://www.hedra.com/terms> and
-  <https://www.hedra.com/docs/pages/app/troubleshooting/file-specifications>
+- Hedra API terms governing integration and content use:
+  <https://www.hedra.com/api-terms>
+- Hedra current subscription and credit pricing:
+  <https://www.hedra.com/pricing>
 - Seedance 2.5 capabilities:
   <https://seed.bytedance.com/en/blog/one-take-creation-flexible-referencing-introducing-seedance-2-5>
 - Runway Seedance pricing and input contract:
   <https://docs.dev.runwayml.com/guides/pricing/> and
   <https://docs.dev.runwayml.com/assets/inputs/>
+- Runway account setup and minimum credit purchase:
+  <https://docs.dev.runwayml.com/guides/setup/>
 - Google Flow Character, asset, and silent-output behavior:
   <https://support.google.com/flow/answer/16935308>
 - Google Flow models and credits:
   <https://support.google.com/flow/answer/16352836> and
   <https://support.google.com/flow/answer/16526234>
+- Google Flow access, account, and watermark rules:
+  <https://support.google.com/flow/answer/16353333>
 - Sync-3 pricing and API:
   <https://fal.ai/models/fal-ai/sync-lipsync/v3>

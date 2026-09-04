@@ -2,7 +2,7 @@
 
 - Status: Accepted for Issue #516 research sequencing
 - Date: 2026-09-04
-- Decision owner: Issue #516 freeze `5541564267`
+- Decision owner: Issue #516 freezes `5541564267` and `5542161744`
 - Authority effect: `NO_AUTHORITY_EFFECT`
 - Implementation authority: none
 
@@ -36,8 +36,9 @@ Treat Hedra Character-3 as a
 `PREQUALIFICATION_CANDIDATE_CONTRACT_BLOCKED` presenter-led route. It is first
 in the documented comparison because its current model page claims a single
 audio-driven job can span each narration and required aspect. It is not selected
-or activated. Current terms/privacy and conflicting duration-by-resolution
-documentation must clear before any upload or spend. One start frame is not a
+or activated. Current terms/privacy, mutable duration/resolution admission, and
+the standard API-terms prohibition on product integration must clear before any
+upload or spend. One start frame is not a
 multi-image identity model, and human realism remains unproved.
 
 ### Plan B
