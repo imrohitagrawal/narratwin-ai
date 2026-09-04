@@ -341,6 +341,17 @@ WAV as an uploaded audio driver or provide the required 117–128-second
 presenter contract, so no Google adapter, SDK, upload, call, spend, model,
 output, account, credential, or activation is added.
 
+Issue `#516` adds dated research references for Hedra Character-3, ByteDance
+Seedance 2.5, Runway-hosted Seedance pricing/input behavior, Google Flow
+Characters/models/credits, and fal-hosted Sync-3. These are provider/model/API
+research references only; no SDK, package, model weight, media, dataset,
+account, credential, upload, call, output, or license is added. Character-3 is
+contract-blocked pending an applicable terms/privacy route. Seedance and Flow
+are preserved only as non-authoritative short visual/B-roll research under the
+current T06 contract. Exact prices, credits, terms, model versions, retention,
+training, processors, region, deletion, and output rights must be refreshed for
+the exact account before any later activation.
+
 ## Issue #459 T03 controlled-local presenter derivatives
 
 Issue #459 uses OpenAI's built-in `gpt-image-2.0` image-edit capability on

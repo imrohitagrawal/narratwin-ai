@@ -12,6 +12,7 @@ RUN set -eux; \
       libgcc=15.2.0-r5 \
       libstdc++=15.2.0-r5 \
       musl=1.2.6-r2; \
+    rm -f /runtime/var/log/apk.log; \
     mkdir -p /runtime/usr/bin /runtime/app /runtime/tmp; \
     cp /usr/local/bin/node /runtime/usr/bin/node; \
     chmod 0755 /runtime/usr/bin/node; \

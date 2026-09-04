@@ -61,6 +61,17 @@ def test_runtime_preserves_package_identity_while_removing_tools() -> None:
     assert "/lib/apk/db/installed" in source
 
 
+def test_runtime_discards_volatile_apk_install_log() -> None:
+    source = DOCKERFILE.read_text(encoding="utf-8")
+    node_source = source.split("FROM scratch AS deps", 1)[0]
+
+    assert "rm -f /runtime/var/log/apk.log" in node_source
+    assert node_source.index("apk add --root /runtime") < node_source.index(
+        "rm -f /runtime/var/log/apk.log"
+    )
+    assert "/runtime/lib/apk/db/installed" in node_source
+
+
 def test_scan_contract_requires_runtime_package_metadata_and_openssl_identity() -> None:
     script = (ROOT / "scripts/ci/docker-image-scan.sh").read_text(encoding="utf-8")
     assert "FRONTEND_RUNTIME_INDEX" in script

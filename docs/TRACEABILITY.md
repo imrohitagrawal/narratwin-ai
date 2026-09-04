@@ -815,3 +815,15 @@ remain separate gates.
 | Bind recommendations before implementation | Nine-step pre-implementation plan, quality matrix, capability manifest, compositor split, and fallback ladder | No adapter code precedes a passing diagnostic, full-duration proof, frozen route, executable RED, and human review |
 | Preserve provider portability | `ProviderCapabilityManifest`, thin provider-native adapters, provider-neutral domain contract and `VideoCompositor` | Runtime configuration switches only reviewed adapters; safety/provenance invariants remain fail-closed code controls |
 | Separate owner Digital Twin from fictional presenters | Future identity route explicitly names consent, voice, DPA/no-training, deletion, revocation, disclosure, and acceptance gates | Current synthetic-presenter work grants no owner-likeness or voice-cloning authority |
+
+## Issue #516 T06 dual-plan strategy traceability
+
+| Requirement | Canonical evidence | Preserved boundary |
+|---|---|---|
+| Reconcile live human rejection | Issue #459 v8/v9 evidence; controlling Issue #516 amendment in the provider landscape | Unchanged HeyGen Photo Avatar IV/static composition is not the next route and no rejected output becomes T06 evidence |
+| Preserve Plan A without false selection | ADR 0079 and Character-3 capability/cost/terms sources | Character-3 remains `PREQUALIFICATION_CANDIDATE_CONTRACT_BLOCKED`; no upload, spend, provider selection, or adapter authority |
+| Preserve Plan B and product truth | Editorial shot plan, real product screen recording, deterministic source-driven graphics, exact WAV/SRT finalization | Seedance/Flow output is `VISUAL_BROLL_RESEARCH_NON_ADMISSIBLE_FOR_T06`; generated UI/audio never becomes authority |
+| Keep the current T06 contract explicit | ADR 0079 continuous-presenter decision and required future amendment | Editorial coverage cannot conceal failed presenter intervals or silently weaken six-cell acceptance |
+| Govern multi-reference media | Proposed `PresenterReferencePackV1` layers and provider-specific selection rules | Current presenter anchors remain immutable; additional Meera/Myra/Raj derivatives require a separate exact-hash route and human approval |
+| Compare costs honestly | 726.691502-second Plan A totals; Plan B 90/180-second and 25/50/100-percent scenarios; Flow credits | Estimates exclude retries, failures, subscriptions, labor, storage and tax and grant no spend authority |
+| Preserve plug-and-play architecture | `AvatarProvider`, future `BrollProvider`, `VideoCompositor`, capability manifest and validated runtime policy | Provider switching applies only to implemented/reviewed adapters; domain, grounding, safety and acceptance remain NarraTwin-owned |

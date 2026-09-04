@@ -2143,3 +2143,30 @@ human acceptance, deployment, release, production-readiness, or Cut 1 evidence.
 - This documentation route adds no provider selection, credentials, upload,
   egress, call, spend, media, runtime behavior, deployment, release, production
   readiness, or Cut 1 completion authority.
+
+## Issue #516 T06 dual-plan strategy amendment (2026-09-04)
+
+- The exact HeyGen v8/v9 diagnostics are human-rejected for authentic-human
+  credibility. The earlier “optimized HeyGen next” instruction is superseded;
+  the unchanged single-photo/static-composition root cause must not be rerun.
+- Plan A records Hedra Character-3 as a presenter-led
+  `PREQUALIFICATION_CANDIDATE_CONTRACT_BLOCKED`. Its published one-frame plus
+  audio surface is compatible in shape with continuous presentation, but
+  terms/privacy, mutable exact-account/model admission, returned-audio behavior,
+  exact input admission, and real output quality remain unproved.
+- Plan B records Seedance 2.5 and Google Flow as
+  `VISUAL_BROLL_RESEARCH_NON_ADMISSIBLE_FOR_T06` components alongside real
+  product screen recording, deterministic graphics, and NarraTwin-owned final
+  audio/captions. It needs a separately authorized continuous-presenter
+  contract amendment before it can satisfy T06.
+- A proposed `PresenterReferencePackV1` separates identity, motion, look,
+  expression, blocking, scene, product-truth, and audio/caption roles. Existing
+  presenter anchors remain immutable; no new angles, looks, derivatives, or
+  motion references are authorized.
+- Dated cost scenarios and Google Flow credit economics are preserved in the
+  provider landscape. The bounded hosted-parity correction
+  removes only the volatile `/runtime/var/log/apk.log` from the frontend scratch runtime while
+  retaining the APK package database as package-identity evidence. Issue `#516`
+  changes research sequencing, records ADR 0079, and corrects that reproducibility
+  defect; no provider is selected or activated, and T06, T07, T08, Cut 1,
+  deployment, publication, release, and production readiness remain incomplete.

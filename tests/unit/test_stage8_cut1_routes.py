@@ -602,6 +602,18 @@ def remove_cleanup_marker(text: str, marker: str) -> str:
 
 
 EXPECTED = {
+    "stage8-516-t06-dual-plan-strategy": {
+        "docs/governance/preflights/issue-516.json",
+        "docs/governance/CUT1_T06_VIDEO_PROVIDER_LANDSCAPE_2026-09-03.md",
+        "docs/ADR/0079-cut1-t06-dual-plan-video-strategy.md",
+        "docs/THIRD_PARTY_NOTICES.md",
+        "docs/TRACEABILITY.md",
+        "docs/STATUS.md",
+        "frontend/Dockerfile",
+        "scripts/quality/stage8_cut1_routes.py",
+        "tests/unit/test_frontend_container_runtime.py",
+        "tests/unit/test_stage8_cut1_routes.py",
+    },
     "stage8-514-video-research-amendment": {
         "docs/governance/preflights/issue-514.json",
         "docs/governance/CUT1_T06_VIDEO_PROVIDER_LANDSCAPE_2026-09-03.md",
@@ -1315,6 +1327,139 @@ def test_issue514_research_records_cost_flow_and_precode_plan() -> None:
         "future product-owner Digital Twin",
     ):
         assert required in landscape
+
+
+def test_issue516_dual_plan_strategy_is_exact_and_bounded() -> None:
+    branch = "stage8-516-t06-dual-plan-strategy"
+    expected = EXPECTED[branch]
+    caps = {
+        "docs/governance/preflights/issue-516.json": 180,
+        "docs/governance/CUT1_T06_VIDEO_PROVIDER_LANDSCAPE_2026-09-03.md": 650,
+        "docs/ADR/0079-cut1-t06-dual-plan-video-strategy.md": 280,
+        "docs/THIRD_PARTY_NOTICES.md": 60,
+        "docs/TRACEABILITY.md": 50,
+        "docs/STATUS.md": 80,
+        "frontend/Dockerfile": 20,
+        "scripts/quality/stage8_cut1_routes.py": 180,
+        "tests/unit/test_frontend_container_runtime.py": 100,
+        "tests/unit/test_stage8_cut1_routes.py": 300,
+    }
+    artifact = json.loads(
+        (REPO / "docs/governance/preflights/issue-516.json").read_text(encoding="utf-8")
+    )
+
+    assert routes.ISSUE516_BRANCH == branch
+    assert routes.ISSUE516_BASE == "9ed7a7e01f3be9b7fa2a2eb77f659f4800df7268"
+    assert routes.ISSUE516_TREE == "4fb37cd794a31e4d0e440cb84d792f53dc05a398"
+    assert routes.ISSUE516_ROUTE_COMMENT == "5542161744"
+    assert routes.ROUTES[branch] == expected
+    assert routes.ROUTE_ISSUES[branch] == 516
+    assert routes.TOTAL_LIMITS[branch] == 1900
+    assert routes.TEXT_LIMITS[branch] == caps
+    assert set(artifact["scope"]["required"]) == expected
+    assert artifact["scope"]["required"] == artifact["scope"]["allowed_prefixes"]
+    context = {"issue_number": 516, "branch": branch, "changed_files": list(expected)}
+    assert routes.validate_governance_preflight(artifact, context=context) == []
+    assert all(
+        value in artifact["objective"]
+        for value in (
+            routes.ISSUE516_BASE,
+            routes.ISSUE516_TREE,
+            routes.ISSUE516_ROUTE_COMMENT,
+        )
+    )
+
+
+def test_issue516_records_dual_plan_multi_reference_and_cost_contract() -> None:
+    landscape = (
+        REPO / "docs/governance/CUT1_T06_VIDEO_PROVIDER_LANDSCAPE_2026-09-03.md"
+    ).read_text(encoding="utf-8")
+    adr = (
+        REPO / "docs/ADR/0079-cut1-t06-dual-plan-video-strategy.md"
+    ).read_text(encoding="utf-8")
+    status = (REPO / "docs/STATUS.md").read_text(encoding="utf-8")
+
+    assert not any(line.startswith("#516") for line in landscape.splitlines())
+
+    for required in (
+        "Plan A — presenter-led compatibility",
+        "Hedra Character-3",
+        "PREQUALIFICATION_CANDIDATE_CONTRACT_BLOCKED",
+        "Plan B — editorial hybrid",
+        "VISUAL_BROLL_RESEARCH_NON_ADMISSIBLE_FOR_T06",
+        "Seedance 2.5",
+        "Google Flow",
+        "real product screen recordings",
+        "deterministic source-driven graphics",
+        "Multi-reference character pack",
+        "PresenterReferencePackV1",
+        "identity core",
+        "look variants",
+        "motion reference",
+        "726.691502",
+        "USD 36.33",
+        "USD 315.29",
+        "USD 655.20",
+        "Cash-to-start versus marginal inference",
+        "Basic is USD 15/month",
+        "USD 10 minimum credit purchase",
+        "Monthly credits do not roll over",
+        "fal Sync-3",
+        "prepaid credits",
+        "exact top-up/account floor is unknown",
+        "50 daily credits",
+        "Omni Flash 720p costs 7/10/12/15 credits",
+        "144 credits",
+        "180 credits",
+        "all-10-second schedule",
+        "270 credits",
+        "92",
+        "2,760 credits",
+        "access documentation currently conflicts",
+        "India, South Korea, or Vietnam",
+        "concept-only",
+        "Runway self-service",
+        "combined reference video and audio duration must stay under 30 seconds",
+        "whole-second request durations",
+        "prohibition on product integration",
+        "model training/improvement",
+        "https://www.hedra.com/api-terms",
+        "https://www.hedra.com/docs/pages/developer/getting_started/quickstart",
+        "https://docs.dev.runwayml.com/api-details/api_changelog/",
+        "https://github.com/runwayml/sdk-python/blob/main/src/runwayml/types/video_to_video_create_params.py",
+        "https://fal.ai/docs/documentation/model-apis/pricing",
+        "600-second/1080p surface",
+        "USD 5.40–9.00",
+        "USD 23.40–39.00",
+        "design hypotheses",
+        "synthetic derivatives",
+        "SynthID",
+        "continuous presenter",
+        "separately authorized contract amendment",
+        "NO_AUTHORITY_EFFECT",
+    ):
+        assert required in landscape
+    assert "conflicting account/model admission" not in landscape
+
+    for required in (
+        "Status: Accepted",
+        "Plan A",
+        "Plan B",
+        "provider-neutral",
+        "current T06 contract remains unchanged",
+        "multi-reference",
+        "no provider selection",
+    ):
+        assert required in adr
+
+    for required in (
+        "mutable exact-account/model admission",
+        "removes only the volatile `/runtime/var/log/apk.log`",
+        "package-identity evidence",
+    ):
+        assert required in status
+    assert "conflicting 1080p duration guidance" not in status
+    assert "records ADR 0079 only" not in status
 
 
 def _issue507_route_root(tmp_path: Path) -> Path:
