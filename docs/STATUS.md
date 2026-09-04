@@ -2152,7 +2152,7 @@ human acceptance, deployment, release, production-readiness, or Cut 1 evidence.
 - Plan A records Hedra Character-3 as a presenter-led
   `PREQUALIFICATION_CANDIDATE_CONTRACT_BLOCKED`. Its published one-frame plus
   audio surface is compatible in shape with continuous presentation, but
-  terms/privacy, conflicting 1080p duration guidance, returned-audio behavior,
+  terms/privacy, mutable exact-account/model admission, returned-audio behavior,
   exact input admission, and real output quality remain unproved.
 - Plan B records Seedance 2.5 and Google Flow as
   `VISUAL_BROLL_RESEARCH_NON_ADMISSIBLE_FOR_T06` components alongside real
@@ -2164,6 +2164,9 @@ human acceptance, deployment, release, production-readiness, or Cut 1 evidence.
   presenter anchors remain immutable; no new angles, looks, derivatives, or
   motion references are authorized.
 - Dated cost scenarios and Google Flow credit economics are preserved in the
-  provider landscape. Issue `#516` changes research sequencing and records ADR
-  0079 only; no provider is selected or activated, and T06, T07, T08, Cut 1,
+  provider landscape. The bounded hosted-parity correction
+  removes only the volatile `/runtime/var/log/apk.log` from the frontend scratch runtime while
+  retaining the APK package database as package-identity evidence. Issue `#516`
+  changes research sequencing, records ADR 0079, and corrects that reproducibility
+  defect; no provider is selected or activated, and T06, T07, T08, Cut 1,
   deployment, publication, release, and production readiness remain incomplete.
