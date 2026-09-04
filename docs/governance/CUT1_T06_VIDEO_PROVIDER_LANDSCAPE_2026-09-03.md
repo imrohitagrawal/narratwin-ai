@@ -554,7 +554,8 @@ That surface can cover each 117–128-second narration in one job and therefore
 matches the current requirement for a continuously visible presenter more
 directly than a stitched short-shot generator.
 
-Plan A remains a compatibility candidate, not an activated recommendation:
+Plan A remains `PREQUALIFICATION_CANDIDATE_CONTRACT_BLOCKED`, not an activated
+recommendation:
 
 - Character-3 accepts a single start frame, not a multi-image identity pack.
   The broader pack can help humans select the best frame, but cannot be claimed
@@ -567,10 +568,13 @@ Plan A remains a compatibility candidate, not an activated recommendation:
   full-duration 1080p. The older material describes a 30-second 1080p limit;
   the live model page says 600 seconds. Exact account/model admission must be
   checked without spend before a package is proposed.
-- The current published Hedra content license and data-use posture do
-  not clear the repository's privacy/rights boundary. A governing order,
-  enterprise no-training agreement, or separately approved terms exception is
-  required before upload.
+- Hedra's current standard API terms prohibit integrating the API into a
+  product and permit Customer Content use for model training/improvement. Its
+  biometric policy also needs an exact applicability and retention decision.
+  The prohibition on product integration is a hard activation stop.
+  A signed governing order/DPA that expressly overrides those terms is required
+  before upload, adapter code, or product use; an internal approval cannot
+  override provider terms.
 - “Audio-driven” does not prove that returned MP4 audio bytes are the accepted
   WAV. The approved WAV and captions remain authoritative; any final mux must
   be deterministic and timing-equivalent, and provider audio must not silently
@@ -596,12 +600,18 @@ captions remain continuous while the picture track deliberately alternates:
 4. restrained environmental or contextual B-roll that makes no factual product
    claim.
 
-Seedance 2.5 and Google Flow are complementary visual candidates in this plan:
+Seedance 2.5 and Google Flow are
+`VISUAL_BROLL_RESEARCH_NON_ADMISSIBLE_FOR_T06` complementary visual candidates
+in this plan:
 
 - Seedance 2.5 currently documents 4–30-second output and up to 30 image, 10
   video, and 10 audio references. It is the better direct consumer of a small,
   explicitly role-labelled identity/motion/scene subset. An audio reference is
   generative conditioning, not proof that exact audio is passed through.
+- This document prices the Runway-hosted Seedance route. Runway self-service
+  terms permit input/output training; Enterprise protections require exact
+  account proof. Direct BytePlus is a different provider/model/region/rate-card
+  contract and cannot be substituted under the same name or estimate.
 - Google Flow Characters currently accept only one or two appearance images
   plus a selected or custom Flow voice. Current models generate 4/6/8/10-second
   clips depending on model and operation. Flow can add short full-frame
@@ -611,6 +621,9 @@ Seedance 2.5 and Google Flow are complementary visual candidates in this plan:
   either route is discarded. For a visibly speaking presenter shot, a separate
   exact-audio lip-sync step must itself pass; otherwise use the shot only where
   the presenter is not visibly forming the narrated words.
+- Flow may switch a request to a compatible model; every job must record the
+  requested and realized model/credit delta. Flow outputs carry invisible
+  SynthID, and any visible watermark fails professional T06 media.
 - Generated product screens, numbers, citations, diagrams, captions, or UI
   states are never evidence. Real capture and deterministic rendering own
   those surfaces.
@@ -625,7 +638,7 @@ presenter-dominant editorial composition and updates its exact acceptance
 matrix. Until then it is a current fallback/complementary plan, not accepted
 T06 evidence.
 
-## Multi-reference character pack
+## Multi-reference character pack (`PresenterReferencePackV1`)
 
 The proposed **Multi-reference character pack** is a versioned source library,
 not a bag of every image sent to every model. More references help only when
@@ -648,6 +661,9 @@ Each asset needs an exact hash, source/rights record, capture metadata, declared
 role, look ID, approval status, and allowed provider/use. Generated outputs do
 not recursively become canonical identity inputs without a new human-governed
 derivative decision, because that compounds identity drift.
+Reference-image inference being zero-priced does not make pack creation free:
+generation/capture, curation, rights, provenance, storage, and human acceptance
+are separate costs and gates.
 
 Provider-specific selection is mandatory:
 
@@ -679,6 +695,10 @@ video-only estimates are **USD 18.17**, **USD 36.33**, and **USD 45.42**
 respectively. The 1080p figure is conditional because of the conflicting
 duration documentation described above. A ten-second elimination diagnostic is
 USD 0.50 at 720p or USD 0.625 at 1080p before any account minimum.
+If the existing three-distinct-output bake-off requirement were applied to
+complete six-cell sets, the 720p inference estimate would be **USD 109.00**.
+Whether repetition applies per candidate, aspect, or final cell must be frozen
+before spend; this document does not infer a cheaper interpretation.
 
 ### Plan B Seedance and lip-sync scenarios
 
@@ -688,7 +708,9 @@ Reference images and audio are free, but input/reference video is another USD
 USD 8/minute, or USD 0.133333/second, and is a separate video-to-video pass.
 The “combined” column therefore models a Seedance visual plus dedicated Sync-3
 for every visibly speaking presenter second; non-speaking visuals do not need
-that second pass.
+that second pass. The seconds below are summed across six independent edits;
+they do not assume that one generated aspect can be blindly reframed as the
+other.
 
 | Presenter footage across six edits | Seconds | Seedance 720p visual | Sync-3 speaking pass | Combined |
 |---|---:|---:|---:|---:|
@@ -702,6 +724,8 @@ At 1080p, Seedance alone is USD 0.68/output-second: USD 61.20 for 90
 seconds, USD 122.40 for 180 seconds, and USD 494.15 for all 726.691502
 seconds before lip sync. Runway documents 1080p for the current route, but
 resolution support does not prove authenticity, exact audio, or T06 acceptance.
+Three complete 720p Seedance-only sets would estimate **USD 654.02** before
+lip sync, reference-video charges, failures, or editing.
 
 Real product recording, local deterministic graphics, and local composition
 have zero marginal provider-generation charge. They still require engineering,
@@ -717,10 +741,13 @@ Veo 3.1 Lite costs 10 credits per 4/6/8-second generation for non-Ultra users
 Quality costs 100 credits for an 8-second generation. Paid subscribers receive
 1080p upscaling at zero additional credits; it is unavailable to non-subscribers.
 
-For scale only, 90 seconds needs at least nine 10-second Omni generations, or
-270 credits; 180 seconds needs 18, or 540 credits. Using eight-second Veo Lite,
-90 seconds needs at least 12 generations/120 non-Ultra credits, and 180 seconds
-needs at least 23/230. Requests may return more than one generation and charge
+For six independent cells, 15 seconds per cell needs at least 12 ten-second
+Omni generations, or 360 credits; 30 seconds per cell needs 18, or 540 credits.
+Using eight-second Veo Lite, those same plans need at least 12 generations/120
+non-Ultra credits and 24/240. Full six-cell coverage would need at least 92
+Veo Lite generations/920 non-Ultra credits because each cell rounds separately;
+three full repeated sets would require 2,760 credits. Requests may return more
+than one generation and charge
 each result; sentence boundaries, rejected shots, alternate aspects, and edits
 raise the real total. Subscription prices and unused-credit economics prevent
 a truthful universal USD conversion, so Flow must be compared using the exact
