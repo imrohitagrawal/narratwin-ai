@@ -609,7 +609,9 @@ EXPECTED = {
         "docs/THIRD_PARTY_NOTICES.md",
         "docs/TRACEABILITY.md",
         "docs/STATUS.md",
+        "frontend/Dockerfile",
         "scripts/quality/stage8_cut1_routes.py",
+        "tests/unit/test_frontend_container_runtime.py",
         "tests/unit/test_stage8_cut1_routes.py",
     },
     "stage8-514-video-research-amendment": {
@@ -1337,7 +1339,9 @@ def test_issue516_dual_plan_strategy_is_exact_and_bounded() -> None:
         "docs/THIRD_PARTY_NOTICES.md": 60,
         "docs/TRACEABILITY.md": 50,
         "docs/STATUS.md": 80,
+        "frontend/Dockerfile": 20,
         "scripts/quality/stage8_cut1_routes.py": 180,
+        "tests/unit/test_frontend_container_runtime.py": 100,
         "tests/unit/test_stage8_cut1_routes.py": 300,
     }
     artifact = json.loads(
@@ -1347,10 +1351,10 @@ def test_issue516_dual_plan_strategy_is_exact_and_bounded() -> None:
     assert routes.ISSUE516_BRANCH == branch
     assert routes.ISSUE516_BASE == "9ed7a7e01f3be9b7fa2a2eb77f659f4800df7268"
     assert routes.ISSUE516_TREE == "4fb37cd794a31e4d0e440cb84d792f53dc05a398"
-    assert routes.ISSUE516_ROUTE_COMMENT == "5541564267"
+    assert routes.ISSUE516_ROUTE_COMMENT == "5542161744"
     assert routes.ROUTES[branch] == expected
     assert routes.ROUTE_ISSUES[branch] == 516
-    assert routes.TOTAL_LIMITS[branch] == 1780
+    assert routes.TOTAL_LIMITS[branch] == 1900
     assert routes.TEXT_LIMITS[branch] == caps
     assert set(artifact["scope"]["required"]) == expected
     assert artifact["scope"]["required"] == artifact["scope"]["allowed_prefixes"]

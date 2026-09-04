@@ -210,7 +210,7 @@ ISSUE514_TREE = "bf0775a43bf5af60f2230b3bd9a7cdd3541f3a8c"
 ISSUE514_ROUTE_COMMENT = "5527274671"
 ISSUE516_BASE = "9ed7a7e01f3be9b7fa2a2eb77f659f4800df7268"
 ISSUE516_TREE = "4fb37cd794a31e4d0e440cb84d792f53dc05a398"
-ISSUE516_ROUTE_COMMENT = "5541564267"
+ISSUE516_ROUTE_COMMENT = "5542161744"
 ISSUE495_TREE = "13f79eb5db44249f635a619e1b283279f25ba9f0"
 ISSUE495_ROUTE_COMMENT = "5498387945"
 ISSUE495_CORRECTION_COMMENT = "5498411811"
@@ -284,7 +284,9 @@ ROUTES = {
         "docs/THIRD_PARTY_NOTICES.md",
         "docs/TRACEABILITY.md",
         "docs/STATUS.md",
+        "frontend/Dockerfile",
         "scripts/quality/stage8_cut1_routes.py",
+        "tests/unit/test_frontend_container_runtime.py",
         "tests/unit/test_stage8_cut1_routes.py",
     },
     ISSUE514_BRANCH: {
@@ -1022,7 +1024,7 @@ TOTAL_LIMITS[ISSUE512_BRANCH] = 1270
 ROUTE_ISSUES[ISSUE514_BRANCH] = 514
 TOTAL_LIMITS[ISSUE514_BRANCH] = 990
 ROUTE_ISSUES[ISSUE516_BRANCH] = 516
-TOTAL_LIMITS[ISSUE516_BRANCH] = 1780
+TOTAL_LIMITS[ISSUE516_BRANCH] = 1900
 ROUTE_ISSUES[ISSUE459_BRANCH] = 459
 TOTAL_LIMITS[ISSUE459_BRANCH] = 4300
 ROUTE_ISSUES[ISSUE459_T03_BRANCH] = 459
@@ -1084,7 +1086,9 @@ TEXT_LIMITS = {
         "docs/THIRD_PARTY_NOTICES.md": 60,
         "docs/TRACEABILITY.md": 50,
         "docs/STATUS.md": 80,
+        "frontend/Dockerfile": 20,
         "scripts/quality/stage8_cut1_routes.py": 180,
+        "tests/unit/test_frontend_container_runtime.py": 100,
         "tests/unit/test_stage8_cut1_routes.py": 300,
     },
     ISSUE514_BRANCH: {
