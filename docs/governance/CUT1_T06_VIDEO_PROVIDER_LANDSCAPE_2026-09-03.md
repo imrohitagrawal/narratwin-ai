@@ -112,8 +112,8 @@ grades, not media-quality scores.
 | `OPEN_MODEL_BENCHMARK` | LongCat-Video-Avatar 1.5 | Open MIT code, image-plus-audio control, long-form focus, and hosted inference | Portrait/aspect control is not documented; high hosted cost, local GPU burden, provider retention, identity continuity, and API stability remain |
 
 This was the 2026-09-03 pre-diagnostic ranking. Later v8/v9 human evidence
-rejects the unchanged HeyGen single-photo/static-composition route; the Issue
-#516 controlling amendment replaces it as the next-step decision.
+rejects the unchanged HeyGen single-photo/static-composition route; the
+Issue #516 controlling amendment replaces it as the next-step decision.
 VEED Fabric through fal.ai is the fastest published pay-as-you-go full-length
 challenger after its Gate 0 privacy path clears. JoggAI remains the strongest
 documented platform-specific full-duration route if its custom-photo API can be
@@ -484,8 +484,8 @@ Official sources verified 2026-09-03:
 ## Historical pre-v9 pre-implementation plan
 
 This plan records the decision before the v8/v9 output reviews. Its optimized
-HeyGen and fallback-ladder instructions are superseded by the controlling Issue
-#516 amendment below; the capability-manifest, compositor, configuration, TDD,
+HeyGen and fallback-ladder instructions are superseded by the controlling
+Issue #516 amendment below; the capability-manifest, compositor, configuration, TDD,
 and full-duration principles remain applicable.
 
 These recommendations are gates for the next implementation route, not optional
