@@ -2,10 +2,11 @@
 
 ## Decision status
 
-- Research checkpoint: 2026-09-03 (Asia/Kolkata).
-- Route: Issue `#512`; parent Cut 1 route: Issue `#459`.
-- Decision: rank evidence-backed candidates and require a demo-before-code
-  ladder.
+- Research checkpoint: 2026-09-03; controlling amendment: 2026-09-04
+  (Asia/Kolkata).
+- Routes: Issues `#512`, `#514`, and `#516`; parent Cut 1 route: Issue `#459`.
+- Decision: preserve two current walkthrough plans, require a demo-before-code
+  ladder, and reject further unchanged single-photo HeyGen Avatar IV work.
 - Provider selected: no.
 - Provider activated: no.
 - Accounts, credentials, egress, calls, or spend authorized by this record: no.
@@ -13,6 +14,8 @@
 - Revisit: immediately before any provider demonstration, when a material
   provider capability/price/terms change is reported, or after 30 days.
 
+The Issue #516 section at the end of this record controls when earlier rankings
+or next-step wording conflicts with the later v8/v9 human-rejection evidence.
 This is the durable refresh of the earlier provider analysis in
 `docs/demo/REAL_MEDIA_HOSTED_DEMO_PLAN.md` and the immutable v1 research
 contract in `docs/governance/cut1-provider-bakeoff-contract-v1.json`. The v1
@@ -108,7 +111,9 @@ grades, not media-quality scores.
 | `API_CHALLENGER_ACTIVATION_BLOCKED` | Runway `gwm1_avatars` / Avatar Videos | A newly documented API creates a custom avatar from one image and generates avatar video from uploaded audio or text | Self-service terms permit training on inputs/outputs and grant a perpetual transferable sublicensable license; Enterprise advertises no training but exact contract applicability, 127.7-second capacity, aspect control, resolution, immutable 24 kHz behavior, and pricing remain unproved |
 | `OPEN_MODEL_BENCHMARK` | LongCat-Video-Avatar 1.5 | Open MIT code, image-plus-audio control, long-form focus, and hosted inference | Portrait/aspect control is not documented; high hosted cost, local GPU burden, provider retention, identity continuity, and API stability remain |
 
-HeyGen is the recommended first compatibility call, not a final selection.
+This was the 2026-09-03 pre-diagnostic ranking. Later v8/v9 human evidence
+rejects the unchanged HeyGen single-photo/static-composition route; the Issue
+#516 controlling amendment replaces it as the next-step decision.
 VEED Fabric through fal.ai is the fastest published pay-as-you-go full-length
 challenger after its Gate 0 privacy path clears. JoggAI remains the strongest
 documented platform-specific full-duration route if its custom-photo API can be
@@ -467,7 +472,12 @@ Official sources verified 2026-09-03:
 - Flow interaction, upload, output, improvement, reviewer, and deletion posture:
   <https://support.google.com/labs/answer/17025472>
 
-## Binding pre-implementation plan
+## Historical pre-v9 pre-implementation plan
+
+This plan records the decision before the v8/v9 output reviews. Its optimized
+HeyGen and fallback-ladder instructions are superseded by the controlling Issue
+#516 amendment below; the capability-manifest, compositor, configuration, TDD,
+and full-duration principles remain applicable.
 
 These recommendations are gates for the next implementation route, not optional
 notes. A later issue may change them only with newer reproduced evidence and an
@@ -525,3 +535,237 @@ Google Flow `@me`, Tavus Phoenix, and Synthesia Personal/Studio Avatar warrant a
 fresh consented-likeness/voice-cloning, capture-quality, DPA/no-training,
 retention/deletion, revocation, disclosure, pricing, and human-acceptance study.
 Nothing in the fictional-presenter diagnostic authorizes that identity route.
+
+## Issue #516 controlling amendment: two current walkthrough plans
+
+The exact v8/v9 human reviews supersede the earlier recommendation to keep
+tuning the same HeyGen Photo Avatar IV composition. The current strategy keeps
+two plans visible so that a reviewer can understand both the full-presenter
+contract and the more authentic editorial fallback. The numbering records the
+two approaches requested by the product owner; it is not evidence that either
+provider has passed.
+
+### Plan A — presenter-led compatibility
+
+Plan A evaluates **Hedra Character-3** as a continuous presenter-led route.
+Hedra's current model page documents one required start frame, required audio,
+audio-driven video, 540p/720p/1080p, seven aspect ratios, and up to 600 seconds.
+That surface can cover each 117–128-second narration in one job and therefore
+matches the current requirement for a continuously visible presenter more
+directly than a stitched short-shot generator.
+
+Plan A remains a compatibility candidate, not an activated recommendation:
+
+- Character-3 accepts a single start frame, not a multi-image identity pack.
+  The broader pack can help humans select the best frame, but cannot be claimed
+  as conditioning that the model never received.
+- It remains in the single-image animation class that produced unacceptable
+  realism in HeyGen. A materially different model can be tested, but marketing
+  examples do not prove natural hands, body motion, lip sync, environment
+  integration, identity, or human credibility for Meera/Myra/Raj.
+- Current Hedra product pages conflict with older Hedra file/FAQ guidance about
+  full-duration 1080p. The older material describes a 30-second 1080p limit;
+  the live model page says 600 seconds. Exact account/model admission must be
+  checked without spend before a package is proposed.
+- The current published Hedra content license and data-use posture do
+  not clear the repository's privacy/rights boundary. A governing order,
+  enterprise no-training agreement, or separately approved terms exception is
+  required before upload.
+- “Audio-driven” does not prove that returned MP4 audio bytes are the accepted
+  WAV. The approved WAV and captions remain authoritative; any final mux must
+  be deterministic and timing-equivalent, and provider audio must not silently
+  replace them.
+
+The smallest Plan A experiment, if those zero-spend stops clear, is one short
+Meera landscape diagnostic with one selected canonical frame and one complete
+sentence. A pass permits a full-duration Myra landscape proof, then Myra
+portrait; it does not directly authorize six-cell fan-out or adapter code.
+
+### Plan B — editorial hybrid
+
+Plan B uses a presenter-dominant edit instead of asking one model to fabricate
+an uninterrupted two-minute human performance. The exact final narration and
+captions remain continuous while the picture track deliberately alternates:
+
+1. short, independently accepted presenter shots for introduction,
+   transitions, emphasis, and conclusion;
+2. **real product screen recordings** for every factual UI action or product
+   state;
+3. **deterministic source-driven graphics** and approved diagrams for concepts,
+   architecture, provenance, and evidence that cannot be filmed; and
+4. restrained environmental or contextual B-roll that makes no factual product
+   claim.
+
+Seedance 2.5 and Google Flow are complementary visual candidates in this plan:
+
+- Seedance 2.5 currently documents 4–30-second output and up to 30 image, 10
+  video, and 10 audio references. It is the better direct consumer of a small,
+  explicitly role-labelled identity/motion/scene subset. An audio reference is
+  generative conditioning, not proof that exact audio is passed through.
+- Google Flow Characters currently accept only one or two appearance images
+  plus a selected or custom Flow voice. Current models generate 4/6/8/10-second
+  clips depending on model and operation. Flow can add short full-frame
+  presenter cutaways, establishing shots, transitions, and B-roll, but its
+  generated voice/audio is not the accepted T05 WAV.
+- Enable Flow's silent-output setting where possible. Generated sound from
+  either route is discarded. For a visibly speaking presenter shot, a separate
+  exact-audio lip-sync step must itself pass; otherwise use the shot only where
+  the presenter is not visibly forming the narrated words.
+- Generated product screens, numbers, citations, diagrams, captions, or UI
+  states are never evidence. Real capture and deterministic rendering own
+  those surfaces.
+- Landscape and portrait are separate shot/edit decisions with independent
+  safe-area and human review; a blind crop of one finished edit is not a cell.
+
+Plan B is the stronger authenticity and product-truth architecture, but it is
+not silently admissible under the current T06 master contract. That contract
+requires the presenter to remain continuously visible. Plan B can satisfy T06
+only after a **separately authorized contract amendment** defines a
+presenter-dominant editorial composition and updates its exact acceptance
+matrix. Until then it is a current fallback/complementary plan, not accepted
+T06 evidence.
+
+## Multi-reference character pack
+
+The proposed **Multi-reference character pack** is a versioned source library,
+not a bag of every image sent to every model. More references help only when
+they are consistent and the provider accepts their declared role. Conflicting
+dresses, glasses, lighting, camera lenses, ages, or expressions can be blended
+into an unstable face, body, wardrobe, or skin tone.
+
+| Layer | Recommended content | Purpose and rule |
+|---|---|---|
+| `IDENTITY_CORE_V1` | Neutral front, approximately 30-degree left, and approximately 30-degree right, captured in one session | Same lens, distance, light, hair, attire, jewellery and glasses state; facial identity only |
+| `PERFORMANCE_V1` | One 6–10-second chest/waist-up rights-cleared clip with blink, breath, small head turn and one restrained gesture | **motion reference**, not identity or voice authority; still images alone do not teach timing |
+| `LOOK_<id>` | A complete, internally consistent pack for one dress, hairstyle, jewellery and glasses state | Keep all look variants separate; never mix look IDs in one request |
+| `EXPRESSION_<id>` | Neutral, light smile, or serious stored separately | Select only what the shot needs; laughing/sad/numb extremes are not identity anchors |
+| `BLOCKING_<shot>` | Posture, rear view, hand position, depth or choreography reference | Body/wardrobe continuity only; a back view provides no facial identity evidence |
+| `SCENE_<id>` | Empty real environment plate for the intended time of day | Lighting/environment only; do not alter the identity core for morning/night |
+| `PRODUCT_TRUTH` | Real product capture and source-derived graphics | Factual authority; never generated by a cinematic model |
+| `AUDIO_CAPTIONS` | Exact accepted WAV/SRT plus all lineage hashes | Immutable narration authority; never replaced by generated audio |
+
+Each asset needs an exact hash, source/rights record, capture metadata, declared
+role, look ID, approval status, and allowed provider/use. Generated outputs do
+not recursively become canonical identity inputs without a new human-governed
+derivative decision, because that compounds identity drift.
+
+Provider-specific selection is mandatory:
+
+- Character-3: choose one front or three-quarter start frame only.
+- Seedance 2.5: normally choose the three identity-core stills, one motion
+  reference, one scene plate, and only shot-specific supporting references;
+  label every role explicitly rather than submitting the full catalog.
+- Google Flow Character: choose one front and at most one three-quarter image.
+- Future real-person Digital Twin capture: use the provider's separately
+  consented guided video process; do not mix it with fictional identity assets.
+
+The current presenter anchors remain immutable. Meera is still
+`SOURCE_READY_NO_DERIVATIVE`; generating or accepting additional Meera angles,
+looks, expressions, motion clips, or scene-composed derivatives requires a
+separate governed derivative route. This document authorizes none.
+
+## Comparable cost consequences
+
+The following dated arithmetic uses published list prices, not account quotes
+or spend authority. It excludes tax, failures, retries, minimum purchases,
+input/reference-video charges unless stated, storage, editing labor, and local
+compute. Every final call needs a fresh price preflight.
+
+### Plan A indicative Character-3 cost
+
+Hedra currently lists USD 0.025/s at 540p, USD 0.05/s at 720p, and USD
+0.0625/s at 1080p. For 726.691502 total seconds across all six aspects, the
+video-only estimates are **USD 18.17**, **USD 36.33**, and **USD 45.42**
+respectively. The 1080p figure is conditional because of the conflicting
+duration documentation described above. A ten-second elimination diagnostic is
+USD 0.50 at 720p or USD 0.625 at 1080p before any account minimum.
+
+### Plan B Seedance and lip-sync scenarios
+
+Runway currently prices Seedance 2.5 at USD 0.30/output-second for 720p.
+Reference images and audio are free, but input/reference video is another USD
+0.15/second and each generation has an USD 0.80 minimum. Sync-3 is approximately
+USD 8/minute, or USD 0.133333/second, and is a separate video-to-video pass.
+The “combined” column therefore models a Seedance visual plus dedicated Sync-3
+for every visibly speaking presenter second; non-speaking visuals do not need
+that second pass.
+
+| Presenter footage across six edits | Seconds | Seedance 720p visual | Sync-3 speaking pass | Combined |
+|---|---:|---:|---:|---:|
+| 15 seconds per cell | 90.000000 | USD 27.00 | USD 12.00 | **USD 39.00** |
+| 30 seconds per cell | 180.000000 | USD 54.00 | USD 24.00 | **USD 78.00** |
+| 25% of final running time | 181.672876 | USD 54.50 | USD 24.22 | **USD 78.72** |
+| 50% of final running time | 363.345751 | USD 109.00 | USD 48.45 | **USD 157.45** |
+| 100% of final running time | 726.691502 | USD 218.01 | USD 96.89 | **USD 314.90** |
+
+At 1080p, Seedance alone is USD 0.68/output-second: USD 61.20 for 90
+seconds, USD 122.40 for 180 seconds, and USD 494.15 for all 726.691502
+seconds before lip sync. Runway documents 1080p for the current route, but
+resolution support does not prove authenticity, exact audio, or T06 acceptance.
+
+Real product recording, local deterministic graphics, and local composition
+have zero marginal provider-generation charge. They still require engineering,
+editing, review, storage, and compute, so this table does not call them free.
+
+### Plan B Google Flow credit scenarios
+
+Flow uses credits per generation rather than a stable USD-per-second price.
+As verified 2026-09-04, free accounts receive **50 daily credits**; Plus, Pro,
+and the two Ultra tiers receive 200, 1,000, 10,000, or 25,000 monthly credits.
+Veo 3.1 Lite costs 10 credits per 4/6/8-second generation for non-Ultra users
+(5 for Ultra); Omni Flash costs 15/20/25/30 credits for 4/6/8/10 seconds.
+Quality costs 100 credits for an 8-second generation. Paid subscribers receive
+1080p upscaling at zero additional credits; it is unavailable to non-subscribers.
+
+For scale only, 90 seconds needs at least nine 10-second Omni generations, or
+270 credits; 180 seconds needs 18, or 540 credits. Using eight-second Veo Lite,
+90 seconds needs at least 12 generations/120 non-Ultra credits, and 180 seconds
+needs at least 23/230. Requests may return more than one generation and charge
+each result; sentence boundaries, rejected shots, alternate aspects, and edits
+raise the real total. Subscription prices and unused-credit economics prevent
+a truthful universal USD conversion, so Flow must be compared using the exact
+account's incremental credit/cash delta at execution.
+
+## Current decision sequence
+
+1. Preserve the rejected HeyGen outputs as negative evidence; do not rerun the
+   same single-photo/static-composition root cause.
+2. Obtain zero-spend written/capability answers for Character-3 duration by
+   resolution, exact accepted WebP, returned-audio behavior, terms/no-training,
+   retention/deletion, aspects, idempotency, and failed-job billing.
+3. Freeze the multi-reference catalog schema and derivative authority before
+   creating any additional presenter asset. Do not make a large pack merely
+   because a model permits many references.
+4. Prototype Plan B's editorial timing locally with existing rejected footage,
+   real product capture, deterministic graphics, exact audio, and captions.
+5. If Plan B is the product decision, amend the continuous-presenter contract
+   before treating the prototype as T06 evidence.
+6. Only after those no-spend gates, authorize one materially different short
+   diagnostic on the best-fit route. Select no adapter until exact output and
+   human review pass.
+
+This amendment has `NO_AUTHORITY_EFFECT`: it makes no provider selection and
+authorizes no account, credential, authentication, upload, egress, spend,
+provider call, media generation, adapter/runtime change, release, deployment,
+production-readiness, or Cut 1 completion claim.
+
+Official sources verified 2026-09-04:
+
+- Hedra Character-3 model and API:
+  <https://www.hedra.com/models/video/hedra/character-3> and
+  <https://www.hedra.com/develop/models/video/hedra-character-3>
+- Hedra terms and conflicting file guidance:
+  <https://www.hedra.com/terms> and
+  <https://www.hedra.com/docs/pages/app/troubleshooting/file-specifications>
+- Seedance 2.5 capabilities:
+  <https://seed.bytedance.com/en/blog/one-take-creation-flexible-referencing-introducing-seedance-2-5>
+- Runway Seedance pricing and input contract:
+  <https://docs.dev.runwayml.com/guides/pricing/> and
+  <https://docs.dev.runwayml.com/assets/inputs/>
+- Google Flow Character, asset, and silent-output behavior:
+  <https://support.google.com/flow/answer/16935308>
+- Google Flow models and credits:
+  <https://support.google.com/flow/answer/16352836> and
+  <https://support.google.com/flow/answer/16526234>
+- Sync-3 pricing and API:
+  <https://fal.ai/models/fal-ai/sync-lipsync/v3>
