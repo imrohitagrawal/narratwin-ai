@@ -706,8 +706,8 @@ compute. Every final call needs a fresh price preflight.
 Hedra currently lists USD 0.025/s at 540p, USD 0.05/s at 720p, and USD
 0.0625/s at 1080p. For 726.691502 total seconds across all six aspects, the
 video-only estimates are **USD 18.17**, **USD 36.33**, and **USD 45.42**
-respectively. The 1080p figure is conditional because of the conflicting
-account/model admission described above. A ten-second elimination diagnostic is
+respectively. The 1080p figure is conditional on exact account/model admission
+described above. A ten-second elimination diagnostic is
 USD 0.50 at 720p or USD 0.625 at 1080p before any account minimum.
 If the existing three-distinct-output bake-off requirement were applied to
 complete six-cell sets, the 720p inference estimate would be **USD 109.00**.
@@ -742,6 +742,13 @@ Fractional coverage is rounded up independently for each presenter/aspect cell:
 segmentation. Sync-3 remains based on exact visibly speaking time; padding or
 additional lip-sync shots can increase it.
 
+If one 6–10-second motion-reference clip is charged once for every minimum
+Seedance job, reference-video sensitivity adds **USD 5.40–9.00** to either the
+15-second or 30-second-per-cell scenario, **USD 7.20–12.00** at 25% coverage,
+**USD 12.60–21.00** at 50%, and **USD 23.40–39.00** at full coverage. Those are
+conservative planning increments, not permission to attach the same motion clip
+to every request; exact shot needs and provider billing must be preflighted.
+
 At 1080p, Seedance alone is USD 0.68/output-second: USD 61.20 for 90
 seconds, USD 122.40 for 180 seconds, and USD 495.04 for the 728 rounded
 seconds before lip sync. Runway documents 1080p for the current route, but
@@ -762,6 +769,7 @@ job. As verified 2026-09-04:
 |---|---:|---:|---|
 | Hedra Character-3 | USD 0.05/s at 720p | Basic is USD 15/month with 1,500 monthly credits | Monthly credits do not roll over; the standard API terms still block NarraTwin product integration, so purchasing a plan would not clear the contract stop |
 | Runway Seedance 2.5 | USD 0.30/s at 720p | USD 10 minimum credit purchase; credits are priced at USD 0.01 each | A small diagnostic can consume less than USD 10 while still requiring the full minimum purchase; remaining-credit treatment and exact account balance must be checked before activation |
+| fal Sync-3 | Approximately USD 8/min of processed video | fal requires prepaid credits; the exact top-up/account floor is unknown from public documentation | It is a separate paid pass for visibly speaking footage; successful-output billing and the exact account balance must be checked before activation |
 | Google Flow | Credits per generation | Exact qualifying subscription, Workspace entitlement, or exact-account daily-credit access | Official access pages conflict, India-resident output is visibly watermarked, and subscription cost cannot truthfully be allocated to one render without the account facts |
 | Local capture/composition | No provider-generation charge | Existing capture/editing hardware and staff time | Not economically free: engineering, recording, editing, review, storage and compute remain real costs |
 
@@ -781,8 +789,10 @@ seconds, while 360p costs 4/5/6/7.
 Quality costs 100 credits for an 8-second generation. Paid subscribers receive
 1080p upscaling at zero additional credits; it is unavailable to non-subscribers.
 
-For six independent cells, 15 seconds per cell needs at least 12 ten-second
-Omni generations, or **180 credits**; 30 seconds per cell needs 18, or **270 credits**.
+For six independent cells, the lower 15-second-per-cell schedule uses **144 credits**
+with two eight-second Omni generations per cell; an
+**all-10-second schedule** uses 12 generations and **180 credits**. Thirty
+seconds per cell needs 18 ten-second generations, or **270 credits**.
 Using eight-second Veo Lite, those same plans need at least 12 generations/120
 non-Ultra credits and 24/240. Full six-cell coverage would need at least 92
 Veo Lite generations/920 non-Ultra credits because each cell rounds separately;
@@ -825,11 +835,16 @@ Official sources verified 2026-09-04:
   <https://www.hedra.com/api-terms>
 - Hedra current subscription and credit pricing:
   <https://www.hedra.com/pricing>
+- Hedra public API paid-subscription prerequisite:
+  <https://www.hedra.com/docs/pages/developer/getting_started/quickstart>
 - Seedance 2.5 capabilities:
   <https://seed.bytedance.com/en/blog/one-take-creation-flexible-referencing-introducing-seedance-2-5>
 - Runway Seedance pricing and input contract:
   <https://docs.dev.runwayml.com/guides/pricing/> and
   <https://docs.dev.runwayml.com/assets/inputs/>
+- Runway Seedance combined-reference cap and integer-duration contract:
+  <https://docs.dev.runwayml.com/api-details/api_changelog/> and
+  <https://github.com/runwayml/sdk-python/blob/main/src/runwayml/types/video_to_video_create_params.py>
 - Runway account setup and minimum credit purchase:
   <https://docs.dev.runwayml.com/guides/setup/>
 - Google Flow Character, asset, and silent-output behavior:
@@ -841,3 +856,5 @@ Official sources verified 2026-09-04:
   <https://support.google.com/flow/answer/16353333>
 - Sync-3 pricing and API:
   <https://fal.ai/models/fal-ai/sync-lipsync/v3>
+- fal prepaid-credit billing model:
+  <https://fal.ai/docs/documentation/model-apis/pricing>
