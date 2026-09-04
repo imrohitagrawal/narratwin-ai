@@ -1,0 +1,40 @@
+{
+  "schema_version": "GovernancePreflightV1",
+  "issue_number": 516,
+  "branch": "stage8-516-t06-dual-plan-strategy",
+  "objective": "From accepted base 9ed7a7e01f3be9b7fa2a2eb77f659f4800df7268 and tree 4fb37cd794a31e4d0e440cb84d792f53dc05a398, preserve the current Cut 1 T06 dual-plan video strategy under route-freeze comment 5541564267. Record Plan A as a presenter-led Hedra Character-3 compatibility candidate and Plan B as a Seedance 2.5 and/or Google Flow editorial hybrid with real product capture and deterministic graphics. Add dated comparable cost scenarios and a provider-specific layered multi-reference character-pack strategy. Preserve the existing continuous-presenter T06 contract and state that Plan B cannot satisfy it without a separately authorized contract amendment. Use exactly eight paths and at most 1,780 aggregate charged lines. Preserve approved presenter/audio bytes and all rejected diagnostic evidence. Permit only fail-closed Issue #516 route enforcement outside documentation. Prohibit provider selection or activation, account or credential use, upload, egress, spend, provider calls, media generation, adapter/runtime changes, deployment, release, production-readiness, and Cut 1 completion claims. Stop on base, scope, source, capability, contract, privacy or terms, authority, hosted-check, review, approval, or mergeability drift.",
+  "status_decision": "update-minimally",
+  "scope": {
+    "required": [
+      "docs/governance/preflights/issue-516.json",
+      "docs/governance/CUT1_T06_VIDEO_PROVIDER_LANDSCAPE_2026-09-03.md",
+      "docs/ADR/0079-cut1-t06-dual-plan-video-strategy.md",
+      "docs/THIRD_PARTY_NOTICES.md",
+      "docs/TRACEABILITY.md",
+      "docs/STATUS.md",
+      "scripts/quality/stage8_cut1_routes.py",
+      "tests/unit/test_stage8_cut1_routes.py"
+    ],
+    "allowed_prefixes": [
+      "docs/governance/preflights/issue-516.json",
+      "docs/governance/CUT1_T06_VIDEO_PROVIDER_LANDSCAPE_2026-09-03.md",
+      "docs/ADR/0079-cut1-t06-dual-plan-video-strategy.md",
+      "docs/THIRD_PARTY_NOTICES.md",
+      "docs/TRACEABILITY.md",
+      "docs/STATUS.md",
+      "scripts/quality/stage8_cut1_routes.py",
+      "tests/unit/test_stage8_cut1_routes.py"
+    ],
+    "forbidden": [
+      "backend/",
+      "frontend/",
+      "pyproject.toml",
+      "uv.lock",
+      ".github/workflows/",
+      "credentials/",
+      "media/",
+      "deployment/",
+      "release/"
+    ]
+  }
+}
