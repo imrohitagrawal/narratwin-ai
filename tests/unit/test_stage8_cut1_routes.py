@@ -602,6 +602,16 @@ def remove_cleanup_marker(text: str, marker: str) -> str:
 
 
 EXPECTED = {
+    "stage8-516-t06-dual-plan-strategy": {
+        "docs/governance/preflights/issue-516.json",
+        "docs/governance/CUT1_T06_VIDEO_PROVIDER_LANDSCAPE_2026-09-03.md",
+        "docs/ADR/0079-cut1-t06-dual-plan-video-strategy.md",
+        "docs/THIRD_PARTY_NOTICES.md",
+        "docs/TRACEABILITY.md",
+        "docs/STATUS.md",
+        "scripts/quality/stage8_cut1_routes.py",
+        "tests/unit/test_stage8_cut1_routes.py",
+    },
     "stage8-514-video-research-amendment": {
         "docs/governance/preflights/issue-514.json",
         "docs/governance/CUT1_T06_VIDEO_PROVIDER_LANDSCAPE_2026-09-03.md",
@@ -1315,6 +1325,87 @@ def test_issue514_research_records_cost_flow_and_precode_plan() -> None:
         "future product-owner Digital Twin",
     ):
         assert required in landscape
+
+
+def test_issue516_dual_plan_strategy_is_exact_and_bounded() -> None:
+    branch = "stage8-516-t06-dual-plan-strategy"
+    expected = EXPECTED[branch]
+    caps = {
+        "docs/governance/preflights/issue-516.json": 180,
+        "docs/governance/CUT1_T06_VIDEO_PROVIDER_LANDSCAPE_2026-09-03.md": 650,
+        "docs/ADR/0079-cut1-t06-dual-plan-video-strategy.md": 280,
+        "docs/THIRD_PARTY_NOTICES.md": 60,
+        "docs/TRACEABILITY.md": 50,
+        "docs/STATUS.md": 80,
+        "scripts/quality/stage8_cut1_routes.py": 180,
+        "tests/unit/test_stage8_cut1_routes.py": 300,
+    }
+    artifact = json.loads(
+        (REPO / "docs/governance/preflights/issue-516.json").read_text(encoding="utf-8")
+    )
+
+    assert routes.ISSUE516_BRANCH == branch
+    assert routes.ISSUE516_BASE == "9ed7a7e01f3be9b7fa2a2eb77f659f4800df7268"
+    assert routes.ISSUE516_TREE == "4fb37cd794a31e4d0e440cb84d792f53dc05a398"
+    assert routes.ISSUE516_ROUTE_COMMENT == "5541564267"
+    assert routes.ROUTES[branch] == expected
+    assert routes.ROUTE_ISSUES[branch] == 516
+    assert routes.TOTAL_LIMITS[branch] == 1780
+    assert routes.TEXT_LIMITS[branch] == caps
+    assert set(artifact["scope"]["required"]) == expected
+    assert artifact["scope"]["required"] == artifact["scope"]["allowed_prefixes"]
+    context = {"issue_number": 516, "branch": branch, "changed_files": list(expected)}
+    assert routes.validate_governance_preflight(artifact, context=context) == []
+    assert all(
+        value in artifact["objective"]
+        for value in (
+            routes.ISSUE516_BASE,
+            routes.ISSUE516_TREE,
+            routes.ISSUE516_ROUTE_COMMENT,
+        )
+    )
+
+
+def test_issue516_records_dual_plan_multi_reference_and_cost_contract() -> None:
+    landscape = (
+        REPO / "docs/governance/CUT1_T06_VIDEO_PROVIDER_LANDSCAPE_2026-09-03.md"
+    ).read_text(encoding="utf-8")
+    adr = (
+        REPO / "docs/ADR/0079-cut1-t06-dual-plan-video-strategy.md"
+    ).read_text(encoding="utf-8")
+
+    for required in (
+        "Plan A — presenter-led compatibility",
+        "Hedra Character-3",
+        "Plan B — editorial hybrid",
+        "Seedance 2.5",
+        "Google Flow",
+        "real product screen recordings",
+        "deterministic source-driven graphics",
+        "Multi-reference character pack",
+        "identity core",
+        "look variants",
+        "motion reference",
+        "726.691502",
+        "USD 36.33",
+        "USD 314.90",
+        "50 daily credits",
+        "continuous presenter",
+        "separately authorized contract amendment",
+        "NO_AUTHORITY_EFFECT",
+    ):
+        assert required in landscape
+
+    for required in (
+        "Status: Accepted",
+        "Plan A",
+        "Plan B",
+        "provider-neutral",
+        "current T06 contract remains unchanged",
+        "multi-reference",
+        "no provider selection",
+    ):
+        assert required in adr
 
 
 def _issue507_route_root(tmp_path: Path) -> Path:
