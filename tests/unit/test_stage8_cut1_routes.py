@@ -1377,6 +1377,7 @@ def test_issue516_records_dual_plan_multi_reference_and_cost_contract() -> None:
     adr = (
         REPO / "docs/ADR/0079-cut1-t06-dual-plan-video-strategy.md"
     ).read_text(encoding="utf-8")
+    status = (REPO / "docs/STATUS.md").read_text(encoding="utf-8")
 
     for required in (
         "Plan A — presenter-led compatibility",
@@ -1436,6 +1437,15 @@ def test_issue516_records_dual_plan_multi_reference_and_cost_contract() -> None:
         "no provider selection",
     ):
         assert required in adr
+
+    for required in (
+        "mutable exact-account/model admission",
+        "removes only the volatile `/runtime/var/log/apk.log`",
+        "package-identity evidence",
+    ):
+        assert required in status
+    assert "conflicting 1080p duration guidance" not in status
+    assert "records ADR 0079 only" not in status
 
 
 def _issue507_route_root(tmp_path: Path) -> Path:
