@@ -1402,9 +1402,14 @@ def test_issue516_records_dual_plan_multi_reference_and_cost_contract() -> None:
         "Basic is USD 15/month",
         "USD 10 minimum credit purchase",
         "Monthly credits do not roll over",
+        "fal Sync-3",
+        "prepaid credits",
+        "exact top-up/account floor is unknown",
         "50 daily credits",
         "Omni Flash 720p costs 7/10/12/15 credits",
+        "144 credits",
         "180 credits",
+        "all-10-second schedule",
         "270 credits",
         "92",
         "2,760 credits",
@@ -1417,7 +1422,13 @@ def test_issue516_records_dual_plan_multi_reference_and_cost_contract() -> None:
         "prohibition on product integration",
         "model training/improvement",
         "https://www.hedra.com/api-terms",
+        "https://www.hedra.com/docs/pages/developer/getting_started/quickstart",
+        "https://docs.dev.runwayml.com/api-details/api_changelog/",
+        "https://github.com/runwayml/sdk-python/blob/main/src/runwayml/types/video_to_video_create_params.py",
+        "https://fal.ai/docs/documentation/model-apis/pricing",
         "600-second/1080p surface",
+        "USD 5.40–9.00",
+        "USD 23.40–39.00",
         "design hypotheses",
         "synthetic derivatives",
         "SynthID",
@@ -1426,6 +1437,7 @@ def test_issue516_records_dual_plan_multi_reference_and_cost_contract() -> None:
         "NO_AUTHORITY_EFFECT",
     ):
         assert required in landscape
+    assert "conflicting account/model admission" not in landscape
 
     for required in (
         "Status: Accepted",
