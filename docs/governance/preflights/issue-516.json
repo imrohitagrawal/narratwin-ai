@@ -2,7 +2,7 @@
   "schema_version": "GovernancePreflightV1",
   "issue_number": 516,
   "branch": "stage8-516-t06-dual-plan-strategy",
-  "objective": "From accepted base 9ed7a7e01f3be9b7fa2a2eb77f659f4800df7268 and tree 4fb37cd794a31e4d0e440cb84d792f53dc05a398, preserve the current Cut 1 T06 dual-plan video strategy under route-freeze comment 5541564267. Record Plan A as a presenter-led Hedra Character-3 compatibility candidate and Plan B as a Seedance 2.5 and/or Google Flow editorial hybrid with real product capture and deterministic graphics. Add dated comparable cost scenarios and a provider-specific layered multi-reference character-pack strategy. Preserve the existing continuous-presenter T06 contract and state that Plan B cannot satisfy it without a separately authorized contract amendment. Use exactly eight paths and at most 1,780 aggregate charged lines. Preserve approved presenter/audio bytes and all rejected diagnostic evidence. Permit only fail-closed Issue #516 route enforcement outside documentation. Prohibit provider selection or activation, account or credential use, upload, egress, spend, provider calls, media generation, adapter/runtime changes, deployment, release, production-readiness, and Cut 1 completion claims. Stop on base, scope, source, capability, contract, privacy or terms, authority, hosted-check, review, approval, or mergeability drift.",
+  "objective": "From accepted base 9ed7a7e01f3be9b7fa2a2eb77f659f4800df7268 and tree 4fb37cd794a31e4d0e440cb84d792f53dc05a398, preserve the current Cut 1 T06 dual-plan video strategy under route-freeze comments 5541564267 and 5542161744. Record Plan A as a presenter-led Hedra Character-3 compatibility candidate and Plan B as a Seedance 2.5 and/or Google Flow editorial hybrid with real product capture and deterministic graphics. Add dated comparable cost scenarios and a provider-specific layered multi-reference character-pack strategy. Preserve the existing continuous-presenter T06 contract and state that Plan B cannot satisfy it without a separately authorized contract amendment. Correct the reproduced hosted-parity blocker by removing only volatile /runtime/var/log/apk.log from the final scratch runtime while preserving /lib/apk/db/installed package evidence. Use exactly ten paths and at most 1,900 aggregate charged lines. Preserve approved presenter/audio bytes and all rejected diagnostic evidence. Permit only fail-closed Issue #516 route enforcement and the bounded runtime-reproducibility correction outside documentation. Prohibit provider selection or activation, account or credential use, upload, egress, spend, provider calls, media generation, package or image identity changes, scanner or threshold changes, deployment, release, production-readiness, and Cut 1 completion claims. Stop on base, scope, source, capability, contract, privacy or terms, authority, a second differing runtime record, package/runtime identity change, hosted-check, review, approval, or mergeability drift.",
   "status_decision": "update-minimally",
   "scope": {
     "required": [
@@ -12,7 +12,9 @@
       "docs/THIRD_PARTY_NOTICES.md",
       "docs/TRACEABILITY.md",
       "docs/STATUS.md",
+      "frontend/Dockerfile",
       "scripts/quality/stage8_cut1_routes.py",
+      "tests/unit/test_frontend_container_runtime.py",
       "tests/unit/test_stage8_cut1_routes.py"
     ],
     "allowed_prefixes": [
@@ -22,12 +24,13 @@
       "docs/THIRD_PARTY_NOTICES.md",
       "docs/TRACEABILITY.md",
       "docs/STATUS.md",
+      "frontend/Dockerfile",
       "scripts/quality/stage8_cut1_routes.py",
+      "tests/unit/test_frontend_container_runtime.py",
       "tests/unit/test_stage8_cut1_routes.py"
     ],
     "forbidden": [
       "backend/",
-      "frontend/",
       "pyproject.toml",
       "uv.lock",
       ".github/workflows/",
