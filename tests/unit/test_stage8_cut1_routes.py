@@ -1379,6 +1379,8 @@ def test_issue516_records_dual_plan_multi_reference_and_cost_contract() -> None:
     ).read_text(encoding="utf-8")
     status = (REPO / "docs/STATUS.md").read_text(encoding="utf-8")
 
+    assert not any(line.startswith("#516") for line in landscape.splitlines())
+
     for required in (
         "Plan A — presenter-led compatibility",
         "Hedra Character-3",
