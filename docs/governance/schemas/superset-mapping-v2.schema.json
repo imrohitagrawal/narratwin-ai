@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://narratwin.local/schemas/superset-mapping-v2.schema.json",
+  "title": "SupersetMappingV2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "mappingId", "proposalState", "cutoff", "ownerAuthority", "sources", "rows", "certification"],
+  "properties": {
+    "schemaVersion": {"const": "SupersetMappingV2"},
+    "mappingId": {"const": "narratwin-master-program-v2-superset"},
+    "proposalState": {"const": "PROPOSED"},
+    "cutoff": {"const": "2026-09-06T23:59:59+05:30"},
+    "ownerAuthority": {"const": "OWNER_PLAN_2026-09-07"},
+    "sources": {"type": "array", "minItems": 1, "uniqueItems": true},
+    "rows": {"type": "array", "minItems": 1},
+    "certification": {"type": "object", "additionalProperties": false, "required": ["structuralResult", "semanticReview", "ownerExactBytesApproval", "eligibleNonAuthorExactHead", "activation"]}
+  }
+}

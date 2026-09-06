@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://narratwin.local/schemas/cut-taxonomy-v2.schema.json",
+  "title": "CutTaxonomyV2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "taxonomyId", "proposalState", "effectiveAt", "engineeringStages", "productModes", "cuts", "laneA", "historicalCheckpoints", "adrPlans", "digitalTwinSequence", "legacyAliases", "activation"],
+  "properties": {
+    "schemaVersion": {"const": "CutTaxonomyV2"},
+    "taxonomyId": {"const": "narratwin-six-cut-taxonomy-v2"},
+    "proposalState": {"const": "PROPOSED"},
+    "effectiveAt": {"type": "null"},
+    "engineeringStages": {"type": "array", "minItems": 10, "maxItems": 10},
+    "productModes": {"type": "array", "minItems": 2, "maxItems": 2},
+    "cuts": {"type": "array", "minItems": 6, "maxItems": 6},
+    "laneA": {"type": "array", "minItems": 8, "maxItems": 8},
+    "historicalCheckpoints": {"type": "array", "minItems": 5, "maxItems": 5},
+    "adrPlans": {"type": "array", "minItems": 2, "maxItems": 2},
+    "digitalTwinSequence": {"type": "array", "minItems": 8, "maxItems": 8},
+    "legacyAliases": {"type": "array", "minItems": 1, "maxItems": 1},
+    "activation": {"type": "object", "additionalProperties": false, "required": ["authority", "v1RemainsEffective", "candidatePresenceActivates", "requiresSeparateAcceptedCurrentTransition"]}
+  }
+}

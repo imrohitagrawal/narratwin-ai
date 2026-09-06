@@ -1,0 +1,83 @@
+{
+  "schemaVersion": "MasterProgramProposalBindingV2",
+  "controllerId": "narratwin-master-program-v2",
+  "controllerIssue": 521,
+  "bootstrapBranch": "phase-1-closure-process-521-master-program-v2",
+  "acceptedBaseSha": "b6b0c05c7227428ff0841361f3970b0b2c40aa86",
+  "researchCutoff": "2026-09-06T23:59:59+05:30",
+  "documentPath": "docs/governance/NARRATWIN_MASTER_PROGRAM_V2.md",
+  "mappingPath": "docs/governance/superset-mapping-v2.json",
+  "taxonomyPath": "docs/governance/cut-taxonomy-v2.json",
+  "artifactHashes": {
+    "documentSha256": "b9f334c4fca0acc7edbb2fe802a53d1d739b2ac48521bc89d56fdd0f014a87bc",
+    "mappingSha256": "ba12b1be49884f3eba25e0d6459104ea2a21588c21785ab4bf90401b41df1b97",
+    "taxonomySha256": "860940f84420f925969d79902a4ee68d9844b62113dd9cf6293be347a1b61ce1"
+  },
+  "artifactShape": {
+    "documentBytes": 45906,
+    "documentLines": 770,
+    "mappingBytes": 7894820,
+    "mappingLines": 5607,
+    "mappingSources": 19,
+    "mappingRows": 5576,
+    "taxonomyBytes": 3958,
+    "taxonomyLines": 77,
+    "hasTrailingNewlines": true
+  },
+  "proposalState": "PROPOSED",
+  "implementationAuthority": "NONE",
+  "activeProgramRoute": null,
+  "supersedesV1": false,
+  "predecessor": {
+    "v1Path": "docs/governance/NARRATWIN_MASTER_PROGRAM_V1.md",
+    "v1GitBlob": "2216951d9716b7c946098ab454265eafa25975bd",
+    "v1DocumentSha256": "c3e3c85bb980aab4f818e80be3db5484e564423d77bc3ab6e81ba736c3af3420",
+    "fiveCutRoadmapSha256": "e358396e7be7ecee89539b1bfb9eb7eb4d331799dd41a64b4cfca4f74e22489b",
+    "adr0079Sha256": "a20ae1b9fae9e12e9e50baa372b0672c43a9417a21b36a2dc4276f5be1529fd5",
+    "v1RemainsEffective": true
+  },
+  "requiredReviews": [
+    {
+      "id": "superset-semantic",
+      "artifact": "docs/reviews/ISSUE_521_SUPERSET_SEMANTIC_REVIEW.md",
+      "state": "PENDING_INDEPENDENT_REVIEW"
+    },
+    {
+      "id": "false-success-security",
+      "artifact": "docs/reviews/ISSUE_521_FALSE_SUCCESS_SECURITY_REVIEW.md",
+      "state": "PENDING_INDEPENDENT_REVIEW"
+    }
+  ],
+  "requiredApprovals": {
+    "ownerExactBytes": "PENDING",
+    "eligibleNonAuthorExactHead": "PENDING",
+    "referenceOnlyMergeWording": "PENDING"
+  },
+  "activationTransition": {
+    "createdBy": "separately-governed accepted-current transition after protected merge",
+    "requiredEvidence": [
+      "v2DocumentSha256",
+      "supersetMappingSha256",
+      "cutTaxonomySha256",
+      "independentReviewDispositions",
+      "ownerExactBytesApproval",
+      "eligibleNonAuthorExactHeadApproval",
+      "mergeSha",
+      "mergedMainChecks",
+      "statusReconciliation",
+      "issueDisposition",
+      "v1SupersessionLink"
+    ],
+    "proposalMayActivate": false
+  },
+  "prohibitedClaims": [
+    "V2 supersedes V1",
+    "IMPLEMENTATION_ELIGIBLE",
+    "CUT1_REAL_MEDIA_ACCEPTED",
+    "Digital Twin activated",
+    "commercial readiness",
+    "public availability",
+    "production readiness",
+    "release"
+  ]
+}
