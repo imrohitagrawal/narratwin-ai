@@ -35,7 +35,7 @@ ISSUE456_PATHS = frozenset({
 ISSUE521_BRANCH = "phase-1-closure-process-521-master-program-v2"
 ISSUE521_BASE = "b6b0c05c7227428ff0841361f3970b0b2c40aa86"
 ISSUE521_PREFLIGHT = "docs/governance/preflights/issue-521.json"
-ISSUE521_PREFLIGHT_SHA256 = "8846b978201602042cc12d03cf8a051213adce7abb443cfd7a7e7b5c566bfc5d"
+ISSUE521_PREFLIGHT_SHA256 = "dfc09f6984791ed5cb6b70ec83b3a29cda2fb940d4504b90b82d7d5e24343f8b"
 ISSUE521_LINE_CAP = 8_500
 
 
@@ -100,8 +100,8 @@ def _issue521_scope() -> tuple[frozenset[str], list[str]]:
         artifact = json.loads(raw.decode("utf-8"))
         required = artifact["scope"]["required"]
         allowed = artifact["scope"]["allowed_prefixes"]
-        if len(required) != 24 or set(required) != set(allowed):
-            return frozenset(), ["Issue #521 preflight must contain exactly twenty-four matching paths."]
+        if len(required) != 27 or set(required) != set(allowed):
+            return frozenset(), ["Issue #521 preflight must contain exactly twenty-seven matching paths."]
         return frozenset(required), []
     except (OSError, UnicodeError, json.JSONDecodeError, KeyError, TypeError):
         return frozenset(), ["Issue #521 preflight could not be read safely."]

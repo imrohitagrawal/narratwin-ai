@@ -3061,8 +3061,11 @@ hard-coded-value inventory.
 ## Issue #521 — Master Program V2 candidate
 
 Branch `phase-1-closure-process-521-master-program-v2` starts at exact main
-`b6b0c05c7227428ff0841361f3970b0b2c40aa86`, owns the 24 preflight paths, and
-is capped at 8,500 charged lines. Its first commit is preflight-only and its
-second freezes RED tests. G1 is non-activating governance only; V1 remains
+`b6b0c05c7227428ff0841361f3970b0b2c40aa86`, owns the 27 preflight paths, and
+is capped at 8,500 charged lines under owner correction checkpoint `5574559059`
+(body SHA-256 `72a3144b556c93b09678eaa7cfa495cfc3ff8cc981f50f86b4cbe64a1e2d217f`).
+Its first commit is preflight-only and its second freezes the original RED tests;
+the correction also freezes RED before GREEN. G1 is non-activating governance
+only; V1 remains
 effective. G2, G3, product code, providers, credentials, egress, spend,
 biometrics, media, deployment, publication, release, and acceptance are separate.

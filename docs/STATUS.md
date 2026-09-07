@@ -2184,5 +2184,8 @@ human acceptance, deployment, release, production-readiness, or Cut 1 evidence.
 - G1 freezes 19 source records and 5,577 deterministic source-atom rows.
 - New Cut 5 is owner Digital Twin; `LegacyCut5Enterprise` maps only to Cut 6
   after migration validation.
+- Owner checkpoint `5574559059` expands the G1 route to exactly 27 paths only
+  for an exact, provenance-bound hosted Gitleaks false-positive correction;
+  the 8,500 charged-line cap and every non-activation prohibition remain.
 - Semantic/security review, exact approvals, hosted parity, merge, and separate
   activation remain pending. Release posture remains No-Go.

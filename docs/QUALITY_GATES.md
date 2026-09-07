@@ -1910,3 +1910,9 @@ hashes, valid taxonomy, pending human gates, and authority `NONE`.
 Certification mode stays red until independent review, exact-byte owner and
 exact-head approvals, and separate activation are real; tests cannot create
 those facts.
+
+Owner checkpoint `5574559059` admits one additional historical Gitleaks
+fingerprint only when its exact commit, path, rule, line, mapping blob/row,
+immutable V1 source, and squash-portable provenance pass. Any wildcard,
+path/rule-wide suppression, scan/history weakening, or real-secret canary
+failure blocks G1.

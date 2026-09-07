@@ -6,6 +6,16 @@
 
 This is a review prompt, not evidence of approval or authority.
 
+## Hosted-parity correction requiring independent verification
+
+Issue comment `5574559059` authorizes only the exact Gitleaks fingerprint for
+historical mapping commit `74dc7c9cb670513cd2340cbd686d66d1d24b819e`, file
+`docs/governance/superset-mapping-v2.json`, rule `generic-api-key`, and line
+1474. The reviewer must verify the commit/blob/line/row and immutable V1 source
+provenance, the squash-portable proof, and real-secret/full-history canaries.
+Any wildcard, path/rule-wide exception, scan/history weakening, or source-clause
+weakening is a `REQUIRED_CONTRACT` failure.
+
 ## Required independent review
 
 The reviewer must attempt to make the candidate falsely pass by testing:
