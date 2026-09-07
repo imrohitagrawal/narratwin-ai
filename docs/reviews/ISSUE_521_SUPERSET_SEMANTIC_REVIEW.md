@@ -21,7 +21,7 @@ mapping, approve exact bytes, supersede V1, or activate an implementation route.
 
 The reviewer must use a fresh context and report `PASS` or `FAIL` for each:
 
-1. All 5,576 deterministic atoms from all 19 frozen sources have one row.
+1. All 5,577 deterministic atoms from all 19 frozen sources have one row.
 2. Atomization did not combine separately normative clauses in a way that can
    hide loss, conflict, relocation, or threshold weakening.
 3. All 42 V1 sections retain their states, roles, thresholds, prohibitions,
