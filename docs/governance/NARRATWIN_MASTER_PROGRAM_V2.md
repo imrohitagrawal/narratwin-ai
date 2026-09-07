@@ -534,6 +534,21 @@ and voice, exportable or deterministically verifiable audio, usable timings,
 reproducibility, cost, retention, deletion, provider revision, grounding, and
 screen truth. New faces/voices add cost and reopen identity/listening review.
 
+#### Architecture and living-documentation trust
+
+The V1 §8 architecture-and-decisions requirement remains normative. Before any
+architecture or provider claim is accepted, the repository must perform the
+same trust review against the pinned architecture-and-decisions source,
+including its exact commit/blob and content hash, while keeping that source
+outside the product runtime dependency graph. `DocumentationMapV1` remains the
+canonical map for required-reading ownership, and `CapabilityStatusV1` remains
+the status contract for each capability. A deterministic documentation and
+capability check must validate the README/required-reading set, links and
+anchors, Mermaid blocks, ADR lifecycle, generated sections, capability evidence,
+stale routes, and document-impact traceability. These checks are release
+evidence; a passing parser cannot replace independent semantic review, and any
+unresolved architecture/documentation drift blocks activation.
+
 Candidate roles remain research-only until their exact hypotheses pass:
 
 - Runway GWM-1: exact-audio generation demonstrated but current prepared-video

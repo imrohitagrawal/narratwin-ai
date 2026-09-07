@@ -170,10 +170,11 @@ def test_issue521_runs_v2_validator_and_preserves_frozen_contracts(monkeypatch: 
     monkeypatch.setattr(runner.legacy, "legacy_parity_failures", lambda value: [])
     monkeypatch.setattr(runner.legacy, "PRESERVED_CHECKS", ("check_final_review_baseline",))
     monkeypatch.setattr(runner.legacy, "_print_result", lambda failures: 1 if failures else 0)
-    monkeypatch.setattr(
-        "scripts.quality.issue521_master_program_v2.validate_repository",
-        lambda root, certification: calls.append("v2") or [],
-    )
+    def validate_v2(root: Any, certification: bool) -> list[str]:
+        calls.append("v2")
+        return []
+
+    monkeypatch.setattr("scripts.quality.issue521_master_program_v2.validate_repository", validate_v2)
 
     assert runner.run_preserved_contracts() == 0
     assert calls == ["v2", "branch", "required", "preserved"]

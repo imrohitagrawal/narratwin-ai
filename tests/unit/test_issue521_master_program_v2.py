@@ -151,6 +151,54 @@ def test_source_and_destination_byte_mutations_fail_closed(tmp_path: Path) -> No
     assert "MPV2.MAPPING.DESTINATION_MISSING" in failures
 
 
+def test_mapping_cannot_self_certify_or_change_destination(tmp_path: Path) -> None:
+    root = _copy_candidate(tmp_path)
+
+    def mutate(value: dict[str, Any]) -> None:
+        value["certification"] = {
+            "structuralResult": "PASS",
+            "semanticReview": "PASS",
+            "ownerExactBytesApproval": "PASS",
+            "eligibleNonAuthorExactHead": "PASS",
+            "activation": "ACCEPTED_CURRENT",
+        }
+        for row in value["rows"]:
+            row["result"] = "PASS"
+            row["v2DestinationClause"] = "## 12. Stop conditions, assumptions, and completion claim"
+
+    _rewrite_json(root, program.MAPPING_PATH, mutate)
+    failures = program.validate_repository(root, certification=False)
+    assert "MPV2.SOURCE.MAPPING_HASH_DRIFT" in failures
+    assert "MPV2.MAPPING.CERTIFICATION_STATE_INVALID" in failures
+    assert "MPV2.MAPPING.DESTINATION_INVALID" in failures
+
+
+def test_mapping_source_inventory_is_frozen_to_authoritative_sources(tmp_path: Path) -> None:
+    root = _copy_candidate(tmp_path)
+
+    def mutate(value: dict[str, Any]) -> None:
+        value["sources"] = [source for source in value["sources"] if source["sourceId"] != "TTS_PROVIDER_CODE"]
+
+    _rewrite_json(root, program.MAPPING_PATH, mutate)
+    failures = program.validate_repository(root, certification=False)
+    assert "MPV2.SOURCE.MAPPING_HASH_DRIFT" in failures
+    assert "MPV2.MAPPING.SOURCE_INVENTORY_INVALID" in failures
+
+
+def test_taxonomy_hash_and_semantics_cannot_be_rewritten_together(tmp_path: Path) -> None:
+    root = _copy_candidate(tmp_path)
+
+    def mutate(value: dict[str, Any]) -> None:
+        value["cuts"] = [cut for cut in value["cuts"] if cut["id"] != "Cut4"]
+        value["cuts"][0]["dependencies"] = []
+        value["legacyAliases"][0]["canonicalCut"] = "Cut5"
+
+    _rewrite_json(root, program.TAXONOMY_PATH, mutate)
+    failures = program.validate_repository(root, certification=False)
+    assert "MPV2.SOURCE.TAXONOMY_HASH_DRIFT" in failures
+    assert "MPV2.TAXONOMY.LEGACY_CUT5_TARGET_INVALID" in failures
+
+
 @pytest.mark.parametrize(
     ("mutate", "expected"),
     [

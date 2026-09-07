@@ -4592,11 +4592,11 @@ def test_issue280_pr_a_requires_public_safe_non_goals() -> None:
 
 def test_master_program_v2_changes_invoke_structural_validator(monkeypatch: Any) -> None:
     observed: list[tuple[Path, bool]] = []
-    monkeypatch.setattr(
-        guardrails,
-        "validate_master_program_v2",
-        lambda root, certification: observed.append((root, certification)) or ["FAULT"],
-    )
+    def validate_v2(root: Path, certification: bool) -> list[str]:
+        observed.append((root, certification))
+        return ["FAULT"]
+
+    monkeypatch.setattr(guardrails, "validate_master_program_v2", validate_v2)
     before = list(guardrails.failures)
     try:
         guardrails.check_master_program_v2(

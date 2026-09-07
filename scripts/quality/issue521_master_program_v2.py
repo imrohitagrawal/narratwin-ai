@@ -12,7 +12,7 @@ import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any, Iterable, cast
 
 
 DOCUMENT_PATH = "docs/governance/NARRATWIN_MASTER_PROGRAM_V2.md"
@@ -37,6 +37,9 @@ REQUIRED_ARTIFACTS = (
 BASE_SHA = "b6b0c05c7227428ff0841361f3970b0b2c40aa86"
 V1_PATH = "docs/governance/NARRATWIN_MASTER_PROGRAM_V1.md"
 V1_SHA256 = "c3e3c85bb980aab4f818e80be3db5484e564423d77bc3ab6e81ba736c3af3420"
+DOCUMENT_SHA256 = "0e1e7ab79503764c99ad5c9bf0185dbf518f1a02f70fbbcfb9d45500a4a1cdcc"
+MAPPING_SHA256 = "9c5490da888f2011373e04524b9e12f0c03912502d254360d85533b97cb9e8cd"
+TAXONOMY_SHA256 = "860940f84420f925969d79902a4ee68d9844b62113dd9cf6293be347a1b61ce1"
 ROADMAP_PATH = "docs/CUT_ROADMAP_AND_EVIDENCE_MATRIX.md"
 ROADMAP_SHA256 = "e358396e7be7ecee89539b1bfb9eb7eb4d331799dd41a64b4cfca4f74e22489b"
 ADR0079_PATH = "docs/ADR/0079-cut1-t06-dual-plan-video-strategy.md"
@@ -248,8 +251,8 @@ def frozen_source_bytes(root: Path, source: dict[str, Any]) -> bytes:
             timeout=10,
         )
         if result.returncode == 0:
-            return result.stdout
-    return (root / relative).read_bytes()
+            return bytes(result.stdout)
+    return cast(bytes, (root / relative).read_bytes())
 
 
 def _issue_refs(text: str, source_path: str) -> list[str]:
@@ -416,9 +419,14 @@ def _load_json(path: Path) -> Any:
                       parse_constant=lambda value: (_ for _ in ()).throw(ValueError(value)))
 
 
-def expected_source_atoms(root: Path, mapping: dict[str, Any]) -> dict[str, Atom]:
+def expected_source_records(root: Path) -> dict[str, dict[str, Any]]:
+    return {source["sourceId"]: source for source in _source_records(root)}
+
+
+def expected_source_atoms(root: Path, mapping: dict[str, Any] | None = None) -> dict[str, Atom]:
+    del mapping
     result: dict[str, Atom] = {}
-    for source in mapping["sources"]:
+    for source in expected_source_records(root).values():
         data = frozen_source_bytes(root, source)
         for atom in _atoms(source["sourceId"], source["atomizer"], data):
             result[atom.atom_id] = atom
@@ -474,12 +482,24 @@ def _mapping_failures(root: Path, mapping: Any, document: str) -> list[str]:
     rows = mapping.get("rows")
     if not isinstance(sources, list) or not isinstance(rows, list):
         return ["MPV2.MAPPING.SCHEMA_INVALID"]
+    try:
+        expected_sources = expected_source_records(root)
+    except (KeyError, OSError, UnicodeError, SyntaxError, ValueError):
+        return ["MPV2.MAPPING.SOURCE_INVENTORY_FAILED"]
     source_by_id: dict[str, dict[str, Any]] = {}
+    if set(source.get("sourceId") for source in sources if isinstance(source, dict)) != set(expected_sources):
+        failures.append("MPV2.MAPPING.SOURCE_INVENTORY_INVALID")
     for source in sources:
         if not isinstance(source, dict) or not isinstance(source.get("sourceId"), str):
             failures.append("MPV2.MAPPING.SOURCE_INVALID")
             continue
         source_by_id[source["sourceId"]] = source
+        expected_source = expected_sources.get(source["sourceId"])
+        if expected_source is None or any(source.get(key) != expected_source.get(key) for key in (
+            "sourceKind", "repositoryPath", "sourceCommit", "sourceGitBlob", "contentSha256",
+            "atomizer", "atomicRequirementCount", "defaultV2Destination",
+        )):
+            failures.append("MPV2.MAPPING.SOURCE_BINDING_INVALID")
         try:
             data = frozen_source_bytes(root, source)
         except (KeyError, OSError, TypeError):
@@ -506,7 +526,7 @@ def _mapping_failures(root: Path, mapping: Any, document: str) -> list[str]:
         atom = expected.get(atom_id)
         if atom is None:
             continue
-        source = source_by_id.get(row["sourceId"], {})
+        source = expected_sources.get(row["sourceId"], {})
         exact_source = (
             row["sourcePath"] == source.get("repositoryPath")
             and row["sourceKind"] == source.get("sourceKind")
@@ -519,6 +539,12 @@ def _mapping_failures(root: Path, mapping: Any, document: str) -> list[str]:
         )
         if not exact_source:
             failures.append("MPV2.MAPPING.SOURCE_BINDING_INVALID")
+        expected_destination = _destination(
+            atom.source_id, atom.anchor.split("::", 1)[0], atom.text,
+            source.get("defaultV2Destination", "## 1. Certification status and authority"),
+        )
+        if row["v2DestinationClause"] != expected_destination:
+            failures.append("MPV2.MAPPING.DESTINATION_INVALID")
         if row["disposition"] not in _DISPOSITIONS:
             failures.append("MPV2.MAPPING.DISPOSITION_INVALID")
         comparison = row["thresholdComparison"]
@@ -540,10 +566,20 @@ def _mapping_failures(root: Path, mapping: Any, document: str) -> list[str]:
         failures.append("MPV2.MAPPING.SOURCE_ATOM_MISSING")
     if extra:
         failures.append("MPV2.MAPPING.SOURCE_ATOM_UNKNOWN")
-    for source in sources:
+    for source in expected_sources.values():
         count = sum(row.get("sourceId") == source.get("sourceId") for row in rows if isinstance(row, dict))
         if count != source.get("atomicRequirementCount"):
             failures.append("MPV2.MAPPING.SOURCE_COUNT_MISMATCH")
+    certification = mapping.get("certification")
+    expected_certification = {
+        "structuralResult": "PASS",
+        "semanticReview": "PENDING_INDEPENDENT_REVIEW",
+        "ownerExactBytesApproval": "PENDING",
+        "eligibleNonAuthorExactHead": "PENDING",
+        "activation": "NONE",
+    }
+    if certification != expected_certification:
+        failures.append("MPV2.MAPPING.CERTIFICATION_STATE_INVALID")
     return failures
 
 
@@ -610,6 +646,12 @@ def validate_repository(root: Path, *, certification: bool) -> list[str]:
     document_bytes = (root / DOCUMENT_PATH).read_bytes()
     mapping_bytes = (root / MAPPING_PATH).read_bytes()
     taxonomy_bytes = (root / TAXONOMY_PATH).read_bytes()
+    if _sha256(document_bytes) != DOCUMENT_SHA256:
+        failures.append("MPV2.SOURCE.DOCUMENT_HASH_DRIFT")
+    if _sha256(mapping_bytes) != MAPPING_SHA256:
+        failures.append("MPV2.SOURCE.MAPPING_HASH_DRIFT")
+    if _sha256(taxonomy_bytes) != TAXONOMY_SHA256:
+        failures.append("MPV2.SOURCE.TAXONOMY_HASH_DRIFT")
     try:
         document = document_bytes.decode("utf-8")
     except UnicodeDecodeError:
