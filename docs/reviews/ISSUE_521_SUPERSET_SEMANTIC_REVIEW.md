@@ -15,7 +15,7 @@ mapping, approve exact bytes, supersede V1, or activate an implementation route.
   `9c5490da888f2011373e04524b9e12f0c03912502d254360d85533b97cb9e8cd`.
 - Taxonomy SHA-256:
   `860940f84420f925969d79902a4ee68d9844b62113dd9cf6293be347a1b61ce1`.
-- Candidate Git head: pending final implementation head.
+- Candidate Git head: `494a038ce79365e3679288e22eddfaf43375c309`.
 
 ## Required independent review
 
