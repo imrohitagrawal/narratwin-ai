@@ -534,7 +534,7 @@ and voice, exportable or deterministically verifiable audio, usable timings,
 reproducibility, cost, retention, deletion, provider revision, grounding, and
 screen truth. New faces/voices add cost and reopen identity/listening review.
 
-#### Architecture and living-documentation trust
+### Architecture and living-documentation trust
 
 The V1 §8 architecture-and-decisions requirement remains normative. Before any
 architecture or provider claim is accepted, the repository must perform the

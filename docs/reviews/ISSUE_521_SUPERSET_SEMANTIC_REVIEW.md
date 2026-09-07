@@ -10,9 +10,9 @@ mapping, approve exact bytes, supersede V1, or activate an implementation route.
 ## Exact review subject
 
 - Candidate document SHA-256:
-  `0e1e7ab79503764c99ad5c9bf0185dbf518f1a02f70fbbcfb9d45500a4a1cdcc`.
+  `6d614c3fde5237106d8aa0c939d4b602e36ed35000221674bd87f788bda903ab`.
 - Mapping SHA-256:
-  `9c5490da888f2011373e04524b9e12f0c03912502d254360d85533b97cb9e8cd`.
+  `a5f12608691bd4cd372b591bfd5cb57b20aa215fd58e8e9a7695c77bb3e805af`.
 - Taxonomy SHA-256:
   `860940f84420f925969d79902a4ee68d9844b62113dd9cf6293be347a1b61ce1`.
 - Candidate Git head: `494a038ce79365e3679288e22eddfaf43375c309`.
