@@ -391,7 +391,8 @@ def generate_mapping(root: Path) -> dict[str, Any]:
 
 
 def render_mapping(mapping: dict[str, Any]) -> str:
-    compact = lambda value: json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    def compact(value: Any) -> str:
+        return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
     lines = ["{", '  "schemaVersion":"SupersetMappingV2",', '  "mappingId":"narratwin-master-program-v2-superset",', '  "proposalState":"PROPOSED",', '  "cutoff":"2026-09-06T23:59:59+05:30",', '  "ownerAuthority":"OWNER_PLAN_2026-09-07",', '  "sources":[']
     for index, source in enumerate(mapping["sources"]):
         lines.append("    " + compact(source) + ("," if index + 1 < len(mapping["sources"]) else ""))
