@@ -1901,3 +1901,12 @@ The exact 127.661917-second, 6,127,816-byte regression shape must pass only
 under explicit 90–135 authority and fail under the default. No test or
 configuration may modify audio cadence or bytes, infer listening, call a
 provider, or claim T05/Cut 1 completion.
+
+## Issue #521 Master Program V2 candidate gate
+
+Run `python3 scripts/quality/issue521_master_program_v2.py`, its focused unit
+test, and `make quality`. Candidate mode requires complete atom coverage, exact
+hashes, valid taxonomy, pending human gates, and authority `NONE`.
+Certification mode stays red until independent review, exact-byte owner and
+exact-head approvals, and separate activation are real; tests cannot create
+those facts.

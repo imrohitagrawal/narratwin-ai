@@ -827,3 +827,12 @@ remain separate gates.
 | Govern multi-reference media | Proposed `PresenterReferencePackV1` layers and provider-specific selection rules | Current presenter anchors remain immutable; additional Meera/Myra/Raj derivatives require a separate exact-hash route and human approval |
 | Compare costs honestly | 726.691502-second Plan A totals; Plan B 90/180-second and 25/50/100-percent scenarios; Flow credits | Estimates exclude retries, failures, subscriptions, labor, storage and tax and grant no spend authority |
 | Preserve plug-and-play architecture | `AvatarProvider`, future `BrollProvider`, `VideoCompositor`, capability manifest and validated runtime policy | Provider switching applies only to implemented/reviewed adapters; domain, grounding, safety and acceptance remain NarraTwin-owned |
+
+## Issue #521 Master Program V2 traceability
+
+| Requirement | Candidate evidence | Preserved boundary |
+|---|---|---|
+| No silent requirement loss | V2 plus 19-source/5,576-row mapping and mutation validator | Structural generation cannot self-certify semantics |
+| Safe six-cut taxonomy | `CutTaxonomyV2` and ADR 0080 | Owner Digital Twin is Cut 5; legacy enterprise evidence cannot cross or bypass Cut 6 migration |
+| Prototype before code | PF-0–PF-7 and later G2 | G1 creates no receipt, runtime, egress, or spend authority |
+| Preserve current authority | Proposal state `PROPOSED`, authority `NONE`, V1 hash and separate transition | Issue/file/test/CI/self-review cannot supersede V1 |

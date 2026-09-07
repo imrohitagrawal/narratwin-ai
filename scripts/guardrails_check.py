@@ -26,6 +26,7 @@ if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from scripts.governance_preflight_repository import validate_governance_preflight_repository
+from scripts.quality.issue521_master_program_v2 import validate_repository as validate_master_program_v2
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -2521,6 +2522,15 @@ def check_governance_preflight_repository() -> None:
     failures.extend(f"Governance preflight finding: {finding.code}" for finding in findings)
 
 
+def check_master_program_v2(changes: list[str]) -> None:
+    if not any(path.startswith("docs/governance/NARRATWIN_MASTER_PROGRAM_V2") or path.startswith("docs/governance/superset-mapping-v2") or path.startswith("docs/governance/cut-taxonomy-v2") or path == "docs/governance/narratwin-master-program-v2.json" for path in changes):
+        return
+    failures.extend(
+        f"Master Program V2 finding: {finding}"
+        for finding in validate_master_program_v2(ROOT, certification=False)
+    )
+
+
 def issue435_route_findings() -> list[str]:
     head_ref = os.environ.get("GITHUB_HEAD_REF", "")
     push_ref = os.environ.get("GITHUB_REF_NAME", "") if os.environ.get("GITHUB_EVENT_NAME", "") == "push" else ""
@@ -2566,6 +2576,7 @@ def main() -> int:
     check_mock_local_defaults()
     check_traceability_rules(changes)
     check_status_tracking_rules(changes)
+    check_master_program_v2(changes)
     check_llm_tracing_and_citations()
     check_eval_results_blocking()
     check_security_results_blocking()

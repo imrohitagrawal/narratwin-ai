@@ -18,16 +18,18 @@ def _copy_candidate(tmp_path: Path) -> Path:
     root = tmp_path / "repository"
     mapping = json.loads((REPO / program.MAPPING_PATH).read_text(encoding="utf-8"))
     paths = set(program.REQUIRED_ARTIFACTS)
-    paths.update(
-        source["repositoryPath"]
-        for source in mapping["sources"]
-        if source["sourceKind"] == "REPOSITORY_FILE"
-    )
     for relative in sorted(paths):
         source = REPO / relative
         destination = root / relative
         destination.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(source, destination)
+    for source_record in mapping["sources"]:
+        if source_record["sourceKind"] != "REPOSITORY_FILE":
+            continue
+        relative = source_record["repositoryPath"]
+        destination = root / relative
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        destination.write_bytes(program.frozen_source_bytes(REPO, source_record))
     return root
 
 

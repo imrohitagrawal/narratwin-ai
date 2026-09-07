@@ -409,3 +409,10 @@ Source: [Docker Official Node image](https://hub.docker.com/_/node) and
 [Node Docker Alpine variant guidance](https://github.com/nodejs/docker-node#image-variants).
 This notice does not authorize redistribution beyond applicable licenses,
 deployment, public availability, release, or production use.
+
+## Issue #521 governance-only candidate
+
+Issue #521 adds no dependency, model, API activation, media, or dataset.
+Provider/tool names in V2 are inherited research candidates, not selections,
+account authority, rights approval, or license conclusions. Refresh exact facts
+and notices in the later qualification/implementation issue that activates one.

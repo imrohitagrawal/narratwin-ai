@@ -12,6 +12,14 @@ Use it to answer:
 - what is blocked or ambiguous
 - what the next approved action is
 
+Issue #521 proposes Master Program V2, `SupersetMappingV2`, and a six-cut
+taxonomy from frozen main `b6b0c05c`. Authority remains `NONE`: V1 and the
+five-cut roadmap remain effective until independent review, exact-byte owner and
+exact-head non-author approval, protected merge, post-merge checks, and a
+separate accepted-current transition. It grants no provider, spend,
+private-evidence, Digital Twin, product, deployment, publication, release, or
+Cut acceptance authority.
+
 ## Canonical Current Product and Readiness Contract
 
 PR `#443` merged at `a6284f7d8f1a14ef4c9a99493d6b06046505f20c`
@@ -2170,3 +2178,11 @@ human acceptance, deployment, release, production-readiness, or Cut 1 evidence.
   changes research sequencing, records ADR 0079, and corrects that reproducibility
   defect; no provider is selected or activated, and T06, T07, T08, Cut 1,
   deployment, publication, release, and production readiness remain incomplete.
+
+## Issue #521 Master Program V2 candidate (2026-09-07)
+
+- G1 freezes 19 source records and 5,576 deterministic source-atom rows.
+- New Cut 5 is owner Digital Twin; `LegacyCut5Enterprise` maps only to Cut 6
+  after migration validation.
+- Semantic/security review, exact approvals, hosted parity, merge, and separate
+  activation remain pending. Release posture remains No-Go.

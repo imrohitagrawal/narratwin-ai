@@ -8,6 +8,7 @@ import ast
 import hashlib
 import json
 import re
+import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -232,6 +233,25 @@ def _atoms(source_id: str, atomizer: str, data: bytes) -> list[Atom]:
     raise ValueError(f"unknown atomizer: {atomizer}")
 
 
+def frozen_source_bytes(root: Path, source: dict[str, Any]) -> bytes:
+    """Read repository sources at their frozen commit; fixture roots fall back to files."""
+    commit = source.get("sourceCommit")
+    relative = source["repositoryPath"]
+    if source.get("sourceKind") == "REPOSITORY_FILE" and isinstance(commit, str) and re.fullmatch(r"[0-9a-f]{40}", commit):
+        result = subprocess.run(
+            ["/usr/bin/git", "show", f"{commit}:{relative}"],
+            cwd=root,
+            env={"PATH": "/usr/bin:/bin", "LC_ALL": "C", "GIT_CONFIG_NOSYSTEM": "1", "GIT_CONFIG_GLOBAL": "/dev/null", "GIT_NO_LAZY_FETCH": "1"},
+            check=False,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            timeout=10,
+        )
+        if result.returncode == 0:
+            return result.stdout
+    return (root / relative).read_bytes()
+
+
 def _issue_refs(text: str, source_path: str) -> list[str]:
     comments = {
         f"github-comment:{match}"
@@ -281,7 +301,11 @@ def _disposition(source_id: str, text: str) -> tuple[str, str | None, str | None
 def _source_records(root: Path) -> list[dict[str, Any]]:
     records: list[dict[str, Any]] = []
     for source_id, kind, relative, atomizer, default in _SOURCE_SPECS:
-        data = (root / relative).read_bytes()
+        commit = "OWNER_DIRECTIVE_2026-09-07" if kind == "OWNER_DIRECTIVE" else BASE_SHA
+        data = frozen_source_bytes(
+            root,
+            {"sourceKind": kind, "sourceCommit": commit, "repositoryPath": relative},
+        )
         atoms = _atoms(source_id, atomizer, data)
         refs = ["owner-directive:OWNER_PLAN_2026-09-07"] if kind == "OWNER_DIRECTIVE" else _issue_refs(data.decode("utf-8"), relative)
         records.append(
@@ -289,7 +313,7 @@ def _source_records(root: Path) -> list[dict[str, Any]]:
                 "sourceId": source_id,
                 "sourceKind": kind,
                 "repositoryPath": relative,
-                "sourceCommit": "OWNER_DIRECTIVE_2026-09-07" if kind == "OWNER_DIRECTIVE" else BASE_SHA,
+                "sourceCommit": commit,
                 "sourceGitBlob": _git_blob(data),
                 "contentSha256": _sha256(data),
                 "atomizer": atomizer,
@@ -305,7 +329,7 @@ def generate_mapping(root: Path) -> dict[str, Any]:
     sources = _source_records(root)
     rows: list[dict[str, Any]] = []
     for source in sources:
-        data = (root / source["repositoryPath"]).read_bytes()
+        data = frozen_source_bytes(root, source)
         for atom in _atoms(source["sourceId"], source["atomizer"], data):
             disposition, replacement, owner_ref = _disposition(source["sourceId"], atom.text)
             destination = _destination(
@@ -394,7 +418,7 @@ def _load_json(path: Path) -> Any:
 def expected_source_atoms(root: Path, mapping: dict[str, Any]) -> dict[str, Atom]:
     result: dict[str, Atom] = {}
     for source in mapping["sources"]:
-        data = (root / source["repositoryPath"]).read_bytes()
+        data = frozen_source_bytes(root, source)
         for atom in _atoms(source["sourceId"], source["atomizer"], data):
             result[atom.atom_id] = atom
     return result
@@ -456,7 +480,7 @@ def _mapping_failures(root: Path, mapping: Any, document: str) -> list[str]:
             continue
         source_by_id[source["sourceId"]] = source
         try:
-            data = (root / source["repositoryPath"]).read_bytes()
+            data = frozen_source_bytes(root, source)
         except (KeyError, OSError, TypeError):
             failures.append("MPV2.SOURCE.MISSING")
             continue

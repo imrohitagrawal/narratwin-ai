@@ -3057,3 +3057,12 @@ performs no audio transformation, provider call, credential lookup, egress,
 spend, listening inference, T06 work, deployment, release, production, or Cut
 1 acceptance. Parent #493 retains the broader configuration architecture and
 hard-coded-value inventory.
+
+## Issue #521 — Master Program V2 candidate
+
+Branch `phase-1-closure-process-521-master-program-v2` starts at exact main
+`b6b0c05c7227428ff0841361f3970b0b2c40aa86`, owns the 24 preflight paths, and
+is capped at 8,500 charged lines. Its first commit is preflight-only and its
+second freezes RED tests. G1 is non-activating governance only; V1 remains
+effective. G2, G3, product code, providers, credentials, egress, spend,
+biometrics, media, deployment, publication, release, and acceptance are separate.

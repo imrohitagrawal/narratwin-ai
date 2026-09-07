@@ -794,6 +794,9 @@ ADR 0055.
 - `docs/SECURITY_AND_PRIVACY.md`
 - `docs/AI_SAFETY_AND_EVALUATION.md`
 - `docs/PORTABILITY_STRATEGY.md`
+- `docs/governance/NARRATWIN_MASTER_PROGRAM_V2.md` — non-activating Issue #521
+  candidate; V1 remains effective pending certification and activation.
+- `docs/ADR/0080-master-program-v2-prototype-first-governance.md`
 
 ## Cut 1 optional hosted TTS amendment
 
@@ -816,3 +819,10 @@ API route. The adapter owns the immutable hosted request vocabulary, canonical
 prompt loader, injected identity and HTTP protocols, durable request ledger,
 bounded response/WAV validator and monotonic tombstone. No concrete network
 transport or ambient credential resolver exists in the repository.
+
+## Master Program V2 candidate boundary
+
+Issue #521 adds governance-only superset/taxonomy artifacts and does not change
+the component graph. Future provider code must cite an unexpired
+`IMPLEMENTATION_ELIGIBLE` receipt after G2 exists; current provider-neutral
+boundaries remain the intended extension points.

@@ -4588,3 +4588,30 @@ def test_issue280_pr_a_requires_public_safe_non_goals() -> None:
     )
 
     assert guardrails.ISSUE_280_PUBLIC_SAFE_BOUNDARY_FAILURE in failures
+
+
+def test_master_program_v2_changes_invoke_structural_validator(monkeypatch: Any) -> None:
+    observed: list[tuple[Path, bool]] = []
+    monkeypatch.setattr(
+        guardrails,
+        "validate_master_program_v2",
+        lambda root, certification: observed.append((root, certification)) or ["FAULT"],
+    )
+    before = list(guardrails.failures)
+    try:
+        guardrails.check_master_program_v2(
+            ["docs/governance/NARRATWIN_MASTER_PROGRAM_V2.md"]
+        )
+        assert observed == [(guardrails.ROOT, False)]
+        assert guardrails.failures[-1] == "Master Program V2 finding: FAULT"
+    finally:
+        guardrails.failures[:] = before
+
+
+def test_unrelated_change_does_not_invoke_master_program_v2_validator(monkeypatch: Any) -> None:
+    monkeypatch.setattr(
+        guardrails,
+        "validate_master_program_v2",
+        lambda root, certification: pytest.fail("unexpected V2 validation"),
+    )
+    guardrails.check_master_program_v2(["README.md"])
