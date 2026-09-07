@@ -284,6 +284,13 @@ def test_issue_521_preflight_is_exact_and_bounded() -> None:
     )
     assert preflight["issue_number"] == 521
     assert preflight["branch"] == "phase-1-closure-process-521-master-program-v2"
-    assert len(preflight["scope"]["required"]) == 24
+    assert len(preflight["scope"]["required"]) == 27
     assert preflight["scope"]["required"] == preflight["scope"]["allowed_prefixes"]
     assert "AGENTS.md" in preflight["scope"]["forbidden"]
+    assert "owner checkpoint 5574559059" in preflight["objective"]
+    assert "72a3144b556c93b09678eaa7cfa495cfc3ff8cc981f50f86b4cbe64a1e2d217f" in preflight["objective"]
+    assert {
+        ".gitleaksignore",
+        "scripts/ci/check_gitleaks_regression.py",
+        "tests/unit/test_gitleaks_regression.py",
+    }.issubset(preflight["scope"]["required"])

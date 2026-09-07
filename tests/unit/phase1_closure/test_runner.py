@@ -180,6 +180,18 @@ def test_issue521_runs_v2_validator_and_preserves_frozen_contracts(monkeypatch: 
     assert calls == ["v2", "branch", "required", "preserved"]
 
 
+def test_issue521_scope_binds_owner_amended_twenty_seven_paths() -> None:
+    paths, failures = runner._issue521_scope()
+
+    assert failures == []
+    assert len(paths) == 27
+    assert {
+        ".gitleaksignore",
+        "scripts/ci/check_gitleaks_regression.py",
+        "tests/unit/test_gitleaks_regression.py",
+    }.issubset(paths)
+
+
 def test_issue521_extra_path_fails_before_validator(monkeypatch: Any) -> None:
     monkeypatch.setattr(runner, "current_branch", lambda root: runner.ISSUE521_BRANCH)
     monkeypatch.setattr(runner, "_head", lambda: "a" * 40)

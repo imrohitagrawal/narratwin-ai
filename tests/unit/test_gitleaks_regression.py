@@ -18,6 +18,15 @@ FROZEN_BASE = "ab97b6eecba6db9c66c37d19b29257c7398f3ab7"
 SOURCE_HEAD = "570239effbcae3990a24ffdc809622f02364ff0d"
 SCAN_HEAD = "9644296da92bf3b3f373cd2afd2c7a64d6ca7c8c"
 PORTABLE_PUBLIC_KEY_HEAD = "d0da128657ed3acdb0c33fc29f4028c702ac52ab"
+MAPPING_COMMIT = "74dc7c9cb670513cd2340cbd686d66d1d24b819e"
+MAPPING_FINGERPRINT = (
+    f"{MAPPING_COMMIT}:docs/governance/superset-mapping-v2.json:generic-api-key:1474"
+)
+MAPPING_BLOB_SHA256 = "ba12b1be49884f3eba25e0d6459104ea2a21588c21785ab4bf90401b41df1b97"
+MAPPING_LINE_SHA256 = "072c497736eac919ac45974581ff2efde3e6f19b85152bba2e526413037b77a7"
+MAPPING_REQUIREMENT_ID = "MPV2-EF7B22C3CF4ED775DC94"
+MAPPING_CLAUSE_SHA256 = "845855204badc3593c9f4e729d2395d4c443ab2f83771cb1731f7a560f3089c1"
+V1_BLOB_SHA256 = "c3e3c85bb980aab4f818e80be3db5484e564423d77bc3ab6e81ba736c3af3420"
 EXPECTED_DIGEST = "910259f61acbbec4e3432c482d821fd56f2fe8b2073211c7ce112c3cd87405bf"
 EXPECTED_PUBLIC_KEY_SHA256 = (
     "6c3b7674b58d9f7266cd8b823ecf469b0a03d1bf2c8c24df1d0121d8e818f1fa"
@@ -33,6 +42,7 @@ EXPECTED_FINGERPRINTS = (
     "8dd002589d45b41205a80dc004e7e6480bec901f:scripts/quality/stage8_cut1_routes.py:generic-api-key:515",
     "8dd002589d45b41205a80dc004e7e6480bec901f:tests/unit/test_stage8_cut1_routes.py:generic-api-key:1370",
     "9644296da92bf3b3f373cd2afd2c7a64d6ca7c8c:scripts/quality/stage8_cut1_routes.py:generic-api-key:509",
+    MAPPING_FINGERPRINT,
     "66dabedecdce4ed51b8354e44f2d1c749c209898:backend/Dockerfile:generic-api-key:18",
     "0cea00fd0a2cda457473c4fccf1d6ab2b2250bae:backend/Dockerfile:generic-api-key:18",
     "dd1e2118dede2b5cf9060d69cace0a3c9ab8ae4c:backend/Dockerfile:generic-api-key:18",
@@ -66,6 +76,78 @@ def test_exact_reviewed_fingerprints_and_provenance_pass() -> None:
     assert checker.validate(ROOT) == []
 
 
+def test_mapping_governance_clause_provenance_is_exact() -> None:
+    checker = _load_checker()
+    mapping = subprocess.run(
+        ["git", "show", f"{MAPPING_COMMIT}:docs/governance/superset-mapping-v2.json"],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+    ).stdout
+    source = subprocess.run(
+        ["git", "show", f"{checker.MAPPING_SOURCE_COMMIT}:{checker.MAPPING_SOURCE_PATH}"],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+    ).stdout
+    assert checker.MAPPING_COMMIT == MAPPING_COMMIT
+    assert checker.MAPPING_BLOB_SHA256 == MAPPING_BLOB_SHA256
+    assert checker.MAPPING_LINE_SHA256 == MAPPING_LINE_SHA256
+    assert checker.MAPPING_REQUIREMENT_ID == MAPPING_REQUIREMENT_ID
+    assert checker.MAPPING_CLAUSE_SHA256 == MAPPING_CLAUSE_SHA256
+    assert checker.MAPPING_SOURCE_SHA256 == V1_BLOB_SHA256
+    assert checker.validate_mapping_clause_blobs(mapping, source) == []
+
+
+def test_mapping_clause_provenance_rejects_blob_line_row_and_source_drift(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    checker = _load_checker()
+    mapping = subprocess.run(
+        ["git", "show", f"{MAPPING_COMMIT}:docs/governance/superset-mapping-v2.json"],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+    ).stdout
+    source = subprocess.run(
+        ["git", "show", f"{checker.MAPPING_SOURCE_COMMIT}:{checker.MAPPING_SOURCE_PATH}"],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+    ).stdout
+    assert "GITLEAKS.PROVENANCE.MAPPING_BLOB" in checker.validate_mapping_clause_blobs(
+        mapping + b"\n", source
+    )
+    changed_line = mapping.replace(MAPPING_REQUIREMENT_ID.encode(), b"MPV2-EF7B22C3CF4ED775DC95", 1)
+    monkeypatch.setattr(checker, "MAPPING_BLOB_SHA256", hashlib.sha256(changed_line).hexdigest())
+    assert "GITLEAKS.PROVENANCE.MAPPING_LINE" in checker.validate_mapping_clause_blobs(
+        changed_line, source
+    )
+    lines = changed_line.splitlines(keepends=True)
+    monkeypatch.setattr(checker, "MAPPING_LINE_SHA256", hashlib.sha256(lines[1473]).hexdigest())
+    assert "GITLEAKS.PROVENANCE.MAPPING_ROW" in checker.validate_mapping_clause_blobs(
+        changed_line, source
+    )
+    assert "GITLEAKS.PROVENANCE.MAPPING_SOURCE" in checker.validate_mapping_clause_blobs(
+        mapping, source + b"\n"
+    )
+
+
+def test_squash_checkout_uses_portable_mapping_provenance(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    checker = _load_checker()
+    original_git = cast(Callable[..., subprocess.CompletedProcess[bytes]], checker._git)
+
+    def hosted_git(root: Path, *args: str) -> subprocess.CompletedProcess[bytes]:
+        if MAPPING_COMMIT in " ".join(args):
+            return subprocess.CompletedProcess(args, 128, b"", b"missing")
+        return original_git(root, *args)
+
+    monkeypatch.setattr(checker, "_git", hosted_git)
+    assert checker.validate(ROOT) == []
+
+
 @pytest.mark.parametrize(
     "candidate",
     (
@@ -94,6 +176,23 @@ def test_ignore_contract_rejects_omission_addition_and_fingerprint_drift(
 ) -> None:
     checker = _load_checker()
     assert checker.validate_ignore_lines(candidate) == ["GITLEAKS.IGNORE.EXACT"]
+
+
+@pytest.mark.parametrize(
+    "candidate",
+    (
+        MAPPING_FINGERPRINT.replace(MAPPING_COMMIT, "0" * 40),
+        MAPPING_FINGERPRINT.replace("superset-mapping-v2.json", "other.json"),
+        MAPPING_FINGERPRINT.replace("generic-api-key", "private-key"),
+        MAPPING_FINGERPRINT.replace(":1474", ":1475"),
+    ),
+)
+def test_mapping_fingerprint_rejects_commit_path_rule_and_line_drift(
+    candidate: str,
+) -> None:
+    checker = _load_checker()
+    altered = tuple(candidate if item == MAPPING_FINGERPRINT else item for item in EXPECTED_FINGERPRINTS)
+    assert checker.validate_ignore_lines(altered) == ["GITLEAKS.IGNORE.EXACT"]
 
 
 def test_frozen_api_contract_bytes_match_the_reviewed_digest() -> None:
