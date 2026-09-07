@@ -4,6 +4,9 @@ from __future__ import annotations
 
 import hashlib
 import importlib.util
+import json
+import os
+import shutil
 import subprocess
 from pathlib import Path
 from types import ModuleType
@@ -146,6 +149,49 @@ def test_squash_checkout_uses_portable_mapping_provenance(
 
     monkeypatch.setattr(checker, "_git", hosted_git)
     assert checker.validate(ROOT) == []
+
+
+def test_portable_mapping_requires_one_exact_requirement_row() -> None:
+    checker = _load_checker()
+    mapping = json.loads((ROOT / checker.MAPPING_PATH).read_text(encoding="utf-8"))
+    row = next(item for item in mapping["rows"] if item["sourceClauseSha256"] == checker.MAPPING_CLAUSE_SHA256)
+    source = subprocess.run(
+        ["git", "show", f"{checker.MAPPING_SOURCE_COMMIT}:{checker.MAPPING_SOURCE_PATH}"],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+    ).stdout
+    portable = json.dumps({"rows": [row]}, separators=(",", ":")).encode()
+    assert checker.validate_portable_mapping_blob(portable, source) == []
+    duplicated = json.dumps({"rows": [row, row]}, separators=(",", ":")).encode()
+    assert "GITLEAKS.PROVENANCE.MAPPING_PORTABLE_UNIQUE" in checker.validate_portable_mapping_blob(duplicated, source)
+
+
+@pytest.mark.skipif(shutil.which("gitleaks") is None, reason="gitleaks CLI unavailable")
+def test_current_mapping_passes_with_a_new_squash_commit_fingerprint(tmp_path: Path) -> None:
+    repository = tmp_path / "synthetic-squash"
+    repository.mkdir()
+    target = repository / "docs/governance/superset-mapping-v2.json"
+    target.parent.mkdir(parents=True)
+    shutil.copyfile(ROOT / "docs/governance/superset-mapping-v2.json", target)
+    shutil.copyfile(ROOT / ".gitleaksignore", repository / ".gitleaksignore")
+    subprocess.run(["git", "init", "-q"], cwd=repository, check=True)
+    subprocess.run(["git", "add", "."], cwd=repository, check=True)
+    environment = {**os.environ, "GIT_AUTHOR_NAME": "NarraTwin test", "GIT_AUTHOR_EMAIL": "test@narratwin.invalid", "GIT_COMMITTER_NAME": "NarraTwin test", "GIT_COMMITTER_EMAIL": "test@narratwin.invalid"}
+    subprocess.run(
+        ["git", "commit", "-q", "-m", "synthetic squash"],
+        cwd=repository,
+        env=environment,
+        check=True,
+    )
+    completed = subprocess.run(
+        [cast(str, shutil.which("gitleaks")), "detect", "--redact", "--no-banner", "--source", "."],
+        cwd=repository,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert completed.returncode == 0, completed.stderr
 
 
 @pytest.mark.parametrize(
