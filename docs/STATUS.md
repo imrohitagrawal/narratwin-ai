@@ -2181,7 +2181,8 @@ human acceptance, deployment, release, production-readiness, or Cut 1 evidence.
 
 ## Issue #521 Master Program V2 candidate (2026-09-07)
 
-- G1 freezes 19 source records and 5,577 deterministic source-atom rows.
+- G1 freezes 193 source-ledger records, complete semantic-partition digests,
+  and an all-and-only normative requirement-row ledger.
 - New Cut 5 is owner Digital Twin; `LegacyCut5Enterprise` maps only to Cut 6
   after migration validation.
 - Owner checkpoint `5574559059` expands the G1 route to exactly 27 paths only

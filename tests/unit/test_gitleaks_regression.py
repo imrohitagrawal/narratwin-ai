@@ -29,14 +29,14 @@ MAPPING_BLOB_SHA256 = "ba12b1be49884f3eba25e0d6459104ea2a21588c21785ab4bf90401b4
 MAPPING_LINE_SHA256 = "072c497736eac919ac45974581ff2efde3e6f19b85152bba2e526413037b77a7"
 MAPPING_REQUIREMENT_ID = "MPV2-EF7B22C3CF4ED775DC94"
 MAPPING_CLAUSE_SHA256 = "845855204badc3593c9f4e729d2395d4c443ab2f83771cb1731f7a560f3089c1"
+CURRENT_MAPPING_REQUIREMENT_IDS = (
+    "MPV2-6008E4EF304A86BC7BD3",
+    "MPV2-BE434AE78F7511BC7812",
+)
 V1_BLOB_SHA256 = "c3e3c85bb980aab4f818e80be3db5484e564423d77bc3ab6e81ba736c3af3420"
 EXPECTED_DIGEST = "910259f61acbbec4e3432c482d821fd56f2fe8b2073211c7ce112c3cd87405bf"
-EXPECTED_PUBLIC_KEY_SHA256 = (
-    "6c3b7674b58d9f7266cd8b823ecf469b0a03d1bf2c8c24df1d0121d8e818f1fa"
-)
-EXPECTED_DOCKERFILE_SHA256 = (
-    "27a75b496a53f07037bceadd7eb57ebdf3e07112df33bb554e674925b9e9dc16"
-)
+EXPECTED_PUBLIC_KEY_SHA256 = "6c3b7674b58d9f7266cd8b823ecf469b0a03d1bf2c8c24df1d0121d8e818f1fa"
+EXPECTED_DOCKERFILE_SHA256 = "27a75b496a53f07037bceadd7eb57ebdf3e07112df33bb554e674925b9e9dc16"
 EXPECTED_PORTABLE_DOCKERFILE_SHA256 = (
     "0e0f46b06a73eee744bcf94e730a0170b43783388bfe496c2f0f1ee5a171e2d8"
 )
@@ -77,6 +77,61 @@ def test_exact_reviewed_fingerprints_and_provenance_pass() -> None:
     )
     assert checker.EXPECTED_FINGERPRINTS == EXPECTED_FINGERPRINTS
     assert checker.validate(ROOT) == []
+
+
+def test_public_signed_delivery_urls_fail_closed() -> None:
+    checker = _load_checker()
+    azure_sas = (b"https://account.blob.core.windows.net/private/object.mp4?sv=2026-01-01" b"&se=2026-09-09T00%3A00%3A00Z&sp=r&s" b"ig=synthetic-review-canary")
+    encoded_separator = b"https://cdn.invalid/object?sp=r&s" b"ig%3Dsynthetic"
+    serialized = (
+        b"https://cdn.invalid/object?sp=r&amp;s" b"ig=synthetic",
+        br"https:\/\/cdn.invalid\/object?X-Amz-Sig" br"nature=synthetic",
+        b"https%3A%2F%2Fcdn.invalid%2Fobject%3FX-Goog-Signa"
+        b"ture%3Dsynthetic",
+        br"https:\/\/cdn.invalid\/object?sp=r\u0026s" br"ig=synthetic",
+        b"https://cdn.invalid/object?to" b"ken=synthetic",
+        b"https://cdn.invalid/object?cred" b"ential=synthetic",
+        b"https://cdn.invalid/object?k" b"ey=synthetic",
+        b"https://cdn.invalid/object?s&#" b"105;g=synthetic",
+        b"http&#" b"115;://cdn.invalid/object?s" b"ig=synthetic",
+        b"//cdn.invalid/object?s" b"ig=synthetic",
+        b"https%25253A%25252F%25252Fcdn.invalid%25252Fobject%25253F" b"sig%25253Dsynthetic",
+        br"\u0068ttps:\/\/cdn.invalid/?s" br"ig=synthetic", b"%252F%252Fcdn.invalid%253Fs" b"ig%253Dsynthetic",
+    )
+    for candidate in (azure_sas, encoded_separator, *serialized):
+        assert checker.validate_public_blob(candidate) == ["GITLEAKS.PUBLIC.SIGNED_URL"]
+    assert checker.validate_public_blob(b"https://docs.invalid/signature-policy") == []
+    assert checker.validate_public_blob(b"https://docs.invalid/?signal=public") == []
+    for candidate in (b"/Use" b"rs/synthetic/private-evidence", b"fi" b"le:///Use" b"rs/synthetic/private-evidence", b"/Use&#" b"114;s/synthetic/private-evidence", b"%25252FUse" b"rs%25252Fsynthetic"):
+        assert checker.validate_public_blob(candidate) == ["GITLEAKS.PUBLIC.PRIVATE_PATH"]
+
+
+def test_tracked_public_blob_scan_enforces_signed_url_boundary(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    checker = _load_checker()
+    (tmp_path / "public-artifact.txt").write_bytes(b"https://cdn.invalid/private.mp4?expires=1&s" b"ig=synthetic")
+    monkeypatch.setattr(
+        checker, "_git", lambda root, *args: subprocess.CompletedProcess(args, 0, b"public-artifact.txt\0", b""),
+    )
+    assert checker._validate_tracked_public_blobs(tmp_path) == ["GITLEAKS.PUBLIC.SIGNED_URL"]
+    (tmp_path / "public-artifact.txt").unlink()
+    (tmp_path / "public-artifact.txt").symlink_to("https://cdn.invalid/private.mp4?s" + "ig=synthetic")
+    assert checker._validate_tracked_public_blobs(tmp_path) == ["GITLEAKS.PUBLIC.SIGNED_URL"]
+
+
+def test_inherited_synthetic_private_path_is_not_a_new_public_leak(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    checker = _load_checker()
+    inherited = b"/Use" b"rs/synthetic/base-fixture"
+    target = tmp_path / "public-artifact.txt"
+    target.write_bytes(inherited)
+
+    def git(root: Path, *args: str) -> subprocess.CompletedProcess[bytes]:
+        del root
+        return subprocess.CompletedProcess(args, 0, b"public-artifact.txt\0" if args[0] == "ls-files" else inherited, b"")
+
+    monkeypatch.setattr(checker, "_git", git)
+    assert checker._validate_tracked_public_blobs(tmp_path) == []
+    target.write_bytes(b"/Use" b"rs/synthetic/new-private-evidence")
+    assert checker._validate_tracked_public_blobs(tmp_path) == ["GITLEAKS.PUBLIC.PRIVATE_PATH"]
 
 
 def test_mapping_governance_clause_provenance_is_exact() -> None:
@@ -153,18 +208,82 @@ def test_squash_checkout_uses_portable_mapping_provenance(
 
 def test_portable_mapping_requires_one_exact_requirement_row() -> None:
     checker = _load_checker()
-    mapping = json.loads((ROOT / checker.MAPPING_PATH).read_text(encoding="utf-8"))
-    row = next(item for item in mapping["rows"] if item["sourceClauseSha256"] == checker.MAPPING_CLAUSE_SHA256)
+    mapping_blob = (ROOT / checker.MAPPING_PATH).read_bytes()
+    mapping = json.loads(mapping_blob)
+    rows = [
+        item
+        for item in checker._logical_mapping_rows(mapping)
+        if item["requirementId"] in CURRENT_MAPPING_REQUIREMENT_IDS
+    ]
     source = subprocess.run(
         ["git", "show", f"{checker.MAPPING_SOURCE_COMMIT}:{checker.MAPPING_SOURCE_PATH}"],
         cwd=ROOT,
         check=True,
         capture_output=True,
     ).stdout
-    portable = json.dumps({"rows": [row]}, separators=(",", ":")).encode()
+    assert tuple(
+        item["requirementId"] for item in checker.CURRENT_MAPPING_ROWS
+    ) == CURRENT_MAPPING_REQUIREMENT_IDS
+    portable = json.dumps({"rows": rows}, separators=(",", ":")).encode()
     assert checker.validate_portable_mapping_blob(portable, source) == []
-    duplicated = json.dumps({"rows": [row, row]}, separators=(",", ":")).encode()
-    assert "GITLEAKS.PROVENANCE.MAPPING_PORTABLE_UNIQUE" in checker.validate_portable_mapping_blob(duplicated, source)
+    duplicated = json.dumps(
+        {"rows": [*rows, rows[0]]}, separators=(",", ":")
+    ).encode()
+    assert "GITLEAKS.PROVENANCE.MAPPING_PORTABLE_UNIQUE" in checker.validate_portable_mapping_blob(
+        duplicated, source
+    )
+    changed = {**rows[0], "sourceAnchor": rows[0]["sourceAnchor"] + "-drift"}
+    altered = json.dumps(
+        {"rows": [changed, rows[1]]}, separators=(",", ":")
+    ).encode()
+    assert "GITLEAKS.PROVENANCE.MAPPING_PORTABLE_ROW" in checker.validate_portable_mapping_blob(
+        altered, source
+    )
+
+
+def test_current_mapping_uses_semantics_preserving_atomic_serialization() -> None:
+    checker = _load_checker()
+    mapping_blob = (ROOT / checker.MAPPING_PATH).read_bytes()
+    assert checker.validate_portable_mapping_encoding(mapping_blob) == []
+    document = json.loads(mapping_blob)
+    rows = {
+        item["requirementId"]: item
+        for item in checker._logical_mapping_rows(document)
+        if item["requirementId"] in CURRENT_MAPPING_REQUIREMENT_IDS
+    }
+    assert set(rows) == set(CURRENT_MAPPING_REQUIREMENT_IDS)
+    assert {
+        rows[item["requirementId"]]["normalizedAtomicRequirement"]
+        for item in checker.CURRENT_MAPPING_ROWS
+    } == {
+        item["normalizedAtomicRequirement"] for item in checker.CURRENT_MAPPING_ROWS
+    }
+    assert document["rowEncoding"]["derivedThresholdComparisonsSha256"] == checker.MAPPING_DERIVED_THRESHOLD_SHA256
+    document["rowEncoding"]["derivedThresholdComparisonsSha256"] = "0" * 64
+    with pytest.raises(ValueError):
+        checker._logical_mapping_rows(document)
+
+
+def test_available_history_does_not_skip_current_portable_validation(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    checker = _load_checker()
+    called = {"historical": 0, "portable": 0}
+    historical = checker.validate_mapping_clause_blobs
+    portable = checker.validate_portable_mapping_blob
+
+    def track_historical(mapping_blob: bytes, source_blob: bytes) -> list[str]:
+        called["historical"] += 1
+        return cast(list[str], historical(mapping_blob, source_blob))
+
+    def track_portable(mapping_blob: bytes, source_blob: bytes) -> list[str]:
+        called["portable"] += 1
+        return cast(list[str], portable(mapping_blob, source_blob))
+
+    monkeypatch.setattr(checker, "validate_mapping_clause_blobs", track_historical)
+    monkeypatch.setattr(checker, "validate_portable_mapping_blob", track_portable)
+    assert checker._validate_mapping_clause_provenance(ROOT) == []
+    assert called == {"historical": 1, "portable": 1}
 
 
 @pytest.mark.skipif(shutil.which("gitleaks") is None, reason="gitleaks CLI unavailable")
@@ -177,7 +296,13 @@ def test_current_mapping_passes_with_a_new_squash_commit_fingerprint(tmp_path: P
     shutil.copyfile(ROOT / ".gitleaksignore", repository / ".gitleaksignore")
     subprocess.run(["git", "init", "-q"], cwd=repository, check=True)
     subprocess.run(["git", "add", "."], cwd=repository, check=True)
-    environment = {**os.environ, "GIT_AUTHOR_NAME": "NarraTwin test", "GIT_AUTHOR_EMAIL": "test@narratwin.invalid", "GIT_COMMITTER_NAME": "NarraTwin test", "GIT_COMMITTER_EMAIL": "test@narratwin.invalid"}
+    environment = {
+        **os.environ,
+        "GIT_AUTHOR_NAME": "NarraTwin test",
+        "GIT_AUTHOR_EMAIL": "test@narratwin.invalid",
+        "GIT_COMMITTER_NAME": "NarraTwin test",
+        "GIT_COMMITTER_EMAIL": "test@narratwin.invalid",
+    }
     subprocess.run(
         ["git", "commit", "-q", "-m", "synthetic squash"],
         cwd=repository,
@@ -237,7 +362,9 @@ def test_mapping_fingerprint_rejects_commit_path_rule_and_line_drift(
     candidate: str,
 ) -> None:
     checker = _load_checker()
-    altered = tuple(candidate if item == MAPPING_FINGERPRINT else item for item in EXPECTED_FINGERPRINTS)
+    altered = tuple(
+        candidate if item == MAPPING_FINGERPRINT else item for item in EXPECTED_FINGERPRINTS
+    )
     assert checker.validate_ignore_lines(altered) == ["GITLEAKS.IGNORE.EXACT"]
 
 
@@ -324,12 +451,9 @@ def test_hosted_checkout_uses_reachable_public_key_provenance(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     checker = _load_checker()
-    original_git = cast(
-        Callable[..., subprocess.CompletedProcess[bytes]], checker._git
-    )
+    original_git = cast(Callable[..., subprocess.CompletedProcess[bytes]], checker._git)
     local_only_commits = {
-        fingerprint.split(":", 1)[0]
-        for fingerprint in EXPECTED_PUBLIC_KEY_FINGERPRINTS
+        fingerprint.split(":", 1)[0] for fingerprint in EXPECTED_PUBLIC_KEY_FINGERPRINTS
     }
 
     def hosted_git(root: Path, *args: str) -> subprocess.CompletedProcess[bytes]:

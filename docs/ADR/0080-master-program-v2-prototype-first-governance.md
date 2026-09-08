@@ -31,7 +31,10 @@ separate accepted-current transition are mandatory.
 G1 changes no API/runtime. G2 owns executable hypothesis/receipt contracts; G3
 owns restricted evidence and cost reconciliation. Provider calls, private-data
 reads, spend, biometrics, deletion, publication, and release remain prohibited.
-Required-reading changes follow activation through the protected hash workflow.
+The accepted-current transition must atomically activate V2, supersede V1,
+complete all seven compatibility-migration surfaces at the transition merge
+time, and add V2 to required reading through the protected agent/playbook hash
+transition. No intermediate state is valid.
 
 ## Rollback
 

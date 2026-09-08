@@ -11,6 +11,8 @@
 - Release posture: No-Go.
 - Current authority permits repository governance work only.
 - V1 remains effective until V2 certification and activation complete.
+- The dirty shared checkout is never modified; implementation uses an isolated
+  worktree created from the then-current accepted `origin/main`.
 
 This document is the candidate complete program for turning approved project
 knowledge into grounded prepared and interactive walkthroughs using fictional
@@ -24,6 +26,22 @@ enrollment, biometric operation, deletion, publication, deployment, release,
 public availability, production-readiness, or production claim.
 
 ## 1. Certification status and authority
+
+<!-- MPV2-DESTINATION:MPV2-SECTION-1 -->
+
+At every registered `MPV2-DESTINATION`, only a `CURRENT_NORMATIVE` row incorporates its normalized atomic focus. Its bound normalized source context resolves grammar, scope, and logical operators; that context is not independently incorporated and cannot reactivate a changed sibling focus. `HISTORICAL_ONLY` and `EVIDENCE_ONLY` rows preserve provenance but cannot authorize an operation, set a threshold, satisfy a gate, or establish acceptance. Disposition applies only to that focus: `PRESERVED` keeps it, `STRENGTHENED` keeps it plus the replacement, `RELOCATED` moves it, and `SUPERSEDED_BY_EXPLICIT_OWNER_AUTHORITY` makes only the resolved owner-authorized replacement normative.
+
+The destination registry is normative only after every row is independently
+reviewed, exact candidate bytes receive owner approval, the protected candidate
+merges, and a separate accepted-current transition activates V2. `PRESERVED`
+imports exact source semantics without elevating observations or estimates to
+acceptance. `RELOCATED` changes only the owner-authorized taxonomy location.
+`SUPERSEDED_BY_EXPLICIT_OWNER_AUTHORITY` replaces only its independently atomic
+clause; sibling obligations remain preserved. `STRENGTHENED` is never assigned
+by generic inference: it requires an exact curated conflict rule, retained
+source semantics, an additive control, and a clause-specific threshold
+comparison. Any unresolved destination, replacement, authority, conflict, or
+threshold comparison keeps certification failed and V1 effective.
 
 V2 is intended to replace V1 only after the certification gates below pass.
 Candidate file presence, a passing test, CI, an issue, a comment, self-review,
@@ -39,25 +57,112 @@ The frozen audit baseline is:
   `e358396e7be7ecee89539b1bfb9eb7eb4d331799dd41a64b4cfca4f74e22489b`.
 - ADR 0079 SHA-256:
   `a20ae1b9fae9e12e9e50baa372b0672c43a9417a21b36a2dc4276f5be1529fd5`.
-- Owner instruction: `OWNER_PLAN_2026-09-07`, represented by these exact
-  candidate bytes and subject to later exact-byte approval.
+- Owner-plan authority: restricted record `OWNER_PLAN_2026-09-07`, SHA-256
+  `986fd1604b385cd1ecd0dad1bfe0e09e6357d0e4b1d58bc94e3c055cc9bec58c`,
+  65,097 UTF-8 bytes. Its raw bytes stay outside public Git because they contain
+  personal absolute paths. This document is a normalized, redacted candidate
+  representation, not the authority source itself. An owner-authored external
+  receipt must attest that the public representation is complete and loses no
+  requirement before semantic certification.
 
-`SupersetMappingV2` covers every deterministic atomic source unit from the
-frozen source inventory. Each row carries a stable requirement ID, source
+`SupersetMappingV2` has two ledgers. Its source ledger inventories 192 exact
+repository objects plus this separately hash-bound owner candidate and gives
+every deterministic candidate unit exactly one semantic class. Its row ledger
+contains all repository `NORMATIVE_REQUIREMENT/CURRENT_NORMATIVE` units and
+all external current or superseded normative clauses; excluded evidence, history, state,
+observation, estimate, and implemented-behavior units remain bound by each
+source's ordered semantic-partition digest. The inventory includes all 42 V1 sections; the
+previous five-cut roadmap and evidence matrix; the latest six-cut plan;
+presenter, AI-quality, enterprise, security, privacy, architecture, status,
+phase, stage, acceptance, and ADR contracts; accepted issue/comment authority
+cited by those sources; the real-media hosted-demo plan and T06 provider
+landscape; the public normalization of the prior conversational requirements;
+existing behavior and disabled-provider boundaries; and the owner-supplied
+sanitized evidence facts and observations. Conversational requirements explicitly
+include provider research, memberships, cost attribution, native-1080 testing,
+continuous audio, screen-guided walkthroughs, and the owner Digital Twin. Each
+row carries a stable requirement ID, source
 path or owner reference, issue/comment references, source commit/blob and
-content hash where applicable, normalized clause, V2 destination, disposition,
+content hash where applicable, raw source-span hash, normalized source context,
+exact atomic focus and code-point coordinates, semantic class, normative effect,
+V2 destination, disposition,
 replacement and owner authority when required, no-weakening comparison,
 rationale, accountable owner, reviewer, review time, and result.
+The public JSON Schema validates the compact indexed storage envelope. The
+deterministic decoder and semantic validator separately reconstruct and enforce
+the complete logical-row contract; neither layer may claim the other's proof.
+
+Structural generation cannot prove that this candidate exhausts the prior
+conversation or the future G3 private-evidence inventory. Before semantic
+certification, an immutable owner-authored receipt must bind the restricted
+source hash and attest the normalized public representation. The external
+authority census binds all 605 cited GitHub issue, pull-request, and comment
+bodies by typed identity, cutoff metadata, exact UTF-8 byte count, and SHA-256;
+raw bodies are not committed. Content addressing proves which bytes were
+audited, not whether they carry accepted normative authority. Independent
+governing-context decisions preserve non-activating classification input
+`746e23fcd200f25e1fcd91ef4dd39b59abc6e34ea00b28db7dee667da81db75f`,
+activation `NONE`; it is provenance, not candidate or adoption authority.
+The final-byte review must prove later edits did not invalidate those decisions
+or require their exact replay and reissuance. Independent review must classify
+every record and verify that every accepted normative
+clause is represented before certification. G3 must create the private
+inventory before any claim that it was exhaustively audited. A later, separate
+exact-byte approval must bind the final V2 document, mapping, taxonomy, review
+receipts, Git head, and tree. Accepted issue and comment authority cited by a
+frozen repository clause remains bound through that clause's exact baseline
+bytes plus its typed issue, pull-request, or comment reference; references are
+never relabelled across authority kinds.
 
 Allowed mapping dispositions are `PRESERVED`, `STRENGTHENED`, `RELOCATED`, and
-`SUPERSEDED_BY_EXPLICIT_OWNER_AUTHORITY`. Relocation requires an exact
-replacement ID. Supersession additionally requires exact owner authority.
-Historical evidence remains immutable and is never rewritten to simulate a
-new decision.
+`SUPERSEDED_BY_EXPLICIT_OWNER_AUTHORITY`. Every relocation or supersession
+requires an exact replacement ID and immutable owner-authority reference;
+supersession additionally proves that the replacement, rather than the
+historical clause, is normative.
+Historical evidence and immutable issue/PR text are never rewritten, including
+to simulate a new decision.
+
+Semantic class and disposition are orthogonal. Only
+`NORMATIVE_REQUIREMENT/CURRENT_NORMATIVE` can contribute an obligation.
+`HISTORICAL_FACT/HISTORICAL_ONLY`; `CURRENT_STATE_FACT`, `USER_OBSERVATION`,
+`AUTOMATED_RESULT`, `COST_ESTIMATE`, and `IMPLEMENTED_BEHAVIOR` with
+`EVIDENCE_ONLY` retain their bytes and provenance but grant no authority and
+cannot satisfy acceptance. Atomic-focus offsets are zero-based, half-open
+Unicode code-point coordinates inside a whitespace-normalized context. Every
+context also binds a one-based inclusive raw-file line span and raw-span hash.
+Independent semantic review must attest each focus/operator/context relation;
+the generator cannot infer or self-approve that meaning.
+
+Committed mapping rows and certification fields remain `PENDING` permanently;
+they cannot be edited to manufacture a pass. G1's `--certification` mode is a
+non-activating tripwire that always reports the outstanding adoption, review,
+approval, and transition gates; it performs no credential lookup, DNS, socket,
+or HTTP work. Default validation and mapping generation use only bounded local
+Git-object reads with lazy fetch disabled. The separately governed
+accepted-current transition must implement and validate the external receipt
+overlay against the protected GitHub issue, pull request, exact head/tree,
+hosted checks, merge, and current-main state; G1 cannot consume local receipt
+files or activate V2.
+
+Every receipt body is exactly the marker `NARRATWIN-MPV2-RECEIPT-V1`, a newline,
+and one canonical compact JSON object with sorted keys and no trailing newline.
+Duplicate keys, noncanonical bytes, edited comments, ordinary prose, wrong
+repository/issue/PR identity, a forked or duplicated receipt type, missing
+predecessor, wrong actor, stale hash/head/tree, or changed evidence fails closed.
+The ordered chain is owner-plan adoption; independent semantic and
+false-success/security review; eligible non-author exact-head approval; owner
+exact-byte approval; protected merge and merged-main checks; and a distinct
+accepted-current transition issue/PR. The owner identity is taken from live
+GitHub user ID `291542729`; reviewer identity and repository association are
+taken from GitHub metadata, never self-asserted receipt fields. Each receipt
+retains provider authority `NONE`, egress false, and spend USD `0`; only the
+last transition may change program activation to `ACCEPTED_CURRENT`.
 
 Certification and activation require all of the following:
 
-1. Zero missing, duplicate, conflicting, or unclassified source atoms.
+1. Zero missing, conflicting, or unclassified requirement occurrences and zero
+   unresolved logical-requirement duplicates; repeated focus/context signatures
+   remain source occurrences but require an independent resolution census.
 2. Every V1 state machine, threshold, prohibition, role, evidence duty,
    failure rule, and closeout duty remains represented without silent
    weakening.
@@ -67,18 +172,21 @@ Certification and activation require all of the following:
 6. `make quality` plus exact hosted push, pull-request, and merge topology.
 7. Protected merge, successful merged-main checks, status reconciliation, and
    issue disposition.
-8. A separately governed accepted-current transition that supersedes V1 and
-   activates V2; this proposal can never perform that transition itself.
+8. A separately governed accepted-current transition that atomically activates
+   V2, supersedes V1, completes all seven compatibility-migration surfaces at
+   its merge time, and adds V2 to required reading through the protected
+   agent/playbook hash transition. No intermediate state is valid and this
+   proposal can never perform that transition itself.
 
-After activation, V2 must be added to repository required reading through the
-protected agent/playbook hash-transition workflow. Any agent-context copy is
-`SHADOW_ONLY`, hash-bound, and non-authoritative.
-
-“Exhaustive” means exhaustive against the frozen repository and owner sources
-enumerated in `SupersetMappingV2`. Future provider facts use governed intake
-and revalidation; the program does not claim knowledge of every future vendor.
+Any agent-context copy remains `SHADOW_ONLY`, hash-bound, and non-authoritative.
+Once certified, “exhaustive” means exhaustive only against the enumerated frozen
+repository, owner, and external-authority sources. It does not claim exhaustive
+coverage of the restricted G3 evidence tree until G3 inventory and
+reconciliation pass, or knowledge of every future vendor.
 
 ## 2. Product definition and complete taxonomy
+
+<!-- MPV2-DESTINATION:MPV2-SECTION-2 -->
 
 NarraTwin converts approved project knowledge into a grounded,
 audience-specific walkthrough delivered by a fictional presenter or the
@@ -126,12 +234,30 @@ The following layers remain distinct:
 | ADR 0079 Plan A/Plan B | Continuous-presenter and editorial research alternatives |
 | DT0–DT7 | Personal Digital Twin governance and capability sequence; new Cut 5 |
 
-New Cut 5 is the owner's personal Digital Twin. Historical enterprise Cut 5
-becomes new Cut 6 and retains immutable alias `LegacyCut5Enterprise`. Old Cut 5
+Stages govern when classes of engineering work are permitted. Product Mode 1
+covers prepared batch script, voice, presenter, composition, and delivery;
+Product Mode 2 adds realtime conversational orchestration. Cuts are
+user-visible acceptance increments and never replace stages. Lane A is only the
+controlled Cut 1 task sequence. Historical checkpoints remain evidence
+progressions, ADR 0079 alternatives remain research paths until selected by an
+applicable contract, and DT0–DT7 together constitute new Cut 5.
+
+New Cut 5 is the owner's personal Digital Twin. At the accepted-current
+effective time, historical enterprise Cut 5 becomes new Cut 6 and retains
+immutable alias `LegacyCut5Enterprise`. Old Cut 5
 evidence cannot satisfy new Cut 5. It cannot qualify new Cut 6 without explicit
 migration validation. Checkpoints 2, 3B, and 3C map into new Cut 5. Schema,
-roadmap, status, test, issue-template, event, and traceability references migrate
-atomically; negative tests reject legacy-number ambiguity after effective time.
+roadmap, status, test, issue-template, event, and traceability references must
+migrate atomically in that transition; negative tests reject legacy-number
+ambiguity after its effective time.
+
+Only after the accepted-current transition will the former five-cut roadmap
+singleton be superseded by the six-cut taxonomy;
+its historical evidence remains immutable and keeps its typed legacy aliases.
+At that same effective time, Legacy E-017 `Cuts 1/5 / UX/Legal` will be
+relocated as `Cuts 1/6 / UX/Legal`:
+controlled-demo accessibility stays in Cut 1, while public-use legal and
+commercial review belongs to Cut 6.
 
 Locked decisions:
 
@@ -156,37 +282,49 @@ Locked decisions:
 
 ## 3. Universal prototype-before-code gate
 
+<!-- MPV2-DESTINATION:MPV2-SECTION-3 -->
+
 The gate applies before every new or materially changed provider, model,
-revision, endpoint, host, account class, region, access surface, translation,
+revision, endpoint, host, account class, region, access surface—including web,
+MCP, CLI, SDK, direct HTTP, OAuth, service credential, and BYOK—translation,
 TTS, voice/face clone, Digital Twin, lip repair, fresh render, B-roll,
 composition, caption, storage/deletion workflow, realtime transport, queue,
 webhook/polling route, hosting/CDN route, scaling architecture, duration,
 aspect, resolution, language, identity class, disclosure, or data-governance
 claim.
 
-No provider-specific product adapter, SDK dependency, migration, queue,
-feature flag, credential plumbing, UI integration, or production code may
+No product/runtime adapter, SDK dependency, migration, queue, feature flag,
+credential plumbing, UI integration, or provider-specific production code may
 start before its proof passes. Permitted pre-proof work is limited to
 governance records, frozen fixtures, measurement tools, local deterministic
 prototypes, and one bounded disposable provider invocation outside product
 modules after separate authority.
 
 `ArchitectureHypothesisV1` records ownership, expiry, one falsifiable claim and
-excluded claims; exact legal entity/product/host/API/model/region/account and
-prototype/intended surfaces; auth type using only opaque `SecretRefV1`; exact
+excluded claims. Ownership includes hypothesis ID, owning cut, component role,
+accountable owner, independent reviewer, and expiry. Provider identity includes
+the exact legal entity, product, serving host, API version, endpoint,
+model/revision, region, account/tier, prototype surface, and intended production
+surface. Authentication records only its type and an opaque `SecretRefV1`.
+The hypothesis also records exact
 input/output requirements and hashes; identity, consent, disclosure, language,
 aspect, duration, native-resolution, latency, privacy, retention, deletion and
 cost requirements; fixture, calibration, thresholds, rubric, failure matrix,
-kill criteria; call/output/seconds/timeout/poll/retry/fallback/concurrency/top-up
-and worst-case debit limits; rights/training/watermark/subprocessor/data-location
-rules; and the exact claim envelope a pass may support.
+kill criteria; maximum create calls, returned outputs, generated seconds,
+timeout, polling, retry, fallback, concurrency, top-up, cash exposure, and
+worst-case debit; training use, commercial rights, watermark, subprocessors,
+data location, deletion, and revalidation rules; and the exact claim envelope a
+pass may support.
 
 `PrototypeQualificationReceiptV1` records hypothesis/calibration hashes,
 official sources and access dates, authenticated account facts and conflicts,
 non-secret authority and `SecretRefV1`, redacted canonical request hash,
-provider job/result IDs and status history, provider-original and transformed
-artifact hashes, requested/native/encoded properties, objective and human
-results, reservation/debit/invoice evidence, retention/deletion results,
+provider job/result IDs, timestamps, status history, and bounded
+polling/webhook evidence. It keeps provider-original, transformed, and delivery
+artifact hashes distinct; records requested, provider-native, and encoded media
+properties; and includes technical probes, human decisions, exact evidence
+hashes, cost reservation/debit/invoice, and retention/deletion results. It also
+records
 prototype/direct-API/target-risk results, limitations, expiry, and disposition.
 
 Allowed dispositions are `PREFLIGHT_BLOCKED`, `GOVERNANCE_BLOCKED`,
@@ -217,6 +355,23 @@ disconnect, or 5xx after possible acceptance becomes `BILLABLE_UNKNOWN`; the
 reservation remains and duplicate requests are prohibited pending
 reconciliation.
 
+The V1 one-conditional-retry allowance is strengthened to zero create retries
+for prototype and provider-qualification operations wherever controllable; all
+V1 non-retryable failure categories remain non-retryable. All prior authority
+under the US$100 audition ceiling is exhausted; the ceiling itself remains an
+outer audition bound until an explicit owner amendment, and every future
+upload, create call, or spend requires a new exact reservation and authority.
+Existing disabled avatar-adapter defaults `max_retries=1` and
+`retry_can_create_billable_job=True` are a non-activatable implementation gap:
+they remain disabled in G1 and must be corrected to zero create retries and no
+billable duplicate create in a post-proof bounded implementation issue before
+provider activation.
+
+Every create request consumes the authorized attempt even when the provider
+rejects it at HTTP level. A failed hypothesis remains immutable negative
+evidence and must be eliminated or explicitly reclassified; it never silently
+becomes another attempt.
+
 Repair, upscale, crop, remux, audio replacement, and scene generation are
 separate hypotheses. A failed hypothesis is immutable negative evidence. A
 second experiment requires a material causal change in provider/host,
@@ -231,31 +386,44 @@ perform root-cause analysis, and rewrite the failure matrix. A shared artifact
 may prove multiple claims only when all claims and thresholds were frozen
 before generation.
 
-Provider web UI proves only manual feasibility; MCP proves only its official
-controlled surface; CLI proves only its documented API wrapper; OAuth proves
-authorization; direct API/official SDK is the required scalable surface but
-still needs account, quality, cost, deletion, and human proof. Browser
-automation or scraping for membership exploitation or production generation is
+Provider web UI proves only manual feasibility and visual review; it cannot
+prove production API behavior, automation, idempotency, service authentication,
+or scalable cost. An official MCP connector proves only its research or
+controlled-operator workflow; it cannot prove backend runtime suitability
+unless it is itself the documented production API. CLI proves a reproducible
+operator experiment or direct-API wrapper; it cannot prove production support
+when it automates consumer UI or hides lifecycle semantics. OAuth proves only
+delegated authorization for a documented API and is not a rendering interface.
+Direct API/official SDK is the required scalable surface but still needs exact
+account, quality, cost, lifecycle, deletion, and human proof. Browser automation
+or scraping for membership exploitation or production generation is
 prohibited.
 
 ## 4. Canonical current inputs, evidence, and gaps
 
+<!-- MPV2-DESTINATION:MPV2-SECTION-4 -->
+
+### Canonical accepted input authority
+
 Accepted fictional presenter inputs are immutable:
 
-| Presenter | Image hash | Voice | WAV SHA-256 | Duration |
-|---|---|---|---|---:|
-| Meera | `d8c4ecb2acadcc3440b7be345b5620717ea0644a5643e41986b9d3f2ea1c30d1` | Despina | `177b2755e300c8fcd52e2e84c642e130b9a8dab6ca454fb033205dfe9c6a7c7c` | 117.981917 s |
-| Myra | `46390ac627662bff38c9bb4ec904520a808e42030ff698741b5c32519f0be4c3` | Leda | `cd9b7a811108910168a13c88a8e7987c80ec78014c7554a3cf219d76f2c4664c` | 127.661917 s |
-| Raj | `f9060b3c0fb5d9cf0231f8142fff17a88c61537d12c6b90ad6be359085c86413` | Achird | `92c580762d7b358e7c67582ee1900a04e6e2b9593e48962651196b876c54216e` | 117.701917 s |
+| Presenter | Canonical image path | Image hash | Voice | WAV SHA-256 | Duration |
+|---|---|---|---|---|---:|
+| Meera | `narratwin-synthetic-presenter.webp` | `d8c4ecb2acadcc3440b7be345b5620717ea0644a5643e41986b9d3f2ea1c30d1` | Despina | `177b2755e300c8fcd52e2e84c642e130b9a8dab6ca454fb033205dfe9c6a7c7c` | 117.981917 s |
+| Myra | `cut1/myra-waist-up.webp` | `46390ac627662bff38c9bb4ec904520a808e42030ff698741b5c32519f0be4c3` | Leda | `cd9b7a811108910168a13c88a8e7987c80ec78014c7554a3cf219d76f2c4664c` | 127.661917 s |
+| Raj | `cut1/raj-waist-up.webp` | `f9060b3c0fb5d9cf0231f8142fff17a88c61537d12c6b90ad6be359085c86413` | Achird | `92c580762d7b358e7c67582ee1900a04e6e2b9593e48962651196b876c54216e` | 117.701917 s |
 
 Canonical narration SHA-256 is
 `3edffc6169460546ae0bdee867fdeaf3c0ae383535e2976e0333f39c03ff614e`.
 TTS is Google `gemini-2.5-pro-tts`, language `en-IN`, approved EU endpoint
 posture, mono PCM16 LINEAR16 WAV at 24 kHz. The accepted T05 SRT is source
 caption authority; delivery uses a separately generated, exact-MP4-timeline
-UTF-8 WebVTT. SRT and VTT cannot silently substitute. A new voice reopens T05
-technical/listening acceptance. A provider-created or modified face reopens
-identity, provenance, rights, and visual acceptance.
+UTF-8 WebVTT. SRT and VTT cannot silently substitute. A provider-native or
+newly generated voice reopens T05 technical and exact-hash listening
+acceptance. A provider-created or modified face reopens identity, provenance,
+rights, and visual acceptance.
+
+### Current implementation evidence
 
 T01–T05 are complete. T06 has zero accepted real presenter cells; T07 browser
 integration and T08 exact-artifact closeout are incomplete. Stages 4–7 prove
@@ -263,6 +431,11 @@ local/mock paths and provider-neutral boundaries, not real media, clones,
 hosting, or production. Existing `AvatarVideoProvider` and `TTSProvider`
 boundaries are reused or minimally separated only after an
 intended-versus-implemented review; duplicate abstractions are prohibited.
+Historical Checkpoint 3A local/mock evidence exists, but Checkpoints 3B and 3C,
+real clone integration, and production remain unproved. No presenter provider
+is selected or activated.
+
+### Restricted diagnostic evidence
 
 Five reviewed restricted artifacts remain diagnostic evidence under opaque
 references `RE-VID-GWM1-29S`, `RE-INPUT-GWM1-NORM-1080`,
@@ -270,59 +443,101 @@ references `RE-VID-GWM1-29S`, `RE-INPUT-GWM1-NORM-1080`,
 The public repository stores only their supplied hashes, sanitized technical
 facts, and observations—not personal paths, signed URLs, biometric data,
 profile IDs, or secrets.
+The three repair outputs are distinct 1920×1080 exact-audio MOV derivatives.
 
 - GWM-1 fresh 29.5-second output, hash
   `fc0e95f0c2593745028042d399307df7a76ea79488f8a113743f29b6baeea09d`,
   was 1088×704/24fps H.264/AAC. The owner observed poor lip sync, half-body
   crop, insignificant hands, and no real scene integration. Its debit is
-  `UNRECONCILED`; USD 0.02 is only an inherited estimate.
+  `UNRECONCILED`; USD 0.02 is only an inherited estimate. Its Runway job ID is
+  `9f0d09c2-4a6d-47f3-a653-e0288b7ad340`.
 - Silent normalized repair input, hash
   `d95756a4689dcde7f044b062f1cd7924c909df0d6b73398ebd4e6b85c30cab42`,
   is an intentional video-only 1920×1080 local transform and never a final
   output. Provider-inference cost is USD 0.
 - LatentSync exact-audio repair, hash
   `f18a2d6461ccfca9ae768f4130d6be2d2ff62b63c04451c479ee4b73a705c183`,
-  improved sync but retained an owner-observed difficult-phrase problem. USD
-  0.20 is a list-price estimate, not a settled debit.
+  modified the existing GWM video rather than creating a fresh performance. It
+  improved sync but retained an owner-observed problem around the identified
+  `Stackline` phrase. USD 0.20 is a list-price estimate, not a settled debit.
 - Sync 2 Pro exact-audio repair, hash
   `87b00d335de9c809fcbad1a54dfe880df61a0695bbc5f4ab43365378bd2c5452`,
-  was preferred by the owner for lip sync. USD 2.46 is an estimate.
+  repaired the same existing video and was preferred by the owner for lip sync.
+  USD 2.46 is an estimate.
 - Sync 3 exact-audio repair, hash
   `fd5ff5c3675b1c00714759ac45226a4b5ae2cfdbf214686d4a854708b866c5b6`,
-  was assessed as materially similar to Sync 2 Pro. USD 3.93 is an estimate.
+  repaired the same existing video and was assessed as materially similar to
+  Sync 2 Pro. USD 3.93 is an estimate.
 
-The only matching Runway receipt belongs to a different 14.747-second job and
-cannot prove the 29.5-second job's cost. fal result JSON is not authenticated
+The only matching Runway receipt belongs to the different 14.747-second job
+`e360efe9-44c6-40be-b6b3-f4a6a02b9e20` and records a 500→498-credit balance;
+it cannot prove the cost of 29.5-second job
+`9f0d09c2-4a6d-47f3-a653-e0288b7ad340`. fal result JSON is not authenticated
 debit evidence. USD 0.20, USD 2.46, USD 3.93, and USD 6.61 aggregate remain
-estimates. Rejected/failed submissions have no known charge. Local download,
-normalization, probing, and exact-audio remux are USD 0 inference operations;
-tax, FX, subscriptions, funding, unused credit, storage, egress, engineering,
-and human review remain separate.
+estimates. The rejected first Sync 3 submission and the failed 59-second fal
+upload are separate events and neither has a known generation charge. Local
+download, normalization, probing, and exact-audio remux are USD 0 inference
+operations; tax, FX, subscriptions, funding, unused credit, storage, egress,
+engineering, and human review remain separate.
+
+### Evidence inventory and immediate security duties
 
 G3 must create an immutable catalog for every file in the restricted evidence
-root with opaque ID, classification, provider/model/host/job/time where known,
+root with opaque ID, explicit source/input/output/intermediate classification,
+provider/model/host/job/request/time where known,
 hash/bytes/probe/native-vs-transformed/audio/lineage, separate user and
 automated observations, acceptance state, cost class, privacy class,
 retention/deletion, and public-sanitization status.
 
 Before any further provider work, Security/Privacy inventories credential-like
-filenames and metadata without reading or publishing secret values; decides
-rotation/revocation; verifies nothing is tracked, staged, copied, improperly
-backed up, or externally indexed/synchronized; and preserves possible evidence
-until owner/Security retention and rotation decisions. Public Git records only
-the sanitized disposition.
+filenames and metadata—including the restricted Google ADC and credential
+database filenames and related logs—without reading or publishing secret
+values; decides rotation/revocation; verifies nothing is tracked, staged,
+copied, improperly backed up, or externally indexed/synchronized; and preserves
+possible evidence until owner/Security retention and rotation decisions. Public
+Git records only the sanitized disposition; credential contents remain unread
+and unpublished.
 
 ## 5. Six-cut product roadmap
 
+<!-- MPV2-DESTINATION:MPV2-SECTION-5 -->
+
 ### Cut 1 — Fictional English prepared walkthrough
+
+<!-- MPV2-DESTINATION:MPV2-CUT1 -->
 
 A reviewer runs the grounded flow locally and sees Meera, Raj, and Myra deliver
 accepted English narration in six independent presenter × aspect cells.
+Upon V2 activation, the former Meera-primary and Raj/Myra-fallback order will
+be superseded: Meera, Raj, and Myra will be three co-required independently
+accepted presenter cells, not fallback substitutions. The V1 Meera-cell minimum of one accepted WAV and two
+independently generated aspect MP4s is retained, while V2 strengthens aggregate
+Cut 1 to three presenter-specific accepted WAVs and six independently accepted
+presenter/aspect MP4 cells. Upon V2 activation, the old categorical Cut 1
+exclusion of paid providers will be superseded only for separately authorized bounded provider
+qualification and accepted real-media proof; paid providers remain optional
+and disabled in local, development, test, and CI environments.
+
+The V1 90.000–120.000-second threshold is Meera-specific and remains preserved.
+V2 adds presenter-specific exact accepted WAV authority for Meera at 117.981917
+seconds, Myra at 127.661917 seconds, and Raj at 117.701917 seconds; a
+configurable local default does not override those exact accepted durations.
+
+<!-- MPV2-DESTINATION:MPV2-CUT1-MEERA-CELL -->
+
+V1 sections 20–35 and legacy Meera-only narration/API duties remain effective
+until V2 activation. Under activated V2 they form the Meera-specific Cut 1 cell
+contract unless an exact clause is separately superseded, and no longer define
+aggregate Cut 1 presenter count. A legacy
+Meera-only `CUT1_REAL_MEDIA_ACCEPTED` event cannot complete V2 Cut 1: all six
+cells, T07 browser integration, and T08 exact-artifact closeout must pass.
+
 Deliver each cell with source snapshot, context, script, claims/citations,
 evaluator and run lineage; accepted image/voice/WAV/caption/video/composed MP4/
 WebVTT/media/disclosure/cost/deletion evidence; real-screen choreography where
 behavior is demonstrated; and one non-intercepted browser route for playback,
 captions, citations, evidence, checksum-identical download, and replay.
+Every accepted media artifact also has an exact-hash human decision.
 
 The current contract uses one continuous presenter job per aspect. Editorial
 segmentation requires an owner-approved amendment. Landscape is 1920×1080 and
@@ -332,14 +547,17 @@ priming. Truncation, frozen/black intervals, unintended silence, watermark,
 audio substitution, and identity drift are prohibited. Each MP4 has one
 exact-hash WebVTT.
 
-Acceptance requires gaze at least 80% with no unexplained off-camera interval
+Acceptance requires camera-aligned gaze for at least 80% of eligible speaking
+time, with no unexplained off-camera interval
 over two seconds; lip-sync absolute-offset P95 at most 80ms and longest
 continuous interval above 80ms at most 200ms; caption accuracy and spoken-word
 coverage at least 98% with no uncaptioned speech over one second; 100% material
 claim citations; zero accepted unsupported claims; 100% refusal on deliberately
-unsupported cases; zero identity/look/background/presenter violations; zero
-severe limb/finger defects; no unnecessary identical gesture more than twice;
-WCAG 2.2 AA including 4.5:1 normal-text contrast; governed script/evaluation
+unsupported cases; zero identity, face, clothing, hair, background, or
+presenter-switch violations; zero severe malformed-limb/finger defects; no
+identical unnecessary gesture more than twice consecutively;
+WCAG 2.2 AA keyboard, screen-reader, focus, caption, and reduced-motion
+behavior, including 4.5:1 normal-text contrast; governed script/evaluation
 P95 at most 20 seconds; preview within five seconds of committed readiness; and
 two-run canonical script/binding/evaluator/manifest parity.
 
@@ -356,47 +574,86 @@ Selection-study ratings cannot be reused for confirmation. Two qualified
 reviewers score every required dimension; acceptance requires zero confirmed
 failure, zero uncertainty, and at least one scorable event per dimension.
 
+The current Cut 1 gap remains T06 with no accepted cell; T07 and T08 have not
+started. Existing GWM, HeyGen, VEED, Aurora, and repaired outputs remain
+diagnostic or rejected evidence. Even passing presenter media still requires
+the T07 browser path and T08 exact-artifact acceptance and closeout.
+
 ### Cut 2 — Multilingual prepared walkthrough
+
+<!-- MPV2-DESTINATION:MPV2-CUT2 -->
 
 Qualify Hindi first, then one language at a time. English cannot qualify another
 language. Every activation adds six independently accepted cells and a newly
 frozen human protocol. Twenty-five Priority 1 fixtures remain represented;
 nine Priority 2 languages remain catalogued and refuse until qualified.
 
-Per-language evidence includes BCP 47 identity, English/native names, script,
-direction and region; approved English and native target; back-translation;
-exact segment mapping; citations/context/claim support/source run/evaluation;
-glossary, transliteration and proper-noun policy; pronunciation lexicon;
-voice/model manifest; lossless audio and derivatives; ASR/alignment; SRT and
-MP4-bound WebVTT; RTL/layout evidence; fidelity/leakage/cultural/voice/sync
-reports; native-speaker review and owner clone review; at least 50 labelled
-cases per activated language; and exact accepted-output cost.
+The outcome is the complete Cut 1 path operating independently for each
+approved language without loss of meaning, grounding, identity, voice quality,
+pronunciation, captions, or layout. Every catalog entry records an explicit
+support state; a local/mock fixture cannot claim real-provider language
+acceptance.
+
+Per-language evidence includes BCP 47 tag, English and native names, native
+script, direction, regional variant, and support state; approved source English,
+native-script target text, English reference/back-translation, segment IDs, and
+exact source-to-target mapping; citation markers/indexes, context references,
+claim-support IDs, source run, and evaluation ID; protected glossary and
+terminology report; transliteration policy and explicit English proper-noun
+handling; pronunciation lexicon for names, numbers, acronyms, technical terms,
+and brand terms; voice/model/version manifest; lossless canonical audio and
+each provider-transcoded derivative; forced-alignment/ASR transcript and timing
+evidence; source SRT and MP4-bound WebVTT; RTL layout and wrapping evidence;
+translation fidelity, omission/insertion, language leakage, cultural
+appropriateness, voice consistency, and lip-sync reports; native-speaker review
+plus owner review for cloned voice; at least 50 separately labelled cases per
+activated language; and exact cost by language, presenter, aspect, generated
+minute, and accepted output.
 
 No claim may be missing, added, unsupported, or mistranslated. Evidence binding,
 protected terms, names, numbers and acronyms remain exact. Required native
 script cannot be romanized; mixing must be approved; captions, voice, video,
 listening, and unsupported-language fail-closed behavior meet Cut 1 floors.
+A voice and its video require independent listening and media review; success
+in one never substitutes for the other.
+A provider-native voice change reopens T05-equivalent technical and listening
+approval. The current repository path is local/mock; no real multilingual
+voice/video cell has passed provider, native-speaker, cost, retention, and
+deletion gates.
+An unsupported catalog language fails closed before any provider egress.
 
 ### Cut 3 — Grounded realtime Q&A
 
+<!-- MPV2-DESTINATION:MPV2-CUT3 -->
+
 Provide an authenticated private fictional-presenter session with ASR timing
 and confidence, retrieval and snapshot evidence, answer plan/text/citations/
-evaluation/abstention, accepted-text-to-spoken-output binding, audio/avatar
-stream, turn/interruption events, cost, and retention/deletion. Language,
-audience, depth, and style materially affect answers. No cross-session memory
-exists without a separate approved memory contract.
+evaluation/abstention, accepted-answer-text-to-ASR-verified-spoken-output
+binding, audio/avatar stream, turn/interruption events, cost, and retention/
+deletion. Language, audience, depth, and style materially affect answers. No
+cross-session memory exists without a separate approved memory contract.
 
 First proof is English, private, at most 120 seconds, exactly three turns: a
 cited supported question; an interrupted then shortened/corrected response;
 and an unsupported question requiring abstention. There is no reconnect or
 session retry. Connection is at most 10 seconds, first response audio at most
 three seconds after turn completion, interruption stops output within 750ms,
-and there are zero uncited claims/leaks with usable A/V sync and complete event/
-cost evidence. Before implementation, freeze ASR accuracy, end-to-end latency,
-packet loss, reconnect, privacy, idle/minimum billing, session cap, quota, and
-concurrency.
+and there are zero uncited material claims, correct abstention, no cross-session
+leakage, usable A/V sync, and complete event/cost evidence. Before
+implementation, freeze ASR accuracy, end-to-end latency, packet loss, reconnect,
+privacy, idle/minimum billing, session cap, quota, and concurrency.
+
+Product Mode 2 remains future work. Batch rendering or avatar success cannot
+qualify realtime behavior, and playground, MCP, or consumer-web success cannot
+qualify the intended production transport.
 
 ### Cut 4 — Rich motion, real scenes, and provider portability
+
+<!-- MPV2-DESTINATION:MPV2-CUT4 -->
+
+The outcome is richer fictional-presenter head, body, hand, environmental, and
+editorial behavior without sacrificing grounding, identity, accessibility, or
+provider portability.
 
 Plan A is continuous presenter-led video and is the only unchanged-T06 route.
 Hedra Character-3 remains contract-blocked until exact terms/DPA satisfy
@@ -409,22 +666,40 @@ locally with rejected footage and cannot satisfy current T06 until amendment
 defines presenter visibility, shot coverage, seams, identity, audio/caption
 continuity, factual-screen rules, and human acceptance.
 
-Deliver `PresenterReferencePackV1`, `WalkthroughChoreographyManifestV1`, an
-optional `BrollProvider`, provider-neutral deterministic composition, separately
-approved expanded framing, same-build switching/fallback/canary/rollback and
-artifact portability, real-screen truth, and independent aspect layouts. Every
-motion/body/scene dimension must be scorable; malformed hands, sliding,
-collapse, loops, decoupling, drift, and incoherent lighting/perspective/depth
-fail. Provider switching cannot change script/audio/citations/core behavior.
+Deliver `PresenterReferencePackV1`, which separates identity core, look
+variants, expressions, motion, blocking, scene, product truth, audio, and
+captions; `WalkthroughChoreographyManifestV1`; an optional `BrollProvider`;
+provider-neutral deterministic composition; full-body or expanded framing only
+after separate asset and motion approval; same-build switching, compatible
+fallback, canary, rollback, and artifact portability; real-screen truth; and
+independent aspect layouts. Every motion/body/scene dimension must be scorable;
+malformed hands, sliding, collapse, repeated loops, face/body decoupling, or
+identity drift fail. Lighting, perspective, background and foreground
+integration, and environmental depth must pass human review. Provider switching
+cannot change script/audio/citations/core behavior.
 Lip repair cannot conceal failed body, scene, hand, or identity behavior.
 
+Neither Plan A nor Plan B is selected. Plan A remains contract-blocked; Plan B
+is locally prototypeable but inadmissible for unchanged T06 until the required
+contract amendment is owner-approved.
+
 ### Cut 5 — Owner personal Digital Twin
+
+<!-- MPV2-DESTINATION:MPV2-CUT5 -->
 
 The owner's governed likeness and voice may present prepared, screen-guided,
 multilingual, and—after Cut 3—private grounded interactive walkthroughs. It is
 a presentation-layer likeness/voice clone, not the owner's mind, personality,
 memory, judgment, legal authority, signature, or ability to act. It cannot
 claim to be the live owner, act autonomously, or silently learn from sessions.
+Prepared owner-avatar narration, real-screen-guided prepared demonstrations,
+multilingual prepared owner-avatar walkthroughs, and post-Cut-3 grounded
+private-room Q&A are separate Cut 5 product surfaces. An expanded-motion owner
+version is permitted only after Cut 4; this motion dependency does not permit
+Cut 4 to substitute for the mandatory Cut 1, Cut 2, and Cut 3 capability
+dependencies.
+Every screen-guided demonstration binds the avatar, identified real-screen
+actions, accepted narration, captions, citations, and disclosure.
 
 | Step | Deliverable | Exit condition |
 |---|---|---|
@@ -446,13 +721,17 @@ policy.
 
 Controls include recent owner authentication and step-up/MFA for enrollment,
 generation, export, revoke, and delete; liveness/replay protection; owner-only
-first implementation; restricted biometric classification and least retention;
+first implementation, with arbitrary third-party enrollment outside Cut 5;
+restricted biometric classification and least retention;
 encryption/key custody/ACL/audit/backup/index/cloud-sync/restore controls; an
 immediate kill switch; immediate revocation of generation/playback/sharing/
 export; `DELETION_PENDING` on provider deletion failure; provider/CDN/cache/
 backup cascade with minimal tombstone; reconsent after material provider/model/
 purpose/audience/destination/likeness/voice changes; visible disclosure for
-invite/public derivatives; and preservation of required marks/credentials.
+invite/public derivatives; and preservation of provider-required watermarks or
+content credentials.
+Provider-required watermarks or content credentials are never removed,
+cropped, or concealed.
 
 Prohibited uses include open-domain speech, political persuasion, medical/
 legal/financial representation, signatures/transactions/approvals/commitments,
@@ -460,67 +739,98 @@ autonomous action, fraud/impersonation/harassment/deceptive presence, silent
 memory/training, or unapproved expansion to a language, audience, project, or
 destination.
 
+No owner biometric capture, upload, enrollment, clone profile, generated
+output, or provider-deletion proof exists today. Cut 5 defines and sequences
+those operations but authorizes none of them.
+
 ### Cut 6 — Enterprise and commercial readiness
 
+<!-- MPV2-DESTINATION:MPV2-CUT6 -->
+
 Operate accepted Cut 1–5 capabilities for governed tenants and commercial/
-public use only after multi-tenant authorization with 100% cross-tenant denial,
-tenant BYOK/operator separation, SLOs/SLIs/budgets/alerts/runbooks/on-call/
-incidents, 99.5% internal and 99.9% commercial availability targets, RTO at
-most four hours and RPO at most 15 minutes proved by drills, capacity/queue/
-backpressure/timeout/rate/quota/storage/egress/cost evidence, provider canary/
-migration/drain/retirement/rollback, SBOM/license/scans/signing/provenance/
-notices, residency/DPA/retention/deletion/legal-hold/export/audit/compliance,
-WCAG 2.2 AA, support/deprecation/vendor-exit/disaster recovery, commercial
-billing/launch review, and an independent final human launch decision.
+public use only after multi-tenant authorization and 100% cross-tenant denial
+tests; tenant BYOK and operator-credential separation; SLOs, SLIs, error budgets,
+alerts, dashboards, runbooks, on-call, incident response, and postmortems; 99.5%
+internal and 99.9% commercial availability targets; RTO at most four hours and
+RPO at most 15 minutes proved by drills; capacity/queue/concurrency/backpressure/
+timeout/rate-limit/quota/storage/egress/cost evidence; provider/model canary,
+migration, drain, retirement, and rollback; SBOM, dependency/license review,
+image scans, signing, provenance, and third-party notices; residency/DPA/
+retention/deletion/legal-hold/export/audit/compliance review; WCAG 2.2 AA and
+public accessibility; support/maintenance/deprecation/vendor-exit/disaster
+recovery plans; commercial pricing/billing boundaries and an approved launch
+checklist; an independent final release review; and a separate explicit human
+launch decision.
 
 Arbitrary-user Digital Twin enrollment remains separately approved. Investigate
 at 5% relative quality regression, 10% input or latency distribution shift, or
-any safety/privacy/provenance regression. Two failing windows block promotion.
+any safety/privacy/provenance regression. Two consecutive failing windows block
+promotion.
 Restore the last accepted model/prompt/index/media bundle within 15 minutes in
 an operational environment. Uncontrolled online self-training or agent-led
 production policy/model changes are prohibited.
 
+These enterprise requirements are specified but not validated. No public,
+commercial, production, or release-readiness claim is currently permitted.
+
 ## 6. Media, duration, and prototype matrix
+
+<!-- MPV2-DESTINATION:MPV2-SECTION-6 -->
 
 The next sync/render proof uses a genuinely uninterrupted sample-aligned trim
 of canonical Meera audio, provisionally 0.000–29.494 seconds, with no opening/
-closing stitch, regenerated narration, speed change, or altered transcript.
+closing concatenation or stitch, regenerated narration, speed change, or
+altered transcript.
 Freeze sample indices, WAV/transcript/caption hashes, two complete consecutive
 caption blocks, phoneme/pause coverage, and the owner-identified difficult
-phrase before generation. Existing stitched 29.5-second evidence remains
+`Stackline` phrase before generation. Existing stitched 29.5-second evidence remains
 diagnostic.
+
+Upon V2 activation, the former sample-addressed 15-second audition fixture will
+be superseded by this continuous 0.000–29.494-second Meera proof, including two complete consecutive
+caption blocks and the owner-identified `Stackline` difficult phrase.
 
 | Component | Smallest proof | Required target-risk proof before code |
 |---|---|---|
-| Local product | Unseen non-NarraTwin upload-to-browser mock flow | Accepted real media inserted without lineage/evaluation bypass |
+| Local product | Unseen non-NarraTwin project through upload, grounding, script, evaluation, language, media placeholders, citations, and browser replay | Accepted real media inserted without lineage/evaluation bypass |
 | Fresh presenter | Continuous 29.494-second Meera landscape, native 1080 requested | Full 127.661917-second Myra in independent landscape and portrait jobs |
 | Lip repair | Accepted 29.494-second source plus canonical audio | Full Meera 117.981917-second repair after accepted full visual source |
 | Screen choreography | One 29.494-second real-build action segment | Full walkthrough with every segment/source/action/caption bound |
 | Scene/B-roll | Zero-cost storyboard then one 6–10-second nonfactual beat | Complete editorial timing after contract amendment |
-| Language/voice | Separate 29–40-second English/Hindi hard passages | Full narration and six cells per activated language |
+| Language/voice | Separate 29–40-second English and Hindi passages covering names, numbers, acronyms, protected terms, pauses, and English proper nouns | Full narration and six cells per activated language |
 | Composition | Local 29.494-second landscape composition twice | Independent portrait plus current full duration |
 | Digital Twin | Full provider consent/liveness capture then private 29.494 seconds | Full prepared, multilingual, deletion, then realtime proof |
 | Realtime | Fictional 120-second three-turn private session | Owner clone only after Cut 3 and Cut 5 gates |
 | Storage/hosting | One private artifact with view/Range/seek/download/denial/expiry/deletion | Full artifacts, invite access, restore and anti-resurrection |
-| 300-second capacity | Local five-chapter proxy and ten simulated reservations | Paid five-minute generation only if still load-bearing and authorized |
+| 300-second capacity | Local five-chapter proxy with unique audio, captions, timecode, and ten simulated reservations | Paid five-minute generation only if still load-bearing and separately authorized |
 
 LatentSync, Sync 2 Pro, Sync 3, and Kling repair modify existing video; they do
 not create body, hands, performance, or environment. Full Meera LatentSync
-therefore requires: continuous 29.494-second repair pass; an accepted genuine
-117.981917-second visual source acceptable except sync; approved full-run
-estimate and authority; one full repair; exact-audio remux; and technical/owner
-review. No such full source exists. Current longest is 59 seconds at native
-1280×720; its 1920×1080 version is derived; fal upload returned HTTP 403; no
-59-second generation or known charge occurred. A 59-second test is a separate
-material duration hypothesis and cannot be called full length.
+therefore requires: continuous 29.494-second repair pass; an
+`acceptedFullDurationVisualSourceRef` identifying a genuine 117.981917-second
+source technically and human-accepted except lip sync; approved full-run
+estimate and authority; one full repair; deterministic exact-audio remux; and
+technical/owner review. No such full source exists. Current longest is 59
+seconds at native 1280×720; its 1920×1080 version is derived; the fal upload
+returned HTTP 403; no 59-second generation or known charge occurred. A
+59-second test is a separate
+material duration hypothesis, is permitted only after fal access is repaired
+and separate authority is recorded, and cannot be called full length.
 
 ## 7. Architecture and provider strategy
+
+<!-- MPV2-DESTINATION:MPV2-SECTION-7 -->
 
 The default modular flow is approved grounded script → localization → approved
 TTS/cloned audio → technical and human listening → exact-audio presenter →
 optional separately qualified repair → deterministic exact-audio remux →
 real-screen/editorial composition → timeline-bound captions/disclosure →
 quarantine/validation/commit → browser evidence.
+
+Provider-create retries are zero throughout prototype and unqualified
+operation. Storage retries and any later qualified, idempotent, billable-safe
+runtime retry policy remain separately typed and configured; a storage retry
+duty never authorizes a duplicate provider create request.
 
 NarraTwin retains project knowledge, retrieval, grounding, claims, citations,
 evaluation, scripts, translations, glossary, voices, captions, product truth,
@@ -532,7 +842,8 @@ than regenerated because a platform bundles alternatives.
 Integrated generation qualifies only with exact transcript, accepted identity
 and voice, exportable or deterministically verifiable audio, usable timings,
 reproducibility, cost, retention, deletion, provider revision, grounding, and
-screen truth. New faces/voices add cost and reopen identity/listening review.
+screen truth. New faces/voices add cost and reopen identity/listening review. A
+bundled platform price is never assumed to include accepted NarraTwin assets.
 
 ### Architecture and living-documentation trust
 
@@ -567,38 +878,58 @@ Candidate roles remain research-only until their exact hypotheses pass:
 - Prepared Digital Twin: HeyGen Digital Twin, Synthesia, D-ID, and materially
   qualified Runway/Google; no ranking before owner output/deletion/API proof.
 - Realtime Digital Twin: Tavus and documented realtime-avatar APIs, later only.
-- Cloned voice: verified personal voice APIs after consent/deletion/listening/
-  language proof.
-- Realtime speech: direct or layered ASR/LLM/TTS after latency, grounding,
-  privacy, billing, and vendor-layer proof.
+- Cloned voice: ElevenLabs verified personal clone and other qualified APIs only
+  after owner verification, consent, deletion, listening, and language proof.
+- Realtime speech/orchestration: Deepgram/Vapi or direct ASR/LLM/TTS components
+  only after latency, grounding, privacy, session billing, and vendor-layer
+  proof.
 - Manual tools such as CapCut, Adobe/DaVinci, Canva, and Envato remain human
   editorial tools absent a stable commercial API.
-- Local/open models require license, weights, dependency, GPU, quality, and
-  commercial-rights review. Unsuitable Wav2Lip/XTTS provenance/licenses remain
-  rejected until independently changed.
+- Local/open research includes OpenVoice, SadTalker, LongCat, and other
+  rights-cleared candidates, each requiring license, model-weight, dependency,
+  GPU, quality, provenance, and commercial-rights review. Unsuitable
+  Wav2Lip/XTTS provenance or licenses remain rejected until independently
+  changed.
 
 Runway routes remain separate: GWM-1 Avatars, Characters/GWM sessions, Act-Two,
-Gen-4 Turbo/4.5, WAN, and Seedance are not interchangeable. Web credits and API
-credits are separate. No subscription is purchased for one prototype; prior
-one-time GWM authority is exhausted.
+Gen-4 Turbo/4.5, WAN, and Seedance are not interchangeable. Characters/GWM
+sessions remain only possible realtime/Q&A research, not prepared-T06 proof.
+Act-Two requires a driving performance and does not generate that performance
+end to end. Gen-4 Turbo/4.5 are visual motion/scene routes and are not assumed
+to provide exact-audio lip synchronization. WAN is resolution-tiered
+scene/native-audio research whose duration and exact input behavior remain to
+be proved. Seedance 2.5 is multimodal scene/B-roll research whose exact-audio,
+duration, cost, and host-specific behavior remain to be proved. Web credits and
+API credits are separate. No subscription is purchased for one prototype;
+prior one-time GWM authority is exhausted.
 
-Seedance is a model family, not one contract; each host is assessed separately.
-fal is a hosting/API layer and each model has its own price/lifecycle.
+Seedance is a model family, not one contract; Runway, Higgsfield, and every
+other host are assessed separately by exact model revision, API surface, rate,
+account credits, retention, deletion, rights, watermark, and output. fal is a
+hosting/API layer and each hosted model has its own price and lifecycle;
+LatentSync pricing never generalizes to Sync or fresh-video models.
 Higgsfield may be a no-incremental-spend comparison only with legitimate active
 credits and exact pre-submit pricing; membership is not API entitlement. Kling
 must prove supplied audio, identity, duration, native 1080, and host economics.
 Aggregator convenience cannot outweigh processor, use, deletion, or portability
 risk.
 
-A supplied membership sheet is read-only. Freeze its dated snapshot/hash and
-record plan/owner/term/fee/credits/expiry/rollover/top-up/cancellation, surfaces
-and balance sharing, rights/training/retention/deletion/team terms, relevant
-capability/use, sunk versus incremental cost, and one of `USE_EXISTING`,
+A supplied Google Sheet is a read-only membership input. Freeze its dated
+snapshot/hash and
+record product/exact plan/account owner/renewal term/committed fee/credit
+balance/expiry/rollover/top-up/cancellation, web/API/MCP/CLI/OAuth surfaces and
+balance sharing, commercial use/training/retention/deletion/sharing/team or
+service-account terms, relevant
+NarraTwin capability, projected monthly utilization, sunk versus incremental
+cost, and one of `USE_EXISTING`,
 `MANUAL_ONLY`, `API_SEPARATE`, `DEFER`, `CANCEL_REVIEW`, or
 `PROCUREMENT_REQUIRED`. Reject unauthorized shared/reseller credentials. Claude
 Max is not API entitlement. Canva Education is not presumed commercial.
 Private consumer logins are not automated; unofficial MCP/CLI/browser routes
 cannot convert memberships into backend services.
+
+A membership is justified only when forecast usage beats pay-as-you-go after
+credit expiry, failed-output yield, maintenance, and lock-in are included.
 
 Selection refreshes official/account facts; eliminates governance/rights/data/
 duration/aspect/resolution/API failures without spend; shortlists at most three;
@@ -610,8 +941,11 @@ boundaries.
 
 ## 8. Cost model and spend governance
 
-Every comparison includes script, translation/review, voice/enrollment,
-face/avatar enrollment, driving performance, base generation, repair, B-roll,
+<!-- MPV2-DESTINATION:MPV2-SECTION-8 -->
+
+Every comparison includes script, translation/review, voice generation/clone
+enrollment, face/avatar creation/enrollment, driving performance, base
+generation, repair, B-roll,
 composition/captions/remux/transcode, storage/CDN/egress/retention, subscription/
 wallet minimum, credit expiry/stranding, rejected yield and allowed contingency,
 tax/FX/fees/refund, human/engineering/monitoring/support/migration/exit cost, and
@@ -622,9 +956,10 @@ one 300-second walkthrough, one Digital Twin enrollment plus output, realtime at
 prototype/production caps, and monthly accepted-yield workload.
 
 Extend rather than replace `PaidOperationV1` with `CostReconciliationV1` fields
-for list price, authenticated estimate, reserved maximum, balances, job/request,
-invoice/statement, refund, tax/FX, subscription allocation, unused-credit
-treatment, confidence/evidence state, and cumulative confirmed project spend.
+for list price, authenticated estimate, reserved maximum, observed balance
+before/after, job/request, invoice/statement, refund, tax/FX, subscription
+allocation, unused-credit treatment, confidence/evidence state, and cumulative
+confirmed project spend.
 
 `PaidOperationV1` remains:
 
@@ -638,6 +973,8 @@ INTENT → RESERVED → DISPATCHED
 `CANCELLED` and `SUPERSEDED` are terminal. Estimates are never actual spend.
 
 ## 9. Public contracts and internal interfaces
+
+<!-- MPV2-DESTINATION:MPV2-SECTION-9 -->
 
 G1 changes no customer API. After intended-versus-implemented review, preserve
 and minimally extend `ActiveProgramRouteV1`, `CapabilityStatusV1`,
@@ -656,11 +993,12 @@ Add or formalize only in their gated increments: `SupersetMappingV2`,
 `DigitalTwinProfileRefV1`, `DigitalTwinRevocationV1`,
 `DigitalTwinDeletionEvidenceV1`, and `RealtimeSessionManifestV1`.
 
-Choreography binds segment/script/citation/support, sample times, visual type,
-real-build state hash, action timeline, aspect-safe presenter layout, captions,
-seams, disclosure, and artifact lineage. Visual types are presenter, real
-screen recording, approved screenshot, deterministic diagram, or nonfactual
-B-roll.
+Choreography binds segment ID and script hash; citation and claim-support
+references; narration start/end samples; visual type; real-build/source-state
+hash; cursor/action timeline; presenter layout and aspect-specific safe area;
+caption references; transition/seam policy; disclosure profile; and exact
+artifact lineage. Visual types are presenter, real screen recording, approved
+screenshot, deterministic diagram, or nonfactual B-roll.
 
 Restricted evidence configuration is typed and environment-specific, never a
 hard-coded personal path. It defines storage/backend/opaque root, encryption/
@@ -670,7 +1008,8 @@ purge, and anti-resurrection. FileVault local storage may be a reviewed
 prototype binding, not production policy.
 
 Restricted archival masters retain internal provenance and no voluntary visible
-label unless required. Internal review derivatives use review disclosure.
+label unless provider or law requires it. Internal review derivatives use a
+review-only disclosure profile and immutable provenance.
 Invite-only derivatives visibly disclose Digital Twin/synthetic media. Public/
 commercial derivatives use jurisdiction/platform/destination-specific visible
 and metadata disclosure. Unknown destination blocks export/publication.
@@ -678,10 +1017,23 @@ Provider-required marks are never removed, cropped, or concealed.
 
 ## 10. Implementation sequence
 
+<!-- MPV2-DESTINATION:MPV2-SECTION-10 -->
+
 G1 opens this issue, works from fresh `origin/main` in an isolated worktree,
-records preflight/skills/intended-versus-implemented/path budget/reviewers,
-adds V2/mapping/taxonomy/compatibility and schema/mutation checks, preserves V1,
-and reconciles governance ledgers. It changes no product/provider/media code.
+reads all required repository governance documents, records preflight/skills/
+intended-versus-implemented/path budget/reviewers, adds V2/mapping/taxonomy/
+compatibility contracts and schema/mutation checks before activation, preserves V1,
+and updates the roadmap, phase plan, stage plan, status,
+architecture index, ADR registry, traceability, quality gates, third-party
+notices, and pull-request context to identify the non-activating proposal. It
+does not add V2 to required reading or execute the seven-surface taxonomy
+migration. The separately governed accepted-current transition must atomically
+migrate schema versions, roadmap references, status records, tests, issue
+templates, completion events, and traceability records at its merge time and
+add V2 to required reading through the protected agent/playbook hash transition
+in the same atomic change. No intermediate state is valid.
+G1 changes no
+product/provider/media code, credential handling, provider upload, or spend.
 
 G2 adds hypothesis/receipt schemas and validators; stale/expired/missing/API/
 target-risk/spend negative tests; and a quality gate that blocks implementation
@@ -695,15 +1047,18 @@ debits/invoices; and separates user observations from objective acceptance.
 Nothing is deleted without owner/Security retention authority.
 
 Before paid generation, run zero-cost unseen-project mock flow, local Plan B
-with rejected footage and real capture, one 29.494-second choreography manifest,
-deterministic composition twice, 300-second capacity/storage/playback proxy,
-invite/denial/expiry/deletion on non-biometric media, and objective
-remeasurement of the five existing videos.
+with rejected footage and real product capture, one 29.494-second choreography
+manifest, deterministic exact-audio/caption composition twice, a 300-second
+capacity/storage/playback proxy, invite/denial/expiry/deletion on non-biometric
+media, and objective remeasurement of the five existing videos under the frozen
+calibration profile.
 
-Provider qualification refreshes exact facts, repairs fal access without
-displaying secrets, freezes one hypothesis, obtains separate authority per
-upload/call/enrollment/subscription, runs the smallest proof, direct-API parity,
-and hard-case proof, then records pass/pivot/stop. Do not repeat unchanged GWM
+Provider qualification refreshes provider/model/host/account/membership facts,
+repairs fal authentication and upload capability without displaying the
+Keychain secret, freezes one exact hypothesis per candidate, obtains separate
+authority per upload/call/enrollment/subscription, and runs the smallest
+representative proof, direct-API parity, and representative full-duration/aspect
+target-risk proof before recording pass/pivot/stop. Do not repeat unchanged GWM
 or HeyGen. Do not run full LatentSync without an accepted full source.
 
 For each proved boundary: open one bounded issue; branch cleanly from accepted
@@ -713,9 +1068,15 @@ configuration for timeouts/retries/polling/concurrency/budgets/limits/model/
 voice/region/aspect/duration/switches; bind effective non-secret config to
 lineage; add security/privacy/observability/cost/deletion/rollback; run focused,
 quality, integration, and hosted commands; obtain independent exact-head review;
-then merge and complete post-merge hygiene/status.
+then merge with compliant wording; verify post-merge checks; synchronize local
+main; clean only task-owned resources and obsolete branches; close satisfied
+issues; and reconcile status. If reconciliation requires another protected
+issue/branch/pull request, open and complete that follow-up rather than treating
+the first merge as complete.
 
 ## 11. Test and acceptance plan
+
+<!-- MPV2-DESTINATION:MPV2-SECTION-11 -->
 
 Superset checks reject missing/duplicate/conflicting/unclassified atoms,
 threshold weakening without owner authority, multiple active routes, stale
@@ -729,21 +1090,25 @@ unapproved identity/voice/biometric egress; and missing deletion evidence.
 
 Provider/artifact checks require disabled-provider zero import-time credentials,
 ADC/metadata/DNS/socket/HTTP/background/telemetry; no secrets in payload/log/
-trace/database/manifest/evidence; signed webhook verification and replay/job
-binding; immediate quarantine download; no provider URL as artifact; no base64
-media in application JSON; full MIME/magic/decode/dimensions/aspect/fps/duration/
+trace/database/manifest/evidence; webhook signature, timestamp, replay
+protection, and exact job binding; immediate quarantine download; no provider
+URL or success payload as artifact; no base64 media in application JSON; full
+MIME/magic/decode/dimensions/aspect/fps/duration/
 codec/pixel/audio/caption/motion/black/frozen/duplicate/loop/checksum validation;
 distinct original/transformed/repaired/composed/delivery hashes; no commit after
 quarantine failure; and deletion proof beyond request/HTTP 202.
 
-The negative media suite rejects fake/HTML/JSON/manifest media; still/audio,
-slideshow/pan/zoom/loop/mouth patch/frozen body; wrong presenter/input/model/
-profile/background/provider/audio/language/caption/source run; altered or
-substituted narration; derived 720p called native 1080; reused aspects; bad
-captions; post-output threshold changes; aggregate masking; model drift; seams/
-identity drift; post-approval byte change; absent retention/deletion; unresolved
-disclosure; and intercepted/placeholder/provider-URL/mismatched-download browser
-success.
+The negative media suite rejects fake/HTML/JSON/manifest media; still-with-audio,
+slideshow, pan/zoom, loop, mouth-only patch, or frozen body; wrong presenter,
+image, model, profile, background, provider, audio, language, caption, or source
+run; silent, truncated, sped-up, time-stretched, regenerated, or substituted
+narration; derived 720p called native 1080; one aspect reused for another;
+missing, stale, overlapping, incomplete, or mistimed captions; post-output
+threshold changes; an aggregate hiding a failed dimension or severe defect;
+model drift without requalification; unapproved seams or identity drift;
+post-approval byte change; absent retention/deletion status; publication with
+unresolved disclosure; and intercepted, placeholder, provider-URL, or
+mismatched-download browser success.
 
 Browser acceptance uses real backend/store without interception and proves auth/
 isolation, Range/content headers, moving frames/audio, seek/pause/resume/reload/
@@ -752,15 +1117,20 @@ download, and absence of placeholder/manifest/provider-URL/base64/console/
 network substitution.
 
 Human review is mandatory for presence, identity/voice, sync, gaze/expression/
-blink/head/torso/arms/hands/body, anatomy and appearance, scene coherence,
-screen truth, language/pronunciation/tone/culture/captions, and Digital Twin
-likeness/disclosure/authority. Provider success, automated scores, probes, or
-one owner preference cannot independently establish full Cut acceptance.
+blink/head/torso/arms/hands/body; teeth, tongue, eyes, skin, hair, clothing,
+jewellery, fingers, and background; scene lighting, perspective, environmental
+depth, and product-screen truth; language, pronunciation, tone, cultural
+appropriateness, and captions; and Digital Twin likeness, disclosure, and
+authorized-use boundaries. Provider success, automated scores, probes, or one
+owner preference cannot independently establish full Cut acceptance.
 
 ## 12. Stop conditions, assumptions, and completion claim
 
+<!-- MPV2-DESTINATION:MPV2-SECTION-12 -->
+
 Stop immediately for missing/conflicting authority; credential exposure or
-uncertain validity; unknown biometric training/retention/deletion; uncontrolled
+uncertain validity; unknown biometric storage/training/retention/deletion;
+uncontrolled
 spend/top-up/subscription/billing; provider/model/account/terms drift; missing
 direct production API for scalable runtime; failed micro/hard-case proof;
 missing repair source; native-resolution misrepresentation; generated UI used

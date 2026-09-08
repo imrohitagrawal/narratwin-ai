@@ -9,32 +9,49 @@ mapping, approve exact bytes, supersede V1, or activate an implementation route.
 
 ## Exact review subject
 
-- Candidate document SHA-256:
-  `6d614c3fde5237106d8aa0c939d4b602e36ed35000221674bd87f788bda903ab`.
-- Mapping SHA-256:
-  `a5f12608691bd4cd372b591bfd5cb57b20aa215fd58e8e9a7695c77bb3e805af`.
-- Taxonomy SHA-256:
-  `860940f84420f925969d79902a4ee68d9844b62113dd9cf6293be347a1b61ce1`.
-- Candidate Git head: `48fc18954fe6d98eed8fce23536790e819a5a2c0`.
+- Candidate document SHA-256: recorded in the candidate binding.
+- Mapping SHA-256: recorded in the candidate binding.
+- Taxonomy SHA-256: recorded in the candidate binding.
+- Final Git head and tree: recorded by the external review receipt. This
+  committed prompt cannot self-bind the commit that contains its own bytes.
 
 ## Required independent review
 
 The reviewer must use a fresh context and report `PASS` or `FAIL` for each:
 
-1. All 5,577 deterministic atoms from all 19 frozen sources have one row.
+1. Every declared source has exactly one content-bound source-ledger entry and
+   a complete, recomputed semantic partition. All and only
+   repository `NORMATIVE_REQUIREMENT/CURRENT_NORMATIVE` units have exactly one
+   row. External current and superseded normative clauses have one row or one
+   globally unique exact-context alias; evidence, history, state, observations,
+   estimates, and implemented behavior remain excluded but digest-bound.
 2. Atomization did not combine separately normative clauses in a way that can
    hide loss, conflict, relocation, or threshold weakening.
+   Independently resolve every group in `semanticDuplicateCensus` as distinct
+   semantic scopes or one canonical logical requirement; different raw anchors
+   alone are not proof, and zero group may remain unexplained.
 3. All 42 V1 sections retain their states, roles, thresholds, prohibitions,
    evidence, failure behavior, and closeout duties.
 4. The owner plan, prior five-cut roadmap, current contracts, issue/comment
    references, code-bound provider defaults, and supplied observations are
-   represented without converting observations or estimates into acceptance.
-5. Every `RELOCATED` or `SUPERSEDED_BY_EXPLICIT_OWNER_AUTHORITY` row has the
-   correct replacement and exact owner authority.
+   represented without converting observations, estimates, or implemented
+   defaults into normative authority or acceptance.
+5. Every destination and replacement resolves exactly; each `RELOCATED` or
+   `SUPERSEDED_BY_EXPLICIT_OWNER_AUTHORITY` row has exact owner authority.
 6. New Cut 5 means only owner personal Digital Twin; historical enterprise
    Cut 5 maps only to Cut 6 and requires migration validation.
 7. V2 remains a non-activating proposal and V1 remains effective.
+8. Independently retrieve and hash-verify all 605 typed external records,
+   reproduce clause-level precedence without treating open/closed state as
+   authority, and prove that each normative clause has a mapped atom or a
+   globally unique exact focus-and-context alias. Ambiguous/fuzzy aliases,
+   unclassified clauses, and `PENDING_INDEPENDENT_CLASSIFICATION` cannot pass.
+9. Compare the final document against non-activating external-classification
+   input `746e23fcd200f25e1fcd91ef4dd39b59abc6e34ea00b28db7dee667da81db75f`.
+   Attest that no change invalidates a governing-context decision, or require
+   exact replay and reissuance of every affected decision and digest.
 
-Any blocker keeps this review `FAIL` or pending. Corrections require regenerated
-hashes and a new exact-head review; reviewer identity, review time, evidence,
-and disposition must be recorded outside self-authored candidate claims.
+Any blocker keeps this review `FAIL` or pending. The external receipt binds the
+final head/tree, all candidate hashes, reviewer identity/time, commands,
+mutations, per-prompt disposition, and limitations. Candidate rows remain
+`PENDING`; neither generated metadata nor this prompt can self-certify them.

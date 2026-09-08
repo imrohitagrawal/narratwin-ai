@@ -2467,7 +2467,7 @@ def check_llm_tracing_and_citations() -> None:
         if rel == "scripts/guardrails_check.py" or rel.startswith("scripts/quality/"):
             continue
         text = read_text(path).lower()
-        if any(term in text for term in ["llm", "generate_script", "walkthrough script", "generated_script"]):
+        if re.search(r"(?<![a-z0-9])llm(?![a-z0-9])|generate_script|walkthrough script|generated_script", text):
             if "trace" not in text and "run_id" not in text:
                 failures.append(f"{rel} appears to generate/use LLM output without trace/run_id metadata.")
             if any(term in text for term in ["script", "walkthrough", "answer"]):
