@@ -40,6 +40,7 @@ ISSUE360_BASE = "b9a2a8cd4aa05328116565990fc30ae44592c875"
 ISSUE396_BASE = "9ee3f4a4d3b8cf1e78b5a878904748b60d557a76"
 ISSUE401_BASE = "9cf6e01f9d0c32f25c229b5adf38c6eb716ca9a0"
 ISSUE499_BASE = "d1f5400f5c6dfec5d4b63eb3a83aa82e3330743f"
+ISSUE523_BASE = "b6b0c05c7227428ff0841361f3970b0b2c40aa86"
 BRACE_PATH = "node_modules/brace-expansion"
 JS_YAML_PATH = "node_modules/js-yaml"
 NANOID_PATH = "node_modules/nanoid"
@@ -64,6 +65,30 @@ PYPDF_SDIST_SHA256 = "595647f6191de6f402cfde1d0c455d6cbccbd509aac32b34783009c032
 PYPDF_PACKAGE_SHA256 = "e8a5256eb981e4dc5c904fa425c0ba134e251343a500219df5a91ea0fcc99423"
 PYPDF_SDIST_URL = "https://files.pythonhosted.org/packages/44/66/54212e75406afd9f3e933d0dda23072f6aecc55c5a273077dc2e0b028b23/pypdf-6.16.2.tar.gz"
 PYPDF_WHEEL_URL = "https://files.pythonhosted.org/packages/13/f1/a2da3b55acd4ab737bf728c97edaaed5ec1d3c1236acb639dcdfa97e42c7/pypdf-6.16.2-py3-none-any.whl"
+HTTPX2_SDIST = (
+    "https://files.pythonhosted.org/packages/7f/f8/579a8b51e42e38ee32647df9f08aa25643ae788e275cc625b199829c4671/"
+    "httpx2-2.12.0.tar.gz",
+    "7631fe9887a8a2275f4a2540e053aa670fcc50742864a9ae7c66e609fdcf12cf",
+    100040,
+)
+HTTPX2_WHEEL = (
+    "https://files.pythonhosted.org/packages/c8/95/411ba65569158e862368917aaf56597f3e5fa3b91b0502919638465a08f3/"
+    "httpx2-2.12.0-py3-none-any.whl",
+    "cc8b6eecb8661c146b8f89a60e97456ee086e91a784ed31ac450c3a9e613dd36",
+    95427,
+)
+HTTPCORE2_SDIST = (
+    "https://files.pythonhosted.org/packages/be/ad/f4f0e57345f1870f3e8cb624e058d7eca6e5a27d33bcc3311d9b618734cd/"
+    "httpcore2-2.12.0.tar.gz",
+    "9293522bba0aa7c4c8e9e3f040c16575bd8868e155a77fa30c7a9085a5eae648",
+    67548,
+)
+HTTPCORE2_WHEEL = (
+    "https://files.pythonhosted.org/packages/d2/74/d370e55600d9bcfa0d9794b0166126d49291a3d2b20c268fc98c453a4948/"
+    "httpcore2-2.12.0-py3-none-any.whl",
+    "7e04258ce01013d7d615e5b910a3b27fac937d7a95038227e79652b4ba3b4ceb",
+    83074,
+)
 PIP_SECURITY_VERSION = "26.2.1"
 PIP_SECURITY_WHEEL_SHA256 = "71138adf1f4ca900cdb7d289c21b7494329f2332b6d85f0e1c42108c0384ed3e"
 PIP_SECURITY_SDIST_SHA256 = "f6ad667e89a1fe78046c8f13232b247200f5258d7828f3f7883d660878e0813f"
@@ -368,6 +393,104 @@ def test_pypdf_refresh_preserves_unsupported_pdf_runtime_boundary() -> None:
     api_test = (ROOT / "tests/api/test_stage4_slice_api.py").read_text(encoding="utf-8")
     assert '("application/pdf" if case == "mime" else "text/markdown")' in api_test
     assert 'expected = "UNSUPPORTED_MEDIA_TYPE" if case in {"mime", "archive"}' in api_test
+
+
+def _assert_distribution(
+    package: dict[str, Any], sdist: tuple[str, str, int], wheel: tuple[str, str, int]
+) -> None:
+    assert package["source"] == {"registry": "https://pypi.org/simple"}
+    assert package["sdist"]["url"] == sdist[0]
+    assert package["sdist"]["hash"] == f"sha256:{sdist[1]}"
+    assert package["sdist"]["size"] == sdist[2]
+    assert len(package["wheels"]) == 1
+    assert package["wheels"][0]["url"] == wheel[0]
+    assert package["wheels"][0]["hash"] == f"sha256:{wheel[1]}"
+    assert package["wheels"][0]["size"] == wheel[2]
+
+
+def _assert_httpx2_2120_contract(project_text: str, lock_text: str) -> None:
+    project = tomllib.loads(project_text)
+    lock = tomllib.loads(lock_text)
+    base_project = tomllib.loads(_text_at(ISSUE523_BASE, "pyproject.toml"))
+    base_lock = tomllib.loads(_text_at(ISSUE523_BASE, "uv.lock"))
+
+    dev = project["dependency-groups"]["dev"]
+    direct = [value for value in dev if value.startswith("httpx2")]
+    assert direct == ["httpx2>=2.12.0"]
+    packages = lock["package"]
+    httpx2 = [item for item in packages if item["name"] == "httpx2"]
+    httpcore2 = [item for item in packages if item["name"] == "httpcore2"]
+    jsfetch = [item for item in packages if item["name"] == "httpx2-jsfetch"]
+    assert len(httpx2) == len(httpcore2) == len(jsfetch) == 1
+    assert httpx2[0]["version"] == httpcore2[0]["version"] == "2.12.0"
+    assert jsfetch[0]["version"] == "1.0"
+    _assert_distribution(httpx2[0], HTTPX2_SDIST, HTTPX2_WHEEL)
+    _assert_distribution(httpcore2[0], HTTPCORE2_SDIST, HTTPCORE2_WHEEL)
+    assert [item["name"] for item in httpx2[0]["dependencies"]].count("httpcore2") == 1
+
+    root = next(item for item in packages if item["name"] == "narratwin-ai")
+    assert root["dev-dependencies"]["dev"].count({"name": "httpx2"}) == 1
+    assert root["metadata"]["requires-dev"]["dev"].count(
+        {"name": "httpx2", "specifier": ">=2.12.0"}
+    ) == 1
+
+    normalized_project = copy.deepcopy(project)
+    normalized_project["dependency-groups"]["dev"][dev.index("httpx2>=2.12.0")] = (
+        "httpx2>=2.5.0"
+    )
+    assert normalized_project == base_project
+
+    normalized_lock = copy.deepcopy(lock)
+    normalized_root = next(
+        item for item in normalized_lock["package"] if item["name"] == "narratwin-ai"
+    )
+    metadata = normalized_root["metadata"]["requires-dev"]["dev"]
+    httpx2_metadata = next(item for item in metadata if item["name"] == "httpx2")
+    httpx2_metadata["specifier"] = ">=2.5.0"
+    base_by_name = {item["name"]: item for item in base_lock["package"]}
+    normalized_lock["package"] = [
+        base_by_name[item["name"]]
+        if item["name"] in {"httpx2", "httpcore2"}
+        else item
+        for item in normalized_lock["package"]
+        if item["name"] != "httpx2-jsfetch"
+    ]
+    assert normalized_lock == base_lock
+
+
+def test_root_httpx2_resolution_is_exact_isolated_and_patched() -> None:
+    _assert_httpx2_2120_contract(
+        (ROOT / "pyproject.toml").read_text(encoding="utf-8"),
+        (ROOT / "uv.lock").read_text(encoding="utf-8"),
+    )
+
+
+def test_httpx2_contract_rejects_vulnerable_substituted_and_unrelated_drift() -> None:
+    project_text = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
+    lock_text = (ROOT / "uv.lock").read_text(encoding="utf-8")
+    mutations = (
+        (project_text.replace("httpx2>=2.12.0", "httpx2>=2.11.0"), lock_text),
+        (project_text.replace('    "httpx2>=2.12.0",\n', ""), lock_text),
+        (
+            project_text.replace(
+                '    "httpx2>=2.12.0",',
+                '    "httpx2>=2.12.0",\n    "httpx2>=2.12.0",',
+            ),
+            lock_text,
+        ),
+        (project_text, lock_text.replace(f"sha256:{HTTPX2_WHEEL[1]}", "sha256:wrong")),
+        (project_text, lock_text.replace(f"sha256:{HTTPCORE2_SDIST[1]}", "sha256:wrong")),
+        (project_text, lock_text.replace(HTTPX2_WHEEL[0], "https://example.invalid/httpx2.whl")),
+        (project_text, lock_text.replace("size = 95427", "size = 95428", 1)),
+        (project_text, lock_text.replace('name = "httpx2"\nversion = "2.12.0"', 'name = "httpx2"\nversion = "2.11.0"')),
+        (project_text, lock_text.replace('name = "httpcore2"\nversion = "2.12.0"', 'name = "httpcore2"\nversion = "2.10.0"')),
+        (project_text, lock_text.replace('{ name = "httpcore2" }', '{ name = "forged-core" }', 1)),
+        (project_text, lock_text.replace('source = { registry = "https://pypi.org/simple" }', 'source = { registry = "https://example.invalid/simple" }', 1)),
+        (project_text.replace('    "bandit>=1.9.4",', '    "bandit>=1.9.5",'), lock_text),
+    )
+    for candidate_project, candidate_lock in mutations:
+        with pytest.raises((AssertionError, KeyError, StopIteration)):
+            _assert_httpx2_2120_contract(candidate_project, candidate_lock)
 
 
 def test_google_auth_contract_rejects_direct_transitive_and_artifact_drift() -> None:

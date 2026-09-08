@@ -414,6 +414,18 @@ ISSUE499_EXPECTED = {
     "docs/THIRD_PARTY_NOTICES.md",
     "docs/TRACEABILITY.md",
 }
+ISSUE523_EXPECTED = {
+    "docs/governance/preflights/issue-523-httpx2-2-12-security-refresh.json",
+    "pyproject.toml",
+    "uv.lock",
+    "scripts/quality/stage8_cut1_routes.py",
+    "tests/unit/test_stage8_cut1_routes.py",
+    "tests/unit/test_dependency_security_contract.py",
+    "docs/ADR/0081-httpx2-2-12-security-refresh.md",
+    "docs/STATUS.md",
+    "docs/THIRD_PARTY_NOTICES.md",
+    "docs/TRACEABILITY.md",
+}
 ISSUE502_EXPECTED = {
     "docs/governance/preflights/issue-502.json",
     "frontend/Dockerfile",
@@ -1089,6 +1101,7 @@ EXPECTED = {
     },
 }
 EXPECTED["stage8-499-pypdf-6-16-2-security-refresh"] = ISSUE499_EXPECTED
+EXPECTED["stage8-523-httpx2-2-12-security-refresh"] = ISSUE523_EXPECTED
 
 
 def completed(args: list[str], code: int = 0, out: str = "", err: str = "") -> subprocess.CompletedProcess[str]:
@@ -4936,6 +4949,91 @@ def test_issue499_route_rejects_fixed_base_drift_and_every_path_cap(monkeypatch:
             failures,
         )
         assert f"Issue #499 charge for {path} exceeds {limit}." in failures
+
+
+def test_issue523_route_freezes_the_exact_httpx2_security_refresh() -> None:
+    branch = "stage8-523-httpx2-2-12-security-refresh"
+    assert routes.ISSUE523_BRANCH == branch
+    assert routes.ISSUE523_BASE == "b6b0c05c7227428ff0841361f3970b0b2c40aa86"
+    assert routes.ISSUE523_TREE == "2a8fc73f5cfc9210fabfdb425d00a07d345fa24f"
+    assert routes.ISSUE523_ROUTE_COMMENT == "5592344400"
+    assert routes.ISSUE523_ROUTE_SHA256 == (
+        "924445e028a7c8e9a67e4e537f5628c737fda99737c0fb62e637023e5aadd876"
+    )
+    assert routes.ROUTES[branch] == ISSUE523_EXPECTED
+    assert routes.ROUTE_ISSUES[branch] == 523
+    assert routes.TOTAL_LIMITS[branch] == 1000
+    assert routes.TEXT_LIMITS[branch] == {
+        "docs/governance/preflights/issue-523-httpx2-2-12-security-refresh.json": 220,
+        "pyproject.toml": 20,
+        "uv.lock": 160,
+        "scripts/quality/stage8_cut1_routes.py": 140,
+        "tests/unit/test_stage8_cut1_routes.py": 160,
+        "tests/unit/test_dependency_security_contract.py": 220,
+        "docs/ADR/0081-httpx2-2-12-security-refresh.md": 80,
+        "docs/STATUS.md": 40,
+        "docs/THIRD_PARTY_NOTICES.md": 40,
+        "docs/TRACEABILITY.md": 20,
+    }
+    preflight = json.loads(
+        (REPO / "docs/governance/preflights/issue-523-httpx2-2-12-security-refresh.json")
+        .read_text(encoding="utf-8")
+    )
+    assert set(preflight["scope"]["required"]) == ISSUE523_EXPECTED
+    assert preflight["scope"]["required"] == preflight["scope"]["allowed_prefixes"]
+    assert branch in stage8.EFFECTIVE_STAGE8_ROUTES
+
+
+def test_issue523_route_rejects_branch_suffix_drift(monkeypatch: Any) -> None:
+    branch = routes.ISSUE523_BRANCH + "-retry"
+    assert branch not in stage8.EFFECTIVE_STAGE8_ROUTES
+    assert stage8.STAGE8_BRANCH_PATTERN.match(branch)
+    monkeypatch.setattr(stage8, "current_branch", lambda: branch)
+    monkeypatch.setattr(
+        stage8,
+        "changed_files_for_stage_scope",
+        lambda: ["pyproject.toml", "uv.lock"],
+    )
+    failures: list[str] = []
+    stage8.check_stage_scope(failures)
+    assert failures == [
+        f"Stage 8 branch collides with exact reviewed route {routes.ISSUE523_BRANCH}: {branch}."
+    ]
+
+
+def test_issue523_route_rejects_fixed_base_drift_and_every_path_cap(monkeypatch: Any) -> None:
+    outputs = iter(
+        (
+            completed([], out=routes.ISSUE523_BASE + "\n"),
+            completed([], out="a" * 40 + "\n"),
+        )
+    )
+    error = pytest.raises(
+        RuntimeError,
+        routes.route_base,
+        lambda _: next(outputs),
+        routes.ISSUE523_BRANCH,
+    )
+    assert "Issue #523 fixed base" in str(error.value)
+    monkeypatch.setattr(routes, "route_base", lambda *_: "base")
+    for path, limit in routes.TEXT_LIMITS[routes.ISSUE523_BRANCH].items():
+        monkeypatch.setattr(
+            routes,
+            "route_text_charges",
+            lambda *_, value_path=path, value_limit=limit: (
+                value_limit + 1,
+                {value_path: value_limit + 1},
+            ),
+        )
+        failures: list[str] = []
+        routes.check_exact_route(
+            REPO,
+            lambda _: completed([]),
+            routes.ISSUE523_BRANCH,
+            ISSUE523_EXPECTED,
+            failures,
+        )
+        assert f"Issue #523 charge for {path} exceeds {limit}." in failures
 
 
 def test_issue495_lock_refresh_changes_only_six_transitive_records() -> None:

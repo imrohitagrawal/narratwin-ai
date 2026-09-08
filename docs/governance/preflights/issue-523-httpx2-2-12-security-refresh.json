@@ -1,0 +1,51 @@
+{
+  "schema_version": "GovernancePreflightV1",
+  "issue_number": 523,
+  "branch": "stage8-523-httpx2-2-12-security-refresh",
+  "objective": "From exact accepted base b6b0c05c7227428ff0841361f3970b0b2c40aa86 and tree 2a8fc73f5cfc9210fabfdb425d00a07d345fa24f, under route comment 5592344400 with raw body SHA-256 924445e028a7c8e9a67e4e537f5628c737fda99737c0fb62e637023e5aadd876, restore the fail-closed dependency-security gate by replacing the sole direct development/test httpx2 >=2.5.0 requirement and locked httpx2/httpcore2 2.5.0 resolution affected by CVE-2026-84378, CVE-2026-84379, CVE-2026-84380, CVE-2026-84381, and CVE-2026-84382 with exact official PyPI httpx2/httpcore2 2.12.0. Preserve every unrelated product, project, and lock behavior. This route adds no provider, voice, narration, audio, avatar, media, credential, egress, spend, deployment, release, or production capability.",
+  "status_decision": "update-minimally",
+  "scope": {
+    "required": [
+      "docs/governance/preflights/issue-523-httpx2-2-12-security-refresh.json",
+      "pyproject.toml",
+      "uv.lock",
+      "scripts/quality/stage8_cut1_routes.py",
+      "tests/unit/test_stage8_cut1_routes.py",
+      "tests/unit/test_dependency_security_contract.py",
+      "docs/ADR/0081-httpx2-2-12-security-refresh.md",
+      "docs/STATUS.md",
+      "docs/THIRD_PARTY_NOTICES.md",
+      "docs/TRACEABILITY.md"
+    ],
+    "allowed_prefixes": [
+      "docs/governance/preflights/issue-523-httpx2-2-12-security-refresh.json",
+      "pyproject.toml",
+      "uv.lock",
+      "scripts/quality/stage8_cut1_routes.py",
+      "tests/unit/test_stage8_cut1_routes.py",
+      "tests/unit/test_dependency_security_contract.py",
+      "docs/ADR/0081-httpx2-2-12-security-refresh.md",
+      "docs/STATUS.md",
+      "docs/THIRD_PARTY_NOTICES.md",
+      "docs/TRACEABILITY.md"
+    ],
+    "forbidden": [
+      ".github/",
+      "AGENTS.md",
+      "Makefile",
+      "README.md",
+      "backend/",
+      "demo/",
+      "evals/",
+      "frontend/",
+      "infra/",
+      "perf/",
+      "portfolio/",
+      "scripts/ci/",
+      "scripts/guardrails_check.py",
+      "tests/acceptance/",
+      "tests/api/",
+      "tools/"
+    ]
+  }
+}
