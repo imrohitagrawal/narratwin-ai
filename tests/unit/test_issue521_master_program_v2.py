@@ -14,7 +14,8 @@ REPO = Path(__file__).resolve().parents[2]
 def _copy_candidate(tmp_path: Path) -> Path:
     root = tmp_path / "repository"
     root.mkdir(parents=True, exist_ok=True)
-    shutil.copyfile(REPO / ".git", root / ".git")
+    git_dir = REPO / ".git"
+    (root / ".git").write_text(f"gitdir: {git_dir.resolve()}\n") if git_dir.is_dir() else shutil.copyfile(git_dir, root / ".git")
     paths = {*program.REQUIRED_ARTIFACTS, program.V1_PATH}
     for relative in sorted(paths):
         source = REPO / relative
