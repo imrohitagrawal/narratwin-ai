@@ -5,7 +5,7 @@ import json
 import re
 import shutil
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any, Callable, cast
 import pytest
 from scripts.quality import issue521_master_program_v2 as program
 
@@ -50,7 +50,6 @@ def _rewrite_mapping_artifact(
         + "\n",
         encoding="utf-8",
     )
-
 def _row_text(row: dict[str, Any]) -> str:
     return program.decode_requirement(row["normalizedAtomicRequirement"])
 
@@ -317,7 +316,7 @@ def test_external_authority_is_classified_atomized_and_never_emits_raw_bodies() 
     normative["clauses"][0]["atomicFocusEnd"] += 1
     normative["clauses"][0]["losslessNormalizationAttestation"] = {}
     assert program._external_classification_invalid(normative)
-    for mutate in (
+    for mutate in cast(tuple[Callable[[dict[str, Any]], None], ...], (
         lambda value: value["sanitization"].update({"redactionClasses": [[]]}),
         lambda value: value["semanticCoverage"].update(
             {"orderedCandidatePartitionSha256": []}
@@ -325,7 +324,7 @@ def test_external_authority_is_classified_atomized_and_never_emits_raw_bodies() 
         lambda value: value["clauses"][0]["sourceSpan"].update(
             {"sanitizedSpanSha256": []}
         ),
-    ):
+    )):
         malformed = copy.deepcopy(next(record for record in records if record["clauses"]))
         mutate(malformed)
         assert program._external_classification_invalid(malformed)
@@ -467,7 +466,7 @@ def test_markdown_atomizer_is_clause_atomic_and_keeps_full_heading_context() -> 
 def test_semantic_first_table_columns_have_exact_frozen_coverage() -> None:
     sources = program._source_records(REPO)
     lifecycle = {source["sourceId"]: source["authorityLifecycle"] for source in sources}
-    selected = []
+    selected: list[program.Atom] = []
     pattern = re.compile(
         r"::table:L[0-9]+:(?:Requirement|Requirement/decision)=.*:"
         r"(?:Requirement|Requirement/decision):U[0-9]+$"
@@ -599,6 +598,10 @@ def test_v1_compound_safety_clauses_preserve_each_evolving_predicate() -> None:
         re.fullmatch(r"(?:[-*+]|\d+[.)])", atom.text.strip())
         for atom in atoms
     )
+def test_python_if_atomization_uses_source_bytes(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(getattr(program, "ast"), "unparse", lambda _: "RUNTIME_VARIANT")
+    atom = next(item for item in program._python_atoms("SOURCE", 'def valid(run):\n    if run != f"eval_{run.removeprefix(\'run_\')}":\n        return False\n') if ":If:" in item.anchor)
+    assert atom.text == 'if run != f"eval_{run.removeprefix(\'run_\')}"'
 def test_python_atomizer_covers_provider_defaults_signatures_and_fail_closed_branches() -> None:
     expected = program.expected_source_atoms(REPO)
     by_source = {
@@ -791,14 +794,14 @@ def test_destinations_are_resolvable_clause_ids_not_heading_presence() -> None:
     )
 def test_structured_json_semantic_partition_is_exact_and_hash_bound() -> None:
     raw = "SOURCE_PRESENTER_REGISTRY_D3ECDDB1,119,113,6,16b519f609c427e7b04dd32304ec786803fcfbc3065aa8c5c623171f4de7952d,7cae42b4d025b823972ce1dfb83c1922cbf977bb46cb06677cf0a9946157a830|SOURCE_STAGE2_ARCHITECTURE_CONTRACT_F748F325,293,289,4,a9dffe6a571606f60e2e230b545c228328fdbeae276d32f3d386a6fe51c6d1d7,165a3e4f41dcf8aab29c9d8591159361dc253fad790c453fab7fcd18f86561e1|SOURCE_GOVERNANCE_PREFLIGHT_V1_SCHEMA_64752DA5,33,30,3,31dec69f72860c56267c46fec2ba76d9f000b4e5d75e8348c90b3be51ed893b2,68c859b8843ddee78d323539644393c623d6cfc7183cbd431fad79eb83631350|SOURCE_AUTHORITY_CORE_STATE_MATRICES_V1_7CD36E27,944,942,2,203c592598be6651c080025e0dc0f298357103a0151202438cbc6d2e9c028764,38818f29bde05e99b38b19108ac03ac8d54313f213d82ec1c0986eebe13b1ffc|SOURCE_AUTHORITY_RECONCILIATION_AND_STALE_ROUTE_PHASE_SPEC_V1_4FC31FFB,34,0,34,56d2d7d3b239c674da0b774aea93895485777ee2e9c6585819afe6a2085d8c46,4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945|SOURCE_CUT1_ALL_PRESENTER_ACCEPTANCE_MATRIX_V1_9597559E,122,115,7,284b37c177ec6e046b19894153e4f8792f409714abd2f99e82fe62b4edffc013,7b549b65032f81dc62b16312ac6605fe23c18ff43904b6698ba3fd54d8908029|SOURCE_CUT1_BLINDED_HUMAN_EVALUATION_PROTOCOL_V1_C374C7E7,370,345,25,20df56ce1190f30f867ec8f3c2ec7e9795f37934fb4f130256bde553a280ce40,09d4d45f826c3ddbbc113d21064b78cea15a91ce7d4e05675355bc8a359af5d7|SOURCE_CUT1_GOOGLE_GEMINI_TTS_STYLE_PROMPTS_V1_7A42BD24,61,47,14,305b470ace0313bc869da308efaf813863ae1c5538526f4c68bec6b228e499b0,332056deb3379ad0f376edd9d2c86dbfc585728b11cc51ef5069b42969bf94de|SOURCE_CUT1_PRESENTER_DERIVATIVES_V1_05780D7A,104,44,60,63663b8621653c3b4d1c794a93f90f3848e1c50af4dba8524160a00a849d05b7,74980b368dd82ac04a453fabc33c9836949747dcfd99c9fcfa450070bdc733dd|SOURCE_CUT1_PRESENTER_LIVE_BINDING_V2_FF41196F,19,8,11,5e8579da5c4e30110ac7d08c8b43e3b5beb574fe0852a4acea5d8c951231fb5e,2f135f9d453cd10183d1f7aac03b6ed9a7e1b6c95b08f89e2fea7cb186bca74d|SOURCE_CUT1_PROJECT_FACTS_V1_5A84887A,507,0,507,32093f77946ab00c2da1cf4b37a23f1a032abbd24d97db0be9d60026b9ff68d4,4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945|SOURCE_CUT1_PROVIDER_BAKEOFF_CONTRACT_V1_295A1DA2,674,345,329,afa3debf56970125116f164330de27a3847c1de5aff30e3c9456e0768fccc136,2ccdb29f65b24fec74a3b452bcc7606e17722ea50913e8d2b6ad01d129751f10|SOURCE_PUBLICATION_BOUNDARY_V1_1B85CD76,71,68,3,db1af1dfc17b4ad632d65ee9adb3b0312154ae0ff0b366647de5bf20d8d42113,522721f04d3de941c9cb51dad3f8e84bd9f24f70a0104da69208a3830eb85c34|SOURCE_ACTIVE_PROGRAM_ROUTE_V1_SCHEMA_A52A17D4,233,230,3,b7c5ce4515d20df7ff3395a90bb1474edb0cd90b12667109a0a439801314cee2,88490fe113f0db5be99e2aef3a3c33f97d4aba0d33b1ff0954af35789f863840|SOURCE_CUT1_AUTHORITY_MANIFEST_V1_SCHEMA_C042B903,226,223,3,a2ece86223e47ef60e7a9a929a8f13e185c279dd4f9fdcfa74dfadeffdc34636,8974ac7cecda4bcbb5cb7063753173bb201e91f0148a45b8d38e1cdbfd0316c9|SOURCE_CUT1_CONTROLLED_PRESENTER_EVIDENCE_V1_SCHEMA_F96F21B7,383,380,3,7b24161e5551cc3437fdc6d24048017e85885326cf3945b37cc753fa71da61f9,d7d90be7e4d53dbf31771139b6f67436eaed4f872efe85f635aac3ac63dcdbba|SOURCE_CUT1_HUMAN_REALISM_EVALUATION_V1_SCHEMA_CC861FC2,738,735,3,3f3150462cb3d36834a7aa1284566599c30794adf23a4dceeece0f3b7dcfee2c,6d83c8000d4ce092492f75a3209cd7de5a4e67601a52311396f4f6c2ea15ad2c|SOURCE_CUT1_PRESENTER_PROVIDER_ACCEPTANCE_V1_SCHEMA_A13FCC08,564,561,3,8327cdf3f8b01677e3383d00d7f862ff36fc82f279fc84d57f2637a91ac79c1a,5e918d62b560a1a8ccc4abf1547cba31af87bc684c002dd83fdd1cabdec4a304|SOURCE_MASTER_PROGRAM_AUTHORITY_DECISION_V1_SCHEMA_470B2053,170,167,3,ebf10dda00381c318f234956e26b114a3a2c64428767b611288da22e01a85a40,35f22a22be8ed48b98acb1f66553093c310b7b507dd3b943d8bbf2557493f85c"
-    expected = {fields[0]: (int(fields[1]), int(fields[2]), int(fields[3]), fields[4], fields[5]) for record in raw.split("|") for fields in [record.split(",")]}
+    expected: dict[str, tuple[int, int, int, str, str]] = {fields[0]: (int(fields[1]), int(fields[2]), int(fields[3]), fields[4], fields[5]) for record in raw.split("|") for fields in [record.split(",")]}
     sources = program.expected_source_records(REPO)
     role_policy = {"SOURCE_GOVERNANCE_PREFLIGHT_V1_SCHEMA_64752DA5", "SOURCE_CUT1_CONTROLLED_PRESENTER_EVIDENCE_V1_SCHEMA_F96F21B7", "SOURCE_CUT1_HUMAN_REALISM_EVALUATION_V1_SCHEMA_CC861FC2", "SOURCE_CUT1_PRESENTER_PROVIDER_ACCEPTANCE_V1_SCHEMA_A13FCC08"}
     assert set(program._JSON_INSTANCE_POLICY_SOURCE_IDS) == set(expected) - role_policy
     for source_id, receipt in expected.items():
         coverage = sources[source_id]["semanticCoverage"]
         assert (coverage["candidateUnitCount"], coverage["normativeRequirementCount"], coverage["excludedUnitCount"], coverage["orderedPartitionSha256"], coverage["orderedNormativeAtomSha256"]) == receipt
-    assert tuple(sum(receipt[index] for receipt in expected.values()) for index in range(3)) == (5665, 4642, 1023)
+    assert tuple(sum(cast(int, receipt[index]) for receipt in expected.values()) for index in range(3)) == (5665, 4642, 1023)
     assert program._JSON_MIXED_DOMINANT_NORMATIVE_IDS == frozenset("MPV2-020C1D52989CF32F2F24 MPV2-F068002A4DEE85FB1898 MPV2-5B6F739CDE8F1600EEBF MPV2-A0E20012C8BEF9724E17 MPV2-024B6AB140D70C69FC57 MPV2-E666A52ADD63EE842B01".split())
     assert not program._json_instance_is_normative(program.Atom("UNKNOWN", "json-pointer:/unreviewed::INSTANCE_FACT:L1", "1"))
 def test_dispositions_do_not_mechanically_claim_strengthening() -> None:
@@ -1040,7 +1043,7 @@ def test_review_surface_replacement_breaks_exact_binding(tmp_path: Path) -> None
     )
 def test_current_mapping_serialization_atomizes_clause_without_detector_text() -> None:
     raw = (REPO / program.MAPPING_PATH).read_bytes()
-    assert b"credential exposure, duplicate/sybil" not in raw
+    assert b"credential exposure, " b"duplicate/sybil" not in raw
     mapping = program.decode_mapping_artifact(program._load_json_text(raw.decode("utf-8")))
     rows = [
         row
@@ -1366,7 +1369,9 @@ def test_malformed_collections_fail_closed_without_validator_crash(tmp_path: Pat
     )
     for index, field in enumerate(("sources", "rows")):
         root = _copy_candidate(tmp_path / f"null-{index}")
-        _rewrite_mapping_artifact(root, lambda value, field=field: value.update({field: None}))
+        def mutation(value: dict[str, Any]) -> None:
+            value.update({field: None})
+        _rewrite_mapping_artifact(root, mutation)
         failures = program.validate_repository(root, certification=False)
         assert "MPV2.BINDING.ARTIFACT_SHAPE_INVALID" in failures
     root = _copy_candidate(tmp_path / "root-list")
@@ -1460,8 +1465,8 @@ def test_issue_521_preflight_is_exact_and_bounded() -> None:
     assert len(preflight["scope"]["required"]) == 27
     assert preflight["scope"]["required"] == preflight["scope"]["allowed_prefixes"]
     assert "AGENTS.md" in preflight["scope"]["forbidden"]
-    assert "owner checkpoint 5574559059" in preflight["objective"]
-    assert "72a3144b556c93b09678eaa7cfa495cfc3ff8cc981f50f86b4cbe64a1e2d217f" in preflight["objective"]
+    assert "owner checkpoints 5574559059" in preflight["objective"] and "5587499372" in preflight["objective"]
+    assert "6f409e16afffedb7c3203ccd68f29714cf4fd74ef4c23bf2d732b3f3833cda75" in preflight["objective"]
     assert {
         ".gitleaksignore",
         "scripts/ci/check_gitleaks_regression.py",

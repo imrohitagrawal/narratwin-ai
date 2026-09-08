@@ -13,15 +13,15 @@ candidate validation.
 
 ## Hosted-parity correction requiring independent verification
 
-Issue comment `5574559059` authorizes only the exact Gitleaks fingerprint for
-historical mapping commit `74dc7c9cb670513cd2340cbd686d66d1d24b819e`, file
-`docs/governance/superset-mapping-v2.json`, rule `generic-api-key`, and line
-1474. The reviewer must verify the commit/blob/line/row and immutable V1 source
-provenance, the squash-portable proof, and real-secret/full-history canaries.
-The current decoded clause must remain exact while its serialization survives a
-new squash commit fingerprint without another exception.
-Any wildcard, path/rule-wide exception, scan/history weakening, or source-clause
-weakening is a `REQUIRED_CONTRACT` failure.
+Issue comments `5574559059` and `5587499372` authorize only these fingerprints:
+`74dc7c9cb670513cd2340cbd686d66d1d24b819e:docs/governance/superset-mapping-v2.json:generic-api-key:1474`;
+`b18aeed00527dfa3e6a1f1df475cf67765a17ebb:scripts/ci/check_gitleaks_regression.py:generic-api-key:71`;
+`b18aeed00527dfa3e6a1f1df475cf67765a17ebb:scripts/quality/issue521_master_program_v2.py:generic-api-key:133`; and
+`547333d283914004257ab0fde86a216a93ff3e17:tests/unit/test_issue521_master_program_v2.py:generic-api-key:232`.
+The reviewer verifies every commit/blob/line hash, mapping/V1 provenance where
+applicable, synthetic non-secret classification, current-tree detector safety,
+history-preserving merge topology, and real-secret/full-history canaries. Any
+wildcard, scan/history weakening, or source weakening is `REQUIRED_CONTRACT`.
 
 ## Required independent review
 

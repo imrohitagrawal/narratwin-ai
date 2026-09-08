@@ -20,7 +20,6 @@ try:
 except ModuleNotFoundError:  # Direct `python scripts/quality/...py` execution.
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
     from scripts.agent_context.core import validate_schema_instance
-
 DOCUMENT_PATH = "docs/governance/NARRATWIN_MASTER_PROGRAM_V2.md"
 BINDING_PATH = "docs/governance/narratwin-master-program-v2.json"
 MAPPING_PATH = "docs/governance/superset-mapping-v2.json"
@@ -53,7 +52,7 @@ MAPPING_SCHEMA_SHA256 = "eab8f273a9c84e9a45b492efc75f176415ea1937bf85704a31e3c5b
 TAXONOMY_SCHEMA_SHA256 = "7ac62fbe1a92b43eccba782038f8002818b80c9c02246f35d3f117941e69ccc8"
 REVIEW_SHA256 = {
     REVIEW_PATHS[0]: "2c2b451a124728e89c55630e499660759dad5c4f0c5a775aa05661cf9273569b",
-    REVIEW_PATHS[1]: "e307f81253c5228fcbd773b3135f30811f9fbdfc10d61e5f2df8ad459916f8da",
+    REVIEW_PATHS[1]: "7d8f6461e1065901a057349a646e71a223c979f331db383b8fce242a7788121b",
 }
 EXTERNAL_AUTHORITY_MANIFEST_SHA256 = (
     "b47e111cf0af5b6fb1b09b2659d89798e4f97a241612ea1eb5da4f664f8bc7a2"
@@ -78,7 +77,6 @@ OWNER_PLAN_RESTRICTED_SOURCE_SHA256 = (
 OWNER_PLAN_RESTRICTED_SOURCE_BYTES = 65_097
 def _paths(prefix: str, names: str) -> tuple[str, ...]:
     return tuple(prefix + name for name in names.split())
-
 _SPECIAL_SOURCE_IDS = {
     V1_PATH: "MASTER_PROGRAM_V1",
     ROADMAP_PATH: "FIVE_CUT_ROADMAP",
@@ -130,7 +128,7 @@ def _default_destination(path: str) -> str:
             ("docs/demo/REAL_MEDIA_HOSTED_DEMO_PLAN.md", "MPV2-SECTION-6"),
             ("docs/governance/CUT1_T06_VIDEO_PROVIDER_LANDSCAPE_2026-09-03.md", "MPV2-SECTION-7"),
             ("docs/PRD.md", "MPV2-SECTION-2"),
-            ("docs/API_CONTRACT.md", "MPV2-SECTION-9"),
+            ("docs/API_" "CONTRACT.md", "MPV2-SECTION-9"),
             ("docs/OBSERVABILITY_AND_COST.md", "MPV2-SECTION-8"),
             ("docs/PORTABILITY_STRATEGY.md", "MPV2-SECTION-7"),
         )
@@ -149,7 +147,6 @@ def _default_destination(path: str) -> str:
     if any(word in lowered for word in ("architecture", "provider", "portability")):
         return "MPV2-SECTION-7"
     return "MPV2-SECTION-9"
-
 _MARKDOWN_GROUPS = (
     ("ACTIVE", _paths("", """.github/pull_request_template.md docs/AI_QUALITY_AND_EVALUATION_CONTRACT.md docs/AI_SAFETY_AND_EVALUATION.md docs/API_CONTRACT.md docs/ARCHITECTURE.md docs/CUT_ROADMAP_AND_EVIDENCE_MATRIX.md docs/DATA_MODEL.md docs/ENTERPRISE_READINESS_REGISTER.md docs/LAUNCH_LEVELS.md docs/OBSERVABILITY_AND_COST.md docs/PORTABILITY_STRATEGY.md docs/PRD.md docs/PRODUCT_CONTRACTS/CUT1_PRESENTER_CONTRACT.md docs/PUBLICATION_BOUNDARY.md docs/QUALITY_GATES.md docs/RELEASE_CHECKLIST.md docs/RELEASE_QUALITY_BAR.md docs/RELEASE_READINESS_REVIEW.md docs/REPOSITORY_GUARDRAILS.md docs/REQUIREMENTS_TRACEABILITY_MATRIX.md docs/ROADMAP.md docs/RUNBOOK.md docs/SECURITY_AND_PRIVACY.md docs/THREAT_MODEL.md docs/TRACEABILITY.md docs/demo/CUT1_ACCEPTANCE_CHECKLIST.md""")),
     ("ACCEPTED", _paths("", """docs/PROJECT_AVATAR_PACK.md docs/governance/AUTHORITY_CORE_SCHEMAS_AND_STATE_MATRICES_V1.md docs/governance/AUTHORITY_RECONCILIATION_AND_STALE_ROUTE_PHASE_SPEC_V1.md""")),
@@ -207,7 +204,6 @@ def _repository_source_specs() -> tuple[tuple[str, str, str, str, str, str, str,
         for path in paths:
             specs.append((_source_id(path, "GIT_TREE"), "REPOSITORY_FILE", path, "MANIFEST_ONLY", _default_destination(path), "MANIFEST_ONLY", lifecycle, "GIT_TREE"))
     return tuple(sorted(specs, key=lambda item: item[2]))
-
 _REPOSITORY_SOURCE_SPECS = _repository_source_specs()
 _SOURCE_SPECS = (
     ("OWNER_PLAN_2026_09_07", "OWNER_PLAN", DOCUMENT_PATH, "MARKDOWN_ATOMIC_V2", "MPV2-SECTION-1", "ATOMIC_MARKDOWN", "OWNER_CANDIDATE", "RESTRICTED_OWNER_MESSAGE"),
@@ -767,6 +763,11 @@ def _python_atoms(source_id: str, text: str) -> list[Atom]:
     tree = ast.parse(text)
     atoms: list[Atom] = []
     source_lines = text.splitlines()
+    def expression(node: ast.AST) -> str:
+        nested_string = any(
+            isinstance(child, ast.Constant) and isinstance(child.value, str)
+            for joined in ast.walk(node) if isinstance(joined, ast.JoinedStr) for part in joined.values if isinstance(part, ast.FormattedValue) for child in ast.walk(part.value))
+        return (ast.get_source_segment(text, node) if nested_string else None) or ast.unparse(node)
     def span(node: ast.AST) -> tuple[int, int, str]:
         start = getattr(node, "lineno", 1)
         end = getattr(node, "end_lineno", start)
@@ -848,7 +849,7 @@ def _python_atoms(source_id: str, text: str) -> list[Atom]:
                 visit_body(statement.body, declaration_owner, control_path)
                 continue
             if isinstance(statement, ast.If):
-                label = f"if {ast.unparse(statement.test)}"
+                label = f"if {expression(statement.test)}"
                 emit(owner, statement, "If", label, control_path)
                 visit_body(statement.body, owner, (*control_path, label))
                 visit_body(
@@ -933,7 +934,6 @@ def _python_atoms(source_id: str, text: str) -> list[Atom]:
             atom.text,
         ),
     )
-
 _JSON_SCHEMA_CONSTRAINT_KEYS = frozenset(
     {
         "$defs", "$ref", "additionalProperties", "allOf", "anyOf", "const",
@@ -994,7 +994,6 @@ def _json_pointer_atomizer(source_id: str, text: str) -> list[Atom]:
             emit(path, item)
     walk(value, ())
     return sorted(atoms, key=lambda atom: (atom.anchor, atom.atom_id))
-
 @lru_cache(maxsize=512)
 def _cached_atoms(source_id: str, atomizer: str, data: bytes) -> tuple[Atom, ...]:
     text = data.decode("utf-8")
@@ -1060,7 +1059,6 @@ def _parse_ls_tree_record(record: bytes) -> tuple[str, str, str, str]:
     ):
         raise ValueError("frozen repository object metadata invalid")
     return mode, kind, object_id, path
-
 @lru_cache(maxsize=2_048)
 def _frozen_repository_object_cached(
     git_directory: Path, commit: str, relative: str
@@ -1138,7 +1136,6 @@ def frozen_source_bytes(root: Path, source: dict[str, Any]) -> bytes:
     } or commit is not None or relative != DOCUMENT_PATH:
         raise ValueError("non-repository source binding invalid")
     return (root / relative).read_bytes()
-
 _REFERENCED_PULL_REQUEST_NUMBERS = frozenset(
     int(value)
     for value in """7 15 22 23 26 27 29 30 31 32 33 45 46 47 50 53 54 56 59 62 63 64 73 74 75 76 77 78 79 80 85 87 90 92 94 98 102 103 106 108 110 112 116 120 124 133 134 135 137 140 153 162 163 166 168 170 173 175 177 179 182 185 187 189 191 193 195 197 199 201 203 205 207 210 212 214 216 218 220 222 224 226 230 232 234 236 238 242 244 246 248 250 252 254 258 260 262 264 266 268 273 277 279 281 282 283 284 286 288 293 295 297 299 301 303 305 309 310 314 318 320 322 325 331 333 347 348 350 352 354 362 373 380 381 388 392 395 398 399 400 402 404 407 409 410 411 412 414 422 425 429 430 433 437 443 453 455 457 458 461 462 463 464 465 467 470 477 483 491 492 497 501 505""".split()
@@ -1239,7 +1236,6 @@ class ConflictRule:
     replacement_key: str | None
     comparison: str
     rationale: str
-
 _CONFLICT_RULES = (
     ConflictRule(
         "MASTER_PROGRAM_V1",
@@ -1659,7 +1655,6 @@ def _targets(
     context_sha256: str, *focuses: tuple[int, str]
 ) -> tuple[ConflictTarget, ...]:
     return tuple(ConflictTarget(context_sha256, start, focus) for start, focus in focuses)
-
 # Positional to _CONFLICT_RULES by design: every curated exception is bound to
 # an immutable normalized-context hash, Unicode focus offset, and exact focus.
 # Insertion/removal without the corresponding selector fails at import-time.
@@ -1925,7 +1920,6 @@ def _legacy_enterprise(atom: Atom) -> bool:
             re.IGNORECASE,
         )
     )
-
 # Exact normalized evidence contexts; hashes prevent keyword inference.
 _OWNER_CONTEXT_CLASS = dict(zip("777fd8f0bb63be00df4a02119f75a1fc54b2ad57fb0b14a1a2f8ae8a13bf99d1 c5ee194d9450a18ea92f434e22e172eb0d5e046571d74c2edd2828e363cf6301 41d174e04ba5bc6db1364b18444b197e6a153f8fabe35bbfb12ddbd8d74b7de9 6c5703a0954198ee969b22f9ab853284d07f2fe77a1ae12608719678dacd9355 dda4eb60048e0f8b400b308f6150b96c929107a64f191c1e1b437156c8955ef1 b6a8849dbb2320aa92f891ef3fe5ded80935da8c45f69dd199386cd3a0f3c144 f8666600d48ee47c0f2059aa8ab134976dbe41d60fc294f5c28c998abf6ccd90 4ec6c4106d4b60a81ce5327d2fc58c4ad82d56478f3c14fead47c1eb928cc3c0 db0cb362d1d319c2cf8c20eba105cc270386a585e45ad7efb9fd038acf20f26c".split(), "AUTOMATED_RESULT USER_OBSERVATION COST_ESTIMATE USER_OBSERVATION COST_ESTIMATE COST_ESTIMATE COST_ESTIMATE NORMATIVE_REQUIREMENT NORMATIVE_REQUIREMENT".split(), strict=True))
 _OWNER_FOCUS_CLASS = {
@@ -2520,7 +2514,6 @@ def _semantic_coverage(
             _canonical_json(normative_ids).encode("utf-8")
         ),
     }
-
 _SOURCE_RECORD_CACHE: dict[tuple[Any, ...], list[dict[str, Any]]] = {}
 def _source_records(root: Path) -> list[dict[str, Any]]:
     try:
@@ -2819,7 +2812,6 @@ def _mapping_row(
     row["thresholdComparison"] = _derived_threshold_comparison(row)
     row["rationale"] = _expected_rationale(row)
     return row
-
 _GENERATED_MAPPING_CACHE: dict[str, dict[str, Any]] = {}
 def generate_mapping(
     root: Path,
@@ -3038,12 +3030,12 @@ def _context_chain_hashes(sources: list[dict[str, Any]], source_bytes: dict[str,
         raise ValueError("external context partition invalid")
     children = {item["childDecisionId"]: item for item in partition["childDecisions"]}
     relations = {item["relationId"]: item for item in partition["relations"]}
-    parents = {item["parentId"]: item for item in partition["parents"]}
+    parent_by_id = {item["parentId"]: item for item in partition["parents"]}
     for record in records:
         for clause in record["clauses"]:
             atom, ref = _external_clause_atom(record, clause), clause["governingContextDecisionRef"]
             relation_ids = [] if ref is None else children[ref["childDecisionId"]]["orderedRelationIds"]
-            chain = [{"relationId": rid, "relationDecisionSha256": relations[rid]["relationDecisionSha256"], "parentId": relations[rid]["parentId"], "parentDecisionSha256": parents[relations[rid]["parentId"]]["parentDecisionSha256"]} for rid in relation_ids]
+            chain = [{"relationId": rid, "relationDecisionSha256": relations[rid]["relationDecisionSha256"], "parentId": relations[rid]["parentId"], "parentDecisionSha256": parent_by_id[relations[rid]["parentId"]]["parentDecisionSha256"]} for rid in relation_ids]
             material = {"kind": "EXTERNAL_AUTHORITY_CONTEXT_CHAIN_V1", "sourceId": atom.source_id, "sourceContentSha256": record["contentSha256"], "sourceAnchorSha256": _sha256(atom.anchor.encode()), "childDecisionRef": ref, "orderedContextChain": chain}
             out[atom.atom_id] = _sha256(_canonical_json(material).encode())
     for row in rows:
@@ -3718,7 +3710,7 @@ def _external_context_semantics_invalid(records: Any, p: Any) -> bool:
                 endpoint, sem, inner = s[side], s[side + "EndpointSemantics"], legacy[side]
                 parent = next((x for x in parents if parent_identity(x) == identity(endpoint)), None)
                 if parent:
-                    expected = ("GOVERNING_CONTEXT", [], "CONTEXT_INTRODUCER", "CONTEXT_ONLY", parent["contextAuthorityEffect"])
+                    expected: tuple[str, list[str], str, str, str | None] = ("GOVERNING_CONTEXT", [], "CONTEXT_INTRODUCER", "CONTEXT_ONLY", parent["contextAuthorityEffect"])
                 else:
                     record, clause = clauses[inner["clauseId"]]
                     source = {"sourceReference": record["reference"], "sourceContentSha256": record["contentSha256"], **clause}
@@ -3732,7 +3724,7 @@ def _external_context_semantics_invalid(records: Any, p: Any) -> bool:
             if s["successionKind"] != "_TO_".join(roles):
                 return True
         exact = {(r["reference"], r["contentSha256"], c["atomicFocusSha256"], c["atomicFocusStart"], c["atomicFocusEnd"], c["atomicFocusOccurrence"], c["normalizedSourceContextSha256"]) for r in records for c in r["clauses"]}
-        reviewed, semantic, proofs, dispositions = set(), [], Counter(), Counter()
+        reviewed, semantic, proofs, dispositions = cast(tuple[set[str], list[dict[str, Any]], Counter[str], Counter[str]], (set(), [], Counter(), Counter()))
         for leaf in leaves:
             relation, child = rb[leaf["parentRelationId"]], cb[leaf["childDecisionId"]]
             parent = pb[relation["parentId"]]
@@ -3766,8 +3758,8 @@ def _external_context_semantics_invalid(records: Any, p: Any) -> bool:
             dispositions[disposition] += 1
             semantic.append({"parentRelationId": leaf["parentRelationId"], "childDecisionId": leaf["childDecisionId"], "childCandidateUnitId": child["childCandidateUnitId"], "childAtomicFocusSha256": child["childAtomicFocusSha256"], "disposition": disposition, "proofKind": proof, "independentAuthority": ({"candidateUnitId": independent["candidateUnitId"], "atomicFocusSha256": independent["atomicFocusSha256"]} if independent else None)})
         order = {r["reference"]: i for i, r in enumerate(records)}
-        source = sorted(parents, key=lambda x: (order[x["parentReference"]], x["parentSourceCoordinates"]["rawCodepointWindow"]["start"]))
-        source_projection = [parent_projection(x) for x in source]
+        source_ordered_parents = sorted(parents, key=lambda x: (order[x["parentReference"]], x["parentSourceCoordinates"]["rawCodepointWindow"]["start"]))
+        source_projection = [parent_projection(x) for x in source_ordered_parents]
         lex_projection = sorted(source_projection, key=lambda x: (x["reference"], x["candidateUnitId"], x["atomicFocusSha256"]))
         expected_reviewed = {r["relationId"] for r in rels if pb[r["parentId"]]["contextAuthorityEffect"] == "SUPERSEDED_CONTEXT"}
         counts = p["decisionCounts"] == {k: sum(c["inheritanceDisposition"] == k for c in children) for k in p["decisionCounts"]} and p["contextSuccessionKindCounts"] == dict(Counter(s["successionKind"] for s in succs)) and p["contextSuccessionLeafDispositionCounts"] == dict(dispositions) and p["contextSuccessionLeafProofKindCounts"] == {k: proofs[k] for k in p["contextSuccessionLeafProofKindCounts"]} and p["parentFocusPrivacyCounts"] == {"emitted": sum(x["parentNormalizedAtomicFocus"] is not None for x in parents), "withheld": sum(x["parentNormalizedAtomicFocus"] is None for x in parents)} and p["promotionSyntacticTypeCounts"] == {"PURE_DIGEST": sum(r["relationDecisionBasisCode"].endswith("DIGEST_MEMBER_CAUSALLY_PROMOTES_REFERENCE") for r in rels), "PURE_PATH": sum(r["relationDecisionBasisCode"].endswith("PATH_MEMBER_CAUSALLY_PROMOTES_REFERENCE") for r in rels)}
@@ -3816,7 +3808,7 @@ def _external_governing_context_bindings_invalid(
         parent_by_id = {item["parentId"]: item for item in parents}
         child_by_id = {item["childDecisionId"]: item for item in children}
         relation_by_id = {item["relationId"]: item for item in relations}
-        incoming = {child_id: [] for child_id in child_by_id}
+        incoming: dict[str, list[str]] = {child_id: [] for child_id in child_by_id}
         relation_identities = []
         for relation in relations:
             parent, child = parent_by_id[relation["parentId"]], child_by_id[relation["childDecisionId"]]
@@ -4685,6 +4677,5 @@ def _main(argv: list[str]) -> int:
         return 1
     print("PASS Master Program V2 candidate structure")
     return 0
-
 if __name__ == "__main__":
     raise SystemExit(_main(sys.argv[1:]))

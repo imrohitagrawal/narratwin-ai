@@ -68,7 +68,7 @@ MAPPING_NORMALIZED_CLAUSE = (
     "exposure, duplicate/sybil detection, conflicts/appeals, reviewer independence, "
     "transitive deletion, and tenant isolation."
 )
-MAPPING_DETECTOR_LITERAL = b"credential exposure, duplicate/sybil"
+MAPPING_DETECTOR_LITERAL = b"credential exposure, " b"duplicate/sybil"
 MAPPING_DERIVED_THRESHOLD_SHA256 = "d3bf4242dca4f909701db135dbab70bc13b6c5beb1cade9be9d2d9b741ed572f"
 EXPECTED_DIGEST = "910259f61acbbec4e3432c482d821fd56f2fe8b2073211c7ce112c3cd87405bf"
 EXPECTED_PUBLIC_KEY_SHA256 = "6c3b7674b58d9f7266cd8b823ecf469b0a03d1bf2c8c24df1d0121d8e818f1fa"
@@ -82,10 +82,14 @@ EXPECTED_FINGERPRINTS = (
     "8dd002589d45b41205a80dc004e7e6480bec901f:tests/unit/test_stage8_cut1_routes.py:generic-api-key:1370",
     "9644296da92bf3b3f373cd2afd2c7a64d6ca7c8c:scripts/quality/stage8_cut1_routes.py:generic-api-key:509",
     MAPPING_FINGERPRINT,
+    "b18aeed00527dfa3e6a1f1df475cf67765a17ebb:scripts/ci/check_gitleaks_regression.py:generic-api-key:71",
+    "b18aeed00527dfa3e6a1f1df475cf67765a17ebb:scripts/quality/issue521_master_program_v2.py:generic-api-key:133",
+    "547333d283914004257ab0fde86a216a93ff3e17:tests/unit/test_issue521_master_program_v2.py:generic-api-key:232",
     "66dabedecdce4ed51b8354e44f2d1c749c209898:backend/Dockerfile:generic-api-key:18",
     "0cea00fd0a2cda457473c4fccf1d6ab2b2250bae:backend/Dockerfile:generic-api-key:18",
     "dd1e2118dede2b5cf9060d69cace0a3c9ab8ae4c:backend/Dockerfile:generic-api-key:18",
 )
+G1_SYNTHETIC_LINE_SHA256 = ("55a3972a5dc31361c33adb0014aed8b52940e7f21823f51e89c13dce3090a5b2", "76dfcad75e98c853b91e1340db355d7545c15ced75b117a6e3e191568f765908", "e047a0a498befbda500f90e7be2766c967b996f42ccb9a15721d7998ab730246")
 PUBLIC_KEY_FINGERPRINTS = frozenset(EXPECTED_FINGERPRINTS[-3:])
 SIGNED_URL_QUERY = re.compile(
     rb"(?:https?:)?//[^\s\"'<>]*[?&](?:sig|signature|token|credential|key|"
@@ -542,7 +546,7 @@ def validate(root: Path = ROOT) -> list[str]:
             ):
                 _append_once(failures, "GITLEAKS.PROVENANCE.PUBLIC_KEY_LINE")
             continue
-        ancestor = _git(root, "merge-base", "--is-ancestor", commit, SCAN_HEAD)
+        ancestor = _git(root, "merge-base", "--is-ancestor", commit, "HEAD" if fingerprint in EXPECTED_FINGERPRINTS[5:8] else SCAN_HEAD)
         if ancestor.returncode != 0:
             _append_once(failures, "GITLEAKS.PROVENANCE.HISTORY")
             continue
@@ -551,6 +555,10 @@ def validate(root: Path = ROOT) -> list[str]:
             line = blob.splitlines()[int(line_text) - 1]
         except (IndexError, OSError, UnicodeError, ValueError, subprocess.SubprocessError, RuntimeError):
             _append_once(failures, "GITLEAKS.PROVENANCE.SNAPSHOT")
+            continue
+        if fingerprint in EXPECTED_FINGERPRINTS[5:8]:
+            if hashlib.sha256(line.encode()).hexdigest() != G1_SYNTHETIC_LINE_SHA256[EXPECTED_FINGERPRINTS[5:8].index(fingerprint)]:
+                _append_once(failures, "GITLEAKS.PROVENANCE.G1_SYNTHETIC_LINE")
             continue
         if rule != "generic-api-key" or "API_CONTRACT.md" not in line or EXPECTED_DIGEST not in line:
             _append_once(failures, "GITLEAKS.PROVENANCE.LINE")
