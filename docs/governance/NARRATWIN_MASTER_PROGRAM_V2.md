@@ -71,7 +71,10 @@ every deterministic candidate unit exactly one semantic class. Its row ledger
 contains all repository `NORMATIVE_REQUIREMENT/CURRENT_NORMATIVE` units and
 all external current or superseded normative clauses; excluded evidence, history, state,
 observation, estimate, and implemented-behavior units remain bound by each
-source's ordered semantic-partition digest. The inventory includes all 42 V1 sections; the
+source's ordered semantic-partition digest. Exact hash-pinned semantic and
+context decision partitions cover every repository/owner-plan Markdown atom and
+detected parent/child relation; they remain pending independent semantic review.
+The inventory includes all 42 V1 sections; the
 previous five-cut roadmap and evidence matrix; the latest six-cut plan;
 presenter, AI-quality, enterprise, security, privacy, architecture, status,
 phase, stage, acceptance, and ADR contracts; accepted issue/comment authority
@@ -125,9 +128,10 @@ to simulate a new decision.
 Semantic class and disposition are orthogonal. Only
 `NORMATIVE_REQUIREMENT/CURRENT_NORMATIVE` can contribute an obligation.
 `HISTORICAL_FACT/HISTORICAL_ONLY`; `CURRENT_STATE_FACT`, `USER_OBSERVATION`,
-`AUTOMATED_RESULT`, `COST_ESTIMATE`, and `IMPLEMENTED_BEHAVIOR` with
-`EVIDENCE_ONLY` retain their bytes and provenance but grant no authority and
-cannot satisfy acceptance. Atomic-focus offsets are zero-based, half-open
+`AUTOMATED_RESULT`, `COST_ESTIMATE`, `IMPLEMENTED_BEHAVIOR`, `EVIDENCE`, and
+`REFERENCE` with `EVIDENCE_ONLY` retain provenance without granting authority.
+`CONTEXT_INTRODUCER/EVIDENCE_ONLY` may scope children but is not an obligation.
+None can satisfy acceptance. Atomic-focus offsets are zero-based, half-open
 Unicode code-point coordinates inside a whitespace-normalized context. Every
 context also binds a one-based inclusive raw-file line span and raw-span hash.
 Independent semantic review must attest each focus/operator/context relation;
@@ -274,7 +278,8 @@ Locked decisions:
 - Landscape and portrait are independently generated and accepted. Cropping or
   normalization cannot substitute one for the other.
 - Native 1080p is requested where supported. Lower-native-resolution output is
-  diagnostic only and must never be described as native 1080p.
+  diagnostic only and must never be described as native 1080p. Derived/upscaled
+  output is labelled honestly.
 - Resolution does not prove lip synchronization.
 - Web, MCP, and CLI may support discovery or operator prototypes. A scalable
   runtime requires the documented direct production API.
@@ -550,10 +555,10 @@ exact-hash WebVTT.
 Acceptance requires camera-aligned gaze for at least 80% of eligible speaking
 time, with no unexplained off-camera interval
 over two seconds; lip-sync absolute-offset P95 at most 80ms and longest
-continuous interval above 80ms at most 200ms; caption accuracy and spoken-word
-coverage at least 98% with no uncaptioned speech over one second; 100% material
-claim citations; zero accepted unsupported claims; 100% refusal on deliberately
-unsupported cases; zero identity, face, clothing, hair, background, or
+continuous interval above 80ms at most 200ms; caption word accuracy and
+spoken-word coverage at least 98% with no uncaptioned audible speech over one
+second; 100% material claim citations; zero accepted unsupported claims; 100%
+refusal on deliberately unsupported cases; zero identity, face, clothing, hair, background, or
 presenter-switch violations; zero severe malformed-limb/finger defects; no
 identical unnecessary gesture more than twice consecutively;
 WCAG 2.2 AA keyboard, screen-reader, focus, caption, and reduced-motion
@@ -725,9 +730,10 @@ first implementation, with arbitrary third-party enrollment outside Cut 5;
 restricted biometric classification and least retention;
 encryption/key custody/ACL/audit/backup/index/cloud-sync/restore controls; an
 immediate kill switch; immediate revocation of generation/playback/sharing/
-export; `DELETION_PENDING` on provider deletion failure; provider/CDN/cache/
-backup cascade with minimal tombstone; reconsent after material provider/model/
-purpose/audience/destination/likeness/voice changes; visible disclosure for
+export; `DELETION_PENDING` on provider deletion failure, never `DELETED`;
+provider/CDN/cache/backup deletion cascade with retained minimal legal/audit
+tombstone; reconsent after provider/model/purpose/audience/destination or
+material likeness/voice change; visible disclosure for
 invite/public derivatives; and preservation of provider-required watermarks or
 content credentials.
 Provider-required watermarks or content credentials are never removed,
@@ -752,7 +758,7 @@ public use only after multi-tenant authorization and 100% cross-tenant denial
 tests; tenant BYOK and operator-credential separation; SLOs, SLIs, error budgets,
 alerts, dashboards, runbooks, on-call, incident response, and postmortems; 99.5%
 internal and 99.9% commercial availability targets; RTO at most four hours and
-RPO at most 15 minutes proved by drills; capacity/queue/concurrency/backpressure/
+RPO at most 15 minutes proven by failover/restore drills; capacity/queue/concurrency/backpressure/
 timeout/rate-limit/quota/storage/egress/cost evidence; provider/model canary,
 migration, drain, retirement, and rollback; SBOM, dependency/license review,
 image scans, signing, provenance, and third-party notices; residency/DPA/
@@ -1111,12 +1117,12 @@ unresolved disclosure; and intercepted, placeholder, provider-URL, or
 mismatched-download browser success.
 
 Browser acceptance uses real backend/store without interception and proves auth/
-isolation, Range/content headers, moving frames/audio, seek/pause/resume/reload/
+isolation, Range/content headers, advancing frames and audible speech, seek/pause/resume/reload/
 restart, captions/accessibility, citations/evaluation, checksum-identical
 download, and absence of placeholder/manifest/provider-URL/base64/console/
 network substitution.
 
-Human review is mandatory for presence, identity/voice, sync, gaze/expression/
+Human review is mandatory for naturalness and realistic presence, identity/voice, sync, gaze/expression/
 blink/head/torso/arms/hands/body; teeth, tongue, eyes, skin, hair, clothing,
 jewellery, fingers, and background; scene lighting, perspective, environmental
 depth, and product-screen truth; language, pronunciation, tone, cultural

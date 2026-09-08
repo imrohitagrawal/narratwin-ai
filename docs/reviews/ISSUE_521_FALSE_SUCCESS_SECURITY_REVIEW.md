@@ -30,9 +30,16 @@ The reviewer must attempt to make the candidate falsely pass by testing:
 - missing, duplicate, conflicting, unknown, or reordered source atoms;
 - changed semantic-partition counts or digests, or excluded evidence promoted
   into a normative row;
+- a fully rehashed semantic or context partition that differs from the exact
+  independently pinned partition;
+- a malformed partition that crashes validation instead of returning a stable
+  fail-closed result;
 - external-record removal, duplication, type relabelling, body-hash/cutoff
   tampering, open/closed state substituted for clause precedence, ambiguous
   alias collapse, or insertion of a raw body or private data;
+- any change beyond the seven attested identity/locator paths for the ten
+  issue-wrapper-to-pull-request corrections, or reuse of those prior
+  classifications for a normative clause;
 - source, destination, mapping, taxonomy, binding, and threshold mutation;
 - relocation or supersession without exact replacement/owner authority;
 - candidate presence, test success, CI, issue prose, comments, or self-review

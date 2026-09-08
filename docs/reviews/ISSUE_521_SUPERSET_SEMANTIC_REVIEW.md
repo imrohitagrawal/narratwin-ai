@@ -12,6 +12,20 @@ mapping, approve exact bytes, supersede V1, or activate an implementation route.
 - Candidate document SHA-256: recorded in the candidate binding.
 - Mapping SHA-256: recorded in the candidate binding.
 - Taxonomy SHA-256: recorded in the candidate binding.
+- The explicit repository/owner semantic partition contains 19,668 units across
+  91 Markdown sources and is bound by partition SHA-256
+  `1a7650934378462a520ed1ddd0f57f6339254de0ea0304478c4752e42b2384fe`.
+- The explicit governing-context partition contains 985 parent decisions,
+  12,942 relations, and 7,723 unique child decisions and is bound by SHA-256
+  `9939476b97f156ccdbc9585b7ee24b0dbfee43fe11561ee0fe365ff63982fcac`.
+- The external correction overlay excludes 185 independently reproduced
+  nonnormative clauses. The remaining 11,713 externally classified normative
+  clauses still require the exhaustive independent semantic review below.
+- Ten records formerly typed through GitHub's issue wrapper are now typed as
+  pull requests. Their attestation compares the exact frozen legacy manifest
+  with the corrected manifest, permits reuse only of `EVIDENCE_ONLY` records
+  having zero normative clauses, and explicitly records that no classifier was
+  replayed.
 - Final Git head and tree: recorded by the external review receipt. This
   committed prompt cannot self-bind the commit that contains its own bytes.
 

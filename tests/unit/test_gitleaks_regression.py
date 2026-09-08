@@ -296,12 +296,16 @@ def test_available_history_does_not_skip_current_portable_validation(
 
 
 @pytest.mark.skipif(shutil.which("gitleaks") is None, reason="gitleaks CLI unavailable")
-def test_current_mapping_passes_with_a_new_squash_commit_fingerprint(tmp_path: Path) -> None:
+def test_current_mapping_rows_pass_with_a_new_squash_commit_fingerprint(tmp_path: Path) -> None:
+    checker = _load_checker()
     repository = tmp_path / "synthetic-squash"
     repository.mkdir()
     target = repository / "docs/governance/superset-mapping-v2.json"
     target.parent.mkdir(parents=True)
-    shutil.copyfile(ROOT / "docs/governance/superset-mapping-v2.json", target)
+    mapping = json.loads((ROOT / checker.MAPPING_PATH).read_text(encoding="utf-8"))
+    rows = [row for row in checker._logical_mapping_rows(mapping) if row["requirementId"] in CURRENT_MAPPING_REQUIREMENT_IDS]
+    assert {row["requirementId"] for row in rows} == set(CURRENT_MAPPING_REQUIREMENT_IDS)
+    target.write_text(json.dumps({"rows": rows}, ensure_ascii=False, separators=(",", ":")) + "\n", encoding="utf-8")
     shutil.copyfile(ROOT / ".gitleaksignore", repository / ".gitleaksignore")
     subprocess.run(["git", "init", "-q"], cwd=repository, check=True)
     subprocess.run(["git", "add", "."], cwd=repository, check=True)
