@@ -827,3 +827,12 @@ remain separate gates.
 | Govern multi-reference media | Proposed `PresenterReferencePackV1` layers and provider-specific selection rules | Current presenter anchors remain immutable; additional Meera/Myra/Raj derivatives require a separate exact-hash route and human approval |
 | Compare costs honestly | 726.691502-second Plan A totals; Plan B 90/180-second and 25/50/100-percent scenarios; Flow credits | Estimates exclude retries, failures, subscriptions, labor, storage and tax and grant no spend authority |
 | Preserve plug-and-play architecture | `AvatarProvider`, future `BrollProvider`, `VideoCompositor`, capability manifest and validated runtime policy | Provider switching applies only to implemented/reviewed adapters; domain, grounding, safety and acceptance remain NarraTwin-owned |
+
+## Issue #523 test-transport dependency-security traceability
+
+| Requirement | Canonical evidence | Preserved boundary |
+|---|---|---|
+| Remove five reported advisories without suppression | Issue #523, ADR 0081, exact official `httpx2`/`httpcore2` 2.12.0 artifacts, strict dependency audit | No ignore, waiver, alternate registry, VCS source, or vendoring |
+| Preserve the complete resolved graph | Exact Emscripten-only `httpx2-jsfetch` 1.0 record plus dependency/marker/provenance mutation tests | Required related transitive record only; unrelated project and lock drift rejects |
+| Preserve API-test behavior | Starlette/FastAPI TestClient suite, typecheck, full quality, and hosted push/PR topology | Development/test transport only; backend image and product paths remain unchanged |
+| Keep G1 scope honest | Independent Issue #523 branch/PR consumed by Issue #521 only after accepted-main merge | No G1 path expansion and no provider call, upload, spend, media, release, or production authority |

@@ -2170,3 +2170,17 @@ human acceptance, deployment, release, production-readiness, or Cut 1 evidence.
   changes research sequencing, records ADR 0079, and corrects that reproducibility
   defect; no provider is selected or activated, and T06, T07, T08, Cut 1,
   deployment, publication, release, and production readiness remain incomplete.
+
+## Issue #523 httpx2/httpcore2 security prerequisite (2026-09-09)
+
+- The public advisory feed now rejects development/test-only `httpx2` and
+  `httpcore2` 2.5.0 for five CVEs, so the strict dependency gate blocks despite
+  both packages being absent from the `--no-dev` backend image.
+- Issue #523 uses TDD to bind the sole direct requirement to
+  `httpx2>=2.12.0`, the exact official 2.12.0 `httpx2`/`httpcore2` records, and
+  the official Emscripten-only `httpx2-jsfetch` 1.0 transitive record. Unrelated
+  project and lock changes fail closed.
+- This independent prerequisite must pass local and hosted review before Issue
+  #521 can consume accepted main and complete its final revalidation. It changes
+  no product/provider behavior and authorizes no call, upload, credential,
+  egress, spend, media, deployment, release, or production claim.

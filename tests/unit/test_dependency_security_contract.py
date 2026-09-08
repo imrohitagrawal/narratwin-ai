@@ -89,6 +89,18 @@ HTTPCORE2_WHEEL = (
     "7e04258ce01013d7d615e5b910a3b27fac937d7a95038227e79652b4ba3b4ceb",
     83074,
 )
+HTTPX2_JSFETCH_SDIST = (
+    "https://files.pythonhosted.org/packages/cd/c4/0e5636363151a2a1795e0a77617168b9ca438e1748ec05fc9b5687f93d64/"
+    "httpx2_jsfetch-1.0.tar.gz",
+    "70a0e3eabfef7cce5ad9c629f7d01ca05e418f586646f4ddf14782e4c1454c60",
+    6872,
+)
+HTTPX2_JSFETCH_WHEEL = (
+    "https://files.pythonhosted.org/packages/9b/43/832f631d32e4f1211caa2ba368317739fe71f0b8530e4c9d15dc454bac2a/"
+    "httpx2_jsfetch-1.0-py3-none-any.whl",
+    "cb916b707601e69a07721aabc8f3f6659be3a6893bc1ff5c6f9e02241df2da32",
+    6382,
+)
 PIP_SECURITY_VERSION = "26.2.1"
 PIP_SECURITY_WHEEL_SHA256 = "71138adf1f4ca900cdb7d289c21b7494329f2332b6d85f0e1c42108c0384ed3e"
 PIP_SECURITY_SDIST_SHA256 = "f6ad667e89a1fe78046c8f13232b247200f5258d7828f3f7883d660878e0813f"
@@ -163,6 +175,29 @@ def _normalize_t03_pillow_dev_delta(project: dict[str, Any], lock: dict[str, Any
     root_dev.remove({"name": "pillow"})
     root_metadata.remove({"name": "pillow", "specifier": ">=12.3.0"})
     lock["package"] = [package for package in lock["package"] if package["name"] != "pillow"]
+
+
+def _normalize_issue523_httpx2_delta(
+    project: dict[str, Any], lock: dict[str, Any], base_project: dict[str, Any],
+    base_lock: dict[str, Any],
+) -> None:
+    dev = project["dependency-groups"]["dev"]
+    assert dev.count("httpx2>=2.12.0") == 1
+    dev[dev.index("httpx2>=2.12.0")] = "httpx2>=2.5.0"
+    root = next(item for item in lock["package"] if item["name"] == "narratwin-ai")
+    metadata = root["metadata"]["requires-dev"]["dev"]
+    current = {"name": "httpx2", "specifier": ">=2.12.0"}
+    assert metadata.count(current) == 1
+    metadata[metadata.index(current)] = {"name": "httpx2", "specifier": ">=2.5.0"}
+    base_records = {item["name"]: item for item in base_lock["package"]}
+    assert [item["version"] for item in lock["package"] if item["name"] == "httpx2"] == ["2.12.0"]
+    assert [item["version"] for item in lock["package"] if item["name"] == "httpcore2"] == ["2.12.0"]
+    assert [item["version"] for item in lock["package"] if item["name"] == "httpx2-jsfetch"] == ["1.0"]
+    lock["package"] = [
+        base_records[item["name"]] if item["name"] in {"httpx2", "httpcore2"} else item
+        for item in lock["package"] if item["name"] != "httpx2-jsfetch"
+    ]
+    assert next(value for value in base_project["dependency-groups"]["dev"] if value.startswith("httpx2")) == "httpx2>=2.5.0"
 
 
 def _assert_google_auth_delta(project: dict[str, Any], lock: dict[str, Any], base_project: dict[str, Any], base_lock: dict[str, Any]) -> None:
@@ -260,6 +295,7 @@ def _assert_pypdf_6162_contract(project_text: str, lock_text: str) -> None:
     project, lock = tomllib.loads(project_text), tomllib.loads(lock_text)
     base_project = tomllib.loads(_text_at(ISSUE401_BASE, "pyproject.toml"))
     base_lock = tomllib.loads(_text_at(ISSUE401_BASE, "uv.lock"))
+    _normalize_issue523_httpx2_delta(project, lock, base_project, base_lock)
     dependencies = project["project"]["dependencies"]
     assert [value for value in dependencies if value.startswith("pypdf")] == ["pypdf>=6.16.2"]
     google_project = copy.deepcopy(project)
@@ -426,7 +462,21 @@ def _assert_httpx2_2120_contract(project_text: str, lock_text: str) -> None:
     assert jsfetch[0]["version"] == "1.0"
     _assert_distribution(httpx2[0], HTTPX2_SDIST, HTTPX2_WHEEL)
     _assert_distribution(httpcore2[0], HTTPCORE2_SDIST, HTTPCORE2_WHEEL)
-    assert [item["name"] for item in httpx2[0]["dependencies"]].count("httpcore2") == 1
+    _assert_distribution(jsfetch[0], HTTPX2_JSFETCH_SDIST, HTTPX2_JSFETCH_WHEEL)
+    assert httpx2[0]["dependencies"] == [
+        {"name": "anyio", "marker": "sys_platform != 'emscripten'"},
+        {"name": "httpcore2", "marker": "sys_platform != 'emscripten'"},
+        {"name": "httpx2-jsfetch", "marker": "sys_platform == 'emscripten'"},
+        {"name": "idna"},
+        {"name": "truststore", "marker": "sys_platform != 'emscripten'"},
+    ]
+    assert httpcore2[0]["dependencies"] == [
+        {"name": "h11", "marker": "sys_platform != 'emscripten'"},
+        {"name": "truststore", "marker": "sys_platform != 'emscripten'"},
+    ]
+    assert set(httpx2[0]) == {"name", "version", "source", "dependencies", "sdist", "wheels"}
+    assert set(httpcore2[0]) == {"name", "version", "source", "dependencies", "sdist", "wheels"}
+    assert set(jsfetch[0]) == {"name", "version", "source", "sdist", "wheels"}
 
     root = next(item for item in packages if item["name"] == "narratwin-ai")
     assert root["dev-dependencies"]["dev"].count({"name": "httpx2"}) == 1
@@ -468,6 +518,10 @@ def test_root_httpx2_resolution_is_exact_isolated_and_patched() -> None:
 def test_httpx2_contract_rejects_vulnerable_substituted_and_unrelated_drift() -> None:
     project_text = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
     lock_text = (ROOT / "uv.lock").read_text(encoding="utf-8")
+    header = 'name = "httpx2"\nversion = "2.12.0"'
+    block_start = lock_text.index("[[package]]\n" + header)
+    block_end = lock_text.index("\n[[package]]", block_start + 1)
+    block = lock_text[block_start:block_end]
     mutations = (
         (project_text.replace("httpx2>=2.12.0", "httpx2>=2.11.0"), lock_text),
         (project_text.replace('    "httpx2>=2.12.0",\n', ""), lock_text),
@@ -484,7 +538,24 @@ def test_httpx2_contract_rejects_vulnerable_substituted_and_unrelated_drift() ->
         (project_text, lock_text.replace("size = 95427", "size = 95428", 1)),
         (project_text, lock_text.replace('name = "httpx2"\nversion = "2.12.0"', 'name = "httpx2"\nversion = "2.11.0"')),
         (project_text, lock_text.replace('name = "httpcore2"\nversion = "2.12.0"', 'name = "httpcore2"\nversion = "2.10.0"')),
-        (project_text, lock_text.replace('{ name = "httpcore2" }', '{ name = "forged-core" }', 1)),
+        (
+            project_text,
+            lock_text.replace(
+                '{ name = "httpcore2", marker = "sys_platform != \'emscripten\'" }',
+                '{ name = "forged-core", marker = "sys_platform != \'emscripten\'" }',
+                1,
+            ),
+        ),
+        (
+            project_text,
+            lock_text.replace(
+                '    { name = "idna" },',
+                '    { name = "idna" },\n    { name = "forged-extra" },',
+                1,
+            ),
+        ),
+        (project_text, lock_text[:block_end] + "\n" + block + lock_text[block_end:]),
+        (project_text, lock_text.replace(f"sha256:{HTTPX2_JSFETCH_WHEEL[1]}", "sha256:wrong")),
         (project_text, lock_text.replace('source = { registry = "https://pypi.org/simple" }', 'source = { registry = "https://example.invalid/simple" }', 1)),
         (project_text.replace('    "bandit>=1.9.4",', '    "bandit>=1.9.5",'), lock_text),
     )

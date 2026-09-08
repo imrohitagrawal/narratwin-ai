@@ -409,3 +409,18 @@ Source: [Docker Official Node image](https://hub.docker.com/_/node) and
 [Node Docker Alpine variant guidance](https://github.com/nodejs/docker-node#image-variants).
 This notice does not authorize redistribution beyond applicable licenses,
 deployment, public availability, release, or production use.
+
+## Issue #523 test-transport security refresh
+
+The development/test graph resolves official PyPI `httpx2` 2.12.0 and its
+exact `httpcore2` 2.12.0 dependency. The universal lock also contains
+`httpx2-jsfetch` 1.0 for the package's Emscripten-only transport path. All three
+declare BSD-3-Clause upstream. The backend runtime image uses `--no-dev`; these
+records support Starlette/FastAPI test transport and do not add an application
+network client or browser runtime.
+
+Sources: official PyPI metadata and artifacts for `httpx2` 2.12.0,
+`httpcore2` 2.12.0, and `httpx2-jsfetch` 1.0, reviewed 2026-09-09. Final license
+and distribution conclusions remain subject to human legal review. This refresh
+grants no provider, credential, egress, spend, media, deployment, release, or
+production authority.

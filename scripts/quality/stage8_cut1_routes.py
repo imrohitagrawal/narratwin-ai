@@ -31,6 +31,7 @@ ISSUE479_BRANCH = "cut1-process-479-t05c-listening-authority"
 ISSUE482_BRANCH = "cut1-process-482-dependency-security-refresh"
 ISSUE495_BRANCH = "stage8-495-browserslist-security-refresh"
 ISSUE499_BRANCH = "stage8-499-pypdf-6-16-2-security-refresh"
+ISSUE523_BRANCH = "stage8-523-httpx2-2-12-security-refresh"
 ISSUE502_BRANCH = "stage8-502-frontend-musl-runtime-security"
 ISSUE507_BRANCH = "stage8-507-google-api-core-grpc-status"
 ISSUE509_BRANCH = "stage8-509-configurable-audio-duration"
@@ -185,6 +186,10 @@ ISSUE499_BASE = "d1f5400f5c6dfec5d4b63eb3a83aa82e3330743f"
 ISSUE499_TREE = "905f562c17e66abf1839e673940f80aca4330cfc"
 ISSUE499_ROUTE_COMMENT = "5500895575"
 ISSUE499_ROUTE_SHA256 = "e0a4fcfadb274efa6ca36e7b076d096e4e8a228de9b9321f6eaa740255c27ae2"
+ISSUE523_BASE = "b6b0c05c7227428ff0841361f3970b0b2c40aa86"
+ISSUE523_TREE = "2a8fc73f5cfc9210fabfdb425d00a07d345fa24f"
+ISSUE523_ROUTE_COMMENT = "5592344400"
+ISSUE523_ROUTE_SHA256 = "924445e028a7c8e9a67e4e537f5628c737fda99737c0fb62e637023e5aadd876"
 ISSUE502_BASE = "e1fe126372d5c5a06dc7d2f9c76cb205da8643e7"
 ISSUE502_TREE = "76495e566a78a7951c33314ac742606c85ee92e5"
 ISSUE502_ROUTE_COMMENT = "5507883668"
@@ -393,6 +398,18 @@ ROUTES = {
         "tests/unit/test_stage8_cut1_routes.py",
         "tests/unit/test_dependency_security_contract.py",
         "docs/ADR/0075-pypdf-6-16-2-security-refresh.md",
+        "docs/STATUS.md",
+        "docs/THIRD_PARTY_NOTICES.md",
+        "docs/TRACEABILITY.md",
+    },
+    ISSUE523_BRANCH: {
+        "docs/governance/preflights/issue-523-httpx2-2-12-security-refresh.json",
+        "pyproject.toml",
+        "uv.lock",
+        "scripts/quality/stage8_cut1_routes.py",
+        "tests/unit/test_stage8_cut1_routes.py",
+        "tests/unit/test_dependency_security_contract.py",
+        "docs/ADR/0081-httpx2-2-12-security-refresh.md",
         "docs/STATUS.md",
         "docs/THIRD_PARTY_NOTICES.md",
         "docs/TRACEABILITY.md",
@@ -1013,6 +1030,8 @@ ROUTE_ISSUES[ISSUE495_BRANCH] = 495
 TOTAL_LIMITS[ISSUE495_BRANCH] = 1300
 ROUTE_ISSUES[ISSUE499_BRANCH] = 499
 TOTAL_LIMITS[ISSUE499_BRANCH] = 1000
+ROUTE_ISSUES[ISSUE523_BRANCH] = 523
+TOTAL_LIMITS[ISSUE523_BRANCH] = 1000
 ROUTE_ISSUES[ISSUE502_BRANCH] = 502
 TOTAL_LIMITS[ISSUE502_BRANCH] = 4660
 ROUTE_ISSUES[ISSUE507_BRANCH] = 507
@@ -1200,6 +1219,18 @@ TEXT_LIMITS = {
         "tests/unit/test_stage8_cut1_routes.py": 140,
         "tests/unit/test_dependency_security_contract.py": 220,
         "docs/ADR/0075-pypdf-6-16-2-security-refresh.md": 80,
+        "docs/STATUS.md": 40,
+        "docs/THIRD_PARTY_NOTICES.md": 40,
+        "docs/TRACEABILITY.md": 20,
+    },
+    ISSUE523_BRANCH: {
+        "docs/governance/preflights/issue-523-httpx2-2-12-security-refresh.json": 220,
+        "pyproject.toml": 20,
+        "uv.lock": 160,
+        "scripts/quality/stage8_cut1_routes.py": 140,
+        "tests/unit/test_stage8_cut1_routes.py": 160,
+        "tests/unit/test_dependency_security_contract.py": 220,
+        "docs/ADR/0081-httpx2-2-12-security-refresh.md": 80,
         "docs/STATUS.md": 40,
         "docs/THIRD_PARTY_NOTICES.md": 40,
         "docs/TRACEABILITY.md": 20,
@@ -2183,6 +2214,7 @@ def route_base(run: Callable[[list[str]], Any], branch: str) -> str:
         ISSUE509_BRANCH: (509, ISSUE509_BASE),
         ISSUE507_BRANCH: (507, ISSUE507_BASE),
         ISSUE502_BRANCH: (502, ISSUE502_BASE),
+        ISSUE523_BRANCH: (523, ISSUE523_BASE),
         ISSUE499_BRANCH: (499, ISSUE499_BASE),
         ISSUE495_BRANCH: (495, ISSUE495_BASE),
         ISSUE482_BRANCH: (482, ISSUE482_BASE),
@@ -2754,7 +2786,31 @@ def check_exact_route(
                 failures.append("Issue #368 binding compatibility authority drifted.")
         except (OSError, ValueError, TypeError) as error:
             failures.append(f"Issue #368 binding compatibility preflight failed closed: {error}")
-    if branch == ISSUE499_BRANCH:
+    if branch == ISSUE523_BRANCH:
+        try:
+            preflight = load_json_without_duplicate_members(
+                root
+                / "docs/governance/preflights/issue-523-httpx2-2-12-security-refresh.json"
+            )
+            findings = validate_governance_preflight(
+                preflight,
+                context={"issue_number": 523, "branch": branch, "changed_files": sorted(files)},
+            )
+            failures.extend(f"Issue #523 governance preflight failed: {item.code}" for item in findings)
+            objective = preflight.get("objective") if isinstance(preflight, dict) else None
+            authority_expected = (
+                ISSUE523_BASE,
+                ISSUE523_TREE,
+                ISSUE523_ROUTE_COMMENT,
+                ISSUE523_ROUTE_SHA256,
+            )
+            if not isinstance(objective, str) or any(
+                item not in objective for item in authority_expected
+            ):
+                failures.append("Issue #523 dependency authority drifted.")
+        except (OSError, ValueError, TypeError) as error:
+            failures.append(f"Issue #523 governance preflight failed closed: {error}")
+    elif branch == ISSUE499_BRANCH:
         try:
             preflight = load_json_without_duplicate_members(
                 root / "docs/governance/preflights/issue-499-pypdf-6-16-2-security-refresh.json"
