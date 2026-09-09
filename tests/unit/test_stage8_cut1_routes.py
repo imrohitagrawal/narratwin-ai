@@ -5445,6 +5445,10 @@ def test_issue523_route_freezes_the_exact_atomic_security_convergence() -> None:
         "5604916338",
         "785914c7f8d7b362a6ed913077d18f72cf46a2e0b7d4d8e5fd9421468bfe855a",
     )
+    assert routes.ISSUE523_RUNTIME_INVENTORY_AMENDMENT == (
+        "5605296135",
+        "34174569a15270ef74cbbe6ca287206d32dc607c936e40a7b2b205c36e018b2f",
+    )
     assert routes.ISSUE523_ATOMIC_CHILDREN == (
         (
             "b1d3198d1c334b22b367d9341c9186bdbc2e01a7",
@@ -5537,6 +5541,7 @@ def test_issue523_route_freezes_the_exact_atomic_security_convergence() -> None:
         *routes.ISSUE523_HOSTED_COMPATIBILITY_AMENDMENT,
         *routes.ISSUE523_HOSTED_SCAN_AMENDMENT,
         *routes.ISSUE523_REVIEWED_INPUT_CORRECTION,
+        *routes.ISSUE523_RUNTIME_INVENTORY_AMENDMENT,
         *(value for pair in routes.ISSUE523_ATOMIC_CHILDREN for value in pair),
         *(value for pair in routes.ISSUE523_ATOMIC_REVIEWS for value in pair),
         *(value for row in routes.ISSUE523_ATOMIC_MERGES for value in row),
@@ -5558,6 +5563,8 @@ def test_issue523_route_freezes_the_exact_atomic_security_convergence() -> None:
         "3f4d64e0ce974390e6d4c3f3a6057a5309bc73ca3fc98520bd1f4922a2c550b4",
         "5604916338",
         "785914c7f8d7b362a6ed913077d18f72cf46a2e0b7d4d8e5fd9421468bfe855a",
+        "5605296135",
+        "34174569a15270ef74cbbe6ca287206d32dc607c936e40a7b2b205c36e018b2f",
     ),
 )
 def test_issue523_route_rejects_evidence_correction_drift(

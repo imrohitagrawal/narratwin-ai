@@ -513,12 +513,12 @@ def test_frontend_config_is_not_passed_in_python_argv(tmp_path: Path) -> None:
 def test_frontend_inventory_contract_is_bounded_and_architecture_bound() -> None:
     module = _load()
     matches = module.frontend_inventory_matches
-    amd64 = "1596:f868cddbe615d21fb965633253098ada945041edfb5ab7325956a669554ceecd"
-    arm64 = "1596:18df82960aa5cbd5b17217eb918a6c50cc450e608a75ac6bf6c70c230ac0a784"
-    assert module.FRONTEND_INVENTORY_RECORD_BOUNDS == {"amd64": (1580, 1620), "arm64": (1580, 1620)}
+    amd64 = "1650:aabc0bb1ec3414df8feeae046efd7801189dd4f1ea5933aa8fec45dd1473b8cd"
+    arm64 = "1650:18df82960aa5cbd5b17217eb918a6c50cc450e608a75ac6bf6c70c230ac0a784"
+    assert module.FRONTEND_INVENTORY_RECORD_BOUNDS == {"amd64": (1630, 1670), "arm64": (1630, 1670)}
     assert matches("amd64", amd64)
     assert matches("arm64", arm64)
-    assert matches("amd64", "1595:92e816bae28c8e5dcfe7d955f26952f58b932206005556f81598128e2276f152")
+    assert matches("amd64", "1649:92e816bae28c8e5dcfe7d955f26952f58b932206005556f81598128e2276f152")
     assert not matches("unknown", amd64)
     for stale in (
         "1805:9a18413ff9fefd9c665595ab2564c72bb706dcf81b490fffd59b23653ad73858",
@@ -531,7 +531,13 @@ def test_frontend_inventory_contract_is_bounded_and_architecture_bound() -> None
     ):
         assert not matches("amd64", stale)
         assert not matches("arm64", stale)
-    for malformed in ("1579:" + "0" * 64, "1621:" + "0" * 64, "1596:" + "G" * 64, "1596:short"):
+    for malformed in (
+        "1629:" + "0" * 64,
+        "1671:" + "0" * 64,
+        "1596:" + "0" * 64,
+        "1650:" + "G" * 64,
+        "1650:short",
+    ):
         assert not matches("amd64", malformed)
 
 
