@@ -454,17 +454,9 @@ def test_frontend_reproduction_cli_emits_only_sanitized_delta() -> None:
 
 def test_runtime_inventory_script_wires_four_line_sanitized_diagnostic() -> None:
     source = (ROOT / "scripts/ci/docker-image-scan.sh").read_text(encoding="utf-8")
-    for marker in ("FrontendRuntimeInventoryDiagnosticV1", "primary_inventory_diagnostic",
-                   "reproduction_inventory_diagnostic", "'%s\\n%s\\n%s\\n%s\\n'"):
-        assert marker in source
-    start = source.index('actual_inventory_output="$(docker run')
-    end = source.index('\n  if [[ "${actual_inventory_output}"', start)
-    inventory_command = source[start:end]
+    inventory_command = source[(start := source.index('actual_inventory_output="$(docker run')):source.index('\n  if [[ "${actual_inventory_output}"', start)]
     cache_disable = "--env NODE_DISABLE_COMPILE_CACHE=1"
-    assert source.count(cache_disable) == 1
-    assert inventory_command.count(cache_disable) == 1
-    skip_start = source.index("const skip=new Set", start)
-    assert "/tmp" not in source[skip_start:source.index(";", skip_start)]
+    assert all(marker in source for marker in ("FrontendRuntimeInventoryDiagnosticV1", "primary_inventory_diagnostic", "reproduction_inventory_diagnostic", "'%s\\n%s\\n%s\\n%s\\n'")) and source.count(cache_disable) == inventory_command.count(cache_disable) == 1 and "/tmp" not in inventory_command
 
 
 def test_frontend_reproduction_inventory_rejection_survives_optimized_python() -> None:
