@@ -286,6 +286,7 @@ def test_stackclimb_schema_notice_preserves_source_license_and_attribution() -> 
     section = notices.split("## Issue #524 frontend security refresh", 1)[1]
     for required in (
         "LicenseRef-stackclimb-source-v1",
+        "shared/schemas/task-resource-ledger-v1.schema.json",
         "f74c8f2fdc0e2edd955b999216d660d06c69986b98427d1147f404f27057c8f5",
         "Copyright (c) 2026 Rohit Agrawal",
         "Permission is hereby granted",
@@ -295,6 +296,9 @@ def test_stackclimb_schema_notice_preserves_source_license_and_attribution() -> 
         "https://www.linkedin.com/in/rohitagrawal14/",
     ):
         assert required in section
+    assert "shared/schemas/task-resource-ledger-v1.schema.json" in (
+        ROOT / "docs/SKILL_LOCK.md"
+    ).read_text(encoding="utf-8")
 
 
 def _base_text(path: str) -> str:
