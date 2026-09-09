@@ -5572,6 +5572,8 @@ def test_issue523_route_freezes_the_exact_atomic_security_convergence() -> None:
         "785914c7f8d7b362a6ed913077d18f72cf46a2e0b7d4d8e5fd9421468bfe855a",
         "5605296135",
         "34174569a15270ef74cbbe6ca287206d32dc607c936e40a7b2b205c36e018b2f",
+        "5605975407",
+        "66e9a7c91a69c82293c3b56781724819d629abeaa2d8c0aa9501d905be526f4f",
     ),
 )
 def test_issue523_route_rejects_evidence_correction_drift(

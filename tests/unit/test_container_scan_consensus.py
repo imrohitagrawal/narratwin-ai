@@ -413,20 +413,27 @@ def test_frontend_inventory_delta_is_sanitized_sorted_and_bounded() -> None:
         ],
     }
     for mutation in (
-        {"schema_version": "wrong", "records": []},
-        _inventory_manifest([_inventory_detail("relative", "a" * 64)], "1" * 64),
+        {**_inventory_manifest([_inventory_detail("/app/a", "a" * 64)], "1" * 64), "inventory": "2:" + "1" * 64}, {**_inventory_manifest([_inventory_detail("/app/a", "a" * 64)], "1" * 64), "inventory": "1:" + "1" * 64 + "\n"},
+        _inventory_manifest([_inventory_detail("relative", "a" * 64)], "1" * 64), _inventory_manifest([_inventory_detail("//app/a", "a" * 64)], "1" * 64), _inventory_manifest([_inventory_detail("/app/../etc/passwd", "a" * 64)], "1" * 64),
         _inventory_manifest([_inventory_detail("/app/secret\nvalue", "a" * 64)], "1" * 64),
-        _inventory_manifest([_inventory_detail("/app/a", "A" * 64)], "1" * 64),
+        _inventory_manifest([_inventory_detail("/app/a", "A" * 64)], "1" * 64), _inventory_manifest([_inventory_detail("/app/a", "a" * 64 + "\n")], "1" * 64),
         _inventory_manifest([_inventory_detail("/app/a", "a" * 64)] * 2, "1" * 64),
     ):
         assert module.frontend_inventory_delta(mutation, reproduction) is None
+    restricted_path = _inventory_manifest([_inventory_detail("/app/private-token", "a" * 64)], "1" * 64)
+    assert module.frontend_inventory_delta(primary, primary) is None and module.frontend_inventory_delta(restricted_path, reproduction, forbidden_values=("private-token",)) is None and module.frontend_inventory_delta(_inventory_manifest([_inventory_detail("/app/a", "a" * 64)], "1" * 64), reproduction, forbidden_values=("a" * 64,)) is None
+    for key, invalid in (("kind", "X"), ("mode", True), ("uid", -1), ("gid", 2**31)):
+        row = {**_inventory_detail("/app/a", "a" * 64), key: invalid}
+        assert module.frontend_inventory_delta(_inventory_manifest([row], "1" * 64), reproduction) is None
 
 
 def test_frontend_reproduction_cli_emits_only_sanitized_delta() -> None:
     primary = {"buildId": "stable", "architecture": "amd64", "inventory": "1650:" + "a" * 64,
-               "previewModeId": "1", "previewModeSigningKey": "2", "previewModeEncryptionKey": "3", "serverActionKey": "4"}
-    reproduction = {**primary, "inventory": "1650:" + "b" * 64, "previewModeId": "5",
-                    "previewModeSigningKey": "6", "previewModeEncryptionKey": "7", "serverActionKey": "8"}
+               "previewModeId": "1" * 32, "previewModeSigningKey": "2" * 64,
+               "previewModeEncryptionKey": "3" * 64, "serverActionKey": "A" * 43 + "="}
+    reproduction = {**primary, "inventory": "1650:" + "b" * 64, "previewModeId": "5" * 32,
+                    "previewModeSigningKey": "6" * 64, "previewModeEncryptionKey": "7" * 64,
+                    "serverActionKey": "B" * 43 + "="}
     left_records = [_inventory_detail(f"/app/runtime-{index:04d}", "c" * 64) for index in range(1650)]
     right_records = copy.deepcopy(left_records)
     right_records[0]["sha256"] = "d" * 64
@@ -440,6 +447,7 @@ def test_frontend_reproduction_cli_emits_only_sanitized_delta() -> None:
     assert completed.returncode == 1
     result = json.loads(completed.stdout)
     assert result["findings"] == ["FRONTEND_RUNTIME_INVENTORY_CHANGED"]
+    assert primary["previewModeId"] not in completed.stdout
     assert result["diagnostic"]["differences"][0]["path"] == "/app/runtime-0000"
     assert set(result["diagnostic"]["differences"][0]) == {"path", "primary", "reproduction"}
 
@@ -473,7 +481,7 @@ def test_runtime_inventory_orchestration_preserves_failures_and_distinct_values(
     log = tmp_path / "reproduction.log"
     harness = f'''set -euo pipefail
 prepare_frontend_images() {{ :; }}
-verify_frontend_runtime() {{ false; printf -v "${{2:-ignored}}" %s "$1-inventory"; }}
+verify_frontend_runtime() {{ false; printf -v "${{2:-ignored}}" %s "$1-inventory"; printf -v "${{3:-ignored}}" %s "$1-diagnostic"; }}
 verify_frontend_reproducibility() {{ printf '%s\n' "$@" >"$LOG"; }}
 {block}
 '''
@@ -483,7 +491,7 @@ verify_frontend_reproducibility() {{ printf '%s\n' "$@" >"$LOG"; }}
     harness = harness.replace("verify_frontend_runtime() { false;", "verify_frontend_runtime() { :;")
     passed = subprocess.run(["bash"], input=harness, env=env, text=True, check=False)
     assert passed.returncode == 0
-    assert log.read_text().splitlines() == ["primary:tag", "repro:tag", "primary:tag-inventory", "repro:tag-inventory"]
+    assert log.read_text().splitlines() == ["primary:tag", "repro:tag", "primary:tag-inventory", "repro:tag-inventory", "primary:tag-diagnostic", "repro:tag-diagnostic"]
 
 
 def test_frontend_config_accepts_only_exact_host_engine_defaults() -> None:

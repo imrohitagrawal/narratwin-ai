@@ -2208,6 +2208,13 @@ human acceptance, deployment, release, production-readiness, or Cut 1 evidence.
   `1630..1670` ranges for the reviewed 1,650-record frontend graph. Exact
   primary/reproduction digest equality and both hosted architectures still gate
   acceptance.
+  Hosted run `34380945721` then reproduced a primary/reproduction digest
+  mismatch after both inventories passed architecture, syntax, and count gates.
+  Diagnostic amendment `5605975407` expands the exact route to thirty-three
+  paths, with no cap increase, for one sanitized maximum-twenty-path delta and
+  at most one cause-specific correction. The diagnostic cannot expose content
+  or secrets, alter the verdict, widen bounds, fix build keys, or authorize a
+  retry; this candidate remains unaccepted until both architectures pass.
   Normal non-fast-forward merges `30bdcecf` then `8ac8a6ea` preserve the #524
   and #525 RED/GREEN ancestry in that order. The composed Python lock proof
   removes the exact HTTPX and JSONSchema deltas before comparing with base, so

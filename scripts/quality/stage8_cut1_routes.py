@@ -218,6 +218,10 @@ ISSUE523_RUNTIME_INVENTORY_AMENDMENT = (
     "5605296135",
     "34174569a15270ef74cbbe6ca287206d32dc607c936e40a7b2b205c36e018b2f",
 )
+ISSUE523_REPRO_DIAGNOSTIC_AMENDMENT = (
+    "5605975407",
+    "66e9a7c91a69c82293c3b56781724819d629abeaa2d8c0aa9501d905be526f4f",
+)
 ISSUE523_ATOMIC_CHILDREN = (
     (
         "b1d3198d1c334b22b367d9341c9186bdbc2e01a7",
@@ -547,6 +551,7 @@ ROUTES = {
         "pyproject.toml",
         "uv.lock",
         "scripts/ci/check_container_scan_consensus.py",
+        "scripts/ci/docker-image-scan.sh",
         "scripts/ci/dependency-security.sh",
         "scripts/ci/prepare_frontend_npm.mjs",
         "scripts/quality/check_stage8_docs.py",
@@ -1424,6 +1429,7 @@ TEXT_LIMITS = {
         "pyproject.toml": 60,
         "uv.lock": 300,
         "scripts/ci/check_container_scan_consensus.py": 80,
+        "scripts/ci/docker-image-scan.sh": 360,
         "scripts/ci/dependency-security.sh": 80,
         "scripts/ci/prepare_frontend_npm.mjs": 120,
         "scripts/quality/check_stage8_docs.py": 40,
@@ -3249,6 +3255,7 @@ def check_exact_route(
                 *ISSUE523_HOSTED_SCAN_AMENDMENT,
                 *ISSUE523_REVIEWED_INPUT_CORRECTION,
                 *ISSUE523_RUNTIME_INVENTORY_AMENDMENT,
+                *ISSUE523_REPRO_DIAGNOSTIC_AMENDMENT,
                 *(value for pair in ISSUE523_ATOMIC_CHILDREN for value in pair),
                 *(value for pair in ISSUE523_ATOMIC_REVIEWS for value in pair),
                 *(value for row in ISSUE523_ATOMIC_MERGES for value in row),

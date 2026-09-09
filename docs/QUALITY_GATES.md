@@ -1942,3 +1942,11 @@ frontend graph produced 1,650 AMD64 records. Exact inventory syntax,
 architecture binding, and equality of the primary and independently rebuilt
 inventory digests remain mandatory. A count outside the frozen range or any
 primary/reproduction mismatch fails closed; both hosted architectures must pass.
+
+Reproducibility diagnostic amendment `5605975407` preserves that failure and
+permits one bounded hosted diagnostic cycle. Only an absolute canonical UTF-8
+path, record kind, mode, numeric owner/group, and payload SHA-256 may appear for
+at most twenty differing paths; omitted differences are counted. Raw bytes,
+symlink targets, manifests, environment values, build secrets, credentials, and
+URLs remain prohibited. Invalid or inconsistent diagnostic input returns only
+`unavailable`; it cannot remove the mismatch, change thresholds, or pass a build.
