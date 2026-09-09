@@ -1901,3 +1901,58 @@ The exact 127.661917-second, 6,127,816-byte regression shape must pass only
 under explicit 90–135 authority and fail under the default. No test or
 configuration may modify audio cadence or bytes, infer listening, call a
 provider, or claim T05/Cut 1 completion.
+
+## Issue #525 isolated schema-oracle quality gate
+
+The adversarial-convergence Draft 2020-12 oracle must use the active absolute
+project interpreter with `-I -P`, a minimal non-secret environment, and exactly
+one subprocess attempt. `NARRATWIN_SCHEMA_ORACLE_TIMEOUT_SECONDS` is a typed
+whole-second policy with default 20 and inclusive bounds 1 through 60.
+Malformed, signed, whitespace, leading-zero, decimal, exponent, nonfinite,
+boolean, nonpositive, and over-ceiling inputs reject before dispatch. Timeout,
+invalid-interpreter, and child-failure messages must not return schema,
+instance, stdout, stderr, or environment data.
+
+The locked development group must contain exactly `jsonschema==4.25.1`; the
+application and provider groups must not gain it. Exact existing PyPI artifact
+URLs, hashes, sizes, dependency set, and all unrelated lock records are frozen.
+Pass requires frozen sync, real isolated import, unchanged valid/invalid Draft
+2020-12 behavior, focused mutation coverage, complete local/hosted gates, and
+independent exact-head review. This gate proves test infrastructure only.
+
+## Issue #523 hosted Sharp compatibility gate
+
+Hosted-parity amendment `5603708565` requires the scratch frontend build to
+derive the locked libvips SONAME from exactly one canonical regular non-symlink
+file in the architecture-specific npm package. Missing, duplicate, malformed,
+symlinked, or unsupported-architecture input fails before the runtime image is
+committed. AMD64 and ARM64 SBOM consensus requires exact sharp 0.35.4, native
+sharp 0.35.4, and libvips package 1.3.3 identities. A hard-coded prior SONAME,
+stale 0.35.3/1.3.2 inventory, scan waiver, or architecture fallback fails.
+
+Hosted duplicate-scan amendment `5604753747` requires the security wrapper to
+honor an exact successful hosted-action marker before testing for a locally
+installed Gitleaks CLI. Local runs retain the real-secret canary and complete
+history scan; malformed or missing hosted markers cannot skip secret scanning.
+Correction `5604916338` keeps the wrapper's reviewed-input digest exact.
+
+Runtime-inventory amendment `5605296135` replaces both stale `1580..1620`
+record-count ranges with the same-width `1630..1670` ranges after the reviewed
+frontend graph produced 1,650 AMD64 records. Exact inventory syntax,
+architecture binding, and equality of the primary and independently rebuilt
+inventory digests remain mandatory. A count outside the frozen range or any
+primary/reproduction mismatch fails closed; both hosted architectures must pass.
+
+Reproducibility diagnostic amendment `5605975407` preserves that failure and
+permits one bounded hosted diagnostic cycle. Only an absolute canonical UTF-8
+path, record kind, mode, numeric owner/group, and payload SHA-256 may appear for
+at most twenty differing paths; omitted differences are counted. Raw bytes,
+symlink targets, manifests, environment values, build secrets, credentials, and
+URLs remain prohibited. Invalid or inconsistent diagnostic input returns only
+`unavailable`; it cannot remove the mismatch, change thresholds, or pass a build.
+The corrected cause boundary sets Node's documented
+`NODE_DISABLE_COMPILE_CACHE=1` inside the final image-assembly process before
+its first dynamic import, preventing nondeterministic
+`/tmp/node-compile-cache` bytes from being baked into the image. The later
+inventory process still walks `/tmp` without a skip, exclusion, or compensating
+normalization.

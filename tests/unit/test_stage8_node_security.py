@@ -96,10 +96,15 @@ def test_issue502_musl_closure_and_real_sharp_transform_fail_closed() -> None:
     scan = stage8.read("scripts/ci/docker-image-scan.sh")
     pins = tuple(f"{name}={version}" for name, version in security.FRONTEND_RUNTIME_PACKAGES.items())
     assert all(dockerfile.count(pin) == 1 for pin in pins)
-    assert "libvips-cpp.so.8.18.3" in dockerfile
+    copy_call = "m.copySharpLibvips('/mnt/deps','/app',process.arch)"
+    assert copy_call in dockerfile
+    assert "libvips-cpp.so.8.18.3" not in dockerfile
     assert all(marker in scan for marker in ("sharp(input).resize(2,2).png()", "Sharp transform invalid", "2x2:png"))
     mutations = [dockerfile.replace(pin, "REMOVED", 1) for pin in pins]
-    mutations += [dockerfile.replace(pins[0], f"{pins[0]} {pins[0]}", 1), dockerfile.replace("libvips-cpp.so.8.18.3", "REMOVED", 1)]
+    mutations += [
+        dockerfile.replace(pins[0], f"{pins[0]} {pins[0]}", 1),
+        dockerfile.replace(copy_call, "REMOVED", 1),
+    ]
     assert all(not security.frontend_node_image_valid(candidate) for candidate in mutations)
 
 

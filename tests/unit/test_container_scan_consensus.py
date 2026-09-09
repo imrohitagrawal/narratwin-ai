@@ -63,9 +63,9 @@ def _sbom(target: str, *, frontend: bool, architecture: str = "amd64") -> dict[s
     if frontend:
         suffix = "x64" if architecture == "amd64" else "arm64"
         components.extend([
-            {"type": "library", "name": "sharp", "version": "0.35.3", "purl": "pkg:npm/sharp@0.35.3"},
-            {"type": "library", "name": f"sharp-linuxmusl-{suffix}", "version": "0.35.3", "purl": f"pkg:npm/%40img/sharp-linuxmusl-{suffix}@0.35.3"},
-            {"type": "library", "name": f"sharp-libvips-linuxmusl-{suffix}", "version": "1.3.2", "purl": f"pkg:npm/%40img/sharp-libvips-linuxmusl-{suffix}@1.3.2"},
+            {"type": "library", "name": "sharp", "version": "0.35.4", "purl": "pkg:npm/sharp@0.35.4"},
+            {"type": "library", "name": f"sharp-linuxmusl-{suffix}", "version": "0.35.4", "purl": f"pkg:npm/%40img/sharp-linuxmusl-{suffix}@0.35.4"},
+            {"type": "library", "name": f"sharp-libvips-linuxmusl-{suffix}", "version": "1.3.3", "purl": f"pkg:npm/%40img/sharp-libvips-linuxmusl-{suffix}@1.3.3"},
         ])
     return {"bomFormat": "CycloneDX", "specVersion": "1.7", "metadata": {"component": {"type": "container", "properties": [{"name": "aquasecurity:trivy:ImageID", "value": target}]}}, "components": components}
 
@@ -219,10 +219,10 @@ def test_frontend_sbom_requires_architecture_specific_sharp_and_forbids_glibc() 
                 component["purl"] = component["purl"].replace(old, new)
         assert not validator(wrong_architecture, FRONTEND_CONFIG, required, architecture)
         for hidden_purl in (
-            f"pkg:npm/%40img/sharp-linuxmusl-{old}@0.35.3",
-            f"pkg:npm/%40img/sharp-linuxmusl-{new}@0.35.3",
-            f"pkg:npm/%40img/sharp-libvips-linuxmusl-{new}@1.3.2",
-            f"PKG:npm/%40img/sharp-linuxmusl-{new}@0.35.3",
+            f"pkg:npm/%40img/sharp-linuxmusl-{old}@0.35.4",
+            f"pkg:npm/%40img/sharp-linuxmusl-{new}@0.35.4",
+            f"pkg:npm/%40img/sharp-libvips-linuxmusl-{new}@1.3.3",
+            f"PKG:npm/%40img/sharp-linuxmusl-{new}@0.35.4",
         ):
             hidden = copy.deepcopy(sbom)
             hidden["components"].append({
@@ -233,13 +233,13 @@ def test_frontend_sbom_requires_architecture_specific_sharp_and_forbids_glibc() 
         hidden_bom_ref["components"].append({
             "type": "library", "name": "benign-native", "version": "1.0.0",
             "purl": "pkg:generic/benign-native@1.0.0",
-            "bom-ref": f"sharp-linuxmusl-{new}@0.35.3",
+            "bom-ref": f"sharp-linuxmusl-{new}@0.35.4",
         })
         assert not validator(hidden_bom_ref, FRONTEND_CONFIG, required, architecture)
         nested_sharp = copy.deepcopy(sbom)
         nested_sharp["components"][0]["components"] = [{
-            "type": "library", "name": f"sharp-linuxmusl-{new}", "version": "0.35.3",
-            "purl": f"pkg:npm/%40img/sharp-linuxmusl-{new}@0.35.3",
+            "type": "library", "name": f"sharp-linuxmusl-{new}", "version": "0.35.4",
+            "purl": f"pkg:npm/%40img/sharp-linuxmusl-{new}@0.35.4",
         }]
         assert not validator(nested_sharp, FRONTEND_CONFIG, required, architecture)
         forbidden = copy.deepcopy(sbom)
@@ -265,7 +265,7 @@ def test_frontend_sbom_requires_architecture_specific_sharp_and_forbids_glibc() 
         for property_name, value in (
             ("aquasecurity:trivy:PkgID", "glibc@2.43-r12"),
             ("aquasecurity:trivy:SrcName", "gcompat"),
-            ("aquasecurity:trivy:PkgID", f"@img/sharp-linuxmusl-{new}@0.35.3"),
+            ("aquasecurity:trivy:PkgID", f"@img/sharp-linuxmusl-{new}@0.35.4"),
         ):
             hidden = copy.deepcopy(sbom)
             hidden["components"].append({
@@ -346,7 +346,7 @@ def test_frontend_reproduction_requires_stable_build_id_and_fresh_secrets() -> N
     primary = {
         "buildId": "source-bound",
         "architecture": "amd64",
-        "inventory": "1596:f868cddbe615d21fb965633253098ada945041edfb5ab7325956a669554ceecd",
+        "inventory": "1650:aabc0bb1ec3414df8feeae046efd7801189dd4f1ea5933aa8fec45dd1473b8cd",
         "previewModeId": "1" * 32,
         "previewModeSigningKey": "2" * 64,
         "previewModeEncryptionKey": "3" * 64,
@@ -362,7 +362,7 @@ def test_frontend_reproduction_requires_stable_build_id_and_fresh_secrets() -> N
         "serverActionKey": "B" * 43 + "=",
     }
     assert validator(primary, reproduction) == []
-    reproduction["inventory"] = "1595:" + "0" * 64
+    reproduction["inventory"] = "1651:" + "0" * 64
     assert validator(primary, reproduction) == ["FRONTEND_RUNTIME_INVENTORY_CHANGED"]
     reproduction["inventory"] = primary["inventory"]
     for bad_inventory in (None, "", "unreviewed"):
@@ -383,6 +383,80 @@ def test_frontend_reproduction_requires_stable_build_id_and_fresh_secrets() -> N
         "FRONTEND_BUILD_ID_CHANGED",
         "FRONTEND_BUILD_SECRET_REUSED",
     ]
+
+
+def _inventory_detail(path: str, digest: str) -> dict[str, Any]:
+    return {"path": path, "kind": "F", "mode": 0o644, "uid": 0, "gid": 0, "sha256": digest}
+
+
+def _inventory_manifest(records: list[dict[str, Any]], digest: str) -> dict[str, Any]:
+    return {"schema_version": "FrontendRuntimeInventoryDiagnosticV1",
+            "inventory": f"{len(records)}:{digest}", "records": records}
+
+
+def test_frontend_inventory_delta_is_sanitized_sorted_and_bounded() -> None:
+    module = _load()
+    paths = [f"/app/runtime-{index:02d}.bin" for index in range(22)]
+    primary = _inventory_manifest([_inventory_detail(path, "a" * 64) for path in paths], "1" * 64)
+    reproduction = _inventory_manifest([_inventory_detail(path, "b" * 64) for path in paths], "2" * 64)
+    result = module.frontend_inventory_delta(primary, reproduction)
+    assert result == {
+        "schema_version": "FrontendRuntimeInventoryDeltaV1",
+        "omitted_count": 2,
+        "differences": [
+            {
+                "path": path,
+                "primary": {"kind": "F", "mode": 0o644, "uid": 0, "gid": 0, "sha256": "a" * 64},
+                "reproduction": {"kind": "F", "mode": 0o644, "uid": 0, "gid": 0, "sha256": "b" * 64},
+            }
+            for path in paths[:20]
+        ],
+    }
+    for mutation in (
+        {**_inventory_manifest([_inventory_detail("/app/a", "a" * 64)], "1" * 64), "inventory": "2:" + "1" * 64}, {**_inventory_manifest([_inventory_detail("/app/a", "a" * 64)], "1" * 64), "inventory": "1:" + "1" * 64 + "\n"},
+        _inventory_manifest([_inventory_detail("relative", "a" * 64)], "1" * 64), _inventory_manifest([_inventory_detail("//app/a", "a" * 64)], "1" * 64), _inventory_manifest([_inventory_detail("/app/../etc/passwd", "a" * 64)], "1" * 64),
+        _inventory_manifest([_inventory_detail("/app/secret\nvalue", "a" * 64)], "1" * 64),
+        _inventory_manifest([_inventory_detail("/app/a", "A" * 64)], "1" * 64), _inventory_manifest([_inventory_detail("/app/a", "a" * 64 + "\n")], "1" * 64),
+        _inventory_manifest([_inventory_detail("/app/a", "a" * 64)] * 2, "1" * 64),
+    ):
+        assert module.frontend_inventory_delta(mutation, reproduction) is None
+    restricted_path = _inventory_manifest([_inventory_detail("/app/private-token", "a" * 64)], "1" * 64)
+    assert module.frontend_inventory_delta(primary, primary) is None and module.frontend_inventory_delta(restricted_path, reproduction, forbidden_values=("private-token",)) is None and module.frontend_inventory_delta(_inventory_manifest([_inventory_detail("/app/a", "a" * 64)], "1" * 64), reproduction, forbidden_values=("a" * 64,)) is None
+    for key, invalid in (("kind", "X"), ("mode", True), ("uid", -1), ("gid", 2**31)):
+        row = {**_inventory_detail("/app/a", "a" * 64), key: invalid}
+        assert module.frontend_inventory_delta(_inventory_manifest([row], "1" * 64), reproduction) is None
+
+
+def test_frontend_reproduction_cli_emits_only_sanitized_delta() -> None:
+    primary = {"buildId": "stable", "architecture": "amd64", "inventory": "1650:" + "a" * 64,
+               "previewModeId": "1" * 32, "previewModeSigningKey": "2" * 64,
+               "previewModeEncryptionKey": "3" * 64, "serverActionKey": "A" * 43 + "="}
+    reproduction = {**primary, "inventory": "1650:" + "b" * 64, "previewModeId": "5" * 32,
+                    "previewModeSigningKey": "6" * 64, "previewModeEncryptionKey": "7" * 64,
+                    "serverActionKey": "B" * 43 + "="}
+    left_records = [_inventory_detail(f"/app/runtime-{index:04d}", "c" * 64) for index in range(1650)]
+    right_records = copy.deepcopy(left_records)
+    right_records[0]["sha256"] = "d" * 64
+    details = _inventory_manifest(left_records, "a" * 64)
+    changed = _inventory_manifest(right_records, "b" * 64)
+    completed = subprocess.run(
+        [sys.executable, str(ROOT / "scripts/ci/check_container_scan_consensus.py"), "--verify-frontend-reproduction"],
+        cwd=ROOT, input="\n".join(map(json.dumps, (primary, reproduction, details, changed))) + "\n",
+        text=True, capture_output=True, check=False,
+    )
+    assert completed.returncode == 1
+    result = json.loads(completed.stdout)
+    assert result["findings"] == ["FRONTEND_RUNTIME_INVENTORY_CHANGED"]
+    assert primary["previewModeId"] not in completed.stdout
+    assert result["diagnostic"]["differences"][0]["path"] == "/app/runtime-0000"
+    assert set(result["diagnostic"]["differences"][0]) == {"path", "primary", "reproduction"}
+
+
+def test_runtime_inventory_script_wires_four_line_sanitized_diagnostic() -> None:
+    source, dockerfile = ((ROOT / "scripts/ci/docker-image-scan.sh").read_text(encoding="utf-8"), (ROOT / "frontend/Dockerfile").read_text(encoding="utf-8"))
+    inventory_command = source[(start := source.index('actual_inventory_output="$(docker run')):source.index('\n  if [[ "${actual_inventory_output}"', start)]
+    cache_disable, assembly = ('process.env.NODE_DISABLE_COMPILE_CACHE=\\"1\\";', dockerfile[(build := dockerfile.index("RUN --mount=from=deps")):dockerfile.index("\n\nUSER", build)])
+    assert all(marker in source for marker in ("FrontendRuntimeInventoryDiagnosticV1", "primary_inventory_diagnostic", "reproduction_inventory_diagnostic", "'%s\\n%s\\n%s\\n%s\\n'")) and "--env NODE_DISABLE_COMPILE_CACHE=1" not in source and dockerfile.count(cache_disable) == assembly.count(cache_disable) == 1 and assembly.index(cache_disable) < assembly.index("await import") and "/tmp" not in inventory_command
 
 
 def test_frontend_reproduction_inventory_rejection_survives_optimized_python() -> None:
@@ -407,7 +481,7 @@ def test_runtime_inventory_orchestration_preserves_failures_and_distinct_values(
     log = tmp_path / "reproduction.log"
     harness = f'''set -euo pipefail
 prepare_frontend_images() {{ :; }}
-verify_frontend_runtime() {{ false; printf -v "${{2:-ignored}}" %s "$1-inventory"; }}
+verify_frontend_runtime() {{ false; printf -v "${{2:-ignored}}" %s "$1-inventory"; printf -v "${{3:-ignored}}" %s "$1-diagnostic"; }}
 verify_frontend_reproducibility() {{ printf '%s\n' "$@" >"$LOG"; }}
 {block}
 '''
@@ -417,7 +491,7 @@ verify_frontend_reproducibility() {{ printf '%s\n' "$@" >"$LOG"; }}
     harness = harness.replace("verify_frontend_runtime() { false;", "verify_frontend_runtime() { :;")
     passed = subprocess.run(["bash"], input=harness, env=env, text=True, check=False)
     assert passed.returncode == 0
-    assert log.read_text().splitlines() == ["primary:tag", "repro:tag", "primary:tag-inventory", "repro:tag-inventory"]
+    assert log.read_text().splitlines() == ["primary:tag", "repro:tag", "primary:tag-inventory", "repro:tag-inventory", "primary:tag-diagnostic", "repro:tag-diagnostic"]
 
 
 def test_frontend_config_accepts_only_exact_host_engine_defaults() -> None:
@@ -513,12 +587,12 @@ def test_frontend_config_is_not_passed_in_python_argv(tmp_path: Path) -> None:
 def test_frontend_inventory_contract_is_bounded_and_architecture_bound() -> None:
     module = _load()
     matches = module.frontend_inventory_matches
-    amd64 = "1596:f868cddbe615d21fb965633253098ada945041edfb5ab7325956a669554ceecd"
-    arm64 = "1596:18df82960aa5cbd5b17217eb918a6c50cc450e608a75ac6bf6c70c230ac0a784"
-    assert module.FRONTEND_INVENTORY_RECORD_BOUNDS == {"amd64": (1580, 1620), "arm64": (1580, 1620)}
+    amd64 = "1650:aabc0bb1ec3414df8feeae046efd7801189dd4f1ea5933aa8fec45dd1473b8cd"
+    arm64 = "1650:18df82960aa5cbd5b17217eb918a6c50cc450e608a75ac6bf6c70c230ac0a784"
+    assert module.FRONTEND_INVENTORY_RECORD_BOUNDS == {"amd64": (1630, 1670), "arm64": (1630, 1670)}
     assert matches("amd64", amd64)
     assert matches("arm64", arm64)
-    assert matches("amd64", "1595:92e816bae28c8e5dcfe7d955f26952f58b932206005556f81598128e2276f152")
+    assert matches("amd64", "1649:92e816bae28c8e5dcfe7d955f26952f58b932206005556f81598128e2276f152")
     assert not matches("unknown", amd64)
     for stale in (
         "1805:9a18413ff9fefd9c665595ab2564c72bb706dcf81b490fffd59b23653ad73858",
@@ -531,7 +605,13 @@ def test_frontend_inventory_contract_is_bounded_and_architecture_bound() -> None
     ):
         assert not matches("amd64", stale)
         assert not matches("arm64", stale)
-    for malformed in ("1579:" + "0" * 64, "1621:" + "0" * 64, "1596:" + "G" * 64, "1596:short"):
+    for malformed in (
+        "1629:" + "0" * 64,
+        "1671:" + "0" * 64,
+        "1596:" + "0" * 64,
+        "1650:" + "G" * 64,
+        "1650:short",
+    ):
         assert not matches("amd64", malformed)
 
 
