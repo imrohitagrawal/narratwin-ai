@@ -827,3 +827,13 @@ remain separate gates.
 | Govern multi-reference media | Proposed `PresenterReferencePackV1` layers and provider-specific selection rules | Current presenter anchors remain immutable; additional Meera/Myra/Raj derivatives require a separate exact-hash route and human approval |
 | Compare costs honestly | 726.691502-second Plan A totals; Plan B 90/180-second and 25/50/100-percent scenarios; Flow credits | Estimates exclude retries, failures, subscriptions, labor, storage and tax and grant no spend authority |
 | Preserve plug-and-play architecture | `AvatarProvider`, future `BrollProvider`, `VideoCompositor`, capability manifest and validated runtime policy | Provider switching applies only to implemented/reviewed adapters; domain, grounding, safety and acceptance remain NarraTwin-owned |
+
+## Issue #524 frontend dependency-security traceability
+
+| Requirement | Evidence | Preserved boundary |
+|---|---|---|
+| Remove all current frontend advisory findings without suppression | Issue `#524`; official npm/GitHub advisory facts; exact Next.js 16.3.4, sharp 0.35.4, js-yaml 4.3.2, and Vitest/`@vitest` 4.1.11 package identities | Audit threshold, registry, integrity, and install-script controls remain fail closed |
+| Preserve unrelated dependency intent | Manifest normalization plus exact fifty-record lock-delta test against `b6b0c05c`; eslint-config-next remains 16.2.9 | No broad lock refresh, direct js-yaml, unrelated Vite/Rolldown/CSS upgrade, alternate registry, VCS package, or vendoring |
+| Prove compatibility | Clean npm install; frontend lint, type, unit, build, browser, audit, and complete repository gates | Dependency compatibility is not product, provider, deployment, release, or production evidence |
+| Resolve the cross-audit cycle atomically | Preserved Issue `#524` RED/GREEN commits; explicit owner amendment; normal merge into Issue `#523`; one combined hosted PR | Neither Python nor frontend audit is waived, and neither branch alone may claim full-gate success |
+| Reclaim only task-owned resources | Issue route resource ledger and post-merge survivor/ownership revalidation | Shared npm/uv/browser/Docker caches and historical worktrees remain inventory-only |

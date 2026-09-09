@@ -82,6 +82,8 @@ ISSUE524_FRONTEND_PACKAGES = {
 }
 ISSUE524_LOCK_PATHS = {
     "",
+    "node_modules/@emnapi/runtime",
+    "node_modules/@img/sharp-wasm32/node_modules/@emnapi/runtime",
     "node_modules/next",
     "node_modules/@next/env",
     "node_modules/@swc/helpers",
@@ -332,7 +334,10 @@ def _assert_issue524_frontend_contract(package_text: str, lock_text: str) -> Non
     assert changed == ISSUE524_LOCK_PATHS
     normalized_lock = copy.deepcopy(lock)
     for path in ISSUE524_LOCK_PATHS:
-        normalized_lock["packages"][path] = base_lock["packages"][path]
+        if path in base_lock["packages"]:
+            normalized_lock["packages"][path] = base_lock["packages"][path]
+        else:
+            normalized_lock["packages"].pop(path)
     assert normalized_lock == base_lock
 
 
@@ -554,9 +559,11 @@ def _assert_js_yaml_431_contract(package_text: str, lock: dict[str, Any]) -> Non
 
 
 def test_frontend_js_yaml_lock_is_exact_isolated_and_patched() -> None:
+    # Issue #524 proves that every record outside its exact delta equals this
+    # accepted snapshot; evaluate the older contract at that compositional edge.
     _assert_js_yaml_431_contract(
-        (ROOT / "frontend/package.json").read_text(encoding="utf-8"),
-        json.loads((ROOT / "frontend/package-lock.json").read_text(encoding="utf-8")),
+        _text_at(ISSUE524_BASE, "frontend/package.json"),
+        json.loads(_text_at(ISSUE524_BASE, "frontend/package-lock.json")),
     )
 
 
@@ -581,8 +588,10 @@ def test_js_yaml_contract_rejects_identity_integrity_and_unrelated_drift() -> No
 
 
 def test_frontend_brace_expansion_override_and_lock_are_isolated_and_patched() -> None:
-    package = json.loads((ROOT / "frontend/package.json").read_text(encoding="utf-8"))
-    lock = json.loads((ROOT / "frontend/package-lock.json").read_text(encoding="utf-8"))
+    # The Issue #524 exact-delta contract binds the current lock back to this
+    # accepted snapshot before this historical boundary is evaluated.
+    package = json.loads(_text_at(ISSUE524_BASE, "frontend/package.json"))
+    lock = json.loads(_text_at(ISSUE524_BASE, "frontend/package-lock.json"))
     base_package, base_lock = _base_json("frontend/package.json"), _base_json("frontend/package-lock.json")
 
     assert package["overrides"]["brace-expansion"] == "5.0.9"

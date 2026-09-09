@@ -2170,3 +2170,19 @@ human acceptance, deployment, release, production-readiness, or Cut 1 evidence.
   changes research sequencing, records ADR 0079, and corrects that reproducibility
   defect; no provider is selected or activated, and T06, T07, T08, Cut 1,
   deployment, publication, release, and production readiness remain incomplete.
+
+## Issues #523/#524 atomic dependency-security convergence (2026-09-09)
+
+- Issue `#524` raises only the affected frontend graph: Next.js 16.3.4,
+  sharp 0.35.4, transitive js-yaml 4.3.2, and Vitest/`@vitest` 4.1.11.
+  Exact registry identities and a fifty-record resolver boundary prevent
+  unrelated Vite/Rolldown or CSS-tooling refreshes.
+- Issue `#523` independently raises the affected Python test transport to
+  httpx2/httpcore2 2.12.0. Because either branch retains the other audit
+  failure, Issue `#524` preserves its RED/GREEN history and converges by normal
+  merge into an explicitly amended Issue `#523` route for one full-gate PR.
+- No advisory is ignored or suppressed. The refresh changes dependency
+  metadata only and adds no product/provider/media behavior, credential use,
+  egress, spend, deployment, release, production-readiness, or Cut 1 claim.
+- T06, T07, T08, deployment, publication, release, production readiness, and
+  Cut 1 acceptance remain incomplete.

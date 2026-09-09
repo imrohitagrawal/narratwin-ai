@@ -402,6 +402,18 @@ ISSUE495_EXPECTED = {
     "docs/STATUS.md",
     "docs/TRACEABILITY.md",
 }
+ISSUE524_EXPECTED = {
+    "docs/governance/preflights/issue-524-frontend-dependency-security-refresh.json",
+    "frontend/package.json",
+    "frontend/package-lock.json",
+    "scripts/quality/stage8_cut1_routes.py",
+    "tests/unit/test_stage8_cut1_routes.py",
+    "tests/unit/test_dependency_security_contract.py",
+    "docs/ADR/0082-frontend-dependency-security-refresh.md",
+    "docs/STATUS.md",
+    "docs/THIRD_PARTY_NOTICES.md",
+    "docs/TRACEABILITY.md",
+}
 ISSUE499_EXPECTED = {
     "docs/governance/preflights/issue-499-pypdf-6-16-2-security-refresh.json",
     "pyproject.toml",
@@ -630,6 +642,7 @@ EXPECTED = {
     "cut1-process-479-t05c-listening-authority": ISSUE479_EXPECTED,
     "cut1-process-482-dependency-security-refresh": ISSUE482_EXPECTED,
     "stage8-495-browserslist-security-refresh": ISSUE495_EXPECTED,
+    "stage8-524-frontend-dependency-security-refresh": ISSUE524_EXPECTED,
     "stage8-498-google-tts-official-grpc": ISSUE498_EXPECTED,
     "cut1-process-478-pr477-status-closeout": ISSUE478_EXPECTED,
     "cut1-475-t05b-runtime-receipt-binding": ISSUE475_EXPECTED,
@@ -4859,6 +4872,93 @@ def test_issue495_route_freezes_the_lockfile_only_security_refresh() -> None:
     assert branch in stage8.EFFECTIVE_STAGE8_ROUTES
 
 
+def test_issue524_route_freezes_the_exact_frontend_security_refresh() -> None:
+    branch = "stage8-524-frontend-dependency-security-refresh"
+    assert routes.ISSUE524_BRANCH == branch
+    assert routes.ISSUE524_BASE == "b6b0c05c7227428ff0841361f3970b0b2c40aa86"
+    assert routes.ISSUE524_TREE == "2a8fc73f5cfc9210fabfdb425d00a07d345fa24f"
+    assert routes.ISSUE524_ROUTE_COMMENT == "5599970578"
+    assert routes.ISSUE524_ROUTE_SHA256 == (
+        "07f2fff6702a9847059a3e4223df25e8b0752269574cff9710b3738fc8c82da5"
+    )
+    assert routes.ROUTES[branch] == ISSUE524_EXPECTED
+    assert routes.ROUTE_ISSUES[branch] == 524
+    assert routes.TOTAL_LIMITS[branch] == 1800
+    assert routes.TEXT_LIMITS[branch] == {
+        "docs/governance/preflights/issue-524-frontend-dependency-security-refresh.json": 240,
+        "frontend/package.json": 80,
+        "frontend/package-lock.json": 700,
+        "scripts/quality/stage8_cut1_routes.py": 160,
+        "tests/unit/test_stage8_cut1_routes.py": 200,
+        "tests/unit/test_dependency_security_contract.py": 300,
+        "docs/ADR/0082-frontend-dependency-security-refresh.md": 100,
+        "docs/STATUS.md": 60,
+        "docs/THIRD_PARTY_NOTICES.md": 60,
+        "docs/TRACEABILITY.md": 40,
+    }
+    preflight = json.loads(
+        (REPO / "docs/governance/preflights/issue-524-frontend-dependency-security-refresh.json")
+        .read_text(encoding="utf-8")
+    )
+    assert set(preflight["scope"]["required"]) == ISSUE524_EXPECTED
+    assert preflight["scope"]["required"] == preflight["scope"]["allowed_prefixes"]
+    assert branch in stage8.EFFECTIVE_STAGE8_ROUTES
+
+
+def test_issue524_route_rejects_branch_suffix_drift(monkeypatch: Any) -> None:
+    branch = routes.ISSUE524_BRANCH + "-retry"
+    assert branch not in stage8.EFFECTIVE_STAGE8_ROUTES
+    assert stage8.STAGE8_BRANCH_PATTERN.match(branch)
+    monkeypatch.setattr(stage8, "current_branch", lambda: branch)
+    monkeypatch.setattr(
+        stage8,
+        "changed_files_for_stage_scope",
+        lambda: ["frontend/package.json", "frontend/package-lock.json"],
+    )
+    failures: list[str] = []
+    stage8.check_stage_scope(failures)
+    assert failures == [
+        f"Stage 8 branch collides with exact reviewed route {routes.ISSUE524_BRANCH}: {branch}."
+    ]
+
+
+def test_issue524_route_rejects_fixed_base_drift_and_every_path_cap(
+    monkeypatch: Any,
+) -> None:
+    outputs = iter(
+        (
+            completed([], out=routes.ISSUE524_BASE + "\n"),
+            completed([], out="a" * 40 + "\n"),
+        )
+    )
+    error = pytest.raises(
+        RuntimeError,
+        routes.route_base,
+        lambda _: next(outputs),
+        routes.ISSUE524_BRANCH,
+    )
+    assert "Issue #524 fixed base" in str(error.value)
+    monkeypatch.setattr(routes, "route_base", lambda *_: "base")
+    for path, limit in routes.TEXT_LIMITS[routes.ISSUE524_BRANCH].items():
+        monkeypatch.setattr(
+            routes,
+            "route_text_charges",
+            lambda *_, value_path=path, value_limit=limit: (
+                value_limit + 1,
+                {value_path: value_limit + 1},
+            ),
+        )
+        failures: list[str] = []
+        routes.check_exact_route(
+            REPO,
+            lambda _: completed([]),
+            routes.ISSUE524_BRANCH,
+            ISSUE524_EXPECTED,
+            failures,
+        )
+        assert f"Issue #524 charge for {path} exceeds {limit}." in failures
+
+
 def test_issue499_route_freezes_the_exact_pypdf_security_refresh() -> None:
     branch = "stage8-499-pypdf-6-16-2-security-refresh"
     assert routes.ISSUE499_BRANCH == branch
@@ -4948,7 +5048,17 @@ def test_issue495_lock_refresh_changes_only_six_transitive_records() -> None:
         text=True,
     )
     before = json.loads(base_result.stdout)["packages"]
-    after = json.loads((REPO / lock_path).read_text(encoding="utf-8"))["packages"]
+    # Issue #524 separately proves that its current fifty-record delta
+    # normalizes exactly to this accepted snapshot.
+    after = json.loads(
+        subprocess.run(
+            ["git", "show", f"{routes.ISSUE524_BASE}:{lock_path}"],
+            cwd=REPO,
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout
+    )["packages"]
     expected = {
         "baseline-browser-mapping": ("2.11.20", "sha512-H0ulySigv6icDJ1F7SjtdCD6PrhTpdYCmP0CactWy1+ekh0AFd0o1Wn5T8b+hnTmdBx19u9yhL6wvCylXMY7zw=="),
         "browserslist": ("4.28.8", "sha512-V2NpofLblG64mfOtSgDhOJESZEGogzDMBv/q+W6oc4LXWP/q75eOXoOaaOu1EOadB9U4Bwx/e0yzbvwKH8zalA=="),
