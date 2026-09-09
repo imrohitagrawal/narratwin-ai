@@ -66,7 +66,7 @@ COPY --from=node-source /runtime/ /
 RUN --mount=from=deps,source=/app,target=/mnt/deps,readonly \
     --mount=type=bind,source=frontend,target=/mnt/frontend,readonly \
     --mount=type=bind,source=scripts/ci/prepare_frontend_npm.mjs,target=/tmp/prepare_frontend_npm.mjs,readonly \
-    ["/usr/bin/node", "--input-type=module", "-e", "const m=await import('/tmp/prepare_frontend_npm.mjs');await m.assembleFrontendRuntime();m.copySharpLibvips('/mnt/deps','/app',process.arch)"]
+    ["/usr/bin/node", "--input-type=module", "-e", "process.env.NODE_DISABLE_COMPILE_CACHE=\"1\";const m=await import('/tmp/prepare_frontend_npm.mjs');await m.assembleFrontendRuntime();m.copySharpLibvips('/mnt/deps','/app',process.arch)"]
 
 USER 65532:65532
 EXPOSE 3000

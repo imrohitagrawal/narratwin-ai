@@ -141,7 +141,7 @@ sharp(input).resize(2,2).png().toBuffer({resolveWithObject:true}).then(({info,da
 if(info.width!==2||info.height!==2||info.format!=="png"||data.length<60)throw new Error("Sharp transform invalid");
 console.log(`${info.width}x${info.height}:${info.format}`);});')"
   [ "${sharp_identity}" = "2x2:png" ] || return 1
-  actual_inventory_output="$(docker run --rm --user 0:0 --env NODE_OPTIONS= --env NODE_PATH= --env LD_PRELOAD= --env NODE_DISABLE_COMPILE_CACHE=1 \
+  actual_inventory_output="$(docker run --rm --user 0:0 --env NODE_OPTIONS= --env NODE_PATH= --env LD_PRELOAD= \
     --entrypoint /usr/bin/node "${image}" -e '
 const crypto=require("crypto"),fs=require("fs"),records=[],details=[],B=Buffer.from,slash=B("/"),empty=Buffer.alloc(0);
 const skip=new Set(["/.dockerenv","/etc/hosts","/etc/hostname","/etc/resolv.conf"].map(x=>B(x).toString("hex")));

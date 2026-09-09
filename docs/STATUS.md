@@ -2215,11 +2215,14 @@ human acceptance, deployment, release, production-readiness, or Cut 1 evidence.
   at most one cause-specific correction. The diagnostic cannot expose content
   or secrets, alter the verdict, widen bounds, fix build keys, or authorize a
   retry; this candidate remains unaccepted until both architectures pass.
-  That one cycle identified only Node's process-local compile cache at
-  `/tmp/node-compile-cache/v26.7.0-x64-8d7ad2ee-0/376b9136`. The authorized
-  cause-specific correction disables the documented module compile cache only
-  in the inventory process; it does not exclude `/tmp`, application bytes, or
-  any other record. Hosted dual-architecture proof is still pending.
+  That cycle identified only Node's process-local compile cache at
+  `/tmp/node-compile-cache/v26.7.0-x64-8d7ad2ee-0/376b9136`. Exact-head hosted
+  run `34392274312` proved the initial inventory-process control was too late:
+  the differing cache bytes were already baked into both images. Amendment
+  `5607354461` moves the control to the final image-assembly process before its
+  first import; it does not exclude `/tmp`, mutate inventory semantics, or
+  change final runtime configuration. Hosted dual-architecture proof remains
+  pending.
   Normal non-fast-forward merges `30bdcecf` then `8ac8a6ea` preserve the #524
   and #525 RED/GREEN ancestry in that order. The composed Python lock proof
   removes the exact HTTPX and JSONSchema deltas before comparing with base, so

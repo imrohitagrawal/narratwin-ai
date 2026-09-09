@@ -1950,8 +1950,9 @@ at most twenty differing paths; omitted differences are counted. Raw bytes,
 symlink targets, manifests, environment values, build secrets, credentials, and
 URLs remain prohibited. Invalid or inconsistent diagnostic input returns only
 `unavailable`; it cannot remove the mismatch, change thresholds, or pass a build.
-The single cause-specific correction sets Node's documented
-`NODE_DISABLE_COMPILE_CACHE=1` only for the inventory process, preventing that
-process from creating nondeterministic `/tmp/node-compile-cache` bytes before
-its own walk. The path remains inside the inventory; no skip or exclusion is
-introduced.
+The corrected cause boundary sets Node's documented
+`NODE_DISABLE_COMPILE_CACHE=1` inside the final image-assembly process before
+its first dynamic import, preventing nondeterministic
+`/tmp/node-compile-cache` bytes from being baked into the image. The later
+inventory process still walks `/tmp` without a skip, exclusion, or compensating
+normalization.
