@@ -385,6 +385,26 @@ def _hostile_regressions() -> list[HostileRow]:
 HOSTILE_REGRESSIONS = _hostile_regressions()
 
 
+def _schema_oracle_errors(completed: subprocess.CompletedProcess[str]) -> list[str]:
+    try:
+        result = json.loads(completed.stdout)
+    except (TypeError, ValueError):
+        raise AssertionError("Draft 2020-12 schema oracle returned an invalid result.") from None
+    if (
+        not isinstance(result, dict)
+        or set(result) != {"errors", "jsonschemaVersion"}
+        or len(completed.stdout.encode("utf-8")) > 65_536
+        or completed.stdout.strip()
+        != json.dumps(result, ensure_ascii=True, sort_keys=True, separators=(",", ":"))
+    ):
+        raise AssertionError("Draft 2020-12 schema oracle returned an invalid result.")
+    if result["jsonschemaVersion"] != "4.25.1":
+        raise AssertionError("Draft 2020-12 schema oracle distribution mismatch.")
+    errors = result["errors"]
+    assert isinstance(errors, list) and all(isinstance(error, str) for error in errors)
+    return cast(list[str], errors)
+
+
 def _draft202012_errors(
     instance: dict[str, object],
     *,
@@ -397,12 +417,14 @@ def _draft202012_errors(
             "Draft 2020-12 schema oracle requires an absolute active interpreter."
         )
     runner = (
-        "import json, sys\n"
+        "import importlib.metadata, json, sys\n"
         "from jsonschema import Draft202012Validator\n"
         "value = json.load(sys.stdin)\n"
         "Draft202012Validator.check_schema(value['schema'])\n"
         "errors = Draft202012Validator(value['schema']).iter_errors(value['instance'])\n"
-        "print(json.dumps([error.message for error in errors]))\n"
+        "result = {'errors': [error.message for error in errors], "
+        "'jsonschemaVersion': importlib.metadata.version('jsonschema')}\n"
+        "print(json.dumps(result, sort_keys=True, separators=(',', ':')))\n"
     )
     envelope = json.dumps({"schema": _load(SCHEMA_PATH), "instance": instance}, ensure_ascii=True, separators=(",", ":"))
     try:
@@ -422,9 +444,7 @@ def _draft202012_errors(
         ) from None
     if completed.returncode != 0:
         raise AssertionError("Draft 2020-12 schema oracle process failed.")
-    errors = json.loads(completed.stdout)
-    assert isinstance(errors, list) and all(isinstance(error, str) for error in errors)
-    return cast(list[str], errors)
+    return _schema_oracle_errors(completed)
 
 
 def test_schema_oracle_binds_the_executing_jsonschema_distribution(
@@ -455,7 +475,12 @@ def test_schema_oracle_default_policy_reaches_one_isolated_project_subprocess(
 
     def fake_run(argv: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
         calls.append((argv, kwargs))
-        return subprocess.CompletedProcess(argv, 0, "[]\n", "")
+        return subprocess.CompletedProcess(
+            argv,
+            0,
+            '{"errors":[],"jsonschemaVersion":"4.25.1"}\n',
+            "",
+        )
 
     monkeypatch.setattr(subprocess, "run", fake_run)
     monkeypatch.delenv("NARRATWIN_SCHEMA_ORACLE_TIMEOUT_SECONDS", raising=False)
@@ -476,7 +501,12 @@ def test_schema_oracle_canonical_override_reaches_the_subprocess(
 
     def fake_run(argv: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
         captured.update(kwargs)
-        return subprocess.CompletedProcess(argv, 0, "[]", "")
+        return subprocess.CompletedProcess(
+            argv,
+            0,
+            '{"errors":[],"jsonschemaVersion":"4.25.1"}\n',
+            "",
+        )
 
     monkeypatch.setattr(subprocess, "run", fake_run)
     assert _draft202012_errors(
@@ -484,6 +514,23 @@ def test_schema_oracle_canonical_override_reaches_the_subprocess(
         environ={"NARRATWIN_SCHEMA_ORACLE_TIMEOUT_SECONDS": "37"},
     ) == []
     assert captured["timeout"] == 37
+
+
+def test_schema_oracle_rejects_distribution_version_drift(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fake_run(argv: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
+        return subprocess.CompletedProcess(
+            argv,
+            0,
+            '{"errors":[],"jsonschemaVersion":"4.25.0"}\n',
+            "",
+        )
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    error = pytest.raises(AssertionError, _draft202012_errors, CORPUS, environ={})
+    assert str(error.value) == "Draft 2020-12 schema oracle distribution mismatch."
+    assert "4.25.0" not in str(error.value)
 
 
 @pytest.mark.parametrize(
