@@ -26,6 +26,7 @@ if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from scripts.governance_preflight_repository import validate_governance_preflight_repository
+from scripts.quality.issue521_master_program_v2 import REQUIRED_ARTIFACTS as MASTER_PROGRAM_V2_ARTIFACTS
 from scripts.quality.issue521_master_program_v2 import validate_repository as validate_master_program_v2
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -2523,7 +2524,7 @@ def check_governance_preflight_repository() -> None:
 
 
 def check_master_program_v2(changes: list[str]) -> None:
-    if not any(path.startswith("docs/governance/NARRATWIN_MASTER_PROGRAM_V2") or path.startswith("docs/governance/superset-mapping-v2") or path.startswith("docs/governance/cut-taxonomy-v2") or path == "docs/governance/narratwin-master-program-v2.json" for path in changes):
+    if not any(path in MASTER_PROGRAM_V2_ARTIFACTS for path in changes):
         return
     failures.extend(
         f"Master Program V2 finding: {finding}"
