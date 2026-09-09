@@ -427,6 +427,27 @@ def _draft202012_errors(
     return cast(list[str], errors)
 
 
+def test_schema_oracle_binds_the_executing_jsonschema_distribution(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: dict[str, object] = {}
+
+    def fake_run(argv: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
+        captured["argv"] = argv
+        return subprocess.CompletedProcess(
+            argv,
+            0,
+            '{"errors":[],"jsonschemaVersion":"4.25.1"}\n',
+            "",
+        )
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    assert _draft202012_errors(CORPUS, environ={}) == []
+    argv = cast(list[str], captured["argv"])
+    assert "importlib.metadata" in argv[4]
+    assert "version('jsonschema')" in argv[4]
+
+
 def test_schema_oracle_default_policy_reaches_one_isolated_project_subprocess(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
