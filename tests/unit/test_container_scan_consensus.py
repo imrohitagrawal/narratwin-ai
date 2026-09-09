@@ -385,6 +385,72 @@ def test_frontend_reproduction_requires_stable_build_id_and_fresh_secrets() -> N
     ]
 
 
+def _inventory_detail(path: str, digest: str) -> dict[str, Any]:
+    return {"path": path, "kind": "F", "mode": 0o644, "uid": 0, "gid": 0, "sha256": digest}
+
+
+def _inventory_manifest(records: list[dict[str, Any]], digest: str) -> dict[str, Any]:
+    return {"schema_version": "FrontendRuntimeInventoryDiagnosticV1",
+            "inventory": f"{len(records)}:{digest}", "records": records}
+
+
+def test_frontend_inventory_delta_is_sanitized_sorted_and_bounded() -> None:
+    module = _load()
+    paths = [f"/app/runtime-{index:02d}.bin" for index in range(22)]
+    primary = _inventory_manifest([_inventory_detail(path, "a" * 64) for path in paths], "1" * 64)
+    reproduction = _inventory_manifest([_inventory_detail(path, "b" * 64) for path in paths], "2" * 64)
+    result = module.frontend_inventory_delta(primary, reproduction)
+    assert result == {
+        "schema_version": "FrontendRuntimeInventoryDeltaV1",
+        "omitted_count": 2,
+        "differences": [
+            {
+                "path": path,
+                "primary": {"kind": "F", "mode": 0o644, "uid": 0, "gid": 0, "sha256": "a" * 64},
+                "reproduction": {"kind": "F", "mode": 0o644, "uid": 0, "gid": 0, "sha256": "b" * 64},
+            }
+            for path in paths[:20]
+        ],
+    }
+    for mutation in (
+        {"schema_version": "wrong", "records": []},
+        _inventory_manifest([_inventory_detail("relative", "a" * 64)], "1" * 64),
+        _inventory_manifest([_inventory_detail("/app/secret\nvalue", "a" * 64)], "1" * 64),
+        _inventory_manifest([_inventory_detail("/app/a", "A" * 64)], "1" * 64),
+        _inventory_manifest([_inventory_detail("/app/a", "a" * 64)] * 2, "1" * 64),
+    ):
+        assert module.frontend_inventory_delta(mutation, reproduction) is None
+
+
+def test_frontend_reproduction_cli_emits_only_sanitized_delta() -> None:
+    primary = {"buildId": "stable", "architecture": "amd64", "inventory": "1650:" + "a" * 64,
+               "previewModeId": "1", "previewModeSigningKey": "2", "previewModeEncryptionKey": "3", "serverActionKey": "4"}
+    reproduction = {**primary, "inventory": "1650:" + "b" * 64, "previewModeId": "5",
+                    "previewModeSigningKey": "6", "previewModeEncryptionKey": "7", "serverActionKey": "8"}
+    left_records = [_inventory_detail(f"/app/runtime-{index:04d}", "c" * 64) for index in range(1650)]
+    right_records = copy.deepcopy(left_records)
+    right_records[0]["sha256"] = "d" * 64
+    details = _inventory_manifest(left_records, "a" * 64)
+    changed = _inventory_manifest(right_records, "b" * 64)
+    completed = subprocess.run(
+        [sys.executable, str(ROOT / "scripts/ci/check_container_scan_consensus.py"), "--verify-frontend-reproduction"],
+        cwd=ROOT, input="\n".join(map(json.dumps, (primary, reproduction, details, changed))) + "\n",
+        text=True, capture_output=True, check=False,
+    )
+    assert completed.returncode == 1
+    result = json.loads(completed.stdout)
+    assert result["findings"] == ["FRONTEND_RUNTIME_INVENTORY_CHANGED"]
+    assert result["diagnostic"]["differences"][0]["path"] == "/app/runtime-0000"
+    assert set(result["diagnostic"]["differences"][0]) == {"path", "primary", "reproduction"}
+
+
+def test_runtime_inventory_script_wires_four_line_sanitized_diagnostic() -> None:
+    source = (ROOT / "scripts/ci/docker-image-scan.sh").read_text(encoding="utf-8")
+    for marker in ("FrontendRuntimeInventoryDiagnosticV1", "primary_inventory_diagnostic",
+                   "reproduction_inventory_diagnostic", "'%s\\n%s\\n%s\\n%s\\n'"):
+        assert marker in source
+
+
 def test_frontend_reproduction_inventory_rejection_survives_optimized_python() -> None:
     primary = {"buildId": "stable", "architecture": "amd64", "previewModeId": "1", "previewModeSigningKey": "2", "previewModeEncryptionKey": "3", "serverActionKey": "4"}
     reproduction = {**primary, "previewModeId": "5", "previewModeSigningKey": "6", "previewModeEncryptionKey": "7", "serverActionKey": "8"}
