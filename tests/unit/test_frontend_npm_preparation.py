@@ -75,7 +75,61 @@ def test_preparer_rejects_unexpected_cli_arguments() -> None:
 
 def test_runtime_assembler_is_ephemeral_and_shell_free() -> None:
     source = PREPARER.read_text(encoding="utf-8")
-    required = ("assembleFrontendRuntime", "spawnSync", "/mnt/deps", "/mnt/frontend", "/tmp/frontend-build")
+    required = (
+        "assembleFrontendRuntime",
+        "copySharpLibvips",
+        "spawnSync",
+        "lstatSync",
+        "readdirSync",
+        "/mnt/deps",
+        "/mnt/frontend",
+        "/tmp/frontend-build",
+    )
     prohibited = ("shell: true", "execSync", "/bin/sh", "narratwin-build-nonce")
     assert all(marker in source for marker in required)
     assert all(marker not in source for marker in prohibited)
+
+
+def test_sharp_libvips_copy_uses_the_one_locked_regular_soname(tmp_path: Path) -> None:
+    dependencies = tmp_path / "dependencies"
+    runtime = tmp_path / "runtime"
+    library = (
+        dependencies
+        / "node_modules/@img/sharp-libvips-linuxmusl-x64/lib/libvips-cpp.so.8.18.6"
+    )
+    library.parent.mkdir(parents=True)
+    library.write_bytes(b"reviewed libvips fixture")
+    expression = (
+        "console.log(module.copySharpLibvips("
+        "process.argv[1], process.argv[2], process.argv[3]));"
+    )
+
+    result = run_module(expression, str(dependencies), str(runtime), "x64")
+
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.strip() == "libvips-cpp.so.8.18.6"
+    copied = runtime / library.relative_to(dependencies)
+    assert copied.read_bytes() == library.read_bytes()
+
+
+def test_sharp_libvips_copy_rejects_ambiguous_or_unsafe_input(tmp_path: Path) -> None:
+    dependencies = tmp_path / "dependencies"
+    runtime = tmp_path / "runtime"
+    library_dir = dependencies / "node_modules/@img/sharp-libvips-linuxmusl-x64/lib"
+    library_dir.mkdir(parents=True)
+    expression = (
+        "module.copySharpLibvips(process.argv[1], process.argv[2], process.argv[3]);"
+    )
+
+    assert run_module(expression, str(dependencies), str(runtime), "s390x").returncode != 0
+    (library_dir / "libvips-cpp.so.latest").write_bytes(b"malformed")
+    assert run_module(expression, str(dependencies), str(runtime), "x64").returncode != 0
+    (library_dir / "libvips-cpp.so.8.18.6").write_bytes(b"one")
+    (library_dir / "libvips-cpp.so.8.18.7").write_bytes(b"two")
+    assert run_module(expression, str(dependencies), str(runtime), "x64").returncode != 0
+    (library_dir / "libvips-cpp.so.8.18.6").unlink()
+    (library_dir / "libvips-cpp.so.8.18.7").unlink()
+    target = tmp_path / "outside"
+    target.write_bytes(b"outside")
+    (library_dir / "libvips-cpp.so.8.18.6").symlink_to(target)
+    assert run_module(expression, str(dependencies), str(runtime), "x64").returncode != 0

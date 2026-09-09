@@ -473,11 +473,19 @@ ISSUE523_EXPECTED = {
     "docs/governance/resource-ledgers/issue-524-task-resource-ledger-v1.json",
     "docs/governance/schemas/task-resource-ledger-v1.schema.json",
     "docs/SKILL_LOCK.md",
+    "frontend/Dockerfile",
     "frontend/package.json",
     "frontend/package-lock.json",
     "pyproject.toml",
     "uv.lock",
+    "scripts/ci/check_container_scan_consensus.py",
+    "scripts/ci/prepare_frontend_npm.mjs",
+    "scripts/quality/check_stage8_docs.py",
+    "scripts/quality/stage8_node_security.py",
     "scripts/quality/stage8_cut1_routes.py",
+    "tests/unit/test_container_scan_consensus.py",
+    "tests/unit/test_frontend_npm_preparation.py",
+    "tests/unit/test_stage8_node_security.py",
     "tests/unit/test_stage8_cut1_routes.py",
     "tests/unit/test_dependency_security_contract.py",
     "tests/unit/test_frontend_dependency_security_contract.py",
@@ -5423,6 +5431,10 @@ def test_issue523_route_freezes_the_exact_atomic_security_convergence() -> None:
         "5603161674",
         "8b6020b670e76f384f5b7f95db9bd8d196e23fe316f92a3cd5fe24a014c9d8a2",
     )
+    assert routes.ISSUE523_HOSTED_COMPATIBILITY_AMENDMENT == (
+        "5603708565",
+        "01b308f7117d6fcfe1b0250083df5226569ccbc20093330709482951a84ab7ce",
+    )
     assert routes.ISSUE523_ATOMIC_CHILDREN == (
         (
             "b1d3198d1c334b22b367d9341c9186bdbc2e01a7",
@@ -5467,7 +5479,7 @@ def test_issue523_route_freezes_the_exact_atomic_security_convergence() -> None:
     )
     assert routes.ROUTES[branch] == ISSUE523_EXPECTED
     assert routes.ROUTE_ISSUES[branch] == 523
-    assert routes.TOTAL_LIMITS[branch] == 6920
+    assert routes.TOTAL_LIMITS[branch] == 7660
     assert routes.TEXT_LIMITS[branch] == {
         "docs/governance/preflights/issue-523-httpx2-2-12-security-refresh.json": 220,
         "docs/governance/preflights/issue-524-frontend-dependency-security-refresh.json": 300,
@@ -5475,11 +5487,19 @@ def test_issue523_route_freezes_the_exact_atomic_security_convergence() -> None:
         "docs/governance/resource-ledgers/issue-524-task-resource-ledger-v1.json": 1100,
         "docs/governance/schemas/task-resource-ledger-v1.schema.json": 320,
         "docs/SKILL_LOCK.md": 120,
+        "frontend/Dockerfile": 40,
         "frontend/package.json": 80,
         "frontend/package-lock.json": 700,
         "pyproject.toml": 60,
         "uv.lock": 300,
+        "scripts/ci/check_container_scan_consensus.py": 80,
+        "scripts/ci/prepare_frontend_npm.mjs": 120,
+        "scripts/quality/check_stage8_docs.py": 40,
+        "scripts/quality/stage8_node_security.py": 80,
         "scripts/quality/stage8_cut1_routes.py": 640,
+        "tests/unit/test_container_scan_consensus.py": 120,
+        "tests/unit/test_frontend_npm_preparation.py": 140,
+        "tests/unit/test_stage8_node_security.py": 120,
         "tests/unit/test_stage8_cut1_routes.py": 820,
         "tests/unit/test_dependency_security_contract.py": 1200,
         "tests/unit/test_frontend_dependency_security_contract.py": 200,
@@ -5502,6 +5522,7 @@ def test_issue523_route_freezes_the_exact_atomic_security_convergence() -> None:
         routes.ISSUE523_ATOMIC_AMENDMENT_COMMENT,
         routes.ISSUE523_ATOMIC_AMENDMENT_SHA256,
         *routes.ISSUE523_EVIDENCE_CORRECTION,
+        *routes.ISSUE523_HOSTED_COMPATIBILITY_AMENDMENT,
         *(value for pair in routes.ISSUE523_ATOMIC_CHILDREN for value in pair),
         *(value for pair in routes.ISSUE523_ATOMIC_REVIEWS for value in pair),
         *(value for row in routes.ISSUE523_ATOMIC_MERGES for value in row),
@@ -5517,6 +5538,8 @@ def test_issue523_route_freezes_the_exact_atomic_security_convergence() -> None:
         "9b53932a058d9b68c2120e78eef71a2cd6778101724836639beed7ef3b617ebe",
         "5603161674",
         "8b6020b670e76f384f5b7f95db9bd8d196e23fe316f92a3cd5fe24a014c9d8a2",
+        "5603708565",
+        "01b308f7117d6fcfe1b0250083df5226569ccbc20093330709482951a84ab7ce",
     ),
 )
 def test_issue523_route_rejects_evidence_correction_drift(

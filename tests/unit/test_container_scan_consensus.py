@@ -63,9 +63,9 @@ def _sbom(target: str, *, frontend: bool, architecture: str = "amd64") -> dict[s
     if frontend:
         suffix = "x64" if architecture == "amd64" else "arm64"
         components.extend([
-            {"type": "library", "name": "sharp", "version": "0.35.3", "purl": "pkg:npm/sharp@0.35.3"},
-            {"type": "library", "name": f"sharp-linuxmusl-{suffix}", "version": "0.35.3", "purl": f"pkg:npm/%40img/sharp-linuxmusl-{suffix}@0.35.3"},
-            {"type": "library", "name": f"sharp-libvips-linuxmusl-{suffix}", "version": "1.3.2", "purl": f"pkg:npm/%40img/sharp-libvips-linuxmusl-{suffix}@1.3.2"},
+            {"type": "library", "name": "sharp", "version": "0.35.4", "purl": "pkg:npm/sharp@0.35.4"},
+            {"type": "library", "name": f"sharp-linuxmusl-{suffix}", "version": "0.35.4", "purl": f"pkg:npm/%40img/sharp-linuxmusl-{suffix}@0.35.4"},
+            {"type": "library", "name": f"sharp-libvips-linuxmusl-{suffix}", "version": "1.3.3", "purl": f"pkg:npm/%40img/sharp-libvips-linuxmusl-{suffix}@1.3.3"},
         ])
     return {"bomFormat": "CycloneDX", "specVersion": "1.7", "metadata": {"component": {"type": "container", "properties": [{"name": "aquasecurity:trivy:ImageID", "value": target}]}}, "components": components}
 
@@ -219,10 +219,10 @@ def test_frontend_sbom_requires_architecture_specific_sharp_and_forbids_glibc() 
                 component["purl"] = component["purl"].replace(old, new)
         assert not validator(wrong_architecture, FRONTEND_CONFIG, required, architecture)
         for hidden_purl in (
-            f"pkg:npm/%40img/sharp-linuxmusl-{old}@0.35.3",
-            f"pkg:npm/%40img/sharp-linuxmusl-{new}@0.35.3",
-            f"pkg:npm/%40img/sharp-libvips-linuxmusl-{new}@1.3.2",
-            f"PKG:npm/%40img/sharp-linuxmusl-{new}@0.35.3",
+            f"pkg:npm/%40img/sharp-linuxmusl-{old}@0.35.4",
+            f"pkg:npm/%40img/sharp-linuxmusl-{new}@0.35.4",
+            f"pkg:npm/%40img/sharp-libvips-linuxmusl-{new}@1.3.3",
+            f"PKG:npm/%40img/sharp-linuxmusl-{new}@0.35.4",
         ):
             hidden = copy.deepcopy(sbom)
             hidden["components"].append({
@@ -233,13 +233,13 @@ def test_frontend_sbom_requires_architecture_specific_sharp_and_forbids_glibc() 
         hidden_bom_ref["components"].append({
             "type": "library", "name": "benign-native", "version": "1.0.0",
             "purl": "pkg:generic/benign-native@1.0.0",
-            "bom-ref": f"sharp-linuxmusl-{new}@0.35.3",
+            "bom-ref": f"sharp-linuxmusl-{new}@0.35.4",
         })
         assert not validator(hidden_bom_ref, FRONTEND_CONFIG, required, architecture)
         nested_sharp = copy.deepcopy(sbom)
         nested_sharp["components"][0]["components"] = [{
-            "type": "library", "name": f"sharp-linuxmusl-{new}", "version": "0.35.3",
-            "purl": f"pkg:npm/%40img/sharp-linuxmusl-{new}@0.35.3",
+            "type": "library", "name": f"sharp-linuxmusl-{new}", "version": "0.35.4",
+            "purl": f"pkg:npm/%40img/sharp-linuxmusl-{new}@0.35.4",
         }]
         assert not validator(nested_sharp, FRONTEND_CONFIG, required, architecture)
         forbidden = copy.deepcopy(sbom)
@@ -265,7 +265,7 @@ def test_frontend_sbom_requires_architecture_specific_sharp_and_forbids_glibc() 
         for property_name, value in (
             ("aquasecurity:trivy:PkgID", "glibc@2.43-r12"),
             ("aquasecurity:trivy:SrcName", "gcompat"),
-            ("aquasecurity:trivy:PkgID", f"@img/sharp-linuxmusl-{new}@0.35.3"),
+            ("aquasecurity:trivy:PkgID", f"@img/sharp-linuxmusl-{new}@0.35.4"),
         ):
             hidden = copy.deepcopy(sbom)
             hidden["components"].append({
