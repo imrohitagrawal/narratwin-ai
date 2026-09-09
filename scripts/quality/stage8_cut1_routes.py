@@ -35,6 +35,7 @@ ISSUE495_BRANCH = "stage8-495-browserslist-security-refresh"
 ISSUE499_BRANCH = "stage8-499-pypdf-6-16-2-security-refresh"
 ISSUE523_BRANCH = "stage8-523-httpx2-2-12-security-refresh"
 ISSUE524_BRANCH = "stage8-524-frontend-dependency-security-refresh"
+ISSUE525_BRANCH = "stage8-525-schema-oracle-runtime-policy"
 ISSUE502_BRANCH = "stage8-502-frontend-musl-runtime-security"
 ISSUE507_BRANCH = "stage8-507-google-api-core-grpc-status"
 ISSUE509_BRANCH = "stage8-509-configurable-audio-duration"
@@ -224,6 +225,20 @@ ISSUE524_LEDGER_RESOURCES = frozenset(
     "issue524-security-python-pycache issue524-tests-api-pycache issue524-tests-phase1-pycache "
     "issue524-tests-publication-pycache issue524-tests-unit-pycache issue524-tsbuildinfo "
     "issue524-uv-cache issue524-venv issue524-worktree".split()
+)
+ISSUE525_BASE = "b6b0c05c7227428ff0841361f3970b0b2c40aa86"
+ISSUE525_TREE = "2a8fc73f5cfc9210fabfdb425d00a07d345fa24f"
+ISSUE525_ROUTE_COMMENT = "5600271943"
+ISSUE525_ROUTE_SHA256 = "4e269bebb90555b0cfaa64d6bdf51297c01cd36497cedb0d9ef0a5589ed56aad"
+ISSUE525_AMENDMENT_COMMENT = "5600384376"
+ISSUE525_AMENDMENT_SHA256 = "f22055cbaddba88d65602a2f97b99aa6f895f455dc0086cae8d52fb758b52ff9"
+ISSUE525_VERSION_CORRECTION_COMMENT = "5600884899"
+ISSUE525_VERSION_CORRECTION_SHA256 = (
+    "4a4137ed5ad6100920ed475f6135042b87cead68deaf3cd09cd396bd855546bf"
+)
+ISSUE525_IO_CORRECTION_COMMENT = "5601074797"
+ISSUE525_IO_CORRECTION_SHA256 = (
+    "1e7e5f22fa281eb9da188fae12d03237fd711a90488a2c4ba21af5a176e6287d"
 )
 ISSUE502_BASE = "e1fe126372d5c5a06dc7d2f9c76cb205da8643e7"
 ISSUE502_TREE = "76495e566a78a7951c33314ac742606c85ee92e5"
@@ -461,6 +476,20 @@ ROUTES = {
         "tests/unit/test_stage8_cut1_routes.py",
         "tests/unit/test_dependency_security_contract.py",
         "docs/ADR/0081-httpx2-2-12-security-refresh.md",
+        "docs/STATUS.md",
+        "docs/THIRD_PARTY_NOTICES.md",
+        "docs/TRACEABILITY.md",
+    },
+    ISSUE525_BRANCH: {
+        "docs/governance/preflights/issue-525-schema-oracle-runtime-policy.json",
+        "tests/unit/test_adversarial_convergence.py",
+        "pyproject.toml",
+        "uv.lock",
+        "tests/unit/test_dependency_security_contract.py",
+        "scripts/quality/stage8_cut1_routes.py",
+        "tests/unit/test_stage8_cut1_routes.py",
+        "docs/ADR/0083-schema-oracle-runtime-policy.md",
+        "docs/QUALITY_GATES.md",
         "docs/STATUS.md",
         "docs/THIRD_PARTY_NOTICES.md",
         "docs/TRACEABILITY.md",
@@ -1085,6 +1114,8 @@ ROUTE_ISSUES[ISSUE499_BRANCH] = 499
 TOTAL_LIMITS[ISSUE499_BRANCH] = 1000
 ROUTE_ISSUES[ISSUE523_BRANCH] = 523
 TOTAL_LIMITS[ISSUE523_BRANCH] = 1000
+ROUTE_ISSUES[ISSUE525_BRANCH] = 525
+TOTAL_LIMITS[ISSUE525_BRANCH] = 2100
 ROUTE_ISSUES[ISSUE502_BRANCH] = 502
 TOTAL_LIMITS[ISSUE502_BRANCH] = 4660
 ROUTE_ISSUES[ISSUE507_BRANCH] = 507
@@ -1303,6 +1334,20 @@ TEXT_LIMITS = {
         "docs/STATUS.md": 40,
         "docs/THIRD_PARTY_NOTICES.md": 40,
         "docs/TRACEABILITY.md": 20,
+    },
+    ISSUE525_BRANCH: {
+        "docs/governance/preflights/issue-525-schema-oracle-runtime-policy.json": 300,
+        "tests/unit/test_adversarial_convergence.py": 360,
+        "pyproject.toml": 40,
+        "uv.lock": 140,
+        "tests/unit/test_dependency_security_contract.py": 280,
+        "scripts/quality/stage8_cut1_routes.py": 200,
+        "tests/unit/test_stage8_cut1_routes.py": 260,
+        "docs/ADR/0083-schema-oracle-runtime-policy.md": 120,
+        "docs/QUALITY_GATES.md": 80,
+        "docs/STATUS.md": 100,
+        "docs/THIRD_PARTY_NOTICES.md": 120,
+        "docs/TRACEABILITY.md": 100,
     },
     ISSUE478_BRANCH: {
         "docs/STATUS.md": 100,
@@ -2460,6 +2505,7 @@ def route_base(run: Callable[[list[str]], Any], branch: str) -> str:
         ISSUE523_BRANCH: (523, ISSUE523_BASE),
         ISSUE499_BRANCH: (499, ISSUE499_BASE),
         ISSUE524_BRANCH: (524, ISSUE524_BASE),
+        ISSUE525_BRANCH: (525, ISSUE525_BASE),
         ISSUE495_BRANCH: (495, ISSUE495_BASE),
         ISSUE482_BRANCH: (482, ISSUE482_BASE),
         ISSUE478_BRANCH: (478, ISSUE478_BASE),
@@ -3103,6 +3149,36 @@ def check_exact_route(
             )
         except (OSError, ValueError, TypeError) as error:
             failures.append(f"Issue #524 governance preflight failed closed: {error}")
+    if branch == ISSUE525_BRANCH:
+        try:
+            preflight = load_json_without_duplicate_members(
+                root
+                / "docs/governance/preflights/issue-525-schema-oracle-runtime-policy.json"
+            )
+            findings = validate_governance_preflight(
+                preflight,
+                context={"issue_number": 525, "branch": branch, "changed_files": sorted(files)},
+            )
+            failures.extend(f"Issue #525 governance preflight failed: {item.code}" for item in findings)
+            objective = preflight.get("objective") if isinstance(preflight, dict) else None
+            issue525_authority_expected = (
+                ISSUE525_BASE,
+                ISSUE525_TREE,
+                ISSUE525_ROUTE_COMMENT,
+                ISSUE525_ROUTE_SHA256,
+                ISSUE525_AMENDMENT_COMMENT,
+                ISSUE525_AMENDMENT_SHA256,
+                ISSUE525_VERSION_CORRECTION_COMMENT,
+                ISSUE525_VERSION_CORRECTION_SHA256,
+                ISSUE525_IO_CORRECTION_COMMENT,
+                ISSUE525_IO_CORRECTION_SHA256,
+            )
+            if not isinstance(objective, str) or any(
+                item not in objective for item in issue525_authority_expected
+            ):
+                failures.append("Issue #525 schema-oracle authority drifted.")
+        except (OSError, ValueError, TypeError) as error:
+            failures.append(f"Issue #525 governance preflight failed closed: {error}")
     elif branch == ISSUE499_BRANCH:
         try:
             preflight = load_json_without_duplicate_members(
@@ -3439,7 +3515,7 @@ def check_exact_route(
             failures.append(f"Issue #459 governance preflight failed closed: {error}")
     try:
         base = fixed_base if fixed_base is not None else route_base(run, branch)
-        if branch in {ISSUE524_BRANCH, ISSUE495_BRANCH, ISSUE479_BRANCH, ISSUE482_BRANCH, ISSUE478_BRANCH, ISSUE475_BRANCH, ISSUE459_BRANCH, ISSUE459_T03_BRANCH, ISSUE459_T05A_BRANCH,
+        if branch in {ISSUE524_BRANCH, ISSUE525_BRANCH, ISSUE495_BRANCH, ISSUE479_BRANCH, ISSUE482_BRANCH, ISSUE478_BRANCH, ISSUE475_BRANCH, ISSUE459_BRANCH, ISSUE459_T03_BRANCH, ISSUE459_T05A_BRANCH,
                       ISSUE459_T05B_BRANCH, ISSUE466_BRANCH, ISSUE494_BRANCH}:
             transition_base = ISSUE459_TRANSITION_BASE if branch == ISSUE459_BRANCH else base
             transitions = (
@@ -3448,7 +3524,7 @@ def check_exact_route(
                    else (run(["git", "diff", "--name-status", "-z", "--find-copies-harder",
                               ISSUE494_BASE, ISSUE494_FROZEN_HEAD, "--"]),)
                    if branch == ISSUE494_BRANCH
-                   else () if branch in {ISSUE524_BRANCH, ISSUE495_BRANCH, ISSUE482_BRANCH, ISSUE478_BRANCH, ISSUE475_BRANCH, ISSUE459_T03_BRANCH, ISSUE459_T05A_BRANCH,
+                   else () if branch in {ISSUE524_BRANCH, ISSUE525_BRANCH, ISSUE495_BRANCH, ISSUE482_BRANCH, ISSUE478_BRANCH, ISSUE475_BRANCH, ISSUE459_T03_BRANCH, ISSUE459_T05A_BRANCH,
                                          ISSUE459_T05B_BRANCH, ISSUE466_BRANCH} else (
                     run(["git", "diff", "--name-status", "-z", "--find-copies-harder",
                          ISSUE459_BASE, ISSUE459_FROZEN_HEAD, "--"]),

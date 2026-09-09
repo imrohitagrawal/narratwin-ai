@@ -847,3 +847,12 @@ remain separate gates.
 | Prove compatibility | Clean npm install; frontend lint, type, unit, build, browser, audit, and complete repository gates | Dependency compatibility is not product, provider, deployment, release, or production evidence |
 | Resolve the cross-audit cycle atomically | Preserved Issue `#524` RED/GREEN commits; owner/orchestrator amendment `5600552079`; normal merge into a separately amended Issue `#523`; one combined hosted PR | Neither Python nor frontend audit is waived, and neither branch alone may claim full-gate success |
 | Reclaim only task-owned resources | Cleanup amendment `5601014173`; live-census amendment `5601780266`; provenance amendment `5601842704`; byte-identical StackClimb `TaskResourceLedgerV1` schema; sanitized thirty-four-resource/sixty-eight-event package ledger; canonical whole-ledger SHA-256 plus schema and semantic mutations; exact source/trust/custom-license lock | The ledger authorizes no deletion; every trigger is pending and evidence obligation active. One ambiguous operator process is retained untouched as a probe gap. Unrelated dirty state, shared caches, historical resources, Docker objects, and private evidence are excluded; a later exact proposal, current-session authority, and fresh survivor/ownership/activity/reference/sensitivity checks are mandatory |
+
+## Issue #525 schema-oracle runtime-policy traceability
+
+| Requirement | Evidence | Preserved boundary |
+|---|---|---|
+| Remove ambient interpreter and user-site dependence | Reproduced cold-start timeout; `sys.executable -I -P`; exact minimal child environment | Separate Draft 2020-12 process remains independent; no retry, prewarm, fallback, or inherited credentials |
+| Make timeout operational policy explicit | Typed canonical whole seconds; default 20; inclusive 1–60 bounds; invalid-input and propagation tests | Invalid policy rejects before dispatch; finite ceiling and one-attempt behavior remain fail closed |
+| Close the isolated dependency exactly | Development-only `jsonschema==4.25.1`; frozen artifact URL/hash/size and lock-normalization mutations | No application/provider dependency, transitive refresh, alternate source, product behavior, provider activation, or spend |
+| Bind authority and delivery | Issue #525 comments `5600271943` and `5600384376`; exact twelve-path route; RED/GREEN and later atomic convergence | Complete local/hosted gates and independent exact-head review remain required; no release or Cut 1 claim |

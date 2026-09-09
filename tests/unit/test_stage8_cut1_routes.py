@@ -478,6 +478,20 @@ ISSUE523_EXPECTED = {
     "docs/THIRD_PARTY_NOTICES.md",
     "docs/TRACEABILITY.md",
 }
+ISSUE525_EXPECTED = {
+    "docs/governance/preflights/issue-525-schema-oracle-runtime-policy.json",
+    "tests/unit/test_adversarial_convergence.py",
+    "pyproject.toml",
+    "uv.lock",
+    "tests/unit/test_dependency_security_contract.py",
+    "scripts/quality/stage8_cut1_routes.py",
+    "tests/unit/test_stage8_cut1_routes.py",
+    "docs/ADR/0083-schema-oracle-runtime-policy.md",
+    "docs/QUALITY_GATES.md",
+    "docs/STATUS.md",
+    "docs/THIRD_PARTY_NOTICES.md",
+    "docs/TRACEABILITY.md",
+}
 ISSUE502_EXPECTED = {
     "docs/governance/preflights/issue-502.json",
     "frontend/Dockerfile",
@@ -1155,6 +1169,7 @@ EXPECTED = {
 }
 EXPECTED["stage8-499-pypdf-6-16-2-security-refresh"] = ISSUE499_EXPECTED
 EXPECTED["stage8-523-httpx2-2-12-security-refresh"] = ISSUE523_EXPECTED
+EXPECTED["stage8-525-schema-oracle-runtime-policy"] = ISSUE525_EXPECTED
 
 
 def completed(args: list[str], code: int = 0, out: str = "", err: str = "") -> subprocess.CompletedProcess[str]:
@@ -5193,6 +5208,111 @@ def test_issue524_route_rejects_fixed_base_drift_and_every_path_cap(
             failures,
         )
         assert f"Issue #524 charge for {path} exceeds {limit}." in failures
+
+
+def test_issue525_route_freezes_the_exact_schema_oracle_policy() -> None:
+    branch = "stage8-525-schema-oracle-runtime-policy"
+    assert routes.ISSUE525_BRANCH == branch
+    assert routes.ISSUE525_BASE == "b6b0c05c7227428ff0841361f3970b0b2c40aa86"
+    assert routes.ISSUE525_TREE == "2a8fc73f5cfc9210fabfdb425d00a07d345fa24f"
+    assert routes.ISSUE525_ROUTE_COMMENT == "5600271943"
+    assert routes.ISSUE525_ROUTE_SHA256 == (
+        "4e269bebb90555b0cfaa64d6bdf51297c01cd36497cedb0d9ef0a5589ed56aad"
+    )
+    assert routes.ISSUE525_AMENDMENT_COMMENT == "5600384376"
+    assert routes.ISSUE525_AMENDMENT_SHA256 == (
+        "f22055cbaddba88d65602a2f97b99aa6f895f455dc0086cae8d52fb758b52ff9"
+    )
+    assert routes.ISSUE525_VERSION_CORRECTION_COMMENT == "5600884899"
+    assert routes.ISSUE525_VERSION_CORRECTION_SHA256 == (
+        "4a4137ed5ad6100920ed475f6135042b87cead68deaf3cd09cd396bd855546bf"
+    )
+    assert routes.ISSUE525_IO_CORRECTION_COMMENT == "5601074797"
+    assert routes.ISSUE525_IO_CORRECTION_SHA256 == (
+        "1e7e5f22fa281eb9da188fae12d03237fd711a90488a2c4ba21af5a176e6287d"
+    )
+    assert routes.ROUTES[branch] == ISSUE525_EXPECTED
+    assert routes.ROUTE_ISSUES[branch] == 525
+    assert routes.TOTAL_LIMITS[branch] == 2100
+    assert routes.TEXT_LIMITS[branch] == {
+        "docs/governance/preflights/issue-525-schema-oracle-runtime-policy.json": 300,
+        "tests/unit/test_adversarial_convergence.py": 360,
+        "pyproject.toml": 40,
+        "uv.lock": 140,
+        "tests/unit/test_dependency_security_contract.py": 280,
+        "scripts/quality/stage8_cut1_routes.py": 200,
+        "tests/unit/test_stage8_cut1_routes.py": 260,
+        "docs/ADR/0083-schema-oracle-runtime-policy.md": 120,
+        "docs/QUALITY_GATES.md": 80,
+        "docs/STATUS.md": 100,
+        "docs/THIRD_PARTY_NOTICES.md": 120,
+        "docs/TRACEABILITY.md": 100,
+    }
+    preflight = json.loads(
+        (
+            REPO
+            / "docs/governance/preflights/issue-525-schema-oracle-runtime-policy.json"
+        ).read_text(encoding="utf-8")
+    )
+    assert set(preflight["scope"]["required"]) == ISSUE525_EXPECTED
+    assert preflight["scope"]["required"] == preflight["scope"]["allowed_prefixes"]
+    assert routes.ISSUE525_IO_CORRECTION_COMMENT in preflight["objective"]
+    assert routes.ISSUE525_IO_CORRECTION_SHA256 in preflight["objective"]
+    assert branch in stage8.EFFECTIVE_STAGE8_ROUTES
+
+
+def test_issue525_route_rejects_branch_suffix_drift(monkeypatch: Any) -> None:
+    branch = routes.ISSUE525_BRANCH + "-retry"
+    assert branch not in stage8.EFFECTIVE_STAGE8_ROUTES
+    assert stage8.STAGE8_BRANCH_PATTERN.match(branch)
+    monkeypatch.setattr(stage8, "current_branch", lambda: branch)
+    monkeypatch.setattr(
+        stage8,
+        "changed_files_for_stage_scope",
+        lambda: ["pyproject.toml", "uv.lock"],
+    )
+    failures: list[str] = []
+    stage8.check_stage_scope(failures)
+    assert failures == [
+        f"Stage 8 branch collides with exact reviewed route {routes.ISSUE525_BRANCH}: {branch}."
+    ]
+
+
+def test_issue525_route_rejects_fixed_base_drift_and_every_path_cap(
+    monkeypatch: Any,
+) -> None:
+    outputs = iter(
+        (
+            completed([], out=routes.ISSUE525_BASE + "\n"),
+            completed([], out="a" * 40 + "\n"),
+        )
+    )
+    error = pytest.raises(
+        RuntimeError,
+        routes.route_base,
+        lambda _: next(outputs),
+        routes.ISSUE525_BRANCH,
+    )
+    assert "Issue #525 fixed base" in str(error.value)
+    monkeypatch.setattr(routes, "route_base", lambda *_: "base")
+    for path, limit in routes.TEXT_LIMITS[routes.ISSUE525_BRANCH].items():
+        monkeypatch.setattr(
+            routes,
+            "route_text_charges",
+            lambda *_, value_path=path, value_limit=limit: (
+                value_limit + 1,
+                {value_path: value_limit + 1},
+            ),
+        )
+        failures: list[str] = []
+        routes.check_exact_route(
+            REPO,
+            lambda _: completed([]),
+            routes.ISSUE525_BRANCH,
+            ISSUE525_EXPECTED,
+            failures,
+        )
+        assert f"Issue #525 charge for {path} exceeds {limit}." in failures
 
 
 def test_issue499_route_freezes_the_exact_pypdf_security_refresh() -> None:

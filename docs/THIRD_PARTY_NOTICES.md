@@ -520,3 +520,16 @@ preserved below; contextual license explanation is summarized after it:
 > carve-out, and brand spelling differ.
 
 Any future user-facing distribution containing this schema or a derivative must carry the attribution above in a visible NOTICE, About, or credits surface.
+
+## Issue #525 jsonschema development oracle
+
+`jsonschema` 4.25.1 is pinned in the development dependency group under its
+MIT license to perform the independent Draft 2020-12 standards check in the
+adversarial-convergence tests. Its official PyPI sdist and universal-wheel
+identities were already present in the lock through an optional dependency;
+Issue #525 adds only the exact root development binding and does not activate
+the provider extra or change the locked package artifacts.
+
+The package is not an application/runtime dependency and supplies no provider,
+model, media, credential, egress, spend, deployment, release, or production
+capability. Final dependency/license review remains required before release.
