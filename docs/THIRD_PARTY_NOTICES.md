@@ -90,10 +90,10 @@ This file is not legal advice. Treat it as the engineering license-review regist
 | React and React DOM | Frontend UI runtime | Pending dependency license review before release | Likely yes after dependency review | Stage 3 frontend foundation | Required by Next.js scaffold. |
 | PostCSS | CSS processing dependency used through Next.js and Vite | Pending dependency license review before release | Likely yes after dependency review | Stage 3 frontend dependency override; issue `#289` audit remediation | `frontend/package.json` pins an override to `8.5.23` to clear the current PostCSS audit advisory while preserving the Next.js scaffold and avoiding a Next downgrade. |
 | minimatch and brace-expansion | Transitive glob/brace expansion dependencies used through frontend ESLint tooling | MIT per npm package metadata; pending full dependency license review before release | Likely yes after dependency review | Stage 3 frontend dependency override; issue `#296` audit remediation | `frontend/package.json` pins overrides to `minimatch@10.2.5` and `brace-expansion@5.0.8` to clear GHSA-mh99-v99m-4gvg in the current npm audit without changing product runtime behavior. |
-| sharp, unrs-resolver, fsevents install scripts | npm install-script approvals for frontend dependency tree | Pending dependency script review before release | Accepted for Stage 3 after local install review | Stage 3 frontend dependency install hygiene | `frontend/package.json` records pinned `allowScripts` entries for the currently installed versions so npm 11 installs are explicit and warning-free. Issue `#245` adds a `sharp` override to `^0.35.3` to clear GHSA-f88m-g3jw-g9cj in the Next.js optional image dependency path without changing application runtime behavior. |
+| sharp, unrs-resolver, fsevents install scripts | npm install-script approvals for frontend dependency tree | Pending dependency script review before release | Accepted for Stage 3 after local install review | Stage 3 frontend dependency install hygiene | `frontend/package.json` records pinned `allowScripts` entries for the currently installed versions so npm 11 installs are explicit and warning-free. Issue `#524` raises the existing `sharp` override and script authorization to 0.35.4 to clear GHSA-rgj7-g3m4-5g8c without changing application behavior. |
 | TypeScript | Frontend type checking | Pending dependency license review before release | Likely yes after dependency review | Stage 3 frontend quality tooling | Used by frontend `typecheck` script. |
 | ESLint and eslint-config-next | Frontend lint tooling | Pending dependency license review before release | Likely yes after dependency review | Stage 3 frontend quality tooling | Used by frontend `lint` script. |
-| js-yaml | Transitive YAML parser used through `@eslint/eslintrc` frontend lint tooling | MIT per npm registry package metadata; full dependency and public-distribution review remains pending | Permitted for controlled-local development/test tooling only; public use remains unapproved | Issue `#396` security prerequisite | The lockfile-only repair moves the sole transitive entry from affected 4.3.0 to exact 4.3.1 with npm-registry URL and SHA-512 integrity for `GHSA-5p4m-2wfm-xmqj`. Its build-input effect is bound to independently reproduced arm64/amd64 final-runtime inventories. It adds no direct dependency, override, product runtime behavior, provider, media, or public-distribution authority. |
+| js-yaml | Transitive YAML parser used through `@eslint/eslintrc` frontend lint tooling | MIT per npm registry package metadata; full dependency and public-distribution review remains pending | Permitted for controlled-local development/test tooling only; public use remains unapproved | Issues `#396` and `#524` security prerequisites | The current sole lock entry is exact 4.3.2 with npm-registry URL and SHA-512 integrity for `GHSA-5p4m-2wfm-xmqj`. Issue `#396` previously moved 4.3.0 to 4.3.1; Issue `#524` moves only that accepted 4.3.1 record to 4.3.2. Its build-input effect remains bound to architecture-specific runtime inventories. It adds no direct dependency, override, product runtime behavior, provider, media, or public-distribution authority. |
 | Vitest | Frontend unit test runner | Pending dependency license review before release | Likely yes after dependency review | Stage 3 frontend quality tooling | Installed for future component/unit tests. |
 | Playwright | Browser automation and E2E test tooling | Pending dependency license review before release | Likely yes after dependency review | Stage 3 frontend quality tooling | Used for the Stage 3 health-check-only frontend smoke test. |
 | Lighthouse | Frontend performance/accessibility/best-practices/SEO audit tooling | Apache License 2.0 per upstream Lighthouse project; package metadata review still required before release | Yes as dev tooling after dependency review | Stage 8 frontend Lighthouse checks | Added as a frontend dev dependency and locked in `frontend/package-lock.json`; issue `#219` updates the lock to `lighthouse@13.4.1` with `@sentry/node@10.67.0` and `@opentelemetry/core@2.9.0`; issue `#296` supersedes the older `brace-expansion` transitive note by pinning `minimatch@10.2.5` and `brace-expansion@5.0.8` for the current npm audit advisory. Not a product runtime dependency. |
@@ -424,3 +424,99 @@ Sources: official PyPI metadata and artifacts for `httpx2` 2.12.0,
 and distribution conclusions remain subject to human legal review. This refresh
 grants no provider, credential, egress, spend, media, deployment, release, or
 production authority.
+
+## Issue #524 frontend security refresh
+
+The existing frontend dependency graph moves Next.js to 16.3.4 (MIT), sharp to
+0.35.4 (Apache-2.0), transitive js-yaml to 4.3.2 (MIT), and Vitest plus its
+coupled `@vitest` packages to 4.1.11 (MIT). Exact official-registry integrity
+values and the resolver-required Next/sharp/Vitest lock closure are tested;
+unrelated frontend packages retain their prior records. This refresh introduces
+no new provider, model, dataset, media asset, runtime service, credential,
+egress, spend, deployment, release, or production authority. Final dependency
+license review remains required before release.
+
+The cleanup record consults StackClimb `work-package-protocol` and read-only `machine-space-reclamation` guidance and redistributes the 10,863-byte
+`TaskResourceLedgerV1` JSON Schema from `shared/schemas/task-resource-ledger-v1.schema.json`. The exact source is
+`https://github.com/imrohitagrawal/stackclimb-skills.git`, VERSION 1.0.0,
+commit `4c49e59e5e6bb41ccca229db106de2eda3164df6`, tree
+`267ce5b1d05734f972bbe997d070e35546077870`, with the schema unchanged at
+SHA-256 `0adc52cb8eb2ceaa2b7142754dde9dd249321226802ceb79385b78d9b57d3a6b`.
+This is governance guidance and a schema, not a runtime dependency or
+provider, spend, credential, merge, or deletion authority.
+
+### StackClimb source license carried with the schema
+
+The source license is `LicenseRef-stackclimb-source-v1` (MIT + Attribution),
+not plain MIT. Its LICENSE is SHA-256
+`f74c8f2fdc0e2edd955b999216d660d06c69986b98427d1147f404f27057c8f5`.
+The complete copyright, permission, attribution, and warranty notice is
+preserved below; contextual license explanation is summarized after it:
+
+> stackclimb-skills License (MIT + Attribution)
+> Copyright (c) 2026 Rohit Agrawal
+> SPDX-License-Identifier: LicenseRef-stackclimb-source-v1
+>
+> This license governs this repository and the skill packages it builds—the
+> skill definitions under `skills/`, the shared contracts under `shared/`, the
+> build and gate tooling, the tests, and the `.skill` bundles emitted into
+> `dist/`. It does NOT govern any third-party skill. This repository never
+> vendors a third-party skill body; `vendored.json` records only where such a
+> skill can be fetched from its owner, under that owner's own licence. It is
+> the same license used across the author's other repositories, so a single
+> attribution form works for all of them.
+>
+> WHAT THIS FILE IS, AND WHAT `shared/project-profile.md` IS: these are two
+> different things. THIS FILE governs the skills themselves—the source and
+> packages that may be installed. `shared/project-profile.md` is a TEMPLATE
+> holding values a skill fills in for the project it runs in; every value is a
+> `{{key}}` placeholder filled from that project's profile. It has never
+> licensed this repository, and it does not. In everyday terms, this file is
+> the licence on the woodworking tools; that file is the label the tools help
+> print for the furniture. Owning the tools does not make the tool author the
+> owner of that furniture, and vice versa.
+>
+> Permission is hereby granted, free of charge, to any person obtaining a copy
+> of this software and associated documentation files (the "Software"), to
+> deal in the Software without restriction, including without limitation the
+> rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+> sell copies of the Software, and to permit persons to whom the Software is
+> furnished to do so, subject to the following conditions:
+>
+> 1. The above copyright notice and this permission notice shall be included
+> in all copies or substantial portions of the Software.
+>
+> 2. Attribution clause. Any redistribution of the Software, or any derivative
+> work based on the Software (in source or binary form), must include an
+> attribution notice in a NOTICE, About, credits, or equivalent location that
+> is visible to end users. It must state the following, or substantively
+> equivalent text, and must not be removed, obscured, or rendered less
+> prominent than other third-party notices. Source-tree-only attribution is
+> insufficient; it must reach the user-facing distribution:
+>
+> stackclimb-skills
+> (c) 2026 Rohit Agrawal
+> StackClimb: https://stackclimb.com
+> GitHub: https://github.com/imrohitagrawal
+> LinkedIn: https://www.linkedin.com/in/rohitagrawal14/
+>
+> THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+> IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+> FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+> AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+> LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+> OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+> THE SOFTWARE.
+>
+> Standard MIT grants the permissions above with the copyright and permission
+> notices preserved. The attribution clause is an addition for solo portfolio
+> projects: it requires downstream distributions to keep the author's name and
+> contact URLs visible, does not restrict commercial use, and deliberately
+> includes LinkedIn as the identity link. There is no content carve-out here;
+> this repository is tooling, and documents produced by a skill belong to the
+> runner. StackClimb is named because every project sits under that umbrella.
+> This text was carried over from `project-doc-skills` so one attribution form
+> covers every StackClimb repository; only the repository name, third-party
+> carve-out, and brand spelling differ.
+
+Any future user-facing distribution containing this schema or a derivative must carry the attribution above in a visible NOTICE, About, or credits surface.

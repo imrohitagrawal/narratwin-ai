@@ -41,6 +41,7 @@ ISSUE396_BASE = "9ee3f4a4d3b8cf1e78b5a878904748b60d557a76"
 ISSUE401_BASE = "9cf6e01f9d0c32f25c229b5adf38c6eb716ca9a0"
 ISSUE499_BASE = "d1f5400f5c6dfec5d4b63eb3a83aa82e3330743f"
 ISSUE523_BASE = "b6b0c05c7227428ff0841361f3970b0b2c40aa86"
+ISSUE524_BASE = "b6b0c05c7227428ff0841361f3970b0b2c40aa86"
 BRACE_PATH = "node_modules/brace-expansion"
 JS_YAML_PATH = "node_modules/js-yaml"
 NANOID_PATH = "node_modules/nanoid"
@@ -58,6 +59,69 @@ ISSUE495_FRONTEND_PACKAGES = {
     "node-releases": ("2.0.54", "sha512-YHs7BmmcsdAI5Ozuf8JZo6PT0mv2GIWC9vMfvUC3dp65M8hn7Ux8CPL+2oBI7juNuj9d0ndhTcznq2ODBps9cQ=="),
     "update-browserslist-db": ("1.3.2", "sha512-UQ+MSxlhRm1bzjhU+DcuXfjFO1FzNtqhK5+9Yvlp90ItDLk5vT932A0rFu619nf7RVS+Y/VeaUW1jaRDqZ8VJw=="),
 }
+ISSUE524_FRONTEND_PACKAGES = {
+    "node_modules/next": (
+        "16.3.4",
+        "sha512-/Ztf6CeRH+ejEXUrYtqI4gkS66eFIHuSwqi60RgcpWKodxFZx2/dqVCMKBwILfAHXQ+F1b1vAudgj3mnxqtoIA==",
+    ),
+    "node_modules/sharp": (
+        "0.35.4",
+        "sha512-n++8XWcj+jCOr2IOl7h8LbKnGBDY4aPbmprMONBNFdn0ImXqpGVv5zliDs0V9HbmbCQLpbuo2ej9rAoOQTvMDA==",
+    ),
+    "node_modules/js-yaml": (
+        "4.3.2",
+        "sha512-SFNOvSJ+Dgf/9An904Yx+CgSlIPCkIpao4qo51lpee25TIRejdH3rhR4EZMGoNx3/TP3O+wzWuiTFl4sqbltzA==",
+    ),
+    "node_modules/vitest": (
+        "4.1.11",
+        "sha512-fhACrNXUidIbGSBr5FlbuBkO7VWC1ZyLl0DO4CU2DrQoAPxX84Ysxs+HeGQpii5lZWV1Q4gBZTTu49mF+A6Edw==",
+    ),
+    "node_modules/@vitest/mocker": (
+        "4.1.11",
+        "sha512-2XJVD55d1o5AZous5CCGKS74g/riOj9odEt2bQpCVZeblHyHdnMeFl4jl0XjU21stf4mbjUkew2eXQZt65g5CQ==",
+    ),
+}
+ISSUE524_LOCK_PATHS = {
+    "",
+    "node_modules/@emnapi/runtime",
+    "node_modules/@img/sharp-wasm32/node_modules/@emnapi/runtime",
+    "node_modules/next",
+    "node_modules/@next/env",
+    "node_modules/@swc/helpers",
+    "node_modules/sharp",
+    "node_modules/js-yaml",
+    "node_modules/vitest",
+    *{
+        f"node_modules/@next/swc-{suffix}"
+        for suffix in (
+            "darwin-arm64", "darwin-x64", "linux-arm64-gnu", "linux-arm64-musl",
+            "linux-x64-gnu", "linux-x64-musl", "win32-arm64-msvc", "win32-x64-msvc",
+        )
+    },
+    *{
+        f"node_modules/@vitest/{name}"
+        for name in ("expect", "mocker", "pretty-format", "runner", "snapshot", "spy", "utils")
+    },
+    *{
+        f"node_modules/@img/sharp-{suffix}"
+        for suffix in (
+            "darwin-arm64", "darwin-x64", "freebsd-wasm32", "linux-arm", "linux-arm64",
+            "linux-ppc64", "linux-riscv64", "linux-s390x", "linux-x64",
+            "linuxmusl-arm64", "linuxmusl-x64", "wasm32", "webcontainers-wasm32",
+            "win32-arm64", "win32-ia32", "win32-x64",
+        )
+    },
+    *{
+        f"node_modules/@img/sharp-libvips-{suffix}"
+        for suffix in (
+            "darwin-arm64", "darwin-x64", "linux-arm", "linux-arm64", "linux-ppc64",
+            "linux-riscv64", "linux-s390x", "linux-x64", "linuxmusl-arm64", "linuxmusl-x64",
+        )
+    },
+}
+ISSUE524_CHANGED_RECORDS_SHA256 = (
+    "f81ce42b1ea694e2bcec87706640a8440c3240767b32734c8c2457dcb900102d"
+)
 ISSUE150_BASE = "a02286240212ad8958915aec01aa5ebaf60fa705"
 ISSUE460_BASE = "ab97b6eecba6db9c66c37d19b29257c7398f3ab7"
 PYPDF_WHEEL_SHA256 = "c8b09a59399062fb45a1b8156c18a787a10a3dae03ac9674397a226712c94604"
@@ -269,6 +333,34 @@ def test_issue498_dependency_docs_distinguish_runtime_and_hosted_test_placement(
     assert "Optional runtime providers extra plus exact development/test pin" in traceability
 
 
+def test_current_js_yaml_notice_preserves_history_without_stale_live_version() -> None:
+    notices = (ROOT / "docs/THIRD_PARTY_NOTICES.md").read_text(encoding="utf-8")
+    rows = [line for line in notices.splitlines() if line.startswith("| js-yaml |")]
+    assert len(rows) == 1
+    assert "current sole lock entry is exact 4.3.2" in rows[0]
+    assert "Issue `#396` previously moved 4.3.0 to 4.3.1" in rows[0]
+
+
+def test_stackclimb_schema_notice_preserves_source_license_and_attribution() -> None:
+    notices = (ROOT / "docs/THIRD_PARTY_NOTICES.md").read_text(encoding="utf-8")
+    section = notices.split("## Issue #524 frontend security refresh", 1)[1]
+    for required in (
+        "LicenseRef-stackclimb-source-v1",
+        "shared/schemas/task-resource-ledger-v1.schema.json",
+        "f74c8f2fdc0e2edd955b999216d660d06c69986b98427d1147f404f27057c8f5",
+        "Copyright (c) 2026 Rohit Agrawal",
+        "Permission is hereby granted",
+        'THE SOFTWARE IS PROVIDED "AS IS"',
+        "https://stackclimb.com",
+        "https://github.com/imrohitagrawal",
+        "https://www.linkedin.com/in/rohitagrawal14/",
+    ):
+        assert required in section
+    assert "shared/schemas/task-resource-ledger-v1.schema.json" in (
+        ROOT / "docs/SKILL_LOCK.md"
+    ).read_text(encoding="utf-8")
+
+
 def _base_text(path: str) -> str:
     return _text_at(ISSUE360_BASE, path)
 
@@ -289,6 +381,180 @@ def _normalize_issue495_frontend_delta(
             integrity,
         )
         lock["packages"][path] = base_lock["packages"][path]
+
+
+def _strict_json_object(text: str) -> dict[str, Any]:
+    def reject_duplicates(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+        result: dict[str, Any] = {}
+        for key, value in pairs:
+            if key in result:
+                raise ValueError(f"duplicate JSON member: {key}")
+            result[key] = value
+        return result
+
+    value = json.loads(text, object_pairs_hook=reject_duplicates)
+    assert isinstance(value, dict)
+    return value
+
+
+def _assert_issue524_frontend_contract(package_text: str, lock_text: str) -> None:
+    manifest = _strict_json_object(package_text)
+    lock = _strict_json_object(lock_text)
+    base_manifest = json.loads(_text_at(ISSUE524_BASE, "frontend/package.json"))
+    base_lock = json.loads(_text_at(ISSUE524_BASE, "frontend/package-lock.json"))
+
+    assert manifest["dependencies"]["next"] == "16.3.4"
+    assert manifest["devDependencies"]["vitest"] == "^4.1.11"
+    assert manifest["overrides"]["sharp"] == "^0.35.4"
+    assert "js-yaml" not in manifest["dependencies"]
+    assert "js-yaml" not in manifest["devDependencies"]
+    assert "js-yaml" not in manifest["overrides"]
+    assert manifest["allowScripts"].get("sharp@0.35.4") is True
+    assert "sharp@0.35.3" not in manifest["allowScripts"]
+    assert manifest["devDependencies"]["eslint-config-next"] == "16.2.9"
+
+    root = lock["packages"][""]
+    assert root["dependencies"]["next"] == "16.3.4"
+    assert root["devDependencies"]["vitest"] == "^4.1.11"
+    for path, (version, integrity) in ISSUE524_FRONTEND_PACKAGES.items():
+        record = lock["packages"][path]
+        assert record["version"] == version
+        assert record["integrity"] == integrity
+        assert record["resolved"].startswith("https://registry.npmjs.org/")
+
+    normalized_manifest = copy.deepcopy(manifest)
+    normalized_manifest["dependencies"]["next"] = base_manifest["dependencies"]["next"]
+    normalized_manifest["devDependencies"]["vitest"] = base_manifest["devDependencies"]["vitest"]
+    normalized_manifest["overrides"]["sharp"] = base_manifest["overrides"]["sharp"]
+    normalized_manifest["allowScripts"]["sharp@0.35.3"] = normalized_manifest[
+        "allowScripts"
+    ].pop("sharp@0.35.4")
+    assert normalized_manifest == base_manifest
+
+    changed = {
+        path
+        for path in set(lock["packages"]) | set(base_lock["packages"])
+        if lock["packages"].get(path) != base_lock["packages"].get(path)
+    }
+    assert changed == ISSUE524_LOCK_PATHS
+    for path in ISSUE524_LOCK_PATHS - {""}:
+        record = lock["packages"][path]
+        assert record["resolved"].startswith("https://registry.npmjs.org/")
+        assert record["integrity"].startswith("sha512-")
+    record_digests = {
+        path: hashlib.sha256(
+            json.dumps(
+                lock["packages"][path],
+                ensure_ascii=True,
+                sort_keys=True,
+                separators=(",", ":"),
+            ).encode("ascii")
+        ).hexdigest()
+        for path in sorted(ISSUE524_LOCK_PATHS)
+    }
+    complete_digest = hashlib.sha256(
+        json.dumps(
+            record_digests,
+            ensure_ascii=True,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("ascii")
+    ).hexdigest()
+    assert complete_digest == ISSUE524_CHANGED_RECORDS_SHA256
+    normalized_lock = copy.deepcopy(lock)
+    for path in ISSUE524_LOCK_PATHS:
+        if path in base_lock["packages"]:
+            normalized_lock["packages"][path] = base_lock["packages"][path]
+        else:
+            normalized_lock["packages"].pop(path)
+    assert normalized_lock == base_lock
+
+
+def test_issue524_frontend_graph_is_exact_patched_and_isolated() -> None:
+    _assert_issue524_frontend_contract(
+        (ROOT / "frontend/package.json").read_text(encoding="utf-8"),
+        (ROOT / "frontend/package-lock.json").read_text(encoding="utf-8"),
+    )
+
+
+def test_issue524_frontend_contract_rejects_weaker_substituted_and_manifest_drift() -> None:
+    package_text = (ROOT / "frontend/package.json").read_text(encoding="utf-8")
+    lock_text = (ROOT / "frontend/package-lock.json").read_text(encoding="utf-8")
+    lock = json.loads(lock_text)
+    alternate_registry = copy.deepcopy(lock)
+    alternate_registry["packages"]["node_modules/@next/env"]["resolved"] = (
+        "https://example.invalid/@next/env.tgz"
+    )
+    forged_integrity = copy.deepcopy(lock)
+    forged_integrity["packages"]["node_modules/@vitest/expect"]["integrity"] = (
+        "sha512-forged"
+    )
+    mutations = (
+        (package_text.replace('"next": "16.3.4"', '"next": "16.3.2"'), lock_text),
+        (package_text.replace('"vitest": "^4.1.11"', '"vitest": "^4.1.9"'), lock_text),
+        (package_text.replace('"sharp": "^0.35.4"', '"sharp": "^0.35.3"'), lock_text),
+        (package_text.replace('"eslint-config-next": "16.2.9"', '"eslint-config-next": "16.3.4"'), lock_text),
+        (package_text, lock_text.replace(ISSUE524_FRONTEND_PACKAGES["node_modules/next"][1], "sha512-forged")),
+        (package_text, lock_text.replace('https://registry.npmjs.org/next/', 'https://example.invalid/next/', 1)),
+        (package_text, json.dumps(alternate_registry)),
+        (package_text, json.dumps(forged_integrity)),
+    )
+    for candidate_package, candidate_lock in mutations:
+        with pytest.raises((AssertionError, KeyError)):
+            _assert_issue524_frontend_contract(candidate_package, candidate_lock)
+
+
+@pytest.mark.parametrize("lock_path", sorted(ISSUE524_LOCK_PATHS))
+def test_issue524_contract_rejects_tampering_in_every_changed_record(lock_path: str) -> None:
+    package_text = (ROOT / "frontend/package.json").read_text(encoding="utf-8")
+    lock = json.loads((ROOT / "frontend/package-lock.json").read_text(encoding="utf-8"))
+    lock["packages"][lock_path]["issue524Tamper"] = True
+    with pytest.raises(AssertionError):
+        _assert_issue524_frontend_contract(
+            package_text,
+            json.dumps(lock, ensure_ascii=True, separators=(",", ":")),
+        )
+
+
+def test_issue524_contract_rejects_missing_and_duplicate_nonprimary_record() -> None:
+    package_text = (ROOT / "frontend/package.json").read_text(encoding="utf-8")
+    lock_text = (ROOT / "frontend/package-lock.json").read_text(encoding="utf-8")
+    lock = json.loads(lock_text)
+    nonprimary = "node_modules/@next/env"
+
+    missing = copy.deepcopy(lock)
+    del missing["packages"][nonprimary]
+    with pytest.raises((AssertionError, KeyError)):
+        _assert_issue524_frontend_contract(package_text, json.dumps(missing))
+
+    marker = f'    "{nonprimary}": {{'
+    duplicate = lock_text.replace(
+        marker,
+        f'    "{nonprimary}": {json.dumps(lock["packages"][nonprimary])},\n{marker}',
+        1,
+    )
+    assert duplicate != lock_text
+    with pytest.raises((AssertionError, ValueError)):
+        _assert_issue524_frontend_contract(package_text, duplicate)
+
+    duplicate_record_field = lock_text.replace(
+        '      "version": "16.3.4",',
+        '      "version": "0.0.0",\n      "version": "16.3.4",',
+        1,
+    )
+    duplicate_manifest_key = package_text.replace(
+        '    "next": "16.3.4",',
+        '    "next": "0.0.0",\n    "next": "16.3.4",',
+        1,
+    )
+    assert duplicate_record_field != lock_text
+    assert duplicate_manifest_key != package_text
+    for candidate_package, candidate_lock in (
+        (package_text, duplicate_record_field),
+        (duplicate_manifest_key, lock_text),
+    ):
+        with pytest.raises(ValueError, match="duplicate JSON member"):
+            _assert_issue524_frontend_contract(candidate_package, candidate_lock)
 
 
 def _assert_pypdf_6162_contract(project_text: str, lock_text: str) -> None:
@@ -620,9 +886,11 @@ def _assert_js_yaml_431_contract(package_text: str, lock: dict[str, Any]) -> Non
 
 
 def test_frontend_js_yaml_lock_is_exact_isolated_and_patched() -> None:
+    # Issue #524 proves that every record outside its exact delta equals this
+    # accepted snapshot; evaluate the older contract at that compositional edge.
     _assert_js_yaml_431_contract(
-        (ROOT / "frontend/package.json").read_text(encoding="utf-8"),
-        json.loads((ROOT / "frontend/package-lock.json").read_text(encoding="utf-8")),
+        _text_at(ISSUE524_BASE, "frontend/package.json"),
+        json.loads(_text_at(ISSUE524_BASE, "frontend/package-lock.json")),
     )
 
 
@@ -647,8 +915,10 @@ def test_js_yaml_contract_rejects_identity_integrity_and_unrelated_drift() -> No
 
 
 def test_frontend_brace_expansion_override_and_lock_are_isolated_and_patched() -> None:
-    package = json.loads((ROOT / "frontend/package.json").read_text(encoding="utf-8"))
-    lock = json.loads((ROOT / "frontend/package-lock.json").read_text(encoding="utf-8"))
+    # The Issue #524 exact-delta contract binds the current lock back to this
+    # accepted snapshot before this historical boundary is evaluated.
+    package = json.loads(_text_at(ISSUE524_BASE, "frontend/package.json"))
+    lock = json.loads(_text_at(ISSUE524_BASE, "frontend/package-lock.json"))
     base_package, base_lock = _base_json("frontend/package.json"), _base_json("frontend/package-lock.json")
 
     assert package["overrides"]["brace-expansion"] == "5.0.9"

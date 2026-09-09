@@ -2184,3 +2184,38 @@ human acceptance, deployment, release, production-readiness, or Cut 1 evidence.
   #521 can consume accepted main and complete its final revalidation. It changes
   no product/provider behavior and authorizes no call, upload, credential,
   egress, spend, media, deployment, release, or production claim.
+
+## Issues #523/#524 atomic dependency-security convergence (2026-09-09)
+
+- Issue `#524` raises only the affected frontend graph: Next.js 16.3.4,
+  sharp 0.35.4, transitive js-yaml 4.3.2, and Vitest/`@vitest` 4.1.11.
+  Exact registry identities and a fifty-record resolver boundary prevent
+  unrelated Vite/Rolldown or CSS-tooling refreshes.
+- Issue `#523` independently raises the affected Python test transport to
+  httpx2/httpcore2 2.12.0. Because either branch retains the other audit
+  failure, owner/orchestrator amendment `5600552079` directs Issue `#524` to
+  preserve its RED/GREEN history and converge by normal merge into a separately
+  amended Issue `#523` route for one full-gate PR.
+- Cleanup amendment `5601014173` replaces the earlier preliminary inventory
+  claim with the exact StackClimb `TaskResourceLedgerV1` schema and a sanitized
+  frozen ledger. Live-census amendment `5601780266` expands the closed inventory
+  to all thirty-four observed Issue `#524` resources and sixty-eight lifecycle
+  events; the whole parsed ledger is canonical-hash bound so fingerprints,
+  measurements, evidence, retention, and sensitivity cannot drift silently.
+  It records retention and
+  revalidation duties but authorizes no deletion; unrelated dirty state, shared
+  caches, historical resources, Docker objects, and private evidence stay out
+  of scope.
+- Full-gate amendment `5601451115` corrects the stale nanoid compatibility
+  fixture against the immutable Issue `#524` dependency reference and renames
+  one opaque ledger ID that matched the secret scanner's key-shaped pattern;
+  neither the nanoid invariant nor the scanner is weakened.
+- Provenance amendment `5601842704` binds the exact StackClimb source, pin,
+  custom license, attribution, trust behavior, and 2026-10-09 review expiry in
+  the skill lock and third-party notice. Its guidance and read-only inventory
+  grant no provider, spend, merge, or cleanup authority.
+- No advisory is ignored or suppressed. The refresh changes dependency
+  metadata only and adds no product/provider/media behavior, credential use,
+  egress, spend, deployment, release, production-readiness, or Cut 1 claim.
+- T06, T07, T08, deployment, publication, release, production readiness, and
+  Cut 1 acceptance remain incomplete.

@@ -402,6 +402,58 @@ ISSUE495_EXPECTED = {
     "docs/STATUS.md",
     "docs/TRACEABILITY.md",
 }
+ISSUE524_EXPECTED = {
+    "docs/governance/preflights/issue-524-frontend-dependency-security-refresh.json",
+    "docs/governance/resource-ledgers/issue-524-task-resource-ledger-v1.json",
+    "docs/governance/schemas/task-resource-ledger-v1.schema.json",
+    "frontend/package.json",
+    "frontend/package-lock.json",
+    "scripts/quality/stage8_cut1_routes.py",
+    "tests/unit/test_stage8_cut1_routes.py",
+    "tests/unit/test_dependency_security_contract.py",
+    "tests/unit/test_frontend_dependency_security_contract.py",
+    "docs/ADR/0082-frontend-dependency-security-refresh.md",
+    "docs/STATUS.md",
+    "docs/SKILL_LOCK.md",
+    "docs/THIRD_PARTY_NOTICES.md",
+    "docs/TRACEABILITY.md",
+}
+ISSUE524_LEDGER_RESOURCE_IDS = {
+    "issue524-audit-cache",
+    "issue524-backend-app-pycache",
+    "issue524-backend-eval-pycache",
+    "issue524-backend-observability-pycache",
+    "issue524-backend-pycache",
+    "issue524-backend-rag-pycache",
+    "issue524-backend-storage-pycache",
+    "issue524-branch",
+    "issue524-frontend-test-results",
+    "issue524-mypy-cache",
+    "issue524-next-env",
+    "issue524-next-output",
+    "issue524-node-modules",
+    "issue524-npm-cache",
+    "issue524-perf-pycache",
+    "issue524-performance-reports",
+    "issue524-pytest-cache",
+    "issue524-ruff-cache",
+    "issue524-scripts-agent-context-pycache",
+    "issue524-scripts-ci-pycache",
+    "issue524-scripts-eval-pycache",
+    "issue524-scripts-phase1-pycache",
+    "issue524-scripts-pycache",
+    "issue524-scripts-publication-pycache",
+    "issue524-scripts-quality-pycache",
+    "issue524-security-python-pycache",
+    "issue524-tests-api-pycache",
+    "issue524-tests-phase1-pycache",
+    "issue524-tests-publication-pycache",
+    "issue524-tests-unit-pycache",
+    "issue524-tsbuildinfo",
+    "issue524-uv-cache",
+    "issue524-venv",
+    "issue524-worktree",
+}
 ISSUE499_EXPECTED = {
     "docs/governance/preflights/issue-499-pypdf-6-16-2-security-refresh.json",
     "pyproject.toml",
@@ -642,6 +694,7 @@ EXPECTED = {
     "cut1-process-479-t05c-listening-authority": ISSUE479_EXPECTED,
     "cut1-process-482-dependency-security-refresh": ISSUE482_EXPECTED,
     "stage8-495-browserslist-security-refresh": ISSUE495_EXPECTED,
+    "stage8-524-frontend-dependency-security-refresh": ISSUE524_EXPECTED,
     "stage8-498-google-tts-official-grpc": ISSUE498_EXPECTED,
     "cut1-process-478-pr477-status-closeout": ISSUE478_EXPECTED,
     "cut1-475-t05b-runtime-receipt-binding": ISSUE475_EXPECTED,
@@ -4872,6 +4925,276 @@ def test_issue495_route_freezes_the_lockfile_only_security_refresh() -> None:
     assert branch in stage8.EFFECTIVE_STAGE8_ROUTES
 
 
+def test_issue524_route_freezes_the_exact_frontend_security_refresh() -> None:
+    branch = "stage8-524-frontend-dependency-security-refresh"
+    assert routes.ISSUE524_BRANCH == branch
+    assert routes.ISSUE524_BASE == "b6b0c05c7227428ff0841361f3970b0b2c40aa86"
+    assert routes.ISSUE524_TREE == "2a8fc73f5cfc9210fabfdb425d00a07d345fa24f"
+    assert routes.ISSUE524_ROUTE_COMMENT == "5599970578"
+    assert routes.ISSUE524_ROUTE_SHA256 == (
+        "07f2fff6702a9847059a3e4223df25e8b0752269574cff9710b3738fc8c82da5"
+    )
+    assert routes.ISSUE524_AMENDMENT_COMMENT == "5600552079"
+    assert routes.ISSUE524_AMENDMENT_SHA256 == (
+        "95ddf400f917530c9c80532582244f645b93389ce33e81d0165dbdcd182f781a"
+    )
+    assert routes.ISSUE524_LEDGER_ROUTE_COMMENT == "5601014173"
+    assert routes.ISSUE524_LEDGER_ROUTE_SHA256 == (
+        "fc5f2bc1f3f0d608e2305205016241540e0a91cc412d0bf79acfc6cf8dda1873"
+    )
+    assert routes.ISSUE524_FULL_GATE_CORRECTION_COMMENT == "5601451115"
+    assert routes.ISSUE524_FULL_GATE_CORRECTION_SHA256 == (
+        "f1ba7fd54276f79c3ac2045fb75c4593415b61d9a945e450e9d441cb0caaae97"
+    )
+    assert routes.ISSUE524_LIVE_CENSUS_COMMENT == "5601780266"
+    assert routes.ISSUE524_LIVE_CENSUS_SHA256 == (
+        "10b1e9e88dc5b5bfe0a5cc0437a359d55eab4adbd9bfcc782bc640186bb912b4"
+    )
+    assert routes.ISSUE524_PROVENANCE_COMMENT == "5601842704"
+    assert routes.ISSUE524_PROVENANCE_SHA256 == (
+        "57bd3ae5f9dacb429ecdbef0f23aa013fc6623b8c508f627c641eed471b56537"
+    )
+    assert routes.ISSUE524_FREEZE_COMMENT == "5602529879"
+    assert routes.ISSUE524_FREEZE_SHA256 == (
+        "9d1b5562adfce21a95cfaed81b940f8bd1a643410dc76ec19dfa016a24e28ed2"
+    )
+    assert routes.ROUTES[branch] == ISSUE524_EXPECTED
+    assert routes.ROUTE_ISSUES[branch] == 524
+    assert routes.TOTAL_LIMITS[branch] == 3820
+    assert routes.TEXT_LIMITS[branch] == {
+        "docs/governance/preflights/issue-524-frontend-dependency-security-refresh.json": 300,
+        "docs/governance/resource-ledgers/issue-524-task-resource-ledger-v1.json": 1100,
+        "docs/governance/schemas/task-resource-ledger-v1.schema.json": 320,
+        "frontend/package.json": 80,
+        "frontend/package-lock.json": 700,
+        "scripts/quality/stage8_cut1_routes.py": 300,
+        "tests/unit/test_stage8_cut1_routes.py": 400,
+        "tests/unit/test_dependency_security_contract.py": 700,
+        "tests/unit/test_frontend_dependency_security_contract.py": 200,
+        "docs/ADR/0082-frontend-dependency-security-refresh.md": 120,
+        "docs/STATUS.md": 80,
+        "docs/SKILL_LOCK.md": 120,
+        "docs/THIRD_PARTY_NOTICES.md": 100,
+        "docs/TRACEABILITY.md": 80,
+    }
+    preflight = json.loads(
+        (REPO / "docs/governance/preflights/issue-524-frontend-dependency-security-refresh.json")
+        .read_text(encoding="utf-8")
+    )
+    assert set(preflight["scope"]["required"]) == ISSUE524_EXPECTED
+    assert preflight["scope"]["required"] == preflight["scope"]["allowed_prefixes"]
+    assert routes.ISSUE524_AMENDMENT_COMMENT in preflight["objective"]
+    assert routes.ISSUE524_AMENDMENT_SHA256 in preflight["objective"]
+    assert routes.ISSUE524_LEDGER_ROUTE_COMMENT in preflight["objective"]
+    assert routes.ISSUE524_LEDGER_ROUTE_SHA256 in preflight["objective"]
+    assert routes.ISSUE524_FULL_GATE_CORRECTION_COMMENT in preflight["objective"]
+    assert routes.ISSUE524_FULL_GATE_CORRECTION_SHA256 in preflight["objective"]
+    assert routes.ISSUE524_LIVE_CENSUS_COMMENT in preflight["objective"]
+    assert routes.ISSUE524_LIVE_CENSUS_SHA256 in preflight["objective"]
+    assert routes.ISSUE524_PROVENANCE_COMMENT in preflight["objective"]
+    assert routes.ISSUE524_PROVENANCE_SHA256 in preflight["objective"]
+    assert routes.ISSUE524_FREEZE_COMMENT in preflight["objective"]
+    assert routes.ISSUE524_FREEZE_SHA256 in preflight["objective"]
+    assert branch in stage8.EFFECTIVE_STAGE8_ROUTES
+
+
+def _issue524_ledger_documents() -> tuple[bytes, dict[str, Any], dict[str, Any]]:
+    schema_path = REPO / "docs/governance/schemas/task-resource-ledger-v1.schema.json"
+    ledger_path = REPO / "docs/governance/resource-ledgers/issue-524-task-resource-ledger-v1.json"
+    return (
+        schema_path.read_bytes(),
+        routes.load_json_without_duplicate_members(schema_path),
+        routes.load_json_without_duplicate_members(ledger_path),
+    )
+
+
+def test_issue524_task_resource_ledger_is_exact_closed_and_non_destructive() -> None:
+    schema_bytes, schema, ledger = _issue524_ledger_documents()
+    assert len(schema_bytes) == 10_863
+    assert hashlib.sha256(schema_bytes).hexdigest() == (
+        "0adc52cb8eb2ceaa2b7142754dde9dd249321226802ceb79385b78d9b57d3a6b"
+    )
+    assert routes.validate_issue524_resource_ledger(schema_bytes, schema, ledger) == []
+    assert ledger["schema_version"] == "TaskResourceLedgerV1"
+    assert ledger["mode"] == "package"
+    assert ledger["ledger_state"] == "frozen"
+    assert ledger["review_state"] == "reviewed"
+    assert {row["resource_id"] for row in ledger["resources"]} == ISSUE524_LEDGER_RESOURCE_IDS
+    assert len(ledger["events"]) == 2 * len(ISSUE524_LEDGER_RESOURCE_IDS)
+    assert all(row["authorization_ref"] is None for row in ledger["resources"])
+    assert {row["lifecycle_state"] for row in ledger["resources"]} == {"classified"}
+
+
+@pytest.mark.parametrize(
+    ("collection", "nested", "required"),
+    [
+        (None, None, "owner"),
+        ("contexts", None, "kind"),
+        ("inventory_probes", None, "status"),
+        ("resources", None, "activity"),
+        ("resources", "cleanup_contract", "trigger"),
+        ("resources", "kind_evidence", "evidence_refs"),
+        ("resources", "verification", "result"),
+        ("events", None, "state"),
+    ],
+)
+def test_issue524_ledger_rejects_missing_field_at_every_required_object_layer(
+    collection: str | None,
+    nested: str | None,
+    required: str,
+) -> None:
+    schema_bytes, schema, ledger = _issue524_ledger_documents()
+    drifted = copy.deepcopy(ledger)
+    target = drifted if collection is None else drifted[collection][0]
+    if nested is not None:
+        target = target[nested]
+    del target[required]
+    assert routes.validate_issue524_resource_ledger(schema_bytes, schema, drifted)
+
+
+def test_issue524_ledger_rejects_representative_semantic_mutations() -> None:
+    schema_bytes, schema, ledger = _issue524_ledger_documents()
+    mutations: list[dict[str, Any]] = []
+
+    missing_resource = copy.deepcopy(ledger)
+    missing_resource["resources"].pop()
+    mutations.append(missing_resource)
+
+    duplicate_id = copy.deepcopy(ledger)
+    duplicate_id["resources"][1]["resource_id"] = duplicate_id["resources"][0]["resource_id"]
+    mutations.append(duplicate_id)
+
+    duplicate_ref = copy.deepcopy(ledger)
+    duplicate_ref["resources"][1]["public_ref"] = duplicate_ref["resources"][0]["public_ref"]
+    duplicate_ref["resources"][1]["cleanup_contract"]["locator"] = duplicate_ref["resources"][0]["public_ref"]
+    mutations.append(duplicate_ref)
+
+    absolute_locator = copy.deepcopy(ledger)
+    absolute_locator["resources"][0]["public_ref"] = "/private/tmp/forbidden"
+    absolute_locator["resources"][0]["cleanup_contract"]["locator"] = "/private/tmp/forbidden"
+    mutations.append(absolute_locator)
+
+    wrong_kind = copy.deepcopy(ledger)
+    wrong_kind["resources"][0]["cleanup_contract"]["kind"] = "shared-resource"
+    mutations.append(wrong_kind)
+
+    unauthorized_state = copy.deepcopy(ledger)
+    unauthorized_state["resources"][0]["lifecycle_state"] = "proposed-delete"
+    mutations.append(unauthorized_state)
+
+    invalid_measurement = copy.deepcopy(ledger)
+    invalid_measurement["resources"][0]["measurement_confidence"] = "unknown"
+    invalid_measurement["resources"][0]["logical_bytes"] = 1
+    mutations.append(invalid_measurement)
+
+    dangling_context = copy.deepcopy(ledger)
+    dangling_context["resources"][0]["context_ref"] = "missing-context"
+    mutations.append(dangling_context)
+
+    dangling_dependency = copy.deepcopy(ledger)
+    dangling_dependency["resources"][0]["dependency_resource_ids"] = ["missing-resource"]
+    mutations.append(dangling_dependency)
+
+    dangling_event = copy.deepcopy(ledger)
+    dangling_event["events"][0]["resource_id"] = "missing-resource"
+    mutations.append(dangling_event)
+
+    post_snapshot_event = copy.deepcopy(ledger)
+    post_snapshot_event["events"][0]["at"] = "2099-01-01T00:00:00Z"
+    mutations.append(post_snapshot_event)
+
+    forged_fingerprint = copy.deepcopy(ledger)
+    forged_fingerprint["resources"][0]["identity_fingerprint"] = "sha256:" + "0" * 64
+    mutations.append(forged_fingerprint)
+
+    forged_measurement = copy.deepcopy(ledger)
+    measured = next(
+        row for row in forged_measurement["resources"] if row["measurement_confidence"] == "exact"
+    )
+    measured["logical_bytes"] = 0
+    measured["exclusive_reclaimable_bytes"] = 0
+    mutations.append(forged_measurement)
+
+    forged_evidence = copy.deepcopy(ledger)
+    forged_evidence["resources"][0]["evidence_refs"] = ["restricted-snapshot:forged"]
+    mutations.append(forged_evidence)
+
+    widened_retention = copy.deepcopy(ledger)
+    widened_retention["resources"][0]["retention_class"] = "always-clean"
+    mutations.append(widened_retention)
+
+    weakened_sensitivity = copy.deepcopy(ledger)
+    temp_cache = next(
+        row for row in weakened_sensitivity["resources"] if row["resource_id"] == "issue524-npm-cache"
+    )
+    temp_cache["sensitivity"] = "ordinary"
+    mutations.append(weakened_sensitivity)
+
+    for drifted in mutations:
+        assert routes.validate_issue524_resource_ledger(schema_bytes, schema, drifted)
+
+
+def test_issue524_ledger_loader_rejects_duplicate_json_members(tmp_path: Path) -> None:
+    duplicate = tmp_path / "duplicate.json"
+    duplicate.write_text('{"schema_version":"a","schema_version":"b"}', encoding="utf-8")
+    with pytest.raises(routes.DuplicateJsonMember):
+        routes.load_json_without_duplicate_members(duplicate)
+
+
+def test_issue524_route_rejects_branch_suffix_drift(monkeypatch: Any) -> None:
+    branch = routes.ISSUE524_BRANCH + "-retry"
+    assert branch not in stage8.EFFECTIVE_STAGE8_ROUTES
+    assert stage8.STAGE8_BRANCH_PATTERN.match(branch)
+    monkeypatch.setattr(stage8, "current_branch", lambda: branch)
+    monkeypatch.setattr(
+        stage8,
+        "changed_files_for_stage_scope",
+        lambda: ["frontend/package.json", "frontend/package-lock.json"],
+    )
+    failures: list[str] = []
+    stage8.check_stage_scope(failures)
+    assert failures == [
+        f"Stage 8 branch collides with exact reviewed route {routes.ISSUE524_BRANCH}: {branch}."
+    ]
+
+
+def test_issue524_route_rejects_fixed_base_drift_and_every_path_cap(
+    monkeypatch: Any,
+) -> None:
+    outputs = iter(
+        (
+            completed([], out=routes.ISSUE524_BASE + "\n"),
+            completed([], out="a" * 40 + "\n"),
+        )
+    )
+    error = pytest.raises(
+        RuntimeError,
+        routes.route_base,
+        lambda _: next(outputs),
+        routes.ISSUE524_BRANCH,
+    )
+    assert "Issue #524 fixed base" in str(error.value)
+    monkeypatch.setattr(routes, "route_base", lambda *_: "base")
+    for path, limit in routes.TEXT_LIMITS[routes.ISSUE524_BRANCH].items():
+        monkeypatch.setattr(
+            routes,
+            "route_text_charges",
+            lambda *_, value_path=path, value_limit=limit: (
+                value_limit + 1,
+                {value_path: value_limit + 1},
+            ),
+        )
+        failures: list[str] = []
+        routes.check_exact_route(
+            REPO,
+            lambda _: completed([]),
+            routes.ISSUE524_BRANCH,
+            ISSUE524_EXPECTED,
+            failures,
+        )
+        assert f"Issue #524 charge for {path} exceeds {limit}." in failures
+
+
 def test_issue499_route_freezes_the_exact_pypdf_security_refresh() -> None:
     branch = "stage8-499-pypdf-6-16-2-security-refresh"
     assert routes.ISSUE499_BRANCH == branch
@@ -5046,7 +5369,17 @@ def test_issue495_lock_refresh_changes_only_six_transitive_records() -> None:
         text=True,
     )
     before = json.loads(base_result.stdout)["packages"]
-    after = json.loads((REPO / lock_path).read_text(encoding="utf-8"))["packages"]
+    # Issue #524 separately proves that its current fifty-record delta
+    # normalizes exactly to this accepted snapshot.
+    after = json.loads(
+        subprocess.run(
+            ["git", "show", f"{routes.ISSUE524_BASE}:{lock_path}"],
+            cwd=REPO,
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout
+    )["packages"]
     expected = {
         "baseline-browser-mapping": ("2.11.20", "sha512-H0ulySigv6icDJ1F7SjtdCD6PrhTpdYCmP0CactWy1+ekh0AFd0o1Wn5T8b+hnTmdBx19u9yhL6wvCylXMY7zw=="),
         "browserslist": ("4.28.8", "sha512-V2NpofLblG64mfOtSgDhOJESZEGogzDMBv/q+W6oc4LXWP/q75eOXoOaaOu1EOadB9U4Bwx/e0yzbvwKH8zalA=="),
