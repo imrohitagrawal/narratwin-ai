@@ -360,7 +360,7 @@ def check_backend_and_tests(failures: list[str]) -> None:
             fail(f"Stage 8 Stage 6 unit tests must cover {marker}.", failures)
     frontend_dockerfile = read("frontend/Dockerfile")
     for marker in ("COPY --from=node-source", "FROM scratch AS deps", "/runtime/lib/apk/db/installed",
-                   "libvips-cpp.so.8.18.3", 'USER 65532:65532', 'ENTRYPOINT ["/usr/bin/node"]'):
+                   "m.copySharpLibvips(", 'USER 65532:65532', 'ENTRYPOINT ["/usr/bin/node"]'):
         if marker not in frontend_dockerfile:
             fail(f"Stage 8 frontend runtime image must preserve {marker}.", failures)
 def check_dependencies_and_scripts(failures: list[str]) -> None:

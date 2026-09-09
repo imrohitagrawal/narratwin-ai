@@ -202,6 +202,10 @@ ISSUE523_EVIDENCE_CORRECTION = (
     "5603161674",
     "8b6020b670e76f384f5b7f95db9bd8d196e23fe316f92a3cd5fe24a014c9d8a2",
 )
+ISSUE523_HOSTED_COMPATIBILITY_AMENDMENT = (
+    "5603708565",
+    "01b308f7117d6fcfe1b0250083df5226569ccbc20093330709482951a84ab7ce",
+)
 ISSUE523_ATOMIC_CHILDREN = (
     (
         "b1d3198d1c334b22b367d9341c9186bdbc2e01a7",
@@ -525,11 +529,19 @@ ROUTES = {
         "docs/governance/resource-ledgers/issue-524-task-resource-ledger-v1.json",
         "docs/governance/schemas/task-resource-ledger-v1.schema.json",
         "docs/SKILL_LOCK.md",
+        "frontend/Dockerfile",
         "frontend/package.json",
         "frontend/package-lock.json",
         "pyproject.toml",
         "uv.lock",
+        "scripts/ci/check_container_scan_consensus.py",
+        "scripts/ci/prepare_frontend_npm.mjs",
+        "scripts/quality/check_stage8_docs.py",
+        "scripts/quality/stage8_node_security.py",
         "scripts/quality/stage8_cut1_routes.py",
+        "tests/unit/test_container_scan_consensus.py",
+        "tests/unit/test_frontend_npm_preparation.py",
+        "tests/unit/test_stage8_node_security.py",
         "tests/unit/test_stage8_cut1_routes.py",
         "tests/unit/test_dependency_security_contract.py",
         "tests/unit/test_frontend_dependency_security_contract.py",
@@ -1175,7 +1187,7 @@ TOTAL_LIMITS[ISSUE524_BRANCH] = 3820
 ROUTE_ISSUES[ISSUE499_BRANCH] = 499
 TOTAL_LIMITS[ISSUE499_BRANCH] = 1000
 ROUTE_ISSUES[ISSUE523_BRANCH] = 523
-TOTAL_LIMITS[ISSUE523_BRANCH] = 6920
+TOTAL_LIMITS[ISSUE523_BRANCH] = 7660
 ROUTE_ISSUES[ISSUE525_BRANCH] = 525
 TOTAL_LIMITS[ISSUE525_BRANCH] = 2100
 ROUTE_ISSUES[ISSUE502_BRANCH] = 502
@@ -1392,11 +1404,19 @@ TEXT_LIMITS = {
         "docs/governance/resource-ledgers/issue-524-task-resource-ledger-v1.json": 1100,
         "docs/governance/schemas/task-resource-ledger-v1.schema.json": 320,
         "docs/SKILL_LOCK.md": 120,
+        "frontend/Dockerfile": 40,
         "frontend/package.json": 80,
         "frontend/package-lock.json": 700,
         "pyproject.toml": 60,
         "uv.lock": 300,
+        "scripts/ci/check_container_scan_consensus.py": 80,
+        "scripts/ci/prepare_frontend_npm.mjs": 120,
+        "scripts/quality/check_stage8_docs.py": 40,
+        "scripts/quality/stage8_node_security.py": 80,
         "scripts/quality/stage8_cut1_routes.py": 640,
+        "tests/unit/test_container_scan_consensus.py": 120,
+        "tests/unit/test_frontend_npm_preparation.py": 140,
+        "tests/unit/test_stage8_node_security.py": 120,
         "tests/unit/test_stage8_cut1_routes.py": 820,
         "tests/unit/test_dependency_security_contract.py": 1200,
         "tests/unit/test_frontend_dependency_security_contract.py": 200,
@@ -3209,6 +3229,7 @@ def check_exact_route(
                 ISSUE523_ATOMIC_AMENDMENT_COMMENT,
                 ISSUE523_ATOMIC_AMENDMENT_SHA256,
                 *ISSUE523_EVIDENCE_CORRECTION,
+                *ISSUE523_HOSTED_COMPATIBILITY_AMENDMENT,
                 *(value for pair in ISSUE523_ATOMIC_CHILDREN for value in pair),
                 *(value for pair in ISSUE523_ATOMIC_REVIEWS for value in pair),
                 *(value for row in ISSUE523_ATOMIC_MERGES for value in row),

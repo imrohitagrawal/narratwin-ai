@@ -1,7 +1,7 @@
 import { createHash, timingSafeEqual } from "node:crypto";
 import { spawnSync } from "node:child_process";
 import {
-  chmodSync, chownSync, cpSync, existsSync, lchownSync, lstatSync, mkdirSync,
+  chmodSync, chownSync, copyFileSync, cpSync, existsSync, lchownSync, lstatSync, mkdirSync,
   readFileSync, readdirSync, renameSync, rmSync,
 } from "node:fs";
 import { createRequire } from "node:module";
@@ -98,6 +98,33 @@ function secureTree(path) {
   chownSync(path, 0, 0);
   chmodSync(path, stat.isDirectory() ? 0o755 : (stat.mode & 0o111) ? 0o755 : 0o644);
   if (stat.isDirectory()) for (const name of readdirSync(path)) secureTree(join(path, name));
+}
+
+export function copySharpLibvips(dependenciesRoot, runtimeRoot, architecture) {
+  if (![dependenciesRoot, runtimeRoot].every((value) => typeof value === "string" && value)) {
+    throw new Error("Sharp libvips roots must be non-empty strings.");
+  }
+  if (!Object.hasOwn({ x64: true, arm64: true }, architecture)) {
+    throw new Error(`Unsupported Sharp libvips architecture: ${architecture}`);
+  }
+  const packagePath = join("node_modules", "@img", `sharp-libvips-linuxmusl-${architecture}`);
+  const sourceDirectory = join(resolve(dependenciesRoot), packagePath, "lib");
+  const prefixed = readdirSync(sourceDirectory).filter((name) => name.startsWith("libvips-cpp.so."));
+  const candidates = prefixed.filter((name) => /^libvips-cpp\.so\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)$/.test(name));
+  if (prefixed.length !== 1 || candidates.length !== 1) {
+    throw new Error("Expected exactly one canonical Sharp libvips shared object.");
+  }
+  const source = join(sourceDirectory, candidates[0]);
+  const sourceStat = lstatSync(source);
+  if (!sourceStat.isFile() || sourceStat.isSymbolicLink()) {
+    throw new Error("Sharp libvips shared object must be a regular non-symlink file.");
+  }
+  const destinationDirectory = join(resolve(runtimeRoot), packagePath, "lib");
+  mkdirSync(destinationDirectory, { recursive: true, mode: 0o755 });
+  const destination = join(destinationDirectory, candidates[0]);
+  copyFileSync(source, destination);
+  chmodSync(destination, 0o644);
+  return candidates[0];
 }
 
 export function assembleFrontendRuntime() {

@@ -79,14 +79,14 @@ FRONTEND_SBOM_COMPONENTS = {
 }
 FRONTEND_SHARP_COMPONENTS = {
     "amd64": {
-        ("sharp", "0.35.3", "pkg:npm/sharp@0.35.3"),
-        ("sharp-linuxmusl-x64", "0.35.3", "pkg:npm/%40img/sharp-linuxmusl-x64@0.35.3"),
-        ("sharp-libvips-linuxmusl-x64", "1.3.2", "pkg:npm/%40img/sharp-libvips-linuxmusl-x64@1.3.2"),
+        ("sharp", "0.35.4", "pkg:npm/sharp@0.35.4"),
+        ("sharp-linuxmusl-x64", "0.35.4", "pkg:npm/%40img/sharp-linuxmusl-x64@0.35.4"),
+        ("sharp-libvips-linuxmusl-x64", "1.3.3", "pkg:npm/%40img/sharp-libvips-linuxmusl-x64@1.3.3"),
     },
     "arm64": {
-        ("sharp", "0.35.3", "pkg:npm/sharp@0.35.3"),
-        ("sharp-linuxmusl-arm64", "0.35.3", "pkg:npm/%40img/sharp-linuxmusl-arm64@0.35.3"),
-        ("sharp-libvips-linuxmusl-arm64", "1.3.2", "pkg:npm/%40img/sharp-libvips-linuxmusl-arm64@1.3.2"),
+        ("sharp", "0.35.4", "pkg:npm/sharp@0.35.4"),
+        ("sharp-linuxmusl-arm64", "0.35.4", "pkg:npm/%40img/sharp-linuxmusl-arm64@0.35.4"),
+        ("sharp-libvips-linuxmusl-arm64", "1.3.3", "pkg:npm/%40img/sharp-libvips-linuxmusl-arm64@1.3.3"),
     },
 }
 ARTIFACT_TOOLS = {

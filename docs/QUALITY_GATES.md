@@ -1919,3 +1919,13 @@ URLs, hashes, sizes, dependency set, and all unrelated lock records are frozen.
 Pass requires frozen sync, real isolated import, unchanged valid/invalid Draft
 2020-12 behavior, focused mutation coverage, complete local/hosted gates, and
 independent exact-head review. This gate proves test infrastructure only.
+
+## Issue #523 hosted Sharp compatibility gate
+
+Hosted-parity amendment `5603708565` requires the scratch frontend build to
+derive the locked libvips SONAME from exactly one canonical regular non-symlink
+file in the architecture-specific npm package. Missing, duplicate, malformed,
+symlinked, or unsupported-architecture input fails before the runtime image is
+committed. AMD64 and ARM64 SBOM consensus requires exact sharp 0.35.4, native
+sharp 0.35.4, and libvips package 1.3.3 identities. A hard-coded prior SONAME,
+stale 0.35.3/1.3.2 inventory, scan waiver, or architecture fallback fails.

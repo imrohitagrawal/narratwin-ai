@@ -2195,6 +2195,10 @@ human acceptance, deployment, release, production-readiness, or Cut 1 evidence.
   Evidence correction `5603161674` binds the live raw-body hash of the existing
   Issue `#525` review receipt after independent reproduction found a clerical
   hash-copy error; it changes no reviewed child, topology, scope, or authority.
+  Hosted-parity amendment `5603708565` expands the exact route to thirty paths
+  and 7,660 charged lines after both Docker contexts reproduced the same stale
+  libvips SONAME. The bounded correction derives one locked regular SONAME and
+  updates both architecture SBOM identities; it adds no dependency or waiver.
   Normal non-fast-forward merges `30bdcecf` then `8ac8a6ea` preserve the #524
   and #525 RED/GREEN ancestry in that order. The composed Python lock proof
   removes the exact HTTPX and JSONSchema deltas before comparing with base, so

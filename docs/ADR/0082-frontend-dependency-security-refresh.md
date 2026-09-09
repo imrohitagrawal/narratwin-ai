@@ -28,6 +28,13 @@ are executable test inputs. The resolver may add the nested Emscripten runtime
 required by sharp 0.35.4, but cannot refresh unrelated Vite/Rolldown or CSS
 tooling merely because their version ranges admit newer releases.
 
+Hosted build evidence subsequently proved that the scratch-image assembly was
+coupled to the former libvips SONAME. Amendment `5603708565` replaces that
+literal with a shell-free helper that copies exactly one canonical regular,
+non-symlink libvips shared object from the integrity-checked architecture
+package. It also advances the SBOM contract to exact sharp 0.35.4, native sharp
+0.35.4, and libvips package 1.3.3 identities for AMD64 and ARM64.
+
 ## Consequences
 
 Final atomic amendment `5602656745` binds the complete fifty-record canonical
