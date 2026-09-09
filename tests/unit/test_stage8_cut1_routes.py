@@ -414,6 +414,7 @@ ISSUE524_EXPECTED = {
     "tests/unit/test_frontend_dependency_security_contract.py",
     "docs/ADR/0082-frontend-dependency-security-refresh.md",
     "docs/STATUS.md",
+    "docs/SKILL_LOCK.md",
     "docs/THIRD_PARTY_NOTICES.md",
     "docs/TRACEABILITY.md",
 }
@@ -4936,9 +4937,13 @@ def test_issue524_route_freezes_the_exact_frontend_security_refresh() -> None:
     assert routes.ISSUE524_LIVE_CENSUS_SHA256 == (
         "10b1e9e88dc5b5bfe0a5cc0437a359d55eab4adbd9bfcc782bc640186bb912b4"
     )
+    assert routes.ISSUE524_PROVENANCE_COMMENT == "5601842704"
+    assert routes.ISSUE524_PROVENANCE_SHA256 == (
+        "57bd3ae5f9dacb429ecdbef0f23aa013fc6623b8c508f627c641eed471b56537"
+    )
     assert routes.ROUTES[branch] == ISSUE524_EXPECTED
     assert routes.ROUTE_ISSUES[branch] == 524
-    assert routes.TOTAL_LIMITS[branch] == 3700
+    assert routes.TOTAL_LIMITS[branch] == 3820
     assert routes.TEXT_LIMITS[branch] == {
         "docs/governance/preflights/issue-524-frontend-dependency-security-refresh.json": 300,
         "docs/governance/resource-ledgers/issue-524-task-resource-ledger-v1.json": 1100,
@@ -4951,6 +4956,7 @@ def test_issue524_route_freezes_the_exact_frontend_security_refresh() -> None:
         "tests/unit/test_frontend_dependency_security_contract.py": 200,
         "docs/ADR/0082-frontend-dependency-security-refresh.md": 120,
         "docs/STATUS.md": 80,
+        "docs/SKILL_LOCK.md": 120,
         "docs/THIRD_PARTY_NOTICES.md": 100,
         "docs/TRACEABILITY.md": 80,
     }
@@ -4968,6 +4974,8 @@ def test_issue524_route_freezes_the_exact_frontend_security_refresh() -> None:
     assert routes.ISSUE524_FULL_GATE_CORRECTION_SHA256 in preflight["objective"]
     assert routes.ISSUE524_LIVE_CENSUS_COMMENT in preflight["objective"]
     assert routes.ISSUE524_LIVE_CENSUS_SHA256 in preflight["objective"]
+    assert routes.ISSUE524_PROVENANCE_COMMENT in preflight["objective"]
+    assert routes.ISSUE524_PROVENANCE_SHA256 in preflight["objective"]
     assert branch in stage8.EFFECTIVE_STAGE8_ROUTES
 
 
@@ -5075,6 +5083,33 @@ def test_issue524_ledger_rejects_representative_semantic_mutations() -> None:
     post_snapshot_event = copy.deepcopy(ledger)
     post_snapshot_event["events"][0]["at"] = "2099-01-01T00:00:00Z"
     mutations.append(post_snapshot_event)
+
+    forged_fingerprint = copy.deepcopy(ledger)
+    forged_fingerprint["resources"][0]["identity_fingerprint"] = "sha256:" + "0" * 64
+    mutations.append(forged_fingerprint)
+
+    forged_measurement = copy.deepcopy(ledger)
+    measured = next(
+        row for row in forged_measurement["resources"] if row["measurement_confidence"] == "exact"
+    )
+    measured["logical_bytes"] = 0
+    measured["exclusive_reclaimable_bytes"] = 0
+    mutations.append(forged_measurement)
+
+    forged_evidence = copy.deepcopy(ledger)
+    forged_evidence["resources"][0]["evidence_refs"] = ["restricted-snapshot:forged"]
+    mutations.append(forged_evidence)
+
+    widened_retention = copy.deepcopy(ledger)
+    widened_retention["resources"][0]["retention_class"] = "always-clean"
+    mutations.append(widened_retention)
+
+    weakened_sensitivity = copy.deepcopy(ledger)
+    temp_cache = next(
+        row for row in weakened_sensitivity["resources"] if row["resource_id"] == "issue524-npm-cache"
+    )
+    temp_cache["sensitivity"] = "ordinary"
+    mutations.append(weakened_sensitivity)
 
     for drifted in mutations:
         assert routes.validate_issue524_resource_ledger(schema_bytes, schema, drifted)

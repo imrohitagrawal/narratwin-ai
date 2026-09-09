@@ -281,6 +281,22 @@ def test_current_js_yaml_notice_preserves_history_without_stale_live_version() -
     assert "Issue `#396` previously moved 4.3.0 to 4.3.1" in rows[0]
 
 
+def test_stackclimb_schema_notice_preserves_source_license_and_attribution() -> None:
+    notices = (ROOT / "docs/THIRD_PARTY_NOTICES.md").read_text(encoding="utf-8")
+    section = notices.split("## Issue #524 frontend security refresh", 1)[1]
+    for required in (
+        "LicenseRef-stackclimb-source-v1",
+        "f74c8f2fdc0e2edd955b999216d660d06c69986b98427d1147f404f27057c8f5",
+        "Copyright (c) 2026 Rohit Agrawal",
+        "Permission is hereby granted",
+        'THE SOFTWARE IS PROVIDED "AS IS"',
+        "https://stackclimb.com",
+        "https://github.com/imrohitagrawal",
+        "https://www.linkedin.com/in/rohitagrawal14/",
+    ):
+        assert required in section
+
+
 def _base_text(path: str) -> str:
     return _text_at(ISSUE360_BASE, path)
 
