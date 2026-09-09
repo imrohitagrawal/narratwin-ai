@@ -422,7 +422,7 @@ egress, spend, deployment, release, or production authority. Final dependency
 license review remains required before release.
 
 The cleanup record consults StackClimb `work-package-protocol` and read-only `machine-space-reclamation` guidance and redistributes the 10,863-byte
-`TaskResourceLedgerV1` JSON Schema. The exact source is
+`TaskResourceLedgerV1` JSON Schema from `shared/schemas/task-resource-ledger-v1.schema.json`. The exact source is
 `https://github.com/imrohitagrawal/stackclimb-skills.git`, VERSION 1.0.0,
 commit `4c49e59e5e6bb41ccca229db106de2eda3164df6`, tree
 `267ce5b1d05734f972bbe997d070e35546077870`, with the schema unchanged at
