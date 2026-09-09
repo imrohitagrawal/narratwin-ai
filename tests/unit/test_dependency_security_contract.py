@@ -40,6 +40,7 @@ ISSUE360_BASE = "b9a2a8cd4aa05328116565990fc30ae44592c875"
 ISSUE396_BASE = "9ee3f4a4d3b8cf1e78b5a878904748b60d557a76"
 ISSUE401_BASE = "9cf6e01f9d0c32f25c229b5adf38c6eb716ca9a0"
 ISSUE499_BASE = "d1f5400f5c6dfec5d4b63eb3a83aa82e3330743f"
+ISSUE524_BASE = "b6b0c05c7227428ff0841361f3970b0b2c40aa86"
 BRACE_PATH = "node_modules/brace-expansion"
 JS_YAML_PATH = "node_modules/js-yaml"
 NANOID_PATH = "node_modules/nanoid"
@@ -56,6 +57,64 @@ ISSUE495_FRONTEND_PACKAGES = {
     "electron-to-chromium": ("1.5.419", "sha512-nHMPn8x4yCxCI0iSnL+LlHL5sUoUfjLXkcRIagZ4GBdrfFLFaiLNvzJWbJqZhFT9IAhw5tUSNlhggWN+otvp/A=="),
     "node-releases": ("2.0.54", "sha512-YHs7BmmcsdAI5Ozuf8JZo6PT0mv2GIWC9vMfvUC3dp65M8hn7Ux8CPL+2oBI7juNuj9d0ndhTcznq2ODBps9cQ=="),
     "update-browserslist-db": ("1.3.2", "sha512-UQ+MSxlhRm1bzjhU+DcuXfjFO1FzNtqhK5+9Yvlp90ItDLk5vT932A0rFu619nf7RVS+Y/VeaUW1jaRDqZ8VJw=="),
+}
+ISSUE524_FRONTEND_PACKAGES = {
+    "node_modules/next": (
+        "16.3.4",
+        "sha512-/Ztf6CeRH+ejEXUrYtqI4gkS66eFIHuSwqi60RgcpWKodxFZx2/dqVCMKBwILfAHXQ+F1b1vAudgj3mnxqtoIA==",
+    ),
+    "node_modules/sharp": (
+        "0.35.4",
+        "sha512-n++8XWcj+jCOr2IOl7h8LbKnGBDY4aPbmprMONBNFdn0ImXqpGVv5zliDs0V9HbmbCQLpbuo2ej9rAoOQTvMDA==",
+    ),
+    "node_modules/js-yaml": (
+        "4.3.2",
+        "sha512-SFNOvSJ+Dgf/9An904Yx+CgSlIPCkIpao4qo51lpee25TIRejdH3rhR4EZMGoNx3/TP3O+wzWuiTFl4sqbltzA==",
+    ),
+    "node_modules/vitest": (
+        "4.1.11",
+        "sha512-fhACrNXUidIbGSBr5FlbuBkO7VWC1ZyLl0DO4CU2DrQoAPxX84Ysxs+HeGQpii5lZWV1Q4gBZTTu49mF+A6Edw==",
+    ),
+    "node_modules/@vitest/mocker": (
+        "4.1.11",
+        "sha512-2XJVD55d1o5AZous5CCGKS74g/riOj9odEt2bQpCVZeblHyHdnMeFl4jl0XjU21stf4mbjUkew2eXQZt65g5CQ==",
+    ),
+}
+ISSUE524_LOCK_PATHS = {
+    "",
+    "node_modules/next",
+    "node_modules/@next/env",
+    "node_modules/@swc/helpers",
+    "node_modules/sharp",
+    "node_modules/js-yaml",
+    "node_modules/vitest",
+    *{
+        f"node_modules/@next/swc-{suffix}"
+        for suffix in (
+            "darwin-arm64", "darwin-x64", "linux-arm64-gnu", "linux-arm64-musl",
+            "linux-x64-gnu", "linux-x64-musl", "win32-arm64-msvc", "win32-x64-msvc",
+        )
+    },
+    *{
+        f"node_modules/@vitest/{name}"
+        for name in ("expect", "mocker", "pretty-format", "runner", "snapshot", "spy", "utils")
+    },
+    *{
+        f"node_modules/@img/sharp-{suffix}"
+        for suffix in (
+            "darwin-arm64", "darwin-x64", "freebsd-wasm32", "linux-arm", "linux-arm64",
+            "linux-ppc64", "linux-riscv64", "linux-s390x", "linux-x64",
+            "linuxmusl-arm64", "linuxmusl-x64", "wasm32", "webcontainers-wasm32",
+            "win32-arm64", "win32-ia32", "win32-x64",
+        )
+    },
+    *{
+        f"node_modules/@img/sharp-libvips-{suffix}"
+        for suffix in (
+            "darwin-arm64", "darwin-x64", "linux-arm", "linux-arm64", "linux-ppc64",
+            "linux-riscv64", "linux-s390x", "linux-x64", "linuxmusl-arm64", "linuxmusl-x64",
+        )
+    },
 }
 ISSUE150_BASE = "a02286240212ad8958915aec01aa5ebaf60fa705"
 ISSUE460_BASE = "ab97b6eecba6db9c66c37d19b29257c7398f3ab7"
@@ -229,6 +288,75 @@ def _normalize_issue495_frontend_delta(
             integrity,
         )
         lock["packages"][path] = base_lock["packages"][path]
+
+
+def _assert_issue524_frontend_contract(package_text: str, lock_text: str) -> None:
+    manifest = json.loads(package_text)
+    lock = json.loads(lock_text)
+    base_manifest = json.loads(_text_at(ISSUE524_BASE, "frontend/package.json"))
+    base_lock = json.loads(_text_at(ISSUE524_BASE, "frontend/package-lock.json"))
+
+    assert manifest["dependencies"]["next"] == "16.3.4"
+    assert manifest["devDependencies"]["vitest"] == "^4.1.11"
+    assert manifest["overrides"]["sharp"] == "^0.35.4"
+    assert "js-yaml" not in manifest["dependencies"]
+    assert "js-yaml" not in manifest["devDependencies"]
+    assert "js-yaml" not in manifest["overrides"]
+    assert manifest["allowScripts"].get("sharp@0.35.4") is True
+    assert "sharp@0.35.3" not in manifest["allowScripts"]
+    assert manifest["devDependencies"]["eslint-config-next"] == "16.2.9"
+
+    root = lock["packages"][""]
+    assert root["dependencies"]["next"] == "16.3.4"
+    assert root["devDependencies"]["vitest"] == "^4.1.11"
+    for path, (version, integrity) in ISSUE524_FRONTEND_PACKAGES.items():
+        record = lock["packages"][path]
+        assert record["version"] == version
+        assert record["integrity"] == integrity
+        assert record["resolved"].startswith("https://registry.npmjs.org/")
+
+    normalized_manifest = copy.deepcopy(manifest)
+    normalized_manifest["dependencies"]["next"] = base_manifest["dependencies"]["next"]
+    normalized_manifest["devDependencies"]["vitest"] = base_manifest["devDependencies"]["vitest"]
+    normalized_manifest["overrides"]["sharp"] = base_manifest["overrides"]["sharp"]
+    normalized_manifest["allowScripts"]["sharp@0.35.3"] = normalized_manifest[
+        "allowScripts"
+    ].pop("sharp@0.35.4")
+    assert normalized_manifest == base_manifest
+
+    changed = {
+        path
+        for path in set(lock["packages"]) | set(base_lock["packages"])
+        if lock["packages"].get(path) != base_lock["packages"].get(path)
+    }
+    assert changed == ISSUE524_LOCK_PATHS
+    normalized_lock = copy.deepcopy(lock)
+    for path in ISSUE524_LOCK_PATHS:
+        normalized_lock["packages"][path] = base_lock["packages"][path]
+    assert normalized_lock == base_lock
+
+
+def test_issue524_frontend_graph_is_exact_patched_and_isolated() -> None:
+    _assert_issue524_frontend_contract(
+        (ROOT / "frontend/package.json").read_text(encoding="utf-8"),
+        (ROOT / "frontend/package-lock.json").read_text(encoding="utf-8"),
+    )
+
+
+def test_issue524_frontend_contract_rejects_weaker_substituted_and_manifest_drift() -> None:
+    package_text = (ROOT / "frontend/package.json").read_text(encoding="utf-8")
+    lock_text = (ROOT / "frontend/package-lock.json").read_text(encoding="utf-8")
+    mutations = (
+        (package_text.replace('"next": "16.3.4"', '"next": "16.3.2"'), lock_text),
+        (package_text.replace('"vitest": "^4.1.11"', '"vitest": "^4.1.9"'), lock_text),
+        (package_text.replace('"sharp": "^0.35.4"', '"sharp": "^0.35.3"'), lock_text),
+        (package_text.replace('"eslint-config-next": "16.2.9"', '"eslint-config-next": "16.3.4"'), lock_text),
+        (package_text, lock_text.replace(ISSUE524_FRONTEND_PACKAGES["node_modules/next"][1], "sha512-forged")),
+        (package_text, lock_text.replace('https://registry.npmjs.org/next/', 'https://example.invalid/next/', 1)),
+    )
+    for candidate_package, candidate_lock in mutations:
+        with pytest.raises((AssertionError, KeyError)):
+            _assert_issue524_frontend_contract(candidate_package, candidate_lock)
 
 
 def _assert_pypdf_6162_contract(project_text: str, lock_text: str) -> None:
