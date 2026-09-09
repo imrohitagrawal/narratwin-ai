@@ -827,3 +827,12 @@ remain separate gates.
 | Govern multi-reference media | Proposed `PresenterReferencePackV1` layers and provider-specific selection rules | Current presenter anchors remain immutable; additional Meera/Myra/Raj derivatives require a separate exact-hash route and human approval |
 | Compare costs honestly | 726.691502-second Plan A totals; Plan B 90/180-second and 25/50/100-percent scenarios; Flow credits | Estimates exclude retries, failures, subscriptions, labor, storage and tax and grant no spend authority |
 | Preserve plug-and-play architecture | `AvatarProvider`, future `BrollProvider`, `VideoCompositor`, capability manifest and validated runtime policy | Provider switching applies only to implemented/reviewed adapters; domain, grounding, safety and acceptance remain NarraTwin-owned |
+
+## Issue #525 schema-oracle runtime-policy traceability
+
+| Requirement | Evidence | Preserved boundary |
+|---|---|---|
+| Remove ambient interpreter and user-site dependence | Reproduced cold-start timeout; `sys.executable -I -P`; exact minimal child environment | Separate Draft 2020-12 process remains independent; no retry, prewarm, fallback, or inherited credentials |
+| Make timeout operational policy explicit | Typed canonical whole seconds; default 20; inclusive 1–60 bounds; invalid-input and propagation tests | Invalid policy rejects before dispatch; finite ceiling and one-attempt behavior remain fail closed |
+| Close the isolated dependency exactly | Development-only `jsonschema==4.25.1`; frozen artifact URL/hash/size and lock-normalization mutations | No application/provider dependency, transitive refresh, alternate source, product behavior, provider activation, or spend |
+| Bind authority and delivery | Issue #525 comments `5600271943` and `5600384376`; exact twelve-path route; RED/GREEN and later atomic convergence | Complete local/hosted gates and independent exact-head review remain required; no release or Cut 1 claim |

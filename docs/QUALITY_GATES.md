@@ -1901,3 +1901,21 @@ The exact 127.661917-second, 6,127,816-byte regression shape must pass only
 under explicit 90–135 authority and fail under the default. No test or
 configuration may modify audio cadence or bytes, infer listening, call a
 provider, or claim T05/Cut 1 completion.
+
+## Issue #525 isolated schema-oracle quality gate
+
+The adversarial-convergence Draft 2020-12 oracle must use the active absolute
+project interpreter with `-I -P`, a minimal non-secret environment, and exactly
+one subprocess attempt. `NARRATWIN_SCHEMA_ORACLE_TIMEOUT_SECONDS` is a typed
+whole-second policy with default 20 and inclusive bounds 1 through 60.
+Malformed, signed, whitespace, leading-zero, decimal, exponent, nonfinite,
+boolean, nonpositive, and over-ceiling inputs reject before dispatch. Timeout,
+invalid-interpreter, and child-failure messages must not return schema,
+instance, stdout, stderr, or environment data.
+
+The locked development group must contain exactly `jsonschema==4.25.1`; the
+application and provider groups must not gain it. Exact existing PyPI artifact
+URLs, hashes, sizes, dependency set, and all unrelated lock records are frozen.
+Pass requires frozen sync, real isolated import, unchanged valid/invalid Draft
+2020-12 behavior, focused mutation coverage, complete local/hosted gates, and
+independent exact-head review. This gate proves test infrastructure only.

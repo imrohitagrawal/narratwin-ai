@@ -409,3 +409,16 @@ Source: [Docker Official Node image](https://hub.docker.com/_/node) and
 [Node Docker Alpine variant guidance](https://github.com/nodejs/docker-node#image-variants).
 This notice does not authorize redistribution beyond applicable licenses,
 deployment, public availability, release, or production use.
+
+## Issue #525 jsonschema development oracle
+
+`jsonschema` 4.25.1 is pinned in the development dependency group under its
+MIT license to perform the independent Draft 2020-12 standards check in the
+adversarial-convergence tests. Its official PyPI sdist and universal-wheel
+identities were already present in the lock through an optional dependency;
+Issue #525 adds only the exact root development binding and does not activate
+the provider extra or change the locked package artifacts.
+
+The package is not an application/runtime dependency and supplies no provider,
+model, media, credential, egress, spend, deployment, release, or production
+capability. Final dependency/license review remains required before release.

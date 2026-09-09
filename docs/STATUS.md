@@ -2170,3 +2170,18 @@ human acceptance, deployment, release, production-readiness, or Cut 1 evidence.
   changes research sequencing, records ADR 0079, and corrects that reproducibility
   defect; no provider is selected or activated, and T06, T07, T08, Cut 1,
   deployment, publication, release, and production readiness remain incomplete.
+
+## Issue #525 schema-oracle runtime-policy prerequisite (2026-09-09)
+
+- Repeated full-suite failures reproduced the unchanged Draft 2020-12 helper's
+  ambient `/usr/bin/python3` dependency and fixed five-second timeout as a
+  `REQUIRED_CONTRACT`, not an Issue #523 regression.
+- The bounded correction uses the isolated active project interpreter, a typed
+  20-second default with 1–60-second bounds, one attempt, and redacted failure.
+  Exact `jsonschema==4.25.1` development placement closes the isolated import;
+  its pre-existing lock artifacts and all unrelated dependency records remain
+  frozen.
+- Issue #525 preserves RED/GREEN history for later normal-merge convergence
+  with Issues #523 and #524. It adds no product/provider/media behavior,
+  credential use, egress, spend, deployment, release, production-readiness, or
+  Cut 1 claim. T06, T07, and T08 remain incomplete.

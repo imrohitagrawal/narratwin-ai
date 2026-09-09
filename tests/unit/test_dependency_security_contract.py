@@ -96,6 +96,22 @@ JSONSCHEMA_WHEEL_URL = "https://files.pythonhosted.org/packages/bf/9c/8c95d85623
 JSONSCHEMA_WHEEL_SHA256 = "3fba0169e345c7175110351d456342c364814cfcf3b964ba4587f22915230a63"
 
 
+def _normalize_issue525_project(project: dict[str, Any]) -> None:
+    dev = project["dependency-groups"]["dev"]
+    assert dev.count("jsonschema==4.25.1") == 1
+    dev.remove("jsonschema==4.25.1")
+
+
+def _normalize_issue525_lock(lock: dict[str, Any]) -> None:
+    root = next(package for package in lock["package"] if package["name"] == "narratwin-ai")
+    dev = root["dev-dependencies"]["dev"]
+    metadata = root["metadata"]["requires-dev"]["dev"]
+    assert dev.count({"name": "jsonschema"}) == 1
+    assert metadata.count({"name": "jsonschema", "specifier": "==4.25.1"}) == 1
+    dev.remove({"name": "jsonschema"})
+    metadata.remove({"name": "jsonschema", "specifier": "==4.25.1"})
+
+
 def _assert_issue525_jsonschema_dev_contract(project_text: str, lock_text: str) -> None:
     project = tomllib.loads(project_text)
     lock = tomllib.loads(lock_text)
@@ -141,17 +157,11 @@ def _assert_issue525_jsonschema_dev_contract(project_text: str, lock_text: str) 
     assert root_metadata.count({"name": "jsonschema", "specifier": "==4.25.1"}) == 1
 
     normalized_project = copy.deepcopy(project)
-    normalized_project["dependency-groups"]["dev"].remove("jsonschema==4.25.1")
+    _normalize_issue525_project(normalized_project)
     assert normalized_project == base_project
 
     normalized_lock = copy.deepcopy(lock)
-    normalized_root = next(
-        package for package in normalized_lock["package"] if package["name"] == "narratwin-ai"
-    )
-    normalized_root["dev-dependencies"]["dev"].remove({"name": "jsonschema"})
-    normalized_root["metadata"]["requires-dev"]["dev"].remove(
-        {"name": "jsonschema", "specifier": "==4.25.1"}
-    )
+    _normalize_issue525_lock(normalized_lock)
     assert normalized_lock == base_lock
 
 
@@ -176,6 +186,8 @@ def test_issue525_jsonschema_contract_rejects_identity_scope_and_lock_drift() ->
     for candidate_project, candidate_lock in mutations:
         with pytest.raises((AssertionError, StopIteration)):
             _assert_issue525_jsonschema_dev_contract(candidate_project, candidate_lock)
+
+
 def _normalize_issue434_project(project: dict[str, Any]) -> None:
     dev = project["dependency-groups"]["dev"]; assert dev.count("cryptography==50.0.0") == 1; dev.remove("cryptography==50.0.0")  # noqa: E702
 def _normalize_issue434_lock(lock: dict[str, Any]) -> None:
@@ -264,6 +276,7 @@ def _assert_google_auth_delta(project: dict[str, Any], lock: dict[str, Any], bas
     normalized_project["project"]["optional-dependencies"]["providers"] = base_providers
     normalized_project["dependency-groups"]["dev"].remove("google-cloud-texttospeech==2.37.0")
     _normalize_issue434_project(normalized_project)
+    _normalize_issue525_project(normalized_project)
     assert normalized_project == base_project
     normalized_lock = copy.deepcopy(lock)
     normalized_root = next(package for package in normalized_lock["package"] if package["name"] == "narratwin-ai")
@@ -279,6 +292,7 @@ def _assert_google_auth_delta(project: dict[str, Any], lock: dict[str, Any], bas
     _normalize_issue434_lock(normalized_lock)
     _normalize_pip_security_delta(normalized_lock, base_lock)
     _normalize_issue482_delta(normalized_lock, base_lock)
+    _normalize_issue525_lock(normalized_lock)
     assert normalized_lock == base_lock
 
 
@@ -379,6 +393,8 @@ def _assert_pypdf_6162_contract(project_text: str, lock_text: str) -> None:
     _normalize_pip_security_delta(normalized_lock, base_lock)
     _normalize_issue482_delta(normalized_lock, base_lock)
     _normalize_t03_pillow_dev_delta(normalized_project, normalized_lock)
+    _normalize_issue525_project(normalized_project)
+    _normalize_issue525_lock(normalized_lock)
     assert normalized_project == base_project
     assert normalized_lock == base_lock
 

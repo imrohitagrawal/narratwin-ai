@@ -50,6 +50,7 @@ dev = [
     "google-cloud-texttospeech==2.37.0",
     "httpx>=0.28.1",
     "httpx2>=2.5.0",
+    "jsonschema==4.25.1",
     "locust>=2.44.4",
     "mypy>=2.1.0",
     "pillow>=12.3.0",
