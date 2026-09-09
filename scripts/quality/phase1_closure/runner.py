@@ -33,9 +33,9 @@ ISSUE456_PATHS = frozenset({
     "docs/TRACEABILITY.md",
 })
 ISSUE521_BRANCH = "phase-1-closure-process-521-master-program-v2"
-ISSUE521_BASE = "b6b0c05c7227428ff0841361f3970b0b2c40aa86"
+ISSUE521_INTEGRATION_BASE = "0e4efa56b36773ad8c687fb9daa73adc0152b89c"
 ISSUE521_PREFLIGHT = "docs/governance/preflights/issue-521.json"
-ISSUE521_PREFLIGHT_SHA256 = "621dda307be3dd8bbcc85ab75fffd1d3d14be43881ac53ce6722e017b98066c4"
+ISSUE521_PREFLIGHT_SHA256 = "6f441468c5ae5d6d91010792c364c5fcbba9a3c3a909e39cf4db0fe20e41d92f"
 ISSUE521_LINE_CAP = 8_500
 
 
@@ -111,13 +111,13 @@ def run_issue521_master_program_v2() -> int:
     head = _head()
     expected_paths, scope_failures = _issue521_scope()
     findings = validate_governance_preflight_repository(
-        ROOT, base_sha=ISSUE521_BASE, head_sha=head, issue_number=521, branch=ISSUE521_BRANCH,
+        ROOT, base_sha=ISSUE521_INTEGRATION_BASE, head_sha=head, issue_number=521, branch=ISSUE521_BRANCH,
     )
-    changed = _changed_paths_since(ISSUE521_BASE, head)
+    changed = _changed_paths_since(ISSUE521_INTEGRATION_BASE, head)
     failures = scope_failures + [f"Issue #521 preflight finding: {finding.code}" for finding in findings]
     if changed != expected_paths:
         failures.append("Issue #521 exact governance preflight scope failed.")
-    charged = _charged_lines(ISSUE521_BASE, head)
+    charged = _charged_lines(ISSUE521_INTEGRATION_BASE, head)
     if charged is None or charged > ISSUE521_LINE_CAP:
         failures.append(f"Issue #521 aggregate charged-line budget exceeded or uncountable (cap {ISSUE521_LINE_CAP}).")
     if not failures:

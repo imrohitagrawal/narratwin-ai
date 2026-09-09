@@ -192,6 +192,14 @@ def test_issue521_scope_binds_owner_amended_twenty_seven_paths() -> None:
     }.issubset(paths)
 
 
+def test_issue521_preserves_audit_base_and_uses_accepted_integration_base() -> None:
+    from scripts.quality import issue521_master_program_v2 as v2
+
+    assert (v2.BASE_SHA, runner.ISSUE521_INTEGRATION_BASE) == (
+        "b6b0c05c7227428ff0841361f3970b0b2c40aa86", "0e4efa56b36773ad8c687fb9daa73adc0152b89c",
+    )
+
+
 def test_issue521_extra_path_fails_before_validator(monkeypatch: Any) -> None:
     monkeypatch.setattr(runner, "current_branch", lambda root: runner.ISSUE521_BRANCH)
     monkeypatch.setattr(runner, "_head", lambda: "a" * 40)
