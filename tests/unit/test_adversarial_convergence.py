@@ -11,7 +11,7 @@ import sys
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from pathlib import Path
-from typing import cast
+from typing import Any, cast
 
 import pytest
 
@@ -53,9 +53,9 @@ def _schema_oracle_policy(
     environ: Mapping[str, object] | None = None,
 ) -> SchemaOraclePolicy:
     source = os.environ if environ is None else environ
-    raw = source.get(SCHEMA_ORACLE_TIMEOUT_ENV)
-    if raw is None:
+    if SCHEMA_ORACLE_TIMEOUT_ENV not in source:
         return SchemaOraclePolicy()
+    raw = source[SCHEMA_ORACLE_TIMEOUT_ENV]
     if not isinstance(raw, str) or SCHEMA_ORACLE_TIMEOUT_PATTERN.match(raw) is None:
         raise ValueError("schema oracle timeout policy must be a canonical whole number")
     return SchemaOraclePolicy(timeout_seconds=int(raw))
@@ -386,6 +386,8 @@ HOSTILE_REGRESSIONS = _hostile_regressions()
 
 
 def _schema_oracle_errors(completed: subprocess.CompletedProcess[str]) -> list[str]:
+    if len(completed.stdout.encode("utf-8")) > 65_536:
+        raise AssertionError("Draft 2020-12 schema oracle returned an invalid result.")
     try:
         result = json.loads(completed.stdout)
     except (TypeError, ValueError):
@@ -393,9 +395,9 @@ def _schema_oracle_errors(completed: subprocess.CompletedProcess[str]) -> list[s
     if (
         not isinstance(result, dict)
         or set(result) != {"errors", "jsonschemaVersion"}
-        or len(completed.stdout.encode("utf-8")) > 65_536
-        or completed.stdout.strip()
+        or completed.stdout
         != json.dumps(result, ensure_ascii=True, sort_keys=True, separators=(",", ":"))
+        + "\n"
     ):
         raise AssertionError("Draft 2020-12 schema oracle returned an invalid result.")
     if result["jsonschemaVersion"] != "4.25.1":
@@ -540,6 +542,7 @@ def test_schema_oracle_rejects_distribution_version_drift(
         '{"errors":[],"jsonschemaVersion":"4.25.1"} \n',
         '{"errors":[],"jsonschemaVersion":"4.25.1"}\n\n',
         '{"jsonschemaVersion":"4.25.1","errors":[]}\n',
+        'not-json\n',
     ),
 )
 def test_schema_oracle_rejects_noncanonical_output_framing(
@@ -567,10 +570,10 @@ def test_schema_oracle_rejects_oversized_output_before_json_parse(
     )
     original_loads = json.loads
 
-    def guarded_loads(value: str, *args: object, **kwargs: object) -> object:
+    def guarded_loads(value: str, **kwargs: Any) -> Any:
         if value == oversized:
             pytest.fail("oversized schema-oracle output reached JSON parsing")
-        return original_loads(value, *args, **kwargs)
+        return original_loads(value, **kwargs)
 
     monkeypatch.setattr(json, "loads", guarded_loads)
     error = pytest.raises(AssertionError, _draft202012_errors, CORPUS, environ={})
