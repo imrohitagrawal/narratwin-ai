@@ -453,9 +453,9 @@ def test_frontend_reproduction_cli_emits_only_sanitized_delta() -> None:
 
 
 def test_runtime_inventory_script_wires_four_line_sanitized_diagnostic() -> None:
-    source = (ROOT / "scripts/ci/docker-image-scan.sh").read_text(encoding="utf-8"); dockerfile = (ROOT / "frontend/Dockerfile").read_text(encoding="utf-8")
+    source, dockerfile = ((ROOT / "scripts/ci/docker-image-scan.sh").read_text(encoding="utf-8"), (ROOT / "frontend/Dockerfile").read_text(encoding="utf-8"))
     inventory_command = source[(start := source.index('actual_inventory_output="$(docker run')):source.index('\n  if [[ "${actual_inventory_output}"', start)]
-    cache_disable = 'process.env.NODE_DISABLE_COMPILE_CACHE=\\"1\\";'; assembly = dockerfile[(build := dockerfile.index("RUN --mount=from=deps")):dockerfile.index("\n\nUSER", build)]
+    cache_disable, assembly = ('process.env.NODE_DISABLE_COMPILE_CACHE=\\"1\\";', dockerfile[(build := dockerfile.index("RUN --mount=from=deps")):dockerfile.index("\n\nUSER", build)])
     assert all(marker in source for marker in ("FrontendRuntimeInventoryDiagnosticV1", "primary_inventory_diagnostic", "reproduction_inventory_diagnostic", "'%s\\n%s\\n%s\\n%s\\n'")) and "--env NODE_DISABLE_COMPILE_CACHE=1" not in source and dockerfile.count(cache_disable) == assembly.count(cache_disable) == 1 and assembly.index(cache_disable) < assembly.index("await import") and "/tmp" not in inventory_command
 
 
