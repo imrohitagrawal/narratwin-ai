@@ -2192,6 +2192,9 @@ human acceptance, deployment, release, production-readiness, or Cut 1 evidence.
   unrelated Vite/Rolldown or CSS-tooling refreshes.
 - Final amendment `5602656745` binds reviewed heads for Issues `#523`, `#524`,
   and `#525`, exactly twenty-two paths, and a 6,920-line aggregate drift cap.
+  Evidence correction `5603161674` binds the live raw-body hash of the existing
+  Issue `#525` review receipt after independent reproduction found a clerical
+  hash-copy error; it changes no reviewed child, topology, scope, or authority.
   Normal non-fast-forward merges `30bdcecf` then `8ac8a6ea` preserve the #524
   and #525 RED/GREEN ancestry in that order. The composed Python lock proof
   removes the exact HTTPX and JSONSchema deltas before comparing with base, so

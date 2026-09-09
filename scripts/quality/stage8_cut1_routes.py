@@ -198,6 +198,10 @@ ISSUE523_ATOMIC_AMENDMENT_COMMENT = "5602656745"
 ISSUE523_ATOMIC_AMENDMENT_SHA256 = (
     "f02c326fb6d637706174068b2e4fd0fc1ce17c18e950d660913223d21e573d65"
 )
+ISSUE523_EVIDENCE_CORRECTION = (
+    "5603161674",
+    "8b6020b670e76f384f5b7f95db9bd8d196e23fe316f92a3cd5fe24a014c9d8a2",
+)
 ISSUE523_ATOMIC_CHILDREN = (
     (
         "b1d3198d1c334b22b367d9341c9186bdbc2e01a7",
@@ -223,7 +227,7 @@ ISSUE523_ATOMIC_REVIEWS = (
     ),
     (
         "5601608099",
-        "9b53932a3e2cbf2a208eebd9847f3573d85c9a20e3e1a76fd555d326e0276e4f",
+        "9b53932a058d9b68c2120e78eef71a2cd6778101724836639beed7ef3b617ebe",
     ),
 )
 ISSUE523_ATOMIC_MERGES = (
@@ -3204,6 +3208,7 @@ def check_exact_route(
                 ISSUE523_ROUTE_SHA256,
                 ISSUE523_ATOMIC_AMENDMENT_COMMENT,
                 ISSUE523_ATOMIC_AMENDMENT_SHA256,
+                *ISSUE523_EVIDENCE_CORRECTION,
                 *(value for pair in ISSUE523_ATOMIC_CHILDREN for value in pair),
                 *(value for pair in ISSUE523_ATOMIC_REVIEWS for value in pair),
                 *(value for row in ISSUE523_ATOMIC_MERGES for value in row),

@@ -5507,7 +5507,40 @@ def test_issue523_route_freezes_the_exact_atomic_security_convergence() -> None:
         *(value for row in routes.ISSUE523_ATOMIC_MERGES for value in row),
     )
     assert all(value in preflight["objective"] for value in expected_authority)
+    assert "9b53932a3e2cbf2a" not in preflight["objective"]
     assert branch in stage8.EFFECTIVE_STAGE8_ROUTES
+
+
+@pytest.mark.parametrize(
+    "authority_value",
+    (
+        "9b53932a058d9b68c2120e78eef71a2cd6778101724836639beed7ef3b617ebe",
+        "5603161674",
+        "8b6020b670e76f384f5b7f95db9bd8d196e23fe316f92a3cd5fe24a014c9d8a2",
+    ),
+)
+def test_issue523_route_rejects_evidence_correction_drift(
+    monkeypatch: Any, authority_value: str,
+) -> None:
+    branch = routes.ISSUE523_BRANCH
+    original_loader = routes.load_json_without_duplicate_members
+    preflight_path = "issue-523-httpx2-2-12-security-refresh.json"
+    preflight = original_loader(REPO / "docs/governance/preflights" / preflight_path)
+    preflight["objective"] = preflight["objective"].replace(
+        authority_value, "0" * len(authority_value)
+    )
+
+    def load_with_drift(path: Path) -> Any:
+        return preflight if path.name == preflight_path else original_loader(path)
+
+    monkeypatch.setattr(routes, "load_json_without_duplicate_members", load_with_drift)
+    monkeypatch.setattr(routes, "route_base", lambda *_: routes.ISSUE523_BASE)
+    monkeypatch.setattr(routes, "route_text_charges", lambda *_: (0, {}))
+    failures: list[str] = []
+    routes.check_exact_route(
+        REPO, lambda _: completed([]), branch, ISSUE523_EXPECTED, failures
+    )
+    assert failures == ["Issue #523 dependency authority drifted."]
 
 
 def test_issue523_route_rejects_branch_suffix_drift(monkeypatch: Any) -> None:
