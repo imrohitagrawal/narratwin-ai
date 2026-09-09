@@ -2185,8 +2185,8 @@ human acceptance, deployment, release, production-readiness, or Cut 1 evidence.
   and an all-and-only normative requirement-row ledger.
 - New Cut 5 is owner Digital Twin; `LegacyCut5Enterprise` maps only to Cut 6
   after migration validation.
-- Owner checkpoints `5574559059` and `5587499372` expand the 27-path G1 route
-  only for four exact, provenance-bound hosted Gitleaks false positives; the
+- Owner checkpoints `5574559059`, `5587499372`, and `5604091052` expand the
+  27-path G1 route only for seven exact, provenance-bound hosted Gitleaks false positives; the
   8,500 charged-line cap and every non-activation prohibition remain.
 - Semantic/security review, exact approvals, hosted parity, merge, and separate
   activation remain pending. Release posture remains No-Go.

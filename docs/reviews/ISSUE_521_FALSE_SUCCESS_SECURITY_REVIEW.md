@@ -13,13 +13,16 @@ candidate validation.
 
 ## Hosted-parity correction requiring independent verification
 
-Issue comments `5574559059` and `5587499372` authorize only these fingerprints:
+Issue comments `5574559059`, `5587499372`, and `5604091052` (raw body SHA-256 `b997552525db14a9a024ce2bc4decd49644a6c75d8342a0c75faa7c7207d8849`) authorize only these seven added fingerprints:
 `74dc7c9cb670513cd2340cbd686d66d1d24b819e:docs/governance/superset-mapping-v2.json:generic-api-key:1474`;
 `b18aeed00527dfa3e6a1f1df475cf67765a17ebb:scripts/ci/check_gitleaks_regression.py:generic-api-key:71`;
-`b18aeed00527dfa3e6a1f1df475cf67765a17ebb:scripts/quality/issue521_master_program_v2.py:generic-api-key:133`; and
-`547333d283914004257ab0fde86a216a93ff3e17:tests/unit/test_issue521_master_program_v2.py:generic-api-key:232`.
+`b18aeed00527dfa3e6a1f1df475cf67765a17ebb:scripts/quality/issue521_master_program_v2.py:generic-api-key:133`;
+`547333d283914004257ab0fde86a216a93ff3e17:tests/unit/test_issue521_master_program_v2.py:generic-api-key:232`;
+`0e96410926f4c25dc6eb6b452bf4421fa36f386c:tests/unit/test_issue521_master_program_v2.py:generic-api-key:978`;
+`0e96410926f4c25dc6eb6b452bf4421fa36f386c:docs/governance/superset-mapping-v2.json:generic-api-key:8`; and
+`0e96410926f4c25dc6eb6b452bf4421fa36f386c:docs/governance/superset-mapping-v2.json:generic-api-key:9`.
 The reviewer verifies every commit/blob/line hash, mapping/V1 provenance where
-applicable, synthetic non-secret classification, current-tree detector safety,
+applicable, synthetic non-secret classification, six-space/current-source detector safety,
 history-preserving merge topology, and real-secret/full-history canaries. Any
 wildcard, scan/history weakening, or source weakening is `REQUIRED_CONTRACT`.
 

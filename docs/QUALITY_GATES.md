@@ -1912,8 +1912,8 @@ Certification mode stays red until independent review, exact-byte owner and
 exact-head approvals, and separate activation are real; tests cannot create
 those facts.
 
-Owner checkpoints `5574559059` and `5587499372` admit exactly four additional
-historical Gitleaks fingerprints only when each exact commit, path, rule, line,
-blob and applicable mapping/V1 provenance pass with a detector-safe current
-tree and history-preserving merge. Any wildcard, scan/history weakening, or
-real-secret canary failure blocks G1.
+Owner checkpoints `5574559059`, `5587499372`, and `5604091052` admit exactly
+seven additional historical Gitleaks fingerprints only when each exact commit,
+path, rule, line, blob and applicable mapping/V1 provenance pass, the current
+tree uses the bound detector-safe encoding, and history is preserved. Any
+wildcard, scan/history weakening, or real-secret canary failure blocks G1.

@@ -3062,8 +3062,8 @@ hard-coded-value inventory.
 
 Branch `phase-1-closure-process-521-master-program-v2` starts at exact main
 `b6b0c05c7227428ff0841361f3970b0b2c40aa86`, owns the 27 preflight paths, and
-is capped at 8,500 charged lines under owner correction checkpoint `5574559059`
-(body SHA-256 `72a3144b556c93b09678eaa7cfa495cfc3ff8cc981f50f86b4cbe64a1e2d217f`).
+is capped at 8,500 charged lines under owner correction checkpoints `5574559059`,
+`5587499372`, and `5604091052`; their exact hashes are bound by the preflight.
 Its first commit is preflight-only and its second freezes the original RED tests;
 the correction also freezes RED before GREEN. G1 is non-activating governance
 only; V1 remains

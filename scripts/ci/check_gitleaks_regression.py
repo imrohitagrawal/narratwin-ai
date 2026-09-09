@@ -85,11 +85,15 @@ EXPECTED_FINGERPRINTS = (
     "b18aeed00527dfa3e6a1f1df475cf67765a17ebb:scripts/ci/check_gitleaks_regression.py:generic-api-key:71",
     "b18aeed00527dfa3e6a1f1df475cf67765a17ebb:scripts/quality/issue521_master_program_v2.py:generic-api-key:133",
     "547333d283914004257ab0fde86a216a93ff3e17:tests/unit/test_issue521_master_program_v2.py:generic-api-key:232",
+    "0e96410926f4c25dc6eb6b452bf4421fa36f386c:tests/unit/test_issue521_master_program_v2.py:generic-api-key:978",
+    "0e96410926f4c25dc6eb6b452bf4421fa36f386c:docs/governance/superset-mapping-v2.json:generic-api-key:8",
+    "0e96410926f4c25dc6eb6b452bf4421fa36f386c:docs/governance/superset-mapping-v2.json:generic-api-key:9",
     "66dabedecdce4ed51b8354e44f2d1c749c209898:backend/Dockerfile:generic-api-key:18",
     "0cea00fd0a2cda457473c4fccf1d6ab2b2250bae:backend/Dockerfile:generic-api-key:18",
     "dd1e2118dede2b5cf9060d69cace0a3c9ab8ae4c:backend/Dockerfile:generic-api-key:18",
 )
-G1_SYNTHETIC_LINE_SHA256 = ("55a3972a5dc31361c33adb0014aed8b52940e7f21823f51e89c13dce3090a5b2", "76dfcad75e98c853b91e1340db355d7545c15ced75b117a6e3e191568f765908", "e047a0a498befbda500f90e7be2766c967b996f42ccb9a15721d7998ab730246")
+G1_SYNTHETIC_LINE_SHA256 = ("55a3972a5dc31361c33adb0014aed8b52940e7f21823f51e89c13dce3090a5b2", "76dfcad75e98c853b91e1340db355d7545c15ced75b117a6e3e191568f765908", "e047a0a498befbda500f90e7be2766c967b996f42ccb9a15721d7998ab730246", "e047a0a498befbda500f90e7be2766c967b996f42ccb9a15721d7998ab730246", "667a5073ce0ecd42d3b8739dba735a05722410e1c3aafe230e857f077bb94822", "087dc78c5495c14e7cc384863310e36f2e0e4443ec32ccbaf1b00c4d8adab395")
+G1_FALSE_POSITIVE_FINGERPRINTS = EXPECTED_FINGERPRINTS[5:-3]
 PUBLIC_KEY_FINGERPRINTS = frozenset(EXPECTED_FINGERPRINTS[-3:])
 SIGNED_URL_QUERY = re.compile(
     rb"(?:https?:)?//[^\s\"'<>]*[?&](?:sig|signature|token|credential|key|"
@@ -424,7 +428,8 @@ def _logical_mapping_rows(document: object) -> list[dict[str, object]]:
 
 def validate_portable_mapping_encoding(mapping_blob: bytes) -> list[str]:
     """Require atomic detector-safe bytes; exact semantics are checked separately."""
-    if MAPPING_DETECTOR_LITERAL in mapping_blob:
+    compact_assignment = re.escape(b"API" + b"_CONTRACT") + rb'(?:\.md)?", {0,5}"'
+    if MAPPING_DETECTOR_LITERAL in mapping_blob or re.search(compact_assignment, mapping_blob):
         return ["GITLEAKS.PROVENANCE.MAPPING_PORTABLE_ENCODING"]
     return []
 
@@ -546,7 +551,7 @@ def validate(root: Path = ROOT) -> list[str]:
             ):
                 _append_once(failures, "GITLEAKS.PROVENANCE.PUBLIC_KEY_LINE")
             continue
-        ancestor = _git(root, "merge-base", "--is-ancestor", commit, "HEAD" if fingerprint in EXPECTED_FINGERPRINTS[5:8] else SCAN_HEAD)
+        ancestor = _git(root, "merge-base", "--is-ancestor", commit, "HEAD" if fingerprint in G1_FALSE_POSITIVE_FINGERPRINTS else SCAN_HEAD)
         if ancestor.returncode != 0:
             _append_once(failures, "GITLEAKS.PROVENANCE.HISTORY")
             continue
@@ -556,8 +561,8 @@ def validate(root: Path = ROOT) -> list[str]:
         except (IndexError, OSError, UnicodeError, ValueError, subprocess.SubprocessError, RuntimeError):
             _append_once(failures, "GITLEAKS.PROVENANCE.SNAPSHOT")
             continue
-        if fingerprint in EXPECTED_FINGERPRINTS[5:8]:
-            if hashlib.sha256(line.encode()).hexdigest() != G1_SYNTHETIC_LINE_SHA256[EXPECTED_FINGERPRINTS[5:8].index(fingerprint)]:
+        if fingerprint in G1_FALSE_POSITIVE_FINGERPRINTS:
+            if hashlib.sha256(line.encode()).hexdigest() != G1_SYNTHETIC_LINE_SHA256[G1_FALSE_POSITIVE_FINGERPRINTS.index(fingerprint)]:
                 _append_once(failures, "GITLEAKS.PROVENANCE.G1_SYNTHETIC_LINE")
             continue
         if rule != "generic-api-key" or "API_CONTRACT.md" not in line or EXPECTED_DIGEST not in line:

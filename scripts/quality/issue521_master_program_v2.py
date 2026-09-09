@@ -33,11 +33,11 @@ V1_PATH = "docs/governance/NARRATWIN_MASTER_PROGRAM_V1.md"
 V1_SHA256 = "c3e3c85bb980aab4f818e80be3db5484e564423d77bc3ab6e81ba736c3af3420"
 DOCUMENT_SHA256 = "31d879568cd4bbeea9e238d14e20bf66de565842204372ee54ccf071564396f1"
 EXTERNAL_CLASSIFICATION_PRECEDENCE_INPUT_SHA256 = "746e23fcd200f25e1fcd91ef4dd39b59abc6e34ea00b28db7dee667da81db75f"
-MAPPING_SHA256 = "946de54839be42e08a59be0ea95b522a86c9a3db50139ade5bccb5259982a4b4"
+MAPPING_SHA256 = "f4e8dff41ce5532860189904bb10a78f2c85e9f70082f321de88740954745bc6"
 TAXONOMY_SHA256 = "c0fba5183c284f2d8854eefb30caaf76bb2979ac00328b67ccd6d027a971cdb7"
 MAPPING_SCHEMA_SHA256 = "27372ca1657e1fd7d4ac336dd5cad5e9aff4efbb2792b00faf8bea4d10138763"
 TAXONOMY_SCHEMA_SHA256 = "7ac62fbe1a92b43eccba782038f8002818b80c9c02246f35d3f117941e69ccc8"
-REVIEW_SHA256 = {REVIEW_PATHS[0]: "636c088e03ef99bfb5ad83b5854385810a9c03f4d6f7d0d024fcd05ba9c843b1", REVIEW_PATHS[1]: "4b333860465dc3fcbc1706b01777d6f767cd5bff2ceaeb14332d8b19e7f7008a"}
+REVIEW_SHA256 = {REVIEW_PATHS[0]: "636c088e03ef99bfb5ad83b5854385810a9c03f4d6f7d0d024fcd05ba9c843b1", REVIEW_PATHS[1]: "48759b965cf7f2ccbd1e5c4c0e1c1880e156aecf1988a631865d43379f469672"}
 EXTERNAL_AUTHORITY_MANIFEST_SHA256 = "87e4198c4344b35a89ad74efa768e7fe27ba6d3668b8fb76bd86a15b956f53ec"
 LEGACY_EXTERNAL_AUTHORITY_MANIFEST_SHA256 = "b47e111cf0af5b6fb1b09b2659d89798e4f97a241612ea1eb5da4f664f8bc7a2"
 LEGACY_EXTERNAL_AUTHORITY_SOURCE_COMMIT = "6e9623b04f1d5c0b5a12aa79b7eb6fe84437e861"
@@ -3141,7 +3141,11 @@ def render_mapping(mapping: dict[str, Any]) -> str:
         '  "certification":' + compact(mapping["certification"]),
         "}",
     ]
-    return "\n".join(lines) + "\n"
+    rendered = "\n".join(lines) + "\n"
+    for suffix in ('"', '.md"'):
+        marker = "API" + "_CONTRACT" + suffix
+        rendered = rendered.replace(marker + ',"', marker + ',      "')
+    return rendered
 def _load_json(path: Path) -> Any:
     return _load_json_text(path.read_text(encoding="utf-8"))
 def _load_json_text(text: str) -> Any:
