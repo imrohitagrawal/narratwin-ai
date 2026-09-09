@@ -4887,6 +4887,10 @@ def test_issue525_route_freezes_the_exact_schema_oracle_policy() -> None:
     assert routes.ISSUE525_AMENDMENT_SHA256 == (
         "f22055cbaddba88d65602a2f97b99aa6f895f455dc0086cae8d52fb758b52ff9"
     )
+    assert routes.ISSUE525_VERSION_CORRECTION_COMMENT == "5600884899"
+    assert routes.ISSUE525_VERSION_CORRECTION_SHA256 == (
+        "4a4137ed5ad6100920ed475f6135042b87cead68deaf3cd09cd396bd855546bf"
+    )
     assert routes.ROUTES[branch] == ISSUE525_EXPECTED
     assert routes.ROUTE_ISSUES[branch] == 525
     assert routes.TOTAL_LIMITS[branch] == 2100
