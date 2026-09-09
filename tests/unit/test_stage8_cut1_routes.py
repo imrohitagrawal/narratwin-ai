@@ -419,19 +419,37 @@ ISSUE524_EXPECTED = {
 }
 ISSUE524_LEDGER_RESOURCE_IDS = {
     "issue524-audit-cache",
+    "issue524-backend-app-pycache",
+    "issue524-backend-eval-pycache",
+    "issue524-backend-observability-pycache",
+    "issue524-backend-pycache",
+    "issue524-backend-rag-pycache",
+    "issue524-backend-storage-pycache",
     "issue524-branch",
+    "issue524-frontend-test-results",
     "issue524-mypy-cache",
     "issue524-next-env",
     "issue524-next-output",
     "issue524-node-modules",
     "issue524-npm-cache",
+    "issue524-perf-pycache",
+    "issue524-performance-reports",
     "issue524-pytest-cache",
     "issue524-ruff-cache",
+    "issue524-scripts-agent-context-pycache",
     "issue524-scripts-ci-pycache",
+    "issue524-scripts-eval-pycache",
+    "issue524-scripts-phase1-pycache",
     "issue524-scripts-pycache",
+    "issue524-scripts-publication-pycache",
     "issue524-scripts-quality-pycache",
+    "issue524-security-python-pycache",
+    "issue524-tests-api-pycache",
+    "issue524-tests-phase1-pycache",
+    "issue524-tests-publication-pycache",
     "issue524-tests-unit-pycache",
     "issue524-tsbuildinfo",
+    "issue524-uv-cache",
     "issue524-venv",
     "issue524-worktree",
 }
@@ -4914,6 +4932,10 @@ def test_issue524_route_freezes_the_exact_frontend_security_refresh() -> None:
     assert routes.ISSUE524_FULL_GATE_CORRECTION_SHA256 == (
         "f1ba7fd54276f79c3ac2045fb75c4593415b61d9a945e450e9d441cb0caaae97"
     )
+    assert routes.ISSUE524_LIVE_CENSUS_COMMENT == "5601780266"
+    assert routes.ISSUE524_LIVE_CENSUS_SHA256 == (
+        "10b1e9e88dc5b5bfe0a5cc0437a359d55eab4adbd9bfcc782bc640186bb912b4"
+    )
     assert routes.ROUTES[branch] == ISSUE524_EXPECTED
     assert routes.ROUTE_ISSUES[branch] == 524
     assert routes.TOTAL_LIMITS[branch] == 3700
@@ -4944,6 +4966,8 @@ def test_issue524_route_freezes_the_exact_frontend_security_refresh() -> None:
     assert routes.ISSUE524_LEDGER_ROUTE_SHA256 in preflight["objective"]
     assert routes.ISSUE524_FULL_GATE_CORRECTION_COMMENT in preflight["objective"]
     assert routes.ISSUE524_FULL_GATE_CORRECTION_SHA256 in preflight["objective"]
+    assert routes.ISSUE524_LIVE_CENSUS_COMMENT in preflight["objective"]
+    assert routes.ISSUE524_LIVE_CENSUS_SHA256 in preflight["objective"]
     assert branch in stage8.EFFECTIVE_STAGE8_ROUTES
 
 

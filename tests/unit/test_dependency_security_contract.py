@@ -273,6 +273,14 @@ def test_issue498_dependency_docs_distinguish_runtime_and_hosted_test_placement(
     assert "Optional runtime providers extra plus exact development/test pin" in traceability
 
 
+def test_current_js_yaml_notice_preserves_history_without_stale_live_version() -> None:
+    notices = (ROOT / "docs/THIRD_PARTY_NOTICES.md").read_text(encoding="utf-8")
+    rows = [line for line in notices.splitlines() if line.startswith("| js-yaml |")]
+    assert len(rows) == 1
+    assert "current sole lock entry is exact 4.3.2" in rows[0]
+    assert "Issue `#396` previously moved 4.3.0 to 4.3.1" in rows[0]
+
+
 def _base_text(path: str) -> str:
     return _text_at(ISSUE360_BASE, path)
 
