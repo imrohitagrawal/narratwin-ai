@@ -1275,6 +1275,10 @@ def test_security_wrapper_is_fail_closed_without_advisory_suppression() -> None:
     assert "--path" in audit_wrapper
     assert "python3 scripts/ci/check_semgrep_security.py installed-tool" in audit_wrapper
     assert "bash scripts/ci/run-semgrep.sh" in wrapper
+    hosted_completion = 'if [ "${CI:-}" = "true" ] && [ "${NARRATWIN_GITLEAKS_ACTION_COMPLETED:-}" = "1" ]; then'
+    cli_scan = "elif command -v gitleaks >/dev/null 2>&1; then"
+    assert wrapper.index(hosted_completion) < wrapper.index(cli_scan)
+    assert "Gitleaks action completed in CI; skipping duplicate CLI scan in wrapper." in wrapper
     for forbidden in (
         "--ignore-vuln",
         "pysec-2026-2132",

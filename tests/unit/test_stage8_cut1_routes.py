@@ -479,6 +479,7 @@ ISSUE523_EXPECTED = {
     "pyproject.toml",
     "uv.lock",
     "scripts/ci/check_container_scan_consensus.py",
+    "scripts/ci/dependency-security.sh",
     "scripts/ci/prepare_frontend_npm.mjs",
     "scripts/quality/check_stage8_docs.py",
     "scripts/quality/stage8_node_security.py",
@@ -5435,6 +5436,10 @@ def test_issue523_route_freezes_the_exact_atomic_security_convergence() -> None:
         "5603708565",
         "01b308f7117d6fcfe1b0250083df5226569ccbc20093330709482951a84ab7ce",
     )
+    assert routes.ISSUE523_HOSTED_SCAN_AMENDMENT == (
+        "5604753747",
+        "3f4d64e0ce974390e6d4c3f3a6057a5309bc73ca3fc98520bd1f4922a2c550b4",
+    )
     assert routes.ISSUE523_ATOMIC_CHILDREN == (
         (
             "b1d3198d1c334b22b367d9341c9186bdbc2e01a7",
@@ -5493,6 +5498,7 @@ def test_issue523_route_freezes_the_exact_atomic_security_convergence() -> None:
         "pyproject.toml": 60,
         "uv.lock": 300,
         "scripts/ci/check_container_scan_consensus.py": 80,
+        "scripts/ci/dependency-security.sh": 80,
         "scripts/ci/prepare_frontend_npm.mjs": 120,
         "scripts/quality/check_stage8_docs.py": 40,
         "scripts/quality/stage8_node_security.py": 80,
@@ -5523,6 +5529,7 @@ def test_issue523_route_freezes_the_exact_atomic_security_convergence() -> None:
         routes.ISSUE523_ATOMIC_AMENDMENT_SHA256,
         *routes.ISSUE523_EVIDENCE_CORRECTION,
         *routes.ISSUE523_HOSTED_COMPATIBILITY_AMENDMENT,
+        *routes.ISSUE523_HOSTED_SCAN_AMENDMENT,
         *(value for pair in routes.ISSUE523_ATOMIC_CHILDREN for value in pair),
         *(value for pair in routes.ISSUE523_ATOMIC_REVIEWS for value in pair),
         *(value for row in routes.ISSUE523_ATOMIC_MERGES for value in row),
@@ -5540,6 +5547,8 @@ def test_issue523_route_freezes_the_exact_atomic_security_convergence() -> None:
         "8b6020b670e76f384f5b7f95db9bd8d196e23fe316f92a3cd5fe24a014c9d8a2",
         "5603708565",
         "01b308f7117d6fcfe1b0250083df5226569ccbc20093330709482951a84ab7ce",
+        "5604753747",
+        "3f4d64e0ce974390e6d4c3f3a6057a5309bc73ca3fc98520bd1f4922a2c550b4",
     ),
 )
 def test_issue523_route_rejects_evidence_correction_drift(
