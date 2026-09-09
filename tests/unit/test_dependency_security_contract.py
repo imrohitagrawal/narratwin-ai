@@ -40,6 +40,7 @@ ISSUE360_BASE = "b9a2a8cd4aa05328116565990fc30ae44592c875"
 ISSUE396_BASE = "9ee3f4a4d3b8cf1e78b5a878904748b60d557a76"
 ISSUE401_BASE = "9cf6e01f9d0c32f25c229b5adf38c6eb716ca9a0"
 ISSUE499_BASE = "d1f5400f5c6dfec5d4b63eb3a83aa82e3330743f"
+ISSUE525_BASE = "b6b0c05c7227428ff0841361f3970b0b2c40aa86"
 BRACE_PATH = "node_modules/brace-expansion"
 JS_YAML_PATH = "node_modules/js-yaml"
 NANOID_PATH = "node_modules/nanoid"
@@ -89,6 +90,92 @@ ISSUE482_PACKAGES = {
     "setuptools": ("84.0.0", "40d7bb1469b8b97ed537a39c27fa445b44513df8d59c77247cdc925f44c53343"),
     "torch": ("2.13.0", "25956554d432863f0207b50dc5f717d294723c4635a65700e4648f8aa2f5f112"),
 }
+JSONSCHEMA_SDIST_URL = "https://files.pythonhosted.org/packages/74/69/f7185de793a29082a9f3c7728268ffb31cb5095131a9c139a74078e27336/jsonschema-4.25.1.tar.gz"
+JSONSCHEMA_SDIST_SHA256 = "e4a9655ce0da0c0b67a085847e00a3a51449e1157f4f75e9fb5aa545e122eb85"
+JSONSCHEMA_WHEEL_URL = "https://files.pythonhosted.org/packages/bf/9c/8c95d856233c1f82500c2450b8c68576b4cf1c871db3afac5c34ff84e6fd/jsonschema-4.25.1-py3-none-any.whl"
+JSONSCHEMA_WHEEL_SHA256 = "3fba0169e345c7175110351d456342c364814cfcf3b964ba4587f22915230a63"
+
+
+def _assert_issue525_jsonschema_dev_contract(project_text: str, lock_text: str) -> None:
+    project = tomllib.loads(project_text)
+    lock = tomllib.loads(lock_text)
+    base_project = tomllib.loads(_text_at(ISSUE525_BASE, "pyproject.toml"))
+    base_lock = tomllib.loads(_text_at(ISSUE525_BASE, "uv.lock"))
+
+    dev = project["dependency-groups"]["dev"]
+    assert dev.count("jsonschema==4.25.1") == 1
+    assert not any(value.startswith("jsonschema") for value in project["project"]["dependencies"])
+    assert not any(
+        value.startswith("jsonschema")
+        for value in project["project"]["optional-dependencies"]["providers"]
+    )
+
+    packages = [package for package in lock["package"] if package["name"] == "jsonschema"]
+    assert len(packages) == 1
+    package = packages[0]
+    assert package["version"] == "4.25.1"
+    assert package["source"] == {"registry": "https://pypi.org/simple"}
+    assert package["dependencies"] == [
+        {"name": "attrs"},
+        {"name": "jsonschema-specifications"},
+        {"name": "referencing"},
+        {"name": "rpds-py"},
+    ]
+    assert package["sdist"] == {
+        "url": JSONSCHEMA_SDIST_URL,
+        "hash": f"sha256:{JSONSCHEMA_SDIST_SHA256}",
+        "size": 357342,
+        "upload-time": "2025-08-18T17:03:50.038Z",
+    }
+    assert package["wheels"] == [{
+        "url": JSONSCHEMA_WHEEL_URL,
+        "hash": f"sha256:{JSONSCHEMA_WHEEL_SHA256}",
+        "size": 90040,
+        "upload-time": "2025-08-18T17:03:48.373Z",
+    }]
+
+    root = next(package for package in lock["package"] if package["name"] == "narratwin-ai")
+    root_dev = root["dev-dependencies"]["dev"]
+    root_metadata = root["metadata"]["requires-dev"]["dev"]
+    assert root_dev.count({"name": "jsonschema"}) == 1
+    assert root_metadata.count({"name": "jsonschema", "specifier": "==4.25.1"}) == 1
+
+    normalized_project = copy.deepcopy(project)
+    normalized_project["dependency-groups"]["dev"].remove("jsonschema==4.25.1")
+    assert normalized_project == base_project
+
+    normalized_lock = copy.deepcopy(lock)
+    normalized_root = next(
+        package for package in normalized_lock["package"] if package["name"] == "narratwin-ai"
+    )
+    normalized_root["dev-dependencies"]["dev"].remove({"name": "jsonschema"})
+    normalized_root["metadata"]["requires-dev"]["dev"].remove(
+        {"name": "jsonschema", "specifier": "==4.25.1"}
+    )
+    assert normalized_lock == base_lock
+
+
+def test_issue525_jsonschema_is_an_exact_isolated_development_dependency() -> None:
+    _assert_issue525_jsonschema_dev_contract(
+        (ROOT / "pyproject.toml").read_text(encoding="utf-8"),
+        (ROOT / "uv.lock").read_text(encoding="utf-8"),
+    )
+
+
+def test_issue525_jsonschema_contract_rejects_identity_scope_and_lock_drift() -> None:
+    project_text = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
+    lock_text = (ROOT / "uv.lock").read_text(encoding="utf-8")
+    mutations = (
+        (project_text.replace("jsonschema==4.25.1", "jsonschema>=4.25.1"), lock_text),
+        (project_text.replace("jsonschema==4.25.1", "jsonschema==4.25.0"), lock_text),
+        (project_text, lock_text.replace(JSONSCHEMA_WHEEL_SHA256, "0" * 64)),
+        (project_text, lock_text.replace("size = 90040", "size = 90041", 1)),
+        (project_text, lock_text.replace('    { name = "rpds-py" },', "", 1)),
+        (project_text, lock_text.replace('    { name = "ruff" },', '    { name = "ruff" },\n    { name = "unexpected" },', 1)),
+    )
+    for candidate_project, candidate_lock in mutations:
+        with pytest.raises((AssertionError, StopIteration)):
+            _assert_issue525_jsonschema_dev_contract(candidate_project, candidate_lock)
 def _normalize_issue434_project(project: dict[str, Any]) -> None:
     dev = project["dependency-groups"]["dev"]; assert dev.count("cryptography==50.0.0") == 1; dev.remove("cryptography==50.0.0")  # noqa: E702
 def _normalize_issue434_lock(lock: dict[str, Any]) -> None:

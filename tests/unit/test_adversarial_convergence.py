@@ -29,8 +29,6 @@ STATE = {"A": "ACCEPTED", "R": "REJECTED", "N": "NOT_APPLICABLE", "X": "NOT_REAC
 JUSTIFICATION = {"A": "contract satisfied", "R": "rejected", "N": "not applicable", "X": "blocked by rejected predecessor"}
 THREATS = tuple(f"ACP-T{number:02d}" for number in range(1, 13))
 KINDS = ("FILESYSTEM", "JSON", "DOCUMENT", "PIPELINE", "OUTCOME", "MUTATION_SET", "EXECUTION_LEDGER", "REVIEWS", "EXPECTATION_BOUNDARY", "ROUTE", "CHECKPOINT", "RESOURCE")
-
-
 def _strict_object(pairs: list[tuple[str, object]]) -> dict[str, object]:
     result: dict[str, object] = {}
     for key, value in pairs:
@@ -384,10 +382,12 @@ def test_schema_oracle_default_policy_reaches_one_isolated_project_subprocess(
         return subprocess.CompletedProcess(argv, 0, "[]\n", "")
 
     monkeypatch.setattr(subprocess, "run", fake_run)
-    assert _draft202012_errors(CORPUS, environ={}) == []
+    monkeypatch.delenv("NARRATWIN_SCHEMA_ORACLE_TIMEOUT_SECONDS", raising=False)
+    assert _draft202012_errors(CORPUS) == []
     assert len(calls) == 1
     argv, kwargs = calls[0]
     assert argv[:4] == [sys.executable, "-I", "-P", "-c"]
+    assert Path(sys.executable).is_absolute()
     assert kwargs["timeout"] == 20
     assert kwargs["env"] == {"PATH": "/usr/bin:/bin", "LC_ALL": "C", "PYTHONHASHSEED": "0"}
     assert kwargs.get("shell", False) is False
@@ -429,6 +429,33 @@ def test_schema_oracle_typed_policy_rejects_invalid_values(value: object) -> Non
     assert callable(policy_type)
     with pytest.raises(ValueError, match="schema oracle timeout policy"):
         cast(Callable[..., object], policy_type)(timeout_seconds=cast(int, value))
+
+
+@pytest.mark.parametrize("value", (1, 60))
+def test_schema_oracle_typed_policy_accepts_inclusive_boundaries(value: int) -> None:
+    policy_type = globals().get("SchemaOraclePolicy")
+    assert callable(policy_type)
+    policy = cast(Callable[..., object], policy_type)(timeout_seconds=value)
+    assert getattr(policy, "timeout_seconds") == value
+
+
+def test_invalid_schema_oracle_policy_blocks_before_subprocess(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls = 0
+
+    def forbidden_run(argv: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
+        nonlocal calls
+        calls += 1
+        return subprocess.CompletedProcess(argv, 0, "[]", "")
+
+    monkeypatch.setattr(subprocess, "run", forbidden_run)
+    with pytest.raises(ValueError, match="schema oracle timeout policy"):
+        _draft202012_errors(
+            CORPUS,
+            environ={"NARRATWIN_SCHEMA_ORACLE_TIMEOUT_SECONDS": True},
+        )
+    assert calls == 0
 
 
 def test_schema_oracle_timeout_is_single_attempt_bounded_and_redacted(
