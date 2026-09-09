@@ -5419,6 +5419,10 @@ def test_issue523_route_freezes_the_exact_atomic_security_convergence() -> None:
     assert routes.ISSUE523_ATOMIC_AMENDMENT_SHA256 == (
         "f02c326fb6d637706174068b2e4fd0fc1ce17c18e950d660913223d21e573d65"
     )
+    assert routes.ISSUE523_EVIDENCE_CORRECTION == (
+        "5603161674",
+        "8b6020b670e76f384f5b7f95db9bd8d196e23fe316f92a3cd5fe24a014c9d8a2",
+    )
     assert routes.ISSUE523_ATOMIC_CHILDREN == (
         (
             "b1d3198d1c334b22b367d9341c9186bdbc2e01a7",
@@ -5444,7 +5448,7 @@ def test_issue523_route_freezes_the_exact_atomic_security_convergence() -> None:
         ),
         (
             "5601608099",
-            "9b53932a3e2cbf2a208eebd9847f3573d85c9a20e3e1a76fd555d326e0276e4f",
+            "9b53932a058d9b68c2120e78eef71a2cd6778101724836639beed7ef3b617ebe",
         ),
     )
     assert routes.ISSUE523_ATOMIC_MERGES == (
@@ -5497,6 +5501,7 @@ def test_issue523_route_freezes_the_exact_atomic_security_convergence() -> None:
     expected_authority = (
         routes.ISSUE523_ATOMIC_AMENDMENT_COMMENT,
         routes.ISSUE523_ATOMIC_AMENDMENT_SHA256,
+        *routes.ISSUE523_EVIDENCE_CORRECTION,
         *(value for pair in routes.ISSUE523_ATOMIC_CHILDREN for value in pair),
         *(value for pair in routes.ISSUE523_ATOMIC_REVIEWS for value in pair),
         *(value for row in routes.ISSUE523_ATOMIC_MERGES for value in row),
