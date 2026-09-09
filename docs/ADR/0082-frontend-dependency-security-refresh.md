@@ -50,7 +50,7 @@ fingerprint, byte, evidence, retention, and sensitivity forgery while keeping
 private locators out of Git. Frontend install, lint, type
 checking, unit tests, production build, browser
 checks, strict audit, and the complete repository gate must pass. Issue #524
-retains its RED/GREEN history and is normally merged into the amended Issue
+retains its RED/GREEN history and is normally merged into the amended
 Issue #523 branch for one atomic, independently reviewed security PR. Neither audit
 is waived and neither branch alone is described as full-gate green.
 
