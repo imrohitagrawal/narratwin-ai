@@ -194,6 +194,52 @@ ISSUE523_BASE = "b6b0c05c7227428ff0841361f3970b0b2c40aa86"
 ISSUE523_TREE = "2a8fc73f5cfc9210fabfdb425d00a07d345fa24f"
 ISSUE523_ROUTE_COMMENT = "5592344400"
 ISSUE523_ROUTE_SHA256 = "924445e028a7c8e9a67e4e537f5628c737fda99737c0fb62e637023e5aadd876"
+ISSUE523_ATOMIC_AMENDMENT_COMMENT = "5602656745"
+ISSUE523_ATOMIC_AMENDMENT_SHA256 = (
+    "f02c326fb6d637706174068b2e4fd0fc1ce17c18e950d660913223d21e573d65"
+)
+ISSUE523_ATOMIC_CHILDREN = (
+    (
+        "b1d3198d1c334b22b367d9341c9186bdbc2e01a7",
+        "7a7fafcf63ccbb3439c100ecf29d6df49ed2199f",
+    ),
+    (
+        "d9abb614783f59791742b250a1c80a486fdce574",
+        "7c4d86608e2428b3d6396dc617558fc2ffba60ba",
+    ),
+    (
+        "f8f6ca0a79a59a44724dfcf67b27471ca1423eb9",
+        "44c3329e020b27dc63dd1b967f7ee49e8509bea5",
+    ),
+)
+ISSUE523_ATOMIC_REVIEWS = (
+    (
+        "5602946863",
+        "a34880438aec2f50eef857413b47f1702ef637bb3a0ba34083079c5bf3fab1f6",
+    ),
+    (
+        "5602529879",
+        "9d1b5562adfce21a95cfaed81b940f8bd1a643410dc76ec19dfa016a24e28ed2",
+    ),
+    (
+        "5601608099",
+        "9b53932a3e2cbf2a208eebd9847f3573d85c9a20e3e1a76fd555d326e0276e4f",
+    ),
+)
+ISSUE523_ATOMIC_MERGES = (
+    (
+        "30bdcecf7a8a7a57b976465ba7da8c3621139ff2",
+        "9a1049cab2f7d42443b41aac0d0f42af9df275b1",
+        ISSUE523_ATOMIC_CHILDREN[0][0],
+        ISSUE523_ATOMIC_CHILDREN[1][0],
+    ),
+    (
+        "8ac8a6ea62f4bb78b85d31a50e1d8a342efe14c1",
+        "7687ff0a6fc8b9cb1b81d05d28efb4b570182d6a",
+        "30bdcecf7a8a7a57b976465ba7da8c3621139ff2",
+        ISSUE523_ATOMIC_CHILDREN[2][0],
+    ),
+)
 ISSUE524_BASE = "b6b0c05c7227428ff0841361f3970b0b2c40aa86"
 ISSUE524_TREE = "2a8fc73f5cfc9210fabfdb425d00a07d345fa24f"
 ISSUE524_ROUTE_COMMENT = "5599970578"
@@ -470,12 +516,24 @@ ROUTES = {
     },
     ISSUE523_BRANCH: {
         "docs/governance/preflights/issue-523-httpx2-2-12-security-refresh.json",
+        "docs/governance/preflights/issue-524-frontend-dependency-security-refresh.json",
+        "docs/governance/preflights/issue-525-schema-oracle-runtime-policy.json",
+        "docs/governance/resource-ledgers/issue-524-task-resource-ledger-v1.json",
+        "docs/governance/schemas/task-resource-ledger-v1.schema.json",
+        "docs/SKILL_LOCK.md",
+        "frontend/package.json",
+        "frontend/package-lock.json",
         "pyproject.toml",
         "uv.lock",
         "scripts/quality/stage8_cut1_routes.py",
         "tests/unit/test_stage8_cut1_routes.py",
         "tests/unit/test_dependency_security_contract.py",
+        "tests/unit/test_frontend_dependency_security_contract.py",
+        "tests/unit/test_adversarial_convergence.py",
         "docs/ADR/0081-httpx2-2-12-security-refresh.md",
+        "docs/ADR/0082-frontend-dependency-security-refresh.md",
+        "docs/ADR/0083-schema-oracle-runtime-policy.md",
+        "docs/QUALITY_GATES.md",
         "docs/STATUS.md",
         "docs/THIRD_PARTY_NOTICES.md",
         "docs/TRACEABILITY.md",
@@ -1113,7 +1171,7 @@ TOTAL_LIMITS[ISSUE524_BRANCH] = 3820
 ROUTE_ISSUES[ISSUE499_BRANCH] = 499
 TOTAL_LIMITS[ISSUE499_BRANCH] = 1000
 ROUTE_ISSUES[ISSUE523_BRANCH] = 523
-TOTAL_LIMITS[ISSUE523_BRANCH] = 1000
+TOTAL_LIMITS[ISSUE523_BRANCH] = 6920
 ROUTE_ISSUES[ISSUE525_BRANCH] = 525
 TOTAL_LIMITS[ISSUE525_BRANCH] = 2100
 ROUTE_ISSUES[ISSUE502_BRANCH] = 502
@@ -1325,15 +1383,27 @@ TEXT_LIMITS = {
     },
     ISSUE523_BRANCH: {
         "docs/governance/preflights/issue-523-httpx2-2-12-security-refresh.json": 220,
-        "pyproject.toml": 20,
-        "uv.lock": 160,
-        "scripts/quality/stage8_cut1_routes.py": 140,
-        "tests/unit/test_stage8_cut1_routes.py": 160,
-        "tests/unit/test_dependency_security_contract.py": 220,
+        "docs/governance/preflights/issue-524-frontend-dependency-security-refresh.json": 300,
+        "docs/governance/preflights/issue-525-schema-oracle-runtime-policy.json": 300,
+        "docs/governance/resource-ledgers/issue-524-task-resource-ledger-v1.json": 1100,
+        "docs/governance/schemas/task-resource-ledger-v1.schema.json": 320,
+        "docs/SKILL_LOCK.md": 120,
+        "frontend/package.json": 80,
+        "frontend/package-lock.json": 700,
+        "pyproject.toml": 60,
+        "uv.lock": 300,
+        "scripts/quality/stage8_cut1_routes.py": 640,
+        "tests/unit/test_stage8_cut1_routes.py": 820,
+        "tests/unit/test_dependency_security_contract.py": 1200,
+        "tests/unit/test_frontend_dependency_security_contract.py": 200,
+        "tests/unit/test_adversarial_convergence.py": 360,
         "docs/ADR/0081-httpx2-2-12-security-refresh.md": 80,
-        "docs/STATUS.md": 40,
-        "docs/THIRD_PARTY_NOTICES.md": 40,
-        "docs/TRACEABILITY.md": 20,
+        "docs/ADR/0082-frontend-dependency-security-refresh.md": 120,
+        "docs/ADR/0083-schema-oracle-runtime-policy.md": 120,
+        "docs/QUALITY_GATES.md": 80,
+        "docs/STATUS.md": 220,
+        "docs/THIRD_PARTY_NOTICES.md": 260,
+        "docs/TRACEABILITY.md": 200,
     },
     ISSUE525_BRANCH: {
         "docs/governance/preflights/issue-525-schema-oracle-runtime-policy.json": 300,
@@ -2495,6 +2565,41 @@ def route_base(run: Callable[[list[str]], Any], branch: str) -> str:
                 "Issue #494 reviewed transition evidence is unavailable or inconsistent."
             )
         return ISSUE494_TRANSITION_BASE
+    if branch == ISSUE523_BRANCH:
+        child_commits = tuple(commit for commit, _tree in ISSUE523_ATOMIC_CHILDREN)
+        merge_commits = tuple(commit for commit, _tree, _left, _right in ISSUE523_ATOMIC_MERGES)
+        commits = (ISSUE523_BASE, *child_commits, *merge_commits)
+        resolved = [run(["git", "rev-parse", f"{commit}^{{commit}}"])
+                    for commit in commits]
+        tree_rows = (*ISSUE523_ATOMIC_CHILDREN, *(
+            (commit, tree) for commit, tree, _left, _right in ISSUE523_ATOMIC_MERGES
+        ))
+        trees = [run(["git", "rev-parse", f"{commit}^{{tree}}"])
+                 for commit, _tree in tree_rows]
+        ancestors = [
+            run(["git", "merge-base", "--is-ancestor", ISSUE523_BASE, child])
+            for child in child_commits
+        ]
+        ancestors.append(
+            run(["git", "merge-base", "--is-ancestor", merge_commits[-1], "HEAD"])
+        )
+        parents = [
+            run(["git", "show", "-s", "--format=%P", commit])
+            for commit in merge_commits
+        ]
+        expected_parents = [f"{left} {right}" for _commit, _tree, left, right
+                            in ISSUE523_ATOMIC_MERGES]
+        if (
+            any(result.returncode for result in [*resolved, *trees, *ancestors, *parents])
+            or [str(result.stdout).strip() for result in resolved] != list(commits)
+            or [str(result.stdout).strip() for result in trees]
+            != [tree for _commit, tree in tree_rows]
+            or [str(result.stdout).strip() for result in parents] != expected_parents
+        ):
+            raise RuntimeError(
+                "Issue #523 atomic merge evidence is unavailable or inconsistent."
+            )
+        return ISSUE523_BASE
     fixed_routes = {
         ISSUE516_BRANCH: (516, ISSUE516_BASE),
         ISSUE514_BRANCH: (514, ISSUE514_BASE),
@@ -2502,7 +2607,6 @@ def route_base(run: Callable[[list[str]], Any], branch: str) -> str:
         ISSUE509_BRANCH: (509, ISSUE509_BASE),
         ISSUE507_BRANCH: (507, ISSUE507_BASE),
         ISSUE502_BRANCH: (502, ISSUE502_BASE),
-        ISSUE523_BRANCH: (523, ISSUE523_BASE),
         ISSUE499_BRANCH: (499, ISSUE499_BASE),
         ISSUE524_BRANCH: (524, ISSUE524_BASE),
         ISSUE525_BRANCH: (525, ISSUE525_BASE),
@@ -3093,11 +3197,29 @@ def check_exact_route(
                 ISSUE523_TREE,
                 ISSUE523_ROUTE_COMMENT,
                 ISSUE523_ROUTE_SHA256,
+                ISSUE523_ATOMIC_AMENDMENT_COMMENT,
+                ISSUE523_ATOMIC_AMENDMENT_SHA256,
+                *(value for pair in ISSUE523_ATOMIC_CHILDREN for value in pair),
+                *(value for pair in ISSUE523_ATOMIC_REVIEWS for value in pair),
+                *(value for row in ISSUE523_ATOMIC_MERGES for value in row),
             )
             if not isinstance(objective, str) or any(
                 item not in objective for item in authority_expected
             ):
                 failures.append("Issue #523 dependency authority drifted.")
+            schema_path = root / "docs/governance/schemas/task-resource-ledger-v1.schema.json"
+            ledger_path = (
+                root
+                / "docs/governance/resource-ledgers/issue-524-task-resource-ledger-v1.json"
+            )
+            schema_bytes = schema_path.read_bytes()
+            failures.extend(
+                validate_issue524_resource_ledger(
+                    schema_bytes,
+                    load_json_without_duplicate_members(schema_path),
+                    load_json_without_duplicate_members(ledger_path),
+                )
+            )
         except (OSError, ValueError, TypeError) as error:
             failures.append(f"Issue #523 governance preflight failed closed: {error}")
     if branch == ISSUE524_BRANCH:

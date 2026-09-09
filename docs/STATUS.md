@@ -2171,7 +2171,7 @@ human acceptance, deployment, release, production-readiness, or Cut 1 evidence.
   defect; no provider is selected or activated, and T06, T07, T08, Cut 1,
   deployment, publication, release, and production readiness remain incomplete.
 
-## Issue #523 httpx2/httpcore2 security prerequisite (2026-09-09)
+## Issue #523 httpx2/httpcore2 security child (2026-09-09)
 
 - The public advisory feed now rejects development/test-only `httpx2` and
   `httpcore2` 2.5.0 for five CVEs, so the strict dependency gate blocks despite
@@ -2180,22 +2180,22 @@ human acceptance, deployment, release, production-readiness, or Cut 1 evidence.
   `httpx2>=2.12.0`, the exact official 2.12.0 `httpx2`/`httpcore2` records, and
   the official Emscripten-only `httpx2-jsfetch` 1.0 transitive record. Unrelated
   project and lock changes fail closed.
-- This independent prerequisite must pass local and hosted review before Issue
-  #521 can consume accepted main and complete its final revalidation. It changes
-  no product/provider behavior and authorizes no call, upload, credential,
-  egress, spend, media, deployment, release, or production claim.
+- Exact child head `b1d3198d` passed independent review in receipt `5602946863`
+  and is preserved as the first parent of the atomic merge chain. Child evidence
+  does not substitute for the combined candidate's local and hosted proof.
 
-## Issues #523/#524 atomic dependency-security convergence (2026-09-09)
+## Issues #523/#524/#525 atomic security convergence (2026-09-09)
 
 - Issue `#524` raises only the affected frontend graph: Next.js 16.3.4,
   sharp 0.35.4, transitive js-yaml 4.3.2, and Vitest/`@vitest` 4.1.11.
   Exact registry identities and a fifty-record resolver boundary prevent
   unrelated Vite/Rolldown or CSS-tooling refreshes.
-- Issue `#523` independently raises the affected Python test transport to
-  httpx2/httpcore2 2.12.0. Because either branch retains the other audit
-  failure, owner/orchestrator amendment `5600552079` directs Issue `#524` to
-  preserve its RED/GREEN history and converge by normal merge into a separately
-  amended Issue `#523` route for one full-gate PR.
+- Final amendment `5602656745` binds reviewed heads for Issues `#523`, `#524`,
+  and `#525`, exactly twenty-two paths, and a 6,920-line aggregate drift cap.
+  Normal non-fast-forward merges `30bdcecf` then `8ac8a6ea` preserve the #524
+  and #525 RED/GREEN ancestry in that order. The composed Python lock proof
+  removes the exact HTTPX and JSONSchema deltas before comparing with base, so
+  either sibling's tampering remains a failure.
 - Cleanup amendment `5601014173` replaces the earlier preliminary inventory
   claim with the exact StackClimb `TaskResourceLedgerV1` schema and a sanitized
   frozen ledger. Live-census amendment `5601780266` expands the closed inventory
@@ -2230,7 +2230,7 @@ human acceptance, deployment, release, production-readiness, or Cut 1 evidence.
   Exact `jsonschema==4.25.1` development placement closes the isolated import;
   its pre-existing lock artifacts and all unrelated dependency records remain
   frozen.
-- Issue #525 preserves RED/GREEN history for later normal-merge convergence
-  with Issues #523 and #524. It adds no product/provider/media behavior,
+- Issue #525 RED/GREEN history is preserved by normal merge `8ac8a6ea` in the
+  combined Issue #523 candidate. It adds no product/provider/media behavior,
   credential use, egress, spend, deployment, release, production-readiness, or
   Cut 1 claim. T06, T07, and T08 remain incomplete.

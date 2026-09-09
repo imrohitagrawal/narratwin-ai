@@ -30,9 +30,9 @@ tooling merely because their version ranges admit newer releases.
 
 ## Consequences
 
-Owner/orchestrator amendment `5600552079` binds the complete fifty-record
-canonical digest, duplicate-member rejection, and normal merge into a separately
-amended Issue #523 route. Cleanup amendment `5601014173` reclassifies the earlier
+Final atomic amendment `5602656745` binds the complete fifty-record canonical
+digest, duplicate-member rejection, and exact normal merge into the combined
+Issue #523 route. Cleanup amendment `5601014173` reclassifies the earlier
 short inventory as preliminary and adds the byte-identical StackClimb
 `TaskResourceLedgerV1` schema plus a frozen, sanitized sixteen-resource package
 ledger with executable schema and semantic mutation coverage. Live-census

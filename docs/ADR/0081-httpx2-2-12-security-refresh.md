@@ -1,6 +1,6 @@
 # ADR 0081: httpx2 2.12 security refresh
 
-- Status: Proposed for Issue #523 exact-head review
+- Status: Accepted child of the Issue #523 atomic candidate
 - Date: 2026-09-09
 - Decision scope: development/test dependency and lock resolution only
 

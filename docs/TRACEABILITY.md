@@ -835,7 +835,7 @@ remain separate gates.
 | Remove five reported advisories without suppression | Issue #523, ADR 0081, exact official `httpx2`/`httpcore2` 2.12.0 artifacts, strict dependency audit | No ignore, waiver, alternate registry, VCS source, or vendoring |
 | Preserve the complete resolved graph | Exact Emscripten-only `httpx2-jsfetch` 1.0 record plus dependency/marker/provenance mutation tests | Required related transitive record only; unrelated project and lock drift rejects |
 | Preserve API-test behavior | Starlette/FastAPI TestClient suite, typecheck, full quality, and hosted push/PR topology | Development/test transport only; backend image and product paths remain unchanged |
-| Keep G1 scope honest | Independent Issue #523 branch/PR consumed by Issue #521 only after accepted-main merge | No G1 path expansion and no provider call, upload, spend, media, release, or production authority |
+| Keep G1 scope honest | Independently reviewed child `b1d3198d`; final atomic authority `5602656745`; combined Issue #523 PR consumed by Issue #521 only after accepted-main merge | No G1 path expansion and no provider call, upload, spend, media, release, or production authority |
 
 ## Issue #524 frontend dependency-security traceability
 
@@ -845,7 +845,7 @@ remain separate gates.
 | Preserve unrelated dependency intent | Manifest normalization plus exact fifty-record lock-delta test against `b6b0c05c`; eslint-config-next remains 16.2.9 | No broad lock refresh, direct js-yaml, unrelated Vite/Rolldown/CSS upgrade, alternate registry, VCS package, or vendoring |
 | Preserve historical nanoid and secret-scan contracts through the refresh | Full-gate amendment `5601451115`; immutable Issue `#524` dependency reference; unchanged key detector | Exact Issue `#524` normalization cannot admit unrelated lock drift, and sanitized governance identifiers cannot contain key-shaped bytes |
 | Prove compatibility | Clean npm install; frontend lint, type, unit, build, browser, audit, and complete repository gates | Dependency compatibility is not product, provider, deployment, release, or production evidence |
-| Resolve the cross-audit cycle atomically | Preserved Issue `#524` RED/GREEN commits; owner/orchestrator amendment `5600552079`; normal merge into a separately amended Issue `#523`; one combined hosted PR | Neither Python nor frontend audit is waived, and neither branch alone may claim full-gate success |
+| Resolve the cross-audit cycle atomically | Preserved Issue `#524` RED/GREEN commits; final authority `5602656745`; exact normal merges `30bdcecf` then `8ac8a6ea`; one combined hosted PR | Neither Python nor frontend audit is waived, and no child branch alone may claim full-gate success |
 | Reclaim only task-owned resources | Cleanup amendment `5601014173`; live-census amendment `5601780266`; provenance amendment `5601842704`; byte-identical StackClimb `TaskResourceLedgerV1` schema; sanitized thirty-four-resource/sixty-eight-event package ledger; canonical whole-ledger SHA-256 plus schema and semantic mutations; exact source/trust/custom-license lock | The ledger authorizes no deletion; every trigger is pending and evidence obligation active. One ambiguous operator process is retained untouched as a probe gap. Unrelated dirty state, shared caches, historical resources, Docker objects, and private evidence are excluded; a later exact proposal, current-session authority, and fresh survivor/ownership/activity/reference/sensitivity checks are mandatory |
 
 ## Issue #525 schema-oracle runtime-policy traceability
@@ -855,4 +855,13 @@ remain separate gates.
 | Remove ambient interpreter and user-site dependence | Reproduced cold-start timeout; `sys.executable -I -P`; exact minimal child environment | Separate Draft 2020-12 process remains independent; no retry, prewarm, fallback, or inherited credentials |
 | Make timeout operational policy explicit | Typed canonical whole seconds; default 20; inclusive 1–60 bounds; invalid-input and propagation tests | Invalid policy rejects before dispatch; finite ceiling and one-attempt behavior remain fail closed |
 | Close the isolated dependency exactly | Development-only `jsonschema==4.25.1`; frozen artifact URL/hash/size and lock-normalization mutations | No application/provider dependency, transitive refresh, alternate source, product behavior, provider activation, or spend |
-| Bind authority and delivery | Issue #525 comments `5600271943` and `5600384376`; exact twelve-path route; RED/GREEN and later atomic convergence | Complete local/hosted gates and independent exact-head review remain required; no release or Cut 1 claim |
+| Bind authority and delivery | Issue #525 comments `5600271943` and `5600384376`; independently reviewed `f8f6ca0a`; final atomic authority `5602656745` | RED/GREEN ancestry is preserved in merge `8ac8a6ea`; complete combined local/hosted gates remain required; no release or Cut 1 claim |
+
+## Issue #523 combined-candidate traceability
+
+| Requirement | Executable evidence | Preserved boundary |
+|---|---|---|
+| Bind the exact atomic topology | Final authority `5602656745`; reviewed child heads/trees and receipts; two merge commits with exact ordered parent pairs and trees; route-base ancestry checks | No rebase, cherry-pick, squash, child substitution, or history rewrite |
+| Preserve the exact combined scope | Twenty-two-path equality, independent per-path ceilings, 6,920 aggregate cap, and no twenty-third path | Only the three authorized governance/security corrections compose |
+| Prove both Python deltas compositionally | Exact HTTPX and JSONSchema assertions over the same bytes; bidirectional sibling-tamper rejection; exact base restoration | Neither normalizer can erase or conceal the other dependency change |
+| Preserve child proofs without false completion | Frontend fifty-record digest, 34-resource/68-event ledger, isolated schema oracle, strict audits, complete local/hosted gates, and independent combined-head review | Child PASS results do not establish combined, G1, demo, Cut 1, release, or production acceptance |
