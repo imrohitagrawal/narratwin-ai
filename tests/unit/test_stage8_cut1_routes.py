@@ -4881,6 +4881,10 @@ def test_issue524_route_freezes_the_exact_frontend_security_refresh() -> None:
     assert routes.ISSUE524_ROUTE_SHA256 == (
         "07f2fff6702a9847059a3e4223df25e8b0752269574cff9710b3738fc8c82da5"
     )
+    assert routes.ISSUE524_AMENDMENT_COMMENT == "5600552079"
+    assert routes.ISSUE524_AMENDMENT_SHA256 == (
+        "95ddf400f917530c9c80532582244f645b93389ce33e81d0165dbdcd182f781a"
+    )
     assert routes.ROUTES[branch] == ISSUE524_EXPECTED
     assert routes.ROUTE_ISSUES[branch] == 524
     assert routes.TOTAL_LIMITS[branch] == 1800
@@ -4902,6 +4906,8 @@ def test_issue524_route_freezes_the_exact_frontend_security_refresh() -> None:
     )
     assert set(preflight["scope"]["required"]) == ISSUE524_EXPECTED
     assert preflight["scope"]["required"] == preflight["scope"]["allowed_prefixes"]
+    assert routes.ISSUE524_AMENDMENT_COMMENT in preflight["objective"]
+    assert routes.ISSUE524_AMENDMENT_SHA256 in preflight["objective"]
     assert branch in stage8.EFFECTIVE_STAGE8_ROUTES
 
 

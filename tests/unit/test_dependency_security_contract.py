@@ -364,6 +364,40 @@ def test_issue524_frontend_contract_rejects_weaker_substituted_and_manifest_drif
             _assert_issue524_frontend_contract(candidate_package, candidate_lock)
 
 
+@pytest.mark.parametrize("lock_path", sorted(ISSUE524_LOCK_PATHS))
+def test_issue524_contract_rejects_tampering_in_every_changed_record(lock_path: str) -> None:
+    package_text = (ROOT / "frontend/package.json").read_text(encoding="utf-8")
+    lock = json.loads((ROOT / "frontend/package-lock.json").read_text(encoding="utf-8"))
+    lock["packages"][lock_path]["issue524Tamper"] = True
+    with pytest.raises(AssertionError):
+        _assert_issue524_frontend_contract(
+            package_text,
+            json.dumps(lock, ensure_ascii=True, separators=(",", ":")),
+        )
+
+
+def test_issue524_contract_rejects_missing_and_duplicate_nonprimary_record() -> None:
+    package_text = (ROOT / "frontend/package.json").read_text(encoding="utf-8")
+    lock_text = (ROOT / "frontend/package-lock.json").read_text(encoding="utf-8")
+    lock = json.loads(lock_text)
+    nonprimary = "node_modules/@next/env"
+
+    missing = copy.deepcopy(lock)
+    del missing["packages"][nonprimary]
+    with pytest.raises((AssertionError, KeyError)):
+        _assert_issue524_frontend_contract(package_text, json.dumps(missing))
+
+    marker = f'    "{nonprimary}": {{'
+    duplicate = lock_text.replace(
+        marker,
+        f'    "{nonprimary}": {json.dumps(lock["packages"][nonprimary])},\n{marker}',
+        1,
+    )
+    assert duplicate != lock_text
+    with pytest.raises((AssertionError, ValueError)):
+        _assert_issue524_frontend_contract(package_text, duplicate)
+
+
 def _assert_pypdf_6162_contract(project_text: str, lock_text: str) -> None:
     project, lock = tomllib.loads(project_text), tomllib.loads(lock_text)
     base_project = tomllib.loads(_text_at(ISSUE401_BASE, "pyproject.toml"))
