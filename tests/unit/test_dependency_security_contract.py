@@ -879,6 +879,24 @@ def test_root_httpx2_resolution_is_exact_isolated_and_patched() -> None:
     )
 
 
+def test_issue523_and_issue525_cross_normalization_rejects_sibling_tamper() -> None:
+    project_text = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
+    lock_text = (ROOT / "uv.lock").read_text(encoding="utf-8")
+    _assert_httpx2_2120_contract(project_text, lock_text)
+    _assert_issue525_jsonschema_dev_contract(project_text, lock_text)
+
+    with pytest.raises(AssertionError):
+        _assert_httpx2_2120_contract(
+            project_text,
+            lock_text.replace(JSONSCHEMA_WHEEL_SHA256, "0" * 64),
+        )
+    with pytest.raises(AssertionError):
+        _assert_issue525_jsonschema_dev_contract(
+            project_text.replace("httpx2>=2.12.0", "httpx2>=2.11.0"),
+            lock_text,
+        )
+
+
 def test_httpx2_contract_rejects_vulnerable_substituted_and_unrelated_drift() -> None:
     project_text = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
     lock_text = (ROOT / "uv.lock").read_text(encoding="utf-8")

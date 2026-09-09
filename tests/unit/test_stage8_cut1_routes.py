@@ -468,12 +468,24 @@ ISSUE499_EXPECTED = {
 }
 ISSUE523_EXPECTED = {
     "docs/governance/preflights/issue-523-httpx2-2-12-security-refresh.json",
+    "docs/governance/preflights/issue-524-frontend-dependency-security-refresh.json",
+    "docs/governance/preflights/issue-525-schema-oracle-runtime-policy.json",
+    "docs/governance/resource-ledgers/issue-524-task-resource-ledger-v1.json",
+    "docs/governance/schemas/task-resource-ledger-v1.schema.json",
+    "docs/SKILL_LOCK.md",
+    "frontend/package.json",
+    "frontend/package-lock.json",
     "pyproject.toml",
     "uv.lock",
     "scripts/quality/stage8_cut1_routes.py",
     "tests/unit/test_stage8_cut1_routes.py",
     "tests/unit/test_dependency_security_contract.py",
+    "tests/unit/test_frontend_dependency_security_contract.py",
+    "tests/unit/test_adversarial_convergence.py",
     "docs/ADR/0081-httpx2-2-12-security-refresh.md",
+    "docs/ADR/0082-frontend-dependency-security-refresh.md",
+    "docs/ADR/0083-schema-oracle-runtime-policy.md",
+    "docs/QUALITY_GATES.md",
     "docs/STATUS.md",
     "docs/THIRD_PARTY_NOTICES.md",
     "docs/TRACEABILITY.md",
@@ -5394,7 +5406,7 @@ def test_issue499_route_rejects_fixed_base_drift_and_every_path_cap(monkeypatch:
         assert f"Issue #499 charge for {path} exceeds {limit}." in failures
 
 
-def test_issue523_route_freezes_the_exact_httpx2_security_refresh() -> None:
+def test_issue523_route_freezes_the_exact_atomic_security_convergence() -> None:
     branch = "stage8-523-httpx2-2-12-security-refresh"
     assert routes.ISSUE523_BRANCH == branch
     assert routes.ISSUE523_BASE == "b6b0c05c7227428ff0841361f3970b0b2c40aa86"
@@ -5403,20 +5415,78 @@ def test_issue523_route_freezes_the_exact_httpx2_security_refresh() -> None:
     assert routes.ISSUE523_ROUTE_SHA256 == (
         "924445e028a7c8e9a67e4e537f5628c737fda99737c0fb62e637023e5aadd876"
     )
+    assert routes.ISSUE523_ATOMIC_AMENDMENT_COMMENT == "5602656745"
+    assert routes.ISSUE523_ATOMIC_AMENDMENT_SHA256 == (
+        "f02c326fb6d637706174068b2e4fd0fc1ce17c18e950d660913223d21e573d65"
+    )
+    assert routes.ISSUE523_ATOMIC_CHILDREN == (
+        (
+            "b1d3198d1c334b22b367d9341c9186bdbc2e01a7",
+            "7a7fafcf63ccbb3439c100ecf29d6df49ed2199f",
+        ),
+        (
+            "d9abb614783f59791742b250a1c80a486fdce574",
+            "7c4d86608e2428b3d6396dc617558fc2ffba60ba",
+        ),
+        (
+            "f8f6ca0a79a59a44724dfcf67b27471ca1423eb9",
+            "44c3329e020b27dc63dd1b967f7ee49e8509bea5",
+        ),
+    )
+    assert routes.ISSUE523_ATOMIC_REVIEWS == (
+        (
+            "5602946863",
+            "a34880438aec2f50eef857413b47f1702ef637bb3a0ba34083079c5bf3fab1f6",
+        ),
+        (
+            "5602529879",
+            "9d1b5562adfce21a95cfaed81b940f8bd1a643410dc76ec19dfa016a24e28ed2",
+        ),
+        (
+            "5601608099",
+            "9b53932a3e2cbf2a208eebd9847f3573d85c9a20e3e1a76fd555d326e0276e4f",
+        ),
+    )
+    assert routes.ISSUE523_ATOMIC_MERGES == (
+        (
+            "30bdcecf7a8a7a57b976465ba7da8c3621139ff2",
+            "9a1049cab2f7d42443b41aac0d0f42af9df275b1",
+            "b1d3198d1c334b22b367d9341c9186bdbc2e01a7",
+            "d9abb614783f59791742b250a1c80a486fdce574",
+        ),
+        (
+            "8ac8a6ea62f4bb78b85d31a50e1d8a342efe14c1",
+            "7687ff0a6fc8b9cb1b81d05d28efb4b570182d6a",
+            "30bdcecf7a8a7a57b976465ba7da8c3621139ff2",
+            "f8f6ca0a79a59a44724dfcf67b27471ca1423eb9",
+        ),
+    )
     assert routes.ROUTES[branch] == ISSUE523_EXPECTED
     assert routes.ROUTE_ISSUES[branch] == 523
-    assert routes.TOTAL_LIMITS[branch] == 1000
+    assert routes.TOTAL_LIMITS[branch] == 6920
     assert routes.TEXT_LIMITS[branch] == {
         "docs/governance/preflights/issue-523-httpx2-2-12-security-refresh.json": 220,
-        "pyproject.toml": 20,
-        "uv.lock": 160,
-        "scripts/quality/stage8_cut1_routes.py": 140,
-        "tests/unit/test_stage8_cut1_routes.py": 160,
-        "tests/unit/test_dependency_security_contract.py": 220,
+        "docs/governance/preflights/issue-524-frontend-dependency-security-refresh.json": 300,
+        "docs/governance/preflights/issue-525-schema-oracle-runtime-policy.json": 300,
+        "docs/governance/resource-ledgers/issue-524-task-resource-ledger-v1.json": 1100,
+        "docs/governance/schemas/task-resource-ledger-v1.schema.json": 320,
+        "docs/SKILL_LOCK.md": 120,
+        "frontend/package.json": 80,
+        "frontend/package-lock.json": 700,
+        "pyproject.toml": 60,
+        "uv.lock": 300,
+        "scripts/quality/stage8_cut1_routes.py": 640,
+        "tests/unit/test_stage8_cut1_routes.py": 820,
+        "tests/unit/test_dependency_security_contract.py": 1200,
+        "tests/unit/test_frontend_dependency_security_contract.py": 200,
+        "tests/unit/test_adversarial_convergence.py": 360,
         "docs/ADR/0081-httpx2-2-12-security-refresh.md": 80,
-        "docs/STATUS.md": 40,
-        "docs/THIRD_PARTY_NOTICES.md": 40,
-        "docs/TRACEABILITY.md": 20,
+        "docs/ADR/0082-frontend-dependency-security-refresh.md": 120,
+        "docs/ADR/0083-schema-oracle-runtime-policy.md": 120,
+        "docs/QUALITY_GATES.md": 80,
+        "docs/STATUS.md": 220,
+        "docs/THIRD_PARTY_NOTICES.md": 260,
+        "docs/TRACEABILITY.md": 200,
     }
     preflight = json.loads(
         (REPO / "docs/governance/preflights/issue-523-httpx2-2-12-security-refresh.json")
@@ -5424,6 +5494,14 @@ def test_issue523_route_freezes_the_exact_httpx2_security_refresh() -> None:
     )
     assert set(preflight["scope"]["required"]) == ISSUE523_EXPECTED
     assert preflight["scope"]["required"] == preflight["scope"]["allowed_prefixes"]
+    expected_authority = (
+        routes.ISSUE523_ATOMIC_AMENDMENT_COMMENT,
+        routes.ISSUE523_ATOMIC_AMENDMENT_SHA256,
+        *(value for pair in routes.ISSUE523_ATOMIC_CHILDREN for value in pair),
+        *(value for pair in routes.ISSUE523_ATOMIC_REVIEWS for value in pair),
+        *(value for row in routes.ISSUE523_ATOMIC_MERGES for value in row),
+    )
+    assert all(value in preflight["objective"] for value in expected_authority)
     assert branch in stage8.EFFECTIVE_STAGE8_ROUTES
 
 
@@ -5444,20 +5522,21 @@ def test_issue523_route_rejects_branch_suffix_drift(monkeypatch: Any) -> None:
     ]
 
 
-def test_issue523_route_rejects_fixed_base_drift_and_every_path_cap(monkeypatch: Any) -> None:
-    outputs = iter(
-        (
-            completed([], out=routes.ISSUE523_BASE + "\n"),
-            completed([], out="a" * 40 + "\n"),
-        )
-    )
-    error = pytest.raises(
-        RuntimeError,
-        routes.route_base,
-        lambda _: next(outputs),
-        routes.ISSUE523_BRANCH,
-    )
-    assert "Issue #523 fixed base" in str(error.value)
+def test_issue523_route_rejects_topology_drift_and_every_path_cap(monkeypatch: Any) -> None:
+    def real_run(args: list[str]) -> subprocess.CompletedProcess[str]:
+        return subprocess.run(args, cwd=REPO, check=False, capture_output=True, text=True)
+
+    assert routes.route_base(real_run, routes.ISSUE523_BRANCH) == routes.ISSUE523_BASE
+
+    second_merge = routes.ISSUE523_ATOMIC_MERGES[1][0]
+
+    def drifted_run(args: list[str]) -> subprocess.CompletedProcess[str]:
+        if args == ["git", "show", "-s", "--format=%P", second_merge]:
+            return completed(args, out="0" * 40 + "\n")
+        return real_run(args)
+
+    error = pytest.raises(RuntimeError, routes.route_base, drifted_run, routes.ISSUE523_BRANCH)
+    assert "Issue #523 atomic merge evidence" in str(error.value)
     monkeypatch.setattr(routes, "route_base", lambda *_: "base")
     for path, limit in routes.TEXT_LIMITS[routes.ISSUE523_BRANCH].items():
         monkeypatch.setattr(
