@@ -35,7 +35,12 @@ canonical digest, duplicate-member rejection, and normal merge into a separately
 amended Issue #523 route. Cleanup amendment `5601014173` reclassifies the earlier
 short inventory as preliminary and adds the byte-identical StackClimb
 `TaskResourceLedgerV1` schema plus a frozen, sanitized sixteen-resource package
-ledger with executable schema and semantic mutation coverage. Frontend install, lint, type
+ledger with executable schema and semantic mutation coverage. Live-census
+authority `5601780266` replaces that preliminary count with thirty-four exact
+resources and sixty-eight lifecycle events, including every full-gate output
+observed in the worktree. Canonical whole-ledger SHA-256 binding prevents
+fingerprint, byte, evidence, retention, and sensitivity forgery while keeping
+private locators out of Git. Frontend install, lint, type
 checking, unit tests, production build, browser
 checks, strict audit, and the complete repository gate must pass. Issue #524
 retains its RED/GREEN history and is normally merged into the amended Issue
@@ -46,6 +51,12 @@ Full-gate amendment `5601451115` keeps the historical nanoid contract
 discriminating while normalizing the immutable Issue #524 reference and removes
 one accidental key-shaped substring from the opaque ledger ID. It does not
 weaken the secret scanner or widen the dependency delta.
+
+Provenance authority `5601842704` adds the repository skill lock for the exact
+StackClimb 1.0.0 commit and custom `LicenseRef-stackclimb-source-v1`. The
+work-package protocol and read-only machine inventory are governance guidance,
+not runtime code or cleanup authority; redistribution must retain the complete
+notice and visible attribution recorded in `docs/THIRD_PARTY_NOTICES.md`.
 
 The ledger grants no cleanup authority: every resource remains classified with
 a pending retention trigger and active evidence obligation. Task-local caches,

@@ -23,6 +23,35 @@ This file records approved skill and workflow sources for NarraTwin AI. A source
 | Trivy | `https://github.com/aquasecurity/trivy` | Installed locally via Homebrew as `trivy 0.72.0`; Dockerized fallback pinned as `aquasec/trivy@sha256:cffe3f5161a47a6823fbd23d985795b3ed72a4c806da4c4df16266c02accdd6f`; CI runner availability must be verified | Apache License 2.0 per upstream project; verify package metadata before release | Stage 8 primary Docker image vulnerability scanner | Stage 8 | Local/CI security tooling only; scans backend/frontend images for critical/high vulnerabilities and writes SARIF reports |
 | Docker Scout CLI | Docker Desktop bundled CLI `docker scout` | Local CLI verified as `v1.22.0`; CI runner availability must be verified | Docker terms apply | Stage 8 Docker image scan fallback when Trivy/Grype are unavailable | Stage 8 | Local/CI security tooling only; scans backend/frontend images for critical/high vulnerabilities |
 | Grype | `https://github.com/anchore/grype` | Installed locally via Homebrew as `grype 0.115.0`; CI runner availability must be verified | Apache License 2.0 per upstream project; verify package metadata before release | Stage 8 Docker image vulnerability scanning without Docker Scout login | Stage 8 | Local/CI security tooling only; scans backend/frontend images for critical/high vulnerabilities |
+| StackClimb work-package protocol | `https://github.com/imrohitagrawal/stackclimb-skills.git` | VERSION 1.0.0; commit `4c49e59e5e6bb41ccca229db106de2eda3164df6`; tree `267ce5b1d05734f972bbe997d070e35546077870`; `SKILL.md` SHA-256 `ac9d5f348b2ae6d69d691f0fd990537b2dace23d799a2b3a0c9819f35837314a`; unsigned commit with no release tag | Custom `LicenseRef-stackclimb-source-v1` (MIT + Attribution); LICENSE SHA-256 `f74c8f2fdc0e2edd955b999216d660d06c69986b98427d1147f404f27057c8f5`; full notice in `docs/THIRD_PARTY_NOTICES.md` | Closed work-package/resource-ledger and governed closeout guidance; existing security/TDD/git/shipping skills did not supply the exact `TaskResourceLedgerV1` and current-session cleanup-authority boundary | Stage 8 Issue #524 governance only | Owner-approved by Issue #524 comment `5601842704`; supervised guidance only, not runtime or evidence by itself; expires 2026-10-09 |
+| StackClimb machine-space reclamation | Same exact source, VERSION, commit, tree, and local symlinked checkout as the work-package protocol | `SKILL.md` SHA-256 `3c6c9f8b2aa5b13f67cf745fd5cc47e0a02b519036ac68b7bac72be2d4ff6e2c`; unsigned commit with no release tag | Same custom `LicenseRef-stackclimb-source-v1` and complete carried notice | Read-only Issue #524 resource assessment; destructive execution remains outside this activation and requires a separately frozen exact proposal plus fresh current-session authority | Stage 8 Issue #524 governance only | Invoked for read-only inventory under comment `5601842704`; no deletion activated; expires 2026-10-09 |
+
+## StackClimb Issue #524 trust record
+
+- The source is a clean detached checkout reached through local skill symlinks.
+  The pin is exact but the symlink target is locally mutable; a source, target,
+  VERSION, commit, tree, LICENSE, skill, reference, schema, or metadata change
+  blocks reuse and requires review. Upstream verification passed 28 checks,
+  which proves its own structural suite only—not semantic fitness for NarraTwin.
+- Static review found Markdown/JSON/YAML and one standard-library `verify.py`.
+  The verifier reads repository files, prints, and exits; it contains no write,
+  delete, subprocess, socket, HTTP, environment-value, credential, telemetry,
+  analytics, background-worker, or hook-install behavior. No package install or
+  product runtime dependency is introduced.
+- Both skills permit implicit invocation in their OpenAI metadata, but their
+  policy requires supervision and grants no autonomy. Their frontmatter has no
+  host-enforced `allowed-tools`, so NarraTwin issue, authority, spend, provider,
+  merge, and cleanup gates remain controlling.
+- Host CLIs can have separate authentication, telemetry, and side effects.
+  No bundled credential acquisition or storage exists; the source forbids
+  reading secret values, secret stores, raw process arguments, or secret URLs.
+  The installed machine-space skill supplies no deletion adapter and was used
+  only for non-mutating inventory in #524.
+- Re-review no later than 2026-10-09, and earlier before automation,
+  public/commercial redistribution, widened network/merge/deploy/cleanup use,
+  or any unexpected telemetry, hook, credential, or side-effect behavior.
+  Residual risks are policy-not-enforcement, an unsigned untagged pin, mutable
+  local symlinks, and separately governed host tools.
 
 ## Lock Rules
 

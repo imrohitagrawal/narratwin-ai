@@ -198,15 +198,25 @@ ISSUE524_LEDGER_ROUTE_COMMENT = "5601014173"
 ISSUE524_LEDGER_ROUTE_SHA256 = "fc5f2bc1f3f0d608e2305205016241540e0a91cc412d0bf79acfc6cf8dda1873"
 ISSUE524_FULL_GATE_CORRECTION_COMMENT = "5601451115"
 ISSUE524_FULL_GATE_CORRECTION_SHA256 = "f1ba7fd54276f79c3ac2045fb75c4593415b61d9a945e450e9d441cb0caaae97"
+ISSUE524_LIVE_CENSUS_COMMENT = "5601780266"
+ISSUE524_LIVE_CENSUS_SHA256 = "10b1e9e88dc5b5bfe0a5cc0437a359d55eab4adbd9bfcc782bc640186bb912b4"
+ISSUE524_PROVENANCE_COMMENT = "5601842704"
+ISSUE524_PROVENANCE_SHA256 = "57bd3ae5f9dacb429ecdbef0f23aa013fc6623b8c508f627c641eed471b56537"
 ISSUE524_LEDGER_SCHEMA_SHA256 = "0adc52cb8eb2ceaa2b7142754dde9dd249321226802ceb79385b78d9b57d3a6b"
 ISSUE524_LEDGER_SCHEMA_BYTES = 10_863
-ISSUE524_LEDGER_PUBLIC_INDEX_SHA256 = "2f0e357bd1c1a26c6d110b91333494beabe578a945748f1fe6dec8a2d316c929"
+ISSUE524_LEDGER_CANONICAL_SHA256 = "5fb601ff0fcd869a0d47db366ff41de9cb2efcafac9b1489dcd03133495645da"
 ISSUE524_LEDGER_RESOURCES = frozenset(
-    "issue524-audit-cache issue524-branch issue524-mypy-cache issue524-next-env "
-    "issue524-next-output issue524-node-modules issue524-npm-cache issue524-pytest-cache "
-    "issue524-ruff-cache issue524-scripts-ci-pycache issue524-scripts-pycache "
-    "issue524-scripts-quality-pycache issue524-tests-unit-pycache issue524-tsbuildinfo "
-    "issue524-venv issue524-worktree".split()
+    "issue524-audit-cache issue524-backend-app-pycache issue524-backend-eval-pycache "
+    "issue524-backend-observability-pycache issue524-backend-pycache issue524-backend-rag-pycache "
+    "issue524-backend-storage-pycache issue524-branch issue524-frontend-test-results "
+    "issue524-mypy-cache issue524-next-env issue524-next-output issue524-node-modules "
+    "issue524-npm-cache issue524-perf-pycache issue524-performance-reports issue524-pytest-cache "
+    "issue524-ruff-cache issue524-scripts-agent-context-pycache issue524-scripts-ci-pycache "
+    "issue524-scripts-eval-pycache issue524-scripts-phase1-pycache issue524-scripts-pycache "
+    "issue524-scripts-publication-pycache issue524-scripts-quality-pycache "
+    "issue524-security-python-pycache issue524-tests-api-pycache issue524-tests-phase1-pycache "
+    "issue524-tests-publication-pycache issue524-tests-unit-pycache issue524-tsbuildinfo "
+    "issue524-uv-cache issue524-venv issue524-worktree".split()
 )
 ISSUE502_BASE = "e1fe126372d5c5a06dc7d2f9c76cb205da8643e7"
 ISSUE502_TREE = "76495e566a78a7951c33314ac742606c85ee92e5"
@@ -420,6 +430,7 @@ ROUTES = {
         "tests/unit/test_frontend_dependency_security_contract.py",
         "docs/ADR/0082-frontend-dependency-security-refresh.md",
         "docs/STATUS.md",
+        "docs/SKILL_LOCK.md",
         "docs/THIRD_PARTY_NOTICES.md",
         "docs/TRACEABILITY.md",
     },
@@ -1050,7 +1061,7 @@ TOTAL_LIMITS[ISSUE482_BRANCH] = 3200
 ROUTE_ISSUES[ISSUE495_BRANCH] = 495
 TOTAL_LIMITS[ISSUE495_BRANCH] = 1300
 ROUTE_ISSUES[ISSUE524_BRANCH] = 524
-TOTAL_LIMITS[ISSUE524_BRANCH] = 3700
+TOTAL_LIMITS[ISSUE524_BRANCH] = 3820
 ROUTE_ISSUES[ISSUE499_BRANCH] = 499
 TOTAL_LIMITS[ISSUE499_BRANCH] = 1000
 ROUTE_ISSUES[ISSUE502_BRANCH] = 502
@@ -1244,6 +1255,7 @@ TEXT_LIMITS = {
         "tests/unit/test_frontend_dependency_security_contract.py": 200,
         "docs/ADR/0082-frontend-dependency-security-refresh.md": 120,
         "docs/STATUS.md": 80,
+        "docs/SKILL_LOCK.md": 120,
         "docs/THIRD_PARTY_NOTICES.md": 100,
         "docs/TRACEABILITY.md": 80,
     },
@@ -1919,18 +1931,8 @@ def validate_issue524_resource_ledger(
         for value in public_refs
     ):
         failures.append("Issue #524 ledger public references are not unique sanitized identities.")
-    public_index = [
-        {
-            "kind": row.get("kind"),
-            "public_ref": row.get("public_ref"),
-            "resource_id": row.get("resource_id"),
-        }
-        for row in sorted(resources, key=lambda item: str(item.get("resource_id")))
-    ]
-    if hashlib.sha256(
-        json.dumps(public_index, sort_keys=True, separators=(",", ":")).encode("utf-8")
-    ).hexdigest() != ISSUE524_LEDGER_PUBLIC_INDEX_SHA256:
-        failures.append("Issue #524 ledger public resource index drifted.")
+    if hashlib.sha256(serialized.encode("utf-8")).hexdigest() != ISSUE524_LEDGER_CANONICAL_SHA256:
+        failures.append("Issue #524 canonical ledger semantics drifted.")
 
     known_contexts = set(context_ids)
     known_resources = set(resource_ids)
@@ -3017,6 +3019,10 @@ def check_exact_route(
                 ISSUE524_LEDGER_ROUTE_SHA256,
                 ISSUE524_FULL_GATE_CORRECTION_COMMENT,
                 ISSUE524_FULL_GATE_CORRECTION_SHA256,
+                ISSUE524_LIVE_CENSUS_COMMENT,
+                ISSUE524_LIVE_CENSUS_SHA256,
+                ISSUE524_PROVENANCE_COMMENT,
+                ISSUE524_PROVENANCE_SHA256,
             )
             if not isinstance(objective, str) or any(
                 item not in objective for item in issue524_authority_expected

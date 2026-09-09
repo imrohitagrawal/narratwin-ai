@@ -2184,7 +2184,11 @@ human acceptance, deployment, release, production-readiness, or Cut 1 evidence.
   amended Issue `#523` route for one full-gate PR.
 - Cleanup amendment `5601014173` replaces the earlier preliminary inventory
   claim with the exact StackClimb `TaskResourceLedgerV1` schema and a sanitized
-  frozen ledger for sixteen Issue `#524` resources. It records retention and
+  frozen ledger. Live-census amendment `5601780266` expands the closed inventory
+  to all thirty-four observed Issue `#524` resources and sixty-eight lifecycle
+  events; the whole parsed ledger is canonical-hash bound so fingerprints,
+  measurements, evidence, retention, and sensitivity cannot drift silently.
+  It records retention and
   revalidation duties but authorizes no deletion; unrelated dirty state, shared
   caches, historical resources, Docker objects, and private evidence stay out
   of scope.
@@ -2192,6 +2196,10 @@ human acceptance, deployment, release, production-readiness, or Cut 1 evidence.
   fixture against the immutable Issue `#524` dependency reference and renames
   one opaque ledger ID that matched the secret scanner's key-shaped pattern;
   neither the nanoid invariant nor the scanner is weakened.
+- Provenance amendment `5601842704` binds the exact StackClimb source, pin,
+  custom license, attribution, trust behavior, and 2026-10-09 review expiry in
+  the skill lock and third-party notice. Its guidance and read-only inventory
+  grant no provider, spend, merge, or cleanup authority.
 - No advisory is ignored or suppressed. The refresh changes dependency
   metadata only and adds no product/provider/media behavior, credential use,
   egress, spend, deployment, release, production-readiness, or Cut 1 claim.
