@@ -346,7 +346,7 @@ def test_frontend_reproduction_requires_stable_build_id_and_fresh_secrets() -> N
     primary = {
         "buildId": "source-bound",
         "architecture": "amd64",
-        "inventory": "1596:f868cddbe615d21fb965633253098ada945041edfb5ab7325956a669554ceecd",
+        "inventory": "1650:aabc0bb1ec3414df8feeae046efd7801189dd4f1ea5933aa8fec45dd1473b8cd",
         "previewModeId": "1" * 32,
         "previewModeSigningKey": "2" * 64,
         "previewModeEncryptionKey": "3" * 64,
@@ -362,7 +362,7 @@ def test_frontend_reproduction_requires_stable_build_id_and_fresh_secrets() -> N
         "serverActionKey": "B" * 43 + "=",
     }
     assert validator(primary, reproduction) == []
-    reproduction["inventory"] = "1595:" + "0" * 64
+    reproduction["inventory"] = "1651:" + "0" * 64
     assert validator(primary, reproduction) == ["FRONTEND_RUNTIME_INVENTORY_CHANGED"]
     reproduction["inventory"] = primary["inventory"]
     for bad_inventory in (None, "", "unreviewed"):

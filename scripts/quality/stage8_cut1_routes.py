@@ -214,6 +214,10 @@ ISSUE523_REVIEWED_INPUT_CORRECTION = (
     "5604916338",
     "785914c7f8d7b362a6ed913077d18f72cf46a2e0b7d4d8e5fd9421468bfe855a",
 )
+ISSUE523_RUNTIME_INVENTORY_AMENDMENT = (
+    "5605296135",
+    "34174569a15270ef74cbbe6ca287206d32dc607c936e40a7b2b205c36e018b2f",
+)
 ISSUE523_ATOMIC_CHILDREN = (
     (
         "b1d3198d1c334b22b367d9341c9186bdbc2e01a7",
@@ -3244,6 +3248,7 @@ def check_exact_route(
                 *ISSUE523_HOSTED_COMPATIBILITY_AMENDMENT,
                 *ISSUE523_HOSTED_SCAN_AMENDMENT,
                 *ISSUE523_REVIEWED_INPUT_CORRECTION,
+                *ISSUE523_RUNTIME_INVENTORY_AMENDMENT,
                 *(value for pair in ISSUE523_ATOMIC_CHILDREN for value in pair),
                 *(value for pair in ISSUE523_ATOMIC_REVIEWS for value in pair),
                 *(value for row in ISSUE523_ATOMIC_MERGES for value in row),

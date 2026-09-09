@@ -1935,3 +1935,10 @@ honor an exact successful hosted-action marker before testing for a locally
 installed Gitleaks CLI. Local runs retain the real-secret canary and complete
 history scan; malformed or missing hosted markers cannot skip secret scanning.
 Correction `5604916338` keeps the wrapper's reviewed-input digest exact.
+
+Runtime-inventory amendment `5605296135` replaces both stale `1580..1620`
+record-count ranges with the same-width `1630..1670` ranges after the reviewed
+frontend graph produced 1,650 AMD64 records. Exact inventory syntax,
+architecture binding, and equality of the primary and independently rebuilt
+inventory digests remain mandatory. A count outside the frozen range or any
+primary/reproduction mismatch fails closed; both hosted architectures must pass.

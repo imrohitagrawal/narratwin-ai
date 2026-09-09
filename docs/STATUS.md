@@ -2203,6 +2203,11 @@ human acceptance, deployment, release, production-readiness, or Cut 1 evidence.
   `5604916338` expand the route to thirty-two paths without raising the cap:
   hosted CI honors the completed dedicated Gitleaks action, local runs retain
   the canary/full-history scan, and the changed wrapper remains hash-bound.
+  Final runtime-inventory amendment `5605296135` keeps the same thirty-two paths
+  and cap while replacing both stale `1580..1620` count ranges with same-width
+  `1630..1670` ranges for the reviewed 1,650-record frontend graph. Exact
+  primary/reproduction digest equality and both hosted architectures still gate
+  acceptance.
   Normal non-fast-forward merges `30bdcecf` then `8ac8a6ea` preserve the #524
   and #525 RED/GREEN ancestry in that order. The composed Python lock proof
   removes the exact HTTPX and JSONSchema deltas before comparing with base, so
