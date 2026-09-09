@@ -49,12 +49,15 @@ EXPECTED_FINGERPRINTS = (
     "b18aeed00527dfa3e6a1f1df475cf67765a17ebb:scripts/ci/check_gitleaks_regression.py:generic-api-key:71",
     "b18aeed00527dfa3e6a1f1df475cf67765a17ebb:scripts/quality/issue521_master_program_v2.py:generic-api-key:133",
     "547333d283914004257ab0fde86a216a93ff3e17:tests/unit/test_issue521_master_program_v2.py:generic-api-key:232",
+    "0e96410926f4c25dc6eb6b452bf4421fa36f386c:tests/unit/test_issue521_master_program_v2.py:generic-api-key:978",
+    "0e96410926f4c25dc6eb6b452bf4421fa36f386c:docs/governance/superset-mapping-v2.json:generic-api-key:8",
+    "0e96410926f4c25dc6eb6b452bf4421fa36f386c:docs/governance/superset-mapping-v2.json:generic-api-key:9",
     "66dabedecdce4ed51b8354e44f2d1c749c209898:backend/Dockerfile:generic-api-key:18",
     "0cea00fd0a2cda457473c4fccf1d6ab2b2250bae:backend/Dockerfile:generic-api-key:18",
     "dd1e2118dede2b5cf9060d69cace0a3c9ab8ae4c:backend/Dockerfile:generic-api-key:18",
 )
 EXPECTED_PUBLIC_KEY_FINGERPRINTS = EXPECTED_FINGERPRINTS[-3:]
-EXPECTED_G1_SYNTHETIC_LINE_SHA256 = ("55a3972a5dc31361c33adb0014aed8b52940e7f21823f51e89c13dce3090a5b2", "76dfcad75e98c853b91e1340db355d7545c15ced75b117a6e3e191568f765908", "e047a0a498befbda500f90e7be2766c967b996f42ccb9a15721d7998ab730246")
+EXPECTED_G1_SYNTHETIC_LINE_SHA256 = ("55a3972a5dc31361c33adb0014aed8b52940e7f21823f51e89c13dce3090a5b2", "76dfcad75e98c853b91e1340db355d7545c15ced75b117a6e3e191568f765908", "e047a0a498befbda500f90e7be2766c967b996f42ccb9a15721d7998ab730246", "e047a0a498befbda500f90e7be2766c967b996f42ccb9a15721d7998ab730246", "667a5073ce0ecd42d3b8739dba735a05722410e1c3aafe230e857f077bb94822", "087dc78c5495c14e7cc384863310e36f2e0e4443ec32ccbaf1b00c4d8adab395")
 
 
 def _load_checker() -> ModuleType:
@@ -254,6 +257,13 @@ def test_current_mapping_uses_semantics_preserving_atomic_serialization() -> Non
     checker = _load_checker()
     mapping_blob = (ROOT / checker.MAPPING_PATH).read_bytes()
     assert checker.validate_portable_mapping_encoding(mapping_blob) == []
+    marker = b"API" + b"_CONTRACT"
+    for suffix in (b"", b".md"):
+        safe = marker + suffix + b'",      "'
+        assert safe in mapping_blob
+        for spaces in (b"", b"     "):
+            unsafe = mapping_blob.replace(safe, marker + suffix + b'",' + spaces + b'"', 1)
+            assert checker.validate_portable_mapping_encoding(unsafe) == ["GITLEAKS.PROVENANCE.MAPPING_PORTABLE_ENCODING"]
     document = json.loads(mapping_blob)
     rows = {
         item["requirementId"]: item

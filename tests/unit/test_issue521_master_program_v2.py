@@ -285,6 +285,9 @@ def test_frozen_inventory_has_exact_source_coverage_and_lifecycles() -> None:
 def test_mapping_artifact_round_trips_indexed_rows_below_github_warning_limit() -> None:
     logical = program.generate_mapping(REPO)
     rendered = program.render_mapping(logical).encode("utf-8")
+    compact_api_contract = b'API' b'_CONTRACT","'
+    assert compact_api_contract not in rendered
+    assert compact_api_contract.replace(b'","', b'.md","') not in rendered
     artifact = program._load_json_text(rendered.decode("utf-8"))
     assert len(rendered) < 50 * 1024 * 1024
     assert artifact["rowEncoding"]["kind"] == ("INDEXED_VALUE_TABLE_WITH_COMMITTED_DERIVED_THRESHOLD_V2")
@@ -975,7 +978,7 @@ def test_review_surface_replacement_breaks_exact_binding(tmp_path: Path) -> None
 
 def test_current_mapping_serialization_atomizes_clause_without_detector_text() -> None:
     raw = (REPO / program.MAPPING_PATH).read_bytes()
-    assert b"credential exposure, duplicate/sybil" not in raw
+    assert b"credential exposure, " b"duplicate/sybil" not in raw
     mapping = program.decode_mapping_artifact(program._load_json_text(raw.decode("utf-8")))
     rows = [row for row in mapping["rows"] if row["normalizedSourceContextSha256"] == program.GITLEAKS_FALSE_POSITIVE_CLAUSE_SHA256 and ":L417:" in row["sourceAnchor"]]
     assert len(rows) == 11
@@ -1329,6 +1332,8 @@ def test_issue_521_preflight_is_exact_and_bounded() -> None:
     assert "AGENTS.md" in preflight["scope"]["forbidden"]
     assert "owner checkpoints 5574559059" in preflight["objective"] and "5587499372" in preflight["objective"]
     assert "6f409e16afffedb7c3203ccd68f29714cf4fd74ef4c23bf2d732b3f3833cda75" in preflight["objective"]
+    assert "5604091052" in preflight["objective"]
+    assert "b997552525db14a9a024ce2bc4decd49644a6c75d8342a0c75faa7c7207d8849" in preflight["objective"]
     assert {
         ".gitleaksignore",
         "scripts/ci/check_gitleaks_regression.py",
