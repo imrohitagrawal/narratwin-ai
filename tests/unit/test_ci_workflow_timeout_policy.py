@@ -29,7 +29,7 @@ def _job_blocks(workflow: str) -> dict[str, str]:
         line = lines[index]
         if line.strip() and not line.startswith((" ", "#")):
             break
-        match = re.fullmatch(r"  ([a-z0-9][a-z0-9_-]*):\s*\n?", line)
+        match = re.match(r"  ([a-z0-9][a-z0-9_-]*):\s*\n?\Z", line)
         if match:
             headers.append((index, match.group(1)))
 
@@ -48,7 +48,7 @@ def _assert_timeout_policy(workflow: str) -> None:
         assert job in blocks, f"ci.yml must retain the {job} job"
         values = re.findall(r"(?m)^    timeout-minutes:\s*(.*?)\s*$", blocks[job])
         assert len(values) == 1, f"{job} must declare exactly one job-level timeout"
-        assert re.fullmatch(r"[0-9]+", values[0]), f"{job} timeout must be numeric"
+        assert re.match(r"[0-9]+\Z", values[0]), f"{job} timeout must be numeric"
         assert int(values[0]) == expected, f"{job} timeout must remain {expected} minutes"
 
 
