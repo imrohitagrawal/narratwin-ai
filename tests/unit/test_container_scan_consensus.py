@@ -455,7 +455,7 @@ def test_frontend_reproduction_cli_emits_only_sanitized_delta() -> None:
 def test_runtime_inventory_script_wires_four_line_sanitized_diagnostic() -> None:
     source = (ROOT / "scripts/ci/docker-image-scan.sh").read_text(encoding="utf-8")
     for marker in ("FrontendRuntimeInventoryDiagnosticV1", "primary_inventory_diagnostic",
-                   "reproduction_inventory_diagnostic", "'%s\\n%s\\n%s\\n%s\\n'"):
+                   "reproduction_inventory_diagnostic", "'%s\\n%s\\n%s\\n%s\\n'", "NODE_DISABLE_COMPILE_CACHE=1"):
         assert marker in source
 
 
