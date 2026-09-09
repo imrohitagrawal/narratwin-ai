@@ -4891,6 +4891,10 @@ def test_issue525_route_freezes_the_exact_schema_oracle_policy() -> None:
     assert routes.ISSUE525_VERSION_CORRECTION_SHA256 == (
         "4a4137ed5ad6100920ed475f6135042b87cead68deaf3cd09cd396bd855546bf"
     )
+    assert routes.ISSUE525_IO_CORRECTION_COMMENT == "5601074797"
+    assert routes.ISSUE525_IO_CORRECTION_SHA256 == (
+        "1e7e5f22fa281eb9da188fae12d03237fd711a90488a2c4ba21af5a176e6287d"
+    )
     assert routes.ROUTES[branch] == ISSUE525_EXPECTED
     assert routes.ROUTE_ISSUES[branch] == 525
     assert routes.TOTAL_LIMITS[branch] == 2100
@@ -4916,6 +4920,8 @@ def test_issue525_route_freezes_the_exact_schema_oracle_policy() -> None:
     )
     assert set(preflight["scope"]["required"]) == ISSUE525_EXPECTED
     assert preflight["scope"]["required"] == preflight["scope"]["allowed_prefixes"]
+    assert routes.ISSUE525_IO_CORRECTION_COMMENT in preflight["objective"]
+    assert routes.ISSUE525_IO_CORRECTION_SHA256 in preflight["objective"]
     assert branch in stage8.EFFECTIVE_STAGE8_ROUTES
 
 
