@@ -404,6 +404,8 @@ ISSUE495_EXPECTED = {
 }
 ISSUE524_EXPECTED = {
     "docs/governance/preflights/issue-524-frontend-dependency-security-refresh.json",
+    "docs/governance/resource-ledgers/issue-524-task-resource-ledger-v1.json",
+    "docs/governance/schemas/task-resource-ledger-v1.schema.json",
     "frontend/package.json",
     "frontend/package-lock.json",
     "scripts/quality/stage8_cut1_routes.py",
@@ -413,6 +415,24 @@ ISSUE524_EXPECTED = {
     "docs/STATUS.md",
     "docs/THIRD_PARTY_NOTICES.md",
     "docs/TRACEABILITY.md",
+}
+ISSUE524_LEDGER_RESOURCE_IDS = {
+    "issue524-audit-cache",
+    "issue524-branch",
+    "issue524-mypy-cache",
+    "issue524-next-env",
+    "issue524-next-output",
+    "issue524-node-modules",
+    "issue524-npm-cache",
+    "issue524-pytest-cache",
+    "issue524-ruff-cache",
+    "issue524-scripts-ci-pycache",
+    "issue524-scripts-pycache",
+    "issue524-scripts-quality-pycache",
+    "issue524-tests-unit-pycache",
+    "issue524-tsbuildinfo",
+    "issue524-venv",
+    "issue524-worktree",
 }
 ISSUE499_EXPECTED = {
     "docs/governance/preflights/issue-499-pypdf-6-16-2-security-refresh.json",
@@ -4885,20 +4905,26 @@ def test_issue524_route_freezes_the_exact_frontend_security_refresh() -> None:
     assert routes.ISSUE524_AMENDMENT_SHA256 == (
         "95ddf400f917530c9c80532582244f645b93389ce33e81d0165dbdcd182f781a"
     )
+    assert routes.ISSUE524_LEDGER_ROUTE_COMMENT == "5601014173"
+    assert routes.ISSUE524_LEDGER_ROUTE_SHA256 == (
+        "fc5f2bc1f3f0d608e2305205016241540e0a91cc412d0bf79acfc6cf8dda1873"
+    )
     assert routes.ROUTES[branch] == ISSUE524_EXPECTED
     assert routes.ROUTE_ISSUES[branch] == 524
-    assert routes.TOTAL_LIMITS[branch] == 1800
+    assert routes.TOTAL_LIMITS[branch] == 3500
     assert routes.TEXT_LIMITS[branch] == {
-        "docs/governance/preflights/issue-524-frontend-dependency-security-refresh.json": 240,
+        "docs/governance/preflights/issue-524-frontend-dependency-security-refresh.json": 300,
+        "docs/governance/resource-ledgers/issue-524-task-resource-ledger-v1.json": 1100,
+        "docs/governance/schemas/task-resource-ledger-v1.schema.json": 320,
         "frontend/package.json": 80,
         "frontend/package-lock.json": 700,
-        "scripts/quality/stage8_cut1_routes.py": 160,
-        "tests/unit/test_stage8_cut1_routes.py": 200,
-        "tests/unit/test_dependency_security_contract.py": 300,
-        "docs/ADR/0082-frontend-dependency-security-refresh.md": 100,
-        "docs/STATUS.md": 60,
-        "docs/THIRD_PARTY_NOTICES.md": 60,
-        "docs/TRACEABILITY.md": 40,
+        "scripts/quality/stage8_cut1_routes.py": 300,
+        "tests/unit/test_stage8_cut1_routes.py": 400,
+        "tests/unit/test_dependency_security_contract.py": 700,
+        "docs/ADR/0082-frontend-dependency-security-refresh.md": 120,
+        "docs/STATUS.md": 80,
+        "docs/THIRD_PARTY_NOTICES.md": 100,
+        "docs/TRACEABILITY.md": 80,
     }
     preflight = json.loads(
         (REPO / "docs/governance/preflights/issue-524-frontend-dependency-security-refresh.json")
@@ -4908,7 +4934,125 @@ def test_issue524_route_freezes_the_exact_frontend_security_refresh() -> None:
     assert preflight["scope"]["required"] == preflight["scope"]["allowed_prefixes"]
     assert routes.ISSUE524_AMENDMENT_COMMENT in preflight["objective"]
     assert routes.ISSUE524_AMENDMENT_SHA256 in preflight["objective"]
+    assert routes.ISSUE524_LEDGER_ROUTE_COMMENT in preflight["objective"]
+    assert routes.ISSUE524_LEDGER_ROUTE_SHA256 in preflight["objective"]
     assert branch in stage8.EFFECTIVE_STAGE8_ROUTES
+
+
+def _issue524_ledger_documents() -> tuple[bytes, dict[str, Any], dict[str, Any]]:
+    schema_path = REPO / "docs/governance/schemas/task-resource-ledger-v1.schema.json"
+    ledger_path = REPO / "docs/governance/resource-ledgers/issue-524-task-resource-ledger-v1.json"
+    return (
+        schema_path.read_bytes(),
+        routes.load_json_without_duplicate_members(schema_path),
+        routes.load_json_without_duplicate_members(ledger_path),
+    )
+
+
+def test_issue524_task_resource_ledger_is_exact_closed_and_non_destructive() -> None:
+    schema_bytes, schema, ledger = _issue524_ledger_documents()
+    assert len(schema_bytes) == 10_863
+    assert hashlib.sha256(schema_bytes).hexdigest() == (
+        "0adc52cb8eb2ceaa2b7142754dde9dd249321226802ceb79385b78d9b57d3a6b"
+    )
+    assert routes.validate_issue524_resource_ledger(schema_bytes, schema, ledger) == []
+    assert ledger["schema_version"] == "TaskResourceLedgerV1"
+    assert ledger["mode"] == "package"
+    assert ledger["ledger_state"] == "frozen"
+    assert ledger["review_state"] == "reviewed"
+    assert {row["resource_id"] for row in ledger["resources"]} == ISSUE524_LEDGER_RESOURCE_IDS
+    assert len(ledger["events"]) == 2 * len(ISSUE524_LEDGER_RESOURCE_IDS)
+    assert all(row["authorization_ref"] is None for row in ledger["resources"])
+    assert {row["lifecycle_state"] for row in ledger["resources"]} == {"classified"}
+
+
+@pytest.mark.parametrize(
+    ("collection", "nested", "required"),
+    [
+        (None, None, "owner"),
+        ("contexts", None, "kind"),
+        ("inventory_probes", None, "status"),
+        ("resources", None, "activity"),
+        ("resources", "cleanup_contract", "trigger"),
+        ("resources", "kind_evidence", "evidence_refs"),
+        ("resources", "verification", "result"),
+        ("events", None, "state"),
+    ],
+)
+def test_issue524_ledger_rejects_missing_field_at_every_required_object_layer(
+    collection: str | None,
+    nested: str | None,
+    required: str,
+) -> None:
+    schema_bytes, schema, ledger = _issue524_ledger_documents()
+    drifted = copy.deepcopy(ledger)
+    target = drifted if collection is None else drifted[collection][0]
+    if nested is not None:
+        target = target[nested]
+    del target[required]
+    assert routes.validate_issue524_resource_ledger(schema_bytes, schema, drifted)
+
+
+def test_issue524_ledger_rejects_representative_semantic_mutations() -> None:
+    schema_bytes, schema, ledger = _issue524_ledger_documents()
+    mutations: list[dict[str, Any]] = []
+
+    missing_resource = copy.deepcopy(ledger)
+    missing_resource["resources"].pop()
+    mutations.append(missing_resource)
+
+    duplicate_id = copy.deepcopy(ledger)
+    duplicate_id["resources"][1]["resource_id"] = duplicate_id["resources"][0]["resource_id"]
+    mutations.append(duplicate_id)
+
+    duplicate_ref = copy.deepcopy(ledger)
+    duplicate_ref["resources"][1]["public_ref"] = duplicate_ref["resources"][0]["public_ref"]
+    duplicate_ref["resources"][1]["cleanup_contract"]["locator"] = duplicate_ref["resources"][0]["public_ref"]
+    mutations.append(duplicate_ref)
+
+    absolute_locator = copy.deepcopy(ledger)
+    absolute_locator["resources"][0]["public_ref"] = "/private/tmp/forbidden"
+    absolute_locator["resources"][0]["cleanup_contract"]["locator"] = "/private/tmp/forbidden"
+    mutations.append(absolute_locator)
+
+    wrong_kind = copy.deepcopy(ledger)
+    wrong_kind["resources"][0]["cleanup_contract"]["kind"] = "shared-resource"
+    mutations.append(wrong_kind)
+
+    unauthorized_state = copy.deepcopy(ledger)
+    unauthorized_state["resources"][0]["lifecycle_state"] = "proposed-delete"
+    mutations.append(unauthorized_state)
+
+    invalid_measurement = copy.deepcopy(ledger)
+    invalid_measurement["resources"][0]["measurement_confidence"] = "unknown"
+    invalid_measurement["resources"][0]["logical_bytes"] = 1
+    mutations.append(invalid_measurement)
+
+    dangling_context = copy.deepcopy(ledger)
+    dangling_context["resources"][0]["context_ref"] = "missing-context"
+    mutations.append(dangling_context)
+
+    dangling_dependency = copy.deepcopy(ledger)
+    dangling_dependency["resources"][0]["dependency_resource_ids"] = ["missing-resource"]
+    mutations.append(dangling_dependency)
+
+    dangling_event = copy.deepcopy(ledger)
+    dangling_event["events"][0]["resource_id"] = "missing-resource"
+    mutations.append(dangling_event)
+
+    post_snapshot_event = copy.deepcopy(ledger)
+    post_snapshot_event["events"][0]["at"] = "2099-01-01T00:00:00Z"
+    mutations.append(post_snapshot_event)
+
+    for drifted in mutations:
+        assert routes.validate_issue524_resource_ledger(schema_bytes, schema, drifted)
+
+
+def test_issue524_ledger_loader_rejects_duplicate_json_members(tmp_path: Path) -> None:
+    duplicate = tmp_path / "duplicate.json"
+    duplicate.write_text('{"schema_version":"a","schema_version":"b"}', encoding="utf-8")
+    with pytest.raises(routes.DuplicateJsonMember):
+        routes.load_json_without_duplicate_members(duplicate)
 
 
 def test_issue524_route_rejects_branch_suffix_drift(monkeypatch: Any) -> None:
