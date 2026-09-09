@@ -534,6 +534,50 @@ def test_schema_oracle_rejects_distribution_version_drift(
 
 
 @pytest.mark.parametrize(
+    "stdout",
+    (
+        ' {"errors":[],"jsonschemaVersion":"4.25.1"}\n',
+        '{"errors":[],"jsonschemaVersion":"4.25.1"} \n',
+        '{"errors":[],"jsonschemaVersion":"4.25.1"}\n\n',
+        '{"jsonschemaVersion":"4.25.1","errors":[]}\n',
+    ),
+)
+def test_schema_oracle_rejects_noncanonical_output_framing(
+    monkeypatch: pytest.MonkeyPatch,
+    stdout: str,
+) -> None:
+    monkeypatch.setattr(
+        subprocess,
+        "run",
+        lambda argv, **_: subprocess.CompletedProcess(argv, 0, stdout, "private-stderr"),
+    )
+    error = pytest.raises(AssertionError, _draft202012_errors, CORPUS, environ={})
+    assert str(error.value) == "Draft 2020-12 schema oracle returned an invalid result."
+    assert "private" not in str(error.value)
+
+
+def test_schema_oracle_rejects_oversized_output_before_json_parse(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    oversized = "x" * 65_537
+    monkeypatch.setattr(
+        subprocess,
+        "run",
+        lambda argv, **_: subprocess.CompletedProcess(argv, 0, oversized, ""),
+    )
+    original_loads = json.loads
+
+    def guarded_loads(value: str, *args: object, **kwargs: object) -> object:
+        if value == oversized:
+            pytest.fail("oversized schema-oracle output reached JSON parsing")
+        return original_loads(value, *args, **kwargs)
+
+    monkeypatch.setattr(json, "loads", guarded_loads)
+    error = pytest.raises(AssertionError, _draft202012_errors, CORPUS, environ={})
+    assert str(error.value) == "Draft 2020-12 schema oracle returned an invalid result."
+
+
+@pytest.mark.parametrize(
     "value",
     ("", "0", "-1", "+1", "01", "1.0", "1e1", "nan", "inf", " 5 ", "61", "true"),
 )
