@@ -579,9 +579,9 @@ def test_schema_oracle_rejects_oversized_output_before_json_parse(
 
 @pytest.mark.parametrize(
     "value",
-    ("", "0", "-1", "+1", "01", "1.0", "1e1", "nan", "inf", " 5 ", "61", "true"),
+    (None, "", "0", "-1", "+1", "01", "1.0", "1e1", "nan", "inf", " 5 ", "61", "true"),
 )
-def test_schema_oracle_environment_policy_rejects_noncanonical_values(value: str) -> None:
+def test_schema_oracle_environment_policy_rejects_noncanonical_values(value: object) -> None:
     policy_factory = globals().get("_schema_oracle_policy")
     assert callable(policy_factory)
     with pytest.raises(ValueError, match="schema oracle timeout policy"):
@@ -606,8 +606,10 @@ def test_schema_oracle_typed_policy_accepts_inclusive_boundaries(value: int) -> 
     assert getattr(policy, "timeout_seconds") == value
 
 
+@pytest.mark.parametrize("value", (None, True))
 def test_invalid_schema_oracle_policy_blocks_before_subprocess(
     monkeypatch: pytest.MonkeyPatch,
+    value: object,
 ) -> None:
     calls = 0
 
@@ -620,7 +622,7 @@ def test_invalid_schema_oracle_policy_blocks_before_subprocess(
     with pytest.raises(ValueError, match="schema oracle timeout policy"):
         _draft202012_errors(
             CORPUS,
-            environ={"NARRATWIN_SCHEMA_ORACLE_TIMEOUT_SECONDS": True},
+            environ={"NARRATWIN_SCHEMA_ORACLE_TIMEOUT_SECONDS": value},
         )
     assert calls == 0
 
