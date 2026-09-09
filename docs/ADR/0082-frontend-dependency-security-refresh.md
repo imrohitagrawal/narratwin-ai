@@ -31,18 +31,29 @@ tooling merely because their version ranges admit newer releases.
 ## Consequences
 
 Owner/orchestrator amendment `5600552079` binds the complete fifty-record
-canonical digest, duplicate-member rejection, exact cleanup ledger, and normal
-merge into a separately amended Issue #523 route. Frontend install, lint, type
+canonical digest, duplicate-member rejection, and normal merge into a separately
+amended Issue #523 route. Cleanup amendment `5601014173` reclassifies the earlier
+short inventory as preliminary and adds the byte-identical StackClimb
+`TaskResourceLedgerV1` schema plus a frozen, sanitized sixteen-resource package
+ledger with executable schema and semantic mutation coverage. Frontend install, lint, type
 checking, unit tests, production build, browser
 checks, strict audit, and the complete repository gate must pass. Issue #524
 retains its RED/GREEN history and is normally merged into the amended Issue
 #523 branch for one atomic, independently reviewed security PR. Neither audit
 is waived and neither branch alone is described as full-gate green.
 
-Task-local npm cache, `node_modules`, build output, browser output, branch, and
-worktree are removed only after accepted merged-main verification and exact
-ownership/survivor checks. Shared caches and historical resources are not part
-of that cleanup.
+Full-gate amendment `5601451115` keeps the historical nanoid contract
+discriminating while normalizing the immutable Issue #524 reference and removes
+one accidental key-shaped substring from the opaque ledger ID. It does not
+weaken the secret scanner or widen the dependency delta.
+
+The ledger grants no cleanup authority: every resource remains classified with
+a pending retention trigger and active evidence obligation. Task-local caches,
+dependencies, build output, branch, and worktree can be proposed for removal
+only after accepted merged-main verification and fresh exact ownership,
+activity, sensitivity, reference, and survivor checks. Unrelated dirty state,
+shared caches, historical resources, Docker objects, and private evidence are
+explicitly excluded.
 
 This decision adds no product behavior, provider integration, credential use,
 egress, spend, media, deployment, release, or production authority.

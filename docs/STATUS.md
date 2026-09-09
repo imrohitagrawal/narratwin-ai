@@ -2182,6 +2182,16 @@ human acceptance, deployment, release, production-readiness, or Cut 1 evidence.
   failure, owner/orchestrator amendment `5600552079` directs Issue `#524` to
   preserve its RED/GREEN history and converge by normal merge into a separately
   amended Issue `#523` route for one full-gate PR.
+- Cleanup amendment `5601014173` replaces the earlier preliminary inventory
+  claim with the exact StackClimb `TaskResourceLedgerV1` schema and a sanitized
+  frozen ledger for sixteen Issue `#524` resources. It records retention and
+  revalidation duties but authorizes no deletion; unrelated dirty state, shared
+  caches, historical resources, Docker objects, and private evidence stay out
+  of scope.
+- Full-gate amendment `5601451115` corrects the stale nanoid compatibility
+  fixture against the immutable Issue `#524` dependency reference and renames
+  one opaque ledger ID that matched the secret scanner's key-shaped pattern;
+  neither the nanoid invariant nor the scanner is weakened.
 - No advisory is ignored or suppressed. The refresh changes dependency
   metadata only and adds no product/provider/media behavior, credential use,
   egress, spend, deployment, release, production-readiness, or Cut 1 claim.

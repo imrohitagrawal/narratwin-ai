@@ -411,6 +411,7 @@ ISSUE524_EXPECTED = {
     "scripts/quality/stage8_cut1_routes.py",
     "tests/unit/test_stage8_cut1_routes.py",
     "tests/unit/test_dependency_security_contract.py",
+    "tests/unit/test_frontend_dependency_security_contract.py",
     "docs/ADR/0082-frontend-dependency-security-refresh.md",
     "docs/STATUS.md",
     "docs/THIRD_PARTY_NOTICES.md",
@@ -4909,9 +4910,13 @@ def test_issue524_route_freezes_the_exact_frontend_security_refresh() -> None:
     assert routes.ISSUE524_LEDGER_ROUTE_SHA256 == (
         "fc5f2bc1f3f0d608e2305205016241540e0a91cc412d0bf79acfc6cf8dda1873"
     )
+    assert routes.ISSUE524_FULL_GATE_CORRECTION_COMMENT == "5601451115"
+    assert routes.ISSUE524_FULL_GATE_CORRECTION_SHA256 == (
+        "f1ba7fd54276f79c3ac2045fb75c4593415b61d9a945e450e9d441cb0caaae97"
+    )
     assert routes.ROUTES[branch] == ISSUE524_EXPECTED
     assert routes.ROUTE_ISSUES[branch] == 524
-    assert routes.TOTAL_LIMITS[branch] == 3500
+    assert routes.TOTAL_LIMITS[branch] == 3700
     assert routes.TEXT_LIMITS[branch] == {
         "docs/governance/preflights/issue-524-frontend-dependency-security-refresh.json": 300,
         "docs/governance/resource-ledgers/issue-524-task-resource-ledger-v1.json": 1100,
@@ -4921,6 +4926,7 @@ def test_issue524_route_freezes_the_exact_frontend_security_refresh() -> None:
         "scripts/quality/stage8_cut1_routes.py": 300,
         "tests/unit/test_stage8_cut1_routes.py": 400,
         "tests/unit/test_dependency_security_contract.py": 700,
+        "tests/unit/test_frontend_dependency_security_contract.py": 200,
         "docs/ADR/0082-frontend-dependency-security-refresh.md": 120,
         "docs/STATUS.md": 80,
         "docs/THIRD_PARTY_NOTICES.md": 100,
@@ -4936,6 +4942,8 @@ def test_issue524_route_freezes_the_exact_frontend_security_refresh() -> None:
     assert routes.ISSUE524_AMENDMENT_SHA256 in preflight["objective"]
     assert routes.ISSUE524_LEDGER_ROUTE_COMMENT in preflight["objective"]
     assert routes.ISSUE524_LEDGER_ROUTE_SHA256 in preflight["objective"]
+    assert routes.ISSUE524_FULL_GATE_CORRECTION_COMMENT in preflight["objective"]
+    assert routes.ISSUE524_FULL_GATE_CORRECTION_SHA256 in preflight["objective"]
     assert branch in stage8.EFFECTIVE_STAGE8_ROUTES
 
 

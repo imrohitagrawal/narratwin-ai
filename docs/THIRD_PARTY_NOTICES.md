@@ -420,3 +420,9 @@ unrelated frontend packages retain their prior records. This refresh introduces
 no new provider, model, dataset, media asset, runtime service, credential,
 egress, spend, deployment, release, or production authority. Final dependency
 license review remains required before release.
+
+The cleanup record vendors the 10,863-byte `TaskResourceLedgerV1` JSON Schema
+from `imrohitagrawal/stackclimb-skills` release 1.0.0 at commit `4c49e59`,
+unchanged at SHA-256
+`0adc52cb8eb2ceaa2b7142754dde9dd249321226802ceb79385b78d9b57d3a6b`.
+It is a governance contract, not a runtime dependency or deletion authority.

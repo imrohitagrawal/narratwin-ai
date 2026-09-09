@@ -11,6 +11,7 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
 ISSUE403_BASE = "a02286240212ad8958915aec01aa5ebaf60fa705"
+ISSUE524_REFERENCE = "f078614e19e935c939ea2bacc70592062dc34688"
 NANOID_PATH = "node_modules/nanoid"
 NANOID_INTEGRITY = "sha512-DTg4MJbGMWkfi6VZFdNt2/caMbQy4Ou+Op/hJQvGEWcnVfoA1QA+xzRKAzw9jD6+GVOOeYr/mIcuDSdug6F6+w=="
 ISSUE495_FRONTEND_PACKAGES = {
@@ -23,15 +24,19 @@ ISSUE495_FRONTEND_PACKAGES = {
 }
 
 
-def _base_text(path: str) -> str:
+def _text_at(revision: str, path: str) -> str:
     result = subprocess.run(
-        ["git", "show", f"{ISSUE403_BASE}:{path}"],
+        ["git", "show", f"{revision}:{path}"],
         cwd=ROOT,
         text=True,
         capture_output=True,
         check=True,
     )
     return result.stdout
+
+
+def _base_text(path: str) -> str:
+    return _text_at(ISSUE403_BASE, path)
 
 
 def _normalize_issue495_delta(lock: dict[str, Any], base_lock: dict[str, Any]) -> None:
@@ -46,10 +51,32 @@ def _normalize_issue495_delta(lock: dict[str, Any], base_lock: dict[str, Any]) -
         lock["packages"][path] = base_lock["packages"][path]
 
 
+def _normalize_issue524_delta(lock: dict[str, Any], base_lock: dict[str, Any]) -> None:
+    reference = cast(
+        dict[str, Any],
+        json.loads(_text_at(ISSUE524_REFERENCE, "frontend/package-lock.json")),
+    )
+    normalized_reference = copy.deepcopy(reference)
+    normalized_reference["packages"][NANOID_PATH] = base_lock["packages"][NANOID_PATH]
+    _normalize_issue495_delta(normalized_reference, base_lock)
+    changed = {
+        path
+        for path in set(normalized_reference["packages"]) | set(base_lock["packages"])
+        if normalized_reference["packages"].get(path) != base_lock["packages"].get(path)
+    }
+    assert len(changed) == 50
+    for path in changed:
+        assert lock["packages"].get(path) == normalized_reference["packages"].get(path)
+        if path in base_lock["packages"]:
+            lock["packages"][path] = base_lock["packages"][path]
+        else:
+            del lock["packages"][path]
+
+
 def _assert_nanoid_contract(package_text: str, lock: dict[str, Any]) -> None:
-    base_package = _base_text("frontend/package.json")
+    expected_package = _text_at(ISSUE524_REFERENCE, "frontend/package.json")
     base_lock = cast(dict[str, Any], json.loads(_base_text("frontend/package-lock.json")))
-    assert package_text == base_package
+    assert package_text == expected_package
     package = json.loads(package_text)
     for section in ("dependencies", "devDependencies", "optionalDependencies", "overrides"):
         assert "nanoid" not in package.get(section, {})
@@ -68,6 +95,7 @@ def _assert_nanoid_contract(package_text: str, lock: dict[str, Any]) -> None:
     normalized = copy.deepcopy(lock)
     normalized["packages"][NANOID_PATH] = base_nanoid
     _normalize_issue495_delta(normalized, base_lock)
+    _normalize_issue524_delta(normalized, base_lock)
     assert normalized == base_lock
 
 
@@ -79,13 +107,10 @@ def test_frontend_nanoid_lock_is_exact_isolated_transitive_and_patched() -> None
 
 
 def test_nanoid_contract_rejects_identity_integrity_direct_dependency_and_drift() -> None:
-    package_text = _base_text("frontend/package.json")
-    base_lock = cast(dict[str, Any], json.loads(_base_text("frontend/package-lock.json")))
-    patched = copy.deepcopy(base_lock)
-    patched["packages"][NANOID_PATH].update(
-        version="3.3.18",
-        resolved="https://registry.npmjs.org/nanoid/-/nanoid-3.3.18.tgz",
-        integrity=NANOID_INTEGRITY,
+    package_text = _text_at(ISSUE524_REFERENCE, "frontend/package.json")
+    patched = cast(
+        dict[str, Any],
+        json.loads(_text_at(ISSUE524_REFERENCE, "frontend/package-lock.json")),
     )
     mutations: list[tuple[str, dict[str, Any]]] = []
     for field, value in (("version", "3.3.16"), ("resolved", "https://example.invalid/nanoid.tgz"),

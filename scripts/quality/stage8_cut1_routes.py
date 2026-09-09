@@ -7,9 +7,11 @@ import re
 import stat
 import subprocess
 import unicodedata
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Callable
 
+from scripts.agent_context.core import validate_schema_instance
 from scripts.governance_preflight_v1 import validate_governance_preflight
 from scripts.guardrails_check import cleanup_authority_anchor_failures
 
@@ -192,6 +194,20 @@ ISSUE524_ROUTE_COMMENT = "5599970578"
 ISSUE524_ROUTE_SHA256 = "07f2fff6702a9847059a3e4223df25e8b0752269574cff9710b3738fc8c82da5"
 ISSUE524_AMENDMENT_COMMENT = "5600552079"
 ISSUE524_AMENDMENT_SHA256 = "95ddf400f917530c9c80532582244f645b93389ce33e81d0165dbdcd182f781a"
+ISSUE524_LEDGER_ROUTE_COMMENT = "5601014173"
+ISSUE524_LEDGER_ROUTE_SHA256 = "fc5f2bc1f3f0d608e2305205016241540e0a91cc412d0bf79acfc6cf8dda1873"
+ISSUE524_FULL_GATE_CORRECTION_COMMENT = "5601451115"
+ISSUE524_FULL_GATE_CORRECTION_SHA256 = "f1ba7fd54276f79c3ac2045fb75c4593415b61d9a945e450e9d441cb0caaae97"
+ISSUE524_LEDGER_SCHEMA_SHA256 = "0adc52cb8eb2ceaa2b7142754dde9dd249321226802ceb79385b78d9b57d3a6b"
+ISSUE524_LEDGER_SCHEMA_BYTES = 10_863
+ISSUE524_LEDGER_PUBLIC_INDEX_SHA256 = "2f0e357bd1c1a26c6d110b91333494beabe578a945748f1fe6dec8a2d316c929"
+ISSUE524_LEDGER_RESOURCES = frozenset(
+    "issue524-audit-cache issue524-branch issue524-mypy-cache issue524-next-env "
+    "issue524-next-output issue524-node-modules issue524-npm-cache issue524-pytest-cache "
+    "issue524-ruff-cache issue524-scripts-ci-pycache issue524-scripts-pycache "
+    "issue524-scripts-quality-pycache issue524-tests-unit-pycache issue524-tsbuildinfo "
+    "issue524-venv issue524-worktree".split()
+)
 ISSUE502_BASE = "e1fe126372d5c5a06dc7d2f9c76cb205da8643e7"
 ISSUE502_TREE = "76495e566a78a7951c33314ac742606c85ee92e5"
 ISSUE502_ROUTE_COMMENT = "5507883668"
@@ -394,11 +410,14 @@ ROUTES = {
     },
     ISSUE524_BRANCH: {
         "docs/governance/preflights/issue-524-frontend-dependency-security-refresh.json",
+        "docs/governance/resource-ledgers/issue-524-task-resource-ledger-v1.json",
+        "docs/governance/schemas/task-resource-ledger-v1.schema.json",
         "frontend/package.json",
         "frontend/package-lock.json",
         "scripts/quality/stage8_cut1_routes.py",
         "tests/unit/test_stage8_cut1_routes.py",
         "tests/unit/test_dependency_security_contract.py",
+        "tests/unit/test_frontend_dependency_security_contract.py",
         "docs/ADR/0082-frontend-dependency-security-refresh.md",
         "docs/STATUS.md",
         "docs/THIRD_PARTY_NOTICES.md",
@@ -1031,7 +1050,7 @@ TOTAL_LIMITS[ISSUE482_BRANCH] = 3200
 ROUTE_ISSUES[ISSUE495_BRANCH] = 495
 TOTAL_LIMITS[ISSUE495_BRANCH] = 1300
 ROUTE_ISSUES[ISSUE524_BRANCH] = 524
-TOTAL_LIMITS[ISSUE524_BRANCH] = 1800
+TOTAL_LIMITS[ISSUE524_BRANCH] = 3700
 ROUTE_ISSUES[ISSUE499_BRANCH] = 499
 TOTAL_LIMITS[ISSUE499_BRANCH] = 1000
 ROUTE_ISSUES[ISSUE502_BRANCH] = 502
@@ -1214,16 +1233,19 @@ TEXT_LIMITS = {
         "docs/TRACEABILITY.md": 80,
     },
     ISSUE524_BRANCH: {
-        "docs/governance/preflights/issue-524-frontend-dependency-security-refresh.json": 240,
+        "docs/governance/preflights/issue-524-frontend-dependency-security-refresh.json": 300,
+        "docs/governance/resource-ledgers/issue-524-task-resource-ledger-v1.json": 1100,
+        "docs/governance/schemas/task-resource-ledger-v1.schema.json": 320,
         "frontend/package.json": 80,
         "frontend/package-lock.json": 700,
-        "scripts/quality/stage8_cut1_routes.py": 160,
-        "tests/unit/test_stage8_cut1_routes.py": 200,
-        "tests/unit/test_dependency_security_contract.py": 300,
-        "docs/ADR/0082-frontend-dependency-security-refresh.md": 100,
-        "docs/STATUS.md": 60,
-        "docs/THIRD_PARTY_NOTICES.md": 60,
-        "docs/TRACEABILITY.md": 40,
+        "scripts/quality/stage8_cut1_routes.py": 300,
+        "tests/unit/test_stage8_cut1_routes.py": 400,
+        "tests/unit/test_dependency_security_contract.py": 700,
+        "tests/unit/test_frontend_dependency_security_contract.py": 200,
+        "docs/ADR/0082-frontend-dependency-security-refresh.md": 120,
+        "docs/STATUS.md": 80,
+        "docs/THIRD_PARTY_NOTICES.md": 100,
+        "docs/TRACEABILITY.md": 80,
     },
     ISSUE499_BRANCH: {
         "docs/governance/preflights/issue-499-pypdf-6-16-2-security-refresh.json": 220,
@@ -1815,6 +1837,190 @@ def load_json_without_duplicate_members(path: Path) -> Any:
         path.read_text(encoding="utf-8"), object_pairs_hook=unique,
         parse_constant=lambda value: (_ for _ in ()).throw(ValueError(value)),
     )
+
+
+def validate_issue524_resource_ledger(
+    schema_bytes: bytes,
+    schema: Any,
+    ledger: Any,
+) -> list[str]:
+    """Validate the closed, sanitized Issue #524 cleanup inventory."""
+    failures: list[str] = []
+    if len(schema_bytes) != ISSUE524_LEDGER_SCHEMA_BYTES or (
+        hashlib.sha256(schema_bytes).hexdigest() != ISSUE524_LEDGER_SCHEMA_SHA256
+    ):
+        failures.append("Issue #524 TaskResourceLedgerV1 schema bytes drifted.")
+    if not isinstance(schema, dict) or not isinstance(ledger, dict):
+        return [*failures, "Issue #524 task resource ledger is not a JSON object."]
+    findings = validate_schema_instance(
+        ledger, {"$defs": {"TaskResourceLedgerV1": schema}}, "TaskResourceLedgerV1"
+    )
+    failures.extend(f"Issue #524 ledger schema failed: {item.code}" for item in findings)
+
+    def parsed_time(value: Any) -> datetime | None:
+        if not isinstance(value, str):
+            return None
+        try:
+            parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        except ValueError:
+            return None
+        return parsed if parsed.tzinfo is not None else None
+
+    created = parsed_time(ledger.get("created_at"))
+    snapshot = parsed_time(ledger.get("snapshot_at"))
+    expires = parsed_time(ledger.get("expires_at"))
+    if created is None or snapshot is None or expires is None or not created <= snapshot < expires:
+        failures.append("Issue #524 ledger time or expiry relationship is invalid.")
+    header = tuple(
+        ledger.get(key)
+        for key in ("schema_version", "mode", "ledger_state", "review_state", "owner", "authority_ref")
+    )
+    expected_header = (
+        "TaskResourceLedgerV1", "package", "frozen", "reviewed",
+        "narratwin-primary-orchestrator",
+        f"github-issue:524#issuecomment-{ISSUE524_LEDGER_ROUTE_COMMENT}",
+    )
+    if header != expected_header:
+        failures.append("Issue #524 ledger freeze header drifted.")
+
+    contexts = [row for row in ledger.get("contexts", []) if isinstance(row, dict)]
+    probes = [row for row in ledger.get("inventory_probes", []) if isinstance(row, dict)]
+    resources = [row for row in ledger.get("resources", []) if isinstance(row, dict)]
+    events = [row for row in ledger.get("events", []) if isinstance(row, dict)]
+    context_ids = [row.get("context_id") for row in contexts]
+    probe_ids = [row.get("probe_id") for row in probes]
+    resource_ids = [row.get("resource_id") for row in resources]
+    event_ids = [row.get("event_id") for row in events]
+    if set(context_ids) != {"issue524-repository-context", "issue524-task-temp-context"}:
+        failures.append("Issue #524 ledger context census drifted.")
+    for label, identifiers, rows in (
+        ("context", context_ids, contexts),
+        ("probe", probe_ids, probes),
+        ("resource", resource_ids, resources),
+        ("event", event_ids, events),
+    ):
+        if len(identifiers) != len(rows) or len(set(identifiers)) != len(identifiers):
+            failures.append(f"Issue #524 ledger {label} IDs are missing or duplicated.")
+    if set(resource_ids) != ISSUE524_LEDGER_RESOURCES or len(resources) != len(
+        ISSUE524_LEDGER_RESOURCES
+    ):
+        failures.append("Issue #524 ledger resource census drifted.")
+    if len(events) != 2 * len(ISSUE524_LEDGER_RESOURCES):
+        failures.append("Issue #524 ledger event census drifted.")
+
+    serialized = json.dumps(ledger, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+    forbidden = ("/Users/", "/private/", "file://", "\\\\", "X-Amz-", "?token=", "?sig=")
+    if any(marker in serialized for marker in forbidden):
+        failures.append("Issue #524 ledger exposes a private or executable locator.")
+    public_refs = [row.get("public_ref") for row in resources]
+    if len(set(public_refs)) != len(public_refs) or any(
+        not isinstance(value, str)
+        or not value.startswith(("repo:narratwin-ai/issue-524/", "local-temp:narratwin/issue-524/"))
+        for value in public_refs
+    ):
+        failures.append("Issue #524 ledger public references are not unique sanitized identities.")
+    public_index = [
+        {
+            "kind": row.get("kind"),
+            "public_ref": row.get("public_ref"),
+            "resource_id": row.get("resource_id"),
+        }
+        for row in sorted(resources, key=lambda item: str(item.get("resource_id")))
+    ]
+    if hashlib.sha256(
+        json.dumps(public_index, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest() != ISSUE524_LEDGER_PUBLIC_INDEX_SHA256:
+        failures.append("Issue #524 ledger public resource index drifted.")
+
+    known_contexts = set(context_ids)
+    known_resources = set(resource_ids)
+    for probe in probes:
+        if probe.get("context_ref") not in known_contexts:
+            failures.append("Issue #524 ledger probe has a dangling context reference.")
+        if not probe.get("evidence_refs"):
+            failures.append("Issue #524 ledger probe lacks evidence.")
+        probe_time = parsed_time(probe.get("snapshot_at"))
+        if probe_time is None or snapshot is None or probe_time > snapshot:
+            failures.append("Issue #524 ledger probe timestamp exceeds its snapshot.")
+
+    expected_dependencies = {
+        "issue524-branch": {"issue524-worktree"},
+        "issue524-worktree": ISSUE524_LEDGER_RESOURCES
+        - {"issue524-branch", "issue524-worktree", "issue524-npm-cache", "issue524-audit-cache"},
+    }
+    for row in resources:
+        resource_id = row.get("resource_id")
+        contract = row.get("cleanup_contract")
+        evidence = row.get("kind_evidence")
+        verification = row.get("verification")
+        dependencies = row.get("dependency_resource_ids")
+        if row.get("context_ref") not in known_contexts:
+            failures.append(f"Issue #524 resource {resource_id!r} has a dangling context.")
+        if not isinstance(contract, dict) or (
+            contract.get("kind") != row.get("kind")
+            or contract.get("locator") != row.get("public_ref")
+            or contract.get("disposition") != "delete"
+        ):
+            failures.append(f"Issue #524 resource {resource_id!r} cleanup contract drifted.")
+        if not isinstance(evidence, dict) or not evidence.get("evidence_refs"):
+            failures.append(f"Issue #524 resource {resource_id!r} lacks kind evidence.")
+        if (
+            row.get("existed_before_task") is not False
+            or row.get("ownership") != "exclusive"
+            or row.get("retention_trigger_state") != "pending"
+            or row.get("evidence_obligation") != "active"
+            or row.get("legal_hold") != "none"
+            or row.get("lifecycle_state") != "classified"
+            or row.get("authorization_ref") is not None
+            or verification != {"result": "not-run", "evidence_refs": []}
+        ):
+            failures.append(f"Issue #524 resource {resource_id!r} became cleanup-eligible.")
+        if not row.get("eligibility_evidence_refs") or not row.get("evidence_refs"):
+            failures.append(f"Issue #524 resource {resource_id!r} lacks inventory evidence.")
+        if not isinstance(dependencies, list) or not set(dependencies) <= known_resources:
+            failures.append(f"Issue #524 resource {resource_id!r} has a dangling dependency.")
+        if set(dependencies or []) != expected_dependencies.get(str(resource_id), set()):
+            failures.append(f"Issue #524 resource {resource_id!r} dependency graph drifted.")
+        confidence = row.get("measurement_confidence")
+        logical = row.get("logical_bytes")
+        exclusive = row.get("exclusive_reclaimable_bytes")
+        if confidence == "unknown" and (logical is not None or exclusive is not None):
+            failures.append(f"Issue #524 resource {resource_id!r} has false unknown-byte evidence.")
+        if confidence == "exact" and (
+            not isinstance(logical, int)
+            or isinstance(logical, bool)
+            or not isinstance(exclusive, int)
+            or isinstance(exclusive, bool)
+            or not 0 <= exclusive <= logical <= 9_007_199_254_740_991
+        ):
+            failures.append(f"Issue #524 resource {resource_id!r} exact bytes are invalid.")
+
+    events_by_resource: dict[Any, list[dict[str, Any]]] = {
+        resource_id: [] for resource_id in resource_ids
+    }
+    for event in events:
+        resource_id = event.get("resource_id")
+        if resource_id not in known_resources:
+            failures.append("Issue #524 ledger event has a dangling resource reference.")
+            continue
+        events_by_resource[resource_id].append(event)
+        event_time = parsed_time(event.get("at"))
+        if (
+            event.get("authorization_ref") is not None
+            or not event.get("evidence_refs")
+            or event_time is None
+            or snapshot is None
+            or event_time > snapshot
+        ):
+            failures.append(f"Issue #524 resource {resource_id!r} event is invalid.")
+    for resource_id, resource_events in events_by_resource.items():
+        if [event.get("state") for event in resource_events] != ["inventoried", "classified"]:
+            failures.append(f"Issue #524 resource {resource_id!r} lifecycle is unordered.")
+        times = [parsed_time(event.get("at")) for event in resource_events]
+        valid_times = [value for value in times if value is not None]
+        if len(valid_times) != len(times) or valid_times != sorted(valid_times):
+            failures.append(f"Issue #524 resource {resource_id!r} event time is unordered.")
+    return sorted(set(failures))
 
 
 def markdown_heading_body(text: str, heading: str, level: int) -> str:
@@ -2807,11 +3013,28 @@ def check_exact_route(
                 ISSUE524_ROUTE_SHA256,
                 ISSUE524_AMENDMENT_COMMENT,
                 ISSUE524_AMENDMENT_SHA256,
+                ISSUE524_LEDGER_ROUTE_COMMENT,
+                ISSUE524_LEDGER_ROUTE_SHA256,
+                ISSUE524_FULL_GATE_CORRECTION_COMMENT,
+                ISSUE524_FULL_GATE_CORRECTION_SHA256,
             )
             if not isinstance(objective, str) or any(
                 item not in objective for item in issue524_authority_expected
             ):
                 failures.append("Issue #524 dependency authority drifted.")
+            schema_path = root / "docs/governance/schemas/task-resource-ledger-v1.schema.json"
+            ledger_path = (
+                root
+                / "docs/governance/resource-ledgers/issue-524-task-resource-ledger-v1.json"
+            )
+            schema_bytes = schema_path.read_bytes()
+            failures.extend(
+                validate_issue524_resource_ledger(
+                    schema_bytes,
+                    load_json_without_duplicate_members(schema_path),
+                    load_json_without_duplicate_members(ledger_path),
+                )
+            )
         except (OSError, ValueError, TypeError) as error:
             failures.append(f"Issue #524 governance preflight failed closed: {error}")
     elif branch == ISSUE499_BRANCH:
