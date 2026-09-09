@@ -3368,8 +3368,10 @@ def check_exact_route(
             )
             failures.extend(f"Issue #527 governance preflight failed: {item.code}" for item in findings)
             objective = preflight.get("objective") if isinstance(preflight, dict) else None
-            authority = (ISSUE527_BASE, ISSUE527_TREE, ISSUE527_ISSUE_BODY_SHA256)
-            if not isinstance(objective, str) or any(value not in objective for value in authority):
+            issue527_authority = (ISSUE527_BASE, ISSUE527_TREE, ISSUE527_ISSUE_BODY_SHA256)
+            if not isinstance(objective, str) or any(
+                value not in objective for value in issue527_authority
+            ):
                 failures.append("Issue #527 CI timeout authority drifted.")
         except (OSError, ValueError, TypeError) as error:
             failures.append(f"Issue #527 governance preflight failed closed: {error}")
