@@ -1929,3 +1929,9 @@ symlinked, or unsupported-architecture input fails before the runtime image is
 committed. AMD64 and ARM64 SBOM consensus requires exact sharp 0.35.4, native
 sharp 0.35.4, and libvips package 1.3.3 identities. A hard-coded prior SONAME,
 stale 0.35.3/1.3.2 inventory, scan waiver, or architecture fallback fails.
+
+Hosted duplicate-scan amendment `5604753747` requires the security wrapper to
+honor an exact successful hosted-action marker before testing for a locally
+installed Gitleaks CLI. Local runs retain the real-secret canary and complete
+history scan; malformed or missing hosted markers cannot skip secret scanning.
+Correction `5604916338` keeps the wrapper's reviewed-input digest exact.

@@ -2199,6 +2199,10 @@ human acceptance, deployment, release, production-readiness, or Cut 1 evidence.
   and 7,660 charged lines after both Docker contexts reproduced the same stale
   libvips SONAME. The bounded correction derives one locked regular SONAME and
   updates both architecture SBOM identities; it adds no dependency or waiver.
+  Hosted duplicate-scan amendment `5604753747` and reviewed-input correction
+  `5604916338` expand the route to thirty-two paths without raising the cap:
+  hosted CI honors the completed dedicated Gitleaks action, local runs retain
+  the canary/full-history scan, and the changed wrapper remains hash-bound.
   Normal non-fast-forward merges `30bdcecf` then `8ac8a6ea` preserve the #524
   and #525 RED/GREEN ancestry in that order. The composed Python lock proof
   removes the exact HTTPX and JSONSchema deltas before comparing with base, so

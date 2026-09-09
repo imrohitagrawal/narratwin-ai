@@ -206,6 +206,14 @@ ISSUE523_HOSTED_COMPATIBILITY_AMENDMENT = (
     "5603708565",
     "01b308f7117d6fcfe1b0250083df5226569ccbc20093330709482951a84ab7ce",
 )
+ISSUE523_HOSTED_SCAN_AMENDMENT = (
+    "5604753747",
+    "3f4d64e0ce974390e6d4c3f3a6057a5309bc73ca3fc98520bd1f4922a2c550b4",
+)
+ISSUE523_REVIEWED_INPUT_CORRECTION = (
+    "5604916338",
+    "785914c7f8d7b362a6ed913077d18f72cf46a2e0b7d4d8e5fd9421468bfe855a",
+)
 ISSUE523_ATOMIC_CHILDREN = (
     (
         "b1d3198d1c334b22b367d9341c9186bdbc2e01a7",
@@ -535,6 +543,7 @@ ROUTES = {
         "pyproject.toml",
         "uv.lock",
         "scripts/ci/check_container_scan_consensus.py",
+        "scripts/ci/dependency-security.sh",
         "scripts/ci/prepare_frontend_npm.mjs",
         "scripts/quality/check_stage8_docs.py",
         "scripts/quality/stage8_node_security.py",
@@ -546,6 +555,7 @@ ROUTES = {
         "tests/unit/test_dependency_security_contract.py",
         "tests/unit/test_frontend_dependency_security_contract.py",
         "tests/unit/test_adversarial_convergence.py",
+        "tools/semgrep/reviewed-inputs.sha256",
         "docs/ADR/0081-httpx2-2-12-security-refresh.md",
         "docs/ADR/0082-frontend-dependency-security-refresh.md",
         "docs/ADR/0083-schema-oracle-runtime-policy.md",
@@ -1410,6 +1420,7 @@ TEXT_LIMITS = {
         "pyproject.toml": 60,
         "uv.lock": 300,
         "scripts/ci/check_container_scan_consensus.py": 80,
+        "scripts/ci/dependency-security.sh": 80,
         "scripts/ci/prepare_frontend_npm.mjs": 120,
         "scripts/quality/check_stage8_docs.py": 40,
         "scripts/quality/stage8_node_security.py": 80,
@@ -1421,6 +1432,7 @@ TEXT_LIMITS = {
         "tests/unit/test_dependency_security_contract.py": 1200,
         "tests/unit/test_frontend_dependency_security_contract.py": 200,
         "tests/unit/test_adversarial_convergence.py": 360,
+        "tools/semgrep/reviewed-inputs.sha256": 20,
         "docs/ADR/0081-httpx2-2-12-security-refresh.md": 80,
         "docs/ADR/0082-frontend-dependency-security-refresh.md": 120,
         "docs/ADR/0083-schema-oracle-runtime-policy.md": 120,
@@ -3230,6 +3242,8 @@ def check_exact_route(
                 ISSUE523_ATOMIC_AMENDMENT_SHA256,
                 *ISSUE523_EVIDENCE_CORRECTION,
                 *ISSUE523_HOSTED_COMPATIBILITY_AMENDMENT,
+                *ISSUE523_HOSTED_SCAN_AMENDMENT,
+                *ISSUE523_REVIEWED_INPUT_CORRECTION,
                 *(value for pair in ISSUE523_ATOMIC_CHILDREN for value in pair),
                 *(value for pair in ISSUE523_ATOMIC_REVIEWS for value in pair),
                 *(value for row in ISSUE523_ATOMIC_MERGES for value in row),

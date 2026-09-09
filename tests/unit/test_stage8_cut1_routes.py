@@ -491,6 +491,7 @@ ISSUE523_EXPECTED = {
     "tests/unit/test_dependency_security_contract.py",
     "tests/unit/test_frontend_dependency_security_contract.py",
     "tests/unit/test_adversarial_convergence.py",
+    "tools/semgrep/reviewed-inputs.sha256",
     "docs/ADR/0081-httpx2-2-12-security-refresh.md",
     "docs/ADR/0082-frontend-dependency-security-refresh.md",
     "docs/ADR/0083-schema-oracle-runtime-policy.md",
@@ -5440,6 +5441,10 @@ def test_issue523_route_freezes_the_exact_atomic_security_convergence() -> None:
         "5604753747",
         "3f4d64e0ce974390e6d4c3f3a6057a5309bc73ca3fc98520bd1f4922a2c550b4",
     )
+    assert routes.ISSUE523_REVIEWED_INPUT_CORRECTION == (
+        "5604916338",
+        "785914c7f8d7b362a6ed913077d18f72cf46a2e0b7d4d8e5fd9421468bfe855a",
+    )
     assert routes.ISSUE523_ATOMIC_CHILDREN == (
         (
             "b1d3198d1c334b22b367d9341c9186bdbc2e01a7",
@@ -5510,6 +5515,7 @@ def test_issue523_route_freezes_the_exact_atomic_security_convergence() -> None:
         "tests/unit/test_dependency_security_contract.py": 1200,
         "tests/unit/test_frontend_dependency_security_contract.py": 200,
         "tests/unit/test_adversarial_convergence.py": 360,
+        "tools/semgrep/reviewed-inputs.sha256": 20,
         "docs/ADR/0081-httpx2-2-12-security-refresh.md": 80,
         "docs/ADR/0082-frontend-dependency-security-refresh.md": 120,
         "docs/ADR/0083-schema-oracle-runtime-policy.md": 120,
@@ -5530,6 +5536,7 @@ def test_issue523_route_freezes_the_exact_atomic_security_convergence() -> None:
         *routes.ISSUE523_EVIDENCE_CORRECTION,
         *routes.ISSUE523_HOSTED_COMPATIBILITY_AMENDMENT,
         *routes.ISSUE523_HOSTED_SCAN_AMENDMENT,
+        *routes.ISSUE523_REVIEWED_INPUT_CORRECTION,
         *(value for pair in routes.ISSUE523_ATOMIC_CHILDREN for value in pair),
         *(value for pair in routes.ISSUE523_ATOMIC_REVIEWS for value in pair),
         *(value for row in routes.ISSUE523_ATOMIC_MERGES for value in row),
@@ -5549,6 +5556,8 @@ def test_issue523_route_freezes_the_exact_atomic_security_convergence() -> None:
         "01b308f7117d6fcfe1b0250083df5226569ccbc20093330709482951a84ab7ce",
         "5604753747",
         "3f4d64e0ce974390e6d4c3f3a6057a5309bc73ca3fc98520bd1f4922a2c550b4",
+        "5604916338",
+        "785914c7f8d7b362a6ed913077d18f72cf46a2e0b7d4d8e5fd9421468bfe855a",
     ),
 )
 def test_issue523_route_rejects_evidence_correction_drift(
