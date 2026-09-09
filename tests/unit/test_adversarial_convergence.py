@@ -374,6 +374,80 @@ def _draft202012_errors(instance: dict[str, object]) -> list[str]:
     return cast(list[str], errors)
 
 
+def test_schema_oracle_default_policy_reaches_one_isolated_project_subprocess(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[tuple[list[str], dict[str, object]]] = []
+
+    def fake_run(argv: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
+        calls.append((argv, kwargs))
+        return subprocess.CompletedProcess(argv, 0, "[]\n", "")
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    assert _draft202012_errors(CORPUS, environ={}) == []
+    assert len(calls) == 1
+    argv, kwargs = calls[0]
+    assert argv[:4] == [sys.executable, "-I", "-P", "-c"]
+    assert kwargs["timeout"] == 20
+    assert kwargs["env"] == {"PATH": "/usr/bin:/bin", "LC_ALL": "C", "PYTHONHASHSEED": "0"}
+    assert kwargs.get("shell", False) is False
+
+
+def test_schema_oracle_canonical_override_reaches_the_subprocess(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: dict[str, object] = {}
+
+    def fake_run(argv: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
+        captured.update(kwargs)
+        return subprocess.CompletedProcess(argv, 0, "[]", "")
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    assert _draft202012_errors(
+        CORPUS,
+        environ={"NARRATWIN_SCHEMA_ORACLE_TIMEOUT_SECONDS": "37"},
+    ) == []
+    assert captured["timeout"] == 37
+
+
+@pytest.mark.parametrize(
+    "value",
+    ("", "0", "-1", "+1", "01", "1.0", "1e1", "nan", "inf", " 5 ", "61", "true"),
+)
+def test_schema_oracle_environment_policy_rejects_noncanonical_values(value: str) -> None:
+    policy_factory = globals().get("_schema_oracle_policy")
+    assert callable(policy_factory)
+    with pytest.raises(ValueError, match="schema oracle timeout policy"):
+        cast(Callable[..., object], policy_factory)(
+            {"NARRATWIN_SCHEMA_ORACLE_TIMEOUT_SECONDS": value}
+        )
+
+
+@pytest.mark.parametrize("value", (True, False, 0, -1, 1.0, float("nan"), float("inf"), 61))
+def test_schema_oracle_typed_policy_rejects_invalid_values(value: object) -> None:
+    policy_type = globals().get("SchemaOraclePolicy")
+    assert callable(policy_type)
+    with pytest.raises(ValueError, match="schema oracle timeout policy"):
+        cast(Callable[..., object], policy_type)(timeout_seconds=cast(int, value))
+
+
+def test_schema_oracle_timeout_is_single_attempt_bounded_and_redacted(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls = 0
+
+    def timeout(argv: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
+        nonlocal calls
+        calls += 1
+        raise subprocess.TimeoutExpired(argv, cast(float, kwargs["timeout"]), output="private-schema")
+
+    monkeypatch.setattr(subprocess, "run", timeout)
+    error = pytest.raises(AssertionError, _draft202012_errors, CORPUS, environ={})
+    assert str(error.value) == "Draft 2020-12 schema oracle exceeded 20 seconds."
+    assert "private-schema" not in str(error.value)
+    assert calls == 1
+
+
 def test_corpus_identity_materialization_and_closed_order() -> None:
     raw = CORPUS_PATH.read_bytes()
     canonical = json.dumps(CORPUS, ensure_ascii=True, sort_keys=True, separators=(",", ":"), allow_nan=False).encode("ascii")
