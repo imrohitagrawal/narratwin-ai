@@ -67,7 +67,7 @@ image_config() {
 }
 
 verify_frontend_runtime() {
-  local image="$1" output_variable="$2" config container port http_code actual_architecture actual_inventory runtime_identity sharp_identity
+  local image="$1" output_variable="${2:-}" diagnostic_variable="${3:-}" config container port http_code actual_architecture actual_inventory actual_inventory_output actual_inventory_diagnostic runtime_identity sharp_identity
   config="$(docker image inspect "${image}" --format '{{json .Config}}')"
   python3 - 3<<<"${config}" <<'PY'
 import json, sys
@@ -141,9 +141,9 @@ sharp(input).resize(2,2).png().toBuffer({resolveWithObject:true}).then(({info,da
 if(info.width!==2||info.height!==2||info.format!=="png"||data.length<60)throw new Error("Sharp transform invalid");
 console.log(`${info.width}x${info.height}:${info.format}`);});')"
   [ "${sharp_identity}" = "2x2:png" ] || return 1
-  actual_inventory="$(docker run --rm --user 0:0 --env NODE_OPTIONS= --env NODE_PATH= --env LD_PRELOAD= \
+  actual_inventory_output="$(docker run --rm --user 0:0 --env NODE_OPTIONS= --env NODE_PATH= --env LD_PRELOAD= \
     --entrypoint /usr/bin/node "${image}" -e '
-const crypto=require("crypto"),fs=require("fs"),records=[],B=Buffer.from,slash=B("/"),empty=Buffer.alloc(0);
+const crypto=require("crypto"),fs=require("fs"),records=[],details=[],B=Buffer.from,slash=B("/"),empty=Buffer.alloc(0);
 const skip=new Set(["/.dockerenv","/etc/hosts","/etc/hostname","/etc/resolv.conf"].map(x=>B(x).toString("hex")));
 const virtual=new Set(["/dev","/proc","/sys"].map(x=>B(x).toString("hex")));
 const prerender=B("/app/.next/prerender-manifest.json"),serverJson=B("/app/.next/server/server-reference-manifest.json"),serverJs=B("/app/.next/server/server-reference-manifest.js");
@@ -158,8 +158,10 @@ function normalize(p,raw) {
   return raw;
 }
 function record(t,p,s,payload=empty) {
-  records.push(Buffer.concat([B(t),u32(p.length),p,u32(s.mode&0o7777),u32(s.uid),u32(s.gid),
-    u32(payload.length),payload]));
+  const encoded=Buffer.concat([B(t),u32(p.length),p,u32(s.mode&0o7777),u32(s.uid),u32(s.gid),u32(payload.length),payload]),path=p.toString("utf8");
+  if(!B(path).equals(p)||!path.startsWith("/"))throw new Error("invalid inventory path");
+  records.push(encoded); details.push({path,kind:t,mode:s.mode&0o7777,uid:s.uid,gid:s.gid,
+    sha256:t==="F"?payload.toString("hex"):crypto.createHash("sha256").update(payload).digest("hex")});
 }
 function add(p,s) {
   if (s.isSymbolicLink()) record("L",p,s,fs.readlinkSync(p,{encoding:"buffer"}));
@@ -174,7 +176,15 @@ function walk(d) { for (const n of fs.readdirSync(d,{encoding:"buffer"}).sort(Bu
 }}
 add(slash,fs.lstatSync(slash)); walk(slash); records.sort(Buffer.compare);
 const h=crypto.createHash("sha256"); for (const r of records) h.update(u32(r.length)).update(r);
-console.log(records.length+":"+h.digest("hex"));')"
+const inventory=records.length+":"+h.digest("hex"); details.sort((a,b)=>Buffer.compare(B(a.path),B(b.path)));
+console.log(inventory);console.log(JSON.stringify({schema_version:"FrontendRuntimeInventoryDiagnosticV1",inventory,records:details}));')"
+  if [[ "${actual_inventory_output}" != *$'\n'* ]]; then
+    echo "Frontend runtime inventory diagnostic is malformed." >&2
+    return 1
+  fi
+  actual_inventory="${actual_inventory_output%%$'\n'*}"
+  actual_inventory_diagnostic="${actual_inventory_output#*$'\n'}"
+  [[ "${actual_inventory_diagnostic}" != *$'\n'* ]] || return 1
   python3 - "${FRONTEND_ARCH}" "${actual_inventory}" <<'PY'
 import sys
 from scripts.ci.check_container_scan_consensus import require_frontend_inventory
@@ -200,7 +210,9 @@ PY
   fi
   docker stop "${container}" >/dev/null
   trap - EXIT RETURN INT TERM
+  [ -n "${output_variable}" ] && [ -n "${diagnostic_variable}" ] || return 1
   printf -v "${output_variable}" '%s' "${actual_inventory}"
+  printf -v "${diagnostic_variable}" '%s' "${actual_inventory_diagnostic}"
 }
 
 frontend_build_identity() {
@@ -214,10 +226,11 @@ console.log(JSON.stringify({buildId:fs.readFileSync("/app/.next/BUILD_ID","utf8"
 }
 
 verify_frontend_reproducibility() {
-  local primary="$1" reproduction="$2" primary_inventory="$3" reproduction_inventory="$4" primary_identity reproduction_identity
+  local primary="$1" reproduction="$2" primary_inventory="$3" reproduction_inventory="$4" primary_diagnostic="$5" reproduction_diagnostic="$6" primary_identity reproduction_identity
   primary_identity="$(frontend_build_identity "${primary}" "${primary_inventory}" "${FRONTEND_ARCH}")"
   reproduction_identity="$(frontend_build_identity "${reproduction}" "${reproduction_inventory}" "${FRONTEND_ARCH}")"
-  printf '%s\n%s\n' "${primary_identity}" "${reproduction_identity}" | \
+  printf '%s\n%s\n%s\n%s\n' "${primary_identity}" "${reproduction_identity}" \
+    "${primary_diagnostic}" "${reproduction_diagnostic}" | \
     python3 scripts/ci/check_container_scan_consensus.py --verify-frontend-reproduction
 }
 
@@ -272,11 +285,14 @@ rm -f "${REPORT_DIR}"/*.raw.json "${REPORT_DIR}"/*.raw.sarif.json "${REPORT_DIR}
 if [ "${SKIP_POLICY_EVALUATION:-0}" != "1" ]; then
   primary_inventory=""
   reproduction_inventory=""
+  primary_inventory_diagnostic=""
+  reproduction_inventory_diagnostic=""
   prepare_frontend_images
-  verify_frontend_runtime "${FRONTEND_IMAGE}" primary_inventory
-  verify_frontend_runtime "${FRONTEND_REPRO_IMAGE}" reproduction_inventory
+  verify_frontend_runtime "${FRONTEND_IMAGE}" primary_inventory primary_inventory_diagnostic
+  verify_frontend_runtime "${FRONTEND_REPRO_IMAGE}" reproduction_inventory reproduction_inventory_diagnostic
   verify_frontend_reproducibility "${FRONTEND_IMAGE}" "${FRONTEND_REPRO_IMAGE}" \
-    "${primary_inventory}" "${reproduction_inventory}"
+    "${primary_inventory}" "${reproduction_inventory}" \
+    "${primary_inventory_diagnostic}" "${reproduction_inventory_diagnostic}"
 fi
 
 set +e

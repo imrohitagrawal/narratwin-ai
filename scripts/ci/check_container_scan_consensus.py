@@ -51,8 +51,9 @@ FRONTEND_ENGINE_CONFIG_DEFAULTS = {
     "Tty": False,
     "Volumes": None,
 }
-FRONTEND_INVENTORY_RECORD_BOUNDS = {"amd64": (1580, 1620), "arm64": (1580, 1620)}
-FRONTEND_INVENTORY_PATTERN = re.compile(r"^(?P<records>[1-9]\d{0,4}):(?P<digest>[0-9a-f]{64})$")
+FRONTEND_INVENTORY_RECORD_BOUNDS = {"amd64": (1630, 1670), "arm64": (1630, 1670)}
+FRONTEND_INVENTORY_PATTERN = re.compile(r"^(?P<records>[1-9]\d{0,4}):(?P<digest>[0-9a-f]{64})\Z")
+FRONTEND_INVENTORY_DIAGNOSTIC_LIMIT, FRONTEND_INVENTORY_DIAGNOSTIC_SCHEMA = 20, "FrontendRuntimeInventoryDiagnosticV1"
 FRONTEND_RUNTIME_INDEX = "sha256:aadf416b2cdce311a8811ba3f0608a61b77dbf997500e2eafe781b51f6a0b019"
 FRONTEND_RUNTIME_PLATFORM_DIGESTS = {
     "amd64": "sha256:b4fea132199070b0c8ea9ac66f363fe2cd6d1e4f994e61d8c87976c2157a1b8a",
@@ -79,14 +80,14 @@ FRONTEND_SBOM_COMPONENTS = {
 }
 FRONTEND_SHARP_COMPONENTS = {
     "amd64": {
-        ("sharp", "0.35.3", "pkg:npm/sharp@0.35.3"),
-        ("sharp-linuxmusl-x64", "0.35.3", "pkg:npm/%40img/sharp-linuxmusl-x64@0.35.3"),
-        ("sharp-libvips-linuxmusl-x64", "1.3.2", "pkg:npm/%40img/sharp-libvips-linuxmusl-x64@1.3.2"),
+        ("sharp", "0.35.4", "pkg:npm/sharp@0.35.4"),
+        ("sharp-linuxmusl-x64", "0.35.4", "pkg:npm/%40img/sharp-linuxmusl-x64@0.35.4"),
+        ("sharp-libvips-linuxmusl-x64", "1.3.3", "pkg:npm/%40img/sharp-libvips-linuxmusl-x64@1.3.3"),
     },
     "arm64": {
-        ("sharp", "0.35.3", "pkg:npm/sharp@0.35.3"),
-        ("sharp-linuxmusl-arm64", "0.35.3", "pkg:npm/%40img/sharp-linuxmusl-arm64@0.35.3"),
-        ("sharp-libvips-linuxmusl-arm64", "1.3.2", "pkg:npm/%40img/sharp-libvips-linuxmusl-arm64@1.3.2"),
+        ("sharp", "0.35.4", "pkg:npm/sharp@0.35.4"),
+        ("sharp-linuxmusl-arm64", "0.35.4", "pkg:npm/%40img/sharp-linuxmusl-arm64@0.35.4"),
+        ("sharp-libvips-linuxmusl-arm64", "1.3.3", "pkg:npm/%40img/sharp-libvips-linuxmusl-arm64@1.3.3"),
     },
 }
 ARTIFACT_TOOLS = {
@@ -113,6 +114,51 @@ def require_frontend_inventory(architecture: str, inventory: str) -> None:
         raise SystemExit(
             f"Frontend runtime inventory is not reviewed: architecture={architecture} inventory={inventory}"
         )
+
+
+def _frontend_inventory_records(value: Any, expected_inventory: str | None, forbidden_values: tuple[str, ...]) -> dict[str, dict[str, Any]] | None:
+    if not isinstance(value, dict) or set(value) != {"schema_version", "inventory", "records"}:
+        return None
+    inventory, rows = value.get("inventory"), value.get("records")
+    match = FRONTEND_INVENTORY_PATTERN.match(inventory) if isinstance(inventory, str) else None
+    if (value.get("schema_version") != FRONTEND_INVENTORY_DIAGNOSTIC_SCHEMA or not match
+            or expected_inventory is not None and inventory != expected_inventory
+            or not isinstance(rows, list) or len(rows) != int(match["records"])
+            or not 0 < len(rows) <= max(high for _low, high in FRONTEND_INVENTORY_RECORD_BOUNDS.values())):
+        return None
+    records: dict[str, dict[str, Any]] = {}
+    for row in rows:
+        if not isinstance(row, dict) or set(row) != {"path", "kind", "mode", "uid", "gid", "sha256"}:
+            return None
+        path, kind, mode, uid, gid, digest = (
+            row["path"], row["kind"], row["mode"], row["uid"], row["gid"], row["sha256"]
+        )
+        if (not isinstance(path, str) or not path.startswith("/") or path.startswith("//") or not path.isprintable()
+                or len(path.encode()) > 1024 or str(PurePosixPath(path)) != path or ".." in PurePosixPath(path).parts or path in records
+                or any(secret and secret in path for secret in forbidden_values)
+                or kind not in {"D", "F", "L", "O"}
+                or any(isinstance(item, bool) or not isinstance(item, int) for item in (mode, uid, gid))
+                or not 0 <= mode <= 0o7777 or not 0 <= uid <= 2**31 - 1 or not 0 <= gid <= 2**31 - 1
+                or not isinstance(digest, str) or digest in forbidden_values or re.match(r"^[0-9a-f]{64}\Z", digest) is None):
+            return None
+        records[path] = {"kind": kind, "mode": mode, "uid": uid, "gid": gid, "sha256": digest}
+    if list(records) != sorted(records, key=lambda item: item.encode("utf-8")):
+        return None
+    return records
+
+
+def frontend_inventory_delta(primary: Any, reproduction: Any, *, expected_primary: str | None = None,
+                             expected_reproduction: str | None = None, forbidden_values: tuple[str, ...] = ()) -> dict[str, Any] | None:
+    left = _frontend_inventory_records(primary, expected_primary, forbidden_values)
+    right = _frontend_inventory_records(reproduction, expected_reproduction, forbidden_values)
+    if left is None or right is None:
+        return None
+    paths = sorted(set(left) | set(right), key=lambda item: item.encode("utf-8"))
+    changed = [{"path": path, "primary": left.get(path), "reproduction": right.get(path)}
+               for path in paths if left.get(path) != right.get(path)]
+    return {"schema_version": "FrontendRuntimeInventoryDeltaV1",
+            "omitted_count": max(0, len(changed) - FRONTEND_INVENTORY_DIAGNOSTIC_LIMIT),
+            "differences": changed[:FRONTEND_INVENTORY_DIAGNOSTIC_LIMIT]} if changed else None
 
 
 def canonical_frontend_config(config: dict[str, Any]) -> dict[str, Any] | None:
@@ -469,9 +515,23 @@ def main() -> int:
     parser.add_argument("--verify-frontend-reproduction", action="store_true")
     args = parser.parse_args()
     if args.verify_frontend_reproduction:
-        primary, reproduction = (json.loads(sys.stdin.readline()) for _ in range(2))
+        raw_lines = tuple(sys.stdin.readline(1_000_001) for _ in range(4))
+        primary, reproduction = (json.loads(line) for line in raw_lines[:2])
         findings = frontend_reproduction_findings(primary, reproduction)
-        print(json.dumps({"status": "fail" if findings else "pass", "findings": findings}))
+        result: dict[str, Any] = {"status": "fail" if findings else "pass", "findings": findings}
+        if "FRONTEND_RUNTIME_INVENTORY_CHANGED" in findings:
+            try:
+                primary_details, reproduction_details = (json.loads(line) for line in raw_lines[2:])
+                secrets = tuple(str(primary.get(field) or "") for field in FRONTEND_SECRET_FIELDS)
+                secrets += tuple(str(reproduction.get(field) or "") for field in FRONTEND_SECRET_FIELDS)
+                result["diagnostic"] = frontend_inventory_delta(
+                    primary_details, reproduction_details,
+                    expected_primary=primary.get("inventory"),
+                    expected_reproduction=reproduction.get("inventory"), forbidden_values=secrets,
+                ) or {"schema_version": "FrontendRuntimeInventoryDeltaV1", "status": "unavailable"}
+            except (json.JSONDecodeError, TypeError, ValueError):
+                result["diagnostic"] = {"schema_version": "FrontendRuntimeInventoryDeltaV1", "status": "unavailable"}
+        print(json.dumps(result, sort_keys=True, separators=(",", ":")))
         return 1 if findings else 0
     if args.case is None:
         parser.error("--case is required unless verifying frontend reproduction")

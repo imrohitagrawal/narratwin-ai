@@ -5,11 +5,13 @@ import copy
 import hashlib
 import json
 import os
+import re
 import subprocess
 import sys
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
+from dataclasses import dataclass
 from pathlib import Path
-from typing import cast
+from typing import Any, cast
 
 import pytest
 
@@ -29,8 +31,34 @@ STATE = {"A": "ACCEPTED", "R": "REJECTED", "N": "NOT_APPLICABLE", "X": "NOT_REAC
 JUSTIFICATION = {"A": "contract satisfied", "R": "rejected", "N": "not applicable", "X": "blocked by rejected predecessor"}
 THREATS = tuple(f"ACP-T{number:02d}" for number in range(1, 13))
 KINDS = ("FILESYSTEM", "JSON", "DOCUMENT", "PIPELINE", "OUTCOME", "MUTATION_SET", "EXECUTION_LEDGER", "REVIEWS", "EXPECTATION_BOUNDARY", "ROUTE", "CHECKPOINT", "RESOURCE")
+SCHEMA_ORACLE_TIMEOUT_ENV = "NARRATWIN_SCHEMA_ORACLE_TIMEOUT_SECONDS"
+SCHEMA_ORACLE_DEFAULT_TIMEOUT_SECONDS = 20
+SCHEMA_ORACLE_MAX_TIMEOUT_SECONDS = 60
+SCHEMA_ORACLE_TIMEOUT_PATTERN = re.compile(r"(?:[1-9]|[1-5][0-9]|60)\Z", re.ASCII)
 
 
+@dataclass(frozen=True, slots=True)
+class SchemaOraclePolicy:
+    timeout_seconds: int = SCHEMA_ORACLE_DEFAULT_TIMEOUT_SECONDS
+
+    def __post_init__(self) -> None:
+        if (
+            type(self.timeout_seconds) is not int
+            or not 1 <= self.timeout_seconds <= SCHEMA_ORACLE_MAX_TIMEOUT_SECONDS
+        ):
+            raise ValueError("schema oracle timeout policy must be whole seconds from 1 through 60")
+
+
+def _schema_oracle_policy(
+    environ: Mapping[str, object] | None = None,
+) -> SchemaOraclePolicy:
+    source = os.environ if environ is None else environ
+    if SCHEMA_ORACLE_TIMEOUT_ENV not in source:
+        return SchemaOraclePolicy()
+    raw = source[SCHEMA_ORACLE_TIMEOUT_ENV]
+    if not isinstance(raw, str) or SCHEMA_ORACLE_TIMEOUT_PATTERN.match(raw) is None:
+        raise ValueError("schema oracle timeout policy must be a canonical whole number")
+    return SchemaOraclePolicy(timeout_seconds=int(raw))
 def _strict_object(pairs: list[tuple[str, object]]) -> dict[str, object]:
     result: dict[str, object] = {}
     for key, value in pairs:
@@ -357,21 +385,302 @@ def _hostile_regressions() -> list[HostileRow]:
 HOSTILE_REGRESSIONS = _hostile_regressions()
 
 
-def _draft202012_errors(instance: dict[str, object]) -> list[str]:
+def _schema_oracle_errors(completed: subprocess.CompletedProcess[str]) -> list[str]:
+    if len(completed.stdout.encode("utf-8")) > 65_536:
+        raise AssertionError("Draft 2020-12 schema oracle returned an invalid result.")
+    try:
+        result = json.loads(completed.stdout)
+    except (TypeError, ValueError):
+        raise AssertionError("Draft 2020-12 schema oracle returned an invalid result.") from None
+    if (
+        not isinstance(result, dict)
+        or set(result) != {"errors", "jsonschemaVersion"}
+        or completed.stdout
+        != json.dumps(result, ensure_ascii=True, sort_keys=True, separators=(",", ":"))
+        + "\n"
+    ):
+        raise AssertionError("Draft 2020-12 schema oracle returned an invalid result.")
+    if result["jsonschemaVersion"] != "4.25.1":
+        raise AssertionError("Draft 2020-12 schema oracle distribution mismatch.")
+    errors = result["errors"]
+    assert isinstance(errors, list) and all(isinstance(error, str) for error in errors)
+    return cast(list[str], errors)
+
+
+def _draft202012_errors(
+    instance: dict[str, object],
+    *,
+    environ: Mapping[str, object] | None = None,
+) -> list[str]:
+    policy = _schema_oracle_policy(environ)
+    interpreter = Path(sys.executable)
+    if not sys.executable or not interpreter.is_absolute():
+        raise AssertionError(
+            "Draft 2020-12 schema oracle requires an absolute active interpreter."
+        )
     runner = (
-        "import json, sys\n"
+        "import importlib.metadata, json, sys\n"
         "from jsonschema import Draft202012Validator\n"
         "value = json.load(sys.stdin)\n"
         "Draft202012Validator.check_schema(value['schema'])\n"
         "errors = Draft202012Validator(value['schema']).iter_errors(value['instance'])\n"
-        "print(json.dumps([error.message for error in errors]))\n"
+        "result = {'errors': [error.message for error in errors], "
+        "'jsonschemaVersion': importlib.metadata.version('jsonschema')}\n"
+        "print(json.dumps(result, sort_keys=True, separators=(',', ':')))\n"
     )
     envelope = json.dumps({"schema": _load(SCHEMA_PATH), "instance": instance}, ensure_ascii=True, separators=(",", ":"))
-    completed = subprocess.run(["/usr/bin/python3", "-c", runner], input=envelope, text=True, capture_output=True, timeout=5, check=False, env={"PATH": "/usr/bin:/bin", "LC_ALL": "C"})
-    assert completed.returncode == 0, completed.stderr
-    errors = json.loads(completed.stdout)
-    assert isinstance(errors, list) and all(isinstance(error, str) for error in errors)
-    return cast(list[str], errors)
+    try:
+        completed = subprocess.run(
+            [str(interpreter), "-I", "-P", "-c", runner],
+            input=envelope,
+            text=True,
+            capture_output=True,
+            timeout=policy.timeout_seconds,
+            check=False,
+            shell=False,
+            env={"PATH": "/usr/bin:/bin", "LC_ALL": "C"},
+        )
+    except subprocess.TimeoutExpired:
+        raise AssertionError(
+            f"Draft 2020-12 schema oracle exceeded {policy.timeout_seconds} seconds."
+        ) from None
+    if completed.returncode != 0:
+        raise AssertionError("Draft 2020-12 schema oracle process failed.")
+    return _schema_oracle_errors(completed)
+
+
+def test_schema_oracle_binds_the_executing_jsonschema_distribution(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: dict[str, object] = {}
+
+    def fake_run(argv: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
+        captured["argv"] = argv
+        return subprocess.CompletedProcess(
+            argv,
+            0,
+            '{"errors":[],"jsonschemaVersion":"4.25.1"}\n',
+            "",
+        )
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    assert _draft202012_errors(CORPUS, environ={}) == []
+    argv = cast(list[str], captured["argv"])
+    assert "importlib.metadata" in argv[4]
+    assert "version('jsonschema')" in argv[4]
+
+
+def test_schema_oracle_default_policy_reaches_one_isolated_project_subprocess(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[tuple[list[str], dict[str, object]]] = []
+
+    def fake_run(argv: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
+        calls.append((argv, kwargs))
+        return subprocess.CompletedProcess(
+            argv,
+            0,
+            '{"errors":[],"jsonschemaVersion":"4.25.1"}\n',
+            "",
+        )
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    monkeypatch.delenv("NARRATWIN_SCHEMA_ORACLE_TIMEOUT_SECONDS", raising=False)
+    assert _draft202012_errors(CORPUS) == []
+    assert len(calls) == 1
+    argv, kwargs = calls[0]
+    assert argv[:4] == [sys.executable, "-I", "-P", "-c"]
+    assert Path(sys.executable).is_absolute()
+    assert kwargs["timeout"] == 20
+    assert kwargs["env"] == {"PATH": "/usr/bin:/bin", "LC_ALL": "C"}
+    assert kwargs.get("shell", False) is False
+
+
+def test_schema_oracle_canonical_override_reaches_the_subprocess(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: dict[str, object] = {}
+
+    def fake_run(argv: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
+        captured.update(kwargs)
+        return subprocess.CompletedProcess(
+            argv,
+            0,
+            '{"errors":[],"jsonschemaVersion":"4.25.1"}\n',
+            "",
+        )
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    assert _draft202012_errors(
+        CORPUS,
+        environ={"NARRATWIN_SCHEMA_ORACLE_TIMEOUT_SECONDS": "37"},
+    ) == []
+    assert captured["timeout"] == 37
+
+
+def test_schema_oracle_rejects_distribution_version_drift(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fake_run(argv: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
+        return subprocess.CompletedProcess(
+            argv,
+            0,
+            '{"errors":[],"jsonschemaVersion":"4.25.0"}\n',
+            "",
+        )
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    error = pytest.raises(AssertionError, _draft202012_errors, CORPUS, environ={})
+    assert str(error.value) == "Draft 2020-12 schema oracle distribution mismatch."
+    assert "4.25.0" not in str(error.value)
+
+
+@pytest.mark.parametrize(
+    "stdout",
+    (
+        ' {"errors":[],"jsonschemaVersion":"4.25.1"}\n',
+        '{"errors":[],"jsonschemaVersion":"4.25.1"} \n',
+        '{"errors":[],"jsonschemaVersion":"4.25.1"}\n\n',
+        '{"jsonschemaVersion":"4.25.1","errors":[]}\n',
+        'not-json\n',
+    ),
+)
+def test_schema_oracle_rejects_noncanonical_output_framing(
+    monkeypatch: pytest.MonkeyPatch,
+    stdout: str,
+) -> None:
+    monkeypatch.setattr(
+        subprocess,
+        "run",
+        lambda argv, **_: subprocess.CompletedProcess(argv, 0, stdout, "private-stderr"),
+    )
+    error = pytest.raises(AssertionError, _draft202012_errors, CORPUS, environ={})
+    assert str(error.value) == "Draft 2020-12 schema oracle returned an invalid result."
+    assert "private" not in str(error.value)
+
+
+def test_schema_oracle_rejects_oversized_output_before_json_parse(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    oversized = "x" * 65_537
+    monkeypatch.setattr(
+        subprocess,
+        "run",
+        lambda argv, **_: subprocess.CompletedProcess(argv, 0, oversized, ""),
+    )
+    original_loads = json.loads
+
+    def guarded_loads(value: str, **kwargs: Any) -> Any:
+        if value == oversized:
+            pytest.fail("oversized schema-oracle output reached JSON parsing")
+        return original_loads(value, **kwargs)
+
+    monkeypatch.setattr(json, "loads", guarded_loads)
+    error = pytest.raises(AssertionError, _draft202012_errors, CORPUS, environ={})
+    assert str(error.value) == "Draft 2020-12 schema oracle returned an invalid result."
+
+
+@pytest.mark.parametrize(
+    "value",
+    (None, "", "0", "-1", "+1", "01", "1.0", "1e1", "nan", "inf", " 5 ", "61", "true"),
+)
+def test_schema_oracle_environment_policy_rejects_noncanonical_values(value: object) -> None:
+    policy_factory = globals().get("_schema_oracle_policy")
+    assert callable(policy_factory)
+    with pytest.raises(ValueError, match="schema oracle timeout policy"):
+        cast(Callable[..., object], policy_factory)(
+            {"NARRATWIN_SCHEMA_ORACLE_TIMEOUT_SECONDS": value}
+        )
+
+
+@pytest.mark.parametrize("value", (True, False, 0, -1, 1.0, float("nan"), float("inf"), 61))
+def test_schema_oracle_typed_policy_rejects_invalid_values(value: object) -> None:
+    policy_type = globals().get("SchemaOraclePolicy")
+    assert callable(policy_type)
+    with pytest.raises(ValueError, match="schema oracle timeout policy"):
+        cast(Callable[..., object], policy_type)(timeout_seconds=cast(int, value))
+
+
+@pytest.mark.parametrize("value", (1, 60))
+def test_schema_oracle_typed_policy_accepts_inclusive_boundaries(value: int) -> None:
+    policy_type = globals().get("SchemaOraclePolicy")
+    assert callable(policy_type)
+    policy = cast(Callable[..., object], policy_type)(timeout_seconds=value)
+    assert getattr(policy, "timeout_seconds") == value
+
+
+@pytest.mark.parametrize("value", (None, True))
+def test_invalid_schema_oracle_policy_blocks_before_subprocess(
+    monkeypatch: pytest.MonkeyPatch,
+    value: object,
+) -> None:
+    calls = 0
+
+    def forbidden_run(argv: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
+        nonlocal calls
+        calls += 1
+        return subprocess.CompletedProcess(argv, 0, "[]", "")
+
+    monkeypatch.setattr(subprocess, "run", forbidden_run)
+    with pytest.raises(ValueError, match="schema oracle timeout policy"):
+        _draft202012_errors(
+            CORPUS,
+            environ={"NARRATWIN_SCHEMA_ORACLE_TIMEOUT_SECONDS": value},
+        )
+    assert calls == 0
+
+
+def test_schema_oracle_timeout_is_single_attempt_bounded_and_redacted(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls = 0
+
+    def timeout(argv: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
+        nonlocal calls
+        calls += 1
+        raise subprocess.TimeoutExpired(argv, cast(float, kwargs["timeout"]), output="private-schema")
+
+    monkeypatch.setattr(subprocess, "run", timeout)
+    error = pytest.raises(AssertionError, _draft202012_errors, CORPUS, environ={})
+    assert str(error.value) == "Draft 2020-12 schema oracle exceeded 20 seconds."
+    assert "private-schema" not in str(error.value)
+    assert calls == 1
+
+
+def test_schema_oracle_rejects_nonabsolute_interpreter_before_dispatch(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls = 0
+
+    def forbidden_run(argv: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
+        nonlocal calls
+        calls += 1
+        return subprocess.CompletedProcess(argv, 0, "[]", "")
+
+    monkeypatch.setattr(sys, "executable", "python")
+    monkeypatch.setattr(subprocess, "run", forbidden_run)
+    error = pytest.raises(AssertionError, _draft202012_errors, CORPUS, environ={})
+    assert str(error.value) == (
+        "Draft 2020-12 schema oracle requires an absolute active interpreter."
+    )
+    assert calls == 0
+
+
+def test_schema_oracle_process_failure_is_single_attempt_and_redacted(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls = 0
+
+    def failed(argv: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
+        nonlocal calls
+        calls += 1
+        return subprocess.CompletedProcess(argv, 1, "private-schema", "private-stderr")
+
+    monkeypatch.setattr(subprocess, "run", failed)
+    error = pytest.raises(AssertionError, _draft202012_errors, CORPUS, environ={})
+    assert str(error.value) == "Draft 2020-12 schema oracle process failed."
+    assert "private" not in str(error.value)
+    assert calls == 1
 
 
 def test_corpus_identity_materialization_and_closed_order() -> None:

@@ -17,7 +17,9 @@ fi
 
 python3 scripts/ci/check_gitleaks_regression.py
 
-if command -v gitleaks >/dev/null 2>&1; then
+if [ "${CI:-}" = "true" ] && [ "${NARRATWIN_GITLEAKS_ACTION_COMPLETED:-}" = "1" ]; then
+  echo "Gitleaks action completed in CI; skipping duplicate CLI scan in wrapper."
+elif command -v gitleaks >/dev/null 2>&1; then
   set +e
   printf '%s%s%s%s%s%s%s%s\n' 'api_' 'key = "' 'sk-proj-' 'a1B2c3D4' \
     'e5F6g7H8' 'i9J0k1L2' 'm3N4o5P6q7R8s9T0' '"' \
@@ -29,8 +31,6 @@ if command -v gitleaks >/dev/null 2>&1; then
     exit 1
   fi
   gitleaks detect --redact --source .
-elif [ "${CI:-}" = "true" ] && [ "${NARRATWIN_GITLEAKS_ACTION_COMPLETED:-}" = "1" ]; then
-  echo "Gitleaks action completed in CI; skipping duplicate CLI scan in wrapper."
 elif [ "${NARRATWIN_ALLOW_LOCAL_SECRET_SCAN_FALLBACK:-}" = "1" ]; then
   echo "gitleaks CLI not installed locally; using explicit guardrail fallback."
   python3 scripts/guardrails_check.py

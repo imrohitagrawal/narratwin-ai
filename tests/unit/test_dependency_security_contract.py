@@ -40,6 +40,9 @@ ISSUE360_BASE = "b9a2a8cd4aa05328116565990fc30ae44592c875"
 ISSUE396_BASE = "9ee3f4a4d3b8cf1e78b5a878904748b60d557a76"
 ISSUE401_BASE = "9cf6e01f9d0c32f25c229b5adf38c6eb716ca9a0"
 ISSUE499_BASE = "d1f5400f5c6dfec5d4b63eb3a83aa82e3330743f"
+ISSUE523_BASE = "b6b0c05c7227428ff0841361f3970b0b2c40aa86"
+ISSUE524_BASE = "b6b0c05c7227428ff0841361f3970b0b2c40aa86"
+ISSUE525_BASE = "b6b0c05c7227428ff0841361f3970b0b2c40aa86"
 BRACE_PATH = "node_modules/brace-expansion"
 JS_YAML_PATH = "node_modules/js-yaml"
 NANOID_PATH = "node_modules/nanoid"
@@ -57,6 +60,69 @@ ISSUE495_FRONTEND_PACKAGES = {
     "node-releases": ("2.0.54", "sha512-YHs7BmmcsdAI5Ozuf8JZo6PT0mv2GIWC9vMfvUC3dp65M8hn7Ux8CPL+2oBI7juNuj9d0ndhTcznq2ODBps9cQ=="),
     "update-browserslist-db": ("1.3.2", "sha512-UQ+MSxlhRm1bzjhU+DcuXfjFO1FzNtqhK5+9Yvlp90ItDLk5vT932A0rFu619nf7RVS+Y/VeaUW1jaRDqZ8VJw=="),
 }
+ISSUE524_FRONTEND_PACKAGES = {
+    "node_modules/next": (
+        "16.3.4",
+        "sha512-/Ztf6CeRH+ejEXUrYtqI4gkS66eFIHuSwqi60RgcpWKodxFZx2/dqVCMKBwILfAHXQ+F1b1vAudgj3mnxqtoIA==",
+    ),
+    "node_modules/sharp": (
+        "0.35.4",
+        "sha512-n++8XWcj+jCOr2IOl7h8LbKnGBDY4aPbmprMONBNFdn0ImXqpGVv5zliDs0V9HbmbCQLpbuo2ej9rAoOQTvMDA==",
+    ),
+    "node_modules/js-yaml": (
+        "4.3.2",
+        "sha512-SFNOvSJ+Dgf/9An904Yx+CgSlIPCkIpao4qo51lpee25TIRejdH3rhR4EZMGoNx3/TP3O+wzWuiTFl4sqbltzA==",
+    ),
+    "node_modules/vitest": (
+        "4.1.11",
+        "sha512-fhACrNXUidIbGSBr5FlbuBkO7VWC1ZyLl0DO4CU2DrQoAPxX84Ysxs+HeGQpii5lZWV1Q4gBZTTu49mF+A6Edw==",
+    ),
+    "node_modules/@vitest/mocker": (
+        "4.1.11",
+        "sha512-2XJVD55d1o5AZous5CCGKS74g/riOj9odEt2bQpCVZeblHyHdnMeFl4jl0XjU21stf4mbjUkew2eXQZt65g5CQ==",
+    ),
+}
+ISSUE524_LOCK_PATHS = {
+    "",
+    "node_modules/@emnapi/runtime",
+    "node_modules/@img/sharp-wasm32/node_modules/@emnapi/runtime",
+    "node_modules/next",
+    "node_modules/@next/env",
+    "node_modules/@swc/helpers",
+    "node_modules/sharp",
+    "node_modules/js-yaml",
+    "node_modules/vitest",
+    *{
+        f"node_modules/@next/swc-{suffix}"
+        for suffix in (
+            "darwin-arm64", "darwin-x64", "linux-arm64-gnu", "linux-arm64-musl",
+            "linux-x64-gnu", "linux-x64-musl", "win32-arm64-msvc", "win32-x64-msvc",
+        )
+    },
+    *{
+        f"node_modules/@vitest/{name}"
+        for name in ("expect", "mocker", "pretty-format", "runner", "snapshot", "spy", "utils")
+    },
+    *{
+        f"node_modules/@img/sharp-{suffix}"
+        for suffix in (
+            "darwin-arm64", "darwin-x64", "freebsd-wasm32", "linux-arm", "linux-arm64",
+            "linux-ppc64", "linux-riscv64", "linux-s390x", "linux-x64",
+            "linuxmusl-arm64", "linuxmusl-x64", "wasm32", "webcontainers-wasm32",
+            "win32-arm64", "win32-ia32", "win32-x64",
+        )
+    },
+    *{
+        f"node_modules/@img/sharp-libvips-{suffix}"
+        for suffix in (
+            "darwin-arm64", "darwin-x64", "linux-arm", "linux-arm64", "linux-ppc64",
+            "linux-riscv64", "linux-s390x", "linux-x64", "linuxmusl-arm64", "linuxmusl-x64",
+        )
+    },
+}
+ISSUE524_CHANGED_RECORDS_SHA256 = (
+    "f81ce42b1ea694e2bcec87706640a8440c3240767b32734c8c2457dcb900102d"
+)
 ISSUE150_BASE = "a02286240212ad8958915aec01aa5ebaf60fa705"
 ISSUE460_BASE = "ab97b6eecba6db9c66c37d19b29257c7398f3ab7"
 PYPDF_WHEEL_SHA256 = "c8b09a59399062fb45a1b8156c18a787a10a3dae03ac9674397a226712c94604"
@@ -64,6 +130,42 @@ PYPDF_SDIST_SHA256 = "595647f6191de6f402cfde1d0c455d6cbccbd509aac32b34783009c032
 PYPDF_PACKAGE_SHA256 = "e8a5256eb981e4dc5c904fa425c0ba134e251343a500219df5a91ea0fcc99423"
 PYPDF_SDIST_URL = "https://files.pythonhosted.org/packages/44/66/54212e75406afd9f3e933d0dda23072f6aecc55c5a273077dc2e0b028b23/pypdf-6.16.2.tar.gz"
 PYPDF_WHEEL_URL = "https://files.pythonhosted.org/packages/13/f1/a2da3b55acd4ab737bf728c97edaaed5ec1d3c1236acb639dcdfa97e42c7/pypdf-6.16.2-py3-none-any.whl"
+HTTPX2_SDIST = (
+    "https://files.pythonhosted.org/packages/7f/f8/579a8b51e42e38ee32647df9f08aa25643ae788e275cc625b199829c4671/"
+    "httpx2-2.12.0.tar.gz",
+    "7631fe9887a8a2275f4a2540e053aa670fcc50742864a9ae7c66e609fdcf12cf",
+    100040,
+)
+HTTPX2_WHEEL = (
+    "https://files.pythonhosted.org/packages/c8/95/411ba65569158e862368917aaf56597f3e5fa3b91b0502919638465a08f3/"
+    "httpx2-2.12.0-py3-none-any.whl",
+    "cc8b6eecb8661c146b8f89a60e97456ee086e91a784ed31ac450c3a9e613dd36",
+    95427,
+)
+HTTPCORE2_SDIST = (
+    "https://files.pythonhosted.org/packages/be/ad/f4f0e57345f1870f3e8cb624e058d7eca6e5a27d33bcc3311d9b618734cd/"
+    "httpcore2-2.12.0.tar.gz",
+    "9293522bba0aa7c4c8e9e3f040c16575bd8868e155a77fa30c7a9085a5eae648",
+    67548,
+)
+HTTPCORE2_WHEEL = (
+    "https://files.pythonhosted.org/packages/d2/74/d370e55600d9bcfa0d9794b0166126d49291a3d2b20c268fc98c453a4948/"
+    "httpcore2-2.12.0-py3-none-any.whl",
+    "7e04258ce01013d7d615e5b910a3b27fac937d7a95038227e79652b4ba3b4ceb",
+    83074,
+)
+HTTPX2_JSFETCH_SDIST = (
+    "https://files.pythonhosted.org/packages/cd/c4/0e5636363151a2a1795e0a77617168b9ca438e1748ec05fc9b5687f93d64/"
+    "httpx2_jsfetch-1.0.tar.gz",
+    "70a0e3eabfef7cce5ad9c629f7d01ca05e418f586646f4ddf14782e4c1454c60",
+    6872,
+)
+HTTPX2_JSFETCH_WHEEL = (
+    "https://files.pythonhosted.org/packages/9b/43/832f631d32e4f1211caa2ba368317739fe71f0b8530e4c9d15dc454bac2a/"
+    "httpx2_jsfetch-1.0-py3-none-any.whl",
+    "cb916b707601e69a07721aabc8f3f6659be3a6893bc1ff5c6f9e02241df2da32",
+    6382,
+)
 PIP_SECURITY_VERSION = "26.2.1"
 PIP_SECURITY_WHEEL_SHA256 = "71138adf1f4ca900cdb7d289c21b7494329f2332b6d85f0e1c42108c0384ed3e"
 PIP_SECURITY_SDIST_SHA256 = "f6ad667e89a1fe78046c8f13232b247200f5258d7828f3f7883d660878e0813f"
@@ -89,6 +191,109 @@ ISSUE482_PACKAGES = {
     "setuptools": ("84.0.0", "40d7bb1469b8b97ed537a39c27fa445b44513df8d59c77247cdc925f44c53343"),
     "torch": ("2.13.0", "25956554d432863f0207b50dc5f717d294723c4635a65700e4648f8aa2f5f112"),
 }
+JSONSCHEMA_SDIST_URL = "https://files.pythonhosted.org/packages/74/69/f7185de793a29082a9f3c7728268ffb31cb5095131a9c139a74078e27336/jsonschema-4.25.1.tar.gz"
+JSONSCHEMA_SDIST_SHA256 = "e4a9655ce0da0c0b67a085847e00a3a51449e1157f4f75e9fb5aa545e122eb85"
+JSONSCHEMA_WHEEL_URL = "https://files.pythonhosted.org/packages/bf/9c/8c95d856233c1f82500c2450b8c68576b4cf1c871db3afac5c34ff84e6fd/jsonschema-4.25.1-py3-none-any.whl"
+JSONSCHEMA_WHEEL_SHA256 = "3fba0169e345c7175110351d456342c364814cfcf3b964ba4587f22915230a63"
+
+
+def _normalize_issue525_project(project: dict[str, Any]) -> None:
+    dev = project["dependency-groups"]["dev"]
+    assert dev.count("jsonschema==4.25.1") == 1
+    dev.remove("jsonschema==4.25.1")
+
+
+def _normalize_issue525_lock(lock: dict[str, Any]) -> None:
+    root = next(package for package in lock["package"] if package["name"] == "narratwin-ai")
+    dev = root["dev-dependencies"]["dev"]
+    metadata = root["metadata"]["requires-dev"]["dev"]
+    assert dev.count({"name": "jsonschema"}) == 1
+    assert metadata.count({"name": "jsonschema", "specifier": "==4.25.1"}) == 1
+    dev.remove({"name": "jsonschema"})
+    metadata.remove({"name": "jsonschema", "specifier": "==4.25.1"})
+
+
+def _assert_issue525_jsonschema_dev_contract(project_text: str, lock_text: str) -> None:
+    project = tomllib.loads(project_text)
+    lock = tomllib.loads(lock_text)
+    base_project = tomllib.loads(_text_at(ISSUE525_BASE, "pyproject.toml"))
+    base_lock = tomllib.loads(_text_at(ISSUE525_BASE, "uv.lock"))
+
+    dev = project["dependency-groups"]["dev"]
+    assert dev.count("jsonschema==4.25.1") == 1
+    assert not any(value.startswith("jsonschema") for value in project["project"]["dependencies"])
+    assert not any(
+        value.startswith("jsonschema")
+        for value in project["project"]["optional-dependencies"]["providers"]
+    )
+
+    packages = [package for package in lock["package"] if package["name"] == "jsonschema"]
+    assert len(packages) == 1
+    package = packages[0]
+    assert package["version"] == "4.25.1"
+    assert package["source"] == {"registry": "https://pypi.org/simple"}
+    assert package["dependencies"] == [
+        {"name": "attrs"},
+        {"name": "jsonschema-specifications"},
+        {"name": "referencing"},
+        {"name": "rpds-py"},
+    ]
+    assert package["sdist"] == {
+        "url": JSONSCHEMA_SDIST_URL,
+        "hash": f"sha256:{JSONSCHEMA_SDIST_SHA256}",
+        "size": 357342,
+        "upload-time": "2025-08-18T17:03:50.038Z",
+    }
+    assert package["wheels"] == [{
+        "url": JSONSCHEMA_WHEEL_URL,
+        "hash": f"sha256:{JSONSCHEMA_WHEEL_SHA256}",
+        "size": 90040,
+        "upload-time": "2025-08-18T17:03:48.373Z",
+    }]
+
+    root = next(package for package in lock["package"] if package["name"] == "narratwin-ai")
+    root_dev = root["dev-dependencies"]["dev"]
+    root_metadata = root["metadata"]["requires-dev"]["dev"]
+    assert root_dev.count({"name": "jsonschema"}) == 1
+    assert root_metadata.count({"name": "jsonschema", "specifier": "==4.25.1"}) == 1
+
+    normalized_project = copy.deepcopy(project)
+    normalized_lock = copy.deepcopy(lock)
+    _normalize_issue525_project(normalized_project)
+    _normalize_issue525_lock(normalized_lock)
+    _normalize_issue523_httpx2_delta(
+        normalized_project,
+        normalized_lock,
+        base_project,
+        base_lock,
+    )
+    assert normalized_project == base_project
+    assert normalized_lock == base_lock
+
+
+def test_issue525_jsonschema_is_an_exact_isolated_development_dependency() -> None:
+    _assert_issue525_jsonschema_dev_contract(
+        (ROOT / "pyproject.toml").read_text(encoding="utf-8"),
+        (ROOT / "uv.lock").read_text(encoding="utf-8"),
+    )
+
+
+def test_issue525_jsonschema_contract_rejects_identity_scope_and_lock_drift() -> None:
+    project_text = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
+    lock_text = (ROOT / "uv.lock").read_text(encoding="utf-8")
+    mutations = (
+        (project_text.replace("jsonschema==4.25.1", "jsonschema>=4.25.1"), lock_text),
+        (project_text.replace("jsonschema==4.25.1", "jsonschema==4.25.0"), lock_text),
+        (project_text, lock_text.replace(JSONSCHEMA_WHEEL_SHA256, "0" * 64)),
+        (project_text, lock_text.replace("size = 90040", "size = 90041", 1)),
+        (project_text, lock_text.replace('    { name = "rpds-py" },', "", 1)),
+        (project_text, lock_text.replace('    { name = "ruff" },', '    { name = "ruff" },\n    { name = "unexpected" },', 1)),
+    )
+    for candidate_project, candidate_lock in mutations:
+        with pytest.raises((AssertionError, StopIteration)):
+            _assert_issue525_jsonschema_dev_contract(candidate_project, candidate_lock)
+
+
 def _normalize_issue434_project(project: dict[str, Any]) -> None:
     dev = project["dependency-groups"]["dev"]; assert dev.count("cryptography==50.0.0") == 1; dev.remove("cryptography==50.0.0")  # noqa: E702
 def _normalize_issue434_lock(lock: dict[str, Any]) -> None:
@@ -140,6 +345,29 @@ def _normalize_t03_pillow_dev_delta(project: dict[str, Any], lock: dict[str, Any
     lock["package"] = [package for package in lock["package"] if package["name"] != "pillow"]
 
 
+def _normalize_issue523_httpx2_delta(
+    project: dict[str, Any], lock: dict[str, Any], base_project: dict[str, Any],
+    base_lock: dict[str, Any],
+) -> None:
+    dev = project["dependency-groups"]["dev"]
+    assert dev.count("httpx2>=2.12.0") == 1
+    dev[dev.index("httpx2>=2.12.0")] = "httpx2>=2.5.0"
+    root = next(item for item in lock["package"] if item["name"] == "narratwin-ai")
+    metadata = root["metadata"]["requires-dev"]["dev"]
+    current = {"name": "httpx2", "specifier": ">=2.12.0"}
+    assert metadata.count(current) == 1
+    metadata[metadata.index(current)] = {"name": "httpx2", "specifier": ">=2.5.0"}
+    base_records = {item["name"]: item for item in base_lock["package"]}
+    assert [item["version"] for item in lock["package"] if item["name"] == "httpx2"] == ["2.12.0"]
+    assert [item["version"] for item in lock["package"] if item["name"] == "httpcore2"] == ["2.12.0"]
+    assert [item["version"] for item in lock["package"] if item["name"] == "httpx2-jsfetch"] == ["1.0"]
+    lock["package"] = [
+        base_records[item["name"]] if item["name"] in {"httpx2", "httpcore2"} else item
+        for item in lock["package"] if item["name"] != "httpx2-jsfetch"
+    ]
+    assert next(value for value in base_project["dependency-groups"]["dev"] if value.startswith("httpx2")) == "httpx2>=2.5.0"
+
+
 def _assert_google_auth_delta(project: dict[str, Any], lock: dict[str, Any], base_project: dict[str, Any], base_lock: dict[str, Any]) -> None:
     providers = project["project"]["optional-dependencies"]["providers"]
     base_providers = base_project["project"]["optional-dependencies"]["providers"]
@@ -177,6 +405,7 @@ def _assert_google_auth_delta(project: dict[str, Any], lock: dict[str, Any], bas
     normalized_project["project"]["optional-dependencies"]["providers"] = base_providers
     normalized_project["dependency-groups"]["dev"].remove("google-cloud-texttospeech==2.37.0")
     _normalize_issue434_project(normalized_project)
+    _normalize_issue525_project(normalized_project)
     assert normalized_project == base_project
     normalized_lock = copy.deepcopy(lock)
     normalized_root = next(package for package in normalized_lock["package"] if package["name"] == "narratwin-ai")
@@ -192,6 +421,7 @@ def _assert_google_auth_delta(project: dict[str, Any], lock: dict[str, Any], bas
     _normalize_issue434_lock(normalized_lock)
     _normalize_pip_security_delta(normalized_lock, base_lock)
     _normalize_issue482_delta(normalized_lock, base_lock)
+    _normalize_issue525_lock(normalized_lock)
     assert normalized_lock == base_lock
 
 
@@ -207,6 +437,34 @@ def test_issue498_dependency_docs_distinguish_runtime_and_hosted_test_placement(
     traceability = (ROOT / "docs/TRACEABILITY.md").read_text(encoding="utf-8")
     assert "optional runtime `providers` extra and the exact development/test dependency group" in notices
     assert "Optional runtime providers extra plus exact development/test pin" in traceability
+
+
+def test_current_js_yaml_notice_preserves_history_without_stale_live_version() -> None:
+    notices = (ROOT / "docs/THIRD_PARTY_NOTICES.md").read_text(encoding="utf-8")
+    rows = [line for line in notices.splitlines() if line.startswith("| js-yaml |")]
+    assert len(rows) == 1
+    assert "current sole lock entry is exact 4.3.2" in rows[0]
+    assert "Issue `#396` previously moved 4.3.0 to 4.3.1" in rows[0]
+
+
+def test_stackclimb_schema_notice_preserves_source_license_and_attribution() -> None:
+    notices = (ROOT / "docs/THIRD_PARTY_NOTICES.md").read_text(encoding="utf-8")
+    section = notices.split("## Issue #524 frontend security refresh", 1)[1]
+    for required in (
+        "LicenseRef-stackclimb-source-v1",
+        "shared/schemas/task-resource-ledger-v1.schema.json",
+        "f74c8f2fdc0e2edd955b999216d660d06c69986b98427d1147f404f27057c8f5",
+        "Copyright (c) 2026 Rohit Agrawal",
+        "Permission is hereby granted",
+        'THE SOFTWARE IS PROVIDED "AS IS"',
+        "https://stackclimb.com",
+        "https://github.com/imrohitagrawal",
+        "https://www.linkedin.com/in/rohitagrawal14/",
+    ):
+        assert required in section
+    assert "shared/schemas/task-resource-ledger-v1.schema.json" in (
+        ROOT / "docs/SKILL_LOCK.md"
+    ).read_text(encoding="utf-8")
 
 
 def _base_text(path: str) -> str:
@@ -231,10 +489,185 @@ def _normalize_issue495_frontend_delta(
         lock["packages"][path] = base_lock["packages"][path]
 
 
+def _strict_json_object(text: str) -> dict[str, Any]:
+    def reject_duplicates(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+        result: dict[str, Any] = {}
+        for key, value in pairs:
+            if key in result:
+                raise ValueError(f"duplicate JSON member: {key}")
+            result[key] = value
+        return result
+
+    value = json.loads(text, object_pairs_hook=reject_duplicates)
+    assert isinstance(value, dict)
+    return value
+
+
+def _assert_issue524_frontend_contract(package_text: str, lock_text: str) -> None:
+    manifest = _strict_json_object(package_text)
+    lock = _strict_json_object(lock_text)
+    base_manifest = json.loads(_text_at(ISSUE524_BASE, "frontend/package.json"))
+    base_lock = json.loads(_text_at(ISSUE524_BASE, "frontend/package-lock.json"))
+
+    assert manifest["dependencies"]["next"] == "16.3.4"
+    assert manifest["devDependencies"]["vitest"] == "^4.1.11"
+    assert manifest["overrides"]["sharp"] == "^0.35.4"
+    assert "js-yaml" not in manifest["dependencies"]
+    assert "js-yaml" not in manifest["devDependencies"]
+    assert "js-yaml" not in manifest["overrides"]
+    assert manifest["allowScripts"].get("sharp@0.35.4") is True
+    assert "sharp@0.35.3" not in manifest["allowScripts"]
+    assert manifest["devDependencies"]["eslint-config-next"] == "16.2.9"
+
+    root = lock["packages"][""]
+    assert root["dependencies"]["next"] == "16.3.4"
+    assert root["devDependencies"]["vitest"] == "^4.1.11"
+    for path, (version, integrity) in ISSUE524_FRONTEND_PACKAGES.items():
+        record = lock["packages"][path]
+        assert record["version"] == version
+        assert record["integrity"] == integrity
+        assert record["resolved"].startswith("https://registry.npmjs.org/")
+
+    normalized_manifest = copy.deepcopy(manifest)
+    normalized_manifest["dependencies"]["next"] = base_manifest["dependencies"]["next"]
+    normalized_manifest["devDependencies"]["vitest"] = base_manifest["devDependencies"]["vitest"]
+    normalized_manifest["overrides"]["sharp"] = base_manifest["overrides"]["sharp"]
+    normalized_manifest["allowScripts"]["sharp@0.35.3"] = normalized_manifest[
+        "allowScripts"
+    ].pop("sharp@0.35.4")
+    assert normalized_manifest == base_manifest
+
+    changed = {
+        path
+        for path in set(lock["packages"]) | set(base_lock["packages"])
+        if lock["packages"].get(path) != base_lock["packages"].get(path)
+    }
+    assert changed == ISSUE524_LOCK_PATHS
+    for path in ISSUE524_LOCK_PATHS - {""}:
+        record = lock["packages"][path]
+        assert record["resolved"].startswith("https://registry.npmjs.org/")
+        assert record["integrity"].startswith("sha512-")
+    record_digests = {
+        path: hashlib.sha256(
+            json.dumps(
+                lock["packages"][path],
+                ensure_ascii=True,
+                sort_keys=True,
+                separators=(",", ":"),
+            ).encode("ascii")
+        ).hexdigest()
+        for path in sorted(ISSUE524_LOCK_PATHS)
+    }
+    complete_digest = hashlib.sha256(
+        json.dumps(
+            record_digests,
+            ensure_ascii=True,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("ascii")
+    ).hexdigest()
+    assert complete_digest == ISSUE524_CHANGED_RECORDS_SHA256
+    normalized_lock = copy.deepcopy(lock)
+    for path in ISSUE524_LOCK_PATHS:
+        if path in base_lock["packages"]:
+            normalized_lock["packages"][path] = base_lock["packages"][path]
+        else:
+            normalized_lock["packages"].pop(path)
+    assert normalized_lock == base_lock
+
+
+def test_issue524_frontend_graph_is_exact_patched_and_isolated() -> None:
+    _assert_issue524_frontend_contract(
+        (ROOT / "frontend/package.json").read_text(encoding="utf-8"),
+        (ROOT / "frontend/package-lock.json").read_text(encoding="utf-8"),
+    )
+
+
+def test_issue524_frontend_contract_rejects_weaker_substituted_and_manifest_drift() -> None:
+    package_text = (ROOT / "frontend/package.json").read_text(encoding="utf-8")
+    lock_text = (ROOT / "frontend/package-lock.json").read_text(encoding="utf-8")
+    lock = json.loads(lock_text)
+    alternate_registry = copy.deepcopy(lock)
+    alternate_registry["packages"]["node_modules/@next/env"]["resolved"] = (
+        "https://example.invalid/@next/env.tgz"
+    )
+    forged_integrity = copy.deepcopy(lock)
+    forged_integrity["packages"]["node_modules/@vitest/expect"]["integrity"] = (
+        "sha512-forged"
+    )
+    mutations = (
+        (package_text.replace('"next": "16.3.4"', '"next": "16.3.2"'), lock_text),
+        (package_text.replace('"vitest": "^4.1.11"', '"vitest": "^4.1.9"'), lock_text),
+        (package_text.replace('"sharp": "^0.35.4"', '"sharp": "^0.35.3"'), lock_text),
+        (package_text.replace('"eslint-config-next": "16.2.9"', '"eslint-config-next": "16.3.4"'), lock_text),
+        (package_text, lock_text.replace(ISSUE524_FRONTEND_PACKAGES["node_modules/next"][1], "sha512-forged")),
+        (package_text, lock_text.replace('https://registry.npmjs.org/next/', 'https://example.invalid/next/', 1)),
+        (package_text, json.dumps(alternate_registry)),
+        (package_text, json.dumps(forged_integrity)),
+    )
+    for candidate_package, candidate_lock in mutations:
+        with pytest.raises((AssertionError, KeyError)):
+            _assert_issue524_frontend_contract(candidate_package, candidate_lock)
+
+
+@pytest.mark.parametrize("lock_path", sorted(ISSUE524_LOCK_PATHS))
+def test_issue524_contract_rejects_tampering_in_every_changed_record(lock_path: str) -> None:
+    package_text = (ROOT / "frontend/package.json").read_text(encoding="utf-8")
+    lock = json.loads((ROOT / "frontend/package-lock.json").read_text(encoding="utf-8"))
+    lock["packages"][lock_path]["issue524Tamper"] = True
+    with pytest.raises(AssertionError):
+        _assert_issue524_frontend_contract(
+            package_text,
+            json.dumps(lock, ensure_ascii=True, separators=(",", ":")),
+        )
+
+
+def test_issue524_contract_rejects_missing_and_duplicate_nonprimary_record() -> None:
+    package_text = (ROOT / "frontend/package.json").read_text(encoding="utf-8")
+    lock_text = (ROOT / "frontend/package-lock.json").read_text(encoding="utf-8")
+    lock = json.loads(lock_text)
+    nonprimary = "node_modules/@next/env"
+
+    missing = copy.deepcopy(lock)
+    del missing["packages"][nonprimary]
+    with pytest.raises((AssertionError, KeyError)):
+        _assert_issue524_frontend_contract(package_text, json.dumps(missing))
+
+    marker = f'    "{nonprimary}": {{'
+    duplicate = lock_text.replace(
+        marker,
+        f'    "{nonprimary}": {json.dumps(lock["packages"][nonprimary])},\n{marker}',
+        1,
+    )
+    assert duplicate != lock_text
+    with pytest.raises((AssertionError, ValueError)):
+        _assert_issue524_frontend_contract(package_text, duplicate)
+
+    duplicate_record_field = lock_text.replace(
+        '      "version": "16.3.4",',
+        '      "version": "0.0.0",\n      "version": "16.3.4",',
+        1,
+    )
+    duplicate_manifest_key = package_text.replace(
+        '    "next": "16.3.4",',
+        '    "next": "0.0.0",\n    "next": "16.3.4",',
+        1,
+    )
+    assert duplicate_record_field != lock_text
+    assert duplicate_manifest_key != package_text
+    for candidate_package, candidate_lock in (
+        (package_text, duplicate_record_field),
+        (duplicate_manifest_key, lock_text),
+    ):
+        with pytest.raises(ValueError, match="duplicate JSON member"):
+            _assert_issue524_frontend_contract(candidate_package, candidate_lock)
+
+
 def _assert_pypdf_6162_contract(project_text: str, lock_text: str) -> None:
     project, lock = tomllib.loads(project_text), tomllib.loads(lock_text)
     base_project = tomllib.loads(_text_at(ISSUE401_BASE, "pyproject.toml"))
     base_lock = tomllib.loads(_text_at(ISSUE401_BASE, "uv.lock"))
+    _normalize_issue523_httpx2_delta(project, lock, base_project, base_lock)
     dependencies = project["project"]["dependencies"]
     assert [value for value in dependencies if value.startswith("pypdf")] == ["pypdf>=6.16.2"]
     google_project = copy.deepcopy(project)
@@ -292,6 +725,8 @@ def _assert_pypdf_6162_contract(project_text: str, lock_text: str) -> None:
     _normalize_pip_security_delta(normalized_lock, base_lock)
     _normalize_issue482_delta(normalized_lock, base_lock)
     _normalize_t03_pillow_dev_delta(normalized_project, normalized_lock)
+    _normalize_issue525_project(normalized_project)
+    _normalize_issue525_lock(normalized_lock)
     assert normalized_project == base_project
     assert normalized_lock == base_lock
 
@@ -370,6 +805,147 @@ def test_pypdf_refresh_preserves_unsupported_pdf_runtime_boundary() -> None:
     assert 'expected = "UNSUPPORTED_MEDIA_TYPE" if case in {"mime", "archive"}' in api_test
 
 
+def _assert_distribution(
+    package: dict[str, Any], sdist: tuple[str, str, int], wheel: tuple[str, str, int]
+) -> None:
+    assert package["source"] == {"registry": "https://pypi.org/simple"}
+    assert package["sdist"]["url"] == sdist[0]
+    assert package["sdist"]["hash"] == f"sha256:{sdist[1]}"
+    assert package["sdist"]["size"] == sdist[2]
+    assert len(package["wheels"]) == 1
+    assert package["wheels"][0]["url"] == wheel[0]
+    assert package["wheels"][0]["hash"] == f"sha256:{wheel[1]}"
+    assert package["wheels"][0]["size"] == wheel[2]
+
+
+def _assert_httpx2_2120_contract(project_text: str, lock_text: str) -> None:
+    project = tomllib.loads(project_text)
+    lock = tomllib.loads(lock_text)
+    base_project = tomllib.loads(_text_at(ISSUE523_BASE, "pyproject.toml"))
+    base_lock = tomllib.loads(_text_at(ISSUE523_BASE, "uv.lock"))
+
+    dev = project["dependency-groups"]["dev"]
+    direct = [value for value in dev if value.startswith("httpx2")]
+    assert direct == ["httpx2>=2.12.0"]
+    packages = lock["package"]
+    httpx2 = [item for item in packages if item["name"] == "httpx2"]
+    httpcore2 = [item for item in packages if item["name"] == "httpcore2"]
+    jsfetch = [item for item in packages if item["name"] == "httpx2-jsfetch"]
+    assert len(httpx2) == len(httpcore2) == len(jsfetch) == 1
+    assert httpx2[0]["version"] == httpcore2[0]["version"] == "2.12.0"
+    assert jsfetch[0]["version"] == "1.0"
+    _assert_distribution(httpx2[0], HTTPX2_SDIST, HTTPX2_WHEEL)
+    _assert_distribution(httpcore2[0], HTTPCORE2_SDIST, HTTPCORE2_WHEEL)
+    _assert_distribution(jsfetch[0], HTTPX2_JSFETCH_SDIST, HTTPX2_JSFETCH_WHEEL)
+    assert httpx2[0]["dependencies"] == [
+        {"name": "anyio", "marker": "sys_platform != 'emscripten'"},
+        {"name": "httpcore2", "marker": "sys_platform != 'emscripten'"},
+        {"name": "httpx2-jsfetch", "marker": "sys_platform == 'emscripten'"},
+        {"name": "idna"},
+        {"name": "truststore", "marker": "sys_platform != 'emscripten'"},
+    ]
+    assert httpcore2[0]["dependencies"] == [
+        {"name": "h11", "marker": "sys_platform != 'emscripten'"},
+        {"name": "truststore", "marker": "sys_platform != 'emscripten'"},
+    ]
+    assert set(httpx2[0]) == {"name", "version", "source", "dependencies", "sdist", "wheels"}
+    assert set(httpcore2[0]) == {"name", "version", "source", "dependencies", "sdist", "wheels"}
+    assert set(jsfetch[0]) == {"name", "version", "source", "sdist", "wheels"}
+
+    root = next(item for item in packages if item["name"] == "narratwin-ai")
+    assert root["dev-dependencies"]["dev"].count({"name": "httpx2"}) == 1
+    assert root["metadata"]["requires-dev"]["dev"].count(
+        {"name": "httpx2", "specifier": ">=2.12.0"}
+    ) == 1
+
+    normalized_project = copy.deepcopy(project)
+    normalized_lock = copy.deepcopy(lock)
+    _normalize_issue523_httpx2_delta(
+        normalized_project,
+        normalized_lock,
+        base_project,
+        base_lock,
+    )
+    _normalize_issue525_project(normalized_project)
+    _normalize_issue525_lock(normalized_lock)
+    assert normalized_project == base_project
+    assert normalized_lock == base_lock
+
+
+def test_root_httpx2_resolution_is_exact_isolated_and_patched() -> None:
+    _assert_httpx2_2120_contract(
+        (ROOT / "pyproject.toml").read_text(encoding="utf-8"),
+        (ROOT / "uv.lock").read_text(encoding="utf-8"),
+    )
+
+
+def test_issue523_and_issue525_cross_normalization_rejects_sibling_tamper() -> None:
+    project_text = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
+    lock_text = (ROOT / "uv.lock").read_text(encoding="utf-8")
+    _assert_httpx2_2120_contract(project_text, lock_text)
+    _assert_issue525_jsonschema_dev_contract(project_text, lock_text)
+
+    with pytest.raises(AssertionError):
+        _assert_httpx2_2120_contract(
+            project_text,
+            lock_text.replace(JSONSCHEMA_WHEEL_SHA256, "0" * 64),
+        )
+    with pytest.raises(AssertionError):
+        _assert_issue525_jsonschema_dev_contract(
+            project_text.replace("httpx2>=2.12.0", "httpx2>=2.11.0"),
+            lock_text,
+        )
+
+
+def test_httpx2_contract_rejects_vulnerable_substituted_and_unrelated_drift() -> None:
+    project_text = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
+    lock_text = (ROOT / "uv.lock").read_text(encoding="utf-8")
+    header = 'name = "httpx2"\nversion = "2.12.0"'
+    block_start = lock_text.index("[[package]]\n" + header)
+    block_end = lock_text.index("\n[[package]]", block_start + 1)
+    block = lock_text[block_start:block_end]
+    mutations = (
+        (project_text.replace("httpx2>=2.12.0", "httpx2>=2.11.0"), lock_text),
+        (project_text.replace('    "httpx2>=2.12.0",\n', ""), lock_text),
+        (
+            project_text.replace(
+                '    "httpx2>=2.12.0",',
+                '    "httpx2>=2.12.0",\n    "httpx2>=2.12.0",',
+            ),
+            lock_text,
+        ),
+        (project_text, lock_text.replace(f"sha256:{HTTPX2_WHEEL[1]}", "sha256:wrong")),
+        (project_text, lock_text.replace(f"sha256:{HTTPCORE2_SDIST[1]}", "sha256:wrong")),
+        (project_text, lock_text.replace(HTTPX2_WHEEL[0], "https://example.invalid/httpx2.whl")),
+        (project_text, lock_text.replace("size = 95427", "size = 95428", 1)),
+        (project_text, lock_text.replace('name = "httpx2"\nversion = "2.12.0"', 'name = "httpx2"\nversion = "2.11.0"')),
+        (project_text, lock_text.replace('name = "httpcore2"\nversion = "2.12.0"', 'name = "httpcore2"\nversion = "2.10.0"')),
+        (
+            project_text,
+            lock_text.replace(
+                '{ name = "httpcore2", marker = "sys_platform != \'emscripten\'" }',
+                '{ name = "forged-core", marker = "sys_platform != \'emscripten\'" }',
+                1,
+            ),
+        ),
+        (
+            project_text,
+            lock_text.replace(
+                '    { name = "idna" },',
+                '    { name = "idna" },\n    { name = "forged-extra" },',
+                1,
+            ),
+        ),
+        (project_text, lock_text[:block_end] + "\n" + block + lock_text[block_end:]),
+        (project_text, lock_text.replace(f"sha256:{HTTPX2_JSFETCH_WHEEL[1]}", "sha256:wrong")),
+        (project_text, lock_text.replace('source = { registry = "https://pypi.org/simple" }', 'source = { registry = "https://example.invalid/simple" }', 1)),
+        (project_text.replace('    "bandit>=1.9.4",', '    "bandit>=1.9.5",'), lock_text),
+    )
+    for candidate_project, candidate_lock in mutations:
+        with pytest.raises((AssertionError, KeyError, StopIteration)):
+            _assert_httpx2_2120_contract(candidate_project, candidate_lock)
+
+
 def test_google_auth_contract_rejects_direct_transitive_and_artifact_drift() -> None:
     project_text = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
     lock_text = (ROOT / "uv.lock").read_text(encoding="utf-8")
@@ -426,9 +1002,11 @@ def _assert_js_yaml_431_contract(package_text: str, lock: dict[str, Any]) -> Non
 
 
 def test_frontend_js_yaml_lock_is_exact_isolated_and_patched() -> None:
+    # Issue #524 proves that every record outside its exact delta equals this
+    # accepted snapshot; evaluate the older contract at that compositional edge.
     _assert_js_yaml_431_contract(
-        (ROOT / "frontend/package.json").read_text(encoding="utf-8"),
-        json.loads((ROOT / "frontend/package-lock.json").read_text(encoding="utf-8")),
+        _text_at(ISSUE524_BASE, "frontend/package.json"),
+        json.loads(_text_at(ISSUE524_BASE, "frontend/package-lock.json")),
     )
 
 
@@ -453,8 +1031,10 @@ def test_js_yaml_contract_rejects_identity_integrity_and_unrelated_drift() -> No
 
 
 def test_frontend_brace_expansion_override_and_lock_are_isolated_and_patched() -> None:
-    package = json.loads((ROOT / "frontend/package.json").read_text(encoding="utf-8"))
-    lock = json.loads((ROOT / "frontend/package-lock.json").read_text(encoding="utf-8"))
+    # The Issue #524 exact-delta contract binds the current lock back to this
+    # accepted snapshot before this historical boundary is evaluated.
+    package = json.loads(_text_at(ISSUE524_BASE, "frontend/package.json"))
+    lock = json.loads(_text_at(ISSUE524_BASE, "frontend/package-lock.json"))
     base_package, base_lock = _base_json("frontend/package.json"), _base_json("frontend/package-lock.json")
 
     assert package["overrides"]["brace-expansion"] == "5.0.9"
@@ -695,6 +1275,10 @@ def test_security_wrapper_is_fail_closed_without_advisory_suppression() -> None:
     assert "--path" in audit_wrapper
     assert "python3 scripts/ci/check_semgrep_security.py installed-tool" in audit_wrapper
     assert "bash scripts/ci/run-semgrep.sh" in wrapper
+    hosted_completion = 'if [ "${CI:-}" = "true" ] && [ "${NARRATWIN_GITLEAKS_ACTION_COMPLETED:-}" = "1" ]; then'
+    cli_scan = "elif command -v gitleaks >/dev/null 2>&1; then"
+    assert wrapper.index(hosted_completion) < wrapper.index(cli_scan)
+    assert "Gitleaks action completed in CI; skipping duplicate CLI scan in wrapper." in wrapper
     for forbidden in (
         "--ignore-vuln",
         "pysec-2026-2132",

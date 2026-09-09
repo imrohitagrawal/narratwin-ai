@@ -1,0 +1,257 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://stackclimb.dev/schemas/task-resource-ledger-v1.schema.json",
+  "title": "TaskResourceLedgerV1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "ledger_id",
+    "session_id",
+    "mode",
+    "ledger_state",
+    "created_at",
+    "snapshot_at",
+    "owner",
+    "review_state",
+    "authority_ref",
+    "expires_at",
+    "explicit_exclusions",
+    "contexts",
+    "inventory_probes",
+    "resources",
+    "events"
+  ],
+  "properties": {
+    "schema_version": {"const": "TaskResourceLedgerV1"},
+    "ledger_id": {"type": "string", "minLength": 1},
+    "session_id": {"type": "string", "minLength": 1},
+    "mode": {"enum": ["package", "reclamation"]},
+    "ledger_state": {"enum": ["draft", "frozen", "final", "superseded"]},
+    "created_at": {"type": "string", "format": "date-time"},
+    "snapshot_at": {"type": "string", "format": "date-time"},
+    "owner": {"type": ["string", "null"]},
+    "review_state": {"enum": ["draft", "reviewed", "superseded"]},
+    "authority_ref": {"type": ["string", "null"]},
+    "expires_at": {"type": ["string", "null"], "format": "date-time"},
+    "explicit_exclusions": {
+      "type": "array",
+      "items": {"type": "string"},
+      "uniqueItems": true
+    },
+    "contexts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["context_id", "public_ref", "kind", "restricted_storage_state", "policy_refs", "exclusions"],
+        "properties": {
+          "context_id": {"type": "string", "minLength": 1},
+          "public_ref": {"type": "string", "minLength": 1},
+          "kind": {"enum": ["repository", "workspace", "engine", "package-store", "other"]},
+          "restricted_storage_state": {"enum": ["approved", "unavailable", "unknown"]},
+          "policy_refs": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+          "exclusions": {"type": "array", "items": {"type": "string"}, "uniqueItems": true}
+        }
+      }
+    },
+    "inventory_probes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["probe_id", "context_ref", "resource_kind", "status", "item_count", "snapshot_at", "evidence_refs"],
+        "properties": {
+          "probe_id": {"type": "string", "minLength": 1},
+          "context_ref": {"type": "string", "minLength": 1},
+          "resource_kind": {"type": "string", "minLength": 1},
+          "status": {"enum": ["completed", "partial", "failed", "blocked"]},
+          "item_count": {"type": "integer", "minimum": 0},
+          "snapshot_at": {"type": "string", "format": "date-time"},
+          "coverage_gap": {"type": ["string", "null"]},
+          "evidence_refs": {"type": "array", "items": {"type": "string"}, "uniqueItems": true}
+        }
+      }
+    },
+    "resources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "resource_id",
+          "context_ref",
+          "public_ref",
+          "kind",
+          "identity_fingerprint",
+          "existed_before_task",
+          "ownership",
+          "activity",
+          "reference_state",
+          "sensitivity",
+          "recoverability",
+          "retention_class",
+          "retention_trigger_state",
+          "evidence_obligation",
+          "legal_hold",
+          "cleanup_contract",
+          "kind_evidence",
+          "logical_bytes",
+          "exclusive_reclaimable_bytes",
+          "measurement_confidence",
+          "eligibility_evidence_refs",
+          "evidence_refs",
+          "dependency_resource_ids",
+          "lifecycle_state",
+          "decision_reasons",
+          "authorization_ref",
+          "verification"
+        ],
+        "properties": {
+          "resource_id": {"type": "string", "minLength": 1},
+          "context_ref": {"type": "string", "minLength": 1},
+          "public_ref": {"type": "string", "minLength": 1},
+          "kind": {
+            "enum": [
+              "local-branch",
+              "remote-branch",
+              "worktree",
+              "filesystem-path",
+              "temporary-file",
+              "virtual-environment",
+              "dependency-tree",
+              "download",
+              "build-output",
+              "generated-artifact",
+              "shared-package-cache",
+              "container",
+              "image",
+              "volume",
+              "network",
+              "builder",
+              "build-cache-record",
+              "process",
+              "port",
+              "shared-resource"
+            ]
+          },
+          "identity_fingerprint": {"type": "string", "minLength": 1},
+          "existed_before_task": {"type": "boolean"},
+          "ownership": {"enum": ["exclusive", "shared", "ambiguous", "unrelated"]},
+          "activity": {"enum": ["active", "inactive", "unknown"]},
+          "reference_state": {"enum": ["unreferenced", "referenced", "unknown"]},
+          "sensitivity": {"enum": ["ordinary", "credential", "private-evidence", "regulated", "unknown"]},
+          "recoverability": {"enum": ["recreatable", "recoverable", "irrecoverable", "unknown"]},
+          "retention_class": {"enum": ["always-clean", "success-clean", "failure-retain", "evidence-until-verified", "persistent", "shared-retain"]},
+          "retention_trigger_state": {"enum": ["pending", "satisfied", "unknown"]},
+          "evidence_obligation": {"enum": ["ended", "active", "unknown"]},
+          "legal_hold": {"enum": ["none", "active", "unknown"]},
+          "cleanup_contract": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["disposition", "kind", "locator", "trigger"],
+            "properties": {
+              "disposition": {"enum": ["delete", "retain"]},
+              "kind": {
+                "enum": [
+                  "local-branch",
+                  "remote-branch",
+                  "worktree",
+                  "filesystem-path",
+                  "temporary-file",
+                  "virtual-environment",
+                  "dependency-tree",
+                  "download",
+                  "build-output",
+                  "generated-artifact",
+                  "shared-package-cache",
+                  "container",
+                  "image",
+                  "volume",
+                  "network",
+                  "builder",
+                  "build-cache-record",
+                  "process",
+                  "port",
+                  "shared-resource"
+                ]
+              },
+              "locator": {"type": "string", "minLength": 1},
+              "trigger": {"type": "string", "minLength": 1}
+            }
+          },
+          "kind_evidence": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["evidence_refs"],
+            "properties": {
+              "evidence_refs": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+              "leaf_shape": {"enum": ["file", "symlink", "empty-directory", "directory-tree", null]},
+              "worktree_clean": {"type": ["boolean", "null"]},
+              "branch_recoverable": {"type": ["boolean", "null"]},
+              "process_trigger_ended": {"type": ["boolean", "null"]},
+              "process_no_dependents": {"type": ["boolean", "null"]},
+              "process_identity_matches": {"type": ["boolean", "null"]},
+              "shared_impact_authority_ref": {"type": ["string", "null"], "pattern": "^current-session-human:[A-Za-z0-9._:-]+$"},
+              "container_stopped": {"type": ["boolean", "null"]},
+              "retained_reference_count": {"type": ["integer", "null"], "minimum": 0, "maximum": 9007199254740991},
+              "volume_empty": {"type": ["boolean", "null"]},
+              "network_is_default": {"type": ["boolean", "null"]},
+              "builder_inactive": {"type": ["boolean", "null"]},
+              "exact_selector_available": {"type": ["boolean", "null"]},
+              "hard_link_coverage_complete": {"type": ["boolean", "null"]}
+            }
+          },
+          "logical_bytes": {"type": ["integer", "null"], "minimum": 0, "maximum": 9007199254740991},
+          "exclusive_reclaimable_bytes": {"type": ["integer", "null"], "minimum": 0, "maximum": 9007199254740991},
+          "measurement_confidence": {"enum": ["exact", "estimated", "unknown"]},
+          "eligibility_evidence_refs": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+          "evidence_refs": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+          "dependency_resource_ids": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+          "lifecycle_state": {"enum": ["inventoried", "classified", "proposed-delete", "authorized-delete", "revalidated", "deletion-attempted", "verified-absent", "retained", "blocked", "delete-outcome-unknown", "deletion-failed"]},
+          "decision_reasons": {"type": "array", "items": {"type": "string"}, "minItems": 1, "uniqueItems": true},
+          "authorization_ref": {"type": ["string", "null"]},
+          "verification": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["result", "evidence_refs"],
+            "properties": {
+              "result": {"enum": ["not-run", "verified-absent", "verified-present", "failed", "unknown"]},
+              "evidence_refs": {"type": "array", "items": {"type": "string"}, "uniqueItems": true}
+            }
+          }
+        }
+      }
+    },
+    "events": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["event_id", "resource_id", "state", "at", "authorization_ref", "evidence_refs"],
+        "properties": {
+          "event_id": {"type": "string", "minLength": 1},
+          "resource_id": {"type": "string", "minLength": 1},
+          "state": {"enum": ["inventoried", "classified", "proposed-delete", "authorized-delete", "revalidated", "deletion-attempted", "verified-absent", "retained", "blocked", "delete-outcome-unknown", "deletion-failed"]},
+          "at": {"type": "string", "format": "date-time"},
+          "authorization_ref": {"type": ["string", "null"]},
+          "evidence_refs": {"type": "array", "items": {"type": "string"}, "minItems": 1, "uniqueItems": true}
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {"ledger_state": {"enum": ["frozen", "final"]}},
+        "required": ["ledger_state"]
+      },
+      "then": {
+        "properties": {
+          "contexts": {"minItems": 1},
+          "inventory_probes": {"minItems": 1}
+        }
+      }
+    }
+  ]
+}

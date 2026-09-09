@@ -2190,3 +2190,98 @@ human acceptance, deployment, release, production-readiness, or Cut 1 evidence.
   8,500 charged-line cap and every non-activation prohibition remain.
 - Semantic/security review, exact approvals, hosted parity, merge, and separate
   activation remain pending. Release posture remains No-Go.
+
+## Issue #523 httpx2/httpcore2 security child (2026-09-09)
+
+- The public advisory feed now rejects development/test-only `httpx2` and
+  `httpcore2` 2.5.0 for five CVEs, so the strict dependency gate blocks despite
+  both packages being absent from the `--no-dev` backend image.
+- Issue #523 uses TDD to bind the sole direct requirement to
+  `httpx2>=2.12.0`, the exact official 2.12.0 `httpx2`/`httpcore2` records, and
+  the official Emscripten-only `httpx2-jsfetch` 1.0 transitive record. Unrelated
+  project and lock changes fail closed.
+- Exact child head `b1d3198d` passed independent review in receipt `5602946863`
+  and is preserved as the first parent of the atomic merge chain. Child evidence
+  does not substitute for the combined candidate's local and hosted proof.
+
+## Issues #523/#524/#525 atomic security convergence (2026-09-09)
+
+- Issue `#524` raises only the affected frontend graph: Next.js 16.3.4,
+  sharp 0.35.4, transitive js-yaml 4.3.2, and Vitest/`@vitest` 4.1.11.
+  Exact registry identities and a fifty-record resolver boundary prevent
+  unrelated Vite/Rolldown or CSS-tooling refreshes.
+- Final amendment `5602656745` binds reviewed heads for Issues `#523`, `#524`,
+  and `#525`, exactly twenty-two paths, and a 6,920-line aggregate drift cap.
+  Evidence correction `5603161674` binds the live raw-body hash of the existing
+  Issue `#525` review receipt after independent reproduction found a clerical
+  hash-copy error; it changes no reviewed child, topology, scope, or authority.
+  Hosted-parity amendment `5603708565` expands the exact route to thirty paths
+  and 7,660 charged lines after both Docker contexts reproduced the same stale
+  libvips SONAME. The bounded correction derives one locked regular SONAME and
+  updates both architecture SBOM identities; it adds no dependency or waiver.
+  Hosted duplicate-scan amendment `5604753747` and reviewed-input correction
+  `5604916338` expand the route to thirty-two paths without raising the cap:
+  hosted CI honors the completed dedicated Gitleaks action, local runs retain
+  the canary/full-history scan, and the changed wrapper remains hash-bound.
+  Final runtime-inventory amendment `5605296135` keeps the same thirty-two paths
+  and cap while replacing both stale `1580..1620` count ranges with same-width
+  `1630..1670` ranges for the reviewed 1,650-record frontend graph. Exact
+  primary/reproduction digest equality and both hosted architectures still gate
+  acceptance.
+  Hosted run `34380945721` then reproduced a primary/reproduction digest
+  mismatch after both inventories passed architecture, syntax, and count gates.
+  Diagnostic amendment `5605975407` expands the exact route to thirty-three
+  paths, with no cap increase, for one sanitized maximum-twenty-path delta and
+  at most one cause-specific correction. The diagnostic cannot expose content
+  or secrets, alter the verdict, widen bounds, fix build keys, or authorize a
+  retry; this candidate remains unaccepted until both architectures pass.
+  That cycle identified only Node's process-local compile cache at
+  `/tmp/node-compile-cache/v26.7.0-x64-8d7ad2ee-0/376b9136`. Exact-head hosted
+  run `34392274312` proved the initial inventory-process control was too late:
+  the differing cache bytes were already baked into both images. Amendment
+  `5607354461` moves the control to the final image-assembly process before its
+  first import; it does not exclude `/tmp`, mutate inventory semantics, or
+  change final runtime configuration. Hosted dual-architecture proof remains
+  pending.
+  Normal non-fast-forward merges `30bdcecf` then `8ac8a6ea` preserve the #524
+  and #525 RED/GREEN ancestry in that order. The composed Python lock proof
+  removes the exact HTTPX and JSONSchema deltas before comparing with base, so
+  either sibling's tampering remains a failure.
+- Cleanup amendment `5601014173` replaces the earlier preliminary inventory
+  claim with the exact StackClimb `TaskResourceLedgerV1` schema and a sanitized
+  frozen ledger. Live-census amendment `5601780266` expands the closed inventory
+  to all thirty-four observed Issue `#524` resources and sixty-eight lifecycle
+  events; the whole parsed ledger is canonical-hash bound so fingerprints,
+  measurements, evidence, retention, and sensitivity cannot drift silently.
+  It records retention and
+  revalidation duties but authorizes no deletion; unrelated dirty state, shared
+  caches, historical resources, Docker objects, and private evidence stay out
+  of scope.
+- Full-gate amendment `5601451115` corrects the stale nanoid compatibility
+  fixture against the immutable Issue `#524` dependency reference and renames
+  one opaque ledger ID that matched the secret scanner's key-shaped pattern;
+  neither the nanoid invariant nor the scanner is weakened.
+- Provenance amendment `5601842704` binds the exact StackClimb source, pin,
+  custom license, attribution, trust behavior, and 2026-10-09 review expiry in
+  the skill lock and third-party notice. Its guidance and read-only inventory
+  grant no provider, spend, merge, or cleanup authority.
+- No advisory is ignored or suppressed. The refresh changes dependency
+  metadata only and adds no product/provider/media behavior, credential use,
+  egress, spend, deployment, release, production-readiness, or Cut 1 claim.
+- T06, T07, T08, deployment, publication, release, production readiness, and
+  Cut 1 acceptance remain incomplete.
+
+## Issue #525 schema-oracle runtime-policy prerequisite (2026-09-09)
+
+- Repeated full-suite failures reproduced the unchanged Draft 2020-12 helper's
+  ambient `/usr/bin/python3` dependency and fixed five-second timeout as a
+  `REQUIRED_CONTRACT`, not an Issue #523 regression.
+- The bounded correction uses the isolated active project interpreter, a typed
+  20-second default with 1–60-second bounds, one attempt, and redacted failure.
+  Exact `jsonschema==4.25.1` development placement closes the isolated import;
+  its pre-existing lock artifacts and all unrelated dependency records remain
+  frozen.
+- Issue #525 RED/GREEN history is preserved by normal merge `8ac8a6ea` in the
+  combined Issue #523 candidate. It adds no product/provider/media behavior,
+  credential use, egress, spend, deployment, release, production-readiness, or
+  Cut 1 claim. T06, T07, and T08 remain incomplete.

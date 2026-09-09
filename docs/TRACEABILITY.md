@@ -836,3 +836,44 @@ remain separate gates.
 | Safe six-cut taxonomy | `CutTaxonomyV2` and ADR 0080 | Owner Digital Twin is Cut 5; legacy enterprise evidence cannot cross or bypass Cut 6 migration |
 | Prototype before code | PF-0–PF-7 and later G2 | G1 creates no receipt, runtime, egress, or spend authority |
 | Preserve current authority | Proposal state `PROPOSED`, authority `NONE`, V1 hash and separate transition | Issue/file/test/CI/self-review cannot supersede V1 |
+
+## Issue #523 test-transport dependency-security traceability
+
+| Requirement | Canonical evidence | Preserved boundary |
+|---|---|---|
+| Remove five reported advisories without suppression | Issue #523, ADR 0081, exact official `httpx2`/`httpcore2` 2.12.0 artifacts, strict dependency audit | No ignore, waiver, alternate registry, VCS source, or vendoring |
+| Preserve the complete resolved graph | Exact Emscripten-only `httpx2-jsfetch` 1.0 record plus dependency/marker/provenance mutation tests | Required related transitive record only; unrelated project and lock drift rejects |
+| Preserve API-test behavior | Starlette/FastAPI TestClient suite, typecheck, full quality, and hosted push/PR topology | Development/test transport only; backend image and product paths remain unchanged |
+| Keep G1 scope honest | Independently reviewed child `b1d3198d`; final atomic authority `5602656745`; combined Issue #523 PR consumed by Issue #521 only after accepted-main merge | No G1 path expansion and no provider call, upload, spend, media, release, or production authority |
+
+## Issue #524 frontend dependency-security traceability
+
+| Requirement | Evidence | Preserved boundary |
+|---|---|---|
+| Remove all current frontend advisory findings without suppression | Issue `#524`; official npm/GitHub advisory facts; exact Next.js 16.3.4, sharp 0.35.4, js-yaml 4.3.2, and Vitest/`@vitest` 4.1.11 package identities | Audit threshold, registry, integrity, and install-script controls remain fail closed |
+| Preserve unrelated dependency intent | Manifest normalization plus exact fifty-record lock-delta test against `b6b0c05c`; eslint-config-next remains 16.2.9 | No broad lock refresh, direct js-yaml, unrelated Vite/Rolldown/CSS upgrade, alternate registry, VCS package, or vendoring |
+| Preserve historical nanoid and secret-scan contracts through the refresh | Full-gate amendment `5601451115`; immutable Issue `#524` dependency reference; unchanged key detector | Exact Issue `#524` normalization cannot admit unrelated lock drift, and sanitized governance identifiers cannot contain key-shaped bytes |
+| Prove compatibility | Clean npm install; frontend lint, type, unit, build, browser, audit; hosted amendment `5603708565`; one canonical locked libvips SONAME; exact AMD64/ARM64 SBOM identities; complete repository gates | Missing/duplicate/malformed/symlinked native input and stale 0.35.3/1.3.2 inventory fail closed; dependency compatibility is not product, provider, deployment, release, or production evidence |
+| Resolve the cross-audit cycle atomically | Preserved Issue `#524` RED/GREEN commits; final authority `5602656745`; exact normal merges `30bdcecf` then `8ac8a6ea`; one combined hosted PR | Neither Python nor frontend audit is waived, and no child branch alone may claim full-gate success |
+| Reclaim only task-owned resources | Cleanup amendment `5601014173`; live-census amendment `5601780266`; provenance amendment `5601842704`; byte-identical StackClimb `TaskResourceLedgerV1` schema; sanitized thirty-four-resource/sixty-eight-event package ledger; canonical whole-ledger SHA-256 plus schema and semantic mutations; exact source/trust/custom-license lock | The ledger authorizes no deletion; every trigger is pending and evidence obligation active. One ambiguous operator process is retained untouched as a probe gap. Unrelated dirty state, shared caches, historical resources, Docker objects, and private evidence are excluded; a later exact proposal, current-session authority, and fresh survivor/ownership/activity/reference/sensitivity checks are mandatory |
+
+## Issue #525 schema-oracle runtime-policy traceability
+
+| Requirement | Evidence | Preserved boundary |
+|---|---|---|
+| Remove ambient interpreter and user-site dependence | Reproduced cold-start timeout; `sys.executable -I -P`; exact minimal child environment | Separate Draft 2020-12 process remains independent; no retry, prewarm, fallback, or inherited credentials |
+| Make timeout operational policy explicit | Typed canonical whole seconds; default 20; inclusive 1–60 bounds; invalid-input and propagation tests | Invalid policy rejects before dispatch; finite ceiling and one-attempt behavior remain fail closed |
+| Close the isolated dependency exactly | Development-only `jsonschema==4.25.1`; frozen artifact URL/hash/size and lock-normalization mutations | No application/provider dependency, transitive refresh, alternate source, product behavior, provider activation, or spend |
+| Bind authority and delivery | Issue #525 comments `5600271943` and `5600384376`; independently reviewed `f8f6ca0a`; final atomic authority `5602656745` | RED/GREEN ancestry is preserved in merge `8ac8a6ea`; complete combined local/hosted gates remain required; no release or Cut 1 claim |
+
+## Issue #523 combined-candidate traceability
+
+| Requirement | Executable evidence | Preserved boundary |
+|---|---|---|
+| Bind the exact atomic topology | Final authority `5602656745`; evidence correction `5603161674`; hosted amendments `5603708565`, `5604753747`, `5604916338`, `5605296135`, and `5605975407`; live-hash-bound reviewed child heads/trees and receipts; two merge commits with exact ordered parent pairs and trees; route-base ancestry checks | No rebase, cherry-pick, squash, child substitution, history rewrite, or clerically substituted receipt hash |
+| Preserve the exact combined scope | Thirty-three-path equality, independent per-path ceilings, unchanged 7,660 aggregate cap, and no thirty-fourth path | Only the authorized dependency/oracle work, Sharp repair, duplicate-scan ordering, runtime diagnostic, and reviewed-input digest compose |
+| Prove both Python deltas compositionally | Exact HTTPX and JSONSchema assertions over the same bytes; bidirectional sibling-tamper rejection; exact base restoration | Neither normalizer can erase or conceal the other dependency change |
+| Preserve child proofs without false completion | Frontend fifty-record digest, 34-resource/68-event ledger, isolated schema oracle, strict audits, complete local/hosted gates, and independent combined-head review | Child PASS results do not establish combined, G1, demo, Cut 1, release, or production acceptance |
+| Renew final-runtime inventory without widening it | Amendment `5605296135`; same-width `1630..1670` bounds for AMD64 and ARM64; exact syntax, architecture, and primary/reproduction digest equality | Stale `1580..1620`, count outside the new range, malformed digest, unknown architecture, or non-reproducible inventory rejects |
+| Diagnose one hosted inventory mismatch without disclosure or weakening | Amendment `5605975407`; strict sanitized record schema; deterministic twenty-path cap and omitted count; original mismatch finding and exit status | No file bytes, link targets, manifests, secrets, environment values, URLs, fixed keys, wider bounds, retries, fallback, or count-only acceptance |
+| Remove the demonstrated transient cause at its producing boundary | Hosted diagnostic run `34385656262` identified only Node's process-local compile cache; exact-head run `34392274312` proved the cache was already baked into both images before inventory; amendment `5607354461` and [Node 26.7.0 CLI documentation](https://nodejs.org/download/release/v26.7.0/docs/api/cli.html#node_disable_compile_cache1), accessed 2026-09-09, bind the disable switch to final image assembly before its first import | No `/tmp` exclusion, skipped record, post-creation deletion, compensating normalization, fixed build secret, retry policy, threshold change, final runtime environment change, or application mutation |

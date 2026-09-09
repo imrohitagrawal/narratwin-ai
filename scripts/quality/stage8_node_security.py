@@ -129,7 +129,7 @@ def frontend_node_image_valid(dockerfile: str) -> bool:
         )
         and "test -s /runtime/lib/apk/db/installed" in dockerfile
         and "chmod 1777 /runtime/tmp" in dockerfile
-        and dockerfile.count("libvips-cpp.so.8.18.3") == 1
+        and dockerfile.count("m.copySharpLibvips('/mnt/deps','/app',process.arch)") == 1
         and "COPY scripts/ci/prepare_frontend_npm.mjs /tmp/prepare_frontend_npm.mjs" in dockerfile
         and '["/usr/bin/node", "/tmp/prepare_frontend_npm.mjs"]' in dockerfile
         and '["/usr/bin/node", "/usr/local/lib/node_modules/npm/bin/npm-cli.js", "ci", "--ignore-scripts"]' in dockerfile
