@@ -389,7 +389,7 @@ def test_schema_oracle_default_policy_reaches_one_isolated_project_subprocess(
     assert argv[:4] == [sys.executable, "-I", "-P", "-c"]
     assert Path(sys.executable).is_absolute()
     assert kwargs["timeout"] == 20
-    assert kwargs["env"] == {"PATH": "/usr/bin:/bin", "LC_ALL": "C", "PYTHONHASHSEED": "0"}
+    assert kwargs["env"] == {"PATH": "/usr/bin:/bin", "LC_ALL": "C"}
     assert kwargs.get("shell", False) is False
 
 
@@ -472,6 +472,42 @@ def test_schema_oracle_timeout_is_single_attempt_bounded_and_redacted(
     error = pytest.raises(AssertionError, _draft202012_errors, CORPUS, environ={})
     assert str(error.value) == "Draft 2020-12 schema oracle exceeded 20 seconds."
     assert "private-schema" not in str(error.value)
+    assert calls == 1
+
+
+def test_schema_oracle_rejects_nonabsolute_interpreter_before_dispatch(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls = 0
+
+    def forbidden_run(argv: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
+        nonlocal calls
+        calls += 1
+        return subprocess.CompletedProcess(argv, 0, "[]", "")
+
+    monkeypatch.setattr(sys, "executable", "python")
+    monkeypatch.setattr(subprocess, "run", forbidden_run)
+    error = pytest.raises(AssertionError, _draft202012_errors, CORPUS, environ={})
+    assert str(error.value) == (
+        "Draft 2020-12 schema oracle requires an absolute active interpreter."
+    )
+    assert calls == 0
+
+
+def test_schema_oracle_process_failure_is_single_attempt_and_redacted(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls = 0
+
+    def failed(argv: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
+        nonlocal calls
+        calls += 1
+        return subprocess.CompletedProcess(argv, 1, "private-schema", "private-stderr")
+
+    monkeypatch.setattr(subprocess, "run", failed)
+    error = pytest.raises(AssertionError, _draft202012_errors, CORPUS, environ={})
+    assert str(error.value) == "Draft 2020-12 schema oracle process failed."
+    assert "private" not in str(error.value)
     assert calls == 1
 
 
