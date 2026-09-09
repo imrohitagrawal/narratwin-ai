@@ -2568,33 +2568,38 @@ def route_base(run: Callable[[list[str]], Any], branch: str) -> str:
     if branch == ISSUE523_BRANCH:
         child_commits = tuple(commit for commit, _tree in ISSUE523_ATOMIC_CHILDREN)
         merge_commits = tuple(commit for commit, _tree, _left, _right in ISSUE523_ATOMIC_MERGES)
-        commits = (ISSUE523_BASE, *child_commits, *merge_commits)
-        resolved = [run(["git", "rev-parse", f"{commit}^{{commit}}"])
-                    for commit in commits]
-        tree_rows = (*ISSUE523_ATOMIC_CHILDREN, *(
+        atomic_commits = (ISSUE523_BASE, *child_commits, *merge_commits)
+        atomic_resolved = [run(["git", "rev-parse", f"{commit}^{{commit}}"])
+                           for commit in atomic_commits]
+        atomic_tree_rows = (*ISSUE523_ATOMIC_CHILDREN, *(
             (commit, tree) for commit, tree, _left, _right in ISSUE523_ATOMIC_MERGES
         ))
-        trees = [run(["git", "rev-parse", f"{commit}^{{tree}}"])
-                 for commit, _tree in tree_rows]
-        ancestors = [
+        atomic_trees = [run(["git", "rev-parse", f"{commit}^{{tree}}"])
+                        for commit, _tree in atomic_tree_rows]
+        atomic_ancestors = [
             run(["git", "merge-base", "--is-ancestor", ISSUE523_BASE, child])
             for child in child_commits
         ]
-        ancestors.append(
+        atomic_ancestors.append(
             run(["git", "merge-base", "--is-ancestor", merge_commits[-1], "HEAD"])
         )
-        parents = [
+        atomic_parents = [
             run(["git", "show", "-s", "--format=%P", commit])
             for commit in merge_commits
         ]
-        expected_parents = [f"{left} {right}" for _commit, _tree, left, right
-                            in ISSUE523_ATOMIC_MERGES]
+        atomic_expected_parents = [
+            f"{left} {right}" for _commit, _tree, left, right in ISSUE523_ATOMIC_MERGES
+        ]
         if (
-            any(result.returncode for result in [*resolved, *trees, *ancestors, *parents])
-            or [str(result.stdout).strip() for result in resolved] != list(commits)
-            or [str(result.stdout).strip() for result in trees]
-            != [tree for _commit, tree in tree_rows]
-            or [str(result.stdout).strip() for result in parents] != expected_parents
+            any(result.returncode for result in [
+                *atomic_resolved, *atomic_trees, *atomic_ancestors, *atomic_parents,
+            ])
+            or [str(result.stdout).strip() for result in atomic_resolved]
+            != list(atomic_commits)
+            or [str(result.stdout).strip() for result in atomic_trees]
+            != [tree for _commit, tree in atomic_tree_rows]
+            or [str(result.stdout).strip() for result in atomic_parents]
+            != atomic_expected_parents
         ):
             raise RuntimeError(
                 "Issue #523 atomic merge evidence is unavailable or inconsistent."
