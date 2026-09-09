@@ -2179,8 +2179,9 @@ human acceptance, deployment, release, production-readiness, or Cut 1 evidence.
   unrelated Vite/Rolldown or CSS-tooling refreshes.
 - Issue `#523` independently raises the affected Python test transport to
   httpx2/httpcore2 2.12.0. Because either branch retains the other audit
-  failure, Issue `#524` preserves its RED/GREEN history and converges by normal
-  merge into an explicitly amended Issue `#523` route for one full-gate PR.
+  failure, owner/orchestrator amendment `5600552079` directs Issue `#524` to
+  preserve its RED/GREEN history and converge by normal merge into a separately
+  amended Issue `#523` route for one full-gate PR.
 - No advisory is ignored or suppressed. The refresh changes dependency
   metadata only and adds no product/provider/media behavior, credential use,
   egress, spend, deployment, release, production-readiness, or Cut 1 claim.

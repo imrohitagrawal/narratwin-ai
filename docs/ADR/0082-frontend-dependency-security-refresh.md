@@ -30,7 +30,10 @@ tooling merely because their version ranges admit newer releases.
 
 ## Consequences
 
-Frontend install, lint, type checking, unit tests, production build, browser
+Owner/orchestrator amendment `5600552079` binds the complete fifty-record
+canonical digest, duplicate-member rejection, exact cleanup ledger, and normal
+merge into a separately amended Issue #523 route. Frontend install, lint, type
+checking, unit tests, production build, browser
 checks, strict audit, and the complete repository gate must pass. Issue #524
 retains its RED/GREEN history and is normally merged into the amended Issue
 #523 branch for one atomic, independently reviewed security PR. Neither audit

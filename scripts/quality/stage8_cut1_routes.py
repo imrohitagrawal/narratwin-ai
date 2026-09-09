@@ -190,6 +190,8 @@ ISSUE524_BASE = "b6b0c05c7227428ff0841361f3970b0b2c40aa86"
 ISSUE524_TREE = "2a8fc73f5cfc9210fabfdb425d00a07d345fa24f"
 ISSUE524_ROUTE_COMMENT = "5599970578"
 ISSUE524_ROUTE_SHA256 = "07f2fff6702a9847059a3e4223df25e8b0752269574cff9710b3738fc8c82da5"
+ISSUE524_AMENDMENT_COMMENT = "5600552079"
+ISSUE524_AMENDMENT_SHA256 = "95ddf400f917530c9c80532582244f645b93389ce33e81d0165dbdcd182f781a"
 ISSUE502_BASE = "e1fe126372d5c5a06dc7d2f9c76cb205da8643e7"
 ISSUE502_TREE = "76495e566a78a7951c33314ac742606c85ee92e5"
 ISSUE502_ROUTE_COMMENT = "5507883668"
@@ -2798,14 +2800,16 @@ def check_exact_route(
             )
             failures.extend(f"Issue #524 governance preflight failed: {item.code}" for item in findings)
             objective = preflight.get("objective") if isinstance(preflight, dict) else None
-            authority_expected = (
+            issue524_authority_expected = (
                 ISSUE524_BASE,
                 ISSUE524_TREE,
                 ISSUE524_ROUTE_COMMENT,
                 ISSUE524_ROUTE_SHA256,
+                ISSUE524_AMENDMENT_COMMENT,
+                ISSUE524_AMENDMENT_SHA256,
             )
             if not isinstance(objective, str) or any(
-                item not in objective for item in authority_expected
+                item not in objective for item in issue524_authority_expected
             ):
                 failures.append("Issue #524 dependency authority drifted.")
         except (OSError, ValueError, TypeError) as error:

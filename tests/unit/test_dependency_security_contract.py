@@ -118,6 +118,9 @@ ISSUE524_LOCK_PATHS = {
         )
     },
 }
+ISSUE524_CHANGED_RECORDS_SHA256 = (
+    "f81ce42b1ea694e2bcec87706640a8440c3240767b32734c8c2457dcb900102d"
+)
 ISSUE150_BASE = "a02286240212ad8958915aec01aa5ebaf60fa705"
 ISSUE460_BASE = "ab97b6eecba6db9c66c37d19b29257c7398f3ab7"
 PYPDF_WHEEL_SHA256 = "c8b09a59399062fb45a1b8156c18a787a10a3dae03ac9674397a226712c94604"
@@ -292,9 +295,23 @@ def _normalize_issue495_frontend_delta(
         lock["packages"][path] = base_lock["packages"][path]
 
 
+def _strict_json_object(text: str) -> dict[str, Any]:
+    def reject_duplicates(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+        result: dict[str, Any] = {}
+        for key, value in pairs:
+            if key in result:
+                raise ValueError(f"duplicate JSON member: {key}")
+            result[key] = value
+        return result
+
+    value = json.loads(text, object_pairs_hook=reject_duplicates)
+    assert isinstance(value, dict)
+    return value
+
+
 def _assert_issue524_frontend_contract(package_text: str, lock_text: str) -> None:
-    manifest = json.loads(package_text)
-    lock = json.loads(lock_text)
+    manifest = _strict_json_object(package_text)
+    lock = _strict_json_object(lock_text)
     base_manifest = json.loads(_text_at(ISSUE524_BASE, "frontend/package.json"))
     base_lock = json.loads(_text_at(ISSUE524_BASE, "frontend/package-lock.json"))
 
@@ -332,6 +349,30 @@ def _assert_issue524_frontend_contract(package_text: str, lock_text: str) -> Non
         if lock["packages"].get(path) != base_lock["packages"].get(path)
     }
     assert changed == ISSUE524_LOCK_PATHS
+    for path in ISSUE524_LOCK_PATHS - {""}:
+        record = lock["packages"][path]
+        assert record["resolved"].startswith("https://registry.npmjs.org/")
+        assert record["integrity"].startswith("sha512-")
+    record_digests = {
+        path: hashlib.sha256(
+            json.dumps(
+                lock["packages"][path],
+                ensure_ascii=True,
+                sort_keys=True,
+                separators=(",", ":"),
+            ).encode("ascii")
+        ).hexdigest()
+        for path in sorted(ISSUE524_LOCK_PATHS)
+    }
+    complete_digest = hashlib.sha256(
+        json.dumps(
+            record_digests,
+            ensure_ascii=True,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("ascii")
+    ).hexdigest()
+    assert complete_digest == ISSUE524_CHANGED_RECORDS_SHA256
     normalized_lock = copy.deepcopy(lock)
     for path in ISSUE524_LOCK_PATHS:
         if path in base_lock["packages"]:
@@ -351,6 +392,15 @@ def test_issue524_frontend_graph_is_exact_patched_and_isolated() -> None:
 def test_issue524_frontend_contract_rejects_weaker_substituted_and_manifest_drift() -> None:
     package_text = (ROOT / "frontend/package.json").read_text(encoding="utf-8")
     lock_text = (ROOT / "frontend/package-lock.json").read_text(encoding="utf-8")
+    lock = json.loads(lock_text)
+    alternate_registry = copy.deepcopy(lock)
+    alternate_registry["packages"]["node_modules/@next/env"]["resolved"] = (
+        "https://example.invalid/@next/env.tgz"
+    )
+    forged_integrity = copy.deepcopy(lock)
+    forged_integrity["packages"]["node_modules/@vitest/expect"]["integrity"] = (
+        "sha512-forged"
+    )
     mutations = (
         (package_text.replace('"next": "16.3.4"', '"next": "16.3.2"'), lock_text),
         (package_text.replace('"vitest": "^4.1.11"', '"vitest": "^4.1.9"'), lock_text),
@@ -358,6 +408,8 @@ def test_issue524_frontend_contract_rejects_weaker_substituted_and_manifest_drif
         (package_text.replace('"eslint-config-next": "16.2.9"', '"eslint-config-next": "16.3.4"'), lock_text),
         (package_text, lock_text.replace(ISSUE524_FRONTEND_PACKAGES["node_modules/next"][1], "sha512-forged")),
         (package_text, lock_text.replace('https://registry.npmjs.org/next/', 'https://example.invalid/next/', 1)),
+        (package_text, json.dumps(alternate_registry)),
+        (package_text, json.dumps(forged_integrity)),
     )
     for candidate_package, candidate_lock in mutations:
         with pytest.raises((AssertionError, KeyError)):
@@ -396,6 +448,25 @@ def test_issue524_contract_rejects_missing_and_duplicate_nonprimary_record() -> 
     assert duplicate != lock_text
     with pytest.raises((AssertionError, ValueError)):
         _assert_issue524_frontend_contract(package_text, duplicate)
+
+    duplicate_record_field = lock_text.replace(
+        '      "version": "16.3.4",',
+        '      "version": "0.0.0",\n      "version": "16.3.4",',
+        1,
+    )
+    duplicate_manifest_key = package_text.replace(
+        '    "next": "16.3.4",',
+        '    "next": "0.0.0",\n    "next": "16.3.4",',
+        1,
+    )
+    assert duplicate_record_field != lock_text
+    assert duplicate_manifest_key != package_text
+    for candidate_package, candidate_lock in (
+        (package_text, duplicate_record_field),
+        (duplicate_manifest_key, lock_text),
+    ):
+        with pytest.raises(ValueError, match="duplicate JSON member"):
+            _assert_issue524_frontend_contract(candidate_package, candidate_lock)
 
 
 def _assert_pypdf_6162_contract(project_text: str, lock_text: str) -> None:
