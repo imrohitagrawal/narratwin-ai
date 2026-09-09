@@ -2265,3 +2265,14 @@ human acceptance, deployment, release, production-readiness, or Cut 1 evidence.
   combined Issue #523 candidate. It adds no product/provider/media behavior,
   credential use, egress, spend, deployment, release, production-readiness, or
   Cut 1 claim. T06, T07, and T08 remain incomplete.
+
+## Issue #527 backend CI timeout prerequisite (2026-09-10)
+
+- PR #522 hosted run `34410932324` reproduced cancellation of backend unit/API
+  tests under the existing 15-minute job ceiling while all sibling jobs passed.
+- Issue #527 changes only that finite ceiling to 30 minutes and adds exact and
+  mutation-based regression coverage; backend commands and sibling ceilings are
+  unchanged. Exact-head hosted checks and independent approval remain required.
+- This CI prerequisite adds no product/provider/media behavior, credential use,
+  egress, spend, demo completion, release, production-readiness, or Cut 1 claim.
+  T06, T07, and T08 remain incomplete.

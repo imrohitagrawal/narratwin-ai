@@ -515,6 +515,16 @@ ISSUE525_EXPECTED = {
     "docs/THIRD_PARTY_NOTICES.md",
     "docs/TRACEABILITY.md",
 }
+ISSUE527_EXPECTED = {
+    ".github/workflows/ci.yml",
+    "tests/unit/test_ci_workflow_timeout_policy.py",
+    "docs/governance/preflights/issue-527-ci-backend-timeout.json",
+    "scripts/quality/stage8_cut1_routes.py",
+    "tests/unit/test_stage8_cut1_routes.py",
+    "docs/QUALITY_GATES.md",
+    "docs/STATUS.md",
+    "docs/TRACEABILITY.md",
+}
 ISSUE502_EXPECTED = {
     "docs/governance/preflights/issue-502.json",
     "frontend/Dockerfile",
@@ -1193,6 +1203,7 @@ EXPECTED = {
 EXPECTED["stage8-499-pypdf-6-16-2-security-refresh"] = ISSUE499_EXPECTED
 EXPECTED["stage8-523-httpx2-2-12-security-refresh"] = ISSUE523_EXPECTED
 EXPECTED["stage8-525-schema-oracle-runtime-policy"] = ISSUE525_EXPECTED
+EXPECTED["stage8-527-backend-ci-timeout"] = ISSUE527_EXPECTED
 
 
 def completed(args: list[str], code: int = 0, out: str = "", err: str = "") -> subprocess.CompletedProcess[str]:
@@ -5336,6 +5347,62 @@ def test_issue525_route_rejects_fixed_base_drift_and_every_path_cap(
             failures,
         )
         assert f"Issue #525 charge for {path} exceeds {limit}." in failures
+
+
+def test_issue527_route_freezes_exact_ci_timeout_scope() -> None:
+    branch = "stage8-527-backend-ci-timeout"
+    assert routes.ISSUE527_BRANCH == branch
+    assert routes.ISSUE527_BASE == "0e4efa56b36773ad8c687fb9daa73adc0152b89c"
+    assert routes.ISSUE527_TREE == "b4aa619ae550bb562a18725da454eb607124853e"
+    assert routes.ROUTES[branch] == ISSUE527_EXPECTED
+    assert routes.ROUTE_ISSUES[branch] == 527
+    assert routes.TOTAL_LIMITS[branch] == 420
+    assert routes.TEXT_LIMITS[branch] == {
+        ".github/workflows/ci.yml": 2,
+        "tests/unit/test_ci_workflow_timeout_policy.py": 120,
+        "docs/governance/preflights/issue-527-ci-backend-timeout.json": 80,
+        "scripts/quality/stage8_cut1_routes.py": 80,
+        "tests/unit/test_stage8_cut1_routes.py": 100,
+        "docs/QUALITY_GATES.md": 80,
+        "docs/STATUS.md": 60,
+        "docs/TRACEABILITY.md": 40,
+    }
+    preflight = json.loads(
+        (REPO / "docs/governance/preflights/issue-527-ci-backend-timeout.json")
+        .read_text(encoding="utf-8")
+    )
+    assert set(preflight["scope"]["required"]) == ISSUE527_EXPECTED
+    assert preflight["scope"]["required"] == preflight["scope"]["allowed_prefixes"]
+    assert routes.ISSUE527_ISSUE_BODY_SHA256 in preflight["objective"]
+    assert branch in stage8.EFFECTIVE_STAGE8_ROUTES
+
+
+def test_issue527_route_rejects_suffix_and_fixed_base_drift(monkeypatch: Any) -> None:
+    branch = routes.ISSUE527_BRANCH + "-retry"
+    assert branch not in stage8.EFFECTIVE_STAGE8_ROUTES
+    assert stage8.STAGE8_BRANCH_PATTERN.match(branch)
+    monkeypatch.setattr(stage8, "current_branch", lambda: branch)
+    monkeypatch.setattr(stage8, "changed_files_for_stage_scope", lambda: [])
+    failures: list[str] = []
+    stage8.check_stage_scope(failures)
+    assert failures == [
+        f"Stage 8 branch collides with exact reviewed route {routes.ISSUE527_BRANCH}: {branch}."
+    ]
+
+    outputs = iter(
+        (
+            completed([], out=routes.ISSUE527_BASE + "\n"),
+            completed([], out=routes.ISSUE527_BASE + "\n"),
+            completed([], out="a" * 40 + "\n"),
+        )
+    )
+    error = pytest.raises(
+        RuntimeError,
+        routes.route_base,
+        lambda _: next(outputs),
+        routes.ISSUE527_BRANCH,
+    )
+    assert "Issue #527 fixed base" in str(error.value)
 
 
 def test_issue499_route_freezes_the_exact_pypdf_security_refresh() -> None:

@@ -868,3 +868,11 @@ remain separate gates.
 | Renew final-runtime inventory without widening it | Amendment `5605296135`; same-width `1630..1670` bounds for AMD64 and ARM64; exact syntax, architecture, and primary/reproduction digest equality | Stale `1580..1620`, count outside the new range, malformed digest, unknown architecture, or non-reproducible inventory rejects |
 | Diagnose one hosted inventory mismatch without disclosure or weakening | Amendment `5605975407`; strict sanitized record schema; deterministic twenty-path cap and omitted count; original mismatch finding and exit status | No file bytes, link targets, manifests, secrets, environment values, URLs, fixed keys, wider bounds, retries, fallback, or count-only acceptance |
 | Remove the demonstrated transient cause at its producing boundary | Hosted diagnostic run `34385656262` identified only Node's process-local compile cache; exact-head run `34392274312` proved the cache was already baked into both images before inventory; amendment `5607354461` and [Node 26.7.0 CLI documentation](https://nodejs.org/download/release/v26.7.0/docs/api/cli.html#node_disable_compile_cache1), accessed 2026-09-09, bind the disable switch to final image assembly before its first import | No `/tmp` exclusion, skipped record, post-creation deletion, compensating normalization, fixed build secret, retry policy, threshold change, final runtime environment change, or application mutation |
+
+## Issue #527 backend CI timeout traceability
+
+| Requirement | Executable evidence | Preserved boundary |
+|---|---|---|
+| Let the complete backend suite reach a verdict | PR #522 run `34410932324`; exact job-level 30-minute regression | A finite ceiling remains; no command, selection, retry, or concurrency change |
+| Reject ambiguous or weakened timeout policy | Missing, duplicate, non-numeric, 29, 31, and misplaced mutations | Frontend, Docker, and Stage 8 ceilings remain 20, 20, and 35 minutes |
+| Preserve delivery authority | Issue #527 preflight, exact route/base/budget tests, and exact-head hosted checks | No product, provider, demo, release, production, credential, egress, or spend authority |
