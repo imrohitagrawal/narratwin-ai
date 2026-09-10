@@ -64,16 +64,44 @@ def test_ci_workflow_has_exact_finite_job_timeout_policy() -> None:
     _assert_timeout_policy(WORKFLOW.read_text(encoding="utf-8"))
 
 
+def _issue_527_section(path: Path) -> str:
+    match = re.search(
+        r"(?ms)^## Issue #527 backend CI timeout[^\n]*\n(?P<body>.*?)(?=^## |\Z)",
+        path.read_text(encoding="utf-8"),
+    )
+    assert match is not None, f"{path.name} must retain the exact Issue #527 section"
+    return match.group("body")
+
+
+def _assert_timeout_evidence_statement(statement: str) -> None:
+    assert STALE_TIMEOUT_EVIDENCE not in statement
+    for run_id, job_id, elapsed in TIMEOUT_EVIDENCE:
+        job_url = (
+            "https://github.com/imrohitagrawal/narratwin-ai/actions/runs/"
+            f"{run_id}/job/{job_id}"
+        )
+        assert job_url in statement
+        assert re.search(rf"{run_id}.*{job_id}.*{re.escape(elapsed)}", statement, re.DOTALL)
+
+
 def test_issue_527_docs_bind_timeout_claim_to_elapsed_ceiling_jobs() -> None:
-    for path in (STATUS, TRACEABILITY):
-        issue_527 = path.read_text(encoding="utf-8").split(
-            "## Issue #527 backend CI timeout", maxsplit=1
-        )[1]
-        assert STALE_TIMEOUT_EVIDENCE not in issue_527
-        for run_id, job_id, elapsed in TIMEOUT_EVIDENCE:
-            assert run_id in issue_527
-            assert job_id in issue_527
-            assert elapsed in issue_527
+    status_section = _issue_527_section(STATUS)
+    status_statement = re.search(
+        r"(?ms)^- PR #522 hosted runs (?P<statement>.*?)(?=^- |\Z)", status_section
+    )
+    assert status_statement is not None
+    _assert_timeout_evidence_statement(status_statement.group("statement"))
+
+    traceability_section = _issue_527_section(TRACEABILITY)
+    evidence_rows = [
+        line
+        for line in traceability_section.splitlines()
+        if line.startswith("| Let the complete backend suite reach a verdict |")
+    ]
+    assert len(evidence_rows) == 1
+    evidence_cells = [cell.strip() for cell in evidence_rows[0].strip("|").split("|")]
+    assert len(evidence_cells) == 3
+    _assert_timeout_evidence_statement(evidence_cells[1])
 
 
 @pytest.mark.parametrize(
