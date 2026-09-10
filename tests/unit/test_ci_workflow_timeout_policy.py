@@ -8,14 +8,8 @@ import pytest
 
 REPO = Path(__file__).parents[2]
 WORKFLOW = REPO / ".github/workflows/ci.yml"
-STATUS = REPO / "docs/STATUS.md"
-TRACEABILITY = REPO / "docs/TRACEABILITY.md"
-EXPECTED_TIMEOUTS = {
-    "backend": 30,
-    "frontend": 20,
-    "docker": 20,
-    "stage8-budgets": 35,
-}
+STATUS, TRACEABILITY = REPO / "docs/STATUS.md", REPO / "docs/TRACEABILITY.md"
+EXPECTED_TIMEOUTS = {"backend": 30, "frontend": 20, "docker": 20, "stage8-budgets": 35}
 
 TIMEOUT_EVIDENCE = (
     ("34282990946", "102251927718", "15m18"),
@@ -76,28 +70,20 @@ def _issue_527_section(path: Path) -> str:
 def _assert_timeout_evidence_statement(statement: str) -> None:
     assert STALE_TIMEOUT_EVIDENCE not in statement
     for run_id, job_id, elapsed in TIMEOUT_EVIDENCE:
-        job_url = (
-            "https://github.com/imrohitagrawal/narratwin-ai/actions/runs/"
-            f"{run_id}/job/{job_id}"
-        )
+        job_url = f"https://github.com/imrohitagrawal/narratwin-ai/actions/runs/{run_id}/job/{job_id}"
         assert job_url in statement
         assert re.search(rf"{run_id}.*{job_id}.*{re.escape(elapsed)}", statement, re.DOTALL)
 
 
 def test_issue_527_docs_bind_timeout_claim_to_elapsed_ceiling_jobs() -> None:
     status_section = _issue_527_section(STATUS)
-    status_statement = re.search(
-        r"(?ms)^- PR #522 hosted runs (?P<statement>.*?)(?=^- |\Z)", status_section
-    )
+    status_statement = re.search(r"(?ms)^- PR #522 hosted runs (.*?)(?=^- |\Z)", status_section)
     assert status_statement is not None
-    _assert_timeout_evidence_statement(status_statement.group("statement"))
+    _assert_timeout_evidence_statement(status_statement.group(1))
 
     traceability_section = _issue_527_section(TRACEABILITY)
-    evidence_rows = [
-        line
-        for line in traceability_section.splitlines()
-        if line.startswith("| Let the complete backend suite reach a verdict |")
-    ]
+    prefix = "| Let the complete backend suite reach a verdict |"
+    evidence_rows = [line for line in traceability_section.splitlines() if line.startswith(prefix)]
     assert len(evidence_rows) == 1
     evidence_cells = [cell.strip() for cell in evidence_rows[0].strip("|").split("|")]
     assert len(evidence_cells) == 3
@@ -116,15 +102,8 @@ def test_issue_527_docs_bind_timeout_claim_to_elapsed_ceiling_jobs() -> None:
     ],
     ids=["missing", "duplicate", "non-numeric", "lower", "higher", "misplaced"],
 )
-def test_backend_timeout_policy_rejects_ambiguous_or_drifted_values(
-    replacement: str,
-    count: int,
-) -> None:
-    accepted = WORKFLOW.read_text(encoding="utf-8").replace(
-        "    timeout-minutes: 15",
-        "    timeout-minutes: 30",
-        1,
-    )
+def test_backend_timeout_policy_rejects_ambiguous_or_drifted_values(replacement: str, count: int) -> None:
+    accepted = WORKFLOW.read_text(encoding="utf-8").replace("    timeout-minutes: 15", "    timeout-minutes: 30", 1)
     mutated = accepted.replace("    timeout-minutes: 30", replacement, count)
     with pytest.raises(AssertionError):
         _assert_timeout_policy(mutated)
