@@ -2268,8 +2268,10 @@ human acceptance, deployment, release, production-readiness, or Cut 1 evidence.
 
 ## Issue #527 backend CI timeout prerequisite (2026-09-10)
 
-- PR #522 hosted run `34410932324` reproduced cancellation of backend unit/API
-  tests under the existing 15-minute job ceiling while all sibling jobs passed.
+- PR #522 hosted runs `34282990946` / job `102251927718` and `34252374484`
+  / job `102149655021` recorded the backend jobs cancelled at elapsed times of
+  15m18 and 15m14, respectively, around the declared 15-minute ceiling; all
+  three sibling jobs passed in each run.
 - Issue #527 changes only that finite ceiling to 30 minutes and adds exact and
   mutation-based regression coverage; backend commands and sibling ceilings are
   unchanged. Exact-head hosted checks and independent approval remain required.
