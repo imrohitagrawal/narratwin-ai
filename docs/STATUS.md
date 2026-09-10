@@ -2268,10 +2268,10 @@ human acceptance, deployment, release, production-readiness, or Cut 1 evidence.
 
 ## Issue #527 backend CI timeout prerequisite (2026-09-10)
 
-- PR #522 hosted runs `34282990946` / job `102251927718` and `34252374484`
-  / job `102149655021` recorded the backend jobs cancelled at elapsed times of
-  15m18 and 15m14, respectively, around the declared 15-minute ceiling; all
-  three sibling jobs passed in each run.
+- PR #522 hosted runs [`34282990946` / job `102251927718`](https://github.com/imrohitagrawal/narratwin-ai/actions/runs/34282990946/job/102251927718)
+  at 15m18 and [`34252374484` / job `102149655021`](https://github.com/imrohitagrawal/narratwin-ai/actions/runs/34252374484/job/102149655021)
+  at 15m14 recorded the backend jobs cancelled around the declared 15-minute
+  ceiling; all three sibling jobs passed in each run.
 - Issue #527 changes only that finite ceiling to 30 minutes and adds exact and
   mutation-based regression coverage; backend commands and sibling ceilings are
   unchanged. Exact-head hosted checks and independent approval remain required.

@@ -873,6 +873,6 @@ remain separate gates.
 
 | Requirement | Executable evidence | Preserved boundary |
 |---|---|---|
-| Let the complete backend suite reach a verdict | PR #522 run `34282990946` / job `102251927718` cancelled at 15m18 and run `34252374484` / job `102149655021` cancelled at 15m14; exact job-level 30-minute regression | A finite ceiling remains; no command, selection, retry, or concurrency change |
+| Let the complete backend suite reach a verdict | PR #522 [`34282990946` / job `102251927718`](https://github.com/imrohitagrawal/narratwin-ai/actions/runs/34282990946/job/102251927718) cancelled at 15m18 and [`34252374484` / job `102149655021`](https://github.com/imrohitagrawal/narratwin-ai/actions/runs/34252374484/job/102149655021) cancelled at 15m14; exact job-level 30-minute regression | A finite ceiling remains; no command, selection, retry, or concurrency change |
 | Reject ambiguous or weakened timeout policy | Missing, duplicate, non-numeric, 29, 31, and misplaced mutations | Frontend, Docker, and Stage 8 ceilings remain 20, 20, and 35 minutes |
 | Preserve delivery authority | Issue #527 preflight, exact route/base/budget tests, and exact-head hosted checks | No product, provider, demo, release, production, credential, egress, or spend authority |
