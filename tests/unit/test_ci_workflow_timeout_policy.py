@@ -8,12 +8,20 @@ import pytest
 
 REPO = Path(__file__).parents[2]
 WORKFLOW = REPO / ".github/workflows/ci.yml"
+STATUS = REPO / "docs/STATUS.md"
+TRACEABILITY = REPO / "docs/TRACEABILITY.md"
 EXPECTED_TIMEOUTS = {
     "backend": 30,
     "frontend": 20,
     "docker": 20,
     "stage8-budgets": 35,
 }
+
+TIMEOUT_EVIDENCE = (
+    ("34282990946", "102251927718", "15m18"),
+    ("34252374484", "102149655021", "15m14"),
+)
+STALE_TIMEOUT_EVIDENCE = "34410932324"
 
 
 def _job_blocks(workflow: str) -> dict[str, str]:
@@ -54,6 +62,18 @@ def _assert_timeout_policy(workflow: str) -> None:
 
 def test_ci_workflow_has_exact_finite_job_timeout_policy() -> None:
     _assert_timeout_policy(WORKFLOW.read_text(encoding="utf-8"))
+
+
+def test_issue_527_docs_bind_timeout_claim_to_elapsed_ceiling_jobs() -> None:
+    for path in (STATUS, TRACEABILITY):
+        issue_527 = path.read_text(encoding="utf-8").split(
+            "## Issue #527 backend CI timeout", maxsplit=1
+        )[1]
+        assert STALE_TIMEOUT_EVIDENCE not in issue_527
+        for run_id, job_id, elapsed in TIMEOUT_EVIDENCE:
+            assert run_id in issue_527
+            assert job_id in issue_527
+            assert elapsed in issue_527
 
 
 @pytest.mark.parametrize(
