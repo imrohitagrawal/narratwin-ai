@@ -1,0 +1,54 @@
+{
+  "schema_version": "GovernancePreflightV1",
+  "issue_number": 529,
+  "branch": "stage8-529-native-arm64-security",
+  "objective": "From exact accepted main 0e4efa56b36773ad8c687fb9daa73adc0152b89c and tree b4aa619ae550bb562a18725da454eb607124853e, correct the repeated hosted QEMU ARM64 SIGILL under Issue #529 body SHA-256 f165f78a66d0f1f7b8c1386d2ba9a6b2991f4df666823572acdee782ba450d4e and frozen decision comment 5612151683 SHA-256 1c08b7ed76199e1dc63f1577ddf5e882b532e647876ef28ac9c9255c884bfcf9. Preserve the byte-identical build wrapper f249db3fafcc3c9a71b1769a5cb9a89beae5b3d114ed166748c5b68eac0f866b, scan wrapper 2babdbb3833fffef8f88b916551aa256bbc924109459f2bb0ce48e5d2b9f321d, and consensus checker f8bc978c3cbe81e9ae24dd4421e162bb0b417237caa34383502f099d3a54c762. Keep the protected security / docker build AMD64 job on ubuntu-latest, remove its emulation dependency, and add a finite-timeout ubuntu-24.04-arm job that runs the same complete native build, runtime, reproducibility, SBOM, Trivy, and Grype contract with isolated image, session, report, and artifact identities. Require a preflight-only first commit, committed discriminating RED, smallest GREEN, focused and full local gates, exact-head hosted push and pull-request parity, required-context reconciliation, independent review, eligible approval, protected merge, post-merge verification, and exact task-resource cleanup. Change exactly eleven paths within 1,000 aggregate charged text lines and the frozen per-path caps. Prohibit retry, fallback, skip, warning-only acceptance, cross-build substitution, threshold weakening, dependency or Dockerfile changes, product/runtime/provider/media work, credentials, egress, spend, deployment, release, production, or Cut 1 claims.",
+  "status_decision": "update-minimally",
+  "scope": {
+    "required": [
+      ".github/workflows/security.yml",
+      "docs/governance/preflights/issue-529.json",
+      "tests/unit/test_stage8_node_security.py",
+      "scripts/quality/check_stage8_docs.py",
+      "scripts/quality/stage8_cut1_routes.py",
+      "tests/unit/test_stage8_cut1_routes.py",
+      "docs/ADR/0084-native-arm64-hosted-security.md",
+      "docs/QUALITY_GATES.md",
+      "docs/STATUS.md",
+      "docs/TRACEABILITY.md",
+      "docs/THIRD_PARTY_NOTICES.md"
+    ],
+    "allowed_prefixes": [
+      ".github/workflows/security.yml",
+      "docs/governance/preflights/issue-529.json",
+      "tests/unit/test_stage8_node_security.py",
+      "scripts/quality/check_stage8_docs.py",
+      "scripts/quality/stage8_cut1_routes.py",
+      "tests/unit/test_stage8_cut1_routes.py",
+      "docs/ADR/0084-native-arm64-hosted-security.md",
+      "docs/QUALITY_GATES.md",
+      "docs/STATUS.md",
+      "docs/TRACEABILITY.md",
+      "docs/THIRD_PARTY_NOTICES.md"
+    ],
+    "forbidden": [
+      "AGENTS.md",
+      ".env",
+      ".stage/current",
+      "Makefile",
+      "backend/",
+      "frontend/",
+      "evals/",
+      "infra/",
+      "perf/",
+      "portfolio/",
+      "pyproject.toml",
+      "scripts/ci/",
+      "scripts/guardrails_check.py",
+      "tests/acceptance/",
+      "tests/api/",
+      "tools/",
+      "uv.lock"
+    ]
+  }
+}
