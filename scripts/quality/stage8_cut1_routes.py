@@ -348,6 +348,8 @@ ISSUE529_BUDGET_AMENDMENT_COMMENT = "5612502264"
 ISSUE529_BUDGET_AMENDMENT_SHA256 = "3efe860882427d574f804061e1e4d718a7ca0e9ca7c0efa065550557fd25a81f"
 ISSUE529_DOCS_AMENDMENT_COMMENT = "5612738830"
 ISSUE529_DOCS_AMENDMENT_SHA256 = "c74cdb7e62e702a3ffa8406976bb1e53a9b98c3dfe128fee074e02b8d718bf63"
+ISSUE529_HOSTED_CORRECTION_COMMENT = "5613239963"
+ISSUE529_HOSTED_CORRECTION_SHA256 = "a444fdf9f283cc631e1e0729bef9b10d227f3778fffc270ed3c76473cb4ca82f"
 ISSUE529_BUDGET_RED = "89f87b3d239b21f0a8064994e328b07760af2cb8"
 ISSUE495_TREE = "13f79eb5db44249f635a619e1b283279f25ba9f0"
 ISSUE495_ROUTE_COMMENT = "5498387945"
@@ -615,6 +617,7 @@ ROUTES = {
         "scripts/ci/verify_branch_protection.py",
         "tests/unit/test_branch_protection_verifier.py",
         "docs/REPOSITORY_GUARDRAILS.md",
+        "docs/agent-context/context-policy-manifest-v1.json",
         "docs/governance/GOVERNANCE_PREFLIGHT_V1.schema.json",
         "scripts/governance_preflight_v1.py",
         "tests/unit/test_governance_preflight_v1.py",
@@ -3421,6 +3424,8 @@ def check_exact_route(
                 ISSUE529_BUDGET_AMENDMENT_SHA256,
                 ISSUE529_DOCS_AMENDMENT_COMMENT,
                 ISSUE529_DOCS_AMENDMENT_SHA256,
+                ISSUE529_HOSTED_CORRECTION_COMMENT,
+                ISSUE529_HOSTED_CORRECTION_SHA256,
                 ISSUE529_BUDGET_RED,
             )
             if not isinstance(objective, str) or any(

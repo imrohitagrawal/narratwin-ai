@@ -530,6 +530,7 @@ ISSUE529_EXPECTED = {
     "scripts/ci/verify_branch_protection.py",
     "tests/unit/test_branch_protection_verifier.py",
     "docs/REPOSITORY_GUARDRAILS.md",
+    "docs/agent-context/context-policy-manifest-v1.json",
     "docs/governance/GOVERNANCE_PREFLIGHT_V1.schema.json",
     "scripts/governance_preflight_v1.py",
     "tests/unit/test_governance_preflight_v1.py",
@@ -5385,6 +5386,10 @@ def test_issue529_route_freezes_native_arm64_and_required_context_scope() -> Non
     assert routes.ISSUE529_DOCS_AMENDMENT_SHA256 == (
         "c74cdb7e62e702a3ffa8406976bb1e53a9b98c3dfe128fee074e02b8d718bf63"
     )
+    assert routes.ISSUE529_HOSTED_CORRECTION_COMMENT == "5613239963"
+    assert routes.ISSUE529_HOSTED_CORRECTION_SHA256 == (
+        "a444fdf9f283cc631e1e0729bef9b10d227f3778fffc270ed3c76473cb4ca82f"
+    )
     assert routes.ISSUE529_BUDGET_RED == "89f87b3d239b21f0a8064994e328b07760af2cb8"
     assert routes.ROUTES[branch] == ISSUE529_EXPECTED
     assert routes.ROUTE_ISSUES[branch] == 529
@@ -5405,6 +5410,7 @@ def test_issue529_route_freezes_native_arm64_and_required_context_scope() -> Non
         "scripts/ci/verify_branch_protection.py": 40,
         "tests/unit/test_branch_protection_verifier.py": 120,
         "docs/REPOSITORY_GUARDRAILS.md": 40,
+        "docs/agent-context/context-policy-manifest-v1.json": 10,
         "docs/governance/GOVERNANCE_PREFLIGHT_V1.schema.json": 100,
         "scripts/governance_preflight_v1.py": 200,
         "tests/unit/test_governance_preflight_v1.py": 240,
@@ -5416,7 +5422,7 @@ def test_issue529_route_freezes_native_arm64_and_required_context_scope() -> Non
         (REPO / "docs/governance/preflights/issue-529.json").read_text(encoding="utf-8")
     )
     assert preflight["change_budget"] == {
-        "exact_paths": 20,
+        "exact_paths": 21,
         "maximum_additions_plus_deletions": 1300,
         "deletions_grant_credit": False,
         "per_file_charged_lines": expected_limits,
@@ -5438,6 +5444,8 @@ def test_issue529_route_freezes_native_arm64_and_required_context_scope() -> Non
         routes.ISSUE529_BUDGET_AMENDMENT_SHA256,
         routes.ISSUE529_DOCS_AMENDMENT_COMMENT,
         routes.ISSUE529_DOCS_AMENDMENT_SHA256,
+        routes.ISSUE529_HOSTED_CORRECTION_COMMENT,
+        routes.ISSUE529_HOSTED_CORRECTION_SHA256,
         routes.ISSUE529_BUDGET_RED,
     ):
         assert value in preflight["objective"]
