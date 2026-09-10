@@ -365,3 +365,70 @@ def test_maximum_fixture_completes_within_hard_ceiling() -> None:
     started = time.perf_counter()
     assert _codes(artifact, context) == []
     assert time.perf_counter() - started < 1.0
+
+
+def _budgeted_artifact() -> Artifact:
+    artifact = _artifact()
+    required = artifact["scope"]["required"]
+    artifact["change_budget"] = {
+        "exact_paths": len(required),
+        "maximum_additions_plus_deletions": 100,
+        "deletions_grant_credit": False,
+        "per_file_charged_lines": {path: 50 for path in required},
+    }
+    return artifact
+
+
+def test_optional_change_budget_is_closed_typed_and_scope_bound() -> None:
+    schema = json.loads(
+        Path("docs/governance/GOVERNANCE_PREFLIGHT_V1.schema.json").read_text()
+    )
+    budget_schema = schema["properties"]["change_budget"]
+    assert budget_schema["additionalProperties"] is False
+    assert set(budget_schema["required"]) == {
+        "exact_paths",
+        "maximum_additions_plus_deletions",
+        "deletions_grant_credit",
+        "per_file_charged_lines",
+    }
+    assert _codes(_budgeted_artifact(), _context()) == []
+
+
+@pytest.mark.parametrize(
+    ("mutation", "expected"),
+    (
+        (lambda budget: budget.pop("exact_paths"), ["GPF.SCHEMA.REQUIRED"]),
+        (lambda budget: budget.__setitem__("unexpected", 1), ["GPF.SCHEMA.UNKNOWN"]),
+        (lambda budget: budget.__setitem__("exact_paths", True), ["GPF.SCHEMA.TYPE"]),
+        (
+            lambda budget: budget.__setitem__("maximum_additions_plus_deletions", 0),
+            ["GPF.SCHEMA.TYPE"],
+        ),
+        (
+            lambda budget: budget.__setitem__("deletions_grant_credit", True),
+            ["GPF.BUDGET.DELETION_CREDIT"],
+        ),
+        (
+            lambda budget: budget.__setitem__("exact_paths", 1),
+            ["GPF.BUDGET.PATH_COUNT_MISMATCH"],
+        ),
+        (
+            lambda budget: budget["per_file_charged_lines"].__setitem__(
+                "unreviewed/path.py", 1
+            ),
+            ["GPF.BUDGET.PATH_SET_MISMATCH"],
+        ),
+        (
+            lambda budget: budget["per_file_charged_lines"].__setitem__(
+                "docs/STATUS.md", 101
+            ),
+            ["GPF.BUDGET.FILE_LIMIT_EXCEEDS_TOTAL"],
+        ),
+    ),
+)
+def test_change_budget_mutations_fail_closed(
+    mutation: Any, expected: list[str]
+) -> None:
+    artifact = _budgeted_artifact()
+    mutation(artifact["change_budget"])
+    assert _codes(artifact, _context()) == expected
