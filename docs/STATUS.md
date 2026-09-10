@@ -2265,3 +2265,19 @@ human acceptance, deployment, release, production-readiness, or Cut 1 evidence.
   combined Issue #523 candidate. It adds no product/provider/media behavior,
   credential use, egress, spend, deployment, release, production-readiness, or
   Cut 1 claim. T06, T07, and T08 remain incomplete.
+
+## Issue #529 native ARM64 hosted-security prerequisite (2026-09-10)
+
+- PR #528 remains blocked after its push security run reproduced QEMU target
+  signal 4 twice during the ARM64 frontend build while the same exact head
+  passed the pull-request event. Unchanged reruns are stopped.
+- Issue #529 preserves the existing protected AMD64 check and replaces only
+  the ARM64 emulation topology with a separate native `ubuntu-24.04-arm` job.
+  Both jobs retain the complete build, runtime, reproducibility, SBOM, Trivy,
+  Grype, finite-timeout, and fail-closed contract.
+- The candidate also reconciles the canonical required-context verifier before
+  live settings change. Exact push/PR evidence, independent review, eligible
+  approval, protected merge, and post-merge verification remain pending.
+- No provider call, upload, credential access, egress, spend, media generation,
+  deployment, release, production-readiness, or Cut 1 evidence is authorized.
+  After merge, PR #528 must integrate accepted main and rerun exact-head gates.

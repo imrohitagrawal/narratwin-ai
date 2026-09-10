@@ -413,10 +413,8 @@ def check_dependencies_and_scripts(failures: list[str]) -> None:
     ):
         if marker not in scripts:
             fail(f"Stage 8 scripts must include {marker}.", failures)
-    for marker in ("security / docker build", "setup-qemu-action", "reports/security/",
-                   "FRONTEND_ARCH:", "docker-image-scan.sh", "upload-artifact"):
-        if marker not in security_workflow:
-            fail(f"Stage 8 security workflow must include {marker}.", failures)
+    for marker,want in (("security / docker build",1),("(ARM64 native)",1),("ubuntu-24.04-arm",1),("setup-qemu-action",0),("reports/security/",1),("FRONTEND_ARCH:",1),("docker-image-scan.sh",1),("upload-artifact",1)):
+        if (marker in security_workflow)!=want:fail("Security drift",failures)
     for marker in (
         "stage8 / performance lighthouse",
         "performance-smoke.sh",

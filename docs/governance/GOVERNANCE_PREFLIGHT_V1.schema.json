@@ -11,6 +11,28 @@
     "branch": {"type": "string", "minLength": 1},
     "objective": {"type": "string", "minLength": 1, "maxLength": 2000},
     "status_decision": {"const": "update-minimally"},
+    "change_budget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "exact_paths",
+        "maximum_additions_plus_deletions",
+        "deletions_grant_credit",
+        "per_file_charged_lines"
+      ],
+      "properties": {
+        "exact_paths": {"$ref": "#/$defs/positiveInteger"},
+        "maximum_additions_plus_deletions": {"$ref": "#/$defs/positiveInteger"},
+        "deletions_grant_credit": {"const": false},
+        "per_file_charged_lines": {
+          "type": "object",
+          "minProperties": 1,
+          "maxProperties": 128,
+          "propertyNames": {"type": "string", "minLength": 1, "maxLength": 512},
+          "additionalProperties": {"$ref": "#/$defs/positiveInteger"}
+        }
+      }
+    },
     "scope": {
       "type": "object",
       "additionalProperties": false,
@@ -23,6 +45,7 @@
     }
   },
   "$defs": {
+    "positiveInteger": {"type": "integer", "minimum": 1},
     "pathList": {
       "type": "array",
       "maxItems": 128,

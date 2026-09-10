@@ -2,8 +2,35 @@
   "schema_version": "GovernancePreflightV1",
   "issue_number": 529,
   "branch": "stage8-529-native-arm64-security",
-  "objective": "From exact accepted main 0e4efa56b36773ad8c687fb9daa73adc0152b89c and tree b4aa619ae550bb562a18725da454eb607124853e, correct the repeated hosted QEMU ARM64 SIGILL under Issue #529 body SHA-256 f165f78a66d0f1f7b8c1386d2ba9a6b2991f4df666823572acdee782ba450d4e and frozen decision comment 5612151683 SHA-256 1c08b7ed76199e1dc63f1577ddf5e882b532e647876ef28ac9c9255c884bfcf9. Preserve the byte-identical build wrapper f249db3fafcc3c9a71b1769a5cb9a89beae5b3d114ed166748c5b68eac0f866b, scan wrapper 2babdbb3833fffef8f88b916551aa256bbc924109459f2bb0ce48e5d2b9f321d, and consensus checker f8bc978c3cbe81e9ae24dd4421e162bb0b417237caa34383502f099d3a54c762. Keep the protected security / docker build AMD64 job on ubuntu-latest, remove its emulation dependency, and add a finite-timeout ubuntu-24.04-arm job that runs the same complete native build, runtime, reproducibility, SBOM, Trivy, and Grype contract with isolated image, session, report, and artifact identities. Require a preflight-only first commit, committed discriminating RED, smallest GREEN, focused and full local gates, exact-head hosted push and pull-request parity, required-context reconciliation, independent review, eligible approval, protected merge, post-merge verification, and exact task-resource cleanup. Change exactly eleven paths within 1,000 aggregate charged text lines and the frozen per-path caps. Prohibit retry, fallback, skip, warning-only acceptance, cross-build substitution, threshold weakening, dependency or Dockerfile changes, product/runtime/provider/media work, credentials, egress, spend, deployment, release, production, or Cut 1 claims.",
+  "objective": "From accepted main 0e4efa56b36773ad8c687fb9daa73adc0152b89c/tree b4aa619ae550bb562a18725da454eb607124853e, correct hosted QEMU ARM64 SIGILL under Issue #529 body f165f78a66d0f1f7b8c1386d2ba9a6b2991f4df666823572acdee782ba450d4e and comments 5612151683/1c08b7ed76199e1dc63f1577ddf5e882b532e647876ef28ac9c9255c884bfcf9, 5612266631/15ae5a70a3b598d43852d3e0b1ff393977778a44cc43ae4738a45aa5ad1d02fd, 5612502264/3efe860882427d574f804061e1e4d718a7ca0e9ca7c0efa065550557fd25a81f, and 5612738830/c74cdb7e62e702a3ffa8406976bb1e53a9b98c3dfe128fee074e02b8d718bf63. Preserve exact build f249db3fafcc3c9a71b1769a5cb9a89beae5b3d114ed166748c5b68eac0f866b, scan 2babdbb3833fffef8f88b916551aa256bbc924109459f2bb0ce48e5d2b9f321d, and consensus f8bc978c3cbe81e9ae24dd4421e162bb0b417237caa34383502f099d3a54c762 wrappers. Keep security / docker build on ubuntu-latest; add finite ubuntu-24.04-arm native build/scan with isolated identities and stable required context. Preserve commits 099ca1772879e496a18a01483df3b9db9336a2d8, 8de34633cac12d50717dda75c10e17fcc5a5edee, and 89f87b3d239b21f0a8064994e328b07760af2cb8. Require exact push/PR parity, live protection reconciliation, independent review, approval, merge, verification, and cleanup. Change exactly twenty paths within the manifest-owned 1,300-line budget. No retry, fallback, skip, warning-only acceptance, cross-build, threshold weakening, product/runtime/provider/media changes, credentials, egress, spend, deployment, release, production, or Cut 1 claim.",
   "status_decision": "update-minimally",
+  "change_budget": {
+    "exact_paths": 20,
+    "maximum_additions_plus_deletions": 1300,
+    "deletions_grant_credit": false,
+    "per_file_charged_lines": {
+      ".github/workflows/security.yml": 140,
+      "docs/governance/preflights/issue-529.json": 240,
+      "tests/unit/test_stage8_node_security.py": 180,
+      "scripts/quality/check_stage8_docs.py": 30,
+      "scripts/quality/stage8_cut1_routes.py": 180,
+      "tests/unit/test_stage8_cut1_routes.py": 240,
+      "docs/ADR/0084-native-arm64-hosted-security.md": 110,
+      "docs/QUALITY_GATES.md": 60,
+      "docs/STATUS.md": 30,
+      "docs/TRACEABILITY.md": 30,
+      "docs/THIRD_PARTY_NOTICES.md": 30,
+      "scripts/ci/verify_branch_protection.py": 40,
+      "tests/unit/test_branch_protection_verifier.py": 120,
+      "docs/REPOSITORY_GUARDRAILS.md": 40,
+      "docs/governance/GOVERNANCE_PREFLIGHT_V1.schema.json": 100,
+      "scripts/governance_preflight_v1.py": 200,
+      "tests/unit/test_governance_preflight_v1.py": 240,
+      "tests/unit/test_governance_preflight_repository.py": 100,
+      "docs/SECURITY_AND_PRIVACY.md": 30,
+      "docs/STAGE_ISSUE_PLAN.md": 30
+    }
+  },
   "scope": {
     "required": [
       ".github/workflows/security.yml",
@@ -16,7 +43,16 @@
       "docs/QUALITY_GATES.md",
       "docs/STATUS.md",
       "docs/TRACEABILITY.md",
-      "docs/THIRD_PARTY_NOTICES.md"
+      "docs/THIRD_PARTY_NOTICES.md",
+      "scripts/ci/verify_branch_protection.py",
+      "tests/unit/test_branch_protection_verifier.py",
+      "docs/REPOSITORY_GUARDRAILS.md",
+      "docs/governance/GOVERNANCE_PREFLIGHT_V1.schema.json",
+      "scripts/governance_preflight_v1.py",
+      "tests/unit/test_governance_preflight_v1.py",
+      "tests/unit/test_governance_preflight_repository.py",
+      "docs/SECURITY_AND_PRIVACY.md",
+      "docs/STAGE_ISSUE_PLAN.md"
     ],
     "allowed_prefixes": [
       ".github/workflows/security.yml",
@@ -29,7 +65,16 @@
       "docs/QUALITY_GATES.md",
       "docs/STATUS.md",
       "docs/TRACEABILITY.md",
-      "docs/THIRD_PARTY_NOTICES.md"
+      "docs/THIRD_PARTY_NOTICES.md",
+      "scripts/ci/verify_branch_protection.py",
+      "tests/unit/test_branch_protection_verifier.py",
+      "docs/REPOSITORY_GUARDRAILS.md",
+      "docs/governance/GOVERNANCE_PREFLIGHT_V1.schema.json",
+      "scripts/governance_preflight_v1.py",
+      "tests/unit/test_governance_preflight_v1.py",
+      "tests/unit/test_governance_preflight_repository.py",
+      "docs/SECURITY_AND_PRIVACY.md",
+      "docs/STAGE_ISSUE_PLAN.md"
     ],
     "forbidden": [
       "AGENTS.md",
@@ -43,7 +88,6 @@
       "perf/",
       "portfolio/",
       "pyproject.toml",
-      "scripts/ci/",
       "scripts/guardrails_check.py",
       "tests/acceptance/",
       "tests/api/",
