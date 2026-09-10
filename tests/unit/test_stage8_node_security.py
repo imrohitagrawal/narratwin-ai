@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from types import SimpleNamespace
 from typing import Any
 
@@ -108,20 +109,69 @@ def test_issue502_musl_closure_and_real_sharp_transform_fail_closed() -> None:
     assert all(not security.frontend_node_image_valid(candidate) for candidate in mutations)
 
 
-def test_issue502_security_workflow_runs_both_frontend_architectures_in_one_context() -> None:
+def _security_job_blocks(workflow: str) -> dict[str, str]:
+    jobs = workflow.split("\njobs:\n", 1)
+    assert len(jobs) == 2
+    matches = list(re.finditer(r"(?m)^  ([a-z][a-z0-9_-]*):\n", jobs[1]))
+    return {
+        match.group(1): jobs[1][match.start() : matches[index + 1].start()]
+        if index + 1 < len(matches)
+        else jobs[1][match.start() :]
+        for index, match in enumerate(matches)
+    }
+
+
+def _assert_issue529_native_security_topology(workflow: str) -> None:
+    blocks = _security_job_blocks(workflow)
+    assert {"security", "docker", "docker-arm64"} <= blocks.keys()
+    amd64, arm64 = blocks["docker"], blocks["docker-arm64"]
+    assert "name: security / docker build\n" in amd64
+    assert "runs-on: ubuntu-latest" in amd64
+    assert "name: security / docker build (ARM64 native)\n" in arm64
+    assert "runs-on: ubuntu-24.04-arm" in arm64
+    assert "setup-qemu-action" not in workflow
+    assert "--platform linux/arm64" not in workflow
+
+    for block, architecture in ((amd64, "amd64"), (arm64, "arm64")):
+        assert block.count("timeout-minutes: 30") == 1
+        assert block.count("actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5") == 1
+        assert block.count("bash scripts/ci/docker-build.sh") == 1
+        assert block.count("bash scripts/ci/docker-image-scan.sh") == 1
+        assert f"REPORT_DIR: reports/security/{architecture}" in block
+        assert f"BACKEND_ARCH: {architecture}" in block
+        assert f"FRONTEND_ARCH: {architecture}" in block
+        assert f"SESSION: issue529-hosted-{architecture}" in block
+        assert f"narratwin-ai-backend:ci-{architecture}" in block
+        assert f"narratwin-ai-frontend:ci-{architecture}" in block
+        assert f"narratwin-ai-frontend-build:ci-{architecture}" in block
+        assert f"narratwin-ai-frontend:repro-ci-{architecture}" in block
+        assert f"name: docker-image-scan-reports-{architecture}" in block
+        assert f"path: reports/security/{architecture}" in block
+        for prohibited in ("continue-on-error", "SKIP_POLICY_EVALUATION", "|| true"):
+            assert prohibited not in block
+
+
+def test_issue529_security_workflow_runs_complete_native_architecture_jobs() -> None:
+    _assert_issue529_native_security_topology(stage8.read(".github/workflows/security.yml"))
+
+
+@pytest.mark.parametrize(
+    ("before", "after"),
+    (
+        ("runs-on: ubuntu-24.04-arm", "runs-on: ubuntu-latest"),
+        ("timeout-minutes: 30", "timeout-minutes: 31"),
+        ("bash scripts/ci/docker-image-scan.sh", "true"),
+        ("name: docker-image-scan-reports-arm64", "name: docker-image-scan-reports-amd64"),
+        ("BACKEND_ARCH: arm64", "BACKEND_ARCH: amd64"),
+    ),
+)
+def test_issue529_security_workflow_rejects_native_topology_mutations(
+    before: str, after: str
+) -> None:
     workflow = stage8.read(".github/workflows/security.yml")
-    assert workflow.count("name: security / docker build") == 1
-    assert "docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130" in workflow
-    assert "platforms: arm64" in workflow
-    for architecture in ("amd64", "arm64"):
-        assert f"REPORT_DIR: reports/security/{architecture}" in workflow
-        assert f"FRONTEND_ARCH: {architecture}" in workflow
-        assert f"SESSION: issue502-hosted-{architecture}" in workflow
-        assert f"narratwin-ai-frontend:ci-{architecture}" in workflow
-        assert f"narratwin-ai-frontend-build:ci-{architecture}" in workflow
-        assert f"narratwin-ai-frontend:repro-ci-{architecture}" in workflow
-    assert workflow.count("bash scripts/ci/docker-image-scan.sh") == 2
-    assert "path: reports/security" in workflow
+    assert before in workflow
+    with pytest.raises(AssertionError):
+        _assert_issue529_native_security_topology(workflow.replace(before, after, 1))
 
 
 def test_issue376_shell_free_dependency_builder_contract_fails_closed() -> None:
