@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import hashlib
 import json
+import re
 from types import SimpleNamespace
 from typing import Any
 
@@ -108,20 +110,167 @@ def test_issue502_musl_closure_and_real_sharp_transform_fail_closed() -> None:
     assert all(not security.frontend_node_image_valid(candidate) for candidate in mutations)
 
 
-def test_issue502_security_workflow_runs_both_frontend_architectures_in_one_context() -> None:
+def _security_job_blocks(workflow: str) -> dict[str, str]:
+    jobs = workflow.split("\njobs:\n", 1)
+    assert len(jobs) == 2
+    matches = list(re.finditer(r"(?m)^  ([a-z][a-z0-9_-]*):\n", jobs[1]))
+    return {
+        match.group(1): jobs[1][match.start() : matches[index + 1].start()]
+        if index + 1 < len(matches)
+        else jobs[1][match.start() :]
+        for index, match in enumerate(matches)
+    }
+
+
+def _assert_issue529_native_security_topology(workflow: str) -> None:
+    prefix = workflow.split("\njobs:\n", 1)[0] + "\njobs:\n"
+    blocks = _security_job_blocks(workflow)
+    assert hashlib.sha256(prefix.encode()).hexdigest() == (
+        "2ae2b00b7a296147edc29479c0aa23ce4cff1d44487a12cce430665c80f4e3ce"
+    )
+    assert {name: hashlib.sha256(block.encode()).hexdigest() for name, block in blocks.items()} == {
+        "security": "d4effe5b5dbfa6afaf0b7e314b1cf75428e9c03aecc2d499e26f1ef5f19fdb63",
+        "docker": "5e3a8f837a4cd7b7fc5fc98195882de6ace6cbe2f4e803414e5d2bd08de76b0b",
+        "docker-arm64": "3c593b6dc35f4ca0e52d278da11afa0364fce173d7de93728ace0a78f1bae76c",
+    }
+    assert set(blocks) == {"security", "docker", "docker-arm64"}
+    amd64, arm64 = blocks["docker"], blocks["docker-arm64"]
+    assert amd64.splitlines().count("    name: security / docker build") == 1
+    assert amd64.splitlines().count("    runs-on: ubuntu-latest") == 1
+    assert arm64.splitlines().count("    name: security / docker build (ARM64 native)") == 1
+    assert arm64.splitlines().count("    runs-on: ubuntu-24.04-arm") == 1
+    assert "setup-qemu-action" not in workflow
+    assert "--platform linux/arm64" not in workflow
+
+    for block, architecture in ((amd64, "amd64"), (arm64, "arm64")):
+        lines = block.splitlines()
+        assert lines.count("    timeout-minutes: 30") == 1
+        assert re.search(r"(?m)^    if:", block) is None
+        assert lines.count(
+            "      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4"
+        ) == 1
+        assert lines.count("        run: bash scripts/ci/docker-build.sh") == 1
+        assert lines.count("        run: bash scripts/ci/docker-image-scan.sh") == 1
+        assert lines.count(f"          REPORT_DIR: reports/security/{architecture}") == 1
+        assert lines.count(f"          BACKEND_ARCH: {architecture}") == 1
+        assert lines.count(f"          FRONTEND_ARCH: {architecture}") == 1
+        assert lines.count(f"          SESSION: issue529-hosted-{architecture}") == 1
+        assert lines.count(f"          BACKEND_IMAGE: narratwin-ai-backend:ci-{architecture}") == 2
+        assert lines.count(f"          FRONTEND_IMAGE: narratwin-ai-frontend:ci-{architecture}") == 2
+        assert lines.count(
+            f"          FRONTEND_BUILD_IMAGE: narratwin-ai-frontend-build:ci-{architecture}"
+        ) == 1
+        assert lines.count(
+            f"          FRONTEND_REPRO_IMAGE: narratwin-ai-frontend:repro-ci-{architecture}"
+        ) == 1
+        assert lines.count(f"          name: docker-image-scan-reports-{architecture}") == 1
+        assert lines.count(f"          path: reports/security/{architecture}") == 1
+        assert lines.count(
+            "        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4"
+        ) == 1
+        assert block.count("\n        if:") == 1
+        upload_index = next(
+            index
+            for index, line in enumerate(lines)
+            if line.startswith("      - name: Upload Docker image scan reports (")
+        )
+        assert lines[upload_index + 1] == "        if: always()"
+        assert lines.count("          if-no-files-found: error") == 1
+        for prohibited in ("continue-on-error", "SKIP_POLICY_EVALUATION", "|| true"):
+            assert prohibited not in block
+
+
+def test_issue529_security_workflow_runs_complete_native_architecture_jobs() -> None:
+    _assert_issue529_native_security_topology(stage8.read(".github/workflows/security.yml"))
+
+
+@pytest.mark.parametrize(
+    ("before", "after"),
+    (
+        ("runs-on: ubuntu-24.04-arm", "runs-on: ubuntu-latest"),
+        ("timeout-minutes: 30", "timeout-minutes: 31"),
+        ("bash scripts/ci/docker-image-scan.sh", "true"),
+        ("name: docker-image-scan-reports-arm64", "name: docker-image-scan-reports-amd64"),
+        ("BACKEND_ARCH: arm64", "BACKEND_ARCH: amd64"),
+        ("    runs-on: ubuntu-24.04-arm", "    runs-on: ubuntu-24.04-arm\n    if: false"),
+        (
+            "    runs-on: ubuntu-24.04-arm",
+            "    runs-on: ubuntu-latest # runs-on: ubuntu-24.04-arm",
+        ),
+        (
+            "        run: bash scripts/ci/docker-image-scan.sh",
+            "        if: false\n        run: bash scripts/ci/docker-image-scan.sh",
+        ),
+        ("        if: always()", "        if: false"),
+        ("if-no-files-found: error", "if-no-files-found: warn"),
+        ("run: bash scripts/ci/dependency-security.sh", "run: true"),
+        ("  push:\n", "  # push removed:\n"),
+        ("          persist-credentials: false\n      - name: Docker build compatibility context (ARM64 native)", "          persist-credentials: true\n      - name: Docker build compatibility context (ARM64 native)"),
+        ("          persist-credentials: false\n      - name: Docker build compatibility context", "          persist-credentials: false\n          ref: main\n      - name: Docker build compatibility context"),
+        ("    name: secret scan / bandit / audit / semgrep", "    name: secret scan / bandit / audit / semgrep\n    if: github.ref == 'refs/heads/__never__'"),
+        ("jobs:\n", 'env:\n  SKIP_POLICY_EVALUATION: "1"\n\njobs:\n'),
+        (
+            "    runs-on: ubuntu-24.04-arm",
+            "    needs: bypass\n    runs-on: ubuntu-24.04-arm",
+        ),
+        (
+            "jobs:\n",
+            "defaults:\n  run:\n    shell: 'bash {0}; true'\n\njobs:\n",
+        ),
+        (
+            "    runs-on: ubuntu-24.04-arm",
+            "    runs-on: ubuntu-24.04-arm\n    defaults:\n      run:\n        shell: 'bash {0}; true'",
+        ),
+        (
+            "      - name: Docker image vulnerability scan (ARM64 native)",
+            "      - name: Docker image vulnerability scan (ARM64 native)\n        shell: 'bash {0}; true'",
+        ),
+        (
+            "      - name: Docker image vulnerability scan (ARM64 native)",
+            "      - name: Rewrite checked-out scanner\n        run: printf bypass > scripts/ci/docker-image-scan.sh\n"
+            "      - name: Docker image vulnerability scan (ARM64 native)",
+        ),
+        (
+            "  docker-arm64:\n",
+            "  bypass-arm64:\n    name: security / docker build (ARM64 native)\n"
+            "    runs-on: ubuntu-latest\n    steps:\n      - run: true\n\n  docker-arm64:\n",
+        ),
+    ),
+)
+def test_issue529_security_workflow_rejects_native_topology_mutations(
+    before: str, after: str
+) -> None:
     workflow = stage8.read(".github/workflows/security.yml")
-    assert workflow.count("name: security / docker build") == 1
-    assert "docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130" in workflow
-    assert "platforms: arm64" in workflow
-    for architecture in ("amd64", "arm64"):
-        assert f"REPORT_DIR: reports/security/{architecture}" in workflow
-        assert f"FRONTEND_ARCH: {architecture}" in workflow
-        assert f"SESSION: issue502-hosted-{architecture}" in workflow
-        assert f"narratwin-ai-frontend:ci-{architecture}" in workflow
-        assert f"narratwin-ai-frontend-build:ci-{architecture}" in workflow
-        assert f"narratwin-ai-frontend:repro-ci-{architecture}" in workflow
-    assert workflow.count("bash scripts/ci/docker-image-scan.sh") == 2
-    assert "path: reports/security" in workflow
+    assert before in workflow
+    with pytest.raises(AssertionError):
+        _assert_issue529_native_security_topology(workflow.replace(before, after, 1))
+
+
+def _assert_issue529_active_docs(security_doc: str, stage_plan: str) -> None:
+    security_section = security_doc.split("## Issue #502", 1)[1].split("## Issue #509", 1)[0]
+    stage_section = stage_plan.split("### Issue #502", 1)[1].split("### Issue #509", 1)[0]
+    for section in (security_section, stage_section):
+        normalized = section.lower()
+        assert "native arm64" in normalized
+        assert "separate required" in normalized
+        assert "all image, runtime, scanner, consensus, and severity" in normalized
+        assert "QEMU-emulated ARM64" not in section
+        assert "emulated ARM64 must" not in section
+
+
+def test_issue529_active_security_and_stage_contracts_use_native_topology() -> None:
+    security_doc = stage8.read("docs/SECURITY_AND_PRIVACY.md")
+    stage_plan = stage8.read("docs/STAGE_ISSUE_PLAN.md")
+    _assert_issue529_active_docs(security_doc, stage_plan)
+    for original, stale in (
+        ("native ARM64", "QEMU-emulated ARM64"),
+        ("separate required", "unchanged single hosted"),
+    ):
+        with pytest.raises(AssertionError):
+            _assert_issue529_active_docs(
+                security_doc.replace(original, stale, 1),
+                stage_plan.replace(original, stale, 1),
+            )
 
 
 def test_issue376_shell_free_dependency_builder_contract_fails_closed() -> None:

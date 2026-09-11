@@ -24,6 +24,7 @@ EXPECTED_CONTEXTS = (
     "ci / docker build",
     "secret scan / bandit / audit / semgrep",
     "security / docker build",
+    "security / docker build (ARM64 native)",
     "eval smoke",
     "stage8 / performance lighthouse",
     "pr-body-consistency",

@@ -471,3 +471,16 @@ def test_missing_promisor_object_cannot_start_git_transport(tmp_path: Path) -> N
     (repo / ".git" / "objects" / head[:2] / head[2:]).unlink()
     assert _codes(repo, base, head) == ["GPF.REPO.HISTORY_UNAVAILABLE"]
     assert not marker.exists()
+
+
+def test_repository_adapter_preserves_valid_manifest_owned_budget(tmp_path: Path) -> None:
+    artifact = _artifact()
+    required = artifact["scope"]["required"]
+    artifact["change_budget"] = {
+        "exact_paths": len(required),
+        "maximum_additions_plus_deletions": 100,
+        "deletions_grant_credit": False,
+        "per_file_charged_lines": {path: 50 for path in required},
+    }
+    repo, base, head = _valid_repo(tmp_path, artifact=artifact)
+    assert _codes(repo, base, head) == []
