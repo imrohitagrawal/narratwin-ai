@@ -314,8 +314,19 @@ ISSUE525_IO_CORRECTION_SHA256 = (
 )
 ISSUE527_BASE = "0e4efa56b36773ad8c687fb9daa73adc0152b89c"
 ISSUE527_TREE = "b4aa619ae550bb562a18725da454eb607124853e"
-ISSUE527_ISSUE_BODY_SHA256 = (
-    "fee713b53055e1d8b2dfe53af320367cd734dd26807c3c3fe083ea092f9c6180"
+ISSUE527_ISSUE_BODY_SHA256 = "fee713b53055e1d8b2dfe53af320367cd734dd26807c3c3fe083ea092f9c6180"
+ISSUE527_TRANSITION_OBJECTS = (
+    ("36a3d12fcdd167c7d48482ff5b4d342d9af570b1", "54b11855326e3ed5ef9ac3be071e0c46a2039c71"),
+    ("ef45442f6c0d333da6053061a2e9b4eaf80146f4", "5757a7a4fc98ac9dc3c61247f8f61deaab395f3f"),
+    ("e78d80e60eecda24088a49aa072d9030aaf7087d", "930f43797ddc07f8a8ccf60f248c85dee1c64674"),
+)
+ISSUE527_TRANSITION_PARENTS = (
+    (ISSUE527_TRANSITION_OBJECTS[1][0], "0e4efa56b36773ad8c687fb9daa73adc0152b89c eaaa3e519a5158c20cbecf7a180ca5c7c8f563f2"),
+    (ISSUE527_TRANSITION_OBJECTS[2][0], "36a3d12fcdd167c7d48482ff5b4d342d9af570b1 ef45442f6c0d333da6053061a2e9b4eaf80146f4"),
+)
+ISSUE527_TRANSITION_AUTHORITY = (
+    "5639330998", "56a8c21d8f9c5a38b641b5e314aad0926d761fb138c0e60bf6c05b95392142c3",
+    "5639349097", "b5173d172773c0c8ff474be5cd6959573cd8542d4e095916e12c139add91f2be",
 )
 ISSUE502_BASE = "e1fe126372d5c5a06dc7d2f9c76cb205da8643e7"
 ISSUE502_TREE = "76495e566a78a7951c33314ac742606c85ee92e5"
@@ -2584,6 +2595,24 @@ def route_has_copy_or_rename(output: str) -> bool:
 
 
 def route_base(run: Callable[[list[str]], Any], branch: str) -> str:
+    if branch == ISSUE527_BRANCH:
+        objects = ((ISSUE527_BASE, ISSUE527_TREE), *ISSUE527_TRANSITION_OBJECTS)
+        base, merge = ISSUE527_TRANSITION_OBJECTS[1][0], ISSUE527_TRANSITION_OBJECTS[2][0]
+        edges = ((ISSUE527_BASE, objects[1][0]), (objects[1][0], "HEAD"),
+                 (base, "HEAD"), (merge, "HEAD"))
+        checks = [
+            *(run(["git", "rev-parse", f"{commit}^{{tree}}"]) for commit, _ in objects),
+            *(run(["git", "show", "-s", "--format=%P", commit])
+              for commit, _ in ISSUE527_TRANSITION_PARENTS),
+            run(["git", "rev-parse", "origin/main^{commit}"]),
+            *(run(["git", "merge-base", "--is-ancestor", *edge]) for edge in edges),
+        ]
+        expected = [*(tree for _, tree in objects),
+                    *(parents for _, parents in ISSUE527_TRANSITION_PARENTS), base, "", "", "", ""]
+        if any(result.returncode or str(result.stdout).strip() != value
+               for result, value in zip(checks, expected, strict=True)):
+            raise RuntimeError("Issue #527 reviewed transition evidence is unavailable or inconsistent.")
+        return base
     if branch == ISSUE459_BRANCH:
         commits = (ISSUE459_BASE, ISSUE459_FROZEN_HEAD, ISSUE459_TRANSITION_BASE, ISSUE459_TRANSITION_MERGE)
         resolved = [run(["git", "rev-parse", f"{commit}^{{commit}}"]) for commit in commits]
@@ -2728,7 +2757,6 @@ def route_base(run: Callable[[list[str]], Any], branch: str) -> str:
         ISSUE499_BRANCH: (499, ISSUE499_BASE),
         ISSUE524_BRANCH: (524, ISSUE524_BASE),
         ISSUE525_BRANCH: (525, ISSUE525_BASE),
-        ISSUE527_BRANCH: (527, ISSUE527_BASE),
         ISSUE529_BRANCH: (529, ISSUE529_BASE),
         ISSUE495_BRANCH: (495, ISSUE495_BASE),
         ISSUE482_BRANCH: (482, ISSUE482_BASE),
@@ -2771,7 +2799,7 @@ def route_base(run: Callable[[list[str]], Any], branch: str) -> str:
             or fixed_value != base or common_value != base
         )
         branch_point_invalid = False
-        if not fixed_invalid and branch in {ISSUE527_BRANCH, ISSUE509_BRANCH, ISSUE507_BRANCH, ISSUE502_BRANCH, ISSUE479_BRANCH, ISSUE482_BRANCH, ISSUE478_BRANCH, ISSUE475_BRANCH, ISSUE468_BRANCH, ISSUE486_BRANCH, ISSUE486_PROTECTED_BRANCH, ISSUE486_HASH_CLEANUP_BRANCH, ISSUE473_BRANCH, ISSUE471_BRANCH, ISSUE459_T05B_BRANCH, ISSUE459_T05A_BRANCH, ISSUE459_T03_BRANCH, ISSUE460_BRANCH, ISSUE452_BRANCH, ISSUE451_BRANCH, ISSUE150_BRANCH, ISSUE424_BRANCH, ISSUE421_BRANCH, ISSUE368_IMPLEMENTATION_BRANCH, ISSUE368_BINDING_COMPAT_BRANCH, ISSUE368_AUTH_TRANSPORT_BRANCH, ISSUE368_TIMEOUT_BRANCH,
+        if not fixed_invalid and branch in {ISSUE509_BRANCH, ISSUE507_BRANCH, ISSUE502_BRANCH, ISSUE479_BRANCH, ISSUE482_BRANCH, ISSUE478_BRANCH, ISSUE475_BRANCH, ISSUE468_BRANCH, ISSUE486_BRANCH, ISSUE486_PROTECTED_BRANCH, ISSUE486_HASH_CLEANUP_BRANCH, ISSUE473_BRANCH, ISSUE471_BRANCH, ISSUE459_T05B_BRANCH, ISSUE459_T05A_BRANCH, ISSUE459_T03_BRANCH, ISSUE460_BRANCH, ISSUE452_BRANCH, ISSUE451_BRANCH, ISSUE150_BRANCH, ISSUE424_BRANCH, ISSUE421_BRANCH, ISSUE368_IMPLEMENTATION_BRANCH, ISSUE368_BINDING_COMPAT_BRANCH, ISSUE368_AUTH_TRANSPORT_BRANCH, ISSUE368_TIMEOUT_BRANCH,
                       ISSUE368_QUOTA_FIX_BRANCH, ISSUE498_BRANCH, ISSUE368_BRANCH,
                       ISSUE368_PROMPT_BRANCH}:
             branch_point = run(["git", "merge-base", "origin/main", "HEAD"])
@@ -3439,7 +3467,9 @@ def check_exact_route(
             )
             failures.extend(f"Issue #527 governance preflight failed: {item.code}" for item in findings)
             objective = preflight.get("objective") if isinstance(preflight, dict) else None
-            issue527_authority = (ISSUE527_BASE, ISSUE527_TREE, ISSUE527_ISSUE_BODY_SHA256)
+            issue527_authority = (ISSUE527_BASE, ISSUE527_TREE, ISSUE527_ISSUE_BODY_SHA256,
+                                  *(value for row in ISSUE527_TRANSITION_OBJECTS + ISSUE527_TRANSITION_PARENTS for value in row),
+                                  *ISSUE527_TRANSITION_AUTHORITY)
             if not isinstance(objective, str) or any(
                 value not in objective for value in issue527_authority
             ):

@@ -5430,8 +5430,8 @@ def test_issue527_route_rejects_suffix_and_transition_drift(monkeypatch: Any) ->
     parents = dict(routes.ISSUE527_TRANSITION_PARENTS)
 
     def good(args: list[str]) -> subprocess.CompletedProcess[str]:
-        if args[:4] == ["git", "show", "-s", "--format=%H%x00%T"]:
-            return completed(args, out=f"{args[4]}\0{objects[args[4]]}\n")
+        if args[:2] == ["git", "rev-parse"] and args[2].endswith("^{tree}"):
+            return completed(args, out=objects[args[2].removesuffix("^{tree}")] + "\n")
         if args[:4] == ["git", "show", "-s", "--format=%P"]:
             return completed(args, out=parents[args[4]] + "\n")
         if args == ["git", "rev-parse", "origin/main^{commit}"]:
@@ -5443,7 +5443,7 @@ def test_issue527_route_rejects_suffix_and_transition_drift(monkeypatch: Any) ->
     assert routes.route_base(good, routes.ISSUE527_BRANCH) == routes.ISSUE527_TRANSITION_OBJECTS[1][0]
     for rejected in ("object", "current-main", "ancestry", "parents"):
         def broken(args: list[str], *, rejected: str = rejected) -> subprocess.CompletedProcess[str]:
-            if rejected == "object" and args[:4] == ["git", "show", "-s", "--format=%H%x00%T"]:
+            if rejected == "object" and args[:2] == ["git", "rev-parse"] and args[2].endswith("^{tree}"):
                 return completed(args, code=128)
             if rejected == "current-main" and args == ["git", "rev-parse", "origin/main^{commit}"]:
                 return completed(args, out="0" * 40 + "\n")
