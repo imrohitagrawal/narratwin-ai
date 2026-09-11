@@ -3032,9 +3032,11 @@ Issue #502 starts from exact accepted main `e1fe126372d5c5a06dc7d2f9c76cb205da86
 on `stage8-502-frontend-musl-runtime-security`, owns exactly twenty paths, and
 is capped at 4,660 charged lines. It replaces only the vulnerable final
 Wolfi/glibc frontend boundary with an immutable Node 26.7.0 Alpine source and a
-six-package musl scratch runtime. AMD64 and emulated ARM64 must each build,
+six-package musl scratch runtime. Issue #529 replaces only its hosted execution
+topology: separate required AMD64 and native ARM64 contexts must each build,
 run, transform with Sharp, reproduce, emit truthful SBOMs, and pass Trivy plus
-Grype through Medium in the unchanged required hosted context.
+Grype through Medium. All image, runtime, scanner, consensus, and severity
+thresholds remain active.
 
 The existing route files also absorb the smallest exact-main Issue #504
 topology correction to remove the PR #505/Issue #502 CI cycle: exact PR #501

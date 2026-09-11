@@ -20,10 +20,18 @@ _ARTIFACT_FIELDS = {
     "branch",
     "objective",
     "status_decision",
+    "change_budget",
     "scope",
 }
+_REQUIRED_ARTIFACT_FIELDS = _ARTIFACT_FIELDS - {"change_budget"}
 _CONTEXT_FIELDS = {"issue_number", "branch", "changed_files"}
 _SCOPE_FIELDS = {"required", "allowed_prefixes", "forbidden"}
+_CHANGE_BUDGET_FIELDS = {
+    "exact_paths",
+    "maximum_additions_plus_deletions",
+    "deletions_grant_credit",
+    "per_file_charged_lines",
+}
 _LIST_FIELDS = ("required", "allowed_prefixes", "forbidden")
 
 
@@ -49,7 +57,7 @@ def _schema_codes(artifact: Any, context: Any) -> list[str]:
         return ["GPF.SCHEMA.TYPE"]
 
     codes: list[str] = []
-    _add(codes, "GPF.SCHEMA.REQUIRED", bool(_ARTIFACT_FIELDS - artifact.keys()))
+    _add(codes, "GPF.SCHEMA.REQUIRED", bool(_REQUIRED_ARTIFACT_FIELDS - artifact.keys()))
     _add(codes, "GPF.SCHEMA.REQUIRED", bool(_CONTEXT_FIELDS - context.keys()))
     if codes:
         return codes
@@ -60,6 +68,13 @@ def _schema_codes(artifact: Any, context: Any) -> list[str]:
     if isinstance(scope, dict):
         _add(codes, "GPF.SCHEMA.REQUIRED", bool(_SCOPE_FIELDS - scope.keys()))
         _add(codes, "GPF.SCHEMA.UNKNOWN", bool(scope.keys() - _SCOPE_FIELDS))
+    budget = artifact.get("change_budget") if "change_budget" in artifact else None
+    if "change_budget" in artifact:
+        if not isinstance(budget, dict):
+            _add(codes, "GPF.SCHEMA.TYPE", True)
+        else:
+            _add(codes, "GPF.SCHEMA.REQUIRED", bool(_CHANGE_BUDGET_FIELDS - budget.keys()))
+            _add(codes, "GPF.SCHEMA.UNKNOWN", bool(budget.keys() - _CHANGE_BUDGET_FIELDS))
     if codes:
         return codes
 
@@ -76,6 +91,20 @@ def _schema_codes(artifact: Any, context: Any) -> list[str]:
         and _string_list(context.get("changed_files"))
     )
     _add(codes, "GPF.SCHEMA.TYPE", not typed)
+    if isinstance(budget, dict):
+        per_file = budget.get("per_file_charged_lines")
+        budget_typed = (
+            _is_int(budget.get("exact_paths"))
+            and budget["exact_paths"] > 0
+            and _is_int(budget.get("maximum_additions_plus_deletions"))
+            and budget["maximum_additions_plus_deletions"] > 0
+            and isinstance(budget.get("deletions_grant_credit"), bool)
+            and isinstance(per_file, dict)
+            and 0 < len(per_file) <= 128
+            and all(isinstance(path, str) and _is_int(limit) and limit > 0
+                    for path, limit in per_file.items())
+        )
+        _add(codes, "GPF.SCHEMA.TYPE", not budget_typed)
     if codes:
         return codes
 
@@ -83,6 +112,8 @@ def _schema_codes(artifact: Any, context: Any) -> list[str]:
     path_lists = cast(tuple[list[str], ...], lists) + (
         cast(list[str], context["changed_files"]),
     )
+    if isinstance(budget, dict):
+        path_lists += (list(budget["per_file_charged_lines"]),)
     if any(any(unicodedata.category(char) == "Cs" for char in value) for value in strings):
         return ["GPF.SCHEMA.TYPE"]
     _add(
@@ -135,6 +166,7 @@ def validate_governance_preflight(
         return _findings(schema_codes)
 
     scope = artifact["scope"]
+    budget = artifact.get("change_budget")
     path_groups = (
         (scope["required"], False),
         (scope["allowed_prefixes"], True),
@@ -157,6 +189,13 @@ def validate_governance_preflight(
     changed = context["changed_files"]
     non_required_changes = [path for path in changed if path not in required]
     codes: list[str] = []
+    if isinstance(budget, dict):
+        limits = budget["per_file_charged_lines"]
+        _add(codes, "GPF.BUDGET.DELETION_CREDIT", budget["deletions_grant_credit"] is not False)
+        _add(codes, "GPF.BUDGET.PATH_COUNT_MISMATCH", budget["exact_paths"] != len(required))
+        _add(codes, "GPF.BUDGET.PATH_SET_MISMATCH", set(limits) != set(required))
+        _add(codes, "GPF.BUDGET.FILE_LIMIT_EXCEEDS_TOTAL",
+             any(limit > budget["maximum_additions_plus_deletions"] for limit in limits.values()))
     _add(codes, "GPF.SCOPE.REQUIRED_FORBIDDEN", any(_matches(path, forbidden) for path in required))
     _add(
         codes,

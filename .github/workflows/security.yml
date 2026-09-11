@@ -70,44 +70,60 @@ jobs:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           persist-credentials: false
-      - name: Install ARM64 emulation
-        uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3
-        with:
-          platforms: arm64
       - name: Docker build compatibility context
         env:
-          BACKEND_IMAGE: narratwin-ai-backend:ci
+          BACKEND_IMAGE: narratwin-ai-backend:ci-amd64
           FRONTEND_IMAGE: narratwin-ai-frontend:ci-amd64
         run: bash scripts/ci/docker-build.sh
       - name: Docker image vulnerability scan (AMD64)
         env:
           REPORT_DIR: reports/security/amd64
-          BACKEND_IMAGE: narratwin-ai-backend:ci
+          BACKEND_IMAGE: narratwin-ai-backend:ci-amd64
           BACKEND_ARCH: amd64
           FRONTEND_IMAGE: narratwin-ai-frontend:ci-amd64
           FRONTEND_BUILD_IMAGE: narratwin-ai-frontend-build:ci-amd64
           FRONTEND_REPRO_IMAGE: narratwin-ai-frontend:repro-ci-amd64
           FRONTEND_ARCH: amd64
-          SESSION: issue502-hosted-amd64
+          SESSION: issue529-hosted-amd64
         run: bash scripts/ci/docker-image-scan.sh
-      - name: Build frontend runtime (ARM64)
-        run: docker build --platform linux/arm64 -f frontend/Dockerfile -t narratwin-ai-frontend:ci-arm64 .
-      - name: Docker image vulnerability scan (ARM64)
+      - name: Upload Docker image scan reports (AMD64)
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: docker-image-scan-reports-amd64
+          path: reports/security/amd64
+          if-no-files-found: error
+          retention-days: 7
+
+  docker-arm64:
+    name: security / docker build (ARM64 native)
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
+      - name: Docker build compatibility context (ARM64 native)
+        env:
+          BACKEND_IMAGE: narratwin-ai-backend:ci-arm64
+          FRONTEND_IMAGE: narratwin-ai-frontend:ci-arm64
+        run: bash scripts/ci/docker-build.sh
+      - name: Docker image vulnerability scan (ARM64 native)
         env:
           REPORT_DIR: reports/security/arm64
-          BACKEND_IMAGE: narratwin-ai-backend:ci
-          BACKEND_ARCH: amd64
+          BACKEND_IMAGE: narratwin-ai-backend:ci-arm64
+          BACKEND_ARCH: arm64
           FRONTEND_IMAGE: narratwin-ai-frontend:ci-arm64
           FRONTEND_BUILD_IMAGE: narratwin-ai-frontend-build:ci-arm64
           FRONTEND_REPRO_IMAGE: narratwin-ai-frontend:repro-ci-arm64
           FRONTEND_ARCH: arm64
-          SESSION: issue502-hosted-arm64
+          SESSION: issue529-hosted-arm64
         run: bash scripts/ci/docker-image-scan.sh
-      - name: Upload Docker image scan reports
+      - name: Upload Docker image scan reports (ARM64)
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: docker-image-scan-reports
-          path: reports/security
+          name: docker-image-scan-reports-arm64
+          path: reports/security/arm64
           if-no-files-found: error
           retention-days: 7
