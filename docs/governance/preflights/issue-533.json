@@ -1,0 +1,43 @@
+{
+  "schema_version": "GovernancePreflightV1",
+  "issue_number": 533,
+  "branch": "phase-1-closure-process-533-g1-prospective-receipt-contract",
+  "objective": "Prepare the owner-session-approved prospective G1 certification carrier from main 71e0568d460306c3837d9e641c78558486b5ab54/tree 290bedd33b6807a3a8871bba70802d8f21b047ff; Issue521 decision packet5648521197 and Issue533 preallocation/scope comment5648606881. Append a closed receipt field contract to STAGE_ISSUE_PLAN and minimally reconcile STATUS. Preserve PR522 proposal artifacts, frozen source Git objects, PENDING fields, completed cleanup and old Issue521 budget/amendments. Route authorization is not owner adoption or exact-byte approval. Prospective adoption, independent security/semantic reviews and859 duplicate dispositions, eligible exact-head approval and owner bytes approval precede a new protected merge. The distinct later transition owns executable receipt acquisition/parsing/overlay and activation. No runtime, gate routing, provider, spend, credentials, private evidence, outreach, history rewrite, mapping rebuild or protected-source update. Three paths,800 charged-line maximum, no deletion credit; root sole writer. Historical cumulative counts remain unestablished, not reset; this authorized package initial approach plus one correction, two rounds each/four total. Full applicable verification and exact hosted topology before freeze; retain task resources while review evidence is live.",
+  "status_decision": "update-minimally",
+  "change_budget": {
+    "exact_paths": 3,
+    "maximum_additions_plus_deletions": 800,
+    "deletions_grant_credit": false,
+    "per_file_charged_lines": {
+      "docs/governance/preflights/issue-533.json": 100,
+      "docs/STAGE_ISSUE_PLAN.md": 600,
+      "docs/STATUS.md": 100
+    }
+  },
+  "scope": {
+    "required": [
+      "docs/governance/preflights/issue-533.json",
+      "docs/STAGE_ISSUE_PLAN.md",
+      "docs/STATUS.md"
+    ],
+    "allowed_prefixes": [
+      "docs/governance/preflights/issue-533.json",
+      "docs/STAGE_ISSUE_PLAN.md",
+      "docs/STATUS.md"
+    ],
+    "forbidden": [
+      "AGENTS.md",
+      "docs/governance/NARRATWIN_MASTER_PROGRAM_V2.md",
+      "docs/governance/NARRATWIN_MASTER_PROGRAM_V2_MAPPING.json",
+      "docs/agent-context/",
+      "docs/templates/",
+      "backend/",
+      "frontend/",
+      "scripts/",
+      "tests/",
+      ".github/",
+      "pyproject.toml",
+      "uv.lock"
+    ]
+  }
+}
