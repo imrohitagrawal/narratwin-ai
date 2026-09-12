@@ -1926,8 +1926,11 @@ provider, or claim T05/Cut 1 completion.
 
 Run `python3 scripts/quality/issue521_master_program_v2.py`, its focused unit
 test, and `make quality`. Candidate mode requires complete semantic-partition
-coverage, all-and-only normative row coverage, exact hashes, valid taxonomy,
-pending human gates, and authority `NONE`.
+coverage, exactly 18,016 repository/owner plus 13,382 external rows (31,398
+total), all 13,397 external normative requirements with exactly 15 aliases,
+zero unreviewed units, a hash-bound exhaustive receipt/overlay, mapping payload
+strictly below 50 MiB, exact hashes, valid taxonomy, pending human gates, and
+authority `NONE`.
 Certification mode stays red until independent review, exact-byte owner and
 exact-head approvals, and separate activation are real; tests cannot create
 those facts.

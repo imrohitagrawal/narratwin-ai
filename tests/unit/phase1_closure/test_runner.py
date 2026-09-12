@@ -196,7 +196,7 @@ def test_issue521_preserves_audit_base_and_uses_accepted_integration_base() -> N
     from scripts.quality import issue521_master_program_v2 as v2
 
     assert (v2.BASE_SHA, runner.ISSUE521_INTEGRATION_BASE) == (
-        "b6b0c05c7227428ff0841361f3970b0b2c40aa86", "0e4efa56b36773ad8c687fb9daa73adc0152b89c",
+        "b6b0c05c7227428ff0841361f3970b0b2c40aa86", "77661700e1019e7e73894a928e4e6aef774c5e75",
     )
 
 

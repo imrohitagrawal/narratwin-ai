@@ -832,7 +832,7 @@ remain separate gates.
 
 | Requirement | Candidate evidence | Preserved boundary |
 |---|---|---|
-| No silent requirement loss | V2 plus 193 content-bound source partitions, all-and-only normative rows, and mutation validator | Structural generation cannot self-certify semantics |
+| No silent requirement loss | Exhaustive overlay/receipt: zero unreviewed, 18,016 repository/owner + 13,382 external = 31,398 rows, 15 exact aliases, and hash-bound independent validator passing 11 mutations | Structural or exhaustive artifacts cannot self-certify the pending integrated fresh-context review |
 | Safe six-cut taxonomy | `CutTaxonomyV2` and ADR 0080 | Owner Digital Twin is Cut 5; legacy enterprise evidence cannot cross or bypass Cut 6 migration |
 | Prototype before code | PF-0–PF-7 and later G2 | G1 creates no receipt, runtime, egress, or spend authority |
 | Preserve current authority | Proposal state `PROPOSED`, authority `NONE`, V1 hash and separate transition | Issue/file/test/CI/self-review cannot supersede V1 |

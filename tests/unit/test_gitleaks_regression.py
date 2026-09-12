@@ -13,6 +13,7 @@ from types import ModuleType
 from typing import Callable, cast
 
 import pytest
+from scripts.quality import issue521_master_program_v2 as program
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -281,6 +282,36 @@ def test_current_mapping_uses_semantics_preserving_atomic_serialization() -> Non
     document["rowEncoding"]["derivedThresholdComparisonsSha256"] = "0" * 64
     with pytest.raises(ValueError):
         checker._logical_mapping_rows(document)
+    # RED: an independent decoder that trusts compressed bytes accepts payload drift.
+    document["rowEncoding"]["derivedThresholdComparisonsSha256"] = checker.MAPPING_DERIVED_THRESHOLD_SHA256
+    document["rowValues"][0]["payloadBase64"] = document["rowValues"][0]["payloadBase64"][:-1] + "!"
+    with pytest.raises(ValueError):
+        checker._logical_mapping_rows(document)
+
+
+@pytest.mark.skipif(shutil.which("gitleaks") is None, reason="gitleaks CLI unavailable")
+def test_current_mapping_bytes_have_no_unignored_secret_finding(tmp_path: Path) -> None:
+    gitleaks = cast(str, shutil.which("gitleaks"))
+    completed = subprocess.run(
+        [
+            gitleaks,
+            "dir",
+            "--redact",
+            "--no-banner",
+            str(ROOT / "docs/governance/superset-mapping-v2.json"),
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert completed.returncode == 0, completed.stderr
+    canary_value = "sk-proj-" + "a1B2c3D4e5F6g7H8i9J0k1L2m3N4o5P6q7R8s9T0"
+    values = ({"api_key": canary_value}, ["api_key", canary_value], ["api_key", hashlib.sha256(b"unrelated-secret").hexdigest()])
+    for index, value in enumerate(values):
+        canary = tmp_path / f"detector-safe-canary-{index}.json"
+        canary.write_text(program._detector_safe_json(value), encoding="utf-8")
+        detected = subprocess.run([gitleaks, "dir", "--exit-code", "86", "--no-banner", str(canary)], check=False)
+        assert detected.returncode == 86
 
 
 def test_available_history_does_not_skip_current_portable_validation(

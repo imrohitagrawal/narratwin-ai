@@ -22,8 +22,8 @@ Issue comments `5574559059`, `5587499372`, and `5604091052` (raw body SHA-256 `b
 `0e96410926f4c25dc6eb6b452bf4421fa36f386c:docs/governance/superset-mapping-v2.json:generic-api-key:8`; and
 `0e96410926f4c25dc6eb6b452bf4421fa36f386c:docs/governance/superset-mapping-v2.json:generic-api-key:9`.
 The reviewer verifies every commit/blob/line hash, mapping/V1 provenance where
-applicable, synthetic non-secret classification, six-space/current-source detector safety,
-history-preserving merge topology, and real-secret/full-history canaries. Any
+applicable, synthetic non-secret classification, recomputed adjacent-checksum spacing,
+working-tree/full-history scans, object/array secret canaries, and preserved history. Any
 wildcard, scan/history weakening, or source weakening is `REQUIRED_CONTRACT`.
 
 ## Required independent review
@@ -40,6 +40,12 @@ The reviewer must attempt to make the candidate falsely pass by testing:
 - external-record removal, duplication, type relabelling, body-hash/cutoff
   tampering, open/closed state substituted for clause precedence, ambiguous
   alias collapse, or insertion of a raw body or private data;
+- legacy-binding or recovered-atom removal, duplication, reclassification,
+  hash/lineage drift, receipt/count/effect self-rehash, restricted-reference or
+  artifact-descriptor substitution, 185-row precedence drift, 15-alias drift,
+  pull-request-body promotion, or a mapping payload at or above 50 MiB;
+- malformed, oversized, noncanonical, trailing, or hash-drifted compressed row
+  values, reordered columns, or disagreement among schema and both decoders;
 - any change beyond the seven attested identity/locator paths for the ten
   issue-wrapper-to-pull-request corrections, or reuse of those prior
   classifications for a normative clause;

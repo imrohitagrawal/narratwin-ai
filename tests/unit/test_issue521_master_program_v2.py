@@ -43,10 +43,7 @@ def _rewrite_mapping_artifact(root: Path, mutate: Callable[[dict[str, Any]], Non
     path = root / program.MAPPING_PATH
     artifact = program._load_json(path)
     mutate(artifact)
-    path.write_text(
-        json.dumps(artifact, ensure_ascii=False, sort_keys=True, separators=(",", ":")) + "\n",
-        encoding="utf-8",
-    )
+    path.write_text(json.dumps(artifact, ensure_ascii=False, sort_keys=True, separators=(",", ":")) + "\n", encoding="utf-8")
 
 
 def _row_text(row: dict[str, Any]) -> str:
@@ -66,10 +63,7 @@ def test_candidate_repository_is_structurally_complete_and_non_activating() -> N
     assert "MPV2.CERTIFICATION.ELIGIBLE_NON_AUTHOR_PENDING" in certification
 
 
-def test_exact_mapping_validation_cache_does_not_hide_other_artifact_mutation(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
+def test_exact_mapping_validation_cache_does_not_hide_other_artifact_mutation(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     program._EXACT_MAPPING_VALIDATION_CACHE.clear()
     calls = 0
     original = program._mapping_failures
@@ -92,9 +86,7 @@ def test_exact_mapping_validation_cache_does_not_hide_other_artifact_mutation(
     assert calls == 2
 
 
-def test_mapping_caches_cannot_be_poisoned_or_hide_unavailable_git(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
+def test_mapping_caches_cannot_be_poisoned_or_hide_unavailable_git(monkeypatch: pytest.MonkeyPatch) -> None:
     mapping = program.generate_mapping(REPO)
     mapping["rows"][0]["accountableOwner"] = "ATTACKER_CONTROLLED_OWNER"
     assert program.generate_mapping(REPO)["rows"][0]["accountableOwner"] == "REPOSITORY_OWNER"
@@ -116,11 +108,7 @@ def test_explicit_mapping_decision_inputs_never_fall_back_to_disk() -> None:
 def test_malformed_mapping_decision_partition_fails_closed_without_crashing() -> None:
     mapping = program.generate_mapping(REPO)
     mapping["repositoryContextDecisionPartition"] = {}
-    failures = program._mapping_failures(
-        REPO,
-        mapping,
-        (REPO / program.DOCUMENT_PATH).read_text(encoding="utf-8"),
-    )
+    failures = program._mapping_failures(REPO, mapping, (REPO / program.DOCUMENT_PATH).read_text(encoding="utf-8"))
     assert "MPV2.MAPPING.SEMANTIC_GENERATION_FAILED" in failures
     assert "MPV2.MAPPING.DECISION_PARTITION_INVALID" in failures
 
@@ -131,30 +119,9 @@ def test_exact_semantic_context_and_external_correction_partitions_are_pinned() 
     context = mapping["repositoryContextDecisionPartition"]
     overlay = mapping["externalSemanticCorrectionOverlay"]
     assert semantic["candidateUnitCount"] == 19_668
-    assert semantic["classCounts"] == {
-        "AUTOMATED_RESULT": 82,
-        "CONTEXT_INTRODUCER": 478,
-        "COST_ESTIMATE": 29,
-        "CURRENT_STATE_FACT": 2_796,
-        "EVIDENCE": 52,
-        "HISTORICAL_FACT": 2_642,
-        "IMPLEMENTED_BEHAVIOR": 158,
-        "NORMATIVE_REQUIREMENT": 13_374,
-        "REFERENCE": 53,
-        "USER_OBSERVATION": 4,
-    }
+    assert semantic["classCounts"] == dict(AUTOMATED_RESULT=82, CONTEXT_INTRODUCER=478, COST_ESTIMATE=29, CURRENT_STATE_FACT=2_796, EVIDENCE=52, HISTORICAL_FACT=2_642, IMPLEMENTED_BEHAVIOR=158, NORMATIVE_REQUIREMENT=13_374, REFERENCE=53, USER_OBSERVATION=4)
     assert semantic["partitionSha256"] == program.REPOSITORY_SEMANTIC_PARTITION_SHA256
-    assert (
-        context["parentCount"],
-        context["relationCount"],
-        context["uniqueChildCount"],
-        context["partitionSha256"],
-    ) == (
-        985,
-        12_942,
-        7_723,
-        program.REPOSITORY_CONTEXT_PARTITION_SHA256,
-    )
+    assert (context["parentCount"], context["relationCount"], context["uniqueChildCount"], context["partitionSha256"]) == (985, 12_942, 7_723, program.REPOSITORY_CONTEXT_PARTITION_SHA256)
     assert context["relationBasisCode"] == "EXACT_GOVERNED_BLOCK_MEMBERSHIP"
     assert context["childBasisCode"] == "EXPLICIT_CLASS_WITH_ORDERED_CONTEXT_CHAIN"
     assert overlay["schemaVersion"] == "ExternalSemanticCorrectionOverlayV2" and overlay["reviewState"] == "EXHAUSTIVE_REVIEW_COMPLETE_NON_ACTIVATING" and overlay["unreviewedNormativeClauseCount"] == overlay["unreviewedCandidateUnitCount"] == 0
@@ -165,11 +132,7 @@ def test_exact_semantic_context_and_external_correction_partitions_are_pinned() 
     assert attestation["attestationSha256"] == (program.EXTERNAL_IDENTITY_EQUIVALENCE_ATTESTATION_SHA256)
     assert attestation == program._build_external_identity_equivalence_attestation(REPO, mapping["externalAuthorityManifest"])
     owner = next(source for source in mapping["sources"] if source["sourceId"] == "OWNER_PLAN_2026_09_07")
-    owner_atoms = program._atoms(
-        owner["sourceId"],
-        owner["atomizer"],
-        program.frozen_source_bytes(REPO, owner),
-    )
+    owner_atoms = program._atoms(owner["sourceId"], owner["atomizer"], program.frozen_source_bytes(REPO, owner))
     owner_entry = next(entry for entry in semantic["sources"] if entry[0] == owner["sourceId"])
     owner_classes = {atom.atom_id: semantic["classCodes"][code] for atom, code in zip(owner_atoms, owner_entry[4], strict=True)}
     for context_hash, expected in (
@@ -180,7 +143,7 @@ def test_exact_semantic_context_and_external_correction_partitions_are_pinned() 
         assert [owner_classes[atom.atom_id] for atom in selected] == expected
 
 
-def test_fully_rehashed_partition_substitutions_cannot_replace_exact_decisions() -> None:
+def test_fully_rehashed_partition_substitutions_cannot_replace_exact_decisions(monkeypatch: pytest.MonkeyPatch) -> None:
     mapping = _read_mapping()
     semantic = copy.deepcopy(mapping["repositorySemanticDecisionPartition"])
     entry = next(item for item in semantic["sources"] if "N" in item[4] and "S" in item[4])
@@ -199,14 +162,41 @@ def test_fully_rehashed_partition_substitutions_cannot_replace_exact_decisions()
     atoms = {source["sourceId"]: program._atoms(source["sourceId"], source["atomizer"], source_bytes[source["sourceId"]]) for source in sources}
     classes = program._repository_semantic_classes(sources, atoms, mapping["repositorySemanticDecisionPartition"])
     skeleton = program._repository_context_skeleton(sources, source_bytes, atoms)
-    substituted = program._build_repository_context_partition(
-        skeleton,
-        classes,
-        {item[2]: "NO_GOVERNING_RELATION" for item in skeleton},
-    )
+    substituted = program._build_repository_context_partition(skeleton, classes, {item[2]: "NO_GOVERNING_RELATION" for item in skeleton})
     assert substituted["partitionSha256"] != program.REPOSITORY_CONTEXT_PARTITION_SHA256
     with pytest.raises(ValueError, match="context decision partition invalid"):
         program._repository_context_bindings(skeleton, classes, substituted)
+    def reject_rehashed(overlay: dict[str, Any]) -> None:
+        review = overlay["exhaustiveReview"]
+        review["receiptSha256"] = program._sha256(program._canonical_json({key: value for key, value in review.items() if key != "receiptSha256"}).encode())
+        overlay["overlaySha256"] = program._sha256(program._canonical_json({key: value for key, value in overlay.items() if key != "overlaySha256"}).encode())
+        monkeypatch.setattr(program, "EXTERNAL_SEMANTIC_CORRECTION_OVERLAY_SHA256", overlay["overlaySha256"])
+        with pytest.raises(ValueError, match="external .* invalid"):
+            program._external_semantic_corrections(REPO, mapping["externalAuthorityManifest"], overlay)
+    for table, left, right, column, digest_key in (("legacyClauseBindings", 1, 4, 1, "orderedLegacyClauseBindingSha256"), ("generatedNormativeAtoms", 0, 554, 0, "orderedGeneratedNormativeAtomSha256"), ("generatedNormativeAtoms", 0, 308, 3, "orderedGeneratedNormativeAtomSha256")):
+        overlay = copy.deepcopy(mapping["externalSemanticCorrectionOverlay"])
+        review, rows = overlay["exhaustiveReview"], overlay["exhaustiveReview"][table]
+        rows[left][column], rows[right][column] = rows[right][column], rows[left][column]
+        if column == 3:
+            for index in (left, right):
+                row = rows[index]
+                row[4] = "EXTSEMREQ-" + program._sha256(program._canonical_json([row[5], row[6], row[1], row[10], row[3]]).encode())[:32]
+        review[digest_key] = program._sha256(program._canonical_json(rows).encode())
+        reject_rehashed(overlay)
+    # RED: outer self-hashes alone accept evidence-descriptor and precedence drift.
+    for target in ("descriptor", "precedence"):
+        overlay = copy.deepcopy(mapping["externalSemanticCorrectionOverlay"])
+        review = overlay["exhaustiveReview"]
+        if target == "descriptor":
+            review["artifacts"]["A"]["restrictedEvidenceRef"] += "-substituted"
+        else:
+            record = review["semanticPrecedenceReconciliation"]["records"][0]
+            record[1] = "0" * 64
+            record[-1] = program._sha256(program._canonical_json(record[:-1]).encode())
+        reconciliation = review["semanticPrecedenceReconciliation"]
+        reconciliation["orderedDecisionSha256"] = program._sha256(program._canonical_json([record[-1] for record in reconciliation["records"]]).encode())
+        reconciliation["reconciliationSha256"] = program._sha256(program._canonical_json({key: value for key, value in reconciliation.items() if key != "reconciliationSha256"}).encode())
+        reject_rehashed(overlay)
 
 
 def test_frozen_baseline_hashes_are_exact() -> None:
@@ -223,11 +213,7 @@ def test_frozen_baseline_hashes_are_exact() -> None:
 
 
 def test_unavailable_repository_commit_never_falls_back_to_worktree_bytes() -> None:
-    source = {
-        "sourceKind": "REPOSITORY_FILE",
-        "repositoryPath": program.V1_PATH,
-        "sourceCommit": "f" * 40,
-    }
+    source = {"sourceKind": "REPOSITORY_FILE", "repositoryPath": program.V1_PATH, "sourceCommit": "f" * 40}
     assert (REPO / program.V1_PATH).is_file()
     with pytest.raises(ValueError, match="frozen repository source unavailable"):
         program.frozen_source_bytes(REPO, source)
@@ -236,9 +222,7 @@ def test_unavailable_repository_commit_never_falls_back_to_worktree_bytes() -> N
         program.frozen_source_bytes(REPO, source)
 
 
-def test_mapping_with_unavailable_source_object_reports_failure(
-    tmp_path: Path,
-) -> None:
+def test_mapping_with_unavailable_source_object_reports_failure(tmp_path: Path) -> None:
     root = _copy_candidate(tmp_path)
     mapping = program.generate_mapping(REPO)
     source = next(item for item in mapping["sources"] if item["sourceKind"] == "REPOSITORY_FILE")
@@ -247,9 +231,7 @@ def test_mapping_with_unavailable_source_object_reports_failure(
     assert "MPV2.SOURCE.MISSING" in program._mapping_failures(root, mapping, document)
 
 
-def test_unadopted_candidate_cannot_authenticate_itself_as_owner_authority(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
+def test_unadopted_candidate_cannot_authenticate_itself_as_owner_authority(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(program, "OWNER_PLAN_ADOPTION_COMMENT_ID", 0)
     monkeypatch.setattr(program, "OWNER_PLAN_ADOPTION_BODY_SHA256", "PENDING_OWNER_ADOPTION")
     monkeypatch.setattr(program, "OWNER_PLAN_ADOPTION_DOCUMENT_SHA256", "PENDING_OWNER_ADOPTION")
@@ -272,12 +254,7 @@ def test_frozen_inventory_has_exact_source_coverage_and_lifecycles() -> None:
     assert owner[0]["authorityLifecycle"] == "OWNER_CANDIDATE"
     assert owner[0]["coverageStatus"] == "PENDING_EXTERNAL_ATTESTATION"
     assert len(repository) == 192
-    assert {mode: sum(source["coverageMode"] == mode for source in repository) for mode in ("ATOMIC_MARKDOWN", "STRUCTURED_SCHEMA", "IMPLEMENTED_CODE", "MANIFEST_ONLY")} == {
-        "ATOMIC_MARKDOWN": 90,
-        "STRUCTURED_SCHEMA": 26,
-        "IMPLEMENTED_CODE": 21,
-        "MANIFEST_ONLY": 55,
-    }
+    assert {mode: sum(source["coverageMode"] == mode for source in repository) for mode in ("ATOMIC_MARKDOWN", "STRUCTURED_SCHEMA", "IMPLEMENTED_CODE", "MANIFEST_ONLY")} == {"ATOMIC_MARKDOWN": 90, "STRUCTURED_SCHEMA": 26, "IMPLEMENTED_CODE": 21, "MANIFEST_ONLY": 55}
     assert len({source["sourceId"] for source in sources}) == 193
     assert len({source["repositoryPath"] for source in repository}) == 192
     assert all(source["sourceCommit"] == program.BASE_SHA for source in repository)
@@ -290,20 +267,30 @@ def test_mapping_artifact_round_trips_indexed_rows_below_github_warning_limit() 
     assert compact_api_contract not in rendered
     assert compact_api_contract.replace(b'","', b'.md","') not in rendered
     artifact = program._load_json_text(rendered.decode("utf-8"))
-    assert len(rendered) < program.MAPPING_MAX_BYTES == 64 * 1024 * 1024
+    assert len(rendered) < program.MAPPING_MAX_BYTES == 50 * 1024 * 1024
     assert artifact["rowEncoding"]["kind"] == ("INDEXED_VALUE_TABLE_WITH_COMMITTED_DERIVED_THRESHOLD_V2")
-    assert re.fullmatch(
-        r"[0-9a-f]{64}",
-        artifact["rowEncoding"]["derivedThresholdComparisonsSha256"],
-    )
+    assert re.fullmatch(r"[0-9a-f]{64}", artifact["rowEncoding"]["derivedThresholdComparisonsSha256"])
     assert artifact["rowEncoding"]["columns"] == list(program.STORED_ROW_COLUMNS)
     assert len(artifact["rows"]) == len(logical["rows"])
+    assert artifact["rowValues"][0]["schemaVersion"] == "CanonicalZlibRowValueTableV1"
     assert program.decode_mapping_artifact(artifact) == logical
+    # RED: a schema with unconstrained rowValues accepts a fake storage envelope.
+    malformed = {**artifact, "rowValues": [{"foo": "bar"}]}
+    assert program._schema_instance_failures(malformed, program._load_json(REPO / program.MAPPING_SCHEMA_PATH), definition="SupersetMappingV2Root", failure_code="SCHEMA_INVALID") == ["SCHEMA_INVALID"]
+    with pytest.raises(ValueError, match="value storage invalid"):
+        program.decode_mapping_artifact(malformed)
+    # RED: an unordered columns schema accepts a decoder-incompatible column swap.
+    reordered = copy.deepcopy(artifact)
+    reordered["rowEncoding"]["columns"][:2] = reversed(reordered["rowEncoding"]["columns"][:2])
+    assert program._schema_instance_failures(reordered, program._load_json(REPO / program.MAPPING_SCHEMA_PATH), definition="SupersetMappingV2Root", failure_code="SCHEMA_INVALID") == ["SCHEMA_INVALID"]
+    with pytest.raises(ValueError, match="row encoding invalid"):
+        program.decode_mapping_artifact(reordered)
+    artifact["rowValues"][0]["payloadBase64"] = artifact["rowValues"][0]["payloadBase64"][:-1] + "!"
+    with pytest.raises(ValueError, match="storage payload invalid"):
+        program.decode_mapping_artifact(artifact)
 
 
-def test_mapping_artifact_commits_derived_thresholds(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
+def test_mapping_artifact_commits_derived_thresholds(monkeypatch: pytest.MonkeyPatch) -> None:
     artifact = program._load_json(REPO / program.MAPPING_PATH)
     monkeypatch.setattr(program, "expected_comparison_basis", lambda row: "WEAKENED")
     with pytest.raises(ValueError, match="derived threshold digest invalid"):
@@ -326,15 +313,7 @@ def test_manifest_only_sources_emit_no_requirement_rows() -> None:
     manifest = [source for source in sources if source["coverageMode"] == "MANIFEST_ONLY"]
     assert manifest
     assert all(source["semanticCoverage"]["candidateUnitCount"] == 0 and source["semanticCoverage"]["normativeRequirementCount"] == 0 and source["semanticCoverage"]["excludedUnitCount"] == 0 for source in manifest)
-    assert all(
-        program._atoms(
-            source["sourceId"],
-            source["atomizer"],
-            program.frozen_source_bytes(REPO, source),
-        )
-        == []
-        for source in manifest
-    )
+    assert all(program._atoms(source["sourceId"], source["atomizer"], program.frozen_source_bytes(REPO, source)) == [] for source in manifest)
 
 
 def test_structured_atomizer_distinguishes_constraints_and_instance_facts() -> None:
@@ -363,15 +342,7 @@ def test_mapping_rows_are_exactly_repository_current_and_external_normative() ->
     mapping = _read_mapping()
     candidates = program.expected_source_atoms(REPO, mapping)
     expected_repository = program.expected_normative_atoms(REPO)
-    corrections = program._external_semantic_corrections(
-        REPO,
-        mapping["externalAuthorityManifest"],
-        mapping["externalSemanticCorrectionOverlay"],
-    )
-    expected_external = program._external_new_atoms(
-        mapping["externalAuthorityManifest"],
-        frozenset(corrections),
-    )
+    expected_external = program._external_new_atoms(REPO, mapping["externalAuthorityManifest"], mapping["externalSemanticCorrectionOverlay"])
     expected = expected_repository | expected_external
     actual = [row["sourceAtomId"] for row in mapping["rows"]]
     assert len(actual) == len(set(actual)) == len(expected)
@@ -381,9 +352,7 @@ def test_mapping_rows_are_exactly_repository_current_and_external_normative() ->
     assert all(source["semanticCoverage"]["candidateUnitCount"] == source["semanticCoverage"]["normativeRequirementCount"] + source["semanticCoverage"]["excludedUnitCount"] == sum(source["semanticCoverage"]["classCounts"].values()) for source in mapping["sources"])
 
 
-def test_repeated_semantic_signatures_have_an_exact_pending_resolution_census(
-    tmp_path: Path,
-) -> None:
+def test_repeated_semantic_signatures_have_an_exact_pending_resolution_census(tmp_path: Path) -> None:
     mapping = program.generate_mapping(REPO)
     census = mapping["semanticDuplicateCensus"]
     assert census["groupCount"] == len(census["groups"]) > 0
@@ -396,11 +365,7 @@ def test_repeated_semantic_signatures_have_an_exact_pending_resolution_census(
     assert len(scoped) == 2 and len({member_hashes[row["sourceAtomId"]] for row in scoped}) == 2
     assert census["resolutionOverlay"]["censusSha256"] == census["orderedGroupSha256"]
     root = _copy_candidate(tmp_path)
-    _rewrite_json(
-        root,
-        program.MAPPING_PATH,
-        lambda value: value["semanticDuplicateCensus"]["groups"][0]["members"][0].update({"contextChainSha256": "0" * 64}),
-    )
+    _rewrite_json(root, program.MAPPING_PATH, lambda value: value["semanticDuplicateCensus"]["groups"][0]["members"][0].update({"contextChainSha256": "0" * 64}))
     assert "MPV2.MAPPING.DUPLICATE_CENSUS_INVALID" in program.validate_repository(root, certification=False)
 
 
@@ -412,27 +377,16 @@ def test_external_authority_is_classified_atomized_and_never_emits_raw_bodies() 
     assert manifest["referenceCount"] == manifest["recordCount"] == 605
     assert len(records) == len({record["reference"] for record in records}) == 605
     assert "github-issue:999" not in {record["reference"] for record in records}
-    assert {record["sourceKind"] for record in records} == {
-        "EXTERNAL_GITHUB_COMMENT",
-        "EXTERNAL_GITHUB_ISSUE_BODY",
-        "EXTERNAL_GITHUB_PULL_REQUEST_BODY",
-    }
-    assert all(
-        record["contentAddressedRef"] == f"{record['reference']}@sha256:{record['contentSha256']}"
-        and (record["sourceKind"] == "EXTERNAL_GITHUB_PULL_REQUEST_BODY") == record["recordIdentity"]["nodeId"].startswith("PR_")
-        and record["cutoffEligible"] is True
-        and "body" not in record
-        and record["authorityEffect"] != "PENDING_INDEPENDENT_CLASSIFICATION"
-        for record in records
-    )
+    assert {record["sourceKind"] for record in records} == {"EXTERNAL_GITHUB_COMMENT", "EXTERNAL_GITHUB_ISSUE_BODY", "EXTERNAL_GITHUB_PULL_REQUEST_BODY"}
+    assert all(record["contentAddressedRef"] == f"{record['reference']}@sha256:{record['contentSha256']}" and (record["sourceKind"] == "EXTERNAL_GITHUB_PULL_REQUEST_BODY") == record["recordIdentity"]["nodeId"].startswith("PR_") and record["cutoffEligible"] is True and "body" not in record and record["authorityEffect"] != "PENDING_INDEPENDENT_CLASSIFICATION" for record in records)
     clauses = [clause for record in records for clause in record["clauses"]]
     assert clauses and len(clauses) == len({clause["clauseId"] for clause in clauses})
     row_by_atom = {row["sourceAtomId"]: row for row in mapping["rows"]}
-    corrections = program._external_semantic_corrections(REPO, manifest, mapping["externalSemanticCorrectionOverlay"])
-    assert len(corrections) == 185
+    bindings, generated = program._external_semantic_corrections(REPO, manifest, mapping["externalSemanticCorrectionOverlay"])
+    assert len(bindings) == 11_898 and len(generated) == 2_080
     for record in records:
         for clause in record["clauses"]:
-            if (record["reference"], clause["clauseId"]) in corrections:
+            if bindings[(record["reference"], clause["clauseId"])][3] not in {"N", "V"}:
                 assert program._external_clause_atom(record, clause).atom_id not in row_by_atom
                 continue
             alias = clause["suggestedAlias"]
@@ -446,6 +400,7 @@ def test_external_authority_is_classified_atomized_and_never_emits_raw_bodies() 
             else:
                 atom = program._external_clause_atom(record, clause)
                 assert atom.atom_id in row_by_atom
+    assert all(atom.atom_id in row_by_atom for _, atom, _ in generated)
     reclassified = [row for row in mapping["rows"] if row["requirementId"] in {"MPV2-EBF89EEC9E95E26A0F9D", "MPV2-0E3D0BD726CBD0E008BB", "MPV2-AA474AFCF10BF9049EDF", "MPV2-4902F39C170E14867575"}]
     assert (len(reclassified), {row["v2DestinationClause"] for row in reclassified}) == (4, {"MPV2-SECTION-10"})
     assert not program._external_authority_failures(mapping["sources"], manifest)
@@ -456,14 +411,7 @@ def test_external_authority_is_classified_atomized_and_never_emits_raw_bodies() 
     normative["clauses"][0]["atomicFocusEnd"] += 1
     normative["clauses"][0]["losslessNormalizationAttestation"] = {}
     assert program._external_classification_invalid(normative)
-    for mutate in cast(
-        tuple[Callable[[dict[str, Any]], None], ...],
-        (
-            lambda value: value["sanitization"].update({"redactionClasses": [[]]}),
-            lambda value: value["semanticCoverage"].update({"orderedCandidatePartitionSha256": []}),
-            lambda value: value["clauses"][0]["sourceSpan"].update({"sanitizedSpanSha256": []}),
-        ),
-    ):
+    for mutate in cast(tuple[Callable[[dict[str, Any]], None], ...], (lambda value: value["sanitization"].update({"redactionClasses": [[]]}), lambda value: value["semanticCoverage"].update({"orderedCandidatePartitionSha256": []}), lambda value: value["clauses"][0]["sourceSpan"].update({"sanitizedSpanSha256": []}))):
         malformed = copy.deepcopy(next(record for record in records if record["clauses"]))
         mutate(malformed)
         assert program._external_classification_invalid(malformed)
@@ -483,16 +431,7 @@ def test_comment_governing_context_partition_is_complete_and_alias_safe() -> Non
     assert tuple(len(partition[key]) for key in ("parents", "relations", "childDecisions", "resolvedExactContextSuccessions")) == (136, 814, 792, 5)
     assert partition["contextSuccessionKindCounts"] == {"GOVERNING_CONTEXT_TO_GOVERNING_CONTEXT": 2, "GOVERNING_CONTEXT_TO_NORMATIVE_CLAUSE": 2, "NORMATIVE_CLAUSE_TO_GOVERNING_CONTEXT": 1}
     assert all("GOVERNING_CONTEXT" in item["successionKind"] for item in partition["resolvedExactContextSuccessions"])
-    identities = [
-        {
-            "parentReference": relation["parentReference"],
-            "parentCandidateUnitId": relation["parentCandidateUnitId"],
-            "parentAtomicFocusSha256": relation["parentAtomicFocusSha256"],
-            "childCandidateUnitId": relation["childCandidateUnitId"],
-            "childAtomicFocusSha256": relation["childAtomicFocusSha256"],
-        }
-        for relation in partition["relations"]
-    ]
+    identities = [{"parentReference": relation["parentReference"], "parentCandidateUnitId": relation["parentCandidateUnitId"], "parentAtomicFocusSha256": relation["parentAtomicFocusSha256"], "childCandidateUnitId": relation["childCandidateUnitId"], "childAtomicFocusSha256": relation["childAtomicFocusSha256"]} for relation in partition["relations"]]
     identities.sort(key=lambda item: tuple(item[key] for key in item))
     identity_sha256 = hashlib.sha256(program._canonical_json(identities).encode()).hexdigest()
     assert identity_sha256 == partition["orderedRelationIdentitySha256"]
@@ -577,49 +516,20 @@ def test_clause_atomizer_switches_modal_predicates_without_inverting_prohibition
     stage_rows = [_row_text(row) for row in mapping["rows"] if row["sourceId"] == "STAGE_ISSUE_PLAN"]
     assert not any("must keep must" in row for row in stage_rows)
     assert not any(row in {"provider SDKs", "provider keys", "paid spend"} for row in stage_rows)
-    stage_atoms = program._markdown_atoms(
-        "STAGE_ISSUE_PLAN",
-        program.frozen_source_bytes(
-            REPO,
-            {
-                "repositoryPath": "docs/STAGE_ISSUE_PLAN.md",
-                "sourceCommit": program.BASE_SHA,
-            },
-        ).decode("utf-8"),
-    )
+    stage_atoms = program._markdown_atoms("STAGE_ISSUE_PLAN", program.frozen_source_bytes(REPO, {"repositoryPath": "docs/STAGE_ISSUE_PLAN.md", "sourceCommit": program.BASE_SHA}).decode("utf-8"))
     provider_sdk = next(atom for atom in stage_atoms if "provider SDKs" in atom.text and ":L1482:" in atom.anchor)
     assert "must not authorize provider setup, provider SDKs" in provider_sdk.source_clause
     assert provider_sdk.source_clause[provider_sdk.focus_start : provider_sdk.resolved_focus_end] == provider_sdk.text
 
 
 def test_v1_compound_safety_clauses_preserve_each_evolving_predicate() -> None:
-    v1 = program.frozen_source_bytes(
-        REPO,
-        {"repositoryPath": program.V1_PATH, "sourceCommit": program.BASE_SHA},
-    ).decode("utf-8")
+    v1 = program.frozen_source_bytes(REPO, {"repositoryPath": program.V1_PATH, "sourceCommit": program.BASE_SHA}).decode("utf-8")
     atoms = program._markdown_atoms("MASTER_PROGRAM_V1", v1)
     billable = {atom.text for atom in atoms if "## 27. PaidOperationV1::prose:L616:" in atom.anchor}
     captions = {atom.text for atom in atoms if "## 31. Captions::prose:L675:" in atom.anchor}
-    assert {
-        "`BILLABLE_UNKNOWN` retains reservation",
-        "prohibits retry/fallback/reroll/ duplicate create",
-        "reconciles via signed webhook, polling, or manual provider evidence",
-        "never treats requested refund as completed",
-        "blocks dispatch when worst-case exposure exceeds authority.",
-    } <= billable
+    assert set("`BILLABLE_UNKNOWN` retains reservation|prohibits retry/fallback/reroll/ duplicate create|reconciles via signed webhook, polling, or manual provider evidence|never treats requested refund as completed|blocks dispatch when worst-case exposure exceeds authority.".split("|")) <= billable
     assert any(text.startswith("Cues are monotonic, nonoverlapping") and "obey readable line limits" in text for text in captions)
-    assert not any(
-        fragment in atom.text
-        for atom in atoms
-        for fragment in (
-            "retains prohibits",
-            "retains reconciles",
-            "retains never treats",
-            "retains blocks",
-            "contain keep",
-            "contain obey",
-        )
-    )
+    assert not any(fragment in atom.text for atom in atoms for fragment in ("retains prohibits", "retains reconciles", "retains never treats", "retains blocks", "contain keep", "contain obey"))
     for atom in atoms:
         if ":L616:" in atom.anchor or ":L675:" in atom.anchor:
             assert atom.source_clause[atom.focus_start : atom.resolved_focus_end] == atom.text
@@ -716,30 +626,14 @@ def test_semantic_effect_and_legacy_conflicts_fail_closed() -> None:
         for row in rows
     )
     assert all(row["normativeEffect"] == "CURRENT_NORMATIVE" for row in rows if not row["sourceKind"].startswith("EXTERNAL_"))
-    required_ids = {
-        "MPV2-A845CC7997102EA6AC29",
-        "MPV2-7C8FA2E96EF79C908783",
-        "MPV2-6B500A05FE9638883A5F",
-        "MPV2-54F4C334C9379D149B4F",
-        "MPV2-DD70D43A1F9FBFA21E97",
-        "MPV2-FDC8E3BB1FFE9BAE5900",
-        "MPV2-8EC0B8E97C6A53C6FDBC",
-    }
+    required_ids = set("MPV2-A845CC7997102EA6AC29 MPV2-7C8FA2E96EF79C908783 MPV2-6B500A05FE9638883A5F MPV2-54F4C334C9379D149B4F MPV2-DD70D43A1F9FBFA21E97 MPV2-FDC8E3BB1FFE9BAE5900 MPV2-8EC0B8E97C6A53C6FDBC".split())
     assert required_ids <= {row["requirementId"] for row in rows}
     security_source = sources["SECURITY_PRIVACY"]
-    security_atoms = program._atoms(
-        "SECURITY_PRIVACY",
-        security_source["atomizer"],
-        program.frozen_source_bytes(REPO, security_source),
-    )
+    security_atoms = program._atoms("SECURITY_PRIVACY", security_source["atomizer"], program.frozen_source_bytes(REPO, security_source))
     screening_ids = {atom.atom_id for atom in security_atoms if "### Secret Screening Result" in atom.anchor}
     assert len(screening_ids) == 23
     assert screening_ids <= {row["sourceAtomId"] for row in rows}
-    for context_hash in (
-        "1b70f8b921ec712c3ebd9bf23d240162ddf5f0cb315a1dee9311630d760ed4f6",
-        "95225178caeac1177083026d1ae7419524c9573e477ba5ec5f027378f4891138",
-        "08aecd4a65e581f6fcb9f88205785a8da405cad4f6eb44300a289b884928cd63",
-    ):
+    for context_hash in "1b70f8b921ec712c3ebd9bf23d240162ddf5f0cb315a1dee9311630d760ed4f6 95225178caeac1177083026d1ae7419524c9573e477ba5ec5f027378f4891138 08aecd4a65e581f6fcb9f88205785a8da405cad4f6eb44300a289b884928cd63".split():
         conflicting = [row for row in rows if row["sourceId"] == "REAL_MEDIA_HOSTED_DEMO_PLAN" and row["normalizedSourceContextSha256"] == context_hash and row["disposition"] != "PRESERVED"]
         assert conflicting and all(row["replacementId"] and row["ownerAuthorityRef"] for row in conflicting)
 
@@ -817,14 +711,7 @@ def test_known_legacy_conflicts_have_curated_resolutions() -> None:
 
 def test_every_curated_conflict_rule_selects_one_unique_frozen_atom() -> None:
     sources = program._source_records(REPO)
-    atoms_by_source = {
-        source["sourceId"]: program._atoms(
-            source["sourceId"],
-            source["atomizer"],
-            program.frozen_source_bytes(REPO, source),
-        )
-        for source in sources
-    }
+    atoms_by_source = {source["sourceId"]: program._atoms(source["sourceId"], source["atomizer"], program.frozen_source_bytes(REPO, source)) for source in sources}
     program._validate_conflict_rules(atoms_by_source)
     first = program._CONFLICT_RULES[0]
     target = program._CONFLICT_TARGETS[0][0]
@@ -872,47 +759,11 @@ def test_issue_references_bind_canonical_entity_types_and_heading_context() -> N
 @pytest.mark.parametrize(
     ("text", "expected"),
     [
-        (
-            "Issues #366, #368, #421 and PR #422 remain exact.",
-            {
-                "github-issue:366",
-                "github-issue:368",
-                "github-issue:421",
-                "github-pull-request:422",
-            },
-        ),
-        (
-            "PRs #443, #453 and #461 are predecessors.",
-            {
-                "github-pull-request:443",
-                "github-pull-request:453",
-                "github-pull-request:461",
-            },
-        ),
-        (
-            "Routes: Issues #512, #514, and #516.",
-            {
-                "github-issue:512",
-                "github-issue:514",
-                "github-issue:516",
-            },
-        ),
-        (
-            "PRs #230, #234, and #248 are immutable predecessors.",
-            {
-                "github-pull-request:230",
-                "github-pull-request:234",
-                "github-pull-request:248",
-            },
-        ),
-        (
-            "Issues #13, #6; #21 only records the later boundary.",
-            {
-                "github-issue:13",
-                "github-issue:6",
-                "github-issue:21",
-            },
-        ),
+        ("Issues #366, #368, #421 and PR #422 remain exact.", {"github-issue:366", "github-issue:368", "github-issue:421", "github-pull-request:422"}),
+        ("PRs #443, #453 and #461 are predecessors.", {"github-pull-request:443", "github-pull-request:453", "github-pull-request:461"}),
+        ("Routes: Issues #512, #514, and #516.", {"github-issue:512", "github-issue:514", "github-issue:516"}),
+        ("PRs #230, #234, and #248 are immutable predecessors.", {"github-pull-request:230", "github-pull-request:234", "github-pull-request:248"}),
+        ("Issues #13, #6; #21 only records the later boundary.", {"github-issue:13", "github-issue:6", "github-issue:21"}),
         (
             "OWNER amendment `5500512956` and correction `5500512957` control.",
             {"github-comment:5500512956", "github-comment:5500512957"},
@@ -1336,6 +1187,7 @@ def test_issue_521_preflight_is_exact_and_bounded() -> None:
     assert "6f409e16afffedb7c3203ccd68f29714cf4fd74ef4c23bf2d732b3f3833cda75" in preflight["objective"]
     assert "5604091052" in preflight["objective"]
     assert "b997552525db14a9a024ce2bc4decd49644a6c75d8342a0c75faa7c7207d8849" in preflight["objective"]
+    assert "5645038993@843623fac94593ae34baa8e4addaed2098e766410dd5312a474c6a662357ab3a" in preflight["objective"] and "77661700e1019e7e73894a928e4e6aef774c5e75" in preflight["objective"]
     assert {
         ".gitleaksignore",
         "scripts/ci/check_gitleaks_regression.py",

@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import base64
 import hashlib
 import html
 import json
@@ -11,6 +12,7 @@ import re
 import subprocess
 import sys
 import urllib.parse
+import zlib
 from pathlib import Path
 from typing import cast
 
@@ -69,7 +71,9 @@ MAPPING_NORMALIZED_CLAUSE = (
     "transitive deletion, and tenant isolation."
 )
 MAPPING_DETECTOR_LITERAL = b"credential exposure, " b"duplicate/sybil"
-MAPPING_DERIVED_THRESHOLD_SHA256 = "ab8ca2b95dc00282a8e54c9a492727b3df79cdbec4507edfd63a5cac72e0879a"
+MAPPING_DERIVED_THRESHOLD_SHA256 = "4831a49c477bdfa476ad4b85183f1cb4d5081cc97aa3788814351f7315d23533"
+MAPPING_VALUE_MAX_BYTES = 24 * 1024 * 1024
+MAPPING_FILE_MAX_BYTES = 50 * 1024 * 1024
 EXPECTED_DIGEST = "910259f61acbbec4e3432c482d821fd56f2fe8b2073211c7ce112c3cd87405bf"
 EXPECTED_PUBLIC_KEY_SHA256 = "6c3b7674b58d9f7266cd8b823ecf469b0a03d1bf2c8c24df1d0121d8e818f1fa"
 EXPECTED_DOCKERFILE_SHA256 = "27a75b496a53f07037bceadd7eb57ebdf3e07112df33bb554e674925b9e9dc16"
@@ -387,6 +391,34 @@ def validate_portable_mapping_blob(mapping_blob: bytes, source_blob: bytes) -> l
     return failures
 
 
+def _logical_mapping_values(stored: object) -> list[object]:
+    """Independently decode the bounded canonical value-table envelope."""
+    if not isinstance(stored, list):
+        raise TypeError
+    if not (len(stored) == 1 and isinstance(stored[0], dict) and stored[0].get("schemaVersion") == "CanonicalZlibRowValueTableV1"):
+        return cast(list[object], stored)
+    envelope = stored[0]
+    fields = set("schemaVersion algorithm decodedByteCount decodedSha256 compressedByteCount compressedSha256 payloadBase64".split())
+    counts = (envelope.get("decodedByteCount"), envelope.get("compressedByteCount"))
+    if set(envelope) != fields or envelope.get("algorithm") != "ZLIB_LEVEL_9" or not isinstance(envelope.get("payloadBase64"), str) or any(isinstance(item, bool) or not isinstance(item, int) for item in counts) or not 2 <= cast(int, counts[0]) <= MAPPING_VALUE_MAX_BYTES or not 1 <= cast(int, counts[1]) < MAPPING_FILE_MAX_BYTES:
+        raise ValueError
+    try:
+        compressed = base64.b64decode(envelope["payloadBase64"], validate=True)
+        decoder = zlib.decompressobj()
+        raw = decoder.decompress(compressed, MAPPING_VALUE_MAX_BYTES + 1)
+    except (ValueError, zlib.error) as exc:
+        raise ValueError from exc
+    if base64.b64encode(compressed).decode() != envelope["payloadBase64"] or len(compressed) != counts[1] or hashlib.sha256(compressed).hexdigest() != envelope.get("compressedSha256") or len(raw) != counts[0] or hashlib.sha256(raw).hexdigest() != envelope.get("decodedSha256") or not decoder.eof or decoder.unused_data or decoder.unconsumed_tail:
+        raise ValueError
+    try:
+        values = json.loads(raw.decode())
+    except (UnicodeError, json.JSONDecodeError) as exc:
+        raise ValueError from exc
+    if not isinstance(values, list) or json.dumps(values, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode() != raw:
+        raise ValueError
+    return cast(list[object], values)
+
+
 def _logical_mapping_rows(document: object) -> list[dict[str, object]]:
     """Decode direct or content-addressed rows without trusting project code."""
     if not isinstance(document, dict) or not isinstance(document.get("rows"), list):
@@ -394,9 +426,10 @@ def _logical_mapping_rows(document: object) -> list[dict[str, object]]:
     rows = document["rows"]
     if all(isinstance(row, dict) for row in rows):
         return cast(list[dict[str, object]], rows)
-    encoding, values = document.get("rowEncoding"), document.get("rowValues")
-    if not isinstance(encoding, dict) or not isinstance(values, list):
+    encoding, stored = document.get("rowEncoding"), document.get("rowValues")
+    if not isinstance(encoding, dict):
         raise TypeError
+    values = _logical_mapping_values(stored)
     columns = encoding.get("columns")
     canonical = [json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")) for value in values]
     if (

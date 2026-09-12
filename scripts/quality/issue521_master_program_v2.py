@@ -3,12 +3,14 @@
 from __future__ import annotations
 import argparse
 import ast
+import base64
 import copy
 import hashlib
 import json
 import re
 import subprocess
 import sys
+import zlib
 from collections import Counter, defaultdict
 from dataclasses import dataclass
 from datetime import datetime
@@ -33,11 +35,11 @@ V1_PATH = "docs/governance/NARRATWIN_MASTER_PROGRAM_V1.md"
 V1_SHA256 = "c3e3c85bb980aab4f818e80be3db5484e564423d77bc3ab6e81ba736c3af3420"
 DOCUMENT_SHA256 = "31d879568cd4bbeea9e238d14e20bf66de565842204372ee54ccf071564396f1"
 EXTERNAL_CLASSIFICATION_PRECEDENCE_INPUT_SHA256 = "746e23fcd200f25e1fcd91ef4dd39b59abc6e34ea00b28db7dee667da81db75f"
-MAPPING_SHA256 = "f4e8dff41ce5532860189904bb10a78f2c85e9f70082f321de88740954745bc6"
+MAPPING_SHA256 = "ce4df939ca8ef4a72483c66f29212e08faeeff737c778db3e505d6fd0074388b"
 TAXONOMY_SHA256 = "c0fba5183c284f2d8854eefb30caaf76bb2979ac00328b67ccd6d027a971cdb7"
-MAPPING_SCHEMA_SHA256 = "27372ca1657e1fd7d4ac336dd5cad5e9aff4efbb2792b00faf8bea4d10138763"
+MAPPING_SCHEMA_SHA256 = "3f6bd3759b8962ea2828c283f9374c2bea498decd7cd5c6854474db4d74e42e2"
 TAXONOMY_SCHEMA_SHA256 = "7ac62fbe1a92b43eccba782038f8002818b80c9c02246f35d3f117941e69ccc8"
-REVIEW_SHA256 = {REVIEW_PATHS[0]: "636c088e03ef99bfb5ad83b5854385810a9c03f4d6f7d0d024fcd05ba9c843b1", REVIEW_PATHS[1]: "48759b965cf7f2ccbd1e5c4c0e1c1880e156aecf1988a631865d43379f469672"}
+REVIEW_SHA256 = {REVIEW_PATHS[0]: "a278c3183969e02103968c1fcd02b7385f0a4ba0dc84a6bf6bc248497ccabe34", REVIEW_PATHS[1]: "8bf61240224e2b0f349c8d4b21fbcdb4602fc84994bfaba176f432e7def60e4d"}
 EXTERNAL_AUTHORITY_MANIFEST_SHA256 = "87e4198c4344b35a89ad74efa768e7fe27ba6d3668b8fb76bd86a15b956f53ec"
 LEGACY_EXTERNAL_AUTHORITY_MANIFEST_SHA256 = "b47e111cf0af5b6fb1b09b2659d89798e4f97a241612ea1eb5da4f664f8bc7a2"
 LEGACY_EXTERNAL_AUTHORITY_SOURCE_COMMIT = "6e9623b04f1d5c0b5a12aa79b7eb6fe84437e861"
@@ -46,8 +48,13 @@ _EXTERNAL_PULL_REQUEST_IDENTITY_CORRECTIONS = {152: (4_882_032_247, 4_051_522_26
 REPOSITORY_SEMANTIC_PARTITION_SHA256 = "1a7650934378462a520ed1ddd0f57f6339254de0ea0304478c4752e42b2384fe"
 REPOSITORY_CONTEXT_PARTITION_SHA256 = "9939476b97f156ccdbc9585b7ee24b0dbfee43fe11561ee0fe365ff63982fcac"
 EXTERNAL_IDENTITY_EQUIVALENCE_ATTESTATION_SHA256 = "5698d5172a4eaa320d59180d1e644f755d1cc4e3a57a0a0ce322b18e191da4e0"
-EXTERNAL_SEMANTIC_CORRECTION_OVERLAY_SHA256 = "91b67cee86764cb21b2ba177a02a5807ecc092f7fc20495f80993237d53524f6"
+EXTERNAL_PRE_EXHAUSTIVE_OVERLAY_SHA256 = "91b67cee86764cb21b2ba177a02a5807ecc092f7fc20495f80993237d53524f6"
+EXTERNAL_SEMANTIC_CORRECTION_OVERLAY_SHA256 = "e421f7f13fa9f2309ef2b320e8c6c9b4952951d9bcaf58a967bfc45fb59c8a27"
+EXTERNAL_EXHAUSTIVE_REVIEW_SHA256 = "88adf48e9f78ef75e520c3e4e3986e5d11cc24d2029c845b4491268a66484e60"
+EXTERNAL_LEGACY_BINDING_SHA256 = "710471c0bcf69a17626efb009da0f616f7fef257738b755b116780c4bb922355"
+EXTERNAL_GENERATED_ATOM_SHA256 = "cd1e1b4ea2bba6229b55a79bfcd505a1dfe385a4769561d722f8cacfc981aa32"
 MAPPING_MAX_BYTES = 50 * 1024 * 1024
+ROW_VALUE_TABLE_MAX_BYTES = 24 * 1024 * 1024
 ROADMAP_PATH = "docs/CUT_ROADMAP_AND_EVIDENCE_MATRIX.md"
 ROADMAP_SHA256 = "e358396e7be7ecee89539b1bfb9eb7eb4d331799dd41a64b4cfca4f74e22489b"
 ADR0079_PATH = "docs/ADR/0079-cut1-t06-dual-plan-video-strategy.md"
@@ -2376,29 +2383,6 @@ def _external_default_destination(record: dict[str, Any], atom: Atom) -> str:
     if re.search(r"\b(?:security|privacy|credential|secret|evidence)\b", subject, re.I):
         return "MPV2-SECTION-4"
     return "MPV2-SECTION-10"
-_EXTERNAL_CORRECTION_SPEC = {
-    "HISTORICAL_FACT": "comment:4968602415:c780c8c3f55792c4584121297260 comment:5122147727:875d5ce60e4585de9f2bfc4e5e03 comment:5195747476:02e4c51c46c4c5f9019d647ef115 comment:5198618791:94720387351cac6f782e467242a1 comment:5256656667:a3edad9d70c66137c981cd8066a2 comment:5256656667:d830a4ec24fc5620fbf4c7798fa4 comment:5296192826:1a1fbacbdd66c6d65773c3e36345 comment:5296192826:9c62989e8bfb275bcb9f89174dd6 comment:5473594761:f5b16d5f1ba259cb352418e2733a",
-    "REFERENCE": "comment:5442862365:1f7f17bec83ebbf16b8851d09582 comment:5442862365:3a889f155e1b6b27dc4a4fd38ffa comment:5442862365:bc1f41186d5ab4f8cf4bc6f9a753 comment:5442862365:c13c07bb8568491b6c628dd0269f comment:5442862365:e16f979d5ddeebd7b762369554ed comment:5442862365:bb12097244a08cbaf41e56c67ff7 comment:5442862365:b99e9281a2089790722e42a67723 comment:5256656667:a183ef755217ad2e1da2f487283b comment:5256656667:2c177aaf099c1f39439cb377cb24 issue:427:EXTREQ-bfdf2b422556a6e622e26dd36ece",
-    "COST_ESTIMATE": "issue:494:EXTREQ-236be27d599f9125afa792e22e54",
-    "CURRENT_STATE_FACT": "comment:4968602415:ff2740884d513cb4a8a8d71c7acd comment:4968602415:cad7a437312a122ea296762618dc comment:5442862365:69b67f26d8cd44f74f5dbe692687 comment:5442862365:22efa6f467a610f65ef3c12810b9 comment:5442862365:586c0c2e078e715ac5b33b4cdecb comment:5442862365:015b6f7e7149a8f04fea80ece1d3 comment:5442862365:fbb0e648c35f8b3e81dd8dc31882 comment:5442862365:7d5cf4b69d0847ccf808debd209c comment:5442862365:38b4a3e47bf909b92d14e81719be comment:5442862365:bdc6664fe4a3bcc71dcce87ea428 comment:5113777002:ee1949ca3938d11345a7b2123b95 comment:5124615153:223ceab39dae3ceea0939af14294 comment:5313522538:06279880e72ea1190fcd81d010ad comment:5449632582:f1e5f3ea8a9d852ca333b5c33883 comment:5449637037:43052409e29943b32e1044e0ec7b comment:5449637037:0da494e561515ed84b98a707faa0 comment:5463979365:d540b1818aad12c8a58147884e7c comment:5464081073:4e25a4ebf0e37958230254b34aa5 comment:5468493806:da0c9a960baef7bb4a1994185da9 comment:5468986974:0186c3443acd36c03ed82392f81d comment:5474383480:87f658539c3f35a61e5e6670b13d comment:5485657599:540c88fb96fb9198c079771ddc42 comment:5507883668:8d0aa4d804de1df7ff79259b71cc comment:5541564267:72520f25dd17b03afc7df6392833 issue:139:EXTREQ-1f15b8ef68252fe57e57a075c5df issue:144:EXTREQ-8a4004434f963997173de68da96d issue:351:EXTREQ-bc21a05607733f6aa57611b80d8e issue:494:EXTREQ-1b8dfe7a2bd9e84a7ceb655e42d6 issue:494:EXTREQ-37f7723975858bea13780dcc1531",
-    "AUTOMATED_RESULT": "comment:5113777002:f769e7ada0870822ee320f2c4af6 comment:5121265229:d525ba5c5833260026911413776d comment:5122147727:ef082e56487496eda0a87aba667c comment:5296192826:72f517ba45866c71b4febb30e4be comment:5313543617:c4b925460835dc7e9f45bf50fae6 comment:5347583669:e88906dbf9e54328fd71f89b2e5a comment:5347583669:b5dfb1d36616b00bee23840e9c18 comment:5446644219:f15d6ea8bce3e539935c4933c8e3 comment:5452170084:5d994aac90112e0b5a803eb9ef7e comment:5463979365:31461c4d5822729f82ae9e19d1ff comment:5464081073:9609b002cbf18b532ba9e29e1ef1 comment:5468511334:b754e935733eeec96ebab486ef08 comment:5470701562:8e7ad122bfabbe944e776bc0b57b comment:5470701562:789055dfc366827cf758247b23d7 comment:5470701562:847a9d4bc81cc49b06d2566bc1e5 comment:5470701562:f8b54774910bf96bc59beac4785c comment:5485657599:fa4018dca2d00676960f07e9f741 comment:5485891564:555cc89325db902280e2482a96e6 comment:5542161744:f82940f73ae37e5da69ee719e049 issue:351:EXTREQ-bbad7daef132e62b692bb5a20445 issue:405:EXTREQ-4f41ad95b4f6dd706a39fdd49610 issue:405:EXTREQ-1fbbd438a9c55f4f0861e3fade64 issue:428:EXTREQ-ece0a967dcd77a96330f1de5036a issue:428:EXTREQ-afa141a8d2c0621c621c1993c656 issue:466:EXTREQ-882003e16c073ccc39c9d2b421ba issue:482:EXTREQ-3913ad7eee7a16607714649ad1be issue:494:EXTREQ-715d4e1d6534b2952f5031d28f79 issue:495:EXTREQ-7325de650f74cdc6ce60b3349600 comment:5256656667:d19984e421280d365a4f284510be comment:5256656667:da4c64141447e44d643fae8d996d comment:5256656667:f9791caf0c0174ae5e62d5421d82",
-    "IMPLEMENTED_BEHAVIOR": "comment:5124615153:231728c47bd59004ca199571f5cd comment:5256656667:1d3cc2ae923d76f0d95f5afb4b42 comment:5256656667:0b432f294d0de4dc32951f2257c9 comment:5256656667:bae3c8e2a57ef5af2496b97a7652 comment:5256656667:542c57b7eab727d39959ac04aeab comment:5256656667:92f60dfefab4e7b99af2f9a3657f comment:5466871459:5d7e35acbe6956f3e9b5f8a354db comment:5468813566:9215d0c18c92709c9f0f36050e73 comment:5470636741:cd2ae90f03d8e01a5bac97a08437 comment:5470636741:bd46947e291867d43623febadff6 comment:5470701562:4fc4ce85e6743bed3210aee831e1 issue:17:EXTREQ-ab587f9cfbbb7416451555456c3c issue:315:EXTREQ-d3347e2c519cd0772248d45b98fa issue:349:EXTREQ-bc6c0839f19a9addff17ef8207c6 issue:349:EXTREQ-b91a226b63d3934596be6b23e5cd issue:401:EXTREQ-659fb51a987ea35a9952739d5f59 issue:450:EXTREQ-c6b6f231bf14e27f4d8f4c6d4c36 issue:475:EXTREQ-29ed66aaa418bfe39d1b4fbce676 issue:494:EXTREQ-28e7df77d4af99af97301b74b61e issue:494:EXTREQ-0c04fb90384e9c9520f79d67c4c4 issue:507:EXTREQ-e5ab0f01775d62ded378f6928a18",
-    "EVIDENCE": "comment:4968602415:1029417a8e1e0506003273b318ff comment:5461065184:196dcfb1f5caf2f58335257de3b4 comment:5466962967:e60e136c21d8049b1c5e1adee612 comment:5467958861:04bd7dba0fbed66373293d16d1c5 comment:5468026907:a1e76684a1ae4bdba5a354256b7c comment:5468493806:c19faa555aaaa3d0a498f177b2a4 comment:5468511334:2d4283f7f6fb7d3691237a393d51 comment:5468560507:4ce49a32d695eb0f35f0126e7889 comment:5469141049:7b9206a775c7abf75f1c4eca6e9f comment:5471282345:51ce6cf48fc6433613dd54ced5ff comment:5473694821:79031b38841d6bd9b7c723eb5e92 comment:5473718767:dbf631e5f933e82afaf59fc14c39 comment:5481522433:553f55c5b7c3e6f45696490830e0 comment:5484097802:06d2975c514eb63f13d7865ad162 comment:5492585578:440dc599d206aef97badd0082b0f comment:5492618746:e2fb3a1e44b05fb681ba6a17333f comment:5495025249:c34f34bbd5957e21f01e6a1f2367 comment:5498589302:0b8e4ad04348ccae72d1f218a016 comment:5498765949:991cfacd06ea74b7b639ad9f3cef comment:5511888548:d76a6aae4067c1c4b0d961f04ff3 comment:5511933453:9f70ef9ce93b9a5c59ade2c0f039 comment:5512191367:0acb89ac075f6b2373f0522dc09e comment:5522092317:383df3b6abaaf8c075ddbd377e52 comment:5522141413:3aa4db39bf845b0e1371a79d7e24 comment:5522156212:1f9d3e9badade48f45811c433a61 issue:466:EXTREQ-596aa19ad43efbabab6958377355 issue:468:EXTREQ-c96d15554e6bb05204f008c19f8e issue:471:EXTREQ-e7548f436307a40f6b6305cefd1e issue:473:EXTREQ-527f6540c71e71e6ec3c12dfa7bd issue:475:EXTREQ-41d1b1969b7f0837224bb6ccd2a4 issue:479:EXTREQ-7ea1d654fc1f5073944b94319469 issue:482:EXTREQ-6227dba7bf641042e9c510ee06d8 comment:5521410237:4fcd8b5165d85324a4cdd82c8723 comment:5521410237:42ddfc29e5c1b63ab2ae1938b232 comment:5521410237:569a61409332125a0b239e3888c4 comment:5521410237:cf0ad7cd56102324a469439604fa comment:5521410237:245a44501c46d376217290ef220e comment:5521410237:ba43ed76b50c631fefa415489635 comment:5521410237:8786e19a66fba2b1fc8c003a7a97 comment:5521410237:d58a311f38d047da8b4a1a531b47 comment:5521410237:af281e50926f0863ad19bc185526 comment:5521410237:e96b918111316093e9b8b45d7580 comment:5521410237:88d035140abdfd6a655c5d1b31f8 comment:5521410237:333076a81b4871be3f773e2e296f comment:5521410237:68402b87b47e403c17a3c3b31a83 comment:5521410237:e9c136d4f6af85d0323c32981214 comment:5521410237:a2ad8b90b54d1fa3a8e16270d1d6 comment:5521410237:c01faa44c01bd99e28dec2655627 comment:5521410237:90b219ec64caac9b7e5ff9f20475 comment:5521410237:e1dbdad35d358929eb3679852bf5 comment:5521410237:bce721e2843bc0c9cfcacaf5cd7c comment:5521410237:cb4b9b0d9bb5ea29ba4928b60603 comment:5521410237:8828689b848ac400152b43ce2e1f comment:5521410237:e821b7be627de55711cc296f4087 comment:5521410237:7ee46f3a468b7cbefcd8636ed85c comment:5521410237:067e65a8821ce856cc4712e917c6 comment:5521410237:b48501550982cb9e9f034534043a comment:5521410237:e522fdd7230774b7cda46d102f0e comment:5521410237:98325f7d8aacfdee6589ea88f6e4 comment:5521410237:b21a59f3a884d344e7da556cfb33 comment:5521410237:8af58b2f566b5994ad5582a46000 comment:5521410237:60b0b0e4e8379fd0665bbc4cca0d comment:5521410237:077dbb1827657f8f1e2231202904 comment:5521410237:dda8045365b1f8ebef1a2e1fcb5e comment:5521410237:a37454df48d38b677a1f5d7b8125 comment:5521410237:adb4ed1e6384e7128b4c61e5b330 comment:5521588438:06f5793cdb77dd882651cde85a04 comment:5521588438:a2876e447193319929f362a4f09f comment:5521588438:a9ada1ca02fabc18bcde9a9f53d6 comment:5521588438:3ce487f23da7e23cf56cc0e215f1 comment:5521588438:ff29096e8fbd3dcf68b02d9c7d18 comment:5521588438:c0e62cfc3daf22340cae20381100 comment:5521588438:c05beaace2de64a55921a781a275 comment:5521588438:a622409ba6f55c17bd71174cd758 comment:5521588438:83c1103f300b0e0d8cc83892be4f comment:5521588438:b1ed9e9f3e052b456a9d0d71de11 comment:5521588438:41147067b1535f5c0e08ae7b2164 comment:5521588438:f89848840b5c8ecd491bd7744043 comment:5521588438:7a1803e2362d9294de4828c4bb8d comment:5521588438:7540c912a17bb73c2c5f349051f5 comment:5521588438:93dcc7891e44152cf93a092b5718 comment:5521588438:98292d6f221c78cb04699bee7a8a comment:5521588438:c3da181843e5f54fc1e782398f26 comment:5521588438:9a00aff1068bfeadb887b33c0f10",
-}
-def _expected_external_semantic_corrections() -> dict[tuple[str, str], str]:
-    result: dict[tuple[str, str], str] = {}
-    for semantic_class, specification in _EXTERNAL_CORRECTION_SPEC.items():
-        for item in specification.split():
-            kind, number, clause_id = item.split(":")
-            if kind == "comment":
-                clause_id = "EXTCOMMENTCLAUSE-" + clause_id
-            key = (f"github-{kind}:{number}", clause_id)
-            if key in result:
-                raise ValueError("duplicate external correction")
-            result[key] = semantic_class
-    if len(result) != 185:
-        raise ValueError("external correction census drift")
-    return result
 def _legacy_external_authority_manifest(root: Path) -> dict[str, Any]:
     data = _frozen_git(
         _git_directory(root),
@@ -2515,35 +2499,95 @@ def _build_external_identity_equivalence_attestation(
     return value
 def _external_semantic_corrections(
     root: Path, manifest: dict[str, Any], overlay: dict[str, Any],
-) -> dict[tuple[str, str], str]:
-    fields = {"schemaVersion", "reviewState", "sourceManifestSha256", "sourceIdentityEquivalenceAttestation", "decisionColumns", "decisionCount", "recordCount", "classCounts", "unreviewedNormativeClauseCount", "decisions", "orderedDecisionSha256", "overlaySha256"}
+) -> tuple[dict[tuple[str, str], tuple[str, str, str, str, str]], list[tuple[dict[str, Any], Atom, str]]]:
+    fields = {"schemaVersion", "reviewState", "sourceManifestSha256", "sourceIdentityEquivalenceAttestation", "decisionColumns", "decisionCount", "recordCount", "classCounts", "unreviewedNormativeClauseCount", "unreviewedCandidateUnitCount", "decisions", "orderedDecisionSha256", "exhaustiveReview", "overlaySha256"}
     columns = ["sourceReference", "sourceContentSha256", "clauseId", "correctedSemanticClass", "basisCode", "decisionSha256"]
     identity_attestation = overlay.get("sourceIdentityEquivalenceAttestation")
-    if set(overlay) != fields or overlay.get("schemaVersion") != "ExternalSemanticCorrectionOverlayV1" or overlay.get("reviewState") != "PARTIAL_DEFINITE_CORRECTIONS_PENDING_EXHAUSTIVE_REVIEW" or overlay.get("sourceManifestSha256") != _sha256(_canonical_json(manifest).encode()) or identity_attestation != _build_external_identity_equivalence_attestation(root, manifest) or not isinstance(identity_attestation, dict) or identity_attestation.get("attestationSha256") != EXTERNAL_IDENTITY_EQUIVALENCE_ATTESTATION_SHA256 or overlay.get("decisionColumns") != columns or overlay.get("overlaySha256") != EXTERNAL_SEMANTIC_CORRECTION_OVERLAY_SHA256 or overlay.get("overlaySha256") != _sha256(_canonical_json({key: value for key, value in overlay.items() if key != "overlaySha256"}).encode()) or not isinstance(overlay.get("decisions"), list):
+    if set(overlay) != fields or overlay.get("schemaVersion") != "ExternalSemanticCorrectionOverlayV2" or overlay.get("reviewState") != "EXHAUSTIVE_REVIEW_COMPLETE_NON_ACTIVATING" or overlay.get("sourceManifestSha256") != _sha256(_canonical_json(manifest).encode()) or identity_attestation != _build_external_identity_equivalence_attestation(root, manifest) or not isinstance(identity_attestation, dict) or identity_attestation.get("attestationSha256") != EXTERNAL_IDENTITY_EQUIVALENCE_ATTESTATION_SHA256 or overlay.get("decisionColumns") != columns or overlay.get("overlaySha256") != EXTERNAL_SEMANTIC_CORRECTION_OVERLAY_SHA256 or overlay.get("overlaySha256") != _sha256(_canonical_json({key: value for key, value in overlay.items() if key != "overlaySha256"}).encode()) or not isinstance(overlay.get("decisions"), list) or overlay.get("unreviewedNormativeClauseCount") != 0 or overlay.get("unreviewedCandidateUnitCount") != 0:
         raise ValueError("external semantic correction overlay invalid")
     clause_index = {(record["reference"], clause["clauseId"]): (record["contentSha256"], clause) for record in manifest["records"] for clause in record["clauses"]}
-    corrections: dict[tuple[str, str], str] = {}
+    prior: dict[tuple[str, str], str] = {}
     counts: Counter[str] = Counter()
     digests: list[str] = []
     for decision in overlay["decisions"]:
-        if not isinstance(decision, list) or len(decision) != 6 or tuple(decision[:2]) != (decision[0], clause_index.get((decision[0], decision[2]), (None,))[0]) or decision[4] != "INDEPENDENT_REPRODUCED_FALSE_NORMATIVE" or decision[3] not in _SEMANTIC_EFFECTS or _SEMANTIC_EFFECTS[decision[3]] == "CURRENT_NORMATIVE" or decision[5] != _sha256(_canonical_json(decision[:-1]).encode()) or (decision[0], decision[2]) in corrections:
+        if not isinstance(decision, list) or len(decision) != 6 or tuple(decision[:2]) != (decision[0], clause_index.get((decision[0], decision[2]), (None,))[0]) or decision[4] != "INDEPENDENT_REPRODUCED_FALSE_NORMATIVE" or decision[3] not in _SEMANTIC_EFFECTS or _SEMANTIC_EFFECTS[decision[3]] == "CURRENT_NORMATIVE" or decision[5] != _sha256(_canonical_json(decision[:-1]).encode()) or (decision[0], decision[2]) in prior:
             raise ValueError("external semantic correction decision invalid")
-        corrections[(decision[0], decision[2])] = decision[3]
+        prior[(decision[0], decision[2])] = decision[3]
         counts[decision[3]] += 1
         digests.append(decision[5])
-    total = sum(len(record["clauses"]) for record in manifest["records"])
-    if corrections != _expected_external_semantic_corrections() or overlay.get("decisionCount") != 185 or overlay.get("recordCount") != 78 or overlay.get("classCounts") != dict(sorted(counts.items())) or overlay.get("unreviewedNormativeClauseCount") != total - len(corrections) or overlay.get("orderedDecisionSha256") != _sha256(_canonical_json(digests).encode()):
+    if len(prior) != 185 or overlay.get("decisionCount") != 185 or overlay.get("recordCount") != 78 or overlay.get("classCounts") != dict(sorted(counts.items())) or overlay.get("orderedDecisionSha256") != _sha256(_canonical_json(digests).encode()):
         raise ValueError("external semantic correction census invalid")
-    return corrections
+    review = overlay.get("exhaustiveReview")
+    review_fields = set("schemaVersion authorityEffect activation sourceCount issueCommentSourceCount pullRequestBodySourceCount candidateUnitCount issueCommentCandidateUnitCount pullRequestBodyCandidateUnitCount reviewedPhysicalCandidateDecisionCount literalEscapeRecoveredCandidateCount effectiveIssueCommentSemanticUnitCount legacyClauseCount legacyClauseBindingCount legacyClauseBindingColumns legacyClauseBindingCoordinateSystem legacyClauseBindings orderedLegacyClauseBindingSha256 legacyDecisionClassCounts generatedAtomColumns generatedNormativeAtomCount generatedNormativeAtoms orderedGeneratedNormativeAtomSha256 partitionNormativeCounts normativeEffectCounts normativeRequirementCount expectedExternalMappingRowCount repositoryMappingRowCount expectedMappingRowCount prBodyDecisionClassCounts ownerDutySemanticCorrection semanticPrecedenceReconciliation artifactInputs artifacts independentValidator reviewResult receiptSha256".split())
+    legacy_columns = ["partition", "boundCandidateOrProjectionId", "physicalDecisionCode", "finalDecisionCode", "bindingKind"]
+    generated_columns = "partition reviewUnitId reviewPayloadSha256 decisionCode generatedRequirementId sourceReference sourceContentSha256 sourceAnchor sourceAnchorSha256 normalizedAtomicFocus atomicFocusSha256 normalizedSourceContext normalizedSourceContextSha256 atomicFocusStart atomicFocusEnd atomicFocusOccurrence sourceSpanStartLine sourceSpanEndLine rawSourceSpanSha256 redactionClasses canonicalAtomId".split()
+    if not isinstance(review, dict) or review.get("receiptSha256") != EXTERNAL_EXHAUSTIVE_REVIEW_SHA256:
+        raise ValueError("external exhaustive semantic review digest invalid")
+    if not isinstance(review, dict) or set(review) != review_fields or review.get("receiptSha256") != _sha256(_canonical_json({key: value for key, value in review.items() if key != "receiptSha256"}).encode()) or review.get("schemaVersion") != "ExternalAuthorityExhaustiveSemanticReviewReceiptV1" or review.get("authorityEffect") != "SEMANTIC_PRECEDENCE_INPUT_ONLY" or review.get("activation") != "NONE" or review.get("legacyClauseBindingColumns") != legacy_columns or review.get("generatedAtomColumns") != generated_columns or review.get("independentValidator") != {"fileSha256": "60efeb0b3e687d1a4281727badcf3b4b4d6788c2f10749e629f3009394ed6dde", "restrictedEvidenceRef": "restricted-evidence:G1_EXTERNAL_SEMANTIC_VALIDATOR_V3", "validatedMappingSha256": "f4e8dff41ce5532860189904bb10a78f2c85e9f70082f321de88740954745bc6", "executionMode": "EXACT_PROGRAM_WITH_CONTENT_HASHED_PREINTEGRATION_MAPPING_INPUT", "result": "PASS_STRICT_G1_V3_BUNDLE_AND_11_DISCRIMINATING_MUTATIONS", "scope": "PREINTEGRATION_EVIDENCE_BUNDLE_NOT_FINAL_EXHAUSTIVE_MAPPING", "integratedCandidateResult": "PENDING_FRESH_CONTEXT_EXACT_HEAD_REVIEW"}:
+        raise ValueError("external exhaustive semantic review invalid")
+    ordered_clauses = [(record, clause) for record in manifest["records"] for clause in record["clauses"]]
+    legacy_rows = review.get("legacyClauseBindings")
+    if not isinstance(legacy_rows, list) or len(legacy_rows) != len(ordered_clauses) or review.get("legacyClauseCount") != len(ordered_clauses) or review.get("legacyClauseBindingCount") != len(legacy_rows) or review.get("legacyClauseBindingCoordinateSystem") != "EXTERNAL_AUTHORITY_MANIFEST_RECORD_AND_CLAUSE_ORDER":
+        raise ValueError("external legacy clause binding census invalid")
+    bindings: dict[tuple[str, str], tuple[str, str, str, str, str]] = {}
+    binding_material: list[list[Any]] = []
+    legacy_counts: Counter[str] = Counter()
+    for (record, clause), row in zip(ordered_clauses, legacy_rows, strict=True):
+        if not isinstance(row, list) or len(row) != 5 or row[0] not in {"A", "B", "C"} or not isinstance(row[1], str) or row[2] not in set("NVEHRCASIUXP") or row[3] not in set("NVEHRCASIUX") or not isinstance(row[4], str):
+            raise ValueError("external legacy clause binding invalid")
+        key = (record["reference"], clause["clauseId"])
+        bindings[key] = cast(tuple[str, str, str, str, str], tuple(row))
+        binding_material.append([record["reference"], record["contentSha256"], clause["clauseId"], clause["atomicFocusSha256"], *row])
+        legacy_counts[row[3]] += 1
+    if len(bindings) != 11_898 or review.get("orderedLegacyClauseBindingSha256") != EXTERNAL_LEGACY_BINDING_SHA256 or review.get("orderedLegacyClauseBindingSha256") != _sha256(_canonical_json(binding_material).encode()) or review.get("legacyDecisionClassCounts") != dict(sorted(legacy_counts.items())):
+        raise ValueError("external legacy clause binding digest invalid")
+    generated_rows = review.get("generatedNormativeAtoms")
+    if not isinstance(generated_rows, list) or len(generated_rows) != review.get("generatedNormativeAtomCount") or len(generated_rows) != 2_080 or review.get("orderedGeneratedNormativeAtomSha256") != EXTERNAL_GENERATED_ATOM_SHA256 or review.get("orderedGeneratedNormativeAtomSha256") != _sha256(_canonical_json(generated_rows).encode()):
+        raise ValueError("external generated normative atom census invalid")
+    record_by_ref = {record["reference"]: record for record in manifest["records"]}
+    generated: list[tuple[dict[str, Any], Atom, str]] = []
+    generated_ids: set[str] = set()
+    partition_counts: Counter[str] = Counter(row[0] for row in legacy_rows if row[3] in {"N", "V"})
+    effect_counts: Counter[str] = Counter(row[3] for row in legacy_rows if row[3] in {"N", "V"})
+    for row in generated_rows:
+        if not isinstance(row, list) or len(row) != len(generated_columns):
+            raise ValueError("external generated normative atom invalid")
+        item = dict(zip(generated_columns, row, strict=True))
+        record = record_by_ref.get(item["sourceReference"])
+        if not isinstance(record, dict) or record["contentSha256"] != item["sourceContentSha256"] or record["sourceKind"] == "EXTERNAL_GITHUB_PULL_REQUEST_BODY" or item["partition"] not in {"A", "B", "C"} or item["decisionCode"] not in {"N", "V"} or not all(isinstance(item[name], int) and not isinstance(item[name], bool) for name in ("atomicFocusStart", "atomicFocusEnd", "atomicFocusOccurrence", "sourceSpanStartLine", "sourceSpanEndLine")) or not isinstance(item["redactionClasses"], list):
+            raise ValueError("external generated normative atom lineage invalid")
+        atom = Atom(source_id=_external_source_id(record["reference"]), anchor=item["sourceAnchor"], text=item["normalizedAtomicFocus"], exact_source_clause=item["normalizedSourceContext"], focus_start=item["atomicFocusStart"], focus_end=item["atomicFocusEnd"], focus_occurrence=item["atomicFocusOccurrence"], source_span_start_line=item["sourceSpanStartLine"], source_span_end_line=item["sourceSpanEndLine"], raw_source_span_sha256=item["rawSourceSpanSha256"])
+        expected_generated_id = "EXTSEMREQ-" + _sha256(_canonical_json([record["reference"], record["contentSha256"], item["reviewUnitId"], item["atomicFocusSha256"], item["decisionCode"]]).encode())[:32]
+        if atom.atom_id != item["canonicalAtomId"] or atom.atom_id in generated_ids or atom.clause_sha256 != item["atomicFocusSha256"] or atom.source_context_sha256 != item["normalizedSourceContextSha256"] or _sha256(item["sourceAnchor"].encode()) != item["sourceAnchorSha256"] or item["generatedRequirementId"] != expected_generated_id or not all(isinstance(item[name], str) and re.fullmatch(r"[0-9a-f]{64}", item[name]) for name in ("reviewPayloadSha256", "atomicFocusSha256", "normalizedSourceContextSha256", "sourceAnchorSha256", "sourceContentSha256", "rawSourceSpanSha256")):
+            raise ValueError("external generated normative atom hash invalid")
+        generated_ids.add(atom.atom_id)
+        generated.append((record, atom, item["decisionCode"]))
+        partition_counts[item["partition"]] += 1
+        effect_counts[item["decisionCode"]] += 1
+    expected_counts = {"sourceCount": 605, "issueCommentSourceCount": 422, "pullRequestBodySourceCount": 183, "candidateUnitCount": 50_748, "issueCommentCandidateUnitCount": 15_921, "pullRequestBodyCandidateUnitCount": 34_872, "reviewedPhysicalCandidateDecisionCount": 50_793, "literalEscapeRecoveredCandidateCount": 45, "effectiveIssueCommentSemanticUnitCount": 15_991, "normativeRequirementCount": 13_397, "expectedExternalMappingRowCount": 13_382, "repositoryMappingRowCount": 18_016, "expectedMappingRowCount": 31_398}
+    if any(review.get(key) != value for key, value in expected_counts.items()) or review.get("partitionNormativeCounts") != {"A": 4_419, "B": 4_623, "C": 4_355} or review.get("normativeEffectCounts") != {"CURRENT_NORMATIVE": 5_983, "SUPERSEDED_NORMATIVE": 7_414} or partition_counts != Counter(review["partitionNormativeCounts"]) or effect_counts != Counter({"N": 5_983, "V": 7_414}) or review.get("prBodyDecisionClassCounts") != {"EVIDENCE_ONLY": 34_872}:
+        raise ValueError("external exhaustive semantic review census invalid")
+    reconciliation = review.get("semanticPrecedenceReconciliation")
+    rec_columns = "sourceReference sourceContentSha256 clauseId atomicFocusSha256 overlaySemanticClass overlayDecisionCode overlayDecisionSha256 partition boundCandidateOrProjectionId finalDecisionCode laterOwnerAdjudicationRef exactClassMatch decisionSha256".split()
+    if not isinstance(reconciliation, dict) or reconciliation.get("decisionColumns") != rec_columns or reconciliation.get("reconciliationSha256") != _sha256(_canonical_json({key: value for key, value in reconciliation.items() if key != "reconciliationSha256"}).encode()) or reconciliation.get("sourceOverlaySha256") != EXTERNAL_PRE_EXHAUSTIVE_OVERLAY_SHA256 or len(reconciliation.get("records", [])) != 185:
+        raise ValueError("external semantic precedence reconciliation invalid")
+    rec_index = {name: index for index, name in enumerate(rec_columns)}
+    class_codes = {"EVIDENCE": "E", "HISTORICAL_FACT": "H", "REFERENCE": "R", "COST_ESTIMATE": "C", "CURRENT_STATE_FACT": "S", "AUTOMATED_RESULT": "A", "IMPLEMENTED_BEHAVIOR": "I"}
+    for decision, rec in zip(overlay["decisions"], reconciliation["records"], strict=True):
+        key = (decision[0], decision[2])
+        binding = bindings[key]
+        clause = clause_index[key][1]
+        if not isinstance(rec, list) or len(rec) != len(rec_columns) or rec[-1] != _sha256(_canonical_json(rec[:-1]).encode()) or rec[rec_index["sourceReference"]] != key[0] or rec[rec_index["clauseId"]] != key[1] or rec[rec_index["atomicFocusSha256"]] != clause["atomicFocusSha256"] or rec[rec_index["overlayDecisionCode"]] != class_codes[decision[3]] or rec[rec_index["partition"]] != binding[0] or rec[rec_index["boundCandidateOrProjectionId"]] != binding[1] or rec[rec_index["finalDecisionCode"]] != binding[3] or binding[3] != class_codes[decision[3]]:
+            raise ValueError("external semantic precedence binding invalid")
+    return bindings, generated
 def _external_new_atoms(
-    manifest: dict[str, Any], corrected: frozenset[tuple[str, str]] = frozenset(),
+    root: Path, manifest: dict[str, Any], overlay: dict[str, Any],
 ) -> dict[str, Atom]:
     atoms: dict[str, Atom] = {}
-    for record in manifest.get("records", []):
-        if not isinstance(record, dict):
-            continue
+    bindings, generated = _external_semantic_corrections(root, manifest, overlay)
+    for record in manifest["records"]:
         for clause in record.get("clauses", []):
-            if (record["reference"], clause["clauseId"]) in corrected:
+            if bindings[(record["reference"], clause["clauseId"])][3] not in {"N", "V"}:
                 continue
             alias = clause.get("suggestedAlias")
             if isinstance(alias, dict) and alias.get("kind") == "EXISTING_REQUIREMENT":
@@ -2552,6 +2596,10 @@ def _external_new_atoms(
             if atom.atom_id in atoms:
                 raise ValueError("duplicate external authority atom")
             atoms[atom.atom_id] = atom
+    for _, atom, _ in generated:
+        if atom.atom_id in atoms:
+            raise ValueError("duplicate external authority atom")
+        atoms[atom.atom_id] = atom
     return atoms
 def _mapping_row(
     atom: Atom,
@@ -2641,7 +2689,7 @@ def generate_mapping(
     selected_external = _selected_external_authority_manifest(
         root, sources, external_manifest
     )
-    external_corrections = _external_semantic_corrections(
+    external_bindings, external_generated = _external_semantic_corrections(
         root, selected_external, external_semantic_correction_overlay
     )
     cache_key = _sha256(
@@ -2710,13 +2758,11 @@ def generate_mapping(
                 )
             )
     rows_by_atom = {row["sourceAtomId"]: row for row in rows}
-    for record in selected_external.get("records", []):
-        if not isinstance(record, dict) or record.get("authorityEffect") not in {
-            "CURRENT_NORMATIVE", "SUPERSEDED_NORMATIVE", "MIXED_NORMATIVE",
-        }:
-            continue
+    external_units: list[tuple[dict[str, Any], Atom, str]] = []
+    for record in selected_external["records"]:
         for clause in record.get("clauses", []):
-            if (record["reference"], clause["clauseId"]) in external_corrections:
+            code = external_bindings[(record["reference"], clause["clauseId"])][3]
+            if code not in {"N", "V"}:
                 continue
             alias = clause.get("suggestedAlias")
             if isinstance(alias, dict) and alias.get("kind") == "EXISTING_REQUIREMENT":
@@ -2727,8 +2773,10 @@ def generate_mapping(
                     {*target["sourceAuthorityRefs"], record["contentAddressedRef"]}
                 )
                 continue
-            atom = _external_clause_atom(record, clause)
-            row = _mapping_row(
+            external_units.append((record, _external_clause_atom(record, clause), code))
+    external_units.extend(external_generated)
+    for record, atom, code in external_units:
+        row = _mapping_row(
                 atom,
                 source_kind=record["sourceKind"],
                 source_path=record["sourceLocator"]["apiUrl"],
@@ -2737,13 +2785,13 @@ def generate_mapping(
                 source_git_blob=None,
                 source_content_sha256=record["contentSha256"],
                 default_destination=_external_default_destination(record, atom),
-                normative_effect=clause["normativeEffect"],
+                normative_effect={"N": "CURRENT_NORMATIVE", "V": "SUPERSEDED_NORMATIVE"}[code],
                 replacements=replacements,
                 adoption_ref=adoption_ref,
                 span_coordinate_system="ORIGINAL_BODY_LINES_ONE_BASED_INCLUSIVE",
             )
-            rows.append(row)
-            rows_by_atom[row["sourceAtomId"]] = row
+        rows.append(row)
+        rows_by_atom[row["sourceAtomId"]] = row
     rows.sort(key=lambda item: (item["sourceId"], item["sourceAnchor"], item["sourceAtomId"]))
     context_hashes = _context_chain_hashes(rows, repository_context_hashes, selected_external)
     duplicate_census = semantic_duplicate_census(rows, context_hashes)
@@ -2810,6 +2858,31 @@ def _indexed_mapping_rows(
         values,
         encoded_rows,
     )
+def _stored_row_values(values: list[Any]) -> list[dict[str, Any]]:
+    raw = _canonical_json(values).encode("utf-8")
+    if len(raw) > ROW_VALUE_TABLE_MAX_BYTES:
+        raise ValueError("mapping value table exceeds decoded ceiling")
+    compressed = zlib.compress(raw, level=9)
+    return [{"schemaVersion": "CanonicalZlibRowValueTableV1", "algorithm": "ZLIB_LEVEL_9", "decodedByteCount": len(raw), "decodedSha256": _sha256(raw), "compressedByteCount": len(compressed), "compressedSha256": _sha256(compressed), "payloadBase64": base64.b64encode(compressed).decode("ascii")}]
+def _logical_row_values(stored: Any) -> list[Any]:
+    fields = set("schemaVersion algorithm decodedByteCount decodedSha256 compressedByteCount compressedSha256 payloadBase64".split())
+    if not isinstance(stored, list) or len(stored) != 1 or not isinstance(stored[0], dict) or set(stored[0]) != fields:
+        raise ValueError("mapping value storage invalid")
+    envelope = stored[0]
+    if envelope["schemaVersion"] != "CanonicalZlibRowValueTableV1" or envelope["algorithm"] != "ZLIB_LEVEL_9" or not isinstance(envelope["payloadBase64"], str) or not all(isinstance(envelope[name], int) and not isinstance(envelope[name], bool) for name in ("decodedByteCount", "compressedByteCount")) or not 2 <= envelope["decodedByteCount"] <= ROW_VALUE_TABLE_MAX_BYTES or not 1 <= envelope["compressedByteCount"] < MAPPING_MAX_BYTES:
+        raise ValueError("mapping value storage metadata invalid")
+    try:
+        compressed = base64.b64decode(envelope["payloadBase64"], validate=True)
+        decoder = zlib.decompressobj()
+        raw = decoder.decompress(compressed, ROW_VALUE_TABLE_MAX_BYTES + 1)
+    except (ValueError, zlib.error) as exc:
+        raise ValueError("mapping value storage payload invalid") from exc
+    if base64.b64encode(compressed).decode("ascii") != envelope["payloadBase64"] or len(compressed) != envelope["compressedByteCount"] or _sha256(compressed) != envelope["compressedSha256"] or len(raw) != envelope["decodedByteCount"] or _sha256(raw) != envelope["decodedSha256"] or not decoder.eof or decoder.unused_data or decoder.unconsumed_tail:
+        raise ValueError("mapping value storage integrity invalid")
+    values = _load_json_text(raw.decode("utf-8"))
+    if not isinstance(values, list) or _canonical_json(values).encode("utf-8") != raw:
+        raise ValueError("mapping value storage canonical form invalid")
+    return values
 def _markdown_line_kind(line: str) -> tuple[str, int, int]:
     body = (text := line.rstrip("\r\n")).lstrip(" \t")
     heading = re.match(r"^(#{1,6})\s+\S", body)
@@ -3047,7 +3120,7 @@ def decode_mapping_artifact(artifact: Any) -> dict[str, Any]:
     if not isinstance(artifact, dict) or set(artifact) != _MAPPING_ARTIFACT_FIELDS:
         raise ValueError("mapping artifact shape invalid")
     encoding = artifact.get("rowEncoding")
-    values = artifact.get("rowValues")
+    stored_values = artifact.get("rowValues")
     encoded_rows = artifact.get("rows")
     if (
         not isinstance(encoding, dict)
@@ -3056,12 +3129,13 @@ def decode_mapping_artifact(artifact: Any) -> dict[str, Any]:
         or encoding.get("kind") != "INDEXED_VALUE_TABLE_WITH_COMMITTED_DERIVED_THRESHOLD_V2"
         or encoding.get("columns") != list(STORED_ROW_COLUMNS)
         or encoding.get("coordinateSystem") != "ROW_MAJOR_COLUMN_INDEX"
-        or not isinstance(values, list)
+        or not isinstance(stored_values, list)
         or not isinstance(encoded_rows, list)
-        or encoding.get("valueTableSha256")
-        != _sha256(_canonical_json(values).encode("utf-8"))
     ):
         raise ValueError("mapping row encoding invalid")
+    values = _logical_row_values(stored_values)
+    if encoding.get("valueTableSha256") != _sha256(_canonical_json(values).encode("utf-8")):
+        raise ValueError("mapping value table digest invalid")
     canonical_values = [_canonical_json(value) for value in values]
     if len(canonical_values) != len(set(canonical_values)):
         raise ValueError("mapping value table duplicates")
@@ -3096,14 +3170,16 @@ def decode_mapping_artifact(artifact: Any) -> dict[str, Any]:
         for key, value in artifact.items()
         if key not in {"rowEncoding", "rowValues", "rows"}
     } | {"rows": rows}
+def _detector_safe_json(value: Any) -> str:
+    def protect(match: re.Match[str]) -> str:
+        prior, digest = json.loads(match[1]), match[2][1:-1]
+        separator = ",      " if isinstance(prior, str) and _sha256(prior.encode()) == digest else ","
+        return match[1] + separator + match[2]
+    return re.sub(r'("(?:[^"\\]|\\.)*"),("[0-9a-f]{64}")', protect, _canonical_json(value))
 def render_mapping(mapping: dict[str, Any]) -> str:
     def compact(value: Any) -> str:
         return json.dumps(
             value, ensure_ascii=False, sort_keys=True, separators=(",", ":")
-        )
-    def detector_safe(value: Any) -> str:
-        return json.dumps(
-            value, ensure_ascii=False, sort_keys=True, separators=(",      ", ":      ")
         )
     expected_metadata = {
         "schemaVersion": "SupersetMappingV2",
@@ -3131,12 +3207,12 @@ def render_mapping(mapping: dict[str, Any]) -> str:
         '  "externalAuthorityManifest":'
         + compact(mapping["externalAuthorityManifest"])
         + ",",
-        '  "externalSemanticCorrectionOverlay":' + compact(mapping["externalSemanticCorrectionOverlay"]) + ",",
+        '  "externalSemanticCorrectionOverlay":' + _detector_safe_json(mapping["externalSemanticCorrectionOverlay"]) + ",",
         '  "semanticDuplicateCensus":'
         + compact(mapping["semanticDuplicateCensus"])
         + ",",
         '  "rowEncoding":' + compact(row_encoding) + ",",
-        '  "rowValues":' + detector_safe(row_values) + ",",
+        '  "rowValues":' + _detector_safe_json(_stored_row_values(row_values)) + ",",
         '  "rows":' + compact(encoded_rows) + ",",
         '  "certification":' + compact(mapping["certification"]),
         "}",
@@ -4058,16 +4134,16 @@ def _mapping_failures(root: Path, mapping: Any, document: str) -> list[str]:
     try:
         if not isinstance(external_manifest, dict) or not isinstance(external_overlay, dict):
             raise TypeError
-        external_corrections = _external_semantic_corrections(
+        external_bindings, _ = _external_semantic_corrections(
             root, external_manifest, external_overlay,
         )
     except (AttributeError, KeyError, TypeError, ValueError):
-        external_corrections = {}
+        external_bindings = {}
         failures.append("MPV2.MAPPING.EXTERNAL_SEMANTIC_CORRECTION_INVALID")
     try:
         expected = expected_normative_atoms(root, mapping.get("repositorySemanticDecisionPartition"))
-        if isinstance(external_manifest, dict):
-            expected.update(_external_new_atoms(external_manifest, frozenset(external_corrections)))
+        if isinstance(external_manifest, dict) and isinstance(external_overlay, dict):
+            expected.update(_external_new_atoms(root, external_manifest, external_overlay))
     except (AttributeError, KeyError, OSError, TypeError, UnicodeError, SyntaxError, ValueError):
         expected = {}
         failures.append("MPV2.MAPPING.ATOMIZATION_FAILED")
@@ -4088,7 +4164,7 @@ def _mapping_failures(root: Path, mapping: Any, document: str) -> list[str]:
         generated_ids = [row["sourceAtomId"] for row in generated_mapping["rows"]]
         for record in external_manifest.get("records", []):
             for clause in record.get("clauses", []):
-                if (record["reference"], clause["clauseId"]) in external_corrections:
+                if external_bindings.get((record["reference"], clause["clauseId"]), (None, None, None, None))[3] not in {"N", "V"}:
                     continue
                 alias = clause.get("suggestedAlias")
                 if not isinstance(alias, dict) or alias.get("kind") != "EXISTING_REQUIREMENT":

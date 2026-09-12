@@ -18,9 +18,16 @@ mapping, approve exact bytes, supersede V1, or activate an implementation route.
 - The explicit governing-context partition contains 985 parent decisions,
   12,942 relations, and 7,723 unique child decisions and is bound by SHA-256
   `9939476b97f156ccdbc9585b7ee24b0dbfee43fe11561ee0fe365ff63982fcac`.
-- The external correction overlay excludes 185 independently reproduced
-  nonnormative clauses. The remaining 11,713 externally classified normative
-  clauses still require the exhaustive independent semantic review below.
+- The non-activating exhaustive overlay reviews 50,793 physical decisions
+  (50,748 inventoried candidates plus 45 literal-escape recoveries) across 605
+  sources: 422 issue/comment sources and 183 pull-request bodies. It binds all
+  11,898 legacy clauses plus 2,080 recovered normative atoms, classifies 13,397
+  external normative requirements, and emits 13,382 external rows because 15
+  exact aliases resolve to existing rows. Together with 18,016 repository/owner
+  rows, the mapping contains 31,398 rows and zero unreviewed candidates; all
+  34,872 pull-request-body candidates are `EVIDENCE_ONLY`.
+- Its receipt is `PASS_REPLACEMENT_READY_PENDING_INTEGRATED_FRESH_CONTEXT_REVIEW`;
+  this review surface and V1 therefore remain pending and active respectively.
 - Ten records formerly typed through GitHub's issue wrapper are now typed as
   pull requests. Their attestation compares the exact frozen legacy manifest
   with the corrected manifest, permits reuse only of `EVIDENCE_ONLY` records
@@ -55,15 +62,15 @@ The reviewer must use a fresh context and report `PASS` or `FAIL` for each:
 6. New Cut 5 means only owner personal Digital Twin; historical enterprise
    Cut 5 maps only to Cut 6 and requires migration validation.
 7. V2 remains a non-activating proposal and V1 remains effective.
-8. Independently retrieve and hash-verify all 605 typed external records,
-   reproduce clause-level precedence without treating open/closed state as
-   authority, and prove that each normative clause has a mapped atom or a
-   globally unique exact focus-and-context alias. Ambiguous/fuzzy aliases,
-   unclassified clauses, and `PENDING_INDEPENDENT_CLASSIFICATION` cannot pass.
-9. Compare the final document against non-activating external-classification
-   input `746e23fcd200f25e1fcd91ef4dd39b59abc6e34ea00b28db7dee667da81db75f`.
-   Attest that no change invalidates a governing-context decision, or require
-   exact replay and reissuance of every affected decision and digest.
+8. Hash-verify the restricted artifact descriptors and all 605 typed records;
+   independently validate 11,898 legacy bindings, 2,080 recovered atoms, 185
+   precedence reconciliations, 15 exact aliases, zero unreviewed units, the
+   `A=4,419/B=4,623/C=4,355` partition, and the `5,983 current/7,414 superseded`
+   effects without treating open/closed state as authority.
+9. Compare the final document and exhaustive receipt against non-activating
+   external-classification input `746e23fcd200f25e1fcd91ef4dd39b59abc6e34ea00b28db7dee667da81db75f`.
+   Ambiguous/fuzzy aliases, unclassified clauses, changed restricted references,
+   or an invalidated governing-context decision require exact replay and reissue.
 
 Any blocker keeps this review `FAIL` or pending. The external receipt binds the
 final head/tree, all candidate hashes, reviewer identity/time, commands,

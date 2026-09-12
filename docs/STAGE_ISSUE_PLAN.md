@@ -3062,10 +3062,13 @@ hard-coded-value inventory.
 
 ## Issue #521 — Master Program V2 candidate
 
-Branch `phase-1-closure-process-521-master-program-v2` starts at exact main
-`b6b0c05c7227428ff0841361f3970b0b2c40aa86`, owns the 27 preflight paths, and
-is capped at 8,500 charged lines under owner correction checkpoints `5574559059`,
-`5587499372`, and `5604091052`; their exact hashes are bound by the preflight.
+Branch `phase-1-closure-process-521-master-program-v2` preserves
+`b6b0c05c7227428ff0841361f3970b0b2c40aa86` as immutable source/audit base and
+measures its exact 27 paths and 8,500 charged-line cap from accepted integration
+base `77661700e1019e7e73894a928e4e6aef774c5e75`. Owner checkpoint `5645038993`
+authorizes the exhaustive semantic correction; Gitleaks-only checkpoints
+`5574559059`, `5587499372`, and `5604091052` retain their narrower authority.
+Their exact body hashes are bound by the preflight.
 Its first commit is preflight-only and its second freezes the original RED tests;
 the correction also freezes RED before GREEN. G1 is non-activating governance
 only; V1 remains
