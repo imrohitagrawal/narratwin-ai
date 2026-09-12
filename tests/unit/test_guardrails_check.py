@@ -4588,3 +4588,44 @@ def test_issue280_pr_a_requires_public_safe_non_goals() -> None:
     )
 
     assert guardrails.ISSUE_280_PUBLIC_SAFE_BOUNDARY_FAILURE in failures
+
+
+@pytest.mark.parametrize("path", guardrails.MASTER_PROGRAM_V2_ARTIFACTS)
+def test_master_program_v2_changes_invoke_structural_validator(monkeypatch: Any, path: str) -> None:
+    observed: list[tuple[Path, bool]] = []
+    def validate_v2(root: Path, certification: bool) -> list[str]:
+        observed.append((root, certification))
+        return ["FAULT"]
+
+    monkeypatch.setattr(guardrails, "validate_master_program_v2", validate_v2)
+    before = list(guardrails.failures)
+    try:
+        guardrails.check_master_program_v2([path])
+        assert observed == [(guardrails.ROOT, False)]
+        assert guardrails.failures[-1] == "Master Program V2 finding: FAULT"
+    finally:
+        guardrails.failures[:] = before
+
+
+def test_unrelated_change_does_not_invoke_master_program_v2_validator(monkeypatch: Any) -> None:
+    monkeypatch.setattr(
+        guardrails,
+        "validate_master_program_v2",
+        lambda root, certification: pytest.fail("unexpected V2 validation"),
+    )
+    guardrails.check_master_program_v2(["README.md"])
+
+
+def test_llm_guard_does_not_treat_fullmatch_as_an_llm_token(monkeypatch: Any) -> None:
+    before = list(guardrails.failures)
+    monkeypatch.setattr(guardrails, "iter_text_files", lambda: [Path("fixture.py")])
+    monkeypatch.setattr(guardrails, "relative", lambda path: str(path))
+    try:
+        monkeypatch.setattr(guardrails, "read_text", lambda path: "re.fullmatch('script')")
+        guardrails.check_llm_tracing_and_citations()
+        assert guardrails.failures == before
+        monkeypatch.setattr(guardrails, "read_text", lambda path: "llm_client.generate_script()")
+        guardrails.check_llm_tracing_and_citations()
+        assert len(guardrails.failures) == len(before) + 2
+    finally:
+        guardrails.failures[:] = before

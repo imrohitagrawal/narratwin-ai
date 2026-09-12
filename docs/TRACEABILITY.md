@@ -828,6 +828,15 @@ remain separate gates.
 | Compare costs honestly | 726.691502-second Plan A totals; Plan B 90/180-second and 25/50/100-percent scenarios; Flow credits | Estimates exclude retries, failures, subscriptions, labor, storage and tax and grant no spend authority |
 | Preserve plug-and-play architecture | `AvatarProvider`, future `BrollProvider`, `VideoCompositor`, capability manifest and validated runtime policy | Provider switching applies only to implemented/reviewed adapters; domain, grounding, safety and acceptance remain NarraTwin-owned |
 
+## Issue #521 Master Program V2 traceability
+
+| Requirement | Candidate evidence | Preserved boundary |
+|---|---|---|
+| No silent requirement loss | Exhaustive overlay/receipt: zero unreviewed, 18,016 repository/owner + 13,382 external = 31,398 rows, 15 exact aliases, and hash-bound independent validator passing 11 mutations | Structural or exhaustive artifacts cannot self-certify the pending integrated fresh-context review |
+| Safe six-cut taxonomy | `CutTaxonomyV2` and ADR 0080 | Owner Digital Twin is Cut 5; legacy enterprise evidence cannot cross or bypass Cut 6 migration |
+| Prototype before code | PF-0–PF-7 and later G2 | G1 creates no receipt, runtime, egress, or spend authority |
+| Preserve current authority | Proposal state `PROPOSED`, authority `NONE`, V1 hash and separate transition | Issue/file/test/CI/self-review cannot supersede V1 |
+
 ## Issue #523 test-transport dependency-security traceability
 
 | Requirement | Canonical evidence | Preserved boundary |

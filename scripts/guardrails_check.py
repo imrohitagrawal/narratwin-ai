@@ -26,6 +26,8 @@ if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from scripts.governance_preflight_repository import validate_governance_preflight_repository
+from scripts.quality.issue521_master_program_v2 import REQUIRED_ARTIFACTS as MASTER_PROGRAM_V2_ARTIFACTS
+from scripts.quality.issue521_master_program_v2 import validate_repository as validate_master_program_v2
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -2466,7 +2468,7 @@ def check_llm_tracing_and_citations() -> None:
         if rel == "scripts/guardrails_check.py" or rel.startswith("scripts/quality/"):
             continue
         text = read_text(path).lower()
-        if any(term in text for term in ["llm", "generate_script", "walkthrough script", "generated_script"]):
+        if re.search(r"(?<![a-z0-9])llm(?![a-z0-9])|generate_script|walkthrough script|generated_script", text):
             if "trace" not in text and "run_id" not in text:
                 failures.append(f"{rel} appears to generate/use LLM output without trace/run_id metadata.")
             if any(term in text for term in ["script", "walkthrough", "answer"]):
@@ -2521,6 +2523,15 @@ def check_governance_preflight_repository() -> None:
     failures.extend(f"Governance preflight finding: {finding.code}" for finding in findings)
 
 
+def check_master_program_v2(changes: list[str]) -> None:
+    if not any(path in MASTER_PROGRAM_V2_ARTIFACTS for path in changes):
+        return
+    failures.extend(
+        f"Master Program V2 finding: {finding}"
+        for finding in validate_master_program_v2(ROOT, certification=False)
+    )
+
+
 def issue435_route_findings() -> list[str]:
     head_ref = os.environ.get("GITHUB_HEAD_REF", "")
     push_ref = os.environ.get("GITHUB_REF_NAME", "") if os.environ.get("GITHUB_EVENT_NAME", "") == "push" else ""
@@ -2566,6 +2577,7 @@ def main() -> int:
     check_mock_local_defaults()
     check_traceability_rules(changes)
     check_status_tracking_rules(changes)
+    check_master_program_v2(changes)
     check_llm_tracing_and_citations()
     check_eval_results_blocking()
     check_security_results_blocking()

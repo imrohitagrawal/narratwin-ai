@@ -411,6 +411,13 @@ Source: [Docker Official Node image](https://hub.docker.com/_/node) and
 This notice does not authorize redistribution beyond applicable licenses,
 deployment, public availability, release, or production use.
 
+## Issue #521 governance-only candidate
+
+Issue #521 adds no dependency, model, API activation, media, or dataset.
+Provider/tool names in V2 are inherited research candidates, not selections,
+account authority, rights approval, or license conclusions. Refresh exact facts
+and notices in the later qualification/implementation issue that activates one.
+
 ## Issue #523 test-transport security refresh
 
 The development/test graph resolves official PyPI `httpx2` 2.12.0 and its

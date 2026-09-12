@@ -150,3 +150,81 @@ def test_other_branch_retains_frozen_legacy_scope(monkeypatch: Any) -> None:
     monkeypatch.setattr(runner.legacy, "run_preserved_contracts", lambda: 31)
 
     assert runner.run_preserved_contracts() == 31
+
+
+def test_issue521_runs_v2_validator_and_preserves_frozen_contracts(monkeypatch: Any) -> None:
+    calls: list[str] = []
+    checker = SimpleNamespace(
+        check_branch=lambda failures: calls.append("branch"),
+        check_required_files=lambda failures: calls.append("required"),
+        check_changed_files=lambda failures: calls.append("legacy-scope"),
+        check_final_review_baseline=lambda failures: calls.append("preserved"),
+    )
+    monkeypatch.setattr(runner, "current_branch", lambda root: runner.ISSUE521_BRANCH)
+    monkeypatch.setattr(runner, "_head", lambda: "a" * 40)
+    monkeypatch.setattr(runner, "_issue521_scope", lambda: (frozenset({"one"}), []))
+    monkeypatch.setattr(runner, "_changed_paths_since", lambda base, head: frozenset({"one"}))
+    monkeypatch.setattr(runner, "_charged_lines", lambda base, head: 1)
+    monkeypatch.setattr(runner, "validate_governance_preflight_repository", lambda *args, **kwargs: [])
+    monkeypatch.setattr(runner.legacy, "_load_checker", lambda: checker)
+    monkeypatch.setattr(runner.legacy, "legacy_parity_failures", lambda value: [])
+    monkeypatch.setattr(runner.legacy, "PRESERVED_CHECKS", ("check_final_review_baseline",))
+    monkeypatch.setattr(runner.legacy, "_print_result", lambda failures: 1 if failures else 0)
+    def validate_v2(root: Any, certification: bool) -> list[str]:
+        calls.append("v2")
+        return []
+
+    monkeypatch.setattr("scripts.quality.issue521_master_program_v2.validate_repository", validate_v2)
+
+    assert runner.run_preserved_contracts() == 0
+    assert calls == ["v2", "branch", "required", "preserved"]
+
+
+def test_issue521_scope_binds_owner_amended_twenty_seven_paths() -> None:
+    paths, failures = runner._issue521_scope()
+
+    assert failures == []
+    assert len(paths) == 27
+    assert {
+        ".gitleaksignore",
+        "scripts/ci/check_gitleaks_regression.py",
+        "tests/unit/test_gitleaks_regression.py",
+    }.issubset(paths)
+
+
+def test_issue521_preserves_audit_base_and_uses_accepted_integration_base() -> None:
+    from scripts.quality import issue521_master_program_v2 as v2
+
+    assert (v2.BASE_SHA, runner.ISSUE521_INTEGRATION_BASE) == (
+        "b6b0c05c7227428ff0841361f3970b0b2c40aa86", "77661700e1019e7e73894a928e4e6aef774c5e75",
+    )
+
+
+def test_issue521_extra_path_fails_before_validator(monkeypatch: Any) -> None:
+    monkeypatch.setattr(runner, "current_branch", lambda root: runner.ISSUE521_BRANCH)
+    monkeypatch.setattr(runner, "_head", lambda: "a" * 40)
+    monkeypatch.setattr(runner, "_issue521_scope", lambda: (frozenset({"one"}), []))
+    monkeypatch.setattr(runner, "_changed_paths_since", lambda base, head: frozenset({"one", "extra"}))
+    monkeypatch.setattr(runner, "_charged_lines", lambda base, head: 1)
+    monkeypatch.setattr(runner, "validate_governance_preflight_repository", lambda *args, **kwargs: [])
+    monkeypatch.setattr(runner.legacy, "_print_result", lambda failures: 1 if failures else 0)
+    monkeypatch.setattr(runner.legacy, "_load_checker", lambda: (_ for _ in ()).throw(AssertionError("must not run")))
+
+    assert runner.run_preserved_contracts() == 1
+
+
+def test_issue521_validator_failure_blocks_preserved_checks(monkeypatch: Any) -> None:
+    monkeypatch.setattr(runner, "current_branch", lambda root: runner.ISSUE521_BRANCH)
+    monkeypatch.setattr(runner, "_head", lambda: "a" * 40)
+    monkeypatch.setattr(runner, "_issue521_scope", lambda: (frozenset({"one"}), []))
+    monkeypatch.setattr(runner, "_changed_paths_since", lambda base, head: frozenset({"one"}))
+    monkeypatch.setattr(runner, "_charged_lines", lambda base, head: 1)
+    monkeypatch.setattr(runner, "validate_governance_preflight_repository", lambda *args, **kwargs: [])
+    monkeypatch.setattr(
+        "scripts.quality.issue521_master_program_v2.validate_repository",
+        lambda root, certification: ["MPV2.TEST.BLOCKED"],
+    )
+    monkeypatch.setattr(runner.legacy, "_print_result", lambda failures: 1 if failures else 0)
+    monkeypatch.setattr(runner.legacy, "_load_checker", lambda: (_ for _ in ()).throw(AssertionError("must not run")))
+
+    assert runner.run_preserved_contracts() == 1

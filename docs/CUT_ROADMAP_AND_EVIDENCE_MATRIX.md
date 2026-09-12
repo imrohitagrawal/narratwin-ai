@@ -139,3 +139,11 @@ lineage. Passing supports only controlled exact-artifact acceptance.
 Stage 1 Issue #16 and a later Lane A route still block product/provider/media
 implementation. No provider selection, spend, render, public availability or
 production readiness follows from the Issue #452 contract alone.
+
+## Issue #521 six-cut candidate migration
+
+Master Program V2 is proposed and non-activating. This five-cut roadmap remains
+current until review, exact-byte owner approval, merge, and separate activation.
+The candidate renumbers enterprise Cut 5 to Cut 6 with alias
+`LegacyCut5Enterprise` and makes owner Digital Twin new Cut 5. Old Cut 5
+evidence cannot qualify new Cut 5 or unvalidated Cut 6.

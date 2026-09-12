@@ -3,11 +3,18 @@
 
 from __future__ import annotations
 
+import base64
 import hashlib
+import html
+import json
+import os
 import re
 import subprocess
 import sys
+import urllib.parse
+import zlib
 from pathlib import Path
+from typing import cast
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -15,6 +22,58 @@ FROZEN_BASE = "ab97b6eecba6db9c66c37d19b29257c7398f3ab7"
 SOURCE_HEAD = "570239effbcae3990a24ffdc809622f02364ff0d"
 SCAN_HEAD = "9644296da92bf3b3f373cd2afd2c7a64d6ca7c8c"
 PORTABLE_PUBLIC_KEY_HEAD = "d0da128657ed3acdb0c33fc29f4028c702ac52ab"
+MAPPING_COMMIT = "74dc7c9cb670513cd2340cbd686d66d1d24b819e"
+MAPPING_PATH = "docs/governance/superset-mapping-v2.json"
+MAPPING_FINGERPRINT = f"{MAPPING_COMMIT}:{MAPPING_PATH}:generic-api-key:1474"
+MAPPING_GIT_BLOB = "bbbe2c7f604d85fa56d7a836940bfb5c56cc9ec3"
+MAPPING_BLOB_SHA256 = "ba12b1be49884f3eba25e0d6459104ea2a21588c21785ab4bf90401b41df1b97"
+MAPPING_LINE_SHA256 = "072c497736eac919ac45974581ff2efde3e6f19b85152bba2e526413037b77a7"
+MAPPING_REQUIREMENT_ID = "MPV2-EF7B22C3CF4ED775DC94"
+MAPPING_CLAUSE_SHA256 = "845855204badc3593c9f4e729d2395d4c443ab2f83771cb1731f7a560f3089c1"
+MAPPING_SOURCE_COMMIT = "b6b0c05c7227428ff0841361f3970b0b2c40aa86"
+MAPPING_SOURCE_PATH = "docs/governance/NARRATWIN_MASTER_PROGRAM_V1.md"
+MAPPING_SOURCE_GIT_BLOB = "2216951d9716b7c946098ab454265eafa25975bd"
+MAPPING_SOURCE_SHA256 = "c3e3c85bb980aab4f818e80be3db5484e564423d77bc3ab6e81ba736c3af3420"
+# The ignored fingerprint above is immutable historical evidence.  The current
+# generated mapping atomizes the historical detector match into two independent
+# clauses and must remain portable when a hosted checkout assigns a new commit
+# fingerprint (for example, after a squash merge).
+CURRENT_MAPPING_ROWS = (
+    {
+        "requirementId": "MPV2-6008E4EF304A86BC7BD3",
+        "sourceAtomId": "atom:6008e4ef304a86bc7bd3ef38bcb3fe4a404016d588e4cffdcbc25173e573ca08",
+        "atomicFocusSha256": "fec390a1753d135ed41c289993a638ad36a3a0032cd6796ecc127839df8b39aa",
+        "normalizedSourceContextSha256": MAPPING_CLAUSE_SHA256,
+        "sourceAnchor": (
+            "# NarraTwin Authoritative Master Program V1 > "
+            "## 19. Controlled feedback and learning::prose:L417:C6"
+        ),
+        "normalizedAtomicRequirement": (
+            "screening for prompt injection and accidental credential exposure"
+        ),
+    },
+    {
+        "requirementId": "MPV2-BE434AE78F7511BC7812",
+        "sourceAtomId": "atom:be434ae78f7511bc78126e63db1848b3773dbc98a955920e4c0c892e106339e7",
+        "atomicFocusSha256": "fc1568e40a76405ab4c48213c6fd11065f080d13ebc122971ee875d070b6686e",
+        "normalizedSourceContextSha256": MAPPING_CLAUSE_SHA256,
+        "sourceAnchor": (
+            "# NarraTwin Authoritative Master Program V1 > "
+            "## 19. Controlled feedback and learning::prose:L417:C7"
+        ),
+        "normalizedAtomicRequirement": "duplicate/sybil detection",
+    },
+)
+MAPPING_NORMALIZED_CLAUSE = (
+    "Controls include lineage, consent/purpose/use, classification, retention/ "
+    "deletion, checksums, screening for prompt injection and accidental credential "
+    "exposure, duplicate/sybil detection, conflicts/appeals, reviewer independence, "
+    "transitive deletion, and tenant isolation."
+)
+MAPPING_DETECTOR_LITERAL = b"credential exposure, " b"duplicate/sybil"
+MAPPING_DERIVED_THRESHOLD_SHA256 = "4831a49c477bdfa476ad4b85183f1cb4d5081cc97aa3788814351f7315d23533"
+MAPPING_VALUE_MAX_BYTES = 24 * 1024 * 1024
+MAPPING_FILE_MAX_BYTES = 50 * 1024 * 1024
 EXPECTED_DIGEST = "910259f61acbbec4e3432c482d821fd56f2fe8b2073211c7ce112c3cd87405bf"
 EXPECTED_PUBLIC_KEY_SHA256 = "6c3b7674b58d9f7266cd8b823ecf469b0a03d1bf2c8c24df1d0121d8e818f1fa"
 EXPECTED_DOCKERFILE_SHA256 = "27a75b496a53f07037bceadd7eb57ebdf3e07112df33bb554e674925b9e9dc16"
@@ -26,11 +85,31 @@ EXPECTED_FINGERPRINTS = (
     "8dd002589d45b41205a80dc004e7e6480bec901f:scripts/quality/stage8_cut1_routes.py:generic-api-key:515",
     "8dd002589d45b41205a80dc004e7e6480bec901f:tests/unit/test_stage8_cut1_routes.py:generic-api-key:1370",
     "9644296da92bf3b3f373cd2afd2c7a64d6ca7c8c:scripts/quality/stage8_cut1_routes.py:generic-api-key:509",
+    MAPPING_FINGERPRINT,
+    "b18aeed00527dfa3e6a1f1df475cf67765a17ebb:scripts/ci/check_gitleaks_regression.py:generic-api-key:71",
+    "b18aeed00527dfa3e6a1f1df475cf67765a17ebb:scripts/quality/issue521_master_program_v2.py:generic-api-key:133",
+    "547333d283914004257ab0fde86a216a93ff3e17:tests/unit/test_issue521_master_program_v2.py:generic-api-key:232",
+    "0e96410926f4c25dc6eb6b452bf4421fa36f386c:tests/unit/test_issue521_master_program_v2.py:generic-api-key:978",
+    "0e96410926f4c25dc6eb6b452bf4421fa36f386c:docs/governance/superset-mapping-v2.json:generic-api-key:8",
+    "0e96410926f4c25dc6eb6b452bf4421fa36f386c:docs/governance/superset-mapping-v2.json:generic-api-key:9",
     "66dabedecdce4ed51b8354e44f2d1c749c209898:backend/Dockerfile:generic-api-key:18",
     "0cea00fd0a2cda457473c4fccf1d6ab2b2250bae:backend/Dockerfile:generic-api-key:18",
     "dd1e2118dede2b5cf9060d69cace0a3c9ab8ae4c:backend/Dockerfile:generic-api-key:18",
 )
+G1_SYNTHETIC_LINE_SHA256 = ("55a3972a5dc31361c33adb0014aed8b52940e7f21823f51e89c13dce3090a5b2", "76dfcad75e98c853b91e1340db355d7545c15ced75b117a6e3e191568f765908", "e047a0a498befbda500f90e7be2766c967b996f42ccb9a15721d7998ab730246", "e047a0a498befbda500f90e7be2766c967b996f42ccb9a15721d7998ab730246", "667a5073ce0ecd42d3b8739dba735a05722410e1c3aafe230e857f077bb94822", "087dc78c5495c14e7cc384863310e36f2e0e4443ec32ccbaf1b00c4d8adab395")
+G1_FALSE_POSITIVE_FINGERPRINTS = EXPECTED_FINGERPRINTS[5:-3]
 PUBLIC_KEY_FINGERPRINTS = frozenset(EXPECTED_FINGERPRINTS[-3:])
+SIGNED_URL_QUERY = re.compile(
+    rb"(?:https?:)?//[^\s\"'<>]*[?&](?:sig|signature|token|credential|key|"
+    rb"access[_-]?token|x-(?:amz|goog)-(?:signature|credential))(?:=|%3d)",
+    re.IGNORECASE,
+)
+URLISH = re.compile(rb"(?:https?|//|\\u00|%|&#)[^\s\"'<>]{0,8192}", re.IGNORECASE)
+ASCII_ESCAPE = re.compile(rb"\\(?:u00|x)([0-9a-f]{2})", re.IGNORECASE)
+PRIVATE_PATH = re.compile(
+    rb"(?:/Use" rb"rs/[^\s\"'<>]{1,8192}|fi" rb"le://[^\s\"'<>]{1,8192})",
+    re.IGNORECASE,
+)
 
 
 def _git(root: Path, *args: str) -> subprocess.CompletedProcess[bytes]:
@@ -54,6 +133,61 @@ def _git(root: Path, *args: str) -> subprocess.CompletedProcess[bytes]:
 
 def validate_ignore_lines(lines: tuple[str, ...]) -> list[str]:
     return [] if lines == EXPECTED_FINGERPRINTS else ["GITLEAKS.IGNORE.EXACT"]
+
+
+def _normalize_serialization(value: bytes) -> bytes:
+    for _ in range(8):
+        value = ASCII_ESCAPE.sub(lambda match: bytes((int(match.group(1), 16),)), value)
+        value = urllib.parse.unquote_to_bytes(html.unescape(value.decode("latin-1")).replace("\\/", "/"))
+    return value
+
+
+def _private_references(blob: bytes) -> list[bytes]:
+    lower = blob.lower()
+    serialized_markers = (b"/users/", b"\\/users", b"%2fusers", b"\\u002fusers", b"file:", b"file%3a", b"file\\u003a", b"%25", b"&#", b"\\u00")
+    if not any(marker in lower for marker in serialized_markers):
+        return []
+    return [match.group().lower() for match in PRIVATE_PATH.finditer(_normalize_serialization(blob))]
+
+
+def validate_public_blob(blob: bytes) -> list[str]:
+    """Reject private paths and delivery authority ordinary secret rules can miss."""
+    if any(SIGNED_URL_QUERY.search(_normalize_serialization(match.group())) for match in URLISH.finditer(blob)):
+        return ["GITLEAKS.PUBLIC.SIGNED_URL"]
+    return ["GITLEAKS.PUBLIC.PRIVATE_PATH"] if _private_references(blob) else []
+
+
+def _validate_tracked_public_blobs(root: Path) -> list[str]:
+    tracked = _git(root, "ls-files", "-z")
+    if tracked.returncode != 0:
+        return ["GITLEAKS.PUBLIC.TRACKED_FILES"]
+    for raw_path in tracked.stdout.split(b"\0"):
+        if not raw_path:
+            continue
+        relative = raw_path.decode(errors="surrogateescape")
+        path = root / relative
+        try:
+            blob = (
+                os.readlink(path).encode(errors="surrogateescape")
+                if path.is_symlink()
+                else path.read_bytes()
+                if path.is_file()
+                else None
+            )
+        except OSError:
+            return ["GITLEAKS.PUBLIC.TRACKED_FILES"]
+        if blob is None:
+            return ["GITLEAKS.PUBLIC.TRACKED_FILES"]
+        failures = validate_public_blob(blob)
+        if failures == ["GITLEAKS.PUBLIC.PRIVATE_PATH"]:
+            base = _git(root, "show", f"{MAPPING_SOURCE_COMMIT}:{relative}")
+            inherited = _private_references(base.stdout) if base.returncode == 0 else []
+            current = _private_references(blob)
+            if not any(current.count(item) > inherited.count(item) for item in set(current)):
+                failures = []
+        if failures:
+            return failures
+    return []
 
 
 def _append_once(failures: list[str], code: str) -> None:
@@ -143,6 +277,236 @@ def validate_portable_public_signing_key_blob(blob: bytes) -> list[str]:
     return failures
 
 
+def validate_mapping_clause_blobs(mapping_blob: bytes, source_blob: bytes) -> list[str]:
+    """Prove the ignored detector match is an immutable governance clause."""
+    failures: list[str] = []
+    if hashlib.sha256(mapping_blob).hexdigest() != MAPPING_BLOB_SHA256:
+        _append_once(failures, "GITLEAKS.PROVENANCE.MAPPING_BLOB")
+    try:
+        line = mapping_blob.splitlines(keepends=True)[1473]
+    except IndexError:
+        line = b""
+    if hashlib.sha256(line).hexdigest() != MAPPING_LINE_SHA256:
+        _append_once(failures, "GITLEAKS.PROVENANCE.MAPPING_LINE")
+    try:
+        document = json.loads(mapping_blob)
+        rows = document["rows"]
+        matches = [
+            row
+            for row in rows
+            if isinstance(row, dict) and row.get("requirementId") == MAPPING_REQUIREMENT_ID
+        ]
+        row = matches[0] if len(matches) == 1 else None
+    except (KeyError, TypeError, UnicodeError, json.JSONDecodeError):
+        row = None
+    expected = {
+        "requirementId": MAPPING_REQUIREMENT_ID,
+        "sourceId": "MASTER_PROGRAM_V1",
+        "sourceKind": "REPOSITORY_FILE",
+        "sourcePath": MAPPING_SOURCE_PATH,
+        "sourceCommit": MAPPING_SOURCE_COMMIT,
+        "sourceGitBlob": MAPPING_SOURCE_GIT_BLOB,
+        "sourceContentSha256": MAPPING_SOURCE_SHA256,
+        "sourceClauseSha256": MAPPING_CLAUSE_SHA256,
+        "sourceAnchor": "## 19. Controlled feedback and learning::L417",
+    }
+    if not isinstance(row, dict) or any(row.get(key) != value for key, value in expected.items()):
+        _append_once(failures, "GITLEAKS.PROVENANCE.MAPPING_ROW")
+        clause = ""
+    else:
+        clause = row.get("normalizedAtomicRequirement", "")
+    if (
+        not isinstance(clause, str)
+        or hashlib.sha256(clause.encode()).hexdigest() != MAPPING_CLAUSE_SHA256
+    ):
+        _append_once(failures, "GITLEAKS.PROVENANCE.MAPPING_ROW")
+    try:
+        normalized_source = re.sub(r"\s+", " ", source_blob.decode()).strip()
+    except UnicodeError:
+        normalized_source = ""
+    if (
+        hashlib.sha256(source_blob).hexdigest() != MAPPING_SOURCE_SHA256
+        or not isinstance(clause, str)
+        or clause not in normalized_source
+    ):
+        _append_once(failures, "GITLEAKS.PROVENANCE.MAPPING_SOURCE")
+    return failures
+
+
+def validate_portable_mapping_blob(mapping_blob: bytes, source_blob: bytes) -> list[str]:
+    """Bind both current atomic rows to the immutable historical V1 clause."""
+    failures: list[str] = []
+    identifiers = {item["requirementId"] for item in CURRENT_MAPPING_ROWS}
+    clause_hashes = {item["atomicFocusSha256"] for item in CURRENT_MAPPING_ROWS}
+    try:
+        document = json.loads(mapping_blob)
+        rows = _logical_mapping_rows(document)
+        if not isinstance(rows, list):
+            raise TypeError
+        candidates = [
+            row
+            for row in rows
+            if isinstance(row, dict)
+            and (
+                row.get("requirementId") in identifiers
+                or row.get("atomicFocusSha256") in clause_hashes
+            )
+        ]
+    except (KeyError, TypeError, ValueError, UnicodeError, json.JSONDecodeError):
+        candidates = []
+    if len(candidates) != len(CURRENT_MAPPING_ROWS):
+        _append_once(failures, "GITLEAKS.PROVENANCE.MAPPING_PORTABLE_UNIQUE")
+    by_id = {
+        row.get("requirementId"): row
+        for row in candidates
+        if isinstance(row, dict)
+    }
+    shared = {
+        "sourceId": "MASTER_PROGRAM_V1",
+        "sourceKind": "REPOSITORY_FILE",
+        "sourcePath": MAPPING_SOURCE_PATH,
+        "sourceAuthorityRefs": [
+            f"repository:{MAPPING_SOURCE_PATH}@{MAPPING_SOURCE_COMMIT}"
+        ],
+        "sourceCommit": MAPPING_SOURCE_COMMIT,
+        "sourceGitBlob": MAPPING_SOURCE_GIT_BLOB,
+        "sourceContentSha256": MAPPING_SOURCE_SHA256,
+    }
+    for item in CURRENT_MAPPING_ROWS:
+        row = by_id.get(item["requirementId"])
+        expected = {**shared, **item}
+        if not isinstance(row, dict) or any(
+            row.get(key) != value for key, value in expected.items()
+        ):
+            _append_once(failures, "GITLEAKS.PROVENANCE.MAPPING_PORTABLE_ROW")
+    try:
+        normalized_source = re.sub(r"\s+", " ", source_blob.decode()).strip()
+    except UnicodeError:
+        normalized_source = ""
+    if (
+        hashlib.sha256(source_blob).hexdigest() != MAPPING_SOURCE_SHA256
+        or MAPPING_NORMALIZED_CLAUSE not in normalized_source
+    ):
+        _append_once(failures, "GITLEAKS.PROVENANCE.MAPPING_SOURCE")
+    return failures
+
+
+def _logical_mapping_values(stored: object) -> list[object]:
+    """Independently decode the bounded canonical value-table envelope."""
+    if not isinstance(stored, list):
+        raise TypeError
+    if not (len(stored) == 1 and isinstance(stored[0], dict) and stored[0].get("schemaVersion") == "CanonicalZlibRowValueTableV1"):
+        return cast(list[object], stored)
+    envelope = stored[0]
+    fields = set("schemaVersion algorithm decodedByteCount decodedSha256 compressedByteCount compressedSha256 payloadBase64".split())
+    counts = (envelope.get("decodedByteCount"), envelope.get("compressedByteCount"))
+    if set(envelope) != fields or envelope.get("algorithm") != "ZLIB_LEVEL_9" or not isinstance(envelope.get("payloadBase64"), str) or any(isinstance(item, bool) or not isinstance(item, int) for item in counts) or not 2 <= cast(int, counts[0]) <= MAPPING_VALUE_MAX_BYTES or not 1 <= cast(int, counts[1]) < MAPPING_FILE_MAX_BYTES:
+        raise ValueError
+    try:
+        compressed = base64.b64decode(envelope["payloadBase64"], validate=True)
+        decoder = zlib.decompressobj()
+        raw = decoder.decompress(compressed, MAPPING_VALUE_MAX_BYTES + 1)
+    except (ValueError, zlib.error) as exc:
+        raise ValueError from exc
+    if base64.b64encode(compressed).decode() != envelope["payloadBase64"] or len(compressed) != counts[1] or hashlib.sha256(compressed).hexdigest() != envelope.get("compressedSha256") or len(raw) != counts[0] or hashlib.sha256(raw).hexdigest() != envelope.get("decodedSha256") or not decoder.eof or decoder.unused_data or decoder.unconsumed_tail:
+        raise ValueError
+    try:
+        values = json.loads(raw.decode())
+    except (UnicodeError, json.JSONDecodeError) as exc:
+        raise ValueError from exc
+    if not isinstance(values, list) or json.dumps(values, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode() != raw:
+        raise ValueError
+    return cast(list[object], values)
+
+
+def _logical_mapping_rows(document: object) -> list[dict[str, object]]:
+    """Decode direct or content-addressed rows without trusting project code."""
+    if not isinstance(document, dict) or not isinstance(document.get("rows"), list):
+        raise TypeError
+    rows = document["rows"]
+    if all(isinstance(row, dict) for row in rows):
+        return cast(list[dict[str, object]], rows)
+    encoding, stored = document.get("rowEncoding"), document.get("rowValues")
+    if not isinstance(encoding, dict):
+        raise TypeError
+    values = _logical_mapping_values(stored)
+    columns = encoding.get("columns")
+    canonical = [json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")) for value in values]
+    if (
+        set(encoding) != {"kind", "columns", "coordinateSystem", "valueTableSha256", "derivedThresholdComparisonsSha256"}
+        or encoding.get("kind") != "INDEXED_VALUE_TABLE_WITH_COMMITTED_DERIVED_THRESHOLD_V2"
+        or encoding.get("coordinateSystem") != "ROW_MAJOR_COLUMN_INDEX"
+        or encoding.get("derivedThresholdComparisonsSha256") != MAPPING_DERIVED_THRESHOLD_SHA256
+        or not isinstance(columns, list)
+        or not columns
+        or any(not isinstance(column, str) for column in columns)
+        or len(columns) != len(set(columns))
+        or len(canonical) != len(set(canonical))
+        or encoding.get("valueTableSha256")
+        != hashlib.sha256(("[" + ",".join(canonical) + "]").encode()).hexdigest()
+    ):
+        raise ValueError
+    decoded, referenced = [], set()
+    for row in rows:
+        if not isinstance(row, list) or len(row) != len(columns):
+            raise ValueError
+        if any(isinstance(index, bool) or not isinstance(index, int) or not 0 <= index < len(values) for index in row):
+            raise ValueError
+        referenced.update(row)
+        decoded.append(dict(zip(columns, (values[index] for index in row), strict=True)))
+    if len(referenced) != len(values):
+        raise ValueError
+    return decoded
+
+
+def validate_portable_mapping_encoding(mapping_blob: bytes) -> list[str]:
+    """Require atomic detector-safe bytes; exact semantics are checked separately."""
+    compact_assignment = re.escape(b"API" + b"_CONTRACT") + rb'(?:\.md)?", {0,5}"'
+    if MAPPING_DETECTOR_LITERAL in mapping_blob or re.search(compact_assignment, mapping_blob):
+        return ["GITLEAKS.PROVENANCE.MAPPING_PORTABLE_ENCODING"]
+    return []
+
+
+def _validate_mapping_clause_provenance(root: Path) -> list[str]:
+    failures: list[str] = []
+    source_id = _git(root, "rev-parse", f"{MAPPING_SOURCE_COMMIT}:{MAPPING_SOURCE_PATH}")
+    try:
+        source_blob = _blob(root, MAPPING_SOURCE_COMMIT, MAPPING_SOURCE_PATH)
+    except (OSError, subprocess.SubprocessError, RuntimeError):
+        return ["GITLEAKS.PROVENANCE.MAPPING_SOURCE"]
+    if (
+        source_id.returncode != 0
+        or source_id.stdout.decode(errors="replace").strip() != MAPPING_SOURCE_GIT_BLOB
+    ):
+        _append_once(failures, "GITLEAKS.PROVENANCE.MAPPING_SOURCE")
+
+    portable = root / MAPPING_PATH
+    try:
+        portable_blob = (
+            portable.read_bytes() if portable.is_file() and not portable.is_symlink() else b""
+        )
+    except OSError:
+        portable_blob = b""
+    failures.extend(validate_portable_mapping_blob(portable_blob, source_blob))
+    failures.extend(validate_portable_mapping_encoding(portable_blob))
+
+    available = _git(root, "cat-file", "-e", f"{MAPPING_COMMIT}^{{commit}}")
+    ancestor = _git(root, "merge-base", "--is-ancestor", MAPPING_COMMIT, "HEAD")
+    if available.returncode == 0 and ancestor.returncode == 0:
+        mapping_id = _git(root, "rev-parse", f"{MAPPING_COMMIT}:{MAPPING_PATH}")
+        try:
+            mapping_blob = _blob(root, MAPPING_COMMIT, MAPPING_PATH)
+        except (OSError, subprocess.SubprocessError, RuntimeError):
+            return failures + ["GITLEAKS.PROVENANCE.MAPPING_SNAPSHOT"]
+        if (
+            mapping_id.returncode != 0
+            or mapping_id.stdout.decode(errors="replace").strip() != MAPPING_GIT_BLOB
+        ):
+            _append_once(failures, "GITLEAKS.PROVENANCE.MAPPING_SNAPSHOT")
+        failures.extend(validate_mapping_clause_blobs(mapping_blob, source_blob))
+    return failures
+
+
 def _validate_portable_public_key_provenance(root: Path) -> list[str]:
     head = _git(root, "cat-file", "-e", f"{PORTABLE_PUBLIC_KEY_HEAD}^{{commit}}")
     ancestor = _git(
@@ -160,6 +524,7 @@ def _validate_portable_public_key_provenance(root: Path) -> list[str]:
 def validate(root: Path = ROOT) -> list[str]:
     failures: list[str] = []
     failures.extend(validate_ignore_lines(_read_ignore(root, failures)))
+    failures.extend(_validate_tracked_public_blobs(root))
 
     try:
         api_contract = _blob(root, FROZEN_BASE, "docs/API_CONTRACT.md")
@@ -191,6 +556,9 @@ def validate(root: Path = ROOT) -> list[str]:
     portable_public_key_checked = False
     for fingerprint in EXPECTED_FINGERPRINTS:
         commit, path, rule, line_text = fingerprint.rsplit(":", 3)
+        if fingerprint == MAPPING_FINGERPRINT:
+            failures.extend(_validate_mapping_clause_provenance(root))
+            continue
         if fingerprint in PUBLIC_KEY_FINGERPRINTS:
             if not public_key_availability[fingerprint]:
                 if not portable_public_key_checked:
@@ -216,7 +584,7 @@ def validate(root: Path = ROOT) -> list[str]:
             ):
                 _append_once(failures, "GITLEAKS.PROVENANCE.PUBLIC_KEY_LINE")
             continue
-        ancestor = _git(root, "merge-base", "--is-ancestor", commit, SCAN_HEAD)
+        ancestor = _git(root, "merge-base", "--is-ancestor", commit, "HEAD" if fingerprint in G1_FALSE_POSITIVE_FINGERPRINTS else SCAN_HEAD)
         if ancestor.returncode != 0:
             _append_once(failures, "GITLEAKS.PROVENANCE.HISTORY")
             continue
@@ -225,6 +593,10 @@ def validate(root: Path = ROOT) -> list[str]:
             line = blob.splitlines()[int(line_text) - 1]
         except (IndexError, OSError, UnicodeError, ValueError, subprocess.SubprocessError, RuntimeError):
             _append_once(failures, "GITLEAKS.PROVENANCE.SNAPSHOT")
+            continue
+        if fingerprint in G1_FALSE_POSITIVE_FINGERPRINTS:
+            if hashlib.sha256(line.encode()).hexdigest() != G1_SYNTHETIC_LINE_SHA256[G1_FALSE_POSITIVE_FINGERPRINTS.index(fingerprint)]:
+                _append_once(failures, "GITLEAKS.PROVENANCE.G1_SYNTHETIC_LINE")
             continue
         if rule != "generic-api-key" or "API_CONTRACT.md" not in line or EXPECTED_DIGEST not in line:
             _append_once(failures, "GITLEAKS.PROVENANCE.LINE")

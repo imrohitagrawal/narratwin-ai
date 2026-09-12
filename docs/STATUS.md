@@ -12,6 +12,15 @@ Use it to answer:
 - what is blocked or ambiguous
 - what the next approved action is
 
+Issue #521 proposes Master Program V2, `SupersetMappingV2`, and a six-cut
+taxonomy from immutable source/audit base `b6b0c05c` on accepted integration
+base `77661700`. Authority remains `NONE`: V1 and the
+five-cut roadmap remain effective until independent review, exact-byte owner and
+exact-head non-author approval, protected merge, post-merge checks, and a
+separate accepted-current transition. It grants no provider, spend,
+private-evidence, Digital Twin, product, deployment, publication, release, or
+Cut acceptance authority.
+
 ## Canonical Current Product and Readiness Contract
 
 PR `#443` merged at `a6284f7d8f1a14ef4c9a99493d6b06046505f20c`
@@ -2170,6 +2179,24 @@ human acceptance, deployment, release, production-readiness, or Cut 1 evidence.
   changes research sequencing, records ADR 0079, and corrects that reproducibility
   defect; no provider is selected or activated, and T06, T07, T08, Cut 1,
   deployment, publication, release, and production readiness remain incomplete.
+
+## Issue #521 Master Program V2 candidate (2026-09-07)
+
+- G1 freezes 193 repository source-ledger records and an exhaustive,
+  non-activating overlay across 605 external sources. It reviews 50,793 physical
+  decisions, binds 11,898 legacy clauses plus 2,080 recovered normative atoms,
+  classifies 13,397 external normative requirements, and leaves zero unreviewed.
+- The mapping contains 18,016 repository/owner and 13,382 external rows (31,398
+  total); 15 exact aliases account for the difference from external requirements.
+- New Cut 5 is owner Digital Twin; `LegacyCut5Enterprise` maps only to Cut 6
+  after migration validation.
+- Owner checkpoints `5574559059`, `5587499372`, and `5604091052` expand the
+  27-path G1 route only for seven exact, provenance-bound hosted Gitleaks false positives; the
+  8,500 charged-line cap and every non-activation prohibition remain.
+- Owner checkpoint `5645038993` binds accepted integration base `77661700`, the
+  exhaustive semantic correction, normal-merge topology, and unchanged scope.
+- Semantic/security review, exact approvals, hosted parity, merge, and separate
+  activation remain pending. Release posture remains No-Go.
 
 ## Issue #523 httpx2/httpcore2 security child (2026-09-09)
 

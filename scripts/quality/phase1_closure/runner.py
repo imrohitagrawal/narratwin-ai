@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
 import subprocess
 from pathlib import Path
 
@@ -30,6 +32,11 @@ ISSUE456_PATHS = frozenset({
     "docs/STATUS.md",
     "docs/TRACEABILITY.md",
 })
+ISSUE521_BRANCH = "phase-1-closure-process-521-master-program-v2"
+ISSUE521_INTEGRATION_BASE = "77661700e1019e7e73894a928e4e6aef774c5e75"
+ISSUE521_PREFLIGHT = "docs/governance/preflights/issue-521.json"
+ISSUE521_PREFLIGHT_SHA256 = "e54b638d0494113869dad53b2ed549999152a8b2a9794db41614eae215c2357c"
+ISSUE521_LINE_CAP = 8_500
 
 
 def _git(*args: str) -> bytes | None:
@@ -60,12 +67,86 @@ def _changed_paths(head: str) -> frozenset[str]:
         return frozenset()
 
 
+def _changed_paths_since(base: str, head: str) -> frozenset[str]:
+    raw = _git("diff", "--name-only", "-z", base, head, "--")
+    try:
+        return frozenset(raw.decode("utf-8").rstrip("\0").split("\0")) if raw else frozenset()
+    except UnicodeError:
+        return frozenset()
+
+
+def _charged_lines(base: str, head: str) -> int | None:
+    raw = _git("diff", "--numstat", base, head, "--")
+    if raw is None:
+        return None
+    total = 0
+    try:
+        for line in raw.decode("utf-8").splitlines():
+            fields = line.split("\t")
+            if len(fields) != 3 or fields[0] == "-" or fields[1] == "-":
+                return None
+            total += int(fields[0]) + int(fields[1])
+    except (UnicodeError, ValueError):
+        return None
+    return total
+
+
+def _issue521_scope() -> tuple[frozenset[str], list[str]]:
+    path = ROOT / ISSUE521_PREFLIGHT
+    try:
+        raw = path.read_bytes()
+        if hashlib.sha256(raw).hexdigest() != ISSUE521_PREFLIGHT_SHA256:
+            return frozenset(), ["Issue #521 preflight hash drifted."]
+        artifact = json.loads(raw.decode("utf-8"))
+        required = artifact["scope"]["required"]
+        allowed = artifact["scope"]["allowed_prefixes"]
+        if len(required) != 27 or set(required) != set(allowed):
+            return frozenset(), ["Issue #521 preflight must contain exactly twenty-seven matching paths."]
+        return frozenset(required), []
+    except (OSError, UnicodeError, json.JSONDecodeError, KeyError, TypeError):
+        return frozenset(), ["Issue #521 preflight could not be read safely."]
+
+
+def run_issue521_master_program_v2() -> int:
+    head = _head()
+    expected_paths, scope_failures = _issue521_scope()
+    findings = validate_governance_preflight_repository(
+        ROOT, base_sha=ISSUE521_INTEGRATION_BASE, head_sha=head, issue_number=521, branch=ISSUE521_BRANCH,
+    )
+    changed = _changed_paths_since(ISSUE521_INTEGRATION_BASE, head)
+    failures = scope_failures + [f"Issue #521 preflight finding: {finding.code}" for finding in findings]
+    if changed != expected_paths:
+        failures.append("Issue #521 exact governance preflight scope failed.")
+    charged = _charged_lines(ISSUE521_INTEGRATION_BASE, head)
+    if charged is None or charged > ISSUE521_LINE_CAP:
+        failures.append(f"Issue #521 aggregate charged-line budget exceeded or uncountable (cap {ISSUE521_LINE_CAP}).")
+    if not failures:
+        from scripts.quality.issue521_master_program_v2 import validate_repository
+
+        failures.extend(validate_repository(ROOT, certification=False))
+    if failures:
+        return legacy._print_result(failures)
+    checker = legacy._load_checker()
+    failures = legacy.legacy_parity_failures(checker)
+    checker.check_branch(failures)
+    checker.check_required_files(failures)
+    if not failures:
+        for name in legacy.PRESERVED_CHECKS:
+            if name == "check_active_demo_docs":
+                legacy.check_active_demo_docs(checker, failures)
+            else:
+                getattr(checker, name)(failures)
+    return legacy._print_result(failures)
+
+
 def check_cut1_presenter_contract() -> int:
     return 1 if validate_contract_bundle(ROOT) else 0
 
 
 def run_preserved_contracts() -> int:
     branch = current_branch(ROOT)
+    if branch == ISSUE521_BRANCH:
+        return run_issue521_master_program_v2()
     if branch != ISSUE456_BRANCH:
         return legacy.run_preserved_contracts()
     head = _head()

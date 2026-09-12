@@ -447,3 +447,10 @@ Acceptance:
 - premium providers remain optional
 - release claims match implemented behavior
 - unresolved risks have explicit disposition
+
+## Master Program V2 governance increments
+
+Issue #521 G1 is governance-only candidate/mapping/taxonomy work. G2 later makes
+the prototype receipt gate executable; G3 later governs restricted evidence and
+cost inventory. Product/provider work remains stage-bound and cannot start from
+a cut, candidate document, or prototype result alone.
