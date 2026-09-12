@@ -21,6 +21,21 @@ separate accepted-current transition. It grants no provider, spend,
 private-evidence, Digital Twin, product, deployment, publication, release, or
 Cut acceptance authority.
 
+## Prospective G1 certification carrier — Issue #533
+
+PR #522 completed its nonactivating proposal merge at `71e0568d`; its recorded
+cleanup is complete and its deletion authorization consumed. Issue #533 follows
+owner-session authorization of the prospective corrective route recorded in
+Issue #521 comment `5648521197` and Issue #533. The new carrier proposes the
+external receipt field contract in `docs/STAGE_ISSUE_PLAN.md`; it preserves all
+frozen V2 artifacts and PENDING states. It is not owner-plan adoption,
+certification, accepted-current transition or authority to implement G2/G3.
+Prospective owner adoption, independent semantic/security and duplicate
+review, eligible exact-head approval, exact-byte owner approval and protected
+carrier merge/checks remain outstanding. The distinct later transition owns
+executable receipt validation and activation. V1 remains effective; provider,
+spend, private-evidence and acceptance authority remain unchanged.
+
 ## Canonical Current Product and Readiness Contract
 
 PR `#443` merged at `a6284f7d8f1a14ef4c9a99493d6b06046505f20c`

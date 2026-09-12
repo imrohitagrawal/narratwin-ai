@@ -3074,3 +3074,319 @@ the correction also freezes RED before GREEN. G1 is non-activating governance
 only; V1 remains
 effective. G2, G3, product code, providers, credentials, egress, spend,
 biometrics, media, deployment, publication, release, and acceptance are separate.
+
+## Issue #533: prospective G1 certification carrier
+
+Status: `PROPOSED_FIELD_CONTRACT`; no receipt has been issued by this section.
+The owner session approved preparing the prospective route in
+[Issue #521's decision packet](https://github.com/imrohitagrawal/narratwin-ai/issues/521#issuecomment-5648521197).
+[Issue #533](https://github.com/imrohitagrawal/narratwin-ai/issues/533) records
+that authorization as an agent transcription, not owner-plan adoption or
+exact-byte approval. The carrier preserves the completed PR #522 proposal merge
+and cleanup. New receipts must precede a NEW protected carrier merge; they
+cannot retroactively certify PR #522.
+
+This section is a prospective field contract outside the historical frozen
+source census. It does not change that census, any V2 source Git object, the
+mapping, taxonomy, binding, schemas, review prompts or their PENDING states.
+V1 remains effective. A distinct accepted-current transition owns executable
+external acquisition, parsing, overlay validation, activation and the seven
+compatibility migrations. This carrier implements none of those operations.
+It grants no provider, credentials, egress, spend, private-evidence access,
+legal/privacy decision, product implementation, publication or Cut acceptance.
+
+### Subject, bytes and identity
+
+The carrier base is `71e0568d460306c3837d9e641c78558486b5ab54`.
+The preserved proposal subject is PR #522, head
+`7667054a4e92b7c4ac72373ec165244291729565`, merge
+`71e0568d460306c3837d9e641c78558486b5ab54`, tree
+`290bedd33b6807a3a8871bba70802d8f21b047ff`. These identify preserved evidence;
+they are not the new carrier's head, merge or approval.
+
+The subject binds exactly these artifact SHA-256 values, using the exact
+repository-relative path as the artifact key:
+
+| Artifact | SHA-256 |
+|---|---|
+| `docs/governance/NARRATWIN_MASTER_PROGRAM_V2.md` | `31d879568cd4bbeea9e238d14e20bf66de565842204372ee54ccf071564396f1` |
+| `docs/governance/narratwin-master-program-v2.json` | `3b2ecd645417c20fcc6aa8a7101cf9199998d43e62232304b73dcd8b31294779` |
+| `docs/governance/superset-mapping-v2.json` | `ce4df939ca8ef4a72483c66f29212e08faeeff737c778db3e505d6fd0074388b` |
+| `docs/governance/cut-taxonomy-v2.json` | `c0fba5183c284f2d8854eefb30caaf76bb2979ac00328b67ccd6d027a971cdb7` |
+| `docs/governance/schemas/superset-mapping-v2.schema.json` | `3f6bd3759b8962ea2828c283f9374c2bea498decd7cd5c6854474db4d74e42e2` |
+| `docs/governance/schemas/cut-taxonomy-v2.schema.json` | `7ac62fbe1a92b43eccba782038f8002818b80c9c02246f35d3f117941e69ccc8` |
+| `docs/reviews/ISSUE_521_SUPERSET_SEMANTIC_REVIEW.md` | `a278c3183969e02103968c1fcd02b7385f0a4ba0dc84a6bf6bc248497ccabe34` |
+| `docs/reviews/ISSUE_521_FALSE_SUCCESS_SECURITY_REVIEW.md` | `8bf61240224e2b0f349c8d4b21fbcdb4602fc84994bfaba176f432e7def60e4d` |
+
+First commit the contract and complete applicable local and exact hosted
+direct-head push/PR verification. Only then freeze the carrier head/tree and
+prepare external receipt bodies. The contract digest is SHA-256 of the ENTIRE
+`docs/STAGE_ISSUE_PLAN.md` at that head, including its final LF. Do not commit
+the resulting head, tree, contract digest or issued receipt hashes back into
+this carrier: that would change the subject. Publish them as external evidence.
+The preflight and status are bound by the head/tree, not omitted from review.
+
+A receipt body consists of UTF-8 bytes: the exact ASCII marker
+`NARRATWIN-MPV2-RECEIPT-V1`, one LF, then one compact JSON object. No BOM,
+surrounding prose, code fence or trailing LF is permitted. At every nesting
+level keys sort lexicographically by Unicode code point; objects have unique
+keys. Serialize strings as literal Unicode scalar values except quote and
+backslash (escaped), standard short escapes for backspace/tab/LF/formfeed/CR,
+and lowercase four-digit Unicode escapes for other U+0000–U+001F controls.
+Do not escape slash or normalize Unicode. Numbers are decimal integers without
+leading zeros, fraction, exponent or negative zero, in 0..9007199254740991.
+No float, nonfinite number or lone surrogate is allowed. Booleans use JSON
+literals. Arrays retain their contract-defined order. Unknown fields, coercion,
+null where not expressly allowed, and noncanonical bytes fail closed.
+
+`Sha256` means exactly 64 lowercase hexadecimal characters; `GitSha` means
+exactly 40; `Id` means a positive interoperable integer. `Utc` is the exact
+`YYYY-MM-DDTHH:mm:ssZ` form and must represent a real UTC instant. A `Text`
+is a nonempty public-safe string. All record shapes below are closed and every
+listed field is required. No examples or unsigned drafts are receipts.
+
+### Closed common receipt shape
+
+| Field | Exact type and constraint |
+|---|---|
+| `schemaVersion` | Literal `MasterProgramV2ExternalReceiptV1`. |
+| `receiptType` | One of the six types in the ordered chain below. |
+| `chainId` | Sha256 of canonical JSON containing exactly `repository`, `controllerIssue`, `carrierIssue`, `carrierPullRequest` and `subject`, using the values in this receipt. |
+| `repository` | Exactly `{"id":1282502888,"nameWithOwner":"imrohitagrawal/narratwin-ai"}`, confirmed against live GitHub metadata. |
+| `controllerIssue` | Integer `521`. |
+| `carrierIssue` | Integer `533`. |
+| `carrierPullRequest` | Id of this issue's new carrier PR, confirmed by live base/head/repository and issue-link evidence. |
+| `subject` | Closed Subject record below, identical throughout the chain. |
+| `predecessors` | Ordered array of ReceiptRef; exact types/order specified below, no extras. |
+| `evidence` | Closed evidence object selected by receiptType below. |
+| `decision` | Literal `PASS` or `FAIL`; FAIL never advances the chain. |
+| `validUntil` | Utc, strictly after publication; no later than the owner-adoption expiry. |
+| `authority` | Exactly `{"egress":false,"programActivation":"NONE","providerAuthority":"NONE","spendUsd":0}`. |
+
+Subject fields are `carrierBaseSha: GitSha` (the base above),
+`carrierHeadSha: GitSha`, `carrierTreeSha: GitSha`,
+`proposal: {pullRequest:522, headSha:GitSha, mergeSha:GitSha, treeSha:GitSha}`
+(the preserved subject above), `artifactHashes: object` (exactly the eight
+path/value pairs above), and `contract: {path:"docs/STAGE_ISSUE_PLAN.md",
+sha256:Sha256}`. Verify every object against exact Git bytes and live PR
+metadata; supplied digests are commitments, not proof of their own validity.
+
+ReceiptRef fields are `repositoryId:1282502888`, `issueNumber:533`,
+`commentId:Id`, `receiptType:Text` (a chain type), `bodySha256:Sha256`.
+All canonical receipts are immutable comments on Issue #533. A PR review is
+separate evidence and does not replace its typed receipt. Hash the complete
+published marker-plus-JSON body bytes, not rendered Markdown or an API wrapper.
+
+Do not include a receipt's own ID, timestamp, author or hash in its body.
+Obtain comment ID, author numeric ID, created/updated time and repository
+association from live GitHub metadata. Require an unedited body and verifiable
+edit history; ambiguous edit provenance fails. An agent posting through an
+owner account cannot manufacture a human decision. OWNER receipts require a
+genuine owner action by numeric ID `291542729`, with verifiable provenance;
+matching the numeric account alone is insufficient if the action was delegated.
+
+Each successor must be created strictly after all its predecessors and bind
+their exact published hashes. All receipts must be valid when consumed. A
+missing, edited, expired, wrong-subject, duplicate-type or forked chain fails.
+No silent reissue/retry or chain restart is permitted. A changed subject or
+expired decision requires a separately recorded owner disposition of the prior
+chain and a newly bounded successor route; never delete or overwrite history.
+
+### Ordered chain and closed evidence records
+
+1. `OWNER_PLAN_ADOPTION`: predecessors `[]`; actual OWNER action.
+   Evidence fields: `sourceId:"OWNER_PLAN_2026-09-07"`,
+   `sourceBytes:65097`, `sourceSha256:Sha256` equal to
+   `986fd1604b385cd1ecd0dad1bfe0e09e6357d0e4b1d58bc94e3c055cc9bec58c`,
+   `publicDocumentSha256:Sha256` equal to the document above,
+   `completeLosslessNormalization:true`, `adoptForCertification:true`,
+   `reviewerPolicy:{securityReviewerId:Id, semanticReviewerId:Id,
+   exactHeadApproverId:Id}`.
+   The owner sets the explicit expiry and eligible review roster in this
+   decision; each designated actor must meet the independence rules below.
+   This record adopts the normalized public representation for certification.
+   The agent may prepare it from the opaque descriptor, but cannot read the
+   private source or assert normalization completeness on the owner's behalf.
+
+2. `FALSE_SUCCESS_SECURITY_REVIEW`: predecessors
+   `[OWNER_PLAN_ADOPTION]`; the designated independent security reviewer.
+   Evidence fields: `promptSha256:Sha256` (security prompt above),
+   `completedAt:Utc`, `report:ArtifactRef`.
+   Report shape is ReviewReport below, with exactly one disposition for each
+   of the sixteen required-review bullets and the hosted-parity correction
+   subsection in the unchanged prompt. This review establishes safe-input and
+   false-success findings before semantic interpretation proceeds. A narrow
+   public-input review may declare private-tree coverage unavailable; it may
+   not attest uninspected private artifacts or satisfy G3/legal/privacy gates.
+
+3. `SUPERSET_SEMANTIC_REVIEW`: predecessors
+   `[OWNER_PLAN_ADOPTION,FALSE_SUCCESS_SECURITY_REVIEW]`; the designated
+   independent semantic reviewer.
+   Evidence fields: `promptSha256:Sha256` (semantic prompt above),
+   `completedAt:Utc`, `report:ArtifactRef`,
+   `duplicateResolution:ArtifactRef`. ReviewReport contains exactly the nine
+   numbered prompt dispositions, and the duplicate artifact has the closed
+   shape below. It binds the original classification input
+   `746e23fcd200f25e1fcd91ef4dd39b59abc6e34ea00b28db7dee667da81db75f`,
+   both frozen partitions and every restricted descriptor through the prompt.
+   Unavailable required source evidence prevents PASS. It does not authorize
+   access to that source or turn a public-only review into exhaustive review.
+
+4. `ELIGIBLE_EXACT_HEAD_APPROVAL`: predecessors
+   `[FALSE_SUCCESS_SECURITY_REVIEW,SUPERSET_SEMANTIC_REVIEW]`; the designated
+   eligible non-author approver.
+   Evidence fields: `reviewId:Id`, `reviewCommitSha:GitSha`,
+   `reviewState:"APPROVED"`. The live GitHub review must belong to that
+   actual actor on the exact carrier head, occur after both reviews, satisfy
+   branch protection and remain undismissed. Ordinary GitHub approval alone
+   is insufficient; the approving human must also issue this typed receipt.
+
+5. `OWNER_EXACT_BYTES_APPROVAL`: predecessors
+   `[ELIGIBLE_EXACT_HEAD_APPROVAL]`; actual OWNER action.
+   Evidence fields: `approveExactSubject:true`,
+   `approveReviewReceiptsAndLimitations:true`,
+   `approveReferenceOnlyNormalMerge:true`. This binds the entire subject and
+   predecessor chain, including duplicate decisions and unresolved advisory
+   limitations. It grants no provider, private-data or activation authority.
+
+6. `PROTECTED_MERGE_AND_MAIN_CHECKS`: predecessors
+   `[OWNER_EXACT_BYTES_APPROVAL]`; a verifiable repository maintainer.
+   Evidence fields: `mergeSha:GitSha`, `orderedParents:[GitSha,GitSha]`,
+   `mergedTreeSha:GitSha`, `mergedAt:Utc`, `proof:ArtifactRef`.
+   Proof shape is MergeProof below. Verify a normal protected merge whose
+   first parent is the frozen carrier base and second is its approved head,
+   whose tree equals the approved carrier tree, and whose live merge time
+   follows owner approval. Base drift requires renewed subject/review; no
+   squash, rebase, retrospective timestamp or original PR #522 substitution.
+
+Owner adoption and exact-byte approval receipts permit only `decision:PASS`
+with their required true assertions. A refusal is retained as a separate
+nonreceipt owner decision; it cannot advance the chain or assert consent.
+Other receipt types may record FAIL for a failed review or verification.
+
+The designated security and semantic reviewers must be different independent
+actors, neither an author/committer of the carrier changes or generator of the
+evidence they independently judge. Their live repository association and
+fresh-context review provenance must be supported. The exact-head approver
+must be a non-author eligible under live protection; the owner cannot waive
+eligibility by placing an ID in reviewerPolicy. Delegated analysis can support
+review but cannot forge the designated actor's decision or legal authority.
+Review completion time must follow adoption (and security completion for
+semantic review) and precede the actual receipt publication time.
+
+`ACCEPTED_CURRENT` is absent from this carrier's receipt types. The later
+transition must separately govern its receipt contract, implement fail-closed
+external validation, obtain its own approvals and protected hosted/merge proof,
+and migrate schemas, roadmap, status, tests, issue templates, completion events
+and traceability atomically, including required-reading hash transition,
+Issue #521 disposition and V1 supersession. It must bind this complete carrier
+chain and exact later current-main state. G2 #531 remains ineligible until its
+accepted-current and Issue #521 closeout prerequisites are satisfied.
+
+### Evidence artifact shapes and duplicate decisions
+
+ArtifactRef fields: `descriptorId:Text`, `sha256:Sha256`,
+`byteCount:Id`, `visibility:"PUBLIC"|"RESTRICTED"`. Descriptor IDs resolve
+through a governed immutable evidence register to exact bytes; a digest or
+self-asserted PASS alone is insufficient. Public descriptors must identify
+immutable repository blobs or unedited GitHub artifacts in this repository.
+Restricted descriptors must already be authorized and accessible to the
+responsible reviewer through the approved restricted store. Do not place
+private paths, credential names, signed URLs, profile IDs or biometric contents
+in any receipt or public artifact. No restricted access is granted here.
+
+ReviewReport fields: `schemaVersion:"MasterProgramV2ReviewReportV1"`,
+`chainId:Sha256`, `receiptType:Text` (one of the two review types),
+`promptSha256:Sha256`, `dispositions:[PromptDisposition,...]`,
+`commands:[CheckEvidence,...]`, `mutations:[CheckEvidence,...]`,
+`findings:[Finding,...]`, `limitations:[Text,...]`,
+`freshContextEvidence:ArtifactRef`, `independenceEvidence:ArtifactRef`.
+Every evidence object carrying `chainId` must equal its containing receipt's
+chainId. ReviewReport `receiptType` and `promptSha256` must also equal the
+containing receipt's type and evidence prompt digest. Substitution fails even
+when the referenced artifact has a valid digest.
+
+Empty findings or limitations are permitted; commands and mutations must be
+nonempty. Each required prompt has exactly one PASS/FAIL disposition, in source
+order, with substantive rationale and retrievable evidence. Whole-review PASS
+requires every prompt PASS, complete coverage and no unresolved reproduced
+CRITICAL_BLOCKER or REQUIRED_CONTRACT. Advisory limitations cannot mask missing
+required evidence.
+
+PromptDisposition fields: `promptId:Text` (semantic `1`..`9`, security
+`1`..`16` then `hosted-parity-correction`), `decision:"PASS"|"FAIL"`,
+`rationale:Text`, `evidence:[ArtifactRef,...]` (nonempty).
+CheckEvidence fields: `id:Text`, `invocation:Text`,
+`expected:Text`, `observed:Text`, `result:"PASS"|"FAIL"`,
+`evidence:ArtifactRef`. Invocations are public-safe records, never commands
+for automatic execution. Results bind exact topology/bytes in the evidence.
+Finding fields: `id:Text`,
+`classification:"CRITICAL_BLOCKER"|"REQUIRED_CONTRACT"|"ADVISORY_DEBT"|"DUPLICATE"|"OUT_OF_SCOPE"`,
+`rootCauseId:Text`, `reproduction:ArtifactRef`, `rationale:Text`,
+`owner:Text`, `disposition:Text`, `independentVerification:[ArtifactRef,...]`.
+Corrections of blocking findings need nonempty independent verification.
+Duplicate symptoms consolidate under the same reproduced root cause.
+
+DuplicateResolution fields: `schemaVersion:"MasterProgramV2DuplicateResolutionV1"`,
+`chainId:Sha256`, `censusSha256:Sha256` equal to
+`b17e17098ad24a1feb607c4122a043c83e77e3b514b48d2733fddbb325083aed`,
+`groupCount:859`, `occurrenceCount:3103`, `decisions:[GroupDecision,...]`.
+GroupDecision fields: `groupId:Text`, `atomicFocusSha256:Sha256`,
+`partitions:[LogicalPartition,...]`, `rationale:Text`,
+`sourceEvidence:[ArtifactRef,...]`, `decision:"PASS"|"FAIL"`.
+LogicalPartition fields: `members:[Member,...]`,
+`canonicalRequirementId:Text`, `rationale:Text`.
+Member fields: `sourceAtomId:Text`, `contextChainSha256:Sha256`.
+
+There must be exactly 859 distinct decisions ordered by groupId, covering the
+census's complete 3,103 member occurrences. Within a group, partitions are
+nonempty, disjoint and exhaustive; members sort by sourceAtomId; partitions
+sort by their first member. Every member/context hash must match the frozen
+census. Each canonical requirement resolves to a mapped requirement justified
+by that partition's actual scope. A group may contain several distinct scopes
+and equivalent occurrences within one scope. Canonical selections must be
+consistent across groups. Missing/extra/repeated groups, overlapping or absent
+members, empty rationale, unsupported canonical targets or using different raw
+anchors as the sole equivalence/scope proof fail. All group decisions must PASS;
+the committed census and mapping remain unchanged.
+
+MergeProof fields: `schemaVersion:"MasterProgramV2CarrierMergeProofV1"`,
+`chainId:Sha256`, `protectedPolicy:ArtifactRef`,
+`pushChecks:[ArtifactRef,...]`, `pullRequestChecks:[ArtifactRef,...]`,
+`mergedMainChecks:[ArtifactRef,...]`, `closeout:ArtifactRef`.
+Each array is nonempty and must collectively prove every required workflow
+context, command, event, head/tree, checkout topology, permissions, effective
+non-secret environment, conclusion and completion time. Match actual frozen
+policy; a local substitute, skipped context, stale check, missing event or
+unverified protection fails. Closeout proves reference-only normal merge
+wording, reconciled status/issue disposition, main synchronization and exact
+task-resource retention/cleanup. Preserve the original PR #522 cleanup receipt;
+its deletion authority is consumed and unrelated resources remain excluded.
+
+### Review packet, ownership and convergence
+
+Before human signing, publish a public-safe packet with carrier issue/PR,
+base/head/tree, all artifact/contract digests, required hosted results and
+unsigned canonical adoption bytes. The owner personally checks the normalized
+representation against the retained source. If that evidence is unavailable,
+adoption stays pending; agent preparation cannot replace the attestation.
+Prepare later receipt bodies only when their exact predecessors exist.
+No receipt commits back into the frozen carrier.
+
+Historical G1 amendments and review evidence remain linked through Issue #521.
+The cumulative historical approach/review count is unestablished in available
+public evidence and is not reset. Issue #533 is one newly approved bounded
+documentation package: one initial approach and at most one root-cause
+correction, two review rounds per approach/four total. Reproduce findings,
+classify by demonstrated impact, consolidate duplicates and independently
+verify blocking corrections. A new material scope or exhausted budget needs
+a bounded amendment; do not repeatedly patch or lower acceptance.
+
+The preflight-only first commit fixes exactly the preflight, this stage plan
+and minimal STATUS change, within 800 charged lines (100/600/100 respectively),
+without deletion credit. Existing scope checks and independently measured
+numstat establish scope; the generic schema validates budget shape, not actual
+charged-line enforcement. No new guardrail or receipt-parser implementation is
+claimed. Contract rejection cases above are source/human-review obligations
+now and discriminating executable test requirements for the distinct transition.
+The G1 certification tripwire intentionally remains nonpassing.
