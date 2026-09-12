@@ -106,6 +106,7 @@ Enable branch protection or repository ruleset for `main` with:
   - `ci / docker build`
   - `secret scan / bandit / audit / semgrep`
   - `security / docker build`
+  - `security / docker build (ARM64 native)`
   - `eval smoke`
   - `stage8 / performance lighthouse`
   - `pr-body-consistency` from the `pr-body-consistency` workflow, bound to GitHub Actions app ID `15368`

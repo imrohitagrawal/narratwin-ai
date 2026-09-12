@@ -760,12 +760,14 @@ libstdc++, libgcc, and the CA bundle required by the application. It excludes
 glibc, gcompat, a shell, package manager, npm, compiler, headers, and effective
 capabilities; the trusted application tree is root-owned and non-writable.
 
-AMD64 and QEMU-emulated ARM64 independently prove exact architecture, non-root
-startup, HTTP behavior, a real Sharp PNG transform, normalized reproducibility,
-CycloneDX identity, and zero Medium-or-higher frontend findings from both Trivy
-and Grype. Package metadata remains scanner-visible. Failure, disagreement,
-missing evidence, or architecture substitution rejects the gate. This is
-container capability isolation only and creates no provider, media,
+Separate required AMD64 and native ARM64 contexts independently prove exact
+architecture, non-root startup, HTTP behavior, a real Sharp PNG transform,
+normalized reproducibility, CycloneDX identity, and zero Medium-or-higher
+frontend findings from both Trivy and Grype. Issue #529 replaces only the QEMU
+execution topology; all image, runtime, scanner, consensus, and severity
+thresholds remain active. Package metadata remains scanner-visible. Failure,
+disagreement, missing evidence, or architecture substitution rejects the gate.
+This is container capability isolation only and creates no provider, media,
 deployment, release, production, or Cut 1 acceptance authority.
 
 ## Issue #509 duration-policy trust boundary

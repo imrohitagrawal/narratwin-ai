@@ -515,6 +515,39 @@ ISSUE525_EXPECTED = {
     "docs/THIRD_PARTY_NOTICES.md",
     "docs/TRACEABILITY.md",
 }
+ISSUE527_EXPECTED = {
+    ".github/workflows/ci.yml",
+    "tests/unit/test_ci_workflow_timeout_policy.py",
+    "docs/governance/preflights/issue-527-ci-backend-timeout.json",
+    "scripts/quality/stage8_cut1_routes.py",
+    "tests/unit/test_stage8_cut1_routes.py",
+    "docs/QUALITY_GATES.md",
+    "docs/STATUS.md",
+    "docs/TRACEABILITY.md",
+}
+ISSUE529_EXPECTED = {
+    ".github/workflows/security.yml",
+    "docs/governance/preflights/issue-529.json",
+    "tests/unit/test_stage8_node_security.py",
+    "scripts/quality/check_stage8_docs.py",
+    "scripts/quality/stage8_cut1_routes.py",
+    "tests/unit/test_stage8_cut1_routes.py",
+    "docs/ADR/0084-native-arm64-hosted-security.md",
+    "docs/QUALITY_GATES.md",
+    "docs/STATUS.md",
+    "docs/TRACEABILITY.md",
+    "docs/THIRD_PARTY_NOTICES.md",
+    "scripts/ci/verify_branch_protection.py",
+    "tests/unit/test_branch_protection_verifier.py",
+    "docs/REPOSITORY_GUARDRAILS.md",
+    "docs/agent-context/context-policy-manifest-v1.json",
+    "docs/governance/GOVERNANCE_PREFLIGHT_V1.schema.json",
+    "scripts/governance_preflight_v1.py",
+    "tests/unit/test_governance_preflight_v1.py",
+    "tests/unit/test_governance_preflight_repository.py",
+    "docs/SECURITY_AND_PRIVACY.md",
+    "docs/STAGE_ISSUE_PLAN.md",
+}
 ISSUE502_EXPECTED = {
     "docs/governance/preflights/issue-502.json",
     "frontend/Dockerfile",
@@ -1193,6 +1226,8 @@ EXPECTED = {
 EXPECTED["stage8-499-pypdf-6-16-2-security-refresh"] = ISSUE499_EXPECTED
 EXPECTED["stage8-523-httpx2-2-12-security-refresh"] = ISSUE523_EXPECTED
 EXPECTED["stage8-525-schema-oracle-runtime-policy"] = ISSUE525_EXPECTED
+EXPECTED["stage8-527-backend-ci-timeout"] = ISSUE527_EXPECTED
+EXPECTED["stage8-529-native-arm64-security"] = ISSUE529_EXPECTED
 
 
 def completed(args: list[str], code: int = 0, out: str = "", err: str = "") -> subprocess.CompletedProcess[str]:
@@ -5336,6 +5371,262 @@ def test_issue525_route_rejects_fixed_base_drift_and_every_path_cap(
             failures,
         )
         assert f"Issue #525 charge for {path} exceeds {limit}." in failures
+
+
+def test_issue527_route_freezes_exact_ci_timeout_scope() -> None:
+    branch = "stage8-527-backend-ci-timeout"
+    assert routes.ISSUE527_BRANCH == branch
+    assert routes.ISSUE527_BASE == "0e4efa56b36773ad8c687fb9daa73adc0152b89c"
+    assert routes.ISSUE527_TREE == "b4aa619ae550bb562a18725da454eb607124853e"
+    assert routes.ISSUE527_TRANSITION_OBJECTS == (
+        ("36a3d12fcdd167c7d48482ff5b4d342d9af570b1", "54b11855326e3ed5ef9ac3be071e0c46a2039c71"),
+        ("ef45442f6c0d333da6053061a2e9b4eaf80146f4", "5757a7a4fc98ac9dc3c61247f8f61deaab395f3f"),
+        ("e78d80e60eecda24088a49aa072d9030aaf7087d", "930f43797ddc07f8a8ccf60f248c85dee1c64674"),
+    )
+    assert routes.ISSUE527_TRANSITION_AUTHORITY == (
+        "5639330998", "56a8c21d8f9c5a38b641b5e314aad0926d761fb138c0e60bf6c05b95392142c3",
+        "5639349097", "b5173d172773c0c8ff474be5cd6959573cd8542d4e095916e12c139add91f2be",
+    )
+    assert routes.ROUTES[branch] == ISSUE527_EXPECTED
+    assert routes.ROUTE_ISSUES[branch] == 527
+    assert routes.TOTAL_LIMITS[branch] == 420
+    assert routes.TEXT_LIMITS[branch] == {
+        ".github/workflows/ci.yml": 2,
+        "tests/unit/test_ci_workflow_timeout_policy.py": 120,
+        "docs/governance/preflights/issue-527-ci-backend-timeout.json": 80,
+        "scripts/quality/stage8_cut1_routes.py": 80,
+        "tests/unit/test_stage8_cut1_routes.py": 100,
+        "docs/QUALITY_GATES.md": 80,
+        "docs/STATUS.md": 60,
+        "docs/TRACEABILITY.md": 40,
+    }
+    preflight = json.loads(
+        (REPO / "docs/governance/preflights/issue-527-ci-backend-timeout.json")
+        .read_text(encoding="utf-8")
+    )
+    assert set(preflight["scope"]["required"]) == ISSUE527_EXPECTED
+    assert preflight["scope"]["required"] == preflight["scope"]["allowed_prefixes"]
+    authority = (routes.ISSUE527_ISSUE_BODY_SHA256, *(
+        value for row in routes.ISSUE527_TRANSITION_OBJECTS for value in row
+    ), *routes.ISSUE527_TRANSITION_AUTHORITY)
+    assert all(value in preflight["objective"] for value in authority)
+    assert branch in stage8.EFFECTIVE_STAGE8_ROUTES
+
+
+def test_issue527_route_rejects_suffix_and_transition_drift(monkeypatch: Any) -> None:
+    branch = routes.ISSUE527_BRANCH + "-retry"
+    assert branch not in stage8.EFFECTIVE_STAGE8_ROUTES
+    assert stage8.STAGE8_BRANCH_PATTERN.match(branch)
+    monkeypatch.setattr(stage8, "current_branch", lambda: branch)
+    monkeypatch.setattr(stage8, "changed_files_for_stage_scope", lambda: [])
+    failures: list[str] = []
+    stage8.check_stage_scope(failures)
+    assert failures == [
+        f"Stage 8 branch collides with exact reviewed route {routes.ISSUE527_BRANCH}: {branch}."
+    ]
+
+    objects = dict(((routes.ISSUE527_BASE, routes.ISSUE527_TREE),
+                    *routes.ISSUE527_TRANSITION_OBJECTS))
+    parents = dict(routes.ISSUE527_TRANSITION_PARENTS)
+
+    def good(args: list[str]) -> subprocess.CompletedProcess[str]:
+        if args[:2] == ["git", "rev-parse"] and args[2].endswith("^{tree}"):
+            return completed(args, out=objects[args[2].removesuffix("^{tree}")] + "\n")
+        if args[:4] == ["git", "show", "-s", "--format=%P"]:
+            return completed(args, out=parents[args[4]] + "\n")
+        if args == ["git", "rev-parse", "origin/main^{commit}"]:
+            return completed(args, out=routes.ISSUE527_TRANSITION_OBJECTS[1][0] + "\n")
+        if args[:3] == ["git", "merge-base", "--is-ancestor"]:
+            return completed(args)
+        raise AssertionError(args)
+
+    assert routes.route_base(good, routes.ISSUE527_BRANCH) == routes.ISSUE527_TRANSITION_OBJECTS[1][0]
+    for rejected in ("object", "current-main", "ancestry", "parents"):
+        def broken(args: list[str], *, rejected: str = rejected) -> subprocess.CompletedProcess[str]:
+            if rejected == "object" and args[:2] == ["git", "rev-parse"] and args[2].endswith("^{tree}"):
+                return completed(args, code=128)
+            if rejected == "current-main" and args == ["git", "rev-parse", "origin/main^{commit}"]:
+                return completed(args, out="0" * 40 + "\n")
+            if rejected == "ancestry" and args[:3] == ["git", "merge-base", "--is-ancestor"]:
+                return completed(args, code=1)
+            if rejected == "parents" and args[:4] == ["git", "show", "-s", "--format=%P"]:
+                return completed(args, out="0" * 40 + "\n")
+            return good(args)
+
+        error = pytest.raises(RuntimeError, routes.route_base, broken, routes.ISSUE527_BRANCH)
+        assert "Issue #527 reviewed transition" in str(error.value)
+
+
+def test_issue529_route_freezes_native_arm64_and_required_context_scope() -> None:
+    branch = "stage8-529-native-arm64-security"
+    assert routes.ISSUE529_BRANCH == branch
+    assert routes.ISSUE529_BASE == "0e4efa56b36773ad8c687fb9daa73adc0152b89c"
+    assert routes.ISSUE529_TREE == "b4aa619ae550bb562a18725da454eb607124853e"
+    assert routes.ISSUE529_BODY_SHA256 == (
+        "f165f78a66d0f1f7b8c1386d2ba9a6b2991f4df666823572acdee782ba450d4e"
+    )
+    assert routes.ISSUE529_DECISION_COMMENT == "5612151683"
+    assert routes.ISSUE529_DECISION_SHA256 == (
+        "1c08b7ed76199e1dc63f1577ddf5e882b532e647876ef28ac9c9255c884bfcf9"
+    )
+    assert routes.ISSUE529_AMENDMENT_COMMENT == "5612266631"
+    assert routes.ISSUE529_AMENDMENT_SHA256 == (
+        "15ae5a70a3b598d43852d3e0b1ff393977778a44cc43ae4738a45aa5ad1d02fd"
+    )
+    assert routes.ISSUE529_BUDGET_AMENDMENT_COMMENT == "5612502264"
+    assert routes.ISSUE529_BUDGET_AMENDMENT_SHA256 == (
+        "3efe860882427d574f804061e1e4d718a7ca0e9ca7c0efa065550557fd25a81f"
+    )
+    assert routes.ISSUE529_DOCS_AMENDMENT_COMMENT == "5612738830"
+    assert routes.ISSUE529_DOCS_AMENDMENT_SHA256 == (
+        "c74cdb7e62e702a3ffa8406976bb1e53a9b98c3dfe128fee074e02b8d718bf63"
+    )
+    assert routes.ISSUE529_HOSTED_CORRECTION_COMMENT == "5613239963"
+    assert routes.ISSUE529_HOSTED_CORRECTION_SHA256 == (
+        "a444fdf9f283cc631e1e0729bef9b10d227f3778fffc270ed3c76473cb4ca82f"
+    )
+    assert routes.ISSUE529_BUDGET_RED == "89f87b3d239b21f0a8064994e328b07760af2cb8"
+    assert routes.ROUTES[branch] == ISSUE529_EXPECTED
+    assert routes.ROUTE_ISSUES[branch] == 529
+    assert branch not in routes.TOTAL_LIMITS
+    assert branch not in routes.TEXT_LIMITS
+    expected_limits = {
+        ".github/workflows/security.yml": 140,
+        "docs/governance/preflights/issue-529.json": 240,
+        "tests/unit/test_stage8_node_security.py": 180,
+        "scripts/quality/check_stage8_docs.py": 30,
+        "scripts/quality/stage8_cut1_routes.py": 180,
+        "tests/unit/test_stage8_cut1_routes.py": 240,
+        "docs/ADR/0084-native-arm64-hosted-security.md": 110,
+        "docs/QUALITY_GATES.md": 60,
+        "docs/STATUS.md": 30,
+        "docs/TRACEABILITY.md": 30,
+        "docs/THIRD_PARTY_NOTICES.md": 30,
+        "scripts/ci/verify_branch_protection.py": 40,
+        "tests/unit/test_branch_protection_verifier.py": 120,
+        "docs/REPOSITORY_GUARDRAILS.md": 40,
+        "docs/agent-context/context-policy-manifest-v1.json": 10,
+        "docs/governance/GOVERNANCE_PREFLIGHT_V1.schema.json": 100,
+        "scripts/governance_preflight_v1.py": 200,
+        "tests/unit/test_governance_preflight_v1.py": 240,
+        "tests/unit/test_governance_preflight_repository.py": 100,
+        "docs/SECURITY_AND_PRIVACY.md": 30,
+        "docs/STAGE_ISSUE_PLAN.md": 30,
+    }
+    preflight = json.loads(
+        (REPO / "docs/governance/preflights/issue-529.json").read_text(encoding="utf-8")
+    )
+    assert preflight["change_budget"] == {
+        "exact_paths": 21,
+        "maximum_additions_plus_deletions": 1300,
+        "deletions_grant_credit": False,
+        "per_file_charged_lines": expected_limits,
+    }
+    assert routes.route_change_budget(REPO, branch, 529, ISSUE529_EXPECTED) == (
+        1300, expected_limits
+    )
+    assert set(preflight["scope"]["required"]) == ISSUE529_EXPECTED
+    assert preflight["scope"]["required"] == preflight["scope"]["allowed_prefixes"]
+    for value in (
+        routes.ISSUE529_BASE,
+        routes.ISSUE529_TREE,
+        routes.ISSUE529_BODY_SHA256,
+        routes.ISSUE529_DECISION_COMMENT,
+        routes.ISSUE529_DECISION_SHA256,
+        routes.ISSUE529_AMENDMENT_COMMENT,
+        routes.ISSUE529_AMENDMENT_SHA256,
+        routes.ISSUE529_BUDGET_AMENDMENT_COMMENT,
+        routes.ISSUE529_BUDGET_AMENDMENT_SHA256,
+        routes.ISSUE529_DOCS_AMENDMENT_COMMENT,
+        routes.ISSUE529_DOCS_AMENDMENT_SHA256,
+        routes.ISSUE529_HOSTED_CORRECTION_COMMENT,
+        routes.ISSUE529_HOSTED_CORRECTION_SHA256,
+        routes.ISSUE529_BUDGET_RED,
+    ):
+        assert value in preflight["objective"]
+    assert branch in stage8.EFFECTIVE_STAGE8_ROUTES
+
+
+def test_issue529_route_rejects_branch_base_authority_and_budget_drift(
+    monkeypatch: Any,
+) -> None:
+    lookalike = routes.ISSUE529_BRANCH + "-retry"
+    assert lookalike not in stage8.EFFECTIVE_STAGE8_ROUTES
+    assert stage8.STAGE8_BRANCH_PATTERN.match(lookalike)
+    monkeypatch.setattr(stage8, "current_branch", lambda: lookalike)
+    monkeypatch.setattr(stage8, "changed_files_for_stage_scope", lambda: [])
+    failures: list[str] = []
+    stage8.check_stage_scope(failures)
+    assert failures == [
+        f"Stage 8 branch collides with exact reviewed route {routes.ISSUE529_BRANCH}: {lookalike}."
+    ]
+
+    outputs = iter(
+        (
+            completed([], out=routes.ISSUE529_BASE + "\n"),
+            completed([], out="a" * 40 + "\n"),
+        )
+    )
+    error = pytest.raises(
+        RuntimeError,
+        routes.route_base,
+        lambda _: next(outputs),
+        routes.ISSUE529_BRANCH,
+    )
+    assert "Issue #529 fixed base" in str(error.value)
+
+    monkeypatch.setattr(routes, "route_base", lambda *_: "base")
+    limits = json.loads(
+        (REPO / "docs/governance/preflights/issue-529.json").read_text(encoding="utf-8")
+    )["change_budget"]["per_file_charged_lines"]
+    for path, limit in limits.items():
+        monkeypatch.setattr(
+            routes,
+            "route_text_charges",
+            lambda *_, value_path=path, value_limit=limit: (
+                value_limit + 1,
+                {value_path: value_limit + 1},
+            ),
+        )
+        failures = []
+        routes.check_exact_route(
+            REPO,
+            lambda _: completed([]),
+            routes.ISSUE529_BRANCH,
+            ISSUE529_EXPECTED,
+            failures,
+        )
+        assert f"Issue #529 charge for {path} exceeds {limit}." in failures
+
+
+def test_issue529_manifest_budget_reaches_enforcement_and_fails_closed(
+    monkeypatch: Any, tmp_path: Path,
+) -> None:
+    manifest = json.loads(
+        (REPO / "docs/governance/preflights/issue-529.json").read_text(encoding="utf-8")
+    )
+    target = tmp_path / "docs/governance/preflights/issue-529.json"
+    target.parent.mkdir(parents=True)
+    target.write_text(json.dumps(manifest), encoding="utf-8")
+    total, limits = routes.route_change_budget(
+        tmp_path, routes.ISSUE529_BRANCH, 529, ISSUE529_EXPECTED
+    )
+    assert total == 1300 and limits == manifest["change_budget"]["per_file_charged_lines"]
+    manifest.pop("change_budget")
+    target.write_text(json.dumps(manifest), encoding="utf-8")
+    with pytest.raises(RuntimeError, match="manifest-owned change budget failed closed"):
+        routes.route_change_budget(tmp_path, routes.ISSUE529_BRANCH, 529, ISSUE529_EXPECTED)
+
+    monkeypatch.setattr(routes, "route_base", lambda *_: "base")
+    first_path = next(iter(limits))
+    monkeypatch.setattr(routes, "route_change_budget", lambda *_: (7, {first_path: 3}))
+    monkeypatch.setattr(routes, "route_text_charges", lambda *_: (8, {first_path: 4}))
+    failures: list[str] = []
+    routes.check_exact_route(
+        REPO, lambda _: completed([]), routes.ISSUE529_BRANCH, ISSUE529_EXPECTED, failures
+    )
+    assert any("charge 8 exceeds 7" in item for item in failures)
+    assert any("exceeds 3" in item for item in failures)
 
 
 def test_issue499_route_freezes_the_exact_pypdf_security_refresh() -> None:

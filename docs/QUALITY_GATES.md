@@ -1872,14 +1872,17 @@ product/provider authority is accepted.
 
 ## Issue #502 frontend musl runtime security gate
 
-The required `security / docker build` context executes separate AMD64 and
-QEMU-emulated ARM64 lanes without renaming the required context. Each lane
-must build and run the scratch frontend, complete a real Sharp PNG transform,
+The required `security / docker build` context executes the AMD64 lane on
+`ubuntu-latest`. Issue #529 adds the separately required
+`security / docker build (ARM64 native)` context on `ubuntu-24.04-arm`; QEMU
+must not appear in the active workflow. Each lane must build and run the
+scratch frontend, complete a real Sharp PNG transform,
 prove exact six-package musl identity, non-root/no-capability/no-shell
 minimization, HTTP behavior, normalized two-build reproducibility, truthful
 CycloneDX output, and zero Medium-or-higher frontend findings in both Trivy and
-Grype. Reports are isolated under `reports/security/<architecture>` and
-uploaded together.
+Grype. Both lanes also run the existing backend build, package, CPython
+regression, SBOM, and scan contract. Reports and uploaded artifacts are
+isolated by architecture.
 
 Focused runtime, scanner-consensus, route, negative, and mutation tests must
 pass before full quality. Wrong source/digest, architecture, package, loader,
@@ -1887,6 +1890,23 @@ SBOM, config, inventory, privilege, scanner result, route, or hosted topology
 fails closed. The exact post-squash PR #501 anchor/tree must also validate on
 later heads. Passing proves only the container/security boundary; no provider,
 audio, listening, media, deployment, production, or Cut 1 acceptance claim.
+
+## Issue #529 native ARM64 hosted-security gate
+
+The workflow must preserve the existing AMD64 required-context name and add
+one finite-timeout native ARM64 job on the exact `ubuntu-24.04-arm` label.
+Both jobs invoke the same unchanged build and scan wrappers with distinct
+backend/frontend tags, session IDs, report paths, and artifact names. Tests
+reject QEMU, cross-build substitution, missing or renamed steps, wrong runner
+or architecture, shared evidence identity, skipped policy, warning-only
+behavior, and timeout drift.
+
+Acceptance requires focused and full local gates, exact-head push and
+pull-request runs with both architecture verdicts, protected-context
+reconciliation, independent exact-head review, and eligible human approval.
+No unchanged retry can replace that evidence. This gate proves hosted
+container-security execution only; it creates no provider, media, demo,
+deployment, release, production-readiness, or Cut 1 evidence.
 
 ## Issue #509 configurable audio-duration authority gate
 
@@ -1972,3 +1992,20 @@ its first dynamic import, preventing nondeterministic
 `/tmp/node-compile-cache` bytes from being baked into the image. The later
 inventory process still walks `/tmp` without a skip, exclusion, or compensating
 normalization.
+
+## Issue #527 backend CI timeout gate
+
+The backend `lint / typecheck / unit / api` job must declare exactly one finite
+30-minute job-level timeout. The frontend, Docker, and Stage 8 performance jobs
+remain fixed at 20, 20, and 35 minutes. Missing, duplicate, non-numeric, lower,
+higher, or misplaced timeout values fail the focused regression:
+
+```bash
+uv run pytest -q tests/unit/test_ci_workflow_timeout_policy.py
+uv run pytest -q tests/unit/test_stage8_cut1_routes.py
+NARRATWIN_POLICY_ONLY=1 make quality
+```
+
+The longer fail-safe does not weaken, skip, retry, or shard the backend suite.
+Every required hosted context must pass at the exact candidate head; a timeout,
+cancellation, or local-only result is not hosted-parity evidence.

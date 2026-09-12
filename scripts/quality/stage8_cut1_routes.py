@@ -36,6 +36,8 @@ ISSUE499_BRANCH = "stage8-499-pypdf-6-16-2-security-refresh"
 ISSUE523_BRANCH = "stage8-523-httpx2-2-12-security-refresh"
 ISSUE524_BRANCH = "stage8-524-frontend-dependency-security-refresh"
 ISSUE525_BRANCH = "stage8-525-schema-oracle-runtime-policy"
+ISSUE527_BRANCH = "stage8-527-backend-ci-timeout"
+ISSUE529_BRANCH = "stage8-529-native-arm64-security"
 ISSUE502_BRANCH = "stage8-502-frontend-musl-runtime-security"
 ISSUE507_BRANCH = "stage8-507-google-api-core-grpc-status"
 ISSUE509_BRANCH = "stage8-509-configurable-audio-duration"
@@ -310,6 +312,22 @@ ISSUE525_IO_CORRECTION_COMMENT = "5601074797"
 ISSUE525_IO_CORRECTION_SHA256 = (
     "1e7e5f22fa281eb9da188fae12d03237fd711a90488a2c4ba21af5a176e6287d"
 )
+ISSUE527_BASE = "0e4efa56b36773ad8c687fb9daa73adc0152b89c"
+ISSUE527_TREE = "b4aa619ae550bb562a18725da454eb607124853e"
+ISSUE527_ISSUE_BODY_SHA256 = "fee713b53055e1d8b2dfe53af320367cd734dd26807c3c3fe083ea092f9c6180"
+ISSUE527_TRANSITION_OBJECTS = (
+    ("36a3d12fcdd167c7d48482ff5b4d342d9af570b1", "54b11855326e3ed5ef9ac3be071e0c46a2039c71"),
+    ("ef45442f6c0d333da6053061a2e9b4eaf80146f4", "5757a7a4fc98ac9dc3c61247f8f61deaab395f3f"),
+    ("e78d80e60eecda24088a49aa072d9030aaf7087d", "930f43797ddc07f8a8ccf60f248c85dee1c64674"),
+)
+ISSUE527_TRANSITION_PARENTS = (
+    (ISSUE527_TRANSITION_OBJECTS[1][0], "0e4efa56b36773ad8c687fb9daa73adc0152b89c eaaa3e519a5158c20cbecf7a180ca5c7c8f563f2"),
+    (ISSUE527_TRANSITION_OBJECTS[2][0], "36a3d12fcdd167c7d48482ff5b4d342d9af570b1 ef45442f6c0d333da6053061a2e9b4eaf80146f4"),
+)
+ISSUE527_TRANSITION_AUTHORITY = (
+    "5639330998", "56a8c21d8f9c5a38b641b5e314aad0926d761fb138c0e60bf6c05b95392142c3",
+    "5639349097", "b5173d172773c0c8ff474be5cd6959573cd8542d4e095916e12c139add91f2be",
+)
 ISSUE502_BASE = "e1fe126372d5c5a06dc7d2f9c76cb205da8643e7"
 ISSUE502_TREE = "76495e566a78a7951c33314ac742606c85ee92e5"
 ISSUE502_ROUTE_COMMENT = "5507883668"
@@ -336,6 +354,20 @@ ISSUE514_ROUTE_COMMENT = "5527274671"
 ISSUE516_BASE = "9ed7a7e01f3be9b7fa2a2eb77f659f4800df7268"
 ISSUE516_TREE = "4fb37cd794a31e4d0e440cb84d792f53dc05a398"
 ISSUE516_ROUTE_COMMENT = "5542161744"
+ISSUE529_BASE = "0e4efa56b36773ad8c687fb9daa73adc0152b89c"
+ISSUE529_TREE = "b4aa619ae550bb562a18725da454eb607124853e"
+ISSUE529_BODY_SHA256 = "f165f78a66d0f1f7b8c1386d2ba9a6b2991f4df666823572acdee782ba450d4e"
+ISSUE529_DECISION_COMMENT = "5612151683"
+ISSUE529_DECISION_SHA256 = "1c08b7ed76199e1dc63f1577ddf5e882b532e647876ef28ac9c9255c884bfcf9"
+ISSUE529_AMENDMENT_COMMENT = "5612266631"
+ISSUE529_AMENDMENT_SHA256 = "15ae5a70a3b598d43852d3e0b1ff393977778a44cc43ae4738a45aa5ad1d02fd"
+ISSUE529_BUDGET_AMENDMENT_COMMENT = "5612502264"
+ISSUE529_BUDGET_AMENDMENT_SHA256 = "3efe860882427d574f804061e1e4d718a7ca0e9ca7c0efa065550557fd25a81f"
+ISSUE529_DOCS_AMENDMENT_COMMENT = "5612738830"
+ISSUE529_DOCS_AMENDMENT_SHA256 = "c74cdb7e62e702a3ffa8406976bb1e53a9b98c3dfe128fee074e02b8d718bf63"
+ISSUE529_HOSTED_CORRECTION_COMMENT = "5613239963"
+ISSUE529_HOSTED_CORRECTION_SHA256 = "a444fdf9f283cc631e1e0729bef9b10d227f3778fffc270ed3c76473cb4ca82f"
+ISSUE529_BUDGET_RED = "89f87b3d239b21f0a8064994e328b07760af2cb8"
 ISSUE495_TREE = "13f79eb5db44249f635a619e1b283279f25ba9f0"
 ISSUE495_ROUTE_COMMENT = "5498387945"
 ISSUE495_CORRECTION_COMMENT = "5498411811"
@@ -586,6 +618,39 @@ ROUTES = {
         "docs/STATUS.md",
         "docs/THIRD_PARTY_NOTICES.md",
         "docs/TRACEABILITY.md",
+    },
+    ISSUE527_BRANCH: {
+        ".github/workflows/ci.yml",
+        "tests/unit/test_ci_workflow_timeout_policy.py",
+        "docs/governance/preflights/issue-527-ci-backend-timeout.json",
+        "scripts/quality/stage8_cut1_routes.py",
+        "tests/unit/test_stage8_cut1_routes.py",
+        "docs/QUALITY_GATES.md",
+        "docs/STATUS.md",
+        "docs/TRACEABILITY.md",
+    },
+    ISSUE529_BRANCH: {
+        ".github/workflows/security.yml",
+        "docs/governance/preflights/issue-529.json",
+        "tests/unit/test_stage8_node_security.py",
+        "scripts/quality/check_stage8_docs.py",
+        "scripts/quality/stage8_cut1_routes.py",
+        "tests/unit/test_stage8_cut1_routes.py",
+        "docs/ADR/0084-native-arm64-hosted-security.md",
+        "docs/QUALITY_GATES.md",
+        "docs/STATUS.md",
+        "docs/TRACEABILITY.md",
+        "docs/THIRD_PARTY_NOTICES.md",
+        "scripts/ci/verify_branch_protection.py",
+        "tests/unit/test_branch_protection_verifier.py",
+        "docs/REPOSITORY_GUARDRAILS.md",
+        "docs/agent-context/context-policy-manifest-v1.json",
+        "docs/governance/GOVERNANCE_PREFLIGHT_V1.schema.json",
+        "scripts/governance_preflight_v1.py",
+        "tests/unit/test_governance_preflight_v1.py",
+        "tests/unit/test_governance_preflight_repository.py",
+        "docs/SECURITY_AND_PRIVACY.md",
+        "docs/STAGE_ISSUE_PLAN.md",
     },
     ISSUE478_BRANCH: {
         "docs/STATUS.md",
@@ -1209,6 +1274,9 @@ ROUTE_ISSUES[ISSUE523_BRANCH] = 523
 TOTAL_LIMITS[ISSUE523_BRANCH] = 7660
 ROUTE_ISSUES[ISSUE525_BRANCH] = 525
 TOTAL_LIMITS[ISSUE525_BRANCH] = 2100
+ROUTE_ISSUES[ISSUE527_BRANCH] = 527
+TOTAL_LIMITS[ISSUE527_BRANCH] = 420
+ROUTE_ISSUES[ISSUE529_BRANCH] = 529
 ROUTE_ISSUES[ISSUE502_BRANCH] = 502
 TOTAL_LIMITS[ISSUE502_BRANCH] = 4660
 ROUTE_ISSUES[ISSUE507_BRANCH] = 507
@@ -1464,6 +1532,16 @@ TEXT_LIMITS = {
         "docs/STATUS.md": 100,
         "docs/THIRD_PARTY_NOTICES.md": 120,
         "docs/TRACEABILITY.md": 100,
+    },
+    ISSUE527_BRANCH: {
+        ".github/workflows/ci.yml": 2,
+        "tests/unit/test_ci_workflow_timeout_policy.py": 120,
+        "docs/governance/preflights/issue-527-ci-backend-timeout.json": 80,
+        "scripts/quality/stage8_cut1_routes.py": 80,
+        "tests/unit/test_stage8_cut1_routes.py": 100,
+        "docs/QUALITY_GATES.md": 80,
+        "docs/STATUS.md": 60,
+        "docs/TRACEABILITY.md": 40,
     },
     ISSUE478_BRANCH: {
         "docs/STATUS.md": 100,
@@ -2517,6 +2595,24 @@ def route_has_copy_or_rename(output: str) -> bool:
 
 
 def route_base(run: Callable[[list[str]], Any], branch: str) -> str:
+    if branch == ISSUE527_BRANCH:
+        objects = ((ISSUE527_BASE, ISSUE527_TREE), *ISSUE527_TRANSITION_OBJECTS)
+        base, merge = ISSUE527_TRANSITION_OBJECTS[1][0], ISSUE527_TRANSITION_OBJECTS[2][0]
+        edges = ((ISSUE527_BASE, objects[1][0]), (objects[1][0], "HEAD"),
+                 (base, "HEAD"), (merge, "HEAD"))
+        checks = [
+            *(run(["git", "rev-parse", f"{commit}^{{tree}}"]) for commit, _ in objects),
+            *(run(["git", "show", "-s", "--format=%P", commit])
+              for commit, _ in ISSUE527_TRANSITION_PARENTS),
+            run(["git", "rev-parse", "origin/main^{commit}"]),
+            *(run(["git", "merge-base", "--is-ancestor", *edge]) for edge in edges),
+        ]
+        expected = [*(tree for _, tree in objects),
+                    *(parents for _, parents in ISSUE527_TRANSITION_PARENTS), base, "", "", "", ""]
+        if any(result.returncode or str(result.stdout).strip() != value
+               for result, value in zip(checks, expected, strict=True)):
+            raise RuntimeError("Issue #527 reviewed transition evidence is unavailable or inconsistent.")
+        return base
     if branch == ISSUE459_BRANCH:
         commits = (ISSUE459_BASE, ISSUE459_FROZEN_HEAD, ISSUE459_TRANSITION_BASE, ISSUE459_TRANSITION_MERGE)
         resolved = [run(["git", "rev-parse", f"{commit}^{{commit}}"]) for commit in commits]
@@ -2661,6 +2757,7 @@ def route_base(run: Callable[[list[str]], Any], branch: str) -> str:
         ISSUE499_BRANCH: (499, ISSUE499_BASE),
         ISSUE524_BRANCH: (524, ISSUE524_BASE),
         ISSUE525_BRANCH: (525, ISSUE525_BASE),
+        ISSUE529_BRANCH: (529, ISSUE529_BASE),
         ISSUE495_BRANCH: (495, ISSUE495_BASE),
         ISSUE482_BRANCH: (482, ISSUE482_BASE),
         ISSUE478_BRANCH: (478, ISSUE478_BASE),
@@ -2755,6 +2852,37 @@ def route_text_charges(
     return max(sum(snapshot.values()) for snapshot in snapshots), {
         path: max(snapshot.get(path, 0) for snapshot in snapshots) for path in all_paths
     }
+
+
+def route_change_budget(
+    root: Path, branch: str, issue: int, files: set[str]
+) -> tuple[int, dict[str, int]]:
+    """Resolve legacy limits or one validated manifest-owned budget."""
+    if branch in TOTAL_LIMITS or branch in TEXT_LIMITS:
+        if branch not in TOTAL_LIMITS or branch not in TEXT_LIMITS:
+            raise RuntimeError(f"Issue #{issue} legacy change budget is incomplete.")
+        return TOTAL_LIMITS[branch], dict(TEXT_LIMITS[branch])
+    candidates: list[dict[str, Any]] = []
+    for relative in sorted(files):
+        if not relative.startswith("docs/governance/preflights/") or not relative.endswith(".json"):
+            continue
+        artifact = load_json_without_duplicate_members(root / relative)
+        if (isinstance(artifact, dict)
+                and artifact.get("schema_version") == "GovernancePreflightV1"
+                and artifact.get("issue_number") == issue
+                and artifact.get("branch") == branch):
+            candidates.append(artifact)
+    if len(candidates) != 1:
+        raise RuntimeError(f"Issue #{issue} requires exactly one manifest-owned change budget.")
+    artifact = candidates[0]
+    findings = validate_governance_preflight(
+        artifact, context={"issue_number": issue, "branch": branch, "changed_files": sorted(files)}
+    )
+    if findings or not isinstance(artifact.get("change_budget"), dict):
+        codes = ", ".join(item.code for item in findings) or "GPF.BUDGET.REQUIRED"
+        raise RuntimeError(f"Issue #{issue} manifest-owned change budget failed closed: {codes}.")
+    budget = artifact["change_budget"]
+    return budget["maximum_additions_plus_deletions"], dict(budget["per_file_charged_lines"])
 
 
 def cut1_transition_charges(
@@ -3328,6 +3456,61 @@ def check_exact_route(
             )
         except (OSError, ValueError, TypeError) as error:
             failures.append(f"Issue #524 governance preflight failed closed: {error}")
+    if branch == ISSUE527_BRANCH:
+        try:
+            preflight = load_json_without_duplicate_members(
+                root / "docs/governance/preflights/issue-527-ci-backend-timeout.json"
+            )
+            findings = validate_governance_preflight(
+                preflight,
+                context={"issue_number": 527, "branch": branch, "changed_files": sorted(files)},
+            )
+            failures.extend(f"Issue #527 governance preflight failed: {item.code}" for item in findings)
+            objective = preflight.get("objective") if isinstance(preflight, dict) else None
+            issue527_authority = (ISSUE527_BASE, ISSUE527_TREE, ISSUE527_ISSUE_BODY_SHA256,
+                                  *(value for row in ISSUE527_TRANSITION_OBJECTS + ISSUE527_TRANSITION_PARENTS for value in row),
+                                  *ISSUE527_TRANSITION_AUTHORITY)
+            if not isinstance(objective, str) or any(
+                value not in objective for value in issue527_authority
+            ):
+                failures.append("Issue #527 CI timeout authority drifted.")
+        except (OSError, ValueError, TypeError) as error:
+            failures.append(f"Issue #527 governance preflight failed closed: {error}")
+    if branch == ISSUE529_BRANCH:
+        try:
+            preflight = load_json_without_duplicate_members(
+                root / "docs/governance/preflights/issue-529.json"
+            )
+            findings = validate_governance_preflight(
+                preflight,
+                context={"issue_number": 529, "branch": branch, "changed_files": sorted(files)},
+            )
+            failures.extend(
+                f"Issue #529 governance preflight failed: {item.code}" for item in findings
+            )
+            objective = preflight.get("objective") if isinstance(preflight, dict) else None
+            issue529_authority = (
+                ISSUE529_BASE,
+                ISSUE529_TREE,
+                ISSUE529_BODY_SHA256,
+                ISSUE529_DECISION_COMMENT,
+                ISSUE529_DECISION_SHA256,
+                ISSUE529_AMENDMENT_COMMENT,
+                ISSUE529_AMENDMENT_SHA256,
+                ISSUE529_BUDGET_AMENDMENT_COMMENT,
+                ISSUE529_BUDGET_AMENDMENT_SHA256,
+                ISSUE529_DOCS_AMENDMENT_COMMENT,
+                ISSUE529_DOCS_AMENDMENT_SHA256,
+                ISSUE529_HOSTED_CORRECTION_COMMENT,
+                ISSUE529_HOSTED_CORRECTION_SHA256,
+                ISSUE529_BUDGET_RED,
+            )
+            if not isinstance(objective, str) or any(
+                item not in objective for item in issue529_authority
+            ):
+                failures.append("Issue #529 native-ARM64 authority drifted.")
+        except (OSError, ValueError, TypeError) as error:
+            failures.append(f"Issue #529 governance preflight failed closed: {error}")
     if branch == ISSUE525_BRANCH:
         try:
             preflight = load_json_without_duplicate_members(
@@ -3719,12 +3902,13 @@ def check_exact_route(
                 raise RuntimeError(f"Issue #{issue} rename/copy evidence is unavailable.")
             if any(route_has_copy_or_rename(str(result.stdout)) for result in transitions):
                 failures.append(f"Issue #{issue} route forbids deleted, renamed, or copied paths.")
-        total, charges = route_text_charges(run, base, set(TEXT_LIMITS[branch]))
-        if total > TOTAL_LIMITS[branch]:
-            failures.append(f"Issue #{issue} charge {total} exceeds {TOTAL_LIMITS[branch]}.")
+        total_limit, text_limits = route_change_budget(root, branch, issue, files)
+        total, charges = route_text_charges(run, base, set(text_limits))
+        if total > total_limit:
+            failures.append(f"Issue #{issue} charge {total} exceeds {total_limit}.")
         failures.extend(
             f"Issue #{issue} charge for {path} exceeds {limit}."
-            for path, limit in TEXT_LIMITS[branch].items() if charges.get(path, 0) > limit
+            for path, limit in text_limits.items() if charges.get(path, 0) > limit
         )
         if branch in {
             ISSUE482_BRANCH,

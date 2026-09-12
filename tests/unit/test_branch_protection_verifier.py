@@ -28,7 +28,13 @@ HISTORICAL_CONTEXTS = (
     "eval smoke",
     "stage8 / performance lighthouse",
 )
-EXPECTED_CONTEXTS = (*HISTORICAL_CONTEXTS, "pr-body-consistency")
+EXPECTED_CONTEXTS = (
+    *HISTORICAL_CONTEXTS[:8],
+    "security / docker build (ARM64 native)",
+    *HISTORICAL_CONTEXTS[8:],
+    "pr-body-consistency",
+)
+PRE_PR_CONTEXTS = EXPECTED_CONTEXTS[:-1]
 
 
 def documented_required_contexts(markdown: str) -> tuple[str, ...]:
@@ -136,16 +142,16 @@ def payload_with_contexts(contexts: tuple[str, ...]) -> dict[str, object]:
     return payload
 
 
-def test_branch_protection_expected_contexts_are_exactly_the_live_eleven() -> None:
+def test_branch_protection_expected_contexts_are_exactly_the_live_twelve() -> None:
     assert verify_branch_protection.EXPECTED_CONTEXTS == EXPECTED_CONTEXTS
 
 
-def test_branch_protection_verifier_accepts_exact_live_eleven_contexts() -> None:
+def test_branch_protection_verifier_accepts_exact_live_twelve_contexts() -> None:
     assert verify_branch_protection.validate(payload_with_contexts(EXPECTED_CONTEXTS)) == []
 
 
 def test_branch_protection_verifier_rejects_missing_pr_body_consistency() -> None:
-    failures = verify_branch_protection.validate(payload_with_contexts(HISTORICAL_CONTEXTS))
+    failures = verify_branch_protection.validate(payload_with_contexts(PRE_PR_CONTEXTS))
 
     assert "required status checks missing contexts: pr-body-consistency." in failures
 
@@ -164,7 +170,7 @@ def test_branch_protection_verifier_rejects_wrong_pr_body_consistency_app() -> N
     ) in failures
 
 
-def test_branch_protection_verifier_rejects_unexpected_twelfth_context() -> None:
+def test_branch_protection_verifier_rejects_unexpected_thirteenth_context() -> None:
     failures = verify_branch_protection.validate(
         payload_with_contexts((*EXPECTED_CONTEXTS, "unexpected / bypass"))
     )
@@ -173,8 +179,8 @@ def test_branch_protection_verifier_rejects_unexpected_twelfth_context() -> None
     assert "required status check bindings include unexpected contexts: unexpected / bypass." in failures
 
 
-def test_branch_protection_verifier_rejects_removal_of_each_historical_context() -> None:
-    for removed in HISTORICAL_CONTEXTS:
+def test_branch_protection_verifier_rejects_removal_of_each_required_context() -> None:
+    for removed in EXPECTED_CONTEXTS:
         contexts = tuple(context for context in EXPECTED_CONTEXTS if context != removed)
 
         failures = verify_branch_protection.validate(payload_with_contexts(contexts))
@@ -186,8 +192,8 @@ def test_branch_protection_verifier_rejects_removal_of_each_historical_context()
 def test_branch_protection_verifier_rejects_duplicate_contexts_and_bindings() -> None:
     duplicate_context = payload_with_contexts((*EXPECTED_CONTEXTS, "pr-body-consistency"))
     failures = verify_branch_protection.validate(duplicate_context)
-    assert "required status checks contexts must contain exactly 11 unique entries." in failures
-    assert "required status check bindings must contain exactly 11 unique entries." in failures
+    assert "required status checks contexts must contain exactly 12 unique entries." in failures
+    assert "required status check bindings must contain exactly 12 unique entries." in failures
 
 
 def test_branch_protection_verifier_rejects_missing_or_malformed_check_bindings() -> None:
