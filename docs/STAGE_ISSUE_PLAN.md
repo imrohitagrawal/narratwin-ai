@@ -3264,9 +3264,10 @@ with their required true assertions. A refusal is retained as a separate
 nonreceipt owner decision; it cannot advance the chain or assert consent.
 Other receipt types may record FAIL for a failed review or verification.
 
-The designated security and semantic reviewers must be different independent
-actors, neither an author/committer of the carrier changes or generator of the
-evidence they independently judge. Their live repository association and
+The designated security and semantic reviewers must each be independent of
+authorship/commits of the carrier changes and generation of the evidence they
+independently judge. One eligible actor may fill both roles with separate
+reports, receipts and fresh-context evidence; equal actor IDs alone do not fail. Their live repository association and
 fresh-context review provenance must be supported. The exact-head approver
 must be a non-author eligible under live protection; the owner cannot waive
 eligibility by placing an ID in reviewerPolicy. Delegated analysis can support
