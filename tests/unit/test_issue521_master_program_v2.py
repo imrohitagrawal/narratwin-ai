@@ -157,7 +157,8 @@ def test_exact_semantic_context_and_external_correction_partitions_are_pinned() 
     )
     assert context["relationBasisCode"] == "EXACT_GOVERNED_BLOCK_MEMBERSHIP"
     assert context["childBasisCode"] == "EXPLICIT_CLASS_WITH_ORDERED_CONTEXT_CHAIN"
-    assert overlay["overlaySha256"] == program.EXTERNAL_SEMANTIC_CORRECTION_OVERLAY_SHA256
+    assert overlay["schemaVersion"] == "ExternalSemanticCorrectionOverlayV2" and overlay["reviewState"] == "EXHAUSTIVE_REVIEW_COMPLETE_NON_ACTIVATING" and overlay["unreviewedNormativeClauseCount"] == overlay["unreviewedCandidateUnitCount"] == 0
+    assert overlay["exhaustiveReview"]["candidateUnitCount"] == 50_748 and overlay["exhaustiveReview"]["normativeRequirementCount"] == 13_397 and overlay["overlaySha256"] == program.EXTERNAL_SEMANTIC_CORRECTION_OVERLAY_SHA256
     attestation = overlay["sourceIdentityEquivalenceAttestation"]
     assert attestation["correctionCount"] == len(attestation["corrections"]) == 10
     assert attestation["reuseScope"] == ("EVIDENCE_ONLY_ZERO_NORMATIVE_CLAUSE_RESULT_ONLY")
@@ -289,7 +290,7 @@ def test_mapping_artifact_round_trips_indexed_rows_below_github_warning_limit() 
     assert compact_api_contract not in rendered
     assert compact_api_contract.replace(b'","', b'.md","') not in rendered
     artifact = program._load_json_text(rendered.decode("utf-8"))
-    assert len(rendered) < 50 * 1024 * 1024
+    assert len(rendered) < program.MAPPING_MAX_BYTES == 64 * 1024 * 1024
     assert artifact["rowEncoding"]["kind"] == ("INDEXED_VALUE_TABLE_WITH_COMMITTED_DERIVED_THRESHOLD_V2")
     assert re.fullmatch(
         r"[0-9a-f]{64}",
@@ -374,6 +375,7 @@ def test_mapping_rows_are_exactly_repository_current_and_external_normative() ->
     expected = expected_repository | expected_external
     actual = [row["sourceAtomId"] for row in mapping["rows"]]
     assert len(actual) == len(set(actual)) == len(expected)
+    assert len(actual) == 31_398 and sum(row["sourceKind"].startswith("EXTERNAL_") for row in mapping["rows"]) == 13_382
     assert set(actual) == set(expected)
     assert set(expected_repository) < set(candidates)
     assert all(source["semanticCoverage"]["candidateUnitCount"] == source["semanticCoverage"]["normativeRequirementCount"] + source["semanticCoverage"]["excludedUnitCount"] == sum(source["semanticCoverage"]["classCounts"].values()) for source in mapping["sources"])
