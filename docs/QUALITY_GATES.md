@@ -1976,3 +1976,20 @@ its first dynamic import, preventing nondeterministic
 `/tmp/node-compile-cache` bytes from being baked into the image. The later
 inventory process still walks `/tmp` without a skip, exclusion, or compensating
 normalization.
+
+## Issue #527 backend CI timeout gate
+
+The backend `lint / typecheck / unit / api` job must declare exactly one finite
+30-minute job-level timeout. The frontend, Docker, and Stage 8 performance jobs
+remain fixed at 20, 20, and 35 minutes. Missing, duplicate, non-numeric, lower,
+higher, or misplaced timeout values fail the focused regression:
+
+```bash
+uv run pytest -q tests/unit/test_ci_workflow_timeout_policy.py
+uv run pytest -q tests/unit/test_stage8_cut1_routes.py
+NARRATWIN_POLICY_ONLY=1 make quality
+```
+
+The longer fail-safe does not weaken, skip, retry, or shard the backend suite.
+Every required hosted context must pass at the exact candidate head; a timeout,
+cancellation, or local-only result is not hosted-parity evidence.

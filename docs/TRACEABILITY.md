@@ -877,3 +877,11 @@ remain separate gates.
 | Preserve complete architecture evidence | Same byte-identical build, scan, and consensus wrappers in independent AMD64 and `ubuntu-24.04-arm` jobs; isolated tags, sessions, report paths, and artifacts | Existing runtime, Sharp, HTTP, reproducibility, SBOM, Trivy, Grype, CPython, thresholds, and finite timeouts remain fail closed |
 | Reconcile the protected topology | Amendment `5612266631`; canonical verifier, mutation tests, and repository-settings documentation include the stable native check once with GitHub Actions app ID `15368` | Existing eleven contexts and strict/review/admin/force-push/deletion/conversation controls remain unchanged |
 | Bind delivery | Preflight-only `099ca177`; committed RED `8de34633`; exact route and budgets; exact-head push/PR runs; independent review and eligible approval | No provider, media, credential, egress, spend, deployment, release, production, demo, or Cut 1 claim |
+
+## Issue #527 backend CI timeout traceability
+
+| Requirement | Executable evidence | Preserved boundary |
+|---|---|---|
+| Let the complete backend suite reach a verdict | PR #522 [`34282990946` / job `102251927718`](https://github.com/imrohitagrawal/narratwin-ai/actions/runs/34282990946/job/102251927718) cancelled at 15m18 and [`34252374484` / job `102149655021`](https://github.com/imrohitagrawal/narratwin-ai/actions/runs/34252374484/job/102149655021) cancelled at 15m14; exact job-level 30-minute regression | A finite ceiling remains; no command, selection, retry, or concurrency change |
+| Reject ambiguous or weakened timeout policy | Missing, duplicate, non-numeric, 29, 31, and misplaced mutations | Frontend, Docker, and Stage 8 ceilings remain 20, 20, and 35 minutes |
+| Preserve delivery authority | Issue #527 preflight, exact route/base/budget tests, and exact-head hosted checks | No product, provider, demo, release, production, credential, egress, or spend authority |

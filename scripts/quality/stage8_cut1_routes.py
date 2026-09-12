@@ -36,6 +36,7 @@ ISSUE499_BRANCH = "stage8-499-pypdf-6-16-2-security-refresh"
 ISSUE523_BRANCH = "stage8-523-httpx2-2-12-security-refresh"
 ISSUE524_BRANCH = "stage8-524-frontend-dependency-security-refresh"
 ISSUE525_BRANCH = "stage8-525-schema-oracle-runtime-policy"
+ISSUE527_BRANCH = "stage8-527-backend-ci-timeout"
 ISSUE529_BRANCH = "stage8-529-native-arm64-security"
 ISSUE502_BRANCH = "stage8-502-frontend-musl-runtime-security"
 ISSUE507_BRANCH = "stage8-507-google-api-core-grpc-status"
@@ -310,6 +311,22 @@ ISSUE525_VERSION_CORRECTION_SHA256 = (
 ISSUE525_IO_CORRECTION_COMMENT = "5601074797"
 ISSUE525_IO_CORRECTION_SHA256 = (
     "1e7e5f22fa281eb9da188fae12d03237fd711a90488a2c4ba21af5a176e6287d"
+)
+ISSUE527_BASE = "0e4efa56b36773ad8c687fb9daa73adc0152b89c"
+ISSUE527_TREE = "b4aa619ae550bb562a18725da454eb607124853e"
+ISSUE527_ISSUE_BODY_SHA256 = "fee713b53055e1d8b2dfe53af320367cd734dd26807c3c3fe083ea092f9c6180"
+ISSUE527_TRANSITION_OBJECTS = (
+    ("36a3d12fcdd167c7d48482ff5b4d342d9af570b1", "54b11855326e3ed5ef9ac3be071e0c46a2039c71"),
+    ("ef45442f6c0d333da6053061a2e9b4eaf80146f4", "5757a7a4fc98ac9dc3c61247f8f61deaab395f3f"),
+    ("e78d80e60eecda24088a49aa072d9030aaf7087d", "930f43797ddc07f8a8ccf60f248c85dee1c64674"),
+)
+ISSUE527_TRANSITION_PARENTS = (
+    (ISSUE527_TRANSITION_OBJECTS[1][0], "0e4efa56b36773ad8c687fb9daa73adc0152b89c eaaa3e519a5158c20cbecf7a180ca5c7c8f563f2"),
+    (ISSUE527_TRANSITION_OBJECTS[2][0], "36a3d12fcdd167c7d48482ff5b4d342d9af570b1 ef45442f6c0d333da6053061a2e9b4eaf80146f4"),
+)
+ISSUE527_TRANSITION_AUTHORITY = (
+    "5639330998", "56a8c21d8f9c5a38b641b5e314aad0926d761fb138c0e60bf6c05b95392142c3",
+    "5639349097", "b5173d172773c0c8ff474be5cd6959573cd8542d4e095916e12c139add91f2be",
 )
 ISSUE502_BASE = "e1fe126372d5c5a06dc7d2f9c76cb205da8643e7"
 ISSUE502_TREE = "76495e566a78a7951c33314ac742606c85ee92e5"
@@ -600,6 +617,16 @@ ROUTES = {
         "docs/QUALITY_GATES.md",
         "docs/STATUS.md",
         "docs/THIRD_PARTY_NOTICES.md",
+        "docs/TRACEABILITY.md",
+    },
+    ISSUE527_BRANCH: {
+        ".github/workflows/ci.yml",
+        "tests/unit/test_ci_workflow_timeout_policy.py",
+        "docs/governance/preflights/issue-527-ci-backend-timeout.json",
+        "scripts/quality/stage8_cut1_routes.py",
+        "tests/unit/test_stage8_cut1_routes.py",
+        "docs/QUALITY_GATES.md",
+        "docs/STATUS.md",
         "docs/TRACEABILITY.md",
     },
     ISSUE529_BRANCH: {
@@ -1247,6 +1274,8 @@ ROUTE_ISSUES[ISSUE523_BRANCH] = 523
 TOTAL_LIMITS[ISSUE523_BRANCH] = 7660
 ROUTE_ISSUES[ISSUE525_BRANCH] = 525
 TOTAL_LIMITS[ISSUE525_BRANCH] = 2100
+ROUTE_ISSUES[ISSUE527_BRANCH] = 527
+TOTAL_LIMITS[ISSUE527_BRANCH] = 420
 ROUTE_ISSUES[ISSUE529_BRANCH] = 529
 ROUTE_ISSUES[ISSUE502_BRANCH] = 502
 TOTAL_LIMITS[ISSUE502_BRANCH] = 4660
@@ -1503,6 +1532,16 @@ TEXT_LIMITS = {
         "docs/STATUS.md": 100,
         "docs/THIRD_PARTY_NOTICES.md": 120,
         "docs/TRACEABILITY.md": 100,
+    },
+    ISSUE527_BRANCH: {
+        ".github/workflows/ci.yml": 2,
+        "tests/unit/test_ci_workflow_timeout_policy.py": 120,
+        "docs/governance/preflights/issue-527-ci-backend-timeout.json": 80,
+        "scripts/quality/stage8_cut1_routes.py": 80,
+        "tests/unit/test_stage8_cut1_routes.py": 100,
+        "docs/QUALITY_GATES.md": 80,
+        "docs/STATUS.md": 60,
+        "docs/TRACEABILITY.md": 40,
     },
     ISSUE478_BRANCH: {
         "docs/STATUS.md": 100,
@@ -2556,6 +2595,24 @@ def route_has_copy_or_rename(output: str) -> bool:
 
 
 def route_base(run: Callable[[list[str]], Any], branch: str) -> str:
+    if branch == ISSUE527_BRANCH:
+        objects = ((ISSUE527_BASE, ISSUE527_TREE), *ISSUE527_TRANSITION_OBJECTS)
+        base, merge = ISSUE527_TRANSITION_OBJECTS[1][0], ISSUE527_TRANSITION_OBJECTS[2][0]
+        edges = ((ISSUE527_BASE, objects[1][0]), (objects[1][0], "HEAD"),
+                 (base, "HEAD"), (merge, "HEAD"))
+        checks = [
+            *(run(["git", "rev-parse", f"{commit}^{{tree}}"]) for commit, _ in objects),
+            *(run(["git", "show", "-s", "--format=%P", commit])
+              for commit, _ in ISSUE527_TRANSITION_PARENTS),
+            run(["git", "rev-parse", "origin/main^{commit}"]),
+            *(run(["git", "merge-base", "--is-ancestor", *edge]) for edge in edges),
+        ]
+        expected = [*(tree for _, tree in objects),
+                    *(parents for _, parents in ISSUE527_TRANSITION_PARENTS), base, "", "", "", ""]
+        if any(result.returncode or str(result.stdout).strip() != value
+               for result, value in zip(checks, expected, strict=True)):
+            raise RuntimeError("Issue #527 reviewed transition evidence is unavailable or inconsistent.")
+        return base
     if branch == ISSUE459_BRANCH:
         commits = (ISSUE459_BASE, ISSUE459_FROZEN_HEAD, ISSUE459_TRANSITION_BASE, ISSUE459_TRANSITION_MERGE)
         resolved = [run(["git", "rev-parse", f"{commit}^{{commit}}"]) for commit in commits]
@@ -3399,6 +3456,26 @@ def check_exact_route(
             )
         except (OSError, ValueError, TypeError) as error:
             failures.append(f"Issue #524 governance preflight failed closed: {error}")
+    if branch == ISSUE527_BRANCH:
+        try:
+            preflight = load_json_without_duplicate_members(
+                root / "docs/governance/preflights/issue-527-ci-backend-timeout.json"
+            )
+            findings = validate_governance_preflight(
+                preflight,
+                context={"issue_number": 527, "branch": branch, "changed_files": sorted(files)},
+            )
+            failures.extend(f"Issue #527 governance preflight failed: {item.code}" for item in findings)
+            objective = preflight.get("objective") if isinstance(preflight, dict) else None
+            issue527_authority = (ISSUE527_BASE, ISSUE527_TREE, ISSUE527_ISSUE_BODY_SHA256,
+                                  *(value for row in ISSUE527_TRANSITION_OBJECTS + ISSUE527_TRANSITION_PARENTS for value in row),
+                                  *ISSUE527_TRANSITION_AUTHORITY)
+            if not isinstance(objective, str) or any(
+                value not in objective for value in issue527_authority
+            ):
+                failures.append("Issue #527 CI timeout authority drifted.")
+        except (OSError, ValueError, TypeError) as error:
+            failures.append(f"Issue #527 governance preflight failed closed: {error}")
     if branch == ISSUE529_BRANCH:
         try:
             preflight = load_json_without_duplicate_members(
@@ -3434,7 +3511,7 @@ def check_exact_route(
                 failures.append("Issue #529 native-ARM64 authority drifted.")
         except (OSError, ValueError, TypeError) as error:
             failures.append(f"Issue #529 governance preflight failed closed: {error}")
-    elif branch == ISSUE525_BRANCH:
+    if branch == ISSUE525_BRANCH:
         try:
             preflight = load_json_without_duplicate_members(
                 root

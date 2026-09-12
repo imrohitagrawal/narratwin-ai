@@ -515,6 +515,16 @@ ISSUE525_EXPECTED = {
     "docs/THIRD_PARTY_NOTICES.md",
     "docs/TRACEABILITY.md",
 }
+ISSUE527_EXPECTED = {
+    ".github/workflows/ci.yml",
+    "tests/unit/test_ci_workflow_timeout_policy.py",
+    "docs/governance/preflights/issue-527-ci-backend-timeout.json",
+    "scripts/quality/stage8_cut1_routes.py",
+    "tests/unit/test_stage8_cut1_routes.py",
+    "docs/QUALITY_GATES.md",
+    "docs/STATUS.md",
+    "docs/TRACEABILITY.md",
+}
 ISSUE529_EXPECTED = {
     ".github/workflows/security.yml",
     "docs/governance/preflights/issue-529.json",
@@ -1216,6 +1226,7 @@ EXPECTED = {
 EXPECTED["stage8-499-pypdf-6-16-2-security-refresh"] = ISSUE499_EXPECTED
 EXPECTED["stage8-523-httpx2-2-12-security-refresh"] = ISSUE523_EXPECTED
 EXPECTED["stage8-525-schema-oracle-runtime-policy"] = ISSUE525_EXPECTED
+EXPECTED["stage8-527-backend-ci-timeout"] = ISSUE527_EXPECTED
 EXPECTED["stage8-529-native-arm64-security"] = ISSUE529_EXPECTED
 
 
@@ -5360,6 +5371,90 @@ def test_issue525_route_rejects_fixed_base_drift_and_every_path_cap(
             failures,
         )
         assert f"Issue #525 charge for {path} exceeds {limit}." in failures
+
+
+def test_issue527_route_freezes_exact_ci_timeout_scope() -> None:
+    branch = "stage8-527-backend-ci-timeout"
+    assert routes.ISSUE527_BRANCH == branch
+    assert routes.ISSUE527_BASE == "0e4efa56b36773ad8c687fb9daa73adc0152b89c"
+    assert routes.ISSUE527_TREE == "b4aa619ae550bb562a18725da454eb607124853e"
+    assert routes.ISSUE527_TRANSITION_OBJECTS == (
+        ("36a3d12fcdd167c7d48482ff5b4d342d9af570b1", "54b11855326e3ed5ef9ac3be071e0c46a2039c71"),
+        ("ef45442f6c0d333da6053061a2e9b4eaf80146f4", "5757a7a4fc98ac9dc3c61247f8f61deaab395f3f"),
+        ("e78d80e60eecda24088a49aa072d9030aaf7087d", "930f43797ddc07f8a8ccf60f248c85dee1c64674"),
+    )
+    assert routes.ISSUE527_TRANSITION_AUTHORITY == (
+        "5639330998", "56a8c21d8f9c5a38b641b5e314aad0926d761fb138c0e60bf6c05b95392142c3",
+        "5639349097", "b5173d172773c0c8ff474be5cd6959573cd8542d4e095916e12c139add91f2be",
+    )
+    assert routes.ROUTES[branch] == ISSUE527_EXPECTED
+    assert routes.ROUTE_ISSUES[branch] == 527
+    assert routes.TOTAL_LIMITS[branch] == 420
+    assert routes.TEXT_LIMITS[branch] == {
+        ".github/workflows/ci.yml": 2,
+        "tests/unit/test_ci_workflow_timeout_policy.py": 120,
+        "docs/governance/preflights/issue-527-ci-backend-timeout.json": 80,
+        "scripts/quality/stage8_cut1_routes.py": 80,
+        "tests/unit/test_stage8_cut1_routes.py": 100,
+        "docs/QUALITY_GATES.md": 80,
+        "docs/STATUS.md": 60,
+        "docs/TRACEABILITY.md": 40,
+    }
+    preflight = json.loads(
+        (REPO / "docs/governance/preflights/issue-527-ci-backend-timeout.json")
+        .read_text(encoding="utf-8")
+    )
+    assert set(preflight["scope"]["required"]) == ISSUE527_EXPECTED
+    assert preflight["scope"]["required"] == preflight["scope"]["allowed_prefixes"]
+    authority = (routes.ISSUE527_ISSUE_BODY_SHA256, *(
+        value for row in routes.ISSUE527_TRANSITION_OBJECTS for value in row
+    ), *routes.ISSUE527_TRANSITION_AUTHORITY)
+    assert all(value in preflight["objective"] for value in authority)
+    assert branch in stage8.EFFECTIVE_STAGE8_ROUTES
+
+
+def test_issue527_route_rejects_suffix_and_transition_drift(monkeypatch: Any) -> None:
+    branch = routes.ISSUE527_BRANCH + "-retry"
+    assert branch not in stage8.EFFECTIVE_STAGE8_ROUTES
+    assert stage8.STAGE8_BRANCH_PATTERN.match(branch)
+    monkeypatch.setattr(stage8, "current_branch", lambda: branch)
+    monkeypatch.setattr(stage8, "changed_files_for_stage_scope", lambda: [])
+    failures: list[str] = []
+    stage8.check_stage_scope(failures)
+    assert failures == [
+        f"Stage 8 branch collides with exact reviewed route {routes.ISSUE527_BRANCH}: {branch}."
+    ]
+
+    objects = dict(((routes.ISSUE527_BASE, routes.ISSUE527_TREE),
+                    *routes.ISSUE527_TRANSITION_OBJECTS))
+    parents = dict(routes.ISSUE527_TRANSITION_PARENTS)
+
+    def good(args: list[str]) -> subprocess.CompletedProcess[str]:
+        if args[:2] == ["git", "rev-parse"] and args[2].endswith("^{tree}"):
+            return completed(args, out=objects[args[2].removesuffix("^{tree}")] + "\n")
+        if args[:4] == ["git", "show", "-s", "--format=%P"]:
+            return completed(args, out=parents[args[4]] + "\n")
+        if args == ["git", "rev-parse", "origin/main^{commit}"]:
+            return completed(args, out=routes.ISSUE527_TRANSITION_OBJECTS[1][0] + "\n")
+        if args[:3] == ["git", "merge-base", "--is-ancestor"]:
+            return completed(args)
+        raise AssertionError(args)
+
+    assert routes.route_base(good, routes.ISSUE527_BRANCH) == routes.ISSUE527_TRANSITION_OBJECTS[1][0]
+    for rejected in ("object", "current-main", "ancestry", "parents"):
+        def broken(args: list[str], *, rejected: str = rejected) -> subprocess.CompletedProcess[str]:
+            if rejected == "object" and args[:2] == ["git", "rev-parse"] and args[2].endswith("^{tree}"):
+                return completed(args, code=128)
+            if rejected == "current-main" and args == ["git", "rev-parse", "origin/main^{commit}"]:
+                return completed(args, out="0" * 40 + "\n")
+            if rejected == "ancestry" and args[:3] == ["git", "merge-base", "--is-ancestor"]:
+                return completed(args, code=1)
+            if rejected == "parents" and args[:4] == ["git", "show", "-s", "--format=%P"]:
+                return completed(args, out="0" * 40 + "\n")
+            return good(args)
+
+        error = pytest.raises(RuntimeError, routes.route_base, broken, routes.ISSUE527_BRANCH)
+        assert "Issue #527 reviewed transition" in str(error.value)
 
 
 def test_issue529_route_freezes_native_arm64_and_required_context_scope() -> None:
