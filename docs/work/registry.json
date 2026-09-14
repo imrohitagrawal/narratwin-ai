@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
   "inventorySource": {
-    "path": "docs/work/working-records/proposals/2026-09-14-structure/SOURCES.json",
-    "sha256": "9b8bff9ecd12748efce4deed693612cbd177fc050c3d989afd9b14210b55095c",
-    "bytes": 10586
+    "path": "docs/work/documentation-architecture/evidence/SOURCES.json",
+    "sha256": "5cc6dc11554edee65e536cd99098133e54c4c01e97f51c4fcf05bb9b9c60d2aa",
+    "bytes": 9067
   },
   "privateRoots": [
     ".evidence",
@@ -22,8 +22,13 @@
   ],
   "issueInventory": [
     {
+      "number": 537,
+      "title": "Docs: unify documentation architecture and contributor lifecycle",
+      "workId": "documentation-architecture"
+    },
+    {
       "number": 535,
-      "title": "Governance: preserve recovered plans and verify repository archive handoffs",
+      "title": "Governance: preserve sources and organize stable work records",
       "workId": "working-records"
     },
     {
@@ -598,8 +603,8 @@
       "path": "docs/work/governance-backlog",
       "plan": {
         "path": "docs/STATUS.md",
-        "sha256": "dfee91ddf9a384a30cb767ce63ee75ebbf372d2b4d506c4bb6fe12e6b33e43fe",
-        "bytes": 289052,
+        "sha256": "fb3326cbb09434a5b5b86a3d247964081187bbcf2846e1f492f3f902b66cdb92",
+        "bytes": 289504,
         "role": "source-pointer"
       },
       "statusRef": "docs/STATUS.md",
@@ -618,6 +623,38 @@
       "evidenceIndex": "docs/work/governance-backlog/evidence/INDEX.json",
       "handoff": "docs/work/governance-backlog/HANDOFF.md",
       "checkpoint": "2026-09-14; observed main71e0568, draft536 daf07ce, prospective amendment74b15e00; verify current checkout and tracker before action"
+    },
+    {
+      "id": "documentation-architecture",
+      "title": "Documentation architecture and contributor lifecycle",
+      "kind": "governance",
+      "owner": "root orchestrator; existing domain authority retained",
+      "path": "docs/work/documentation-architecture",
+      "plan": {
+        "path": "docs/work/documentation-architecture/PLAN.md",
+        "sha256": "76de94a044a5404f7a80ed42c857049c6de528e6a9ccfe5f99176cd666f467c6",
+        "bytes": 12824,
+        "role": "execution-plan"
+      },
+      "statusRef": "docs/STATUS.md",
+      "authorityRefs": [
+        "AGENTS.md",
+        "docs/governance/NARRATWIN_MASTER_PROGRAM_V1.md",
+        "docs/REPOSITORY_GUARDRAILS.md"
+      ],
+      "issues": [
+        537
+      ],
+      "parent": "working-records",
+      "relationships": [
+        {
+          "kind": "related-to",
+          "target": "governance-backlog"
+        }
+      ],
+      "evidenceIndex": "docs/work/documentation-architecture/evidence/INDEX.json",
+      "handoff": "docs/work/documentation-architecture/HANDOFF.md",
+      "checkpoint": "2026-09-14; original5369e35fb35, prospective scope72966390; verify live tracker before action"
     }
   ]
 }

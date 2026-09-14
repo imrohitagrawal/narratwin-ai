@@ -1,5 +1,7 @@
 # Codex Operating Model
 
+For role-based document discovery, start with the [documentation map](README.md), [contributor lifecycle](../CONTRIBUTING.md) and [template catalog](templates/README.md). Existing mandatory reading and authority remain binding.
+
 ## Shared session entry and handoff
 
 All humans and agents start with README, AGENTS mandatory reading and STATUS

@@ -1,5 +1,7 @@
 ## Linked issue
 
+Authoring help: [CONTRIBUTING.md](https://github.com/imrohitagrawal/narratwin-ai/blob/main/CONTRIBUTING.md) explains concise, self-contained answers. Keep every applicable required section below.
+
 Refs #
 
 If this PR is intentionally meant to close an issue, state the exact closing

@@ -4,8 +4,13 @@ export UV_CACHE_DIR ?= .uv-cache
 
 .PHONY: issue16-spec-quality
 
-quality: work-records-quality
+quality: work-records-quality documentation-quality
 	python3 scripts/quality/check_quality_stage.py
+
+.PHONY: documentation-quality
+documentation-quality:
+	python3 -m scripts.documentation_catalog --catalog docs/documentation-catalog.json
+	python3 -m unittest discover -s tests_stdlib -p test_documentation_catalog.py
 
 issue16-spec-quality:
 	python3 scripts/quality/check_issue16_spec_kit.py

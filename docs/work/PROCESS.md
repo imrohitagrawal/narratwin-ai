@@ -1,5 +1,7 @@
 # Working records and session continuity
 
+Use the [documentation map](../README.md), [contributor lifecycle](../../CONTRIBUTING.md) and [template catalog](../templates/README.md) for new ideas, design, issue intake, implementation and PR preparation. This procedure owns work capture and handoff.
+
 This is the shared procedure for programs, comparisons, experiments, delivery and
 governance work. Existing PRD, accepted contracts, ADRs, traceability and STATUS
 retain their authority. The registry owns navigation metadata; it does not adopt

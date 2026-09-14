@@ -16,6 +16,7 @@ These are navigation records. Review state and folder location grant no authorit
 | [Future product capabilities](../../docs/work/future-capabilities/README.md) | workstream | [source-pointer](../../docs/PRD.md) | [STATUS](../../docs/STATUS.md) · [handoff](../../docs/work/future-capabilities/HANDOFF.md) |
 | [Readiness and operations](../../docs/work/readiness/README.md) | workstream | [source-pointer](../../docs/ENTERPRISE_READINESS_REGISTER.md) | [STATUS](../../docs/STATUS.md) · [handoff](../../docs/work/readiness/HANDOFF.md) |
 | [Governance and evaluation backlog](../../docs/work/governance-backlog/README.md) | governance | [source-pointer](../../docs/STATUS.md) | [STATUS](../../docs/STATUS.md) · [handoff](../../docs/work/governance-backlog/HANDOFF.md) |
+| [Documentation architecture and contributor lifecycle](../../docs/work/documentation-architecture/README.md) | governance | [execution-plan](../../docs/work/documentation-architecture/PLAN.md) | [STATUS](../../docs/STATUS.md) · [handoff](../../docs/work/documentation-architecture/HANDOFF.md) |
 
 ## Observed issue ownership
 
@@ -23,7 +24,8 @@ Snapshot coverage is recorded in the registry; verify live tracker state before 
 
 | Issue | Owning work |
 |---|---|
-| [#535](https://github.com/imrohitagrawal/narratwin-ai/issues/535) Governance: preserve recovered plans and verify repository archive handoffs | [working-records](working-records/README.md) |
+| [#537](https://github.com/imrohitagrawal/narratwin-ai/issues/537) Docs: unify documentation architecture and contributor lifecycle | [documentation-architecture](documentation-architecture/README.md) |
+| [#535](https://github.com/imrohitagrawal/narratwin-ai/issues/535) Governance: preserve sources and organize stable work records | [working-records](working-records/README.md) |
 | [#533](https://github.com/imrohitagrawal/narratwin-ai/issues/533) G1: prospective certification carrier and external receipt field contract | [g1-certification](g1-certification/README.md) |
 | [#532](https://github.com/imrohitagrawal/narratwin-ai/issues/532) Security/Evidence G3 — Establish the restricted evidence store and reconcile private evidence | [security-governance](security-governance/README.md) |
 | [#531](https://github.com/imrohitagrawal/narratwin-ai/issues/531) Governance G2 — Make the prototype qualification gate executable | [security-governance](security-governance/README.md) |

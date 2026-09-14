@@ -1,5 +1,7 @@
 # Work record template
 
+Find other canonical forms in the [template catalog](../../templates/README.md). For starting a discovery, bug or implementation issue, follow [CONTRIBUTING](../../../CONTRIBUTING.md).
+
 Use only the sections needed for independently owned work. Read PROCESS before
 copying this template. Existing plans are referenced rather than copied.
 
@@ -53,3 +55,9 @@ Keep the work path after completion. Update authoritative status, decisions and
 handoff, retain necessary revisions/sources, reconcile references and verify read-back.
 Apply the repository's existing review/merge/cleanup rules. No implicit deletion,
 provider, spending, release or backup authority is supplied by this template.
+
+## Conditional discovery and design
+
+For a new product or uncertain feature, link the existing engineering playbook's intent/spec sections from the template catalog. Record the user/job, observations, assumptions, decision sought, alternatives, next bounded investigation and decision owner. No existing PRD is required for discovery; accepted requirements are required before dependent implementation.
+
+For design work, record current/proposed journey, interaction and loading/empty/error/refusal states, keyboard/accessibility and responsive constraints, prototype/source links, evidence, rejected alternatives and the design decision. Label proposed versus accepted work. Keep significant engineering tradeoffs in ADRs and link them; do not duplicate product requirements here.

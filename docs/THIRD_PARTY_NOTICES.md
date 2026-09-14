@@ -541,3 +541,7 @@ the provider extra or change the locked package artifacts.
 The package is not an application/runtime dependency and supplies no provider,
 model, media, credential, egress, spend, deployment, release, or production
 capability. Final dependency/license review remains required before release.
+
+## Documentation architecture reference sources — Issue #537
+
+Consulted on 2026-09-14: [GitHub issue-form syntax](https://docs.github.com/en/communities/using-templates-to-encourage-useful-issues-and-pull-requests/syntax-for-issue-forms), [GitHub PR templates](https://docs.github.com/en/communities/using-templates-to-encourage-useful-issues-and-pull-requests/creating-a-pull-request-template-for-your-repository), [Google change descriptions](https://google.github.io/eng-practices/review/developer/cl-descriptions.html), and [Diataxis](https://diataxis.fr/). These informed native locations, explanatory change descriptions and task-oriented navigation. New prose/checker/forms are repository-authored; no external code, template text, dependency, skill or media asset was imported. No blanket enterprise-practice certification is implied.

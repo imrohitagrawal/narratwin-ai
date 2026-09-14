@@ -1,5 +1,7 @@
 # NarraTwin AI
 
+[Documentation map](docs/README.md) · [Contributing and starting work](CONTRIBUTING.md) · [All templates](docs/templates/README.md)
+
 ## Start here
 
 Read the [PRD](docs/PRD.md) for product intent, then [STATUS](docs/STATUS.md) for

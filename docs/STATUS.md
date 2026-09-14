@@ -1,5 +1,7 @@
 # Program Status
 
+Issue #537 extends the Issue #535 / draft PR #536 documentation work with a [documentation map](README.md), [template catalog](templates/README.md) and [contributor lifecycle](../CONTRIBUTING.md). Its [plan, review and handoff](work/documentation-architecture/README.md) distinguish implemented navigation checks from outstanding capability/authority requirements. This is the branch target state; integration remains behind PR #534 carrier closeout.
+
 ## Find current work
 
 Start at [the work index](work/INDEX.md) (`docs/work/INDEX.md`) for stable programs,

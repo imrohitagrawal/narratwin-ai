@@ -1,0 +1,285 @@
+{
+  "kind": "public-source-and-live-issue-snapshot",
+  "observedDate": "2026-09-14",
+  "sourceHead": "9e35fb357835c518be0c6ffcdda06c7f51dc91fe",
+  "preflightAmendment": "72966390",
+  "openIssues": [
+    {
+      "number": 537,
+      "title": "Docs: unify documentation architecture and contributor lifecycle"
+    },
+    {
+      "number": 535,
+      "title": "Governance: preserve sources and organize stable work records"
+    },
+    {
+      "number": 533,
+      "title": "G1: prospective certification carrier and external receipt field contract"
+    },
+    {
+      "number": 532,
+      "title": "Security/Evidence G3 \u2014 Establish the restricted evidence store and reconcile private evidence"
+    },
+    {
+      "number": 531,
+      "title": "Governance G2 \u2014 Make the prototype qualification gate executable"
+    },
+    {
+      "number": 525,
+      "title": "Quality: bind external schema-oracle runtime policy"
+    },
+    {
+      "number": 524,
+      "title": "Security: refresh frontend graph after five npm findings"
+    },
+    {
+      "number": 523,
+      "title": "Security: refresh httpx2/httpcore2 after five advisories"
+    },
+    {
+      "number": 521,
+      "title": "Governance G1: certify Master Program V2 superset and six-cut taxonomy"
+    },
+    {
+      "number": 520,
+      "title": "Cut 1 UI capture readiness: consolidate demo surfaces and polish the canonical workflow"
+    },
+    {
+      "number": 519,
+      "title": "Cut 1 T06: validate materially different presenter prototypes before adapter code"
+    },
+    {
+      "number": 512,
+      "title": "Cut 1 T06A: prove real-video provider compatibility before adapter implementation"
+    },
+    {
+      "number": 510,
+      "title": "cut1: make T05 audio duration authority configuration-bound"
+    },
+    {
+      "number": 493,
+      "title": "governance: make tunable policy configuration-first and manifest-driven"
+    },
+    {
+      "number": 459,
+      "title": "Lane A Cut 1 \u2014 controlled local presenter implementation"
+    },
+    {
+      "number": 450,
+      "title": "Cut 1 / Slice 4 master implementation plan: grounded content to human-like presenters"
+    },
+    {
+      "number": 449,
+      "title": "Cut 1 planning: quality-first voice and presenter-video provider bake-off"
+    },
+    {
+      "number": 432,
+      "title": "Cut 1: require blinded human-indistinguishability acceptance"
+    },
+    {
+      "number": 426,
+      "title": "Governance: specify authority reconciliation and stale-route enforcement"
+    },
+    {
+      "number": 391,
+      "title": "Post-Cut-1 workflow: session-scoped resource lifecycle and safe cleanup automation"
+    },
+    {
+      "number": 371,
+      "title": "Cut 1 integration: all-presenter end-to-end evidence, adversarial review, and closeout"
+    },
+    {
+      "number": 370,
+      "title": "Cut 1 UI: coral-clay accessible media generation, playback, and download path"
+    },
+    {
+      "number": 369,
+      "title": "Cut 1 local renderer: synchronized animated presenter video, captions, and export validation"
+    },
+    {
+      "number": 368,
+      "title": "Cut 1 local TTS: generate and validate intelligible key-free audio artifacts"
+    },
+    {
+      "number": 366,
+      "title": "Cut 1: genuine local end-to-end grounded speaking-presenter media"
+    },
+    {
+      "number": 356,
+      "title": "Docs: make repository state and contribution routes clear in the README"
+    },
+    {
+      "number": 328,
+      "title": "R0C \u2014 Reconcile durable execution blueprint and agent-context freshness"
+    },
+    {
+      "number": 327,
+      "title": "R0D \u2014 Decompose legacy Phase 1 closure monoliths behind compatibility facade"
+    },
+    {
+      "number": 298,
+      "title": "Correct #280 semantic multilingual conversion gap"
+    },
+    {
+      "number": 249,
+      "title": "Checkpoint 3: Portfolio product-faithful controlled demo plan"
+    },
+    {
+      "number": 167,
+      "title": "PHF-020A \u2014 Replace product-mode prose scanning with structured policy validation"
+    },
+    {
+      "number": 161,
+      "title": "CH-M1-00E \u2014 Reconcile the Final Review GO/NO-GO scanner evidence"
+    },
+    {
+      "number": 160,
+      "title": "Final Review follow-up \u2014 expand workload performance evidence beyond health-only Locust smoke"
+    },
+    {
+      "number": 159,
+      "title": "CH-M1-00D \u2014 Label superseded release-security evidence after PR #152"
+    },
+    {
+      "number": 149,
+      "title": "CH-14 prerequisite 9/9: platform readiness and reviewer handoff"
+    },
+    {
+      "number": 148,
+      "title": "CH-14 prerequisite 8/9: restore observability and evidence export"
+    },
+    {
+      "number": 147,
+      "title": "CH-14 prerequisite 7/9: restore runbook and target-safety automation"
+    },
+    {
+      "number": 146,
+      "title": "CH-14 prerequisite 6/9: deterministic Stage 4/6/7 seed and parity validator"
+    },
+    {
+      "number": 145,
+      "title": "CH-14 prerequisite 5/9: managed backup policy and artifact catalog"
+    },
+    {
+      "number": 144,
+      "title": "CH-14 prerequisite 4/9: pre-production source and isolated restore landing-zone IaC"
+    },
+    {
+      "number": 143,
+      "title": "CH-14 prerequisite 3/9: Stage 4/6/7 PostgreSQL persistence adapters"
+    },
+    {
+      "number": 142,
+      "title": "CH-14 prerequisite 2/9: connection-backed PostgreSQL kernel and migrations"
+    },
+    {
+      "number": 141,
+      "title": "CH-14 prerequisite 1/9: platform decision, ownership, and durability scope"
+    },
+    {
+      "number": 139,
+      "title": "Phase 1 prerequisite: production-like durability and backup/restore platform for CH-14"
+    },
+    {
+      "number": 132,
+      "title": "Phase 1 closure: CH-22 untrusted replayed input for SEC-UNTRUSTED-001 (Refs #39)"
+    },
+    {
+      "number": 131,
+      "title": "Phase 1 closure: CH-21 retention and erasure for SEC-RETENTION-001 (Refs #39)"
+    },
+    {
+      "number": 130,
+      "title": "Phase 1 closure: CH-12 dashboards and alerts for OPS-ALERT-001 (Refs #39)"
+    },
+    {
+      "number": 129,
+      "title": "Phase 1 closure: CH-13 first-hour watch for OPS-WATCH-001 (Refs #39)"
+    },
+    {
+      "number": 126,
+      "title": "Phase 1 closure: CH-14 production-like restore drill for DUR-RESTORE-001 (Refs #39)"
+    },
+    {
+      "number": 49,
+      "title": "Bound local idempotency records across simulated actors"
+    },
+    {
+      "number": 48,
+      "title": "Track scoped project lookup hardening before production auth"
+    },
+    {
+      "number": 44,
+      "title": "Final Review: track telemetry, CSP, log-envelope, and stale risk-register hardening"
+    },
+    {
+      "number": 43,
+      "title": "Final Review \u2014 Prove the controlled local demo through a real browser-to-backend path"
+    },
+    {
+      "number": 39,
+      "title": "Final Review: resolve production durability and monitoring blockers"
+    },
+    {
+      "number": 21,
+      "title": "Slice 6 \u2014 Premium adapters, observability dashboard, and cost controls"
+    },
+    {
+      "number": 20,
+      "title": "Slice 5 \u2014 Interactive Q&A over approved project knowledge"
+    },
+    {
+      "number": 19,
+      "title": "Later track \u2014 Timed mock video and FFmpeg assembly beyond Stage 7 placeholders"
+    },
+    {
+      "number": 18,
+      "title": "Later track \u2014 Playable local TTS audio beyond the Stage 6 voice manifest"
+    },
+    {
+      "number": 17,
+      "title": "Stage 6 residual \u2014 Controlled fallback integrity for multilingual generation"
+    }
+  ],
+  "originalDocCount": 460,
+  "originalADRCount": 91,
+  "coverage": "Tracked public documentation and declared entry/template sources; no private sources or complete conversation capture.",
+  "sources": [
+    {
+      "path": "AGENTS.md",
+      "sha256": "57ea2bdddd7f0f3df91c75ecb0e434e25aa0779a54d0a2603a7e32a87b5c9ca7"
+    },
+    {
+      "path": "docs/STATUS.md",
+      "sha256": "dfee91ddf9a384a30cb767ce63ee75ebbf372d2b4d506c4bb6fe12e6b33e43fe"
+    },
+    {
+      "path": "docs/ARCHITECTURE.md",
+      "sha256": "0728bc51862b8dca0cbefd992f2fdcf8ee420cdc774120d5cb73d690b494f5ba"
+    },
+    {
+      "path": "docs/governance/NARRATWIN_MASTER_PROGRAM_V1.md",
+      "sha256": "c3e3c85bb980aab4f818e80be3db5484e564423d77bc3ab6e81ba736c3af3420"
+    },
+    {
+      "path": "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md",
+      "sha256": "e70d7c3045a4fec6b8c4feeb276244ea963a778f872955670cc2e209c0b03e2d"
+    },
+    {
+      "path": "docs/ENGINEERING_PROCESS_RCA.md",
+      "sha256": "c634b2bceffefa6e56ccf426a31a031d273fac46116d405f69cb0c34e6b6b6c7"
+    },
+    {
+      "path": ".github/pull_request_template.md",
+      "sha256": "fe458a5da135c0321b621e60a4d647130b44cd6cb988840c2edc06771fbbd693"
+    },
+    {
+      "path": ".github/ISSUE_TEMPLATE/stage_guardrail.yml",
+      "sha256": "e7439c66afad64729c82b232392348e62df8695e51e417f1405f1bd8a824b97f"
+    },
+    {
+      "path": "scripts/work_records.py",
+      "sha256": "43dc0c13267153d19a227dd4b5ec19e298bfe0b98dd4a0d604e1c026835da8a1"
+    }
+  ]
+}
