@@ -8,6 +8,7 @@ from pathlib import Path
 import subprocess
 import tempfile
 import unittest
+from unittest.mock import patch
 
 from scripts import work_records as wr
 
@@ -140,6 +141,14 @@ class WorkRecordsTest(unittest.TestCase):
         for value in (True, 0, -1, float('nan'), float('inf')):
             with self.subTest(value=value), self.assertRaisesRegex(wr.RecordError,'CONFIG_INVALID'):
                 wr.validate(self.root,git_timeout=value)
+
+    def test_timeout_override_reaches_git(self):
+        """Red if the configured timeout is reported but ignored by a Git call."""
+        with patch.object(wr.subprocess, 'run', wraps=subprocess.run) as run:
+            report=wr.validate(self.root,git_timeout=1.25)
+        self.assertEqual(report['effectiveConfiguration']['gitTimeoutSeconds'],1.25)
+        self.assertGreater(len(run.call_args_list),0)
+        self.assertTrue(all(call.kwargs['timeout']==1.25 for call in run.call_args_list))
 
     def test_profile_selection(self):
         """Red if missing profile silently passes, or unknown profile blocks unrelated navigation."""

@@ -44,3 +44,26 @@ no remaining blocker in that bounded correction review. These
 are new implementation results, not retrospective amendments of the design review.
 MIGRATION.json is now bound as public evidence; actual copy preservation and private
 read-back are verified separately rather than inferred from metadata alone.
+
+## Completed local verification
+
+- Public `make work-records-quality` passed the retained29 archive/scope tests and
+  current19 generic tests (including effective timeout propagation).
+- `make quality` passed the Phase1 governance route and exact77-path manifest;
+  the final charge total is measured by that gate, not treated as a quality metric.
+- The selected G1 profile verified9 work records,58 observed issues and all11
+  original-source bindings; a twelfth public artifact now binds the location map.
+- Explicit private read-back verified all1011 inventoried content files. Public
+  output still reports private availability NOT_CHECKED; backup remains UNPROVED.
+- A clean tracked snapshot of implementation1c8b113c passed generic/profile checks
+  and its then-current18 tests without private payloads. The owned temporary copy
+  was removed after verification; the later timeout-propagation test passes locally.
+- Combined guardrail/Phase1/preflight/runner regression run:1538tests passed.
+- Repository guardrails passed on committed implementation1c8b113c; ruff and mypy
+  passed the changed utility and repository scripts/tests.
+- All pre-existing dirty shared tracked files match their pre-work hashes. All8
+  frozen V2 subjects and original descriptors were independently compared unchanged.
+
+Broader `make ci`, exact required PR command evidence, actual hosted direct/merge
+checks and final PR reconciliation remain in progress. No result above is a
+substitute for those requirements or the original carrier integration dependency.
