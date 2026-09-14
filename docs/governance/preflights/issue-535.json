@@ -2,11 +2,11 @@
   "schema_version": "GovernancePreflightV1",
   "issue_number": 535,
   "branch": "phase-1-closure-process-535-work-archive",
-  "objective": "Implement independently reviewed stable docs/work records for all current programs/comparisons; preserve authoritative PRD/contracts/STATUS and exact recovered sources; generated index from one registry; reusable capture/handoff template; typed graph/identity/path/entrypoint checks; README/STATUS/CODEX discovery and thin tracked CLAUDE bridge. Existing archive stays historical/compatibility, private store intact with unchanged descriptors. Amend prospectively after original preflight-only commit; root sole writer. AGENTS hash transition is a separate prerequisite/consumer increment. Preserve PR534 subject and no merge before carrier closeout. No provider, spend, certification, activation, backup or deletion. Pre-code source/failure/review evidence: docs/work/working-records/proposals/2026-09-14-structure/PLAN.md and REVIEW.md, linked in PR536 before code. Resource ledger created before allocation. Generic registry checks supplement exact11 G1 checker and preserve legacy scope checks. Existing Issue532/391 ownership unchanged. Prospective owner-authorized Issue537 documentation architecture amendment: one navigation/template catalog, full contributor lifecycle, native discovery/bug/implementation issue forms, real-link and ADR-identity checks, declarative documentation-impact routes, portable profile and independent cold-onboarding review. Root sole writer. Existing PR536 is expanded, historical9e35fb35 retained; PR534 original subject and carrier order unchanged. No stacked-base/route machinery, no architecture/AGENTS/playbook repins. Complete source/audit/plan/review record under docs/work/documentation-architecture before code, all required hosted parity renewed for expanded head. More than five files are coupled by one catalog, generated consumers, native form endpoints, gate/test boundary and mandatory hash-bound handoff/source indexes; scope remains within128-path schema.",
+  "objective": "Implement independently reviewed stable docs/work records for all current programs/comparisons; preserve authoritative PRD/contracts/STATUS and exact recovered sources; generated index from one registry; reusable capture/handoff template; typed graph/identity/path/entrypoint checks; README/STATUS/CODEX discovery and thin tracked CLAUDE bridge. Existing archive stays historical/compatibility, private store intact with unchanged descriptors. Amend prospectively after original preflight-only commit; root sole writer. AGENTS hash transition is a separate prerequisite/consumer increment. Preserve PR534 subject and no merge before carrier closeout. No provider, spend, certification, activation, backup or deletion. Pre-code source/failure/review evidence: docs/work/working-records/proposals/2026-09-14-structure/PLAN.md and REVIEW.md, linked in PR536 before code. Resource ledger created before allocation. Generic registry checks supplement exact11 G1 checker and preserve legacy scope checks. Existing Issue532/391 ownership unchanged. Prospective owner-authorized Issue537 documentation architecture amendment: one navigation/template catalog, full contributor lifecycle, native discovery/bug/implementation issue forms, real-link and ADR-identity checks, declarative documentation-impact routes, portable profile and independent cold-onboarding review. Root sole writer. Existing PR536 is expanded, historical9e35fb35 retained; PR534 original subject and carrier order unchanged. No stacked-base/route machinery, no architecture/AGENTS/playbook repins. Complete source/audit/plan/review record under docs/work/documentation-architecture before code, all required hosted parity renewed for expanded head. More than five files are coupled by one catalog, generated consumers, native form endpoints, gate/test boundary and mandatory hash-bound handoff/source indexes; scope remains within128-path schema. Before writing the new navigation design decision, add ADR0085 to the prospective scope; record this architecture decision rather than relying on a generated ADR index as its decision evidence.",
   "status_decision": "update-minimally",
   "change_budget": {
-    "exact_paths": 98,
-    "maximum_additions_plus_deletions": 35298,
+    "exact_paths": 99,
+    "maximum_additions_plus_deletions": 35398,
     "deletions_grant_credit": false,
     "per_file_charged_lines": {
       ".gitignore": 8,
@@ -106,7 +106,8 @@
       "docs/work/documentation-architecture/HANDOFF.md": 150,
       "docs/work/documentation-architecture/evidence/INDEX.json": 120,
       "docs/work/documentation-architecture/evidence/SOURCES.json": 650,
-      "docs/THIRD_PARTY_NOTICES.md": 60
+      "docs/THIRD_PARTY_NOTICES.md": 60,
+      "docs/ADR/0085-documentation-navigation.md": 100
     }
   },
   "scope": {
@@ -208,7 +209,8 @@
       "docs/work/documentation-architecture/HANDOFF.md",
       "docs/work/documentation-architecture/evidence/INDEX.json",
       "docs/work/documentation-architecture/evidence/SOURCES.json",
-      "docs/THIRD_PARTY_NOTICES.md"
+      "docs/THIRD_PARTY_NOTICES.md",
+      "docs/ADR/0085-documentation-navigation.md"
     ],
     "allowed_prefixes": [
       ".gitignore",
@@ -308,7 +310,8 @@
       "docs/work/documentation-architecture/HANDOFF.md",
       "docs/work/documentation-architecture/evidence/INDEX.json",
       "docs/work/documentation-architecture/evidence/SOURCES.json",
-      "docs/THIRD_PARTY_NOTICES.md"
+      "docs/THIRD_PARTY_NOTICES.md",
+      "docs/ADR/0085-documentation-navigation.md"
     ],
     "forbidden": [
       "AGENTS.md",
