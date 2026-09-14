@@ -43,7 +43,8 @@ def test_bibliography_candidate_excludes_exact_four_normative_rows() -> None:
 
 def attach_fixture_git(source: Path, destination: Path, config: successor.RuntimeConfig) -> None:
     """Preserve source checkout metadata identity for read-only fixture operations."""
-    shutil.copyfile(source / ".git", destination / ".git")
+    metadata = successor.git(source, config, "rev-parse", "--absolute-git-dir").decode().strip()
+    (destination / ".git").write_text(f"gitdir: {metadata}\n")
 
 
 @pytest.mark.parametrize("topology", ["standalone", "linked"])
