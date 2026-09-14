@@ -364,3 +364,66 @@ def test_malformed_encoded_rows_fail_both_schema_and_successor(candidate: Path) 
 def test_default_runtime_config_is_reviewed_and_reported() -> None:
     profile, _ = successor.registered_inputs(ROOT)
     assert successor.RuntimeConfig.resolve(profile, {}).effective() == {"gitTimeoutSeconds": 5.0}
+
+
+def alternate_history(tmp_path: Path, *, late_merge: bool = False) -> Path:
+    """Real Git objects/index/history; borrow existing objects read-only, never clone."""
+    root = tmp_path / "alternate-history"
+    root.mkdir()
+    environment = {"PATH": "/usr/bin:/bin", "GIT_CONFIG_NOSYSTEM": "1", "GIT_CONFIG_GLOBAL": "/dev/null", "GIT_NO_LAZY_FETCH": "1"}
+    def git(*args: str) -> str:
+        return subprocess.run(["/usr/bin/git", *args], cwd=root, env=environment, check=True, capture_output=True, text=True).stdout.strip()
+    git("init")
+    common = subprocess.run(["/usr/bin/git", "rev-parse", "--path-format=absolute", "--git-common-dir"], cwd=ROOT, check=True, capture_output=True, text=True).stdout.strip()
+    (root / ".git/objects/info/alternates").write_text(str(Path(common) / "objects") + "\n")
+    profile, preflight = successor.registered_inputs(ROOT)
+    git("config", "user.name", "History fixture")
+    git("config", "user.email", "fixture@example.invalid")
+    git("config", "commit.gpgsign", "false")
+    git("checkout", "-b", profile["branch"], successor.BASE_COMMIT)
+    # Unlike the earlier empty-base scope fixture, the actual GPF adapter exists at base.
+    git("cat-file", "-e", successor.BASE_COMMIT + ":scripts/governance_preflight_repository.py")
+    git("cat-file", "-e", successor.PREFLIGHT_COMMIT)
+    raw = (ROOT / profile["preflightPath"]).read_bytes()
+    path = root / profile["preflightPath"]
+    path.write_bytes(raw.replace(b'"issue_number": 540', b'"issue_number": 541'))
+    git("add", "--", profile["preflightPath"])
+    git("commit", "-m", "alternate first preflight")
+    for relative in preflight["scope"]["required"]:
+        path = root / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        if relative == profile["preflightPath"]:
+            path.write_bytes(raw)
+        elif relative == successor.PROFILE_PATH:
+            path.write_bytes((ROOT / relative).read_bytes())
+        else:
+            addition = b"\nfixture change\n" if path.exists() else b"fixture change\n"
+            with path.open("ab") as stream:
+                stream.write(addition)
+    git("add", "--", *preflight["scope"]["required"])
+    git("commit", "-m", "restore final preflight bytes and complete scope")
+    if late_merge:
+        git("merge", "--no-ff", "-s", "ours", "-m", "late unrelated registered history", successor.PREFLIGHT_COMMIT)
+    return root
+
+
+@pytest.mark.parametrize("boundary", ["common", "scope", "late_merge"])
+def test_registered_preflight_must_belong_to_actual_first_history(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, boundary: str) -> None:
+    root = alternate_history(tmp_path, late_merge=boundary == "late_merge")
+    profile, _ = successor.registered_inputs(root)
+    monkeypatch.setenv("GITHUB_ACTIONS", "true")
+    if boundary == "common":
+        with pytest.raises(ValueError, match="G1.REGISTRATION.ANCESTRY"):
+            successor.verify_inputs(root, profile, successor.RuntimeConfig(5.0))
+    else:
+        expected = "G1.REGISTRATION.FIRST_COMMIT" if boundary == "late_merge" else "G1.REGISTRATION.ANCESTRY"
+        assert successor.successor_scope(root, profile["branch"]) == [expected]
+
+
+def test_successor_binding_binds_exact_lineage_bytes() -> None:
+    profile, _ = successor.registered_inputs(ROOT)
+    binding = predecessor._load_json(ROOT / profile["outputs"]["binding"])
+    raw = (ROOT / profile["outputs"]["integrationLineage"]).read_bytes()
+    assert binding.get("integrationLineagePath") == profile["outputs"]["integrationLineage"]
+    assert binding["artifactHashes"].get("integrationLineageSha256") == hashlib.sha256(raw).hexdigest()
+    assert binding["artifactShape"].get("integrationLineageBytes") == len(raw)
