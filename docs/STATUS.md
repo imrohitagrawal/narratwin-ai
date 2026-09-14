@@ -2321,3 +2321,22 @@ human acceptance, deployment, release, production-readiness, or Cut 1 evidence.
 - This CI prerequisite adds no product/provider/media behavior, credential use,
   egress, spend, demo completion, release, production-readiness, or Cut 1 claim.
   T06, T07, and T08 remain incomplete.
+
+## Recovered work archive — Issue #535
+
+Start from [the work archive](work-archive/README.md) and its
+[current handoff](work-archive/2026-09-14-recovery/HANDOFF.md) to recover the
+7 September owner plan, ten exact supporting review files, complete comparison
+packet and bounded discussion history. Exact restricted originals are stored
+locally under `docs/work-archive/.restricted/2026-09-14-recovery/`; public Git
+contains the safe index and readable plans. Other worktrees need the explicit
+private root; a clone is not a copy of the restricted files.
+
+[Issue #535](https://github.com/imrohitagrawal/narratwin-ai/issues/535) tracks
+this separate preservation/process increment. Its branch preparation does not
+change PR #534's frozen subject or grant certification. All ten review files and
+the original are locally recovered; the four ADR bibliography classification
+errors remain open in the separate semantic correction route. The comparison
+amendment remains nonactivating. Independent backup is UNPROVED under #532.
+Follow the [capture and verification procedure](work-archive/PROCESS.md) before
+handoff or cleanup; source recovery no longer requires the user to resend files.

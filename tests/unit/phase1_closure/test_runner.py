@@ -228,3 +228,19 @@ def test_issue521_validator_failure_blocks_preserved_checks(monkeypatch: Any) ->
     monkeypatch.setattr(runner.legacy, "_load_checker", lambda: (_ for _ in ()).throw(AssertionError("must not run")))
 
     assert runner.run_preserved_contracts() == 1
+
+
+def test_archive_scope_failure_prevents_legacy_pass(monkeypatch: Any) -> None:
+    from scripts.quality import work_archive_scope
+
+    monkeypatch.setattr(runner, "current_branch", lambda root: work_archive_scope.BRANCH)
+    monkeypatch.setattr(work_archive_scope, "validate_scope", lambda *args: ["ARCHIVE_SCOPE_FILE_BUDGET"])
+    monkeypatch.setattr(runner.legacy, "_load_checker", lambda: (_ for _ in ()).throw(AssertionError("must not run")))
+    monkeypatch.setattr(runner.legacy, "_print_result", lambda failures: int(bool(failures)))
+    assert runner.run_preserved_contracts() == 1
+
+
+def test_archive_lookalike_retains_legacy_scope(monkeypatch: Any) -> None:
+    monkeypatch.setattr(runner, "current_branch", lambda root: "phase-1-closure-process-535-work-archive-other")
+    monkeypatch.setattr(runner.legacy, "run_preserved_contracts", lambda: 31)
+    assert runner.run_preserved_contracts() == 31

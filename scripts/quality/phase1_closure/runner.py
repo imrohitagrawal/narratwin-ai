@@ -145,6 +145,8 @@ def check_cut1_presenter_contract() -> int:
 
 def run_preserved_contracts() -> int:
     branch = current_branch(ROOT)
+    if branch == "phase-1-closure-process-535-work-archive":
+        return run_work_archive()
     if branch == ISSUE521_BRANCH:
         return run_issue521_master_program_v2()
     if branch != ISSUE456_BRANCH:
@@ -180,3 +182,22 @@ def main() -> int:
     except Exception:
         print("Phase 1 quality runner could not complete safely.")
         return 1
+
+
+def run_work_archive() -> int:
+    from scripts.quality.work_archive_scope import BRANCH, validate_scope
+
+    failures = validate_scope(ROOT, BRANCH)
+    if failures:
+        return legacy._print_result(failures)
+    checker = legacy._load_checker()
+    failures = legacy.legacy_parity_failures(checker)
+    checker.check_branch(failures)
+    checker.check_required_files(failures)
+    if not failures:
+        for name in legacy.PRESERVED_CHECKS:
+            if name == "check_active_demo_docs":
+                legacy.check_active_demo_docs(checker, failures)
+            else:
+                getattr(checker, name)(failures)
+    return legacy._print_result(failures)

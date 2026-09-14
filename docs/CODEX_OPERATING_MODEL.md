@@ -121,3 +121,15 @@ Stage 0 passes only when:
 ## Stage 1 Boundary
 
 Do not start Stage 1 in the Stage 0 redo branch. Stage 1 may begin only from its own issue, branch, PR, and quality target after this Stage 0 redo is reviewed.
+
+## Work continuity and source retrieval
+
+At session start and before handoff, use [docs/work-archive/README.md](work-archive/README.md)
+and the handoff linked by STATUS. Read the full current plan, decisions and required
+source evidence; do not rely solely on a previous agent's summary or a file hash.
+Follow [the archive procedure](work-archive/PROCESS.md): save exact sources privately,
+review public derivatives, record supersession and coverage, update the index and
+handoff, and run both public and actual private read-back checks. Missing private
+evidence cannot receive an availability pass from hosted CI. Keep backup status
+explicit; an ignored local folder is not an independent backup. This archive does
+not change accepted product contracts or authorize provider work.

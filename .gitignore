@@ -37,3 +37,6 @@ reports/
 .github/workflows/triage.yml
 CLAUDE.md
 GEMINI.md
+
+# Local restricted work evidence; public Git contains only safe indexes.
+/docs/work-archive/.restricted/
