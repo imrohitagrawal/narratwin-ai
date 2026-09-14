@@ -41,6 +41,48 @@ def test_bibliography_candidate_excludes_exact_four_normative_rows() -> None:
     assert len([row for row in rows if row["sourceId"] == "ADR_0000_ADR_PROCESS"]) == 17
 
 
+def attach_fixture_git(source: Path, destination: Path, config: successor.RuntimeConfig) -> None:
+    """Preserve source checkout metadata identity for read-only fixture operations."""
+    shutil.copyfile(source / ".git", destination / ".git")
+
+
+@pytest.mark.parametrize("topology", ["standalone", "linked"])
+def test_fixture_git_preserves_standalone_and_linked_checkout_identity(tmp_path: Path, topology: str) -> None:
+    profile, _ = successor.registered_inputs(ROOT)
+    config = successor.RuntimeConfig.resolve(profile)
+    environment = {"PATH": "/usr/bin:/bin", "GIT_CONFIG_NOSYSTEM": "1", "GIT_CONFIG_GLOBAL": "/dev/null", "GIT_NO_LAZY_FETCH": "1"}
+    standalone, linked, destination = (tmp_path / name for name in ("standalone", "linked", "destination"))
+    standalone.mkdir()
+    destination.mkdir()
+    def git(path: Path, *args: str) -> str:
+        return subprocess.run(["/usr/bin/git", *args], cwd=path, env=environment, check=True,
+                              capture_output=True, text=True, timeout=config.git_timeout_seconds).stdout.strip()
+    git(standalone, "init")
+    git(standalone, "config", "user.name", "Topology fixture")
+    git(standalone, "config", "user.email", "fixture@example.invalid")
+    git(standalone, "config", "commit.gpgsign", "false")
+    (standalone / "frozen.txt").write_text("literal historical source\n")
+    git(standalone, "add", "frozen.txt")
+    git(standalone, "commit", "-m", "frozen source A")
+    frozen = git(standalone, "rev-parse", "HEAD")
+    git(standalone, "worktree", "add", "--detach", str(linked), "HEAD")
+    (linked / "later.txt").write_text("linked-only commit B\n")
+    git(linked, "add", "later.txt")
+    git(linked, "commit", "-m", "distinct linked head B")
+    linked_head = git(linked, "rev-parse", "HEAD")
+    assert frozen != linked_head
+    assert (standalone / ".git").is_dir() and (linked / ".git").is_file()
+    source = standalone if topology == "standalone" else linked
+    attach_fixture_git(source, destination, config)
+    metadata = git(source, "rev-parse", "--absolute-git-dir")
+    assert (destination / ".git").read_text() == f"gitdir: {metadata}\n"
+    assert git(destination, "rev-parse", "HEAD") == (frozen if topology == "standalone" else linked_head)
+    assert git(destination, "show", frozen + ":frozen.txt") == "literal historical source"
+    assert git(destination, "merge-base", "--is-ancestor", frozen, linked_head) == ""
+    if topology == "linked":
+        assert metadata != git(source, "rev-parse", "--path-format=absolute", "--git-common-dir")
+
+
 @pytest.fixture(scope="module")
 def candidate(tmp_path_factory: pytest.TempPathFactory) -> Path:
     root = tmp_path_factory.mktemp("successor")
@@ -52,7 +94,7 @@ def candidate(tmp_path_factory: pytest.TempPathFactory) -> Path:
         target = root / relative
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(ROOT / relative, target)
-    shutil.copyfile(ROOT / ".git", root / ".git")
+    attach_fixture_git(ROOT, root, successor.RuntimeConfig.resolve(profile))
     return root
 
 
