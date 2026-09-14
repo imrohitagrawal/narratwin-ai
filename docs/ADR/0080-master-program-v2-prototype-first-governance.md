@@ -41,3 +41,9 @@ transition. No intermediate state is valid.
 Before merge, close the PR and remove only Issue #521 resources. After merge,
 revert through a new issue/branch/PR. Never delete V1 or historical evidence or
 implicitly reactivate a stale route.
+
+## 2026-09-14 — Issue540 preserved bibliography successor
+
+The [reviewed correction plan](../work/g1-certification/PLAN.md) adds a separately registered derivative for four ADR0000 bibliography entries classified as requirements in the original proposal. Original document, mapping, binding, schema, taxonomy and review artifacts retain their exact bytes and existing archive meaning. The corrected source partition preserves the entries as references and removes only their normative mapping rows.
+
+A narrow verifier first verifies the unchanged predecessor, then derives and compares the complete successor. Its reviewed fixed registration anchors profile and first preflight bytes outside the candidate packet; actual exact-head review/protected merge governs changes to that registration. Local STRUCTURAL_PENDING is not certification or authenticated hosted approval. The derived schema changes only partition hash and two class counts. A new integration lineage keeps the original external semantic receipt as historical input with original31398/18016 counts, binds successor31394/18012 counts, and grants no source adoption, activation or transfer of retired534 evidence. V1 remains effective.

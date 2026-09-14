@@ -26,6 +26,7 @@ if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from scripts.governance_preflight_repository import validate_governance_preflight_repository
+from scripts.quality import issue521_successor
 from scripts.quality.issue521_master_program_v2 import REQUIRED_ARTIFACTS as MASTER_PROGRAM_V2_ARTIFACTS
 from scripts.quality.issue521_master_program_v2 import validate_repository as validate_master_program_v2
 
@@ -2524,6 +2525,8 @@ def check_governance_preflight_repository() -> None:
 
 
 def check_master_program_v2(changes: list[str]) -> None:
+    if any(path.startswith("docs/governance/successors/g1-adr0000/") or path in issue521_successor.TRIGGER_PATHS for path in changes):
+        failures.extend(f"G1 successor finding: {finding}" for finding in issue521_successor.validate_repository(ROOT))
     if not any(path in MASTER_PROGRAM_V2_ARTIFACTS for path in changes):
         return
     failures.extend(

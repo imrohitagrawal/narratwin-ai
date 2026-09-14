@@ -2012,3 +2012,11 @@ NARRATWIN_POLICY_ONLY=1 make quality
 The longer fail-safe does not weaken, skip, retry, or shard the backend suite.
 Every required hosted context must pass at the exact candidate head; a timeout,
 cancellation, or local-only result is not hosted-parity evidence.
+
+## Issue540 G1 bibliography successor boundary
+
+`python3 -m scripts.quality.issue521_successor` checks the registered successor and unchanged predecessor with only standard-library dependencies. `--generate` explicitly materializes the bounded derivative after input verification; it does not certify it. The Phase1 runner also checks both on main and issue branches, and its540 route reads exact paths and per-path/aggregate charged-line budgets from the registered preflight. Guardrails invoke the successor for successor/profile/verifier changes before dependency bootstrap.
+
+`NARRATWIN_G1_GIT_TIMEOUT_SECONDS` overrides the reviewed default only through finite-positive typed runtime configuration and reaches new Git calls; existing predecessor Git limits remain unchanged. Verification reports its effective configuration without rewriting generation lineage. Profile identity, source selectors, correction set, scope and byte ceilings have no caller-supplied digest override.
+
+Tests cover exact four-entry exclusion, retained row/source/receipt equality, census and schema execution, coherently rehashed unauthorized changes, stale bindings, untrusted profile/preflight replacement, invalid configuration, unavailable Git and path/symlink rejection. Actual dependency-absent bootstrap, push/PR direct-head/merge checkouts and required hosted contexts remain mandatory before exact-head approval; local tests alone are insufficient.

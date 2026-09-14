@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
   "inventorySource": {
-    "path": "docs/work/documentation-architecture/evidence/SOURCES.json",
-    "sha256": "ecd0de4bc1a6d29b4efb07243d642146f6d954a1a0e4b4341ff31153e726c04c",
-    "bytes": 9993
+    "path": "docs/work/g1-certification/evidence/ISSUE_SNAPSHOT.json",
+    "sha256": "2f531d7093cf2d7c2cf134f48eb40fd6516f91e2d70b9534fd2608faaf8dbd70",
+    "bytes": 7181
   },
   "privateRoots": [
     ".evidence",
@@ -320,6 +320,11 @@
       "number": 17,
       "title": "Stage 6 residual \u2014 Controlled fallback integrity for multilingual generation",
       "workId": "future-capabilities"
+    },
+    {
+      "number": 540,
+      "title": "G1: derive a preserved four-bibliography correction successor",
+      "workId": "g1-certification"
     }
   ],
   "works": [
@@ -358,9 +363,9 @@
       "owner": "root orchestrator; existing issue authorities retained",
       "path": "docs/work/g1-certification",
       "plan": {
-        "path": "docs/work/g1-certification/README.md",
-        "sha256": "7f3bacedac7cb47e36dc82015f88f27165115034138125577a2f56bf3cab65be",
-        "bytes": 2774,
+        "path": "docs/work/g1-certification/PLAN.md",
+        "sha256": "3bf6b50a534e3da546c1ed194bc50cb18c36059129fa8ff44134e52673503245",
+        "bytes": 28749,
         "role": "execution-plan"
       },
       "statusRef": "docs/STATUS.md",
@@ -370,13 +375,14 @@
         "docs/CUT_ROADMAP_AND_EVIDENCE_MATRIX.md"
       ],
       "issues": [
-        533
+        533,
+        540
       ],
       "parent": "master-program",
       "relationships": [],
       "evidenceIndex": "docs/work/g1-certification/evidence/INDEX.json",
       "handoff": "docs/work/g1-certification/HANDOFF.md",
-      "checkpoint": "2026-09-14; PR536 merged67d4b094 with approved29606 tree; PR534 retired unmerged; Issue538/PR539 reconciles sequencing; verify live tracker before action"
+      "checkpoint": "2026-09-14; Issue540/PR541 four-bibliography successor; structural delivery is not certification; verify exact-head review and hosted checks"
     },
     {
       "id": "demo-comparison",
@@ -609,8 +615,8 @@
       "path": "docs/work/governance-backlog",
       "plan": {
         "path": "docs/STATUS.md",
-        "sha256": "acad7caa6f222d103bf3c6764d171a8ef484bdeef88c1a18190c7de22e0af1ac",
-        "bytes": 290453,
+        "sha256": "26a9dc6ccda4811fbfae653726e5dc3e3e8bdc88ef49462b107c3ecb7d701d63",
+        "bytes": 290401,
         "role": "source-pointer"
       },
       "statusRef": "docs/STATUS.md",

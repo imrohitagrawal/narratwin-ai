@@ -120,6 +120,54 @@
       "custody": "restricted",
       "verification": "METADATA_PINNED",
       "derivedFrom": []
+    },
+    {
+      "id": "g1-540-plan",
+      "owner": "g1-certification",
+      "role": "derived",
+      "revision": "3bf6b50a534e3da546c1ed194bc50cb18c36059129fa8ff44134e52673503245",
+      "sha256": "3bf6b50a534e3da546c1ed194bc50cb18c36059129fa8ff44134e52673503245",
+      "bytes": 28749,
+      "path": "docs/work/g1-certification/PLAN.md",
+      "custody": "public",
+      "verification": "METADATA_PINNED",
+      "derivedFrom": []
+    },
+    {
+      "id": "g1-540-profile",
+      "owner": "g1-certification",
+      "role": "derived",
+      "revision": "51ac965848046e6b5ad06c029ca10a78ae432a840200820be0f0e89ca7fb8c8c",
+      "sha256": "51ac965848046e6b5ad06c029ca10a78ae432a840200820be0f0e89ca7fb8c8c",
+      "bytes": 6558,
+      "path": "docs/governance/successors/g1-adr0000/profile.json",
+      "custody": "public",
+      "verification": "METADATA_PINNED",
+      "derivedFrom": []
+    },
+    {
+      "id": "g1-540-reviews",
+      "owner": "g1-certification",
+      "role": "review",
+      "revision": "4d87f42336e4ee74b4d8e8638907dd7ca2ac00f53b91174ee1039e3696fc3c53",
+      "sha256": "4d87f42336e4ee74b4d8e8638907dd7ca2ac00f53b91174ee1039e3696fc3c53",
+      "bytes": 9952,
+      "path": "docs/work/g1-certification/evidence/REVIEWS.md",
+      "custody": "public",
+      "verification": "METADATA_PINNED",
+      "derivedFrom": []
+    },
+    {
+      "id": "g1-540-lineage",
+      "owner": "g1-certification",
+      "role": "derived",
+      "revision": "4f2a4669e0ca993cffb2f63cca9d0de6c0d5431334d9196f3e5caca07c652e95",
+      "sha256": "4f2a4669e0ca993cffb2f63cca9d0de6c0d5431334d9196f3e5caca07c652e95",
+      "bytes": 2908,
+      "path": "docs/governance/successors/g1-adr0000/integration-lineage.json",
+      "custody": "public",
+      "verification": "METADATA_PINNED",
+      "derivedFrom": []
     }
   ],
   "uses": [
