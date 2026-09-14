@@ -2333,7 +2333,8 @@ contains the safe index and readable plans. Other worktrees need the explicit
 private root; a clone is not a copy of the restricted files.
 
 [Issue #535](https://github.com/imrohitagrawal/narratwin-ai/issues/535) tracks
-this separate preservation/process increment. Its branch preparation does not
+this separate preservation/process increment in
+[draft PR #536](https://github.com/imrohitagrawal/narratwin-ai/pull/536). Its preparation does not
 change PR #534's frozen subject or grant certification. All ten review files and
 the original are locally recovered; the four ADR bibliography classification
 errors remain open in the separate semantic correction route. The comparison

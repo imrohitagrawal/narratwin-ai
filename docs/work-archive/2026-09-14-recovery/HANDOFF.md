@@ -7,7 +7,8 @@ Start from [the index](INDEX.json), [decisions](DECISIONS.md),
 [archive instructions](../PROCESS.md). This is a local preservation and process
 increment prepared on `phase-1-closure-process-535-work-archive` from main
 `71e0568d460306c3837d9e641c78558486b5ab54`. Local preservation and independent review are complete. This branch is
-prepared for repository review; it is not merged or certified by this handoff.
+in [draft PR #536](https://github.com/imrohitagrawal/narratwin-ai/pull/536);
+it is not merged or certified by this handoff.
 
 ## Saved material
 
@@ -55,7 +56,7 @@ distinct accepted-current transition; #521/#531/#520 dependencies remain.
 Root owns archive verification, independent review triage and branch closeout.
 Project owner is private-source custodian. Retain all existing source copies and
 this archive; no deletion is authorized. Independent backup is UNPROVED: Issue
-#532 must establish a separate restricted store, custody and successful restore.
+Issue #532 must establish a separate restricted store, custody and successful restore.
 A same-machine archive is useful local preservation, not disaster recovery.
 
 Complete hosted archive checks when the branch is published and retain its
