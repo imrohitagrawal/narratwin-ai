@@ -40,10 +40,10 @@ def prose(value: str) -> str:
     for line in value.splitlines():
         marker = re.match(r'^\s*(`{3,}|~{3,})', line)
         if marker:
-            token = marker[1]
+            fence_marker = marker[1]
             if not fence:
-                fence = token
-            elif token[0] == fence[0] and len(token) >= len(fence):
+                fence = fence_marker
+            elif fence_marker[0] == fence[0] and len(fence_marker) >= len(fence):
                 fence = ''
             continue
         if not fence:

@@ -12,7 +12,7 @@ Full revised plan and review were published in Issue537 and PR536 before impleme
 
 ## Implementation verification
 
-In progress. Record actual independent scenarios, executable failures/corrections and tested heads here before final verification. Current hosted results belong to PR536 Checks; this document is a review checkpoint, not a live CI ledger.
+Independent implementation and correction reviews are complete within the recorded scope. Full local/hosted validation is recorded against the actual head in PR536. This document is a review checkpoint, not a live CI ledger.
 
 The root added one prospectively declared ADR0085 path before writing that decision, giving99 cumulative paths and35398 charged lines. This records the navigation architecture itself; the generated ADR index is not used as a substitute decision.
 
@@ -47,5 +47,11 @@ Behavioral stdlib tests prove catalog/form/source boundaries with synthetic isol
 
 Code/test review checkpoint SHA-256:
 
-- `scripts/documentation_catalog.py`: `101e89498ece6f904230dbb6da4a6be5db12c0ffb9317ac3564dcb411142ada7`
-- `tests_stdlib/test_documentation_catalog.py`: `6732048f2854386f4d2fb22dcf5d3e1135f4803ef5147c0acc4a73762acdc8c6`
+- `scripts/documentation_catalog.py`: `2d69edc881a36836d41ee6651e57ffb5fab066d2a6b9862058889798606dc775`
+- `tests_stdlib/test_documentation_catalog.py`: `fa54dc50acf6bba697c73423610db1c491e2fb927654ce18aa5ef18526f0fc3b`
+
+## Hosted compatibility correction
+
+Hosted policy, quality and security checks on3a9c894c rejected the Markdown fence parser variable name as a potential credential assignment. Root classified this REQUIRED_CONTRACT because the required hosted scanner failed, while confirming the matched text is a parser expression, not a credential. Local make quality does not execute this separate compatibility scanner; the missing boundary was not covered by that green result.
+
+Root added HostedCompatibilityTests using the actual scanner against the catalog source regardless of Git tracking, observed1RED, and renamed the local variable without changing the scanner. Independent review reproduced the old failure in an isolated fixture, verified the correction and all29tests, compared AST behavior and confirmed the scanner remains byte-identical. No waiver or threshold change. Re-run direct-head and pull-request guardrails plus the hosted checks before any exact-head acceptance; the earlier hosted failure remains historical evidence.

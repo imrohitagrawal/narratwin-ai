@@ -9,6 +9,17 @@ import unittest
 from unittest.mock import patch
 
 from scripts import documentation_catalog as nav
+from scripts import guardrails_check as guardrails
+
+
+class HostedCompatibilityTests(unittest.TestCase):
+    def test_catalog_source_passes_actual_repository_secret_scan(self):
+        # Exercise the hosted scanner on this source even before Git tracks it.
+        source = Path(nav.__file__).resolve()
+        with patch.object(guardrails, 'iter_text_files', return_value=[source]), \
+                patch.object(guardrails, 'failures', []):
+            guardrails.check_secrets()
+            self.assertEqual(guardrails.failures, [])
 
 
 class CatalogTests(unittest.TestCase):
