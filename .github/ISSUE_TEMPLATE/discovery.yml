@@ -1,0 +1,67 @@
+{
+  "name": "Discovery / feature / design question",
+  "description": "Explore a problem, a new product or a design decision before committing to implementation.",
+  "body": [
+    {
+      "type": "markdown",
+      "attributes": {
+        "value": "Search existing work first. Use public-safe evidence only; never paste secrets, customer data or private session logs. This issue records a request, not execution authority."
+      }
+    },
+    {
+      "type": "textarea",
+      "id": "problem",
+      "attributes": {
+        "label": "Who has the problem, and what happens today?",
+        "description": "Describe the affected person, journey and available observations; a new product may have no current implementation."
+      },
+      "validations": {
+        "required": true
+      }
+    },
+    {
+      "type": "textarea",
+      "id": "decision",
+      "attributes": {
+        "label": "What decision or outcome should this investigation produce?",
+        "description": "State the question, intended user experience and evidence that supports go/revise/stop. Demo existence alone is not success. Do not invent implementation approval."
+      },
+      "validations": {
+        "required": true
+      }
+    },
+    {
+      "type": "textarea",
+      "id": "unknowns",
+      "attributes": {
+        "label": "What is unknown, and what will we investigate next?",
+        "description": "List assumptions and alternatives. Define the smallest representative demo or investigation, minimum acceptable output, failure conditions and the next complete-output proof before substantial integration or hardening."
+      },
+      "validations": {
+        "required": true
+      }
+    },
+    {
+      "type": "textarea",
+      "id": "context",
+      "attributes": {
+        "label": "Existing work, design and sources",
+        "description": "Link existing work, designs, PRD and identified reference/demo evidence; label reported versus inspected observations. None yet is valid for a new product."
+      },
+      "validations": {
+        "required": false
+      }
+    },
+    {
+      "type": "textarea",
+      "id": "ownership",
+      "attributes": {
+        "label": "Who owns the next decision or dependency?",
+        "description": "Name a known owner/dependency, or say unassigned for maintainer triage."
+      },
+      "validations": {
+        "required": false
+      }
+    }
+  ]
+}

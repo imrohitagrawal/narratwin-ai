@@ -1,0 +1,30 @@
+{
+  "task": "Review scalable work-record structure and produce action plan",
+  "issue": 535,
+  "relatedDraftPR": 536,
+  "authority": "User explicitly requested independent subagent review and final plan; no migration or activation in this turn",
+  "recordedBeforeAllocation": true,
+  "createdAt": "2026-09-14T06:49:09.891962+00:00",
+  "owner": "root orchestrator",
+  "writers": "root only; three independent read-only agents; one consolidation verification pass",
+  "plannedLocalFolder": "docs/work/working-records/proposals/2026-09-14-structure",
+  "files": [
+    "PLAN.md",
+    "REVIEW.md",
+    "SOURCES.json",
+    "RESOURCE_LEDGER.json"
+  ],
+  "aggregateByteCeiling": 100000,
+  "retention": "Keep as local public-safe proposal; no deletion. Implementation must amend scope before tracked changes. Existing private inventory and all copies remain unchanged.",
+  "forbiddenActions": [
+    "provider execution",
+    "paid operations",
+    "uploads",
+    "private source publication",
+    "migration",
+    "deletion",
+    "branch merge",
+    "tracked authority edits"
+  ],
+  "spendUSD": 0
+}

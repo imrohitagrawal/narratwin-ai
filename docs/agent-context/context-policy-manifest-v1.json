@@ -148,7 +148,7 @@
       "moduleId": "evidence-quality",
       "schemaVersion": "ContextPolicyModuleV1",
       "location": "docs/ENGINEERING_PROCESS_RCA.md",
-      "sourceSha256": "f7e3a5cb63032f28b0611e62200a2c4379560be91bcef4df3b792db19284a1cf",
+      "sourceSha256": "c634b2bceffefa6e56ccf426a31a031d273fac46116d405f69cb0c34e6b6b6c7",
       "contentSha256": "c9166eb03905c83eb34602e5e855c30a22e59e15bc54e5691a177403e4a71dd0",
       "authorityLevel": "evidence",
       "status": "active",

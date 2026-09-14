@@ -792,3 +792,25 @@ or authorize an automatic reset or patch wave.
 The repository root does not yet contain `CLAUDE.md`. After Issue #435 merges,
 a separate issue, branch, and pull request should add only a thin pointer to
 `AGENTS.md`; duplicating this policy would create two competing authorities.
+
+## Recovered plans and incomplete source handoffs — Issue #535
+
+The 7 September owner plan survived in a Codex session, while the handoff retained
+a hash and said the original was unavailable. Ten supporting semantic files later
+required recovery from recorded sources. The demonstrated defect is incomplete
+retrieval and continuity evidence; no deletion actor or complete requirement loss
+is established by this observation. Prior retention rules were present but did not
+ensure a current, usable source location and byte-verified handoff.
+
+[The work archive](work-archive/README.md) now groups the exact local restricted
+sources, safe index, readable plan, decisions, coverage and current handoff.
+[Its process](work-archive/PROCESS.md) requires capture at decisions and verification
+before handoff. Public index checks and private read-back prove different claims;
+backup remains UNPROVED until an independent store and restore are evidenced.
+
+Reusable lesson: source identity, source availability, semantic acceptance and
+backup are separate assertions. Preserve full sources beside summaries, distinguish
+historical and superseding decisions, and verify retrieval before deleting or
+handoff. A hash without a usable locator is insufficient. The existing playbook
+already requires retained-resource recovery evidence; its frozen authority is
+preserved here. Broader automatic resource lifecycle work remains with #391.

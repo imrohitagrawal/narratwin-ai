@@ -1,5 +1,15 @@
 # Traceability Register
 
+## Working-source continuity
+
+Issue #535 / PR #536 maps current work and recovered source ownership through
+[the work index](work/INDEX.md). Original September source descriptors belong to
+[master-program](work/master-program/README.md); ten supporting masters belong to
+[G1](work/g1-certification/README.md). Existing requirement IDs, accepted contracts
+and implementation/evaluation evidence mappings remain authoritative. This navigation
+change does not add product capability or certify the proposed V2 requirements.
+
+
 ## Issue #16 specification-gate traceability
 
 | Gate ID | Claim | Source | Evidence / next mapping |

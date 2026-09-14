@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "artifacts": [
+    {
+      "id": "working-record-location-map",
+      "owner": "working-records",
+      "role": "review",
+      "revision": "b2732a61e0046e288564a1cc6213574e2c91c084e553fa5d9eefd086f524a7a0",
+      "sha256": "b2732a61e0046e288564a1cc6213574e2c91c084e553fa5d9eefd086f524a7a0",
+      "bytes": 1297,
+      "path": "docs/work/working-records/MIGRATION.json",
+      "custody": "public",
+      "verification": "METADATA_PINNED",
+      "derivedFrom": []
+    }
+  ],
+  "uses": []
+}

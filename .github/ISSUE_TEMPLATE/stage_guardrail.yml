@@ -1,57 +1,149 @@
-name: Stage / Guardrail Work
-description: Track every stage or guardrail change before branch and PR work starts.
-title: "Stage X — "
-labels: ["stage", "guardrails"]
-body:
-  - type: input
-    id: stage
-    attributes:
-      label: Stage or slice
-      description: Example: Stage 0, Stage 1, Slice 1
-    validations:
-      required: true
-  - type: textarea
-    id: objective
-    attributes:
-      label: Objective
-      description: What should this issue achieve?
-    validations:
-      required: true
-  - type: textarea
-    id: scope
-    attributes:
-      label: In scope
-      description: List the exact files/features expected in scope.
-    validations:
-      required: true
-  - type: textarea
-    id: out_of_scope
-    attributes:
-      label: Out of scope
-      description: List what must not be changed in this issue.
-    validations:
-      required: true
-  - type: checkboxes
-    id: guardrails
-    attributes:
-      label: Required guardrails
-      options:
-        - label: Work will use issue + branch + PR, not direct main commits.
-          required: true
-        - label: CI must pass before merge.
-          required: true
-        - label: No secrets or real provider keys will be committed.
-          required: true
-        - label: Tests must run with mock/local providers and no paid provider requirement.
-          required: true
-        - label: Architecture changes will update ADRs.
-          required: true
-        - label: PRD-impacting changes will update traceability.
-          required: true
-  - type: textarea
-    id: acceptance
-    attributes:
-      label: Acceptance criteria
-      description: Define measurable acceptance criteria.
-    validations:
-      required: true
+{
+  "name": "Stage / Guardrail Work",
+  "description": "Plan accepted implementation or engineering work with bounded scope and verifiable completion.",
+  "title": "Stage X \u2014 ",
+  "labels": [
+    "stage",
+    "guardrails"
+  ],
+  "body": [
+    {
+      "type": "markdown",
+      "attributes": {
+        "value": "Search existing work first. Use public-safe evidence only; never paste secrets, customer data or private session logs. This issue records a request, not execution authority."
+      }
+    },
+    {
+      "type": "input",
+      "id": "stage",
+      "attributes": {
+        "label": "Stage or slice",
+        "description": "Name the existing approved stage or independently scoped engineering increment."
+      },
+      "validations": {
+        "required": true
+      }
+    },
+    {
+      "type": "textarea",
+      "id": "problem",
+      "attributes": {
+        "label": "User problem and current behavior",
+        "description": "Explain who benefits and the concrete before/after outcome."
+      },
+      "validations": {
+        "required": true
+      }
+    },
+    {
+      "type": "textarea",
+      "id": "objective",
+      "attributes": {
+        "label": "Objective",
+        "description": "What accepted requirement will this issue deliver?"
+      },
+      "validations": {
+        "required": true
+      }
+    },
+    {
+      "type": "textarea",
+      "id": "scope",
+      "attributes": {
+        "label": "In scope",
+        "description": "List exact files/features and link the reviewed preflight budget before implementation."
+      },
+      "validations": {
+        "required": true
+      }
+    },
+    {
+      "type": "textarea",
+      "id": "out_of_scope",
+      "attributes": {
+        "label": "Out of scope",
+        "description": "State exclusions and prohibited behavior."
+      },
+      "validations": {
+        "required": true
+      }
+    },
+    {
+      "type": "textarea",
+      "id": "plan",
+      "attributes": {
+        "label": "Work record, sources and plan",
+        "description": "Link the durable work, accepted requirement, plan/design and applicable authority. Include early demo observations and go/revise/stop decision, or the bounded proof needed before substantial integration/hardening. A demo does not waive minimum controls or existing gates."
+      },
+      "validations": {
+        "required": true
+      }
+    },
+    {
+      "type": "textarea",
+      "id": "ownership",
+      "attributes": {
+        "label": "Owner, dependencies and open decisions",
+        "description": "Name the accountable owner, prerequisites, unresolved decisions and the next permitted action."
+      },
+      "validations": {
+        "required": true
+      }
+    },
+    {
+      "type": "checkboxes",
+      "id": "guardrails",
+      "attributes": {
+        "label": "Required guardrails",
+        "options": [
+          {
+            "label": "Work will use issue + branch + PR, not direct main commits.",
+            "required": true
+          },
+          {
+            "label": "CI must pass before merge.",
+            "required": true
+          },
+          {
+            "label": "No secrets or real provider keys will be committed.",
+            "required": true
+          },
+          {
+            "label": "Tests must run with mock/local providers and no paid provider requirement.",
+            "required": true
+          },
+          {
+            "label": "Architecture changes will update ADRs.",
+            "required": true
+          },
+          {
+            "label": "PRD-impacting changes will update traceability.",
+            "required": true
+          }
+        ]
+      }
+    },
+    {
+      "type": "textarea",
+      "id": "acceptance",
+      "attributes": {
+        "label": "Acceptance criteria",
+        "description": "Define observable expected and prohibited behavior, including negative cases appropriate to the risk."
+      },
+      "validations": {
+        "required": true
+      }
+    },
+    {
+      "type": "textarea",
+      "id": "validation",
+      "attributes": {
+        "label": "Validation and closeout",
+        "description": "Name checks/review/evidence, documentation impact, completion conditions and handoff destination. Separate diagnostic evidence from representative complete output, API suitability, repeatability and formal acceptance."
+      },
+      "validations": {
+        "required": true
+      }
+    }
+  ]
+}

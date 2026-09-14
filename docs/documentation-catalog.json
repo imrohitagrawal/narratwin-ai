@@ -1,0 +1,1128 @@
+{
+  "schemaVersion": "DocumentationNavigationV1",
+  "title": "Documentation map",
+  "privateRoots": [
+    ".evidence",
+    "docs/work-archive/.restricted"
+  ],
+  "inventory": {
+    "roots": [
+      "docs/",
+      ".github/ISSUE_TEMPLATE/",
+      ".specify/"
+    ],
+    "files": [
+      "README.md",
+      "AGENTS.md",
+      "CLAUDE.md",
+      "CONTRIBUTING.md",
+      ".github/pull_request_template.md"
+    ],
+    "rootMarkdown": true
+  },
+  "entries": [
+    {
+      "id": "adversarial-verification-playbook",
+      "path": "docs/ADVERSARIAL_VERIFICATION_PLAYBOOK.md",
+      "title": "Adversarial Convergence Framework v1",
+      "role": "Reference; check STATUS for current effect",
+      "owner": "Engineering lead",
+      "updateWhen": "The owned contract, behavior or evidence changes"
+    },
+    {
+      "id": "ai-build-brief",
+      "path": "docs/AI_BUILD_BRIEF.md",
+      "title": "AI Build Brief: NarraTwin AI",
+      "role": "Reference; check STATUS for current effect",
+      "owner": "Engineering lead",
+      "updateWhen": "The owned contract, behavior or evidence changes"
+    },
+    {
+      "id": "ai-quality-and-evaluation-contract",
+      "path": "docs/AI_QUALITY_AND_EVALUATION_CONTRACT.md",
+      "title": "AI Quality and Evaluation Contract",
+      "role": "Reference; check STATUS for current effect",
+      "owner": "Engineering lead",
+      "updateWhen": "The owned contract, behavior or evidence changes"
+    },
+    {
+      "id": "ai-safety-and-evaluation",
+      "path": "docs/AI_SAFETY_AND_EVALUATION.md",
+      "title": "AI Safety and Evaluation v1.0",
+      "role": "Reference; check STATUS for current effect",
+      "owner": "Engineering lead",
+      "updateWhen": "The owned contract, behavior or evidence changes"
+    },
+    {
+      "id": "api-contract",
+      "path": "docs/API_CONTRACT.md",
+      "title": "API Contract",
+      "role": "Reference; check STATUS for current effect",
+      "owner": "Engineering lead",
+      "updateWhen": "Endpoints, request/response schemas or error behavior change"
+    },
+    {
+      "id": "architecture",
+      "path": "docs/ARCHITECTURE.md",
+      "title": "Architecture v1.0",
+      "role": "Architecture index; historical stage baseline retained",
+      "owner": "Architecture owner",
+      "updateWhen": "Significant system boundaries or accepted design decisions change"
+    },
+    {
+      "id": "codex-operating-model",
+      "path": "docs/CODEX_OPERATING_MODEL.md",
+      "title": "Codex Operating Model",
+      "role": "Reference; check STATUS for current effect",
+      "owner": "Engineering lead",
+      "updateWhen": "The owned contract, behavior or evidence changes"
+    },
+    {
+      "id": "cut-roadmap-and-evidence-matrix",
+      "path": "docs/CUT_ROADMAP_AND_EVIDENCE_MATRIX.md",
+      "title": "Cut Roadmap and Evidence Matrix",
+      "role": "Reference; check STATUS for current effect",
+      "owner": "Engineering lead",
+      "updateWhen": "The owned contract, behavior or evidence changes"
+    },
+    {
+      "id": "data-model",
+      "path": "docs/DATA_MODEL.md",
+      "title": "Data Model",
+      "role": "Reference; check STATUS for current effect",
+      "owner": "Engineering lead",
+      "updateWhen": "Persistence entities, schema or migration rules change"
+    },
+    {
+      "id": "engineering-process-rca",
+      "path": "docs/ENGINEERING_PROCESS_RCA.md",
+      "title": "Engineering Process RCA",
+      "role": "Reference; check STATUS for current effect",
+      "owner": "Engineering lead",
+      "updateWhen": "The owned contract, behavior or evidence changes"
+    },
+    {
+      "id": "enterprise-readiness-register",
+      "path": "docs/ENTERPRISE_READINESS_REGISTER.md",
+      "title": "Enterprise Readiness Register",
+      "role": "Reference; check STATUS for current effect",
+      "owner": "Operations/release owner",
+      "updateWhen": "The owned contract, behavior or evidence changes"
+    },
+    {
+      "id": "eval-report",
+      "path": "docs/EVAL_REPORT.md",
+      "title": "Evaluation Report",
+      "role": "Reference; check STATUS for current effect",
+      "owner": "Engineering lead",
+      "updateWhen": "The owned contract, behavior or evidence changes"
+    },
+    {
+      "id": "launch-levels",
+      "path": "docs/LAUNCH_LEVELS.md",
+      "title": "NarraTwin AI Launch Levels and Infrastructure Boundaries",
+      "role": "Reference; check STATUS for current effect",
+      "owner": "Engineering lead",
+      "updateWhen": "The owned contract, behavior or evidence changes"
+    },
+    {
+      "id": "local-development",
+      "path": "docs/LOCAL_DEVELOPMENT.md",
+      "title": "Local Development",
+      "role": "Reference; check STATUS for current effect",
+      "owner": "Engineering lead",
+      "updateWhen": "The owned contract, behavior or evidence changes"
+    },
+    {
+      "id": "methodology",
+      "path": "docs/METHODOLOGY.md",
+      "title": "Methodology",
+      "role": "Reference; check STATUS for current effect",
+      "owner": "Engineering lead",
+      "updateWhen": "The owned contract, behavior or evidence changes"
+    },
+    {
+      "id": "north-star-metrics",
+      "path": "docs/NORTH_STAR_METRICS.md",
+      "title": "North Star Metrics",
+      "role": "Product intent; apply accepted amendments",
+      "owner": "Product lead",
+      "updateWhen": "The owned contract, behavior or evidence changes"
+    },
+    {
+      "id": "observability-and-cost",
+      "path": "docs/OBSERVABILITY_AND_COST.md",
+      "title": "Observability and Cost",
+      "role": "Reference; check STATUS for current effect",
+      "owner": "Operations/release owner",
+      "updateWhen": "The owned contract, behavior or evidence changes"
+    },
+    {
+      "id": "phase-plan",
+      "path": "docs/PHASE_PLAN.md",
+      "title": "Phase Plan",
+      "role": "Reference; check STATUS for current effect",
+      "owner": "Engineering lead",
+      "updateWhen": "The owned contract, behavior or evidence changes"
+    },
+    {
+      "id": "portability-strategy",
+      "path": "docs/PORTABILITY_STRATEGY.md",
+      "title": "Portability Strategy",
+      "role": "Reference; check STATUS for current effect",
+      "owner": "Engineering lead",
+      "updateWhen": "The owned contract, behavior or evidence changes"
+    },
+    {
+      "id": "prd",
+      "path": "docs/PRD.md",
+      "title": "PRD v1.0: NarraTwin AI",
+      "role": "Product intent; apply accepted amendments",
+      "owner": "Product lead",
+      "updateWhen": "Accepted users, outcomes, scope or success criteria change"
+    },
+    {
+      "id": "prd-red-team-review",
+      "path": "docs/PRD_RED_TEAM_REVIEW.md",
+      "title": "PRD Red-Team Review: NarraTwin AI",
+      "role": "Reference; check STATUS for current effect",
+      "owner": "Engineering lead",
+      "updateWhen": "The owned contract, behavior or evidence changes"
+    },
+    {
+      "id": "product-strategy",
+      "path": "docs/PRODUCT_STRATEGY.md",
+      "title": "Product Strategy: NarraTwin AI",
+      "role": "Product intent; apply accepted amendments",
+      "owner": "Product lead",
+      "updateWhen": "The owned contract, behavior or evidence changes"
+    },
+    {
+      "id": "project-avatar-pack",
+      "path": "docs/PROJECT_AVATAR_PACK.md",
+      "title": "Project Avatar Pack Contract",
+      "role": "Reference; check STATUS for current effect",
+      "owner": "Engineering lead",
+      "updateWhen": "The owned contract, behavior or evidence changes"
+    },
+    {
+      "id": "project-governance-learnings",
+      "path": "docs/PROJECT_GOVERNANCE_LEARNINGS.md",
+      "title": "Project Governance Learnings",
+      "role": "Reference; check STATUS for current effect",
+      "owner": "Engineering lead",
+      "updateWhen": "The owned contract, behavior or evidence changes"
+    },
+    {
+      "id": "project-learnings-tracker",
+      "path": "docs/PROJECT_LEARNINGS_TRACKER.md",
+      "title": "Project Learnings Tracker",
+      "role": "Reference; check STATUS for current effect",
+      "owner": "Engineering lead",
+      "updateWhen": "The owned contract, behavior or evidence changes"
+    },
+    {
+      "id": "publication-boundary",
+      "path": "docs/PUBLICATION_BOUNDARY.md",
+      "title": "Publication Boundary",
+      "role": "Reference; check STATUS for current effect",
+      "owner": "Engineering lead",
+      "updateWhen": "The owned contract, behavior or evidence changes"
+    },
+    {
+      "id": "quality-gates",
+      "path": "docs/QUALITY_GATES.md",
+      "title": "Quality Gates",
+      "role": "Reference; check STATUS for current effect",
+      "owner": "Engineering lead",
+      "updateWhen": "Required checks, acceptance thresholds or verification commands change"
+    },
+    {
+      "id": "recommended-review-items",
+      "path": "docs/RECOMMENDED_REVIEW_ITEMS.md",
+      "title": "Recommended Review Items",
+      "role": "Reference; check STATUS for current effect",
+      "owner": "Engineering lead",
+      "updateWhen": "The owned contract, behavior or evidence changes"
+    },
+    {
+      "id": "release-checklist",
+      "path": "docs/RELEASE_CHECKLIST.md",
+      "title": "Stage 8 And Phase 1 Release Checklist",
+      "role": "Reference; check STATUS for current effect",
+      "owner": "Operations/release owner",
+      "updateWhen": "The owned contract, behavior or evidence changes"
+    },
+    {
+      "id": "release-quality-bar",
+      "path": "docs/RELEASE_QUALITY_BAR.md",
+      "title": "Release Quality Bar",
+      "role": "Reference; check STATUS for current effect",
+      "owner": "Operations/release owner",
+      "updateWhen": "The owned contract, behavior or evidence changes"
+    },
+    {
+      "id": "release-readiness-review",
+      "path": "docs/RELEASE_READINESS_REVIEW.md",
+      "title": "Release Readiness Review",
+      "role": "Reference; check STATUS for current effect",
+      "owner": "Operations/release owner",
+      "updateWhen": "The owned contract, behavior or evidence changes"
+    },
+    {
+      "id": "repository-guardrails",
+      "path": "docs/REPOSITORY_GUARDRAILS.md",
+      "title": "Repository Guardrails",
+      "role": "Reference; check STATUS for current effect",
+      "owner": "Engineering lead",
+      "updateWhen": "The owned contract, behavior or evidence changes"
+    },
+    {
+      "id": "requirements-traceability-matrix",
+      "path": "docs/REQUIREMENTS_TRACEABILITY_MATRIX.md",
+      "title": "Requirements Traceability Matrix",
+      "role": "Requirement/evidence mapping; scoped source",
+      "owner": "Engineering lead",
+      "updateWhen": "The owned contract, behavior or evidence changes"
+    },
+    {
+      "id": "review-rigor-retrospective",
+      "path": "docs/REVIEW_RIGOR_RETROSPECTIVE.md",
+      "title": "Review Rigor Retrospective",
+      "role": "Reference; check STATUS for current effect",
+      "owner": "Engineering lead",
+      "updateWhen": "The owned contract, behavior or evidence changes"
+    },
+    {
+      "id": "risk-register",
+      "path": "docs/RISK_REGISTER.md",
+      "title": "Risk Register",
+      "role": "Reference; check STATUS for current effect",
+      "owner": "Engineering lead",
+      "updateWhen": "The owned contract, behavior or evidence changes"
+    },
+    {
+      "id": "roadmap",
+      "path": "docs/ROADMAP.md",
+      "title": "Roadmap",
+      "role": "Reference; check STATUS for current effect",
+      "owner": "Engineering lead",
+      "updateWhen": "The owned contract, behavior or evidence changes"
+    },
+    {
+      "id": "runbook",
+      "path": "docs/RUNBOOK.md",
+      "title": "Stage 8 And Phase 1 Runbook",
+      "role": "Reference; check STATUS for current effect",
+      "owner": "Operations/release owner",
+      "updateWhen": "Operational commands, diagnostics, recovery or escalation change"
+    },
+    {
+      "id": "security-and-privacy",
+      "path": "docs/SECURITY_AND_PRIVACY.md",
+      "title": "Security and Privacy v1.0",
+      "role": "Reference; check STATUS for current effect",
+      "owner": "Security owner",
+      "updateWhen": "Trust boundaries, data use, threats or mitigation policy changes"
+    },
+    {
+      "id": "skills-and-codex-setup",
+      "path": "docs/SKILLS_AND_CODEX_SETUP.md",
+      "title": "Skills and Codex Setup",
+      "role": "Reference; check STATUS for current effect",
+      "owner": "Engineering lead",
+      "updateWhen": "The owned contract, behavior or evidence changes"
+    },
+    {
+      "id": "skill-execution-plan",
+      "path": "docs/SKILL_EXECUTION_PLAN.md",
+      "title": "Skill Execution Plan",
+      "role": "Reference; check STATUS for current effect",
+      "owner": "Engineering lead",
+      "updateWhen": "The owned contract, behavior or evidence changes"
+    },
+    {
+      "id": "skill-lock",
+      "path": "docs/SKILL_LOCK.md",
+      "title": "Skill Lock",
+      "role": "Reference; check STATUS for current effect",
+      "owner": "Engineering lead",
+      "updateWhen": "The owned contract, behavior or evidence changes"
+    },
+    {
+      "id": "skill-selection-and-evidence",
+      "path": "docs/SKILL_SELECTION_AND_EVIDENCE.md",
+      "title": "Skill Selection And Evidence",
+      "role": "Reference; check STATUS for current effect",
+      "owner": "Engineering lead",
+      "updateWhen": "The owned contract, behavior or evidence changes"
+    },
+    {
+      "id": "skill-trust-review",
+      "path": "docs/SKILL_TRUST_REVIEW.md",
+      "title": "Skill Trust Review",
+      "role": "Reference; check STATUS for current effect",
+      "owner": "Engineering lead",
+      "updateWhen": "The owned contract, behavior or evidence changes"
+    },
+    {
+      "id": "stage2-architecture-contract",
+      "path": "docs/STAGE2_ARCHITECTURE_CONTRACT.json",
+      "title": "STAGE2_ARCHITECTURE_CONTRACT.json",
+      "role": "Reference; check STATUS for current effect",
+      "owner": "Engineering lead",
+      "updateWhen": "The owned contract, behavior or evidence changes"
+    },
+    {
+      "id": "stage2-human-review-checklist",
+      "path": "docs/STAGE2_HUMAN_REVIEW_CHECKLIST.md",
+      "title": "Stage 2 Human Review Checklist",
+      "role": "Reference; check STATUS for current effect",
+      "owner": "Engineering lead",
+      "updateWhen": "The owned contract, behavior or evidence changes"
+    },
+    {
+      "id": "stage2-review-prompt-pack",
+      "path": "docs/STAGE2_REVIEW_PROMPT_PACK.md",
+      "title": "Stage 2 Review Prompt Pack",
+      "role": "Reference; check STATUS for current effect",
+      "owner": "Engineering lead",
+      "updateWhen": "The owned contract, behavior or evidence changes"
+    },
+    {
+      "id": "stage-issue-plan",
+      "path": "docs/STAGE_ISSUE_PLAN.md",
+      "title": "Stage Issue Plan",
+      "role": "Reference; check STATUS for current effect",
+      "owner": "Engineering lead",
+      "updateWhen": "The owned contract, behavior or evidence changes"
+    },
+    {
+      "id": "status",
+      "path": "docs/STATUS.md",
+      "title": "Program Status",
+      "role": "Canonical repository status; verify live tracker",
+      "owner": "Program owner",
+      "updateWhen": "Material repository progress, issue/PR mapping or governance changes"
+    },
+    {
+      "id": "third-party-notices",
+      "path": "docs/THIRD_PARTY_NOTICES.md",
+      "title": "Third-Party Notices",
+      "role": "Reference; check STATUS for current effect",
+      "owner": "Engineering lead",
+      "updateWhen": "External packages, tools, models, media or source attribution changes"
+    },
+    {
+      "id": "threat-model",
+      "path": "docs/THREAT_MODEL.md",
+      "title": "Threat Model",
+      "role": "Reference; check STATUS for current effect",
+      "owner": "Security owner",
+      "updateWhen": "The owned contract, behavior or evidence changes"
+    },
+    {
+      "id": "traceability",
+      "path": "docs/TRACEABILITY.md",
+      "title": "Traceability Register",
+      "role": "Requirement/evidence mapping; scoped source",
+      "owner": "Engineering lead",
+      "updateWhen": "Requirements or their implementation/evidence mappings change"
+    },
+    {
+      "id": "repository",
+      "path": "README.md",
+      "title": "Repository README",
+      "role": "Repository front door",
+      "owner": "Engineering lead",
+      "updateWhen": "The owned contract, behavior or evidence changes"
+    },
+    {
+      "id": "agents",
+      "path": "AGENTS.md",
+      "title": "Agent instructions",
+      "role": "Mandatory agent rules; anchored source",
+      "owner": "Engineering lead",
+      "updateWhen": "The owned contract, behavior or evidence changes"
+    },
+    {
+      "id": "claude",
+      "path": "CLAUDE.md",
+      "title": "Claude bridge",
+      "role": "Thin agent bridge",
+      "owner": "Engineering lead",
+      "updateWhen": "The owned contract, behavior or evidence changes"
+    },
+    {
+      "id": "contributing",
+      "path": "CONTRIBUTING.md",
+      "title": "Contributing and starting work",
+      "role": "Contributor lifecycle",
+      "owner": "Engineering lead",
+      "updateWhen": "The owned contract, behavior or evidence changes"
+    },
+    {
+      "id": "document-map",
+      "path": "docs/README.md",
+      "title": "Documentation map",
+      "role": "Generated documentation map",
+      "owner": "Engineering lead",
+      "updateWhen": "The owned contract, behavior or evidence changes"
+    },
+    {
+      "id": "documentation-guide",
+      "path": "docs/DOCUMENTATION_GUIDE.md",
+      "title": "Documentation guide",
+      "role": "Placement, ownership and limits",
+      "owner": "Engineering lead",
+      "updateWhen": "The owned contract, behavior or evidence changes"
+    },
+    {
+      "id": "catalog",
+      "path": "docs/documentation-catalog.json",
+      "title": "Navigation catalog",
+      "role": "Navigation configuration; no authority grant",
+      "owner": "Engineering lead",
+      "updateWhen": "The owned contract, behavior or evidence changes"
+    },
+    {
+      "id": "templates",
+      "path": "docs/templates/README.md",
+      "title": "Template catalog",
+      "role": "Generated template catalog",
+      "owner": "Engineering lead",
+      "updateWhen": "The owned contract, behavior or evidence changes"
+    },
+    {
+      "id": "adrs",
+      "path": "docs/ADR/INDEX.md",
+      "title": "ADR registry",
+      "role": "Generated source-declared ADR index",
+      "owner": "Engineering lead",
+      "updateWhen": "The owned contract, behavior or evidence changes"
+    },
+    {
+      "id": "engineering-playbook",
+      "path": "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md",
+      "title": "Engineering playbook",
+      "role": "Anchored engineering policy and embedded forms",
+      "owner": "Engineering lead",
+      "updateWhen": "Separately approved anchored engineering policy transition"
+    },
+    {
+      "id": "adversarial-template",
+      "path": "docs/templates/ADVERSARIAL_INVARIANT_MATRIX.md",
+      "title": "Adversarial invariant matrix",
+      "role": "Reusable invariant template",
+      "owner": "Engineering lead",
+      "updateWhen": "The owned contract, behavior or evidence changes"
+    },
+    {
+      "id": "work-index",
+      "path": "docs/work/INDEX.md",
+      "title": "Work index",
+      "role": "Generated work navigation",
+      "owner": "Engineering lead",
+      "updateWhen": "The owned contract, behavior or evidence changes"
+    },
+    {
+      "id": "work-process",
+      "path": "docs/work/PROCESS.md",
+      "title": "Work procedure",
+      "role": "Work capture and handoff procedure",
+      "owner": "Engineering lead",
+      "updateWhen": "Capture, ownership, handoff or retention procedure changes"
+    },
+    {
+      "id": "work-registry",
+      "path": "docs/work/registry.json",
+      "title": "Work registry",
+      "role": "Work identities and source bindings",
+      "owner": "Engineering lead",
+      "updateWhen": "The owned contract, behavior or evidence changes"
+    },
+    {
+      "id": "work-template",
+      "path": "docs/work/templates/WORK.md",
+      "title": "Work record template",
+      "role": "Reusable work record with conditional design",
+      "owner": "Engineering lead",
+      "updateWhen": "The owned contract, behavior or evidence changes"
+    },
+    {
+      "id": "work-format",
+      "path": "docs/work/templates/registry.schema.json",
+      "title": "Work registry format",
+      "role": "Work registry format",
+      "owner": "Engineering lead",
+      "updateWhen": "The owned contract, behavior or evidence changes"
+    },
+    {
+      "id": "pr-template",
+      "path": ".github/pull_request_template.md",
+      "title": "Pull request template",
+      "role": "Canonical native PR template",
+      "owner": "Engineering lead",
+      "updateWhen": "Separately reviewed PR authoring requirements or guidance changes"
+    },
+    {
+      "id": "implementation-form",
+      "path": ".github/ISSUE_TEMPLATE/stage_guardrail.yml",
+      "title": "Implementation / stage issue",
+      "role": "Canonical native implementation intake",
+      "owner": "Engineering lead",
+      "updateWhen": "The owned contract, behavior or evidence changes"
+    },
+    {
+      "id": "discovery-form",
+      "path": ".github/ISSUE_TEMPLATE/discovery.yml",
+      "title": "Discovery / design issue",
+      "role": "Canonical native discovery intake",
+      "owner": "Engineering lead",
+      "updateWhen": "The owned contract, behavior or evidence changes"
+    },
+    {
+      "id": "bug-form",
+      "path": ".github/ISSUE_TEMPLATE/bug_report.yml",
+      "title": "Bug report",
+      "role": "Canonical native bug intake",
+      "owner": "Engineering lead",
+      "updateWhen": "The owned contract, behavior or evidence changes"
+    },
+    {
+      "id": "constitution",
+      "path": ".specify/memory/constitution.md",
+      "title": "Specification constitution",
+      "role": "Specification constitution; scoped authority",
+      "owner": "Engineering lead",
+      "updateWhen": "The owned contract, behavior or evidence changes"
+    },
+    {
+      "id": "master-program",
+      "path": "docs/governance/NARRATWIN_MASTER_PROGRAM_V1.md",
+      "title": "Master Program V1",
+      "role": "Effective program source; apply accepted amendments",
+      "owner": "Engineering lead",
+      "updateWhen": "The owned contract, behavior or evidence changes"
+    }
+  ],
+  "collections": [
+    {
+      "prefix": "docs/ADR/",
+      "title": "Architecture decisions",
+      "owner": "Architecture owner",
+      "role": "Source-declared decisions; consult ADR registry",
+      "updateWhen": "The owning work, source or workflow changes; preserve historical revisions"
+    },
+    {
+      "prefix": "docs/PRODUCT_CONTRACTS/",
+      "title": "Product contracts",
+      "owner": "Product lead",
+      "role": "Product contract sources; current effect selected by STATUS",
+      "updateWhen": "The owning work, source or workflow changes; preserve historical revisions"
+    },
+    {
+      "prefix": "docs/agent-context/",
+      "title": "Agent context",
+      "owner": "Engineering governance owner",
+      "role": "Shadow routing/configuration; not live authority",
+      "updateWhen": "The owning work, source or workflow changes; preserve historical revisions"
+    },
+    {
+      "prefix": "docs/demo/",
+      "title": "Demo evidence",
+      "owner": "Delivery owner",
+      "role": "Run plans/checklists and evidence with scoped acceptance",
+      "updateWhen": "The owning work, source or workflow changes; preserve historical revisions"
+    },
+    {
+      "prefix": "docs/evals/",
+      "title": "Evaluation fixtures",
+      "owner": "AI/evaluation owner",
+      "role": "Versioned evaluation data and expectations",
+      "updateWhen": "The owning work, source or workflow changes; preserve historical revisions"
+    },
+    {
+      "prefix": "docs/governance/",
+      "title": "Governance records",
+      "owner": "Engineering governance owner",
+      "role": "Contracts/candidates/preflights; source-declared effect",
+      "updateWhen": "The owning work, source or workflow changes; preserve historical revisions"
+    },
+    {
+      "prefix": "docs/reviews/",
+      "title": "Reviews",
+      "owner": "Owning issue reviewer",
+      "role": "Issue-scoped historical or active review evidence",
+      "updateWhen": "The owning work, source or workflow changes; preserve historical revisions"
+    },
+    {
+      "prefix": "docs/templates/",
+      "title": "Shared templates",
+      "owner": "Engineering governance owner",
+      "role": "Reusable forms; explicit template registration required",
+      "updateWhen": "The owning work, source or workflow changes; preserve historical revisions"
+    },
+    {
+      "prefix": "docs/work-archive/",
+      "title": "Historical recovery",
+      "owner": "Source custodian",
+      "role": "Retained historical compatibility evidence",
+      "updateWhen": "The owning work, source or workflow changes; preserve historical revisions"
+    },
+    {
+      "prefix": "docs/work/",
+      "title": "Stable work records",
+      "owner": "Owning work controller",
+      "role": "Owning work plans/decisions/handoffs; not acceptance authority",
+      "updateWhen": "The owning work, source or workflow changes; preserve historical revisions"
+    },
+    {
+      "prefix": ".github/ISSUE_TEMPLATE/",
+      "title": "Native issue forms",
+      "owner": "Engineering governance owner",
+      "role": "Tool-owned intake templates",
+      "updateWhen": "The owning work, source or workflow changes; preserve historical revisions"
+    }
+  ],
+  "templates": [
+    {
+      "id": "pull-request",
+      "entry": "pr-template",
+      "anchor": "",
+      "title": "Pull request",
+      "useWhen": "Every PR; complete applicable required sections with concrete evidence"
+    },
+    {
+      "id": "discovery",
+      "entry": "discovery-form",
+      "anchor": "",
+      "title": "Discovery / feature / design",
+      "useWhen": "Explore a problem or decision, including a product with no PRD yet"
+    },
+    {
+      "id": "bug",
+      "entry": "bug-form",
+      "anchor": "",
+      "title": "Bug report",
+      "useWhen": "Report expected/actual behavior and reproduction"
+    },
+    {
+      "id": "implementation",
+      "entry": "implementation-form",
+      "anchor": "",
+      "title": "Stage / engineering implementation",
+      "useWhen": "Deliver accepted bounded scope with validation and closeout"
+    },
+    {
+      "id": "work",
+      "entry": "work-template",
+      "anchor": "",
+      "title": "Work record and conditional design",
+      "useWhen": "Preserve independently owned plan, decisions, evidence and handoff"
+    },
+    {
+      "id": "work-format",
+      "entry": "work-format",
+      "anchor": "",
+      "title": "Work registry format",
+      "useWhen": "Register work identities and exact source bindings; this is a schema, not a prose form"
+    },
+    {
+      "id": "project",
+      "entry": "engineering-playbook",
+      "anchor": "",
+      "title": "New-project engineering playbook",
+      "useWhen": "Bootstrap and tailor engineering rules for a new project"
+    },
+    {
+      "id": "invariant",
+      "entry": "adversarial-template",
+      "anchor": "",
+      "title": "Adversarial invariant matrix",
+      "useWhen": "Plan positive/negative evidence for a governed slice"
+    },
+    {
+      "id": "intent",
+      "entry": "engineering-playbook",
+      "anchor": "gate-0-intent-discovery",
+      "title": "Intent discovery",
+      "useWhen": "Define user, problem, outcome and unknowns before implementation"
+    },
+    {
+      "id": "spec",
+      "entry": "engineering-playbook",
+      "anchor": "gate-1-specification",
+      "title": "Specification",
+      "useWhen": "Turn an accepted outcome into scoped, testable requirements"
+    },
+    {
+      "id": "architecture",
+      "entry": "engineering-playbook",
+      "anchor": "gate-5-architecture-review",
+      "title": "Architecture review",
+      "useWhen": "Review significant technical choices and alternatives"
+    },
+    {
+      "id": "preflight",
+      "entry": "engineering-playbook",
+      "anchor": "invariant-to-test-matrix-template",
+      "title": "Invariant-to-test matrix and pre-implementation evidence",
+      "useWhen": "Map each requirement and failure to verifiable evidence"
+    },
+    {
+      "id": "closeout",
+      "entry": "engineering-playbook",
+      "anchor": "gate-8-proactive-next-step-closeout",
+      "title": "Closeout",
+      "useWhen": "Use the existing completion and closeout requirements"
+    },
+    {
+      "id": "source-facts",
+      "entry": "engineering-playbook",
+      "anchor": "gate-2-source-facts",
+      "title": "Source facts",
+      "useWhen": "Establish technical and external facts before choosing an implementation"
+    },
+    {
+      "id": "human-review",
+      "entry": "pr-template",
+      "anchor": "human-verification-checklist",
+      "title": "Human verification checklist",
+      "useWhen": "Make reviewer checks self-contained with sources and pass/fail criteria"
+    },
+    {
+      "id": "rca-example",
+      "entry": "engineering-process-rca",
+      "anchor": "invariant-to-test-matrix-template",
+      "title": "NarraTwin invariant mapping worked example",
+      "useWhen": "Consult repository-specific examples; use the engineering playbook for the reusable scaffold"
+    }
+  ],
+  "routes": [
+    {
+      "audience": "New reader",
+      "question": "What is NarraTwin and what works?",
+      "entries": [
+        "prd",
+        "status",
+        "architecture"
+      ]
+    },
+    {
+      "audience": "New product / designer",
+      "question": "How do I investigate a user need or design?",
+      "entries": [
+        "contributing",
+        "discovery-form",
+        "engineering-playbook",
+        "work-template"
+      ]
+    },
+    {
+      "audience": "Feature / bug contributor",
+      "question": "How do I propose and scope a change?",
+      "entries": [
+        "contributing",
+        "templates",
+        "work-index"
+      ]
+    },
+    {
+      "audience": "Implementer",
+      "question": "Which contracts and checks apply?",
+      "entries": [
+        "agents",
+        "documentation-guide",
+        "quality-gates",
+        "local-development"
+      ]
+    },
+    {
+      "audience": "PR reviewer",
+      "question": "What changed and how do I verify it?",
+      "entries": [
+        "contributing",
+        "pr-template",
+        "review-rigor-retrospective"
+      ]
+    },
+    {
+      "audience": "Returning person / agent",
+      "question": "What is done, pending and next?",
+      "entries": [
+        "status",
+        "work-index",
+        "work-process"
+      ]
+    },
+    {
+      "audience": "Operator / release owner",
+      "question": "Where are current limits and operational procedures?",
+      "entries": [
+        "enterprise-readiness-register",
+        "runbook",
+        "security-and-privacy"
+      ]
+    }
+  ],
+  "impacts": [
+    {
+      "area": "product-design",
+      "implementation": [
+        "frontend/"
+      ],
+      "entries": [
+        "prd",
+        "product-strategy",
+        "architecture",
+        "traceability",
+        "status"
+      ],
+      "owner": "Product/design owner",
+      "updateWhen": "User journey, requirements, interaction or accessibility changes"
+    },
+    {
+      "area": "api-data",
+      "implementation": [
+        "backend/app/"
+      ],
+      "entries": [
+        "api-contract",
+        "data-model",
+        "architecture",
+        "adrs",
+        "traceability"
+      ],
+      "owner": "API/data owner",
+      "updateWhen": "Interfaces, schema, tenant boundaries or migrations change"
+    },
+    {
+      "area": "ai-evaluation",
+      "implementation": [
+        "backend/app/",
+        "docs/evals/"
+      ],
+      "entries": [
+        "ai-quality-and-evaluation-contract",
+        "ai-safety-and-evaluation",
+        "eval-report",
+        "observability-and-cost"
+      ],
+      "owner": "AI/evaluation owner",
+      "updateWhen": "Grounding, model/prompt/evaluation or refusal behavior changes"
+    },
+    {
+      "area": "media-localization",
+      "implementation": [
+        "backend/app/"
+      ],
+      "entries": [
+        "api-contract",
+        "cut-roadmap-and-evidence-matrix",
+        "third-party-notices",
+        "security-and-privacy"
+      ],
+      "owner": "Media/localization owner",
+      "updateWhen": "Voice/avatar/captions/language or provider boundaries change"
+    },
+    {
+      "area": "security",
+      "implementation": [
+        "backend/",
+        "frontend/"
+      ],
+      "entries": [
+        "security-and-privacy",
+        "threat-model",
+        "risk-register",
+        "third-party-notices"
+      ],
+      "owner": "Security owner",
+      "updateWhen": "Threats, privacy, dependencies, identity or secrets boundaries change"
+    },
+    {
+      "area": "operations",
+      "implementation": [
+        "scripts/ci/"
+      ],
+      "entries": [
+        "runbook",
+        "observability-and-cost",
+        "portability-strategy",
+        "enterprise-readiness-register"
+      ],
+      "owner": "Operations owner",
+      "updateWhen": "Deployment, reliability, restore, monitoring or cost behavior changes"
+    },
+    {
+      "area": "ci-supply-chain",
+      "implementation": [
+        ".github/workflows/",
+        "scripts/ci/"
+      ],
+      "entries": [
+        "quality-gates",
+        "release-quality-bar",
+        "third-party-notices",
+        "adrs"
+      ],
+      "owner": "Build/release owner",
+      "updateWhen": "Build, dependency, scanning or release controls change"
+    },
+    {
+      "area": "engineering-governance",
+      "implementation": [
+        "scripts/",
+        "docs/work/"
+      ],
+      "entries": [
+        "agents",
+        "codex-operating-model",
+        "repository-guardrails",
+        "work-process",
+        "status"
+      ],
+      "owner": "Engineering governance owner",
+      "updateWhen": "Engineering workflow, source custody or validation rules change"
+    }
+  ],
+  "forms": [
+    {
+      "path": ".github/ISSUE_TEMPLATE/discovery.yml",
+      "requiredIds": [
+        "problem",
+        "decision",
+        "unknowns"
+      ],
+      "retainedIds": [],
+      "retainedChecks": {}
+    },
+    {
+      "path": ".github/ISSUE_TEMPLATE/bug_report.yml",
+      "requiredIds": [
+        "expected",
+        "actual",
+        "reproduction"
+      ],
+      "retainedIds": [],
+      "retainedChecks": {}
+    },
+    {
+      "path": ".github/ISSUE_TEMPLATE/stage_guardrail.yml",
+      "requiredIds": [
+        "stage",
+        "problem",
+        "objective",
+        "scope",
+        "out_of_scope",
+        "plan",
+        "ownership",
+        "acceptance",
+        "validation"
+      ],
+      "retainedIds": [
+        "stage",
+        "objective",
+        "scope",
+        "out_of_scope",
+        "guardrails",
+        "acceptance"
+      ],
+      "retainedChecks": {
+        "guardrails": [
+          "Work will use issue + branch + PR, not direct main commits.",
+          "CI must pass before merge.",
+          "No secrets or real provider keys will be committed.",
+          "Tests must run with mock/local providers and no paid provider requirement.",
+          "Architecture changes will update ADRs.",
+          "PRD-impacting changes will update traceability."
+        ]
+      }
+    }
+  ],
+  "adr": {
+    "prefix": "docs/ADR/",
+    "legacyCollisions": {
+      "0001": [
+        "docs/ADR/0001-architecture-approach.md",
+        "docs/ADR/0001-system-architecture.md"
+      ],
+      "0002": [
+        "docs/ADR/0002-provider-agnostic-adapters.md",
+        "docs/ADR/0002-rag-storage.md"
+      ],
+      "0003": [
+        "docs/ADR/0003-free-mode-vs-premium-mode.md",
+        "docs/ADR/0003-llm-provider-routing.md"
+      ],
+      "0037": [
+        "docs/ADR/0037-issue280-ui-browser-demo-slice.md",
+        "docs/ADR/0037-postcss-audit-remediation.md"
+      ],
+      "0040": [
+        "docs/ADR/0040-heartbeat1-a1-curated-eligibility.md",
+        "docs/ADR/0040-pr-body-live-state-reconciliation.md"
+      ],
+      "0048": [
+        "docs/ADR/0048-cut1-presenter-enterprise-readiness-contracts.md",
+        "docs/ADR/0048-quiet-presence-embedded-guide.md"
+      ],
+      "0061": [
+        "docs/ADR/0061-core-authority-schemas-state-matrices.md",
+        "docs/ADR/0061-semgrep-1-172-mcp-override-renewal.md"
+      ],
+      "0069": [
+        "docs/ADR/0069-cut1-presenter-derivative-readiness-binding.md",
+        "docs/ADR/0069-semgrep-1-175-override-removal.md"
+      ]
+    }
+  },
+  "outputs": {
+    "documents": "docs/README.md",
+    "templates": "docs/templates/README.md",
+    "adrs": "docs/ADR/INDEX.md"
+  },
+  "checkedLinks": [
+    "README.md",
+    "CONTRIBUTING.md",
+    "docs/README.md",
+    "docs/DOCUMENTATION_GUIDE.md",
+    "docs/templates/README.md",
+    "docs/ADR/INDEX.md",
+    "docs/work/PROCESS.md",
+    "docs/work/templates/WORK.md",
+    "docs/work/documentation-architecture/README.md",
+    "docs/work/documentation-architecture/HANDOFF.md"
+  ],
+  "requiredLinks": [
+    {
+      "source": "README.md",
+      "target": "docs/README.md"
+    },
+    {
+      "source": "README.md",
+      "target": "CONTRIBUTING.md"
+    },
+    {
+      "source": "CONTRIBUTING.md",
+      "target": ".github/pull_request_template.md"
+    },
+    {
+      "source": "docs/work/PROCESS.md",
+      "target": "docs/templates/README.md"
+    },
+    {
+      "source": "docs/work/templates/WORK.md",
+      "target": "docs/templates/README.md"
+    },
+    {
+      "source": "docs/STATUS.md",
+      "target": "docs/README.md"
+    },
+    {
+      "source": "docs/CODEX_OPERATING_MODEL.md",
+      "target": "docs/README.md"
+    }
+  ]
+}

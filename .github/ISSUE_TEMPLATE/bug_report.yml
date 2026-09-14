@@ -1,0 +1,56 @@
+{
+  "name": "Bug / unexpected behavior",
+  "description": "Report an observed problem with expected behavior and a reproducible example.",
+  "body": [
+    {
+      "type": "markdown",
+      "attributes": {
+        "value": "Search existing work first. Use public-safe evidence only; never paste secrets, customer data or private session logs. This issue records a request, not execution authority."
+      }
+    },
+    {
+      "type": "textarea",
+      "id": "expected",
+      "attributes": {
+        "label": "What did you expect?",
+        "description": "Describe the user outcome and relevant requirement, if known."
+      },
+      "validations": {
+        "required": true
+      }
+    },
+    {
+      "type": "textarea",
+      "id": "actual",
+      "attributes": {
+        "label": "What happened instead, and who is affected?",
+        "description": "Include impact without assuming a cause."
+      },
+      "validations": {
+        "required": true
+      }
+    },
+    {
+      "type": "textarea",
+      "id": "reproduction",
+      "attributes": {
+        "label": "How can someone reproduce it?",
+        "description": "Give steps, safe inputs, environment/version and repeatability; explain if reproduction is not yet possible."
+      },
+      "validations": {
+        "required": true
+      }
+    },
+    {
+      "type": "textarea",
+      "id": "evidence",
+      "attributes": {
+        "label": "Safe evidence and related work",
+        "description": "Link sanitized logs, the owning work or prior issue; omit private payloads."
+      },
+      "validations": {
+        "required": false
+      }
+    }
+  ]
+}

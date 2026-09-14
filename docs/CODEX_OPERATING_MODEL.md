@@ -1,5 +1,24 @@
 # Codex Operating Model
 
+For role-based document discovery, start with the [documentation map](README.md), [contributor lifecycle](../CONTRIBUTING.md) and [template catalog](templates/README.md). Existing mandatory reading and authority remain binding.
+
+## Shared session entry and handoff
+
+All humans and agents start with README, AGENTS mandatory reading and STATUS
+(current accepted contracts), then the PRD/applicable amendments and
+[docs/work/INDEX.md](work/INDEX.md). Read the selected work plan, decisions, handoff
+and original evidence; verify the actual checkout/head and live applicable tracker
+facts before action. Follow [docs/work/PROCESS.md](work/PROCESS.md) to register
+work and preserve decisions and evidence before handoff, compaction, branch changes
+or cleanup. Use the [small reusable template](work/templates/WORK.md).
+
+CLAUDE is a thin bridge to this same procedure. Existing AGENTS required reading
+already reaches this section. Shadow agent-context routing remains shadow-only.
+The work registry does not replace PRD, STATUS, accepted contracts, traceability,
+DocumentationMapV1 or CapabilityStatusV1. Active work uses stable work folders;
+old work-archive records remain historical verification/compatibility sources.
+
+
 NarraTwin AI is built through issue-linked, PR-reviewed stages. Stage 0 in this branch is limited to operating model, skill lock, and executable quality-gate setup.
 
 ## Master Rule
@@ -121,3 +140,12 @@ Stage 0 passes only when:
 ## Stage 1 Boundary
 
 Do not start Stage 1 in the Stage 0 redo branch. Stage 1 may begin only from its own issue, branch, PR, and quality target after this Stage 0 redo is reviewed.
+
+## Work continuity and source retrieval
+
+Use [docs/work/INDEX.md](work/INDEX.md) and the selected work handoff at session
+start and before handoff. Follow [the common procedure](work/PROCESS.md) to preserve
+exact sources, decisions, supersession and coverage. Recovery-specific verification
+remains available through [the historical source index](work-archive/2026-09-14-recovery/INDEX.json).
+Missing private evidence cannot receive an availability pass from hosted CI;
+independent backup and source semantic acceptance remain separate claims.

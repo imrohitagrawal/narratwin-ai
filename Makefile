@@ -4,8 +4,13 @@ export UV_CACHE_DIR ?= .uv-cache
 
 .PHONY: issue16-spec-quality
 
-quality:
+quality: work-records-quality documentation-quality
 	python3 scripts/quality/check_quality_stage.py
+
+.PHONY: documentation-quality
+documentation-quality:
+	python3 -m scripts.documentation_catalog --catalog docs/documentation-catalog.json
+	python3 -m unittest discover -s tests_stdlib -p test_documentation_catalog.py
 
 issue16-spec-quality:
 	python3 scripts/quality/check_issue16_spec_kit.py
@@ -185,3 +190,13 @@ dependency-audit:
 
 container-scan: docker-build
 	bash scripts/ci/docker-image-scan.sh
+
+.PHONY: work-archive-quality
+work-archive-quality:
+	python3 scripts/work_archive.py
+	python3 -m unittest discover -s tests_stdlib -p 'test_work_archive*.py'
+
+.PHONY: work-records-quality
+work-records-quality: work-archive-quality
+	python3 -m scripts.work_records --profile g1-originals
+	python3 -m unittest discover -s tests_stdlib -p 'test_work_records.py'
