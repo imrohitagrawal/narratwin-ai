@@ -1,0 +1,623 @@
+{
+  "schemaVersion": 1,
+  "inventorySource": {
+    "path": "docs/work/working-records/proposals/2026-09-14-structure/SOURCES.json",
+    "sha256": "9b8bff9ecd12748efce4deed693612cbd177fc050c3d989afd9b14210b55095c",
+    "bytes": 10586
+  },
+  "privateRoots": [
+    ".evidence",
+    "docs/work-archive/.restricted"
+  ],
+  "profiles": [
+    {
+      "id": "g1-originals",
+      "kind": "g1-originals-v1",
+      "descriptor": {
+        "path": "docs/work/g1-certification/evidence/PROFILE.json",
+        "sha256": "ce28adc7b26ecc172cc8e3a2f1869b9c9e7e1031c692f42bc56b8ec538897bcd",
+        "bytes": 345
+      }
+    }
+  ],
+  "issueInventory": [
+    {
+      "number": 535,
+      "title": "Governance: preserve recovered plans and verify repository archive handoffs",
+      "workId": "working-records"
+    },
+    {
+      "number": 533,
+      "title": "G1: prospective certification carrier and external receipt field contract",
+      "workId": "g1-certification"
+    },
+    {
+      "number": 532,
+      "title": "Security/Evidence G3 \u2014 Establish the restricted evidence store and reconcile private evidence",
+      "workId": "security-governance"
+    },
+    {
+      "number": 531,
+      "title": "Governance G2 \u2014 Make the prototype qualification gate executable",
+      "workId": "security-governance"
+    },
+    {
+      "number": 525,
+      "title": "Quality: bind external schema-oracle runtime policy",
+      "workId": "security-governance"
+    },
+    {
+      "number": 524,
+      "title": "Security: refresh frontend graph after five npm findings",
+      "workId": "security-governance"
+    },
+    {
+      "number": 523,
+      "title": "Security: refresh httpx2/httpcore2 after five advisories",
+      "workId": "security-governance"
+    },
+    {
+      "number": 521,
+      "title": "Governance G1: certify Master Program V2 superset and six-cut taxonomy",
+      "workId": "master-program"
+    },
+    {
+      "number": 520,
+      "title": "Cut 1 UI capture readiness: consolidate demo surfaces and polish the canonical workflow",
+      "workId": "delivery"
+    },
+    {
+      "number": 519,
+      "title": "Cut 1 T06: validate materially different presenter prototypes before adapter code",
+      "workId": "demo-comparison"
+    },
+    {
+      "number": 512,
+      "title": "Cut 1 T06A: prove real-video provider compatibility before adapter implementation",
+      "workId": "demo-comparison"
+    },
+    {
+      "number": 510,
+      "title": "cut1: make T05 audio duration authority configuration-bound",
+      "workId": "delivery"
+    },
+    {
+      "number": 493,
+      "title": "governance: make tunable policy configuration-first and manifest-driven",
+      "workId": "security-governance"
+    },
+    {
+      "number": 459,
+      "title": "Lane A Cut 1 \u2014 controlled local presenter implementation",
+      "workId": "delivery"
+    },
+    {
+      "number": 450,
+      "title": "Cut 1 / Slice 4 master implementation plan: grounded content to human-like presenters",
+      "workId": "master-program"
+    },
+    {
+      "number": 449,
+      "title": "Cut 1 planning: quality-first voice and presenter-video provider bake-off",
+      "workId": "demo-comparison"
+    },
+    {
+      "number": 432,
+      "title": "Cut 1: require blinded human-indistinguishability acceptance",
+      "workId": "demo-comparison"
+    },
+    {
+      "number": 426,
+      "title": "Governance: specify authority reconciliation and stale-route enforcement",
+      "workId": "security-governance"
+    },
+    {
+      "number": 391,
+      "title": "Post-Cut-1 workflow: session-scoped resource lifecycle and safe cleanup automation",
+      "workId": "working-records"
+    },
+    {
+      "number": 371,
+      "title": "Cut 1 integration: all-presenter end-to-end evidence, adversarial review, and closeout",
+      "workId": "delivery"
+    },
+    {
+      "number": 370,
+      "title": "Cut 1 UI: coral-clay accessible media generation, playback, and download path",
+      "workId": "delivery"
+    },
+    {
+      "number": 369,
+      "title": "Cut 1 local renderer: synchronized animated presenter video, captions, and export validation",
+      "workId": "delivery"
+    },
+    {
+      "number": 368,
+      "title": "Cut 1 local TTS: generate and validate intelligible key-free audio artifacts",
+      "workId": "delivery"
+    },
+    {
+      "number": 366,
+      "title": "Cut 1: genuine local end-to-end grounded speaking-presenter media",
+      "workId": "delivery"
+    },
+    {
+      "number": 356,
+      "title": "Docs: make repository state and contribution routes clear in the README",
+      "workId": "working-records"
+    },
+    {
+      "number": 328,
+      "title": "R0C \u2014 Reconcile durable execution blueprint and agent-context freshness",
+      "workId": "working-records"
+    },
+    {
+      "number": 327,
+      "title": "R0D \u2014 Decompose legacy Phase 1 closure monoliths behind compatibility facade",
+      "workId": "governance-backlog"
+    },
+    {
+      "number": 298,
+      "title": "Correct #280 semantic multilingual conversion gap",
+      "workId": "governance-backlog"
+    },
+    {
+      "number": 249,
+      "title": "Checkpoint 3: Portfolio product-faithful controlled demo plan",
+      "workId": "governance-backlog"
+    },
+    {
+      "number": 167,
+      "title": "PHF-020A \u2014 Replace product-mode prose scanning with structured policy validation",
+      "workId": "readiness"
+    },
+    {
+      "number": 161,
+      "title": "CH-M1-00E \u2014 Reconcile the Final Review GO/NO-GO scanner evidence",
+      "workId": "readiness"
+    },
+    {
+      "number": 160,
+      "title": "Final Review follow-up \u2014 expand workload performance evidence beyond health-only Locust smoke",
+      "workId": "readiness"
+    },
+    {
+      "number": 159,
+      "title": "CH-M1-00D \u2014 Label superseded release-security evidence after PR #152",
+      "workId": "readiness"
+    },
+    {
+      "number": 149,
+      "title": "CH-14 prerequisite 9/9: platform readiness and reviewer handoff",
+      "workId": "readiness"
+    },
+    {
+      "number": 148,
+      "title": "CH-14 prerequisite 8/9: restore observability and evidence export",
+      "workId": "readiness"
+    },
+    {
+      "number": 147,
+      "title": "CH-14 prerequisite 7/9: restore runbook and target-safety automation",
+      "workId": "readiness"
+    },
+    {
+      "number": 146,
+      "title": "CH-14 prerequisite 6/9: deterministic Stage 4/6/7 seed and parity validator",
+      "workId": "readiness"
+    },
+    {
+      "number": 145,
+      "title": "CH-14 prerequisite 5/9: managed backup policy and artifact catalog",
+      "workId": "readiness"
+    },
+    {
+      "number": 144,
+      "title": "CH-14 prerequisite 4/9: pre-production source and isolated restore landing-zone IaC",
+      "workId": "readiness"
+    },
+    {
+      "number": 143,
+      "title": "CH-14 prerequisite 3/9: Stage 4/6/7 PostgreSQL persistence adapters",
+      "workId": "readiness"
+    },
+    {
+      "number": 142,
+      "title": "CH-14 prerequisite 2/9: connection-backed PostgreSQL kernel and migrations",
+      "workId": "readiness"
+    },
+    {
+      "number": 141,
+      "title": "CH-14 prerequisite 1/9: platform decision, ownership, and durability scope",
+      "workId": "readiness"
+    },
+    {
+      "number": 139,
+      "title": "Phase 1 prerequisite: production-like durability and backup/restore platform for CH-14",
+      "workId": "readiness"
+    },
+    {
+      "number": 132,
+      "title": "Phase 1 closure: CH-22 untrusted replayed input for SEC-UNTRUSTED-001 (Refs #39)",
+      "workId": "readiness"
+    },
+    {
+      "number": 131,
+      "title": "Phase 1 closure: CH-21 retention and erasure for SEC-RETENTION-001 (Refs #39)",
+      "workId": "readiness"
+    },
+    {
+      "number": 130,
+      "title": "Phase 1 closure: CH-12 dashboards and alerts for OPS-ALERT-001 (Refs #39)",
+      "workId": "readiness"
+    },
+    {
+      "number": 129,
+      "title": "Phase 1 closure: CH-13 first-hour watch for OPS-WATCH-001 (Refs #39)",
+      "workId": "readiness"
+    },
+    {
+      "number": 126,
+      "title": "Phase 1 closure: CH-14 production-like restore drill for DUR-RESTORE-001 (Refs #39)",
+      "workId": "readiness"
+    },
+    {
+      "number": 49,
+      "title": "Bound local idempotency records across simulated actors",
+      "workId": "readiness"
+    },
+    {
+      "number": 48,
+      "title": "Track scoped project lookup hardening before production auth",
+      "workId": "readiness"
+    },
+    {
+      "number": 44,
+      "title": "Final Review: track telemetry, CSP, log-envelope, and stale risk-register hardening",
+      "workId": "readiness"
+    },
+    {
+      "number": 43,
+      "title": "Final Review \u2014 Prove the controlled local demo through a real browser-to-backend path",
+      "workId": "readiness"
+    },
+    {
+      "number": 39,
+      "title": "Final Review: resolve production durability and monitoring blockers",
+      "workId": "readiness"
+    },
+    {
+      "number": 21,
+      "title": "Slice 6 \u2014 Premium adapters, observability dashboard, and cost controls",
+      "workId": "future-capabilities"
+    },
+    {
+      "number": 20,
+      "title": "Slice 5 \u2014 Interactive Q&A over approved project knowledge",
+      "workId": "future-capabilities"
+    },
+    {
+      "number": 19,
+      "title": "Later track \u2014 Timed mock video and FFmpeg assembly beyond Stage 7 placeholders",
+      "workId": "future-capabilities"
+    },
+    {
+      "number": 18,
+      "title": "Later track \u2014 Playable local TTS audio beyond the Stage 6 voice manifest",
+      "workId": "future-capabilities"
+    },
+    {
+      "number": 17,
+      "title": "Stage 6 residual \u2014 Controlled fallback integrity for multilingual generation",
+      "workId": "future-capabilities"
+    }
+  ],
+  "works": [
+    {
+      "id": "master-program",
+      "title": "Master program",
+      "kind": "program",
+      "owner": "root orchestrator; existing issue authorities retained",
+      "path": "docs/work/master-program",
+      "plan": {
+        "path": "docs/governance/NARRATWIN_MASTER_PROGRAM_V1.md",
+        "sha256": "c3e3c85bb980aab4f818e80be3db5484e564423d77bc3ab6e81ba736c3af3420",
+        "bytes": 40135,
+        "role": "effective-source"
+      },
+      "statusRef": "docs/STATUS.md",
+      "authorityRefs": [
+        "docs/PRD.md",
+        "docs/PHASE_PLAN.md",
+        "docs/CUT_ROADMAP_AND_EVIDENCE_MATRIX.md"
+      ],
+      "issues": [
+        521,
+        450
+      ],
+      "parent": null,
+      "relationships": [],
+      "evidenceIndex": "docs/work/master-program/evidence/INDEX.json",
+      "handoff": "docs/work/master-program/HANDOFF.md",
+      "checkpoint": "2026-09-14; observed main71e0568, draft536 daf07ce, prospective amendment74b15e00; verify current checkout and tracker before action"
+    },
+    {
+      "id": "g1-certification",
+      "title": "G1 source certification",
+      "kind": "governance",
+      "owner": "root orchestrator; existing issue authorities retained",
+      "path": "docs/work/g1-certification",
+      "plan": {
+        "path": "docs/work/g1-certification/README.md",
+        "sha256": "213211107f07ac33f4dbe971c864295a47d5e60138a968deeb64dbb47fa730c8",
+        "bytes": 1292,
+        "role": "execution-plan"
+      },
+      "statusRef": "docs/STATUS.md",
+      "authorityRefs": [
+        "docs/PRD.md",
+        "docs/PHASE_PLAN.md",
+        "docs/CUT_ROADMAP_AND_EVIDENCE_MATRIX.md"
+      ],
+      "issues": [
+        533
+      ],
+      "parent": "master-program",
+      "relationships": [],
+      "evidenceIndex": "docs/work/g1-certification/evidence/INDEX.json",
+      "handoff": "docs/work/g1-certification/HANDOFF.md",
+      "checkpoint": "2026-09-14; observed main71e0568, draft536 daf07ce, prospective amendment74b15e00; verify current checkout and tracker before action"
+    },
+    {
+      "id": "demo-comparison",
+      "title": "Demo workflow comparison",
+      "kind": "comparison",
+      "owner": "root orchestrator; existing issue authorities retained",
+      "path": "docs/work/demo-comparison",
+      "plan": {
+        "path": "docs/work/demo-comparison/PLAN.md",
+        "sha256": "386e5b28504b5684625424875776f71be380508b194a36933488e3ac67e9e03a",
+        "bytes": 46368,
+        "role": "reviewed-proposal"
+      },
+      "statusRef": "docs/STATUS.md",
+      "authorityRefs": [
+        "docs/PRD.md",
+        "docs/PHASE_PLAN.md",
+        "docs/CUT_ROADMAP_AND_EVIDENCE_MATRIX.md"
+      ],
+      "issues": [
+        449,
+        519,
+        512,
+        432
+      ],
+      "parent": "master-program",
+      "relationships": [
+        {
+          "kind": "depends-on",
+          "target": "g1-certification"
+        },
+        {
+          "kind": "related-to",
+          "target": "delivery"
+        }
+      ],
+      "evidenceIndex": "docs/work/demo-comparison/evidence/INDEX.json",
+      "handoff": "docs/work/demo-comparison/HANDOFF.md",
+      "checkpoint": "2026-09-14; observed main71e0568, draft536 daf07ce, prospective amendment74b15e00; verify current checkout and tracker before action"
+    },
+    {
+      "id": "working-records",
+      "title": "Working records and preservation",
+      "kind": "recovery",
+      "owner": "root orchestrator; existing issue authorities retained",
+      "path": "docs/work/working-records",
+      "plan": {
+        "path": "docs/work/working-records/IMPLEMENTATION.md",
+        "sha256": "50643f692eea766c2fda041de5208efeb9351cddbb53bc0a240406cea4860230",
+        "bytes": 6671,
+        "role": "execution-plan"
+      },
+      "statusRef": "docs/STATUS.md",
+      "authorityRefs": [
+        "docs/PRD.md",
+        "docs/PHASE_PLAN.md",
+        "docs/CUT_ROADMAP_AND_EVIDENCE_MATRIX.md"
+      ],
+      "issues": [
+        535,
+        356,
+        328,
+        391
+      ],
+      "parent": "master-program",
+      "relationships": [
+        {
+          "kind": "related-to",
+          "target": "security-governance"
+        }
+      ],
+      "evidenceIndex": "docs/work/working-records/evidence/INDEX.json",
+      "handoff": "docs/work/working-records/HANDOFF.md",
+      "checkpoint": "2026-09-14; observed main71e0568, draft536 daf07ce, prospective amendment74b15e00; verify current checkout and tracker before action"
+    },
+    {
+      "id": "delivery",
+      "title": "Cut 1 delivery",
+      "kind": "delivery",
+      "owner": "root orchestrator; existing issue authorities retained",
+      "path": "docs/work/delivery",
+      "plan": {
+        "path": "docs/STAGE_ISSUE_PLAN.md",
+        "sha256": "041471c62da962ed7aa88dc71a484a02a4e37b2f6595ee0b791f479c1f127dbe",
+        "bytes": 161863,
+        "role": "source-pointer"
+      },
+      "statusRef": "docs/STATUS.md",
+      "authorityRefs": [
+        "docs/PRD.md",
+        "docs/PHASE_PLAN.md",
+        "docs/CUT_ROADMAP_AND_EVIDENCE_MATRIX.md"
+      ],
+      "issues": [
+        510,
+        520,
+        371,
+        370,
+        369,
+        368,
+        366,
+        459
+      ],
+      "parent": "master-program",
+      "relationships": [],
+      "evidenceIndex": "docs/work/delivery/evidence/INDEX.json",
+      "handoff": "docs/work/delivery/HANDOFF.md",
+      "checkpoint": "2026-09-14; observed main71e0568, draft536 daf07ce, prospective amendment74b15e00; verify current checkout and tracker before action"
+    },
+    {
+      "id": "security-governance",
+      "title": "Security and operational governance",
+      "kind": "governance",
+      "owner": "root orchestrator; existing issue authorities retained",
+      "path": "docs/work/security-governance",
+      "plan": {
+        "path": "docs/ENTERPRISE_READINESS_REGISTER.md",
+        "sha256": "fd42d73871b62f48e018ced1eb5020ffcb53a62cdbdd53936b7c257c22940c1d",
+        "bytes": 7178,
+        "role": "source-pointer"
+      },
+      "statusRef": "docs/STATUS.md",
+      "authorityRefs": [
+        "docs/PRD.md",
+        "docs/PHASE_PLAN.md",
+        "docs/CUT_ROADMAP_AND_EVIDENCE_MATRIX.md"
+      ],
+      "issues": [
+        532,
+        531,
+        525,
+        524,
+        523,
+        493,
+        426
+      ],
+      "parent": "master-program",
+      "relationships": [],
+      "evidenceIndex": "docs/work/security-governance/evidence/INDEX.json",
+      "handoff": "docs/work/security-governance/HANDOFF.md",
+      "checkpoint": "2026-09-14; observed main71e0568, draft536 daf07ce, prospective amendment74b15e00; verify current checkout and tracker before action"
+    },
+    {
+      "id": "future-capabilities",
+      "title": "Future product capabilities",
+      "kind": "workstream",
+      "owner": "root orchestrator; existing issue authorities retained",
+      "path": "docs/work/future-capabilities",
+      "plan": {
+        "path": "docs/PRD.md",
+        "sha256": "2cde5d9ec7d8e932b25f2fdf66d4dd11f49065b50078f16f59b6a65cbb7d720a",
+        "bytes": 18863,
+        "role": "source-pointer"
+      },
+      "statusRef": "docs/STATUS.md",
+      "authorityRefs": [
+        "docs/PRD.md",
+        "docs/PHASE_PLAN.md",
+        "docs/CUT_ROADMAP_AND_EVIDENCE_MATRIX.md"
+      ],
+      "issues": [
+        20,
+        21,
+        17,
+        18,
+        19
+      ],
+      "parent": "master-program",
+      "relationships": [],
+      "evidenceIndex": "docs/work/future-capabilities/evidence/INDEX.json",
+      "handoff": "docs/work/future-capabilities/HANDOFF.md",
+      "checkpoint": "2026-09-14; observed main71e0568, draft536 daf07ce, prospective amendment74b15e00; verify current checkout and tracker before action"
+    },
+    {
+      "id": "readiness",
+      "title": "Readiness and operations",
+      "kind": "workstream",
+      "owner": "root orchestrator; existing issue authorities retained",
+      "path": "docs/work/readiness",
+      "plan": {
+        "path": "docs/ENTERPRISE_READINESS_REGISTER.md",
+        "sha256": "fd42d73871b62f48e018ced1eb5020ffcb53a62cdbdd53936b7c257c22940c1d",
+        "bytes": 7178,
+        "role": "source-pointer"
+      },
+      "statusRef": "docs/STATUS.md",
+      "authorityRefs": [
+        "docs/PRD.md",
+        "docs/PHASE_PLAN.md",
+        "docs/CUT_ROADMAP_AND_EVIDENCE_MATRIX.md"
+      ],
+      "issues": [
+        39,
+        43,
+        44,
+        48,
+        49,
+        126,
+        129,
+        130,
+        131,
+        132,
+        139,
+        141,
+        142,
+        143,
+        144,
+        145,
+        146,
+        147,
+        148,
+        149,
+        159,
+        160,
+        161,
+        167
+      ],
+      "parent": "master-program",
+      "relationships": [],
+      "evidenceIndex": "docs/work/readiness/evidence/INDEX.json",
+      "handoff": "docs/work/readiness/HANDOFF.md",
+      "checkpoint": "2026-09-14; observed main71e0568, draft536 daf07ce, prospective amendment74b15e00; verify current checkout and tracker before action"
+    },
+    {
+      "id": "governance-backlog",
+      "title": "Governance and evaluation backlog",
+      "kind": "governance",
+      "owner": "root orchestrator; existing issue authorities retained",
+      "path": "docs/work/governance-backlog",
+      "plan": {
+        "path": "docs/STATUS.md",
+        "sha256": "dfee91ddf9a384a30cb767ce63ee75ebbf372d2b4d506c4bb6fe12e6b33e43fe",
+        "bytes": 289052,
+        "role": "source-pointer"
+      },
+      "statusRef": "docs/STATUS.md",
+      "authorityRefs": [
+        "docs/PRD.md",
+        "docs/PHASE_PLAN.md",
+        "docs/CUT_ROADMAP_AND_EVIDENCE_MATRIX.md"
+      ],
+      "issues": [
+        327,
+        298,
+        249
+      ],
+      "parent": "master-program",
+      "relationships": [],
+      "evidenceIndex": "docs/work/governance-backlog/evidence/INDEX.json",
+      "handoff": "docs/work/governance-backlog/HANDOFF.md",
+      "checkpoint": "2026-09-14; observed main71e0568, draft536 daf07ce, prospective amendment74b15e00; verify current checkout and tracker before action"
+    }
+  ]
+}

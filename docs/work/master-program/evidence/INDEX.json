@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "artifacts": [
+    {
+      "id": "owner-plan-2026-09-07",
+      "owner": "master-program",
+      "role": "original",
+      "revision": "986fd1604b385cd1ecd0dad1bfe0e09e6357d0e4b1d58bc94e3c055cc9bec58c",
+      "sha256": "986fd1604b385cd1ecd0dad1bfe0e09e6357d0e4b1d58bc94e3c055cc9bec58c",
+      "bytes": 65097,
+      "restrictedEvidenceRef": "restricted-evidence:OWNER_PLAN_2026_09_07",
+      "custody": "restricted",
+      "verification": "METADATA_PINNED",
+      "derivedFrom": []
+    }
+  ],
+  "uses": []
+}

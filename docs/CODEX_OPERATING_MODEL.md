@@ -1,5 +1,22 @@
 # Codex Operating Model
 
+## Shared session entry and handoff
+
+All humans and agents start with README, AGENTS mandatory reading and STATUS
+(current accepted contracts), then the PRD/applicable amendments and
+[docs/work/INDEX.md](work/INDEX.md). Read the selected work plan, decisions, handoff
+and original evidence; verify the actual checkout/head and live applicable tracker
+facts before action. Follow [docs/work/PROCESS.md](work/PROCESS.md) to register
+work and preserve decisions and evidence before handoff, compaction, branch changes
+or cleanup. Use the [small reusable template](work/templates/WORK.md).
+
+CLAUDE is a thin bridge to this same procedure. Existing AGENTS required reading
+already reaches this section. Shadow agent-context routing remains shadow-only.
+The work registry does not replace PRD, STATUS, accepted contracts, traceability,
+DocumentationMapV1 or CapabilityStatusV1. Active work uses stable work folders;
+old work-archive records remain historical verification/compatibility sources.
+
+
 NarraTwin AI is built through issue-linked, PR-reviewed stages. Stage 0 in this branch is limited to operating model, skill lock, and executable quality-gate setup.
 
 ## Master Rule
@@ -124,12 +141,9 @@ Do not start Stage 1 in the Stage 0 redo branch. Stage 1 may begin only from its
 
 ## Work continuity and source retrieval
 
-At session start and before handoff, use [docs/work-archive/README.md](work-archive/README.md)
-and the handoff linked by STATUS. Read the full current plan, decisions and required
-source evidence; do not rely solely on a previous agent's summary or a file hash.
-Follow [the archive procedure](work-archive/PROCESS.md): save exact sources privately,
-review public derivatives, record supersession and coverage, update the index and
-handoff, and run both public and actual private read-back checks. Missing private
-evidence cannot receive an availability pass from hosted CI. Keep backup status
-explicit; an ignored local folder is not an independent backup. This archive does
-not change accepted product contracts or authorize provider work.
+Use [docs/work/INDEX.md](work/INDEX.md) and the selected work handoff at session
+start and before handoff. Follow [the common procedure](work/PROCESS.md) to preserve
+exact sources, decisions, supersession and coverage. Recovery-specific verification
+remains available through [the historical source index](work-archive/2026-09-14-recovery/INDEX.json).
+Missing private evidence cannot receive an availability pass from hosted CI;
+independent backup and source semantic acceptance remain separate claims.

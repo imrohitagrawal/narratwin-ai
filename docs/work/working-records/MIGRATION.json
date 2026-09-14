@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "privateStore": {
+    "id": "recovery-2026-09-14",
+    "state": "RETAINED_TEMPORARY_LOCATION",
+    "relativePath": "docs/work-archive/.restricted/2026-09-14-recovery",
+    "custodian": "project owner",
+    "availability": "NOT_CHECKED_IN_PUBLIC_CLONE",
+    "backup": "UNPROVED",
+    "inventory": {
+      "path": "PRIVATE_INVENTORY.json",
+      "sha256": "620c71ecdad6f1c4f20503eeb545de6e7508564449a7aa6710298a37cd1f92e9",
+      "bytes": 285251
+    },
+    "migration": "No private copy/relocation; independent store remains Issue532"
+  },
+  "publicCopies": [
+    {
+      "source": "docs/work-archive/2026-09-14-recovery/COMPARISON_AND_AMENDMENT.md",
+      "destination": "docs/work/demo-comparison/PLAN.md",
+      "sha256": "386e5b28504b5684625424875776f71be380508b194a36933488e3ac67e9e03a",
+      "bytes": 46368,
+      "treatment": "Exact copy; historical source retained, active owner demo-comparison"
+    }
+  ],
+  "compatibility": {
+    "index": "docs/work-archive/2026-09-14-recovery/INDEX.json",
+    "reason": "Historical exact11 verification retained; active navigation uses docs/work/INDEX.md"
+  },
+  "originalMapping": {
+    "path": "docs/governance/superset-mapping-v2.json",
+    "sha256": "ce4df939ca8ef4a72483c66f29212e08faeeff737c778db3e505d6fd0074388b"
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "indexPath": "docs/work-archive/2026-09-14-recovery/INDEX.json",
+  "bindings": {
+    "A": "g1-a",
+    "B": "g1-b",
+    "B0": "g1-b0",
+    "C": "g1-c",
+    "I": "g1-i",
+    "IM": "g1-im",
+    "L": "g1-l",
+    "P": "g1-p",
+    "R": "g1-r",
+    "VALIDATOR": "g1-validator",
+    "OWNER_PLAN": "owner-plan-2026-09-07"
+  }
+}

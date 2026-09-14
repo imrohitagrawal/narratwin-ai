@@ -106,13 +106,13 @@
     },
     {
       "path": "docs/work-archive/PROCESS.md",
-      "sha256": "51c26f53332b8e7ed39f36e3fafa9b5dbcf7b1d5831de79f766f5b8ca29fadbd",
-      "bytes": 10055
+      "sha256": "78a105bc5b6937400bd7331e1c8493e7e20ff5b597e065e97c73a65cfc3ed712",
+      "bytes": 10294
     },
     {
       "path": "docs/work-archive/README.md",
-      "sha256": "18077f9ce70711cc94e794228754908f4cfbc01c7600bac6dd3f626847f7de00",
-      "bytes": 3106
+      "sha256": "3f449afd701ea5a188b61e683fdb7fb4e9fbd5abd0c4088149994aeb3eb3067b",
+      "bytes": 1249
     }
   ],
   "handoffPath": "docs/work-archive/2026-09-14-recovery/HANDOFF.md",

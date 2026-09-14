@@ -1,0 +1,128 @@
+{
+  "schemaVersion": 1,
+  "artifacts": [
+    {
+      "id": "g1-a",
+      "owner": "g1-certification",
+      "role": "original",
+      "revision": "dd0c8ea19cc7606926e34a8d16b80376b5ed20d9bae9b0f572c13fbe5f63efb9",
+      "sha256": "dd0c8ea19cc7606926e34a8d16b80376b5ed20d9bae9b0f572c13fbe5f63efb9",
+      "bytes": 15098928,
+      "restrictedEvidenceRef": "restricted-evidence:G1_EXTERNAL_SEMANTIC_A_V3",
+      "custody": "restricted",
+      "verification": "METADATA_PINNED",
+      "derivedFrom": []
+    },
+    {
+      "id": "g1-b",
+      "owner": "g1-certification",
+      "role": "original",
+      "revision": "52bfe86b99ec6809068645fc9ebe06bd0dcc825bf356aa249987afdf04bba3d2",
+      "sha256": "52bfe86b99ec6809068645fc9ebe06bd0dcc825bf356aa249987afdf04bba3d2",
+      "bytes": 7982471,
+      "restrictedEvidenceRef": "restricted-evidence:G1_EXTERNAL_SEMANTIC_B_V3",
+      "custody": "restricted",
+      "verification": "METADATA_PINNED",
+      "derivedFrom": []
+    },
+    {
+      "id": "g1-b0",
+      "owner": "g1-certification",
+      "role": "original",
+      "revision": "a2fdf8e0ed748f35ed954ce1a8b3108c44bc367e207fd6441077e692cff830a6",
+      "sha256": "a2fdf8e0ed748f35ed954ce1a8b3108c44bc367e207fd6441077e692cff830a6",
+      "bytes": 7847760,
+      "restrictedEvidenceRef": "restricted-evidence:G1_EXTERNAL_SEMANTIC_B0_V3",
+      "custody": "restricted",
+      "verification": "METADATA_PINNED",
+      "derivedFrom": []
+    },
+    {
+      "id": "g1-c",
+      "owner": "g1-certification",
+      "role": "original",
+      "revision": "bacfc4c9fcbaaaeaa9b8630433ba40708b64b91ef9bd3045e3711f6b0c92c517",
+      "sha256": "bacfc4c9fcbaaaeaa9b8630433ba40708b64b91ef9bd3045e3711f6b0c92c517",
+      "bytes": 10981094,
+      "restrictedEvidenceRef": "restricted-evidence:G1_EXTERNAL_SEMANTIC_C_V3",
+      "custody": "restricted",
+      "verification": "METADATA_PINNED",
+      "derivedFrom": []
+    },
+    {
+      "id": "g1-i",
+      "owner": "g1-certification",
+      "role": "original",
+      "revision": "28c2a2030fd2eedeaf84441679f754e49d037981206db92feb9406b08f16b0e5",
+      "sha256": "28c2a2030fd2eedeaf84441679f754e49d037981206db92feb9406b08f16b0e5",
+      "bytes": 78729126,
+      "restrictedEvidenceRef": "restricted-evidence:G1_EXTERNAL_SEMANTIC_I_V3",
+      "custody": "restricted",
+      "verification": "METADATA_PINNED",
+      "derivedFrom": []
+    },
+    {
+      "id": "g1-im",
+      "owner": "g1-certification",
+      "role": "original",
+      "revision": "89ae7bc4415f72bfebe5f2c0dc7cb48ef685f0d408ccb05d14326668bf311e5f",
+      "sha256": "89ae7bc4415f72bfebe5f2c0dc7cb48ef685f0d408ccb05d14326668bf311e5f",
+      "bytes": 20284,
+      "restrictedEvidenceRef": "restricted-evidence:G1_EXTERNAL_SEMANTIC_IM_V3",
+      "custody": "restricted",
+      "verification": "METADATA_PINNED",
+      "derivedFrom": []
+    },
+    {
+      "id": "g1-l",
+      "owner": "g1-certification",
+      "role": "original",
+      "revision": "db2db0110b1c115b4be7c0271e04127cbba34e4d946882fc75b1ba65f9b0b557",
+      "sha256": "db2db0110b1c115b4be7c0271e04127cbba34e4d946882fc75b1ba65f9b0b557",
+      "bytes": 81576,
+      "restrictedEvidenceRef": "restricted-evidence:G1_EXTERNAL_SEMANTIC_L_V3",
+      "custody": "restricted",
+      "verification": "METADATA_PINNED",
+      "derivedFrom": []
+    },
+    {
+      "id": "g1-p",
+      "owner": "g1-certification",
+      "role": "original",
+      "revision": "43b98b12d5115ba79760df54a98a1846e0a015efbd3023f1be06de55e036328f",
+      "sha256": "43b98b12d5115ba79760df54a98a1846e0a015efbd3023f1be06de55e036328f",
+      "bytes": 2864546,
+      "restrictedEvidenceRef": "restricted-evidence:G1_EXTERNAL_SEMANTIC_P_V3",
+      "custody": "restricted",
+      "verification": "METADATA_PINNED",
+      "derivedFrom": []
+    },
+    {
+      "id": "g1-r",
+      "owner": "g1-certification",
+      "role": "original",
+      "revision": "7404b46856afad97f210b5b6a581fcdf598e810d5fe02380485e5ff5a74b0df6",
+      "sha256": "7404b46856afad97f210b5b6a581fcdf598e810d5fe02380485e5ff5a74b0df6",
+      "bytes": 94160,
+      "restrictedEvidenceRef": "restricted-evidence:G1_EXTERNAL_SEMANTIC_R_V3",
+      "custody": "restricted",
+      "verification": "METADATA_PINNED",
+      "derivedFrom": []
+    },
+    {
+      "id": "g1-validator",
+      "owner": "g1-certification",
+      "role": "original",
+      "revision": "60efeb0b3e687d1a4281727badcf3b4b4d6788c2f10749e629f3009394ed6dde",
+      "sha256": "60efeb0b3e687d1a4281727badcf3b4b4d6788c2f10749e629f3009394ed6dde",
+      "bytes": 53332,
+      "restrictedEvidenceRef": "restricted-evidence:G1_EXTERNAL_SEMANTIC_VALIDATOR_V3",
+      "custody": "restricted",
+      "verification": "METADATA_PINNED",
+      "derivedFrom": []
+    }
+  ],
+  "uses": [
+    "owner-plan-2026-09-07"
+  ]
+}

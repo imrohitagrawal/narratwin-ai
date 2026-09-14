@@ -4,7 +4,7 @@ export UV_CACHE_DIR ?= .uv-cache
 
 .PHONY: issue16-spec-quality
 
-quality: work-archive-quality
+quality: work-records-quality
 	python3 scripts/quality/check_quality_stage.py
 
 issue16-spec-quality:
@@ -190,3 +190,8 @@ container-scan: docker-build
 work-archive-quality:
 	python3 scripts/work_archive.py
 	python3 -m unittest discover -s tests_stdlib -p 'test_work_archive*.py'
+
+.PHONY: work-records-quality
+work-records-quality: work-archive-quality
+	python3 -m scripts.work_records --profile g1-originals
+	python3 -m unittest discover -s tests_stdlib -p 'test_work_records.py'

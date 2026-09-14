@@ -1,5 +1,18 @@
 # Program Status
 
+## Find current work
+
+Start at [the work index](work/INDEX.md) (`docs/work/INDEX.md`) for stable programs,
+comparisons, plans, decisions, handoffs and evidence owners. Follow [the shared
+procedure](work/PROCESS.md); read the canonical accepted-contract map below before
+acting. The index is navigation, not a second status or approval ledger.
+
+Issue #535 / draft PR #536 introduces the stable records and retains the recovered
+private originals intact. [Implementation and limits](work/working-records/IMPLEMENTATION.md)
+record the pending carrier dependency, explicit AGENTS consumer and independent
+backup gap. This branch-local description does not claim those changes are merged.
+
+
 This file is the canonical repository-tracked governance and delivery ledger for NarraTwin AI.
 
 It is maintained from the repository itself, not from live GitHub state. Repo checks can verify only repository-tracked changes and internal document consistency. Out-of-band issue and pull request state changes must be reconciled in the next governance update.

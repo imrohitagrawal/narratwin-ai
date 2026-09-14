@@ -1,0 +1,11 @@
+{
+  "schemaVersion": "WorkRecordsSchemaV1",
+  "description": "Versioned closed-field navigation format consumed by scripts/work_records.py; not a general JSON Schema interpreter or an acceptance protocol.",
+  "registryFields": ["schemaVersion", "inventorySource", "privateRoots", "profiles", "issueInventory", "works"],
+  "workFields": ["id", "title", "kind", "owner", "path", "plan", "statusRef", "authorityRefs", "issues", "parent", "relationships", "evidenceIndex", "handoff", "checkpoint"],
+  "artifactFields": ["id", "owner", "role", "revision", "sha256", "bytes", "custody", "verification", "derivedFrom"],
+  "kinds": ["program", "workstream", "comparison", "experiment", "delivery", "governance", "recovery"],
+  "planRoles": ["effective-source", "source-pointer", "reviewed-proposal", "execution-plan", "historical-source"],
+  "artifactRoles": ["original", "derived", "review", "historical"],
+  "relationships": ["parent", "depends-on", "related-to", "uses-evidence-from"]
+}

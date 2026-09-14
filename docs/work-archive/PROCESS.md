@@ -1,5 +1,10 @@
 # Preserve work at every handoff
 
+Historical process snapshot. New work follows [docs/work/PROCESS.md](../work/PROCESS.md).
+The rules below record the original recovery increment; they do not prescribe the
+active folder convention after the stable work-record migration.
+
+
 ## Observation and scope
 
 The repository already required evidence retention, custody and recoverable

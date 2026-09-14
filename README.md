@@ -1,5 +1,15 @@
 # NarraTwin AI
 
+## Start here
+
+Read the [PRD](docs/PRD.md) for product intent, then [STATUS](docs/STATUS.md) for
+current capabilities, limitations and accepted contracts. Open [the work index](docs/work/INDEX.md)
+to find programs, comparisons, active plans, decisions and evidence. Follow the
+[session and handoff procedure](docs/CODEX_OPERATING_MODEL.md). Agents must also
+follow [AGENTS.md](AGENTS.md) and its required reading; [CLAUDE.md](CLAUDE.md)
+points to the same flow. Existing product documents retain their authority.
+
+
 **NarraTwin AI** is a provider-agnostic multilingual AI avatar walkthrough platform.
 
 NarraTwin turns approved knowledge into grounded, cited, multilingual avatar

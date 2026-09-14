@@ -1,0 +1,17 @@
+--- a/AGENTS.md
++++ b/AGENTS.md
+@@ -1,6 +1,14 @@
+ # Codex / Agent Instructions for NarraTwin AI
+ 
+ You are working on NarraTwin AI as a Principal Staff AI Product Engineer.
++
++## Session entry and working records
++
++Start with the repository README, then `docs/STATUS.md` and its current accepted
++contract map. Use `docs/work/INDEX.md` to select the relevant work record and its
++current plan, decisions, handoff and required evidence. Follow the shared session
++and handoff procedure in `docs/CODEX_OPERATING_MODEL.md`. This navigation does not
++replace the required reading below or grant approval from a file's location.
+ 
+ ## Required Reading
+ 

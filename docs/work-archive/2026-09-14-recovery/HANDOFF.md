@@ -1,6 +1,10 @@
-# Current archive handoff — Issue #535
+# Historical recovery handoff — Issue #535
 
-INDEX_SHA256: b18fecd76056074c8d80536612fde21d389ddd4af396b8a43701f549785928f6
+Current work starts at [docs/work/INDEX.md](../../work/INDEX.md);
+[working-records/HANDOFF.md](../../work/working-records/HANDOFF.md) owns the
+structure implementation. The original recovery results below remain historical.
+
+INDEX_SHA256: bdc76bf430e283090c5dad59566cbe45459f436ce6b29b05ae8e66a27a4bfdcb
 
 Start from [the index](INDEX.json), [decisions](DECISIONS.md),
 [full comparison proposal](COMPARISON_AND_AMENDMENT.md), and
