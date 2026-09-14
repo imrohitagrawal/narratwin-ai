@@ -51,6 +51,15 @@ Do not merge this archive branch ahead of the original carrier closeout. The
 later comparison amendment starts from verified current main and requires the
 distinct accepted-current transition; #521/#531/#520 dependencies remain.
 
+## Repository integration status
+
+Draft PR #536 is published. Local archive checks and the scoped test suite pass.
+The PR-event guardrail still rejects the incomplete repository-wide validation
+command ledger; do not copy scoped results into those broader command rows.
+Use `REQUIRED_PR_VALIDATION_COMMANDS` in `scripts/guardrails_check.py` and the
+live PR checks to finish that evidence. The earlier Markdown heading error was
+corrected. No all-CI-green, merge-eligible or exact-head approval is asserted.
+
 ## Ownership and next action
 
 Root owns archive verification, independent review triage and branch closeout.
