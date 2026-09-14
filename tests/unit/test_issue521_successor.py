@@ -311,43 +311,33 @@ def test_successor_manifest_budgets_are_generic_and_fail_closed() -> None:
 
 
 def test_actual_git_scope_push_pr_dirty_and_first_commit_boundaries(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    profile, artifact = successor.registered_inputs(runner.ROOT)
-    profile = copy.deepcopy(profile)
-    root = tmp_path / "scope"
-    root.mkdir()
+    root = alternate_history(tmp_path, registered_first=True)
+    profile, _ = successor.registered_inputs(root)
     def git(*args: str) -> str:
         return subprocess.run(["/usr/bin/git", *args], cwd=root, check=True, capture_output=True).stdout.decode().strip()
-    git("init", "-b", profile["branch"])
-    git("config", "user.email", "fixture@example.invalid")
-    git("config", "user.name", "Scope fixture")
-    git("commit", "--allow-empty", "-m", "base")
-    profile["baseCommit"] = git("rev-parse", "HEAD")
-    preflight = root / profile["preflightPath"]
-    preflight.parent.mkdir(parents=True)
-    preflight.write_bytes((runner.ROOT / profile["preflightPath"]).read_bytes())
-    git("add", ".")
-    git("commit", "-m", "preflight only")
-    # Registration itself is covered against immutable real bytes in successor tests.
-    monkeypatch.setattr(successor, "registered_inputs", lambda root: (profile, artifact))
-    assert "GPF.SCOPE.REQUIRED_NOT_CHANGED" in successor.successor_scope(root, profile["branch"])
-    for relative in artifact["scope"]["required"]:
-        if relative == profile["preflightPath"]:
-            continue
-        path = root / relative
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text("fixture\n")
-    git("add", ".")
-    git("commit", "-m", "complete scope")
     monkeypatch.setenv("GITHUB_ACTIONS", "true")
-    for event, base in (("push", "0" * 40), ("pull_request", profile["baseCommit"])):
+    monkeypatch.setenv("GITHUB_REF_NAME", profile["branch"])
+    for event, base in (("push", "0" * 40), ("push", "f" * 40), ("pull_request", profile["baseCommit"])):
         monkeypatch.setenv("GITHUB_EVENT_NAME", event)
         monkeypatch.setenv("GITHUB_BASE_SHA", base)
         monkeypatch.setenv("GITHUB_HEAD_SHA", git("rev-parse", "HEAD"))
         assert successor.successor_scope(root, profile["branch"]) == []
+    # A real PR merge checkout has main first and the candidate second parent.
+    candidate_head = git("rev-parse", "HEAD")
+    git("checkout", "-b", "synthetic-main", successor.BASE_COMMIT)
+    git("-c", "commit.gpgsign=false", "commit", "--allow-empty", "-m", "main advanced")
+    git("-c", "commit.gpgsign=false", "merge", "--no-ff", "-m", "PR merge checkout", candidate_head)
+    assert successor.verify_history(root, profile, successor.RuntimeConfig(5.0)) == git("rev-parse", "HEAD")
+    monkeypatch.setenv("GITHUB_HEAD_SHA", candidate_head)
+    assert successor.successor_scope(root, profile["branch"]) == []
+    monkeypatch.setenv("GITHUB_HEAD_SHA", successor.PREFLIGHT_COMMIT)
+    assert successor.successor_scope(root, profile["branch"]) == ["G1.REGISTRATION.CHECKOUT"]
+    monkeypatch.setenv("GITHUB_HEAD_SHA", candidate_head)
     assert successor.successor_scope(root, profile["branch"] + "-near") == ["G1.SCOPE.BRANCH"]
     (root / "extra.txt").write_text("outside\n")
     assert successor.successor_scope(root, profile["branch"]) == ["G1.SCOPE.HOSTED_DIRTY"]
     monkeypatch.delenv("GITHUB_ACTIONS")
+    git("checkout", "--detach", candidate_head)
     assert successor.successor_scope(root, profile["branch"]) == ["G1.SCOPE.EXTRA_PATH"]
 
 
@@ -366,7 +356,7 @@ def test_default_runtime_config_is_reviewed_and_reported() -> None:
     assert successor.RuntimeConfig.resolve(profile, {}).effective() == {"gitTimeoutSeconds": 5.0}
 
 
-def alternate_history(tmp_path: Path, *, late_merge: bool = False) -> Path:
+def alternate_history(tmp_path: Path, *, late_merge: bool = False, registered_first: bool = False) -> Path:
     """Real Git objects/index/history; borrow existing objects read-only, never clone."""
     root = tmp_path / "alternate-history"
     root.mkdir()
@@ -380,15 +370,16 @@ def alternate_history(tmp_path: Path, *, late_merge: bool = False) -> Path:
     git("config", "user.name", "History fixture")
     git("config", "user.email", "fixture@example.invalid")
     git("config", "commit.gpgsign", "false")
-    git("checkout", "-b", profile["branch"], successor.BASE_COMMIT)
+    git("checkout", "-b", profile["branch"], successor.PREFLIGHT_COMMIT if registered_first else successor.BASE_COMMIT)
     # Unlike the earlier empty-base scope fixture, the actual GPF adapter exists at base.
     git("cat-file", "-e", successor.BASE_COMMIT + ":scripts/governance_preflight_repository.py")
     git("cat-file", "-e", successor.PREFLIGHT_COMMIT)
     raw = (ROOT / profile["preflightPath"]).read_bytes()
     path = root / profile["preflightPath"]
-    path.write_bytes(raw.replace(b'"issue_number": 540', b'"issue_number": 541'))
-    git("add", "--", profile["preflightPath"])
-    git("commit", "-m", "alternate first preflight")
+    if not registered_first:
+        path.write_bytes(raw.replace(b'"issue_number": 540', b'"issue_number": 541'))
+        git("add", "--", profile["preflightPath"])
+        git("commit", "-m", "alternate first preflight")
     for relative in preflight["scope"]["required"]:
         path = root / relative
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -427,3 +418,49 @@ def test_successor_binding_binds_exact_lineage_bytes() -> None:
     assert binding.get("integrationLineagePath") == profile["outputs"]["integrationLineage"]
     assert binding["artifactHashes"].get("integrationLineageSha256") == hashlib.sha256(raw).hexdigest()
     assert binding["artifactShape"].get("integrationLineageBytes") == len(raw)
+
+
+@pytest.mark.parametrize("mutation", ["missing", "stale", "bytes", "path"])
+def test_successor_rejects_missing_or_stale_lineage_binding(candidate: Path, mutation: str) -> None:
+    profile, _ = successor.registered_inputs(candidate)
+    relative = profile["outputs"]["binding"]
+    binding = predecessor._load_json(candidate / relative)
+    if mutation == "missing":
+        del binding["integrationLineagePath"]
+    elif mutation == "stale":
+        binding["artifactHashes"]["integrationLineageSha256"] = "0" * 64
+    elif mutation == "bytes":
+        binding["artifactShape"]["integrationLineageBytes"] += 1
+    else:
+        binding["integrationLineagePath"] = predecessor.BINDING_PATH
+    with changed(candidate, relative, successor.canonical(binding) + b"\n"):
+        assert successor.validate_repository(candidate) == ["G1.SUCCESSOR.DERIVATION:" + relative]
+
+
+def test_generation_override_binds_new_lineage_without_changing_mapping(candidate: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    profile, _ = successor.registered_inputs(candidate)
+    originals = {path: (candidate / path).read_bytes() for path in profile["outputs"].values()}
+    try:
+        monkeypatch.setenv("NARRATWIN_G1_GIT_TIMEOUT_SECONDS", "7.25")
+        successor.generate(candidate)
+        assert (candidate / SUCCESSOR).read_bytes() == originals[SUCCESSOR]
+        lineage = (candidate / profile["outputs"]["integrationLineage"]).read_bytes()
+        binding = predecessor._load_json(candidate / profile["outputs"]["binding"])
+        assert json.loads(lineage)["effectiveGenerationConfiguration"] == {"gitTimeoutSeconds": 7.25}
+        assert binding["artifactHashes"]["integrationLineageSha256"] == hashlib.sha256(lineage).hexdigest()
+        assert binding["artifactShape"]["integrationLineageBytes"] == len(lineage)
+        assert successor.validate_repository(candidate, config=successor.RuntimeConfig(6.0)) == []
+        with changed(candidate, profile["outputs"]["binding"], originals[profile["outputs"]["binding"]]):
+            assert successor.validate_repository(candidate) == ["G1.SUCCESSOR.DERIVATION:" + profile["outputs"]["binding"]]
+    finally:
+        for path, raw in originals.items():
+            (candidate / path).write_bytes(raw)
+
+
+def test_actual_git_poll_timeout_boundary_and_rejection() -> None:
+    import threading
+    # Independent representability expectations, not imported implementation constants.
+    assert successor.git(ROOT, successor.RuntimeConfig(2_147_483), "rev-parse", "HEAD").strip()
+    for value in (2_147_484, threading.TIMEOUT_MAX):
+        with pytest.raises(ValueError, match="G1.CONFIG.GIT_TIMEOUT"):
+            successor.RuntimeConfig(value)

@@ -8,7 +8,6 @@ import json
 import math
 import os
 import subprocess
-import threading
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from typing import Any, Mapping
@@ -27,6 +26,8 @@ PREFLIGHT_SHA256 = "87c4dc10beb76875cb51244d6f538a1eb9d67f8d138c2d5de2d078e1e31b
 PREFLIGHT_BYTES = 7015
 PREFLIGHT_COMMIT = "8add659eec90a21514d3cea193d5f6ffb5a724e7"
 BASE_COMMIT = "57c7dcb8302bce6f007f8443965981fe60b12e23"
+# Poll/select converts seconds to signed32 milliseconds; round down before conversion.
+MAXIMUM_GIT_TIMEOUT_SECONDS = (2**31 - 1) // 1000
 ROOT = Path(__file__).resolve().parents[2]
 TRIGGER_PATHS = frozenset({
     PROFILE_PATH, "docs/governance/preflights/issue-540.json",
@@ -74,7 +75,7 @@ class RuntimeConfig:
     def __post_init__(self) -> None:
         value = self.git_timeout_seconds
         try:
-            valid = type(value) in (int, float) and math.isfinite(value) and 0 < value <= threading.TIMEOUT_MAX
+            valid = type(value) in (int, float) and math.isfinite(value) and 0 < value <= MAXIMUM_GIT_TIMEOUT_SECONDS
         except OverflowError:
             valid = False
         if not valid:
@@ -120,12 +121,28 @@ def registered_inputs(root: Path, profile_id: str = PROFILE_ID) -> tuple[dict[st
     return profile, preflight
 
 
-def verify_inputs(root: Path, profile: dict[str, Any], config: RuntimeConfig) -> None:
+def verify_history(root: Path, profile: dict[str, Any], config: RuntimeConfig, *, require_first: bool = False, candidate_head: str | None = None) -> str:
     raw = git(root, config, "show", f"{PREFLIGHT_COMMIT}:{profile['preflightPath']}")
     if digest(raw) != PREFLIGHT_SHA256:
         raise ValueError("G1.REGISTRATION.FIRST_BLOB")
     if git(root, config, "rev-parse", f"{PREFLIGHT_COMMIT}^").decode().strip() != BASE_COMMIT:
         raise ValueError("G1.REGISTRATION.BASE")
+    head = candidate_head or git(root, config, "rev-parse", "HEAD").decode().strip()
+    try:
+        git(root, config, "merge-base", "--is-ancestor", PREFLIGHT_COMMIT, head)
+    except subprocess.CalledProcessError as exc:
+        if exc.returncode == 1:
+            raise ValueError("G1.REGISTRATION.ANCESTRY") from exc
+        raise
+    if require_first:
+        commits = git(root, config, "rev-list", "--first-parent", "--reverse", f"{BASE_COMMIT}..{head}").decode().splitlines()
+        if not commits or commits[0] != PREFLIGHT_COMMIT:
+            raise ValueError("G1.REGISTRATION.FIRST_COMMIT")
+    return head
+
+
+def verify_inputs(root: Path, profile: dict[str, Any], config: RuntimeConfig) -> None:
+    verify_history(root, profile, config)
     for item in profile["predecessorArtifacts"]:
         raw = read_bytes(root, item["path"], item["byteCount"], exact=item["byteCount"])
         if digest(raw) != item["sha256"]:
@@ -220,7 +237,11 @@ def derive_artifacts(root: Path, profile: dict[str, Any], config: RuntimeConfig,
         "inheritedPredecessorConfiguration": "UNCHANGED_LEGACY_GIT_LIMITS",
         "operationalAuthority": profile["operationalAuthority"],
     }
-    artifacts = {outputs["mapping"]: rendered, outputs["mappingSchema"]: schema_bytes, outputs["binding"]: canonical(binding) + b"\n", outputs["integrationLineage"]: canonical(lineage) + b"\n"}
+    lineage_bytes = canonical(lineage) + b"\n"
+    binding["integrationLineagePath"] = outputs["integrationLineage"]
+    binding["artifactHashes"]["integrationLineageSha256"] = digest(lineage_bytes)
+    binding["artifactShape"]["integrationLineageBytes"] = len(lineage_bytes)
+    artifacts = {outputs["mapping"]: rendered, outputs["mappingSchema"]: schema_bytes, outputs["binding"]: canonical(binding) + b"\n", outputs["integrationLineage"]: lineage_bytes}
     if len(rendered) >= profile["limits"]["maximumMappingBytesExclusive"] or sum(map(len, artifacts.values())) > profile["limits"]["maximumGeneratedBytes"]:
         raise ValueError("G1.ARTIFACT.BUDGET")
     return artifacts
@@ -273,7 +294,16 @@ def successor_scope(root: Path, branch: str) -> list[str]:
             return ["G1.SCOPE.BRANCH"]
         def run_git(*args: str) -> bytes:
             return git(root, config, *args)
-        head = run_git("rev-parse", "HEAD").decode().strip()
+        checkout = verify_history(root, profile, config)
+        head = checkout
+        if os.environ.get("GITHUB_ACTIONS") == "true" and os.environ.get("GITHUB_EVENT_NAME") == "pull_request":
+            candidate = os.environ.get("GITHUB_HEAD_SHA", checkout)
+            if candidate != checkout:
+                parents = run_git("rev-list", "--parents", "-n", "1", checkout).decode().split()
+                if len(parents) != 3 or candidate != parents[2]:
+                    return ["G1.REGISTRATION.CHECKOUT"]
+                head = candidate
+        verify_history(root, profile, config, require_first=True, candidate_head=head)
         base = profile["baseCommit"]
         run_git("merge-base", "--is-ancestor", base, head)
         dirty = bool(run_git("status", "--porcelain", "--untracked-files=all"))
@@ -311,8 +341,8 @@ def successor_scope(root: Path, branch: str) -> list[str]:
                 failures.append("G1.SCOPE.MISSING_FILE")
         print(json.dumps({"scopeMode": "WORKTREE_CHECK_ONLY" if dirty else "COMMITTED_SCOPE_CHECK", "chargedLines": sum(charges.values()), "effectiveConfiguration": config.effective()}))
         return failures
-    except (OSError, ValueError, KeyError, TypeError, subprocess.SubprocessError):
-        return ["G1.SCOPE.UNAVAILABLE"]
+    except (OSError, ValueError, KeyError, TypeError, subprocess.SubprocessError) as exc:
+        return [str(exc) if isinstance(exc, ValueError) and str(exc).startswith("G1.") else "G1.SCOPE.UNAVAILABLE"]
 
 
 def successor_budget_failures(artifact: dict[str, Any], charges: dict[str, int], branch: str, issue: int) -> list[str]:
