@@ -41,3 +41,9 @@ Root [technical approval5667612108](https://github.com/imrohitagrawal/narratwin-
 Prior5218494/8500 lines; retired533381/800 cumulative (375 final),3/4 review rounds,1/2 corrective approaches; earlier G1 totals UNKNOWN. Historical semantic20 groups19 boundedPASS/1FAIL and839 unreviewed remain.540's first two review rounds are consumed; one implementation approach and one bounded RCA correction are additive, not renewed retired authority.
 
 Root owns the [cumulative allocation and approval record](https://github.com/imrohitagrawal/narratwin-ai/issues/540#issuecomment-5667612108). This review file is not a second ledger. Local command observations remain sanitized under ignored reports/issue540-verification until summarized here; actual resource identity, size, elapsed commands and outcomes are reported to root. Private originals, provider operations, environments/scanners/Docker/browser allocations are outside the present grant.
+
+## Implementation observations before GREEN
+
+Planning commit5f5639d1 preserves the approved bytes. Required `make quality` invocation exited2: archive29, work-record19 and documentation29 tests passed; legacy Phase1 allowlist rejected the three planned new paths before its scoped route exists. This is an incomplete-route observation, not source-defect RED.
+
+F540-01 semantic RED ran against the actual predecessor through the existing decoder: `pytest -q tests/unit/test_issue521_successor.py -p no:cacheprovider` failed on the four literal bibliography IDs still present as normative rows (PID69706,1.598seconds). No missing-import/file assertion was credited. The initial hosted policy/security failures were GPF.SCOPE.REQUIRED_NOT_CHANGED at preflight-only8add659e, not vulnerability findings or bibliography regression proof.
