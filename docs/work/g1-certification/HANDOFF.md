@@ -1,17 +1,16 @@
 # G1 source certification: handoff
 
-PLAN_SHA256: 213211107f07ac33f4dbe971c864295a47d5e60138a968deeb64dbb47fa730c8
+PLAN_SHA256: 7f3bacedac7cb47e36dc82015f88f27165115034138125577a2f56bf3cab65be
 EVIDENCE_SHA256: eb8b49b9ee4f2de4579ed500470bf9b16d11835a8cd714b801c70f6cc7b30e85
 
+Current checkpoint: 2026-09-14; PR536 merged67d4b094 with approved29606 tree; PR534 retired unmerged; Issue538/PR539 reconciles sequencing; verify live tracker before action. This branch prepares the additional reconciliation; consult PR539 for its actual head, checks and review.
 
-Observed source checkpoint: 2026-09-14; observed main71e0568, draft536 daf07ce, prospective amendment74b15e00; verify current checkout and tracker before action.
+Read [STATUS](../../STATUS.md), [README](README.md), [decisions](DECISIONS.md) and [evidence](evidence/INDEX.json). The [delegated sequencing decision](https://github.com/imrohitagrawal/narratwin-ai/issues/535#issuecomment-5666016246) supersedes earlier534-first documentation ordering, including historical handoff instructions. PR534 was closed unmerged; its unsigned receipt example is retired. Preserve its original Git objects and all frozen sources.
 
-Preserve the ten supporting masters and reference the owner plan. Original-subject certification and the bibliography semantic correction remain unresolved; PR534 stays frozen and open.
+Next action: Do not resume534 signing or merge. Root prepares an exact G1 correction/successor scope under521/533, including the four bibliography decisions and dependent lineage. This increment does not modify the mapping or complete certification.
 
-Read [README](README.md), [decisions](DECISIONS.md), [evidence](evidence/INDEX.json) and [STATUS](../../STATUS.md) before acting.
+[public correction analysis](https://github.com/imrohitagrawal/narratwin-ai/issues/521#issuecomment-5666139978) records the independently reproduced defect and limited correction predictions. Historical20-group review is19 bounded passes/one failure;839 groups remain unreviewed. Neither recovery nor this documentation merge supplies semantic PASS, source adoption, V2 activation or provider authority. No further design answer is pending from the user; actual protected approval remains required for each new PR head.
 
-Repository status: this structure is being prepared on Issue535 draft PR536; it is not merged. Public metadata verification does not establish private availability or approval. Original private bytes remain in the retained recovery store; backup UNPROVED.
+Public descriptors and navigation are verified separately from private availability. Original private bytes remain in the retained recovery store; backup stays UNPROVED. Historical review and bounded conversation-capture coverage remain in [the recovery record](../../work-archive/2026-09-14-recovery/HANDOFF.md); no complete conversation or new private-read claim.
 
-Next action: use the linked existing issues and current STATUS to select the permitted next increment. Registration does not complete this work or grant provider, spending or release authority.
-
-Coverage: this record preserves the reviewed issue snapshot and current structure decision. Earlier visible-message capture boundaries and omissions remain in the historical recovery receipts; no complete conversation capture is claimed.
+Early demonstration still means natural presenter performance and lively coherent surroundings before substantial integration/hardening, with minimum controls retained. Identify the shared reference clip before claiming fidelity. Full output, production API, repetitions and formal acceptance remain separate evidence.

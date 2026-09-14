@@ -24,6 +24,7 @@ Snapshot coverage is recorded in the registry; verify live tracker state before 
 
 | Issue | Owning work |
 |---|---|
+| [#538](https://github.com/imrohitagrawal/narratwin-ai/issues/538) Docs: reconcile delegated sequencing and the retired G1 carrier | [working-records](working-records/README.md) |
 | [#537](https://github.com/imrohitagrawal/narratwin-ai/issues/537) Docs: unify documentation architecture and contributor lifecycle | [documentation-architecture](documentation-architecture/README.md) |
 | [#535](https://github.com/imrohitagrawal/narratwin-ai/issues/535) Governance: preserve sources and organize stable work records | [working-records](working-records/README.md) |
 | [#533](https://github.com/imrohitagrawal/narratwin-ai/issues/533) G1: prospective certification carrier and external receipt field contract | [g1-certification](g1-certification/README.md) |

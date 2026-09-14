@@ -1,6 +1,6 @@
 # Program Status
 
-Issue #537 extends the Issue #535 / draft PR #536 documentation work with a [documentation map](README.md), [template catalog](templates/README.md) and [contributor lifecycle](../CONTRIBUTING.md). Its [plan, review and handoff](work/documentation-architecture/README.md) distinguish implemented navigation checks from outstanding capability/authority requirements. This is the branch target state; integration remains behind PR #534 carrier closeout.
+PR #536 delivered Issue #535/#537 documentation navigation: [documentation map](README.md), [template catalog](templates/README.md) and [contributor lifecycle](../CONTRIBUTING.md). The [delegated sequencing decision](https://github.com/imrohitagrawal/narratwin-ai/issues/535#issuecomment-5666016246) retired PR #534 unmerged and superseded its prerequisite relationship to documentation delivery. [Issue #538 / PR #539](https://github.com/imrohitagrawal/narratwin-ai/pull/539) is the additional Issue #535 increment reconciling current plans and handoffs. When this PR merges, that sequencing correction is complete; next work is the separately bounded G1 correction under #521/#533. The [active plan and handoff](work/documentation-architecture/README.md) retain the distinction between implemented navigation and outstanding certification/capability requirements.
 
 ## Find current work
 
@@ -9,10 +9,7 @@ comparisons, plans, decisions, handoffs and evidence owners. Follow [the shared
 procedure](work/PROCESS.md); read the canonical accepted-contract map below before
 acting. The index is navigation, not a second status or approval ledger.
 
-Issue #535 / draft PR #536 introduces the stable records and retains the recovered
-private originals intact. [Implementation and limits](work/working-records/IMPLEMENTATION.md)
-record the pending carrier dependency, explicit AGENTS consumer and independent
-backup gap. This branch-local description does not claim those changes are merged.
+PR #536 introduced the stable records and retained the recovered private originals intact. [Implementation and limits](work/working-records/IMPLEMENTATION.md) record the explicit AGENTS consumer and independent-backup gap. The retired PR #534 subject and unsigned signing example are historical and must not be consumed. The [public correction analysis](https://github.com/imrohitagrawal/narratwin-ai/issues/521#issuecomment-5666139978) reproduces four bibliography classifications needing correction; no G1 semantic PASS, V2 activation or provider authority follows. Current handoffs and this section supersede earlier carrier-first statements retained in historical snapshots. Routine merge/check/cleanup facts remain in GitHub comments; no successor is needed solely to repeat them.
 
 
 This file is the canonical repository-tracked governance and delivery ledger for NarraTwin AI.
@@ -2349,8 +2346,7 @@ private root; a clone is not a copy of the restricted files.
 
 [Issue #535](https://github.com/imrohitagrawal/narratwin-ai/issues/535) tracks
 this separate preservation/process increment in
-[draft PR #536](https://github.com/imrohitagrawal/narratwin-ai/pull/536). Its preparation does not
-change PR #534's frozen subject or grant certification. All ten review files and
+[merged PR #536](https://github.com/imrohitagrawal/narratwin-ai/pull/536). Its source-preservation work does not change PR #534's retained bytes or grant certification; current sequencing and retirement are recorded at the top of this ledger. All ten review files and
 the original are locally recovered; the four ADR bibliography classification
 errors remain open in the separate semantic correction route. The comparison
 amendment remains nonactivating. Independent backup is UNPROVED under #532.

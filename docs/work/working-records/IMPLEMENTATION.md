@@ -60,9 +60,7 @@ required before exact-head approval; this plan never substitutes a local pass.
 4. Verify source retention, public-only behavior, private read-back and cold starts.
 5. Independently review, triage/reproduce findings, and verify blocker corrections.
 6. Run actual applicable local/hosted commands and reconcile PR evidence.
-7. Keep PR536 draft until its required checks and original PR534 carrier dependency
-   permit integration; refresh from verified current main then. No certification,
-   accepted-current transition or provider operation is implied.
+7. PR536 completed independent documentation integration under the [delegated sequencing decision](https://github.com/imrohitagrawal/narratwin-ai/issues/535#issuecomment-5666016246). PR534 is retired unmerged; preserve its original bytes as history and do not consume its unsigned packet. The additional Issue535/538 increment reconciles current records from verified main. G1 needs a separately bounded correction and fresh certification subject; no accepted-current transition or provider operation is implied.
 
 AGENTS already requires STATUS/CODEX, so the new procedure is in its mandatory read
 flow. An explicit heading is prepared in [the consumer patch](proposals/agent-entry.patch).
@@ -88,3 +86,13 @@ recovery remain historical evidence, not a newly implemented conversation collec
 Independent backup remains UNPROVED under #532. Broader lifecycle automation remains
 with #391. Repeated blockers trigger a bounded root-cause revision and independent
 verification; advisory debt is recorded without automatically blocking progression.
+
+## 14 September 2026 — current sequencing reconciliation
+
+[Issue #538 / PR #539](https://github.com/imrohitagrawal/narratwin-ai/pull/539) carries the prospectively reviewed additional Issue535 increment after verified PR536 merge67d4b094. Preflight-only2d7269c5 precedes the linked draft PR and remaining edits. Preserve previous99-path/9066-charged history and35398 program ceiling; this increment has17 exact documentation paths and2000 additional charged-line ceiling. No checker, runtime, dependency, workflow, frozen source or comparison PLAN change.
+
+The [delegated sequencing decision](https://github.com/imrohitagrawal/narratwin-ai/issues/535#issuecomment-5666016246) is an agent-authored exercise of explicit user delegation, not a personal source attestation. Current STATUS, decisions, handoffs and registry bindings must agree:534 is retired unmerged,536 delivered navigation, and538 reconciles active work. Historical carrier-first prose is superseded only for documentation integration. After this reconciliation, prepare the G1 successor scope using the [public correction analysis](https://github.com/imrohitagrawal/narratwin-ai/issues/521#issuecomment-5666139978); preserve classification failures, unavailable evidence and all substantive certification/comparison/operation gates.
+
+Verify cold-session navigation, exact path/line accounting, public original descriptors, generated records, Markdown and applicable repository/hosted checks. Fresh independent review and eligible approval apply to PR539; PR536 approval does not transfer. Routine final merge facts belong in issue/PR comments; no follow-up solely for those facts.
+
+Binding refinement: preflight-onlyc547de52 prospectively adds the STATUS-owned governance-backlog handoff after the existing validator reproduced HANDOFF_STALE. This is the sole bounded dependency correction; per-file caps total1920 within the unchanged2000 increment ceiling. Earlier16-path planning remains historical.

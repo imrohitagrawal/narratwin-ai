@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "inventorySource": {
     "path": "docs/work/documentation-architecture/evidence/SOURCES.json",
-    "sha256": "5cc6dc11554edee65e536cd99098133e54c4c01e97f51c4fcf05bb9b9c60d2aa",
-    "bytes": 9067
+    "sha256": "ecd0de4bc1a6d29b4efb07243d642146f6d954a1a0e4b4341ff31153e726c04c",
+    "bytes": 9993
   },
   "privateRoots": [
     ".evidence",
@@ -21,6 +21,11 @@
     }
   ],
   "issueInventory": [
+    {
+      "number": 538,
+      "title": "Docs: reconcile delegated sequencing and the retired G1 carrier",
+      "workId": "working-records"
+    },
     {
       "number": 537,
       "title": "Docs: unify documentation architecture and contributor lifecycle",
@@ -354,8 +359,8 @@
       "path": "docs/work/g1-certification",
       "plan": {
         "path": "docs/work/g1-certification/README.md",
-        "sha256": "213211107f07ac33f4dbe971c864295a47d5e60138a968deeb64dbb47fa730c8",
-        "bytes": 1292,
+        "sha256": "7f3bacedac7cb47e36dc82015f88f27165115034138125577a2f56bf3cab65be",
+        "bytes": 2774,
         "role": "execution-plan"
       },
       "statusRef": "docs/STATUS.md",
@@ -371,7 +376,7 @@
       "relationships": [],
       "evidenceIndex": "docs/work/g1-certification/evidence/INDEX.json",
       "handoff": "docs/work/g1-certification/HANDOFF.md",
-      "checkpoint": "2026-09-14; observed main71e0568, draft536 daf07ce, prospective amendment74b15e00; verify current checkout and tracker before action"
+      "checkpoint": "2026-09-14; PR536 merged67d4b094 with approved29606 tree; PR534 retired unmerged; Issue538/PR539 reconciles sequencing; verify live tracker before action"
     },
     {
       "id": "demo-comparison",
@@ -410,7 +415,7 @@
       ],
       "evidenceIndex": "docs/work/demo-comparison/evidence/INDEX.json",
       "handoff": "docs/work/demo-comparison/HANDOFF.md",
-      "checkpoint": "2026-09-14; observed main71e0568, draft536 daf07ce, prospective amendment74b15e00; verify current checkout and tracker before action"
+      "checkpoint": "2026-09-14; PR536 merged67d4b094 with approved29606 tree; PR534 retired unmerged; Issue538/PR539 reconciles sequencing; verify live tracker before action"
     },
     {
       "id": "working-records",
@@ -420,8 +425,8 @@
       "path": "docs/work/working-records",
       "plan": {
         "path": "docs/work/working-records/IMPLEMENTATION.md",
-        "sha256": "50643f692eea766c2fda041de5208efeb9351cddbb53bc0a240406cea4860230",
-        "bytes": 6671,
+        "sha256": "77b34bd3761d0c97e18aa9507dec4f1d5ae4873e7db849b990165ee83beaafdb",
+        "bytes": 8925,
         "role": "execution-plan"
       },
       "statusRef": "docs/STATUS.md",
@@ -434,7 +439,8 @@
         535,
         356,
         328,
-        391
+        391,
+        538
       ],
       "parent": "master-program",
       "relationships": [
@@ -445,7 +451,7 @@
       ],
       "evidenceIndex": "docs/work/working-records/evidence/INDEX.json",
       "handoff": "docs/work/working-records/HANDOFF.md",
-      "checkpoint": "2026-09-14; observed main71e0568, draft536 daf07ce, prospective amendment74b15e00; verify current checkout and tracker before action"
+      "checkpoint": "2026-09-14; PR536 merged67d4b094 with approved29606 tree; PR534 retired unmerged; Issue538/PR539 reconciles sequencing; verify live tracker before action"
     },
     {
       "id": "delivery",
@@ -603,8 +609,8 @@
       "path": "docs/work/governance-backlog",
       "plan": {
         "path": "docs/STATUS.md",
-        "sha256": "fb3326cbb09434a5b5b86a3d247964081187bbcf2846e1f492f3f902b66cdb92",
-        "bytes": 289504,
+        "sha256": "acad7caa6f222d103bf3c6764d171a8ef484bdeef88c1a18190c7de22e0af1ac",
+        "bytes": 290453,
         "role": "source-pointer"
       },
       "statusRef": "docs/STATUS.md",
@@ -632,8 +638,8 @@
       "path": "docs/work/documentation-architecture",
       "plan": {
         "path": "docs/work/documentation-architecture/PLAN.md",
-        "sha256": "1e12d31ab84b03fe810aa6a29575f779c1a76cfb0758b84ff9141102d36bec46",
-        "bytes": 14737,
+        "sha256": "3768d6dfc39d1cdd80dbae5782638bf099397f79b28edf43d515a5e80e0cb926",
+        "bytes": 16995,
         "role": "execution-plan"
       },
       "statusRef": "docs/STATUS.md",
@@ -654,7 +660,7 @@
       ],
       "evidenceIndex": "docs/work/documentation-architecture/evidence/INDEX.json",
       "handoff": "docs/work/documentation-architecture/HANDOFF.md",
-      "checkpoint": "2026-09-14; original5369e35fb35, prospective scope72966390; verify live tracker before action"
+      "checkpoint": "2026-09-14; PR536 merged67d4b094 with approved29606 tree; PR534 retired unmerged; Issue538/PR539 reconciles sequencing; verify live tracker before action"
     }
   ]
 }
