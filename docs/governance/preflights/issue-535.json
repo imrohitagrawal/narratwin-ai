@@ -2,10 +2,10 @@
   "schema_version": "GovernancePreflightV1",
   "issue_number": 535,
   "branch": "phase-1-closure-process-535-work-archive",
-  "objective": "Additional Issue535 increment for child538 after verified PR536 normal merge67d4b094912a540000749710ec15ba74cbbaf585; delegated sequencing decision535:5666016246 and reviewed pre-code scope538:5666238136. Reconcile current STATUS, working-records/documentation plans and handoffs, retired534 G1 ownership, comparison decision pointer and exact registry/inventory bindings. No personal OWNER attestation or certification. Preserve original534 head/base/tree, eight frozen V2 artifacts, all original/private descriptors, historical comparison PLAN/recovery records, AGENTS, code, tests, workflows and dependencies. Root sole writer; same three read-only reviewers and retained535 worktree/environment; no new resource/provider allocation. First increment commit is this preflight only, then linked draft PR before remaining edits. Existing99path/9066charged PR536 history and35398 program ceiling remain; this additional16path increment has2000charged ceiling, combined maximum11066, no deletion credit or budget/review reset. Scope is substantive sequencing/active-work reconciliation, not routine merge-SHA status-only work. Validate catalog/work/profile/handoff/Markdown/scope and current protected checks; fresh independent review and eligible approval apply to the new head. Prepare separate bounded G1 classification correction with fresh lineage; no mapping rebuild, activation, source adoption, private read/copy, paid operation, deployment or cleanup. No further user design answer is pending.",
+  "objective": "Additional Issue535 increment for child538 after verified PR536 normal merge67d4b094912a540000749710ec15ba74cbbaf585; delegated sequencing decision535:5666016246 and reviewed pre-code scope538:5666238136. Reconcile current STATUS, working-records/documentation plans and handoffs, retired534 G1 ownership, comparison decision pointer and exact registry/inventory bindings. No personal OWNER attestation or certification. Preserve original534 head/base/tree, eight frozen V2 artifacts, all original/private descriptors, historical comparison PLAN/recovery records, AGENTS, code, tests, workflows and dependencies. Root sole writer; same three read-only reviewers and retained535 worktree/environment; no new resource/provider allocation. First increment commit is this preflight only, then linked draft PR before remaining edits. Existing99path/9066charged PR536 history and35398 program ceiling remain; this additional17path increment has2000charged ceiling, combined maximum11066, no deletion credit or budget/review reset. Scope is substantive sequencing/active-work reconciliation, not routine merge-SHA status-only work. Validate catalog/work/profile/handoff/Markdown/scope and current protected checks; fresh independent review and eligible approval apply to the new head. Prepare separate bounded G1 classification correction with fresh lineage; no mapping rebuild, activation, source adoption, private read/copy, paid operation, deployment or cleanup. No further user design answer is pending. Binding dependency refinement538:5666296293 adds the STATUS-owned governance-backlog handoff before its update; existing HANDOFF_STALE regression reproduces the gap.",
   "status_decision": "update-minimally",
   "change_budget": {
-    "exact_paths": 16,
+    "exact_paths": 17,
     "maximum_additions_plus_deletions": 2000,
     "deletions_grant_credit": false,
     "per_file_charged_lines": {
@@ -24,7 +24,8 @@
       "docs/work/demo-comparison/HANDOFF.md": 65,
       "docs/work/registry.json": 160,
       "docs/work/INDEX.md": 65,
-      "docs/work/documentation-architecture/evidence/SOURCES.json": 65
+      "docs/work/documentation-architecture/evidence/SOURCES.json": 65,
+      "docs/work/governance-backlog/HANDOFF.md": 65
     }
   },
   "scope": {
@@ -44,7 +45,8 @@
       "docs/work/demo-comparison/HANDOFF.md",
       "docs/work/registry.json",
       "docs/work/INDEX.md",
-      "docs/work/documentation-architecture/evidence/SOURCES.json"
+      "docs/work/documentation-architecture/evidence/SOURCES.json",
+      "docs/work/governance-backlog/HANDOFF.md"
     ],
     "allowed_prefixes": [
       "docs/governance/preflights/issue-535.json",
@@ -62,7 +64,8 @@
       "docs/work/demo-comparison/HANDOFF.md",
       "docs/work/registry.json",
       "docs/work/INDEX.md",
-      "docs/work/documentation-architecture/evidence/SOURCES.json"
+      "docs/work/documentation-architecture/evidence/SOURCES.json",
+      "docs/work/governance-backlog/HANDOFF.md"
     ],
     "forbidden": [
       "AGENTS.md",
