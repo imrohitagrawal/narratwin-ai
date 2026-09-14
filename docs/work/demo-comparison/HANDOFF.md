@@ -12,6 +12,8 @@ Read [README](README.md), [decisions](DECISIONS.md), [evidence](evidence/INDEX.j
 
 Repository status: this structure is being prepared on Issue535 draft PR536; it is not merged. Public metadata verification does not establish private availability or approval. Original private bytes remain in the retained recovery store; backup UNPROVED.
 
+Latest owner clarification: read [early proof and lively presenter requirements](DECISIONS.md#14-september-2026--early-proof-of-the-intended-presenter-experience). Identify the previously shared reference clip before claiming fidelity; preserve diagnostic versus complete-output acceptance and minimum operation controls.
+
 Next action: use the linked existing issues and current STATUS to select the permitted next increment. Registration does not complete this work or grant provider, spending or release authority.
 
 Coverage: this record preserves the reviewed issue snapshot and current structure decision. Earlier visible-message capture boundaries and omissions remain in the historical recovery receipts; no complete conversation capture is claimed.

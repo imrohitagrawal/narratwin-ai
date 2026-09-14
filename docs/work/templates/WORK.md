@@ -49,6 +49,27 @@ new revision; a whole-workflow comparison does not isolate a component advantage
 Formal acceptance retains its actual preregistration/matching/calibration/holdout
 requirements. Complete API capability and repeat reliability need their own proof.
 
+## Early demonstration and investment decision
+
+Before substantial product/provider integration or production hardening, record:
+
+- Intended user experience, riskiest hypothesis, source/reference identity and custody;
+  distinguish owner-reported observations from independently inspected evidence.
+- Smallest representative diagnostic, scope, minimum controls, exact operation
+  authority and limits; use existing behavior/focused reproduction for maintenance.
+- Minimum acceptable output and explicit rejection conditions agreed before running.
+- Actual original output, observations, rejected results, uncertainty and reviewer.
+- Go/revise/stop decision, its reason, next authorized step and unresolved questions.
+- Representative complete-output proof before further adapter/integration investment;
+  separate full narration, API suitability, repeatability and formal acceptance evidence.
+
+For presenter output include natural performance and lively, coherent surroundings
+appropriate to the intended scene. Inspect synchronization, anatomy and temporal
+stability; unrelated motion does not prove quality. Identify the reference clip
+before claiming reproduction. Demo existence is not success. Preserve baseline and
+failure evidence; required stage, rights, privacy, security and operation/cost gates
+apply before the demo. Production hardening follows evidence under its own gates.
+
 ## Closeout
 
 Keep the work path after completion. Update authoritative status, decisions and

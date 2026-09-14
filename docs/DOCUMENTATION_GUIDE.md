@@ -100,6 +100,16 @@ traceability from the accepted master program remain outstanding requirements.
 
 ## Capture decisions and resume without chat
 
+Capture early demonstration requirements and investment decisions in the owning
+work record using the [work template](work/templates/WORK.md#early-demonstration-and-investment-decision)
+and [contributor sequence](../CONTRIBUTING.md#prove-the-intended-experience-early).
+Retain desired experience, identified references, minimum quality, actual outputs,
+failures and the go/revise/stop decision. Distinguish reported dissatisfaction from
+inspected evidence. A small diagnostic precedes representative complete-output proof;
+substantial integration and production hardening follow supporting evidence, while
+minimum required controls apply before the demo. A missing reference identity stays
+an explicit evidence gap rather than a claim that an example was reproduced.
+
 Follow [work PROCESS](work/PROCESS.md). At a meaningful decision record the exact
 visible source coordinate and permitted custody, date, decision owner, rationale,
 constraints, effect, rejected alternatives and superseded record. Retain original

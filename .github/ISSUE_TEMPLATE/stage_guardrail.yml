@@ -73,7 +73,7 @@
       "id": "plan",
       "attributes": {
         "label": "Work record, sources and plan",
-        "description": "Link the durable work record, accepted requirement, execution plan/design and applicable authority. Triage may start with unknowns; implementation cannot."
+        "description": "Link the durable work, accepted requirement, plan/design and applicable authority. Include early demo observations and go/revise/stop decision, or the bounded proof needed before substantial integration/hardening. A demo does not waive minimum controls or existing gates."
       },
       "validations": {
         "required": true
@@ -139,7 +139,7 @@
       "id": "validation",
       "attributes": {
         "label": "Validation and closeout",
-        "description": "Name checks/review/evidence, documentation impact, completion conditions and the final handoff destination."
+        "description": "Name checks/review/evidence, documentation impact, completion conditions and handoff destination. Separate diagnostic evidence from representative complete output, API suitability, repeatability and formal acceptance."
       },
       "validations": {
         "required": true

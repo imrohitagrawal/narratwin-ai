@@ -24,7 +24,7 @@
       "id": "decision",
       "attributes": {
         "label": "What decision or outcome should this investigation produce?",
-        "description": "State the question and what evidence would help decide. Do not invent implementation approval."
+        "description": "State the question, intended user experience and evidence that supports go/revise/stop. Demo existence alone is not success. Do not invent implementation approval."
       },
       "validations": {
         "required": true
@@ -35,7 +35,7 @@
       "id": "unknowns",
       "attributes": {
         "label": "What is unknown, and what will we investigate next?",
-        "description": "List assumptions, alternatives and a bounded next investigation."
+        "description": "List assumptions and alternatives. Define the smallest representative demo or investigation, minimum acceptable output, failure conditions and the next complete-output proof before substantial integration or hardening."
       },
       "validations": {
         "required": true
@@ -46,7 +46,7 @@
       "id": "context",
       "attributes": {
         "label": "Existing work, design and sources",
-        "description": "Link the work record, designs or PRD if they exist; none yet is valid for a new product."
+        "description": "Link existing work, designs, PRD and identified reference/demo evidence; label reported versus inspected observations. None yet is valid for a new product."
       },
       "validations": {
         "required": false

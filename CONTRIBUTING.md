@@ -21,6 +21,37 @@ invented PRD or an approved implementation plan. An implementation issue starts
 from an accepted requirement and applicable authority. Creating an issue or PR
 does not authorize providers, spending, private-data use, deployment or release.
 
+## Prove the intended experience early
+
+For a new product, feature, provider or media approach, demonstrate the intended
+user experience before committing to substantial integration, infrastructure or
+production hardening. Start with the riskiest user-visible hypothesis and the
+smallest representative diagnostic. Review a complete representative output
+before further adapter/integration investment. For maintenance, existing working
+behavior and a focused reproduction can supply the relevant demonstration.
+
+Record the intended outcome, reference and its custody, minimum acceptable quality,
+failure conditions, bounded operation, actual observations and a **go/revise/stop**
+decision in the owning work record. Keep rejected outputs and uncertainty. A demo
+existing is insufficient; it must answer the stated question. “Go” permits only
+the next authorized step. A short success does not establish full-output quality,
+production API suitability, repeat reliability or formal acceptance.
+
+For presenter work, assess natural performance and lively, coherent surroundings
+against the intended scene, alongside intelligibility, synchronization, anatomy and
+temporal stability. A static portrait with moving lips can miss that experience;
+arbitrary background motion can also fail it. Identify any reference clip before
+claiming fidelity. Label mockups and generated material; product-behavior claims
+need genuine product evidence. Preserve the baseline and the
+[comparison work's existing protocol](docs/work/demo-comparison/PLAN.md).
+
+Apply required stage, rights, privacy, security and bounded-operation/cost controls
+before the demonstration. Keep its setup proportionate to that operation; develop
+additional scale and production hardening after the approach has supporting evidence.
+This sequence does not waive existing gates, approve a new presenter or authorize a
+provider operation. Preserve separately governed full-walkthrough, API and acceptance
+requirements when advancing.
+
 ## Create a useful GitHub issue
 
 Search existing issues and [registered work](docs/work/INDEX.md) first. Reuse the

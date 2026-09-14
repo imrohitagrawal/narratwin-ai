@@ -632,8 +632,8 @@
       "path": "docs/work/documentation-architecture",
       "plan": {
         "path": "docs/work/documentation-architecture/PLAN.md",
-        "sha256": "76de94a044a5404f7a80ed42c857049c6de528e6a9ccfe5f99176cd666f467c6",
-        "bytes": 12824,
+        "sha256": "1e12d31ab84b03fe810aa6a29575f779c1a76cfb0758b84ff9141102d36bec46",
+        "bytes": 14737,
         "role": "execution-plan"
       },
       "statusRef": "docs/STATUS.md",

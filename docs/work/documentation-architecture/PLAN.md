@@ -85,3 +85,11 @@ The prospective preflight contains 99 exact paths and 35398 cumulative additions
 - `docs/THIRD_PARTY_NOTICES.md`: 60 charged lines.
 
 - `docs/ADR/0085-documentation-navigation.md`: 100 charged lines, prospectively added in5a597655 before its source was written; record the architecture decision as well as its generated index.
+
+## Owner clarification during verification — early demo before further investment
+
+The owner requested early proof of the actual intended experience before substantial infrastructure and production hardening, with natural presenter performance and lively coherent surroundings. The exact instruction and comparison-specific effect are retained by [the comparison owner record](../demo-comparison/DECISIONS.md#14-september-2026--early-proof-of-the-intended-presenter-experience); no reference clip was inspected here.
+
+Three independent reviewers passed a bounded clarification within the existing99 paths/caps. Preflight-only commit031a174f precedes these edits; the [reviewed plan was published before edits](https://github.com/imrohitagrawal/narratwin-ai/issues/537#issuecomment-5662139760). Update CONTRIBUTING, work template and existing discovery/stage field descriptions with diagnostic → reviewed representative complete output → further integration → production hardening; record minimum quality, rejection, observations and go/revise/stop. Maintenance can reuse existing behavior and focused reproduction. Record the source at demo-comparison DECISIONS, link its handoff, and capture procedural adoption in this work's guide/decisions/review/handoff. Original comparison PLAN and frozen subjects remain unchanged.
+
+Minimum stage, security, rights, privacy and operation/cost controls apply before a demo. No provider execution or acceptance-policy activation follows. Complete narration, API suitability, repetition and formal acceptance retain separate proof. Verify with independent cold reading, existing29 tests, form/navigation/scope/handoff checks, source preservation and updated hosted checks; do not add tests that mirror prose. Full local integration begun on e7ea57df remains that checkpoint's evidence; validate the subsequent documentation delta and current hosted head explicitly.
