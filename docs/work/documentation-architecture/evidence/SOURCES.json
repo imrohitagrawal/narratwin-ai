@@ -5,6 +5,10 @@
   "preflightAmendment": "72966390",
   "openIssues": [
     {
+      "number": 538,
+      "title": "Docs: reconcile delegated sequencing and the retired G1 carrier"
+    },
+    {
       "number": 537,
       "title": "Docs: unify documentation architecture and contributor lifecycle"
     },
@@ -281,5 +285,17 @@
       "path": "scripts/work_records.py",
       "sha256": "43dc0c13267153d19a227dd4b5ec19e298bfe0b98dd4a0d604e1c026835da8a1"
     }
-  ]
+  ],
+  "subsequentObservations": [
+    {
+      "observedDate": "2026-09-14",
+      "issue": 538,
+      "title": "Docs: reconcile delegated sequencing and the retired G1 carrier",
+      "reference": "https://github.com/imrohitagrawal/narratwin-ai/issues/538",
+      "basis": "One subsequent issue addition; earlier snapshot metadata and other recorded issues retained, no fresh full tracker census claimed.",
+      "priorSnapshot": "git:67d4b094912a540000749710ec15ba74cbbaf585:docs/work/documentation-architecture/evidence/SOURCES.json",
+      "priorSnapshotSha256": "5cc6dc11554edee65e536cd99098133e54c4c01e97f51c4fcf05bb9b9c60d2aa"
+    }
+  ],
+  "inventoryMeaning": "openIssues is the prior recorded snapshot plus explicitly listed subsequent additions; it is not a fresh census or an as-of-sourceHead inventory."
 }
