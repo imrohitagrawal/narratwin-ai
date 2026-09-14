@@ -5,7 +5,7 @@ sequence below. Three independent initial reviews and final correction-verificat
 passes completed; this does not activate repository policy or approve a merge.
 Date: 14 September 2026. Owner: root orchestrator under delegated user authority.
 Related work: Issue #535 / draft PR #536; README clarity #356; context freshness
-#328; broader resource automation #391; private evidence store #532.
+Issue #328; broader resource automation #391; private evidence store #532.
 
 This local review packet is preserved in the repository working folder. It is
 not staged, merged, a scope amendment, a new product authority or a migration.

@@ -67,3 +67,31 @@ read-back are verified separately rather than inferred from metadata alone.
 Broader `make ci`, exact required PR command evidence, actual hosted direct/merge
 checks and final PR reconciliation remain in progress. No result above is a
 substitute for those requirements or the original carrier integration dependency.
+
+## Hosted preparation findings
+
+Hosted Markdown lint reproduced MD018 on the reviewed proposal's line beginning
+with issue reference #328. The public copy now spells that prefix “Issue #328”;
+this is a formatting-only derivative. Exact reviewed bytes remain in commit78cf1879
+and the retained local proposal. No requirement or authority changed. Run the same
+Markdownlint0.18.1 glob set locally before the next push.
+
+The PR-event policy gate still awaits the complete actual broad-command validation
+ledger. The temporary pre-code proposal appended to the PR body also triggered its
+placeholder detector; the final self-contained PR rewrite removes that temporary
+embedding while keeping pre-code history and committed proposal evidence.
+
+## Final preparation checkpoint
+
+The exact hosted Markdownlint0.18.1 configuration and glob set now pass locally
+with zero errors. The first local attempt used default rules and was not hosted
+parity; its unrelated line-length results were not treated as product defects.
+Timeout defaults share the existing archive configuration constant; the additional
+regression proves the effective override reaches every Git subprocess.
+
+The full local unit run passed5779tests; API passed226tests; frontend passed52tests.
+Broader security/container commands and final hosted checks were still running at
+this preparation checkpoint. Current outcomes belong to PR536's validation evidence
+and automation-owned live-state block; this historical checkpoint is not a live CI
+ledger. No exact-head approval or merge is asserted. The explicit AGENTS transition
+and carrier sequencing remain as documented.

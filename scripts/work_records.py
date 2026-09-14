@@ -98,7 +98,8 @@ def render_index(data: dict[str, Any]) -> str:
     return '\n'.join(lines) + '\n'
 
 
-def validate(root: Path, *, git_timeout: float = 5.0, profile_id: str | None = None,
+def validate(root: Path, *, git_timeout: float = archive.DEFAULT_GIT_TIMEOUT_SECONDS,
+             profile_id: str | None = None,
              check_index: bool = True) -> dict[str, Any]:
     need(type(git_timeout) in (int, float) and math.isfinite(git_timeout)
          and git_timeout > 0, 'CONFIG_INVALID')
@@ -282,7 +283,8 @@ def validate(root: Path, *, git_timeout: float = 5.0, profile_id: str | None = N
 def main() -> int:
     parser = archive.SafeParser(description=__doc__)
     parser.add_argument('--repo-root', type=Path, default=Path(__file__).resolve().parents[1])
-    parser.add_argument('--git-timeout-seconds', type=archive.positive_seconds, default=5.0)
+    parser.add_argument('--git-timeout-seconds', type=archive.positive_seconds,
+                        default=archive.DEFAULT_GIT_TIMEOUT_SECONDS)
     parser.add_argument('--profile')
     parser.add_argument('--write-index', action='store_true')
     args = parser.parse_args()
