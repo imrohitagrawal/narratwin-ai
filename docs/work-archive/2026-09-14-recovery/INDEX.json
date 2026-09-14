@@ -118,8 +118,8 @@
   "handoffPath": "docs/work-archive/2026-09-14-recovery/HANDOFF.md",
   "privateInventory": {
     "path": "PRIVATE_INVENTORY.json",
-    "sha256": "00094bf8e525ff67f9690566c9ee7dac3ddd77caae139da75ef158eb05a5b815",
-    "bytes": 280740
+    "sha256": "620c71ecdad6f1c4f20503eeb545de6e7508564449a7aa6710298a37cd1f92e9",
+    "bytes": 285251
   },
   "backup": "UNPROVED",
   "semanticAcceptance": "NOT_GRANTED"

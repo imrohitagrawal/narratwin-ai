@@ -1,6 +1,6 @@
 # Current archive handoff — Issue #535
 
-INDEX_SHA256: 49916eab85baa42f1c70a6ee4fa34826ad031dc9879c96cb0e5d4db764a0b619
+INDEX_SHA256: b18fecd76056074c8d80536612fde21d389ddd4af396b8a43701f549785928f6
 
 Start from [the index](INDEX.json), [decisions](DECISIONS.md),
 [full comparison proposal](COMPARISON_AND_AMENDMENT.md), and
@@ -19,7 +19,9 @@ contains 978 preserved files, including all ten recovered supporting masters.
 Three corrected V2 user-visible discussion snapshots and their coverage receipt
 are current; the initial user-only snapshots and their receipt are retained as
 historical evidence of the corrected omission. The private inventory lists all content, including its README;
-its own bytes are pinned separately by INDEX. Historical absolute locators
+its own bytes are pinned separately by INDEX. The final archive-increment snapshot
+also preserves its twenty public files, PR body draft and resource closeout; copied
+metadata is historical and does not replace the root INDEX. Historical absolute locators
 inside copied evidence are not the current archive paths.
 
 Other worktrees and public clones do not contain private payloads. From an
