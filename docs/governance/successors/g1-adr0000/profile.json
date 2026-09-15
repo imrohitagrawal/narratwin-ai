@@ -1,0 +1,177 @@
+{
+  "schemaVersion": "G1BibliographySuccessorProfileV1",
+  "profileId": "g1-adr0000-bibliography-successor",
+  "issueNumber": 540,
+  "proposalState": "PENDING",
+  "authorityEffect": "NONE",
+  "localVerdict": "STRUCTURAL_PENDING",
+  "baseCommit": "57c7dcb8302bce6f007f8443965981fe60b12e23",
+  "branch": "phase-1-closure-process-540-g1-bibliography-successor",
+  "preflightPath": "docs/governance/preflights/issue-540.json",
+  "planPath": "docs/work/g1-certification/PLAN.md",
+  "authorityReferences": [
+    "https://github.com/imrohitagrawal/narratwin-ai/issues/540",
+    "https://github.com/imrohitagrawal/narratwin-ai/issues/521#issuecomment-5667192971"
+  ],
+  "correctionEvidence": [
+    "https://github.com/imrohitagrawal/narratwin-ai/issues/521#issuecomment-5666139978",
+    "https://github.com/imrohitagrawal/narratwin-ai/issues/521#issuecomment-5666628401"
+  ],
+  "predecessorArtifacts": [
+    {
+      "path": "docs/governance/NARRATWIN_MASTER_PROGRAM_V2.md",
+      "sha256": "31d879568cd4bbeea9e238d14e20bf66de565842204372ee54ccf071564396f1",
+      "byteCount": 70130
+    },
+    {
+      "path": "docs/governance/narratwin-master-program-v2.json",
+      "sha256": "3b2ecd645417c20fcc6aa8a7101cf9199998d43e62232304b73dcd8b31294779",
+      "byteCount": 3349
+    },
+    {
+      "path": "docs/governance/superset-mapping-v2.json",
+      "sha256": "ce4df939ca8ef4a72483c66f29212e08faeeff737c778db3e505d6fd0074388b",
+      "byteCount": 46191128
+    },
+    {
+      "path": "docs/governance/cut-taxonomy-v2.json",
+      "sha256": "c0fba5183c284f2d8854eefb30caaf76bb2979ac00328b67ccd6d027a971cdb7",
+      "byteCount": 4732
+    },
+    {
+      "path": "docs/governance/schemas/superset-mapping-v2.schema.json",
+      "sha256": "3f6bd3759b8962ea2828c283f9374c2bea498decd7cd5c6854474db4d74e42e2",
+      "byteCount": 68051
+    },
+    {
+      "path": "docs/governance/schemas/cut-taxonomy-v2.schema.json",
+      "sha256": "7ac62fbe1a92b43eccba782038f8002818b80c9c02246f35d3f117941e69ccc8",
+      "byteCount": 5832
+    },
+    {
+      "path": "docs/reviews/ISSUE_521_SUPERSET_SEMANTIC_REVIEW.md",
+      "sha256": "a278c3183969e02103968c1fcd02b7385f0a4ba0dc84a6bf6bc248497ccabe34",
+      "byteCount": 4799
+    },
+    {
+      "path": "docs/reviews/ISSUE_521_FALSE_SUCCESS_SECURITY_REVIEW.md",
+      "sha256": "8bf61240224e2b0f349c8d4b21fbcdb4602fc84994bfaba176f432e7def60e4d",
+      "byteCount": 4373
+    }
+  ],
+  "source": {
+    "sourceId": "ADR_0000_ADR_PROCESS",
+    "repositoryPath": "docs/ADR/0000-adr-process.md",
+    "sourceCommit": "b6b0c05c7227428ff0841361f3970b0b2c40aa86",
+    "sourceGitBlob": "41c55ac9adec291cd274475fb4a5798ff0492456",
+    "contentSha256": "a1f5f8dc371eb87b54bf4dec401209b9fdc21fb23f007f23f7f8ba844f2e8c6a"
+  },
+  "corrections": [
+    {
+      "requirementId": "MPV2-6FD1AF1B119751D12FE6",
+      "sourceAtomId": "atom:6fd1af1b119751d12fe6e00302667d21a443cee5cf508baa808b3f7409ebdcc4",
+      "zeroBasedVectorIndex": 18,
+      "sourceSpan": {
+        "coordinateSystem": "ONE_BASED_INCLUSIVE_LINES",
+        "endLine": 36,
+        "rawSha256": "fee4d4e48ccd3ca3a78a0829cd19e807f3435b74ed1f5a12edbb8f27291b1831",
+        "startLine": 36
+      },
+      "fromClass": "NORMATIVE_REQUIREMENT",
+      "toClass": "REFERENCE",
+      "fromCode": "N",
+      "toCode": "R"
+    },
+    {
+      "requirementId": "MPV2-29F6F8A4F175178310E3",
+      "sourceAtomId": "atom:29f6f8a4f175178310e30b2c55bcc75298478ee65dab6ba9a2f1d3d6ff8d6197",
+      "zeroBasedVectorIndex": 19,
+      "sourceSpan": {
+        "coordinateSystem": "ONE_BASED_INCLUSIVE_LINES",
+        "endLine": 37,
+        "rawSha256": "e37eeee6d181647f98261e7b91d2e69341c9f86dab48dc1731e043785c4f59be",
+        "startLine": 37
+      },
+      "fromClass": "NORMATIVE_REQUIREMENT",
+      "toClass": "REFERENCE",
+      "fromCode": "N",
+      "toCode": "R"
+    },
+    {
+      "requirementId": "MPV2-7A08CF034D6B2A3D447D",
+      "sourceAtomId": "atom:7a08cf034d6b2a3d447ddd7959a7955e491e3ddea52a186f18bde2e5726b09c4",
+      "zeroBasedVectorIndex": 20,
+      "sourceSpan": {
+        "coordinateSystem": "ONE_BASED_INCLUSIVE_LINES",
+        "endLine": 38,
+        "rawSha256": "7594063b5f22a3559f08255d54762b4cae898520a8761aaf8886a9820f72f942",
+        "startLine": 38
+      },
+      "fromClass": "NORMATIVE_REQUIREMENT",
+      "toClass": "REFERENCE",
+      "fromCode": "N",
+      "toCode": "R"
+    },
+    {
+      "requirementId": "MPV2-D5086F6004054DDDA5F6",
+      "sourceAtomId": "atom:d5086f6004054ddda5f6ac46d46669a88b2c5217d0d421377e977c3c91b1e926",
+      "zeroBasedVectorIndex": 21,
+      "sourceSpan": {
+        "coordinateSystem": "ONE_BASED_INCLUSIVE_LINES",
+        "endLine": 39,
+        "rawSha256": "1fd4ada4b08b468c5281f477b35d0e0e76d2f1f4231b1523d43b8a8080cf15a3",
+        "startLine": 39
+      },
+      "fromClass": "NORMATIVE_REQUIREMENT",
+      "toClass": "REFERENCE",
+      "fromCode": "N",
+      "toCode": "R"
+    }
+  ],
+  "expectedCounts": {
+    "predecessor": {
+      "mappingRows": 31398,
+      "repositoryOwnerRows": 18016,
+      "externalRows": 13382,
+      "normativeRequirements": 13374,
+      "references": 53,
+      "duplicateGroups": 859,
+      "duplicateOccurrences": 3103,
+      "duplicateExcess": 2244
+    },
+    "successor": {
+      "mappingRows": 31394,
+      "repositoryOwnerRows": 18012,
+      "externalRows": 13382,
+      "normativeRequirements": 13370,
+      "references": 57,
+      "duplicateGroups": 859,
+      "duplicateOccurrences": 3099,
+      "duplicateExcess": 2240
+    }
+  },
+  "outputs": {
+    "mapping": "docs/governance/successors/g1-adr0000/superset-mapping-v2.json",
+    "binding": "docs/governance/successors/g1-adr0000/narratwin-master-program-v2.json",
+    "mappingSchema": "docs/governance/successors/g1-adr0000/superset-mapping-v2.schema.json",
+    "integrationLineage": "docs/governance/successors/g1-adr0000/integration-lineage.json"
+  },
+  "limits": {
+    "gitTimeoutSeconds": 5.0,
+    "maximumProfileBytes": 65536,
+    "maximumDescriptorBytes": 1048576,
+    "maximumMappingBytesExclusive": 52428800,
+    "maximumGeneratedBytes": 57671680
+  },
+  "operationalAuthority": {
+    "privateSourceReads": 0,
+    "uploads": 0,
+    "providerCreates": 0,
+    "spendUsd": 0,
+    "retries": 0,
+    "fallback": false
+  },
+  "lineagePolicy": "PRESERVE_PREDECESSOR_RECEIPT_AS_HISTORICAL_EXTERNAL_SEMANTIC_INPUT; FRESH_SUCCESSOR_CERTIFICATION_PENDING",
+  "preserveContextPartitionSha256": "9939476b97f156ccdbc9585b7ee24b0dbfee43fe11561ee0fe365ff63982fcac",
+  "preserveOriginalPartitionSha256": "1a7650934378462a520ed1ddd0f57f6339254de0ea0304478c4752e42b2384fe"
+}

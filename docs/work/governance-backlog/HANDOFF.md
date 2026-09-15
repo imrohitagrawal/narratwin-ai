@@ -1,6 +1,6 @@
 # Governance and evaluation backlog: handoff
 
-PLAN_SHA256: acad7caa6f222d103bf3c6764d171a8ef484bdeef88c1a18190c7de22e0af1ac
+PLAN_SHA256: 26a9dc6ccda4811fbfae653726e5dc3e3e8bdc88ef49462b107c3ecb7d701d63
 EVIDENCE_SHA256: 550beb600595ce8cf46e1b89652936f2e02d678564f9e57001548d90784db6ec
 
 

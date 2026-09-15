@@ -4629,3 +4629,25 @@ def test_llm_guard_does_not_treat_fullmatch_as_an_llm_token(monkeypatch: Any) ->
         assert len(guardrails.failures) == len(before) + 2
     finally:
         guardrails.failures[:] = before
+
+
+@pytest.mark.parametrize("path", [
+    "docs/governance/preflights/issue-540.json",
+    "docs/governance/successors/g1-adr0000/profile.json",
+    "docs/governance/successors/g1-adr0000/superset-mapping-v2.json",
+    "docs/governance/successors/g1-adr0000/integration-lineage.json",
+    "scripts/quality/issue521_successor.py",
+])
+def test_successor_changes_reach_bootstrap_guardrail(monkeypatch: Any, path: str) -> None:
+    observed: list[Path] = []
+    def validate(root: Path) -> list[str]:
+        observed.append(root)
+        return ["G1.FAULT"]
+    monkeypatch.setattr(guardrails.issue521_successor, "validate_repository", validate)
+    before = list(guardrails.failures)
+    try:
+        guardrails.check_master_program_v2([path])
+        assert observed == [guardrails.ROOT]
+        assert guardrails.failures[-1] == "G1 successor finding: G1.FAULT"
+    finally:
+        guardrails.failures[:] = before

@@ -3,8 +3,8 @@ from __future__ import annotations
 from types import SimpleNamespace
 from typing import Any
 
+from scripts.quality import issue521_successor
 from scripts.quality.phase1_closure import runner
-
 
 def test_runner_checks_publication_and_cut1_before_preserved_contracts(monkeypatch: Any) -> None:
     calls: list[str] = []
@@ -25,8 +25,12 @@ def test_runner_checks_publication_and_cut1_before_preserved_contracts(monkeypat
     monkeypatch.setattr(runner, "check_cut1_presenter_contract", cut1)
     monkeypatch.setattr(runner, "run_preserved_contracts", preserved)
 
+    def successor_check(root: Any) -> list[str]:
+        calls.append("successor")
+        return []
+    monkeypatch.setattr(issue521_successor, "validate_repository", successor_check)
     assert runner.main() == 0
-    assert calls == ["new", "cut1", "legacy"]
+    assert calls == ["new", "cut1", "successor", "legacy"]
 
 
 def test_publication_failure_prevents_legacy_continuation(monkeypatch: Any) -> None:

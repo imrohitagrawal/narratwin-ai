@@ -8,7 +8,7 @@ These are navigation records. Review state and folder location grant no authorit
 | Work | Kind | Current plan / source | State and next action |
 |---|---|---|---|
 | [Master program](../../docs/work/master-program/README.md) | program | [effective-source](../../docs/governance/NARRATWIN_MASTER_PROGRAM_V1.md) | [STATUS](../../docs/STATUS.md) · [handoff](../../docs/work/master-program/HANDOFF.md) |
-| [G1 source certification](../../docs/work/g1-certification/README.md) | governance | [execution-plan](../../docs/work/g1-certification/README.md) | [STATUS](../../docs/STATUS.md) · [handoff](../../docs/work/g1-certification/HANDOFF.md) |
+| [G1 source certification](../../docs/work/g1-certification/README.md) | governance | [execution-plan](../../docs/work/g1-certification/PLAN.md) | [STATUS](../../docs/STATUS.md) · [handoff](../../docs/work/g1-certification/HANDOFF.md) |
 | [Demo workflow comparison](../../docs/work/demo-comparison/README.md) | comparison | [reviewed-proposal](../../docs/work/demo-comparison/PLAN.md) | [STATUS](../../docs/STATUS.md) · [handoff](../../docs/work/demo-comparison/HANDOFF.md) |
 | [Working records and preservation](../../docs/work/working-records/README.md) | recovery | [execution-plan](../../docs/work/working-records/IMPLEMENTATION.md) | [STATUS](../../docs/STATUS.md) · [handoff](../../docs/work/working-records/HANDOFF.md) |
 | [Cut 1 delivery](../../docs/work/delivery/README.md) | delivery | [source-pointer](../../docs/STAGE_ISSUE_PLAN.md) | [STATUS](../../docs/STATUS.md) · [handoff](../../docs/work/delivery/HANDOFF.md) |
@@ -84,3 +84,4 @@ Snapshot coverage is recorded in the registry; verify live tracker state before 
 | [#19](https://github.com/imrohitagrawal/narratwin-ai/issues/19) Later track — Timed mock video and FFmpeg assembly beyond Stage 7 placeholders | [future-capabilities](future-capabilities/README.md) |
 | [#18](https://github.com/imrohitagrawal/narratwin-ai/issues/18) Later track — Playable local TTS audio beyond the Stage 6 voice manifest | [future-capabilities](future-capabilities/README.md) |
 | [#17](https://github.com/imrohitagrawal/narratwin-ai/issues/17) Stage 6 residual — Controlled fallback integrity for multilingual generation | [future-capabilities](future-capabilities/README.md) |
+| [#540](https://github.com/imrohitagrawal/narratwin-ai/issues/540) G1: derive a preserved four-bibliography correction successor | [g1-certification](g1-certification/README.md) |

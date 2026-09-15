@@ -8,6 +8,7 @@ import subprocess
 from pathlib import Path
 
 from scripts.governance_preflight_repository import validate_governance_preflight_repository
+from scripts.quality import issue521_successor as successor
 from scripts.quality.branch_identity import current_branch
 from scripts.quality.cut1_presenter_contract import validate_contract_bundle
 from scripts.quality.publication_boundary.cli import main as check_publication_boundary
@@ -145,6 +146,8 @@ def check_cut1_presenter_contract() -> int:
 
 def run_preserved_contracts() -> int:
     branch = current_branch(ROOT)
+    if branch == successor.registered_inputs(ROOT)[0]["branch"]:
+        return run_successor()
     if branch == "phase-1-closure-process-535-work-archive":
         return run_work_archive()
     if branch == ISSUE521_BRANCH:
@@ -178,6 +181,9 @@ def main() -> int:
         cut1_status = check_cut1_presenter_contract()
         if cut1_status != 0:
             return cut1_status
+        successor_failures = successor.validate_repository(ROOT)
+        if successor_failures:
+            return legacy._print_result(successor_failures)
         return run_preserved_contracts()
     except Exception:
         print("Phase 1 quality runner could not complete safely.")
@@ -188,6 +194,23 @@ def run_work_archive() -> int:
     from scripts.quality.work_archive_scope import BRANCH, validate_scope
 
     failures = validate_scope(ROOT, BRANCH)
+    if failures:
+        return legacy._print_result(failures)
+    checker = legacy._load_checker()
+    failures = legacy.legacy_parity_failures(checker)
+    checker.check_branch(failures)
+    checker.check_required_files(failures)
+    if not failures:
+        for name in legacy.PRESERVED_CHECKS:
+            if name == "check_active_demo_docs":
+                legacy.check_active_demo_docs(checker, failures)
+            else:
+                getattr(checker, name)(failures)
+    return legacy._print_result(failures)
+
+
+def run_successor() -> int:
+    failures = successor.successor_scope(ROOT, current_branch(ROOT))
     if failures:
         return legacy._print_result(failures)
     checker = legacy._load_checker()
