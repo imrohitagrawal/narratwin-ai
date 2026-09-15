@@ -148,13 +148,19 @@ def test_invalid_runtime_environment_rejected(repository: Any, monkeypatch: Any,
     assert scope.validate_scope(repository.root, scope.BRANCH) == ["G1.CONFIG.GIT_TIMEOUT"]
 
 
-def test_actual_git_maximum_and_dependency_absent_bootstrap(repository: Any) -> None:
+def test_actual_git_maximum_and_dependency_absent_bootstrap(repository: Any, tmp_path: Path) -> None:
     assert scope.validate_scope(repository.root, scope.BRANCH, config=scope.RuntimeConfig(2147483)) == []
     assert scope.validate_scope(repository.root, scope.BRANCH, config=False) == ["G1.CONFIG.TYPE"]  # type: ignore[arg-type]
     with pytest.raises(ValueError, match="G1.CONFIG.GIT_TIMEOUT"):
         scope.RuntimeConfig(True)
+    r = repository
+    linked = tmp_path / "bootstrap-linked"
+    r.git("worktree", "add", "--detach", str(linked), r.head)
+    r.git("checkout", "main")
+    r.git("merge", "--no-ff", "-m", "normal merge", r.head)
     result = subprocess.run([sys.executable, "-S", "-c",
-        "from scripts.quality import g1_certification_scope as s; "
+        "from pathlib import Path; from scripts.quality import g1_certification_scope as s; "
+        f"s.BASE={r.base!r}; s.FIRST_COMMIT={r.first!r}; s.ROOT=Path({str(r.root)!r}); "
         "assert s.registered_preflight(s.ROOT)['issue_number']==533; "
         "print(s.candidate_head(s.ROOT,s.RuntimeConfig(5)))"],
         cwd=scope.ROOT, capture_output=True, text=True, timeout=10)
