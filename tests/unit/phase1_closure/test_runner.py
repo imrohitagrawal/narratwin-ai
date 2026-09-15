@@ -6,6 +6,26 @@ from typing import Any
 from scripts.quality import issue521_successor
 from scripts.quality.phase1_closure import runner
 
+
+def test_fresh533_exact_admission_replaces_only_frozen_path_rejection(monkeypatch: Any) -> None:
+    import json
+
+    branch = "phase-1-closure-process-533-fresh-g1-certification"
+    artifact = json.loads((runner.ROOT / "docs/governance/preflights/issue-533.json").read_text())
+    checker = runner.legacy._load_checker()
+    calls: list[str] = []
+    monkeypatch.setattr(runner, "current_branch", lambda root: branch)
+    monkeypatch.setattr(checker, "current_branch", lambda: branch)
+    monkeypatch.setattr(checker, "changed_files", lambda: artifact["scope"]["required"])
+    monkeypatch.setattr(checker, "check_required_files", lambda failures: None)
+    monkeypatch.setattr(runner.legacy, "_load_checker", lambda: checker)
+    monkeypatch.setattr(runner.legacy, "PRESERVED_CHECKS", ())
+    monkeypatch.setattr(runner, "fresh_scope", SimpleNamespace(
+        BRANCH=branch, validate_scope=lambda *args: calls.append("exact-admission") or [],
+    ), raising=False)
+    assert runner.run_preserved_contracts() == 0
+    assert calls == ["exact-admission"]
+
 def test_runner_checks_publication_and_cut1_before_preserved_contracts(monkeypatch: Any) -> None:
     calls: list[str] = []
 
