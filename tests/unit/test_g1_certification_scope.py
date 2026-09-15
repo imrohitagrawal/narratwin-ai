@@ -160,7 +160,7 @@ def test_actual_git_maximum_and_dependency_absent_bootstrap(repository: Any, tmp
     r.git("merge", "--no-ff", "-m", "normal merge", r.head)
     result = subprocess.run([sys.executable, "-S", "-c",
         "from pathlib import Path; from scripts.quality import g1_certification_scope as s; "
-        f"s.BASE={r.base!r}; s.FIRST_COMMIT={r.first!r}; s.ROOT=Path({str(r.root)!r}); "
+        f"s.BASE={r.base!r}; s.FIRST_COMMIT={r.first!r}; s.ROOT=Path({str(linked)!r}); "
         "assert s.registered_preflight(s.ROOT)['issue_number']==533; "
         "print(s.candidate_head(s.ROOT,s.RuntimeConfig(5)))"],
         cwd=scope.ROOT, capture_output=True, text=True, timeout=10)
