@@ -467,8 +467,8 @@
       "path": "docs/work/delivery",
       "plan": {
         "path": "docs/STAGE_ISSUE_PLAN.md",
-        "sha256": "8849ccd83e953a72728d28ae32508db9803c264786a274b426dd54d6121c18d3",
-        "bytes": 191433,
+        "sha256": "39570ef24865aabf31c16d72b36c3ddcec9ffef9a93a60eda96081b654118fdd",
+        "bytes": 192654,
         "role": "source-pointer"
       },
       "statusRef": "docs/STATUS.md",

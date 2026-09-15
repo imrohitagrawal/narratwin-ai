@@ -11,6 +11,7 @@ from typing import Any
 import pytest
 
 from scripts.quality import g1_certification_scope as scope
+from scripts.quality.issue521_successor import RuntimeConfig, git
 from scripts.quality.phase1_closure import runner
 
 
@@ -80,7 +81,7 @@ def test_actual_checkout_topologies(repository: Any, monkeypatch: Any, tmp_path:
         monkeypatch.setenv("GITHUB_BASE_SHA", "0" * 40 if topology == "initial-push" else r.head)
     checkout = r.root if topology == "merge" else linked
     assert scope.validate_scope(checkout, scope.BRANCH) == []
-    assert scope.git(linked, scope.RuntimeConfig(5), "rev-parse", "HEAD").decode().strip() == r.head
+    assert git(linked, RuntimeConfig(5), "rev-parse", "HEAD").decode().strip() == r.head
     if topology == "merge":
         monkeypatch.setenv("GITHUB_REF", "refs/heads/main")
         assert scope.validate_scope(checkout, scope.BRANCH) == ["G1.CARRIER.CHECKOUT"]
@@ -149,10 +150,10 @@ def test_invalid_runtime_environment_rejected(repository: Any, monkeypatch: Any,
 
 
 def test_actual_git_maximum_and_dependency_absent_bootstrap(repository: Any, tmp_path: Path) -> None:
-    assert scope.validate_scope(repository.root, scope.BRANCH, config=scope.RuntimeConfig(2147483)) == []
+    assert scope.validate_scope(repository.root, scope.BRANCH, config=RuntimeConfig(2147483)) == []
     assert scope.validate_scope(repository.root, scope.BRANCH, config=False) == ["G1.CONFIG.TYPE"]  # type: ignore[arg-type]
     with pytest.raises(ValueError, match="G1.CONFIG.GIT_TIMEOUT"):
-        scope.RuntimeConfig(True)
+        RuntimeConfig(True)
     r = repository
     linked = tmp_path / "bootstrap-linked"
     r.git("worktree", "add", "--detach", str(linked), r.head)
@@ -184,6 +185,9 @@ def test_fresh533_exact_admission_replaces_only_frozen_path_rejection(monkeypatc
     monkeypatch.setattr(checker, "check_required_files", lambda failures: None)
     monkeypatch.setattr(runner.legacy, "_load_checker", lambda: checker)
     monkeypatch.setattr(runner.legacy, "PRESERVED_CHECKS", ())
-    monkeypatch.setattr(scope, "validate_scope", lambda *args: calls.append("exact-admission") or [])
+    def admission(*args: Any) -> list[str]:
+        calls.append("exact-admission")
+        return []
+    monkeypatch.setattr(scope, "validate_scope", admission)
     assert runner.run_preserved_contracts() == 0
     assert calls == ["exact-admission"]

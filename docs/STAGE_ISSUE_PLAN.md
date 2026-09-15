@@ -3352,6 +3352,17 @@ for the complete implementation; final independent correction verification is ro
 F533-04 replaces impossible whole-object report/receipt equality with exact shared-field equality, the same Subject
 and an external raw report-byte reference, under [root5676726630](https://github.com/imrohitagrawal/narratwin-ai/issues/533#issuecomment-5676726630).
 The correction adds no parser or prose-mirroring test; independent contract verification remains required.
+F533-05: strict mypy in the first full CI run found four implicit test reexports and a value-use of list.append.
+The run at local candidate 251d8b7 exited 2 after 58.631 seconds; 350.722 cumulative local seconds remain charged.
+Focused pytest and Ruff did not prove strict typing. The correction imports helpers from their owner module and
+uses an explicitly typed recorder, with no production change or suppression. Retain the original log as actual RED.
+[Plan5676871585](https://github.com/imrohitagrawal/narratwin-ai/issues/533#issuecomment-5676871585) and
+[root5676902915](https://github.com/imrohitagrawal/narratwin-ai/issues/533#issuecomment-5676902915)
+prospectively add approach four and plan review round eight, preserving all three approaches and seven prior rounds.
+Round seven was technical verification, not proof of complete CI. Run exact strict mypy, focused tests and quality,
+then one authorized full CI retry and all publication commands before final independent correction round nine.
+The 11-path/1,470-line and 10,800-second ceilings remain; no automatic retry or hosted event is added.
+The failed subject is local candidate 251d8b7; live draft PR542 remained at preflight 68e4c947 at this amendment.
 Next: verify complete carrier implementation and all gates, then obtain the actual owner comparison and fresh ordered
 certification evidence. Personal observation remains UNSET; no provider, account, private-read, upload, spend, retry,
 fallback, media, product, deployment, public launch or production-readiness authority is granted here.
