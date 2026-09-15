@@ -3305,10 +3305,21 @@ must all precede the new protected normal merge. No approval is backdated to PR 
 The external freeze record is a closed object with `subjectHead:G, subjectTree:G, candidateArtifacts:CandidateArtifacts,
 localCommands:CommandResult[], hostedBoundaries:HostedBoundary[], requiredContexts:S[], frozenAt:T, expiresAt:T,
 authorityEvidence:Artifact[], result:"PASS"|"FAIL"`. It contains no reference to its own body or a future receipt.
-`HostedBoundary` has exactly `workflowPath:S, workflowCommit:G, event:"push"|"pull_request"|"pull_request_review",
+`HostedBoundary` has exactly `workflowPath:S, workflowCommit:G, event:"push"|"pull_request"|"pull_request_target"|"pull_request_review",
 runId:P, attempt:P, jobId:P, context:S, head:G, checkout:G, permissions:Artifact, environment:Artifact,
 commands:CommandResult[], result:"PASS"|"FAIL"`. The required context set comes from actual protection metadata,
 and evidence must prove commands/checkouts rather than workflow names alone. Every required boundary must PASS.
+The admitted inventory is branch push (quality-gates/ci/security/eval), PR (also quality), trusted-base
+pull_request_target (pr-body-consistency), later actual review (quality-gates), and post-merge main push (quality).
+Dispatch and merge-group declarations add no authority or prerequisite to this ordinary protected-merge route.
+Boundary.head is actual run metadata head_sha; checkout is the actual checked-out commit, and workflowCommit
+is the executed workflow revision, substantiated separately through actual metadata/source linkage.
+The enclosing subjectHead identifies the candidate. Trusted-base PR-body evidence binds the actual PR repository,
+number and candidate head obtained through the API; no base checkout or workflow revision is relabelled candidate.
+Record effective non-secret environment and permissions: reconcile uses contents:read/pull-requests:write with --apply;
+the required check uses contents:read/pull-requests:read without --apply, under actual workflow eligibility conditions.
+Existing Artifact references bind sanitized API/log evidence and exact source; mark metadata-derived inferences
+and timestamp/exit observation limits explicitly. Publish those evidence bodies before a freeze references them.
 Any later tracked/evidence change invalidates dependent approvals and requires bounded revalidation/reissuance.
 
 The post-approval `MergeHandoff` is an external closed evidence object, not a new receipt type or activation:
@@ -3363,6 +3374,16 @@ Round seven was technical verification, not proof of complete CI. Run exact stri
 then one authorized full CI retry and all publication commands before final independent correction round nine.
 The 11-path/1,470-line and 10,800-second ceilings remain; no automatic retry or hosted event is added.
 The failed subject is local candidate 251d8b7; live draft PR542 remained at preflight 68e4c947 at this amendment.
+F533-07: the closed event list omitted mandatory pull_request_target, reproduced against actual historical run
+34940668760. Its run head68e4 differs from trusted checkout2fc; it remains a FAIL witness, never current PASS.
+[Plan5678075236](https://github.com/imrohitagrawal/narratwin-ai/issues/533#issuecomment-5678075236),
+[supplement5678100902](https://github.com/imrohitagrawal/narratwin-ai/issues/533#issuecomment-5678100902) and
+[root5678221582](https://github.com/imrohitagrawal/narratwin-ai/issues/533#issuecomment-5678221582)
+add approach five, completed plan round ten and final round eleven after all corrected local evidence passes.
+Preserve all four approaches/nine rounds, F533-06 evidence-attribution corrections, 4,739.328 prior local seconds
+and fresh hosted10/22/6,335 run/job/second totals. Old exact-head results and overwritten outputs retain custody.
+One new-head full CI (3,600 seconds) plus 600 other seconds stays within 10,800; no retry or hosted event is granted.
+Complete-recipe attribution must identify every fresh command and state when its make target was not invoked.
 Next: verify complete carrier implementation and all gates, then obtain the actual owner comparison and fresh ordered
 certification evidence. Personal observation remains UNSET; no provider, account, private-read, upload, spend, retry,
 fallback, media, product, deployment, public launch or production-readiness authority is granted here.
