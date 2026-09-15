@@ -1,0 +1,74 @@
+{
+  "schema_version": "GovernancePreflightV1",
+  "issue_number": 533,
+  "branch": "phase-1-closure-process-533-fresh-g1-certification",
+  "objective": "Fresh #533 carrier under #521 from base 2fc1bbd7904421d4a5a2c85995c28dbd9cdf0fce. Authority: root 5675922010, amendments 5676064125/5676075289 and bootstrap 5676143779. Reviewed corrected plan https://github.com/imrohitagrawal/narratwin-ai/issues/533#issuecomment-5676107249 is 19501 UTF-8 bytes, SHA256 623b8456fdb531335039cd6d431dd3859c1d53cad6d8d54a0c3e4fc91c2a2bd9. Both independent round-five reviews PASS. First commit preflight only; root pins raw SHA/base/firstcommit before implementation. Narrow exact-branch admission measures manifest budgets with existing helpers; prove pinned first-parent history, actual direct/PR-merge candidate, initial/forced push and typed bounded Git with effective configuration. Complete closed adoption/semantic/security/host-approval/final-byte field contracts in existing STAGE G1 section before local+actual hosted-tested freeze and personal adoption. No self-referential future hashes or stale receipt transfer. Preserve #540 PLAN/evidence, originals/successor, generated INDEX and private custody; registry/handoffs close STAGE/STATUS bindings. Owner decision UNSET; PR534 retired unmerged. No G1 receipt parser/overlay or activation; distinct transition owns those. V1 effective; T05 accepted; T06-T08 pending. Retired #533 381/800 cumulative(375final), one approach/three rounds retained; fresh rounds4-5 consumed, implementation6/correction7 maximum, three cumulative approaches. Separate1,470 lines; preserve #521 8494/8500, earlier UNKNOWNs,#540 1758/4000/three approaches/six rounds/7012.503seconds and failures. Root owns cumulative ledger/merge/cleanup. Bootstrap 128MiB checkout+1MiB planning,120seconds/four descendants/256KiBoutput only; later resources require grants. No provider/account/private read/upload/egress/spend/retry/fallback/media/product/deploy/release/certification authority.",
+  "status_decision": "update-minimally",
+  "change_budget": {
+    "exact_paths": 11,
+    "maximum_additions_plus_deletions": 1470,
+    "deletions_grant_credit": false,
+    "per_file_charged_lines": {
+      "docs/governance/preflights/issue-533.json": 180,
+      "docs/STAGE_ISSUE_PLAN.md": 340,
+      "docs/STATUS.md": 80,
+      "docs/work/registry.json": 80,
+      "docs/work/delivery/HANDOFF.md": 40,
+      "docs/work/governance-backlog/HANDOFF.md": 40,
+      "docs/work/g1-certification/HANDOFF.md": 100,
+      "scripts/quality/g1_certification_scope.py": 220,
+      "tests/unit/test_g1_certification_scope.py": 200,
+      "scripts/quality/phase1_closure/runner.py": 30,
+      "tests/unit/phase1_closure/test_runner.py": 160
+    }
+  },
+  "scope": {
+    "required": [
+      "docs/governance/preflights/issue-533.json",
+      "docs/STAGE_ISSUE_PLAN.md",
+      "docs/STATUS.md",
+      "docs/work/registry.json",
+      "docs/work/delivery/HANDOFF.md",
+      "docs/work/governance-backlog/HANDOFF.md",
+      "docs/work/g1-certification/HANDOFF.md",
+      "scripts/quality/g1_certification_scope.py",
+      "tests/unit/test_g1_certification_scope.py",
+      "scripts/quality/phase1_closure/runner.py",
+      "tests/unit/phase1_closure/test_runner.py"
+    ],
+    "allowed_prefixes": [
+      "docs/governance/preflights/issue-533.json",
+      "docs/STAGE_ISSUE_PLAN.md",
+      "docs/STATUS.md",
+      "docs/work/registry.json",
+      "docs/work/delivery/HANDOFF.md",
+      "docs/work/governance-backlog/HANDOFF.md",
+      "docs/work/g1-certification/HANDOFF.md",
+      "scripts/quality/g1_certification_scope.py",
+      "tests/unit/test_g1_certification_scope.py",
+      "scripts/quality/phase1_closure/runner.py",
+      "tests/unit/phase1_closure/test_runner.py"
+    ],
+    "forbidden": [
+      "AGENTS.md",
+      ".github/",
+      "backend/",
+      "frontend/",
+      "pyproject.toml",
+      "uv.lock",
+      "docs/governance/NARRATWIN_MASTER_PROGRAM_V2.md",
+      "docs/governance/superset-mapping-v2.json",
+      "docs/governance/narratwin-master-program-v2.json",
+      "docs/governance/schemas/",
+      "docs/governance/successors/",
+      "docs/work-archive/",
+      "docs/work/INDEX.md",
+      "docs/work/g1-certification/PLAN.md",
+      "docs/work/g1-certification/evidence/",
+      "scripts/quality/issue521_master_program_v2.py",
+      "scripts/quality/issue521_successor.py",
+      "scripts/quality/check_phase1_closure_docs.py",
+      "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md"
+    ]
+  }
+}

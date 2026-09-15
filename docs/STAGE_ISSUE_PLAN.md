@@ -3074,3 +3074,316 @@ the correction also freezes RED before GREEN. G1 is non-activating governance
 only; V1 remains
 effective. G2, G3, product code, providers, credentials, egress, spend,
 biometrics, media, deployment, publication, release, and acceptance are separate.
+
+### 2026-09-15 — Fresh Issue #533 certification carrier
+
+Issue #533 / PR #542 prepares the prospective certification contract after
+PR #541 merged the four-bibliography successor at `2fc1bbd7904421d4a5a2c85995c28dbd9cdf0fce`.
+Structural delivery is complete; G1 certification and accepted-current activation are not.
+V1 remains effective, T05 is accepted, and T06–T08 remain incomplete. PR #534 is
+retired unmerged; its unsigned signing packet must never be resumed or transferred.
+This section supplements the unchanged [V2 section 1](governance/NARRATWIN_MASTER_PROGRAM_V2.md#1-certification-status-and-authority),
+[semantic prompts](reviews/ISSUE_521_SUPERSET_SEMANTIC_REVIEW.md) and
+[security prompts](reviews/ISSUE_521_FALSE_SUCCESS_SECURITY_REVIEW.md).
+Those source contracts remain authoritative; their historical subject counts are not successor certification.
+
+The current increment plan is [corrected comment 5676107249](https://github.com/imrohitagrawal/narratwin-ai/issues/533#issuecomment-5676107249),
+19,501 UTF-8 bytes, SHA256 `623b8456fdb531335039cd6d431dd3859c1d53cad6d8d54a0c3e4fc91c2a2bd9`.
+It preserves initial plan `5675980954`; root amendments `5676064125` and `5676075289`
+admit exactly eleven paths / 1,470 charged lines. [Preflight](governance/preflights/issue-533.json)
+owns every per-path cap; first commit `68e4c947b751b94e60d91a27ebce5ce6e2c21f0d`
+has parent `2fc1bbd7904421d4a5a2c85995c28dbd9cdf0fce` and only that preflight.
+Its raw identity is 4,511 bytes / SHA256 `c2f43651499ff30470b76bcf4be35d306496fc8d26554143889f58df94515428`.
+The exact branch is `phase-1-closure-process-533-fresh-g1-certification`.
+Root [bootstrap](https://github.com/imrohitagrawal/narratwin-ai/issues/533#issuecomment-5676143779)
+and [execution grant](https://github.com/imrohitagrawal/narratwin-ai/issues/533#issuecomment-5676236364)
+precede their respective allocations. Root comments own resource/hosted accounting and closeout.
+The unchanged G1 PLAN/evidence indexes remain the historical #540 correction record, not this increment's authority.
+
+#### Owner comparison surface — personal decision UNSET
+
+| Subject | Exact identity and observation boundary |
+|---|---|
+| Restricted original | `restricted-evidence:OWNER_PLAN_2026_09_07`; 65,097 UTF-8 bytes; SHA256 `986fd1604b385cd1ecd0dad1bfe0e09e6357d0e4b1d58bc94e3c055cc9bec58c` |
+| Public representation | [Exact V2 document](https://github.com/imrohitagrawal/narratwin-ai/blob/2fc1bbd7904421d4a5a2c85995c28dbd9cdf0fce/docs/governance/NARRATWIN_MASTER_PROGRAM_V2.md); 70,130 UTF-8 bytes / 1,161 lines; SHA256 `31d879568cd4bbeea9e238d14e20bf66de565842204372ee54ccf071564396f1` |
+| Personal observation | After the complete carrier passes local and actual hosted gates: does this exact public representation preserve every original requirement and meaning, allowing only privacy-safe normalization/redaction? |
+| Available outcomes | `COMPLETE_WITHOUT_REQUIREMENT_LOSS`, `CHANGES_REQUIRED`, `UNABLE_TO_DETERMINE`; none is selected. Only the first can become adoption evidence. |
+| Safe correction | Identify public section coordinates and sanitized changed meaning. Do not disclose private contents, paths or credentials. |
+
+This is not a marker-prefixed sample or ready-to-sign receipt. Private originals and ten supporting
+masters remain in retained custody; no actual availability gap is demonstrated. Public verification
+means private availability `NOT_CHECKED`, backup `UNPROVED`; no request to supply originals again follows.
+General delegation, PR #541 approval, descriptor equality or agent consensus cannot supply this personal observation.
+
+#### Closed external contract: notation, bytes and references
+
+These are complete field representations for later externally acquired evidence, not a parser or receipt overlay.
+Every object below has exactly its listed keys, all required; no additional, missing or duplicate keys are valid.
+An alternative separated by `|` is a closed tagged union, never an untyped bag. Lists preserve their stated order;
+duplicate identifiers, implicit coercion, booleans used as integers, nonfinite numbers and unknown enums reject.
+`S` means a nonempty UTF-8 string without control characters or secret/private locator content.
+`I` is an integer; `N` a nonnegative integer; `P` a positive integer; `H` exactly 64 lowercase hexadecimal characters;
+`G` exactly 40 lowercase hexadecimal characters; `T` a valid UTC `YYYY-MM-DDTHH:MM:SSZ` timestamp.
+`Bool` is JSON true/false; `X[]` is a finite list of X; only explicitly stated `null` is permitted.
+Public paths are canonical repository-relative POSIX paths with no traversal, symlink or absolute component.
+Public identifiers resolve only in `imrohitagrawal/narratwin-ai`; restricted references must match already registered descriptors.
+
+| Type | Closed keys and types |
+|---|---|
+| `RepoArtifact` | `kind:"REPOSITORY_BLOB", path:S, commit:G, sha256:H, bytes:P, encoding:"UTF8"|"BINARY"` |
+| `RestrictedArtifact` | `kind:"RESTRICTED_REFERENCE", reference:S, sha256:H, bytes:P, encoding:"UTF8"|"BINARY"` |
+| `CommentArtifact` | `kind:"PUBLIC_COMMENT", repository:"imrohitagrawal/narratwin-ai", issue:P, commentId:P, sha256:H, bytes:P, encoding:"UTF8"` |
+| `Artifact` | Exactly one of `RepoArtifact`, `RestrictedArtifact`, `CommentArtifact`; hash/size identify raw bytes, not parsed or normalized content. |
+| `Authority` | `providerAuthority:"NONE", egress:false, spendUsd:0, programActivation:"NONE"`; spend is integer zero. |
+| `CandidateArtifacts` | `document:RepoArtifact, predecessorMapping:RepoArtifact, predecessorBinding:RepoArtifact, predecessorSchema:RepoArtifact, taxonomy:RepoArtifact, taxonomySchema:RepoArtifact, semanticPrompt:RepoArtifact, securityPrompt:RepoArtifact, successorMapping:RepoArtifact, successorSchema:RepoArtifact, successorBinding:RepoArtifact, successorLineage:RepoArtifact, successorProfile:RepoArtifact, carrierContract:RepoArtifact` |
+| `Subject` | `repository:"imrohitagrawal/narratwin-ai", controllerIssue:521, carrierIssue:533, carrierPr:542, branch:S, base:G, head:G, tree:G, artifacts:CandidateArtifacts, freeze:Artifact, expiresAt:T` |
+| `ReceiptRef` | `kind:"RECEIPT_COMMENT", receiptType:"OWNER_ADOPTION"|"SEMANTIC_REVIEW"|"SECURITY_REVIEW"|"OWNER_EXACT_BYTES", repository:S, issue:533, commentId:P, actorId:P, association:S, createdAt:T, updatedAt:T, bodySha256:H, bodyBytes:P` |
+| `HostReview` | `kind:"GITHUB_REVIEW", repository:S, pullRequest:542, reviewId:P, actorId:P, association:S, state:"APPROVED", commit:G, submittedAt:T, dismissed:false, lastPushAt:T, eligible:true, metadata:Artifact` |
+| `CommandResult` | `command:S, environment:Artifact, startedAt:T|null, finishedAt:T|null, expectedExit:N, actualExit:I|null, outcome:"PASS"|"FAIL"|"NOT_RUN", evidence:Artifact[], limitations:S[]`; times/exit may be null only for NOT_RUN; negative actual exit records signal termination, not success. |
+| `PromptResult` | `result:"PASS"|"FAIL", rationale:S, evidence:Artifact[]`; every PASS requires nonempty evidence. |
+| `Execution` | `executorKind:"AGENT"|"HUMAN", executorRef:S, allocation:Artifact, authorship:Artifact, freshContext:Artifact, independentOfImplementation:Bool, startedAt:T, finishedAt:T, inputs:Artifact[], commands:CommandResult[], limitations:S[]` |
+| `Finding` | `id:S, classification:"CRITICAL_BLOCKER"|"REQUIRED_CONTRACT"|"ADVISORY_DEBT"|"DUPLICATE"|"OUT_OF_SCOPE", reproduction:Artifact[], rootCauseId:S, owner:S, disposition:S, correction:Artifact|null, independentVerification:Artifact|null, resolved:Bool` |
+
+Association strings must equal the actual host's metadata enum, not an asserted eligibility claim.
+Candidate artifact paths and source identities must match the fixed #540 registration and current carrier;
+the successor replaces no predecessor artifact. Subject.branch is the exact branch above and Subject.base is its fixed base.
+Subject.head/tree must match actual Git objects and the independently observed freeze evidence. The contract artifact points to this completed document's
+actual commit after it exists; no future head/tree or own document digest is embedded in its source bytes.
+Freeze evidence is a prior, separately published hash-bound root verification record, with its exact
+subject, completed local/hosted evidence and explicitly chosen finite expiry. Its expiry must be later
+than the freeze time; each receipt must be created before expiry, and acceptance must occur before expiry.
+No environment override extends an expiry, source, digest or scope. A renewed subject requires fresh dependent evidence.
+
+Receipt bodies are exactly `NARRATWIN-MPV2-RECEIPT-V1`, newline, then one canonical compact sorted-key JSON object,
+with no trailing newline. UTF-8 strings use JSON escaping only where required; no insignificant whitespace,
+alternate number spellings, duplicate keys or Unicode normalization of source bytes is accepted.
+Canonical comparison uses the repository's existing sorted-key compact UTF-8 serialization rule.
+Ordinary reports, technical comments and API metadata are evidence references, never receipt bodies by relabelling.
+The receipt's own comment ID, actor, association, timestamps, body hash/size and endpoint are acquired externally;
+they cannot appear as self-verifying facts in its payload. `createdAt` must equal `updatedAt` for every receipt.
+Repeated receipt types for one subject, forked chains, edited comments, wrong actor/repository/PR,
+changed references, missing predecessors, stale head/tree/hash, expired evidence or reused retired receipts reject.
+Host identities, current dismissal/eligibility/last-push state and required check conclusions must be revalidated
+against actual host metadata at consumption and merge; a self-consistent metadata artifact alone supplies no authority.
+
+#### Publisher, execution identity and order
+
+The [root interpretation 5676518263](https://github.com/imrohitagrawal/narratwin-ai/issues/533#issuecomment-5676518263)
+closes the actor representation against V2 and both accepted review contracts: independent review execution
+and metadata-authenticated receipt publication are separate roles. A root-published receipt is a root attestation
+of separately bound independent work, not a claim that the GitHub publisher was the agent executor.
+For `publisherRole:"ROOT_ATTESTOR"`, actual live numeric actor ID must be `291542729`, with the
+root's current delegated allocation/attestation role substantiated by linked authority evidence.
+For `publisherRole:"REVIEW_EXECUTOR"`, the actual host actor must equal the HUMAN execution actor;
+repository association and author independence must be verified from host and authorship evidence.
+An AGENT execution uses its actual task reference and allocation/authorship/fresh-context artifacts;
+no agent task identifier is a GitHub account. Human execution uses `github-user:<numeric-id>` verified from metadata.
+Both independent semantic and security executions require `independentOfImplementation:true`, no overlapping
+authored implementation, fresh context and independently reviewable evidence. The publisher's attestation
+does not substitute for the executor's report or resolve a finding by itself.
+Owner adoption and exact-byte approval are personally supplied by actual actor `291542729`.
+The separate `HostReview` must be an actual eligible non-author APPROVED review of the exact final head,
+submitted after its last push, not dismissed; user delegation or a comment named Approved never creates it.
+No additional independent human approver is inferred for semantic/security agent work.
+
+All receipt payloads have exactly `receiptType, subject, authority, predecessors, publisherRole, data`.
+`subject` is `Subject`; `authority` is `Authority`. `publisherRole` is
+`"OWNER"|"ROOT_ATTESTOR"|"REVIEW_EXECUTOR"`, constrained by the table below.
+`predecessors` is the exact ordered array shown; predecessor bodies must have the identical complete Subject.
+Every successor publication and review execution starts after its required predecessors exist and are verified.
+
+| Receipt type | Publisher role; exact predecessors | Closed `data` keys |
+|---|---|---|
+| `OWNER_ADOPTION` | `OWNER`; `[]` (no earlier receipt) | `original:RestrictedArtifact, publicRepresentation:RepoArtifact, observation:"COMPLETE_WITHOUT_REQUIREMENT_LOSS", normalization:"PRIVACY_SAFE_WITHOUT_REQUIREMENT_LOSS"` |
+| `SEMANTIC_REVIEW` | `ROOT_ATTESTOR` or `REVIEW_EXECUTOR`; `[OWNER_ADOPTION ReceiptRef]` | `execution:Execution, safeInputReview:Artifact, report:Artifact, sourceDecisions:Artifact, duplicateDecisions:Artifact, prompts:SemanticPrompts, coverage:SemanticCoverage, findings:Finding[], result:"PASS"|"FAIL"` |
+| `SECURITY_REVIEW` | `ROOT_ATTESTOR` or `REVIEW_EXECUTOR`; `[OWNER_ADOPTION ReceiptRef, SEMANTIC_REVIEW ReceiptRef]` | `execution:Execution, report:Artifact, prompts:SecurityPrompts, mutations:Mutation[], findings:Finding[], result:"PASS"|"FAIL"` |
+| `OWNER_EXACT_BYTES` | `OWNER`; `[OWNER_ADOPTION ReceiptRef, SEMANTIC_REVIEW ReceiptRef, SECURITY_REVIEW ReceiptRef, HostReview]` | `approvedArtifacts:CandidateArtifacts, semanticReport:Artifact, sourceDecisions:Artifact, duplicateDecisions:Artifact, securityReport:Artifact, hostApproval:HostReview, observation:"APPROVE_EXACT_BYTES"` |
+
+Adoption binds the exact two tuples in the owner comparison table; only personal successful observation qualifies.
+The semantic report first verifies a security-safe input interpretation after adoption and before semantic execution:
+the `safeInputReview` artifact is a closed object with `subject:Subject, execution:Execution,
+inputInventory:Artifact[], handlingAuthority:Artifact[], findings:Finding[], result:"PASS"|"FAIL"`.
+Its executor is independent of implementation, all inputs are admitted, and no unresolved blocker may remain.
+This preparatory input-safety evidence is not the later complete false-success/security receipt.
+Security review must reproduce the actual candidate and semantic findings; generic scanner success is insufficient.
+Both reports must PASS, every mandatory prompt must PASS, every demonstrated blocker must be corrected and
+independently verified, and advisory/deferred findings must retain explicit owner/disposition before owner exact-byte approval.
+`approvedArtifacts` must equal Subject.artifacts byte-for-byte; report/decision references and HostReview must exactly
+match the prior receipts. Owner exact-byte approval consequently binds both reports and the actual eligible host event.
+
+#### Closed semantic evidence and complete duplicate disposition
+
+`SemanticPrompts` has exactly keys `P1,P2,P3,P4,P5,P6,P7,P8,P9`, each `PromptResult`.
+Their meaning is the full corresponding numbered prompt in the unchanged accepted semantic source, with
+successor-vs-predecessor lineage explicitly distinguished; the following labels are navigation, not replacements:
+
+| Key | Mandatory accepted review obligation |
+|---|---|
+| P1 | Every source ledger entry and recomputed partition; exactly normative rows/unique exact aliases, excluded evidence still bound. |
+| P2 | No atomization loss or threshold weakening; independently explain every logical duplicate, not just distinct raw anchors. |
+| P3 | All 42 V1 sections retain states, roles, thresholds, prohibitions, evidence, failure and closeout duties. |
+| P4 | Owner plan, five-cut roadmap, current contracts, external references/defaults/observations without new authority. |
+| P5 | Every destination/replacement and relocation/supersession has exact applicable owner authority. |
+| P6 | New Cut 5 Digital Twin and historical enterprise-to-Cut-6 migration remain distinct. |
+| P7 | V2 remains non-activating and V1 effective. |
+| P8 | Restricted descriptors and all 605 records; 11,898 legacy bindings, 2,080 recovered atoms, 185 reconciliations, 15 aliases, exact class/effect partitions and zero unreviewed units. |
+| P9 | Final document/exhaustive input comparison; ambiguity, changed restricted references or invalid context require exact replay/reissue. |
+
+| Type | Closed keys and constraints |
+|---|---|
+| `SemanticCoverage` | `sourceLedgerCount:N, sourceDecisionCount:N, missingCount:N, unclassifiedCount:N, conflictingCount:N, unreviewedCount:N, duplicateGroupCount:859, duplicateOccurrenceCount:3099, unresolvedDuplicateCount:N, successorRows:31394, repositoryOwnerRows:18012, externalRows:13382, predecessorRows:31398, predecessorRepositoryOwnerRows:18016`; four missing/unclassified/conflicting/unreviewed counts and unresolvedDuplicateCount must be zero for PASS; source counts must equal independent frozen-inventory recomputation. |
+| `UnitDecision` | `sourceId:S, decisionId:S, partition:"REPOSITORY"|"OWNER"|"EXTERNAL"|"GOVERNING_CONTEXT", sourceDecisionSha256:H, atomicFocusSha256:H|null, operatorDecisionSha256:H|null, contextDecisionSha256:H|null, result:"PASS"|"FAIL", rationale:S, evidence:Artifact[]`; null focus/operator/context is allowed only when the bound source decision has no such component, with explicit evidence of non-applicability. |
+| `SourceDecisionReport` | `subject:Subject, execution:Execution, inventory:Artifact[], units:UnitDecision[], coverage:SemanticCoverage, result:"PASS"|"FAIL"`; exactly one decision for every required frozen source/partition unit, no extras or duplicate identities. |
+| `DuplicateMember` | `sourceAtomId:S, contextChainSha256:H, logicalRequirementId:S, rationale:S, evidence:Artifact[]`; atom ID must equal the bound census member, not an invented alias. |
+| `DuplicateDecision` | `groupId:S, disposition:"DISTINCT_SEMANTIC_SCOPES"|"CANONICAL_LOGICAL_REQUIREMENT", members:DuplicateMember[], canonicalLogicalRequirementId:S|null, rationale:S, evidence:Artifact[]`; null canonical ID only for DISTINCT; CANONICAL requires all member logical IDs equal the nonnull canonical ID. |
+| `DuplicateReport` | `subject:Subject, execution:Execution, censusSha256:H, decisions:DuplicateDecision[], groupCount:859, occurrenceCount:3099, unresolvedCount:N, result:"PASS"|"FAIL"`; exactly all census groups/members once, zero unresolved and no raw-anchor-only justification for PASS. |
+| `SemanticReport` | `subject:Subject, execution:Execution, safeInputReview:Artifact, sourceDecisions:Artifact, duplicateDecisions:Artifact, prompts:SemanticPrompts, coverage:SemanticCoverage, findings:Finding[], result:"PASS"|"FAIL"`; only execution, safeInputReview, sourceDecisions, duplicateDecisions, prompts, coverage, findings and result equal the corresponding semantic receipt data fields; subject equals receipt.subject. |
+
+Unit identities, class/disposition, normalized atomic-focus/operator/context relations and raw-span hashes
+must be independently checked against the exact frozen source partitions, not inferred from labels or self-reported totals.
+Every group ID is the existing `duplicate:<64-lowercase-hex>` identity; every atom ID is the existing
+`atom:<64-lowercase-hex>` identity. The ordered decision lists follow their frozen inventory/census ordering.
+The successor keeps 859 groups / 3,099 occurrences; predecessor 3,103 occurrences and 2,244 excess remain history.
+The historical 20-group review (19 bounded PASS, one FAIL, 839 unreviewed) supplies no fresh disposition.
+Original 31,398/18,016 counts and the external preintegration receipt, including legacy 11-mutation PASS,
+remain historical inputs. They cannot certify the 31,394-row successor. Every unchanged source remains in scope.
+The four corrected ADR bibliography entries remain REFERENCE; no original bytes or PENDING fields are rewritten.
+
+#### Closed false-success/security evidence
+
+`SecurityPrompts` has exactly `H0,S1,S2,S3,S4,S5,S6,S7,S8,S9,S10,S11,S12,S13,S14,S15,S16`, each `PromptResult`.
+H0 is the accepted seven-fingerprint hosted-parity correction review. S1–S16 correspond in order to
+the sixteen bullets in the unchanged accepted false-success/security source; all full obligations apply:
+
+| Key | Required attempted false pass |
+|---|---|
+| H0 | Seven exact attested Gitleaks fingerprints, provenance/spacing/canaries/full-history scans; no wildcard or weakening. |
+| S1 | Missing, duplicate, conflicting, unknown or reordered source atoms. |
+| S2 | Changed partition counts/digests or evidence promoted to normative authority. |
+| S3 | Self-rehashed partition differing from independently pinned identity. |
+| S4 | Malformed partition crashes instead of stable refusal. |
+| S5 | External-record/type/hash/cutoff/precedence/alias tampering or raw/private body insertion. |
+| S6 | Legacy/recovered-atom/lineage/count/reference/precedence/alias drift, PR promotion or mapping at/above 50 MiB. |
+| S7 | Malformed/oversized/noncanonical/trailing/compressed rows, column order or schema/decoder disagreement. |
+| S8 | Changes beyond seven attested locator paths or normative reuse of wrapper-type corrections. |
+| S9 | Source, destination, mapping, taxonomy, binding or threshold mutation. |
+| S10 | Relocation/supersession without exact owner replacement authority. |
+| S11 | Candidate/tests/CI/prose/comments/self-review treated as activation. |
+| S12 | Legacy enterprise Cut 5 misuse, invalid Cut 6 or compatibility migration/effective-time drift. |
+| S13 | Short/web/manual/other-host/model/account evidence treated as implementation receipt. |
+| S14 | Private paths, signed URLs, credentials, provider IDs or biometric/secret evidence in public Git. |
+| S15 | Observations/provider success/estimates/derived resolution/repaired media treated as full acceptance. |
+| S16 | Unauthorized provider/spend/enrollment/deletion/publication/release/Digital Twin/Cut/commercial/production claims. |
+
+`Mutation` has exactly `id:S, promptId:"H0"|"S1".."S16", baseline:Artifact[], changed:Artifact[],
+command:CommandResult, expected:"REJECT", actual:"REJECT"|"FALSE_PASS"|"ERROR", findings:Finding[]`.
+Every mandatory attack family requires discriminating evidence; expected refusal alone is not a test result.
+An ERROR is not a successful stable refusal; an unresolved FALSE_PASS/ERROR or missing mandatory test keeps FAIL.
+`SecurityReport` has exactly `subject:Subject, execution:Execution, prompts:SecurityPrompts,
+mutations:Mutation[], findings:Finding[], result:"PASS"|"FAIL"`; execution, prompts, mutations, findings and result
+equal the corresponding security receipt data fields; subject equals receipt.subject. In both cases the receipt
+data.report reference identifies the complete raw report bytes and is not a field inside the report itself.
+Reports preserve failed attempts, classifications, smallest corrections and independent correction verification.
+These definitions do not authorize new mutations against private/provider resources or new receipt-parser implementation.
+
+#### Hosted-tested freeze, merge and distinct transition
+
+Complete the contract, focused RED/GREEN, independent implementation/correction review, `make quality`, full
+`make ci`, and all thirteen publication commands with exact local results or truthful dependency attribution.
+Then prove actual hosted dependency-free/bootstrap and frozen dependency installation, direct-head/push and
+real PR merge checkouts, built-in/custom environment propagation, permissions, complete commands and required contexts.
+Prefreeze evidence uses the actual draft/implementing push and PR workflow boundaries, including their current
+review-policy result; that result does not claim an APPROVED review. The later actual review-triggered workflow
+revalidates the completed approval chain before merge. It is not required to exist before its own triggering review.
+No local approximation, interim review commit or initial preflight workflow failure is a candidate freeze.
+Root records the frozen final head/tree and exact artifact tuples only after all these checks pass.
+The field definitions must be complete at that point; no unresolved type, actor or ordering rule is deferred.
+The owner then supplies adoption; root separately allocates complete independent input-safety/semantic/security
+work and the 859-group disposition. The chain above, actual eligible host approval and owner exact-byte approval
+must all precede the new protected normal merge. No approval is backdated to PR #522, #534 or #541.
+
+The external freeze record is a closed object with `subjectHead:G, subjectTree:G, candidateArtifacts:CandidateArtifacts,
+localCommands:CommandResult[], hostedBoundaries:HostedBoundary[], requiredContexts:S[], frozenAt:T, expiresAt:T,
+authorityEvidence:Artifact[], result:"PASS"|"FAIL"`. It contains no reference to its own body or a future receipt.
+`HostedBoundary` has exactly `workflowPath:S, workflowCommit:G, event:"push"|"pull_request"|"pull_request_target"|"pull_request_review",
+runId:P, attempt:P, jobId:P, context:S, head:G, checkout:G, permissions:Artifact, environment:Artifact,
+commands:CommandResult[], result:"PASS"|"FAIL"`. The required context set comes from actual protection metadata,
+and evidence must prove commands/checkouts rather than workflow names alone. Every required boundary must PASS.
+The admitted inventory is branch push (quality-gates/ci/security/eval), PR (also quality), trusted-base
+pull_request_target (pr-body-consistency), later actual review (quality-gates), and post-merge main push (quality).
+Dispatch and merge-group declarations add no authority or prerequisite to this ordinary protected-merge route.
+Boundary.head is actual run metadata head_sha; checkout is the actual checked-out commit, and workflowCommit
+is the executed workflow revision, substantiated separately through actual metadata/source linkage.
+The enclosing subjectHead identifies the candidate. Trusted-base PR-body evidence binds the actual PR repository,
+number and candidate head obtained through the API; no base checkout or workflow revision is relabelled candidate.
+Record effective non-secret environment and permissions: reconcile uses contents:read/pull-requests:write with --apply;
+the required check uses contents:read/pull-requests:read without --apply, under actual workflow eligibility conditions.
+Existing Artifact references bind sanitized API/log evidence and exact source; mark metadata-derived inferences
+and timestamp/exit observation limits explicitly. Publish those evidence bodies before a freeze references them.
+Any later tracked/evidence change invalidates dependent approvals and requires bounded revalidation/reissuance.
+
+The post-approval `MergeHandoff` is an external closed evidence object, not a new receipt type or activation:
+`subject:Subject, ownerApproval:ReceiptRef, hostApproval:HostReview, mergedPr:542, mergeCommit:G,
+mergeTree:G, reviewedTree:G, method:"MERGE_COMMIT", mergedAt:T, protection:Artifact,
+mainChecks:HostedBoundary[], dispositions:IssueDisposition[], transitionIssue:P|null, activation:"NONE"`.
+`IssueDisposition` has exactly `issue:P, state:"OPEN"|"CLOSED", rationale:S, evidence:Artifact[]`.
+The merge tree must equal the reviewed tree; merge history must preserve the pinned first preflight.
+Successful current-main checks and truthful issue/retention disposition complete carrier closeout only.
+Null transitionIssue means the separately governed transition has not yet been allocated, never implicit activation.
+That later issue/PR owns executable authenticated receipt acquisition/overlay, all seven compatibility migrations
+and atomic ACCEPTED_CURRENT activation. G1 does not read local receipts, acquire private originals or change PENDING.
+
+#### Implementation boundary, preserved history and next action
+
+The thin exact-branch route reuses existing generic preflight, budget, safe-path and bounded Git primitives;
+it measures actual numstat plus permitted untracked text and binds immutable first-blob/base/first-parent history.
+Hosted PR selection reads actual event metadata; direct candidate and exact synthetic merge are distinguished.
+Initial/forced push never substitutes a zero or unrelated before-SHA for the reviewed base. Hosted dirty state rejects.
+`NARRATWIN_G1_GIT_TIMEOUT_SECONDS` reaches new Git calls through the existing typed RuntimeConfig; default is five
+seconds, finite positive values must be representable, and effective non-secret values are reported.
+The generic repository helper retains its separately reported inherited timeout. No operational override changes authority.
+Actual caller RED and scope/config/topology GREEN are retained under the task-owned reports prefix and PR/root comments;
+full gates and exact independent verdicts must be freshly verified, never inferred from this prose.
+
+Retired #533 retains 381/800 cumulative charged lines (375 final), one approach and three rounds. Fresh initial
+planning is cumulative round four; corrected planning round five passed. Implementation review is round six,
+with at most one bounded correction/verification round seven and three cumulative approaches total.
+Prior #521 8,494/8,500 and earlier UNKNOWN quantities remain; #540 retains 1,758/4,000, three approaches,
+six rounds, 7,012.503 local command seconds and every failed attempt. New 1,470 lines are additive, never reused authority.
+Root owns the cumulative resource ledger and explicit cleanup; other worktrees, originals and historical attempts stay retained.
+F533-01 is a public prose heuristic false positive, locally corrected without a checker change; underlying
+context-insensitive path matching is advisory debt owned by root/publication-boundary maintenance outside this package.
+F533-02 corrected a false-valued injected configuration falling through to the default; retained comparison is
+explicitly post-correction reconstruction, not historical RED. Independent review verified rejection before Git.
+F533-03 corrects only a dependency-free test's ambient checkout assumption after its fixture cleared host metadata;
+actual merge topology requires a fixture-bound subprocess, not weaker production history checks.
+Root [5676552000](https://github.com/imrohitagrawal/narratwin-ai/issues/533#issuecomment-5676552000)
+substantiated the failure and prospectively activated cumulative correction approach three. Round six continues
+for the complete implementation; final independent correction verification is round seven, with no counter reset.
+F533-04 replaces impossible whole-object report/receipt equality with exact shared-field equality, the same Subject
+and an external raw report-byte reference, under [root5676726630](https://github.com/imrohitagrawal/narratwin-ai/issues/533#issuecomment-5676726630).
+The correction adds no parser or prose-mirroring test; independent contract verification remains required.
+F533-05: strict mypy in the first full CI run found four implicit test reexports and a value-use of list.append.
+The run at local candidate 251d8b7 exited 2 after 58.631 seconds; 350.722 cumulative local seconds remain charged.
+Focused pytest and Ruff did not prove strict typing. The correction imports helpers from their owner module and
+uses an explicitly typed recorder, with no production change or suppression. Retain the original log as actual RED.
+[Plan5676871585](https://github.com/imrohitagrawal/narratwin-ai/issues/533#issuecomment-5676871585) and
+[root5676902915](https://github.com/imrohitagrawal/narratwin-ai/issues/533#issuecomment-5676902915)
+prospectively add approach four and plan review round eight, preserving all three approaches and seven prior rounds.
+Round seven was technical verification, not proof of complete CI. Run exact strict mypy, focused tests and quality,
+then one authorized full CI retry and all publication commands before final independent correction round nine.
+The 11-path/1,470-line and 10,800-second ceilings remain; no automatic retry or hosted event is added.
+The failed subject is local candidate 251d8b7; live draft PR542 remained at preflight 68e4c947 at this amendment.
+F533-07: the closed event list omitted mandatory pull_request_target, reproduced against actual historical run
+34940668760. Its run head68e4 differs from trusted checkout2fc; it remains a FAIL witness, never current PASS.
+[Plan5678075236](https://github.com/imrohitagrawal/narratwin-ai/issues/533#issuecomment-5678075236),
+[supplement5678100902](https://github.com/imrohitagrawal/narratwin-ai/issues/533#issuecomment-5678100902) and
+[root5678221582](https://github.com/imrohitagrawal/narratwin-ai/issues/533#issuecomment-5678221582)
+add approach five, completed plan round ten and final round eleven after all corrected local evidence passes.
+Preserve all four approaches/nine rounds, F533-06 evidence-attribution corrections, 4,739.328 prior local seconds
+and fresh hosted10/22/6,335 run/job/second totals. Old exact-head results and overwritten outputs retain custody.
+One new-head full CI (3,600 seconds) plus 600 other seconds stays within 10,800; no retry or hosted event is granted.
+Complete-recipe attribution must identify every fresh command and state when its make target was not invoked.
+Next: verify complete carrier implementation and all gates, then obtain the actual owner comparison and fresh ordered
+certification evidence. Personal observation remains UNSET; no provider, account, private-read, upload, spend, retry,
+fallback, media, product, deployment, public launch or production-readiness authority is granted here.

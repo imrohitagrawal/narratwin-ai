@@ -382,7 +382,7 @@
       "relationships": [],
       "evidenceIndex": "docs/work/g1-certification/evidence/INDEX.json",
       "handoff": "docs/work/g1-certification/HANDOFF.md",
-      "checkpoint": "2026-09-14; Issue540/PR541 four-bibliography successor; structural delivery is not certification; verify exact-head review and hosted checks"
+      "checkpoint": "2026-09-15; PR541 merged2fc1bbd structural successor; fresh533/PR542 contract in STAGE G1 section; historical PLAN binding retained; certification and owner observation pending"
     },
     {
       "id": "demo-comparison",
@@ -467,8 +467,8 @@
       "path": "docs/work/delivery",
       "plan": {
         "path": "docs/STAGE_ISSUE_PLAN.md",
-        "sha256": "041471c62da962ed7aa88dc71a484a02a4e37b2f6595ee0b791f479c1f127dbe",
-        "bytes": 161863,
+        "sha256": "a83b60ea60075d953b7bad3c1aa896a2fc5efc33ad5cf05d50dce89c4ae258e1",
+        "bytes": 195009,
         "role": "source-pointer"
       },
       "statusRef": "docs/STATUS.md",
@@ -615,8 +615,8 @@
       "path": "docs/work/governance-backlog",
       "plan": {
         "path": "docs/STATUS.md",
-        "sha256": "26a9dc6ccda4811fbfae653726e5dc3e3e8bdc88ef49462b107c3ecb7d701d63",
-        "bytes": 290401,
+        "sha256": "6d589f9b9ae06d8843f406dd6d3dac7ce43d4423a1e29e6163cd2802169ff15b",
+        "bytes": 291387,
         "role": "source-pointer"
       },
       "statusRef": "docs/STATUS.md",
