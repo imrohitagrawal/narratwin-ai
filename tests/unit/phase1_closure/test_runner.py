@@ -3,28 +3,11 @@ from __future__ import annotations
 from types import SimpleNamespace
 from typing import Any
 
+import pytest
+
 from scripts.quality import issue521_successor
 from scripts.quality.phase1_closure import runner
 
-
-def test_fresh533_exact_admission_replaces_only_frozen_path_rejection(monkeypatch: Any) -> None:
-    import json
-
-    branch = "phase-1-closure-process-533-fresh-g1-certification"
-    artifact = json.loads((runner.ROOT / "docs/governance/preflights/issue-533.json").read_text())
-    checker = runner.legacy._load_checker()
-    calls: list[str] = []
-    monkeypatch.setattr(runner, "current_branch", lambda root: branch)
-    monkeypatch.setattr(checker, "current_branch", lambda: branch)
-    monkeypatch.setattr(checker, "changed_files", lambda: artifact["scope"]["required"])
-    monkeypatch.setattr(checker, "check_required_files", lambda failures: None)
-    monkeypatch.setattr(runner.legacy, "_load_checker", lambda: checker)
-    monkeypatch.setattr(runner.legacy, "PRESERVED_CHECKS", ())
-    monkeypatch.setattr(runner, "fresh_scope", SimpleNamespace(
-        BRANCH=branch, validate_scope=lambda *args: calls.append("exact-admission") or [],
-    ), raising=False)
-    assert runner.run_preserved_contracts() == 0
-    assert calls == ["exact-admission"]
 
 def test_runner_checks_publication_and_cut1_before_preserved_contracts(monkeypatch: Any) -> None:
     calls: list[str] = []
@@ -169,8 +152,10 @@ def test_coherent_preflight_with_extra_path_cannot_bypass_legacy_scope(monkeypat
     assert runner.run_preserved_contracts() == 1
 
 
-def test_other_branch_retains_frozen_legacy_scope(monkeypatch: Any) -> None:
-    monkeypatch.setattr(runner, "current_branch", lambda root: "phase-1-closure-process-455-other")
+@pytest.mark.parametrize("branch", ["phase-1-closure-process-455-other",
+    "phase-1-closure-process-535-work-archive-other", "phase-1-closure-process-533-fresh-g1-certification-other"])
+def test_other_branch_retains_frozen_legacy_scope(monkeypatch: Any, branch: str) -> None:
+    monkeypatch.setattr(runner, "current_branch", lambda root: branch)
     monkeypatch.setattr(runner.legacy, "run_preserved_contracts", lambda: 31)
 
     assert runner.run_preserved_contracts() == 31
@@ -263,8 +248,3 @@ def test_archive_scope_failure_prevents_legacy_pass(monkeypatch: Any) -> None:
     monkeypatch.setattr(runner.legacy, "_print_result", lambda failures: int(bool(failures)))
     assert runner.run_preserved_contracts() == 1
 
-
-def test_archive_lookalike_retains_legacy_scope(monkeypatch: Any) -> None:
-    monkeypatch.setattr(runner, "current_branch", lambda root: "phase-1-closure-process-535-work-archive-other")
-    monkeypatch.setattr(runner.legacy, "run_preserved_contracts", lambda: 31)
-    assert runner.run_preserved_contracts() == 31

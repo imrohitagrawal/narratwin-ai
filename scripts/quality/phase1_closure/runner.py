@@ -9,6 +9,7 @@ from pathlib import Path
 
 from scripts.governance_preflight_repository import validate_governance_preflight_repository
 from scripts.quality import issue521_successor as successor
+from scripts.quality import g1_certification_scope as fresh_scope
 from scripts.quality.branch_identity import current_branch
 from scripts.quality.cut1_presenter_contract import validate_contract_bundle
 from scripts.quality.publication_boundary.cli import main as check_publication_boundary
@@ -146,6 +147,8 @@ def check_cut1_presenter_contract() -> int:
 
 def run_preserved_contracts() -> int:
     branch = current_branch(ROOT)
+    if branch == fresh_scope.BRANCH:
+        return run_fresh_carrier()
     if branch == successor.registered_inputs(ROOT)[0]["branch"]:
         return run_successor()
     if branch == "phase-1-closure-process-535-work-archive":
@@ -211,6 +214,23 @@ def run_work_archive() -> int:
 
 def run_successor() -> int:
     failures = successor.successor_scope(ROOT, current_branch(ROOT))
+    if failures:
+        return legacy._print_result(failures)
+    checker = legacy._load_checker()
+    failures = legacy.legacy_parity_failures(checker)
+    checker.check_branch(failures)
+    checker.check_required_files(failures)
+    if not failures:
+        for name in legacy.PRESERVED_CHECKS:
+            if name == "check_active_demo_docs":
+                legacy.check_active_demo_docs(checker, failures)
+            else:
+                getattr(checker, name)(failures)
+    return legacy._print_result(failures)
+
+
+def run_fresh_carrier() -> int:
+    failures = fresh_scope.validate_scope(ROOT, current_branch(ROOT))
     if failures:
         return legacy._print_result(failures)
     checker = legacy._load_checker()
