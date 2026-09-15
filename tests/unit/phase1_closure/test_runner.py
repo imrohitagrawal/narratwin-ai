@@ -247,4 +247,3 @@ def test_archive_scope_failure_prevents_legacy_pass(monkeypatch: Any) -> None:
     monkeypatch.setattr(runner.legacy, "_load_checker", lambda: (_ for _ in ()).throw(AssertionError("must not run")))
     monkeypatch.setattr(runner.legacy, "_print_result", lambda failures: int(bool(failures)))
     assert runner.run_preserved_contracts() == 1
-
