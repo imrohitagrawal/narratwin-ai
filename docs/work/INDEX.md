@@ -9,7 +9,7 @@ These are navigation records. Review state and folder location grant no authorit
 |---|---|---|---|
 | [Master program](../../docs/work/master-program/README.md) | program | [effective-source](../../docs/governance/NARRATWIN_MASTER_PROGRAM_V1.md) | [STATUS](../../docs/STATUS.md) · [handoff](../../docs/work/master-program/HANDOFF.md) |
 | [G1 source certification](../../docs/work/g1-certification/README.md) | governance | [execution-plan](../../docs/work/g1-certification/PLAN.md) | [STATUS](../../docs/STATUS.md) · [handoff](../../docs/work/g1-certification/HANDOFF.md) |
-| [Demo workflow comparison](../../docs/work/demo-comparison/README.md) | comparison | [reviewed-proposal](../../docs/work/demo-comparison/PLAN.md) | [STATUS](../../docs/STATUS.md) · [handoff](../../docs/work/demo-comparison/HANDOFF.md) |
+| [Demo workflow comparison](../../docs/work/demo-comparison/README.md) | comparison | [execution-plan](../../docs/work/demo-comparison/EXECUTION_PLAN.md) | [STATUS](../../docs/STATUS.md) · [handoff](../../docs/work/demo-comparison/HANDOFF.md) |
 | [Working records and preservation](../../docs/work/working-records/README.md) | recovery | [execution-plan](../../docs/work/working-records/IMPLEMENTATION.md) | [STATUS](../../docs/STATUS.md) · [handoff](../../docs/work/working-records/HANDOFF.md) |
 | [Cut 1 delivery](../../docs/work/delivery/README.md) | delivery | [source-pointer](../../docs/STAGE_ISSUE_PLAN.md) | [STATUS](../../docs/STATUS.md) · [handoff](../../docs/work/delivery/HANDOFF.md) |
 | [Security and operational governance](../../docs/work/security-governance/README.md) | governance | [source-pointer](../../docs/ENTERPRISE_READINESS_REGISTER.md) | [STATUS](../../docs/STATUS.md) · [handoff](../../docs/work/security-governance/HANDOFF.md) |

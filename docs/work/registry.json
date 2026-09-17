@@ -391,10 +391,10 @@
       "owner": "root orchestrator; existing issue authorities retained",
       "path": "docs/work/demo-comparison",
       "plan": {
-        "path": "docs/work/demo-comparison/PLAN.md",
-        "sha256": "386e5b28504b5684625424875776f71be380508b194a36933488e3ac67e9e03a",
-        "bytes": 46368,
-        "role": "reviewed-proposal"
+        "path": "docs/work/demo-comparison/EXECUTION_PLAN.md",
+        "sha256": "28e8615305ca5e6302c198e11005d84bb0e436f9d3236e1499b7339d2fdab2a7",
+        "bytes": 24969,
+        "role": "execution-plan"
       },
       "statusRef": "docs/STATUS.md",
       "authorityRefs": [
@@ -411,7 +411,7 @@
       "parent": "master-program",
       "relationships": [
         {
-          "kind": "depends-on",
+          "kind": "uses-evidence-from",
           "target": "g1-certification"
         },
         {
@@ -421,7 +421,7 @@
       ],
       "evidenceIndex": "docs/work/demo-comparison/evidence/INDEX.json",
       "handoff": "docs/work/demo-comparison/HANDOFF.md",
-      "checkpoint": "2026-09-14; PR536 merged67d4b094 with approved29606 tree; PR534 retired unmerged; Issue538/PR539 reconciles sequencing; verify live tracker before action"
+      "checkpoint": "2026-09-17; Issue519 draft PR546 zero-exposure preparation; PR545 failed attempt preserved; exact-head review and hosted checks pending; no provider or Cut1 acceptance"
     },
     {
       "id": "working-records",
@@ -615,8 +615,8 @@
       "path": "docs/work/governance-backlog",
       "plan": {
         "path": "docs/STATUS.md",
-        "sha256": "26a9dc6ccda4811fbfae653726e5dc3e3e8bdc88ef49462b107c3ecb7d701d63",
-        "bytes": 290401,
+        "sha256": "2b6bd4a057b8789c2895940ee86abdd63f8f9a781a98f199052224ee449021a7",
+        "bytes": 292031,
         "role": "source-pointer"
       },
       "statusRef": "docs/STATUS.md",

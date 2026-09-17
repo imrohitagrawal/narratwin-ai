@@ -5,7 +5,7 @@ Compare modular, integrated and hybrid complete walkthroughs for usefulness and 
 ## Read in order
 
 1. [Current status and accepted contracts](../../STATUS.md), then the [PRD](../../PRD.md) and applicable amendments.
-2. [Registered plan/source](../../../docs/work/demo-comparison/PLAN.md) — role: `reviewed-proposal`.
+2. [Current execution plan](EXECUTION_PLAN.md) — role: `execution-plan`, zero-exposure preparation only.
 3. [Decisions](DECISIONS.md), [handoff](HANDOFF.md) and [evidence](evidence/INDEX.json).
 
 Owner: root orchestrator for navigation; existing issue/acceptance owners retain authority.
@@ -20,4 +20,6 @@ Owner: root orchestrator for navigation; existing issue/acceptance owners retain
 
 ## Experiments
 
-PLAN.md preserves the complete reviewed proposal byte-for-byte. Use the comparison section of the [template](../templates/WORK.md) for new experiments: hypothesis, alternatives, protocol, exact inputs/settings, authorized operations, full outputs, acceptance levels, total costs including rejected attempts, and revision effort. No sample establishes reliability or production economics; registration grants no operations authority.
+[PLAN.md](PLAN.md) preserves the complete reviewed proposal byte-for-byte as historical source evidence; its A1–A6 exploratory amendment remains unaccepted. [EXECUTION_PLAN.md](EXECUTION_PLAN.md) owns the current bounded preparation and dependency map. The [review record](evidence/REVIEWS.md) distinguishes preimplementation review, preserved failures and pending exact-head review.
+
+Public research and eligible planning may proceed independently; #531 implementation and #532 provider/account/security stops remain binding. The exact 27.216125-second fixture and canonical Meera/Raj/Myra inputs remain unchanged. No provider is qualified or activated, and no T06 credit follows. Use the existing [work template](../templates/WORK.md) for later separately authorized operations; do not create a parallel ledger.

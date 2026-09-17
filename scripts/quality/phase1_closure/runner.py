@@ -8,6 +8,7 @@ import subprocess
 from pathlib import Path
 
 from scripts.governance_preflight_repository import validate_governance_preflight_repository
+from scripts.quality import issue519_experiment_package
 from scripts.quality import issue521_successor as successor
 from scripts.quality.branch_identity import current_branch
 from scripts.quality.cut1_presenter_contract import validate_contract_bundle
@@ -146,6 +147,8 @@ def check_cut1_presenter_contract() -> int:
 
 def run_preserved_contracts() -> int:
     branch = current_branch(ROOT)
+    if branch == issue519_experiment_package.BRANCH:
+        return issue519_experiment_package.run(ROOT, branch)
     if branch == successor.registered_inputs(ROOT)[0]["branch"]:
         return run_successor()
     if branch == "phase-1-closure-process-535-work-archive":
