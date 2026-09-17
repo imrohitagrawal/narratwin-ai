@@ -1,7 +1,7 @@
 # Demo workflow comparison: handoff
 
-PLAN_SHA256: 28e8615305ca5e6302c198e11005d84bb0e436f9d3236e1499b7339d2fdab2a7
-EVIDENCE_SHA256: e16b979840e7102f2c4a5c84f111c500ca2bbaacc12c172fefe7d261690c20ae
+PLAN_SHA256: 5a3590d17cc5e7902065f223ba4c1f8ff2e281127fce59ca676e8f384f272051
+EVIDENCE_SHA256: bf4e1d411d8a1b734debe41bdfb05cd0ce76c5cc3422c02d467dfdf0541d70d5
 
 Current checkpoint: 2026-09-17; source main `2fc1bbd7904421d4a5a2c85995c28dbd9cdf0fce`; Issue519 draft [PR546](https://github.com/imrohitagrawal/narratwin-ai/pull/546), branch `phase-1-closure-process-519-experiment-first-package-v2`, fresh preflight-only C1 `a05cd088a7131b0d7736c8d53341326608f022a6`. This checkpoint is not an exact-head freeze or approval; use the PR for live head/check/review state.
 

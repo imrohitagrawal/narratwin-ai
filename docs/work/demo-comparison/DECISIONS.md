@@ -41,8 +41,8 @@ Supersession is deliberately narrow: earlier PR534-first/blanket G1/G2/G3
 sequencing, including [#519 comment5638906609](https://github.com/imrohitagrawal/narratwin-ai/issues/519#issuecomment-5638906609),
 does not block independent public research, zero-exposure comparison preparation
 or eligible UI planning. #531 accepted-current implementation dependencies and
-#532's actual provider/account/credential/incident stop are unchanged. Optional
-#520 strict-offline sandbox work is not a new Cut 1 gate. Presenter diagnostics
+Issue #532's actual provider/account/credential/incident stop are unchanged. Optional
+Issue #520 strict-offline sandbox work is not a new Cut 1 gate. Presenter diagnostics
 need not await UI redesign; canonical product capture still requires actual UI.
 
 A1–A6 remain unaccepted: new research identity (A1), exact words with different

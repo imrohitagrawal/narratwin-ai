@@ -79,6 +79,29 @@ outside scope. No skills/plugins/dependencies installed. Existing work records,
 preflight validator, preserved checks and generator were reused. The skill name
 alone is not evidence; the RED/negative cases and narrowed scope are its effect.
 
+## Bounded correction after exact-head review
+
+Root substantiated the following REQUIRED_CONTRACT corrections on candidate
+`d30bebb45ac6ed1e97382f74e8da8b7ad43385f2`: the hosted Markdown MD018 failure
+from wrapped issue references; the missing numeric P2 output envelope; and missing
+readable-but-byte-altered C1 regression. The correction prefixes the issue labels,
+states 2 independent outputs × 127.661917 seconds = 255.323834 seconds per candidate
+without authorizing previews/repairs/retries/fan-out, and verifies that readable
+altered C1 bytes stop before preserved checks. No acceptance threshold changed.
+
+The same head's direct-checkout and actual GitHub merge-ref `70c356c8249d7e6470800186dbb334732e5cb5ce`
+quality passes remain historical evidence, not approval of changed bytes. Both
+used tree `9d9b742d7e9c3742dcd502292d0aa0bb18ac8cd1`. Hosted Markdown
+[job105146532659](https://github.com/imrohitagrawal/narratwin-ai/actions/runs/35204395782/job/105146532659)
+and PR-body guardrail
+[job105145782914](https://github.com/imrohitagrawal/narratwin-ai/actions/runs/35204168429/job/105145782914)
+failed; preserve those controller outcomes. PR-body structure is corrected
+separately; its required full-command evidence remains incomplete under this
+bounded local grant. No fabricated command pass, heavy local suite or guardrail
+change is permitted. The corrected head remains draft/blocked until exact-head
+command evidence and independent correction verification exist. Routine new
+command/check/cleanup results belong in the PR comments.
+
 ## Resource and human-only disposition
 
 One active writer; retired PR545 checkout retained until successor independent

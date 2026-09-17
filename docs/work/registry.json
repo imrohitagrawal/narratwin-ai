@@ -392,8 +392,8 @@
       "path": "docs/work/demo-comparison",
       "plan": {
         "path": "docs/work/demo-comparison/EXECUTION_PLAN.md",
-        "sha256": "28e8615305ca5e6302c198e11005d84bb0e436f9d3236e1499b7339d2fdab2a7",
-        "bytes": 24969,
+        "sha256": "5a3590d17cc5e7902065f223ba4c1f8ff2e281127fce59ca676e8f384f272051",
+        "bytes": 25372,
         "role": "execution-plan"
       },
       "statusRef": "docs/STATUS.md",

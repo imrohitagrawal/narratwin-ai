@@ -136,6 +136,12 @@ assessed without claiming resemblance; no right to reuse that example is inferre
 | P3 workflow decision | Separate complete continuous-presenter and editorial scorecards; real product capture where applicable; revision/cost report including failures | Select only within demonstrated format/input limits; zero finalists is valid and triggers next bounded hypothesis, not relaxed thresholds |
 | P4 formal canonical acceptance and actual product delivery | Applicable canonical identities, soundtracks, formats, native dimensions, repetitions, holdout, technical checks and exact-artifact human decisions; real browser-to-backend path | Existing formal contracts and T06/T07/T08 apply; P1–P3 grant none of their acceptance credit |
 
+Prospective P2 output envelope per candidate: **2 independent outputs × 127.661917
+seconds = 255.323834 generated seconds**. This covers one landscape and one
+portrait output only; it excludes previews, repairs, retries and internal fan-out,
+which require separately bounded exposure before admission. This prospective
+envelope grants no current authority; current outputs/generated seconds remain 0.
+
 Evaluate actual full output, not thumbnails or provider claims:
 
 - Natural intelligible speech, unchanged approved spoken words, complete narration,

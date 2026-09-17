@@ -152,6 +152,13 @@ def test_pinned_c1_custody_and_ancestry_required(packet: dict[str, Any], field: 
     assert packet["calls"] == []
 
 
+def test_readable_but_byte_altered_c1_stops_preserved(packet: dict[str, Any]) -> None:
+    packet["first"] += b"\n"
+    assert json.loads(packet["first"]) == json.loads(packet["manifest"])
+    assert runner.run_preserved_contracts() == 1
+    assert packet["calls"] == []
+
+
 def test_parity_failure_prevents_preserved_checks(packet: dict[str, Any]) -> None:
     packet["parity"] = ["frozen checker drifted"]
     assert runner.run_preserved_contracts() == 1
