@@ -1,0 +1,68 @@
+{
+  "schema_version": "GovernancePreflightV1",
+  "issue_number": 519,
+  "branch": "phase-1-closure-process-519-experiment-first-package",
+  "objective": "Refs #519. Exact base 2fc1bbd7904421d4a5a2c85995c28dbd9cdf0fce. Root plan5711497440, binding amendment5711528983 and exact-route amendment5711586679 authorize this nonactivating comparison package and its minimal pinned-manifest quality route. Preserve archived PLAN bytes; register EXECUTION_PLAN as current preparation only. Supersede PR534-first and blanket G1/G2/G3 sequencing only for public research, zero-exposure preparation and eligible UI planning. Preserve #531 accepted-current dependency, #532 provider/account/security stop, canonical inputs, unaccepted A1-A6, actual UI capture, independent continuous/editorial proof, and diagnostic/full-output/formal acceptance distinctions. Three workflow families maximum, zero qualified valid; Pruna-first/Akool-second clarification-only. Preserve exact27.216125-second fixture; separately authorized full-risk proof is full127.661917-second Myra in independently generated landscape and portrait. Exact transcript/captions require existing authorized custody route; REFERENCE_FIDELITY=UNPROVED. C1 is preflight only; draft PR precedes substantive edits. Pin C1 digest, base and branch in runner; enforce13 exact paths/2200 aggregate and per-file caps from pinned bytes, repository preflight, fail-closed numstat and preserved legacy checks. Focused RED/GREEN plus direct-head/merge topology; no generic fallback edits or self-approved acceptance. One isolated checkout; new disk256MiB maximum; no installs/Docker/server/browser. All provider/manual-tool/contact/account/credential/private-source/upload/create/output/generated-second/poll/retry/fallback/USD exposure remains0. No runtime/UI/adapters, media, G1/G2/G3 completion, T06 credit, deployment or release. Root owns resources, cumulative prior failures, review dispositions, host eligibility, merges and cleanup; stop on path/budget/ownership/authority drift.",
+  "status_decision": "update-minimally",
+  "change_budget": {
+    "exact_paths": 13,
+    "maximum_additions_plus_deletions": 2200,
+    "deletions_grant_credit": false,
+    "per_file_charged_lines": {
+      "docs/governance/preflights/issue-519.json": 260,
+      "docs/work/demo-comparison/EXECUTION_PLAN.md": 760,
+      "docs/work/demo-comparison/README.md": 100,
+      "docs/work/demo-comparison/DECISIONS.md": 180,
+      "docs/work/demo-comparison/HANDOFF.md": 180,
+      "docs/work/demo-comparison/evidence/INDEX.json": 100,
+      "docs/work/demo-comparison/evidence/REVIEWS.md": 260,
+      "docs/work/registry.json": 120,
+      "docs/work/INDEX.md": 80,
+      "docs/STATUS.md": 140,
+      "docs/work/governance-backlog/HANDOFF.md": 80,
+      "scripts/quality/phase1_closure/runner.py": 160,
+      "tests/unit/phase1_closure/test_runner.py": 220
+    }
+  },
+  "scope": {
+    "required": [
+      "docs/governance/preflights/issue-519.json",
+      "docs/work/demo-comparison/EXECUTION_PLAN.md",
+      "docs/work/demo-comparison/README.md",
+      "docs/work/demo-comparison/DECISIONS.md",
+      "docs/work/demo-comparison/HANDOFF.md",
+      "docs/work/demo-comparison/evidence/INDEX.json",
+      "docs/work/demo-comparison/evidence/REVIEWS.md",
+      "docs/work/registry.json",
+      "docs/work/INDEX.md",
+      "docs/STATUS.md",
+      "docs/work/governance-backlog/HANDOFF.md",
+      "scripts/quality/phase1_closure/runner.py",
+      "tests/unit/phase1_closure/test_runner.py"
+    ],
+    "allowed_prefixes": [
+      "docs/governance/preflights/issue-519.json",
+      "docs/work/demo-comparison/EXECUTION_PLAN.md",
+      "docs/work/demo-comparison/README.md",
+      "docs/work/demo-comparison/DECISIONS.md",
+      "docs/work/demo-comparison/HANDOFF.md",
+      "docs/work/demo-comparison/evidence/INDEX.json",
+      "docs/work/demo-comparison/evidence/REVIEWS.md",
+      "docs/work/registry.json",
+      "docs/work/INDEX.md",
+      "docs/STATUS.md",
+      "docs/work/governance-backlog/HANDOFF.md",
+      "scripts/quality/phase1_closure/runner.py",
+      "tests/unit/phase1_closure/test_runner.py"
+    ],
+    "forbidden": [
+      "AGENTS.md", "backend/", "frontend/", ".github/", "pyproject.toml", "uv.lock",
+      "docs/work/demo-comparison/PLAN.md", "docs/work/g1-certification/", "docs/work-archive/",
+      "docs/governance/NARRATWIN_MASTER_PROGRAM_V2.md", "docs/governance/superset-mapping-v2.json",
+      "docs/governance/schemas/", "scripts/governance_preflight_v1.py",
+      "scripts/governance_preflight_repository.py", "scripts/guardrails_check.py",
+      "scripts/quality/check_stage8_docs.py", "scripts/quality/check_phase1_closure_docs.py",
+      "docs/QUALITY_GATES.md", "docs/templates/NEW_PROJECT_ENGINEERING_PLAYBOOK.md"
+    ]
+  }
+}
