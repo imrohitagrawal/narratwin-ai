@@ -391,10 +391,10 @@
       "owner": "root orchestrator; existing issue authorities retained",
       "path": "docs/work/demo-comparison",
       "plan": {
-        "path": "docs/work/demo-comparison/PLAN.md",
-        "sha256": "386e5b28504b5684625424875776f71be380508b194a36933488e3ac67e9e03a",
-        "bytes": 46368,
-        "role": "reviewed-proposal"
+        "path": "docs/work/demo-comparison/EXECUTION_PLAN.md",
+        "sha256": "2206bb47b60947a961975958110aac26835e6e070c869ad4dbaa2bb3eeb36eae",
+        "bytes": 44644,
+        "role": "execution-plan"
       },
       "statusRef": "docs/STATUS.md",
       "authorityRefs": [
@@ -411,7 +411,7 @@
       "parent": "master-program",
       "relationships": [
         {
-          "kind": "depends-on",
+          "kind": "uses-evidence-from",
           "target": "g1-certification"
         },
         {
@@ -421,7 +421,7 @@
       ],
       "evidenceIndex": "docs/work/demo-comparison/evidence/INDEX.json",
       "handoff": "docs/work/demo-comparison/HANDOFF.md",
-      "checkpoint": "2026-09-14; PR536 merged67d4b094 with approved29606 tree; PR534 retired unmerged; Issue538/PR539 reconciles sequencing; verify live tracker before action"
+      "checkpoint": "2026-09-18; P1/P1B rejected; PVR-1 moving-driver diagnostic remains continuous hypothesis; zero-exposure HFE-1/P1E planning may proceed in parallel; P1D derived audio and every provider operation remain separately unaccepted; Runway Act-Two conditional; draft PR546 hosted checks pending; no provider or Cut1 acceptance"
     },
     {
       "id": "working-records",
@@ -615,8 +615,8 @@
       "path": "docs/work/governance-backlog",
       "plan": {
         "path": "docs/STATUS.md",
-        "sha256": "26a9dc6ccda4811fbfae653726e5dc3e3e8bdc88ef49462b107c3ecb7d701d63",
-        "bytes": 290401,
+        "sha256": "0d49215aa8a7e393e805c5439a3ab2f3d87fc731c6f1539adfa5f469e23a8354",
+        "bytes": 293798,
         "role": "source-pointer"
       },
       "statusRef": "docs/STATUS.md",
@@ -634,7 +634,7 @@
       "relationships": [],
       "evidenceIndex": "docs/work/governance-backlog/evidence/INDEX.json",
       "handoff": "docs/work/governance-backlog/HANDOFF.md",
-      "checkpoint": "2026-09-14; observed main71e0568, draft536 daf07ce, prospective amendment74b15e00; verify current checkout and tracker before action"
+      "checkpoint": "2026-09-18; STATUS binds rejected P1/P1B and newly recorded consented-driver successor with derived-audio controls under Issue519 draft PR546; verify current checkout and tracker before action"
     },
     {
       "id": "documentation-architecture",

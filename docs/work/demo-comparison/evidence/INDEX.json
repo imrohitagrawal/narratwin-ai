@@ -1,6 +1,31 @@
 {
   "schemaVersion": 1,
-  "artifacts": [],
+  "artifacts": [
+    {
+      "id": "comparison-archived-plan",
+      "owner": "demo-comparison",
+      "role": "historical",
+      "revision": "386e5b28504b5684625424875776f71be380508b194a36933488e3ac67e9e03a",
+      "sha256": "386e5b28504b5684625424875776f71be380508b194a36933488e3ac67e9e03a",
+      "bytes": 46368,
+      "path": "docs/work/demo-comparison/PLAN.md",
+      "custody": "public",
+      "verification": "METADATA_PINNED",
+      "derivedFrom": []
+    },
+    {
+      "id": "comparison-519-reviews",
+      "owner": "demo-comparison",
+      "role": "review",
+      "revision": "d821867f1063ea62bc3d29b27abefb9062b03c2b2240f5afca36ac67bf9bfab8",
+      "sha256": "d821867f1063ea62bc3d29b27abefb9062b03c2b2240f5afca36ac67bf9bfab8",
+      "bytes": 17257,
+      "path": "docs/work/demo-comparison/evidence/REVIEWS.md",
+      "custody": "public",
+      "verification": "METADATA_PINNED",
+      "derivedFrom": ["comparison-archived-plan"]
+    }
+  ],
   "uses": [
     "owner-plan-2026-09-07"
   ]
