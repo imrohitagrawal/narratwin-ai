@@ -389,6 +389,11 @@ ISSUE549_STANDALONE_COMMENT = "5734670605"
 ISSUE549_STANDALONE_SHA256 = "0b7461d1f2c14065c53289e75d2d33da1ee0e8120524ce6b0d5c15e7f798dc4d"
 ISSUE549_DISPOSITION_COMMENT = "5734722695"
 ISSUE549_DISPOSITION_SHA256 = "e517f5a9572731532d0f50eeb9b46f41c0bbc0b64da5d61d14fe8ad1255ffa77"
+ISSUE547_ATOMIC_BRANCH = "ci-547-549-atomic-runtime-security-successor"
+ISSUE547_ATOMIC_F, ISSUE547_ATOMIC_C1 = "2ea926c63df6f3442faf2f4c7447d0707e23e31e", "9bde8dd761cd7b8dcd53a9723769487cb1f59933"
+ISSUE547_ATOMIC_PUSH_LIMIT = 1
+ISSUE547_ATOMIC_AUTHORITY = (("5737207458", "a4f8ca11da2bc89d9761c29f14e078b230ae108d01e8558768cb9d04975f556e"), ("5737217558", "f02f07ea6528c661f7948b2140db38d776ab7bd8a0fa67a1e43a1e160befda6f"), ("5737227530", "3a89ce829048f630d969de102e085f9a3ec8655d66dc1b58c6389562c6de5621"))
+ISSUE547_FROZEN = {"docs/ADR/0086-soupsieve-2-9-security-refresh.md", "docs/ADR/INDEX.md", "docs/governance/preflights/issue-549-soupsieve-security-refresh.json", "tests/unit/test_dependency_security_contract.py", "uv.lock"}
 ISSUE495_TREE = "13f79eb5db44249f635a619e1b283279f25ba9f0"
 ISSUE495_ROUTE_COMMENT = "5498387945"
 ISSUE495_CORRECTION_COMMENT = "5498411811"
@@ -1307,6 +1312,9 @@ ROUTE_ISSUES[ISSUE527_BRANCH] = 527
 TOTAL_LIMITS[ISSUE527_BRANCH] = 420
 ROUTE_ISSUES[ISSUE529_BRANCH] = 529
 ROUTE_ISSUES[ISSUE549_BRANCH] = 549
+ROUTES[ISSUE547_ATOMIC_BRANCH] = ROUTES[ISSUE549_BRANCH] | {"docs/governance/preflights/issue-547.json", "backend/Dockerfile", "scripts/ci/backend-image-package-check.sh", "scripts/quality/stage8_backend_security.py",
+    "tests/unit/test_stage8_backend_security.py", "tests/unit/test_backend_image_package_check.py", "tests/unit/test_cpython_security_backports.py", "docs/ADR/0006-stage8-release-hardening.md"}
+ROUTE_ISSUES[ISSUE547_ATOMIC_BRANCH] = 547
 TOTAL_LIMITS[ISSUE549_BRANCH] = 800
 ROUTE_ISSUES[ISSUE502_BRANCH] = 502
 TOTAL_LIMITS[ISSUE502_BRANCH] = 4660
@@ -3105,6 +3113,45 @@ def issue498_commit_topology_failures(run: Callable[[list[str]], Any]) -> list[s
     return []
 
 
+def issue547_atomic_evidence(root: Path, run: Callable[[list[str]], Any]) -> None:
+    from scripts import work_records
+    def read(*args: str) -> str:
+        result = run(["git", *args])
+        if result.returncode: raise RuntimeError("Atomic #547 Git evidence unavailable.")
+        return str(result.stdout)
+    base, frozen, first = ISSUE549_BASE, ISSUE547_ATOMIC_F, ISSUE547_ATOMIC_C1
+    preflight = "docs/governance/preflights/issue-547.json"
+    if hashlib.sha256((root / preflight).read_bytes()).hexdigest() != "e87526e77db15cfe320ad9de6c8cea6100a0e3a47a8009212f218e9e2b0f304a": raise RuntimeError("Atomic #547 preflight drift.")
+    expected = ((("rev-parse", f"{base}^{{tree}}"), ISSUE549_TREE), (("rev-parse", f"{frozen}^{{tree}}"), "65ec8393dd8255fa968ec815936800f74e04cc52"),
+                (("rev-parse", f"{first}^{{tree}}"), "78329621c6a16a28a832b516e4b417c87a45f2c6"), (("rev-parse", f"{first}^"), frozen),
+                (("diff-tree", "--no-commit-id", "--name-only", "-r", first), preflight), (("merge-base", base, "HEAD"), base),
+                (("merge-base", "--is-ancestor", first, "HEAD"), ""), (("merge-base", "--is-ancestor", frozen, "HEAD"), ""))
+    for args, value in expected:
+        if read(*args).strip() != value: raise RuntimeError("Atomic #547 ancestry/tree/first-diff drift.")
+    if read("rev-list", "--reverse", f"{frozen}..HEAD").splitlines()[0] != first or read("show", f"{first}:{preflight}").encode() != (root / preflight).read_bytes(): raise RuntimeError("Atomic #547 C1 drift.")
+    manifest = read("ls-tree", "-r", frozen, "--", *sorted(ROUTES[ISSUE549_BRANCH]))
+    if hashlib.sha256(manifest.encode()).hexdigest() != "602c341d3f20fa838cb309f1ba518b7fbfb7f3abac9f5ff382c2c1d3657eb891": raise RuntimeError("Atomic #549 twelve-blob manifest drift.")
+    rows = [row.split("\t") for row in read("diff", "--numstat", "--no-renames", base, frozen, "--").splitlines()]
+    if len(rows) != 12 or any(len(r) != 3 or not r[0].isdigit() or not r[1].isdigit() for r in rows) or {r[2] for r in rows} != ROUTES[ISSUE549_BRANCH] or sum(int(a) + int(d) for a, d, _ in rows) != 471: raise RuntimeError("Atomic immutable 12-path/471 layer drift.")
+    for path in ISSUE547_FROZEN:
+        if (root / path).read_bytes() != read("show", f"{frozen}:{path}").encode(): raise RuntimeError("Atomic frozen-only blob drift.")
+    status = (root / "docs/STATUS.md").read_bytes()
+    registry_path, handoff_path = "docs/work/registry.json", "docs/work/governance-backlog/HANDOFF.md"
+    registry = read("show", f"{frozen}:{registry_path}")
+    old = next(w["plan"] for w in json.loads(registry)["works"] if w["id"] == "governance-backlog")
+    digest = hashlib.sha256(status).hexdigest()
+    expected_registry = registry.replace(old["sha256"], digest, 1).replace(f'"bytes": {old["bytes"]}', f'"bytes": {len(status)}', 1)
+    if (root / registry_path).read_bytes() != expected_registry.encode() or (root / handoff_path).read_bytes() != read("show", f"{frozen}:{handoff_path}").replace(f'PLAN_SHA256: {old["sha256"]}', f"PLAN_SHA256: {digest}", 1).encode(): raise RuntimeError("Atomic STATUS pointer-only delta drift.")
+    work_records.validate(root)
+    _, combined = route_change_budget(root, ISSUE547_ATOMIC_BRANCH, 547, ROUTES[ISSUE547_ATOMIC_BRANCH])
+    layer = {p: n - TEXT_LIMITS[ISSUE549_BRANCH].get(p, 0) for p, n in combined.items() if p not in ISSUE547_FROZEN}
+    layer.update({registry_path: 4, handoff_path: 2})
+    total, charges = route_text_charges(run, frozen, set(layer))
+    if len(layer) != 15 or set(charges) != set(layer) or total > 900 or any(charges[p] > n for p, n in layer.items()): raise RuntimeError("Atomic mutable 15-path/900 layer drift.")
+    if any(route_has_copy_or_rename(read("diff", *flags, "--name-status", "-z", "--find-copies-harder", frozen, *end, "--")) for flags, end in (([], ["HEAD"]), (["--cached"], []), ([], []))): raise RuntimeError("Atomic deleted/renamed/copied path.")
+    if any((root / p).is_symlink() or not (root / p).is_file() for p in ROUTES[ISSUE547_ATOMIC_BRANCH]): raise RuntimeError("Atomic nonregular path.")
+
+
 def check_exact_route(
     root: Path, run: Callable[[list[str]], Any], branch: str, changed: set[str], failures: list[str]
 ) -> None:
@@ -3931,6 +3978,7 @@ def check_exact_route(
         except (OSError, ValueError, TypeError) as error:
             failures.append(f"Issue #459 governance preflight failed closed: {error}")
     try:
+        if branch == ISSUE547_ATOMIC_BRANCH: issue547_atomic_evidence(root, run)
         base = fixed_base if fixed_base is not None else route_base(run, branch)
         if branch in {ISSUE524_BRANCH, ISSUE525_BRANCH, ISSUE495_BRANCH, ISSUE479_BRANCH, ISSUE482_BRANCH, ISSUE478_BRANCH, ISSUE475_BRANCH, ISSUE459_BRANCH, ISSUE459_T03_BRANCH, ISSUE459_T05A_BRANCH,
                       ISSUE459_T05B_BRANCH, ISSUE466_BRANCH, ISSUE494_BRANCH}:
@@ -3998,7 +4046,7 @@ def check_exact_route(
                 f"Issue #383 binary {path} exceeds 500000 bytes."
                 for path, size in sizes.items() if size > 500000
             )
-    except RuntimeError as error:
+    except (RuntimeError, OSError, ValueError, TypeError, IndexError) as error:
         failures.append(f"Issue #{issue} route evidence failed closed: {error}")
     if branch == ISSUE549_BRANCH and not failures:
         failures.append(

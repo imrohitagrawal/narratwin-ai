@@ -542,6 +542,20 @@ The package is not an application/runtime dependency and supplies no provider,
 model, media, credential, egress, spend, deployment, release, or production
 capability. Final dependency/license review remains required before release.
 
+## Issue #547 exact Alpine package provenance — 2026-09-19
+
+The earlier Issue436 row is historical. Current reviewed pins are below; package licenses and release-review limits remain unchanged. An independent read-only refresh of all ten official architecture/package pages found no revision drift on 2026-09-19. No package/archive was downloaded or built locally.
+
+| Exact revision | Official x86_64 / aarch64 records | Packaging commit reported by both architectures |
+|---|---|---|
+| `openssl-dev=3.3.7-r1` | [x86_64](https://pkgs.alpinelinux.org/package/v3.21/main/x86_64/openssl-dev), [aarch64](https://pkgs.alpinelinux.org/package/v3.21/main/aarch64/openssl-dev) | `9b59567ddd9ca9722deeedb5145506726b5c9389` |
+| `libcrypto3=3.3.7-r1` | [x86_64](https://pkgs.alpinelinux.org/package/v3.21/main/x86_64/libcrypto3), [aarch64](https://pkgs.alpinelinux.org/package/v3.21/main/aarch64/libcrypto3) | `9b59567ddd9ca9722deeedb5145506726b5c9389` |
+| `libssl3=3.3.7-r1` | [x86_64](https://pkgs.alpinelinux.org/package/v3.21/main/x86_64/libssl3), [aarch64](https://pkgs.alpinelinux.org/package/v3.21/main/aarch64/libssl3) | `9b59567ddd9ca9722deeedb5145506726b5c9389` |
+| `alpine-release=3.21.8-r0` | [x86_64](https://pkgs.alpinelinux.org/package/v3.21/main/x86_64/alpine-release), [aarch64](https://pkgs.alpinelinux.org/package/v3.21/main/aarch64/alpine-release) | `c9e7411a5b43b71e267421008585d98f939b5bd9` |
+| `alpine-keys=2.5-r0` | [x86_64](https://pkgs.alpinelinux.org/package/v3.21/main/x86_64/alpine-keys), [aarch64](https://pkgs.alpinelinux.org/package/v3.21/main/aarch64/alpine-keys) | `6d473fb38effb2389f567b29fb7eb27039b3a279` |
+
+Direct GitLab OpenSSL/release commit pages returned403; their diff contents remain unverified. Commit identities above derive from official package metadata, not inspected GitLab diffs. These mutable records prove current published package revisions, not reproducible builds, scanner success or absence of vulnerabilities. Exact hosted build/inventory/TLS/CA/non-root/Trivy/Grype/SBOM proof remains required on both architectures; recheck if a revision changes before execution. No scanner exclusion, new dependency family or provider permission is introduced.
+
 ## Documentation architecture reference sources — Issue #537
 
 Consulted on 2026-09-14: [GitHub issue-form syntax](https://docs.github.com/en/communities/using-templates-to-encourage-useful-issues-and-pull-requests/syntax-for-issue-forms), [GitHub PR templates](https://docs.github.com/en/communities/using-templates-to-encourage-useful-issues-and-pull-requests/creating-a-pull-request-template-for-your-repository), [Google change descriptions](https://google.github.io/eng-practices/review/developer/cl-descriptions.html), and [Diataxis](https://diataxis.fr/). These informed native locations, explanatory change descriptions and task-oriented navigation. New prose/checker/forms are repository-authored; no external code, template text, dependency, skill or media asset was imported. No blanket enterprise-practice certification is implied.

@@ -1,5 +1,25 @@
 # Program Status
 
+## Atomic #547/#549 runtime-security successor — 2026-09-19
+
+The dedicated `ci-547-549-atomic-runtime-security-successor` branch preserves frozen549
+`2ea926c63df6f3442faf2f4c7447d0707e23e31e` and immutable C1 `9bde8dd761cd7b8dcd53a9723769487cb1f59933`.
+Branch changes combine retained Soup Sieve2.9 with exact OpenSSL3.3.7-r1,
+alpine-release3.21.8-r0 and unchanged alpine-keys2.5-r0 consumers. They are not merged,
+hosted-verified or accepted. [ADR0006](ADR/0006-stage8-release-hardening.md#issue-547549-atomic-package-revision-maintenance--2026-09-19)
+and [traceability](TRACEABILITY.md#issue-547549-atomic-runtime-security-traceability) own the bounded contract.
+The paired pointer amendment `5737207458`/`5737217558`/`5737227530` corrects only the
+required STATUS binding conflict: F→candidate15 paths/900 lines, main union20/1371,
+registry STATUS hash/bytes4 charged lines and handoff hash2; other bytes stay frozen.
+Committed RED `e86c1fd7e049dcf4f014dafcc796d3a3f9e2b659` recorded8 expected failures/22 passes,
+with actual Stage8 and work-record consumers. Subsequent exact-head validation and
+independent review must be recorded against the containing candidate, not inferred.
+The sole remaining push is unspent and owned by main; direct-head hosted success
+precedes draft PR creation, then actual merge-ref checks and enforced approvals.
+No local Docker/bootstrap, provider/private/media activity, deployment or Cut1 credit.
+Retain the active checkout/evidence until main's consumer-aware closeout; floor14GiB,
+no new environment/dependency/cache. Prior failed runs and exhausted grants remain history.
+
 PR #536 delivered Issue #535/#537 [documentation navigation](README.md), and PR #539 merged the Issue #538 sequencing reconciliation at57c7dcb. That documentation work is complete. [Issue #540 / PR #541](https://github.com/imrohitagrawal/narratwin-ai/pull/541) is the bounded four-bibliography G1 correction under #521/#533, with [reviewed plan](work/g1-certification/PLAN.md), [review evidence](work/g1-certification/evidence/REVIEWS.md) and [current handoff](work/g1-certification/HANDOFF.md). It produces a separate structurally checked successor; G1 certification, accepted-current transition and Cut1 acceptance remain incomplete. Root's delegated technical approval is not a human attestation or GitHub APPROVED review. PR #534 remains retired unmerged and its unsigned signing packet must never be resumed.
 
 Issue #549 preserves an exact Soup Sieve 2.9 lock candidate as

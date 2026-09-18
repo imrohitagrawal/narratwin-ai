@@ -420,3 +420,29 @@ release, public-availability, or production-readiness authority.
 ```
 
 <!-- ISSUE158-SECURITY-HISTORY-V2:END -->
+
+## Issue #547/#549 atomic package-revision maintenance — 2026-09-19
+
+Accepted implementation scope: [#547 successor](https://github.com/imrohitagrawal/narratwin-ai/issues/547#issuecomment-5730236384), paired atomic comments `5735011321`/`5735021726`/`5735025880`, and pointer-only correction `5737207458`/`5737217558`/`5737227530`. Immutable C1 remains `9bde8dd761cd7b8dcd53a9723769487cb1f59933`, parent frozen549 `2ea926c63df6f3442faf2f4c7447d0707e23e31e`; main remains `2fc1bbd7904421d4a5a2c85995c28dbd9cdf0fce`.
+
+Decision: maintain exact rolling-repository revisions through the real build,
+runtime inventory and consumed Stage8 validator: OpenSSL `3.3.7-r1` for
+`openssl-dev`, `libcrypto3` and `libssl3`; `alpine-release=3.21.8-r0`;
+`alpine-keys=2.5-r0` unchanged. Typed current expectations live in
+`stage8_backend_security.py`; Issue436 r0/3.21.7 constants and receipts remain history.
+Official multi-architecture facts and packaging identities are in
+[third-party notices](../THIRD_PARTY_NOTICES.md#issue-547-exact-alpine-package-provenance--2026-09-19).
+
+The former pins became unavailable in the rolling Alpine repository. Floating
+versions, base-image replacement and weakening scanners would hide that failure,
+so they are rejected. Any further revision drift needs another reviewed decision.
+Base digest/Alpine branch, CPython version/hash/signature, architectures, TLS/CA,
+non-root identity, APK metadata, scanner/SBOM controls and thresholds are unchanged.
+
+Atomic proof separately enforces main→F12/471, F→candidate15/900 and main→candidate20/1371, without deletion credit. Five frozen-only blobs remain exact; registry may change only governance-backlog STATUS hash/bytes and its handoff only `PLAN_SHA256`. All other bytes remain exact. The consumed work-record validator proves these bindings; historical549 still fails standalone acceptance.
+
+Only the complete independently reviewed carrier may use the sole remaining
+push, owned by main. Direct-head hosted AMD64/native-ARM64 build/security evidence
+must pass before its draft PR; merge-ref checks, approvals and conversations remain
+separate. No local Docker/bootstrap or product, provider, deployment, release or
+Cut1 acceptance is established by this maintenance.
