@@ -1,6 +1,6 @@
 # Governance and evaluation backlog: handoff
 
-PLAN_SHA256: 26a9dc6ccda4811fbfae653726e5dc3e3e8bdc88ef49462b107c3ecb7d701d63
+PLAN_SHA256: 3c6729620609a08ee4c2b4ee35c1d593531d5a07df8458485f552f72244d2e12
 EVIDENCE_SHA256: 550beb600595ce8cf46e1b89652936f2e02d678564f9e57001548d90784db6ec
 
 
@@ -20,6 +20,8 @@ Issue #549 checkpoint (2026-09-18): exact Soup Sieve 2.9 lock bytes are retained
 as `FROZEN_COMPONENT_DRAFT` under recovery comment `5732696613`. Resolver command
 SUCCESS does not erase controller FAIL/76 or the 114404 KiB versus 65536 KiB
 resource failure; attempt count is one and cleanup was verified. Standalone
-merge is prohibited. Offline lock validation awaits at least 4194304 KiB free;
-then a prospectively authorized atomic #549/#547 successor, fresh exact-head
-review, hosted checks, and its sole final push are required.
+merge is prohibited. The offline no-cache lock check passed without mutation.
+The later complete-quality attempt is not accepted: it created a 374020 KiB
+`.venv` and 379368 KiB `.uv-cache`, installed 149 packages, and did not prove
+whole-suite completion. Exact cleanup, a prospectively authorized atomic
+#549/#547 successor, fresh review, hosted checks, and the sole final push remain.

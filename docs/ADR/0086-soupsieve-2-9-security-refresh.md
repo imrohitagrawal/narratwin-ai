@@ -39,8 +39,11 @@ push. Audit suppression, retry, repair, manual reconstruction, alternate
 registry, or broader refresh is prohibited.
 
 The amendment permits one non-mutating offline `uv lock --check` only when at
-least 4194304 KiB is free. It was not run while capacity was below that floor;
-this is pending validation, not a pass or a new failure.
+least 4194304 KiB is free. That check later passed without changing the lock or
+manifest and left no scratch. A subsequent complete-quality attempt is not
+acceptance evidence: it created a 374020 KiB project environment and 379368 KiB
+uv cache, installed 149 packages, and did not establish whole-suite completion.
+Those exact task-owned resources await separately authorized cleanup.
 
 ## Consequences
 

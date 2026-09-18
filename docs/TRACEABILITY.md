@@ -911,4 +911,4 @@ remain separate gates.
 |---|---|---|
 | Remove two strict-audit findings without suppression | Exact official-PyPI Soup Sieve 2.9 sdist/wheel identities and semantic lock mutation tests | Beautiful Soup 4.15.0, raw manifest, every unrelated lock record, and parser behavior remain unchanged |
 | Preserve failed-attempt truth | Recovery comment `5732696613`; command SUCCESS; controller FAIL/76; 114404 KiB cache peak against 65536 KiB; cleanup verified; attempt count one | No retry, repair, reconstruction, cap reset, alternate registry, or whole-operation pass |
-| Prevent standalone acceptance | ADR 0086, exact route and `FROZEN_COMPONENT_DRAFT` state | Offline check awaits 4 GiB free; fresh atomic #549/#547 successor, exact-head review, hosted checks, and final push remain required |
+| Prevent standalone acceptance | ADR 0086, exact route and `FROZEN_COMPONENT_DRAFT` state; offline no-cache lock check passed without mutation | Complete-quality attempt created out-of-envelope environment/cache resources and did not prove the whole suite; exact cleanup, fresh atomic #549/#547 successor, exact-head review, hosted checks, and final push remain required |

@@ -7,8 +7,12 @@ Issue #549 preserves an exact Soup Sieve 2.9 lock candidate as
 controller failed (exit 76) because task-cache peak 114404 KiB exceeded the
 65536 KiB ceiling; the attempt remains spent and cleanup was verified. Recovery
 comment `5732696613` binds the retained lock bytes without authorizing a retry.
-Standalone merge is prohibited: offline lock validation is pending the 4 GiB
-free-space floor, and a fresh atomic #549/#547 successor remains required.
+The offline, no-cache lock check subsequently passed without changing the lock
+or manifest. Standalone merge is still prohibited. The first complete-quality
+attempt is not accepted: its controller created a 374020 KiB `.venv` and a
+379368 KiB `.uv-cache`, installed 149 packages, and observable output ended
+after backend lint without proving the whole suite. Exact cleanup and a fresh
+atomic #549/#547 successor remain required.
 
 ## Find current work
 
