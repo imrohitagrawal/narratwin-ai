@@ -21,3 +21,15 @@ Owner: root orchestrator for navigation; existing issue/acceptance owners retain
 ## Experiments
 
 PLAN.md preserves the complete reviewed proposal byte-for-byte. Use the comparison section of the [template](../templates/WORK.md) for new experiments: hypothesis, alternatives, protocol, exact inputs/settings, authorized operations, full outputs, acceptance levels, total costs including rejected attempts, and revision effort. No sample establishes reliability or production economics; registration grants no operations authority.
+
+## Current product qualification preparation
+
+[Issue551](https://github.com/imrohitagrawal/narratwin-ai/issues/551) owns the
+[provider/input/environment worksheet](PROVIDER_INPUT_ENVIRONMENT_QUALIFICATION.md).
+It maps six input groups and eight reference roles to PVR-1, conditional Act-Two,
+four distinct Higgsfield constituents and the separate VOSU reference surface.
+It preserves rejected routes and the unchanged, locally verified but remotely
+unpublished Issue550 P1E source. It grants no operations, reference derivatives
+or acceptance. Follow its source/custody map and [current handoff](HANDOFF.md),
+not the historical registry checkpoint, for the next permitted preparation.
+CI governs publication/merge, not independent public qualification planning.

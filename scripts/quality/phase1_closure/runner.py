@@ -9,6 +9,7 @@ from pathlib import Path
 
 from scripts.governance_preflight_repository import validate_governance_preflight_repository
 from scripts.quality import issue521_successor as successor
+from scripts.quality import issue551_provider_input_qualification_route as qualification
 from scripts.quality.branch_identity import current_branch
 from scripts.quality.cut1_presenter_contract import validate_contract_bundle
 from scripts.quality.publication_boundary.cli import main as check_publication_boundary
@@ -146,6 +147,8 @@ def check_cut1_presenter_contract() -> int:
 
 def run_preserved_contracts() -> int:
     branch = current_branch(ROOT)
+    if branch == qualification.BRANCH:
+        return qualification.run(ROOT)
     if branch == successor.registered_inputs(ROOT)[0]["branch"]:
         return run_successor()
     if branch == "phase-1-closure-process-535-work-archive":

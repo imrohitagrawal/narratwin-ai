@@ -27,3 +27,30 @@ Next action: the comparison owner must identify the earlier reference clip throu
 The [delegated sequencing decision](https://github.com/imrohitagrawal/narratwin-ai/issues/535#issuecomment-5666016246), recorded by root under explicit user delegation, retires unused PR534 and permits documentation PR536 to merge independently. [Issue #538 / PR #539](https://github.com/imrohitagrawal/narratwin-ai/pull/539) reconciles active handoffs. This supersedes only the original requirement to hold documentation delivery behind534; the preserved comparison PLAN and historical sources remain exact. The future comparison-policy amendment must use a fresh applicable certification route and distinct accepted-current transition. Original534 signing examples are unusable.
 
 Root's next work is the separately bounded G1 correction and comparison-policy preparation, using the [public correction analysis](https://github.com/imrohitagrawal/narratwin-ai/issues/521#issuecomment-5666139978). Natural presenter motion and lively coherent surroundings remain the intended demo outcome. No reference clip has been inspected, no new output accepted, and no generation/spend authority follows.
+
+## 18 September 2026 — qualified inputs before another presenter operation
+
+Sources: [Issue550 correction5735557091](https://github.com/imrohitagrawal/narratwin-ai/issues/550#issuecomment-5735557091),
+[Issue551](https://github.com/imrohitagrawal/narratwin-ai/issues/551), and the exact
+accepted-contract/frozen-source map in the
+[qualification worksheet](PROVIDER_INPUT_ENVIRONMENT_QUALIFICATION.md).
+Root adopts this bounded technical preparation under delegated authority.
+
+The correction supersedes only merge-first preparation wording in the retained
+Issue550 handoff. Public source qualification, input/rights briefing and local
+shot planning may proceed alongside CI. Applicable rights/privacy/account,
+incident, input custody and finite-exposure requirements still govern operations;
+repository freeze/merge still requires exact hosted evidence and enforced review.
+
+Preserve PVR-1's real moving-driver dependency, conditional Act-Two, the four
+unqualified HFE constituents and VOSU as a separate observable target. The office
+still is style-only; HFE may prepare a coherent generated-world option or a
+rights-cleared real environment, without creating either. Earlier unknown-reference
+wording is historical: observable target evidence does not prove recipe or reuse rights.
+HeyGen v8/v9 and Pruna P1/P1B remain rejected; no unchanged repeat or fallback.
+
+The new main-based record references rather than copies frozen550, which remains
+`LOCAL_VERIFIED_REMOTE_UNPUBLISHED`; no source review transfers. It is not a
+semantic activation framework. Next decision: the exact moving-driver acquisition
+and rights route, not a render. All new operation authority remains zero; T05
+acceptance persists and T06/T07/T08 remain incomplete.

@@ -1,8 +1,10 @@
 # Governance and evaluation backlog: handoff
 
-PLAN_SHA256: 26a9dc6ccda4811fbfae653726e5dc3e3e8bdc88ef49462b107c3ecb7d701d63
+PLAN_SHA256: 2aa74b4d7d593701cd9ee09c5b05305ef1ce04dd9718fe37364b07b4833476a6
 EVIDENCE_SHA256: 550beb600595ce8cf46e1b89652936f2e02d678564f9e57001548d90784db6ec
 
+Issue551 refreshes only this STATUS source binding on 18 September 2026 UTC.
+The checkpoint below is retained history; use current STATUS and live authority.
 
 Observed source checkpoint: 2026-09-14; observed main71e0568, draft536 daf07ce, prospective amendment74b15e00; verify current checkout and tracker before action.
 
