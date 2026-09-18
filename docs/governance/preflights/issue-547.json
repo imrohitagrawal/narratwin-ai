@@ -1,0 +1,77 @@
+{
+  "schema_version": "GovernancePreflightV1",
+  "issue_number": 547,
+  "branch": "ci-547-alpine-openssl-r1-drift-correction",
+  "objective": "From exact accepted main 2fc1bbd7904421d4a5a2c85995c28dbd9cdf0fce and Issue #547 OWNER amendment 5729972600, restore deterministic Alpine 3.21 OpenSSL package resolution by coherently changing only openssl-dev, libcrypto3, and libssl3 from 3.3.7-r0 to exact 3.3.7-r1 across build, runtime, inventory, Stage 8 contracts, tests, and required notices/status/traceability. Preserve Issue #436 historical constants and receipts and every package-inventory, TLS, provenance, SBOM, scanner, architecture, and non-root gate. Bind official records accessed 2026-09-18: https://pkgs.alpinelinux.org/package/v3.21/main/x86_64/openssl-dev, https://pkgs.alpinelinux.org/package/v3.21/main/x86_64/libcrypto3, https://pkgs.alpinelinux.org/package/v3.21/main/x86_64/libssl3, https://pkgs.alpinelinux.org/package/v3.21/main/aarch64/openssl-dev, https://pkgs.alpinelinux.org/package/v3.21/main/aarch64/libcrypto3, https://pkgs.alpinelinux.org/package/v3.21/main/aarch64/libssl3, and Alpine packaging commit https://gitlab.alpinelinux.org/alpine/aports/-/commit/9b59567ddd9ca9722deeedb5145506726b5c9389. Require RED evidence that current r0 and every single-package mismatch fail, then focused GREEN proof. Stop if Alpine advances beyond r1 or scope, security, provenance, architecture, base-image, CPython, threshold, resource, or authority boundaries drift. No floating pins, dependency bootstrap, local container work, heavy suite, provider/private-source action, deployment, release, production, or Cut 1 completion claim.",
+  "status_decision": "update-minimally",
+  "change_budget": {
+    "exact_paths": 12,
+    "maximum_additions_plus_deletions": 740,
+    "deletions_grant_credit": false,
+    "per_file_charged_lines": {
+      "docs/governance/preflights/issue-547.json": 140,
+      "backend/Dockerfile": 20,
+      "scripts/ci/backend-image-package-check.sh": 20,
+      "scripts/quality/stage8_backend_security.py": 80,
+      "scripts/quality/stage8_cut1_routes.py": 40,
+      "tests/unit/test_stage8_backend_security.py": 120,
+      "tests/unit/test_backend_image_package_check.py": 80,
+      "tests/unit/test_cpython_security_backports.py": 100,
+      "tests/unit/test_stage8_cut1_routes.py": 60,
+      "docs/THIRD_PARTY_NOTICES.md": 20,
+      "docs/STATUS.md": 30,
+      "docs/TRACEABILITY.md": 30
+    }
+  },
+  "scope": {
+    "required": [
+      "docs/governance/preflights/issue-547.json",
+      "backend/Dockerfile",
+      "scripts/ci/backend-image-package-check.sh",
+      "scripts/quality/stage8_backend_security.py",
+      "scripts/quality/stage8_cut1_routes.py",
+      "tests/unit/test_stage8_backend_security.py",
+      "tests/unit/test_backend_image_package_check.py",
+      "tests/unit/test_cpython_security_backports.py",
+      "tests/unit/test_stage8_cut1_routes.py",
+      "docs/THIRD_PARTY_NOTICES.md",
+      "docs/STATUS.md",
+      "docs/TRACEABILITY.md"
+    ],
+    "allowed_prefixes": [
+      "docs/governance/preflights/issue-547.json",
+      "backend/Dockerfile",
+      "scripts/ci/backend-image-package-check.sh",
+      "scripts/quality/stage8_backend_security.py",
+      "scripts/quality/stage8_cut1_routes.py",
+      "tests/unit/test_stage8_backend_security.py",
+      "tests/unit/test_backend_image_package_check.py",
+      "tests/unit/test_cpython_security_backports.py",
+      "tests/unit/test_stage8_cut1_routes.py",
+      "docs/THIRD_PARTY_NOTICES.md",
+      "docs/STATUS.md",
+      "docs/TRACEABILITY.md"
+    ],
+    "forbidden": [
+      ".github/",
+      ".stage/",
+      "AGENTS.md",
+      "Makefile",
+      "backend/app/",
+      "docs/ADR/",
+      "docs/QUALITY_GATES.md",
+      "docs/REPOSITORY_GUARDRAILS.md",
+      "docs/STAGE_ISSUE_PLAN.md",
+      "frontend/",
+      "infra/",
+      "perf/",
+      "pyproject.toml",
+      "scripts/guardrails_check.py",
+      "security/",
+      "tests/acceptance/",
+      "tests/api/",
+      "tools/",
+      "uv.lock"
+    ]
+  }
+}
