@@ -1268,6 +1268,19 @@ def test_issue549_route_freezes_component_and_atomic_successor_prerequisite() ->
     assert routes.ISSUE549_PREFLIGHT_SHA256 == (
         "34a25839158b56d68f1eeda84b724bfe58f24ed43b06c30f99fcbb4bf910ca13"
     )
+    assert (routes.ISSUE549_RECOVERY_COMMENT, routes.ISSUE549_RECOVERY_SHA256) == (
+        "5732696613",
+        "644de05a6ef35b7e7fb225ae087e5018697f2187d1b4196827e8cc6a73f8d2bc",
+    )
+    assert hashlib.sha256((REPO / "uv.lock").read_bytes()).hexdigest() == (
+        routes.ISSUE549_LOCK_SHA256
+    )
+    assert hashlib.sha256((REPO / "pyproject.toml").read_bytes()).hexdigest() == (
+        routes.ISSUE549_PROJECT_SHA256
+    )
+    assert routes.ISSUE549_ATTEMPT_OUTCOMES == (
+        "one", "command SUCCESS", "controller FAIL", "resource FAIL",
+    )
     assert routes.ISSUE549_COMPONENT_STATE == "FROZEN_COMPONENT_DRAFT"
     assert routes.ISSUE549_STANDALONE_MERGE_ELIGIBLE is False
     assert routes.ISSUE549_ATOMIC_SUCCESSOR_REQUIRED is True

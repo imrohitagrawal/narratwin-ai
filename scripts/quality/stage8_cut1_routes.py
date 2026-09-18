@@ -38,6 +38,7 @@ ISSUE524_BRANCH = "stage8-524-frontend-dependency-security-refresh"
 ISSUE525_BRANCH = "stage8-525-schema-oracle-runtime-policy"
 ISSUE527_BRANCH = "stage8-527-backend-ci-timeout"
 ISSUE529_BRANCH = "stage8-529-native-arm64-security"
+ISSUE549_BRANCH = "stage8-549-soupsieve-security-refresh"
 ISSUE502_BRANCH = "stage8-502-frontend-musl-runtime-security"
 ISSUE507_BRANCH = "stage8-507-google-api-core-grpc-status"
 ISSUE509_BRANCH = "stage8-509-configurable-audio-duration"
@@ -368,6 +369,22 @@ ISSUE529_DOCS_AMENDMENT_SHA256 = "c74cdb7e62e702a3ffa8406976bb1e53a9b98c3dfe128f
 ISSUE529_HOSTED_CORRECTION_COMMENT = "5613239963"
 ISSUE529_HOSTED_CORRECTION_SHA256 = "a444fdf9f283cc631e1e0729bef9b10d227f3778fffc270ed3c76473cb4ca82f"
 ISSUE529_BUDGET_RED = "89f87b3d239b21f0a8064994e328b07760af2cb8"
+ISSUE549_BASE = "2fc1bbd7904421d4a5a2c85995c28dbd9cdf0fce"
+ISSUE549_TREE = "3ebbaaac4b66900de5129f60f56e6cd2d6978766"
+ISSUE549_BODY_SHA256 = "7e12d0872833abb5de71aa584d0eca645597357d2b197dcabf11ed657b63c5e0"
+ISSUE549_AMENDMENT_COMMENT = "5731668055"
+ISSUE549_AMENDMENT_SHA256 = "14ad930762f6b86a786b45d62aa44604587bd12b604ed65a680333c32864022d"
+ISSUE549_C1_COMMIT = "0d019810ec1d96410f390c9e8672655be9d07095"
+ISSUE549_C1_TREE = "68eb50b1bb6c82f84317ddf293df371e336209f3"
+ISSUE549_PREFLIGHT_SHA256 = "34a25839158b56d68f1eeda84b724bfe58f24ed43b06c30f99fcbb4bf910ca13"
+ISSUE549_RECOVERY_COMMENT = "5732696613"
+ISSUE549_RECOVERY_SHA256 = "644de05a6ef35b7e7fb225ae087e5018697f2187d1b4196827e8cc6a73f8d2bc"
+ISSUE549_LOCK_SHA256 = "c0ed386893396e65e5c58d4a0b87209120669b049d250566b8cfcaab24670b0a"
+ISSUE549_PROJECT_SHA256 = "9838c28dc62c7486f21ea1a5f7f645680e75e983e926263931b19dec04f0ef11"
+ISSUE549_ATTEMPT_OUTCOMES = ("one", "command SUCCESS", "controller FAIL", "resource FAIL")
+ISSUE549_COMPONENT_STATE = "FROZEN_COMPONENT_DRAFT"
+ISSUE549_STANDALONE_MERGE_ELIGIBLE = False
+ISSUE549_ATOMIC_SUCCESSOR_REQUIRED = True
 ISSUE495_TREE = "13f79eb5db44249f635a619e1b283279f25ba9f0"
 ISSUE495_ROUTE_COMMENT = "5498387945"
 ISSUE495_CORRECTION_COMMENT = "5498411811"
@@ -1236,6 +1253,14 @@ ROUTES = {
         "docs/THIRD_PARTY_NOTICES.md",
     },
 }
+ROUTES[ISSUE549_BRANCH] = {
+    "docs/governance/preflights/issue-549-soupsieve-security-refresh.json",
+    "uv.lock", "tests/unit/test_dependency_security_contract.py",
+    "scripts/quality/stage8_cut1_routes.py", "tests/unit/test_stage8_cut1_routes.py",
+    "docs/ADR/0086-soupsieve-2-9-security-refresh.md", "docs/ADR/INDEX.md",
+    "docs/STATUS.md", "docs/THIRD_PARTY_NOTICES.md", "docs/TRACEABILITY.md",
+    "docs/work/registry.json", "docs/work/governance-backlog/HANDOFF.md",
+}
 ROUTE_ISSUES = {ISSUE452_BRANCH: 452, ISSUE451_BRANCH: 451, ISSUE150_BRANCH: 150, ISSUE424_BRANCH: 424, ISSUE421_BRANCH: 421, ISSUE415_BRANCH: 415, ISSUE415_CORRECTION_BRANCH: 415, ISSUE413_BRANCH: 413, ISSUE368_ADAPTER_BRANCH: 368, ISSUE368_IMPLEMENTATION_BRANCH: 368, ISSUE368_QUOTA_FIX_BRANCH: 368, ISSUE368_PROMPT_BRANCH: 368, ISSUE368_BRANCH: 368, ISSUE405_BRANCH: 405, ISSUE428_BRANCH: 428, ISSUE403_BRANCH: 403, ISSUE401_BRANCH: 401, ISSUE396_BRANCH: 396,
                 ISSUE386_BRANCH: 386, ISSUE385_BRANCH: 385,
                 ISSUE384_BRANCH: 384, ISSUE383_BRANCH: 383, ISSUE397_BRANCH: 397,
@@ -1277,6 +1302,8 @@ TOTAL_LIMITS[ISSUE525_BRANCH] = 2100
 ROUTE_ISSUES[ISSUE527_BRANCH] = 527
 TOTAL_LIMITS[ISSUE527_BRANCH] = 420
 ROUTE_ISSUES[ISSUE529_BRANCH] = 529
+ROUTE_ISSUES[ISSUE549_BRANCH] = 549
+TOTAL_LIMITS[ISSUE549_BRANCH] = 800
 ROUTE_ISSUES[ISSUE502_BRANCH] = 502
 TOTAL_LIMITS[ISSUE502_BRANCH] = 4660
 ROUTE_ISSUES[ISSUE507_BRANCH] = 507
@@ -2103,6 +2130,17 @@ ISSUE424_ROUTE_GUARD = (
     "implementation route may activate."
 )
 
+TEXT_LIMITS[ISSUE549_BRANCH] = {
+    "docs/governance/preflights/issue-549-soupsieve-security-refresh.json": 180,
+    "uv.lock": 30, "tests/unit/test_dependency_security_contract.py": 180,
+    "scripts/quality/stage8_cut1_routes.py": 120,
+    "tests/unit/test_stage8_cut1_routes.py": 160,
+    "docs/ADR/0086-soupsieve-2-9-security-refresh.md": 100,
+    "docs/ADR/INDEX.md": 20, "docs/STATUS.md": 60,
+    "docs/THIRD_PARTY_NOTICES.md": 60, "docs/TRACEABILITY.md": 40,
+    "docs/work/registry.json": 40, "docs/work/governance-backlog/HANDOFF.md": 30,
+}
+
 
 class DuplicateJsonMember(ValueError):
     """Reject authority bytes whose meaning depends on parser key precedence."""
@@ -2747,6 +2785,19 @@ def route_base(run: Callable[[list[str]], Any], branch: str) -> str:
                 "Issue #523 atomic merge evidence is unavailable or inconsistent."
             )
         return ISSUE523_BASE
+    if branch == ISSUE549_BRANCH:
+        fixed = run(["git", "rev-parse", f"{ISSUE549_BASE}^{{commit}}"])
+        tree = run(["git", "rev-parse", f"{ISSUE549_C1_COMMIT}^{{tree}}"])
+        base_edge = run(["git", "merge-base", ISSUE549_BASE, "HEAD"])
+        c1_edge = run(["git", "merge-base", "--is-ancestor", ISSUE549_C1_COMMIT, "HEAD"])
+        if (
+            fixed.returncode or tree.returncode or base_edge.returncode or c1_edge.returncode
+            or str(fixed.stdout).strip() != ISSUE549_BASE
+            or str(tree.stdout).strip() != ISSUE549_C1_TREE
+            or str(base_edge.stdout).strip() != ISSUE549_BASE
+        ):
+            raise RuntimeError("Issue #549 frozen component evidence is unavailable or inconsistent.")
+        return ISSUE549_BASE
     fixed_routes = {
         ISSUE516_BRANCH: (516, ISSUE516_BASE),
         ISSUE514_BRANCH: (514, ISSUE514_BASE),
