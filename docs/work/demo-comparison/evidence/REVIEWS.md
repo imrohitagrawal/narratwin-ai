@@ -49,18 +49,26 @@ The same bounded two-file command then passed **44/44**, exit0, zero errors/skip
 35.42s. Earlier RED/GREEN remains historical; this is the correction verification,
 not independent review or hosted evidence. No test cache or dependency was created.
 
-## Pending review and limits
+## R1 disposition and pending R2
 
-Completed exact-head PR review cycles: **0/3**; correction implementations: **1/2**.
-C1/RED reviews are not PR-head cycles. Main pre-commit artifact review passed:
-source/product boundaries and custody; independent 44/44 focused tests; real scope
-`[]`; generic preflight; exact hash bindings; and `make quality` on the pre-C2 tree.
-These are local pre-commit results, not hosted or clean-C2 evidence. Main authorized
-only lifecycle wording/binding reconciliation before the candidate commit.
-The commit containing this record establishes the candidate head. Independent
-exact-head review and actual hosted bootstrap/direct-head/merge/push/PR/check
-boundaries remain pending before evidence freeze. No push/PR or hosted/full-suite
-execution is claimed here. Lifecycle reconciliation is not a second correction.
+Completed exact-head review cycles: **1/3**; correction implementations: **2/2**.
+C1/RED reviews are not PR-head cycles. Main pre-C2 review passed source/custody,
+independent 44/44, real scope `[]`, preflight, hashes and `make quality`.
+Clean C2 `091369b23fa463a6e493dde166707b12a3c557f3` then passed 44/44 in 35.55s,
+`make quality`, committed preflight/scope and bindings. These remain local evidence.
+R1 reviewed that exact C2. Root substantiated product `REQUIRED_CONTRACT`: each
+shortlisted surface needed an explicit manual/API/account map; Act-Two's documented
+Standard-plan-or-higher gate was absent. Correction 2/2 adds that compact map and
+S2 gate, without inferring owner eligibility, API parity or operation authority.
+R1 engineering local-dirty/hosted-dirty test-mode coverage is `ADVISORY_DEBT`,
+owned by root for a future route-testing increment; recorded, not expanded here.
+The reviewer's resource-floor stop remains a transient external-pressure receipt,
+not a quality pass or permission to continue below floor. Root re-admitted capacity;
+this package performed no cleanup. Earlier pauses and failures remain preserved.
+The containing C3 commit establishes the corrected candidate; R2 exact-head review
+and actual hosted bootstrap/direct-head/merge/push/PR/check proof remain pending.
+No C2 acceptance transfers to changed bytes. No push/PR or hosted/full-suite result
+is claimed here. The earlier lifecycle reconciliation was not a correction cycle.
 
 TDD guidance kept behavior behind RED; documentation guidance preserved context,
 source limits and supersession. Skills are guidance, not acceptance evidence or a

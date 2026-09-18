@@ -1,16 +1,17 @@
 # Demo workflow comparison: handoff
 
 PLAN_SHA256: 386e5b28504b5684625424875776f71be380508b194a36933488e3ac67e9e03a
-EVIDENCE_SHA256: de7607fde9c6e3d2aeb6c91aeda1a11cf9c6d626d32671ee9cb2f827d4d0496b
+EVIDENCE_SHA256: 2df90f897c749c5d07dd69e0e5c6442d98d636df0bf445681b88484711c5c1f1
 
 ## Current Issue551 checkpoint — 18 September 2026 UTC
 
 [Issue551](https://github.com/imrohitagrawal/narratwin-ai/issues/551) owns the
 [qualification worksheet](PROVIDER_INPUT_ENVIRONMENT_QUALIFICATION.md). Source main
 is `2fc1bbd7904421d4a5a2c85995c28dbd9cdf0fce`; immutable preflight C1 is
-`c459ca12568985334b7f33287808d9960f37bca4`. Main pre-commit review passed. The commit
-containing this record establishes the candidate head; independent exact-head and
-hosted review remain pending, with no exact-head freeze or hosted pass claimed.
+`c459ca12568985334b7f33287808d9960f37bca4`. Main pre-commit review passed; R1 reviewed
+C2 `091369b23fa463a6e493dde166707b12a3c557f3`. The containing C3 commit establishes
+the corrected candidate; R2 exact-head and hosted review remain pending, with no
+exact-head freeze, transferred acceptance or hosted pass claimed.
 
 Completed/accepted: existing T05 audio and prior navigation/sequencing delivery.
 Implemented/unaccepted: six-group/eight-role qualification record, PVR driver/rights
@@ -30,10 +31,12 @@ All new operation, private/browser/account/media/derivative/spend authority is z
 Issue550 comment5735557091 supersedes preparation-after-merge wording only; public
 qualification remains independent of CI while publication/merge gates stay binding.
 
-Next action: independent exact-head review of the containing candidate commit,
+Next action: R2 independent exact-head review of the containing candidate commit,
 then applicable hosted proof under separate authority. This handoff itself grants
 no push, PR, heavy/full suite or provider operation.
-PR-head review cycles remain 0/3, correction implementations 1/2. Keep all failures:
+Exact-head review cycles: 1/3 completed; correction implementations: 2/2. R1's
+required surface/account mapping is corrected; engineering test-mode coverage is
+recorded advisory debt, not expanded tests. Keep all failures and the reviewer stop:
 initial no-allocation capacity stop, validator argument error, meaningful RED and
 later resource-floor pause. Root separately restored capacity; no cleanup was done
 by this package. Retain its active checkout/evidence under the preflight cap/floor.
