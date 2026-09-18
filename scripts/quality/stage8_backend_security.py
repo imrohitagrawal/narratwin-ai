@@ -48,11 +48,13 @@ RUNTIME_PACKAGE_REVISIONS: dict[str, str] = {
 
 
 def backend_runtime_probe_valid(probe: str) -> bool:
+    probe = re.sub(r"(?m)#.*$", "", probe)
     return all(f'packages["{package}"] == "{revision}"' in probe
                for package, revision in RUNTIME_PACKAGE_REVISIONS.items())
 
 
 def backend_dockerfile_valid(dockerfile: str) -> bool:
+    dockerfile = re.sub(r"(?m)#.*$", "", dockerfile)
     from_lines = [
         line.strip()
         for line in dockerfile.splitlines()

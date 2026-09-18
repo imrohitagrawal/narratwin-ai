@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import subprocess
 from pathlib import Path
+from typing import Any
 
 from scripts.quality import stage8_backend_security as security
 from scripts.quality import stage8_node_security as node_security
@@ -67,6 +68,25 @@ def test_issue547_runtime_probe_rejects_each_inventory_mismatch() -> None:
         assert not validator(probe.replace(marker, f'packages["{package}"] == "{rejected}"'))
 
 
+def test_issue547_commented_pin_decoys_cannot_mask_stale_consumers() -> None:
+    dockerfile = (ROOT / "backend/Dockerfile").read_text()
+    probe = (ROOT / "scripts/ci/backend-image-package-check.sh").read_text()
+    for package, revision, stale in (
+        ("openssl-dev", "3.3.7-r1", "3.3.7-r0"),
+        ("libcrypto3", "3.3.7-r1", "3.3.7-r0"),
+        ("libssl3", "3.3.7-r1", "3.3.7-r0"),
+        ("alpine-release", "3.21.8-r0", "3.21.7-r0"),
+        ("alpine-keys", "2.5-r0", "2.4-r1"),
+    ):
+        marker = f"{package}={revision}"
+        changed = dockerfile.replace(marker, f"{package}={stale}", 1)
+        assert not security.backend_dockerfile_valid(changed + f"\n# {marker}\n")
+        if package != "openssl-dev":
+            marker = f'packages["{package}"] == "{revision}"'
+            changed = probe.replace(marker, f'packages["{package}"] == "{stale}"', 1)
+            assert not security.backend_runtime_probe_valid(changed + f"\n# {marker}\n")
+
+
 def test_issue436_rejects_image_source_tls_and_metadata_mutations() -> None:
     dockerfile = (ROOT / "backend/Dockerfile").read_text(encoding="utf-8")
     mutations = (
@@ -96,10 +116,10 @@ def test_issue436_runtime_probe_requires_tls_and_safe_openssl_line() -> None:
         assert marker in probe
 
 
-def test_issue547_inventory_validator_is_consumed(monkeypatch) -> None:
+def test_issue547_inventory_validator_is_consumed(monkeypatch: Any) -> None:
     monkeypatch.setattr(security, "backend_dockerfile_valid", lambda _: True)
     monkeypatch.setattr(security, "backend_runtime_probe_valid", lambda _: False, raising=False)
-    failures = []
+    failures: list[str] = []
     security.check(ROOT, lambda args: subprocess.CompletedProcess(args, 0, "", ""), "main", failures)
     assert failures == ["Stage 8 backend runtime inventory contract drifted."]
 

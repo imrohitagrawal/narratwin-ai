@@ -392,7 +392,7 @@ ISSUE549_DISPOSITION_SHA256 = "e517f5a9572731532d0f50eeb9b46f41c0bbc0b64da5d61d1
 ISSUE547_ATOMIC_BRANCH = "ci-547-549-atomic-runtime-security-successor"
 ISSUE547_ATOMIC_F, ISSUE547_ATOMIC_C1 = "2ea926c63df6f3442faf2f4c7447d0707e23e31e", "9bde8dd761cd7b8dcd53a9723769487cb1f59933"
 ISSUE547_ATOMIC_PUSH_LIMIT = 1
-ISSUE547_ATOMIC_AUTHORITY = (("5737207458", "a4f8ca11da2bc89d9761c29f14e078b230ae108d01e8558768cb9d04975f556e"), ("5737217558", "f02f07ea6528c661f7948b2140db38d776ab7bd8a0fa67a1e43a1e160befda6f"), ("5737227530", "3a89ce829048f630d969de102e085f9a3ec8655d66dc1b58c6389562c6de5621"))
+ISSUE547_ATOMIC_AUTHORITY = (("5737207458", "a4f8ca11da2bc89d9761c29f14e078b230ae108d01e8558768cb9d04975f556e"), ("5737217558", "f02f07ea6528c661f7948b2140db38d776ab7bd8a0fa67a1e43a1e160befda6f"), ("5737227530", "3a89ce829048f630d969de102e085f9a3ec8655d66dc1b58c6389562c6de5621"), ("5737432474", "979be396f76bb31a3058b4d1881b403168f77a11ab26d022e38a422796e230ce"), ("5737436428", "f4eef65fc5e10b40bb2ac65c5c70933e63caf0935ae1e15b458d595302e59a29"), ("5737446015", "6dc4935373589893a93309327578bff18f603935f59a72b308cb0b164b23d367"), ("5737462767", "fedcf4b2312d0fabeebe7c4f2009fabad4aefbca594a5dfd05bfde2303a7c37a"), ("5737466529", "f47834839c59a8edc3504a9978e9f14007d87f6308b2e24af3b20a7176611947"))
 ISSUE547_FROZEN = {"docs/ADR/0086-soupsieve-2-9-security-refresh.md", "docs/ADR/INDEX.md", "docs/governance/preflights/issue-549-soupsieve-security-refresh.json", "tests/unit/test_dependency_security_contract.py", "uv.lock"}
 ISSUE495_TREE = "13f79eb5db44249f635a619e1b283279f25ba9f0"
 ISSUE495_ROUTE_COMMENT = "5498387945"
@@ -3134,7 +3134,7 @@ def issue547_atomic_evidence(root: Path, run: Callable[[list[str]], Any]) -> Non
     rows = [row.split("\t") for row in read("diff", "--numstat", "--no-renames", base, frozen, "--").splitlines()]
     if len(rows) != 12 or any(len(r) != 3 or not r[0].isdigit() or not r[1].isdigit() for r in rows) or {r[2] for r in rows} != ROUTES[ISSUE549_BRANCH] or sum(int(a) + int(d) for a, d, _ in rows) != 471: raise RuntimeError("Atomic immutable 12-path/471 layer drift.")
     for path in ISSUE547_FROZEN:
-        if (root / path).read_bytes() != read("show", f"{frozen}:{path}").encode(): raise RuntimeError("Atomic frozen-only blob drift.")
+        if (root / path).read_bytes() != read("show", f"{frozen}:{path}").encode() or read("show", f"HEAD:{path}") != read("show", f"{frozen}:{path}") or read("diff", "--cached", "--name-only", frozen, "--", path).strip(): raise RuntimeError("Atomic frozen-only blob or snapshot drift.")
     status = (root / "docs/STATUS.md").read_bytes()
     registry_path, handoff_path = "docs/work/registry.json", "docs/work/governance-backlog/HANDOFF.md"
     registry = read("show", f"{frozen}:{registry_path}")
@@ -3145,7 +3145,7 @@ def issue547_atomic_evidence(root: Path, run: Callable[[list[str]], Any]) -> Non
     work_records.validate(root)
     _, combined = route_change_budget(root, ISSUE547_ATOMIC_BRANCH, 547, ROUTES[ISSUE547_ATOMIC_BRANCH])
     layer = {p: n - TEXT_LIMITS[ISSUE549_BRANCH].get(p, 0) for p, n in combined.items() if p not in ISSUE547_FROZEN}
-    layer.update({registry_path: 4, handoff_path: 2})
+    layer.update({registry_path: 4, handoff_path: 2, "tests/unit/test_stage8_cut1_routes.py": 94})
     total, charges = route_text_charges(run, frozen, set(layer))
     if len(layer) != 15 or set(charges) != set(layer) or total > 900 or any(charges[p] > n for p, n in layer.items()): raise RuntimeError("Atomic mutable 15-path/900 layer drift.")
     if any(route_has_copy_or_rename(read("diff", *flags, "--name-status", "-z", "--find-copies-harder", frozen, *end, "--")) for flags, end in (([], ["HEAD"]), (["--cached"], []), ([], []))): raise RuntimeError("Atomic deleted/renamed/copied path.")
