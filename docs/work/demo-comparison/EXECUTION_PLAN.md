@@ -138,7 +138,7 @@ finalists, grants or automatic fallbacks**.
 
 | ID / material workflow | Falsifiable viewer hypothesis / exact surface | Admission state |
 |---|---|---|
-| PVR-1 continuous, performance-driven: Pruna `p-video-replace` | Identity replacement over one rights-cleared moving performance can retain joint presenter/environment motion, exact narration timing and scene continuity better than animating a studio still. The [official guide](https://docs.pruna.ai/en/stable/docs_pruna_endpoints/performance_models/p-video-replace.html) documents a source video plus one to four character identity stills, background/blocking/camera/lighting/motion preservation, optional source-audio retention, driver-following duration/aspect and 1080p that may exceed driver-native dimensions; every behavior and native-pixel claim remains unproved for the exact inputs. | NEXT HYPOTHESIS, NOT ACTIVATED: requires the exact driver, rights/consent, model/account controls and finite operation package below |
+| PVR-1 continuous, performance-driven: Pruna `p-video-replace` | Identity replacement over one rights-cleared moving performance can retain joint presenter/environment motion, narration timing and scene continuity better than animating a studio still. The [official guide](https://docs.pruna.ai/en/stable/docs_pruna_endpoints/performance_models/p-video-replace.html), accessed 2026-09-18, documents one source MP4 and one to four identity stills; it has no separate WAV input. It describes background/blocking/camera/lighting/motion preservation, optional source-audio retention, driver-following duration/aspect and 1080p that may exceed driver-native dimensions. Every behavior, codec and native-pixel claim remains unproved for the exact inputs. | NEXT HYPOTHESIS, NOT ACTIVATED: requires the exact driver, rights/consent, model/account controls and finite operation package below |
 | RA2-1 conditional challenger: Runway Aleph 2.0 | A scene-preserving video edit may retain the same moving performance and environment while producing more coherent identity integration than PVR-1. The [official model list](https://docs.dev.runwayml.com/guides/models/) identifies `aleph2` as video plus text/image to video, and [pricing](https://docs.dev.runwayml.com/guides/pricing/) lists 28 credits per second; exact identity control, audio treatment, model revision and account behavior must still be qualified. | CONDITIONAL ONLY: prepare/activate only if PVR-1 is unavailable or fails; requires its own reviewed operation and spend grant |
 
 The documented one-to-four character-reference field does **not** establish that
@@ -166,7 +166,7 @@ assessed without claiming resemblance; no right to reuse that example is inferre
 | Stage | Inputs and evidence | Advance / stop rule |
 |---|---|---|
 | P0 qualification, currently preparation only | Exact host/product/revision, accepted bytes, safe settings, rights/account/incident/lifecycle disposition and finite signed operation envelope | Unresolved applicable control means no operation; public facts and UI planning may continue |
-| P1 short diagnostic, PVR-1 separately authorized later | One rights-cleared moving driver bound to the exact 27.216125-second WAV plus the one canonical Meera identity image; one actual output and whole-output technical/listening/visual review | A pass permits only requesting representative complete outputs; no retry, repair, second aspect, identity variation or automatic challenger |
+| P1 short diagnostic, PVR-1 separately authorized later | One newly recorded, consented real-office performance with lip-sync, a reviewed derived embedded-audio representation traceable to the authoritative 27.216125-second WAV, and the one canonical Meera identity image; one actual output and whole-output technical/listening/visual review | A pass permits only requesting representative complete outputs; no retry, repair, second aspect, identity variation or automatic challenger |
 | P1C conditional challenger, RA2-1 separately authorized later | The same accepted driver/input intent and rejection rubric, with Aleph-specific schema/audio/config bound independently | Only if PVR-1 is unavailable or rejected; a pass has the same limited effect as P1, never fallback authority |
 | P2 representative complete-output proof, separately authorized later | Full 127.661917-second Myra narration in independently generated landscape and portrait; bind both outputs, exact audio and caption timelines; review whole outputs | Required full-risk proof before substantial adapter/workflow selection; a short pass or cropped/reframed companion does not substitute |
 | P3 workflow decision | Separate complete continuous-presenter and editorial scorecards; real product capture where applicable; revision/cost report including failures | Select only within demonstrated format/input limits; zero finalists is valid and triggers next bounded hypothesis, not relaxed thresholds |
@@ -227,20 +227,32 @@ provider process or standing background monitoring.
 
 PVR-1 cannot activate until one manifest binds all of the following:
 
-1. `MOVING_DRIVER_SHA256=UNRESOLVED`: one rights-cleared, consented, standard
-   landscape moving performance in the intended real environment, exactly aligned
-   to the unchanged 27.216125-second WAV. It must contain the presenter and scene
-   together with useful depth, contact/occlusion, lighting, surrounding motion and,
-   where present, coherent reflection/mirror behavior. Bind exact bytes, codec,
-   dimensions, frame rate, duration, rights scope and provider-egress permission.
+1. `MOVING_DRIVER_SHA256=UNRESOLVED`: the primary route is a newly recorded,
+   consented real-office performance with useful lip-sync in the intended real
+   environment. It must contain performer and scene together with useful depth,
+   contact/occlusion, lighting, surrounding motion and, where present, coherent
+   reflection/mirror behavior. Bind exact bytes, container, video/audio codecs,
+   dimensions, frame rate, duration and rights covering performer, location,
+   property, AI identity replacement, Pruna egress, internal demo use and retention.
+   Stock Envato/iStock footage is reference/fallback diagnostic material only, not
+   an admitted driver: unrelated mouth motion and AI-use consent remain unresolved.
+   No download, license purchase or spend is authorized here.
 2. `IDENTITY_REFERENCE`: only canonical Meera SHA256 `d8c4ecb2acadcc3440b7be345b5620717ea0644a5643e41986b9d3f2ea1c30d1`.
    The existing office still may guide location, styling and lighting but is
    prohibited as a static final plate or substitute driver.
-3. `AUDIO`: exact diagnostic WAV SHA256 `6cf1f8838d0b5fbbffdb49375d7f0db07693da968a45d0eb3fd2c8bdb7942ac5`;
-   the driver mux must preserve its complete words and timing. Any provider audio
-   rewrite, TTS, prompt rewrite or unreviewed remux is prohibited.
+3. `AUDIO_SOURCE`: exact diagnostic PCM16 WAV SHA256
+   `6cf1f8838d0b5fbbffdb49375d7f0db07693da968a45d0eb3fd2c8bdb7942ac5`
+   remains the authoritative source/custody record. P-Video-Replace accepts a source
+   MP4 and has no separate WAV input, so the WAV bytes cannot be submitted directly
+   unchanged. Any embedded driver-audio encoding, or any restoration of authoritative
+   audio after provider output, is a derived representation. Before any such work,
+   separately review and authorize the exact lineage, codec/container, tool/version,
+   command/options and input/output hashes; prove complete words and timing.
+   No conversion or remux is authorized now. Provider rewrite, TTS, prompt rewrite or
+   an unreviewed derived representation is prohibited.
 4. `PROVIDER_CONTROLS=UNRESOLVED`: exact Pruna host, account eligibility, endpoint,
-   model/revision, request schema, safety settings, native/requested output shape,
+   model/revision, request schema, accepted MP4 container/video/audio codecs and
+   maximum duration, safety settings, native/requested output shape,
    `save_audio` behavior, training/subprocessor/region/retention/deletion behavior
    and failed-job billing. The published USD 0.06/output-second 1080p rate is only
    a planning fact; the exact account quote, tax and total cap must be frozen.

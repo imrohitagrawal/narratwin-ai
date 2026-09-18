@@ -1,7 +1,7 @@
 # Demo workflow comparison: handoff
 
-PLAN_SHA256: 979b94e202859ed208bede96db4e552fbc66576907f347e21b8d33c8fd286954
-EVIDENCE_SHA256: 845f79bab4513abb997514bcdf664eadef04514bd2ccf6bbcfeb1e996d69257d
+PLAN_SHA256: e1adb69ab3ff3ea06ea08e91bc6ec64c5b87e7e966e203c81ef2c84e322fc349
+EVIDENCE_SHA256: 5421c8269a1425535f770840c759f703405ffb26538d1db8b44e474d0eceaf12
 
 Current checkpoint: 2026-09-18; source/remote main
 `2fc1bbd7904421d4a5a2c85995c28dbd9cdf0fce`; Issue519 draft
@@ -46,13 +46,22 @@ Pruna outputs totaling 56.083334 delivered seconds, but exact requests/internal 
 billed seconds, polling, retention and total debit/tax remain unknown. Never record
 them as zero. The office still is style/layout/lighting reference only.
 
-Pending/blocked: acquire one rights-cleared moving driver aligned to the exact
-27.216125-second WAV; bind its hash, technical metadata, consent and egress rights;
+Pending/blocked: prepare a newly recorded, consented real-office performance with
+lip-sync and explicit performer/location/property/AI-replacement/Pruna/internal-
+demo/retention rights. P-Video-Replace has no separate WAV input. Keep the exact
+27.216125-second PCM16 WAV as authoritative source/custody; any embedded driver
+audio or post-output restoration is a derived representation requiring separately
+reviewed lineage, codec, tool/version, command/options and hashes. No conversion or
+remux is authorized now. Verify accepted MP4/video/audio codecs and maximum duration;
 bind exact Pruna `p-video-replace` model/account/lifecycle settings and one finite
 operation/spend envelope. Account/credential access, provider upload/create/
 generation, spend, private-original access, deletion, deployment/publication and
 broader G3 remain unauthorized. A1–A6 remain unaccepted. T06 has zero accepted
 cells, T07/T08 are incomplete and `REFERENCE_FIDELITY=UNPROVED`.
+
+Envato/iStock footage remains reference/fallback diagnostic material only, not an
+admitted driver, because unrelated mouth motion and AI-use consent are unresolved.
+No stock download, license purchase or spend is authorized.
 
 Next authorized action: main obtains stable final-byte review of this disposition
 record, commits the reviewed tree, verifies exact-head parity, and runs the

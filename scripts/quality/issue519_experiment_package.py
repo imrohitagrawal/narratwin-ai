@@ -16,6 +16,13 @@ BASE = "2fc1bbd7904421d4a5a2c85995c28dbd9cdf0fce"
 PREFLIGHT = "docs/governance/preflights/issue-519.json"
 C1 = "a05cd088a7131b0d7736c8d53341326608f022a6"
 C1_SHA256 = "4feef3a10c1c506c94695f7634275b693a4b7a19a58dba76ab707a49c3966bfd"
+PVR_CONTRACT_PATHS = (
+    "docs/work/demo-comparison/EXECUTION_PLAN.md",
+    "docs/work/demo-comparison/DECISIONS.md",
+    "docs/work/demo-comparison/HANDOFF.md",
+    "docs/work/demo-comparison/evidence/REVIEWS.md",
+    "docs/STATUS.md",
+)
 
 
 def _git(root: Path, *args: str) -> bytes | None:
@@ -96,8 +103,31 @@ def validate_scope(root: Path, branch: str) -> list[str]:
     return []
 
 
+def validate_pvr_contract(root: Path) -> list[str]:
+    try:
+        plan, decisions, handoff, reviews, status = (
+            (root / path).read_text(encoding="utf-8") for path in PVR_CONTRACT_PATHS
+        )
+    except OSError:
+        return ["Issue #519 PVR contract documents are unavailable."]
+    required = (
+        (plan, "has no separate WAV input", "PVR input schema is unbound."),
+        (plan, "newly recorded, consented real-office performance", "PVR primary driver rights route is unbound."),
+        (plan, "No conversion or remux is authorized now.", "PVR derived-audio authority is unbound."),
+        (plan, "maximum duration", "PVR first-activation qualification is unbound."),
+        (plan, "only canonical Meera", "PVR canonical identity constraint is unbound."),
+        (decisions, "Stock Envato/iStock footage is reference/fallback diagnostic material only", "PVR stock driver exclusion is unbound."),
+        (handoff, "P-Video-Replace has no separate WAV input", "PVR handoff schema is stale."),
+        (reviews, "REQUIRED_CONTRACT", "PVR review finding is absent."),
+        (status, "No conversion/remux is authorized", "PVR status authority is stale."),
+    )
+    return [failure for document, marker, failure in required if marker not in document]
+
+
 def run(root: Path, branch: str) -> int:
     failures = validate_scope(root, branch)
+    if not failures:
+        failures = validate_pvr_contract(root)
     if failures:
         return legacy._print_result(failures)
     checker = legacy._load_checker()

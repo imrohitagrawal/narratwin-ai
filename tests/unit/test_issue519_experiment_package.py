@@ -186,3 +186,53 @@ def test_import_has_no_git_or_legacy_side_effects(monkeypatch: Any) -> None:
 def test_wrong_branch_rejected_by_scope() -> None:
     module = importlib.import_module("scripts.quality.issue519_experiment_package")
     assert module.validate_scope(runner.ROOT, BRANCH + "-other") == ["Issue #519 exact branch required."]
+
+
+def test_current_pvr_audio_and_driver_contract_is_bound() -> None:
+    module = importlib.import_module("scripts.quality.issue519_experiment_package")
+    assert module.validate_pvr_contract(runner.ROOT) == []
+
+
+@pytest.mark.parametrize(
+    ("path", "old", "new", "expected"),
+    (
+        (
+            "docs/work/demo-comparison/EXECUTION_PLAN.md",
+            "has no separate WAV input",
+            "accepts a separate WAV input",
+            "PVR input schema",
+        ),
+        (
+            "docs/work/demo-comparison/EXECUTION_PLAN.md",
+            "newly recorded, consented real-office performance",
+            "stock performance",
+            "primary driver rights route",
+        ),
+        (
+            "docs/work/demo-comparison/EXECUTION_PLAN.md",
+            "No conversion or remux is authorized now.",
+            "Conversion is authorized now.",
+            "derived-audio authority",
+        ),
+        (
+            "docs/work/demo-comparison/DECISIONS.md",
+            "Stock Envato/iStock footage is reference/fallback diagnostic material only",
+            "Stock footage is the primary driver",
+            "stock driver exclusion",
+        ),
+    ),
+)
+def test_pvr_contract_mutations_fail_closed(
+    tmp_path: Any, path: str, old: str, new: str, expected: str
+) -> None:
+    module = importlib.import_module("scripts.quality.issue519_experiment_package")
+    for required_path in module.PVR_CONTRACT_PATHS:
+        source = runner.ROOT / required_path
+        target = tmp_path / required_path
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(source.read_bytes())
+    target = tmp_path / path
+    original = target.read_text(encoding="utf-8")
+    assert old in original
+    target.write_text(original.replace(old, new), encoding="utf-8")
+    assert any(expected in failure for failure in module.validate_pvr_contract(tmp_path))

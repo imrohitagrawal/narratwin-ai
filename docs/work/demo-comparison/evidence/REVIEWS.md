@@ -79,12 +79,22 @@ Cut 1 credit. HeyGen v8/v9 rejection and ADR0079 independently prohibit repeatin
 the unchanged Avatar IV/static-office route.
 
 The smallest materially different hypothesis is performance-driven identity
-replacement, not a more elaborate still-image prompt: one rights-cleared moving
-driver aligned to the exact diagnostic WAV, one canonical Meera reference, and one
+replacement, not a more elaborate still-image prompt: one newly recorded,
+consented real-office moving driver, one canonical Meera reference, and one
 separately authorized Pruna `p-video-replace` output. The existing office still is
 style/layout/lighting reference only. The documented one-to-four character-reference field
 does not validate multiple same-subject angles. Runway Aleph 2.0 is one conditional
 challenger after a recorded PVR-1 unavailable/fail result; it inherits no authority.
+
+Public official-source research on 2026-09-18 reproduced a `REQUIRED_CONTRACT`
+input mismatch: the [P-Video-Replace guide](https://docs.pruna.ai/en/stable/docs_pruna_endpoints/performance_models/p-video-replace.html)
+accepts a source MP4 and one to four identity stills, with no separate WAV input.
+The exact PCM16 WAV remains authoritative source/custody, but direct unchanged-WAV
+submission must not be implied. Embedded driver audio or post-output restoration is
+a derived representation requiring a separately reviewed lineage/codec/tool/
+command/hash rule and separate operation authority. No conversion, remux, stock
+download or provider operation occurred. Research narrowed the contract; it is not
+provider qualification or acceptance.
 
 Issue #532 [owner decision 5721036635](https://github.com/imrohitagrawal/narratwin-ai/issues/532#issuecomment-5721036635)
 lifts the incident-specific stop only for separately reviewed public-research/P1

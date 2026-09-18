@@ -96,13 +96,27 @@ invented text and posture defects. Therefore a third prompt-only run with the sa
 studio image would repeat the known root cause rather than test a new hypothesis.
 
 Decision: the next candidate is one performance-driven Pruna `p-video-replace`
-diagnostic using a separately rights-cleared moving driver already aligned to the
-exact 27.216125-second WAV and the one canonical Meera identity reference. The
+diagnostic using a separately rights-cleared moving driver and the one canonical
+Meera identity reference. The exact 27.216125-second PCM16 WAV remains the
+authoritative audio source, but the official P-Video-Replace guide accessed
+2026-09-18 accepts a source MP4 plus one to four identity stills and has no separate
+WAV input. Therefore embedded driver audio and any post-output audio restoration
+are derived representations requiring a separately reviewed lineage, codec,
+tool/version, command/options and input/output hashes; no conversion or remux is
+authorized now. The first activation must verify accepted MP4/video/audio codecs
+and maximum duration rather than infer them. The
 existing office still is a style/layout/lighting reference only, never the final
 static plate. The official one-to-four character-reference input does not validate
 multi-angle conditioning; new Meera angles, expressions or motion assets remain
 separately governed derivatives. Runway Aleph 2.0 is one conditional challenger
 only if this diagnostic is unavailable or rejected, never an automatic fallback.
+
+The primary driver route is a newly recorded, consented real-office performance
+with lip-sync and explicit performer, location, property, AI identity-replacement,
+Pruna-egress, internal-demo and retention rights.
+Stock Envato/iStock footage is reference/fallback diagnostic material only:
+unrelated mouth motion and AI-use
+consent remain unresolved, so it is not admitted and no download or spend follows.
 
 Supersession: this replaces the stale active recommendations for another HeyGen
 Avatar IV/static composition, another Pruna P-Video-Avatar prompt pass, or automatic

@@ -392,8 +392,8 @@
       "path": "docs/work/demo-comparison",
       "plan": {
         "path": "docs/work/demo-comparison/EXECUTION_PLAN.md",
-        "sha256": "979b94e202859ed208bede96db4e552fbc66576907f347e21b8d33c8fd286954",
-        "bytes": 30979,
+        "sha256": "e1adb69ab3ff3ea06ea08e91bc6ec64c5b87e7e966e203c81ef2c84e322fc349",
+        "bytes": 32004,
         "role": "execution-plan"
       },
       "statusRef": "docs/STATUS.md",
@@ -421,7 +421,7 @@
       ],
       "evidenceIndex": "docs/work/demo-comparison/evidence/INDEX.json",
       "handoff": "docs/work/demo-comparison/HANDOFF.md",
-      "checkpoint": "2026-09-18; P1/P1B rejected; moving-driver p-video-replace next after rights and exact grant; Aleph 2.0 conditional; draft PR546 review/checks pending; no provider or Cut1 acceptance"
+      "checkpoint": "2026-09-18; P1/P1B rejected; newly recorded consented driver p-video-replace next after rights, derived-audio lineage and exact grant; Aleph 2.0 conditional; draft PR546 review/checks pending; no provider or Cut1 acceptance"
     },
     {
       "id": "working-records",
@@ -615,8 +615,8 @@
       "path": "docs/work/governance-backlog",
       "plan": {
         "path": "docs/STATUS.md",
-        "sha256": "13d5946373cb3dc2026c3885dc0caad5a6606ea74111dfd2772b3152c64756b5",
-        "bytes": 292680,
+        "sha256": "683e7fc959e6f06c741e45cafd9995382e55f7d6545852d00282c8a164eea96c",
+        "bytes": 293012,
         "role": "source-pointer"
       },
       "statusRef": "docs/STATUS.md",
@@ -634,7 +634,7 @@
       "relationships": [],
       "evidenceIndex": "docs/work/governance-backlog/evidence/INDEX.json",
       "handoff": "docs/work/governance-backlog/HANDOFF.md",
-      "checkpoint": "2026-09-18; STATUS binds rejected P1/P1B and moving-driver successor under Issue519 draft PR546; verify current checkout and tracker before action"
+      "checkpoint": "2026-09-18; STATUS binds rejected P1/P1B and newly recorded consented-driver successor with derived-audio controls under Issue519 draft PR546; verify current checkout and tracker before action"
     },
     {
       "id": "documentation-architecture",
