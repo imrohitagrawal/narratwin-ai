@@ -1262,6 +1262,10 @@ def test_issue549_standalone_acceptance_fails_closed(via_scope: bool, monkeypatc
     assert (routes.ISSUE549_STANDALONE_COMMENT, routes.ISSUE549_STANDALONE_SHA256) == (
         "5734670605", "0b7461d1f2c14065c53289e75d2d33da1ee0e8120524ce6b0d5c15e7f798dc4d",
     )
+    assert getattr(routes, "ISSUE549_DISPOSITION_COMMENT", None) == "5734722695"
+    assert getattr(routes, "ISSUE549_DISPOSITION_SHA256", None) == (
+        "e517f5a9572731532d0f50eeb9b46f41c0bbc0b64da5d61d14fe8ad1255ffa77"
+    )
 
 
 def test_issue549_route_freezes_component_and_atomic_successor_prerequisite() -> None:
