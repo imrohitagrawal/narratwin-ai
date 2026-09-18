@@ -392,8 +392,8 @@
       "path": "docs/work/demo-comparison",
       "plan": {
         "path": "docs/work/demo-comparison/EXECUTION_PLAN.md",
-        "sha256": "e1adb69ab3ff3ea06ea08e91bc6ec64c5b87e7e966e203c81ef2c84e322fc349",
-        "bytes": 32004,
+        "sha256": "2206bb47b60947a961975958110aac26835e6e070c869ad4dbaa2bb3eeb36eae",
+        "bytes": 44644,
         "role": "execution-plan"
       },
       "statusRef": "docs/STATUS.md",
@@ -421,7 +421,7 @@
       ],
       "evidenceIndex": "docs/work/demo-comparison/evidence/INDEX.json",
       "handoff": "docs/work/demo-comparison/HANDOFF.md",
-      "checkpoint": "2026-09-18; P1/P1B rejected; newly recorded consented driver p-video-replace next after rights, derived-audio lineage and exact grant; Aleph 2.0 conditional; draft PR546 review/checks pending; no provider or Cut1 acceptance"
+      "checkpoint": "2026-09-18; P1/P1B rejected; PVR-1 moving-driver diagnostic remains continuous hypothesis; zero-exposure HFE-1/P1E planning may proceed in parallel; P1D derived audio and every provider operation remain separately unaccepted; Runway Act-Two conditional; draft PR546 hosted checks pending; no provider or Cut1 acceptance"
     },
     {
       "id": "working-records",
@@ -615,8 +615,8 @@
       "path": "docs/work/governance-backlog",
       "plan": {
         "path": "docs/STATUS.md",
-        "sha256": "683e7fc959e6f06c741e45cafd9995382e55f7d6545852d00282c8a164eea96c",
-        "bytes": 293012,
+        "sha256": "0d49215aa8a7e393e805c5439a3ab2f3d87fc731c6f1539adfa5f469e23a8354",
+        "bytes": 293798,
         "role": "source-pointer"
       },
       "statusRef": "docs/STATUS.md",

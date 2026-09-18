@@ -1,7 +1,7 @@
 # Demo workflow comparison: handoff
 
 PLAN_SHA256: 2206bb47b60947a961975958110aac26835e6e070c869ad4dbaa2bb3eeb36eae
-EVIDENCE_SHA256: 5421c8269a1425535f770840c759f703405ffb26538d1db8b44e474d0eceaf12
+EVIDENCE_SHA256: 697de1811f0b28242ec17bae7e95c1adf8971c83d45fc3c2746629f060be1094
 
 Current checkpoint: 2026-09-18; source/remote main
 `2fc1bbd7904421d4a5a2c85995c28dbd9cdf0fce`; Issue519 draft
