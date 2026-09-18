@@ -25,7 +25,34 @@ def test_issue436_backend_image_contract_is_exact_and_fail_closed() -> None:
     assert len(security.ISSUE436_FILES) == 13
     assert security.ISSUE436_STACK_BASE == "6bcdb8d60ebb4d1e5fef3725cffc459dd5525987"
     assert security.ISSUE436_STACK_FILES == security.ISSUE436_FILES | node_security.ISSUE376_SECURITY_FILES
+    assert security.ISSUE436_OPENSSL_PACKAGE_REVISION == "3.3.7-r0"
+    historical = dockerfile.replace("3.3.7-r1", security.ISSUE436_OPENSSL_PACKAGE_REVISION)
+    assert security.backend_dockerfile_valid(
+        historical,
+        openssl_package_revision=security.ISSUE436_OPENSSL_PACKAGE_REVISION,
+    )
+
+
+def test_issue547_current_revision_is_coherent_and_each_partial_update_fails() -> None:
+    dockerfile = (ROOT / "backend/Dockerfile").read_text(encoding="utf-8")
+    probe = (ROOT / "scripts/ci/backend-image-package-check.sh").read_text(encoding="utf-8")
+    assert security.OPENSSL_PACKAGE_REVISION == "3.3.7-r1"
     assert security.backend_dockerfile_valid(dockerfile)
+    assert security.backend_runtime_probe_valid(probe)
+    for package in ("openssl-dev", "libcrypto3", "libssl3"):
+        assert not security.backend_dockerfile_valid(
+            dockerfile.replace(
+                f"{package}={security.OPENSSL_PACKAGE_REVISION}",
+                f"{package}={security.ISSUE436_OPENSSL_PACKAGE_REVISION}",
+            )
+        )
+    for package in ("libcrypto3", "libssl3"):
+        assert not security.backend_runtime_probe_valid(
+            probe.replace(
+                f'packages["{package}"] == "{security.OPENSSL_PACKAGE_REVISION}"',
+                f'packages["{package}"] == "{security.ISSUE436_OPENSSL_PACKAGE_REVISION}"',
+            )
+        )
 
 
 def test_issue436_rejects_image_source_tls_and_metadata_mutations() -> None:
@@ -36,8 +63,8 @@ def test_issue436_rejects_image_source_tls_and_metadata_mutations() -> None:
         dockerfile.replace(security.CPYTHON_VERSION, "3.13.14"),
         dockerfile.replace(security.CPYTHON_SHA256, "0" * 64),
         dockerfile.replace("sha256sum -c -", "REMOVED"),
-        dockerfile.replace("libssl3=3.3.7-r0", "libssl3=3.5.7-r0"),
-        dockerfile.replace("libcrypto3=3.3.7-r0", "libcrypto3=3.5.7-r0"),
+        dockerfile.replace("libssl3=3.3.7-r1", "libssl3=3.5.7-r0"),
+        dockerfile.replace("libcrypto3=3.3.7-r1", "libcrypto3=3.5.7-r0"),
         dockerfile.replace("/lib/apk/db/installed", "/tmp/concealed"),
         dockerfile + "\nFROM alpine:latest AS bypass\n",
     )
@@ -51,8 +78,8 @@ def test_issue436_runtime_probe_requires_tls_and_safe_openssl_line() -> None:
         'startswith("OpenSSL 3.3.7 ")',
         "ssl.create_default_context()",
         "/lib/apk/db/installed",
-        'packages["libcrypto3"] == "3.3.7-r0"',
-        'packages["libssl3"] == "3.3.7-r0"',
+        'packages["libcrypto3"] == "3.3.7-r1"',
+        'packages["libssl3"] == "3.3.7-r1"',
     ):
         assert marker in probe
 

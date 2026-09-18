@@ -143,5 +143,5 @@ def test_dockerfile_builds_verified_fixed_cpython_release_for_final_runtime() ->
     assert '"https://www.python.org/ftp/python/${PYTHON_VERSION}/Python-${PYTHON_VERSION}.tar.xz"' in dockerfile
     assert 'echo "$PYTHON_SHA256 *python.tar.xz" | sha256sum -c -' in dockerfile
     assert "gpg --batch --verify python.tar.xz.asc python.tar.xz" in dockerfile
-    assert "libcrypto3=3.3.7-r0" in dockerfile and "libssl3=3.3.7-r0" in dockerfile
+    assert "libcrypto3=3.3.7-r1" in dockerfile and "libssl3=3.3.7-r1" in dockerfile
     assert "apply_backports.py" not in dockerfile and BASE_IMAGE not in dockerfile

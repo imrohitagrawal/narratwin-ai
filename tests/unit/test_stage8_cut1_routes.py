@@ -548,6 +548,14 @@ ISSUE529_EXPECTED = {
     "docs/SECURITY_AND_PRIVACY.md",
     "docs/STAGE_ISSUE_PLAN.md",
 }
+ISSUE547_EXPECTED = {
+    "docs/governance/preflights/issue-547.json", "backend/Dockerfile",
+    "scripts/ci/backend-image-package-check.sh", "scripts/quality/stage8_backend_security.py",
+    "scripts/quality/stage8_cut1_routes.py", "tests/unit/test_stage8_backend_security.py",
+    "tests/unit/test_backend_image_package_check.py", "tests/unit/test_cpython_security_backports.py",
+    "tests/unit/test_stage8_cut1_routes.py", "docs/THIRD_PARTY_NOTICES.md",
+    "docs/STATUS.md", "docs/TRACEABILITY.md",
+}
 ISSUE502_EXPECTED = {
     "docs/governance/preflights/issue-502.json",
     "frontend/Dockerfile",
@@ -1228,10 +1236,27 @@ EXPECTED["stage8-523-httpx2-2-12-security-refresh"] = ISSUE523_EXPECTED
 EXPECTED["stage8-525-schema-oracle-runtime-policy"] = ISSUE525_EXPECTED
 EXPECTED["stage8-527-backend-ci-timeout"] = ISSUE527_EXPECTED
 EXPECTED["stage8-529-native-arm64-security"] = ISSUE529_EXPECTED
+EXPECTED["ci-547-alpine-openssl-r1-drift-correction"] = ISSUE547_EXPECTED
 
 
 def completed(args: list[str], code: int = 0, out: str = "", err: str = "") -> subprocess.CompletedProcess[str]:
     return subprocess.CompletedProcess(args, code, out, err)
+
+
+def test_issue547_route_freezes_exact_openssl_revision_scope() -> None:
+    branch = "ci-547-alpine-openssl-r1-drift-correction"
+    preflight = json.loads(
+        (REPO / "docs/governance/preflights/issue-547.json").read_text(encoding="utf-8")
+    )
+    assert routes.ISSUE547_BRANCH == branch
+    assert routes.ISSUE547_BASE == "2fc1bbd7904421d4a5a2c85995c28dbd9cdf0fce"
+    assert routes.ROUTES[branch] == ISSUE547_EXPECTED
+    assert routes.ROUTE_ISSUES[branch] == 547
+    assert set(preflight["scope"]["required"]) == ISSUE547_EXPECTED
+    assert preflight["scope"]["required"] == preflight["scope"]["allowed_prefixes"]
+    assert preflight["change_budget"]["maximum_additions_plus_deletions"] == 740
+    assert branch in stage8.EFFECTIVE_STAGE8_ROUTES
+    assert branch + "-retry" not in stage8.EFFECTIVE_STAGE8_ROUTES
 
 
 def test_issue502_musl_runtime_route_is_exact_bounded_and_authority_pinned() -> None:
