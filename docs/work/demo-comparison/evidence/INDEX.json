@@ -1,6 +1,43 @@
 {
   "schemaVersion": 1,
-  "artifacts": [],
+  "artifacts": [
+    {
+      "id": "issue551-preflight",
+      "owner": "demo-comparison",
+      "role": "original",
+      "revision": "c459ca12568985334b7f33287808d9960f37bca4",
+      "path": "docs/governance/preflights/issue-551.json",
+      "sha256": "f370303c61329342ff08753432d77b5af43ed368b43ee3656cb126f171d86427",
+      "bytes": 5245,
+      "custody": "public",
+      "verification": "METADATA_PINNED",
+      "derivedFrom": []
+    },
+    {
+      "id": "issue551-qualification-preparation",
+      "owner": "demo-comparison",
+      "role": "derived",
+      "revision": "2026-09-18-c3-candidate",
+      "path": "docs/work/demo-comparison/PROVIDER_INPUT_ENVIRONMENT_QUALIFICATION.md",
+      "sha256": "f076b70c71f957d5fe801f0f528bf7515e10bbf7739c8540c9fd76b4995a6b36",
+      "bytes": 31272,
+      "custody": "public",
+      "verification": "METADATA_PINNED",
+      "derivedFrom": ["issue551-preflight"]
+    },
+    {
+      "id": "issue551-preparation-review-evidence",
+      "owner": "demo-comparison",
+      "role": "review",
+      "revision": "2026-09-18-c3-candidate",
+      "path": "docs/work/demo-comparison/evidence/REVIEWS.md",
+      "sha256": "47bfae4a62bb361542157134646d9b9fbc76ef4913fcfe69083da3e64fda857b",
+      "bytes": 4984,
+      "custody": "public",
+      "verification": "METADATA_PINNED",
+      "derivedFrom": ["issue551-qualification-preparation"]
+    }
+  ],
   "uses": [
     "owner-plan-2026-09-07"
   ]
