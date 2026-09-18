@@ -667,6 +667,14 @@ durability, deployment, and release decisions remain outside this trace.
 | Scratch final stage, truthful APK database, Python binary catalog, non-root identity, CA verification, and package probe | Retain runtime identity and required HTTPS/application behavior while excluding compiler, shell, package manager, build-only pip, and unused SQLite capability | No package-metadata concealment and no backend API, provider, storage, media, or product behavior change |
 | Fresh Trivy and Grype scans plus exact route/mutation tests | Require independent zero-Critical/High scanner consensus and fail closed on image, TLS, provenance, inventory, scope, or budget drift | Issue #376 frontend repair and full combined Stage 8 acceptance remain separate; no release or production authority |
 
+## Issue #547 Alpine OpenSSL revision-drift traceability
+
+| Evidence | Requirement | Preserved boundary |
+|---|---|---|
+| Six official Alpine v3.21 x86_64/aarch64 `openssl-dev`, `libcrypto3`, and `libssl3` package records plus packaging commit `9b59567ddd9ca9722deeedb5145506726b5c9389`, all bound in `docs/governance/preflights/issue-547.json` and accessed 2026-09-18 | Advance the unavailable exact `3.3.7-r0` repository revision to exact `3.3.7-r1` only when all supported package records agree | Stop rather than float or silently chase a revision beyond r1; no base-image, CPython, package-family, architecture, or security-threshold change |
+| Typed `OPENSSL_PACKAGE_REVISION`, Docker build/runtime pins, runtime APK inventory probe, and independent single-package mutations | Keep build `openssl-dev` and runtime `libcrypto3`/`libssl3` coherent and fail every partial revision update | Preserve Issue #436 historical constants and receipts; no weakening of TLS, truthful inventory, CA, non-root, provenance, SBOM, Trivy, or Grype controls |
+| Exact Issue #547 route, first-commit preflight, 12-path manifest, per-file caps, and 740-line no-credit ceiling | Admit only the bounded revision correction from main `2fc1bbd7904421d4a5a2c85995c28dbd9cdf0fce` | Hosted direct-head/merge-ref checks and independent exact-head review remain required; no provider, media, deployment, release, production, or Cut 1 completion claim |
+
 ## Issue #421 Cut 1 atomic grounding traceability
 
 | Requirement | Implementation | Evidence |

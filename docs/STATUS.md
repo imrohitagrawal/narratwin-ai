@@ -1770,6 +1770,24 @@ accepted on `main`, so Child B resumes with its own complete validation and
 review sequence. Release, deployment, publication, provider activation,
 egress, spend, media generation, and production readiness remain No-Go.
 
+## Issue #547 Alpine OpenSSL repository-revision correction target state (2026-09-18)
+
+- PR `#546` exposed a `REQUIRED_CONTRACT` failure after Alpine v3.21 replaced
+  the exact OpenSSL `3.3.7-r0` packages with `3.3.7-r1` on both x86_64 and
+  aarch64; the unchanged Issue #436 image could no longer resolve its pins.
+- Issue `#547` preserves the Issue #436 design and coherently advances build
+  `openssl-dev`, runtime `libcrypto3`/`libssl3`, inventory assertions, and
+  Stage 8 tests to exact `3.3.7-r1`. Six official architecture/package records
+  and packaging commit `9b59567ddd9ca9722deeedb5145506726b5c9389` are bound
+  in `docs/governance/preflights/issue-547.json`, accessed 2026-09-18.
+- Once its PR merges with exact-head AMD64/ARM64 build, package/TLS/non-root,
+  Trivy, Grype, SBOM, required-context, and independent-review evidence, this
+  issue restores the container prerequisite only. Those hosted claims remain
+  unproved on the local implementation branch.
+- No base-image, CPython, scanner threshold, product/runtime behavior, provider,
+  media, deployment, release, public availability, production readiness, or
+  Cut 1 acceptance authority changes.
+
 ## Issue #435 framework v1 completed state (2026-08-27)
 
 - Issue `#435` is closed as completed through merged PR `#453` at

@@ -4302,7 +4302,9 @@ def test_exact_route_completeness_lookalikes_and_budgets(monkeypatch: Any) -> No
         issue = routes.ROUTE_ISSUES[branch]
         assert failures == [f"Issue #{issue} route is missing required path: {missing}"]
         confusable = (
-            branch.replace("stage8", "stageв")
+            branch.replace("ci", "cі", 1)
+            if branch.startswith("ci-")
+            else branch.replace("stage8", "stageв")
             if "stage8" in branch
             else branch.replace("process", "procesѕ")
             if "process" in branch

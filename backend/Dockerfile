@@ -7,7 +7,7 @@ RUN set -eux; \
     apk add --no-cache \
       bluez-dev build-base bzip2-dev expat-dev gdbm-dev gnupg \
       libffi-dev libnsl-dev libtirpc-dev linux-headers ncurses-dev \
-      openssl-dev=3.3.7-r0 pax-utils readline-dev sqlite-dev tar \
+      openssl-dev=3.3.7-r1 pax-utils readline-dev sqlite-dev tar \
       tcl-dev tk-dev util-linux-dev wget xz-dev zlib-dev; \
     wget -O python.tar.xz \
       "https://www.python.org/ftp/python/${PYTHON_VERSION}/Python-${PYTHON_VERSION}.tar.xz"; \
@@ -56,7 +56,7 @@ RUN set -eux; \
     apk add --root /runtime --initdb --no-cache --no-scripts \
       --keys-dir /etc/apk/keys --repositories-file /etc/apk/repositories \
       alpine-keys=2.5-r0 alpine-release=3.21.7-r0 ca-certificates-bundle tzdata \
-      libcrypto3=3.3.7-r0 libssl3=3.3.7-r0 $runtime_deps; \
+      libcrypto3=3.3.7-r1 libssl3=3.3.7-r1 $runtime_deps; \
     mkdir -p /runtime/usr /runtime/etc /runtime/app /runtime/tmp; \
     cp -a /usr/local /runtime/usr/; \
     rm -rf /runtime/usr/local/lib/python3.13/site-packages/pip \

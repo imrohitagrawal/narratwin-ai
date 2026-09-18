@@ -38,6 +38,7 @@ ISSUE524_BRANCH = "stage8-524-frontend-dependency-security-refresh"
 ISSUE525_BRANCH = "stage8-525-schema-oracle-runtime-policy"
 ISSUE527_BRANCH = "stage8-527-backend-ci-timeout"
 ISSUE529_BRANCH = "stage8-529-native-arm64-security"
+ISSUE547_BRANCH = "ci-547-alpine-openssl-r1-drift-correction"
 ISSUE502_BRANCH = "stage8-502-frontend-musl-runtime-security"
 ISSUE507_BRANCH = "stage8-507-google-api-core-grpc-status"
 ISSUE509_BRANCH = "stage8-509-configurable-audio-duration"
@@ -368,6 +369,7 @@ ISSUE529_DOCS_AMENDMENT_SHA256 = "c74cdb7e62e702a3ffa8406976bb1e53a9b98c3dfe128f
 ISSUE529_HOSTED_CORRECTION_COMMENT = "5613239963"
 ISSUE529_HOSTED_CORRECTION_SHA256 = "a444fdf9f283cc631e1e0729bef9b10d227f3778fffc270ed3c76473cb4ca82f"
 ISSUE529_BUDGET_RED = "89f87b3d239b21f0a8064994e328b07760af2cb8"
+ISSUE547_BASE = "2fc1bbd7904421d4a5a2c85995c28dbd9cdf0fce"
 ISSUE495_TREE = "13f79eb5db44249f635a619e1b283279f25ba9f0"
 ISSUE495_ROUTE_COMMENT = "5498387945"
 ISSUE495_CORRECTION_COMMENT = "5498411811"
@@ -651,6 +653,14 @@ ROUTES = {
         "tests/unit/test_governance_preflight_repository.py",
         "docs/SECURITY_AND_PRIVACY.md",
         "docs/STAGE_ISSUE_PLAN.md",
+    },
+    ISSUE547_BRANCH: {
+        "docs/governance/preflights/issue-547.json", "backend/Dockerfile",
+        "scripts/ci/backend-image-package-check.sh", "scripts/quality/stage8_backend_security.py",
+        "scripts/quality/stage8_cut1_routes.py", "tests/unit/test_stage8_backend_security.py",
+        "tests/unit/test_backend_image_package_check.py", "tests/unit/test_cpython_security_backports.py",
+        "tests/unit/test_stage8_cut1_routes.py", "docs/THIRD_PARTY_NOTICES.md",
+        "docs/STATUS.md", "docs/TRACEABILITY.md",
     },
     ISSUE478_BRANCH: {
         "docs/STATUS.md",
@@ -1277,6 +1287,7 @@ TOTAL_LIMITS[ISSUE525_BRANCH] = 2100
 ROUTE_ISSUES[ISSUE527_BRANCH] = 527
 TOTAL_LIMITS[ISSUE527_BRANCH] = 420
 ROUTE_ISSUES[ISSUE529_BRANCH] = 529
+ROUTE_ISSUES[ISSUE547_BRANCH] = 547
 ROUTE_ISSUES[ISSUE502_BRANCH] = 502
 TOTAL_LIMITS[ISSUE502_BRANCH] = 4660
 ROUTE_ISSUES[ISSUE507_BRANCH] = 507
@@ -2758,6 +2769,7 @@ def route_base(run: Callable[[list[str]], Any], branch: str) -> str:
         ISSUE524_BRANCH: (524, ISSUE524_BASE),
         ISSUE525_BRANCH: (525, ISSUE525_BASE),
         ISSUE529_BRANCH: (529, ISSUE529_BASE),
+        ISSUE547_BRANCH: (547, ISSUE547_BASE),
         ISSUE495_BRANCH: (495, ISSUE495_BASE),
         ISSUE482_BRANCH: (482, ISSUE482_BASE),
         ISSUE478_BRANCH: (478, ISSUE478_BASE),

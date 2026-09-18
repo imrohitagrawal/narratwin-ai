@@ -4,7 +4,7 @@ from __future__ import annotations
 import json
 import re
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any, Callable, Final
 
 from scripts.quality import stage8_node_security as node_security
 
@@ -36,9 +36,15 @@ BACKEND_BASE_IMAGE = (
 )
 CPYTHON_VERSION = "3.13.15"
 CPYTHON_SHA256 = "1e66a7945a48390ee4c2a4268a0e4185884059a13c4aab6d148aa208deea4a76"
+ISSUE436_OPENSSL_PACKAGE_REVISION = "3.3.7-r0"
+OPENSSL_PACKAGE_REVISION: Final[str] = "3.3.7-r1"
 
 
-def backend_dockerfile_valid(dockerfile: str) -> bool:
+def backend_dockerfile_valid(
+    dockerfile: str,
+    *,
+    openssl_package_revision: str = OPENSSL_PACKAGE_REVISION,
+) -> bool:
     from_lines = [
         line.strip()
         for line in dockerfile.splitlines()
@@ -50,8 +56,6 @@ def backend_dockerfile_valid(dockerfile: str) -> bool:
         '"https://www.python.org/ftp/python/${PYTHON_VERSION}/Python-${PYTHON_VERSION}.tar.xz"',
         'echo "$PYTHON_SHA256 *python.tar.xz" | sha256sum -c -',
         "gpg --batch --verify python.tar.xz.asc python.tar.xz",
-        "libcrypto3=3.3.7-r0",
-        "libssl3=3.3.7-r0",
         "/runtime/lib/apk/db/installed",
         "COPY --from=cpython-build /runtime/ /",
         "USER 10001:10001",
@@ -66,10 +70,33 @@ def backend_dockerfile_valid(dockerfile: str) -> bool:
         ]
         and dockerfile.count(BACKEND_BASE_IMAGE) == 1
         and all(marker in dockerfile for marker in required)
+        and re.findall(
+            r"\b(openssl-dev|libcrypto3|libssl3)=([^\s;\\]+)", dockerfile
+        )
+        == [
+            ("openssl-dev", openssl_package_revision),
+            ("libcrypto3", openssl_package_revision),
+            ("libssl3", openssl_package_revision),
+        ]
         and "3.5.7-r0" not in dockerfile
         and "python:3.13-alpine" not in dockerfile
         and not re.search(r"(?i)rm[^\n]*(?:/lib/apk/db|/runtime/lib/apk/db)", dockerfile)
     )
+
+
+def backend_runtime_probe_valid(probe: str) -> bool:
+    required = (
+        "ssl.OPENSSL_VERSION",
+        'startswith("OpenSSL 3.3.7 ")',
+        "ssl.create_default_context()",
+        "/lib/apk/db/installed",
+    )
+    return all(marker in probe for marker in required) and re.findall(
+        r'packages\["(libcrypto3|libssl3)"\]\s*==\s*"([^"]+)"', probe
+    ) == [
+        ("libcrypto3", OPENSSL_PACKAGE_REVISION),
+        ("libssl3", OPENSSL_PACKAGE_REVISION),
+    ]
 
 
 def _charge(output: str, failures: list[str]) -> tuple[int, set[str]]:
@@ -159,5 +186,8 @@ def check(
     dockerfile = (root / "backend/Dockerfile").read_text(encoding="utf-8")
     if not backend_dockerfile_valid(dockerfile):
         failures.append("Stage 8 backend CPython and TLS image contract drifted.")
+    probe = (root / "scripts/ci/backend-image-package-check.sh").read_text(encoding="utf-8")
+    if not backend_runtime_probe_valid(probe):
+        failures.append("Stage 8 backend TLS package inventory probe drifted.")
     if branch == ISSUE436_BRANCH:
         check_route(root, run, failures)

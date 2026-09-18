@@ -21,8 +21,8 @@ for record in records:
 if not ssl.OPENSSL_VERSION.startswith("OpenSSL 3.3.7 "):
     raise SystemExit(f"backend image has unexpected TLS library {ssl.OPENSSL_VERSION}")
 if not (
-    packages["libcrypto3"] == "3.3.7-r0"
-    and packages["libssl3"] == "3.3.7-r0"
+    packages["libcrypto3"] == "3.3.7-r1"
+    and packages["libssl3"] == "3.3.7-r1"
 ):
     raise SystemExit("backend image TLS package inventory drifted")
 context = ssl.create_default_context()
