@@ -1249,7 +1249,6 @@ def completed(args: list[str], code: int = 0, out: str = "", err: str = "") -> s
     return subprocess.CompletedProcess(args, code, out, err)
 
 
-
 ATOMIC547_BRANCH = "ci-547-549-atomic-runtime-security-successor"
 ATOMIC547_F, ATOMIC547_C1 = "2ea926c63df6f3442faf2f4c7447d0707e23e31e", "9bde8dd761cd7b8dcd53a9723769487cb1f59933"
 ATOMIC547_FILES = ISSUE549_EXPECTED | {"docs/governance/preflights/issue-547.json", "backend/Dockerfile", "scripts/ci/backend-image-package-check.sh", "scripts/quality/stage8_backend_security.py", "tests/unit/test_stage8_backend_security.py", "tests/unit/test_backend_image_package_check.py", "tests/unit/test_cpython_security_backports.py", "docs/ADR/0006-stage8-release-hardening.md"}
@@ -1258,8 +1257,7 @@ ATOMIC547_FROZEN = {"docs/ADR/0086-soupsieve-2-9-security-refresh.md", "docs/ADR
 
 def _atomic547_snapshot(args: list[str]) -> subprocess.CompletedProcess[str]:
     if args[1] == "diff" and not (routes.ISSUE549_BASE in args and ATOMIC547_F in args) and not ("--name-only" in args and args[-1] in ATOMIC547_FROZEN):
-        paths = args[args.index("--") + 1:] if "--" in args else []
-        paths = paths or sorted(ATOMIC547_FILES - (ATOMIC547_FROZEN if ATOMIC547_F in args else set()))
+        paths = (args[args.index("--") + 1:] if "--" in args else []) or sorted(ATOMIC547_FILES - (ATOMIC547_FROZEN if ATOMIC547_F in args else set()))
         if "--numstat" in args:
             return completed(args, out="".join(f"1\t0\t{p}\n" for p in paths))
         if "--name-status" in args:
@@ -1271,21 +1269,20 @@ def _atomic547_snapshot(args: list[str]) -> subprocess.CompletedProcess[str]:
 
 @pytest.mark.parametrize("fault", [None, "near", "old", "extra", "missing", "base", "frozen", "c1", "parent", "first", "ancestry", "manifest", "binary", "rename", "total", "file", "raw", "registry", "handoff", "status"])
 def test_atomic547_actual_scope_rejects_layer_and_custody_drift(fault: str | None, monkeypatch: Any) -> None:
-    branch = ATOMIC547_BRANCH + ("-near" if fault == "near" else "")
-    if fault == "old": branch = "ci-547-alpine-runtime-pins-successor"
-    changed = ATOMIC547_FILES | ({"foreign.py"} if fault == "extra" else set())
-    if fault == "missing": changed = changed - {"backend/Dockerfile"}
+    branch = "ci-547-alpine-runtime-pins-successor" if fault == "old" else ATOMIC547_BRANCH + ("-near" if fault == "near" else "")
+    changed = (ATOMIC547_FILES | ({"foreign.py"} if fault == "extra" else set())) - ({"backend/Dockerfile"} if fault == "missing" else set())
     corrupt = {"base": ["rev-parse", f"{routes.ISSUE549_BASE}^{{tree}}"], "frozen": ["rev-parse", f"{ATOMIC547_F}^{{tree}}"], "c1": ["rev-parse", f"{ATOMIC547_C1}^{{tree}}"], "parent": ["rev-parse", f"{ATOMIC547_C1}^"], "first": ["diff-tree", "--no-commit-id", "--name-only", "-r", ATOMIC547_C1]}
     def run(args: list[str]) -> subprocess.CompletedProcess[str]:
         value = _atomic547_snapshot(args)
-        if args[1:] == corrupt.get(fault or ""): return completed(args, out="0" * 40 + "\n")
-        if fault == "ancestry" and args[1:3] == ["merge-base", "--is-ancestor"]: return completed(args, code=1)
-        if fault == "manifest" and args[1] == "ls-tree": return completed(args, out=value.stdout.replace("100644", "100755", 1))
-        if fault == "rename" and "--name-status" in args: return completed(args, out="R100\0uv.lock\0foreign.py\0")
-        if "--numstat" in args and ATOMIC547_F in args and routes.ISSUE549_BASE not in args:
-            if fault == "binary": return completed(args, out="-\t-\tbackend/Dockerfile\n")
-            if fault in {"total", "file"}: return completed(args, out=f"{901 if fault == 'total' else 25}\t0\tbackend/Dockerfile\n")
-        return value
+        responses = (
+            (args[1:] == corrupt.get(fault or ""), completed(args, out="0" * 40 + "\n")),
+            (fault == "ancestry" and args[1:3] == ["merge-base", "--is-ancestor"], completed(args, code=1)),
+            (fault == "manifest" and args[1] == "ls-tree", completed(args, out=value.stdout.replace("100644", "100755", 1))),
+            (fault == "rename" and "--name-status" in args, completed(args, out="R100\0uv.lock\0foreign.py\0")),
+            ("--numstat" in args and ATOMIC547_F in args and routes.ISSUE549_BASE not in args and fault == "binary", completed(args, out="-\t-\tbackend/Dockerfile\n")),
+            ("--numstat" in args and ATOMIC547_F in args and routes.ISSUE549_BASE not in args and fault in {"total", "file"}, completed(args, out=f"{901 if fault == 'total' else 25}\t0\tbackend/Dockerfile\n")),
+        )
+        return next((result for matches, result in responses if matches), value)
     original = Path.read_bytes
     targets = {"raw": "docs/governance/preflights/issue-547.json", "registry": "docs/work/registry.json", "handoff": "docs/work/governance-backlog/HANDOFF.md", "status": "docs/STATUS.md"}
     monkeypatch.setattr(Path, "read_bytes", lambda p: original(p) + (b"\n" if p == REPO / targets.get(fault or "", "__none__") else b""))
@@ -1321,15 +1318,18 @@ def test_atomic547_work_record_consumer_rejects_each_stale_binding(monkeypatch: 
     for expected in ("CONTENT_DRIFT", "HANDOFF_STALE", None):
         monkeypatch.setattr(wr, "file_bytes", lambda root, path, private_roots=None: overlay.get(path, original(root, path, private_roots)))
         if expected:
-            with pytest.raises(wr.RecordError, match=f"^{expected}$"): wr.validate(REPO)
-        else: assert wr.validate(REPO)["publicIndex"] == "VALID"
-        if expected == "CONTENT_DRIFT": overlay[wr.REGISTRY] = json.dumps(registry, indent=2).encode() + b"\n"
-        if expected == "HANDOFF_STALE": overlay[work["handoff"]] = original(REPO, work["handoff"]).replace(old.encode(), work["plan"]["sha256"].encode())
+            with pytest.raises(wr.RecordError, match=f"^{expected}$"):
+                wr.validate(REPO)
+        else:
+            assert wr.validate(REPO)["publicIndex"] == "VALID"
+        updates = {"CONTENT_DRIFT": {wr.REGISTRY: json.dumps(registry, indent=2).encode() + b"\n"}, "HANDOFF_STALE": {work["handoff"]: original(REPO, work["handoff"]).replace(old.encode(), work["plan"]["sha256"].encode())}}
+        overlay.update(updates.get(expected or "", {}))
 
 
 def _frozen549_run(args: list[str]) -> subprocess.CompletedProcess[str]:
     if args[1] == "diff" and "--numstat" in args:
-        args = [a for a in args if a != "--cached"]; args.insert(args.index("--"), ATOMIC547_F)
+        args = [a for a in args if a != "--cached"]
+        args.insert(args.index("--"), ATOMIC547_F)
     return subprocess.run(args, cwd=REPO, check=False, capture_output=True, text=True)
 
 

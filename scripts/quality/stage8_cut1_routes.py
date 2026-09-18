@@ -3115,41 +3115,40 @@ def issue498_commit_topology_failures(run: Callable[[list[str]], Any]) -> list[s
 
 def issue547_atomic_evidence(root: Path, run: Callable[[list[str]], Any]) -> None:
     from scripts import work_records
+    def reject(condition: object, message: str) -> None:
+        if condition:
+            raise RuntimeError(message)
     def read(*args: str) -> str:
         result = run(["git", *args])
-        if result.returncode: raise RuntimeError("Atomic #547 Git evidence unavailable.")
+        reject(result.returncode, "Atomic #547 Git evidence unavailable.")
         return str(result.stdout)
-    base, frozen, first = ISSUE549_BASE, ISSUE547_ATOMIC_F, ISSUE547_ATOMIC_C1
-    preflight = "docs/governance/preflights/issue-547.json"
-    if hashlib.sha256((root / preflight).read_bytes()).hexdigest() != "e87526e77db15cfe320ad9de6c8cea6100a0e3a47a8009212f218e9e2b0f304a": raise RuntimeError("Atomic #547 preflight drift.")
-    expected = ((("rev-parse", f"{base}^{{tree}}"), ISSUE549_TREE), (("rev-parse", f"{frozen}^{{tree}}"), "65ec8393dd8255fa968ec815936800f74e04cc52"),
+    base, frozen, first, preflight = ISSUE549_BASE, ISSUE547_ATOMIC_F, ISSUE547_ATOMIC_C1, "docs/governance/preflights/issue-547.json"
+    reject(hashlib.sha256((root / preflight).read_bytes()).hexdigest() != "e87526e77db15cfe320ad9de6c8cea6100a0e3a47a8009212f218e9e2b0f304a", "Atomic #547 preflight drift.")
+    for args, value in ((("rev-parse", f"{base}^{{tree}}"), ISSUE549_TREE), (("rev-parse", f"{frozen}^{{tree}}"), "65ec8393dd8255fa968ec815936800f74e04cc52"),
                 (("rev-parse", f"{first}^{{tree}}"), "78329621c6a16a28a832b516e4b417c87a45f2c6"), (("rev-parse", f"{first}^"), frozen),
                 (("diff-tree", "--no-commit-id", "--name-only", "-r", first), preflight), (("merge-base", base, "HEAD"), base),
-                (("merge-base", "--is-ancestor", first, "HEAD"), ""), (("merge-base", "--is-ancestor", frozen, "HEAD"), ""))
-    for args, value in expected:
-        if read(*args).strip() != value: raise RuntimeError("Atomic #547 ancestry/tree/first-diff drift.")
-    if read("rev-list", "--reverse", f"{frozen}..HEAD").splitlines()[0] != first or read("show", f"{first}:{preflight}").encode() != (root / preflight).read_bytes(): raise RuntimeError("Atomic #547 C1 drift.")
-    manifest = read("ls-tree", "-r", frozen, "--", *sorted(ROUTES[ISSUE549_BRANCH]))
-    if hashlib.sha256(manifest.encode()).hexdigest() != "602c341d3f20fa838cb309f1ba518b7fbfb7f3abac9f5ff382c2c1d3657eb891": raise RuntimeError("Atomic #549 twelve-blob manifest drift.")
+                (("merge-base", "--is-ancestor", first, "HEAD"), ""), (("merge-base", "--is-ancestor", frozen, "HEAD"), "")):
+        reject(read(*args).strip() != value, "Atomic #547 ancestry/tree/first-diff drift.")
+    reject(read("rev-list", "--reverse", f"{frozen}..HEAD").splitlines()[0] != first or read("show", f"{first}:{preflight}").encode() != (root / preflight).read_bytes(), "Atomic #547 C1 drift.")
+    reject(hashlib.sha256(read("ls-tree", "-r", frozen, "--", *sorted(ROUTES[ISSUE549_BRANCH])).encode()).hexdigest() != "602c341d3f20fa838cb309f1ba518b7fbfb7f3abac9f5ff382c2c1d3657eb891", "Atomic #549 twelve-blob manifest drift.")
     rows = [row.split("\t") for row in read("diff", "--numstat", "--no-renames", base, frozen, "--").splitlines()]
-    if len(rows) != 12 or any(len(r) != 3 or not r[0].isdigit() or not r[1].isdigit() for r in rows) or {r[2] for r in rows} != ROUTES[ISSUE549_BRANCH] or sum(int(a) + int(d) for a, d, _ in rows) != 471: raise RuntimeError("Atomic immutable 12-path/471 layer drift.")
+    reject(len(rows) != 12 or any(len(r) != 3 or not r[0].isdigit() or not r[1].isdigit() for r in rows) or {r[2] for r in rows} != ROUTES[ISSUE549_BRANCH] or sum(int(a) + int(d) for a, d, _ in rows) != 471, "Atomic immutable 12-path/471 layer drift.")
     for path in ISSUE547_FROZEN:
-        if (root / path).read_bytes() != read("show", f"{frozen}:{path}").encode() or read("show", f"HEAD:{path}") != read("show", f"{frozen}:{path}") or read("diff", "--cached", "--name-only", frozen, "--", path).strip(): raise RuntimeError("Atomic frozen-only blob or snapshot drift.")
+        reject((root / path).read_bytes() != read("show", f"{frozen}:{path}").encode() or read("show", f"HEAD:{path}") != read("show", f"{frozen}:{path}") or read("diff", "--cached", "--name-only", frozen, "--", path).strip(), "Atomic frozen-only blob or snapshot drift.")
     status = (root / "docs/STATUS.md").read_bytes()
     registry_path, handoff_path = "docs/work/registry.json", "docs/work/governance-backlog/HANDOFF.md"
     registry = read("show", f"{frozen}:{registry_path}")
     old = next(w["plan"] for w in json.loads(registry)["works"] if w["id"] == "governance-backlog")
     digest = hashlib.sha256(status).hexdigest()
     expected_registry = registry.replace(old["sha256"], digest, 1).replace(f'"bytes": {old["bytes"]}', f'"bytes": {len(status)}', 1)
-    if (root / registry_path).read_bytes() != expected_registry.encode() or (root / handoff_path).read_bytes() != read("show", f"{frozen}:{handoff_path}").replace(f'PLAN_SHA256: {old["sha256"]}', f"PLAN_SHA256: {digest}", 1).encode(): raise RuntimeError("Atomic STATUS pointer-only delta drift.")
+    reject((root / registry_path).read_bytes() != expected_registry.encode() or (root / handoff_path).read_bytes() != read("show", f"{frozen}:{handoff_path}").replace(f'PLAN_SHA256: {old["sha256"]}', f"PLAN_SHA256: {digest}", 1).encode(), "Atomic STATUS pointer-only delta drift.")
     work_records.validate(root)
-    _, combined = route_change_budget(root, ISSUE547_ATOMIC_BRANCH, 547, ROUTES[ISSUE547_ATOMIC_BRANCH])
-    layer = {p: n - TEXT_LIMITS[ISSUE549_BRANCH].get(p, 0) for p, n in combined.items() if p not in ISSUE547_FROZEN}
+    layer = {p: n - TEXT_LIMITS[ISSUE549_BRANCH].get(p, 0) for p, n in route_change_budget(root, ISSUE547_ATOMIC_BRANCH, 547, ROUTES[ISSUE547_ATOMIC_BRANCH])[1].items() if p not in ISSUE547_FROZEN}
     layer.update({registry_path: 4, handoff_path: 2, "tests/unit/test_stage8_cut1_routes.py": 94})
     total, charges = route_text_charges(run, frozen, set(layer))
-    if len(layer) != 15 or set(charges) != set(layer) or total > 900 or any(charges[p] > n for p, n in layer.items()): raise RuntimeError("Atomic mutable 15-path/900 layer drift.")
-    if any(route_has_copy_or_rename(read("diff", *flags, "--name-status", "-z", "--find-copies-harder", frozen, *end, "--")) for flags, end in (([], ["HEAD"]), (["--cached"], []), ([], []))): raise RuntimeError("Atomic deleted/renamed/copied path.")
-    if any((root / p).is_symlink() or not (root / p).is_file() for p in ROUTES[ISSUE547_ATOMIC_BRANCH]): raise RuntimeError("Atomic nonregular path.")
+    reject(len(layer) != 15 or set(charges) != set(layer) or total > 900 or any(charges[p] > n for p, n in layer.items()), "Atomic mutable 15-path/900 layer drift.")
+    reject(any(route_has_copy_or_rename(read("diff", *flags, "--name-status", "-z", "--find-copies-harder", frozen, *end, "--")) for flags, end in (([], ["HEAD"]), (["--cached"], []), ([], []))), "Atomic deleted/renamed/copied path.")
+    reject(any((root / p).is_symlink() or not (root / p).is_file() for p in ROUTES[ISSUE547_ATOMIC_BRANCH]), "Atomic nonregular path.")
 
 
 def check_exact_route(
@@ -3978,7 +3977,8 @@ def check_exact_route(
         except (OSError, ValueError, TypeError) as error:
             failures.append(f"Issue #459 governance preflight failed closed: {error}")
     try:
-        if branch == ISSUE547_ATOMIC_BRANCH: issue547_atomic_evidence(root, run)
+        if branch == ISSUE547_ATOMIC_BRANCH:
+            issue547_atomic_evidence(root, run)
         base = fixed_base if fixed_base is not None else route_base(run, branch)
         if branch in {ISSUE524_BRANCH, ISSUE525_BRANCH, ISSUE495_BRANCH, ISSUE479_BRANCH, ISSUE482_BRANCH, ISSUE478_BRANCH, ISSUE475_BRANCH, ISSUE459_BRANCH, ISSUE459_T03_BRANCH, ISSUE459_T05A_BRANCH,
                       ISSUE459_T05B_BRANCH, ISSUE466_BRANCH, ISSUE494_BRANCH}:
