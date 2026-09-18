@@ -385,6 +385,8 @@ ISSUE549_ATTEMPT_OUTCOMES = ("one", "command SUCCESS", "controller FAIL", "resou
 ISSUE549_COMPONENT_STATE = "FROZEN_COMPONENT_DRAFT"
 ISSUE549_STANDALONE_MERGE_ELIGIBLE = False
 ISSUE549_ATOMIC_SUCCESSOR_REQUIRED = True
+ISSUE549_STANDALONE_COMMENT = "5734670605"
+ISSUE549_STANDALONE_SHA256 = "0b7461d1f2c14065c53289e75d2d33da1ee0e8120524ce6b0d5c15e7f798dc4d"
 ISSUE495_TREE = "13f79eb5db44249f635a619e1b283279f25ba9f0"
 ISSUE495_ROUTE_COMMENT = "5498387945"
 ISSUE495_CORRECTION_COMMENT = "5498411811"
@@ -3996,3 +3998,7 @@ def check_exact_route(
             )
     except RuntimeError as error:
         failures.append(f"Issue #{issue} route evidence failed closed: {error}")
+    if branch == ISSUE549_BRANCH and not failures:
+        failures.append(
+            "Issue #549 standalone acceptance is prohibited; atomic successor required."
+        )
