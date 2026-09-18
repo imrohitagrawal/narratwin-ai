@@ -392,8 +392,8 @@
       "path": "docs/work/demo-comparison",
       "plan": {
         "path": "docs/work/demo-comparison/EXECUTION_PLAN.md",
-        "sha256": "5a3590d17cc5e7902065f223ba4c1f8ff2e281127fce59ca676e8f384f272051",
-        "bytes": 25372,
+        "sha256": "979b94e202859ed208bede96db4e552fbc66576907f347e21b8d33c8fd286954",
+        "bytes": 30979,
         "role": "execution-plan"
       },
       "statusRef": "docs/STATUS.md",
@@ -421,7 +421,7 @@
       ],
       "evidenceIndex": "docs/work/demo-comparison/evidence/INDEX.json",
       "handoff": "docs/work/demo-comparison/HANDOFF.md",
-      "checkpoint": "2026-09-17; Issue519 draft PR546 zero-exposure preparation; PR545 failed attempt preserved; exact-head review and hosted checks pending; no provider or Cut1 acceptance"
+      "checkpoint": "2026-09-18; P1/P1B rejected; moving-driver p-video-replace next after rights and exact grant; Aleph 2.0 conditional; draft PR546 review/checks pending; no provider or Cut1 acceptance"
     },
     {
       "id": "working-records",
@@ -615,8 +615,8 @@
       "path": "docs/work/governance-backlog",
       "plan": {
         "path": "docs/STATUS.md",
-        "sha256": "2b6bd4a057b8789c2895940ee86abdd63f8f9a781a98f199052224ee449021a7",
-        "bytes": 292031,
+        "sha256": "13d5946373cb3dc2026c3885dc0caad5a6606ea74111dfd2772b3152c64756b5",
+        "bytes": 292680,
         "role": "source-pointer"
       },
       "statusRef": "docs/STATUS.md",
@@ -634,7 +634,7 @@
       "relationships": [],
       "evidenceIndex": "docs/work/governance-backlog/evidence/INDEX.json",
       "handoff": "docs/work/governance-backlog/HANDOFF.md",
-      "checkpoint": "2026-09-14; observed main71e0568, draft536 daf07ce, prospective amendment74b15e00; verify current checkout and tracker before action"
+      "checkpoint": "2026-09-18; STATUS binds rejected P1/P1B and moving-driver successor under Issue519 draft PR546; verify current checkout and tracker before action"
     },
     {
       "id": "documentation-architecture",

@@ -5,7 +5,7 @@ Compare modular, integrated and hybrid complete walkthroughs for usefulness and 
 ## Read in order
 
 1. [Current status and accepted contracts](../../STATUS.md), then the [PRD](../../PRD.md) and applicable amendments.
-2. [Current execution plan](EXECUTION_PLAN.md) — role: `execution-plan`, zero-exposure preparation only.
+2. [Current execution plan](EXECUTION_PLAN.md) — role: `execution-plan`, zero-new-authority preparation only.
 3. [Decisions](DECISIONS.md), [handoff](HANDOFF.md) and [evidence](evidence/INDEX.json).
 
 Owner: root orchestrator for navigation; existing issue/acceptance owners retain authority.
@@ -22,4 +22,17 @@ Owner: root orchestrator for navigation; existing issue/acceptance owners retain
 
 [PLAN.md](PLAN.md) preserves the complete reviewed proposal byte-for-byte as historical source evidence; its A1–A6 exploratory amendment remains unaccepted. [EXECUTION_PLAN.md](EXECUTION_PLAN.md) owns the current bounded preparation and dependency map. The [review record](evidence/REVIEWS.md) distinguishes preimplementation review, preserved failures and pending exact-head review.
 
-Public research and eligible planning may proceed independently; #531 implementation and #532 provider/account/security stops remain binding. The exact 27.216125-second fixture and canonical Meera/Raj/Myra inputs remain unchanged. No provider is qualified or activated, and no T06 credit follows. Use the existing [work template](../templates/WORK.md) for later separately authorized operations; do not create a parallel ledger.
+Public research and eligible planning may proceed independently. The Issue #532
+incident stop is lifted only for separately reviewed P1 preparation; account,
+credential, provider-operation, rights/privacy/lifecycle and spend gates remain
+separate. The exact 27.216125-second fixture and canonical Meera/Raj/Myra inputs
+remain unchanged.
+
+HeyGen v8/v9 and Pruna P1/P1B are rejected evidence. Do not repeat unchanged
+Avatar IV/static-office composition or run a third P-Video-Avatar prompt pass.
+The next hypothesis is one rights-cleared moving-driver Pruna `p-video-replace`
+diagnostic; Runway Aleph 2.0 is conditional only if that route is unavailable or
+fails. The office still is style/layout/lighting reference only. No provider is
+qualified or activated, no new operation is authorized, and no T06 credit follows.
+Use the existing [work template](../templates/WORK.md) for any later separately
+authorized operation; do not create a parallel ledger.

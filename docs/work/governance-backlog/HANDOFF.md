@@ -1,10 +1,10 @@
 # Governance and evaluation backlog: handoff
 
-PLAN_SHA256: 2b6bd4a057b8789c2895940ee86abdd63f8f9a781a98f199052224ee449021a7
+PLAN_SHA256: 13d5946373cb3dc2026c3885dc0caad5a6606ea74111dfd2772b3152c64756b5
 EVIDENCE_SHA256: 550beb600595ce8cf46e1b89652936f2e02d678564f9e57001548d90784db6ec
 
 
-Observed source checkpoint: 2026-09-17; exact source main2fc1bbd7 and Issue519 draft PR546 preparation. This record only refreshes its STATUS binding; verify live tracker before action.
+Observed source checkpoint: 2026-09-18; exact source main2fc1bbd7 and Issue519 draft PR546 preparation. This record only refreshes its STATUS binding; verify live tracker before action.
 
 Retain remaining governance, evaluation and decomposition issues under their existing scopes. This navigation parent neither absorbs nor closes them; consult the issue before execution.
 

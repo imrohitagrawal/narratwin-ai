@@ -75,3 +75,51 @@ runner dispatch. Generic fallback, frozen checker, central preflight/schema,
 publication/context limits and product/provider code remain unchanged. The
 successor's scopes are derived only from its pinned preflight bytes; deletions
 consume budget. No broader exception is justified by these failures.
+
+## 18 September 2026 — performance-driven successor after rejected P1/P1B
+
+Sources: the public-safe owner correction and [root successor amendment](https://github.com/imrohitagrawal/narratwin-ai/issues/519#issuecomment-5729533055);
+the
+[P1 exact-artifact receipt](https://github.com/imrohitagrawal/narratwin-ai/issues/519#issuecomment-5728503107),
+[P1B receipt](https://github.com/imrohitagrawal/narratwin-ai/issues/519#issuecomment-5728910472),
+[Issue #532 owner decision](https://github.com/imrohitagrawal/narratwin-ai/issues/532#issuecomment-5721036635),
+[ADR0079](../../ADR/0079-cut1-t06-dual-plan-video-strategy.md) and the dated
+[provider landscape](../../governance/CUT1_T06_VIDEO_PROVIDER_LANDSCAPE_2026-09-03.md).
+Decision owner: root orchestrator under delegated routine technical authority.
+
+Finding: the intended experience is not a still presenter placed over an office
+image. It is a jointly coherent moving performance in a real situation, including
+environmental depth, contact, occlusion, lighting, reflections and surrounding
+motion. HeyGen v8/v9, Pruna P1 and Pruna P1B did not establish that experience.
+P1B shows that a prompt influences P-Video-Avatar, but also shows scene swapping,
+invented text and posture defects. Therefore a third prompt-only run with the same
+studio image would repeat the known root cause rather than test a new hypothesis.
+
+Decision: the next candidate is one performance-driven Pruna `p-video-replace`
+diagnostic using a separately rights-cleared moving driver already aligned to the
+exact 27.216125-second WAV and the one canonical Meera identity reference. The
+existing office still is a style/layout/lighting reference only, never the final
+static plate. The official one-to-four character-reference input does not validate
+multi-angle conditioning; new Meera angles, expressions or motion assets remain
+separately governed derivatives. Runway Aleph 2.0 is one conditional challenger
+only if this diagnostic is unavailable or rejected, never an automatic fallback.
+
+Supersession: this replaces the stale active recommendations for another HeyGen
+Avatar IV/static composition, another Pruna P-Video-Avatar prompt pass, or automatic
+Akool/Sync/Seedance fallback. It does not erase their evidence, change the current
+continuous/editorial acceptance distinction, activate A1–A6, or select a provider.
+Hedra remains contract-blocked. `REFERENCE_FIDELITY=UNPROVED` remains binding.
+
+Sequence: prepare the exact moving-driver acquisition/rights package; only after
+separate applicable authority, acquire and approve its bytes, consent and rights;
+freeze one finite PVR-1 activation manifest; run/review at most one output if
+separately authorized; use Aleph only after an explicit PVR-1 unavailable/fail
+decision; then prove one full Myra landscape and one independent portrait output,
+select the workflow, and only then implement an adapter and actual browser/media/
+caption/playback/export path before formal T06–T08 acceptance.
+
+Authority: Issue #532 lifts `INC-G3-URL-001` only for separately reviewed public
+research/P1 preparation. Account/credential use, provider upload/create/generation,
+spend, private-original access, deletion, deployment/publication and broader G3
+remain separately unauthorized. This decision grants zero new provider operations
+or spend and does not transfer the earlier Pruna one-shot authority.

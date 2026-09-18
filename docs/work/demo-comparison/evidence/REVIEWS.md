@@ -55,13 +55,50 @@ branches/comments. #543's failed container verification/storage allowance and
 its partial passes remain in that owner's evidence, untouched. No new verification
 here permits repeating a provider operation or resets earlier expenditure.
 
+## Public experiment receipts and successor disposition
+
+This correction relies only on the two public Issue #519 review receipts. The
+writer did not access the media locators, private originals, account, dashboard,
+credentials or provider. The receipts remain root preliminary reviews rather than
+independent exact-artifact acceptance:
+
+The [post-P1/P1B successor amendment](https://github.com/imrohitagrawal/narratwin-ai/issues/519#issuecomment-5729533055)
+separates the immutable C1 scope/validation authority from current experiment order
+and cumulative exposure; no C1 byte or digest is rewritten.
+
+| Evidence | Public receipt | Preserved result and current effect |
+|---|---|---|
+| Pruna P1, artifact SHA256 `9cda77987433b52c2c4452b3c2ca5c405886036e6202f23f0f041dc10c8d830f` | [comment 5728503107](https://github.com/imrohitagrawal/narratwin-ai/issues/519#issuecomment-5728503107) | `REJECTED_LIMITED_DIAGNOSTIC`: exact WAV compatibility/timing evidence only; inert studio, 1792x1152 delivery and 0.825667-second silent tail block the intended environment/delivery claims |
+| Pruna P1B, artifact SHA256 `246a0df60e9d05a6391aab62d0cd6dea64f60c114715bcb2b8e153abbfcfaf84` | [comment 5728910472](https://github.com/imrohitagrawal/narratwin-ai/issues/519#issuecomment-5728910472) | `REJECTED_LIMITED_DIAGNOSTIC`: prompt responsiveness and reduced fist motion do not cure scene swaps, invented text, head/gaze/posture or delivery defects; no third prompt-only run |
+
+Public metadata proves two outputs totaling 56.083334 delivered video seconds.
+Actual request count, internal jobs/generated or billed seconds, polling, retention,
+P1B authority and cumulative debit/tax remain unbound. They are `UNKNOWN`, not zero.
+Neither output earns T06/T07/T08, provider qualification, workflow selection or
+Cut 1 credit. HeyGen v8/v9 rejection and ADR0079 independently prohibit repeating
+the unchanged Avatar IV/static-office route.
+
+The smallest materially different hypothesis is performance-driven identity
+replacement, not a more elaborate still-image prompt: one rights-cleared moving
+driver aligned to the exact diagnostic WAV, one canonical Meera reference, and one
+separately authorized Pruna `p-video-replace` output. The existing office still is
+style/layout/lighting reference only. The documented one-to-four character-reference field
+does not validate multiple same-subject angles. Runway Aleph 2.0 is one conditional
+challenger after a recorded PVR-1 unavailable/fail result; it inherits no authority.
+
+Issue #532 [owner decision 5721036635](https://github.com/imrohitagrawal/narratwin-ai/issues/532#issuecomment-5721036635)
+lifts the incident-specific stop only for separately reviewed public-research/P1
+preparation. Account/credential, upload/create/generation, spend, private-original,
+deletion, deployment/publication and broader G3 authority remain separate.
+
 ## Verification contract and limitations
 
 The [execution plan invariant matrix](../EXECUTION_PLAN.md#invariants-validation-and-independent-review)
 owns C519-01 through C519-08 and the independent review prompts. Repository tests
-cover scope/routing false passes; actual speech, anatomy, environment, drift,
-captions, revision labor and complete-output usefulness remain unexecuted.
-No full media, final transcript, SRT payload, account, private original or prior
+cover scope/routing false passes. This writer performed no media playback or new
+speech, anatomy, environment, drift, caption, revision-labor or complete-output
+evaluation; the public P1/P1B receipts are not relabelled as independent review.
+No media locator, final transcript, SRT payload, account, private original or prior
 reference clip was accessed. Public metadata is not private availability/backup.
 
 Final candidate evidence must separately record committed direct-head and
@@ -71,6 +108,18 @@ acceptance. This record does not freeze a head or claim hosted success. The
 required status/approval state is main's live inspection responsibility.
 Heavy local integration/security/container commands and dependency bootstrap are
 outside this finite local grant; no local approximation claims hosted parity.
+
+Two independent read-only correction reviewers challenged the corrected core plan
+and authority wording before this disposition paragraph was added. Both reproduced
+`REQUIRED_CONTRACT` false-zero exposure and overbroad driver-acquisition wording;
+the route breaker also reproduced the immutable C1 objective's stale experiment-
+order/exposure wording. Root corrected the smallest responsible boundaries, posted
+successor amendment `5729533055`, regenerated the bindings and obtained
+`GO_CORRECTION` from both reviewers for those core corrections. Main's final
+fixed-base audit records the exact 14-path scope, 1183/2300 charged lines and
+per-file caps. This disposition record still requires one stable final-byte review.
+The reviews are not GitHub `APPROVED`, committed-head/hosted proof, media acceptance
+or merge authority.
 
 Installed planning guidance shaped the bounded dependency/admission packet;
 installed TDD guidance required the real RED before scope implementation.
@@ -107,7 +156,8 @@ command/check/cleanup results belong in the PR comments.
 One active writer; retired PR545 checkout retained until successor independent
 verification and root cleanup review. Combined new checkout allowance is 256 MiB.
 Observed V1/V2 sizes 105676/105668 KiB; no executable environments allocated.
-No task-owned long-running process, provider operation or spend exists. Root
+No task-owned long-running process or provider operation exists in this correction;
+historical P1/P1B exposure remains recorded above. Root
 rechecks live consumers, recoverable remote patches, protected source/evidence
 survival and free space before cleanup. No deletion occurred in this package.
 
