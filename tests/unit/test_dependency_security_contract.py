@@ -43,6 +43,7 @@ ISSUE499_BASE = "d1f5400f5c6dfec5d4b63eb3a83aa82e3330743f"
 ISSUE523_BASE = "b6b0c05c7227428ff0841361f3970b0b2c40aa86"
 ISSUE524_BASE = "b6b0c05c7227428ff0841361f3970b0b2c40aa86"
 ISSUE525_BASE = "b6b0c05c7227428ff0841361f3970b0b2c40aa86"
+ISSUE549_BASE = "2fc1bbd7904421d4a5a2c85995c28dbd9cdf0fce"
 BRACE_PATH = "node_modules/brace-expansion"
 JS_YAML_PATH = "node_modules/js-yaml"
 NANOID_PATH = "node_modules/nanoid"
@@ -130,6 +131,23 @@ PYPDF_SDIST_SHA256 = "595647f6191de6f402cfde1d0c455d6cbccbd509aac32b34783009c032
 PYPDF_PACKAGE_SHA256 = "e8a5256eb981e4dc5c904fa425c0ba134e251343a500219df5a91ea0fcc99423"
 PYPDF_SDIST_URL = "https://files.pythonhosted.org/packages/44/66/54212e75406afd9f3e933d0dda23072f6aecc55c5a273077dc2e0b028b23/pypdf-6.16.2.tar.gz"
 PYPDF_WHEEL_URL = "https://files.pythonhosted.org/packages/13/f1/a2da3b55acd4ab737bf728c97edaaed5ec1d3c1236acb639dcdfa97e42c7/pypdf-6.16.2-py3-none-any.whl"
+SOUPSIEVE_29 = {
+    "name": "soupsieve",
+    "version": "2.9",
+    "source": {"registry": "https://pypi.org/simple"},
+    "sdist": {
+        "url": "https://files.pythonhosted.org/packages/80/f1/93422647dd7e461f23d254e6b2bfa687a85b53aeb4903fcdbb74474d4584/soupsieve-2.9.tar.gz",
+        "hash": "sha256:acee8417325c5653e1377dc31eccad59eb82cbc65942afe6174c53b3aaad63fc",
+        "size": 122122,
+        "upload-time": "2026-07-19T01:35:18.425Z",
+    },
+    "wheels": [{
+        "url": "https://files.pythonhosted.org/packages/7b/d6/3185ab5ad1280319b31986898f3206dd7227cd75e293d4dba2a5e6bf27a0/soupsieve-2.9-py3-none-any.whl",
+        "hash": "sha256:a2b2c76d67df2382d245409fd71e321a571717e58463efa32ace87dcadac2c12",
+        "size": 37387,
+        "upload-time": "2026-07-19T01:35:17.106Z",
+    }],
+}
 HTTPX2_SDIST = (
     "https://files.pythonhosted.org/packages/7f/f8/579a8b51e42e38ee32647df9f08aa25643ae788e275cc625b199829c4671/"
     "httpx2-2.12.0.tar.gz",
@@ -430,6 +448,83 @@ def _text_at(ref: str, path: str) -> str:
         ["git", "show", f"{ref}:{path}"], cwd=ROOT, text=True, capture_output=True, check=True
     )
     return result.stdout
+
+
+def _assert_soupsieve_29_contract(project_text: str, lock_text: str) -> None:
+    """Accept only the exact one-record transitive security refresh."""
+    base_project = _text_at(ISSUE549_BASE, "pyproject.toml")
+    base_lock = tomllib.loads(_text_at(ISSUE549_BASE, "uv.lock"))
+    lock = tomllib.loads(lock_text)
+    assert project_text == base_project
+
+    soupsieve = [
+        package for package in lock["package"] if package["name"] == "soupsieve"
+    ]
+    assert soupsieve == [SOUPSIEVE_29]
+    beautifulsoup = [package for package in lock["package"] if package["name"] == "beautifulsoup4"]
+    base_beautifulsoup = [
+        package for package in base_lock["package"] if package["name"] == "beautifulsoup4"
+    ]
+    assert beautifulsoup == base_beautifulsoup
+
+    normalized = copy.deepcopy(lock)
+    index = next(
+        i for i, package in enumerate(normalized["package"])
+        if package["name"] == "soupsieve"
+    )
+    normalized["package"][index] = next(
+        package for package in base_lock["package"] if package["name"] == "soupsieve"
+    )
+    assert normalized == base_lock
+
+
+def _synthetic_soupsieve_29_lock() -> str:
+    base = _text_at(ISSUE549_BASE, "uv.lock")
+    start = base.index('[[package]]\nname = "soupsieve"')
+    end = base.index("\n[[package]]", start + 1)
+    replacement = '''[[package]]
+name = "soupsieve"
+version = "2.9"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/80/f1/93422647dd7e461f23d254e6b2bfa687a85b53aeb4903fcdbb74474d4584/soupsieve-2.9.tar.gz", hash = "sha256:acee8417325c5653e1377dc31eccad59eb82cbc65942afe6174c53b3aaad63fc", size = 122122, upload-time = "2026-07-19T01:35:18.425Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/7b/d6/3185ab5ad1280319b31986898f3206dd7227cd75e293d4dba2a5e6bf27a0/soupsieve-2.9-py3-none-any.whl", hash = "sha256:a2b2c76d67df2382d245409fd71e321a571717e58463efa32ace87dcadac2c12", size = 37387, upload-time = "2026-07-19T01:35:17.106Z" },
+]'''
+    return base[:start] + replacement + base[end:]
+
+
+def test_issue549_soupsieve_resolution_is_exact_isolated_and_patched() -> None:
+    _assert_soupsieve_29_contract(
+        (ROOT / "pyproject.toml").read_text(encoding="utf-8"),
+        (ROOT / "uv.lock").read_text(encoding="utf-8"),
+    )
+
+
+def test_issue549_soupsieve_oracle_rejects_false_pass_mutations() -> None:
+    project = _text_at(ISSUE549_BASE, "pyproject.toml")
+    candidate = _synthetic_soupsieve_29_lock()
+    _assert_soupsieve_29_contract(project, candidate)
+    header = 'name = "soupsieve"\nversion = "2.9"'
+    start = candidate.index("[[package]]\n" + header)
+    end = candidate.index("\n[[package]]", start + 1)
+    block = candidate[start:end]
+    # Each mutation models a false pass: vulnerable version, forged provenance,
+    # duplicate record, retained Beautiful Soup drift, or unrelated lock drift.
+    mutations = (
+        candidate.replace('version = "2.9"', 'version = "2.8.4"', 1),
+        candidate.replace(SOUPSIEVE_29["sdist"]["hash"], "sha256:" + "0" * 64, 1),
+        candidate.replace(SOUPSIEVE_29["wheels"][0]["hash"], "sha256:" + "1" * 64, 1),
+        candidate.replace(header + '\nsource = { registry = "https://pypi.org/simple" }',
+                          header + '\nsource = { registry = "https://example.invalid/simple" }', 1),
+        candidate[:end] + "\n" + block + candidate[end:],
+        candidate.replace('name = "beautifulsoup4"\nversion = "4.15.0"', 'name = "beautifulsoup4"\nversion = "4.14.3"', 1),
+        candidate.replace('name = "sniffio"\nversion = "1.3.1"', 'name = "sniffio"\nversion = "0.0.0"', 1),
+    )
+    for mutation in mutations:
+        with pytest.raises(AssertionError):
+            _assert_soupsieve_29_contract(project, mutation)
+    with pytest.raises(AssertionError):
+        _assert_soupsieve_29_contract(project + "\n", candidate)
 
 
 def test_issue498_dependency_docs_distinguish_runtime_and_hosted_test_placement() -> None:

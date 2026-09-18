@@ -548,6 +548,20 @@ ISSUE529_EXPECTED = {
     "docs/SECURITY_AND_PRIVACY.md",
     "docs/STAGE_ISSUE_PLAN.md",
 }
+ISSUE549_EXPECTED = {
+    "docs/governance/preflights/issue-549-soupsieve-security-refresh.json",
+    "uv.lock",
+    "tests/unit/test_dependency_security_contract.py",
+    "scripts/quality/stage8_cut1_routes.py",
+    "tests/unit/test_stage8_cut1_routes.py",
+    "docs/ADR/0086-soupsieve-2-9-security-refresh.md",
+    "docs/ADR/INDEX.md",
+    "docs/STATUS.md",
+    "docs/THIRD_PARTY_NOTICES.md",
+    "docs/TRACEABILITY.md",
+    "docs/work/registry.json",
+    "docs/work/governance-backlog/HANDOFF.md",
+}
 ISSUE502_EXPECTED = {
     "docs/governance/preflights/issue-502.json",
     "frontend/Dockerfile",
@@ -1228,10 +1242,97 @@ EXPECTED["stage8-523-httpx2-2-12-security-refresh"] = ISSUE523_EXPECTED
 EXPECTED["stage8-525-schema-oracle-runtime-policy"] = ISSUE525_EXPECTED
 EXPECTED["stage8-527-backend-ci-timeout"] = ISSUE527_EXPECTED
 EXPECTED["stage8-529-native-arm64-security"] = ISSUE529_EXPECTED
+EXPECTED["stage8-549-soupsieve-security-refresh"] = ISSUE549_EXPECTED
 
 
 def completed(args: list[str], code: int = 0, out: str = "", err: str = "") -> subprocess.CompletedProcess[str]:
     return subprocess.CompletedProcess(args, code, out, err)
+
+
+def test_issue549_route_freezes_component_and_atomic_successor_prerequisite() -> None:
+    branch = "stage8-549-soupsieve-security-refresh"
+    base = "2fc1bbd7904421d4a5a2c85995c28dbd9cdf0fce"
+    c1 = "0d019810ec1d96410f390c9e8672655be9d07095"
+    assert routes.ISSUE549_BRANCH == branch
+    assert routes.ISSUE549_BASE == base
+    assert routes.ISSUE549_TREE == "3ebbaaac4b66900de5129f60f56e6cd2d6978766"
+    assert routes.ISSUE549_BODY_SHA256 == (
+        "7e12d0872833abb5de71aa584d0eca645597357d2b197dcabf11ed657b63c5e0"
+    )
+    assert routes.ISSUE549_AMENDMENT_COMMENT == "5731668055"
+    assert routes.ISSUE549_AMENDMENT_SHA256 == (
+        "14ad930762f6b86a786b45d62aa44604587bd12b604ed65a680333c32864022d"
+    )
+    assert routes.ISSUE549_C1_COMMIT == c1
+    assert routes.ISSUE549_C1_TREE == "68eb50b1bb6c82f84317ddf293df371e336209f3"
+    assert routes.ISSUE549_PREFLIGHT_SHA256 == (
+        "34a25839158b56d68f1eeda84b724bfe58f24ed43b06c30f99fcbb4bf910ca13"
+    )
+    assert routes.ISSUE549_COMPONENT_STATE == "FROZEN_COMPONENT_DRAFT"
+    assert routes.ISSUE549_STANDALONE_MERGE_ELIGIBLE is False
+    assert routes.ISSUE549_ATOMIC_SUCCESSOR_REQUIRED is True
+    assert routes.ROUTES[branch] == ISSUE549_EXPECTED
+    assert routes.ROUTE_ISSUES[branch] == 549
+
+    preflight_path = REPO / "docs/governance/preflights/issue-549-soupsieve-security-refresh.json"
+    preflight_bytes = preflight_path.read_bytes()
+    preflight = json.loads(preflight_bytes)
+    assert hashlib.sha256(preflight_bytes).hexdigest() == routes.ISSUE549_PREFLIGHT_SHA256
+    frozen_preflight = subprocess.run(
+        ["git", "show", f"{c1}:{preflight_path.relative_to(REPO)}"],
+        cwd=REPO, check=True, capture_output=True,
+    ).stdout
+    assert frozen_preflight == preflight_bytes
+    limits = {
+        "docs/governance/preflights/issue-549-soupsieve-security-refresh.json": 180,
+        "uv.lock": 30,
+        "tests/unit/test_dependency_security_contract.py": 180,
+        "scripts/quality/stage8_cut1_routes.py": 120,
+        "tests/unit/test_stage8_cut1_routes.py": 160,
+        "docs/ADR/0086-soupsieve-2-9-security-refresh.md": 100,
+        "docs/ADR/INDEX.md": 20,
+        "docs/STATUS.md": 60,
+        "docs/THIRD_PARTY_NOTICES.md": 60,
+        "docs/TRACEABILITY.md": 40,
+        "docs/work/registry.json": 40,
+        "docs/work/governance-backlog/HANDOFF.md": 30,
+    }
+    assert preflight["change_budget"] == {
+        "exact_paths": 12,
+        "maximum_additions_plus_deletions": 800,
+        "deletions_grant_credit": False,
+        "per_file_charged_lines": limits,
+    }
+    assert set(preflight["scope"]["required"]) == ISSUE549_EXPECTED
+    assert preflight["scope"]["required"] == preflight["scope"]["allowed_prefixes"]
+    assert routes.route_change_budget(REPO, branch, 549, ISSUE549_EXPECTED) == (800, limits)
+    for value in (
+        base, routes.ISSUE549_TREE, routes.ISSUE549_BODY_SHA256,
+        routes.ISSUE549_AMENDMENT_COMMENT, routes.ISSUE549_AMENDMENT_SHA256,
+        routes.ISSUE549_COMPONENT_STATE, "cannot merge standalone", "atomic successor",
+    ):
+        assert value in preflight["objective"]
+
+    def real_run(args: list[str]) -> subprocess.CompletedProcess[str]:
+        return subprocess.run(args, cwd=REPO, check=False, capture_output=True, text=True)
+
+    assert routes.route_base(real_run, branch) == base
+
+    def drifted_run(args: list[str]) -> subprocess.CompletedProcess[str]:
+        if args == ["git", "rev-parse", f"{c1}^{{tree}}"]:
+            return completed(args, out="0" * 40 + "\n")
+        return real_run(args)
+
+    error = pytest.raises(RuntimeError, routes.route_base, drifted_run, branch)
+    assert "Issue #549 frozen component evidence" in str(error.value)
+
+    def detached_run(args: list[str]) -> subprocess.CompletedProcess[str]:
+        if args == ["git", "merge-base", "--is-ancestor", c1, "HEAD"]:
+            return completed(args, code=1)
+        return real_run(args)
+
+    error = pytest.raises(RuntimeError, routes.route_base, detached_run, branch)
+    assert "Issue #549 frozen component evidence" in str(error.value)
 
 
 def test_issue502_musl_runtime_route_is_exact_bounded_and_authority_pinned() -> None:
