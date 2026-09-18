@@ -98,3 +98,4 @@ Missing or ambiguous status needs review. Absence of a supersession link proves 
 | [0083-schema-oracle-runtime-policy](0083-schema-oracle-runtime-policy.md) | Accepted | Not declared; effective lifecycle unproved |
 | [0084-native-arm64-hosted-security](0084-native-arm64-hosted-security.md) | Accepted for Issue #529 candidate validation | Not declared; effective lifecycle unproved |
 | [0085-documentation-navigation](0085-documentation-navigation.md) | Proposed in Issue537 / draft PR536. No product or acceptance-policy effect. | Not declared; effective lifecycle unproved |
+| [0086-soupsieve-2-9-security-refresh](0086-soupsieve-2-9-security-refresh.md) | Frozen component draft for Issue #549; standalone merge prohibited. | Requires a fresh atomic #549/#547 successor |

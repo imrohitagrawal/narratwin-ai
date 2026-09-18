@@ -2,6 +2,14 @@
 
 PR #536 delivered Issue #535/#537 [documentation navigation](README.md), and PR #539 merged the Issue #538 sequencing reconciliation at57c7dcb. That documentation work is complete. [Issue #540 / PR #541](https://github.com/imrohitagrawal/narratwin-ai/pull/541) is the bounded four-bibliography G1 correction under #521/#533, with [reviewed plan](work/g1-certification/PLAN.md), [review evidence](work/g1-certification/evidence/REVIEWS.md) and [current handoff](work/g1-certification/HANDOFF.md). It produces a separate structurally checked successor; G1 certification, accepted-current transition and Cut1 acceptance remain incomplete. Root's delegated technical approval is not a human attestation or GitHub APPROVED review. PR #534 remains retired unmerged and its unsigned signing packet must never be resumed.
 
+Issue #549 preserves an exact Soup Sieve 2.9 lock candidate as
+`FROZEN_COMPONENT_DRAFT`. The sole resolver command succeeded, but its
+controller failed (exit 76) because task-cache peak 114404 KiB exceeded the
+65536 KiB ceiling; the attempt remains spent and cleanup was verified. Recovery
+comment `5732696613` binds the retained lock bytes without authorizing a retry.
+Standalone merge is prohibited: offline lock validation is pending the 4 GiB
+free-space floor, and a fresh atomic #549/#547 successor remains required.
+
 ## Find current work
 
 Start at [the work index](work/INDEX.md) (`docs/work/INDEX.md`) for stable programs,

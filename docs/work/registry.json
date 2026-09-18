@@ -22,6 +22,11 @@
   ],
   "issueInventory": [
     {
+      "number": 549,
+      "title": "Security: refresh transitive Soup Sieve after two advisories",
+      "workId": "security-governance"
+    },
+    {
       "number": 538,
       "title": "Docs: reconcile delegated sequencing and the retired G1 carrier",
       "workId": "working-records"

@@ -904,3 +904,11 @@ remain separate gates.
 | Let the complete backend suite reach a verdict | PR #522 [`34282990946` / job `102251927718`](https://github.com/imrohitagrawal/narratwin-ai/actions/runs/34282990946/job/102251927718) cancelled at 15m18 and [`34252374484` / job `102149655021`](https://github.com/imrohitagrawal/narratwin-ai/actions/runs/34252374484/job/102149655021) cancelled at 15m14; exact job-level 30-minute regression | A finite ceiling remains; no command, selection, retry, or concurrency change |
 | Reject ambiguous or weakened timeout policy | Missing, duplicate, non-numeric, 29, 31, and misplaced mutations | Frontend, Docker, and Stage 8 ceilings remain 20, 20, and 35 minutes |
 | Preserve delivery authority | Issue #527 preflight, exact route/base/budget tests, and exact-head hosted checks | No product, provider, demo, release, production, credential, egress, or spend authority |
+
+## Issue #549 Soup Sieve security-candidate traceability
+
+| Requirement | Evidence | Preserved boundary |
+|---|---|---|
+| Remove two strict-audit findings without suppression | Exact official-PyPI Soup Sieve 2.9 sdist/wheel identities and semantic lock mutation tests | Beautiful Soup 4.15.0, raw manifest, every unrelated lock record, and parser behavior remain unchanged |
+| Preserve failed-attempt truth | Recovery comment `5732696613`; command SUCCESS; controller FAIL/76; 114404 KiB cache peak against 65536 KiB; cleanup verified; attempt count one | No retry, repair, reconstruction, cap reset, alternate registry, or whole-operation pass |
+| Prevent standalone acceptance | ADR 0086, exact route and `FROZEN_COMPONENT_DRAFT` state | Offline check awaits 4 GiB free; fresh atomic #549/#547 successor, exact-head review, hosted checks, and final push remain required |
