@@ -31,8 +31,15 @@ remain unchanged.
 HeyGen v8/v9 and Pruna P1/P1B are rejected evidence. Do not repeat unchanged
 Avatar IV/static-office composition or run a third P-Video-Avatar prompt pass.
 The next hypothesis is one rights-cleared moving-driver Pruna `p-video-replace`
-diagnostic; Runway Aleph 2.0 is conditional only if that route is unavailable or
-fails. The office still is style/layout/lighting reference only. No provider is
-qualified or activated, no new operation is authorized, and no T06 credit follows.
+diagnostic. In parallel, prepare—but do not generate—the distinct HFE-1 editorial
+lane: an exact 55–60% presenter / 40–45% product/environment shot plan and
+Higgsfield-versus-VOSU/Seedance constituent matrix derived from the identified
+[public reference reel](https://www.instagram.com/reel/Dcuigs2zPWK/). Runway
+Act-Two is the conditional performance challenger; Aleph is only a separately
+declared scene-edit constituent. Higgsfield direct canonical-WAV use is unproved;
+any later editorial generation starts with one finite separately authorized P1D
+diagnostic, not a complete walkthrough. The office still is style/layout/lighting
+reference only. No provider is qualified or activated, no new operation is
+authorized, and no T06 credit follows.
 Use the existing [work template](../templates/WORK.md) for any later separately
 authorized operation; do not create a parallel ledger.

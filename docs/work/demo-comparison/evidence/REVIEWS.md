@@ -93,8 +93,9 @@ The exact PCM16 WAV remains authoritative source/custody, but direct unchanged-W
 submission must not be implied. Embedded driver audio or post-output restoration is
 a derived representation requiring a separately reviewed lineage/codec/tool/
 command/hash rule and separate operation authority. No conversion, remux, stock
-download or provider operation occurred. Research narrowed the contract; it is not
-provider qualification or acceptance.
+download or provider operation occurred. Later reference inspection did use a
+temporary public-rendition fetch; that distinct activity is recorded below.
+Research narrowed the contract; it is not provider qualification or acceptance.
 
 Issue #532 [owner decision 5721036635](https://github.com/imrohitagrawal/narratwin-ai/issues/532#issuecomment-5721036635)
 lifts the incident-specific stop only for separately reviewed public-research/P1
@@ -108,8 +109,10 @@ owns C519-01 through C519-08 and the independent review prompts. Repository test
 cover scope/routing false passes. This writer performed no media playback or new
 speech, anatomy, environment, drift, caption, revision-labor or complete-output
 evaluation; the public P1/P1B receipts are not relabelled as independent review.
-No media locator, final transcript, SRT payload, account, private original or prior
-reference clip was accessed. Public metadata is not private availability/backup.
+No private media locator, final transcript, SRT payload, account or private original
+was accessed. A later bounded public-reference review used read-only Chrome and a
+temporary public rendition outside the repository; it created no provider operation
+and grants no reuse right. Public access is not private availability/backup.
 
 Final candidate evidence must separately record committed direct-head and
 merge-checkout scope/preflight results, quality/controller outcomes, hosted
@@ -133,8 +136,10 @@ or merge authority.
 
 Installed planning guidance shaped the bounded dependency/admission packet;
 installed TDD guidance required the real RED before scope implementation.
-Browser/generation/account/provider skills and new frameworks were rejected as
-outside scope. No skills/plugins/dependencies installed. Existing work records,
+At the earlier core-plan checkpoint, browser/generation/account/provider skills
+and new frameworks were rejected as outside scope; the later owner-requested
+public-reference amendment used the bounded browser review recorded below. No
+skills/plugins/dependencies installed. Existing work records,
 preflight validator, preserved checks and generator were reused. The skill name
 alone is not evidence; the RED/negative cases and narrowed scope are its effect.
 
@@ -161,15 +166,55 @@ change is permitted. The corrected head remains draft/blocked until exact-head
 command evidence and independent correction verification exist. Routine new
 command/check/cleanup results belong in the PR comments.
 
+## 18 September reference/input amendment review
+
+Two independent read-only reviewers returned `NO-GO` on the first amendment bytes.
+Root reproduced and classified their consolidated findings:
+
+- `REQUIRED_CONTRACT`: HFE-1 skipped a finite generated diagnostic before complete
+  output. Correction adds P1D, at most two shots/12 delivered seconds/two creates,
+  exact-input lineage, rejection rules and pass-to-editorial-P2 only.
+- `REQUIRED_CONTRACT`: Higgsfield MP3/WAV denotes a voice-cloning sample, not proven
+  canonical-narration upload. Correction makes exact-audio/mute-mux viability an
+  admission requirement.
+- `REQUIRED_CONTRACT`: browser/fetch/resource provenance was contradictory.
+  Correction records read-only browser inspection, temporary public fetch/removal,
+  no repository retention/reuse/provider action, and the exceeded cache ceiling.
+- `REQUIRED_CONTRACT`: host/model lineage and HeyGen sources were incomplete.
+  Correction distinguishes VOSU-hosted Seedance from Higgsfield Cinema Studio 4.0/
+  Seedance 2.5 and links Digital Twin/Looks sources.
+- `ADVISORY_DEBT`, accepted in scope: define the presenter-share denominator.
+  Correction classifies the entire delivered timeline once and excludes UI cards.
+
+Those were first-pass correction dispositions, not exact-final-byte approval.
+
+First correction re-review resolved those findings but returned `NO-GO` for one
+new `REQUIRED_CONTRACT`: the at-most-12-second P1D excerpt was incorrectly called
+approved even though the accepted diagnostic is the exact 27.216125-second WAV and
+A1–A6 remain unaccepted. The correction now sets `P1D_AUDIO_SEGMENT=UNRESOLVED` and
+requires the applicable amendment, exact source/derived hashes, sample and transcript
+boundaries, codec/tool/command lineage and separate acceptance before admission.
+
+Final independent current-byte re-review returned product `GO` and governance
+`GO_CORRECTION` for plan SHA256
+`2206bb47b60947a961975958110aac26835e6e070c869ad4dbaa2bb3eeb36eae`:
+zero `CRITICAL_BLOCKER`, zero `REQUIRED_CONTRACT` and zero new advisory findings.
+Both reviewers confirmed the input matrix, diagnostic-before-full-proof sequence,
+audio-derivative gate, host/model lineage, reference provenance, resource-failure
+record and zero-operation authority. This is commit/push eligibility only—not a
+GitHub `APPROVED` review, hosted parity, media acceptance or merge authority.
+
 ## Resource and human-only disposition
 
-One active writer; retired PR545 checkout retained until successor independent
-verification and root cleanup review. Combined new checkout allowance is 256 MiB.
-Observed V1/V2 sizes 105676/105668 KiB; no executable environments allocated.
-No task-owned long-running process or provider operation exists in this correction;
-historical P1/P1B exposure remains recorded above. Root
-rechecks live consumers, recoverable remote patches, protected source/evidence
-survival and free space before cleanup. No deletion occurred in this package.
+One active writer. The retired PR545 worktree is absent; its remote branch and
+`c205ea29` commit remain recovery. The 256 MiB cumulative-new-disk ceiling failed:
+V2 is 479804 KiB and includes a 371580 KiB task-local `.uv-cache`; growth from the
+105668 KiB baseline is 374136 KiB, 111992 KiB beyond the ceiling. No retroactive
+pass is claimed. Read-only browser inspection and temporary public fetches occurred;
+source files were removed, some via Trash, with no measured reclaimed bytes. No
+task cache was deleted. No task-owned long-running process or provider operation
+exists; historical P1/P1B exposure remains recorded above. Root controls any exact
+cleanup proposal and rechecks consumers/recovery/evidence/free space first.
 
 Owner-only decisions remain exact operation/spend, rights/privacy/security-incident,
 artifact listening/visual acceptance and any exploratory amendment adoption.
