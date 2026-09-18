@@ -1249,6 +1249,21 @@ def completed(args: list[str], code: int = 0, out: str = "", err: str = "") -> s
     return subprocess.CompletedProcess(args, code, out, err)
 
 
+@pytest.mark.parametrize("via_scope", [False, True])
+def test_issue549_standalone_acceptance_fails_closed(via_scope: bool, monkeypatch: Any) -> None:
+    monkeypatch.setattr(stage8, "current_branch", lambda: routes.ISSUE549_BRANCH)
+    monkeypatch.setattr(stage8, "changed_files_for_stage_scope", lambda: sorted(ISSUE549_EXPECTED))
+    failures: list[str] = []
+    if via_scope:
+        stage8.check_stage_scope(failures)
+    else:
+        routes.check_exact_route(REPO, stage8.run, routes.ISSUE549_BRANCH, ISSUE549_EXPECTED, failures)
+    assert failures == ["Issue #549 standalone acceptance is prohibited; atomic successor required."]
+    assert (routes.ISSUE549_STANDALONE_COMMENT, routes.ISSUE549_STANDALONE_SHA256) == (
+        "5734670605", "0b7461d1f2c14065c53289e75d2d33da1ee0e8120524ce6b0d5c15e7f798dc4d",
+    )
+
+
 def test_issue549_route_freezes_component_and_atomic_successor_prerequisite() -> None:
     branch = "stage8-549-soupsieve-security-refresh"
     base = "2fc1bbd7904421d4a5a2c85995c28dbd9cdf0fce"
@@ -1346,6 +1361,12 @@ def test_issue549_route_freezes_component_and_atomic_successor_prerequisite() ->
 
     error = pytest.raises(RuntimeError, routes.route_base, detached_run, branch)
     assert "Issue #549 frozen component evidence" in str(error.value)
+    failures: list[str] = []
+    routes.check_exact_route(REPO, detached_run, branch, ISSUE549_EXPECTED, failures)
+    assert failures == ["Issue #549 route evidence failed closed: Issue #549 frozen component evidence is unavailable or inconsistent."]
+    failures = ["prior failure"]
+    routes.check_exact_route(REPO, real_run, branch, ISSUE549_EXPECTED, failures)
+    assert failures == ["prior failure"]
 
 
 def test_issue502_musl_runtime_route_is_exact_bounded_and_authority_pinned() -> None:
@@ -4380,7 +4401,10 @@ def test_exact_route_completeness_lookalikes_and_budgets(monkeypatch: Any) -> No
                   _issue498_runner if branch == routes.ISSUE498_BRANCH else
                   lambda _: completed([]))
         routes.check_exact_route(REPO, runner, branch, set(paths), failures)
-        assert failures == []
+        assert failures == (
+            ["Issue #549 standalone acceptance is prohibited; atomic successor required."]
+            if branch == routes.ISSUE549_BRANCH else []
+        )
         if branch in {
             routes.ISSUE459_BRANCH, routes.ISSUE479_BRANCH, routes.ISSUE494_BRANCH,
         }:
