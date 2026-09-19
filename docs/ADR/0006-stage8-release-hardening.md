@@ -420,3 +420,80 @@ release, public-availability, or production-readiness authority.
 ```
 
 <!-- ISSUE158-SECURITY-HISTORY-V2:END -->
+
+## Issue #547/#549 atomic package-revision maintenance — 2026-09-19
+
+Accepted implementation scope: [#547 successor](https://github.com/imrohitagrawal/narratwin-ai/issues/547#issuecomment-5730236384), paired atomic comments `5735011321`/`5735021726`/`5735025880`, and pointer-only correction `5737207458`/`5737217558`/`5737227530`. Immutable C1 remains `9bde8dd761cd7b8dcd53a9723769487cb1f59933`, parent frozen549 `2ea926c63df6f3442faf2f4c7447d0707e23e31e`; main remains `2fc1bbd7904421d4a5a2c85995c28dbd9cdf0fce`.
+
+Decision: maintain exact rolling-repository revisions through the real build,
+runtime inventory and consumed Stage8 validator: OpenSSL `3.3.7-r1` for
+`openssl-dev`, `libcrypto3` and `libssl3`; `alpine-release=3.21.8-r0`;
+`alpine-keys=2.5-r0` unchanged. Typed current expectations live in
+`stage8_backend_security.py`; Issue436 r0/3.21.7 constants and receipts remain history.
+Official multi-architecture facts and packaging identities are in
+[third-party notices](../THIRD_PARTY_NOTICES.md#issue-547-exact-alpine-package-provenance--2026-09-19).
+
+The former pins became unavailable in the rolling Alpine repository. Floating
+versions, base-image replacement and weakening scanners would hide that failure,
+so they are rejected. Any further revision drift needs another reviewed decision.
+Base digest/Alpine branch, CPython version/hash/signature, architectures, TLS/CA,
+non-root identity, APK metadata, scanner/SBOM controls and thresholds are unchanged.
+
+Atomic proof separately enforces main→F12/471, F→candidate15/900 and main→candidate20/1371, without deletion credit. Five frozen-only blobs remain exact; registry may change only governance-backlog STATUS hash/bytes and its handoff only `PLAN_SHA256`. All other bytes remain exact. The consumed work-record validator proves these bindings; historical549 still fails standalone acceptance.
+
+Only the complete independently reviewed carrier may use the sole remaining
+push, owned by main. Direct-head hosted AMD64/native-ARM64 build/security evidence
+must pass before its draft PR; merge-ref checks, approvals and conversations remain
+separate. No local Docker/bootstrap or product, provider, deployment, release or
+Cut1 acceptance is established by this maintenance.
+
+## Issue #554 two-root hosted-drift successor — 2026-09-19
+
+Decision: keep the two demonstrated roots in one narrow successor to published
+`f8daafee2d28ed46e56483b49e654a0fcea685e6` (tree `9063cde95ed01cf28f398503d24d58ff1a49306c`).
+[Plan5737932641](https://github.com/imrohitagrawal/narratwin-ai/issues/554#issuecomment-5737932641)
+binds7088 bytes/SHA256 `daa8f1912532520ee31cd9ce7d5e2dc7f96a53cf7a4d795344d61a3891c8cb85`.
+The consumed prior push's security run35409304465 reported AnyIO strict-audit
+drift and identical stale frontend APK pins on AMD64/native ARM64. This does not
+authorize retrying the old carrier. Separate PRs would duplicate hosted exposure
+and obscure the single candidate that must satisfy both roots.
+
+Replace only the root AnyIO record with the retained official4.14.2 record;
+preserve raw pyproject, the Semgrep lock, idna edge and every unrelated record.
+Historical whole-lock oracles first prove a unique full current record, then
+restore the exact historical record; arbitrary or forged normalization fails.
+Frontend changes only release3.24.2-r0 and CA bundle20260909-r0 plus six SBOM
+distro qualifiers3.24.2. Active pin checks reject commented decoys. Base/platform
+digests, other four packages, Node/OpenSSL, TLS/CA, non-root and scanners stay fixed.
+
+C1 is preflight-only on the exact predecessor. The consumed route proves main→P
+20 paths/906 charged lines, P→candidate17 paths with manifest-owned caps, and
+main-union27; ten predecessor-only blobs stay exact in HEAD, index and working tree.
+Target900/hard1200 has no deletion credit. Scope growth or new drift stops work.
+Source-only budget: checkout160MiB, serialized scratch64MiB, reports32MiB,
+combined256MiB; free admission15204352KiB, floor14680064KiB. No new environment.
+TDD proves real consumers before correction; source tests cannot prove downloaded
+artifact contents, image execution, scanner databases or hosted bootstrap parity.
+Main's one new push follows source review; an unchanged-head PR then establishes
+PR-only/merge-ref contexts, eligible approval, last-push approval and conversations.
+Max three exact-head review cycles/two corrections; no automatic retry or waiver.
+
+R2 rejected candidate `dd1d3a63` for one reproduced `CRITICAL_BLOCKER`: an active
+ENV/RUN/LABEL decoy could satisfy a pin missing from the real APK install clause.
+[Disposition5738180443](https://github.com/imrohitagrawal/narratwin-ai/issues/554#issuecomment-5738180443)
+authorizes correction1/2: compare the single logical APK command's exact option
+and package tokens. RED recorded37 failures, including the independent source
+predicate. Packages/Dockerfile/thresholds stay unchanged; corrected-head R3 remains
+required. Earlier local GREEN is preserved, not transferred as acceptance.
+
+## Issue #555 bounded heredoc admission — 2026-09-19
+
+Decision: reject active RUN/COPY/ADD/ONBUILD heredoc openers before comment stripping
+or APK normalization; retain exact APK tokens. Quoting, escapes, continuations and
+JSON ambiguity fail closed; full-line comments and unambiguous literals remain.
+This bounded recognizer is not a general Dockerfile parser or native-build proof.
+The independent source oracle binds the whole frozen Dockerfile, not this guard.
+Plan5738302888/addendum5738327761 bind parent `ad4bcf3b`, main→parent27/1441,
+increment11/500 without deletion credit, union28 and seventeen frozen mode/blobs.
+TDD reproduced the exact3942-byte mutant before correction; removing the guard
+reproduces its false pass. #554 history stays failed; no new package or threshold.

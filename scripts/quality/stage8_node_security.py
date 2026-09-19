@@ -67,8 +67,8 @@ ISSUE389_VULNERABLE_RUNTIME_IMAGE = (
 )
 FRONTEND_RUNTIME_NODE_VERSION = "26.7.0"
 FRONTEND_RUNTIME_PACKAGES = {
-    "alpine-keys": "2.6-r0", "alpine-release": "3.24.1-r0",
-    "ca-certificates-bundle": "20260611-r0", "libgcc": "15.2.0-r5",
+    "alpine-keys": "2.6-r0", "alpine-release": "3.24.2-r0",
+    "ca-certificates-bundle": "20260909-r0", "libgcc": "15.2.0-r5",
     "libstdc++": "15.2.0-r5", "musl": "1.2.6-r2",
 }
 FRONTEND_BUILD_ARCHIVE_SHA512 = {
@@ -105,7 +105,66 @@ FRONTEND_NODE_IMAGE_FAILURE = (
 )
 
 
+def frontend_heredoc_free(source: str) -> bool:
+    """Bounded admission guard, not a Dockerfile/shell parser; ambiguity rejects."""
+    pending = ""
+    for physical in source.split("\n"):
+        line = physical.strip()
+        if re.match(r"(?i)^#\s*escape\s*=", line) and line.split("=", 1)[1].strip() != "\\":
+            return False
+        if not line or line.startswith("#"):
+            continue
+        line = pending + line
+        if (len(line) - len(line.rstrip("\\"))) % 2:
+            pending = line[:-1] + " "
+            continue
+        pending = ""
+        instruction = re.match(r"(?i)^(?:ONBUILD\s+)?(?:RUN|COPY|ADD)\s+(.*)$", line)
+        if not instruction:
+            continue
+        body = instruction[1]
+        if body.startswith("["):
+            try:
+                value = json.loads(body)
+            except ValueError:
+                return False
+            if not isinstance(value, list) or not value or any(type(v) is not str for v in value):
+                return False
+            continue
+        word, quote, escaped = "", "", False
+        for char in body + " ":
+            if escaped:
+                word += char
+                escaped = False
+            elif char == "\\" and quote != "'":
+                word += char
+                escaped = True
+            elif quote:
+                word += char
+                if char == quote:
+                    quote = ""
+            elif char in "\"'":
+                word += char
+                quote = char
+            elif char.isspace():
+                if re.match(r"^\d*<<", word):
+                    return False
+                word = ""
+            else:
+                word += char
+        if quote or escaped:
+            return False
+    return not pending
+
+
 def frontend_node_image_valid(dockerfile: str) -> bool:
+    if not frontend_heredoc_free(dockerfile):
+        return False
+    dockerfile = "\n".join(line.split("#", 1)[0] for line in dockerfile.splitlines())
+    logical = dockerfile.replace("\\\n", " ")
+    apk_clauses = re.findall(r"(?m)^RUN set -eux;[ \t]*(apk add [^;\n]+);", logical)
+    apk_tokens = "apk add --root /runtime --initdb --no-cache --no-scripts --keys-dir /etc/apk/keys --repositories-file /etc/apk/repositories".split()
+    apk_tokens += [f"{name}={version}" for name, version in FRONTEND_RUNTIME_PACKAGES.items()]
     expected = [
         f"FROM {FRONTEND_NODE_SOURCE_IMAGE} AS node-source",
         "FROM scratch AS deps",
@@ -122,11 +181,8 @@ def frontend_node_image_valid(dockerfile: str) -> bool:
         and dockerfile.count("COPY --from=node-source /runtime/ /") == 2
         and "process.config.variables.node_use_quic!==false" in dockerfile
         and "process.config.variables.node_shared_openssl!==false" in dockerfile
-        and dockerfile.count("apk add --root /runtime --initdb --no-cache --no-scripts") == 1
-        and all(
-            dockerfile.count(f"{name}={version}") == 1
-            for name, version in FRONTEND_RUNTIME_PACKAGES.items()
-        )
+        and len(re.findall(r"\bapk\s+add\b", logical)) == 1
+        and [clause.split() for clause in apk_clauses] == [apk_tokens]
         and "test -s /runtime/lib/apk/db/installed" in dockerfile
         and "chmod 1777 /runtime/tmp" in dockerfile
         and dockerfile.count("m.copySharpLibvips('/mnt/deps','/app',process.arch)") == 1

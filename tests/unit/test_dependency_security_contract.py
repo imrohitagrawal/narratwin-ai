@@ -43,6 +43,7 @@ ISSUE499_BASE = "d1f5400f5c6dfec5d4b63eb3a83aa82e3330743f"
 ISSUE523_BASE = "b6b0c05c7227428ff0841361f3970b0b2c40aa86"
 ISSUE524_BASE = "b6b0c05c7227428ff0841361f3970b0b2c40aa86"
 ISSUE525_BASE = "b6b0c05c7227428ff0841361f3970b0b2c40aa86"
+ISSUE549_BASE = "2fc1bbd7904421d4a5a2c85995c28dbd9cdf0fce"
 BRACE_PATH = "node_modules/brace-expansion"
 JS_YAML_PATH = "node_modules/js-yaml"
 NANOID_PATH = "node_modules/nanoid"
@@ -130,6 +131,23 @@ PYPDF_SDIST_SHA256 = "595647f6191de6f402cfde1d0c455d6cbccbd509aac32b34783009c032
 PYPDF_PACKAGE_SHA256 = "e8a5256eb981e4dc5c904fa425c0ba134e251343a500219df5a91ea0fcc99423"
 PYPDF_SDIST_URL = "https://files.pythonhosted.org/packages/44/66/54212e75406afd9f3e933d0dda23072f6aecc55c5a273077dc2e0b028b23/pypdf-6.16.2.tar.gz"
 PYPDF_WHEEL_URL = "https://files.pythonhosted.org/packages/13/f1/a2da3b55acd4ab737bf728c97edaaed5ec1d3c1236acb639dcdfa97e42c7/pypdf-6.16.2-py3-none-any.whl"
+SOUPSIEVE_29 = {
+    "name": "soupsieve",
+    "version": "2.9",
+    "source": {"registry": "https://pypi.org/simple"},
+    "sdist": {
+        "url": "https://files.pythonhosted.org/packages/80/f1/93422647dd7e461f23d254e6b2bfa687a85b53aeb4903fcdbb74474d4584/soupsieve-2.9.tar.gz",
+        "hash": "sha256:acee8417325c5653e1377dc31eccad59eb82cbc65942afe6174c53b3aaad63fc",
+        "size": 122122,
+        "upload-time": "2026-07-19T01:35:18.425Z",
+    },
+    "wheels": [{
+        "url": "https://files.pythonhosted.org/packages/7b/d6/3185ab5ad1280319b31986898f3206dd7227cd75e293d4dba2a5e6bf27a0/soupsieve-2.9-py3-none-any.whl",
+        "hash": "sha256:a2b2c76d67df2382d245409fd71e321a571717e58463efa32ace87dcadac2c12",
+        "size": 37387,
+        "upload-time": "2026-07-19T01:35:17.106Z",
+    }],
+}
 HTTPX2_SDIST = (
     "https://files.pythonhosted.org/packages/7f/f8/579a8b51e42e38ee32647df9f08aa25643ae788e275cc625b199829c4671/"
     "httpx2-2.12.0.tar.gz",
@@ -268,6 +286,8 @@ def _assert_issue525_jsonschema_dev_contract(project_text: str, lock_text: str) 
         base_lock,
     )
     assert normalized_project == base_project
+    _normalize_soupsieve_29_delta(normalized_lock, base_lock)
+    _normalize_anyio_4142_delta(normalized_lock, base_lock)
     assert normalized_lock == base_lock
 
 
@@ -422,6 +442,8 @@ def _assert_google_auth_delta(project: dict[str, Any], lock: dict[str, Any], bas
     _normalize_pip_security_delta(normalized_lock, base_lock)
     _normalize_issue482_delta(normalized_lock, base_lock)
     _normalize_issue525_lock(normalized_lock)
+    _normalize_soupsieve_29_delta(normalized_lock, base_lock)
+    _normalize_anyio_4142_delta(normalized_lock, base_lock)
     assert normalized_lock == base_lock
 
 
@@ -430,6 +452,150 @@ def _text_at(ref: str, path: str) -> str:
         ["git", "show", f"{ref}:{path}"], cwd=ROOT, text=True, capture_output=True, check=True
     )
     return result.stdout
+
+
+def _normalize_soupsieve_29_delta(lock: dict[str, Any], base_lock: dict[str, Any]) -> None:
+    packages = lock["package"]
+    matches = [i for i, package in enumerate(packages) if package["name"] == "soupsieve"]
+    assert len(matches) == 1 and packages[matches[0]] == SOUPSIEVE_29
+    historical = [package for package in base_lock["package"] if package["name"] == "soupsieve"]
+    assert len(historical) == 1
+    packages[matches[0]] = copy.deepcopy(historical[0])
+
+
+ISSUE554_PREDECESSOR = "f8daafee2d28ed46e56483b49e654a0fcea685e6"
+ANYIO_4142 = tomllib.loads('''[[package]]
+name = "anyio"
+version = "4.14.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [{ name = "idna" }]
+sdist = { url = "https://files.pythonhosted.org/packages/61/cc/a381afa6efea9f496eff839d4a6a1aed3bfafc7b3ab4b0d1b243a12573dd/anyio-4.14.2.tar.gz", hash = "sha256:cfa139f3ed1a23ee8f88a145ddb5ac7605b8bbfd8592baacd7ce3d8bb4313c7f", size = 260176, upload-time = "2026-07-12T20:29:07.082Z" }
+wheels = [{ url = "https://files.pythonhosted.org/packages/da/35/f2287558c17e29fafc8ef3daf819bb9834061cfa43bff8014f7df7f63bdc/anyio-4.14.2-py3-none-any.whl", hash = "sha256:9f505dda5ac9f0c8309b5e8bd445a8c2bf7246f3ce950121e45ea15bc41d1494", size = 125813, upload-time = "2026-07-12T20:29:05.763Z" }]
+''')["package"][0]
+
+
+def _normalize_anyio_4142_delta(lock: dict[str, Any], base: dict[str, Any]) -> None:
+    matches = [i for i, package in enumerate(lock["package"]) if package["name"] == "anyio"]
+    assert len(matches) == 1 and lock["package"][matches[0]] == ANYIO_4142
+    historical = [p for p in base["package"] if p["name"] == "anyio"]
+    assert len(historical) == 1
+    lock["package"][matches[0]] = copy.deepcopy(historical[0])
+
+
+def _assert_issue554_anyio_contract(lock: dict[str, Any]) -> None:
+    base = tomllib.loads(_text_at(ISSUE554_PREDECESSOR, "uv.lock"))
+    assert (ROOT / "pyproject.toml").read_text() == _text_at(ISSUE554_PREDECESSOR, "pyproject.toml")
+    normalized = copy.deepcopy(lock)
+    _normalize_anyio_4142_delta(normalized, base)
+    assert normalized == base
+
+
+def test_issue554_actual_anyio_is_exact_isolated_official_record() -> None:
+    _assert_issue554_anyio_contract(tomllib.loads((ROOT / "uv.lock").read_text()))
+    retained = tomllib.loads((ROOT / "tools/semgrep/uv.lock").read_text())
+    assert [p for p in retained["package"] if p["name"] == "anyio"] == [ANYIO_4142]
+
+
+@pytest.mark.parametrize("fault", ["version", "registry", "dependency", "sdist-url", "sdist-hash", "sdist-size", "sdist-time", "wheel-url", "wheel-hash", "wheel-size", "wheel-time", "duplicate", "root", "unrelated", "soupsieve"])
+def test_issue554_anyio_oracle_rejects_whole_record_and_graph_forgery(fault: str) -> None:
+    lock = tomllib.loads(_text_at(ISSUE554_PREDECESSOR, "uv.lock"))
+    index = next(i for i, p in enumerate(lock["package"]) if p["name"] == "anyio")
+    lock["package"][index] = copy.deepcopy(ANYIO_4142)
+    _assert_issue554_anyio_contract(lock)
+    package = lock["package"][index]
+    if "-" in fault:
+        target, field = fault.split("-")
+        record = package["sdist"] if target == "sdist" else package["wheels"][0]
+        key = "upload-time" if field == "time" else field
+        record[key] = 1 if field == "size" else "FORGED"
+    elif fault == "version":
+        package["version"] = "4.14.1"
+    elif fault == "registry":
+        package["source"]["registry"] = "https://example.invalid/simple"
+    elif fault == "dependency":
+        package["dependencies"] = []
+    elif fault == "duplicate":
+        lock["package"].append(copy.deepcopy(package))
+    elif fault == "root":
+        lock["revision"] = 999
+    else:
+        next(p for p in lock["package"] if p["name"] == ("sniffio" if fault == "unrelated" else "soupsieve"))["version"] = "0"
+    with pytest.raises(AssertionError):
+        _assert_issue554_anyio_contract(lock)
+
+
+def _assert_soupsieve_29_contract(project_text: str, lock_text: str) -> None:
+    """Accept only the exact one-record transitive security refresh."""
+    base_project = _text_at(ISSUE549_BASE, "pyproject.toml")
+    base_lock = tomllib.loads(_text_at(ISSUE549_BASE, "uv.lock"))
+    lock = tomllib.loads(lock_text)
+    assert project_text == base_project
+
+    beautifulsoup = [package for package in lock["package"] if package["name"] == "beautifulsoup4"]
+    base_beautifulsoup = [
+        package for package in base_lock["package"] if package["name"] == "beautifulsoup4"
+    ]
+    assert beautifulsoup == base_beautifulsoup
+
+    normalized = copy.deepcopy(lock)
+    _normalize_soupsieve_29_delta(normalized, base_lock)
+    _normalize_anyio_4142_delta(normalized, base_lock)
+    assert normalized == base_lock
+
+
+def _synthetic_soupsieve_29_lock() -> str:
+    base = _text_at(ISSUE549_BASE, "uv.lock")
+    retained = (ROOT / "tools/semgrep/uv.lock").read_text()
+    current_start = retained.index('[[package]]\nname = "anyio"')
+    current_end = retained.index("\n[[package]]", current_start + 1)
+    old_start = base.index('[[package]]\nname = "anyio"')
+    old_end = base.index("\n[[package]]", old_start + 1)
+    base = base[:old_start] + retained[current_start:current_end] + base[old_end:]
+    start = base.index('[[package]]\nname = "soupsieve"')
+    end = base.index("\n[[package]]", start + 1)
+    replacement = '''[[package]]
+name = "soupsieve"
+version = "2.9"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/80/f1/93422647dd7e461f23d254e6b2bfa687a85b53aeb4903fcdbb74474d4584/soupsieve-2.9.tar.gz", hash = "sha256:acee8417325c5653e1377dc31eccad59eb82cbc65942afe6174c53b3aaad63fc", size = 122122, upload-time = "2026-07-19T01:35:18.425Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/7b/d6/3185ab5ad1280319b31986898f3206dd7227cd75e293d4dba2a5e6bf27a0/soupsieve-2.9-py3-none-any.whl", hash = "sha256:a2b2c76d67df2382d245409fd71e321a571717e58463efa32ace87dcadac2c12", size = 37387, upload-time = "2026-07-19T01:35:17.106Z" },
+]'''
+    return base[:start] + replacement + base[end:]
+
+
+def test_issue549_soupsieve_resolution_is_exact_isolated_and_patched() -> None:
+    _assert_soupsieve_29_contract(
+        (ROOT / "pyproject.toml").read_text(encoding="utf-8"),
+        (ROOT / "uv.lock").read_text(encoding="utf-8"),
+    )
+
+
+def test_issue549_soupsieve_oracle_rejects_false_pass_mutations() -> None:
+    project = _text_at(ISSUE549_BASE, "pyproject.toml")
+    candidate = _synthetic_soupsieve_29_lock()
+    _assert_soupsieve_29_contract(project, candidate)
+    header = 'name = "soupsieve"\nversion = "2.9"'
+    start = candidate.index("[[package]]\n" + header)
+    end = candidate.index("\n[[package]]", start + 1)
+    block = candidate[start:end]
+    # Each mutation models a false pass: vulnerable version, forged provenance,
+    # duplicate record, retained Beautiful Soup drift, or unrelated lock drift.
+    mutations = (
+        candidate.replace('version = "2.9"', 'version = "2.8.4"', 1),
+        candidate.replace(cast(dict[str, Any], SOUPSIEVE_29["sdist"])["hash"], "sha256:" + "0" * 64, 1),
+        candidate.replace(cast(list[dict[str, Any]], SOUPSIEVE_29["wheels"])[0]["hash"], "sha256:" + "1" * 64, 1),
+        candidate.replace(header + '\nsource = { registry = "https://pypi.org/simple" }',
+                          header + '\nsource = { registry = "https://example.invalid/simple" }', 1),
+        candidate[:end] + "\n" + block + candidate[end:],
+        candidate.replace('name = "beautifulsoup4"\nversion = "4.15.0"', 'name = "beautifulsoup4"\nversion = "4.14.3"', 1),
+        candidate.replace('name = "sniffio"\nversion = "1.3.1"', 'name = "sniffio"\nversion = "0.0.0"', 1),
+    )
+    for mutation in mutations:
+        with pytest.raises(AssertionError):
+            _assert_soupsieve_29_contract(project, mutation)
+    with pytest.raises(AssertionError):
+        _assert_soupsieve_29_contract(project + "\n", candidate)
 
 
 def test_issue498_dependency_docs_distinguish_runtime_and_hosted_test_placement() -> None:
@@ -728,6 +894,8 @@ def _assert_pypdf_6162_contract(project_text: str, lock_text: str) -> None:
     _normalize_issue525_project(normalized_project)
     _normalize_issue525_lock(normalized_lock)
     assert normalized_project == base_project
+    _normalize_soupsieve_29_delta(normalized_lock, base_lock)
+    _normalize_anyio_4142_delta(normalized_lock, base_lock)
     assert normalized_lock == base_lock
 
 
@@ -869,6 +1037,8 @@ def _assert_httpx2_2120_contract(project_text: str, lock_text: str) -> None:
     _normalize_issue525_project(normalized_project)
     _normalize_issue525_lock(normalized_lock)
     assert normalized_project == base_project
+    _normalize_soupsieve_29_delta(normalized_lock, base_lock)
+    _normalize_anyio_4142_delta(normalized_lock, base_lock)
     assert normalized_lock == base_lock
 
 

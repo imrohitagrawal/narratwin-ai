@@ -38,6 +38,7 @@ ISSUE524_BRANCH = "stage8-524-frontend-dependency-security-refresh"
 ISSUE525_BRANCH = "stage8-525-schema-oracle-runtime-policy"
 ISSUE527_BRANCH = "stage8-527-backend-ci-timeout"
 ISSUE529_BRANCH = "stage8-529-native-arm64-security"
+ISSUE549_BRANCH = "stage8-549-soupsieve-security-refresh"
 ISSUE502_BRANCH = "stage8-502-frontend-musl-runtime-security"
 ISSUE507_BRANCH = "stage8-507-google-api-core-grpc-status"
 ISSUE509_BRANCH = "stage8-509-configurable-audio-duration"
@@ -368,6 +369,31 @@ ISSUE529_DOCS_AMENDMENT_SHA256 = "c74cdb7e62e702a3ffa8406976bb1e53a9b98c3dfe128f
 ISSUE529_HOSTED_CORRECTION_COMMENT = "5613239963"
 ISSUE529_HOSTED_CORRECTION_SHA256 = "a444fdf9f283cc631e1e0729bef9b10d227f3778fffc270ed3c76473cb4ca82f"
 ISSUE529_BUDGET_RED = "89f87b3d239b21f0a8064994e328b07760af2cb8"
+ISSUE549_BASE = "2fc1bbd7904421d4a5a2c85995c28dbd9cdf0fce"
+ISSUE549_TREE = "3ebbaaac4b66900de5129f60f56e6cd2d6978766"
+ISSUE549_BODY_SHA256 = "7e12d0872833abb5de71aa584d0eca645597357d2b197dcabf11ed657b63c5e0"
+ISSUE549_AMENDMENT_COMMENT = "5731668055"
+ISSUE549_AMENDMENT_SHA256 = "14ad930762f6b86a786b45d62aa44604587bd12b604ed65a680333c32864022d"
+ISSUE549_C1_COMMIT = "0d019810ec1d96410f390c9e8672655be9d07095"
+ISSUE549_C1_TREE = "68eb50b1bb6c82f84317ddf293df371e336209f3"
+ISSUE549_PREFLIGHT_SHA256 = "34a25839158b56d68f1eeda84b724bfe58f24ed43b06c30f99fcbb4bf910ca13"
+ISSUE549_RECOVERY_COMMENT = "5732696613"
+ISSUE549_RECOVERY_SHA256 = "644de05a6ef35b7e7fb225ae087e5018697f2187d1b4196827e8cc6a73f8d2bc"
+ISSUE549_LOCK_SHA256 = "c0ed386893396e65e5c58d4a0b87209120669b049d250566b8cfcaab24670b0a"
+ISSUE549_PROJECT_SHA256 = "9838c28dc62c7486f21ea1a5f7f645680e75e983e926263931b19dec04f0ef11"
+ISSUE549_ATTEMPT_OUTCOMES = ("one", "command SUCCESS", "controller FAIL", "resource FAIL")
+ISSUE549_COMPONENT_STATE = "FROZEN_COMPONENT_DRAFT"
+ISSUE549_STANDALONE_MERGE_ELIGIBLE = False
+ISSUE549_ATOMIC_SUCCESSOR_REQUIRED = True
+ISSUE549_STANDALONE_COMMENT = "5734670605"
+ISSUE549_STANDALONE_SHA256 = "0b7461d1f2c14065c53289e75d2d33da1ee0e8120524ce6b0d5c15e7f798dc4d"
+ISSUE549_DISPOSITION_COMMENT = "5734722695"
+ISSUE549_DISPOSITION_SHA256 = "e517f5a9572731532d0f50eeb9b46f41c0bbc0b64da5d61d14fe8ad1255ffa77"
+ISSUE547_ATOMIC_BRANCH = "ci-547-549-atomic-runtime-security-successor"
+ISSUE547_ATOMIC_F, ISSUE547_ATOMIC_C1 = "2ea926c63df6f3442faf2f4c7447d0707e23e31e", "9bde8dd761cd7b8dcd53a9723769487cb1f59933"
+ISSUE547_ATOMIC_PUSH_LIMIT = 1
+ISSUE547_ATOMIC_AUTHORITY = (("5737207458", "a4f8ca11da2bc89d9761c29f14e078b230ae108d01e8558768cb9d04975f556e"), ("5737217558", "f02f07ea6528c661f7948b2140db38d776ab7bd8a0fa67a1e43a1e160befda6f"), ("5737227530", "3a89ce829048f630d969de102e085f9a3ec8655d66dc1b58c6389562c6de5621"), ("5737432474", "979be396f76bb31a3058b4d1881b403168f77a11ab26d022e38a422796e230ce"), ("5737436428", "f4eef65fc5e10b40bb2ac65c5c70933e63caf0935ae1e15b458d595302e59a29"), ("5737446015", "6dc4935373589893a93309327578bff18f603935f59a72b308cb0b164b23d367"), ("5737462767", "fedcf4b2312d0fabeebe7c4f2009fabad4aefbca594a5dfd05bfde2303a7c37a"), ("5737466529", "f47834839c59a8edc3504a9978e9f14007d87f6308b2e24af3b20a7176611947"), ("5737629990", "d053c9b927aa7357180d54e1ea6b7767e1605a9ea73a6f67080f67c5c4d08be7"), ("5737634271", "abb3101684f5e471d99f0a6a18917eb3bc789206d7dd96ab142547022db5e0a6"), ("5737637839", "d7cb83157722b94ac51ae6ee00c35c4d1ae3739d87c727b975fb8555a5cd19fe"), ("5737712689", "1de4bd52af5ca1a8abed4f494143a3049442506f28ec4da60c3e811fed24251d"), ("5737719015", "06ead9f112672fe383ffad2a653ca9bce5f48bca0976fb9f08d4563492d23379"), ("5737723412", "0c73219ab5ce44bcb4aebda4417221878ae606168bf12c870b674105483adf23"))
+ISSUE547_FROZEN = {"docs/ADR/0086-soupsieve-2-9-security-refresh.md", "docs/ADR/INDEX.md", "docs/governance/preflights/issue-549-soupsieve-security-refresh.json", "uv.lock"}
 ISSUE495_TREE = "13f79eb5db44249f635a619e1b283279f25ba9f0"
 ISSUE495_ROUTE_COMMENT = "5498387945"
 ISSUE495_CORRECTION_COMMENT = "5498411811"
@@ -1236,6 +1262,14 @@ ROUTES = {
         "docs/THIRD_PARTY_NOTICES.md",
     },
 }
+ROUTES[ISSUE549_BRANCH] = {
+    "docs/governance/preflights/issue-549-soupsieve-security-refresh.json",
+    "uv.lock", "tests/unit/test_dependency_security_contract.py",
+    "scripts/quality/stage8_cut1_routes.py", "tests/unit/test_stage8_cut1_routes.py",
+    "docs/ADR/0086-soupsieve-2-9-security-refresh.md", "docs/ADR/INDEX.md",
+    "docs/STATUS.md", "docs/THIRD_PARTY_NOTICES.md", "docs/TRACEABILITY.md",
+    "docs/work/registry.json", "docs/work/governance-backlog/HANDOFF.md",
+}
 ROUTE_ISSUES = {ISSUE452_BRANCH: 452, ISSUE451_BRANCH: 451, ISSUE150_BRANCH: 150, ISSUE424_BRANCH: 424, ISSUE421_BRANCH: 421, ISSUE415_BRANCH: 415, ISSUE415_CORRECTION_BRANCH: 415, ISSUE413_BRANCH: 413, ISSUE368_ADAPTER_BRANCH: 368, ISSUE368_IMPLEMENTATION_BRANCH: 368, ISSUE368_QUOTA_FIX_BRANCH: 368, ISSUE368_PROMPT_BRANCH: 368, ISSUE368_BRANCH: 368, ISSUE405_BRANCH: 405, ISSUE428_BRANCH: 428, ISSUE403_BRANCH: 403, ISSUE401_BRANCH: 401, ISSUE396_BRANCH: 396,
                 ISSUE386_BRANCH: 386, ISSUE385_BRANCH: 385,
                 ISSUE384_BRANCH: 384, ISSUE383_BRANCH: 383, ISSUE397_BRANCH: 397,
@@ -1277,6 +1311,33 @@ TOTAL_LIMITS[ISSUE525_BRANCH] = 2100
 ROUTE_ISSUES[ISSUE527_BRANCH] = 527
 TOTAL_LIMITS[ISSUE527_BRANCH] = 420
 ROUTE_ISSUES[ISSUE529_BRANCH] = 529
+ROUTE_ISSUES[ISSUE549_BRANCH] = 549
+ROUTES[ISSUE547_ATOMIC_BRANCH] = ROUTES[ISSUE549_BRANCH] | {"docs/governance/preflights/issue-547.json", "backend/Dockerfile", "scripts/ci/backend-image-package-check.sh", "scripts/quality/stage8_backend_security.py",
+    "tests/unit/test_stage8_backend_security.py", "tests/unit/test_backend_image_package_check.py", "tests/unit/test_cpython_security_backports.py", "docs/ADR/0006-stage8-release-hardening.md"}
+ROUTE_ISSUES[ISSUE547_ATOMIC_BRANCH] = 547
+ISSUE554_BRANCH = "ci-554-anyio-alpine-runtime-security-successor"
+ISSUE554_PARENT = "f8daafee2d28ed46e56483b49e654a0fcea685e6"
+ISSUE554_C1 = "b0c47803c121babfddfd4d361d8658adde78600c"
+ISSUE554_AUTHORITY = ("5737932641", "daa8f1912532520ee31cd9ce7d5e2dc7f96a53cf7a4d795344d61a3891c8cb85")
+ISSUE554_PUSH_LIMIT = 1
+ISSUE554_FILES = {
+    "docs/governance/preflights/issue-554.json", "uv.lock", "tests/unit/test_dependency_security_contract.py",
+    "frontend/Dockerfile", "scripts/ci/check_container_scan_consensus.py", "scripts/quality/stage8_node_security.py",
+    "scripts/quality/stage8_cut1_routes.py", "tests/unit/test_frontend_container_runtime.py", "tests/unit/test_stage8_node_security.py",
+    "tests/unit/test_container_scan_consensus.py", "tests/unit/test_stage8_cut1_routes.py", "docs/ADR/0006-stage8-release-hardening.md",
+    "docs/STATUS.md", "docs/THIRD_PARTY_NOTICES.md", "docs/TRACEABILITY.md", "docs/work/registry.json", "docs/work/governance-backlog/HANDOFF.md",
+}
+ROUTES[ISSUE554_BRANCH] = ROUTES[ISSUE547_ATOMIC_BRANCH] | ISSUE554_FILES
+ROUTE_ISSUES[ISSUE554_BRANCH] = 554
+ISSUE555_BRANCH = "ci-555-frontend-heredoc-guard-successor"
+ISSUE555_PARENT = "ad4bcf3b2ea8eef3668a5711914da17175df2849"
+ISSUE555_C1 = "2809ed06eafcfc2cb74a89f5a0139e6a58570000"
+ISSUE555_AUTHORITY = (("5738302888", "2c36dddbafd34db282832686f84c4a04e9ef9da457b210072719f08eb6aa81bb"), ("5738327761", "89954a33c63f1d4f03a869ad4486e6942f1dd331399fa3eb94bb6706c83ecd45"))
+ISSUE555_PUSH_LIMIT = 1  # Replaces, never adds to, the retired unpublished #554 event.
+ISSUE555_FILES = {"docs/governance/preflights/issue-555.json", "scripts/quality/stage8_node_security.py", "tests/unit/test_stage8_node_security.py", "tests/unit/test_frontend_container_runtime.py", "scripts/quality/stage8_cut1_routes.py", "tests/unit/test_stage8_cut1_routes.py", "docs/ADR/0006-stage8-release-hardening.md", "docs/STATUS.md", "docs/TRACEABILITY.md", "docs/work/registry.json", "docs/work/governance-backlog/HANDOFF.md"}
+ROUTES[ISSUE555_BRANCH] = ROUTES[ISSUE554_BRANCH] | ISSUE555_FILES
+ROUTE_ISSUES[ISSUE555_BRANCH] = 555
+TOTAL_LIMITS[ISSUE549_BRANCH] = 800
 ROUTE_ISSUES[ISSUE502_BRANCH] = 502
 TOTAL_LIMITS[ISSUE502_BRANCH] = 4660
 ROUTE_ISSUES[ISSUE507_BRANCH] = 507
@@ -2103,6 +2164,17 @@ ISSUE424_ROUTE_GUARD = (
     "implementation route may activate."
 )
 
+TEXT_LIMITS[ISSUE549_BRANCH] = {
+    "docs/governance/preflights/issue-549-soupsieve-security-refresh.json": 180,
+    "uv.lock": 30, "tests/unit/test_dependency_security_contract.py": 180,
+    "scripts/quality/stage8_cut1_routes.py": 120,
+    "tests/unit/test_stage8_cut1_routes.py": 160,
+    "docs/ADR/0086-soupsieve-2-9-security-refresh.md": 100,
+    "docs/ADR/INDEX.md": 20, "docs/STATUS.md": 60,
+    "docs/THIRD_PARTY_NOTICES.md": 60, "docs/TRACEABILITY.md": 40,
+    "docs/work/registry.json": 40, "docs/work/governance-backlog/HANDOFF.md": 30,
+}
+
 
 class DuplicateJsonMember(ValueError):
     """Reject authority bytes whose meaning depends on parser key precedence."""
@@ -2747,6 +2819,19 @@ def route_base(run: Callable[[list[str]], Any], branch: str) -> str:
                 "Issue #523 atomic merge evidence is unavailable or inconsistent."
             )
         return ISSUE523_BASE
+    if branch == ISSUE549_BRANCH:
+        fixed = run(["git", "rev-parse", f"{ISSUE549_BASE}^{{commit}}"])
+        tree = run(["git", "rev-parse", f"{ISSUE549_C1_COMMIT}^{{tree}}"])
+        base_edge = run(["git", "merge-base", ISSUE549_BASE, "HEAD"])
+        c1_edge = run(["git", "merge-base", "--is-ancestor", ISSUE549_C1_COMMIT, "HEAD"])
+        if (
+            fixed.returncode or tree.returncode or base_edge.returncode or c1_edge.returncode
+            or str(fixed.stdout).strip() != ISSUE549_BASE
+            or str(tree.stdout).strip() != ISSUE549_C1_TREE
+            or str(base_edge.stdout).strip() != ISSUE549_BASE
+        ):
+            raise RuntimeError("Issue #549 frozen component evidence is unavailable or inconsistent.")
+        return ISSUE549_BASE
     fixed_routes = {
         ISSUE516_BRANCH: (516, ISSUE516_BASE),
         ISSUE514_BRANCH: (514, ISSUE514_BASE),
@@ -3050,6 +3135,163 @@ def issue498_commit_topology_failures(run: Callable[[list[str]], Any]) -> list[s
     return []
 
 
+def issue547_atomic_evidence(root: Path, run: Callable[[list[str]], Any]) -> None:
+    from scripts import work_records
+    def reject(condition: object, message: str) -> None:
+        if condition:
+            raise RuntimeError(message)
+    def read(*args: str) -> str:
+        result = run(["git", *args])
+        reject(result.returncode, "Atomic #547 Git evidence unavailable.")
+        return str(result.stdout)
+    base, frozen, first, preflight = ISSUE549_BASE, ISSUE547_ATOMIC_F, ISSUE547_ATOMIC_C1, "docs/governance/preflights/issue-547.json"
+    reject(hashlib.sha256((root / preflight).read_bytes()).hexdigest() != "e87526e77db15cfe320ad9de6c8cea6100a0e3a47a8009212f218e9e2b0f304a", "Atomic #547 preflight drift.")
+    for args, value in ((("rev-parse", f"{base}^{{tree}}"), ISSUE549_TREE), (("rev-parse", f"{frozen}^{{tree}}"), "65ec8393dd8255fa968ec815936800f74e04cc52"),
+                (("rev-parse", f"{first}^{{tree}}"), "78329621c6a16a28a832b516e4b417c87a45f2c6"), (("rev-parse", f"{first}^"), frozen),
+                (("diff-tree", "--no-commit-id", "--name-only", "-r", first), preflight), (("merge-base", base, "HEAD"), base),
+                (("merge-base", "--is-ancestor", first, "HEAD"), ""), (("merge-base", "--is-ancestor", frozen, "HEAD"), "")):
+        reject(read(*args).strip() != value, "Atomic #547 ancestry/tree/first-diff drift.")
+    reject(read("rev-list", "--reverse", f"{frozen}..HEAD").splitlines()[0] != first or read("show", f"{first}:{preflight}").encode() != (root / preflight).read_bytes(), "Atomic #547 C1 drift.")
+    reject(hashlib.sha256(read("ls-tree", "-r", frozen, "--", *sorted(ROUTES[ISSUE549_BRANCH])).encode()).hexdigest() != "602c341d3f20fa838cb309f1ba518b7fbfb7f3abac9f5ff382c2c1d3657eb891", "Atomic #549 twelve-blob manifest drift.")
+    rows = [row.split("\t") for row in read("diff", "--numstat", "--no-renames", base, frozen, "--").splitlines()]
+    reject(len(rows) != 12 or any(len(r) != 3 or not r[0].isdigit() or not r[1].isdigit() for r in rows) or {r[2] for r in rows} != ROUTES[ISSUE549_BRANCH] or sum(int(a) + int(d) for a, d, _ in rows) != 471, "Atomic immutable 12-path/471 layer drift.")
+    for path in ISSUE547_FROZEN:
+        reject((root / path).read_bytes() != read("show", f"{frozen}:{path}").encode() or read("show", f"HEAD:{path}") != read("show", f"{frozen}:{path}") or read("diff", "--cached", "--name-only", frozen, "--", path).strip(), "Atomic frozen-only blob or snapshot drift.")
+    status = (root / "docs/STATUS.md").read_bytes()
+    registry_path, handoff_path = "docs/work/registry.json", "docs/work/governance-backlog/HANDOFF.md"
+    registry = read("show", f"{frozen}:{registry_path}")
+    old = next(w["plan"] for w in json.loads(registry)["works"] if w["id"] == "governance-backlog")
+    digest = hashlib.sha256(status).hexdigest()
+    expected_registry = registry.replace(old["sha256"], digest, 1).replace(f'"bytes": {old["bytes"]}', f'"bytes": {len(status)}', 1)
+    reject((root / registry_path).read_bytes() != expected_registry.encode() or (root / handoff_path).read_bytes() != read("show", f"{frozen}:{handoff_path}").replace(f'PLAN_SHA256: {old["sha256"]}', f"PLAN_SHA256: {digest}", 1).encode(), "Atomic STATUS pointer-only delta drift.")
+    work_records.validate(root)
+    layer = {p: n - TEXT_LIMITS[ISSUE549_BRANCH].get(p, 0) for p, n in route_change_budget(root, ISSUE547_ATOMIC_BRANCH, 547, ROUTES[ISSUE547_ATOMIC_BRANCH])[1].items() if p not in ISSUE547_FROZEN}
+    layer.update({registry_path: 4, handoff_path: 2, "tests/unit/test_stage8_cut1_routes.py": 94, "tests/unit/test_dependency_security_contract.py": 29})
+    total, charges = route_text_charges(run, frozen, set(layer))
+    reject(len(layer) != 16 or set(charges) != set(layer) or total > 900 or any(charges[p] > n for p, n in layer.items()), "Atomic mutable 16-path/900 layer drift.")
+    reject(any(route_has_copy_or_rename(read("diff", *flags, "--name-status", "-z", "--find-copies-harder", frozen, *end, "--")) for flags, end in (([], ["HEAD"]), (["--cached"], []), ([], []))), "Atomic deleted/renamed/copied path.")
+    reject(any((root / p).is_symlink() or not (root / p).is_file() for p in ROUTES[ISSUE547_ATOMIC_BRANCH]), "Atomic nonregular path.")
+
+
+def issue554_successor_evidence(root: Path, run: Callable[[list[str]], Any], changed: set[str]) -> None:
+    from scripts import work_records
+    def reject(condition: object, message: str) -> None:
+        if condition:
+            raise RuntimeError(message)
+    def read(*args: str) -> str:
+        result = run(["git", *args])
+        reject(result.returncode, "Successor Git evidence unavailable.")
+        return str(result.stdout)
+    base, parent, first = ISSUE549_BASE, ISSUE554_PARENT, ISSUE554_C1
+    preflight = "docs/governance/preflights/issue-554.json"
+    raw = (root / preflight).read_bytes()
+    reject(hashlib.sha256(raw).hexdigest() != "8907ec5193ac3778fd64d6aa3afa141c34127893a3dc401154e91ff0d63e6de5", "Successor immutable preflight drift.")
+    for args, value in (
+        (("rev-parse", f"{base}^{{tree}}"), ISSUE549_TREE),
+        (("rev-parse", f"{parent}^{{tree}}"), "9063cde95ed01cf28f398503d24d58ff1a49306c"),
+        (("rev-parse", f"{first}^{{tree}}"), "acbe907c7be84fd9e0918f2067a6998a34ba474d"),
+        (("rev-parse", f"{first}^"), parent), (("rev-parse", "origin/main^{commit}"), base),
+        (("diff-tree", "--no-commit-id", "--name-only", "-r", first), preflight),
+        (("merge-base", base, "HEAD"), base),
+        (("merge-base", "--is-ancestor", first, "HEAD"), ""),
+        (("merge-base", "--is-ancestor", parent, "HEAD"), ""),
+    ):
+        reject(read(*args).strip() != value, "Successor ancestry/tree/C1 drift.")
+    reject(read("rev-list", "--reverse", f"{parent}..HEAD").splitlines()[0] != first, "Successor first commit drift.")
+    for ref in (first, "HEAD", ""):
+        reject(read("show", f"{ref}:{preflight}").encode() != raw, "Successor C1 raw-byte drift.")
+    rows = [row.split("\t") for row in read("diff", "--numstat", "--no-renames", base, parent, "--").splitlines()]
+    reject(len(rows) != 20 or any(len(r) != 3 or not r[0].isdigit() or not r[1].isdigit() for r in rows) or {r[2] for r in rows} != ROUTES[ISSUE547_ATOMIC_BRANCH] or sum(int(a) + int(d) for a, d, _ in rows) != 906, "Successor predecessor 20-path/906 drift.")
+    frozen = ROUTES[ISSUE547_ATOMIC_BRANCH] - ISSUE554_FILES
+    reject(len(frozen) != 10, "Successor frozen manifest cardinality drift.")
+    for path in frozen:
+        expected = read("show", f"{parent}:{path}")
+        reject((root / path).read_bytes() != expected.encode() or read("show", f"HEAD:{path}") != expected or read("diff", "--cached", "--name-only", parent, "--", path).strip(), "Successor frozen predecessor blob drift.")
+    reject(changed != ROUTES[ISSUE554_BRANCH], "Successor exact 27-path main union drift.")
+    for flags, end in (([], ["HEAD"]), (["--cached"], []), ([], [])):
+        names = set(read("diff", *flags, "--name-only", "--no-renames", parent, *end, "--").splitlines())
+        reject(bool(names - ISSUE554_FILES), "Successor unauthorized increment path.")
+        reject(route_has_copy_or_rename(read("diff", *flags, "--name-status", "-z", "--find-copies-harder", parent, *end, "--")), "Successor deleted/renamed/copied path.")
+    reject(set(read("diff", "--name-only", "--no-renames", base, "--").splitlines()) != ROUTES[ISSUE554_BRANCH], "Successor observed main union drift.")
+    limit, caps = route_change_budget(root, ISSUE554_BRANCH, 554, ISSUE554_FILES)
+    total, charges = route_text_charges(run, parent, ISSUE554_FILES)
+    reject(set(charges) != ISSUE554_FILES or total > limit or any(charges[p] > n for p, n in caps.items()), "Successor exact 17-path charged budget drift.")
+    reject(any((root / p).is_symlink() or not (root / p).is_file() for p in ROUTES[ISSUE554_BRANCH]), "Successor nonregular path.")
+    status = (root / "docs/STATUS.md").read_bytes()
+    registry = read("show", f"{parent}:docs/work/registry.json")
+    old = next(w["plan"] for w in json.loads(registry)["works"] if w["id"] == "governance-backlog")
+    expected_registry = registry.replace(old["sha256"], hashlib.sha256(status).hexdigest(), 1).replace(f'"bytes": {old["bytes"]}', f'"bytes": {len(status)}', 1)
+    reject((root / "docs/work/registry.json").read_bytes() != expected_registry.encode(), "Successor STATUS pointer-only delta drift.")
+    work_records.validate(root)
+
+
+def issue555_successor_evidence(root: Path, run: Callable[[list[str]], Any], changed: set[str]) -> None:
+    from scripts import work_records
+    def reject(condition: object, message: str) -> None:
+        if condition:
+            raise RuntimeError(message)
+    def read(*args: str) -> str:
+        result = run(["git", *args])
+        reject(result.returncode, "Heredoc successor Git evidence unavailable.")
+        return str(result.stdout)
+    base, parent, first = ISSUE549_BASE, ISSUE555_PARENT, ISSUE555_C1
+    preflight = "docs/governance/preflights/issue-555.json"
+    raw = (root / preflight).read_bytes()
+    reject(hashlib.sha256(raw).hexdigest() != "6aca5699a7b812c63c5bf377d42ce2bb2678c902d80bd817244f2f47fab42dcd", "Heredoc immutable preflight drift.")
+    for args, value in (
+        (("rev-parse", f"{base}^{{tree}}"), ISSUE549_TREE),
+        (("rev-parse", f"{parent}^{{tree}}"), "2976641ec3d6b50f4bf0ef8991130677be533f7e"),
+        (("rev-parse", f"{first}^{{tree}}"), "ce4755ba254e8ac61fea4716440e7370ea0778c5"),
+        (("rev-parse", f"{first}^"), parent), (("rev-parse", "origin/main^{commit}"), base),
+        (("diff-tree", "--no-commit-id", "--name-only", "-r", first), preflight),
+        (("merge-base", base, "HEAD"), base),
+        (("merge-base", "--is-ancestor", first, "HEAD"), ""),
+        (("merge-base", "--is-ancestor", parent, "HEAD"), ""),
+    ):
+        reject(read(*args).strip() != value, "Heredoc ancestry/tree/C1 drift.")
+    reject(read("rev-list", "--reverse", f"{parent}..HEAD").splitlines()[0] != first, "Heredoc first commit drift.")
+    for ref in (first, "HEAD", ""):
+        reject(read("show", f"{ref}:{preflight}").encode() != raw, "Heredoc C1 raw-byte drift.")
+    rows = [row.split("\t") for row in read("diff", "--numstat", "--no-renames", base, parent, "--").splitlines()]
+    reject(len(rows) != 27 or any(len(r) != 3 or not r[0].isdigit() or not r[1].isdigit() for r in rows) or {r[2] for r in rows} != ROUTES[ISSUE554_BRANCH] or sum(int(a) + int(d) for a, d, _ in rows) != 1441, "Heredoc predecessor 27-path/1441 drift.")
+    frozen = sorted(ROUTES[ISSUE554_BRANCH] - ISSUE555_FILES)
+    manifest = read("ls-tree", "-r", parent, "--", *frozen)
+    reject(len(frozen) != 17 or hashlib.sha256(manifest.encode()).hexdigest() != "b3dec533a5a7abcdf966dbdebce9cceb99795688f1d08569c0873dbc96e8f147", "Heredoc frozen17 manifest drift.")
+    reject(read("ls-tree", "-r", "HEAD", "--", *frozen) != manifest, "Heredoc frozen HEAD mode/blob drift.")
+    for row in manifest.splitlines():
+        metadata, path = row.split("\t")
+        mode, _, blob = metadata.split()
+        expected = read("show", f"{parent}:{path}")
+        reject((root / path).is_symlink() or not (root / path).is_file() or (root / path).read_bytes() != expected.encode() or read("show", f"HEAD:{path}") != expected or read("diff", "--cached", "--name-only", parent, "--", path).strip(), "Heredoc frozen blob/snapshot drift.")
+        reject(read("ls-files", "-s", "--", path).strip() != f"{mode} {blob} 0\t{path}" or bool((root / path).stat().st_mode & 0o111) != (mode == "100755"), "Heredoc frozen index/worktree mode drift.")
+    reject(changed != ROUTES[ISSUE555_BRANCH], "Heredoc exact 28-path main union drift.")
+    for flags, end in (([], ["HEAD"]), (["--cached"], []), ([], [])):
+        names = set(read("diff", *flags, "--name-only", "--no-renames", parent, *end, "--").splitlines())
+        reject(bool(names - ISSUE555_FILES), "Heredoc unauthorized increment path.")
+        reject(route_has_copy_or_rename(read("diff", *flags, "--name-status", "-z", "--find-copies-harder", parent, *end, "--")), "Heredoc deleted/renamed/copied path.")
+    reject(set(read("diff", "--name-only", "--no-renames", base, "--").splitlines()) != ROUTES[ISSUE555_BRANCH], "Heredoc observed main union drift.")
+    limit, caps = route_change_budget(root, ISSUE555_BRANCH, 555, ISSUE555_FILES)
+    total, charges = route_text_charges(run, parent, ISSUE555_FILES)
+    reject(set(charges) != ISSUE555_FILES or total > limit or any(charges[p] > n for p, n in caps.items()), "Heredoc exact 11-path charged budget drift.")
+    reject(any((root / p).is_symlink() or not (root / p).is_file() for p in ROUTES[ISSUE555_BRANCH]), "Heredoc nonregular path.")
+    status = (root / "docs/STATUS.md").read_bytes()
+    registry = read("show", f"{parent}:docs/work/registry.json")
+    old = next(w["plan"] for w in json.loads(registry)["works"] if w["id"] == "governance-backlog")
+    expected_registry = registry.replace(old["sha256"], hashlib.sha256(status).hexdigest(), 1).replace(f'"bytes": {old["bytes"]}', f'"bytes": {len(status)}', 1)
+    reject((root / "docs/work/registry.json").read_bytes() != expected_registry.encode(), "Heredoc STATUS pointer-only delta drift.")
+    handoff_path = "docs/work/governance-backlog/HANDOFF.md"
+    expected_handoff = read("show", f"{parent}:{handoff_path}").replace(f"PLAN_SHA256: {old['sha256']}", f"PLAN_SHA256: {hashlib.sha256(status).hexdigest()}", 1)
+    checkpoint = ("Issue #555 supersedes the next-action/publication statements below: #554 ended\n"
+                  "NO_GO at ad4bcf3b, unpublished. C1 2809ed06 and RED bd422ff3 precede this candidate.\n"
+                  "Next: main's R2 on the containing GREEN head; at most one correction/R3, then\n"
+                  "one replacement push and unchanged-head PR only when eligible. No review transfers.\n"
+                  "Retain both sources/evidence; release only checked inactive owned test scratch.\n\n")
+    anchor = "Issue #554 checkpoint (2026-09-19): published predecessor f8daafee's push is spent;\n"
+    expected_handoff = expected_handoff.replace(anchor, checkpoint + anchor, 1)
+    reject((root / handoff_path).read_bytes() != expected_handoff.encode(), "Heredoc HANDOFF permitted-delta drift.")
+    work_records.validate(root)
+
+
 def check_exact_route(
     root: Path, run: Callable[[list[str]], Any], branch: str, changed: set[str], failures: list[str]
 ) -> None:
@@ -3068,6 +3310,18 @@ def check_exact_route(
             )
         return
     issue = ROUTE_ISSUES[branch]
+    if branch == ISSUE555_BRANCH:
+        try:
+            issue555_successor_evidence(root, run, changed)
+        except (RuntimeError, OSError, ValueError, TypeError, IndexError) as error:
+            failures.append(f"Issue #555 route evidence failed closed: {error}")
+        return
+    if branch == ISSUE554_BRANCH:
+        try:
+            issue554_successor_evidence(root, run, changed)
+        except (RuntimeError, OSError, ValueError, TypeError, IndexError) as error:
+            failures.append(f"Issue #554 route evidence failed closed: {error}")
+        return
     files = ROUTES[branch]
     effective_changed = set(changed)
     fixed_base: str | None = None
@@ -3876,6 +4130,8 @@ def check_exact_route(
         except (OSError, ValueError, TypeError) as error:
             failures.append(f"Issue #459 governance preflight failed closed: {error}")
     try:
+        if branch == ISSUE547_ATOMIC_BRANCH:
+            issue547_atomic_evidence(root, run)
         base = fixed_base if fixed_base is not None else route_base(run, branch)
         if branch in {ISSUE524_BRANCH, ISSUE525_BRANCH, ISSUE495_BRANCH, ISSUE479_BRANCH, ISSUE482_BRANCH, ISSUE478_BRANCH, ISSUE475_BRANCH, ISSUE459_BRANCH, ISSUE459_T03_BRANCH, ISSUE459_T05A_BRANCH,
                       ISSUE459_T05B_BRANCH, ISSUE466_BRANCH, ISSUE494_BRANCH}:
@@ -3943,5 +4199,9 @@ def check_exact_route(
                 f"Issue #383 binary {path} exceeds 500000 bytes."
                 for path, size in sizes.items() if size > 500000
             )
-    except RuntimeError as error:
+    except (RuntimeError, OSError, ValueError, TypeError, IndexError) as error:
         failures.append(f"Issue #{issue} route evidence failed closed: {error}")
+    if branch == ISSUE549_BRANCH and not failures:
+        failures.append(
+            "Issue #549 standalone acceptance is prohibited; atomic successor required."
+        )

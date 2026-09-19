@@ -1,6 +1,76 @@
 # Program Status
 
+## Issue #555 frontend heredoc guard successor — 2026-09-19
+
+[Plan5738302888](https://github.com/imrohitagrawal/narratwin-ai/issues/555#issuecomment-5738302888)
+supersedes #554's unspent publication proposal: its three review cycles ended
+NO_GO at unpublished `ad4bcf3b2ea8eef3668a5711914da17175df2849`; preserve that evidence.
+C1 `2809ed06eafcfc2cb74a89f5a0139e6a58570000` precedes RED `bd422ff3e6ef55a07702c70f7f7557c39c3e42ad`
+(75 failed/27 passed): the exact3942-byte heredoc mutant fooled both prior predicates.
+The containing commit establishes only a local guard/custody candidate; Dockerfile,
+packages and workflows stay exact. Main owns R2, at most one correction/R3, and
+one replacement push, not another #554 event. Independent and hosted acceptance
+remain pending; no old review transfers and no automatic rerun is authorized.
+See [ADR0006](ADR/0006-stage8-release-hardening.md#issue-555-bounded-heredoc-admission--2026-09-19).
+No local Docker/install, provider/private/account/media operation or Cut1 credit.
+
+## Issue #554 AnyIO / frontend Alpine successor — 2026-09-19
+
+This section supersedes the earlier atomic carrier's unspent-push statement, not
+its preserved evidence. Published predecessor `f8daafee2d28ed46e56483b49e654a0fcea685e6`
+retains tree `9063cde95ed01cf28f398503d24d58ff1a49306c`; its push was consumed.
+Security run35409304465 failed on AnyIO4.14.1 strict audit and unavailable frontend
+Alpine revisions on AMD64 and native ARM64; CI job105805508100 also failed.
+Missing scanner outputs after a failed build are not a separate permission to retry.
+
+[Issue #554's controlling plan](https://github.com/imrohitagrawal/narratwin-ai/issues/554#issuecomment-5737932641)
+owns this dedicated successor: exact AnyIO4.14.2 record and frontend
+alpine-release3.24.2-r0 / ca-certificates-bundle20260909-r0, with all-six Alpine
+SBOM distro qualifiers3.24.2. Other packages, digests and security controls remain.
+Immutable C1 is `b0c47803c121babfddfd4d361d8658adde78600c`; committed RED
+`55d5d5394d2423062c13839c05e7d830aa87672d` recorded11 expected failures/33 passes.
+The commit containing this record establishes a local source candidate only.
+Independent exact-head review, complete applicable quality and hosted evidence
+remain required; no predecessor acceptance transfers. Main owns one fresh push,
+then an unchanged-head real PR for PR-only and merge-ref contexts. No auto-rerun.
+See [ADR0006](ADR/0006-stage8-release-hardening.md#issue-554-two-root-hosted-drift-successor--2026-09-19)
+and [traceability](TRACEABILITY.md#issue-554-source-and-hosted-parity-boundaries).
+No local installer/Docker, provider/private/account/media operation or Cut1 credit.
+Retain source and failure evidence; cleanup only owned inactive scratch after checks.
+
+## Atomic #547/#549 runtime-security successor — 2026-09-19
+
+The dedicated `ci-547-549-atomic-runtime-security-successor` branch preserves frozen549
+`2ea926c63df6f3442faf2f4c7447d0707e23e31e` and immutable C1 `9bde8dd761cd7b8dcd53a9723769487cb1f59933`.
+Branch changes combine retained Soup Sieve2.9 with exact OpenSSL3.3.7-r1,
+alpine-release3.21.8-r0 and unchanged alpine-keys2.5-r0 consumers. They are not merged,
+hosted-verified or accepted. [ADR0006](ADR/0006-stage8-release-hardening.md#issue-547549-atomic-package-revision-maintenance--2026-09-19)
+and [traceability](TRACEABILITY.md#issue-547549-atomic-runtime-security-traceability) own the bounded contract.
+The paired pointer amendment `5737207458`/`5737217558`/`5737227530` corrects only the
+required STATUS binding conflict: F→candidate15 paths/900 lines, main union20/1371,
+registry STATUS hash/bytes4 charged lines and handoff hash2; other bytes stay frozen.
+Committed RED `e86c1fd7e049dcf4f014dafcc796d3a3f9e2b659` recorded8 expected failures/22 passes,
+with actual Stage8 and work-record consumers. Subsequent exact-head validation and
+independent review must be recorded against the containing candidate, not inferred.
+The sole remaining push is unspent and owned by main; direct-head hosted success
+precedes draft PR creation, then actual merge-ref checks and enforced approvals.
+No local Docker/bootstrap, provider/private/media activity, deployment or Cut1 credit.
+Retain the active checkout/evidence until main's consumer-aware closeout; floor14GiB,
+no new environment/dependency/cache. Prior failed runs and exhausted grants remain history.
+
 PR #536 delivered Issue #535/#537 [documentation navigation](README.md), and PR #539 merged the Issue #538 sequencing reconciliation at57c7dcb. That documentation work is complete. [Issue #540 / PR #541](https://github.com/imrohitagrawal/narratwin-ai/pull/541) is the bounded four-bibliography G1 correction under #521/#533, with [reviewed plan](work/g1-certification/PLAN.md), [review evidence](work/g1-certification/evidence/REVIEWS.md) and [current handoff](work/g1-certification/HANDOFF.md). It produces a separate structurally checked successor; G1 certification, accepted-current transition and Cut1 acceptance remain incomplete. Root's delegated technical approval is not a human attestation or GitHub APPROVED review. PR #534 remains retired unmerged and its unsigned signing packet must never be resumed.
+
+Issue #549 preserves an exact Soup Sieve 2.9 lock candidate as
+`FROZEN_COMPONENT_DRAFT`. The sole resolver command succeeded, but its
+controller failed (exit 76) because task-cache peak 114404 KiB exceeded the
+65536 KiB ceiling; the attempt remains spent and cleanup was verified. Recovery
+comment `5732696613` binds the retained lock bytes without authorizing a retry.
+The offline, no-cache lock check subsequently passed without changing the lock
+or manifest. Standalone merge is still prohibited. The first complete-quality
+attempt is not accepted: its controller created a 374020 KiB `.venv` and a
+379368 KiB `.uv-cache`, installed 149 packages, and observable output ended
+after backend lint without proving the whole suite. Exact cleanup and a fresh
+atomic #549/#547 successor remain required.
 
 ## Find current work
 

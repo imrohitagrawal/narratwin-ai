@@ -36,9 +36,25 @@ BACKEND_BASE_IMAGE = (
 )
 CPYTHON_VERSION = "3.13.15"
 CPYTHON_SHA256 = "1e66a7945a48390ee4c2a4268a0e4185884059a13c4aab6d148aa208deea4a76"
+OPENSSL_PACKAGE_REVISION: str = "3.3.7-r1"
+ALPINE_RELEASE_REVISION: str = "3.21.8-r0"
+ALPINE_KEYS_REVISION: str = "2.5-r0"
+ISSUE436_OPENSSL_PACKAGE_REVISION: str = "3.3.7-r0"
+ISSUE436_ALPINE_RELEASE_REVISION: str = "3.21.7-r0"
+RUNTIME_PACKAGE_REVISIONS: dict[str, str] = {
+    "libcrypto3": OPENSSL_PACKAGE_REVISION, "libssl3": OPENSSL_PACKAGE_REVISION,
+    "alpine-release": ALPINE_RELEASE_REVISION, "alpine-keys": ALPINE_KEYS_REVISION,
+}
+
+
+def backend_runtime_probe_valid(probe: str) -> bool:
+    probe = re.sub(r"(?m)#.*$", "", probe)
+    return all(f'packages["{package}"] == "{revision}"' in probe
+               for package, revision in RUNTIME_PACKAGE_REVISIONS.items())
 
 
 def backend_dockerfile_valid(dockerfile: str) -> bool:
+    dockerfile = re.sub(r"(?m)#.*$", "", dockerfile)
     from_lines = [
         line.strip()
         for line in dockerfile.splitlines()
@@ -50,8 +66,8 @@ def backend_dockerfile_valid(dockerfile: str) -> bool:
         '"https://www.python.org/ftp/python/${PYTHON_VERSION}/Python-${PYTHON_VERSION}.tar.xz"',
         'echo "$PYTHON_SHA256 *python.tar.xz" | sha256sum -c -',
         "gpg --batch --verify python.tar.xz.asc python.tar.xz",
-        "libcrypto3=3.3.7-r0",
-        "libssl3=3.3.7-r0",
+        *(f"{package}={revision}" for package, revision in RUNTIME_PACKAGE_REVISIONS.items()),
+        f"openssl-dev={OPENSSL_PACKAGE_REVISION}",
         "/runtime/lib/apk/db/installed",
         "COPY --from=cpython-build /runtime/ /",
         "USER 10001:10001",
@@ -66,6 +82,8 @@ def backend_dockerfile_valid(dockerfile: str) -> bool:
         ]
         and dockerfile.count(BACKEND_BASE_IMAGE) == 1
         and all(marker in dockerfile for marker in required)
+        and all(re.search(rf"(?<![\w-]){re.escape(package)}={re.escape(revision)}(?=\s|$)", dockerfile)
+                for package, revision in {"openssl-dev": OPENSSL_PACKAGE_REVISION, **RUNTIME_PACKAGE_REVISIONS}.items())
         and "3.5.7-r0" not in dockerfile
         and "python:3.13-alpine" not in dockerfile
         and not re.search(r"(?i)rm[^\n]*(?:/lib/apk/db|/runtime/lib/apk/db)", dockerfile)
@@ -159,5 +177,7 @@ def check(
     dockerfile = (root / "backend/Dockerfile").read_text(encoding="utf-8")
     if not backend_dockerfile_valid(dockerfile):
         failures.append("Stage 8 backend CPython and TLS image contract drifted.")
+    if not backend_runtime_probe_valid((root / "scripts/ci/backend-image-package-check.sh").read_text(encoding="utf-8")):
+        failures.append("Stage 8 backend runtime inventory contract drifted.")
     if branch == ISSUE436_BRANCH:
         check_route(root, run, failures)

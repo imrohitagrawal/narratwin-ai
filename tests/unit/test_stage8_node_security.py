@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import importlib.util
 import json
 import re
 from types import SimpleNamespace
@@ -88,7 +89,7 @@ def test_issue389_fixed_runtime_pin_and_package_contract_fail_closed() -> None:
     assert security.FRONTEND_NODE_RUNTIME_IMAGE == expected_runtime and f"FROM {expected_runtime} AS node-source" in dockerfile
     assert 'process.version!=="v26.7.0"' in scan and "Sharp transform invalid" in scan
     assert security.FRONTEND_RUNTIME_NODE_VERSION == "26.7.0"
-    assert security.FRONTEND_RUNTIME_PACKAGES == {"alpine-keys":"2.6-r0","alpine-release":"3.24.1-r0","ca-certificates-bundle":"20260611-r0","libgcc":"15.2.0-r5","libstdc++":"15.2.0-r5","musl":"1.2.6-r2"}
+    assert security.FRONTEND_RUNTIME_PACKAGES == {"alpine-keys":"2.6-r0","alpine-release":"3.24.2-r0","ca-certificates-bundle":"20260909-r0","libgcc":"15.2.0-r5","libstdc++":"15.2.0-r5","musl":"1.2.6-r2"}
     for mutation in (dockerfile.replace(expected_runtime, expected_runtime[:-1]+"1"), dockerfile.replace(expected_runtime, "node:26.7.0-alpine3.24:latest"), dockerfile.replace("FROM scratch AS build", f"FROM {security.ISSUE389_VULNERABLE_RUNTIME_IMAGE} AS build"), dockerfile.replace("/lib/apk/db/installed", "REMOVED")):
         assert not security.frontend_node_image_valid(mutation)
 
@@ -108,6 +109,60 @@ def test_issue502_musl_closure_and_real_sharp_transform_fail_closed() -> None:
         dockerfile.replace(copy_call, "REMOVED", 1),
     ]
     assert all(not security.frontend_node_image_valid(candidate) for candidate in mutations)
+
+
+def test_issue554_active_apk_pins_cannot_be_satisfied_by_comment_decoys() -> None:
+    dockerfile = stage8.read("frontend/Dockerfile")
+    assert security.frontend_node_image_valid(dockerfile)
+    for name, version in security.FRONTEND_RUNTIME_PACKAGES.items():
+        pin = f"{name}={version}"
+        for replacement in (f"{name}=0-r0", name, pin + " " + pin):
+            mutation = dockerfile.replace(pin, replacement, 1)
+            if replacement != pin + " " + pin:
+                mutation += f"\n# {pin}\n"
+            assert not security.frontend_node_image_valid(mutation), (name, replacement)
+
+
+@pytest.mark.parametrize("name", security.FRONTEND_RUNTIME_PACKAGES)
+@pytest.mark.parametrize("stale", [False, True])
+@pytest.mark.parametrize("decoy", ['ENV EXPECTED="{pin}"', 'RUN echo "{pin}"', 'LABEL expected="{pin}"'])
+def test_issue554_install_clause_rejects_active_non_apk_decoys(name: str, stale: bool, decoy: str) -> None:
+    dockerfile = stage8.read("frontend/Dockerfile")
+    pin = f"{name}={security.FRONTEND_RUNTIME_PACKAGES[name]}"
+    actual = f"{name}=0-r0" if stale else name
+    mutation = dockerfile.replace(pin, actual, 1) + "\n" + decoy.format(pin=pin) + "\n"
+    assert not security.frontend_node_image_valid(mutation)
+
+
+@pytest.mark.parametrize("instruction", ["RUN", "COPY", "ADD", "ONBUILD RUN", "ONBUILD COPY", "ONBUILD ADD"])
+@pytest.mark.parametrize("opener", ["<<EOF", "<<-EOF", "3<<EOF", "<<'EOF'", '<<"EOF"', r"<<E\OF", "<<E'OF'", "<<A <<B", "<<'", "<<", "<<EOF#suffix"])
+def test_issue555_heredoc_lexical_matrix(instruction: str, opener: str) -> None:
+    source = stage8.read("frontend/Dockerfile")
+    assert not security.frontend_node_image_valid(source + f"\n{instruction} {opener}\n")
+
+
+@pytest.mark.parametrize("extra", ["# RUN <<EOF\n", 'RUN echo "<<EOF"\n', r"RUN echo \<\<EOF" + "\n", "RUN echo https://example.invalid/a<<b\n", 'RUN ["echo", "<<EOF"]\n'])
+def test_issue555_literal_markers_are_not_openers(extra: str) -> None:
+    assert security.frontend_node_image_valid(stage8.read("frontend/Dockerfile") + "\n" + extra)
+
+
+@pytest.mark.parametrize("extra", ["RUN \\\n<<EOF\n", "RUN \\\r\n<<EOF\r\n", "RUN \\\n# ignored\n<<EOF\n", "# escape=`\nRUN `\n<<EOF\n", 'RUN ["unterminated <<EOF\n'])
+def test_issue555_continuation_and_ambiguous_forms_fail_closed(extra: str) -> None:
+    assert not security.frontend_node_image_valid(stage8.read("frontend/Dockerfile") + "\n" + extra)
+
+
+@pytest.mark.parametrize("separator,digest", [(" ", "3e953325f1a5af73851e83de7f5eb878f4cb15a27ea31e8d21eb7a4171accf35"), ("\v", "f93105c51bd71913a7a992076e4aa3f52639bcaa37da416b8fddc7deb9747d73"), ("\f", "cef76b979a314c2b7674335e871c56297c39295e469872a615ff612515cf0619")])
+def test_issue555_exact_counterexample_and_guard_removal(monkeypatch: Any, separator: str, digest: str) -> None:
+    spec = importlib.util.spec_from_file_location("issue555_source_oracle", stage8.ROOT / "tests/unit/test_frontend_container_runtime.py")
+    assert spec is not None and spec.loader is not None
+    fixture = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(fixture)
+    mutant = fixture.issue555_heredoc_mutant(stage8.read("frontend/Dockerfile")).replace("RUN <<'OUTER'", f"RUN{separator}<<'OUTER'", 1)
+    assert len(mutant.encode()) == 3942 and hashlib.sha256(mutant.encode()).hexdigest() == digest
+    assert not security.frontend_heredoc_free(mutant)
+    assert not security.frontend_node_image_valid(mutant)
+    monkeypatch.setattr(security, "frontend_heredoc_free", lambda source: True)
+    assert security.frontend_node_image_valid(mutant), "removing the guard must reproduce the historical false pass"
 
 
 def _security_job_blocks(workflow: str) -> dict[str, str]:

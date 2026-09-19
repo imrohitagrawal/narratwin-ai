@@ -66,17 +66,17 @@ FRONTEND_NODE_SOURCE_PLATFORM_DIGESTS = {
 }
 FRONTEND_RUNTIME_OPENSSL_VERSION = "3.5.7"
 FRONTEND_RUNTIME_PACKAGES = {
-    "alpine-keys": "2.6-r0", "alpine-release": "3.24.1-r0",
-    "ca-certificates-bundle": "20260611-r0", "libgcc": "15.2.0-r5",
+    "alpine-keys": "2.6-r0", "alpine-release": "3.24.2-r0",
+    "ca-certificates-bundle": "20260909-r0", "libgcc": "15.2.0-r5",
     "libstdc++": "15.2.0-r5", "musl": "1.2.6-r2",
 }
 FRONTEND_SBOM_COMPONENTS = {
-    "alpine-keys": ("2.6-r0", ("MIT",), "alpine", "3.24.1"),
-    "alpine-release": ("3.24.1-r0", ("MIT",), "alpine", "3.24.1"),
-    "ca-certificates-bundle": ("20260611-r0", ("MIT", "MPL-2.0"), "alpine", "3.24.1"),
-    "libgcc": ("15.2.0-r5", ("GPL-2.0-or-later", "LGPL-2.1-or-later"), "alpine", "3.24.1"),
-    "libstdc++": ("15.2.0-r5", ("GPL-2.0-or-later", "LGPL-2.1-or-later"), "alpine", "3.24.1"),
-    "musl": ("1.2.6-r2", ("MIT",), "alpine", "3.24.1"),
+    "alpine-keys": ("2.6-r0", ("MIT",), "alpine", "3.24.2"),
+    "alpine-release": ("3.24.2-r0", ("MIT",), "alpine", "3.24.2"),
+    "ca-certificates-bundle": ("20260909-r0", ("MIT", "MPL-2.0"), "alpine", "3.24.2"),
+    "libgcc": ("15.2.0-r5", ("GPL-2.0-or-later", "LGPL-2.1-or-later"), "alpine", "3.24.2"),
+    "libstdc++": ("15.2.0-r5", ("GPL-2.0-or-later", "LGPL-2.1-or-later"), "alpine", "3.24.2"),
+    "musl": ("1.2.6-r2", ("MIT",), "alpine", "3.24.2"),
 }
 FRONTEND_SHARP_COMPONENTS = {
     "amd64": {

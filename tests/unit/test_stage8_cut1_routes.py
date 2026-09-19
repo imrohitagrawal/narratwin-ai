@@ -548,6 +548,20 @@ ISSUE529_EXPECTED = {
     "docs/SECURITY_AND_PRIVACY.md",
     "docs/STAGE_ISSUE_PLAN.md",
 }
+ISSUE549_EXPECTED = {
+    "docs/governance/preflights/issue-549-soupsieve-security-refresh.json",
+    "uv.lock",
+    "tests/unit/test_dependency_security_contract.py",
+    "scripts/quality/stage8_cut1_routes.py",
+    "tests/unit/test_stage8_cut1_routes.py",
+    "docs/ADR/0086-soupsieve-2-9-security-refresh.md",
+    "docs/ADR/INDEX.md",
+    "docs/STATUS.md",
+    "docs/THIRD_PARTY_NOTICES.md",
+    "docs/TRACEABILITY.md",
+    "docs/work/registry.json",
+    "docs/work/governance-backlog/HANDOFF.md",
+}
 ISSUE502_EXPECTED = {
     "docs/governance/preflights/issue-502.json",
     "frontend/Dockerfile",
@@ -1228,10 +1242,398 @@ EXPECTED["stage8-523-httpx2-2-12-security-refresh"] = ISSUE523_EXPECTED
 EXPECTED["stage8-525-schema-oracle-runtime-policy"] = ISSUE525_EXPECTED
 EXPECTED["stage8-527-backend-ci-timeout"] = ISSUE527_EXPECTED
 EXPECTED["stage8-529-native-arm64-security"] = ISSUE529_EXPECTED
+EXPECTED["stage8-549-soupsieve-security-refresh"] = ISSUE549_EXPECTED
 
 
 def completed(args: list[str], code: int = 0, out: str = "", err: str = "") -> subprocess.CompletedProcess[str]:
     return subprocess.CompletedProcess(args, code, out, err)
+
+
+ATOMIC547_BRANCH = "ci-547-549-atomic-runtime-security-successor"
+ATOMIC547_F, ATOMIC547_C1 = "2ea926c63df6f3442faf2f4c7447d0707e23e31e", "9bde8dd761cd7b8dcd53a9723769487cb1f59933"
+ATOMIC547_FILES = ISSUE549_EXPECTED | {"docs/governance/preflights/issue-547.json", "backend/Dockerfile", "scripts/ci/backend-image-package-check.sh", "scripts/quality/stage8_backend_security.py", "tests/unit/test_stage8_backend_security.py", "tests/unit/test_backend_image_package_check.py", "tests/unit/test_cpython_security_backports.py", "docs/ADR/0006-stage8-release-hardening.md"}
+ATOMIC547_FROZEN = {"docs/ADR/0086-soupsieve-2-9-security-refresh.md", "docs/ADR/INDEX.md", "docs/governance/preflights/issue-549-soupsieve-security-refresh.json", "uv.lock"}
+
+SUCCESSOR554_BRANCH = "ci-554-anyio-alpine-runtime-security-successor"
+SUCCESSOR554_P = "f8daafee2d28ed46e56483b49e654a0fcea685e6"
+SUCCESSOR554_C1 = "b0c47803c121babfddfd4d361d8658adde78600c"
+SUCCESSOR554_PATHS = {
+    "docs/governance/preflights/issue-554.json", "uv.lock", "tests/unit/test_dependency_security_contract.py",
+    "frontend/Dockerfile", "scripts/ci/check_container_scan_consensus.py", "scripts/quality/stage8_node_security.py",
+    "scripts/quality/stage8_cut1_routes.py", "tests/unit/test_frontend_container_runtime.py", "tests/unit/test_stage8_node_security.py",
+    "tests/unit/test_container_scan_consensus.py", "tests/unit/test_stage8_cut1_routes.py", "docs/ADR/0006-stage8-release-hardening.md",
+    "docs/STATUS.md", "docs/THIRD_PARTY_NOTICES.md", "docs/TRACEABILITY.md", "docs/work/registry.json", "docs/work/governance-backlog/HANDOFF.md",
+}
+SUCCESSOR554_UNION = ATOMIC547_FILES | SUCCESSOR554_PATHS
+
+SUCCESSOR555_BRANCH = "ci-555-frontend-heredoc-guard-successor"
+SUCCESSOR555_P = "ad4bcf3b2ea8eef3668a5711914da17175df2849"
+SUCCESSOR555_C1 = "2809ed06eafcfc2cb74a89f5a0139e6a58570000"
+SUCCESSOR555_PATHS = {"docs/governance/preflights/issue-555.json", "scripts/quality/stage8_node_security.py", "tests/unit/test_stage8_node_security.py", "tests/unit/test_frontend_container_runtime.py", "scripts/quality/stage8_cut1_routes.py", "tests/unit/test_stage8_cut1_routes.py", "docs/ADR/0006-stage8-release-hardening.md", "docs/STATUS.md", "docs/TRACEABILITY.md", "docs/work/registry.json", "docs/work/governance-backlog/HANDOFF.md"}
+SUCCESSOR555_UNION = SUCCESSOR554_UNION | SUCCESSOR555_PATHS
+
+
+def _successor555_snapshot(args: list[str]) -> subprocess.CompletedProcess[str]:
+    if args[1] == "diff" and SUCCESSOR555_P in args and routes.ISSUE549_BASE not in args:
+        paths = (args[args.index("--") + 1:] if "--" in args else []) or sorted(SUCCESSOR555_PATHS)
+        paths = [p for p in paths if p in SUCCESSOR555_PATHS]
+        if "--numstat" in args:
+            return completed(args, out="".join(f"1\t0\t{p}\n" for p in paths))
+        if "--name-status" in args:
+            return completed(args, out="".join(f"M\0{p}\0" for p in paths))
+        if "--name-only" in args:
+            return completed(args, out="\n".join(paths))
+    if args[1] == "diff" and routes.ISSUE549_BASE in args and SUCCESSOR555_P not in args and "--name-only" in args:
+        return completed(args, out="\n".join(sorted(SUCCESSOR555_UNION)))
+    return subprocess.run(args, cwd=REPO, check=False, capture_output=True, text=True)
+
+
+@pytest.mark.parametrize("fault", [None, "near", "extra", "missing", "base", "predecessor", "c1", "parent", "first", "ancestry", "raw", "blob", "staged", "mode", "manifest", "predecessor-charge", "binary", "rename", "total", "file", "deletions", "registry", "handoff", "handoff-extra", "handoff-missing", "handoff-altered", "handoff-unrelated"])
+def test_issue555_actual_scope_checks_layers_and_frozen_custody(fault: str | None, monkeypatch: Any) -> None:
+    from scripts import work_records
+    branch = SUCCESSOR555_BRANCH + ("-near" if fault == "near" else "")
+    changed = (SUCCESSOR555_UNION | ({"foreign.py"} if fault == "extra" else set())) - ({"frontend/Dockerfile"} if fault == "missing" else set())
+    corrupt = {"base": ["rev-parse", f"{routes.ISSUE549_BASE}^{{tree}}"], "predecessor": ["rev-parse", f"{SUCCESSOR555_P}^{{tree}}"], "c1": ["rev-parse", f"{SUCCESSOR555_C1}^{{tree}}"], "parent": ["rev-parse", f"{SUCCESSOR555_C1}^"], "first": ["diff-tree", "--no-commit-id", "--name-only", "-r", SUCCESSOR555_C1]}
+    def run(args: list[str]) -> subprocess.CompletedProcess[str]:
+        value = _successor555_snapshot(args)
+        if args[1:] == corrupt.get(fault or ""):
+            return completed(args, out="0" * 40 + "\n")
+        if fault == "ancestry" and args[1:3] == ["merge-base", "--is-ancestor"]:
+            return completed(args, code=1)
+        if fault == "blob" and args[1:3] == ["show", "HEAD:frontend/Dockerfile"]:
+            return completed(args, out=value.stdout + "\n")
+        if fault == "staged" and "--cached" in args and args[-1] == "frontend/Dockerfile":
+            return completed(args, out="frontend/Dockerfile\n")
+        if fault in {"mode", "manifest"} and args[1] == "ls-tree":
+            return completed(args, out=value.stdout.replace("100644", "100755", 1))
+        if fault == "predecessor-charge" and "--numstat" in args and routes.ISSUE549_BASE in args:
+            return completed(args, out=value.stdout.replace("\t", "1\t", 1))
+        if "--numstat" in args and SUCCESSOR555_P in args and routes.ISSUE549_BASE not in args:
+            if fault == "total":
+                caps = json.loads((REPO / "docs/governance/preflights/issue-555.json").read_text())["change_budget"]["per_file_charged_lines"]
+                return completed(args, out=f"{caps[args[-1]]}\t0\t{args[-1]}\n")
+            if args[-1] == "docs/work/registry.json" and fault in {"binary", "file", "deletions"}:
+                return completed(args, out={"binary": "-\t-\tdocs/work/registry.json\n", "file": "5\t0\tdocs/work/registry.json\n", "deletions": "3\t2\tdocs/work/registry.json\n"}[fault])
+        if fault == "rename" and "--name-status" in args:
+            return completed(args, out="R100\0docs/STATUS.md\0foreign.py\0")
+        return value
+    original = Path.read_bytes
+    targets = {"raw": "docs/governance/preflights/issue-555.json", "registry": "docs/work/registry.json", "handoff": "docs/work/governance-backlog/HANDOFF.md"}
+    def mutated(path: Path) -> bytes:
+        raw = original(path)
+        if path == REPO / targets["handoff"] and fault in {"handoff-extra", "handoff-missing", "handoff-altered", "handoff-unrelated"}:
+            checkpoint = raw[raw.index(b"Issue #555 supersedes"):raw.index(b"Issue #554 checkpoint")]
+            return {"handoff-extra": raw + b"\nProvider operations are authorized.\n", "handoff-missing": raw.replace(checkpoint, b"", 1), "handoff-altered": raw.replace(b"one replacement push", b"two replacement pushes", 1), "handoff-unrelated": raw.replace(b"Observed source checkpoint:", b"Altered source checkpoint:", 1)}[fault]
+        return (raw.replace(b"PLAN_SHA256:", b"PLAN_SHA256:0") if fault == "handoff" else raw + b"\n") if path == REPO / targets.get(fault or "", "__none__") else raw
+    monkeypatch.setattr(Path, "read_bytes", mutated)
+    original_record = work_records.file_bytes
+    monkeypatch.setattr(work_records, "file_bytes", lambda root, path, private_roots=None: mutated(root / path) if fault == "handoff" and path == targets["handoff"] else original_record(root, path, private_roots))
+    monkeypatch.setattr(stage8, "current_branch", lambda: branch)
+    monkeypatch.setattr(stage8, "changed_files_for_stage_scope", lambda: sorted(changed))
+    monkeypatch.setattr(stage8, "run", run)
+    failures: list[str] = []
+    stage8.check_stage_scope(failures)
+    assert bool(failures) == (fault is not None), failures
+
+
+def test_issue555_exact_route_authority_and_publication_replacement() -> None:
+    assert routes.ROUTES.get(SUCCESSOR555_BRANCH) == SUCCESSOR555_UNION
+    assert len(SUCCESSOR555_PATHS) == 11 and len(SUCCESSOR555_UNION) == 28
+    assert routes.ISSUE555_AUTHORITY == (("5738302888", "2c36dddbafd34db282832686f84c4a04e9ef9da457b210072719f08eb6aa81bb"), ("5738327761", "89954a33c63f1d4f03a869ad4486e6942f1dd331399fa3eb94bb6706c83ecd45"))
+    assert routes.ISSUE555_PUSH_LIMIT == 1
+
+
+def _successor554_snapshot(args: list[str]) -> subprocess.CompletedProcess[str]:
+    if args[1] == "diff" and SUCCESSOR554_P in args and routes.ISSUE549_BASE not in args:
+        paths = (args[args.index("--") + 1:] if "--" in args else []) or sorted(SUCCESSOR554_PATHS)
+        paths = [p for p in paths if p in SUCCESSOR554_PATHS]
+        if "--numstat" in args:
+            return completed(args, out="".join(f"1\t0\t{p}\n" for p in paths))
+        if "--name-status" in args:
+            return completed(args, out="".join(f"M\0{p}\0" for p in paths))
+        if "--name-only" in args:
+            return completed(args, out="\n".join(paths))
+    if args[1] == "diff" and routes.ISSUE549_BASE in args and SUCCESSOR554_P not in args and "--name-only" in args:
+        return completed(args, out="\n".join(sorted(SUCCESSOR554_UNION)))
+    historical = [a.replace("HEAD", SUCCESSOR555_P) for a in args]
+    if "--cached" in historical:
+        historical.remove("--cached")
+        historical.insert(historical.index("--"), SUCCESSOR555_P)
+    return subprocess.run(historical, cwd=REPO, check=False, capture_output=True, text=True)
+
+
+@pytest.fixture(autouse=True)
+def _immutable_issue554_files(request: Any, monkeypatch: Any) -> None:
+    if request.node.name.startswith("test_issue554_actual_scope"):
+        original = Path.read_bytes
+        snapshot = {REPO / p: subprocess.run(["git", "show", f"{SUCCESSOR555_P}:{p}"], cwd=REPO, check=True, capture_output=True).stdout for p in SUCCESSOR554_UNION}
+        monkeypatch.setattr(Path, "read_bytes", lambda path: snapshot[path] if path in snapshot else original(path))
+
+
+@pytest.mark.parametrize("fault", [None, "near", "extra", "missing", "base", "predecessor", "c1", "parent", "first", "ancestry", "raw", "blob", "staged", "predecessor-charge", "binary", "rename", "total", "file", "deletions"])
+def test_issue554_actual_scope_checks_all_three_layers_and_custody(fault: str | None, monkeypatch: Any) -> None:
+    branch = SUCCESSOR554_BRANCH + ("-near" if fault == "near" else "")
+    changed = (SUCCESSOR554_UNION | ({"foreign.py"} if fault == "extra" else set())) - ({"frontend/Dockerfile"} if fault == "missing" else set())
+    corrupt = {"base": ["rev-parse", f"{routes.ISSUE549_BASE}^{{tree}}"], "predecessor": ["rev-parse", f"{SUCCESSOR554_P}^{{tree}}"], "c1": ["rev-parse", f"{SUCCESSOR554_C1}^{{tree}}"], "parent": ["rev-parse", f"{SUCCESSOR554_C1}^"], "first": ["diff-tree", "--no-commit-id", "--name-only", "-r", SUCCESSOR554_C1]}
+    def run(args: list[str]) -> subprocess.CompletedProcess[str]:
+        value = _successor554_snapshot(args)
+        if args[1:] == corrupt.get(fault or ""):
+            return completed(args, out="0" * 40 + "\n")
+        if fault == "ancestry" and args[1:3] == ["merge-base", "--is-ancestor"]:
+            return completed(args, code=1)
+        if fault == "blob" and args[1:3] == ["show", "HEAD:backend/Dockerfile"]:
+            return completed(args, out=value.stdout + "\n")
+        if fault == "staged" and "--cached" in args and args[-1] == "backend/Dockerfile":
+            return completed(args, out="backend/Dockerfile\n")
+        if fault == "predecessor-charge" and "--numstat" in args and routes.ISSUE549_BASE in args:
+            return completed(args, out=value.stdout.replace("\t", "1\t", 1))
+        if "--numstat" in args and SUCCESSOR554_P in args and routes.ISSUE549_BASE not in args:
+            if fault == "total":
+                caps = json.loads((REPO / "docs/governance/preflights/issue-554.json").read_text())["change_budget"]["per_file_charged_lines"]
+                return completed(args, out=f"{caps[args[-1]]}\t0\t{args[-1]}\n")
+            if args[-1] == "uv.lock" and fault in {"binary", "file", "deletions"}:
+                return completed(args, out={"binary": "-\t-\tuv.lock\n", "file": "13\t0\tuv.lock\n", "deletions": "7\t6\tuv.lock\n"}[fault])
+        if fault == "rename" and "--name-status" in args:
+            return completed(args, out="R100\0uv.lock\0foreign.py\0")
+        return value
+    original = Path.read_bytes
+    monkeypatch.setattr(Path, "read_bytes", lambda p: original(p) + (b"\n" if fault == "raw" and p == REPO / "docs/governance/preflights/issue-554.json" else b""))
+    monkeypatch.setattr(stage8, "current_branch", lambda: branch)
+    monkeypatch.setattr(stage8, "changed_files_for_stage_scope", lambda: sorted(changed))
+    monkeypatch.setattr(stage8, "run", run)
+    failures: list[str] = []
+    stage8.check_stage_scope(failures)
+    assert bool(failures) == (fault is not None), failures
+
+
+def test_issue554_route_is_exact_union_not_a_replacement_for_historical_routes() -> None:
+    assert routes.ROUTES.get(SUCCESSOR554_BRANCH) == SUCCESSOR554_UNION
+    assert len(SUCCESSOR554_PATHS) == 17 and len(SUCCESSOR554_UNION) == 27
+    assert routes.ROUTES[ATOMIC547_BRANCH] == ATOMIC547_FILES
+    assert routes.ISSUE554_AUTHORITY == ("5737932641", "daa8f1912532520ee31cd9ce7d5e2dc7f96a53cf7a4d795344d61a3891c8cb85")
+    assert routes.ISSUE554_PUSH_LIMIT == 1
+
+
+def _atomic547_snapshot(args: list[str]) -> subprocess.CompletedProcess[str]:
+    if args[1] == "diff" and not (routes.ISSUE549_BASE in args and ATOMIC547_F in args) and not ("--name-only" in args and args[-1] in ATOMIC547_FROZEN):
+        paths = (args[args.index("--") + 1:] if "--" in args else []) or sorted(ATOMIC547_FILES - (ATOMIC547_FROZEN if ATOMIC547_F in args else set()))
+        if "--numstat" in args:
+            return completed(args, out="".join(f"1\t0\t{p}\n" for p in paths))
+        if "--name-status" in args:
+            return completed(args, out="".join(f"M\0{p}\0" for p in paths))
+        if "--name-only" in args:
+            return completed(args, out="\n".join(paths) + "\n")
+    historical = [a.replace("HEAD", SUCCESSOR554_P) for a in args]
+    if "--cached" in historical:
+        historical.remove("--cached")
+        historical.insert(historical.index("--"), SUCCESSOR554_P)
+    return subprocess.run(historical, cwd=REPO, check=False, capture_output=True, text=True)
+
+
+@pytest.fixture(autouse=True)
+def _immutable_atomic547_files(request: Any, monkeypatch: Any) -> None:
+    if not request.node.name.startswith(("test_atomic547_actual_scope", "test_atomic547_rejects_staged")):
+        return
+    original = Path.read_bytes
+    snapshot = {REPO / p: subprocess.run(["git", "show", f"{SUCCESSOR554_P}:{p}"], cwd=REPO, check=True, capture_output=True).stdout for p in ATOMIC547_FILES}
+    monkeypatch.setattr(Path, "read_bytes", lambda path: snapshot[path] if path in snapshot else original(path))
+
+
+@pytest.mark.parametrize("fault", [None, "near", "old", "extra", "missing", "base", "frozen", "c1", "parent", "first", "ancestry", "manifest", "binary", "rename", "total", "file", "dependency", "raw", "registry", "handoff", "status"])
+def test_atomic547_actual_scope_rejects_layer_and_custody_drift(fault: str | None, monkeypatch: Any) -> None:
+    branch = "ci-547-alpine-runtime-pins-successor" if fault == "old" else ATOMIC547_BRANCH + ("-near" if fault == "near" else "")
+    changed = (ATOMIC547_FILES | ({"foreign.py"} if fault == "extra" else set())) - ({"backend/Dockerfile"} if fault == "missing" else set())
+    corrupt = {"base": ["rev-parse", f"{routes.ISSUE549_BASE}^{{tree}}"], "frozen": ["rev-parse", f"{ATOMIC547_F}^{{tree}}"], "c1": ["rev-parse", f"{ATOMIC547_C1}^{{tree}}"], "parent": ["rev-parse", f"{ATOMIC547_C1}^"], "first": ["diff-tree", "--no-commit-id", "--name-only", "-r", ATOMIC547_C1]}
+    def run(args: list[str]) -> subprocess.CompletedProcess[str]:
+        value = _atomic547_snapshot(args)
+        responses = (
+            (args[1:] == corrupt.get(fault or ""), completed(args, out="0" * 40 + "\n")),
+            (fault == "ancestry" and args[1:3] == ["merge-base", "--is-ancestor"], completed(args, code=1)),
+            (fault == "manifest" and args[1] == "ls-tree", completed(args, out=value.stdout.replace("100644", "100755", 1))),
+            (fault == "rename" and "--name-status" in args, completed(args, out="R100\0uv.lock\0foreign.py\0")),
+            ("--numstat" in args and ATOMIC547_F in args and routes.ISSUE549_BASE not in args and fault == "binary", completed(args, out="-\t-\tbackend/Dockerfile\n")),
+            ("--numstat" in args and ATOMIC547_F in args and routes.ISSUE549_BASE not in args and fault in {"total", "file", "dependency"}, completed(args, out="30\t0\ttests/unit/test_dependency_security_contract.py\n" if fault == "dependency" else f"{901 if fault == 'total' else 25}\t0\tbackend/Dockerfile\n")),
+        )
+        return next((result for matches, result in responses if matches), value)
+    original = Path.read_bytes
+    targets = {"raw": "docs/governance/preflights/issue-547.json", "registry": "docs/work/registry.json", "handoff": "docs/work/governance-backlog/HANDOFF.md", "status": "docs/STATUS.md"}
+    monkeypatch.setattr(Path, "read_bytes", lambda p: original(p) + (b"\n" if p == REPO / targets.get(fault or "", "__none__") else b""))
+    monkeypatch.setattr(stage8, "current_branch", lambda: branch)
+    monkeypatch.setattr(stage8, "changed_files_for_stage_scope", lambda: sorted(changed))
+    monkeypatch.setattr(stage8, "run", run)
+    failures: list[str] = []
+    stage8.check_stage_scope(failures)
+    assert bool(failures) == (fault is not None), failures
+
+
+@pytest.mark.parametrize("path", sorted(ATOMIC547_FROZEN))
+def test_atomic547_rejects_staged_frozen_drift(path: str, monkeypatch: Any) -> None:
+    def run(args: list[str]) -> subprocess.CompletedProcess[str]:
+        if args[:2] == ["git", "diff"] and "--cached" in args and "--name-only" in args and path in args:
+            return completed(args, out=path + "\n")
+        return _atomic547_snapshot(args)
+    monkeypatch.setattr(stage8, "run", run)
+    monkeypatch.setattr(stage8, "current_branch", lambda: ATOMIC547_BRANCH)
+    monkeypatch.setattr(stage8, "changed_files_for_stage_scope", lambda: sorted(ATOMIC547_FILES))
+    failures: list[str] = []
+    stage8.check_stage_scope(failures)
+    assert failures == ["Issue #547 route evidence failed closed: Atomic frozen-only blob or snapshot drift."], failures
+
+def test_atomic547_work_record_consumer_rejects_each_stale_binding(monkeypatch: Any) -> None:
+    from scripts import work_records as wr
+    original = wr.file_bytes
+    registry = json.loads(original(REPO, wr.REGISTRY))
+    work = next(w for w in registry["works"] if w["id"] == "governance-backlog")
+    status = original(REPO, "docs/STATUS.md") + b"\n"
+    old = work["plan"]["sha256"]
+    work["plan"].update(sha256=hashlib.sha256(status).hexdigest(), bytes=len(status))
+    overlay = {"docs/STATUS.md": status}
+    for expected in ("CONTENT_DRIFT", "HANDOFF_STALE", None):
+        monkeypatch.setattr(wr, "file_bytes", lambda root, path, private_roots=None: overlay.get(path, original(root, path, private_roots)))
+        if expected:
+            with pytest.raises(wr.RecordError, match=f"^{expected}$"):
+                wr.validate(REPO)
+        else:
+            assert wr.validate(REPO)["publicIndex"] == "VALID"
+        updates = {"CONTENT_DRIFT": {wr.REGISTRY: json.dumps(registry, indent=2).encode() + b"\n"}, "HANDOFF_STALE": {work["handoff"]: original(REPO, work["handoff"]).replace(old.encode(), work["plan"]["sha256"].encode())}}
+        overlay.update(updates.get(expected or "", {}))
+
+
+def _frozen549_run(args: list[str]) -> subprocess.CompletedProcess[str]:
+    if args[1] == "diff" and "--numstat" in args:
+        args = [a for a in args if a != "--cached"]
+        args.insert(args.index("--"), ATOMIC547_F)
+    return subprocess.run(args, cwd=REPO, check=False, capture_output=True, text=True)
+
+
+def test_atomic547_authority_and_one_push_boundary() -> None:
+    assert getattr(stage8.cr, "ISSUE547_ATOMIC_PUSH_LIMIT", None) == 1
+    assert getattr(stage8.cr, "ISSUE547_ATOMIC_AUTHORITY", None) == (("5737207458", "a4f8ca11da2bc89d9761c29f14e078b230ae108d01e8558768cb9d04975f556e"), ("5737217558", "f02f07ea6528c661f7948b2140db38d776ab7bd8a0fa67a1e43a1e160befda6f"), ("5737227530", "3a89ce829048f630d969de102e085f9a3ec8655d66dc1b58c6389562c6de5621"), ("5737432474", "979be396f76bb31a3058b4d1881b403168f77a11ab26d022e38a422796e230ce"), ("5737436428", "f4eef65fc5e10b40bb2ac65c5c70933e63caf0935ae1e15b458d595302e59a29"), ("5737446015", "6dc4935373589893a93309327578bff18f603935f59a72b308cb0b164b23d367"), ("5737462767", "fedcf4b2312d0fabeebe7c4f2009fabad4aefbca594a5dfd05bfde2303a7c37a"), ("5737466529", "f47834839c59a8edc3504a9978e9f14007d87f6308b2e24af3b20a7176611947"), ("5737629990", "d053c9b927aa7357180d54e1ea6b7767e1605a9ea73a6f67080f67c5c4d08be7"), ("5737634271", "abb3101684f5e471d99f0a6a18917eb3bc789206d7dd96ab142547022db5e0a6"), ("5737637839", "d7cb83157722b94ac51ae6ee00c35c4d1ae3739d87c727b975fb8555a5cd19fe"), ("5737712689", "1de4bd52af5ca1a8abed4f494143a3049442506f28ec4da60c3e811fed24251d"), ("5737719015", "06ead9f112672fe383ffad2a653ca9bce5f48bca0976fb9f08d4563492d23379"), ("5737723412", "0c73219ab5ce44bcb4aebda4417221878ae606168bf12c870b674105483adf23"))
+
+@pytest.mark.parametrize("via_scope", [False, True])
+def test_issue549_standalone_acceptance_fails_closed(via_scope: bool, monkeypatch: Any) -> None:
+    monkeypatch.setattr(stage8, "run", _frozen549_run)
+    monkeypatch.setattr(stage8, "current_branch", lambda: routes.ISSUE549_BRANCH)
+    monkeypatch.setattr(stage8, "changed_files_for_stage_scope", lambda: sorted(ISSUE549_EXPECTED))
+    failures: list[str] = []
+    if via_scope:
+        stage8.check_stage_scope(failures)
+    else:
+        routes.check_exact_route(REPO, stage8.run, routes.ISSUE549_BRANCH, ISSUE549_EXPECTED, failures)
+    assert failures == ["Issue #549 standalone acceptance is prohibited; atomic successor required."]
+    assert (routes.ISSUE549_STANDALONE_COMMENT, routes.ISSUE549_STANDALONE_SHA256) == (
+        "5734670605", "0b7461d1f2c14065c53289e75d2d33da1ee0e8120524ce6b0d5c15e7f798dc4d",
+    )
+    assert getattr(routes, "ISSUE549_DISPOSITION_COMMENT", None) == "5734722695"
+    assert getattr(routes, "ISSUE549_DISPOSITION_SHA256", None) == (
+        "e517f5a9572731532d0f50eeb9b46f41c0bbc0b64da5d61d14fe8ad1255ffa77"
+    )
+
+
+def test_issue549_route_freezes_component_and_atomic_successor_prerequisite() -> None:
+    branch = "stage8-549-soupsieve-security-refresh"
+    base = "2fc1bbd7904421d4a5a2c85995c28dbd9cdf0fce"
+    c1 = "0d019810ec1d96410f390c9e8672655be9d07095"
+    assert routes.ISSUE549_BRANCH == branch
+    assert routes.ISSUE549_BASE == base
+    assert routes.ISSUE549_TREE == "3ebbaaac4b66900de5129f60f56e6cd2d6978766"
+    assert routes.ISSUE549_BODY_SHA256 == (
+        "7e12d0872833abb5de71aa584d0eca645597357d2b197dcabf11ed657b63c5e0"
+    )
+    assert routes.ISSUE549_AMENDMENT_COMMENT == "5731668055"
+    assert routes.ISSUE549_AMENDMENT_SHA256 == (
+        "14ad930762f6b86a786b45d62aa44604587bd12b604ed65a680333c32864022d"
+    )
+    assert routes.ISSUE549_C1_COMMIT == c1
+    assert routes.ISSUE549_C1_TREE == "68eb50b1bb6c82f84317ddf293df371e336209f3"
+    assert routes.ISSUE549_PREFLIGHT_SHA256 == (
+        "34a25839158b56d68f1eeda84b724bfe58f24ed43b06c30f99fcbb4bf910ca13"
+    )
+    assert (routes.ISSUE549_RECOVERY_COMMENT, routes.ISSUE549_RECOVERY_SHA256) == (
+        "5732696613",
+        "644de05a6ef35b7e7fb225ae087e5018697f2187d1b4196827e8cc6a73f8d2bc",
+    )
+    historical_lock = subprocess.run(["git", "show", f"{ATOMIC547_F}:uv.lock"], cwd=REPO, check=True, capture_output=True).stdout
+    assert hashlib.sha256(historical_lock).hexdigest() == (
+        routes.ISSUE549_LOCK_SHA256
+    )
+    assert hashlib.sha256((REPO / "pyproject.toml").read_bytes()).hexdigest() == (
+        routes.ISSUE549_PROJECT_SHA256
+    )
+    assert routes.ISSUE549_ATTEMPT_OUTCOMES == (
+        "one", "command SUCCESS", "controller FAIL", "resource FAIL",
+    )
+    assert routes.ISSUE549_COMPONENT_STATE == "FROZEN_COMPONENT_DRAFT"
+    assert routes.ISSUE549_STANDALONE_MERGE_ELIGIBLE is False
+    assert routes.ISSUE549_ATOMIC_SUCCESSOR_REQUIRED is True
+    assert routes.ROUTES[branch] == ISSUE549_EXPECTED
+    assert routes.ROUTE_ISSUES[branch] == 549
+
+    preflight_path = REPO / "docs/governance/preflights/issue-549-soupsieve-security-refresh.json"
+    preflight_bytes = preflight_path.read_bytes()
+    preflight = json.loads(preflight_bytes)
+    assert hashlib.sha256(preflight_bytes).hexdigest() == routes.ISSUE549_PREFLIGHT_SHA256
+    frozen_preflight = subprocess.run(
+        ["git", "show", f"{c1}:{preflight_path.relative_to(REPO)}"],
+        cwd=REPO, check=True, capture_output=True,
+    ).stdout
+    assert frozen_preflight == preflight_bytes
+    limits = {
+        "docs/governance/preflights/issue-549-soupsieve-security-refresh.json": 180,
+        "uv.lock": 30,
+        "tests/unit/test_dependency_security_contract.py": 180,
+        "scripts/quality/stage8_cut1_routes.py": 120,
+        "tests/unit/test_stage8_cut1_routes.py": 160,
+        "docs/ADR/0086-soupsieve-2-9-security-refresh.md": 100,
+        "docs/ADR/INDEX.md": 20,
+        "docs/STATUS.md": 60,
+        "docs/THIRD_PARTY_NOTICES.md": 60,
+        "docs/TRACEABILITY.md": 40,
+        "docs/work/registry.json": 40,
+        "docs/work/governance-backlog/HANDOFF.md": 30,
+    }
+    assert preflight["change_budget"] == {
+        "exact_paths": 12,
+        "maximum_additions_plus_deletions": 800,
+        "deletions_grant_credit": False,
+        "per_file_charged_lines": limits,
+    }
+    assert set(preflight["scope"]["required"]) == ISSUE549_EXPECTED
+    assert preflight["scope"]["required"] == preflight["scope"]["allowed_prefixes"]
+    assert routes.route_change_budget(REPO, branch, 549, ISSUE549_EXPECTED) == (800, limits)
+    for value in (
+        base, routes.ISSUE549_TREE, routes.ISSUE549_BODY_SHA256,
+        routes.ISSUE549_AMENDMENT_COMMENT, routes.ISSUE549_AMENDMENT_SHA256,
+        routes.ISSUE549_COMPONENT_STATE, "cannot merge standalone", "atomic successor",
+    ):
+        assert value in preflight["objective"]
+
+    def real_run(args: list[str]) -> subprocess.CompletedProcess[str]:
+        return _frozen549_run(args)
+
+    assert routes.route_base(real_run, branch) == base
+
+    def drifted_run(args: list[str]) -> subprocess.CompletedProcess[str]:
+        if args == ["git", "rev-parse", f"{c1}^{{tree}}"]:
+            return completed(args, out="0" * 40 + "\n")
+        return real_run(args)
+
+    error = pytest.raises(RuntimeError, routes.route_base, drifted_run, branch)
+    assert "Issue #549 frozen component evidence" in str(error.value)
+
+    def detached_run(args: list[str]) -> subprocess.CompletedProcess[str]:
+        if args == ["git", "merge-base", "--is-ancestor", c1, "HEAD"]:
+            return completed(args, code=1)
+        return real_run(args)
+
+    error = pytest.raises(RuntimeError, routes.route_base, detached_run, branch)
+    assert "Issue #549 frozen component evidence" in str(error.value)
+    failures: list[str] = []
+    routes.check_exact_route(REPO, detached_run, branch, ISSUE549_EXPECTED, failures)
+    assert failures == ["Issue #549 route evidence failed closed: Issue #549 frozen component evidence is unavailable or inconsistent."]
+    failures = ["prior failure"]
+    routes.check_exact_route(REPO, real_run, branch, ISSUE549_EXPECTED, failures)
+    assert failures == ["prior failure"]
 
 
 def test_issue502_musl_runtime_route_is_exact_bounded_and_authority_pinned() -> None:
@@ -1885,7 +2287,7 @@ def test_google_tts_governance_marks_prompt_prerequisite_satisfied_only() -> Non
 
 
 def test_routes_are_exact_pre_registered_and_issue386_preflight_matches() -> None:
-    assert routes.ROUTES == EXPECTED
+    assert routes.ROUTES == EXPECTED | {ATOMIC547_BRANCH: ATOMIC547_FILES, SUCCESSOR554_BRANCH: SUCCESSOR554_UNION, SUCCESSOR555_BRANCH: SUCCESSOR555_UNION}
     assert {branch: stage8.EFFECTIVE_STAGE8_ROUTES[branch] for branch in EXPECTED} == EXPECTED
     issue150 = json.loads((REPO / "docs/governance/preflights/issue-150.json").read_text(encoding="utf-8"))
     issue150_route = EXPECTED["cut1-process-150-semgrep-mcp-renewal"]
@@ -4266,7 +4668,10 @@ def test_exact_route_completeness_lookalikes_and_budgets(monkeypatch: Any) -> No
                   _issue498_runner if branch == routes.ISSUE498_BRANCH else
                   lambda _: completed([]))
         routes.check_exact_route(REPO, runner, branch, set(paths), failures)
-        assert failures == []
+        assert failures == (
+            ["Issue #549 standalone acceptance is prohibited; atomic successor required."]
+            if branch == routes.ISSUE549_BRANCH else []
+        )
         if branch in {
             routes.ISSUE459_BRANCH, routes.ISSUE479_BRANCH, routes.ISSUE494_BRANCH,
         }:

@@ -904,3 +904,46 @@ remain separate gates.
 | Let the complete backend suite reach a verdict | PR #522 [`34282990946` / job `102251927718`](https://github.com/imrohitagrawal/narratwin-ai/actions/runs/34282990946/job/102251927718) cancelled at 15m18 and [`34252374484` / job `102149655021`](https://github.com/imrohitagrawal/narratwin-ai/actions/runs/34252374484/job/102149655021) cancelled at 15m14; exact job-level 30-minute regression | A finite ceiling remains; no command, selection, retry, or concurrency change |
 | Reject ambiguous or weakened timeout policy | Missing, duplicate, non-numeric, 29, 31, and misplaced mutations | Frontend, Docker, and Stage 8 ceilings remain 20, 20, and 35 minutes |
 | Preserve delivery authority | Issue #527 preflight, exact route/base/budget tests, and exact-head hosted checks | No product, provider, demo, release, production, credential, egress, or spend authority |
+
+## Issue #547/#549 atomic runtime-security traceability
+
+| Requirement | Evidence and discriminating boundary | Remaining claim |
+|---|---|---|
+| Exact build/runtime packages | Typed OpenSSL3.3.7-r1, Alpine release3.21.8-r0 and keys2.5-r0 expectations; real Dockerfile/inventory consumers; old/partial/floating pin mutations and consumed inventory-validator RED | No image build or scanner result follows from source tests |
+| Preserve immutable predecessor | Main `2fc1bbd…` to F `2ea926c…`: exact12 paths/471 lines and twelve-blob manifest; five frozen-only blobs in candidate | No standalone549 acceptance or transferred review |
+| Separate mutable scopes | Exact atomic branch/C1/raw preflight; F-layer15/900 and main-union20/1371; additive deletions, per-path limits, rename/copy and foreign-path rejection | Head/merge checkout and all hosted status contexts remain required |
+| Repair only derived STATUS pointers | Paired comments `5737207458`/`5737217558`/`5737227530`; real work-record consumer rejects stale STATUS, registry and handoff combinations; exact other bytes preserved | No registry inventory, ownership or historical-evidence change |
+| Preserve execution truth | RED `e86c1fd7e049dcf4f014dafcc796d3a3f9e2b659`:8 failed/22 passed/276 deselected, zero errors/skips,0.90s; no Docker/install | Later GREEN, independent review and hosted outcomes bind their own exact bytes |
+| Keep finite carrier topology | One remaining main-owned push; terminal direct-head AMD64/native-ARM64 proof before draft PR; exact merge-ref checks/approval/last-push/conversations | No manual rerun, second push, provider or product acceptance |
+
+Official package records/versions and known source limits are in [notices](THIRD_PARTY_NOTICES.md#issue-547-exact-alpine-package-provenance--2026-09-19). Historical Issue436, retired PR548 and failed549 resource/command/controller outcomes remain preserved. TDD guidance produced the consumed-boundary RED; source-driven guidance kept package metadata distinct from inaccessible commit diffs. Neither skill supplies acceptance.
+
+## Issue #554 source and hosted-parity boundaries
+
+| Requirement | Discriminating source evidence | Unproved boundary |
+|---|---|---|
+| Exact AnyIO security delta | Unique complete4.14.2 record, official artifact identities, whole-lock equality after exact historical substitution; version/hash/URL/size/time/duplicate/graph mutations | Fresh strict audit and dependency bootstrap |
+| Exact frontend runtime closure | Real APK pins/inventory and all-six3.24.2 SBOM qualifiers; stale/commented/duplicate pins and wrong-distro mutations | AMD64/native ARM64 build, runtime, TLS and dual scanners |
+| Preserve published predecessor | Exact20/906 predecessor,17-path increment,27-path main union, immutable C1, ten frozen blobs and pointer-only registry update | Exact-head independent review; no transferred approval |
+| Preserve failed attempts | RED55d5d539:11 failed/33 passed/497 deselected; predecessor security35409304465 and CI35409304479 retained | Local source GREEN cannot erase controller/hosted failures |
+| Bound publication | One new main-owned push then unchanged-head PR; all12 contexts, strict/approval/last-push/conversations | No rerun, merge, deployment or Cut1 acceptance implied |
+
+The [ADR](ADR/0006-stage8-release-hardening.md#issue-554-two-root-hosted-drift-successor--2026-09-19)
+owns the decision; [notices](THIRD_PARTY_NOTICES.md#issue-554-anyio-and-frontend-alpine-provenance--2026-09-19)
+own source identities. TDD guidance produced real-consumer RED before source changes.
+
+## Issue #555 heredoc source-admission boundary
+
+Issue #555 supersedes #554 publication, not its failed evidence: exact mutant
+`3e953325f1a5af73851e83de7f5eb878f4cb15a27ea31e8d21eb7a4171accf35`
+binds3942 bytes. RED `bd422ff3` and complete-fixture lexical/guard-removal tests
+prove the source boundary; route mutations prove C1/layers/frozen custody.
+Main-owned exact-head review, replacement push and real PR contexts remain gates.
+
+## Issue #549 Soup Sieve security-candidate traceability
+
+| Requirement | Evidence | Preserved boundary |
+|---|---|---|
+| Remove two strict-audit findings without suppression | Exact official-PyPI Soup Sieve 2.9 sdist/wheel identities and semantic lock mutation tests | Beautiful Soup 4.15.0, raw manifest, every unrelated lock record, and parser behavior remain unchanged |
+| Preserve failed-attempt truth | Recovery comment `5732696613`; command SUCCESS; controller FAIL/76; 114404 KiB cache peak against 65536 KiB; cleanup verified; attempt count one | No retry, repair, reconstruction, cap reset, alternate registry, or whole-operation pass |
+| Prevent standalone acceptance | ADR 0086, exact route and `FROZEN_COMPONENT_DRAFT` state; offline no-cache lock check passed without mutation | Complete-quality attempt created out-of-envelope environment/cache resources and did not prove the whole suite; exact cleanup, fresh atomic #549/#547 successor, exact-head review, hosted checks, and final push remain required |

@@ -62,7 +62,7 @@ This file is not legal advice. Treat it as the engineering license-review regist
 | nanoid | Transitive PostCSS identifier utility in the frontend toolchain | MIT per upstream and official npm metadata | Permitted for controlled-local dependency tooling; public-distribution review remains pending | Frontend transitive dependency; Issues `#403`, `#428` | Sole lock record moves to official 3.3.18 for the expanded CVE-2026-67213 range. Registry SHA-512 is `DTg4MJbGMWkfi6VZFdNt2/caMbQy4Ou+Op/hJQvGEWcnVfoA1QA+xzRKAzw9jD6+GVOOeYr/mIcuDSdug6F6+w==`. No direct dependency or product behavior is added. |
 | python-docx | DOCX text extraction for project knowledge ingestion | Pending dependency license review before release | Likely yes after dependency review | Stage 4 dependency prep | Added as `python-docx==1.2.0`; DOCX upload behavior still requires Stage 4 validation and safety controls. |
 | Markdown | Markdown parsing for approved project knowledge | Pending dependency license review before release | Likely yes after dependency review | Stage 4 dependency prep | Added as `markdown==3.10.2`; markdown input must still be treated as untrusted uploaded content. |
-| Beautiful Soup | HTML parsing and sanitization support for ingested content | Pending dependency license review before release | Likely yes after dependency review | Stage 4 dependency prep | Added as `beautifulsoup4==4.15.0`; output encoding and sanitization rules remain required. |
+| Beautiful Soup / Soup Sieve | HTML parsing, sanitization, and CSS selector support for ingested content | Pending dependency license review before release | Likely yes after dependency review | Stage 4 dependency prep; Issue #549 security candidate | `beautifulsoup4==4.15.0` remains unchanged; its transitive official-PyPI Soup Sieve record moves from 2.8.4 to 2.9 in the frozen component draft. Output encoding and sanitization rules remain required. |
 | tiktoken | Token counting for chunking and prompt budget controls | Pending dependency license review before release | Likely yes after dependency review | Stage 4 dependency prep | Added as `tiktoken==0.13.0`; budget enforcement still requires Stage 4 implementation and tests. |
 | sentence-transformers | Local embedding model runtime candidate | Pending dependency and model license review before release | Needs review before release | Stage 4 optional provider extra, disabled by default | Declared as optional `sentence-transformers>=5.6.0`; not installed in the backend runtime image for the mock/local slice. Any selected embedding model must be separately recorded before use. |
 | OpenAI Python SDK | Optional provider SDK for future LLM integration | Provider and package terms require review before use | Review before use | Stage 4 optional provider extra, disabled by default | Declared as optional `openai>=2.44.0`; local/dev/test must keep paid providers optional and disabled. |
@@ -541,6 +541,39 @@ the provider extra or change the locked package artifacts.
 The package is not an application/runtime dependency and supplies no provider,
 model, media, credential, egress, spend, deployment, release, or production
 capability. Final dependency/license review remains required before release.
+
+## Issue #547 exact Alpine package provenance — 2026-09-19
+
+The earlier Issue436 row is historical. Current reviewed pins are below; package licenses and release-review limits remain unchanged. An independent read-only refresh of all ten official architecture/package pages found no revision drift on 2026-09-19. No package/archive was downloaded or built locally.
+
+| Exact revision | Official x86_64 / aarch64 records | Packaging commit reported by both architectures |
+|---|---|---|
+| `openssl-dev=3.3.7-r1` | [x86_64](https://pkgs.alpinelinux.org/package/v3.21/main/x86_64/openssl-dev), [aarch64](https://pkgs.alpinelinux.org/package/v3.21/main/aarch64/openssl-dev) | `9b59567ddd9ca9722deeedb5145506726b5c9389` |
+| `libcrypto3=3.3.7-r1` | [x86_64](https://pkgs.alpinelinux.org/package/v3.21/main/x86_64/libcrypto3), [aarch64](https://pkgs.alpinelinux.org/package/v3.21/main/aarch64/libcrypto3) | `9b59567ddd9ca9722deeedb5145506726b5c9389` |
+| `libssl3=3.3.7-r1` | [x86_64](https://pkgs.alpinelinux.org/package/v3.21/main/x86_64/libssl3), [aarch64](https://pkgs.alpinelinux.org/package/v3.21/main/aarch64/libssl3) | `9b59567ddd9ca9722deeedb5145506726b5c9389` |
+| `alpine-release=3.21.8-r0` | [x86_64](https://pkgs.alpinelinux.org/package/v3.21/main/x86_64/alpine-release), [aarch64](https://pkgs.alpinelinux.org/package/v3.21/main/aarch64/alpine-release) | `c9e7411a5b43b71e267421008585d98f939b5bd9` |
+| `alpine-keys=2.5-r0` | [x86_64](https://pkgs.alpinelinux.org/package/v3.21/main/x86_64/alpine-keys), [aarch64](https://pkgs.alpinelinux.org/package/v3.21/main/aarch64/alpine-keys) | `6d473fb38effb2389f567b29fb7eb27039b3a279` |
+
+Direct GitLab OpenSSL/release commit pages returned403; their diff contents remain unverified. Commit identities above derive from official package metadata, not inspected GitLab diffs. These mutable records prove current published package revisions, not reproducible builds, scanner success or absence of vulnerabilities. Exact hosted build/inventory/TLS/CA/non-root/Trivy/Grype/SBOM proof remains required on both architectures; recheck if a revision changes before execution. No scanner exclusion, new dependency family or provider permission is introduced.
+
+## Issue #554 AnyIO and frontend Alpine provenance — 2026-09-19
+
+The approved plan binds [official AnyIO4.14.2 metadata](https://pypi.org/pypi/anyio/4.14.2/json)
+to the identical retained `tools/semgrep/uv.lock` record; only the root lock changes.
+AnyIO remains MIT-licensed. Sdist SHA256 `cfa139f3ed1a23ee8f88a145ddb5ac7605b8bbfd8592baacd7ce3d8bb4313c7f`
+and wheel SHA256 `9f505dda5ac9f0c8309b5e8bd445a8c2bf7246f3ce950121e45ea15bc41d1494`
+bind exact URL, size and upload-time assertions in the dependency contract tests.
+No resolver, archive download or installed-package replacement was performed here.
+
+Frontend Alpine v3.24/main pins are `alpine-release=3.24.2-r0` (MIT) and
+`ca-certificates-bundle=20260909-r0` (MIT/MPL-2.0): official release records
+[x86_64](https://pkgs.alpinelinux.org/package/v3.24/main/x86_64/alpine-release),
+[aarch64](https://pkgs.alpinelinux.org/package/v3.24/main/aarch64/alpine-release), and CA records
+[x86_64](https://pkgs.alpinelinux.org/package/v3.24/main/x86_64/ca-certificates-bundle),
+[aarch64](https://pkgs.alpinelinux.org/package/v3.24/main/aarch64/ca-certificates-bundle).
+These mutable sources and the plan's hosted build diagnostics justify the narrow
+revision choice, not reproducible builds or audit success. Fresh hosted resolution,
+runtime inventory, TLS/CA and scanner evidence remain mandatory; new drift stops.
 
 ## Documentation architecture reference sources — Issue #537
 

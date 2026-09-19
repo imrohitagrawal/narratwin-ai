@@ -1,0 +1,75 @@
+{
+  "schema_version": "GovernancePreflightV1",
+  "issue_number": 549,
+  "branch": "stage8-549-soupsieve-security-refresh",
+  "objective": "Exact base/tree: 2fc1bbd7904421d4a5a2c85995c28dbd9cdf0fce/3ebbaaac4b66900de5129f60f56e6cd2d6978766. Implement only Issue #549 FROZEN_COMPONENT_DRAFT under its 5529-byte body SHA-256 7e12d0872833abb5de71aa584d0eca645597357d2b197dcabf11ed657b63c5e0 and amendment 5731668055, 5669 bytes, SHA-256 14ad930762f6b86a786b45d62aa44604587bd12b604ed65a680333c32864022d. After committed RED, replace only transitive Soup Sieve 2.8.4 with official PyPI 2.9. Preserve raw pyproject.toml, exact Beautiful Soup 4.15.0, every other lock record, strict audit and runtime/provider behavior. Exact uv 0.11.18 (e32666915 2026-06-01 aarch64-apple-darwin) gets one lock-mutating public-PyPI attempt: soupsieve==2.9, https://pypi.org/simple, first-index, keyring/config discovery/Python downloads disabled, worktree-local cache/scratch, and no install, sync, venv or package execution. Offline uv lock --check is validation. Use 12 paths, maximum 800 charged additions plus deletions, no deletion credit, target 650. Ceilings: worktree 160 MiB, cache 64 MiB, scratch/reports 16 MiB, total incremental 240 MiB, and 4 GiB free before allocation/resolver. No local Docker, broad cleanup, credentials, provider/private-source action, deployment, release or Cut 1 claim. Preserve Issue #547 head 6f01bc1d6ee41648287255e3b62579d3685386b8, four uncommitted RED files and unspent one-push allowance; do not touch, rebase or push it. #549 cannot merge standalone while Docker checks fail. After #549 freeze, require prospective #549/#547 amendments and a fresh atomic successor binding separate scopes, immutable #549 bytes, fresh exact-head review and the sole final push. Stop on authority/base/body/amendment drift, path/budget/resource breach, second resolver attempt, non-Soup lock or Beautiful Soup/pyproject drift, source contradiction, direct/user-controlled selector reachability, audit weakening, new hosted blocker, #547 mutation or underspecified atomic route.",
+  "status_decision": "update-minimally",
+  "change_budget": {
+    "exact_paths": 12,
+    "maximum_additions_plus_deletions": 800,
+    "deletions_grant_credit": false,
+    "per_file_charged_lines": {
+      "docs/governance/preflights/issue-549-soupsieve-security-refresh.json": 180,
+      "uv.lock": 30,
+      "tests/unit/test_dependency_security_contract.py": 180,
+      "scripts/quality/stage8_cut1_routes.py": 120,
+      "tests/unit/test_stage8_cut1_routes.py": 160,
+      "docs/ADR/0086-soupsieve-2-9-security-refresh.md": 100,
+      "docs/ADR/INDEX.md": 20,
+      "docs/STATUS.md": 60,
+      "docs/THIRD_PARTY_NOTICES.md": 60,
+      "docs/TRACEABILITY.md": 40,
+      "docs/work/registry.json": 40,
+      "docs/work/governance-backlog/HANDOFF.md": 30
+    }
+  },
+  "scope": {
+    "required": [
+      "docs/governance/preflights/issue-549-soupsieve-security-refresh.json",
+      "uv.lock",
+      "tests/unit/test_dependency_security_contract.py",
+      "scripts/quality/stage8_cut1_routes.py",
+      "tests/unit/test_stage8_cut1_routes.py",
+      "docs/ADR/0086-soupsieve-2-9-security-refresh.md",
+      "docs/ADR/INDEX.md",
+      "docs/STATUS.md",
+      "docs/THIRD_PARTY_NOTICES.md",
+      "docs/TRACEABILITY.md",
+      "docs/work/registry.json",
+      "docs/work/governance-backlog/HANDOFF.md"
+    ],
+    "allowed_prefixes": [
+      "docs/governance/preflights/issue-549-soupsieve-security-refresh.json",
+      "uv.lock",
+      "tests/unit/test_dependency_security_contract.py",
+      "scripts/quality/stage8_cut1_routes.py",
+      "tests/unit/test_stage8_cut1_routes.py",
+      "docs/ADR/0086-soupsieve-2-9-security-refresh.md",
+      "docs/ADR/INDEX.md",
+      "docs/STATUS.md",
+      "docs/THIRD_PARTY_NOTICES.md",
+      "docs/TRACEABILITY.md",
+      "docs/work/registry.json",
+      "docs/work/governance-backlog/HANDOFF.md"
+    ],
+    "forbidden": [
+      ".github/",
+      "AGENTS.md",
+      "Makefile",
+      "README.md",
+      "backend/",
+      "demo/",
+      "evals/",
+      "frontend/",
+      "infra/",
+      "perf/",
+      "portfolio/",
+      "pyproject.toml",
+      "scripts/ci/",
+      "scripts/guardrails_check.py",
+      "tests/acceptance/",
+      "tests/api/",
+      "tools/"
+    ]
+  }
+}

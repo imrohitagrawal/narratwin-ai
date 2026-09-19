@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import subprocess
 from pathlib import Path
+from typing import Any
 
 from scripts.quality import stage8_backend_security as security
 from scripts.quality import stage8_node_security as node_security
@@ -28,6 +29,64 @@ def test_issue436_backend_image_contract_is_exact_and_fail_closed() -> None:
     assert security.backend_dockerfile_valid(dockerfile)
 
 
+def test_issue547_exact_alpine_runtime_revisions_reach_real_consumers() -> None:
+    expected = {"OPENSSL_PACKAGE_REVISION": "3.3.7-r1", "ALPINE_RELEASE_REVISION": "3.21.8-r0",
+                "ALPINE_KEYS_REVISION": "2.5-r0", "ISSUE436_OPENSSL_PACKAGE_REVISION": "3.3.7-r0",
+                "ISSUE436_ALPINE_RELEASE_REVISION": "3.21.7-r0"}
+    assert {name: getattr(security, name, None) for name in expected} == expected
+    assert security.backend_dockerfile_valid((ROOT / "backend/Dockerfile").read_text())
+    assert callable(getattr(security, "backend_runtime_probe_valid", None))
+    assert security.backend_runtime_probe_valid((ROOT / "scripts/ci/backend-image-package-check.sh").read_text())
+
+
+def test_issue547_rejects_each_old_partial_mismatched_or_floating_pin() -> None:
+    current = (ROOT / "backend/Dockerfile").read_text(encoding="utf-8")
+    desired = current.replace("3.3.7-r0", "3.3.7-r1").replace("3.21.7-r0", "3.21.8-r0")
+    assert security.backend_dockerfile_valid(desired), "reviewed three-pin contract must be accepted"
+    for package, revision, rejected in (
+        ("openssl-dev", "3.3.7-r1", "3.3.7-r0"), ("libcrypto3", "3.3.7-r1", "3.3.7-r0"),
+        ("libssl3", "3.3.7-r1", "3.3.7-r0"), ("alpine-release", "3.21.8-r0", "3.21.7-r0"),
+        ("alpine-keys", "2.5-r0", "2.4-r1"),
+    ):
+        marker = f"{package}={revision}"
+        assert marker in desired
+        for replacement in (f"{package}={rejected}", package):
+            assert not security.backend_dockerfile_valid(desired.replace(marker, replacement))
+
+
+def test_issue547_runtime_probe_rejects_each_inventory_mismatch() -> None:
+    validator = getattr(security, "backend_runtime_probe_valid", None)
+    assert callable(validator), "runtime inventory consumer validation must exist"
+    probe = (ROOT / "scripts/ci/backend-image-package-check.sh").read_text(encoding="utf-8")
+    assert validator(probe)
+    for package, revision, rejected in (
+        ("libcrypto3", "3.3.7-r1", "3.3.7-r0"), ("libssl3", "3.3.7-r1", "3.3.7-r0"),
+        ("alpine-release", "3.21.8-r0", "3.21.7-r0"), ("alpine-keys", "2.5-r0", "2.4-r1"),
+    ):
+        marker = f'packages["{package}"] == "{revision}"'
+        assert marker in probe
+        assert not validator(probe.replace(marker, f'packages["{package}"] == "{rejected}"'))
+
+
+def test_issue547_commented_pin_decoys_cannot_mask_stale_consumers() -> None:
+    dockerfile = (ROOT / "backend/Dockerfile").read_text()
+    probe = (ROOT / "scripts/ci/backend-image-package-check.sh").read_text()
+    for package, revision, stale in (
+        ("openssl-dev", "3.3.7-r1", "3.3.7-r0"),
+        ("libcrypto3", "3.3.7-r1", "3.3.7-r0"),
+        ("libssl3", "3.3.7-r1", "3.3.7-r0"),
+        ("alpine-release", "3.21.8-r0", "3.21.7-r0"),
+        ("alpine-keys", "2.5-r0", "2.4-r1"),
+    ):
+        marker = f"{package}={revision}"
+        changed = dockerfile.replace(marker, f"{package}={stale}", 1)
+        assert not security.backend_dockerfile_valid(changed + f"\n# {marker}\n")
+        if package != "openssl-dev":
+            marker = f'packages["{package}"] == "{revision}"'
+            changed = probe.replace(marker, f'packages["{package}"] == "{stale}"', 1)
+            assert not security.backend_runtime_probe_valid(changed + f"\n# {marker}\n")
+
+
 def test_issue436_rejects_image_source_tls_and_metadata_mutations() -> None:
     dockerfile = (ROOT / "backend/Dockerfile").read_text(encoding="utf-8")
     mutations = (
@@ -36,8 +95,8 @@ def test_issue436_rejects_image_source_tls_and_metadata_mutations() -> None:
         dockerfile.replace(security.CPYTHON_VERSION, "3.13.14"),
         dockerfile.replace(security.CPYTHON_SHA256, "0" * 64),
         dockerfile.replace("sha256sum -c -", "REMOVED"),
-        dockerfile.replace("libssl3=3.3.7-r0", "libssl3=3.5.7-r0"),
-        dockerfile.replace("libcrypto3=3.3.7-r0", "libcrypto3=3.5.7-r0"),
+        dockerfile.replace("libssl3=3.3.7-r1", "libssl3=3.5.7-r0"),
+        dockerfile.replace("libcrypto3=3.3.7-r1", "libcrypto3=3.5.7-r0"),
         dockerfile.replace("/lib/apk/db/installed", "/tmp/concealed"),
         dockerfile + "\nFROM alpine:latest AS bypass\n",
     )
@@ -51,10 +110,18 @@ def test_issue436_runtime_probe_requires_tls_and_safe_openssl_line() -> None:
         'startswith("OpenSSL 3.3.7 ")',
         "ssl.create_default_context()",
         "/lib/apk/db/installed",
-        'packages["libcrypto3"] == "3.3.7-r0"',
-        'packages["libssl3"] == "3.3.7-r0"',
+        'packages["libcrypto3"] == "3.3.7-r1"',
+        'packages["libssl3"] == "3.3.7-r1"',
     ):
         assert marker in probe
+
+
+def test_issue547_inventory_validator_is_consumed(monkeypatch: Any) -> None:
+    monkeypatch.setattr(security, "backend_dockerfile_valid", lambda _: True)
+    monkeypatch.setattr(security, "backend_runtime_probe_valid", lambda _: False, raising=False)
+    failures: list[str] = []
+    security.check(ROOT, lambda args: subprocess.CompletedProcess(args, 0, "", ""), "main", failures)
+    assert failures == ["Stage 8 backend runtime inventory contract drifted."]
 
 
 def test_issue436_route_binds_base_first_commit_scope_and_budget() -> None:

@@ -57,7 +57,7 @@ def _sarif(tool: str, cves: tuple[str, ...] = TARGET_CVES, severity: str = "8.0"
 
 
 def _sbom(target: str, *, frontend: bool, architecture: str = "amd64") -> dict[str, Any]:
-    packages = (("alpine-keys", "2.6-r0", ("MIT",), "alpine", "3.24.1"), ("alpine-release", "3.24.1-r0", ("MIT",), "alpine", "3.24.1"), ("ca-certificates-bundle", "20260611-r0", ("MIT", "MPL-2.0"), "alpine", "3.24.1"), ("libgcc", "15.2.0-r5", ("GPL-2.0-or-later", "LGPL-2.1-or-later"), "alpine", "3.24.1"), ("libstdc++", "15.2.0-r5", ("GPL-2.0-or-later", "LGPL-2.1-or-later"), "alpine", "3.24.1"), ("musl", "1.2.6-r2", ("MIT",), "alpine", "3.24.1")) if frontend else (("python", "3.13.14", ("PSF-2.0",), "wolfi", "20230201"),)
+    packages = (("alpine-keys", "2.6-r0", ("MIT",), "alpine", "3.24.2"), ("alpine-release", "3.24.2-r0", ("MIT",), "alpine", "3.24.2"), ("ca-certificates-bundle", "20260909-r0", ("MIT", "MPL-2.0"), "alpine", "3.24.2"), ("libgcc", "15.2.0-r5", ("GPL-2.0-or-later", "LGPL-2.1-or-later"), "alpine", "3.24.2"), ("libstdc++", "15.2.0-r5", ("GPL-2.0-or-later", "LGPL-2.1-or-later"), "alpine", "3.24.2"), ("musl", "1.2.6-r2", ("MIT",), "alpine", "3.24.2")) if frontend else (("python", "3.13.14", ("PSF-2.0",), "wolfi", "20230201"),)
     package_arch = "x86_64" if architecture == "amd64" else "aarch64"
     components = [{"type": "library", "name": name, "version": version, "purl": f"pkg:apk/{namespace}/{quote(name, safe='')}@{version}?arch={package_arch}&distro={distro}", "licenses": [{"expression": license_id} if " WITH " in license_id else {"license": {"id": license_id}} for license_id in licenses]} for name, version, licenses, namespace, distro in packages]
     if frontend:
@@ -108,6 +108,16 @@ def _rehash(case: dict[str, Any], name: str) -> None:
     digest, size = _digest(case["reports"][name])
     case["envelopes"][name]["artifact_sha256"] = digest
     case["envelopes"][name]["artifact_size"] = size
+
+
+@pytest.mark.parametrize("index", range(6))
+def test_issue554_all_six_runtime_sbom_distro_qualifiers_are_enforced(index: int) -> None:
+    case = _case()
+    assert _evaluate(case)["findings"] == []
+    component = case["reports"]["frontend-sbom"]["components"][index]
+    component["purl"] = component["purl"].replace("distro=3.24.2", "distro=3.24.1")
+    _rehash(case, "frontend-sbom")
+    assert _evaluate(case)["findings"]
 
 
 def _evaluate(case: dict[str, Any]) -> dict[str, Any]:
