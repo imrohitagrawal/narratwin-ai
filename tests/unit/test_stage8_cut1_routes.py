@@ -1266,6 +1266,73 @@ SUCCESSOR554_PATHS = {
 }
 SUCCESSOR554_UNION = ATOMIC547_FILES | SUCCESSOR554_PATHS
 
+SUCCESSOR555_BRANCH = "ci-555-frontend-heredoc-guard-successor"
+SUCCESSOR555_P = "ad4bcf3b2ea8eef3668a5711914da17175df2849"
+SUCCESSOR555_C1 = "2809ed06eafcfc2cb74a89f5a0139e6a58570000"
+SUCCESSOR555_PATHS = {"docs/governance/preflights/issue-555.json", "scripts/quality/stage8_node_security.py", "tests/unit/test_stage8_node_security.py", "tests/unit/test_frontend_container_runtime.py", "scripts/quality/stage8_cut1_routes.py", "tests/unit/test_stage8_cut1_routes.py", "docs/ADR/0006-stage8-release-hardening.md", "docs/STATUS.md", "docs/TRACEABILITY.md", "docs/work/registry.json", "docs/work/governance-backlog/HANDOFF.md"}
+SUCCESSOR555_UNION = SUCCESSOR554_UNION | SUCCESSOR555_PATHS
+
+
+def _successor555_snapshot(args: list[str]) -> subprocess.CompletedProcess[str]:
+    if args[1] == "diff" and SUCCESSOR555_P in args and routes.ISSUE549_BASE not in args:
+        paths = (args[args.index("--") + 1:] if "--" in args else []) or sorted(SUCCESSOR555_PATHS)
+        paths = [p for p in paths if p in SUCCESSOR555_PATHS]
+        if "--numstat" in args:
+            return completed(args, out="".join(f"1\t0\t{p}\n" for p in paths))
+        if "--name-status" in args:
+            return completed(args, out="".join(f"M\0{p}\0" for p in paths))
+        if "--name-only" in args:
+            return completed(args, out="\n".join(paths))
+    if args[1] == "diff" and routes.ISSUE549_BASE in args and SUCCESSOR555_P not in args and "--name-only" in args:
+        return completed(args, out="\n".join(sorted(SUCCESSOR555_UNION)))
+    return subprocess.run(args, cwd=REPO, check=False, capture_output=True, text=True)
+
+
+@pytest.mark.parametrize("fault", [None, "near", "extra", "missing", "base", "predecessor", "c1", "parent", "first", "ancestry", "raw", "blob", "staged", "mode", "manifest", "predecessor-charge", "binary", "rename", "total", "file", "deletions", "registry", "handoff"])
+def test_issue555_actual_scope_checks_layers_and_frozen_custody(fault: str | None, monkeypatch: Any) -> None:
+    branch = SUCCESSOR555_BRANCH + ("-near" if fault == "near" else "")
+    changed = (SUCCESSOR555_UNION | ({"foreign.py"} if fault == "extra" else set())) - ({"frontend/Dockerfile"} if fault == "missing" else set())
+    corrupt = {"base": ["rev-parse", f"{routes.ISSUE549_BASE}^{{tree}}"], "predecessor": ["rev-parse", f"{SUCCESSOR555_P}^{{tree}}"], "c1": ["rev-parse", f"{SUCCESSOR555_C1}^{{tree}}"], "parent": ["rev-parse", f"{SUCCESSOR555_C1}^"], "first": ["diff-tree", "--no-commit-id", "--name-only", "-r", SUCCESSOR555_C1]}
+    def run(args: list[str]) -> subprocess.CompletedProcess[str]:
+        value = _successor555_snapshot(args)
+        if args[1:] == corrupt.get(fault or ""):
+            return completed(args, out="0" * 40 + "\n")
+        if fault == "ancestry" and args[1:3] == ["merge-base", "--is-ancestor"]:
+            return completed(args, code=1)
+        if fault == "blob" and args[1:3] == ["show", "HEAD:frontend/Dockerfile"]:
+            return completed(args, out=value.stdout + "\n")
+        if fault == "staged" and "--cached" in args and args[-1] == "frontend/Dockerfile":
+            return completed(args, out="frontend/Dockerfile\n")
+        if fault in {"mode", "manifest"} and args[1] == "ls-tree":
+            return completed(args, out=value.stdout.replace("100644", "100755", 1))
+        if fault == "predecessor-charge" and "--numstat" in args and routes.ISSUE549_BASE in args:
+            return completed(args, out=value.stdout.replace("\t", "1\t", 1))
+        if "--numstat" in args and SUCCESSOR555_P in args and routes.ISSUE549_BASE not in args:
+            if fault == "total":
+                caps = json.loads((REPO / "docs/governance/preflights/issue-555.json").read_text())["change_budget"]["per_file_charged_lines"]
+                return completed(args, out=f"{caps[args[-1]]}\t0\t{args[-1]}\n")
+            if args[-1] == "docs/work/registry.json" and fault in {"binary", "file", "deletions"}:
+                return completed(args, out={"binary": "-\t-\tdocs/work/registry.json\n", "file": "5\t0\tdocs/work/registry.json\n", "deletions": "3\t2\tdocs/work/registry.json\n"}[fault])
+        if fault == "rename" and "--name-status" in args:
+            return completed(args, out="R100\0docs/STATUS.md\0foreign.py\0")
+        return value
+    original = Path.read_bytes
+    targets = {"raw": "docs/governance/preflights/issue-555.json", "registry": "docs/work/registry.json", "handoff": "docs/work/governance-backlog/HANDOFF.md"}
+    monkeypatch.setattr(Path, "read_bytes", lambda p: original(p) + (b"\n" if p == REPO / targets.get(fault or "", "__none__") else b""))
+    monkeypatch.setattr(stage8, "current_branch", lambda: branch)
+    monkeypatch.setattr(stage8, "changed_files_for_stage_scope", lambda: sorted(changed))
+    monkeypatch.setattr(stage8, "run", run)
+    failures: list[str] = []
+    stage8.check_stage_scope(failures)
+    assert bool(failures) == (fault is not None), failures
+
+
+def test_issue555_exact_route_authority_and_publication_replacement() -> None:
+    assert routes.ROUTES.get(SUCCESSOR555_BRANCH) == SUCCESSOR555_UNION
+    assert len(SUCCESSOR555_PATHS) == 11 and len(SUCCESSOR555_UNION) == 28
+    assert routes.ISSUE555_AUTHORITY == (("5738302888", "2c36dddbafd34db282832686f84c4a04e9ef9da457b210072719f08eb6aa81bb"), ("5738327761", "89954a33c63f1d4f03a869ad4486e6942f1dd331399fa3eb94bb6706c83ecd45"))
+    assert routes.ISSUE555_PUSH_LIMIT == 1
+
 
 def _successor554_snapshot(args: list[str]) -> subprocess.CompletedProcess[str]:
     if args[1] == "diff" and SUCCESSOR554_P in args and routes.ISSUE549_BASE not in args:

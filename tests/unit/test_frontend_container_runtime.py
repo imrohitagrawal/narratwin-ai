@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib.util
+import hashlib
 from pathlib import Path
 from types import ModuleType
 
@@ -53,6 +54,29 @@ def test_issue554_source_predicate_rejects_active_non_apk_decoys() -> None:
             for decoy in (f'ENV EXPECTED="{pin}"', f'RUN echo "{pin}"', f'LABEL expected="{pin}"'):
                 with pytest.raises(AssertionError):
                     _assert_exact_runtime_apk_install(source.replace(pin, actual, 1) + "\n" + decoy + "\n")
+
+
+def issue555_heredoc_mutant(source: str) -> str:
+    options = "--root /runtime --initdb --no-cache --no-scripts --keys-dir /etc/apk/keys --repositories-file /etc/apk/repositories"
+    fake = "RUN set -eux; apk add " + options + " " + " ".join(f"{n}={v}" for n, v in RUNTIME_PACKAGES.items()) + ";"
+    start = source.index("RUN set -eux; \\\n")
+    end = source.index("\n\nFROM scratch AS deps", start)
+    replacement = ("RUN <<'OUTER'\ncat <<'INNER' >/dev/null\n" + fake + "\nINNER\nset -eux\n"
+                   + '/sbin/apk "add" ' + options + " " + " ".join(RUNTIME_PACKAGES) + ";\n"
+                   + "rm -f /runtime/var/log/apk.log;\nmkdir -p /runtime/usr/bin /runtime/app /runtime/tmp;\n"
+                   + "cp /usr/local/bin/node /runtime/usr/bin/node;\nchmod 0755 /runtime/usr/bin/node;\n"
+                   + "chmod 1777 /runtime/tmp;\ntest -s /runtime/lib/apk/db/installed;\ntest ! -e /runtime/bin/sh\nOUTER")
+    result = source[:start] + replacement + source[end:]
+    assert len(result.encode()) == 3942
+    assert hashlib.sha256(result.encode()).hexdigest() == "3e953325f1a5af73851e83de7f5eb878f4cb15a27ea31e8d21eb7a4171accf35"
+    return result
+
+
+def test_issue555_independent_complete_source_oracle_rejects_inert_pins() -> None:
+    source = DOCKERFILE.read_text()
+    _assert_exact_runtime_apk_install(source)
+    with pytest.raises(AssertionError):
+        _assert_exact_runtime_apk_install(issue555_heredoc_mutant(source))
 
 
 def test_runtime_pins_the_reviewed_node_source_and_minimal_final_stage() -> None:

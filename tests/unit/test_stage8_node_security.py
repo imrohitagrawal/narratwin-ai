@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import importlib.util
 import json
 import re
 from types import SimpleNamespace
@@ -131,6 +132,34 @@ def test_issue554_install_clause_rejects_active_non_apk_decoys(name: str, stale:
     actual = f"{name}=0-r0" if stale else name
     mutation = dockerfile.replace(pin, actual, 1) + "\n" + decoy.format(pin=pin) + "\n"
     assert not security.frontend_node_image_valid(mutation)
+
+
+@pytest.mark.parametrize("instruction", ["RUN", "COPY", "ADD", "ONBUILD RUN", "ONBUILD COPY", "ONBUILD ADD"])
+@pytest.mark.parametrize("opener", ["<<EOF", "<<-EOF", "3<<EOF", "<<'EOF'", '<<"EOF"', r"<<E\OF", "<<E'OF'", "<<A <<B", "<<'", "<<", "<<EOF#suffix"])
+def test_issue555_heredoc_lexical_matrix(instruction: str, opener: str) -> None:
+    source = stage8.read("frontend/Dockerfile")
+    assert not security.frontend_node_image_valid(source + f"\n{instruction} {opener}\n")
+
+
+@pytest.mark.parametrize("extra", ["# RUN <<EOF\n", 'RUN echo "<<EOF"\n', r"RUN echo \<\<EOF" + "\n", "RUN echo https://example.invalid/a<<b\n", 'RUN ["echo", "<<EOF"]\n'])
+def test_issue555_literal_markers_are_not_openers(extra: str) -> None:
+    assert security.frontend_node_image_valid(stage8.read("frontend/Dockerfile") + "\n" + extra)
+
+
+@pytest.mark.parametrize("extra", ["RUN \\\n<<EOF\n", "RUN \\\r\n<<EOF\r\n", "RUN \\\n# ignored\n<<EOF\n", "# escape=`\nRUN `\n<<EOF\n", 'RUN ["unterminated <<EOF\n'])
+def test_issue555_continuation_and_ambiguous_forms_fail_closed(extra: str) -> None:
+    assert not security.frontend_node_image_valid(stage8.read("frontend/Dockerfile") + "\n" + extra)
+
+
+def test_issue555_exact_counterexample_and_guard_removal(monkeypatch: Any) -> None:
+    spec = importlib.util.spec_from_file_location("issue555_source_oracle", stage8.ROOT / "tests/unit/test_frontend_container_runtime.py")
+    assert spec is not None and spec.loader is not None
+    fixture = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(fixture)
+    mutant = fixture.issue555_heredoc_mutant(stage8.read("frontend/Dockerfile"))
+    assert not security.frontend_node_image_valid(mutant)
+    monkeypatch.setattr(security, "frontend_heredoc_free", lambda source: True)
+    assert security.frontend_node_image_valid(mutant), "removing the guard must reproduce the historical false pass"
 
 
 def _security_job_blocks(workflow: str) -> dict[str, str]:
