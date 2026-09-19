@@ -107,6 +107,10 @@ FRONTEND_NODE_IMAGE_FAILURE = (
 
 def frontend_node_image_valid(dockerfile: str) -> bool:
     dockerfile = "\n".join(line.split("#", 1)[0] for line in dockerfile.splitlines())
+    logical = dockerfile.replace("\\\n", " ")
+    apk_clauses = re.findall(r"(?m)^RUN set -eux;[ \t]*(apk add [^;\n]+);", logical)
+    apk_tokens = "apk add --root /runtime --initdb --no-cache --no-scripts --keys-dir /etc/apk/keys --repositories-file /etc/apk/repositories".split()
+    apk_tokens += [f"{name}={version}" for name, version in FRONTEND_RUNTIME_PACKAGES.items()]
     expected = [
         f"FROM {FRONTEND_NODE_SOURCE_IMAGE} AS node-source",
         "FROM scratch AS deps",
@@ -123,11 +127,8 @@ def frontend_node_image_valid(dockerfile: str) -> bool:
         and dockerfile.count("COPY --from=node-source /runtime/ /") == 2
         and "process.config.variables.node_use_quic!==false" in dockerfile
         and "process.config.variables.node_shared_openssl!==false" in dockerfile
-        and dockerfile.count("apk add --root /runtime --initdb --no-cache --no-scripts") == 1
-        and all(
-            dockerfile.count(f"{name}={version}") == 1
-            for name, version in FRONTEND_RUNTIME_PACKAGES.items()
-        )
+        and len(re.findall(r"\bapk\s+add\b", logical)) == 1
+        and [clause.split() for clause in apk_clauses] == [apk_tokens]
         and "test -s /runtime/lib/apk/db/installed" in dockerfile
         and "chmod 1777 /runtime/tmp" in dockerfile
         and dockerfile.count("m.copySharpLibvips('/mnt/deps','/app',process.arch)") == 1

@@ -477,3 +477,11 @@ artifact contents, image execution, scanner databases or hosted bootstrap parity
 Main's one new push follows source review; an unchanged-head PR then establishes
 PR-only/merge-ref contexts, eligible approval, last-push approval and conversations.
 Max three exact-head review cycles/two corrections; no automatic retry or waiver.
+
+R2 rejected candidate `dd1d3a63` for one reproduced `CRITICAL_BLOCKER`: an active
+ENV/RUN/LABEL decoy could satisfy a pin missing from the real APK install clause.
+[Disposition5738180443](https://github.com/imrohitagrawal/narratwin-ai/issues/554#issuecomment-5738180443)
+authorizes correction1/2: compare the single logical APK command's exact option
+and package tokens. RED recorded37 failures, including the independent source
+predicate. Packages/Dockerfile/thresholds stay unchanged; corrected-head R3 remains
+required. Earlier local GREEN is preserved, not transferred as acceptance.

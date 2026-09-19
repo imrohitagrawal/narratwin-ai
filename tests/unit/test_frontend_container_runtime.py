@@ -4,6 +4,8 @@ import importlib.util
 from pathlib import Path
 from types import ModuleType
 
+import pytest
+
 
 ROOT = Path(__file__).resolve().parents[2]
 DOCKERFILE = ROOT / "frontend/Dockerfile"
@@ -30,10 +32,27 @@ def load_consensus() -> ModuleType:
     return module
 
 
+def _assert_exact_runtime_apk_install(source: str) -> None:
+    active = "\n".join(line.split("#", 1)[0] for line in source.splitlines())
+    instructions = [line for line in active.replace("\\\n", " ").splitlines() if line.startswith("RUN set -eux;")]
+    assert len(instructions) == 1 and active.count("apk add") == 1
+    options = "apk add --root /runtime --initdb --no-cache --no-scripts --keys-dir /etc/apk/keys --repositories-file /etc/apk/repositories".split()
+    assert instructions[0].split(";")[1].split() == options + [f"{name}={version}" for name, version in RUNTIME_PACKAGES.items()]
+
+
 def test_issue554_actual_apk_install_and_scan_inventory_match_exact_pins() -> None:
-    active = "\n".join(line.split("#", 1)[0] for line in DOCKERFILE.read_text().splitlines())
-    assert all(active.count(f"{name}={version}") == 1 for name, version in RUNTIME_PACKAGES.items())
+    _assert_exact_runtime_apk_install(DOCKERFILE.read_text())
     assert load_consensus().FRONTEND_RUNTIME_PACKAGES == RUNTIME_PACKAGES
+
+
+def test_issue554_source_predicate_rejects_active_non_apk_decoys() -> None:
+    source = DOCKERFILE.read_text()
+    for name, version in RUNTIME_PACKAGES.items():
+        pin = f"{name}={version}"
+        for actual in (name, f"{name}=0-r0"):
+            for decoy in (f'ENV EXPECTED="{pin}"', f'RUN echo "{pin}"', f'LABEL expected="{pin}"'):
+                with pytest.raises(AssertionError):
+                    _assert_exact_runtime_apk_install(source.replace(pin, actual, 1) + "\n" + decoy + "\n")
 
 
 def test_runtime_pins_the_reviewed_node_source_and_minimal_final_stage() -> None:

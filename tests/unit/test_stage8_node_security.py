@@ -122,6 +122,17 @@ def test_issue554_active_apk_pins_cannot_be_satisfied_by_comment_decoys() -> Non
             assert not security.frontend_node_image_valid(mutation), (name, replacement)
 
 
+@pytest.mark.parametrize("name", security.FRONTEND_RUNTIME_PACKAGES)
+@pytest.mark.parametrize("stale", [False, True])
+@pytest.mark.parametrize("decoy", ['ENV EXPECTED="{pin}"', 'RUN echo "{pin}"', 'LABEL expected="{pin}"'])
+def test_issue554_install_clause_rejects_active_non_apk_decoys(name: str, stale: bool, decoy: str) -> None:
+    dockerfile = stage8.read("frontend/Dockerfile")
+    pin = f"{name}={security.FRONTEND_RUNTIME_PACKAGES[name]}"
+    actual = f"{name}=0-r0" if stale else name
+    mutation = dockerfile.replace(pin, actual, 1) + "\n" + decoy.format(pin=pin) + "\n"
+    assert not security.frontend_node_image_valid(mutation)
+
+
 def _security_job_blocks(workflow: str) -> dict[str, str]:
     jobs = workflow.split("\njobs:\n", 1)
     assert len(jobs) == 2
