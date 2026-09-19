@@ -392,8 +392,8 @@ ISSUE549_DISPOSITION_SHA256 = "e517f5a9572731532d0f50eeb9b46f41c0bbc0b64da5d61d1
 ISSUE547_ATOMIC_BRANCH = "ci-547-549-atomic-runtime-security-successor"
 ISSUE547_ATOMIC_F, ISSUE547_ATOMIC_C1 = "2ea926c63df6f3442faf2f4c7447d0707e23e31e", "9bde8dd761cd7b8dcd53a9723769487cb1f59933"
 ISSUE547_ATOMIC_PUSH_LIMIT = 1
-ISSUE547_ATOMIC_AUTHORITY = (("5737207458", "a4f8ca11da2bc89d9761c29f14e078b230ae108d01e8558768cb9d04975f556e"), ("5737217558", "f02f07ea6528c661f7948b2140db38d776ab7bd8a0fa67a1e43a1e160befda6f"), ("5737227530", "3a89ce829048f630d969de102e085f9a3ec8655d66dc1b58c6389562c6de5621"), ("5737432474", "979be396f76bb31a3058b4d1881b403168f77a11ab26d022e38a422796e230ce"), ("5737436428", "f4eef65fc5e10b40bb2ac65c5c70933e63caf0935ae1e15b458d595302e59a29"), ("5737446015", "6dc4935373589893a93309327578bff18f603935f59a72b308cb0b164b23d367"), ("5737462767", "fedcf4b2312d0fabeebe7c4f2009fabad4aefbca594a5dfd05bfde2303a7c37a"), ("5737466529", "f47834839c59a8edc3504a9978e9f14007d87f6308b2e24af3b20a7176611947"))
-ISSUE547_FROZEN = {"docs/ADR/0086-soupsieve-2-9-security-refresh.md", "docs/ADR/INDEX.md", "docs/governance/preflights/issue-549-soupsieve-security-refresh.json", "tests/unit/test_dependency_security_contract.py", "uv.lock"}
+ISSUE547_ATOMIC_AUTHORITY = (("5737207458", "a4f8ca11da2bc89d9761c29f14e078b230ae108d01e8558768cb9d04975f556e"), ("5737217558", "f02f07ea6528c661f7948b2140db38d776ab7bd8a0fa67a1e43a1e160befda6f"), ("5737227530", "3a89ce829048f630d969de102e085f9a3ec8655d66dc1b58c6389562c6de5621"), ("5737432474", "979be396f76bb31a3058b4d1881b403168f77a11ab26d022e38a422796e230ce"), ("5737436428", "f4eef65fc5e10b40bb2ac65c5c70933e63caf0935ae1e15b458d595302e59a29"), ("5737446015", "6dc4935373589893a93309327578bff18f603935f59a72b308cb0b164b23d367"), ("5737462767", "fedcf4b2312d0fabeebe7c4f2009fabad4aefbca594a5dfd05bfde2303a7c37a"), ("5737466529", "f47834839c59a8edc3504a9978e9f14007d87f6308b2e24af3b20a7176611947"), ("5737629990", "d053c9b927aa7357180d54e1ea6b7767e1605a9ea73a6f67080f67c5c4d08be7"), ("5737634271", "abb3101684f5e471d99f0a6a18917eb3bc789206d7dd96ab142547022db5e0a6"), ("5737637839", "d7cb83157722b94ac51ae6ee00c35c4d1ae3739d87c727b975fb8555a5cd19fe"), ("5737712689", "1de4bd52af5ca1a8abed4f494143a3049442506f28ec4da60c3e811fed24251d"), ("5737719015", "06ead9f112672fe383ffad2a653ca9bce5f48bca0976fb9f08d4563492d23379"), ("5737723412", "0c73219ab5ce44bcb4aebda4417221878ae606168bf12c870b674105483adf23"))
+ISSUE547_FROZEN = {"docs/ADR/0086-soupsieve-2-9-security-refresh.md", "docs/ADR/INDEX.md", "docs/governance/preflights/issue-549-soupsieve-security-refresh.json", "uv.lock"}
 ISSUE495_TREE = "13f79eb5db44249f635a619e1b283279f25ba9f0"
 ISSUE495_ROUTE_COMMENT = "5498387945"
 ISSUE495_CORRECTION_COMMENT = "5498411811"
@@ -3144,9 +3144,9 @@ def issue547_atomic_evidence(root: Path, run: Callable[[list[str]], Any]) -> Non
     reject((root / registry_path).read_bytes() != expected_registry.encode() or (root / handoff_path).read_bytes() != read("show", f"{frozen}:{handoff_path}").replace(f'PLAN_SHA256: {old["sha256"]}', f"PLAN_SHA256: {digest}", 1).encode(), "Atomic STATUS pointer-only delta drift.")
     work_records.validate(root)
     layer = {p: n - TEXT_LIMITS[ISSUE549_BRANCH].get(p, 0) for p, n in route_change_budget(root, ISSUE547_ATOMIC_BRANCH, 547, ROUTES[ISSUE547_ATOMIC_BRANCH])[1].items() if p not in ISSUE547_FROZEN}
-    layer.update({registry_path: 4, handoff_path: 2, "tests/unit/test_stage8_cut1_routes.py": 94})
+    layer.update({registry_path: 4, handoff_path: 2, "tests/unit/test_stage8_cut1_routes.py": 94, "tests/unit/test_dependency_security_contract.py": 29})
     total, charges = route_text_charges(run, frozen, set(layer))
-    reject(len(layer) != 15 or set(charges) != set(layer) or total > 900 or any(charges[p] > n for p, n in layer.items()), "Atomic mutable 15-path/900 layer drift.")
+    reject(len(layer) != 16 or set(charges) != set(layer) or total > 900 or any(charges[p] > n for p, n in layer.items()), "Atomic mutable 16-path/900 layer drift.")
     reject(any(route_has_copy_or_rename(read("diff", *flags, "--name-status", "-z", "--find-copies-harder", frozen, *end, "--")) for flags, end in (([], ["HEAD"]), (["--cached"], []), ([], []))), "Atomic deleted/renamed/copied path.")
     reject(any((root / p).is_symlink() or not (root / p).is_file() for p in ROUTES[ISSUE547_ATOMIC_BRANCH]), "Atomic nonregular path.")
 

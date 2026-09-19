@@ -286,6 +286,7 @@ def _assert_issue525_jsonschema_dev_contract(project_text: str, lock_text: str) 
         base_lock,
     )
     assert normalized_project == base_project
+    _normalize_soupsieve_29_delta(normalized_lock, base_lock)
     assert normalized_lock == base_lock
 
 
@@ -440,6 +441,7 @@ def _assert_google_auth_delta(project: dict[str, Any], lock: dict[str, Any], bas
     _normalize_pip_security_delta(normalized_lock, base_lock)
     _normalize_issue482_delta(normalized_lock, base_lock)
     _normalize_issue525_lock(normalized_lock)
+    _normalize_soupsieve_29_delta(normalized_lock, base_lock)
     assert normalized_lock == base_lock
 
 
@@ -450,6 +452,15 @@ def _text_at(ref: str, path: str) -> str:
     return result.stdout
 
 
+def _normalize_soupsieve_29_delta(lock: dict[str, Any], base_lock: dict[str, Any]) -> None:
+    packages = lock["package"]
+    matches = [i for i, package in enumerate(packages) if package["name"] == "soupsieve"]
+    assert len(matches) == 1 and packages[matches[0]] == SOUPSIEVE_29
+    historical = [package for package in base_lock["package"] if package["name"] == "soupsieve"]
+    assert len(historical) == 1
+    packages[matches[0]] = copy.deepcopy(historical[0])
+
+
 def _assert_soupsieve_29_contract(project_text: str, lock_text: str) -> None:
     """Accept only the exact one-record transitive security refresh."""
     base_project = _text_at(ISSUE549_BASE, "pyproject.toml")
@@ -457,10 +468,6 @@ def _assert_soupsieve_29_contract(project_text: str, lock_text: str) -> None:
     lock = tomllib.loads(lock_text)
     assert project_text == base_project
 
-    soupsieve = [
-        package for package in lock["package"] if package["name"] == "soupsieve"
-    ]
-    assert soupsieve == [SOUPSIEVE_29]
     beautifulsoup = [package for package in lock["package"] if package["name"] == "beautifulsoup4"]
     base_beautifulsoup = [
         package for package in base_lock["package"] if package["name"] == "beautifulsoup4"
@@ -468,13 +475,7 @@ def _assert_soupsieve_29_contract(project_text: str, lock_text: str) -> None:
     assert beautifulsoup == base_beautifulsoup
 
     normalized = copy.deepcopy(lock)
-    index = next(
-        i for i, package in enumerate(normalized["package"])
-        if package["name"] == "soupsieve"
-    )
-    normalized["package"][index] = next(
-        package for package in base_lock["package"] if package["name"] == "soupsieve"
-    )
+    _normalize_soupsieve_29_delta(normalized, base_lock)
     assert normalized == base_lock
 
 
@@ -512,8 +513,8 @@ def test_issue549_soupsieve_oracle_rejects_false_pass_mutations() -> None:
     # duplicate record, retained Beautiful Soup drift, or unrelated lock drift.
     mutations = (
         candidate.replace('version = "2.9"', 'version = "2.8.4"', 1),
-        candidate.replace(SOUPSIEVE_29["sdist"]["hash"], "sha256:" + "0" * 64, 1),
-        candidate.replace(SOUPSIEVE_29["wheels"][0]["hash"], "sha256:" + "1" * 64, 1),
+        candidate.replace(cast(dict[str, Any], SOUPSIEVE_29["sdist"])["hash"], "sha256:" + "0" * 64, 1),
+        candidate.replace(cast(list[dict[str, Any]], SOUPSIEVE_29["wheels"])[0]["hash"], "sha256:" + "1" * 64, 1),
         candidate.replace(header + '\nsource = { registry = "https://pypi.org/simple" }',
                           header + '\nsource = { registry = "https://example.invalid/simple" }', 1),
         candidate[:end] + "\n" + block + candidate[end:],
@@ -823,6 +824,7 @@ def _assert_pypdf_6162_contract(project_text: str, lock_text: str) -> None:
     _normalize_issue525_project(normalized_project)
     _normalize_issue525_lock(normalized_lock)
     assert normalized_project == base_project
+    _normalize_soupsieve_29_delta(normalized_lock, base_lock)
     assert normalized_lock == base_lock
 
 
@@ -964,6 +966,7 @@ def _assert_httpx2_2120_contract(project_text: str, lock_text: str) -> None:
     _normalize_issue525_project(normalized_project)
     _normalize_issue525_lock(normalized_lock)
     assert normalized_project == base_project
+    _normalize_soupsieve_29_delta(normalized_lock, base_lock)
     assert normalized_lock == base_lock
 
 

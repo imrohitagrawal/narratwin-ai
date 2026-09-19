@@ -1252,7 +1252,7 @@ def completed(args: list[str], code: int = 0, out: str = "", err: str = "") -> s
 ATOMIC547_BRANCH = "ci-547-549-atomic-runtime-security-successor"
 ATOMIC547_F, ATOMIC547_C1 = "2ea926c63df6f3442faf2f4c7447d0707e23e31e", "9bde8dd761cd7b8dcd53a9723769487cb1f59933"
 ATOMIC547_FILES = ISSUE549_EXPECTED | {"docs/governance/preflights/issue-547.json", "backend/Dockerfile", "scripts/ci/backend-image-package-check.sh", "scripts/quality/stage8_backend_security.py", "tests/unit/test_stage8_backend_security.py", "tests/unit/test_backend_image_package_check.py", "tests/unit/test_cpython_security_backports.py", "docs/ADR/0006-stage8-release-hardening.md"}
-ATOMIC547_FROZEN = {"docs/ADR/0086-soupsieve-2-9-security-refresh.md", "docs/ADR/INDEX.md", "docs/governance/preflights/issue-549-soupsieve-security-refresh.json", "tests/unit/test_dependency_security_contract.py", "uv.lock"}
+ATOMIC547_FROZEN = {"docs/ADR/0086-soupsieve-2-9-security-refresh.md", "docs/ADR/INDEX.md", "docs/governance/preflights/issue-549-soupsieve-security-refresh.json", "uv.lock"}
 
 
 def _atomic547_snapshot(args: list[str]) -> subprocess.CompletedProcess[str]:
@@ -1267,7 +1267,7 @@ def _atomic547_snapshot(args: list[str]) -> subprocess.CompletedProcess[str]:
     return subprocess.run(args, cwd=REPO, check=False, capture_output=True, text=True)
 
 
-@pytest.mark.parametrize("fault", [None, "near", "old", "extra", "missing", "base", "frozen", "c1", "parent", "first", "ancestry", "manifest", "binary", "rename", "total", "file", "raw", "registry", "handoff", "status"])
+@pytest.mark.parametrize("fault", [None, "near", "old", "extra", "missing", "base", "frozen", "c1", "parent", "first", "ancestry", "manifest", "binary", "rename", "total", "file", "dependency", "raw", "registry", "handoff", "status"])
 def test_atomic547_actual_scope_rejects_layer_and_custody_drift(fault: str | None, monkeypatch: Any) -> None:
     branch = "ci-547-alpine-runtime-pins-successor" if fault == "old" else ATOMIC547_BRANCH + ("-near" if fault == "near" else "")
     changed = (ATOMIC547_FILES | ({"foreign.py"} if fault == "extra" else set())) - ({"backend/Dockerfile"} if fault == "missing" else set())
@@ -1280,7 +1280,7 @@ def test_atomic547_actual_scope_rejects_layer_and_custody_drift(fault: str | Non
             (fault == "manifest" and args[1] == "ls-tree", completed(args, out=value.stdout.replace("100644", "100755", 1))),
             (fault == "rename" and "--name-status" in args, completed(args, out="R100\0uv.lock\0foreign.py\0")),
             ("--numstat" in args and ATOMIC547_F in args and routes.ISSUE549_BASE not in args and fault == "binary", completed(args, out="-\t-\tbackend/Dockerfile\n")),
-            ("--numstat" in args and ATOMIC547_F in args and routes.ISSUE549_BASE not in args and fault in {"total", "file"}, completed(args, out=f"{901 if fault == 'total' else 25}\t0\tbackend/Dockerfile\n")),
+            ("--numstat" in args and ATOMIC547_F in args and routes.ISSUE549_BASE not in args and fault in {"total", "file", "dependency"}, completed(args, out="30\t0\ttests/unit/test_dependency_security_contract.py\n" if fault == "dependency" else f"{901 if fault == 'total' else 25}\t0\tbackend/Dockerfile\n")),
         )
         return next((result for matches, result in responses if matches), value)
     original = Path.read_bytes
@@ -1335,7 +1335,7 @@ def _frozen549_run(args: list[str]) -> subprocess.CompletedProcess[str]:
 
 def test_atomic547_authority_and_one_push_boundary() -> None:
     assert getattr(stage8.cr, "ISSUE547_ATOMIC_PUSH_LIMIT", None) == 1
-    assert getattr(stage8.cr, "ISSUE547_ATOMIC_AUTHORITY", None) == (("5737207458", "a4f8ca11da2bc89d9761c29f14e078b230ae108d01e8558768cb9d04975f556e"), ("5737217558", "f02f07ea6528c661f7948b2140db38d776ab7bd8a0fa67a1e43a1e160befda6f"), ("5737227530", "3a89ce829048f630d969de102e085f9a3ec8655d66dc1b58c6389562c6de5621"), ("5737432474", "979be396f76bb31a3058b4d1881b403168f77a11ab26d022e38a422796e230ce"), ("5737436428", "f4eef65fc5e10b40bb2ac65c5c70933e63caf0935ae1e15b458d595302e59a29"), ("5737446015", "6dc4935373589893a93309327578bff18f603935f59a72b308cb0b164b23d367"), ("5737462767", "fedcf4b2312d0fabeebe7c4f2009fabad4aefbca594a5dfd05bfde2303a7c37a"), ("5737466529", "f47834839c59a8edc3504a9978e9f14007d87f6308b2e24af3b20a7176611947"))
+    assert getattr(stage8.cr, "ISSUE547_ATOMIC_AUTHORITY", None) == (("5737207458", "a4f8ca11da2bc89d9761c29f14e078b230ae108d01e8558768cb9d04975f556e"), ("5737217558", "f02f07ea6528c661f7948b2140db38d776ab7bd8a0fa67a1e43a1e160befda6f"), ("5737227530", "3a89ce829048f630d969de102e085f9a3ec8655d66dc1b58c6389562c6de5621"), ("5737432474", "979be396f76bb31a3058b4d1881b403168f77a11ab26d022e38a422796e230ce"), ("5737436428", "f4eef65fc5e10b40bb2ac65c5c70933e63caf0935ae1e15b458d595302e59a29"), ("5737446015", "6dc4935373589893a93309327578bff18f603935f59a72b308cb0b164b23d367"), ("5737462767", "fedcf4b2312d0fabeebe7c4f2009fabad4aefbca594a5dfd05bfde2303a7c37a"), ("5737466529", "f47834839c59a8edc3504a9978e9f14007d87f6308b2e24af3b20a7176611947"), ("5737629990", "d053c9b927aa7357180d54e1ea6b7767e1605a9ea73a6f67080f67c5c4d08be7"), ("5737634271", "abb3101684f5e471d99f0a6a18917eb3bc789206d7dd96ab142547022db5e0a6"), ("5737637839", "d7cb83157722b94ac51ae6ee00c35c4d1ae3739d87c727b975fb8555a5cd19fe"), ("5737712689", "1de4bd52af5ca1a8abed4f494143a3049442506f28ec4da60c3e811fed24251d"), ("5737719015", "06ead9f112672fe383ffad2a653ca9bce5f48bca0976fb9f08d4563492d23379"), ("5737723412", "0c73219ab5ce44bcb4aebda4417221878ae606168bf12c870b674105483adf23"))
 
 @pytest.mark.parametrize("via_scope", [False, True])
 def test_issue549_standalone_acceptance_fails_closed(via_scope: bool, monkeypatch: Any) -> None:
