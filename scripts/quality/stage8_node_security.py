@@ -108,7 +108,7 @@ FRONTEND_NODE_IMAGE_FAILURE = (
 def frontend_heredoc_free(source: str) -> bool:
     """Bounded admission guard, not a Dockerfile/shell parser; ambiguity rejects."""
     pending = ""
-    for physical in source.splitlines():
+    for physical in source.split("\n"):
         line = physical.strip()
         if re.match(r"(?i)^#\s*escape\s*=", line) and line.split("=", 1)[1].strip() != "\\":
             return False

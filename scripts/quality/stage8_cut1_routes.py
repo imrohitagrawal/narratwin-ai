@@ -3279,6 +3279,16 @@ def issue555_successor_evidence(root: Path, run: Callable[[list[str]], Any], cha
     old = next(w["plan"] for w in json.loads(registry)["works"] if w["id"] == "governance-backlog")
     expected_registry = registry.replace(old["sha256"], hashlib.sha256(status).hexdigest(), 1).replace(f'"bytes": {old["bytes"]}', f'"bytes": {len(status)}', 1)
     reject((root / "docs/work/registry.json").read_bytes() != expected_registry.encode(), "Heredoc STATUS pointer-only delta drift.")
+    handoff_path = "docs/work/governance-backlog/HANDOFF.md"
+    expected_handoff = read("show", f"{parent}:{handoff_path}").replace(f"PLAN_SHA256: {old['sha256']}", f"PLAN_SHA256: {hashlib.sha256(status).hexdigest()}", 1)
+    checkpoint = ("Issue #555 supersedes the next-action/publication statements below: #554 ended\n"
+                  "NO_GO at ad4bcf3b, unpublished. C1 2809ed06 and RED bd422ff3 precede this candidate.\n"
+                  "Next: main's R2 on the containing GREEN head; at most one correction/R3, then\n"
+                  "one replacement push and unchanged-head PR only when eligible. No review transfers.\n"
+                  "Retain both sources/evidence; release only checked inactive owned test scratch.\n\n")
+    anchor = "Issue #554 checkpoint (2026-09-19): published predecessor f8daafee's push is spent;\n"
+    expected_handoff = expected_handoff.replace(anchor, checkpoint + anchor, 1)
+    reject((root / handoff_path).read_bytes() != expected_handoff.encode(), "Heredoc HANDOFF permitted-delta drift.")
     work_records.validate(root)
 
 

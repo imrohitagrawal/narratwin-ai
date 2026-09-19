@@ -151,12 +151,15 @@ def test_issue555_continuation_and_ambiguous_forms_fail_closed(extra: str) -> No
     assert not security.frontend_node_image_valid(stage8.read("frontend/Dockerfile") + "\n" + extra)
 
 
-def test_issue555_exact_counterexample_and_guard_removal(monkeypatch: Any) -> None:
+@pytest.mark.parametrize("separator,digest", [(" ", "3e953325f1a5af73851e83de7f5eb878f4cb15a27ea31e8d21eb7a4171accf35"), ("\v", "f93105c51bd71913a7a992076e4aa3f52639bcaa37da416b8fddc7deb9747d73"), ("\f", "cef76b979a314c2b7674335e871c56297c39295e469872a615ff612515cf0619")])
+def test_issue555_exact_counterexample_and_guard_removal(monkeypatch: Any, separator: str, digest: str) -> None:
     spec = importlib.util.spec_from_file_location("issue555_source_oracle", stage8.ROOT / "tests/unit/test_frontend_container_runtime.py")
     assert spec is not None and spec.loader is not None
     fixture = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(fixture)
-    mutant = fixture.issue555_heredoc_mutant(stage8.read("frontend/Dockerfile"))
+    mutant = fixture.issue555_heredoc_mutant(stage8.read("frontend/Dockerfile")).replace("RUN <<'OUTER'", f"RUN{separator}<<'OUTER'", 1)
+    assert len(mutant.encode()) == 3942 and hashlib.sha256(mutant.encode()).hexdigest() == digest
+    assert not security.frontend_heredoc_free(mutant)
     assert not security.frontend_node_image_valid(mutant)
     monkeypatch.setattr(security, "frontend_heredoc_free", lambda source: True)
     assert security.frontend_node_image_valid(mutant), "removing the guard must reproduce the historical false pass"

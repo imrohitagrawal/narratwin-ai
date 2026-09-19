@@ -1288,7 +1288,7 @@ def _successor555_snapshot(args: list[str]) -> subprocess.CompletedProcess[str]:
     return subprocess.run(args, cwd=REPO, check=False, capture_output=True, text=True)
 
 
-@pytest.mark.parametrize("fault", [None, "near", "extra", "missing", "base", "predecessor", "c1", "parent", "first", "ancestry", "raw", "blob", "staged", "mode", "manifest", "predecessor-charge", "binary", "rename", "total", "file", "deletions", "registry", "handoff"])
+@pytest.mark.parametrize("fault", [None, "near", "extra", "missing", "base", "predecessor", "c1", "parent", "first", "ancestry", "raw", "blob", "staged", "mode", "manifest", "predecessor-charge", "binary", "rename", "total", "file", "deletions", "registry", "handoff", "handoff-extra", "handoff-missing", "handoff-altered", "handoff-unrelated"])
 def test_issue555_actual_scope_checks_layers_and_frozen_custody(fault: str | None, monkeypatch: Any) -> None:
     from scripts import work_records
     branch = SUCCESSOR555_BRANCH + ("-near" if fault == "near" else "")
@@ -1321,6 +1321,9 @@ def test_issue555_actual_scope_checks_layers_and_frozen_custody(fault: str | Non
     targets = {"raw": "docs/governance/preflights/issue-555.json", "registry": "docs/work/registry.json", "handoff": "docs/work/governance-backlog/HANDOFF.md"}
     def mutated(path: Path) -> bytes:
         raw = original(path)
+        if path == REPO / targets["handoff"] and fault in {"handoff-extra", "handoff-missing", "handoff-altered", "handoff-unrelated"}:
+            checkpoint = raw[raw.index(b"Issue #555 supersedes"):raw.index(b"Issue #554 checkpoint")]
+            return {"handoff-extra": raw + b"\nProvider operations are authorized.\n", "handoff-missing": raw.replace(checkpoint, b"", 1), "handoff-altered": raw.replace(b"one replacement push", b"two replacement pushes", 1), "handoff-unrelated": raw.replace(b"Observed source checkpoint:", b"Altered source checkpoint:", 1)}[fault]
         return (raw.replace(b"PLAN_SHA256:", b"PLAN_SHA256:0") if fault == "handoff" else raw + b"\n") if path == REPO / targets.get(fault or "", "__none__") else raw
     monkeypatch.setattr(Path, "read_bytes", mutated)
     original_record = work_records.file_bytes
