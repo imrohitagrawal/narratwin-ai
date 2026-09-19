@@ -1,7 +1,13 @@
 # Governance and evaluation backlog: handoff
 
-PLAN_SHA256: bac265d52ebec44dfa0f53b00e247c05fe877dc42118108ef13416d5d92c70cb
+PLAN_SHA256: 73153bd2f74a1725b62d8c82aaf0d2d97434bd7baa936c92588137bcd4044819
 EVIDENCE_SHA256: 550beb600595ce8cf46e1b89652936f2e02d678564f9e57001548d90784db6ec
+
+Issue #555 supersedes the next-action/publication statements below: #554 ended
+NO_GO at ad4bcf3b, unpublished. C1 2809ed06 and RED bd422ff3 precede this candidate.
+Next: main's R2 on the containing GREEN head; at most one correction/R3, then
+one replacement push and unchanged-head PR only when eligible. No review transfers.
+Retain both sources/evidence; release only checked inactive owned test scratch.
 
 Issue #554 checkpoint (2026-09-19): published predecessor f8daafee's push is spent;
 its hosted AnyIO/Alpine failures remain evidence, not acceptance. New C1b0c47803

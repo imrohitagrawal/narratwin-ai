@@ -34,6 +34,8 @@ def load_consensus() -> ModuleType:
 
 
 def _assert_exact_runtime_apk_install(source: str) -> None:
+    # Independent full-source oracle: this increment freezes every Dockerfile byte.
+    assert hashlib.sha256(source.encode()).hexdigest() == "33c0c52eda6aa80d9576397976255da56acae4ff69b21fe69bce442a0377926d"
     active = "\n".join(line.split("#", 1)[0] for line in source.splitlines())
     instructions = [line for line in active.replace("\\\n", " ").splitlines() if line.startswith("RUN set -eux;")]
     assert len(instructions) == 1 and active.count("apk add") == 1

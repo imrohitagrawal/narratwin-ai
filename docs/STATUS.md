@@ -1,5 +1,19 @@
 # Program Status
 
+## Issue #555 frontend heredoc guard successor — 2026-09-19
+
+[Plan5738302888](https://github.com/imrohitagrawal/narratwin-ai/issues/555#issuecomment-5738302888)
+supersedes #554's unspent publication proposal: its three review cycles ended
+NO_GO at unpublished `ad4bcf3b2ea8eef3668a5711914da17175df2849`; preserve that evidence.
+C1 `2809ed06eafcfc2cb74a89f5a0139e6a58570000` precedes RED `bd422ff3e6ef55a07702c70f7f7557c39c3e42ad`
+(75 failed/27 passed): the exact3942-byte heredoc mutant fooled both prior predicates.
+The containing commit establishes only a local guard/custody candidate; Dockerfile,
+packages and workflows stay exact. Main owns R2, at most one correction/R3, and
+one replacement push, not another #554 event. Independent and hosted acceptance
+remain pending; no old review transfers and no automatic rerun is authorized.
+See [ADR0006](ADR/0006-stage8-release-hardening.md#issue-555-bounded-heredoc-admission--2026-09-19).
+No local Docker/install, provider/private/account/media operation or Cut1 credit.
+
 ## Issue #554 AnyIO / frontend Alpine successor — 2026-09-19
 
 This section supersedes the earlier atomic carrier's unspent-push statement, not

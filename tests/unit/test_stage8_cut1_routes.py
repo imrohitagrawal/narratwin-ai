@@ -1290,6 +1290,7 @@ def _successor555_snapshot(args: list[str]) -> subprocess.CompletedProcess[str]:
 
 @pytest.mark.parametrize("fault", [None, "near", "extra", "missing", "base", "predecessor", "c1", "parent", "first", "ancestry", "raw", "blob", "staged", "mode", "manifest", "predecessor-charge", "binary", "rename", "total", "file", "deletions", "registry", "handoff"])
 def test_issue555_actual_scope_checks_layers_and_frozen_custody(fault: str | None, monkeypatch: Any) -> None:
+    from scripts import work_records
     branch = SUCCESSOR555_BRANCH + ("-near" if fault == "near" else "")
     changed = (SUCCESSOR555_UNION | ({"foreign.py"} if fault == "extra" else set())) - ({"frontend/Dockerfile"} if fault == "missing" else set())
     corrupt = {"base": ["rev-parse", f"{routes.ISSUE549_BASE}^{{tree}}"], "predecessor": ["rev-parse", f"{SUCCESSOR555_P}^{{tree}}"], "c1": ["rev-parse", f"{SUCCESSOR555_C1}^{{tree}}"], "parent": ["rev-parse", f"{SUCCESSOR555_C1}^"], "first": ["diff-tree", "--no-commit-id", "--name-only", "-r", SUCCESSOR555_C1]}
@@ -1318,7 +1319,12 @@ def test_issue555_actual_scope_checks_layers_and_frozen_custody(fault: str | Non
         return value
     original = Path.read_bytes
     targets = {"raw": "docs/governance/preflights/issue-555.json", "registry": "docs/work/registry.json", "handoff": "docs/work/governance-backlog/HANDOFF.md"}
-    monkeypatch.setattr(Path, "read_bytes", lambda p: original(p) + (b"\n" if p == REPO / targets.get(fault or "", "__none__") else b""))
+    def mutated(path: Path) -> bytes:
+        raw = original(path)
+        return (raw.replace(b"PLAN_SHA256:", b"PLAN_SHA256:0") if fault == "handoff" else raw + b"\n") if path == REPO / targets.get(fault or "", "__none__") else raw
+    monkeypatch.setattr(Path, "read_bytes", mutated)
+    original_record = work_records.file_bytes
+    monkeypatch.setattr(work_records, "file_bytes", lambda root, path, private_roots=None: mutated(root / path) if fault == "handoff" and path == targets["handoff"] else original_record(root, path, private_roots))
     monkeypatch.setattr(stage8, "current_branch", lambda: branch)
     monkeypatch.setattr(stage8, "changed_files_for_stage_scope", lambda: sorted(changed))
     monkeypatch.setattr(stage8, "run", run)
@@ -1346,7 +1352,19 @@ def _successor554_snapshot(args: list[str]) -> subprocess.CompletedProcess[str]:
             return completed(args, out="\n".join(paths))
     if args[1] == "diff" and routes.ISSUE549_BASE in args and SUCCESSOR554_P not in args and "--name-only" in args:
         return completed(args, out="\n".join(sorted(SUCCESSOR554_UNION)))
-    return subprocess.run(args, cwd=REPO, check=False, capture_output=True, text=True)
+    historical = [a.replace("HEAD", SUCCESSOR555_P) for a in args]
+    if "--cached" in historical:
+        historical.remove("--cached")
+        historical.insert(historical.index("--"), SUCCESSOR555_P)
+    return subprocess.run(historical, cwd=REPO, check=False, capture_output=True, text=True)
+
+
+@pytest.fixture(autouse=True)
+def _immutable_issue554_files(request: Any, monkeypatch: Any) -> None:
+    if request.node.name.startswith("test_issue554_actual_scope"):
+        original = Path.read_bytes
+        snapshot = {REPO / p: subprocess.run(["git", "show", f"{SUCCESSOR555_P}:{p}"], cwd=REPO, check=True, capture_output=True).stdout for p in SUCCESSOR554_UNION}
+        monkeypatch.setattr(Path, "read_bytes", lambda path: snapshot[path] if path in snapshot else original(path))
 
 
 @pytest.mark.parametrize("fault", [None, "near", "extra", "missing", "base", "predecessor", "c1", "parent", "first", "ancestry", "raw", "blob", "staged", "predecessor-charge", "binary", "rename", "total", "file", "deletions"])
@@ -2266,7 +2284,7 @@ def test_google_tts_governance_marks_prompt_prerequisite_satisfied_only() -> Non
 
 
 def test_routes_are_exact_pre_registered_and_issue386_preflight_matches() -> None:
-    assert routes.ROUTES == EXPECTED | {ATOMIC547_BRANCH: ATOMIC547_FILES, SUCCESSOR554_BRANCH: SUCCESSOR554_UNION}
+    assert routes.ROUTES == EXPECTED | {ATOMIC547_BRANCH: ATOMIC547_FILES, SUCCESSOR554_BRANCH: SUCCESSOR554_UNION, SUCCESSOR555_BRANCH: SUCCESSOR555_UNION}
     assert {branch: stage8.EFFECTIVE_STAGE8_ROUTES[branch] for branch in EXPECTED} == EXPECTED
     issue150 = json.loads((REPO / "docs/governance/preflights/issue-150.json").read_text(encoding="utf-8"))
     issue150_route = EXPECTED["cut1-process-150-semgrep-mcp-renewal"]

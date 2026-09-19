@@ -932,6 +932,14 @@ The [ADR](ADR/0006-stage8-release-hardening.md#issue-554-two-root-hosted-drift-s
 owns the decision; [notices](THIRD_PARTY_NOTICES.md#issue-554-anyio-and-frontend-alpine-provenance--2026-09-19)
 own source identities. TDD guidance produced real-consumer RED before source changes.
 
+## Issue #555 heredoc source-admission boundary
+
+Issue #555 supersedes #554 publication, not its failed evidence: exact mutant
+`3e953325f1a5af73851e83de7f5eb878f4cb15a27ea31e8d21eb7a4171accf35`
+binds3942 bytes. RED `bd422ff3` and complete-fixture lexical/guard-removal tests
+prove the source boundary; route mutations prove C1/layers/frozen custody.
+Main-owned exact-head review, replacement push and real PR contexts remain gates.
+
 ## Issue #549 Soup Sieve security-candidate traceability
 
 | Requirement | Evidence | Preserved boundary |

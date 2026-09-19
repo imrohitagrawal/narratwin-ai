@@ -485,3 +485,15 @@ authorizes correction1/2: compare the single logical APK command's exact option
 and package tokens. RED recorded37 failures, including the independent source
 predicate. Packages/Dockerfile/thresholds stay unchanged; corrected-head R3 remains
 required. Earlier local GREEN is preserved, not transferred as acceptance.
+
+## Issue #555 bounded heredoc admission — 2026-09-19
+
+Decision: reject active RUN/COPY/ADD/ONBUILD heredoc openers before comment stripping
+or APK normalization; retain exact APK tokens. Quoting, escapes, continuations and
+JSON ambiguity fail closed; full-line comments and unambiguous literals remain.
+This bounded recognizer is not a general Dockerfile parser or native-build proof.
+The independent source oracle binds the whole frozen Dockerfile, not this guard.
+Plan5738302888/addendum5738327761 bind parent `ad4bcf3b`, main→parent27/1441,
+increment11/500 without deletion credit, union28 and seventeen frozen mode/blobs.
+TDD reproduced the exact3942-byte mutant before correction; removing the guard
+reproduces its false pass. #554 history stays failed; no new package or threshold.

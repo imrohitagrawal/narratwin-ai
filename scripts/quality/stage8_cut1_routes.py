@@ -1329,6 +1329,14 @@ ISSUE554_FILES = {
 }
 ROUTES[ISSUE554_BRANCH] = ROUTES[ISSUE547_ATOMIC_BRANCH] | ISSUE554_FILES
 ROUTE_ISSUES[ISSUE554_BRANCH] = 554
+ISSUE555_BRANCH = "ci-555-frontend-heredoc-guard-successor"
+ISSUE555_PARENT = "ad4bcf3b2ea8eef3668a5711914da17175df2849"
+ISSUE555_C1 = "2809ed06eafcfc2cb74a89f5a0139e6a58570000"
+ISSUE555_AUTHORITY = (("5738302888", "2c36dddbafd34db282832686f84c4a04e9ef9da457b210072719f08eb6aa81bb"), ("5738327761", "89954a33c63f1d4f03a869ad4486e6942f1dd331399fa3eb94bb6706c83ecd45"))
+ISSUE555_PUSH_LIMIT = 1  # Replaces, never adds to, the retired unpublished #554 event.
+ISSUE555_FILES = {"docs/governance/preflights/issue-555.json", "scripts/quality/stage8_node_security.py", "tests/unit/test_stage8_node_security.py", "tests/unit/test_frontend_container_runtime.py", "scripts/quality/stage8_cut1_routes.py", "tests/unit/test_stage8_cut1_routes.py", "docs/ADR/0006-stage8-release-hardening.md", "docs/STATUS.md", "docs/TRACEABILITY.md", "docs/work/registry.json", "docs/work/governance-backlog/HANDOFF.md"}
+ROUTES[ISSUE555_BRANCH] = ROUTES[ISSUE554_BRANCH] | ISSUE555_FILES
+ROUTE_ISSUES[ISSUE555_BRANCH] = 555
 TOTAL_LIMITS[ISSUE549_BRANCH] = 800
 ROUTE_ISSUES[ISSUE502_BRANCH] = 502
 TOTAL_LIMITS[ISSUE502_BRANCH] = 4660
@@ -3217,6 +3225,63 @@ def issue554_successor_evidence(root: Path, run: Callable[[list[str]], Any], cha
     work_records.validate(root)
 
 
+def issue555_successor_evidence(root: Path, run: Callable[[list[str]], Any], changed: set[str]) -> None:
+    from scripts import work_records
+    def reject(condition: object, message: str) -> None:
+        if condition:
+            raise RuntimeError(message)
+    def read(*args: str) -> str:
+        result = run(["git", *args])
+        reject(result.returncode, "Heredoc successor Git evidence unavailable.")
+        return str(result.stdout)
+    base, parent, first = ISSUE549_BASE, ISSUE555_PARENT, ISSUE555_C1
+    preflight = "docs/governance/preflights/issue-555.json"
+    raw = (root / preflight).read_bytes()
+    reject(hashlib.sha256(raw).hexdigest() != "6aca5699a7b812c63c5bf377d42ce2bb2678c902d80bd817244f2f47fab42dcd", "Heredoc immutable preflight drift.")
+    for args, value in (
+        (("rev-parse", f"{base}^{{tree}}"), ISSUE549_TREE),
+        (("rev-parse", f"{parent}^{{tree}}"), "2976641ec3d6b50f4bf0ef8991130677be533f7e"),
+        (("rev-parse", f"{first}^{{tree}}"), "ce4755ba254e8ac61fea4716440e7370ea0778c5"),
+        (("rev-parse", f"{first}^"), parent), (("rev-parse", "origin/main^{commit}"), base),
+        (("diff-tree", "--no-commit-id", "--name-only", "-r", first), preflight),
+        (("merge-base", base, "HEAD"), base),
+        (("merge-base", "--is-ancestor", first, "HEAD"), ""),
+        (("merge-base", "--is-ancestor", parent, "HEAD"), ""),
+    ):
+        reject(read(*args).strip() != value, "Heredoc ancestry/tree/C1 drift.")
+    reject(read("rev-list", "--reverse", f"{parent}..HEAD").splitlines()[0] != first, "Heredoc first commit drift.")
+    for ref in (first, "HEAD", ""):
+        reject(read("show", f"{ref}:{preflight}").encode() != raw, "Heredoc C1 raw-byte drift.")
+    rows = [row.split("\t") for row in read("diff", "--numstat", "--no-renames", base, parent, "--").splitlines()]
+    reject(len(rows) != 27 or any(len(r) != 3 or not r[0].isdigit() or not r[1].isdigit() for r in rows) or {r[2] for r in rows} != ROUTES[ISSUE554_BRANCH] or sum(int(a) + int(d) for a, d, _ in rows) != 1441, "Heredoc predecessor 27-path/1441 drift.")
+    frozen = sorted(ROUTES[ISSUE554_BRANCH] - ISSUE555_FILES)
+    manifest = read("ls-tree", "-r", parent, "--", *frozen)
+    reject(len(frozen) != 17 or hashlib.sha256(manifest.encode()).hexdigest() != "b3dec533a5a7abcdf966dbdebce9cceb99795688f1d08569c0873dbc96e8f147", "Heredoc frozen17 manifest drift.")
+    reject(read("ls-tree", "-r", "HEAD", "--", *frozen) != manifest, "Heredoc frozen HEAD mode/blob drift.")
+    for row in manifest.splitlines():
+        metadata, path = row.split("\t")
+        mode, _, blob = metadata.split()
+        expected = read("show", f"{parent}:{path}")
+        reject((root / path).is_symlink() or not (root / path).is_file() or (root / path).read_bytes() != expected.encode() or read("show", f"HEAD:{path}") != expected or read("diff", "--cached", "--name-only", parent, "--", path).strip(), "Heredoc frozen blob/snapshot drift.")
+        reject(read("ls-files", "-s", "--", path).strip() != f"{mode} {blob} 0\t{path}" or bool((root / path).stat().st_mode & 0o111) != (mode == "100755"), "Heredoc frozen index/worktree mode drift.")
+    reject(changed != ROUTES[ISSUE555_BRANCH], "Heredoc exact 28-path main union drift.")
+    for flags, end in (([], ["HEAD"]), (["--cached"], []), ([], [])):
+        names = set(read("diff", *flags, "--name-only", "--no-renames", parent, *end, "--").splitlines())
+        reject(bool(names - ISSUE555_FILES), "Heredoc unauthorized increment path.")
+        reject(route_has_copy_or_rename(read("diff", *flags, "--name-status", "-z", "--find-copies-harder", parent, *end, "--")), "Heredoc deleted/renamed/copied path.")
+    reject(set(read("diff", "--name-only", "--no-renames", base, "--").splitlines()) != ROUTES[ISSUE555_BRANCH], "Heredoc observed main union drift.")
+    limit, caps = route_change_budget(root, ISSUE555_BRANCH, 555, ISSUE555_FILES)
+    total, charges = route_text_charges(run, parent, ISSUE555_FILES)
+    reject(set(charges) != ISSUE555_FILES or total > limit or any(charges[p] > n for p, n in caps.items()), "Heredoc exact 11-path charged budget drift.")
+    reject(any((root / p).is_symlink() or not (root / p).is_file() for p in ROUTES[ISSUE555_BRANCH]), "Heredoc nonregular path.")
+    status = (root / "docs/STATUS.md").read_bytes()
+    registry = read("show", f"{parent}:docs/work/registry.json")
+    old = next(w["plan"] for w in json.loads(registry)["works"] if w["id"] == "governance-backlog")
+    expected_registry = registry.replace(old["sha256"], hashlib.sha256(status).hexdigest(), 1).replace(f'"bytes": {old["bytes"]}', f'"bytes": {len(status)}', 1)
+    reject((root / "docs/work/registry.json").read_bytes() != expected_registry.encode(), "Heredoc STATUS pointer-only delta drift.")
+    work_records.validate(root)
+
+
 def check_exact_route(
     root: Path, run: Callable[[list[str]], Any], branch: str, changed: set[str], failures: list[str]
 ) -> None:
@@ -3235,6 +3300,12 @@ def check_exact_route(
             )
         return
     issue = ROUTE_ISSUES[branch]
+    if branch == ISSUE555_BRANCH:
+        try:
+            issue555_successor_evidence(root, run, changed)
+        except (RuntimeError, OSError, ValueError, TypeError, IndexError) as error:
+            failures.append(f"Issue #555 route evidence failed closed: {error}")
+        return
     if branch == ISSUE554_BRANCH:
         try:
             issue554_successor_evidence(root, run, changed)
