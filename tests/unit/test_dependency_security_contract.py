@@ -461,6 +461,61 @@ def _normalize_soupsieve_29_delta(lock: dict[str, Any], base_lock: dict[str, Any
     packages[matches[0]] = copy.deepcopy(historical[0])
 
 
+ISSUE554_PREDECESSOR = "f8daafee2d28ed46e56483b49e654a0fcea685e6"
+ANYIO_4142 = tomllib.loads('''[[package]]
+name = "anyio"
+version = "4.14.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [{ name = "idna" }]
+sdist = { url = "https://files.pythonhosted.org/packages/61/cc/a381afa6efea9f496eff839d4a6a1aed3bfafc7b3ab4b0d1b243a12573dd/anyio-4.14.2.tar.gz", hash = "sha256:cfa139f3ed1a23ee8f88a145ddb5ac7605b8bbfd8592baacd7ce3d8bb4313c7f", size = 260176, upload-time = "2026-07-12T20:29:07.082Z" }
+wheels = [{ url = "https://files.pythonhosted.org/packages/da/35/f2287558c17e29fafc8ef3daf819bb9834061cfa43bff8014f7df7f63bdc/anyio-4.14.2-py3-none-any.whl", hash = "sha256:9f505dda5ac9f0c8309b5e8bd445a8c2bf7246f3ce950121e45ea15bc41d1494", size = 125813, upload-time = "2026-07-12T20:29:05.763Z" }]
+''')["package"][0]
+
+
+def _assert_issue554_anyio_contract(lock: dict[str, Any]) -> None:
+    base = tomllib.loads(_text_at(ISSUE554_PREDECESSOR, "uv.lock"))
+    assert (ROOT / "pyproject.toml").read_text() == _text_at(ISSUE554_PREDECESSOR, "pyproject.toml")
+    normalized = copy.deepcopy(lock)
+    matches = [i for i, package in enumerate(normalized["package"]) if package["name"] == "anyio"]
+    assert len(matches) == 1 and normalized["package"][matches[0]] == ANYIO_4142
+    normalized["package"][matches[0]] = next(p for p in base["package"] if p["name"] == "anyio")
+    assert normalized == base
+
+
+def test_issue554_actual_anyio_is_exact_isolated_official_record() -> None:
+    _assert_issue554_anyio_contract(tomllib.loads((ROOT / "uv.lock").read_text()))
+    retained = tomllib.loads((ROOT / "tools/semgrep/uv.lock").read_text())
+    assert [p for p in retained["package"] if p["name"] == "anyio"] == [ANYIO_4142]
+
+
+@pytest.mark.parametrize("fault", ["version", "registry", "dependency", "sdist-url", "sdist-hash", "sdist-size", "sdist-time", "wheel-url", "wheel-hash", "wheel-size", "wheel-time", "duplicate", "root", "unrelated", "soupsieve"])
+def test_issue554_anyio_oracle_rejects_whole_record_and_graph_forgery(fault: str) -> None:
+    lock = tomllib.loads(_text_at(ISSUE554_PREDECESSOR, "uv.lock"))
+    index = next(i for i, p in enumerate(lock["package"]) if p["name"] == "anyio")
+    lock["package"][index] = copy.deepcopy(ANYIO_4142)
+    _assert_issue554_anyio_contract(lock)
+    package = lock["package"][index]
+    if "-" in fault:
+        target, field = fault.split("-")
+        record = package["sdist"] if target == "sdist" else package["wheels"][0]
+        key = "upload-time" if field == "time" else field
+        record[key] = 1 if field == "size" else "FORGED"
+    elif fault == "version":
+        package["version"] = "4.14.1"
+    elif fault == "registry":
+        package["source"]["registry"] = "https://example.invalid/simple"
+    elif fault == "dependency":
+        package["dependencies"] = []
+    elif fault == "duplicate":
+        lock["package"].append(copy.deepcopy(package))
+    elif fault == "root":
+        lock["revision"] = 999
+    else:
+        next(p for p in lock["package"] if p["name"] == ("sniffio" if fault == "unrelated" else "soupsieve"))["version"] = "0"
+    with pytest.raises(AssertionError):
+        _assert_issue554_anyio_contract(lock)
+
+
 def _assert_soupsieve_29_contract(project_text: str, lock_text: str) -> None:
     """Accept only the exact one-record transitive security refresh."""
     base_project = _text_at(ISSUE549_BASE, "pyproject.toml")

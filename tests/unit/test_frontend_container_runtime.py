@@ -16,8 +16,8 @@ PLATFORM_DIGESTS = {
 NODE_SOURCE_INDEX = INDEX_DIGEST
 NODE_SOURCE_PLATFORM_DIGESTS = PLATFORM_DIGESTS
 RUNTIME_PACKAGES = {
-    "alpine-keys": "2.6-r0", "alpine-release": "3.24.1-r0",
-    "ca-certificates-bundle": "20260611-r0", "libgcc": "15.2.0-r5",
+    "alpine-keys": "2.6-r0", "alpine-release": "3.24.2-r0",
+    "ca-certificates-bundle": "20260909-r0", "libgcc": "15.2.0-r5",
     "libstdc++": "15.2.0-r5", "musl": "1.2.6-r2",
 }
 
@@ -28,6 +28,12 @@ def load_consensus() -> ModuleType:
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
+
+
+def test_issue554_actual_apk_install_and_scan_inventory_match_exact_pins() -> None:
+    active = "\n".join(line.split("#", 1)[0] for line in DOCKERFILE.read_text().splitlines())
+    assert all(active.count(f"{name}={version}") == 1 for name, version in RUNTIME_PACKAGES.items())
+    assert load_consensus().FRONTEND_RUNTIME_PACKAGES == RUNTIME_PACKAGES
 
 
 def test_runtime_pins_the_reviewed_node_source_and_minimal_final_stage() -> None:
