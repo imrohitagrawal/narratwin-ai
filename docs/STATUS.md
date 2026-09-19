@@ -1,5 +1,29 @@
 # Program Status
 
+## Issue #554 AnyIO / frontend Alpine successor — 2026-09-19
+
+This section supersedes the earlier atomic carrier's unspent-push statement, not
+its preserved evidence. Published predecessor `f8daafee2d28ed46e56483b49e654a0fcea685e6`
+retains tree `9063cde95ed01cf28f398503d24d58ff1a49306c`; its push was consumed.
+Security run35409304465 failed on AnyIO4.14.1 strict audit and unavailable frontend
+Alpine revisions on AMD64 and native ARM64; CI job105805508100 also failed.
+Missing scanner outputs after a failed build are not a separate permission to retry.
+
+[Issue #554's controlling plan](https://github.com/imrohitagrawal/narratwin-ai/issues/554#issuecomment-5737932641)
+owns this dedicated successor: exact AnyIO4.14.2 record and frontend
+alpine-release3.24.2-r0 / ca-certificates-bundle20260909-r0, with all-six Alpine
+SBOM distro qualifiers3.24.2. Other packages, digests and security controls remain.
+Immutable C1 is `b0c47803c121babfddfd4d361d8658adde78600c`; committed RED
+`55d5d5394d2423062c13839c05e7d830aa87672d` recorded11 expected failures/33 passes.
+The commit containing this record establishes a local source candidate only.
+Independent exact-head review, complete applicable quality and hosted evidence
+remain required; no predecessor acceptance transfers. Main owns one fresh push,
+then an unchanged-head real PR for PR-only and merge-ref contexts. No auto-rerun.
+See [ADR0006](ADR/0006-stage8-release-hardening.md#issue-554-two-root-hosted-drift-successor--2026-09-19)
+and [traceability](TRACEABILITY.md#issue-554-source-and-hosted-parity-boundaries).
+No local installer/Docker, provider/private/account/media operation or Cut1 credit.
+Retain source and failure evidence; cleanup only owned inactive scratch after checks.
+
 ## Atomic #547/#549 runtime-security successor — 2026-09-19
 
 The dedicated `ci-547-549-atomic-runtime-security-successor` branch preserves frozen549

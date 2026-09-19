@@ -287,6 +287,7 @@ def _assert_issue525_jsonschema_dev_contract(project_text: str, lock_text: str) 
     )
     assert normalized_project == base_project
     _normalize_soupsieve_29_delta(normalized_lock, base_lock)
+    _normalize_anyio_4142_delta(normalized_lock, base_lock)
     assert normalized_lock == base_lock
 
 
@@ -442,6 +443,7 @@ def _assert_google_auth_delta(project: dict[str, Any], lock: dict[str, Any], bas
     _normalize_issue482_delta(normalized_lock, base_lock)
     _normalize_issue525_lock(normalized_lock)
     _normalize_soupsieve_29_delta(normalized_lock, base_lock)
+    _normalize_anyio_4142_delta(normalized_lock, base_lock)
     assert normalized_lock == base_lock
 
 
@@ -472,13 +474,19 @@ wheels = [{ url = "https://files.pythonhosted.org/packages/da/35/f2287558c17e29f
 ''')["package"][0]
 
 
+def _normalize_anyio_4142_delta(lock: dict[str, Any], base: dict[str, Any]) -> None:
+    matches = [i for i, package in enumerate(lock["package"]) if package["name"] == "anyio"]
+    assert len(matches) == 1 and lock["package"][matches[0]] == ANYIO_4142
+    historical = [p for p in base["package"] if p["name"] == "anyio"]
+    assert len(historical) == 1
+    lock["package"][matches[0]] = copy.deepcopy(historical[0])
+
+
 def _assert_issue554_anyio_contract(lock: dict[str, Any]) -> None:
     base = tomllib.loads(_text_at(ISSUE554_PREDECESSOR, "uv.lock"))
     assert (ROOT / "pyproject.toml").read_text() == _text_at(ISSUE554_PREDECESSOR, "pyproject.toml")
     normalized = copy.deepcopy(lock)
-    matches = [i for i, package in enumerate(normalized["package"]) if package["name"] == "anyio"]
-    assert len(matches) == 1 and normalized["package"][matches[0]] == ANYIO_4142
-    normalized["package"][matches[0]] = next(p for p in base["package"] if p["name"] == "anyio")
+    _normalize_anyio_4142_delta(normalized, base)
     assert normalized == base
 
 
@@ -531,11 +539,18 @@ def _assert_soupsieve_29_contract(project_text: str, lock_text: str) -> None:
 
     normalized = copy.deepcopy(lock)
     _normalize_soupsieve_29_delta(normalized, base_lock)
+    _normalize_anyio_4142_delta(normalized, base_lock)
     assert normalized == base_lock
 
 
 def _synthetic_soupsieve_29_lock() -> str:
     base = _text_at(ISSUE549_BASE, "uv.lock")
+    retained = (ROOT / "tools/semgrep/uv.lock").read_text()
+    current_start = retained.index('[[package]]\nname = "anyio"')
+    current_end = retained.index("\n[[package]]", current_start + 1)
+    old_start = base.index('[[package]]\nname = "anyio"')
+    old_end = base.index("\n[[package]]", old_start + 1)
+    base = base[:old_start] + retained[current_start:current_end] + base[old_end:]
     start = base.index('[[package]]\nname = "soupsieve"')
     end = base.index("\n[[package]]", start + 1)
     replacement = '''[[package]]
@@ -880,6 +895,7 @@ def _assert_pypdf_6162_contract(project_text: str, lock_text: str) -> None:
     _normalize_issue525_lock(normalized_lock)
     assert normalized_project == base_project
     _normalize_soupsieve_29_delta(normalized_lock, base_lock)
+    _normalize_anyio_4142_delta(normalized_lock, base_lock)
     assert normalized_lock == base_lock
 
 
@@ -1022,6 +1038,7 @@ def _assert_httpx2_2120_contract(project_text: str, lock_text: str) -> None:
     _normalize_issue525_lock(normalized_lock)
     assert normalized_project == base_project
     _normalize_soupsieve_29_delta(normalized_lock, base_lock)
+    _normalize_anyio_4142_delta(normalized_lock, base_lock)
     assert normalized_lock == base_lock
 
 

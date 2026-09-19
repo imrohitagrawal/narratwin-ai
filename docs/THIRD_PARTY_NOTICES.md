@@ -556,6 +556,25 @@ The earlier Issue436 row is historical. Current reviewed pins are below; package
 
 Direct GitLab OpenSSL/release commit pages returned403; their diff contents remain unverified. Commit identities above derive from official package metadata, not inspected GitLab diffs. These mutable records prove current published package revisions, not reproducible builds, scanner success or absence of vulnerabilities. Exact hosted build/inventory/TLS/CA/non-root/Trivy/Grype/SBOM proof remains required on both architectures; recheck if a revision changes before execution. No scanner exclusion, new dependency family or provider permission is introduced.
 
+## Issue #554 AnyIO and frontend Alpine provenance — 2026-09-19
+
+The approved plan binds [official AnyIO4.14.2 metadata](https://pypi.org/pypi/anyio/4.14.2/json)
+to the identical retained `tools/semgrep/uv.lock` record; only the root lock changes.
+AnyIO remains MIT-licensed. Sdist SHA256 `cfa139f3ed1a23ee8f88a145ddb5ac7605b8bbfd8592baacd7ce3d8bb4313c7f`
+and wheel SHA256 `9f505dda5ac9f0c8309b5e8bd445a8c2bf7246f3ce950121e45ea15bc41d1494`
+bind exact URL, size and upload-time assertions in the dependency contract tests.
+No resolver, archive download or installed-package replacement was performed here.
+
+Frontend Alpine v3.24/main pins are `alpine-release=3.24.2-r0` (MIT) and
+`ca-certificates-bundle=20260909-r0` (MIT/MPL-2.0): official release records
+[x86_64](https://pkgs.alpinelinux.org/package/v3.24/main/x86_64/alpine-release),
+[aarch64](https://pkgs.alpinelinux.org/package/v3.24/main/aarch64/alpine-release), and CA records
+[x86_64](https://pkgs.alpinelinux.org/package/v3.24/main/x86_64/ca-certificates-bundle),
+[aarch64](https://pkgs.alpinelinux.org/package/v3.24/main/aarch64/ca-certificates-bundle).
+These mutable sources and the plan's hosted build diagnostics justify the narrow
+revision choice, not reproducible builds or audit success. Fresh hosted resolution,
+runtime inventory, TLS/CA and scanner evidence remain mandatory; new drift stops.
+
 ## Documentation architecture reference sources — Issue #537
 
 Consulted on 2026-09-14: [GitHub issue-form syntax](https://docs.github.com/en/communities/using-templates-to-encourage-useful-issues-and-pull-requests/syntax-for-issue-forms), [GitHub PR templates](https://docs.github.com/en/communities/using-templates-to-encourage-useful-issues-and-pull-requests/creating-a-pull-request-template-for-your-repository), [Google change descriptions](https://google.github.io/eng-practices/review/developer/cl-descriptions.html), and [Diataxis](https://diataxis.fr/). These informed native locations, explanatory change descriptions and task-oriented navigation. New prose/checker/forms are repository-authored; no external code, template text, dependency, skill or media asset was imported. No blanket enterprise-practice certification is implied.

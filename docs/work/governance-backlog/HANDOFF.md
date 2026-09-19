@@ -1,8 +1,14 @@
 # Governance and evaluation backlog: handoff
 
-PLAN_SHA256: 04bffca71cfcc95e7033bcb154f23b51324b7057bc4a7c9c1183dad23ac57496
+PLAN_SHA256: bac265d52ebec44dfa0f53b00e247c05fe877dc42118108ef13416d5d92c70cb
 EVIDENCE_SHA256: 550beb600595ce8cf46e1b89652936f2e02d678564f9e57001548d90784db6ec
 
+Issue #554 checkpoint (2026-09-19): published predecessor f8daafee's push is spent;
+its hosted AnyIO/Alpine failures remain evidence, not acceptance. New C1b0c47803
+and RED55d5d539 precede the local source candidate. Plan5737932641 owns17 paths,
+exact predecessor custody and one fresh main-owned push; no old grant transfers.
+Next: exact-head independent/source review, direct-head hosted proof, then the
+unchanged-head PR and required merge-ref checks. No provider or Cut1 authority.
 
 Observed source checkpoint: 2026-09-14; observed main71e0568, draft536 daf07ce, prospective amendment74b15e00; verify current checkout and tracker before action.
 

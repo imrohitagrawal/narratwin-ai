@@ -1315,6 +1315,20 @@ ROUTE_ISSUES[ISSUE549_BRANCH] = 549
 ROUTES[ISSUE547_ATOMIC_BRANCH] = ROUTES[ISSUE549_BRANCH] | {"docs/governance/preflights/issue-547.json", "backend/Dockerfile", "scripts/ci/backend-image-package-check.sh", "scripts/quality/stage8_backend_security.py",
     "tests/unit/test_stage8_backend_security.py", "tests/unit/test_backend_image_package_check.py", "tests/unit/test_cpython_security_backports.py", "docs/ADR/0006-stage8-release-hardening.md"}
 ROUTE_ISSUES[ISSUE547_ATOMIC_BRANCH] = 547
+ISSUE554_BRANCH = "ci-554-anyio-alpine-runtime-security-successor"
+ISSUE554_PARENT = "f8daafee2d28ed46e56483b49e654a0fcea685e6"
+ISSUE554_C1 = "b0c47803c121babfddfd4d361d8658adde78600c"
+ISSUE554_AUTHORITY = ("5737932641", "daa8f1912532520ee31cd9ce7d5e2dc7f96a53cf7a4d795344d61a3891c8cb85")
+ISSUE554_PUSH_LIMIT = 1
+ISSUE554_FILES = {
+    "docs/governance/preflights/issue-554.json", "uv.lock", "tests/unit/test_dependency_security_contract.py",
+    "frontend/Dockerfile", "scripts/ci/check_container_scan_consensus.py", "scripts/quality/stage8_node_security.py",
+    "scripts/quality/stage8_cut1_routes.py", "tests/unit/test_frontend_container_runtime.py", "tests/unit/test_stage8_node_security.py",
+    "tests/unit/test_container_scan_consensus.py", "tests/unit/test_stage8_cut1_routes.py", "docs/ADR/0006-stage8-release-hardening.md",
+    "docs/STATUS.md", "docs/THIRD_PARTY_NOTICES.md", "docs/TRACEABILITY.md", "docs/work/registry.json", "docs/work/governance-backlog/HANDOFF.md",
+}
+ROUTES[ISSUE554_BRANCH] = ROUTES[ISSUE547_ATOMIC_BRANCH] | ISSUE554_FILES
+ROUTE_ISSUES[ISSUE554_BRANCH] = 554
 TOTAL_LIMITS[ISSUE549_BRANCH] = 800
 ROUTE_ISSUES[ISSUE502_BRANCH] = 502
 TOTAL_LIMITS[ISSUE502_BRANCH] = 4660
@@ -3151,6 +3165,58 @@ def issue547_atomic_evidence(root: Path, run: Callable[[list[str]], Any]) -> Non
     reject(any((root / p).is_symlink() or not (root / p).is_file() for p in ROUTES[ISSUE547_ATOMIC_BRANCH]), "Atomic nonregular path.")
 
 
+def issue554_successor_evidence(root: Path, run: Callable[[list[str]], Any], changed: set[str]) -> None:
+    from scripts import work_records
+    def reject(condition: object, message: str) -> None:
+        if condition:
+            raise RuntimeError(message)
+    def read(*args: str) -> str:
+        result = run(["git", *args])
+        reject(result.returncode, "Successor Git evidence unavailable.")
+        return str(result.stdout)
+    base, parent, first = ISSUE549_BASE, ISSUE554_PARENT, ISSUE554_C1
+    preflight = "docs/governance/preflights/issue-554.json"
+    raw = (root / preflight).read_bytes()
+    reject(hashlib.sha256(raw).hexdigest() != "8907ec5193ac3778fd64d6aa3afa141c34127893a3dc401154e91ff0d63e6de5", "Successor immutable preflight drift.")
+    for args, value in (
+        (("rev-parse", f"{base}^{{tree}}"), ISSUE549_TREE),
+        (("rev-parse", f"{parent}^{{tree}}"), "9063cde95ed01cf28f398503d24d58ff1a49306c"),
+        (("rev-parse", f"{first}^{{tree}}"), "acbe907c7be84fd9e0918f2067a6998a34ba474d"),
+        (("rev-parse", f"{first}^"), parent), (("rev-parse", "origin/main^{commit}"), base),
+        (("diff-tree", "--no-commit-id", "--name-only", "-r", first), preflight),
+        (("merge-base", base, "HEAD"), base),
+        (("merge-base", "--is-ancestor", first, "HEAD"), ""),
+        (("merge-base", "--is-ancestor", parent, "HEAD"), ""),
+    ):
+        reject(read(*args).strip() != value, "Successor ancestry/tree/C1 drift.")
+    reject(read("rev-list", "--reverse", f"{parent}..HEAD").splitlines()[0] != first, "Successor first commit drift.")
+    for ref in (first, "HEAD", ""):
+        reject(read("show", f"{ref}:{preflight}").encode() != raw, "Successor C1 raw-byte drift.")
+    rows = [row.split("\t") for row in read("diff", "--numstat", "--no-renames", base, parent, "--").splitlines()]
+    reject(len(rows) != 20 or any(len(r) != 3 or not r[0].isdigit() or not r[1].isdigit() for r in rows) or {r[2] for r in rows} != ROUTES[ISSUE547_ATOMIC_BRANCH] or sum(int(a) + int(d) for a, d, _ in rows) != 906, "Successor predecessor 20-path/906 drift.")
+    frozen = ROUTES[ISSUE547_ATOMIC_BRANCH] - ISSUE554_FILES
+    reject(len(frozen) != 10, "Successor frozen manifest cardinality drift.")
+    for path in frozen:
+        expected = read("show", f"{parent}:{path}")
+        reject((root / path).read_bytes() != expected.encode() or read("show", f"HEAD:{path}") != expected or read("diff", "--cached", "--name-only", parent, "--", path).strip(), "Successor frozen predecessor blob drift.")
+    reject(changed != ROUTES[ISSUE554_BRANCH], "Successor exact 27-path main union drift.")
+    for flags, end in (([], ["HEAD"]), (["--cached"], []), ([], [])):
+        names = set(read("diff", *flags, "--name-only", "--no-renames", parent, *end, "--").splitlines())
+        reject(bool(names - ISSUE554_FILES), "Successor unauthorized increment path.")
+        reject(route_has_copy_or_rename(read("diff", *flags, "--name-status", "-z", "--find-copies-harder", parent, *end, "--")), "Successor deleted/renamed/copied path.")
+    reject(set(read("diff", "--name-only", "--no-renames", base, "--").splitlines()) != ROUTES[ISSUE554_BRANCH], "Successor observed main union drift.")
+    limit, caps = route_change_budget(root, ISSUE554_BRANCH, 554, ISSUE554_FILES)
+    total, charges = route_text_charges(run, parent, ISSUE554_FILES)
+    reject(set(charges) != ISSUE554_FILES or total > limit or any(charges[p] > n for p, n in caps.items()), "Successor exact 17-path charged budget drift.")
+    reject(any((root / p).is_symlink() or not (root / p).is_file() for p in ROUTES[ISSUE554_BRANCH]), "Successor nonregular path.")
+    status = (root / "docs/STATUS.md").read_bytes()
+    registry = read("show", f"{parent}:docs/work/registry.json")
+    old = next(w["plan"] for w in json.loads(registry)["works"] if w["id"] == "governance-backlog")
+    expected_registry = registry.replace(old["sha256"], hashlib.sha256(status).hexdigest(), 1).replace(f'"bytes": {old["bytes"]}', f'"bytes": {len(status)}', 1)
+    reject((root / "docs/work/registry.json").read_bytes() != expected_registry.encode(), "Successor STATUS pointer-only delta drift.")
+    work_records.validate(root)
+
+
 def check_exact_route(
     root: Path, run: Callable[[list[str]], Any], branch: str, changed: set[str], failures: list[str]
 ) -> None:
@@ -3169,6 +3235,12 @@ def check_exact_route(
             )
         return
     issue = ROUTE_ISSUES[branch]
+    if branch == ISSUE554_BRANCH:
+        try:
+            issue554_successor_evidence(root, run, changed)
+        except (RuntimeError, OSError, ValueError, TypeError, IndexError) as error:
+            failures.append(f"Issue #554 route evidence failed closed: {error}")
+        return
     files = ROUTES[branch]
     effective_changed = set(changed)
     fixed_base: str | None = None

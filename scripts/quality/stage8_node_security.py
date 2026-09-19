@@ -67,8 +67,8 @@ ISSUE389_VULNERABLE_RUNTIME_IMAGE = (
 )
 FRONTEND_RUNTIME_NODE_VERSION = "26.7.0"
 FRONTEND_RUNTIME_PACKAGES = {
-    "alpine-keys": "2.6-r0", "alpine-release": "3.24.1-r0",
-    "ca-certificates-bundle": "20260611-r0", "libgcc": "15.2.0-r5",
+    "alpine-keys": "2.6-r0", "alpine-release": "3.24.2-r0",
+    "ca-certificates-bundle": "20260909-r0", "libgcc": "15.2.0-r5",
     "libstdc++": "15.2.0-r5", "musl": "1.2.6-r2",
 }
 FRONTEND_BUILD_ARCHIVE_SHA512 = {
@@ -106,6 +106,7 @@ FRONTEND_NODE_IMAGE_FAILURE = (
 
 
 def frontend_node_image_valid(dockerfile: str) -> bool:
+    dockerfile = "\n".join(line.split("#", 1)[0] for line in dockerfile.splitlines())
     expected = [
         f"FROM {FRONTEND_NODE_SOURCE_IMAGE} AS node-source",
         "FROM scratch AS deps",

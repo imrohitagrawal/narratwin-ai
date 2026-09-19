@@ -918,6 +918,20 @@ remain separate gates.
 
 Official package records/versions and known source limits are in [notices](THIRD_PARTY_NOTICES.md#issue-547-exact-alpine-package-provenance--2026-09-19). Historical Issue436, retired PR548 and failed549 resource/command/controller outcomes remain preserved. TDD guidance produced the consumed-boundary RED; source-driven guidance kept package metadata distinct from inaccessible commit diffs. Neither skill supplies acceptance.
 
+## Issue #554 source and hosted-parity boundaries
+
+| Requirement | Discriminating source evidence | Unproved boundary |
+|---|---|---|
+| Exact AnyIO security delta | Unique complete4.14.2 record, official artifact identities, whole-lock equality after exact historical substitution; version/hash/URL/size/time/duplicate/graph mutations | Fresh strict audit and dependency bootstrap |
+| Exact frontend runtime closure | Real APK pins/inventory and all-six3.24.2 SBOM qualifiers; stale/commented/duplicate pins and wrong-distro mutations | AMD64/native ARM64 build, runtime, TLS and dual scanners |
+| Preserve published predecessor | Exact20/906 predecessor,17-path increment,27-path main union, immutable C1, ten frozen blobs and pointer-only registry update | Exact-head independent review; no transferred approval |
+| Preserve failed attempts | RED55d5d539:11 failed/33 passed/497 deselected; predecessor security35409304465 and CI35409304479 retained | Local source GREEN cannot erase controller/hosted failures |
+| Bound publication | One new main-owned push then unchanged-head PR; all12 contexts, strict/approval/last-push/conversations | No rerun, merge, deployment or Cut1 acceptance implied |
+
+The [ADR](ADR/0006-stage8-release-hardening.md#issue-554-two-root-hosted-drift-successor--2026-09-19)
+owns the decision; [notices](THIRD_PARTY_NOTICES.md#issue-554-anyio-and-frontend-alpine-provenance--2026-09-19)
+own source identities. TDD guidance produced real-consumer RED before source changes.
+
 ## Issue #549 Soup Sieve security-candidate traceability
 
 | Requirement | Evidence | Preserved boundary |

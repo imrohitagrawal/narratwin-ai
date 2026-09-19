@@ -1300,8 +1300,11 @@ def test_issue554_actual_scope_checks_all_three_layers_and_custody(fault: str | 
         if fault == "predecessor-charge" and "--numstat" in args and routes.ISSUE549_BASE in args:
             return completed(args, out=value.stdout.replace("\t", "1\t", 1))
         if "--numstat" in args and SUCCESSOR554_P in args and routes.ISSUE549_BASE not in args:
-            if fault in {"binary", "total", "file", "deletions"}:
-                return completed(args, out={"binary": "-\t-\tuv.lock\n", "total": "1201\t0\tuv.lock\n", "file": "13\t0\tuv.lock\n", "deletions": "7\t6\tuv.lock\n"}[fault])
+            if fault == "total":
+                caps = json.loads((REPO / "docs/governance/preflights/issue-554.json").read_text())["change_budget"]["per_file_charged_lines"]
+                return completed(args, out=f"{caps[args[-1]]}\t0\t{args[-1]}\n")
+            if args[-1] == "uv.lock" and fault in {"binary", "file", "deletions"}:
+                return completed(args, out={"binary": "-\t-\tuv.lock\n", "file": "13\t0\tuv.lock\n", "deletions": "7\t6\tuv.lock\n"}[fault])
         if fault == "rename" and "--name-status" in args:
             return completed(args, out="R100\0uv.lock\0foreign.py\0")
         return value
@@ -1319,6 +1322,8 @@ def test_issue554_route_is_exact_union_not_a_replacement_for_historical_routes()
     assert routes.ROUTES.get(SUCCESSOR554_BRANCH) == SUCCESSOR554_UNION
     assert len(SUCCESSOR554_PATHS) == 17 and len(SUCCESSOR554_UNION) == 27
     assert routes.ROUTES[ATOMIC547_BRANCH] == ATOMIC547_FILES
+    assert routes.ISSUE554_AUTHORITY == ("5737932641", "daa8f1912532520ee31cd9ce7d5e2dc7f96a53cf7a4d795344d61a3891c8cb85")
+    assert routes.ISSUE554_PUSH_LIMIT == 1
 
 
 def _atomic547_snapshot(args: list[str]) -> subprocess.CompletedProcess[str]:
@@ -1330,7 +1335,20 @@ def _atomic547_snapshot(args: list[str]) -> subprocess.CompletedProcess[str]:
             return completed(args, out="".join(f"M\0{p}\0" for p in paths))
         if "--name-only" in args:
             return completed(args, out="\n".join(paths) + "\n")
-    return subprocess.run(args, cwd=REPO, check=False, capture_output=True, text=True)
+    historical = [a.replace("HEAD", SUCCESSOR554_P) for a in args]
+    if "--cached" in historical:
+        historical.remove("--cached")
+        historical.insert(historical.index("--"), SUCCESSOR554_P)
+    return subprocess.run(historical, cwd=REPO, check=False, capture_output=True, text=True)
+
+
+@pytest.fixture(autouse=True)
+def _immutable_atomic547_files(request: Any, monkeypatch: Any) -> None:
+    if not request.node.name.startswith(("test_atomic547_actual_scope", "test_atomic547_rejects_staged")):
+        return
+    original = Path.read_bytes
+    snapshot = {REPO / p: subprocess.run(["git", "show", f"{SUCCESSOR554_P}:{p}"], cwd=REPO, check=True, capture_output=True).stdout for p in ATOMIC547_FILES}
+    monkeypatch.setattr(Path, "read_bytes", lambda path: snapshot[path] if path in snapshot else original(path))
 
 
 @pytest.mark.parametrize("fault", [None, "near", "old", "extra", "missing", "base", "frozen", "c1", "parent", "first", "ancestry", "manifest", "binary", "rename", "total", "file", "dependency", "raw", "registry", "handoff", "status"])
@@ -1365,9 +1383,10 @@ def test_atomic547_rejects_staged_frozen_drift(path: str, monkeypatch: Any) -> N
     def run(args: list[str]) -> subprocess.CompletedProcess[str]:
         if args[:2] == ["git", "diff"] and "--cached" in args and "--name-only" in args and path in args:
             return completed(args, out=path + "\n")
-        return subprocess.run(args, cwd=REPO, check=False, capture_output=True, text=True)
+        return _atomic547_snapshot(args)
     monkeypatch.setattr(stage8, "run", run)
     monkeypatch.setattr(stage8, "current_branch", lambda: ATOMIC547_BRANCH)
+    monkeypatch.setattr(stage8, "changed_files_for_stage_scope", lambda: sorted(ATOMIC547_FILES))
     failures: list[str] = []
     stage8.check_stage_scope(failures)
     assert failures == ["Issue #547 route evidence failed closed: Atomic frozen-only blob or snapshot drift."], failures
@@ -1446,7 +1465,8 @@ def test_issue549_route_freezes_component_and_atomic_successor_prerequisite() ->
         "5732696613",
         "644de05a6ef35b7e7fb225ae087e5018697f2187d1b4196827e8cc6a73f8d2bc",
     )
-    assert hashlib.sha256((REPO / "uv.lock").read_bytes()).hexdigest() == (
+    historical_lock = subprocess.run(["git", "show", f"{ATOMIC547_F}:uv.lock"], cwd=REPO, check=True, capture_output=True).stdout
+    assert hashlib.sha256(historical_lock).hexdigest() == (
         routes.ISSUE549_LOCK_SHA256
     )
     assert hashlib.sha256((REPO / "pyproject.toml").read_bytes()).hexdigest() == (
@@ -2179,7 +2199,7 @@ def test_google_tts_governance_marks_prompt_prerequisite_satisfied_only() -> Non
 
 
 def test_routes_are_exact_pre_registered_and_issue386_preflight_matches() -> None:
-    assert routes.ROUTES == EXPECTED | {ATOMIC547_BRANCH: ATOMIC547_FILES}
+    assert routes.ROUTES == EXPECTED | {ATOMIC547_BRANCH: ATOMIC547_FILES, SUCCESSOR554_BRANCH: SUCCESSOR554_UNION}
     assert {branch: stage8.EFFECTIVE_STAGE8_ROUTES[branch] for branch in EXPECTED} == EXPECTED
     issue150 = json.loads((REPO / "docs/governance/preflights/issue-150.json").read_text(encoding="utf-8"))
     issue150_route = EXPECTED["cut1-process-150-semgrep-mcp-renewal"]
