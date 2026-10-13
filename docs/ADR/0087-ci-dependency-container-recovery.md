@@ -96,7 +96,8 @@ Official signed Python3.13.16 fixes those reported issues; its version/hash
 are configured through the closed dependency profile and checked in the actual
 image probe. Trust key, nonroot/TLS and capability-isolation contracts remain.
 
-The frozen legacy test explicitly invokes a local child. Its scoped fixture
-removes only that test's inherited hosted marker; missing hosted event data
-still fails closed. Mypy uses explicit namespace bases and the existing unit
+The frozen legacy test removes the event name before its baseline subprocess.
+Its scoped fixture restores the genuine captured event only to that child, so
+PR merges retain source/base proof. Local runs isolate an orphaned marker only
+for that test. Production missing-event checks still fail closed. Mypy uses explicit namespace bases and the existing unit
 test import path to check both same-named fixtures without exclusions.

@@ -117,6 +117,20 @@ def test_dependency_refresh_scope_uses_real_first_commit_and_manifest_budgets(
     assert findings() == ["Dependency refresh hosted checkout is dirty."]
     g("add", "docs/STATUS.md")
     assert findings() == []
+    source = g("rev-parse", "HEAD")
+    g("checkout", "main")
+    g("merge", "--no-ff", branch, "-m", "actual same-tree PR merge")
+    assert g("rev-parse", "HEAD^{tree}") == g("rev-parse", source + "^{tree}")
+    event.write_text(json.dumps({"pull_request": {
+        "head": {"sha": source, "ref": branch}, "base": {"sha": base}
+    }}))
+    monkeypatch.setenv("GITHUB_EVENT_NAME", "pull_request")
+    assert findings() == []
+    # The merge must retain genuine hosted provenance, never masquerade as local.
+    monkeypatch.delenv("GITHUB_EVENT_NAME")
+    assert findings() == ["Dependency refresh hosted event missing."]
+    monkeypatch.setenv("GITHUB_EVENT_NAME", "pull_request")
+    assert findings() == []
 
 
 def test_exact_merge_checkout_requires_both_event_parents_and_rejects_foreign_checkout(
