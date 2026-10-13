@@ -2049,3 +2049,19 @@ Scoped tinyglobby substitution is qualified only for current configuration,
 whose root discovery uses context.cwd; general glob compatibility failed.
 Runtime and archive consumers use validated profile values; profile agreement
 is not security acceptance. Full hosted audits/builds/scans remain mandatory.
+## Work-record manifest scope
+
+Issue559 replaces only the frozen process path-list choice for prospective
+work-record documentation, through scripts/quality/work_record_scope.py.
+GovernancePreflightV1 retains issue/branch/preflight-first history binding;
+required, allowed, budget and actual paths agree exactly. Actual committed and
+working content charges are additions plus deletions; binary/nonregular/missing
+files, self-declared runtime scope and installed kernel edits fail closed.
+Local results are WORKTREE_CHECK_ONLY; hosted results require a clean candidate
+or verified two-parent merge checkout. Push before is not the integration base.
+The complete installation kernel is admissible only when absent in verified base;
+ordinary installed-base docs cannot modify it. Frozen parity and every preserved
+contract still run. Review and live protection/status contexts remain mandatory;
+no provider, biometric, spending, media, deployment or release authority follows.
+See [preflight](work/working-records/proposals/work-record-scope/PREFLIGHT.md)
+and [review](work/working-records/proposals/work-record-scope/REVIEW.md).

@@ -17,3 +17,10 @@ Owner: root orchestrator for navigation; existing issue/acceptance owners retain
 - [#356](https://github.com/imrohitagrawal/narratwin-ai/issues/356)
 - [#328](https://github.com/imrohitagrawal/narratwin-ai/issues/328)
 - [#391](https://github.com/imrohitagrawal/narratwin-ai/issues/391)
+
+## Manifest scope correction
+
+Issue559 prepares [the scoped adapter contract](proposals/work-record-scope/PREFLIGHT.md)
+and [technical review](proposals/work-record-scope/REVIEW.md) to remove the
+frozen path-list conflict for work records. It grants no provider/product
+capability; independent review and hosted checks precede acceptance.

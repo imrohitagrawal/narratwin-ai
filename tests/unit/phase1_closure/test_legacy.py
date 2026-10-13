@@ -195,3 +195,35 @@ def test_failure_output_is_bounded(capsys: Any) -> None:
     assert "failure-49" in output
     assert "failure-50" not in output
     assert "Additional failures omitted." in output
+
+
+def test_record_scope_replaces_only_path_check_and_keeps_every_contract(monkeypatch: Any) -> None:
+    """Removing preserved continuation or calling frozen scope turns W6 red."""
+    from scripts.quality import work_record_scope
+    calls: list[str] = []
+    checker = fake_checker(calls)
+    monkeypatch.setattr(legacy, '_load_checker', lambda: checker)
+    monkeypatch.setattr(legacy, 'current_branch', lambda: 'phase-1-closure-process-777-records')
+    monkeypatch.setattr(legacy, 'legacy_parity_failures', lambda _checker: [])
+    monkeypatch.setattr(work_record_scope, 'scope_findings', lambda root, branch: [])
+    monkeypatch.setattr(
+        legacy, 'check_active_demo_docs', lambda _checker, _failures: calls.append('check_active_demo_docs')
+    )
+    assert legacy.run_preserved_contracts() == 0
+    assert calls == ['check_branch', 'check_required_files', *EXPECTED_PRESERVED_CHECKS]
+    checker.check_process_docs = lambda failures: failures.append('preserved failure')
+    assert legacy.run_preserved_contracts() == 1
+
+
+def test_record_scope_failure_stops_contract_continuation(monkeypatch: Any) -> None:
+    """A rejected manifest cannot fall back to frozen success or skip failure."""
+    from scripts.quality import work_record_scope
+    calls: list[str] = []
+    monkeypatch.setattr(legacy, '_load_checker', lambda: fake_checker(calls))
+    monkeypatch.setattr(legacy, 'current_branch', lambda: 'phase-1-closure-process-777-records')
+    monkeypatch.setattr(legacy, 'legacy_parity_failures', lambda _checker: [])
+    monkeypatch.setattr(
+        work_record_scope, 'scope_findings', lambda root, branch: ['WRS.MANIFEST_INVALID']
+    )
+    assert legacy.run_preserved_contracts() == 1
+    assert calls == ['check_branch', 'check_required_files']

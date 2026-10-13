@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
   "inventorySource": {
-    "path": "docs/work/g1-certification/evidence/ISSUE_SNAPSHOT.json",
-    "sha256": "2f531d7093cf2d7c2cf134f48eb40fd6516f91e2d70b9534fd2608faaf8dbd70",
-    "bytes": 7181
+    "path": "docs/work/working-records/proposals/work-record-scope/ISSUE_SNAPSHOT.json",
+    "sha256": "fea4c8163dab89cffe19c580fc8bc74e7c20764f02f4f0ec398b6a9748bde750",
+    "bytes": 8390
   },
   "privateRoots": [
     ".evidence",
@@ -325,6 +325,11 @@
       "number": 540,
       "title": "G1: derive a preserved four-bibliography correction successor",
       "workId": "g1-certification"
+    },
+    {
+      "number": 559,
+      "title": "Governance: validate work-record scope from reviewed manifests",
+      "workId": "working-records"
     }
   ],
   "works": [
@@ -446,7 +451,8 @@
         356,
         328,
         391,
-        538
+        538,
+        559
       ],
       "parent": "master-program",
       "relationships": [
@@ -457,7 +463,7 @@
       ],
       "evidenceIndex": "docs/work/working-records/evidence/INDEX.json",
       "handoff": "docs/work/working-records/HANDOFF.md",
-      "checkpoint": "2026-09-14; PR536 merged67d4b094 with approved29606 tree; PR534 retired unmerged; Issue538/PR539 reconciles sequencing; verify live tracker before action"
+      "checkpoint": "2026-10-13; Issue559 manifest scope correction candidate; independent local/hosted acceptance pending; no provider authority"
     },
     {
       "id": "delivery",
@@ -615,8 +621,8 @@
       "path": "docs/work/governance-backlog",
       "plan": {
         "path": "docs/STATUS.md",
-        "sha256": "c83791d639f7fdbbe5d01591a6399393aeb7cbf59d3a45a622154b308e02ff86",
-        "bytes": 291706,
+        "sha256": "b9d0a263005544fc23a61032ee0daf69e9a74692ae97c66b4850471310e8f767",
+        "bytes": 292704,
         "role": "source-pointer"
       },
       "statusRef": "docs/STATUS.md",
