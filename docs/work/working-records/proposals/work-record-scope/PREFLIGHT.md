@@ -97,3 +97,37 @@ frozen checker, docs envelope and budgets remain. This is the one bounded RCA
 approach, review round2 next; cumulative review/approach counters do not reset.
 Resume only after staged masking and missing-host tests fail before/pass after,
 full suite and independent corrected-boundary verification.
+
+## Current owner amendment and rebase checkpoint — 2026-10-14
+
+The original base, resource estimates, work-package guidance and bounded-review
+clauses above are historical observations, preserved in the original bundle and
+commit history. Current owner amendments remove the work-package-protocol
+dependency, its procedural four-round approval limit and fixed memory/disk
+reserve prerequisites. None is a current entry gate. Actual allocation failure
+still needs diagnosis; issue-owned scope and charged-line budgets remain binding.
+
+The existing source is rebased onto PR562 merge
+5303ade4ec2a43b8ee81b4ee7ad33218573eb69e. Both ADR and quality sections are retained;
+registry and handoff bindings are recomputed from resulting STATUS bytes. The
+four kernel files remain byte-identical to the prior reviewed candidate. Complete
+local integration, direct-head/merge and actual hosted boundaries will be
+reverified before acceptance; old green checks do not establish the new head.
+Issue563 tracked CI-status reconciliation uses the already declared STATUS,
+governance-backlog handoff and derived hash/navigation paths in this increment.
+It is satisfied when this PR merges; no new runtime or admission code is added. Pilot558 remains preparation only.
+
+| Claim/boundary | Guidance considered | Decision and produced evidence |
+|---|---|---|
+| Git history/custody | Git workflow skill | Consulted in-session; lock activation not claimed; original bundle verified and rebase kept preflight-first history |
+| Scope/host agreements | PM code-review guidance and RCA/playbook | Consulted in-session; activation not claimed; independent exact-head review and focused negative regressions required |
+| Former entry gate | work-package-protocol | Rejected by explicit owner amendment; prevents an unauthorized procedural or reserve approval gate |
+| Avatar/provider/runtime | Media and implementation skills | Deferred; read-only account evidence and recording brief produce no provider job or code |
+
+W8 / coordinated563: verify live PR562 merge5303ade4, host approval and successful
+postmerge main quality38445200376; label earlier candidate claims as history.
+Expected: current navigation recognizes repaired CI and pending559/pilot558.
+Prohibited: describing old CI failures as current, skipping fresh559 verification,
+or implying provider/media/application/release acceptance. Source read-back and
+independent metadata review prove this documentation boundary; no extra code
+regression is warranted for the reversible factual edit.

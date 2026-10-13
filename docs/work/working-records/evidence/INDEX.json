@@ -19,8 +19,8 @@
       "role": "derived",
       "revision": "2026-10-13",
       "path": "docs/work/working-records/proposals/work-record-scope/PREFLIGHT.md",
-      "sha256": "0f8ffd6a6fe305a90129af9db56472e54d5eed2f44e60c13b9bd115712bab2d2",
-      "bytes": 6873,
+      "sha256": "29c6c64aa5ee1f92514b0746b9c82855d307f99633bfaa9383fa5730533fe1c2",
+      "bytes": 9404,
       "custody": "public",
       "verification": "METADATA_PINNED",
       "derivedFrom": []
@@ -31,8 +31,8 @@
       "role": "review",
       "revision": "2026-10-13",
       "path": "docs/work/working-records/proposals/work-record-scope/REVIEW.md",
-      "sha256": "171a0d111b9931209dff7c9ffc9aa9a8657f38ab68bd93534cd2858972d0b812",
-      "bytes": 3280,
+      "sha256": "70bb956a3b3f731fcef3d0aabb4fb148b253f2d27eb5742de44298a8359495a0",
+      "bytes": 3808,
       "custody": "public",
       "verification": "METADATA_PINNED",
       "derivedFrom": []

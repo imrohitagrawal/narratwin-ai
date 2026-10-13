@@ -41,3 +41,12 @@ before initial implementation call at2026-10-13T10:13:21.143Z. This records actu
 local pre-code order, not a claim the later full matrix file existed in C1.
 RCA delta was added before the bounded correction. No hidden reasoning, system
 or developer content was captured in the selected source evidence.
+
+## Rebase verification checkpoint — 2026-10-14
+
+Original rounds and corrected findings above remain history. The owner removed
+the work-package dependency and its fixed reserve/procedural review prerequisites.
+The resumed candidate uses mergedmain5303ade4; the kernel is unchanged. Conflicts
+were confined to append-only ADR/quality sections and derived STATUS identity.
+New exact-head independent review and local/hosted verification are pending;
+previous CI failures repaired by PR562 are historical, not current blockers.

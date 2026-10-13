@@ -2368,7 +2368,7 @@ amendment remains nonactivating. Independent backup is UNPROVED under #532.
 Follow the [capture and verification procedure](work-archive/PROCESS.md) before
 handoff or cleanup; source recovery no longer requires the user to resend files.
 
-## Current CI recovery — issue #561
+## Historical CI recovery candidate — issue #561 (2026-10-13 premerge)
 
 The owner authorized repair of the inherited strict dependency-audit and Alpine
 build failures on 2026-10-13. Candidate branch
@@ -2388,3 +2388,29 @@ frontend checks and real build pass; interrupted full-suite/secret scans are
 incomplete, and native hosted builds/scans plus final independent review remain
 pending. Current manifest49paths/4000charged preserves historical C1 and the
 original dirty checkout. This does not deliver or accept personal-avatar media.
+
+## Current CI recovery and scope acceptance checkpoint — 2026-10-14
+
+[PR #562](https://github.com/imrohitagrawal/narratwin-ai/pull/562) merged Issue #561
+at `5303ade4ec2a43b8ee81b4ee7ad33218573eb69e` after exact-head host approval,
+complete local quality, and all required hosted checks. Postmerge main quality
+[run 38445200376](https://github.com/imrohitagrawal/narratwin-ai/actions/runs/38445200376)
+passed. The two candidate paragraphs above are retained premerge history, not
+current audit/build blockers. Clean local main is synced; original dirty338,
+unpublished work, original reports and source bundles are retained.
+
+[Issue #563](https://github.com/imrohitagrawal/narratwin-ai/issues/563) reconciles
+those stale tracked observations within the existing #559/PR #560 documentation
+boundary and its preflight-first history. This PR satisfies that reconciliation
+when merged. The #559 scope capability requires fresh local/hosted checks and
+independent review on the rebased head before acceptance. After eligible merge,
+register the prepared personal-avatar pilot #558 on accepted main. Pilot558
+remains incomplete; qualification and media acceptance belong to its own scope.
+
+The owner removed the work-package-protocol dependency, its procedural review
+limit and fixed memory/disk reserve prerequisites. None is an entry gate. Exact
+scope, technical verification, truthful host approval and existing protection
+remain mandatory. Read-only HeyGen inspection and recording preparation may
+proceed independently. No provider upload/enrollment, cloning, rendering, spend,
+Meera/Despina change, formal Cut1 pass, application integration, deployment,
+release or production readiness is established.

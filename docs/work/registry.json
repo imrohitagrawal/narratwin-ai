@@ -621,8 +621,8 @@
       "path": "docs/work/governance-backlog",
       "plan": {
         "path": "docs/STATUS.md",
-        "sha256": "b9d0a263005544fc23a61032ee0daf69e9a74692ae97c66b4850471310e8f767",
-        "bytes": 292704,
+        "sha256": "e11f44c4ab0cd355626fe6d083070b992f4e529af3988abc6d0d38f75566366b",
+        "bytes": 294444,
         "role": "source-pointer"
       },
       "statusRef": "docs/STATUS.md",
@@ -640,7 +640,7 @@
       "relationships": [],
       "evidenceIndex": "docs/work/governance-backlog/evidence/INDEX.json",
       "handoff": "docs/work/governance-backlog/HANDOFF.md",
-      "checkpoint": "2026-09-14; observed main71e0568, draft536 daf07ce, prospective amendment74b15e00; verify current checkout and tracker before action"
+      "checkpoint": "2026-10-14; CI561/PR562 merged5303ade4 and postmerge quality passed; coordinated563 status reconciliation in559/PR560 pending acceptance; pilot558 incomplete"
     },
     {
       "id": "documentation-architecture",
