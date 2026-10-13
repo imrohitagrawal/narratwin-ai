@@ -904,3 +904,19 @@ remain separate gates.
 | Let the complete backend suite reach a verdict | PR #522 [`34282990946` / job `102251927718`](https://github.com/imrohitagrawal/narratwin-ai/actions/runs/34282990946/job/102251927718) cancelled at 15m18 and [`34252374484` / job `102149655021`](https://github.com/imrohitagrawal/narratwin-ai/actions/runs/34252374484/job/102149655021) cancelled at 15m14; exact job-level 30-minute regression | A finite ceiling remains; no command, selection, retry, or concurrency change |
 | Reject ambiguous or weakened timeout policy | Missing, duplicate, non-numeric, 29, 31, and misplaced mutations | Frontend, Docker, and Stage 8 ceilings remain 20, 20, and 35 minutes |
 | Preserve delivery authority | Issue #527 preflight, exact route/base/budget tests, and exact-head hosted checks | No product, provider, demo, release, production, credential, egress, or spend authority |
+
+## Issue #561 enabling security prerequisite
+
+Stage 8 dependency/container reliability maps to the current security profile,
+`test_dependency_refresh.py`, Stage 8 real-Git scope/topology regressions,
+existing TLS/runtime capability tests and strict audit/build/scan workflows.
+These prove repository prerequisites for PR #560 and pilot #558. They do not
+prove grounded scripts, provider eligibility, presenter realism, complete media
+or the integrated upload-to-playback path.
+
+The Issue561 owner audit-repair scope includes necessary frontend dependency,
+archive and native-scanner consumers. Current ESLint configuration is guarded
+with all baseline rules/options/parser/settings preserved and real Next canaries;
+custom rootDir is blocked because general alias compatibility did not qualify.
+Current graph and Sharp/SBOM checks are operational requirements; historical
+fixtures do not replace them. Hosted acceptance and media feasibility remain open.

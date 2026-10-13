@@ -7,8 +7,8 @@ RUN set -eux; \
       --keys-dir /etc/apk/keys \
       --repositories-file /etc/apk/repositories \
       alpine-keys=2.6-r0 \
-      alpine-release=3.24.1-r0 \
-      ca-certificates-bundle=20260611-r0 \
+      alpine-release=3.24.2-r0 \
+      ca-certificates-bundle=20260909-r0 \
       libgcc=15.2.0-r5 \
       libstdc++=15.2.0-r5 \
       musl=1.2.6-r2; \
@@ -33,10 +33,13 @@ COPY --from=node-source /runtime/ /
 COPY --from=node-source /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/npm
 
 ADD --checksum=sha256:5dbb86c71d07a1957f2e90734092dd6a58bdcd9ebc2d8d41ca1c6e6a21d364e1 https://registry.npmjs.org/npm/-/npm-12.0.2.tgz /tmp/frontend-npm-archives/npm-12.0.2.tgz
-ADD --checksum=sha256:5d06001fddd25cbee90c96db4dc5b7b57711b984c3141e28d10f143deb52dbaf https://registry.npmjs.org/brace-expansion/-/brace-expansion-5.0.9.tgz /tmp/frontend-npm-archives/brace-expansion-5.0.9.tgz
+ADD --checksum=sha256:ef8448ec78f20b692f04fa6d01f39b5ab34c66404bea3429f5a39c6c9e0be8b4 https://registry.npmjs.org/brace-expansion/-/brace-expansion-5.0.12.tgz /tmp/frontend-npm-archives/brace-expansion-5.0.12.tgz
 ADD --checksum=sha256:ad1790063beea11a312c801df30d58e147de762f4f77787552376eb7424623e5 https://registry.npmjs.org/ip-address/-/ip-address-10.3.1.tgz /tmp/frontend-npm-archives/ip-address-10.3.1.tgz
 ADD --checksum=sha256:bcedf25a21daecd1a18fb5e19ab855b7d79ec8ef1da175e8ba85cfc0ed0069d1 https://registry.npmjs.org/tar/-/tar-7.5.21.tgz /tmp/frontend-npm-archives/tar-7.5.21.tgz
-ADD --checksum=sha256:32a86c6fa28fd48b915555048c05bbd37ad35457d9e945953831a4374c886a9c https://registry.npmjs.org/undici/-/undici-6.28.0.tgz /tmp/frontend-npm-archives/undici-6.28.0.tgz
+ADD --checksum=sha256:e18191aac9c0ff43dac7fe9b10b7041a22d07addb7b66a6e8ac14a52a5b69b74 https://registry.npmjs.org/undici/-/undici-6.28.1.tgz /tmp/frontend-npm-archives/undici-6.28.1.tgz
+ADD --checksum=sha256:d75e1e6a11587954da5e2f0e2b5c4b397a16d28cc2f7bdf64e9027fc2fe593ee https://registry.npmjs.org/http-cache-semantics/-/http-cache-semantics-4.3.0.tgz /tmp/frontend-npm-archives/http-cache-semantics-4.3.0.tgz
+COPY frontend/scripts/frontend-security-profile.mjs /frontend/scripts/frontend-security-profile.mjs
+COPY docs/security/FRONTEND_DEPENDENCY_REFRESH.json /docs/security/FRONTEND_DEPENDENCY_REFRESH.json
 COPY scripts/ci/prepare_frontend_npm.mjs /tmp/prepare_frontend_npm.mjs
 RUN ["/usr/bin/node", "/tmp/prepare_frontend_npm.mjs"]
 
@@ -66,6 +69,8 @@ COPY --from=node-source /runtime/ /
 RUN --mount=from=deps,source=/app,target=/mnt/deps,readonly \
     --mount=type=bind,source=frontend,target=/mnt/frontend,readonly \
     --mount=type=bind,source=scripts/ci/prepare_frontend_npm.mjs,target=/tmp/prepare_frontend_npm.mjs,readonly \
+    --mount=type=bind,source=frontend/scripts/frontend-security-profile.mjs,target=/frontend/scripts/frontend-security-profile.mjs,readonly \
+    --mount=type=bind,source=docs/security/FRONTEND_DEPENDENCY_REFRESH.json,target=/docs/security/FRONTEND_DEPENDENCY_REFRESH.json,readonly \
     ["/usr/bin/node", "--input-type=module", "-e", "process.env.NODE_DISABLE_COMPILE_CACHE=\"1\";const m=await import('/tmp/prepare_frontend_npm.mjs');await m.assembleFrontendRuntime();m.copySharpLibvips('/mnt/deps','/app',process.arch)"]
 
 USER 65532:65532

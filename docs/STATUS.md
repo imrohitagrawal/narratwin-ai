@@ -2352,3 +2352,24 @@ errors remain open in the separate semantic correction route. The comparison
 amendment remains nonactivating. Independent backup is UNPROVED under #532.
 Follow the [capture and verification procedure](work-archive/PROCESS.md) before
 handoff or cleanup; source recovery no longer requires the user to resend files.
+
+## Current CI recovery — issue #561
+
+The owner authorized repair of the inherited strict dependency-audit and Alpine
+build failures on 2026-10-13. Candidate branch
+`stage8-561-dependency-container-refresh` starts at main `2fc1bbd7`;
+preflight-only C1 is `f74768c6`, retained unchanged in history. The explicitly
+reviewed earlier amendment covered 24 paths under a 4,000 charged-line cap.
+Fresh root and isolated tool audits pass after targeted security updates;
+full-suite, native hosted image builds/scans, exact-head review and merge remain
+pending. PR #560 and pilot issue #558 cannot claim repository acceptance yet.
+This adds no presenter, media, application-integration or Cut 1 acceptance.
+Existing dirty/unpublished work and PR #556 remain preserved.
+
+Issue #561's recorded frontend amendment qualifies patch dependencies and a
+scoped published alias only under guarded current ESLint configuration. All
+baseline rules are preserved; custom next.rootDir is blocked. Local focused
+frontend checks and real build pass; interrupted full-suite/secret scans are
+incomplete, and native hosted builds/scans plus final independent review remain
+pending. Current manifest49paths/4000charged preserves historical C1 and the
+original dirty checkout. This does not deliver or accept personal-avatar media.

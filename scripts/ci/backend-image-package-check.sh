@@ -3,10 +3,25 @@ set -euo pipefail
 
 BACKEND_IMAGE="${BACKEND_IMAGE:-narratwin-ai-backend:ci}"
 
+SECURITY_PROFILE="$(python3 -c '
+import hashlib, json
+from scripts.ci.check_semgrep_security import ROOT, load_security_profile
+profile = load_security_profile()
+raw = (ROOT / "docs/security/DEPENDENCY_REFRESH.json").read_bytes()
+print(json.dumps({"apk": profile["apk"], "cpython": profile["cpython"], "profileSha256": hashlib.sha256(raw).hexdigest()}))
+')"
+
 docker run --rm --entrypoint /app/.venv/bin/python "${BACKEND_IMAGE}" -c '
 import importlib.metadata
 import importlib.util
 import ssl
+import sys
+import json
+
+profile = json.loads(sys.argv[1])
+expected = profile["apk"]
+if sys.version_info[:3] != tuple(int(part) for part in profile["cpython"]["version"].split(".")):
+    raise SystemExit("backend image CPython version drifted")
 from pathlib import Path
 
 records = Path("/lib/apk/db/installed").read_text(encoding="utf-8").split("\n\n")
@@ -18,11 +33,11 @@ for record in records:
     if "P" in fields and "V" in fields:
         packages[fields["P"]] = fields["V"]
 
-if not ssl.OPENSSL_VERSION.startswith("OpenSSL 3.3.7 "):
+if not ssl.OPENSSL_VERSION.startswith("OpenSSL " + expected["opensslVersion"] + " "):
     raise SystemExit(f"backend image has unexpected TLS library {ssl.OPENSSL_VERSION}")
 if not (
-    packages["libcrypto3"] == "3.3.7-r0"
-    and packages["libssl3"] == "3.3.7-r0"
+    packages["libcrypto3"] == expected["opensslApkVersion"]
+    and packages["libssl3"] == expected["opensslApkVersion"]
 ):
     raise SystemExit("backend image TLS package inventory drifted")
 context = ssl.create_default_context()
@@ -40,5 +55,5 @@ except importlib.metadata.PackageNotFoundError:
     pass
 else:
     raise SystemExit("backend image must not contain Semgrep")
-print("backend image dependency inventory: TLS and Click are fixed; Semgrep is absent")
-'
+print("backend image dependency inventory verified; profile=" + profile["profileSha256"])
+' "$SECURITY_PROFILE"

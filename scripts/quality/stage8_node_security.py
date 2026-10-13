@@ -6,6 +6,8 @@ import re
 from pathlib import Path
 from typing import Any, Callable
 
+from scripts.ci.frontend_security_profile import load_profile
+
 ISSUE374_SECURITY_BRANCH = "stage8-374-node-image-cve-2026-58043"
 ISSUE374_SECURITY_FILES = {
     "frontend/Dockerfile",
@@ -66,39 +68,15 @@ ISSUE389_VULNERABLE_RUNTIME_IMAGE = (
     "cf7ae5ead5aed79a61404d7b1bbb9b89ea461991b21cb8fcb07d4b6ad4d8b734"
 )
 FRONTEND_RUNTIME_NODE_VERSION = "26.7.0"
-FRONTEND_RUNTIME_PACKAGES = {
-    "alpine-keys": "2.6-r0", "alpine-release": "3.24.1-r0",
-    "ca-certificates-bundle": "20260611-r0", "libgcc": "15.2.0-r5",
-    "libstdc++": "15.2.0-r5", "musl": "1.2.6-r2",
-}
+_PROFILE = load_profile()
+FRONTEND_RUNTIME_PACKAGES = _PROFILE["runtimePackages"]
 FRONTEND_BUILD_ARCHIVE_SHA512 = {
-    "npm@12.0.2": (
-        "b885e890b9418fa1693544d05f53e64f9a73ec194837d4258b15fecdd692347b"
-        "1dd2a517b1b0cbaf9d31cd8e92c3b70956bd2ecc72833a57b4b3098f5bfa7943"
-    ),
-    "brace-expansion@5.0.9": (
-        "49c43822ebc8105d533253fb66dfaf8c9ffff7394f6f64837315b13376e4f2cea"
-        "de8619d27b28ed5d09c4e274e3c929e3d6df42c4ff6713ef00b23e1a3dfd6c6"
-    ),
-    "ip-address@10.3.1": (
-        "d5ef5dde46fdecd1c94c8243656f6b2aa5b687af9d15ae740f2d1fa4f48c429d"
-        "800e37b982f2ac5e67622ba770639b7be93693b79f8fe4dd58fcba13a08c4fea"
-    ),
-    "tar@7.5.21": (
-        "5dd86d0af94ccb0c31a425bc604ab794e5c126950f4d1d8e1c77302cf3b71f0b"
-        "09a8e1dad8e93fa09eebb86ce9f89acaa113d50b327001d123a8b5bfbcd44f1c"
-    ),
-    "undici@6.28.0": (
-        "2c863dd7483d4c8d77612f7996b305aecf119bfbbf8ab8077935a8282a2d79e2"
-        "74e02509f767847e3d2b567fbb54a30f06950f894a0129f84dc8b236dc413f28"
-    ),
+    name + "@" + row["version"]: row["sha512"]
+    for name, row in _PROFILE["buildArchives"].items()
 }
 FRONTEND_BUILD_ARCHIVE_SHA256 = {
-    "npm-12.0.2.tgz": "5dbb86c71d07a1957f2e90734092dd6a58bdcd9ebc2d8d41ca1c6e6a21d364e1",
-    "brace-expansion-5.0.9.tgz": "5d06001fddd25cbee90c96db4dc5b7b57711b984c3141e28d10f143deb52dbaf",
-    "ip-address-10.3.1.tgz": "ad1790063beea11a312c801df30d58e147de762f4f77787552376eb7424623e5",
-    "tar-7.5.21.tgz": "bcedf25a21daecd1a18fb5e19ab855b7d79ec8ef1da175e8ba85cfc0ed0069d1",
-    "undici-6.28.0.tgz": "32a86c6fa28fd48b915555048c05bbd37ad35457d9e945953831a4374c886a9c",
+    name + "-" + row["version"] + ".tgz": row["sha256"]
+    for name, row in _PROFILE["buildArchives"].items()
 }
 FRONTEND_NODE_IMAGE_FAILURE = (
     "Stage 8 frontend build and runtime images must retain the reviewed Node image pin."

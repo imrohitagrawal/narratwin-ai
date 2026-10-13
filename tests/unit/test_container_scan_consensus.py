@@ -57,15 +57,15 @@ def _sarif(tool: str, cves: tuple[str, ...] = TARGET_CVES, severity: str = "8.0"
 
 
 def _sbom(target: str, *, frontend: bool, architecture: str = "amd64") -> dict[str, Any]:
-    packages = (("alpine-keys", "2.6-r0", ("MIT",), "alpine", "3.24.1"), ("alpine-release", "3.24.1-r0", ("MIT",), "alpine", "3.24.1"), ("ca-certificates-bundle", "20260611-r0", ("MIT", "MPL-2.0"), "alpine", "3.24.1"), ("libgcc", "15.2.0-r5", ("GPL-2.0-or-later", "LGPL-2.1-or-later"), "alpine", "3.24.1"), ("libstdc++", "15.2.0-r5", ("GPL-2.0-or-later", "LGPL-2.1-or-later"), "alpine", "3.24.1"), ("musl", "1.2.6-r2", ("MIT",), "alpine", "3.24.1")) if frontend else (("python", "3.13.14", ("PSF-2.0",), "wolfi", "20230201"),)
+    packages = (("alpine-keys", "2.6-r0", ("MIT",), "alpine", "3.24.2"), ("alpine-release", "3.24.2-r0", ("MIT",), "alpine", "3.24.2"), ("ca-certificates-bundle", "20260909-r0", ("MIT", "MPL-2.0"), "alpine", "3.24.2"), ("libgcc", "15.2.0-r5", ("GPL-2.0-or-later", "LGPL-2.1-or-later"), "alpine", "3.24.2"), ("libstdc++", "15.2.0-r5", ("GPL-2.0-or-later", "LGPL-2.1-or-later"), "alpine", "3.24.2"), ("musl", "1.2.6-r2", ("MIT",), "alpine", "3.24.2")) if frontend else (("python", "3.13.14", ("PSF-2.0",), "wolfi", "20230201"),)
     package_arch = "x86_64" if architecture == "amd64" else "aarch64"
     components = [{"type": "library", "name": name, "version": version, "purl": f"pkg:apk/{namespace}/{quote(name, safe='')}@{version}?arch={package_arch}&distro={distro}", "licenses": [{"expression": license_id} if " WITH " in license_id else {"license": {"id": license_id}} for license_id in licenses]} for name, version, licenses, namespace, distro in packages]
     if frontend:
         suffix = "x64" if architecture == "amd64" else "arm64"
         components.extend([
-            {"type": "library", "name": "sharp", "version": "0.35.4", "purl": "pkg:npm/sharp@0.35.4"},
-            {"type": "library", "name": f"sharp-linuxmusl-{suffix}", "version": "0.35.4", "purl": f"pkg:npm/%40img/sharp-linuxmusl-{suffix}@0.35.4"},
-            {"type": "library", "name": f"sharp-libvips-linuxmusl-{suffix}", "version": "1.3.3", "purl": f"pkg:npm/%40img/sharp-libvips-linuxmusl-{suffix}@1.3.3"},
+            {"type": "library", "name": "sharp", "version": "0.35.5", "purl": "pkg:npm/sharp@0.35.5"},
+            {"type": "library", "name": f"sharp-linuxmusl-{suffix}", "version": "0.35.5", "purl": f"pkg:npm/%40img/sharp-linuxmusl-{suffix}@0.35.5"},
+            {"type": "library", "name": f"sharp-libvips-linuxmusl-{suffix}", "version": "1.3.4", "purl": f"pkg:npm/%40img/sharp-libvips-linuxmusl-{suffix}@1.3.4"},
         ])
     return {"bomFormat": "CycloneDX", "specVersion": "1.7", "metadata": {"component": {"type": "container", "properties": [{"name": "aquasecurity:trivy:ImageID", "value": target}]}}, "components": components}
 
@@ -219,10 +219,10 @@ def test_frontend_sbom_requires_architecture_specific_sharp_and_forbids_glibc() 
                 component["purl"] = component["purl"].replace(old, new)
         assert not validator(wrong_architecture, FRONTEND_CONFIG, required, architecture)
         for hidden_purl in (
-            f"pkg:npm/%40img/sharp-linuxmusl-{old}@0.35.4",
-            f"pkg:npm/%40img/sharp-linuxmusl-{new}@0.35.4",
-            f"pkg:npm/%40img/sharp-libvips-linuxmusl-{new}@1.3.3",
-            f"PKG:npm/%40img/sharp-linuxmusl-{new}@0.35.4",
+            f"pkg:npm/%40img/sharp-linuxmusl-{old}@0.35.5",
+            f"pkg:npm/%40img/sharp-linuxmusl-{new}@0.35.5",
+            f"pkg:npm/%40img/sharp-libvips-linuxmusl-{new}@1.3.4",
+            f"PKG:npm/%40img/sharp-linuxmusl-{new}@0.35.5",
         ):
             hidden = copy.deepcopy(sbom)
             hidden["components"].append({
@@ -233,13 +233,13 @@ def test_frontend_sbom_requires_architecture_specific_sharp_and_forbids_glibc() 
         hidden_bom_ref["components"].append({
             "type": "library", "name": "benign-native", "version": "1.0.0",
             "purl": "pkg:generic/benign-native@1.0.0",
-            "bom-ref": f"sharp-linuxmusl-{new}@0.35.4",
+            "bom-ref": f"sharp-linuxmusl-{new}@0.35.5",
         })
         assert not validator(hidden_bom_ref, FRONTEND_CONFIG, required, architecture)
         nested_sharp = copy.deepcopy(sbom)
         nested_sharp["components"][0]["components"] = [{
-            "type": "library", "name": f"sharp-linuxmusl-{new}", "version": "0.35.4",
-            "purl": f"pkg:npm/%40img/sharp-linuxmusl-{new}@0.35.4",
+            "type": "library", "name": f"sharp-linuxmusl-{new}", "version": "0.35.5",
+            "purl": f"pkg:npm/%40img/sharp-linuxmusl-{new}@0.35.5",
         }]
         assert not validator(nested_sharp, FRONTEND_CONFIG, required, architecture)
         forbidden = copy.deepcopy(sbom)
@@ -265,7 +265,7 @@ def test_frontend_sbom_requires_architecture_specific_sharp_and_forbids_glibc() 
         for property_name, value in (
             ("aquasecurity:trivy:PkgID", "glibc@2.43-r12"),
             ("aquasecurity:trivy:SrcName", "gcompat"),
-            ("aquasecurity:trivy:PkgID", f"@img/sharp-linuxmusl-{new}@0.35.4"),
+            ("aquasecurity:trivy:PkgID", f"@img/sharp-linuxmusl-{new}@0.35.5"),
         ):
             hidden = copy.deepcopy(sbom)
             hidden["components"].append({
@@ -324,8 +324,8 @@ def test_issue389_npm12_findings_fail_consensus() -> None:
     lambda s:s["components"][2].update(licenses=[{"license":{"id":"MIT"}}]),
     lambda s:s["components"][0].update(purl="pkg:apk/alpine/alpine-keys@2.6-r0"),
     lambda s:s["components"][0].update(purl="pkg:apk/alpine/alpine-keys@2.6-r0?arch=evil&distro=ubuntu"),
-    lambda s:s["components"][0].update(purl="pkg:apk/alpine/alpine-keys@2.6-r0?arch=x86_64&arch=aarch64&distro=3.24.1"),
-    lambda s:s["components"][0].update(purl="pkg:apk/alpine/alpine-keys@2.6-r0?arch=x86_64&distro=3.24.1&foreign=yes"),
+    lambda s:s["components"][0].update(purl="pkg:apk/alpine/alpine-keys@2.6-r0?arch=x86_64&arch=aarch64&distro=3.24.2"),
+    lambda s:s["components"][0].update(purl="pkg:apk/alpine/alpine-keys@2.6-r0?arch=x86_64&distro=3.24.2&foreign=yes"),
     lambda s:s["components"].append({"type":"library","name":"glibc","version":"2.43-r12","purl":"pkg:apk/wolfi/glibc@2.43-r12?arch=x86_64&distro=20230201","licenses":[{"license":{"id":"LGPL-2.1-or-later"}}]})])
 def test_frontend_sbom_identity_packages_and_licenses_fail_closed(mutation: Callable[[dict[str, Any]], None]) -> None:
     sbom = _sbom(FRONTEND_CONFIG, frontend=True)

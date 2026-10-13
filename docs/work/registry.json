@@ -615,8 +615,8 @@
       "path": "docs/work/governance-backlog",
       "plan": {
         "path": "docs/STATUS.md",
-        "sha256": "26a9dc6ccda4811fbfae653726e5dc3e3e8bdc88ef49462b107c3ecb7d701d63",
-        "bytes": 290401,
+        "sha256": "c83791d639f7fdbbe5d01591a6399393aeb7cbf59d3a45a622154b308e02ff86",
+        "bytes": 291706,
         "role": "source-pointer"
       },
       "statusRef": "docs/STATUS.md",

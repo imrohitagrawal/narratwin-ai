@@ -545,3 +545,60 @@ capability. Final dependency/license review remains required before release.
 ## Documentation architecture reference sources — Issue #537
 
 Consulted on 2026-09-14: [GitHub issue-form syntax](https://docs.github.com/en/communities/using-templates-to-encourage-useful-issues-and-pull-requests/syntax-for-issue-forms), [GitHub PR templates](https://docs.github.com/en/communities/using-templates-to-encourage-useful-issues-and-pull-requests/creating-a-pull-request-template-for-your-repository), [Google change descriptions](https://google.github.io/eng-practices/review/developer/cl-descriptions.html), and [Diataxis](https://diataxis.fr/). These informed native locations, explanatory change descriptions and task-oriented navigation. New prose/checker/forms are repository-authored; no external code, template text, dependency, skill or media asset was imported. No blanket enterprise-practice certification is implied.
+
+## Issue #561 current security refresh (2026-10-13)
+
+Existing license notices remain applicable; no new paid provider is activated.
+Qualified application security versions are AnyIO 4.14.2, pypdf 6.20.1,
+Soup Sieve 2.9, urllib3 2.8.0, virtualenv 21.14.7 and Werkzeug 3.1.9.
+Virtualenv additionally requires packaging 26.3 and python-discovery 1.6.2.
+The isolated scanner uses Semgrep 1.180.0 with PyJWT 2.15.0 and urllib3 2.8.0,
+without dependency overrides or audit exclusions. All distribution URLs,
+SHA256 hashes and sizes were checked against publisher PyPI release metadata;
+source snapshot receipts and exact record hashes are in the security profile.
+
+Primary security references: [AnyIO](https://anyio.readthedocs.io/en/stable/versionhistory.html),
+[pypdf](https://pypdf.readthedocs.io/en/stable/meta/CHANGELOG.html),
+[Soup Sieve](https://github.com/facelessuser/soupsieve/security/advisories/GHSA-gjv8-xp57-g29c),
+[urllib3](https://urllib3.readthedocs.io/en/stable/changelog.html),
+[virtualenv](https://github.com/pypa/virtualenv/security/advisories/GHSA-vxj4-q4g9-crj7),
+[Werkzeug](https://github.com/pallets/werkzeug/security/advisories/GHSA-g6x2-hccm-hh4m),
+[Semgrep release](https://github.com/semgrep/semgrep/releases/tag/v1.180.0).
+The blank-fix PyJWT advisory is not rewritten or ignored: the installed options
+reuse regression and unsuppressed audit verify the selected candidate.
+
+Alpine remains 3.21; OpenSSL build/runtime packages are 3.3.7-r2 and
+`alpine-release` is 3.21.8-r0, verified for x86_64 and aarch64 from
+[official package records](https://pkgs.alpinelinux.org/package/v3.21/main/x86_64/openssl-dev).
+Signed/hashed CPython provenance, TLS trust, nonroot operation, absence of pip
+and SQLite, and intact runtime package metadata remain required.
+
+### Issue561 frontend audit and builder repair (2026-10-13)
+
+Next/eslint-config-next16.3.8 (MIT), brace-expansion5.0.12 (MIT), Sharp0.35.5
+(Apache-2.0; libvips package1.3.4) and source-map-js1.2.2 (BSD-3-Clause)
+are current qualified patch inputs. Tinyglobby0.2.17 (MIT) is a truthful scoped
+npm alias for Next lint tooling; current configuration only, custom rootDir
+blocked. No vendor patch, fake upstream version or general glob compatibility.
+Sources refreshed2026-10-13: https://github.com/vercel/next.js/releases/tag/v16.3.8 ;
+https://github.com/juliangruber/brace-expansion/releases/tag/v5.0.12 ;
+https://github.com/lovell/sharp/releases/tag/v0.35.5 ;
+https://registry.npmjs.org/source-map-js/1.2.2 ;
+https://raw.githubusercontent.com/SuperchupuDev/tinyglobby/0.2.17/package.json .
+Exact npm release receipts, original consumer source and baseline/effective lint
+configuration are retained once in the durable private execution evidence store.
+Published provenance and local qualification do not establish hosted acceptance.
+
+Issue #561 native builder qualification additionally uses http-cache-semantics
+4.3.0 (BSD-2-Clause, https://github.com/kornelski/http-cache-semantics) and
+undici 6.28.1 (MIT, https://github.com/nodejs/undici), official npm archives
+with verified SHA-256/SHA-512 identities. Registry/source checked 2026-10-13.
+These build-tool dependencies do not grant provider or media authority.
+
+Issue #561 also qualifies CPython 3.13.16 (PSF License v2), official release
+archive SHA-256 `f4b1bfb3c79b5bb11b8d228a12504163b4c0dab4d679828d8f5f26b6cb6ab35d`.
+The [official release](https://www.python.org/downloads/release/python-31316/)
+fixes CVE-2026-19445, CVE-2026-19553 and CVE-2026-82049 reported by native scans.
+Build signature verification remains mandatory. Native acceptance is pending.
+Historical builder descriptions above are superseded by the executable scan
+contract: builder Critical/High and final runtime Critical/High/Medium gates.

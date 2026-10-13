@@ -604,6 +604,22 @@
       "role": "Effective program source; apply accepted amendments",
       "owner": "Engineering lead",
       "updateWhen": "The owned contract, behavior or evidence changes"
+    },
+    {
+      "id": "dependency-security-profile",
+      "path": "docs/security/DEPENDENCY_REFRESH.json",
+      "title": "Dependency security profile",
+      "role": "Validated configuration and provenance; no acceptance authority",
+      "owner": "Security owner",
+      "updateWhen": "Qualified dependency, container or verification policy changes"
+    },
+    {
+      "id": "frontend-dependency-security-profile",
+      "path": "docs/security/FRONTEND_DEPENDENCY_REFRESH.json",
+      "title": "Frontend dependency security profile",
+      "role": "Validated current configuration and provenance; no acceptance authority",
+      "owner": "Security owner",
+      "updateWhen": "Qualified frontend dependency, archive or verification policy changes"
     }
   ],
   "collections": [

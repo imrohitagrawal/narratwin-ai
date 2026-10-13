@@ -138,10 +138,10 @@ def test_runtime_regression_cli_is_bounded_and_probe_entrypoint_fails_closed() -
 
 def test_dockerfile_builds_verified_fixed_cpython_release_for_final_runtime() -> None:
     dockerfile = (ROOT / "backend/Dockerfile").read_text(encoding="utf-8")
-    assert "ENV PYTHON_VERSION=3.13.15" in dockerfile
-    assert "ENV PYTHON_SHA256=1e66a7945a48390ee4c2a4268a0e4185884059a13c4aab6d148aa208deea4a76" in dockerfile
+    assert "ENV PYTHON_VERSION=3.13.16" in dockerfile
+    assert "ENV PYTHON_SHA256=f4b1bfb3c79b5bb11b8d228a12504163b4c0dab4d679828d8f5f26b6cb6ab35d" in dockerfile
     assert '"https://www.python.org/ftp/python/${PYTHON_VERSION}/Python-${PYTHON_VERSION}.tar.xz"' in dockerfile
     assert 'echo "$PYTHON_SHA256 *python.tar.xz" | sha256sum -c -' in dockerfile
     assert "gpg --batch --verify python.tar.xz.asc python.tar.xz" in dockerfile
-    assert "libcrypto3=3.3.7-r0" in dockerfile and "libssl3=3.3.7-r0" in dockerfile
+    assert "libcrypto3=3.3.7-r2" in dockerfile and "libssl3=3.3.7-r2" in dockerfile
     assert "apply_backports.py" not in dockerfile and BASE_IMAGE not in dockerfile

@@ -1,4 +1,5 @@
 """Issue #436 backend CPython and TLS capability-isolation contracts."""
+
 from __future__ import annotations
 
 import json
@@ -7,6 +8,7 @@ from pathlib import Path
 from typing import Any, Callable
 
 from scripts.quality import stage8_node_security as node_security
+from scripts.ci.check_semgrep_security import load_security_profile
 
 ISSUE436_BRANCH = "stage8-436-backend-tls-capability-isolation-r4"
 ISSUE436_BASE = "87b8504ca8d5e094394343aeaa4ef5bad46133d5"
@@ -34,24 +36,28 @@ BACKEND_BASE_IMAGE = (
     "docker.io/library/alpine:3.21@sha256:"
     "48b0309ca019d89d40f670aa1bc06e426dc0931948452e8491e3d65087abc07d"
 )
-CPYTHON_VERSION = "3.13.15"
-CPYTHON_SHA256 = "1e66a7945a48390ee4c2a4268a0e4185884059a13c4aab6d148aa208deea4a76"
+CPYTHON_VERSION = load_security_profile()["cpython"]["version"]
+CPYTHON_SHA256 = load_security_profile()["cpython"]["sha256"]
 
 
-def backend_dockerfile_valid(dockerfile: str) -> bool:
+def backend_dockerfile_valid(dockerfile: str, profile: dict[str, Any] | None = None) -> bool:
+    effective = load_security_profile() if profile is None else profile
+    apk, cpython = effective["apk"], effective["cpython"]
     from_lines = [
         line.strip()
         for line in dockerfile.splitlines()
         if re.match(r"(?i)^from(?:\s|$)", line.lstrip())
     ]
     required = (
-        f"ENV PYTHON_VERSION={CPYTHON_VERSION}",
-        f"ENV PYTHON_SHA256={CPYTHON_SHA256}",
+        f"ENV PYTHON_VERSION={cpython['version']}",
+        f"ENV PYTHON_SHA256={cpython['sha256']}",
         '"https://www.python.org/ftp/python/${PYTHON_VERSION}/Python-${PYTHON_VERSION}.tar.xz"',
         'echo "$PYTHON_SHA256 *python.tar.xz" | sha256sum -c -',
         "gpg --batch --verify python.tar.xz.asc python.tar.xz",
-        "libcrypto3=3.3.7-r0",
-        "libssl3=3.3.7-r0",
+        f"openssl-dev={apk['opensslApkVersion']}",
+        f"libcrypto3={apk['opensslApkVersion']}",
+        f"libssl3={apk['opensslApkVersion']}",
+        f"alpine-release={apk['alpineRelease']}",
         "/runtime/lib/apk/db/installed",
         "COPY --from=cpython-build /runtime/ /",
         "USER 10001:10001",
@@ -157,7 +163,7 @@ def check(
     failures: list[str],
 ) -> None:
     dockerfile = (root / "backend/Dockerfile").read_text(encoding="utf-8")
-    if not backend_dockerfile_valid(dockerfile):
+    if not backend_dockerfile_valid(dockerfile, load_security_profile(root)):
         failures.append("Stage 8 backend CPython and TLS image contract drifted.")
     if branch == ISSUE436_BRANCH:
         check_route(root, run, failures)

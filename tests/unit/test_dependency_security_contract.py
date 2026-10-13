@@ -20,6 +20,9 @@ from typing import Any, cast
 import pytest
 from packaging.version import Version
 
+from test_frontend_dependency_refresh import validated_historical_text as validated_frontend_text
+from test_dependency_refresh import validated_historical_text
+
 import scripts.ci.check_semgrep_security as semgrep_security
 from scripts.ci.check_semgrep_security import (
     ContractError,
@@ -273,14 +276,14 @@ def _assert_issue525_jsonschema_dev_contract(project_text: str, lock_text: str) 
 
 def test_issue525_jsonschema_is_an_exact_isolated_development_dependency() -> None:
     _assert_issue525_jsonschema_dev_contract(
-        (ROOT / "pyproject.toml").read_text(encoding="utf-8"),
-        (ROOT / "uv.lock").read_text(encoding="utf-8"),
+        validated_historical_text("pyproject.toml"),
+        validated_historical_text("uv.lock"),
     )
 
 
 def test_issue525_jsonschema_contract_rejects_identity_scope_and_lock_drift() -> None:
-    project_text = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
-    lock_text = (ROOT / "uv.lock").read_text(encoding="utf-8")
+    project_text = validated_historical_text("pyproject.toml")
+    lock_text = validated_historical_text("uv.lock")
     mutations = (
         (project_text.replace("jsonschema==4.25.1", "jsonschema>=4.25.1"), lock_text),
         (project_text.replace("jsonschema==4.25.1", "jsonschema==4.25.0"), lock_text),
@@ -577,15 +580,16 @@ def _assert_issue524_frontend_contract(package_text: str, lock_text: str) -> Non
 
 
 def test_issue524_frontend_graph_is_exact_patched_and_isolated() -> None:
+    # Historical compatibility only; exact current graph is validated before acquisition.
     _assert_issue524_frontend_contract(
-        (ROOT / "frontend/package.json").read_text(encoding="utf-8"),
-        (ROOT / "frontend/package-lock.json").read_text(encoding="utf-8"),
+        validated_frontend_text("frontend/package.json"),
+        validated_frontend_text("frontend/package-lock.json"),
     )
 
 
 def test_issue524_frontend_contract_rejects_weaker_substituted_and_manifest_drift() -> None:
-    package_text = (ROOT / "frontend/package.json").read_text(encoding="utf-8")
-    lock_text = (ROOT / "frontend/package-lock.json").read_text(encoding="utf-8")
+    package_text = validated_frontend_text("frontend/package.json")
+    lock_text = validated_frontend_text("frontend/package-lock.json")
     lock = json.loads(lock_text)
     alternate_registry = copy.deepcopy(lock)
     alternate_registry["packages"]["node_modules/@next/env"]["resolved"] = (
@@ -612,8 +616,8 @@ def test_issue524_frontend_contract_rejects_weaker_substituted_and_manifest_drif
 
 @pytest.mark.parametrize("lock_path", sorted(ISSUE524_LOCK_PATHS))
 def test_issue524_contract_rejects_tampering_in_every_changed_record(lock_path: str) -> None:
-    package_text = (ROOT / "frontend/package.json").read_text(encoding="utf-8")
-    lock = json.loads((ROOT / "frontend/package-lock.json").read_text(encoding="utf-8"))
+    package_text = validated_frontend_text("frontend/package.json")
+    lock = json.loads(validated_frontend_text("frontend/package-lock.json"))
     lock["packages"][lock_path]["issue524Tamper"] = True
     with pytest.raises(AssertionError):
         _assert_issue524_frontend_contract(
@@ -623,8 +627,8 @@ def test_issue524_contract_rejects_tampering_in_every_changed_record(lock_path: 
 
 
 def test_issue524_contract_rejects_missing_and_duplicate_nonprimary_record() -> None:
-    package_text = (ROOT / "frontend/package.json").read_text(encoding="utf-8")
-    lock_text = (ROOT / "frontend/package-lock.json").read_text(encoding="utf-8")
+    package_text = validated_frontend_text("frontend/package.json")
+    lock_text = validated_frontend_text("frontend/package-lock.json")
     lock = json.loads(lock_text)
     nonprimary = "node_modules/@next/env"
 
@@ -731,16 +735,16 @@ def _assert_pypdf_6162_contract(project_text: str, lock_text: str) -> None:
     assert normalized_lock == base_lock
 
 
-def test_root_pypdf_resolution_is_exact_isolated_and_patched() -> None:
+def test_historical_pypdf_resolution_is_exact_isolated_and_patched() -> None:
     _assert_pypdf_6162_contract(
-        (ROOT / "pyproject.toml").read_text(encoding="utf-8"),
-        (ROOT / "uv.lock").read_text(encoding="utf-8"),
+        validated_historical_text("pyproject.toml"),
+        validated_historical_text("uv.lock"),
     )
 
 
 def test_pypdf_contract_rejects_vulnerable_hash_and_unrelated_drift() -> None:
-    project_text = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
-    lock_text = (ROOT / "uv.lock").read_text(encoding="utf-8")
+    project_text = validated_historical_text("pyproject.toml")
+    lock_text = validated_historical_text("uv.lock")
     mutations = (
         (project_text.replace("pypdf>=6.16.2", "pypdf>=6.15.0"), lock_text),
         (project_text.replace("pypdf>=6.16.2", "pypdf>=6.16.0"), lock_text),
@@ -764,8 +768,8 @@ def test_pypdf_contract_rejects_vulnerable_hash_and_unrelated_drift() -> None:
 
 
 def test_pypdf_contract_rejects_complete_provenance_and_graph_mutations() -> None:
-    project_text = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
-    lock_text = (ROOT / "uv.lock").read_text(encoding="utf-8")
+    project_text = validated_historical_text("pyproject.toml")
+    lock_text = validated_historical_text("uv.lock")
     pypdf_header = 'name = "pypdf"\nversion = "6.16.2"'
     pypdf_source = pypdf_header + '\nsource = { registry = "https://pypi.org/simple" }'
     pypdf_block_start = lock_text.index("[[package]]\n" + pypdf_header)
@@ -874,14 +878,14 @@ def _assert_httpx2_2120_contract(project_text: str, lock_text: str) -> None:
 
 def test_root_httpx2_resolution_is_exact_isolated_and_patched() -> None:
     _assert_httpx2_2120_contract(
-        (ROOT / "pyproject.toml").read_text(encoding="utf-8"),
-        (ROOT / "uv.lock").read_text(encoding="utf-8"),
+        validated_historical_text("pyproject.toml"),
+        validated_historical_text("uv.lock"),
     )
 
 
 def test_issue523_and_issue525_cross_normalization_rejects_sibling_tamper() -> None:
-    project_text = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
-    lock_text = (ROOT / "uv.lock").read_text(encoding="utf-8")
+    project_text = validated_historical_text("pyproject.toml")
+    lock_text = validated_historical_text("uv.lock")
     _assert_httpx2_2120_contract(project_text, lock_text)
     _assert_issue525_jsonschema_dev_contract(project_text, lock_text)
 
@@ -898,8 +902,8 @@ def test_issue523_and_issue525_cross_normalization_rejects_sibling_tamper() -> N
 
 
 def test_httpx2_contract_rejects_vulnerable_substituted_and_unrelated_drift() -> None:
-    project_text = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
-    lock_text = (ROOT / "uv.lock").read_text(encoding="utf-8")
+    project_text = validated_historical_text("pyproject.toml")
+    lock_text = validated_historical_text("uv.lock")
     header = 'name = "httpx2"\nversion = "2.12.0"'
     block_start = lock_text.index("[[package]]\n" + header)
     block_end = lock_text.index("\n[[package]]", block_start + 1)
@@ -947,8 +951,8 @@ def test_httpx2_contract_rejects_vulnerable_substituted_and_unrelated_drift() ->
 
 
 def test_google_auth_contract_rejects_direct_transitive_and_artifact_drift() -> None:
-    project_text = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
-    lock_text = (ROOT / "uv.lock").read_text(encoding="utf-8")
+    project_text = validated_historical_text("pyproject.toml")
+    lock_text = validated_historical_text("uv.lock")
     mutations = (
         (project_text.replace('"google-auth==2.56.3",\n', ""), lock_text),
         (
@@ -1071,9 +1075,9 @@ def _packages(lock_path: Path) -> dict[str, set[str]]:
 def test_root_and_semgrep_tool_locks_are_separate_and_patched() -> None:
     validate_project_contract(ROOT, today=dt.date(2026, 8, 29))
 
-    root_project = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+    root_project = tomllib.loads(validated_historical_text("pyproject.toml"))
     tool_project = tomllib.loads(
-        (ROOT / "tools/semgrep/pyproject.toml").read_text(encoding="utf-8")
+        validated_historical_text("tools/semgrep/pyproject.toml")
     )
     root_packages = _packages(ROOT / "uv.lock")
     tool_packages = _packages(ROOT / "tools/semgrep/uv.lock")
@@ -1084,15 +1088,16 @@ def test_root_and_semgrep_tool_locks_are_separate_and_patched() -> None:
     assert Version(next(iter(root_packages["click"]))) >= Version("8.3.3")
     assert tool_project["project"]["dependencies"] == ["semgrep==1.175.0"]
     assert "override-dependencies" not in tool_project["tool"]["uv"]
-    assert tool_packages["semgrep"] == {"1.175.0"}
+    assert tool_packages["semgrep"] == {"1.180.0"}
     assert tool_packages["click"] == {"8.4.2"}
     assert tool_packages["mcp"] == {"1.29.0"}
     assert tool_packages["cryptography"] == {"50.0.0"}
-    assert tool_packages["pyjwt"] == {"2.13.0"}
+    assert tool_packages["pyjwt"] == {"2.15.0"}
 
 
 def test_semgrep_1_175_generated_lock_has_no_override_and_is_isolated() -> None:
-    lock_bytes = (ROOT / "tools/semgrep/uv.lock").read_bytes()
+    # Historical generation/provenance proof; current graph is independently validated first.
+    lock_bytes = validated_historical_text("tools/semgrep/uv.lock").encode("utf-8")
     lock = tomllib.loads(lock_bytes.decode())
     base_lock = tomllib.loads(_text_at(ISSUE460_BASE, "tools/semgrep/uv.lock"))
     assert hashlib.sha256(lock_bytes).hexdigest() == "85340b301faabb76e071fe27b660f5532b54901b9d0c92e02000f16c16404416"
@@ -1126,7 +1131,7 @@ def test_semgrep_tool_contract_rejects_vulnerable_cryptography_lock(
 ) -> None:
     root_project: dict[str, Any] = {"tool": {"uv": {}}}
     tool_project: dict[str, Any] = {
-        "project": {"dependencies": ["semgrep==1.175.0"]},
+        "project": {"dependencies": ["semgrep==1.180.0"]},
         "tool": {"uv": {}},
     }
     root_lock = {"click": {"8.3.3"}}
@@ -1147,11 +1152,11 @@ def test_semgrep_tool_contract_rejects_vulnerable_cryptography_lock(
 
     for version, accepted in (("49.0.0", False), ("50.0.0", True)):
         tool_lock = {
-            "semgrep": {"1.175.0"},
+            "semgrep": {"1.180.0"},
             "click": {"8.4.2"},
             "mcp": {"1.29.0"},
             "cryptography": {version},
-            "pyjwt": {"2.13.0"},
+            "pyjwt": {"2.15.0"}, "urllib3": {"2.8.0"},
         }
         monkeypatch.setattr(
             semgrep_security,
@@ -1168,8 +1173,8 @@ def test_semgrep_tool_contract_rejects_vulnerable_cryptography_lock(
 def test_semgrep_tool_contract_rejects_any_override_and_dependency_drift(monkeypatch: pytest.MonkeyPatch) -> None:
     root_project: dict[str, Any] = {"tool": {"uv": {}}}
     root_lock: dict[str, set[str]] = {"click": {"8.3.3"}}
-    base_tool: dict[str, Any] = {"project": {"dependencies": ["semgrep==1.175.0"]}, "tool": {"uv": {}}}
-    base_lock: dict[str, set[str]] = {"semgrep": {"1.175.0"}, "click": {"8.4.2"}, "mcp": {"1.29.0"}, "cryptography": {"50.0.0"}, "pyjwt": {"2.13.0"}}
+    base_tool: dict[str, Any] = {"project": {"dependencies": ["semgrep==1.180.0"]}, "tool": {"uv": {}}}
+    base_lock: dict[str, set[str]] = {"semgrep": {"1.180.0"}, "click": {"8.4.2"}, "mcp": {"1.29.0"}, "cryptography": {"50.0.0"}, "pyjwt": {"2.15.0"}, "urllib3": {"2.8.0"}}
 
     def install(tool_project: dict[str, Any], tool_lock: dict[str, set[str]]) -> None:
         monkeypatch.setattr(semgrep_security, "_toml", lambda path: tool_project if "tools/semgrep" in str(path) else root_project)
@@ -1207,8 +1212,9 @@ def test_installed_semgrep_tool_identity_requires_locked_mcp(monkeypatch: pytest
     site_packages = tmp_path / "semgrep-tool" / "lib"
     site_packages.mkdir(parents=True)
     monkeypatch.setattr(semgrep_security, "TOOL_ENV", tmp_path)
-    lock = {"semgrep": {"1.175.0"}, "click": {"8.4.2"}, "mcp": {"1.29.0"}, "cryptography": {"50.0.0"}, "pyjwt": {"2.13.0"}}
-    installed = [dist("semgrep", "1.175.0"), dist("click", "8.4.2"), dist("mcp", "1.29.0"), dist("cryptography", "50.0.0"), dist("PyJWT", "2.13.0")]
+    monkeypatch.setattr(semgrep_security, "verify_installed_pyjwt", lambda: None)
+    lock = {"semgrep": {"1.180.0"}, "click": {"8.4.2"}, "mcp": {"1.29.0"}, "cryptography": {"50.0.0"}, "pyjwt": {"2.15.0"}, "urllib3": {"2.8.0"}}
+    installed = [dist("semgrep", "1.180.0"), dist("click", "8.4.2"), dist("mcp", "1.29.0"), dist("cryptography", "50.0.0"), dist("PyJWT", "2.15.0"), dist("urllib3", "2.8.0")]
     monkeypatch.setattr(semgrep_security, "_locked_versions", lambda path: lock)
     monkeypatch.setattr(importlib.metadata, "distributions", lambda path: installed)
     validate_installed_tool(site_packages)
@@ -1226,20 +1232,21 @@ def test_installed_semgrep_tool_identity_rejects_vulnerable_cryptography(
     site_packages = tmp_path / "semgrep-tool" / "lib"
     site_packages.mkdir(parents=True)
     monkeypatch.setattr(semgrep_security, "TOOL_ENV", tmp_path)
+    monkeypatch.setattr(semgrep_security, "verify_installed_pyjwt", lambda: None)
     locked = {
-        "semgrep": {"1.175.0"},
+        "semgrep": {"1.180.0"},
         "click": {"8.4.2"},
         "mcp": {"1.29.0"},
         "cryptography": {"50.0.0"},
-        "pyjwt": {"2.13.0"},
+        "pyjwt": {"2.15.0"}, "urllib3": {"2.8.0"},
     }
     monkeypatch.setattr(semgrep_security, "_locked_versions", lambda path: locked)
     installed = [
-        dist("semgrep", "1.175.0"),
+        dist("semgrep", "1.180.0"),
         dist("click", "8.4.2"),
         dist("mcp", "1.29.0"),
         dist("cryptography", "49.0.0"),
-        dist("PyJWT", "2.13.0"),
+        dist("PyJWT", "2.15.0"),
     ]
     monkeypatch.setattr(importlib.metadata, "distributions", lambda path: installed)
     with pytest.raises(ContractError, match="cryptography"):
@@ -1256,7 +1263,8 @@ def test_installed_semgrep_tool_identity_requires_exact_pyjwt(
     site_packages = tmp_path / "semgrep-tool" / "lib"
     site_packages.mkdir(parents=True)
     monkeypatch.setattr(semgrep_security, "TOOL_ENV", tmp_path)
-    installed = [dist("semgrep", "1.175.0"), dist("click", "8.4.2"), dist("mcp", "1.29.0"), dist("cryptography", "50.0.0")]
+    monkeypatch.setattr(semgrep_security, "verify_installed_pyjwt", lambda: None)
+    installed = [dist("semgrep", "1.180.0"), dist("click", "8.4.2"), dist("mcp", "1.29.0"), dist("cryptography", "50.0.0")]
     if version is not None:
         installed.append(dist("PyJWT", version))
     monkeypatch.setattr(importlib.metadata, "distributions", lambda path: installed)
@@ -1299,7 +1307,7 @@ def test_security_wrapper_is_fail_closed_without_advisory_suppression() -> None:
 def test_issue482_lock_refresh_is_exact_and_removes_vulnerable_versions() -> None:
     packages = {
         row["name"]: row
-        for row in tomllib.loads((ROOT / "uv.lock").read_text(encoding="utf-8"))["package"]
+        for row in tomllib.loads(validated_historical_text("uv.lock"))["package"]
     }
     assert {
         name: packages[name]["version"] for name in ISSUE482_PACKAGES
