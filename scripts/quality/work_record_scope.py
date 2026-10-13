@@ -191,6 +191,7 @@ def _scope(root: Path, branch: str, issue: int) -> list[str] | None:
         not findings or (pending and not hosted and committed == {artifact}),
         "WRS.PREFLIGHT_HISTORY",
     )
+    require(tree_mode(root, head, artifact) == "100644", "WRS.FILE_TYPE")
     raw = git(root, "show", head + ":" + artifact)
     current_artifact = file_bytes(root, artifact)
     require(not hosted or raw == current_artifact, "WRS.PREFLIGHT_DIRTY")

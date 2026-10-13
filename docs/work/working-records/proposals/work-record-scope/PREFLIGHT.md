@@ -131,3 +131,22 @@ Prohibited: describing old CI failures as current, skipping fresh559 verificatio
 or implying provider/media/application/release acceptance. Source read-back and
 independent metadata review prove this documentation boundary; no extra code
 regression is warranted for the reversible factual edit.
+
+## Bounded correction preflight: committed preflight mode — 2026-10-14
+
+Independent review and primary scratch reproduction on5d7a856 prove a W4
+REQUIRED_CONTRACT violation: with HEAD containing preflight only, the pending
+local route accepts a committed100755 or120000 preflight after its index/current
+file is restored to100644. Hosted validation rejects the pending state; no
+hosted false acceptance or provider/security bypass is demonstrated. Root owns
+the correction. The responsible boundary is unconditional committed preflight
+mode validation, while retaining ordinary uncommitted documentation preparation.
+
+Before code, add two Git regressions that assert WRS.FILE_TYPE for executable
+and symlink committed preflights masked by regular staged/working copies. Record
+RED on unchanged helper, then one mode check before reading the committed
+artifact. Reverify all pending-valid, staged, final committed and hosted cases,
+complete integration/quality and independent corrected-boundary review. Existing
+eighteen paths and budgets suffice; no architecture/envelope expansion. Original
+review history/counters remain visible; owner amendments remove the superseded
+work-package procedural limit rather than technical verification requirements.

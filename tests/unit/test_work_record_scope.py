@@ -201,6 +201,26 @@ def test_dirty_local_docs_checked_but_dirty_hosted_rejected(
     assert check(repository)
 
 
+@pytest.mark.parametrize("mode", ["executable", "symlink"])
+def test_pending_committed_preflight_mode_cannot_be_masked(repository: Path, mode: str) -> None:
+    candidate(repository, commit=False)
+    artifact = repository / PREFLIGHT
+    raw = artifact.read_text()
+    if mode == "executable":
+        git(repository, "update-index", "--chmod=+x", PREFLIGHT)
+    else:
+        artifact.unlink()
+        artifact.symlink_to(raw)
+        git(repository, "add", PREFLIGHT)
+    git(repository, "commit", "--amend", "-qm", "unsafe committed preflight")
+    if artifact.is_symlink():
+        artifact.unlink()
+        artifact.write_text(raw)
+    artifact.chmod(0o644)
+    git(repository, "add", PREFLIGHT)
+    assert check(repository) == ["WRS.FILE_TYPE"]
+
+
 @pytest.mark.parametrize("kind", ["extra", "binary", "symlink", "invalid_utf8", "mode"])
 def test_unsafe_working_files_fail_closed(repository: Path, kind: str) -> None:
     candidate(repository)

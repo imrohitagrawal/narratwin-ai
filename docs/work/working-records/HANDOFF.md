@@ -1,7 +1,7 @@
 # Working records and preservation: handoff
 
 PLAN_SHA256: 77b34bd3761d0c97e18aa9507dec4f1d5ae4873e7db849b990165ee83beaafdb
-EVIDENCE_SHA256: a81fa88ba83f2dc24f3471172d5e94a589b290a51d11272874b60eed05c2e04c
+EVIDENCE_SHA256: 186884e12f1a7fdc698b6cc8c9fe8cb1be89032eb770bfccf60084b12554f4b4
 
 Current checkpoint: 2026-09-14; PR536 merged67d4b094 with approved29606 tree; PR534 retired unmerged; Issue538/PR539 reconciles sequencing; verify live tracker before action. This branch prepares the additional reconciliation; consult PR539 for its actual head, checks and review.
 

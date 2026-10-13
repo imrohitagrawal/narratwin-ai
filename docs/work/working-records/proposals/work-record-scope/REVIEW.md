@@ -50,3 +50,21 @@ The resumed candidate uses mergedmain5303ade4; the kernel is unchanged. Conflict
 were confined to append-only ADR/quality sections and derived STATUS identity.
 New exact-head independent review and local/hosted verification are pending;
 previous CI failures repaired by PR562 are historical, not current blockers.
+
+## Current pending-mode correction disposition — 2026-10-14
+
+The initial resumed candidate5d7a856 preserved the original kernel. Independent
+review then reproduced one additional REQUIRED_CONTRACT W4 finding: executable
+and symlink committed preflights can be masked by regular index/current copies
+during preflight-only local preparation. Primary independently reproduced both;
+hosted pending candidates still rejected. No hosted false acceptance demonstrated.
+
+Two new Git regressions failed RED with the original helper returning success.
+The smallest correction unconditionally requires the committed preflight's100644
+mode before its blob is consumed. Existing repository schema validation proves
+committed JSON bytes, and current/index/file safety checks remain in place. Valid
+uncommitted document preparation stays permitted. Root owns the fix; independent
+corrected-boundary review and complete new-head integration/hosted checks remain
+required. Earlier exact-head PASS receipts are historical, not current acceptance.
+The helper and its test now differ narrowly from c97ebd95; the wrapper and its
+test remain byte-identical. No envelope, threshold, runtime or authority change.
