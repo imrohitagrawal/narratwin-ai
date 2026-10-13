@@ -30,7 +30,7 @@ forged, duplicate, missing and unrelated current inputs before normalization.
 
 The owner's current repair instruction is recorded separately from host review.
 C1 f74768c6 remains immutable history; a documented current preflight amendment
-governs 47 paths and 4,000 additions plus deletions. A bounded Stage 8 hardening
+governs 48 paths and 4,000 additions plus deletions. A bounded Stage 8 hardening
 envelope, first-commit proof, manifest budgets and real checkout topology retain
 the existing semantic gates and frozen Phase 1 substrate.
 

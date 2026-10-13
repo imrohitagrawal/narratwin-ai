@@ -2371,5 +2371,5 @@ scoped published alias only under guarded current ESLint configuration. All
 baseline rules are preserved; custom next.rootDir is blocked. Local focused
 frontend checks and real build pass; interrupted full-suite/secret scans are
 incomplete, and native hosted builds/scans plus final independent review remain
-pending. Current manifest47paths/4000charged preserves historical C1 and the
+pending. Current manifest48paths/4000charged preserves historical C1 and the
 original dirty checkout. This does not deliver or accept personal-avatar media.
