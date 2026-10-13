@@ -39,7 +39,9 @@ and repository scan, complete unit/API/frontend checks, exact local/direct/merge
 quality and native hosted x86/ARM image build/probe/scan must pass before merge.
 Disk reserve prevents unqualified local Docker allocation; actual native hosted
 commands provide image verification. No immutable release evidence is frozen
-from local approximation. Four review rounds/two approaches are cumulative.
+from local approximation. Prior four review rounds/two approaches remain history. The owner removed the
+work-package-protocol dependency and its review-limit approval gate; repository
+technical review and hosted verification still govern acceptance.
 
 ## Frontend qualification amendment
 
@@ -51,7 +53,7 @@ General glob and local-file adapter qualification failed and are not promoted.
 
 The actual ESLint configuration does not set next.rootDir. A mandatory lint,
 test and build prerequisite binds every effective rule/options/parser/settings
-for supported types and actual source files, verifies the unmodified published
+for supported types and all actual lint targets, including root configuration files, verifies the unmodified published
 Next consumer, blocks custom rootDir, and runs real failing/passing Next-rule
 canaries. All baseline rules remain; the official Next patch adds one rule.
 This qualifies current configuration only; future custom rootDir needs a new

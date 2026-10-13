@@ -2359,7 +2359,7 @@ The owner authorized repair of the inherited strict dependency-audit and Alpine
 build failures on 2026-10-13. Candidate branch
 `stage8-561-dependency-container-refresh` starts at main `2fc1bbd7`;
 preflight-only C1 is `f74768c6`, retained unchanged in history. The explicitly
-reviewed current amendment covers 24 paths under a 4,000 charged-line cap.
+reviewed earlier amendment covered 24 paths under a 4,000 charged-line cap.
 Fresh root and isolated tool audits pass after targeted security updates;
 full-suite, native hosted image builds/scans, exact-head review and merge remain
 pending. PR #560 and pilot issue #558 cannot claim repository acceptance yet.

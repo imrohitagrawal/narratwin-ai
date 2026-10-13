@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
+import { extname, join, relative, sep } from "node:path";
 
 export const profileURL = new URL("../../docs/security/FRONTEND_DEPENDENCY_REFRESH.json", import.meta.url);
 const fields = "schemaVersion baseSha manifestHash lockHash recordHashes removedRecords effectiveConfigHashes baselineConfigsSha256 rootDiscoverySourceSha256 verificationTimeoutSeconds buildArchives sharpVersion libvipsVersion runtimePackages packageVersions".split(" ");
@@ -63,4 +64,20 @@ export function validateEffectiveConfiguration(config, extension, p) {
   const actual = { rules: config.rules, settings: config.settings ?? {}, parser: config.languageOptions.parser.meta };
   requireValue(digest(actual) === p.effectiveConfigHashes[extension], "Effective ESLint rules, options, parser or settings drifted.");
   return actual;
+}
+export async function verifyActualConfigurations(root, eslint, p) {
+  let actualFiles = 0;
+  for (const entry of readdirSync(root, { recursive: true, withFileTypes: true })) {
+    if (!entry.isFile()) continue;
+    const filename = join(entry.parentPath, entry.name);
+    const first = relative(root, filename).split(sep)[0];
+    // ESLint's built-in exclusions; configured ignores are checked by ESLint below.
+    if (first === "node_modules" || first === ".git") continue;
+    const extension = extname(filename).slice(1);
+    if (!(extension in p.effectiveConfigHashes) || await eslint.isPathIgnored(filename)) continue;
+    validateEffectiveConfiguration(await eslint.calculateConfigForFile(filename), extension, p);
+    actualFiles++;
+  }
+  requireValue(actualFiles > 0, "No actual frontend source files were qualified.");
+  return actualFiles;
 }

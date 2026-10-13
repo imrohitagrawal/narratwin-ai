@@ -215,6 +215,19 @@ def validate_pair(manifest_text: str, lock_text: str, *, root: Path = ROOT) -> N
         ),
         "Unqualified frontend dependency family cannot be approved by rehashing.",
     )
+    # Only the qualified obsolete fast-glob closure may disappear from this base.
+    qualified_removals = {
+        "node_modules/" + name
+        for name in (
+            "@nodelib/fs.scandir @nodelib/fs.stat @nodelib/fs.walk braces fast-glob "
+            "fast-glob/node_modules/glob-parent fastq fill-range is-number merge2 "
+            "micromatch picomatch queue-microtask reusify run-parallel to-regex-range"
+        ).split()
+    }
+    require(
+        set(p["removedRecords"]) == qualified_removals,
+        "Unqualified frontend dependency removal cannot be approved by rehashing.",
+    )
     for name, checksum in p["recordHashes"].items():
         require(digest(records[name]) == checksum, "Frontend record identity invalid.")
     require(

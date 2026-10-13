@@ -1,11 +1,11 @@
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
-import { mkdtempSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+import { mkdtempSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, extname, join } from "node:path";
+import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { ESLint } from "eslint";
-import { byteDigest, digest, loadProfile, parseStrict, requireValue, validateEffectiveConfiguration } from "./frontend-security-profile.mjs";
+import { byteDigest, digest, loadProfile, parseStrict, requireValue, validateEffectiveConfiguration, verifyActualConfigurations } from "./frontend-security-profile.mjs";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const require = createRequire(join(root, "package.json"));
@@ -21,17 +21,7 @@ try {
   const alias = parseStrict(readFileSync(aliasFile, "utf8"));
   requireValue(alias.name === "tinyglobby" && alias.version === p.packageVersions.tinyglobby, "Scoped glob alias identity invalid.");
   const eslint = new ESLint({ cwd: root });
-  let actualFiles = 0;
-  for (const directory of ["src", "tests", "scripts"]) {
-    for (const relative of readdirSync(join(root, directory), { recursive: true })) {
-      const extension = extname(relative).slice(1);
-      if (!(extension in p.effectiveConfigHashes)) continue;
-      const filename = join(root, directory, relative);
-      validateEffectiveConfiguration(await eslint.calculateConfigForFile(filename), extension, p);
-      actualFiles++;
-    }
-  }
-  requireValue(actualFiles > 0, "No actual frontend source files were qualified.");
+  const actualFiles = await verifyActualConfigurations(root, eslint, p);
   for (const extension of Object.keys(p.effectiveConfigHashes)) {
     const config = await eslint.calculateConfigForFile(join(root, "src", "qualification." + extension));
     validateEffectiveConfiguration(config, extension, p);

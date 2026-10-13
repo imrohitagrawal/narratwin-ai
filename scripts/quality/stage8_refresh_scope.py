@@ -103,7 +103,8 @@ def check_refresh_scope(
             else:
                 raise RuntimeError("Dependency refresh hosted event missing.")
             if (
-                git_output("diff", "--name-only", "HEAD", "--").strip()
+                git_output("diff", "--cached", "--name-only", "HEAD", "--").strip()
+                or git_output("diff", "--name-only", "--").strip()
                 or git_output("ls-files", "--others", "--exclude-standard").strip()
             ):
                 raise RuntimeError("Dependency refresh hosted checkout is dirty.")
@@ -126,7 +127,7 @@ def check_refresh_scope(
         historical = json.loads(
             git_output("show", commits[0] + ":" + preflight), object_pairs_hook=unique
         )
-        if not isinstance(historical, dict):
+        if not isinstance(historical, dict) or "change_budget" not in historical:
             raise RuntimeError("Dependency refresh historical preflight invalid.")
         historical_scope = historical.get("scope")
         historical_paths = (

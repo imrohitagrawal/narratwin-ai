@@ -100,6 +100,20 @@ def test_dependency_refresh_scope_uses_real_first_commit_and_manifest_budgets(
     put(tmp_path, path, json.dumps(amended) + "\n")
     g("add", path)
     assert findings() == []
+    g("commit", "-m", "valid preflight amendment")
+    event = tmp_path.parent / (tmp_path.name + "-push-event.json")
+    event.write_text(json.dumps({"after": g("rev-parse", "HEAD"), "ref": "refs/heads/" + branch}))
+    monkeypatch.setenv("GITHUB_ACTIONS", "true")
+    monkeypatch.setenv("GITHUB_EVENT_NAME", "push")
+    monkeypatch.setenv("GITHUB_EVENT_PATH", str(event))
+    assert findings() == []
+    # RED: a staged allowed-file change canceled in the worktree is still a dirty checkout.
+    put(tmp_path, "docs/STATUS.md", "base\n")
+    g("add", "docs/STATUS.md")
+    put(tmp_path, "docs/STATUS.md", "patched\n")
+    assert findings() == ["Dependency refresh hosted checkout is dirty."]
+    g("add", "docs/STATUS.md")
+    assert findings() == []
 
 
 def test_exact_merge_checkout_requires_both_event_parents_and_rejects_foreign_checkout(
@@ -138,9 +152,11 @@ def test_exact_merge_checkout_requires_both_event_parents_and_rejects_foreign_ch
     pytest.raises(RuntimeError, stage8.changed_files_for_stage_scope)
 
 
+@pytest.mark.parametrize("missing_budget", [False, True])
 def test_invalid_historical_preflight_cannot_be_repaired_after_implementation(
     monkeypatch: Any,
     tmp_path: Path,
+    missing_budget: bool,
 ) -> None:
     """RED: a filename-only C1 check accepts a late valid preflight after empty C1."""
     branch = "stage8-903-dependency-container-refresh"
@@ -157,9 +173,6 @@ def test_invalid_historical_preflight_cannot_be_repaired_after_implementation(
     g("update-ref", "refs/remotes/origin/main", g("rev-parse", "HEAD"))
     g("checkout", "-b", branch)
     path = "docs/governance/preflights/issue-903.json"
-    put(tmp_path, path, "{}\n")
-    g("add", ".")
-    g("commit", "-m", "invalid preflight only")
     paths = [path, "docs/STATUS.md"]
     valid = {
         "schema_version": "GovernancePreflightV1",
@@ -175,6 +188,10 @@ def test_invalid_historical_preflight_cannot_be_repaired_after_implementation(
         },
         "scope": {"required": paths, "allowed_prefixes": paths, "forbidden": ["backend/app/"]},
     }
+    historical = {key: value for key, value in valid.items() if key != "change_budget"}
+    put(tmp_path, path, json.dumps(historical if missing_budget else {}) + "\n")
+    g("add", ".")
+    g("commit", "-m", "invalid preflight only")
     put(tmp_path, path, json.dumps(valid) + "\n")
     put(tmp_path, "docs/STATUS.md", "changed\n")
     g("add", ".")

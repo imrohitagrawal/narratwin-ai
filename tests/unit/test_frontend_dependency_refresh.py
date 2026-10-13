@@ -140,3 +140,55 @@ def test_coherently_rehashed_foreign_package_does_not_gain_scope(monkeypatch: An
     monkeypatch.setattr(module, "load_profile", lambda root: profile)
     with pytest.raises(module.ProfileError, match="Unqualified frontend dependency family"):
         module.validate_pair(package, json.dumps(lock), root=ROOT)
+
+
+def test_coherently_rehashed_foreign_removal_cannot_normalize(monkeypatch: Any) -> None:
+    """RED: a deleted unrelated package must not gain authority from profile rehashing."""
+    from scripts.ci import frontend_security_profile as module
+
+    package, text = current_pair()
+    module.validate_pair(package, text, root=ROOT)
+    lock = json.loads(text)
+    profile = module.load_profile(ROOT)
+    del lock["packages"]["node_modules/eslint"]
+    profile["lockHash"] = module.digest(lock)
+    profile["removedRecords"].append("node_modules/eslint")
+    monkeypatch.setattr(module, "load_profile", lambda root: profile)
+    with pytest.raises(module.ProfileError, match="Unqualified frontend dependency removal"):
+        module.validate_pair(package, json.dumps(lock), root=ROOT)
+
+
+def test_guard_covers_root_configuration_before_running_rules(tmp_path: Path) -> None:
+    """RED: root-only unsupported settings survive a subdirectory-only qualification boundary."""
+    import subprocess
+    from scripts.ci.frontend_security_profile import load_profile
+
+    for name in ("next.config.ts", "src/index.tsx", "ignored.ts", "node_modules/foreign.ts"):
+        target = tmp_path / name
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text("fixture")
+    module = (ROOT / "frontend/scripts/frontend-security-profile.mjs").as_uri()
+    profile = load_profile(ROOT)
+    code = """import assert from 'node:assert/strict';
+import {digest,verifyActualConfigurations} from MODULE;
+const root=process.argv[1], seen=[];
+const config={rules:{test:[2]},settings:{},languageOptions:{parser:{meta:{name:'test',version:'1'}}}};
+const hash=digest({rules:config.rules,settings:config.settings,parser:config.languageOptions.parser.meta});
+const p={effectiveConfigHashes:{ts:hash,tsx:hash}};
+let bad=false;
+const eslint={isPathIgnored:async filename=>filename.endsWith('/ignored.ts'),
+ calculateConfigForFile:async filename=>{seen.push(filename);return bad && filename.endsWith('/next.config.ts')
+ ? {...config,settings:{next:{rootDir:'unqualified'}}}:config;}};
+assert.equal(await verifyActualConfigurations(root,eslint,p),2);
+assert(seen.includes(root+'/next.config.ts'));
+bad=true;
+await assert.rejects(verifyActualConfigurations(root,eslint,p),/rootDir/);
+""".replace("MODULE", json.dumps(module))
+    result = subprocess.run(
+        ["node", "--input-type=module", "--eval", code, "--", str(tmp_path)],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        timeout=profile["verificationTimeoutSeconds"],
+    )
+    assert result.returncode == 0, result.stderr
