@@ -36,20 +36,21 @@ BACKEND_BASE_IMAGE = (
     "docker.io/library/alpine:3.21@sha256:"
     "48b0309ca019d89d40f670aa1bc06e426dc0931948452e8491e3d65087abc07d"
 )
-CPYTHON_VERSION = "3.13.15"
-CPYTHON_SHA256 = "1e66a7945a48390ee4c2a4268a0e4185884059a13c4aab6d148aa208deea4a76"
+CPYTHON_VERSION = load_security_profile()["cpython"]["version"]
+CPYTHON_SHA256 = load_security_profile()["cpython"]["sha256"]
 
 
 def backend_dockerfile_valid(dockerfile: str, profile: dict[str, Any] | None = None) -> bool:
-    apk = (load_security_profile() if profile is None else profile)["apk"]
+    effective = load_security_profile() if profile is None else profile
+    apk, cpython = effective["apk"], effective["cpython"]
     from_lines = [
         line.strip()
         for line in dockerfile.splitlines()
         if re.match(r"(?i)^from(?:\s|$)", line.lstrip())
     ]
     required = (
-        f"ENV PYTHON_VERSION={CPYTHON_VERSION}",
-        f"ENV PYTHON_SHA256={CPYTHON_SHA256}",
+        f"ENV PYTHON_VERSION={cpython['version']}",
+        f"ENV PYTHON_SHA256={cpython['sha256']}",
         '"https://www.python.org/ftp/python/${PYTHON_VERSION}/Python-${PYTHON_VERSION}.tar.xz"',
         'echo "$PYTHON_SHA256 *python.tar.xz" | sha256sum -c -',
         "gpg --batch --verify python.tar.xz.asc python.tar.xz",

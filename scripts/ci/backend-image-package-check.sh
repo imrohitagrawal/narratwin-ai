@@ -8,7 +8,7 @@ import hashlib, json
 from scripts.ci.check_semgrep_security import ROOT, load_security_profile
 profile = load_security_profile()
 raw = (ROOT / "docs/security/DEPENDENCY_REFRESH.json").read_bytes()
-print(json.dumps({"apk": profile["apk"], "profileSha256": hashlib.sha256(raw).hexdigest()}))
+print(json.dumps({"apk": profile["apk"], "cpython": profile["cpython"], "profileSha256": hashlib.sha256(raw).hexdigest()}))
 ')"
 
 docker run --rm --entrypoint /app/.venv/bin/python "${BACKEND_IMAGE}" -c '
@@ -20,6 +20,8 @@ import json
 
 profile = json.loads(sys.argv[1])
 expected = profile["apk"]
+if sys.version_info[:3] != tuple(int(part) for part in profile["cpython"]["version"].split(".")):
+    raise SystemExit("backend image CPython version drifted")
 from pathlib import Path
 
 records = Path("/lib/apk/db/installed").read_text(encoding="utf-8").split("\n\n")

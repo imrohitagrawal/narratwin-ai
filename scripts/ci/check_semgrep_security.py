@@ -138,6 +138,7 @@ def load_security_profile(root: Path = ROOT) -> dict[str, Any]:
         "rootProjectHash",
         "toolProjectHash",
         "apk",
+        "cpython",
         "sourceReceipts",
         "toolVerificationTimeoutSeconds",
     }
@@ -190,6 +191,14 @@ def load_security_profile(root: Path = ROOT) -> dict[str, Any]:
             for name, version in profile["toolVersions"].items()
         ),
         "security profile tool identity drifted",
+    )
+    cpython = profile["cpython"]
+    _require(
+        type(cpython) is dict
+        and set(cpython) == {"version", "sha256"}
+        and matches(cpython["version"], r"3\.13\.\d+")
+        and matches(cpython["sha256"], r"[0-9a-f]{64}"),
+        "security profile CPython policy invalid",
     )
     apk = profile["apk"]
     _require(

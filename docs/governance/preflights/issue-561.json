@@ -2,10 +2,10 @@
   "schema_version": "GovernancePreflightV1",
   "issue_number": 561,
   "branch": "stage8-561-dependency-container-refresh",
-  "objective": "Owner-authorized inherited audit/container repair from main2fc; current48paths/4000charged, exactcaps. Preserve dirty338, PR556 and original preflight-onlyC1f74768c6/23pathhistory. Qualifiedroot/tool securityrecords and compatibleSemgrep1.180/PyJWT2.15; no overrides/ignores. Typedclosed profiles bind currentgraphs/provenance/tool/APK/archive/native identities including six build archives (qualified http-cache-semantics4.3/undici6.28.1), actual native scan proof required and finite verificationpolicy. Currentpair proof precedes historical test inputs. Scope requires valid historicalC1 budget/currentmanifest/fixedenvelope/committed-index-working charges and clean hosted topology. Preserve frozenPhase1/contextlimits. Frontend qualification per pre-code6145651233; current-only publishedalias, general/localfile routes rejected. Check all actual linttargets and extensions before rules, block rootDir, unmodifiedpublishedNextconsumer and actualpositive/negativecanaries. Independent changed/removal boundaries; all baseline rules preserved. Hosted amendment6147192043 qualifies available frontend APK revisions on both architectures and narrow maintenance-family reference-only PR policy, canonical stage completion unchanged. Owner6147004081 removes work-package-protocol dependency; prior review history retained, repo independent verification mandatory. Complete fullsuites/audits/quality and actual native hosted x86ARM builds/scans beforemerge; no localfreeze. Allocation128MiBwriter/root500/tool400/cache500/front750x2/npmcache300/Docker3GiB/evidence128/reserve5GiB; Docker hosted unless peak fits reserve. No provideractivation/biometrics/spend/deploy/productfeatures/sharedcleanup/protectionchange/thresholdweakening/mediaPASS.",
+  "objective": "Owner-authorized inherited audit/container repair from main2fc; current49paths/4000charged, exactcaps. Preserve dirty338, PR556 and original preflight-onlyC1f74768c6/23pathhistory. Qualified CPython3.13.16 source/hash behind typed profile/runtime probe; qualifiedroot/tool securityrecords and compatibleSemgrep1.180/PyJWT2.15; no overrides/ignores. Typedclosed profiles bind currentgraphs/provenance/tool/APK/archive/native identities including six build archives (qualified http-cache-semantics4.3/undici6.28.1), actual native scan proof required and finite verificationpolicy. Currentpair proof precedes historical test inputs. Scope requires valid historicalC1 budget/currentmanifest/fixedenvelope/committed-index-working charges and clean hosted topology. Preserve frozenPhase1/contextlimits and frozen Stage8test bytes; isolated legacy local-child fixture clears hosted provenance only for its own test. Frontend qualification per pre-code6145651233; current-only publishedalias, general/localfile routes rejected. Check all actual linttargets and extensions before rules, block rootDir, unmodifiedpublishedNextconsumer and actualpositive/negativecanaries. Independent changed/removal boundaries; all baseline rules preserved. Hosted amendment6147192043 qualifies available frontend APK revisions on both architectures and narrow maintenance-family reference-only PR policy, canonical stage completion unchanged. Owner6147004081 removes work-package-protocol dependency; prior review history retained, repo independent verification mandatory. Complete fullsuites/audits/quality and actual native hosted x86ARM builds/scans beforemerge; no localfreeze. Allocation128MiBwriter/root500/tool400/cache500/front750x2/npmcache300/Docker3GiB/evidence128; owner removes preset memory/disk reserve prerequisite. No provideractivation/biometrics/spend/deploy/productfeatures/sharedcleanup/protectionchange/thresholdweakening/mediaPASS.",
   "status_decision": "update-minimally",
   "change_budget": {
-    "exact_paths": 48,
+    "exact_paths": 49,
     "maximum_additions_plus_deletions": 4000,
     "deletions_grant_credit": false,
     "per_file_charged_lines": {
@@ -56,7 +56,8 @@
       "tests/unit/test_frontend_dependency_security_contract.py": 80,
       "scripts/guardrails_check.py": 80,
       "tests/unit/test_dependency_refresh_pr_policy.py": 220,
-      "tests/unit/test_frontend_container_runtime.py": 20
+      "tests/unit/test_frontend_container_runtime.py": 20,
+      "tests/unit/conftest.py": 50
     }
   },
   "scope": {
@@ -108,7 +109,8 @@
       "tests/unit/test_frontend_dependency_security_contract.py",
       "scripts/guardrails_check.py",
       "tests/unit/test_dependency_refresh_pr_policy.py",
-      "tests/unit/test_frontend_container_runtime.py"
+      "tests/unit/test_frontend_container_runtime.py",
+      "tests/unit/conftest.py"
     ],
     "allowed_prefixes": [
       "docs/governance/preflights/issue-561.json",
@@ -158,7 +160,8 @@
       "tests/unit/test_frontend_dependency_security_contract.py",
       "scripts/guardrails_check.py",
       "tests/unit/test_dependency_refresh_pr_policy.py",
-      "tests/unit/test_frontend_container_runtime.py"
+      "tests/unit/test_frontend_container_runtime.py",
+      "tests/unit/conftest.py"
     ],
     "forbidden": [
       ".github/",

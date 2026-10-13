@@ -5,7 +5,11 @@
     "opensslVersion": "3.3.7"
   },
   "baseSha": "2fc1bbd7904421d4a5a2c85995c28dbd9cdf0fce",
-  "rootProjectHash": "97de3d71908166267851add06ce34ce55a61209e80034924a1e5fe58b805ab02",
+  "cpython": {
+    "sha256": "f4b1bfb3c79b5bb11b8d228a12504163b4c0dab4d679828d8f5f26b6cb6ab35d",
+    "version": "3.13.16"
+  },
+  "rootProjectHash": "bba7872148d484bf7e84e1d243ed5fa546f6ca166274b0f91560a0f80b220dad",
   "rootRecordHashes": {
     "anyio": "955e9f436959f55eee99504987f9c9957a9b9b1648a09e78ac76807521a9a894",
     "narratwin-ai": "8b989b755bc4c984b8d4fca1f4d23cbee442885af66cca8d448c783dc099b722",

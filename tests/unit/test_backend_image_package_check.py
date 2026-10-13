@@ -53,6 +53,7 @@ def test_probe_propagates_validated_profile_to_actual_docker_invocation(tmp_path
     policy = load_security_profile(ROOT)
     # A synthetic override proves propagation, never current source eligibility.
     policy["apk"]["opensslApkVersion"] = "3.3.7-r99"
+    policy["cpython"]["version"] = "3.13.99"
     path = tmp_path / "docs/security/DEPENDENCY_REFRESH.json"
     path.parent.mkdir(parents=True)
     path.write_text(json.dumps(policy))
@@ -83,9 +84,14 @@ def test_probe_propagates_validated_profile_to_actual_docker_invocation(tmp_path
     args = json.loads(capture.read_text())
     passed = json.loads(args[-1])
     assert passed["apk"]["opensslApkVersion"] == "3.3.7-r99"
+    assert passed["cpython"]["version"] == "3.13.99"
     assert passed["profileSha256"] == hashlib.sha256(path.read_bytes()).hexdigest()
     assert 'expected = profile["apk"]' in args[-2]
     assert 'packages["libcrypto3"] == expected["opensslApkVersion"]' in args[-2]
+    runtime = subprocess.run(
+        [sys.executable, "-c", args[-2], args[-1]], capture_output=True, text=True, timeout=15
+    )
+    assert runtime.returncode != 0 and "CPython version drifted" in runtime.stderr
     capture.unlink()
     path.write_text("{}")
     result = subprocess.run(

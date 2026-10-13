@@ -594,3 +594,11 @@ Issue #561 native builder qualification additionally uses http-cache-semantics
 undici 6.28.1 (MIT, https://github.com/nodejs/undici), official npm archives
 with verified SHA-256/SHA-512 identities. Registry/source checked 2026-10-13.
 These build-tool dependencies do not grant provider or media authority.
+
+Issue #561 also qualifies CPython 3.13.16 (PSF License v2), official release
+archive SHA-256 `f4b1bfb3c79b5bb11b8d228a12504163b4c0dab4d679828d8f5f26b6cb6ab35d`.
+The [official release](https://www.python.org/downloads/release/python-31316/)
+fixes CVE-2026-19445, CVE-2026-19553 and CVE-2026-82049 reported by native scans.
+Build signature verification remains mandatory. Native acceptance is pending.
+Historical builder descriptions above are superseded by the executable scan
+contract: builder Critical/High and final runtime Critical/High/Medium gates.

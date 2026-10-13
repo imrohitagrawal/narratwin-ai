@@ -1,8 +1,8 @@
 FROM docker.io/library/alpine:3.21@sha256:48b0309ca019d89d40f670aa1bc06e426dc0931948452e8491e3d65087abc07d AS cpython-build
 
 ENV PATH=/usr/local/bin:$PATH
-ENV PYTHON_VERSION=3.13.15
-ENV PYTHON_SHA256=1e66a7945a48390ee4c2a4268a0e4185884059a13c4aab6d148aa208deea4a76
+ENV PYTHON_VERSION=3.13.16
+ENV PYTHON_SHA256=f4b1bfb3c79b5bb11b8d228a12504163b4c0dab4d679828d8f5f26b6cb6ab35d
 RUN set -eux; \
     apk add --no-cache \
       bluez-dev build-base bzip2-dev expat-dev gdbm-dev gnupg \

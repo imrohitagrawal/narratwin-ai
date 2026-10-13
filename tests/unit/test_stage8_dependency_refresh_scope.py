@@ -83,6 +83,9 @@ def test_dependency_refresh_scope_uses_real_first_commit_and_manifest_budgets(
         return failures
 
     assert findings() == []
+    monkeypatch.setenv("GITHUB_ACTIONS", "true")
+    assert findings() == ["Dependency refresh hosted event missing."]
+    monkeypatch.delenv("GITHUB_ACTIONS")
     # Every committed/index/worktree layer is charged even when a later layer cancels it.
     put(tmp_path, "pyproject.toml", "excess\n" * 6)
     g("add", "pyproject.toml")

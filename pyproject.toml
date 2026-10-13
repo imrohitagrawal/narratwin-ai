@@ -75,3 +75,5 @@ python_version = "3.13"
 strict = true
 warn_unused_configs = true
 files = ["backend", "scripts", "tests"]
+explicit_package_bases = true
+mypy_path = "tests/unit"

@@ -30,6 +30,35 @@ ROOT_VERSIONS = {
 TOOL_VERSIONS = {"semgrep": "1.180.0", "pyjwt": "2.15.0", "urllib3": "2.8.0"}
 
 
+def test_backend_cpython_release_and_checksum_are_qualified() -> None:
+    """RED: the known vulnerable image release must not satisfy current qualification."""
+    profile = load_security_profile(ROOT)
+    assert profile["cpython"] == {
+        "version": "3.13.16",
+        "sha256": "f4b1bfb3c79b5bb11b8d228a12504163b4c0dab4d679828d8f5f26b6cb6ab35d",
+    }
+
+
+@pytest.mark.parametrize(
+    "bad",
+    [
+        {},
+        {"version": True, "sha256": "0" * 64},
+        {"version": "3.14.1", "sha256": "0" * 64},
+        {"version": "3.13.16", "sha256": "bad"},
+    ],
+)
+def test_cpython_configuration_fails_closed(tmp_path: Path, bad: Any) -> None:
+    """RED: missing, foreign or wrongly typed CPython configuration must not activate."""
+    value = load_security_profile(ROOT)
+    value["cpython"] = bad
+    path = tmp_path / "docs/security/DEPENDENCY_REFRESH.json"
+    path.parent.mkdir(parents=True)
+    path.write_text(json.dumps(value))
+    with pytest.raises(ContractError, match="CPython policy invalid"):
+        load_security_profile(tmp_path)
+
+
 def digest(value: Any) -> str:
     return hashlib.sha256(
         json.dumps(value, sort_keys=True, separators=(",", ":")).encode()
@@ -74,6 +103,9 @@ def validate_current_inputs(inputs: dict[str, str]) -> None:
         baseline_project = tomllib.loads(historical_text(project))
         expected_project = copy.deepcopy(baseline_project)
         if name == "root":
+            expected_project["tool"]["mypy"].update(
+                explicit_package_bases=True, mypy_path="tests/unit"
+            )
             expected_project["project"]["dependencies"] = [
                 f"pypdf>={policy['rootVersions']['pypdf']}" if row == "pypdf>=6.16.2" else row
                 for row in expected_project["project"]["dependencies"]
@@ -231,8 +263,6 @@ def test_tool_regression_uses_isolated_interpreter_and_effective_timeout(monkeyp
     assert calls[0][0][:3] == [str(security.TOOL_ENV / "bin/python"), "-I", "-c"]
     assert "assert options==original" in calls[0][0][3]
     assert calls[0][1]["timeout"] == load_security_profile(ROOT)["toolVerificationTimeoutSeconds"]
-    monkeypatch.setattr(
-        subprocess, "run", lambda args, **kw: subprocess.CompletedProcess(args, 1)
-    )
+    monkeypatch.setattr(subprocess, "run", lambda args, **kw: subprocess.CompletedProcess(args, 1))
     with pytest.raises(ContractError):
         security.verify_installed_pyjwt()

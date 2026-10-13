@@ -30,15 +30,16 @@ forged, duplicate, missing and unrelated current inputs before normalization.
 
 The owner's current repair instruction is recorded separately from host review.
 C1 f74768c6 remains immutable history; a documented current preflight amendment
-governs 48 paths and 4,000 additions plus deletions. A bounded Stage 8 hardening
+governs 49 paths and 4,000 additions plus deletions. A bounded Stage 8 hardening
 envelope, first-commit proof, manifest budgets and real checkout topology retain
 the existing semantic gates and frozen Phase 1 substrate.
 
 Root and tool strict audits, installed PyJWT options regression, Semgrep canary
 and repository scan, complete unit/API/frontend checks, exact local/direct/merge
 quality and native hosted x86/ARM image build/probe/scan must pass before merge.
-Disk reserve prevents unqualified local Docker allocation; actual native hosted
-commands provide image verification. No immutable release evidence is frozen
+Owner removed the preset memory/disk reserve prerequisite; actual capacity
+is observed without an arbitrary reserve approval gate. Local and native hosted
+commands provide verification. No immutable release evidence is frozen
 from local approximation. Prior four review rounds/two approaches remain history. The owner removed the
 work-package-protocol dependency and its review-limit approval gate; repository
 technical review and hosted verification still govern acceptance.
@@ -89,3 +90,13 @@ verified archive-preparation boundary installs published http-cache-semantics
 no invented fixed-version metadata) and patched undici 6.28.1. The closed
 archive set now has six identities; npm, IP-address and tar remain unchanged.
 Actual unsuppressed native scans must qualify this correction.
+
+Native scanners reproduced new critical/high CPython3.13.15 findings.
+Official signed Python3.13.16 fixes those reported issues; its version/hash
+are configured through the closed dependency profile and checked in the actual
+image probe. Trust key, nonroot/TLS and capability-isolation contracts remain.
+
+The frozen legacy test explicitly invokes a local child. Its scoped fixture
+removes only that test's inherited hosted marker; missing hosted event data
+still fails closed. Mypy uses explicit namespace bases and the existing unit
+test import path to check both same-named fixtures without exclusions.

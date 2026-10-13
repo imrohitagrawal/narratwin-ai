@@ -38,6 +38,7 @@ REFRESH_HARDENING_PATHS.update(
         "scripts/guardrails_check.py",
         "tests/unit/test_dependency_refresh_pr_policy.py",
         "tests/unit/test_frontend_container_runtime.py",
+        "tests/unit/conftest.py",
     }
 )
 
@@ -94,6 +95,8 @@ def check_refresh_scope(
         event = os.environ.get("GITHUB_EVENT_NAME", "")
         hosted = bool(event) or os.environ.get("GITHUB_ACTIONS") == "true"
         if hosted:
+            if event not in {"pull_request", "pull_request_review", "push"}:
+                raise RuntimeError("Dependency refresh hosted event missing.")
             payload = json.loads(
                 Path(os.environ["GITHUB_EVENT_PATH"]).read_text(), object_pairs_hook=unique
             )
