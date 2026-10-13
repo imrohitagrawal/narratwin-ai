@@ -34,7 +34,11 @@ scripts/ci/check_semgrep_security.py scripts/quality/check_stage8_docs.py
  tests/unit/test_frontend_dependency_security_contract.py""".split()
 )
 REFRESH_HARDENING_PATHS.update(
-    {"scripts/guardrails_check.py", "tests/unit/test_dependency_refresh_pr_policy.py"}
+    {
+        "scripts/guardrails_check.py",
+        "tests/unit/test_dependency_refresh_pr_policy.py",
+        "tests/unit/test_frontend_container_runtime.py",
+    }
 )
 
 

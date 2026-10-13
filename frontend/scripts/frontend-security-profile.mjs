@@ -6,7 +6,7 @@ export const profileURL = new URL("../../docs/security/FRONTEND_DEPENDENCY_REFRE
 const fields = "schemaVersion baseSha manifestHash lockHash recordHashes removedRecords effectiveConfigHashes baselineConfigsSha256 rootDiscoverySourceSha256 verificationTimeoutSeconds buildArchives sharpVersion libvipsVersion runtimePackages packageVersions".split(" ");
 const extensions = ["ts", "tsx", "js", "jsx", "mjs", "cjs"];
 const packages = ["next", "eslint-config-next", "brace-expansion", "sharp", "source-map-js", "tinyglobby"];
-const archives = ["npm", "brace-expansion", "ip-address", "tar", "undici"];
+const archives = ["npm", "brace-expansion", "ip-address", "tar", "undici", "http-cache-semantics"];
 const runtime = ["alpine-keys", "alpine-release", "ca-certificates-bundle", "libgcc", "libstdc++", "musl"];
 export function requireValue(condition, message) {
   if (!condition) throw new Error(message);

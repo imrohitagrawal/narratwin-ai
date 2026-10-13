@@ -18,7 +18,7 @@ const FRONTEND_RUNTIME_ROOT = "/app";
 
 const archiveProfile = loadProfile().buildArchives;
 export const ARCHIVES = Object.freeze(
-  ["npm", "brace-expansion", "ip-address", "tar", "undici"].map((name) => {
+  ["npm", "brace-expansion", "ip-address", "tar", "undici", "http-cache-semantics"].map((name) => {
     const { version, sha512 } = archiveProfile[name];
     return Object.freeze({ filename: `${name}-${version}.tgz`, package: name, version,
       sha512, destination: name === "npm" ? NPM_ROOT : `${NPM_ROOT}/node_modules/${name}` });

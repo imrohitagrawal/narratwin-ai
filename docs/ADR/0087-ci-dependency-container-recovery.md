@@ -81,3 +81,11 @@ and certificate revisions. Official v3.24 indexes on both architectures qualify
 3.24.2-r0 and 20260909-r0; no other runtime package changed. The maintenance
 branch family is reference-only and remains subject to exact scope validation;
 canonical Stage 8 completion and near-match branches keep their closure policy.
+
+Native deps-stage scan also found bundled http-cache-semantics 4.2.0 and
+undici 6.28.0 at HIGH severity. Latest npm still bundles both, so the existing
+verified archive-preparation boundary installs published http-cache-semantics
+4.3.0 (outside the reported affected range; maintainer disputes the advisory,
+no invented fixed-version metadata) and patched undici 6.28.1. The closed
+archive set now has six identities; npm, IP-address and tar remain unchanged.
+Actual unsuppressed native scans must qualify this correction.

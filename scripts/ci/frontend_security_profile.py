@@ -14,7 +14,7 @@ PROFILE_PATH = "docs/security/FRONTEND_DEPENDENCY_REFRESH.json"
 FIELDS = set(
     "schemaVersion baseSha manifestHash lockHash recordHashes removedRecords effectiveConfigHashes baselineConfigsSha256 rootDiscoverySourceSha256 verificationTimeoutSeconds buildArchives sharpVersion libvipsVersion runtimePackages packageVersions".split()
 )
-ARCHIVE_NAMES = {"npm", "brace-expansion", "ip-address", "tar", "undici"}
+ARCHIVE_NAMES = set("npm brace-expansion ip-address tar undici http-cache-semantics".split())
 EXTENSIONS = {"ts", "tsx", "js", "jsx", "mjs", "cjs"}
 
 

@@ -25,6 +25,23 @@ def test_frontend_runtime_uses_qualified_available_apk_revisions() -> None:
         assert f"{name}={packages[name]}" in docker
 
 
+def test_builder_archives_exclude_reported_high_severity_versions() -> None:
+    """RED: project-lock audit alone misses vulnerable bundled build-tool dependencies."""
+    from scripts.ci.frontend_security_profile import load_profile
+
+    archives = load_profile(ROOT)["buildArchives"]
+    assert set(archives) == {
+        "npm",
+        "brace-expansion",
+        "ip-address",
+        "tar",
+        "undici",
+        "http-cache-semantics",
+    }
+    assert archives["undici"]["version"] == "6.28.1"
+    assert archives["http-cache-semantics"]["version"] == "4.3.0"
+
+
 def test_current_frontend_security_floor_and_scoped_truthful_alias() -> None:
     package = json.loads((ROOT / "frontend/package.json").read_text())
     assert package["dependencies"]["next"] == "16.3.8"

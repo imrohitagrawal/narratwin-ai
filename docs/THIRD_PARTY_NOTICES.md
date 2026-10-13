@@ -588,3 +588,9 @@ https://raw.githubusercontent.com/SuperchupuDev/tinyglobby/0.2.17/package.json .
 Exact npm release receipts, original consumer source and baseline/effective lint
 configuration are retained once in the durable private execution evidence store.
 Published provenance and local qualification do not establish hosted acceptance.
+
+Issue #561 native builder qualification additionally uses http-cache-semantics
+4.3.0 (BSD-2-Clause, https://github.com/kornelski/http-cache-semantics) and
+undici 6.28.1 (MIT, https://github.com/nodejs/undici), official npm archives
+with verified SHA-256/SHA-512 identities. Registry/source checked 2026-10-13.
+These build-tool dependencies do not grant provider or media authority.
