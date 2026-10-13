@@ -26,6 +26,7 @@ if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from scripts.governance_preflight_repository import validate_governance_preflight_repository
+from scripts.quality.stage8_refresh_scope import REFRESH_BRANCH
 from scripts.quality import issue521_successor
 from scripts.quality.issue521_master_program_v2 import REQUIRED_ARTIFACTS as MASTER_PROGRAM_V2_ARTIFACTS
 from scripts.quality.issue521_master_program_v2 import validate_repository as validate_master_program_v2
@@ -1116,6 +1117,8 @@ def should_enforce_pull_request_issue_checks() -> bool:
 
 def canonical_stage_issue(head_ref: str | None) -> tuple[str, str] | None:
     if not head_ref or head_ref in {ISSUE_353_RECOVERY_BRANCH, ISSUE_424_MASTER_PROGRAM_BRANCH}:
+        return None
+    if REFRESH_BRANCH.fullmatch(head_ref):
         return None
     for prefix, stage_name, issue_number in CANONICAL_STAGE_ISSUE_CLOSURE:
         if head_ref.startswith(prefix):

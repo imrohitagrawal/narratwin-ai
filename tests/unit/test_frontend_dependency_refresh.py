@@ -13,6 +13,18 @@ ROOT = Path(__file__).resolve().parents[2]
 BASE = "2fc1bbd7904421d4a5a2c85995c28dbd9cdf0fce"
 
 
+def test_frontend_runtime_uses_qualified_available_apk_revisions() -> None:
+    """RED: removed APK revisions stop actual native image bootstrap."""
+    from scripts.ci.frontend_security_profile import load_profile
+
+    packages = load_profile(ROOT)["runtimePackages"]
+    assert packages["alpine-release"] == "3.24.2-r0"
+    assert packages["ca-certificates-bundle"] == "20260909-r0"
+    docker = (ROOT / "frontend/Dockerfile").read_text()
+    for name in ("alpine-release", "ca-certificates-bundle"):
+        assert f"{name}={packages[name]}" in docker
+
+
 def test_current_frontend_security_floor_and_scoped_truthful_alias() -> None:
     package = json.loads((ROOT / "frontend/package.json").read_text())
     assert package["dependencies"]["next"] == "16.3.8"

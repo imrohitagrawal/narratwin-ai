@@ -30,7 +30,7 @@ forged, duplicate, missing and unrelated current inputs before normalization.
 
 The owner's current repair instruction is recorded separately from host review.
 C1 f74768c6 remains immutable history; a documented current preflight amendment
-governs 45 paths and 4,000 additions plus deletions. A bounded Stage 8 hardening
+governs 47 paths and 4,000 additions plus deletions. A bounded Stage 8 hardening
 envelope, first-commit proof, manifest budgets and real checkout topology retain
 the existing semantic gates and frozen Phase 1 substrate.
 
@@ -75,3 +75,9 @@ clone, paid operation, deployment, protection change, threshold reduction or
 shared/historical cleanup. No new Meera/Cut 1 or personal-avatar media acceptance.
 Durable execution records remain outside temporary worktrees, with custody and
 resume instructions; independent backup is not proved.
+
+Actual hosted ARM bootstrap also reproduced missing frontend Alpine release
+and certificate revisions. Official v3.24 indexes on both architectures qualify
+3.24.2-r0 and 20260909-r0; no other runtime package changed. The maintenance
+branch family is reference-only and remains subject to exact scope validation;
+canonical Stage 8 completion and near-match branches keep their closure policy.

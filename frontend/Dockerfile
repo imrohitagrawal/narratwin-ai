@@ -7,8 +7,8 @@ RUN set -eux; \
       --keys-dir /etc/apk/keys \
       --repositories-file /etc/apk/repositories \
       alpine-keys=2.6-r0 \
-      alpine-release=3.24.1-r0 \
-      ca-certificates-bundle=20260611-r0 \
+      alpine-release=3.24.2-r0 \
+      ca-certificates-bundle=20260909-r0 \
       libgcc=15.2.0-r5 \
       libstdc++=15.2.0-r5 \
       musl=1.2.6-r2; \

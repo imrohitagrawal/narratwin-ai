@@ -88,7 +88,7 @@ def test_issue389_fixed_runtime_pin_and_package_contract_fail_closed() -> None:
     assert security.FRONTEND_NODE_RUNTIME_IMAGE == expected_runtime and f"FROM {expected_runtime} AS node-source" in dockerfile
     assert 'process.version!=="v26.7.0"' in scan and "Sharp transform invalid" in scan
     assert security.FRONTEND_RUNTIME_NODE_VERSION == "26.7.0"
-    assert security.FRONTEND_RUNTIME_PACKAGES == {"alpine-keys":"2.6-r0","alpine-release":"3.24.1-r0","ca-certificates-bundle":"20260611-r0","libgcc":"15.2.0-r5","libstdc++":"15.2.0-r5","musl":"1.2.6-r2"}
+    assert security.FRONTEND_RUNTIME_PACKAGES == {"alpine-keys":"2.6-r0","alpine-release":"3.24.2-r0","ca-certificates-bundle":"20260909-r0","libgcc":"15.2.0-r5","libstdc++":"15.2.0-r5","musl":"1.2.6-r2"}
     for mutation in (dockerfile.replace(expected_runtime, expected_runtime[:-1]+"1"), dockerfile.replace(expected_runtime, "node:26.7.0-alpine3.24:latest"), dockerfile.replace("FROM scratch AS build", f"FROM {security.ISSUE389_VULNERABLE_RUNTIME_IMAGE} AS build"), dockerfile.replace("/lib/apk/db/installed", "REMOVED")):
         assert not security.frontend_node_image_valid(mutation)
 
