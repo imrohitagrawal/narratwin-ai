@@ -21,3 +21,11 @@ Owner: root orchestrator for navigation; existing issue/acceptance owners retain
 ## Experiments
 
 PLAN.md preserves the complete reviewed proposal byte-for-byte. Use the comparison section of the [template](../templates/WORK.md) for new experiments: hypothesis, alternatives, protocol, exact inputs/settings, authorized operations, full outputs, acceptance levels, total costs including rejected attempts, and revision effort. No sample establishes reliability or production economics; registration grants no operations authority.
+
+## Separate personal-avatar pilot
+
+The owner-requested [personal-avatar pilot](../personal-avatar-pilot/README.md)
+has a separate plan and handoff under Issue558. It preserves this comparison's
+historical plan/evidence and formal Meera/Despina/Cut1 acceptance. Public research
+and recording preparation proceed; enrollment, spend and integration remain
+explicitly gated. Registration is navigation, not a provider grant.

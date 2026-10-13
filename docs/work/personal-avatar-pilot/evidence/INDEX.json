@@ -1,0 +1,92 @@
+{
+  "schemaVersion": 1,
+  "artifacts": [
+    {
+      "id": "personal-avatar-recording-brief-v1",
+      "owner": "personal-avatar-pilot",
+      "role": "derived",
+      "revision": "2026-10-14-preparation",
+      "path": "docs/work/personal-avatar-pilot/RECORDING_BRIEF.md",
+      "sha256": "89c241a2453bd0d005306b8e6b6cffbd152494ad9c525103a5af43da73e995aa",
+      "bytes": 4949,
+      "custody": "public",
+      "verification": "METADATA_PINNED",
+      "derivedFrom": []
+    },
+    {
+      "id": "personal-avatar-qualification-v1",
+      "owner": "personal-avatar-pilot",
+      "role": "derived",
+      "revision": "2026-10-14-preparation",
+      "path": "docs/work/personal-avatar-pilot/QUALIFICATION.md",
+      "sha256": "61c9bda71ae2449947d8998092a520fd81d1dac8570caff28f28974cead84b5f",
+      "bytes": 6407,
+      "custody": "public",
+      "verification": "METADATA_PINNED",
+      "derivedFrom": []
+    },
+    {
+      "id": "personal-avatar-preflight-v1",
+      "owner": "personal-avatar-pilot",
+      "role": "derived",
+      "revision": "2026-10-14-preparation",
+      "path": "docs/work/personal-avatar-pilot/PREFLIGHT.md",
+      "sha256": "79073d5398460350ac28dd66857710fa05023ab7988fc751494141ab42e0b474",
+      "bytes": 7437,
+      "custody": "public",
+      "verification": "METADATA_PINNED",
+      "derivedFrom": []
+    },
+    {
+      "id": "personal-avatar-sources-v1",
+      "owner": "personal-avatar-pilot",
+      "role": "derived",
+      "revision": "2026-10-14-preparation",
+      "path": "docs/work/personal-avatar-pilot/evidence/SOURCES.md",
+      "sha256": "bc1d6aa8efea8fb76e4ce38adc1241608ab27b4748e5a5446c5758f7a26a88b1",
+      "bytes": 6149,
+      "custody": "public",
+      "verification": "METADATA_PINNED",
+      "derivedFrom": []
+    },
+    {
+      "id": "personal-avatar-issue-snapshot-v1",
+      "owner": "personal-avatar-pilot",
+      "role": "derived",
+      "revision": "2026-10-14-preparation",
+      "path": "docs/work/personal-avatar-pilot/evidence/ISSUE_SNAPSHOT.json",
+      "sha256": "e44ec976b63b0dbe5d259a78f1aadda39b68837152f66afcfc262a3b85ca5d1d",
+      "bytes": 8538,
+      "custody": "public",
+      "verification": "METADATA_PINNED",
+      "derivedFrom": []
+    },
+    {
+      "id": "personal-avatar-reviews-v1",
+      "owner": "personal-avatar-pilot",
+      "role": "review",
+      "revision": "2026-10-14-preparation",
+      "path": "docs/work/personal-avatar-pilot/evidence/REVIEWS.md",
+      "sha256": "e5bcbc004ac383e883989addd244e7edecee1acfcc3034d9d126c5e9e5d753c5",
+      "bytes": 6394,
+      "custody": "public",
+      "verification": "METADATA_PINNED",
+      "derivedFrom": []
+    },
+    {
+      "id": "personal-avatar-gate-permission-20261013",
+      "owner": "personal-avatar-pilot",
+      "role": "original",
+      "revision": "2026-10-13",
+      "sha256": "225e7a53b0dc579752731b7beaa98fd311370244afb743a7403b719e0607abcb",
+      "bytes": 34,
+      "custody": "restricted",
+      "verification": "METADATA_PINNED",
+      "derivedFrom": [],
+      "restrictedEvidenceRef": "restricted-evidence:personal-avatar-pilot/gate-permission-20261013"
+    }
+  ],
+  "uses": [
+    "owner-plan-2026-09-07"
+  ]
+}

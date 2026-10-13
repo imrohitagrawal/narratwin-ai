@@ -1,6 +1,6 @@
 # Governance and evaluation backlog: handoff
 
-PLAN_SHA256: e11f44c4ab0cd355626fe6d083070b992f4e529af3988abc6d0d38f75566366b
+PLAN_SHA256: 28de84cd139ec4917ddf38b5f1e2a235102b68baed1bed1f869e43f574931aea
 EVIDENCE_SHA256: 550beb600595ce8cf46e1b89652936f2e02d678564f9e57001548d90784db6ec
 
 
@@ -31,3 +31,6 @@ inputs. Owner removed work-package-protocol and fixed reserve entry gates.
 Original sources and dirty338 remain preserved; no provider operation or spend,
 personal performance acceptance, Cut1 pass, application integration or release
 is claimed. Earlier checkpoints remain history, including backup UNPROVED.
+
+Current2026-10-14: PR560 merged13d78f29; postmerge quality passed;559/563 satisfied.
+Pilot558 now registers separate source qualification; no media/provider acceptance.
