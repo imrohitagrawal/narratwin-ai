@@ -1,0 +1,83 @@
+{
+  "schema_version": "GovernancePreflightV1",
+  "issue_number": 559,
+  "branch": "phase-1-closure-process-559-work-record-scope",
+  "objective": "Refs #559/#558. Owner current session authorizes separate narrow manifest scope correction on base2fc1bbd7904421d4a5a2c85995c28dbd9cdf0fce. First commit preflight only. Replace only frozen legacy path-list choice for prospective exact work-record documentation manifests; retain frozen parity/required/branch and every preserved contract. Independent docs-only envelope, exact manifest/path/budget binding, first-preflight committed history and working snapshot, actual line charge and file type safety. Stable four-file install kernel only when absent from verified base; installed base rejects kernel through docs route. No unpublished338 absorption or issue-specific central budgets. TDD Git fixtures and hostile coherent manifests; direct-head/merge checkout and push/PR/review/local parity. No runtime/provider/biometric/voice/media/spend/deployment/release/protection change or historical cleanup.128MiB writer/reviewer copies,500MiB scratch, up to1GiB environment if hosted parity needs it,10MiB durable evidence,5GiB reserve. Independent implementation/security and operations reviews; one approach plus one bounded RCA correction, four review rounds max. Current owner permission grants repository correction/review/eligible closeout, not provider operations. No immutable freeze before applicable local/hosted checks.",
+  "status_decision": "update-minimally",
+  "change_budget": {
+    "exact_paths": 16,
+    "maximum_additions_plus_deletions": 4000,
+    "deletions_grant_credit": false,
+    "per_file_charged_lines": {
+      "docs/governance/preflights/issue-559.json": 200,
+      "scripts/quality/work_record_scope.py": 450,
+      "scripts/quality/phase1_closure/legacy.py": 200,
+      "tests/unit/test_work_record_scope.py": 700,
+      "tests/unit/phase1_closure/test_legacy.py": 200,
+      "docs/work/working-records/proposals/work-record-scope/PREFLIGHT.md": 300,
+      "docs/work/working-records/proposals/work-record-scope/REVIEW.md": 200,
+      "docs/work/working-records/README.md": 200,
+      "docs/work/working-records/HANDOFF.md": 200,
+      "docs/work/working-records/evidence/INDEX.json": 200,
+      "docs/work/registry.json": 200,
+      "docs/work/INDEX.md": 200,
+      "docs/work/governance-backlog/HANDOFF.md": 200,
+      "docs/STATUS.md": 200,
+      "docs/QUALITY_GATES.md": 200,
+      "docs/ADR/0081-work-record-manifest-scope.md": 200
+    }
+  },
+  "scope": {
+    "required": [
+      "docs/governance/preflights/issue-559.json",
+      "scripts/quality/work_record_scope.py",
+      "scripts/quality/phase1_closure/legacy.py",
+      "tests/unit/test_work_record_scope.py",
+      "tests/unit/phase1_closure/test_legacy.py",
+      "docs/work/working-records/proposals/work-record-scope/PREFLIGHT.md",
+      "docs/work/working-records/proposals/work-record-scope/REVIEW.md",
+      "docs/work/working-records/README.md",
+      "docs/work/working-records/HANDOFF.md",
+      "docs/work/working-records/evidence/INDEX.json",
+      "docs/work/registry.json",
+      "docs/work/INDEX.md",
+      "docs/work/governance-backlog/HANDOFF.md",
+      "docs/STATUS.md",
+      "docs/QUALITY_GATES.md",
+      "docs/ADR/0081-work-record-manifest-scope.md"
+    ],
+    "allowed_prefixes": [
+      "docs/governance/preflights/issue-559.json",
+      "scripts/quality/work_record_scope.py",
+      "scripts/quality/phase1_closure/legacy.py",
+      "tests/unit/test_work_record_scope.py",
+      "tests/unit/phase1_closure/test_legacy.py",
+      "docs/work/working-records/proposals/work-record-scope/PREFLIGHT.md",
+      "docs/work/working-records/proposals/work-record-scope/REVIEW.md",
+      "docs/work/working-records/README.md",
+      "docs/work/working-records/HANDOFF.md",
+      "docs/work/working-records/evidence/INDEX.json",
+      "docs/work/registry.json",
+      "docs/work/INDEX.md",
+      "docs/work/governance-backlog/HANDOFF.md",
+      "docs/STATUS.md",
+      "docs/QUALITY_GATES.md",
+      "docs/ADR/0081-work-record-manifest-scope.md"
+    ],
+    "forbidden": [
+      "backend/",
+      "frontend/",
+      ".github/",
+      "AGENTS.md",
+      "Makefile",
+      "pyproject.toml",
+      "uv.lock",
+      "scripts/quality/check_phase1_closure_docs.py",
+      "tests/unit/test_phase1_closure_docs.py",
+      "scripts/governance_preflight_repository.py",
+      "scripts/governance_preflight_v1.py",
+      "docs/work-archive/",
+      "docs/governance/successors/"
+    ]
+  }
+}
