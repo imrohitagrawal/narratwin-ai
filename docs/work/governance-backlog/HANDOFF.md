@@ -1,6 +1,6 @@
 # Governance and evaluation backlog: handoff
 
-PLAN_SHA256: c83791d639f7fdbbe5d01591a6399393aeb7cbf59d3a45a622154b308e02ff86
+PLAN_SHA256: e11f44c4ab0cd355626fe6d083070b992f4e529af3988abc6d0d38f75566366b
 EVIDENCE_SHA256: 550beb600595ce8cf46e1b89652936f2e02d678564f9e57001548d90784db6ec
 
 
@@ -16,7 +16,18 @@ Next action: use the linked existing issues and current STATUS to select the per
 
 Coverage: this record preserves the reviewed issue snapshot and current structure decision. Earlier visible-message capture boundaries and omissions remain in the historical recovery receipts; no complete conversation capture is claimed.
 
-Current owner-authorized prerequisite: issue #561 repairs inherited strict audit/
+Historical premerge checkpoint (2026-10-13; superseded below): issue #561 repairs inherited strict audit/
 Alpine failures enabling #559/PR #560 and pilot #558. Candidate remains unmerged;
 verify exact-head CI/review and durable recovery handoff before continuing.
 Earlier draft observations remain history; metadata consistency grants no acceptance.
+
+Current checkpoint — 2026-10-14: Issue561/PR562 merged at
+5303ade4ec2a43b8ee81b4ee7ad33218573eb69e; exact-head approval and required checks
+passed, then postmerge main quality38445200376 passed. Issue563 reconciles the
+tracked observations in existing559/PR560. This branch rebases559 onto that main;
+its fresh exact-head local/hosted verification and independent review precede
+acceptance. Next after eligible merge: register prepared pilot558 and qualify
+inputs. Owner removed work-package-protocol and fixed reserve entry gates.
+Original sources and dirty338 remain preserved; no provider operation or spend,
+personal performance acceptance, Cut1 pass, application integration or release
+is claimed. Earlier checkpoints remain history, including backup UNPROVED.

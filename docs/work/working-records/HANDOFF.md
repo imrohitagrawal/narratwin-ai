@@ -1,7 +1,7 @@
 # Working records and preservation: handoff
 
 PLAN_SHA256: 77b34bd3761d0c97e18aa9507dec4f1d5ae4873e7db849b990165ee83beaafdb
-EVIDENCE_SHA256: 104aeb7db24b3177ebdca8417aecbff207f33617efb78d637b2fbdbb4145e471
+EVIDENCE_SHA256: 186884e12f1a7fdc698b6cc8c9fe8cb1be89032eb770bfccf60084b12554f4b4
 
 Current checkpoint: 2026-09-14; PR536 merged67d4b094 with approved29606 tree; PR534 retired unmerged; Issue538/PR539 reconciles sequencing; verify live tracker before action. This branch prepares the additional reconciliation; consult PR539 for its actual head, checks and review.
 
@@ -14,3 +14,11 @@ Next action: Navigation and preservation are delivered by536. Issue538/PR539 rec
 Public descriptors and navigation are verified separately from private availability. Original private bytes remain in the retained recovery store; backup stays UNPROVED. Historical review and bounded conversation-capture coverage remain in [the recovery record](../../work-archive/2026-09-14-recovery/HANDOFF.md); no complete conversation or new private-read claim.
 
 Early demonstration still means natural presenter performance and lively coherent surroundings before substantial integration/hardening, with minimum controls retained. Identify the shared reference clip before claiming fidelity. Full output, production API, repetitions and formal acceptance remain separate evidence.
+
+Current checkpoint — 2026-10-14: Navigation/sequencing536/539 and CI recovery562
+are merged. Existing559/PR560 is rebased onto5303ade4 and carries Issue563 tracked
+status reconciliation within its declared paths. Independent exact-head review
+and fresh local/hosted checks are pending; previous green candidate evidence is
+historical. This PR satisfies559 and563 when merged; next is pilot558 registration
+and input qualification. Work-package dependency/reserve gates are removed by
+owner amendment. No biometric/provider/media/spend or Cut1/release authority.

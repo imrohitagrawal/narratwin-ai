@@ -198,7 +198,13 @@ def run_preserved_contracts() -> int:
     checker.check_branch(failures)
     checker.check_required_files(failures)
     if branch != ISSUE_324_BRANCH:
-        checker.check_changed_files(failures)
+        from scripts.quality.work_record_scope import scope_findings
+
+        scope = scope_findings(ROOT, branch)
+        if scope is None:
+            checker.check_changed_files(failures)
+        else:
+            failures.extend(scope)
     if not failures:
         for name in PRESERVED_CHECKS:
             if name == "check_active_demo_docs":

@@ -12,6 +12,42 @@
       "custody": "public",
       "verification": "METADATA_PINNED",
       "derivedFrom": []
+    },
+    {
+      "id": "work-record-scope-preflight-v1",
+      "owner": "working-records",
+      "role": "derived",
+      "revision": "2026-10-13",
+      "path": "docs/work/working-records/proposals/work-record-scope/PREFLIGHT.md",
+      "sha256": "c33fd8b7b59add7a128efc8d6115aacf2f27b67c268ecc79dd8350488be9661a",
+      "bytes": 10658,
+      "custody": "public",
+      "verification": "METADATA_PINNED",
+      "derivedFrom": []
+    },
+    {
+      "id": "work-record-scope-review-v1",
+      "owner": "working-records",
+      "role": "review",
+      "revision": "2026-10-13",
+      "path": "docs/work/working-records/proposals/work-record-scope/REVIEW.md",
+      "sha256": "2f430178780dcc3df8260649dc8fbcb90c73ed3c410693bfcf854026388fd844",
+      "bytes": 5000,
+      "custody": "public",
+      "verification": "METADATA_PINNED",
+      "derivedFrom": []
+    },
+    {
+      "id": "work-record-scope-issue-snapshot-v1",
+      "owner": "working-records",
+      "role": "derived",
+      "revision": "2026-10-13",
+      "path": "docs/work/working-records/proposals/work-record-scope/ISSUE_SNAPSHOT.json",
+      "sha256": "fea4c8163dab89cffe19c580fc8bc74e7c20764f02f4f0ec398b6a9748bde750",
+      "bytes": 8390,
+      "custody": "public",
+      "verification": "METADATA_PINNED",
+      "derivedFrom": []
     }
   ],
   "uses": []

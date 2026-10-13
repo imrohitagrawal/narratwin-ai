@@ -85,3 +85,4 @@ Snapshot coverage is recorded in the registry; verify live tracker state before 
 | [#18](https://github.com/imrohitagrawal/narratwin-ai/issues/18) Later track — Playable local TTS audio beyond the Stage 6 voice manifest | [future-capabilities](future-capabilities/README.md) |
 | [#17](https://github.com/imrohitagrawal/narratwin-ai/issues/17) Stage 6 residual — Controlled fallback integrity for multilingual generation | [future-capabilities](future-capabilities/README.md) |
 | [#540](https://github.com/imrohitagrawal/narratwin-ai/issues/540) G1: derive a preserved four-bibliography correction successor | [g1-certification](g1-certification/README.md) |
+| [#559](https://github.com/imrohitagrawal/narratwin-ai/issues/559) Governance: validate work-record scope from reviewed manifests | [working-records](working-records/README.md) |

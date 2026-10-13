@@ -2,6 +2,21 @@
 
 PR #536 delivered Issue #535/#537 [documentation navigation](README.md), and PR #539 merged the Issue #538 sequencing reconciliation at57c7dcb. That documentation work is complete. [Issue #540 / PR #541](https://github.com/imrohitagrawal/narratwin-ai/pull/541) is the bounded four-bibliography G1 correction under #521/#533, with [reviewed plan](work/g1-certification/PLAN.md), [review evidence](work/g1-certification/evidence/REVIEWS.md) and [current handoff](work/g1-certification/HANDOFF.md). It produces a separate structurally checked successor; G1 certification, accepted-current transition and Cut1 acceptance remain incomplete. Root's delegated technical approval is not a human attestation or GitHub APPROVED review. PR #534 remains retired unmerged and its unsigned signing packet must never be resumed.
 
+## Work-record scope correction
+
+[Issue #559](https://github.com/imrohitagrawal/narratwin-ai/issues/559) owns the
+separately authorized [manifest scope correction](work/working-records/proposals/work-record-scope/PREFLIGHT.md)
+needed by personal-avatar preparation #558. It installs a documentation-only
+scope adapter around frozen Phase1 checks; all preserved contracts and default
+mock/local routes remain. Scope and charged-line budgets live in each issue
+manifest. Ordinary documentation manifests cannot authorize runtime, provider,
+workflow, dependency or installed quality-kernel edits. This candidate requires
+independent review and exact hosted verification before repository acceptance.
+Next after eligible merge: register pilot #558 on current main and qualify inputs
+read-only. No biometric upload/enrollment, cloning, generation, spend, G1
+certification, V2 activation, Cut1 acceptance or release authority follows.
+Unpublished338 and dirty work remain preserved; No-Go is unchanged.
+
 ## Find current work
 
 Start at [the work index](work/INDEX.md) (`docs/work/INDEX.md`) for stable programs,
@@ -2353,7 +2368,7 @@ amendment remains nonactivating. Independent backup is UNPROVED under #532.
 Follow the [capture and verification procedure](work-archive/PROCESS.md) before
 handoff or cleanup; source recovery no longer requires the user to resend files.
 
-## Current CI recovery — issue #561
+## Historical CI recovery candidate — issue #561 (2026-10-13 premerge)
 
 The owner authorized repair of the inherited strict dependency-audit and Alpine
 build failures on 2026-10-13. Candidate branch
@@ -2373,3 +2388,29 @@ frontend checks and real build pass; interrupted full-suite/secret scans are
 incomplete, and native hosted builds/scans plus final independent review remain
 pending. Current manifest49paths/4000charged preserves historical C1 and the
 original dirty checkout. This does not deliver or accept personal-avatar media.
+
+## Current CI recovery and scope acceptance checkpoint — 2026-10-14
+
+[PR #562](https://github.com/imrohitagrawal/narratwin-ai/pull/562) merged Issue #561
+at `5303ade4ec2a43b8ee81b4ee7ad33218573eb69e` after exact-head host approval,
+complete local quality, and all required hosted checks. Postmerge main quality
+[run 38445200376](https://github.com/imrohitagrawal/narratwin-ai/actions/runs/38445200376)
+passed. The two candidate paragraphs above are retained premerge history, not
+current audit/build blockers. Clean local main is synced; original dirty338,
+unpublished work, original reports and source bundles are retained.
+
+[Issue #563](https://github.com/imrohitagrawal/narratwin-ai/issues/563) reconciles
+those stale tracked observations within the existing #559/PR #560 documentation
+boundary and its preflight-first history. This PR satisfies that reconciliation
+when merged. The #559 scope capability requires fresh local/hosted checks and
+independent review on the rebased head before acceptance. After eligible merge,
+register the prepared personal-avatar pilot #558 on accepted main. Pilot558
+remains incomplete; qualification and media acceptance belong to its own scope.
+
+The owner removed the work-package-protocol dependency, its procedural review
+limit and fixed memory/disk reserve prerequisites. None is an entry gate. Exact
+scope, technical verification, truthful host approval and existing protection
+remain mandatory. Read-only HeyGen inspection and recording preparation may
+proceed independently. No provider upload/enrollment, cloning, rendering, spend,
+Meera/Despina change, formal Cut1 pass, application integration, deployment,
+release or production readiness is established.
