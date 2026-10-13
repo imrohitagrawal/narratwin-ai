@@ -6,6 +6,7 @@ import hashlib
 import importlib.metadata
 import json
 import re
+import subprocess
 import sys
 import tomllib
 from pathlib import Path
@@ -54,6 +55,7 @@ REVIEWED_INPUTS = (
     "scripts/ci/semgrep-targets.txt",
     "tools/semgrep/pyproject.toml",
     "tools/semgrep/uv.lock",
+    "docs/security/DEPENDENCY_REFRESH.json",
 )
 FORBIDDEN_AUDIT_BYPASSES = (
     "--ignore-vuln",
@@ -108,6 +110,140 @@ def _version_tuple(value: str) -> tuple[int, ...]:
         raise ContractError(f"non-numeric version is not allowed here: {value}") from exc
 
 
+def load_security_profile(root: Path = ROOT) -> dict[str, Any]:
+    """Validate public artifact policy; agreement never substitutes for a current audit."""
+
+    def unique(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+        result: dict[str, Any] = {}
+        for key, value in pairs:
+            _require(key not in result, "duplicate security profile field")
+            result[key] = value
+        return result
+
+    try:
+        profile = json.loads(
+            (root / "docs/security/DEPENDENCY_REFRESH.json").read_text(encoding="utf-8"),
+            object_pairs_hook=unique,
+        )
+    except (OSError, ValueError) as error:
+        raise ContractError("security profile unavailable") from error
+    fields = {
+        "schemaVersion",
+        "baseSha",
+        "rootVersions",
+        "toolVersions",
+        "toolIdentity",
+        "rootRecordHashes",
+        "toolRecordHashes",
+        "rootProjectHash",
+        "toolProjectHash",
+        "apk",
+        "sourceReceipts",
+        "toolVerificationTimeoutSeconds",
+    }
+    _require(type(profile) is dict and set(profile) == fields, "security profile schema drifted")
+    _require(
+        type(profile["schemaVersion"]) is int and profile["schemaVersion"] == 1,
+        "security profile version drifted",
+    )
+    _require(
+        type(profile["toolVerificationTimeoutSeconds"]) is int
+        and profile["toolVerificationTimeoutSeconds"] > 0,
+        "tool verification timeout invalid",
+    )
+
+    def matches(value: Any, pattern: str) -> bool:
+        return isinstance(value, str) and re.fullmatch(pattern, value, re.ASCII) is not None
+
+    _require(matches(profile["baseSha"], r"[0-9a-f]{40}"), "security profile base invalid")
+    for key in ("rootProjectHash", "toolProjectHash"):
+        _require(matches(profile[key], r"[0-9a-f]{64}"), "security profile project hash invalid")
+    for key in (
+        "rootVersions",
+        "toolVersions",
+        "toolIdentity",
+        "rootRecordHashes",
+        "toolRecordHashes",
+    ):
+        values = profile[key]
+        pattern = r"[0-9a-f]{64}" if key.endswith("Hashes") else r"\d+(?:\.\d+){1,2}"
+        _require(
+            type(values) is dict
+            and bool(values)
+            and all(
+                matches(name, r"[a-z0-9]+(?:-[a-z0-9]+)*") and matches(value, pattern)
+                for name, value in values.items()
+            ),
+            "security profile mapping invalid",
+        )
+    _require(
+        set(profile["rootRecordHashes"]) == set(profile["rootVersions"]) | {"narratwin-ai"}
+        and set(profile["toolRecordHashes"])
+        == set(profile["toolVersions"]) | {"narratwin-semgrep-tool"},
+        "security profile record cardinality drifted",
+    )
+    _require(
+        set(profile["toolIdentity"])
+        == {"semgrep", "click", "mcp", "cryptography", "pyjwt", "urllib3"}
+        and all(
+            profile["toolIdentity"].get(name) == version
+            for name, version in profile["toolVersions"].items()
+        ),
+        "security profile tool identity drifted",
+    )
+    apk = profile["apk"]
+    _require(
+        type(apk) is dict
+        and set(apk) == {"opensslApkVersion", "opensslVersion", "alpineRelease"}
+        and matches(apk["opensslVersion"], r"\d+\.\d+\.\d+")
+        and all(
+            matches(apk[key], r"\d+\.\d+\.\d+-r\d+")
+            for key in ("opensslApkVersion", "alpineRelease")
+        ),
+        "security profile APK policy invalid",
+    )
+    versions = profile["rootVersions"] | profile["toolVersions"]
+    receipts = profile["sourceReceipts"]
+    _require(
+        type(receipts) is dict and set(receipts) == set(versions),
+        "security source cardinality drifted",
+    )
+    for name, row in receipts.items():
+        _require(
+            type(row) is dict
+            and set(row) == {"url", "sha256", "bytes", "version"}
+            and row["version"] == versions[name]
+            and row["url"] == f"https://pypi.org/pypi/{name}/{versions[name]}/json"
+            and matches(row["sha256"], r"[0-9a-f]{64}")
+            and type(row["bytes"]) is int
+            and row["bytes"] > 0,
+            "security source receipt invalid",
+        )
+    return cast(dict[str, Any], profile)
+
+
+def verify_installed_pyjwt() -> None:
+    """Exercise the options-reuse regression in the qualified, isolated tool interpreter."""
+    timeout = load_security_profile()["toolVerificationTimeoutSeconds"]
+    code = (
+        "import jwt; options={}; original=options.copy(); "
+        "key='local regression fixture key with sufficient length'; "
+        "value=jwt.encode({'sub':'local'},key,algorithm='HS256'); "
+        "jwt.decode(value,key,algorithms=['HS256'],options=options); assert options==original"
+    )
+    try:
+        result = subprocess.run(
+            [str(TOOL_ENV / "bin/python"), "-I", "-c", code],
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+            check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired) as error:
+        raise ContractError("installed PyJWT regression unavailable") from error
+    _require(result.returncode == 0, "installed PyJWT options regression failed")
+
+
 def validate_reviewed_inputs(root: Path = ROOT) -> None:
     manifest_path = root / "tools/semgrep/reviewed-inputs.sha256"
     recorded: dict[str, str] = {}
@@ -147,6 +283,7 @@ def validate_project_contract(root: Path = ROOT, *, today: object | None = None)
     tool_project = _toml(root / "tools/semgrep/pyproject.toml")
     root_lock = _locked_versions(root / "uv.lock")
     tool_lock = _locked_versions(root / "tools/semgrep/uv.lock")
+    identity = load_security_profile(root)["toolIdentity"]
 
     root_uv = root_project.get("tool", {}).get("uv", {})
     _require("override-dependencies" not in root_uv, "root dependency overrides are forbidden")
@@ -158,18 +295,16 @@ def validate_project_contract(root: Path = ROOT, *, today: object | None = None)
         "root Click must be locked to a fixed version >=8.3.3",
     )
     _require(
-        tool_project["project"]["dependencies"] == ["semgrep==1.175.0"],
+        tool_project["project"]["dependencies"] == [f"semgrep=={identity['semgrep']}"],
         "Semgrep tool pin must remain exact",
     )
     _require(
         "override-dependencies" not in tool_project["tool"]["uv"],
         "Semgrep tool dependency overrides are forbidden",
     )
-    _require(tool_lock.get("semgrep") == {"1.175.0"}, "tool Semgrep lock drifted")
-    _require(tool_lock.get("click") == {"8.4.2"}, "tool Click lock drifted")
-    _require(tool_lock.get("mcp") == {"1.29.0"}, "tool MCP lock drifted")
-    _require(tool_lock.get("cryptography") == {"50.0.0"}, "tool cryptography lock drifted")
-    _require(tool_lock.get("pyjwt") == {"2.13.0"}, "tool PyJWT lock drifted")
+    for name, version in identity.items():
+        label = {"mcp": "MCP", "pyjwt": "PyJWT"}.get(name, name)
+        _require(tool_lock.get(name) == {version}, f"tool {label} lock drifted")
     _require(_manifest_targets(root) == EXPECTED_TARGETS, "Semgrep target manifest drifted")
     validate_rule_ids(_configured_rule_ids(root / "semgrep.yml"))
     validate_reviewed_inputs(root)
@@ -185,11 +320,9 @@ def validate_installed_tool(site_packages: Path) -> None:
         for distribution in importlib.metadata.distributions(path=[str(resolved)])
         if distribution.metadata.get("Name")
     }
-    _require(installed.get("semgrep") == "1.175.0", "installed Semgrep identity mismatch")
-    _require(installed.get("click") == "8.4.2", "installed Click identity mismatch")
-    _require(installed.get("mcp") == "1.29.0", "installed MCP identity mismatch")
-    _require(installed.get("cryptography") == "50.0.0", "installed cryptography identity mismatch")
-    _require(installed.get("pyjwt") == "2.13.0", "installed PyJWT identity mismatch")
+    for name, version in load_security_profile()["toolIdentity"].items():
+        label = {"mcp": "MCP", "pyjwt": "PyJWT"}.get(name, name)
+        _require(installed.get(name) == version, f"installed {label} identity mismatch")
     locked = _locked_versions(TOOL_ROOT / "uv.lock")
     unexpected = {
         f"{name}=={version}"
@@ -197,6 +330,7 @@ def validate_installed_tool(site_packages: Path) -> None:
         if version not in locked.get(name, set())
     }
     _require(not unexpected, f"installed tool packages absent from lock: {sorted(unexpected)}")
+    verify_installed_pyjwt()
 
 
 def validate_scan_result(payload: dict[str, Any]) -> None:

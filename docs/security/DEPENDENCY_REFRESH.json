@@ -1,0 +1,114 @@
+{
+  "apk": {
+    "alpineRelease": "3.21.8-r0",
+    "opensslApkVersion": "3.3.7-r2",
+    "opensslVersion": "3.3.7"
+  },
+  "baseSha": "2fc1bbd7904421d4a5a2c85995c28dbd9cdf0fce",
+  "rootProjectHash": "97de3d71908166267851add06ce34ce55a61209e80034924a1e5fe58b805ab02",
+  "rootRecordHashes": {
+    "anyio": "955e9f436959f55eee99504987f9c9957a9b9b1648a09e78ac76807521a9a894",
+    "narratwin-ai": "8b989b755bc4c984b8d4fca1f4d23cbee442885af66cca8d448c783dc099b722",
+    "packaging": "029d77b017ced106c1aa1d38a94480a1242346cebd3a3108dc7279d85c2959be",
+    "pypdf": "2379d68f5391050ee7a7c2cc6a86de199bc3493998e0fac71b7719925a054cdb",
+    "python-discovery": "c7d62e9820c483a38e9204d6450c885abaa8595ef6e36e3354435133ee00320f",
+    "soupsieve": "2ae9e13fe3078deb4ce2b6345e3a317c2c393050c484abe771f4fa81f72d2160",
+    "urllib3": "24136ea09b15a94ad45cce6ceb957ea89c71295241811ee9c8a8bf7ab58ecff1",
+    "virtualenv": "a29c67805d567c882c5917e3be5dfa28dab3663f9c3597821e4b88ca0860382f",
+    "werkzeug": "0131026b28eb8747c7d9059318ef367ef03c40cd2704cb87dc63ad6bb09b802a"
+  },
+  "rootVersions": {
+    "anyio": "4.14.2",
+    "packaging": "26.3",
+    "pypdf": "6.20.1",
+    "python-discovery": "1.6.2",
+    "soupsieve": "2.9",
+    "urllib3": "2.8.0",
+    "virtualenv": "21.14.7",
+    "werkzeug": "3.1.9"
+  },
+  "schemaVersion": 1,
+  "sourceReceipts": {
+    "anyio": {
+      "bytes": 6826,
+      "sha256": "db8486b090bcf9977cd53888ffcd558fdf646d47887f656ab2eeeb0e9bb4cd06",
+      "url": "https://pypi.org/pypi/anyio/4.14.2/json",
+      "version": "4.14.2"
+    },
+    "packaging": {
+      "bytes": 5748,
+      "sha256": "4f190d2f0b312b3086058cee64ab4333bf3ce67fb78b4c2bdb43899049b29f4d",
+      "url": "https://pypi.org/pypi/packaging/26.3/json",
+      "version": "26.3"
+    },
+    "pyjwt": {
+      "bytes": 5552,
+      "sha256": "d7d239d115c9442eed19860676c23a4132a38a3880d5722da57fe2e0bd80f570",
+      "url": "https://pypi.org/pypi/pyjwt/2.15.0/json",
+      "version": "2.15.0"
+    },
+    "pypdf": {
+      "bytes": 9370,
+      "sha256": "10f8e46b3502aa8a3b46c95880856ab73ffedd396209dfb3e112f1e71a5af3a3",
+      "url": "https://pypi.org/pypi/pypdf/6.20.1/json",
+      "version": "6.20.1"
+    },
+    "python-discovery": {
+      "bytes": 7151,
+      "sha256": "8fad1e40a75c78b7fd59ecde95cdcf9fb4cbffa48f935349b0d341860e02ed69",
+      "url": "https://pypi.org/pypi/python-discovery/1.6.2/json",
+      "version": "1.6.2"
+    },
+    "semgrep": {
+      "bytes": 30857,
+      "sha256": "766df3edda94136fc7dc618a8f7fe4098fe5eb7c2158aa1e88ec90e997332068",
+      "url": "https://pypi.org/pypi/semgrep/1.180.0/json",
+      "version": "1.180.0"
+    },
+    "soupsieve": {
+      "bytes": 6733,
+      "sha256": "ce531a08b111f5ae5e83be0804599938480c74c1d2bafd6e67cb0ce890fcd240",
+      "url": "https://pypi.org/pypi/soupsieve/2.9/json",
+      "version": "2.9"
+    },
+    "urllib3": {
+      "bytes": 9510,
+      "sha256": "5315e7401db3cacccd0c2ce5daf81f752a9cc3614b18c37f2b79930b7159ce2f",
+      "url": "https://pypi.org/pypi/urllib3/2.8.0/json",
+      "version": "2.8.0"
+    },
+    "virtualenv": {
+      "bytes": 6027,
+      "sha256": "f9ed4d706359779b0d8a990d901e308be8d7539e1bfc132af106fd4d15498e57",
+      "url": "https://pypi.org/pypi/virtualenv/21.14.7/json",
+      "version": "21.14.7"
+    },
+    "werkzeug": {
+      "bytes": 6113,
+      "sha256": "2ebf74c299c008b5df95eaf3d0aa223cd9504142686eb3186627ab46b733096a",
+      "url": "https://pypi.org/pypi/werkzeug/3.1.9/json",
+      "version": "3.1.9"
+    }
+  },
+  "toolIdentity": {
+    "click": "8.4.2",
+    "cryptography": "50.0.0",
+    "mcp": "1.29.0",
+    "pyjwt": "2.15.0",
+    "semgrep": "1.180.0",
+    "urllib3": "2.8.0"
+  },
+  "toolProjectHash": "e7b5d9521804bb04971b53f7a68f38a4deaf2d28c54035cb82ea68210d6ce619",
+  "toolRecordHashes": {
+    "narratwin-semgrep-tool": "ae1dae926cc404a2b4f2781647d86154b1f18e7a0b14fe13ea4274af9eff4c87",
+    "pyjwt": "32406266795a374aaffbc3e1c446cd1f648d17f8094647dd4be4160b2547792b",
+    "semgrep": "48dc9741b8853695750fa5a355a8fe1414d46c336cb691772c9cc9978b7321dd",
+    "urllib3": "24136ea09b15a94ad45cce6ceb957ea89c71295241811ee9c8a8bf7ab58ecff1"
+  },
+  "toolVerificationTimeoutSeconds": 30,
+  "toolVersions": {
+    "pyjwt": "2.15.0",
+    "semgrep": "1.180.0",
+    "urllib3": "2.8.0"
+  }
+}

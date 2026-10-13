@@ -12,6 +12,9 @@ from pathlib import Path, PurePosixPath
 from typing import Any
 from urllib.parse import parse_qs, quote, unquote, urlsplit
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from scripts.ci.frontend_security_profile import load_profile
+
 
 TARGET_CVES = ("CVE-2026-11940", "CVE-2026-11972", "CVE-2026-15308")
 ARTIFACTS = (
@@ -65,30 +68,27 @@ FRONTEND_NODE_SOURCE_PLATFORM_DIGESTS = {
     "arm64": "sha256:d778881fd638833a2a0ed0fbb30577718729ab08112776dea4555eb5551826da",
 }
 FRONTEND_RUNTIME_OPENSSL_VERSION = "3.5.7"
-FRONTEND_RUNTIME_PACKAGES = {
-    "alpine-keys": "2.6-r0", "alpine-release": "3.24.1-r0",
-    "ca-certificates-bundle": "20260611-r0", "libgcc": "15.2.0-r5",
-    "libstdc++": "15.2.0-r5", "musl": "1.2.6-r2",
-}
+_NATIVE_PROFILE = load_profile()
+FRONTEND_RUNTIME_PACKAGES = _NATIVE_PROFILE["runtimePackages"]
 FRONTEND_SBOM_COMPONENTS = {
-    "alpine-keys": ("2.6-r0", ("MIT",), "alpine", "3.24.1"),
-    "alpine-release": ("3.24.1-r0", ("MIT",), "alpine", "3.24.1"),
-    "ca-certificates-bundle": ("20260611-r0", ("MIT", "MPL-2.0"), "alpine", "3.24.1"),
-    "libgcc": ("15.2.0-r5", ("GPL-2.0-or-later", "LGPL-2.1-or-later"), "alpine", "3.24.1"),
-    "libstdc++": ("15.2.0-r5", ("GPL-2.0-or-later", "LGPL-2.1-or-later"), "alpine", "3.24.1"),
-    "musl": ("1.2.6-r2", ("MIT",), "alpine", "3.24.1"),
+    name: (version, licenses, "alpine", FRONTEND_RUNTIME_PACKAGES["alpine-release"].split("-r")[0])
+    for name, licenses in {
+        "alpine-keys": ("MIT",), "alpine-release": ("MIT",),
+        "ca-certificates-bundle": ("MIT", "MPL-2.0"),
+        "libgcc": ("GPL-2.0-or-later", "LGPL-2.1-or-later"),
+        "libstdc++": ("GPL-2.0-or-later", "LGPL-2.1-or-later"), "musl": ("MIT",),
+    }.items()
+    for version in (FRONTEND_RUNTIME_PACKAGES[name],)
 }
 FRONTEND_SHARP_COMPONENTS = {
-    "amd64": {
-        ("sharp", "0.35.4", "pkg:npm/sharp@0.35.4"),
-        ("sharp-linuxmusl-x64", "0.35.4", "pkg:npm/%40img/sharp-linuxmusl-x64@0.35.4"),
-        ("sharp-libvips-linuxmusl-x64", "1.3.3", "pkg:npm/%40img/sharp-libvips-linuxmusl-x64@1.3.3"),
-    },
-    "arm64": {
-        ("sharp", "0.35.4", "pkg:npm/sharp@0.35.4"),
-        ("sharp-linuxmusl-arm64", "0.35.4", "pkg:npm/%40img/sharp-linuxmusl-arm64@0.35.4"),
-        ("sharp-libvips-linuxmusl-arm64", "1.3.3", "pkg:npm/%40img/sharp-libvips-linuxmusl-arm64@1.3.3"),
-    },
+    architecture: {
+        ("sharp", _NATIVE_PROFILE["sharpVersion"], "pkg:npm/sharp@" + _NATIVE_PROFILE["sharpVersion"]),
+        ("sharp-linuxmusl-" + suffix, _NATIVE_PROFILE["sharpVersion"],
+         "pkg:npm/%40img/sharp-linuxmusl-" + suffix + "@" + _NATIVE_PROFILE["sharpVersion"]),
+        ("sharp-libvips-linuxmusl-" + suffix, _NATIVE_PROFILE["libvipsVersion"],
+         "pkg:npm/%40img/sharp-libvips-linuxmusl-" + suffix + "@" + _NATIVE_PROFILE["libvipsVersion"]),
+    }
+    for architecture, suffix in (("amd64", "x64"), ("arm64", "arm64"))
 }
 ARTIFACT_TOOLS = {
     "backend-trivy": "trivy", "backend-grype": "grype",

@@ -89,6 +89,8 @@ Generated navigation from the repository catalog; it grants no approval.
 | [Bug report](../.github/ISSUE_TEMPLATE/bug_report.yml) | Canonical native bug intake | Engineering lead | The owned contract, behavior or evidence changes |
 | [Specification constitution](../.specify/memory/constitution.md) | Specification constitution; scoped authority | Engineering lead | The owned contract, behavior or evidence changes |
 | [Master Program V1](governance/NARRATWIN_MASTER_PROGRAM_V1.md) | Effective program source; apply accepted amendments | Engineering lead | The owned contract, behavior or evidence changes |
+| [Dependency security profile](security/DEPENDENCY_REFRESH.json) | Validated configuration and provenance; no acceptance authority | Security owner | Qualified dependency, container or verification policy changes |
+| [Frontend dependency security profile](security/FRONTEND_DEPENDENCY_REFRESH.json) | Validated current configuration and provenance; no acceptance authority | Security owner | Qualified frontend dependency, archive or verification policy changes |
 
 ## Collections
 

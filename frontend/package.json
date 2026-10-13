@@ -4,23 +4,27 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "node scripts/check-next-glob-compat.mjs && next build",
     "typecheck": "tsc --noEmit",
     "start": "node .next/standalone/server.js",
-    "lint": "eslint",
-    "test": "vitest run",
+    "lint": "node scripts/check-next-glob-compat.mjs && eslint",
+    "test": "node scripts/check-next-glob-compat.mjs && vitest run",
     "test:smoke": "playwright test"
   },
   "dependencies": {
-    "next": "16.3.4",
+    "next": "16.3.8",
     "react": "19.2.4",
     "react-dom": "19.2.4"
   },
   "overrides": {
-    "brace-expansion": "5.0.9",
+    "brace-expansion": "5.0.12",
     "minimatch": "10.2.5",
     "postcss": "8.5.23",
-    "sharp": "^0.35.4"
+    "sharp": "^0.35.5",
+    "source-map-js": "1.2.2",
+    "@next/eslint-plugin-next": {
+      "fast-glob": "npm:tinyglobby@0.2.17"
+    }
   },
   "devDependencies": {
     "@playwright/test": "^1.61.1",
@@ -28,16 +32,16 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9.39.4",
-    "eslint-config-next": "16.2.9",
+    "eslint-config-next": "16.3.8",
     "lighthouse": "^13.4.1",
     "playwright": "^1.61.1",
     "typescript": "^5",
     "vitest": "^4.1.11"
   },
   "allowScripts": {
-    "sharp@0.35.4": true,
     "unrs-resolver@1.12.2": true,
     "fsevents@2.3.2": true,
-    "fsevents@2.3.3": true
+    "fsevents@2.3.3": true,
+    "sharp@0.35.5": true
   }
 }

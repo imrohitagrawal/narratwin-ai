@@ -2020,3 +2020,32 @@ cancellation, or local-only result is not hosted-parity evidence.
 `NARRATWIN_G1_GIT_TIMEOUT_SECONDS` overrides the reviewed default only through finite-positive typed runtime configuration and reaches new Git calls; existing predecessor Git limits remain unchanged. Verification reports its effective configuration without rewriting generation lineage. Profile identity, source selectors, correction set, scope and byte ceilings have no caller-supplied digest override.
 
 Tests cover exact four-entry exclusion, retained row/source/receipt equality, census and schema execution, coherently rehashed unauthorized changes, stale bindings, untrusted profile/preflight replacement, invalid configuration, unavailable Git and path/symlink rejection. Actual dependency-absent bootstrap, push/PR direct-head/merge checkouts and required hosted contexts remain mandatory before exact-head approval; local tests alone are insufficient.
+
+## Dependency/container refresh profile
+
+`stage8-<issue>-dependency-container-refresh` uses the current reviewed
+GovernancePreflightV1 manifest for exact paths and charged-line caps. Its
+independent hardening envelope excludes application features and workflows.
+The first commit contains only the issue preflight; a recorded current scope
+amendment preserves C1 as history. Committed, indexed and working charges are
+checked independently, and real direct-head/merge checkout evidence is required.
+
+`docs/security/DEPENDENCY_REFRESH.json` is a closed, typed public artifact
+profile, including exact graph/provenance hashes, tool identity, APK inventory
+and positive verification timeout in seconds. Missing, duplicate, foreign or
+illtyped fields fail closed. The checker and container probe consume it; probe
+receipts bind the raw profile SHA256. Agreement proves consistency, not source
+eligibility, security approval, hosted execution or media acceptance. Strict
+current root/tool audits, Semgrep canaries, full tests and native x86/ARM image
+builds/scans remain mandatory. Historical provenance/mutation tests acquire the
+old inputs only after supplied current inputs pass the complete graph contract.
+
+The closed frontend profile additionally binds the exact current npm graph,
+qualified npm archives and current Sharp/native SBOM identity. The mandatory
+frontend lint/test/build prerequisite validates effective configurations for
+all supported types and actual files, checks unmodified published Next source,
+blocks any custom next.rootDir, and executes actual Next-rule pass/fail canaries.
+Scoped tinyglobby substitution is qualified only for current configuration,
+whose root discovery uses context.cwd; general glob compatibility failed.
+Runtime and archive consumers use validated profile values; profile agreement
+is not security acceptance. Full hosted audits/builds/scans remain mandatory.

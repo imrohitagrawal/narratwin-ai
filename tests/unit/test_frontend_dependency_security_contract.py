@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any, cast
 
 import pytest
+from test_frontend_dependency_refresh import validated_historical_text
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -100,9 +101,10 @@ def _assert_nanoid_contract(package_text: str, lock: dict[str, Any]) -> None:
 
 
 def test_frontend_nanoid_lock_is_exact_isolated_transitive_and_patched() -> None:
+    # Historical NanoID compatibility; current pair is proved before baseline acquisition.
     _assert_nanoid_contract(
-        (ROOT / "frontend/package.json").read_text(encoding="utf-8"),
-        json.loads((ROOT / "frontend/package-lock.json").read_text(encoding="utf-8")),
+        validated_historical_text("frontend/package.json"),
+        json.loads(validated_historical_text("frontend/package-lock.json")),
     )
 
 

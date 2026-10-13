@@ -1,0 +1,128 @@
+{
+  "schemaVersion": 1,
+  "baseSha": "2fc1bbd7904421d4a5a2c85995c28dbd9cdf0fce",
+  "manifestHash": "c6706be3a32d1a8b0467ce60c47eb2b958b5060d7f0a5c95b6dc770fb3f5f19d",
+  "lockHash": "ece5eea56c26dca29c1900a6ac46350b218514b21c60b1c5ed980a0eb7c1a7a2",
+  "recordHashes": {
+    "": "c4e009b21636aa64ced74bae92ec4b1e8a71da1c0c3c12b2dc9eb477d1755637",
+    "node_modules/@emnapi/runtime": "7711e7dd758eb0431622120f49be68f3498d499503e89182a3152b74c3f2e747",
+    "node_modules/@img/sharp-darwin-arm64": "d53352332fd71759c380670d1d9f7f5b720b08584a305e982c934e53343a0bbd",
+    "node_modules/@img/sharp-darwin-x64": "7e0c2478d87544b1870ee9a16ff7b64be7e1c7eed4396a977d32572b6091ba3b",
+    "node_modules/@img/sharp-freebsd-wasm32": "5c353f978c062f27b066295935269624582c32748ede737faad7e97451156a6d",
+    "node_modules/@img/sharp-libvips-darwin-arm64": "cbf7996518f8be75779155ef77399faf22286c07ca515b2246ca064092114953",
+    "node_modules/@img/sharp-libvips-darwin-x64": "1a0fe751b77e05b080d9b869eff6c9faa3fbca8de2a6208bee02d211999df461",
+    "node_modules/@img/sharp-libvips-linux-arm": "25622ddc6e784cd6952016941c3f8db688d82c99526d2fb05eb1f5fb125d4d16",
+    "node_modules/@img/sharp-libvips-linux-arm64": "fb58b0d078af78d2092395d6f9fc064d4f9eb830f7470b238c9c4420905c58d0",
+    "node_modules/@img/sharp-libvips-linux-ppc64": "29da59b224990f32281a047b015a9523ef0bde5852950c3f108b2e52aab3da84",
+    "node_modules/@img/sharp-libvips-linux-riscv64": "65aac91484b87e0ef8ced6170ff8243c2aa6d9af4f4b57964c9c0e927aefaf17",
+    "node_modules/@img/sharp-libvips-linux-s390x": "8dde4226f36e2d35ae7c069ffe58cf4dc4c210d722fde88d5942f094a8f3066d",
+    "node_modules/@img/sharp-libvips-linux-x64": "0ed6eb6f9cc0183c2c75d7c91afa71d3b8d3fd61f1434cf39b2ea572dccc639a",
+    "node_modules/@img/sharp-libvips-linuxmusl-arm64": "77e1ea27c1a0799239c079450a11555d2bc021772ddbaab73ace76b38800b74f",
+    "node_modules/@img/sharp-libvips-linuxmusl-x64": "a4490728fbac6999ca212e862e870123bcd1a04b897d700661765faf569e2245",
+    "node_modules/@img/sharp-linux-arm": "f88b9153b44ded9e604b8ded4a274c50133fdd15716e59d1b629d77e5d0afcb5",
+    "node_modules/@img/sharp-linux-arm64": "2240ff2201b9a44f984b93fa5fc7b742820847690ecc7272979566e6a8d368f8",
+    "node_modules/@img/sharp-linux-ppc64": "3da94aa251ebd5ff690f21f0d043648fc13094b79fc1a3f1c62a9cac0ad5b8a7",
+    "node_modules/@img/sharp-linux-riscv64": "88c8552925d6dab323e827dbdb6cf3c2b8ae0111a9a790ddd5c4c32973ebd618",
+    "node_modules/@img/sharp-linux-s390x": "bc52a6b846316b5080b36d217b8216a17db22895769035b7c2d62e9d85efc786",
+    "node_modules/@img/sharp-linux-x64": "8e922a597d6b211a3160dd27c1967e9fe75ba5475da5b57da615f899b8ae6e57",
+    "node_modules/@img/sharp-linuxmusl-arm64": "50e0153e7d2b3ad733c01f115f9a5a87909a008d42fd669e220072cde41833cf",
+    "node_modules/@img/sharp-linuxmusl-x64": "7caa1791cec20227481d3a855e785480268d456e2bb53006af600a482ac5a5d5",
+    "node_modules/@img/sharp-wasm32": "1f71d194d52583fee8f10f43d2c26bd19cac60dd21e8e32a6c87dcbc6ee89a86",
+    "node_modules/@img/sharp-webcontainers-wasm32": "9b9d187ad9aae09a1528ddac8578487d12ebf66e38903b20e9da3686af3fb8f3",
+    "node_modules/@img/sharp-win32-arm64": "5a70f5376d718d832ff4da673e4ed75a280e506c3b1ca89ab2eacfbc6b0cac0b",
+    "node_modules/@img/sharp-win32-ia32": "959c34aec241c80b24040f04851bcae918771453fb75a31a1976a38b57f5cb71",
+    "node_modules/@img/sharp-win32-x64": "c10ef9bc6fcf7fdf3a5cb7e7b7b0c94170ec0e01a3c9920c29a1bf4af0072b24",
+    "node_modules/@next/env": "07d7ff6a2ce8ea884d6cfc331f85aaadcc6e8d0c1b0dfe2ba1bb01feb5ad053b",
+    "node_modules/@next/eslint-plugin-next": "e6da400528113271ac6f02d456a4d086600f6879cf3e87deb6d61a822d6221a4",
+    "node_modules/@next/eslint-plugin-next/node_modules/fast-glob": "a794827a00d4ed81dfad840211af0aa58b4154289abd9ec481f8be9ee5a28fa3",
+    "node_modules/@next/eslint-plugin-next/node_modules/fdir": "eaa38667cb587fe0834a66cb17e238af2663b4696ecda167880591638b0f4711",
+    "node_modules/@next/eslint-plugin-next/node_modules/picomatch": "99a1bb8bddde31dcd3e57271cc64ea405db84bb866d2d76dc48b5445e8d984c3",
+    "node_modules/@next/swc-darwin-arm64": "5efeb22be78a7978d63fc6e00bb3506d66d6bc0a2d852e0cdc33aeeb41f10538",
+    "node_modules/@next/swc-darwin-x64": "fd24a828df580888f2fc10fe5986134f82d634544c39e90f472d56d9210e21d4",
+    "node_modules/@next/swc-linux-arm64-gnu": "b08fceb7f190bbd69264127ab2a6e142d0ac0cc173a2f627c0d7c3ecc1782786",
+    "node_modules/@next/swc-linux-arm64-musl": "4966e0ddc7d9c0246f89375829ac8c4440128795f420f6a1dfc152550fdd1256",
+    "node_modules/@next/swc-linux-x64-gnu": "0bad549c04a7318a172531030f2b4c1f0bc55cdccb32e6944a22bae30cf433ec",
+    "node_modules/@next/swc-linux-x64-musl": "a79f03d4c3e9b94d1f5ae16a43ef5eb0fc79e80f67aa81718f4959ecbcce60f5",
+    "node_modules/@next/swc-win32-arm64-msvc": "99eb40a0160bb5c571a344b3a35d9b21c9683727a864f72defe60aa985da776f",
+    "node_modules/@next/swc-win32-x64-msvc": "14015e8c0aff54addc7043b3f332799cb3ce22d769de19107fb91e050d47ebf6",
+    "node_modules/brace-expansion": "ac747276a12b0103a7ffc52a515157270591faa4509214282689c6d51700a2af",
+    "node_modules/eslint-config-next": "bb617f680e08629e7f7dd35d901ec9ae2dda003ceffffe4b5168913fb8852ebe",
+    "node_modules/next": "82452dec55947a1fc8c6afbad8cdd6510f8c9de4d7d9f9fb7ae792577a93c4fc",
+    "node_modules/sharp": "727e75a4e67eb89b61e6cbb2ec0ba071268f1ee41858616ad0d468774f51b3d0",
+    "node_modules/source-map-js": "e886760c62fe6c5e09ec2a4ea68e4677907f39dcd2a52b8881917ca02b35727a"
+  },
+  "removedRecords": [
+    "node_modules/@nodelib/fs.scandir",
+    "node_modules/@nodelib/fs.stat",
+    "node_modules/@nodelib/fs.walk",
+    "node_modules/braces",
+    "node_modules/fast-glob",
+    "node_modules/fast-glob/node_modules/glob-parent",
+    "node_modules/fastq",
+    "node_modules/fill-range",
+    "node_modules/is-number",
+    "node_modules/merge2",
+    "node_modules/micromatch",
+    "node_modules/picomatch",
+    "node_modules/queue-microtask",
+    "node_modules/reusify",
+    "node_modules/run-parallel",
+    "node_modules/to-regex-range"
+  ],
+  "effectiveConfigHashes": {
+    "ts": "bb275b51578329e49ed8a8133aca1db155e609e289b6ec494177eccf6be4e0b9",
+    "tsx": "bb275b51578329e49ed8a8133aca1db155e609e289b6ec494177eccf6be4e0b9",
+    "js": "56f9b10a9f5b1f7130aa58c18b4d0789bd83381f32a6f5eeb6b26f0ffbe0117c",
+    "jsx": "56f9b10a9f5b1f7130aa58c18b4d0789bd83381f32a6f5eeb6b26f0ffbe0117c",
+    "mjs": "56f9b10a9f5b1f7130aa58c18b4d0789bd83381f32a6f5eeb6b26f0ffbe0117c",
+    "cjs": "362165d5f3245434b6449f378d38f753c22b4de5faf5bf1e84819199f5eeeb33"
+  },
+  "baselineConfigsSha256": "18d6d95d659b69bb6a6360281ec5329fbaa51e3e3e44a169fd751878e367d32f",
+  "rootDiscoverySourceSha256": "886677432990a735e5ebdfb345ff1cbd40e264f9947a8432eeeb254b3a926bde",
+  "verificationTimeoutSeconds": 30,
+  "buildArchives": {
+    "npm": {
+      "version": "12.0.2",
+      "sha256": "5dbb86c71d07a1957f2e90734092dd6a58bdcd9ebc2d8d41ca1c6e6a21d364e1",
+      "sha512": "b885e890b9418fa1693544d05f53e64f9a73ec194837d4258b15fecdd692347b1dd2a517b1b0cbaf9d31cd8e92c3b70956bd2ecc72833a57b4b3098f5bfa7943"
+    },
+    "brace-expansion": {
+      "version": "5.0.12",
+      "sha256": "ef8448ec78f20b692f04fa6d01f39b5ab34c66404bea3429f5a39c6c9e0be8b4",
+      "sha512": "628bd0debce168b308ac38cd0cc90d4b4d6d79af77aa11211b9c72f1febe47497e770dca8bee6c0a822823de368ae2d94c75a881692d830543854d3d88d12299"
+    },
+    "ip-address": {
+      "version": "10.3.1",
+      "sha256": "ad1790063beea11a312c801df30d58e147de762f4f77787552376eb7424623e5",
+      "sha512": "d5ef5dde46fdecd1c94c8243656f6b2aa5b687af9d15ae740f2d1fa4f48c429d800e37b982f2ac5e67622ba770639b7be93693b79f8fe4dd58fcba13a08c4fea"
+    },
+    "tar": {
+      "version": "7.5.21",
+      "sha256": "bcedf25a21daecd1a18fb5e19ab855b7d79ec8ef1da175e8ba85cfc0ed0069d1",
+      "sha512": "5dd86d0af94ccb0c31a425bc604ab794e5c126950f4d1d8e1c77302cf3b71f0b09a8e1dad8e93fa09eebb86ce9f89acaa113d50b327001d123a8b5bfbcd44f1c"
+    },
+    "undici": {
+      "version": "6.28.0",
+      "sha256": "32a86c6fa28fd48b915555048c05bbd37ad35457d9e945953831a4374c886a9c",
+      "sha512": "2c863dd7483d4c8d77612f7996b305aecf119bfbbf8ab8077935a8282a2d79e274e02509f767847e3d2b567fbb54a30f06950f894a0129f84dc8b236dc413f28"
+    }
+  },
+  "sharpVersion": "0.35.5",
+  "libvipsVersion": "1.3.4",
+  "runtimePackages": {
+    "alpine-keys": "2.6-r0",
+    "alpine-release": "3.24.1-r0",
+    "ca-certificates-bundle": "20260611-r0",
+    "libgcc": "15.2.0-r5",
+    "libstdc++": "15.2.0-r5",
+    "musl": "1.2.6-r2"
+  },
+  "packageVersions": {
+    "next": "16.3.8",
+    "eslint-config-next": "16.3.8",
+    "brace-expansion": "5.0.12",
+    "sharp": "0.35.5",
+    "source-map-js": "1.2.2",
+    "tinyglobby": "0.2.17"
+  }
+}

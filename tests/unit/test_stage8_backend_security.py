@@ -36,8 +36,8 @@ def test_issue436_rejects_image_source_tls_and_metadata_mutations() -> None:
         dockerfile.replace(security.CPYTHON_VERSION, "3.13.14"),
         dockerfile.replace(security.CPYTHON_SHA256, "0" * 64),
         dockerfile.replace("sha256sum -c -", "REMOVED"),
-        dockerfile.replace("libssl3=3.3.7-r0", "libssl3=3.5.7-r0"),
-        dockerfile.replace("libcrypto3=3.3.7-r0", "libcrypto3=3.5.7-r0"),
+        dockerfile.replace("libssl3=3.3.7-r2", "libssl3=3.5.7-r0"),
+        dockerfile.replace("libcrypto3=3.3.7-r2", "libcrypto3=3.5.7-r0"),
         dockerfile.replace("/lib/apk/db/installed", "/tmp/concealed"),
         dockerfile + "\nFROM alpine:latest AS bypass\n",
     )
@@ -48,11 +48,11 @@ def test_issue436_runtime_probe_requires_tls_and_safe_openssl_line() -> None:
     probe = (ROOT / "scripts/ci/backend-image-package-check.sh").read_text(encoding="utf-8")
     for marker in (
         "ssl.OPENSSL_VERSION",
-        'startswith("OpenSSL 3.3.7 ")',
+        'startswith("OpenSSL " + expected["opensslVersion"] + " ")',
         "ssl.create_default_context()",
         "/lib/apk/db/installed",
-        'packages["libcrypto3"] == "3.3.7-r0"',
-        'packages["libssl3"] == "3.3.7-r0"',
+        'packages["libcrypto3"] == expected["opensslApkVersion"]',
+        'packages["libssl3"] == expected["opensslApkVersion"]',
     ):
         assert marker in probe
 

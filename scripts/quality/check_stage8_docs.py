@@ -6,6 +6,7 @@ import hashlib, json, os, re, subprocess, sys
 from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT));import scripts.quality.issue427_architecture_reset as issue427_reset
+from scripts.quality import stage8_checkout_scope as checkout_scope, stage8_refresh_scope as refresh_scope
 import scripts.quality.issue431_authority_core as issue431_authority_core
 from scripts.quality.branch_identity import current_branch
 from scripts.quality.check_stage2_docs import check_retrieval_strategy_v1_parity
@@ -141,60 +142,7 @@ def check_issue434_verifier(f:list[str])->None:
 def read(path:str)->str: return (ROOT/path).read_text(encoding="utf-8")
 def fail(message:str,failures:list[str])->None: failures.append(message)
 def changed_files_for_stage_scope() -> list[str]:
-    head_result = run(["git", "rev-parse", "HEAD"])
-    if head_result.returncode != 0 or not head_result.stdout.strip():
-        raise RuntimeError(head_result.stderr.strip() or "git rev-parse HEAD failed")
-    head=head_result.stdout.strip(); event_name=os.environ.get("GITHUB_EVENT_NAME","").strip()
-    expected_head = os.environ.get("GITHUB_HEAD_SHA", "").strip()
-    event_path = os.environ.get("GITHUB_EVENT_PATH", "").strip()
-    if event_path and event_name in {"pull_request", "pull_request_review", "push"}:
-        try:
-            payload = json.loads(Path(event_path).read_text(encoding="utf-8"))
-            event_head = (payload["after"] if event_name == "push" else payload["pull_request"]["head"]["sha"])
-        except (KeyError, OSError, TypeError, ValueError) as error:
-            raise RuntimeError("GitHub exact head evidence is malformed or unavailable.") from error
-        if not isinstance(event_head, str) or not event_head.strip():
-            raise RuntimeError("GitHub exact head evidence is malformed or unavailable.")
-        if expected_head and expected_head != event_head.strip():
-            raise RuntimeError("GitHub exact head evidence contradicts GITHUB_HEAD_SHA.")
-        expected_head = event_head.strip()
-    if not expected_head and event_name in {"pull_request", "pull_request_review", "push"}:
-        raise RuntimeError("GitHub exact head evidence is malformed or unavailable.")
-    if expected_head:
-        expected_result = run(["git", "rev-parse", f"{expected_head}^{{commit}}"])
-        if expected_result.returncode != 0 or not expected_result.stdout.strip():
-            raise RuntimeError(expected_result.stderr.strip() or "git rev-parse exact head failed")
-        if expected_result.stdout.strip() != head:
-            raise RuntimeError("Stage 8 scope checkout does not match the exact head.")
-    b=os.environ.get("GITHUB_BASE_SHA","").strip()
-    r=os.environ.get("NARRATWIN_HEAD_REF",os.environ.get("GITHUB_REF_NAME","")).strip()
-    f=(event_name=="push" and r!="main") or not b or b==NULL_GIT_SHA
-    candidates=([cr.ISSUE459_TRANSITION_BASE] if event_name=="push" and
-        r==cr.ISSUE459_BRANCH else ["origin/main","main"] if f else [b])
-    merge_base=""; last_error=""
-    for candidate in candidates:
-        result = run(["git", "merge-base", candidate, head])
-        if result.returncode == 0 and result.stdout.strip():
-            merge_base = result.stdout.strip()
-            break
-        last_error = result.stderr.strip()
-    if not merge_base:
-        raise RuntimeError(last_error or "git merge-base failed for Stage 8 scope.")
-    diff_flags = ["--name-status", "-z", "--find-renames", "--find-copies", "--find-copies-harder"]
-    paths: list[str] = []
-    for args in (
-        ["git", "diff", *diff_flags, f"{merge_base}..{head}", "--"],
-        ["git", "diff", "--cached", *diff_flags, head, "--"],
-        ["git", "diff", *diff_flags, "--"],
-    ):
-        result = run(args)
-        if result.returncode != 0:
-            raise RuntimeError(result.stderr.strip() or f"{' '.join(args)} failed")
-        paths.extend(parse_name_status_z(result.stdout))
-    untracked = run(["git", "ls-files", "-z", "--others", "--exclude-standard"])
-    if untracked.returncode != 0:
-        raise RuntimeError(untracked.stderr.strip() or "git ls-files failed")
-    paths.extend(parse_paths_z(untracked.stdout)); return sorted(set(paths))
+    return checkout_scope.changed_files(run, parse_name_status_z, parse_paths_z, NULL_GIT_SHA, cr)
 def citation_parity_charge() -> int:
     p=CP_BASE; b=run(["git","merge-base",p,"HEAD"])
     i=run(["git","diff","--cached","--numstat",p,"--"]); w=run(["git","diff","--numstat",p,"--"])
@@ -292,6 +240,10 @@ def check_stage_marker_and_branch(failures: list[str]) -> None:
         and branch not in EFFECTIVE_STAGE8_ROUTES
     ):
         fail(f"Stage 8 work must run on a stage8-* branch or main after merge; got {branch}.", failures)
+REFRESH_BRANCH = refresh_scope.REFRESH_BRANCH
+def check_refresh_scope(branch: str, failures: list[str]) -> None:
+    refresh_scope.check_refresh_scope(branch, failures, ROOT, run, changed_files_for_stage_scope)
+
 def check_stage_scope(failures: list[str]) -> None:
     branch = current_branch()
     if not branch:
@@ -299,6 +251,9 @@ def check_stage_scope(failures: list[str]) -> None:
         return
     if branch not in EFFECTIVE_STAGE8_ROUTES and branch != "main" and not STAGE8_BRANCH_PATTERN.match(branch):
         fail(f"Stage 8 scope requires an exact reviewed branch; got {branch}.", failures)
+        return
+    if REFRESH_BRANCH.fullmatch(branch):
+        check_refresh_scope(branch, failures)
         return
     allowed_files = EFFECTIVE_STAGE8_ROUTES.get(branch, STAGE8_ALLOWED_FILES)
     changed_files = set(changed_files_for_stage_scope())

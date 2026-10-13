@@ -354,3 +354,17 @@ def test_issue389_charge_evidence_rejects_malformed_or_unscoped(output: str) -> 
     failures: list[str] = []
     security._charges(output, failures)
     assert failures
+
+
+def test_current_frontend_archive_policy_reaches_docker_checker() -> None:
+    from scripts.ci.frontend_security_profile import load_profile
+    profile = load_profile()
+    archive = profile["buildArchives"]["brace-expansion"]
+    assert archive["version"] == "5.0.12"
+    filename = "brace-expansion-" + archive["version"] + ".tgz"
+    assert security.FRONTEND_BUILD_ARCHIVE_SHA256[filename] == archive["sha256"]
+    dockerfile = stage8.read("frontend/Dockerfile")
+    assert security.frontend_node_image_valid(dockerfile)
+    assert not security.frontend_node_image_valid(dockerfile.replace(archive["sha256"], "0" * 64))
+    assert "frontend-security-profile.mjs" in dockerfile
+    assert "FRONTEND_DEPENDENCY_REFRESH.json" in dockerfile

@@ -1,0 +1,75 @@
+# ADR 0087: current dependency and container recovery
+
+Status: proposed in issue #561; acceptance requires exact-head review and CI.
+
+## Problem and decision
+
+Main's Alpine OpenSSL r0 pin disappeared, and strict audits find six vulnerable
+application packages plus two vulnerable isolated-tool packages. The prior
+September successor's r1 pin is also stale. Preserve that history and the
+original dirty checkout; repair the currently demonstrated failures separately.
+Target only qualified security packages and their required transitive records.
+Semgrep 1.175 caps PyJWT below its patched version; actual resolution proves
+that a compatible upstream Semgrep 1.180 pin is necessary. No override or audit
+exception is permitted. Keep Alpine 3.21 with verified current APK revisions.
+
+A closed, validated public profile binds exact current project/record hashes,
+source receipts, isolated tool identity, APK values and verification timeout.
+Checker/probe consumers read it; the probe receives validated public values
+with the original profile hash. Dockerfile/pyproject/lock files are deployment
+configuration and must agree with it. Future patch data changes require fresh
+source qualification, graph review, audits and actual builds. Agreement alone
+never grants owner or hosted approval.
+
+Historical compatibility tests keep their original mutations on immutable
+prior inputs, acquired only after the exact supplied current pair has passed
+whole-graph/provenance validation. A separate mutation suite rejects vulnerable,
+forged, duplicate, missing and unrelated current inputs before normalization.
+
+## Scope, authority and verification
+
+The owner's current repair instruction is recorded separately from host review.
+C1 f74768c6 remains immutable history; a documented current preflight amendment
+governs 45 paths and 4,000 additions plus deletions. A bounded Stage 8 hardening
+envelope, first-commit proof, manifest budgets and real checkout topology retain
+the existing semantic gates and frozen Phase 1 substrate.
+
+Root and tool strict audits, installed PyJWT options regression, Semgrep canary
+and repository scan, complete unit/API/frontend checks, exact local/direct/merge
+quality and native hosted x86/ARM image build/probe/scan must pass before merge.
+Disk reserve prevents unqualified local Docker allocation; actual native hosted
+commands provide image verification. No immutable release evidence is frozen
+from local approximation. Four review rounds/two approaches are cumulative.
+
+## Frontend qualification amendment
+
+Current npm audit also demonstrates vulnerable Next, brace-expansion, Sharp and
+source-map-js records. Qualified patch versions and required native/transitive
+records are refreshed, including the vendored npm brace archive. The unpatched
+braces dependency is removed through a truthful scoped tinyglobby alias.
+General glob and local-file adapter qualification failed and are not promoted.
+
+The actual ESLint configuration does not set next.rootDir. A mandatory lint,
+test and build prerequisite binds every effective rule/options/parser/settings
+for supported types and actual source files, verifies the unmodified published
+Next consumer, blocks custom rootDir, and runs real failing/passing Next-rule
+canaries. All baseline rules remain; the official Next patch adds one rule.
+This qualifies current configuration only; future custom rootDir needs a new
+compatibility decision. There is no general fast-glob compatibility claim.
+
+A separate closed frontend profile carries current graph bindings, native and
+npm-archive identity, effective configuration hashes and verification timeout.
+Both Python and Node consumers reject malformed/duplicate/foreign data. Timeout
+is capped by Node's intrinsic signed-32-bit millisecond timer representation.
+Native scanner/SBOM checks consume current Sharp and runtime-package identity.
+Interrupted local full-suite/secret scans are retained as incomplete; actual
+hosted full checks remain mandatory. The pre-code amendment is issue comment
+6145651233; earlier exclusions and C1 remain history, review counters unchanged.
+
+## Limits
+
+No application feature, provider account mutation, biometric transfer, voice
+clone, paid operation, deployment, protection change, threshold reduction or
+shared/historical cleanup. No new Meera/Cut 1 or personal-avatar media acceptance.
+Durable execution records remain outside temporary worktrees, with custody and
+resume instructions; independent backup is not proved.

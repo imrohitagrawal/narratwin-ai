@@ -1,6 +1,6 @@
 # Governance and evaluation backlog: handoff
 
-PLAN_SHA256: 26a9dc6ccda4811fbfae653726e5dc3e3e8bdc88ef49462b107c3ecb7d701d63
+PLAN_SHA256: 3ef7cd207f9f210f602fcd4436f2a1288324e3b8fb2b1b403ad23e3a8932e018
 EVIDENCE_SHA256: 550beb600595ce8cf46e1b89652936f2e02d678564f9e57001548d90784db6ec
 
 
@@ -15,3 +15,8 @@ Repository status: this structure is being prepared on Issue535 draft PR536; it 
 Next action: use the linked existing issues and current STATUS to select the permitted next increment. Registration does not complete this work or grant provider, spending or release authority.
 
 Coverage: this record preserves the reviewed issue snapshot and current structure decision. Earlier visible-message capture boundaries and omissions remain in the historical recovery receipts; no complete conversation capture is claimed.
+
+Current owner-authorized prerequisite: issue #561 repairs inherited strict audit/
+Alpine failures enabling #559/PR #560 and pilot #558. Candidate remains unmerged;
+verify exact-head CI/review and durable recovery handoff before continuing.
+Earlier draft observations remain history; metadata consistency grants no acceptance.
