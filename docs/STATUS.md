@@ -10,10 +10,9 @@ needed by personal-avatar preparation #558. It installs a documentation-only
 scope adapter around frozen Phase1 checks; all preserved contracts and default
 mock/local routes remain. Scope and charged-line budgets live in each issue
 manifest. Ordinary documentation manifests cannot authorize runtime, provider,
-workflow, dependency or installed quality-kernel edits. This candidate requires
-independent review and exact hosted verification before repository acceptance.
-Next after eligible merge: register pilot #558 on current main and qualify inputs
-read-only. No biometric upload/enrollment, cloning, generation, spend, G1
+workflow, dependency or installed quality-kernel edits. PR560 merged after independent review, complete local integration, exact hosted
+verification and eligible host approval; postmerge quality passed. Pilot #558 now
+registers on accepted main and qualifies inputs locally/read-only. No biometric upload/enrollment, cloning, generation, spend, G1
 certification, V2 activation, Cut1 acceptance or release authority follows.
 Unpublished338 and dirty work remain preserved; No-Go is unchanged.
 
@@ -2414,3 +2413,22 @@ remain mandatory. Read-only HeyGen inspection and recording preparation may
 proceed independently. No provider upload/enrollment, cloning, rendering, spend,
 Meera/Despina change, formal Cut1 pass, application integration, deployment,
 release or production readiness is established.
+
+## Personal-avatar input preparation — Issue #558
+
+PR560 merged at13d78f29ce52f29f18db895f66fce42211974ba5 with actual eligible host approval;
+postmerge quality38455739092 passed. Scope559 and coordinated status563 are
+satisfied. This increment registers the separate [pilot](work/personal-avatar-pilot/README.md)
+on accepted main, preserving historical records and the dirty unpublished338 work.
+Read-only HeyGen inspection found Free website plan and incomplete API onboarding;
+exact operation/look/privacy/maximum billing remains unqualified. Approved local
+review of five Drive originals found1080p portrait candidates: English1/3/5,
+Hindi2/4. File1 is provisional enrollment source and separate file5 a proposed
+held-out control. Metadata/sample frames/local draft transcription support
+preparation, not full audiovisual approval. Downloaded video/audio/frame copies
+are removed after assessment as requested; original Drive files remain.
+No provider upload/enrollment/clone/render/spend, performance acceptance, Meera/
+Despina/formalCut1 change, G1 certification, V2 activation, release or production
+readiness. Fresh provider consent capture, exact approved audio/transcript,
+operation qualification, reusablevoice/fullvideo/revision and actual application
+integration remain incomplete. Earlier pending559 observations are historical.

@@ -17,6 +17,7 @@ These are navigation records. Review state and folder location grant no authorit
 | [Readiness and operations](../../docs/work/readiness/README.md) | workstream | [source-pointer](../../docs/ENTERPRISE_READINESS_REGISTER.md) | [STATUS](../../docs/STATUS.md) · [handoff](../../docs/work/readiness/HANDOFF.md) |
 | [Governance and evaluation backlog](../../docs/work/governance-backlog/README.md) | governance | [source-pointer](../../docs/STATUS.md) | [STATUS](../../docs/STATUS.md) · [handoff](../../docs/work/governance-backlog/HANDOFF.md) |
 | [Documentation architecture and contributor lifecycle](../../docs/work/documentation-architecture/README.md) | governance | [execution-plan](../../docs/work/documentation-architecture/PLAN.md) | [STATUS](../../docs/STATUS.md) · [handoff](../../docs/work/documentation-architecture/HANDOFF.md) |
+| [Personal-avatar pilot](../../docs/work/personal-avatar-pilot/README.md) | experiment | [execution-plan](../../docs/work/personal-avatar-pilot/PLAN.md) | [STATUS](../../docs/STATUS.md) · [handoff](../../docs/work/personal-avatar-pilot/HANDOFF.md) |
 
 ## Observed issue ownership
 
@@ -86,3 +87,4 @@ Snapshot coverage is recorded in the registry; verify live tracker state before 
 | [#17](https://github.com/imrohitagrawal/narratwin-ai/issues/17) Stage 6 residual — Controlled fallback integrity for multilingual generation | [future-capabilities](future-capabilities/README.md) |
 | [#540](https://github.com/imrohitagrawal/narratwin-ai/issues/540) G1: derive a preserved four-bibliography correction successor | [g1-certification](g1-certification/README.md) |
 | [#559](https://github.com/imrohitagrawal/narratwin-ai/issues/559) Governance: validate work-record scope from reviewed manifests | [working-records](working-records/README.md) |
+| [#558](https://github.com/imrohitagrawal/narratwin-ai/issues/558) Personal-avatar pilot: durable recovery record and input qualification | [personal-avatar-pilot](personal-avatar-pilot/README.md) |

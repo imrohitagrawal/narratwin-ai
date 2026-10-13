@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
   "inventorySource": {
-    "path": "docs/work/working-records/proposals/work-record-scope/ISSUE_SNAPSHOT.json",
-    "sha256": "fea4c8163dab89cffe19c580fc8bc74e7c20764f02f4f0ec398b6a9748bde750",
-    "bytes": 8390
+    "path": "docs/work/personal-avatar-pilot/evidence/ISSUE_SNAPSHOT.json",
+    "sha256": "e44ec976b63b0dbe5d259a78f1aadda39b68837152f66afcfc262a3b85ca5d1d",
+    "bytes": 8538
   },
   "privateRoots": [
     ".evidence",
@@ -330,6 +330,11 @@
       "number": 559,
       "title": "Governance: validate work-record scope from reviewed manifests",
       "workId": "working-records"
+    },
+    {
+      "number": 558,
+      "title": "Personal-avatar pilot: durable recovery record and input qualification",
+      "workId": "personal-avatar-pilot"
     }
   ],
   "works": [
@@ -621,8 +626,8 @@
       "path": "docs/work/governance-backlog",
       "plan": {
         "path": "docs/STATUS.md",
-        "sha256": "e11f44c4ab0cd355626fe6d083070b992f4e529af3988abc6d0d38f75566366b",
-        "bytes": 294444,
+        "sha256": "28de84cd139ec4917ddf38b5f1e2a235102b68baed1bed1f869e43f574931aea",
+        "bytes": 295823,
         "role": "source-pointer"
       },
       "statusRef": "docs/STATUS.md",
@@ -673,6 +678,42 @@
       "evidenceIndex": "docs/work/documentation-architecture/evidence/INDEX.json",
       "handoff": "docs/work/documentation-architecture/HANDOFF.md",
       "checkpoint": "2026-09-14; PR536 merged67d4b094 with approved29606 tree; PR534 retired unmerged; Issue538/PR539 reconciles sequencing; verify live tracker before action"
+    },
+    {
+      "id": "personal-avatar-pilot",
+      "title": "Personal-avatar pilot",
+      "kind": "experiment",
+      "owner": "Rohit; root execution and record owner",
+      "path": "docs/work/personal-avatar-pilot",
+      "plan": {
+        "path": "docs/work/personal-avatar-pilot/PLAN.md",
+        "sha256": "31178e655a5602231c054d129c5d931c0455fe04f1945d5b61055c16e7ce0dc2",
+        "bytes": 13707,
+        "role": "execution-plan"
+      },
+      "statusRef": "docs/STATUS.md",
+      "authorityRefs": [
+        "docs/work/personal-avatar-pilot/DECISIONS.md",
+        "docs/PRD.md",
+        "docs/PHASE_PLAN.md"
+      ],
+      "issues": [
+        558
+      ],
+      "parent": "demo-comparison",
+      "relationships": [
+        {
+          "kind": "related-to",
+          "target": "delivery"
+        },
+        {
+          "kind": "uses-evidence-from",
+          "target": "demo-comparison"
+        }
+      ],
+      "evidenceIndex": "docs/work/personal-avatar-pilot/evidence/INDEX.json",
+      "handoff": "docs/work/personal-avatar-pilot/HANDOFF.md",
+      "checkpoint": "2026-10-14; preparation on accepted13d78f29; five portrait originals provisionally assessed; file1/file5 separate enrollment/control candidates; downloaded videos and audio/frames deleted; full audiovisual/provider qualification incomplete"
     }
   ]
 }

@@ -602,3 +602,19 @@ fixes CVE-2026-19445, CVE-2026-19553 and CVE-2026-82049 reported by native scans
 Build signature verification remains mandatory. Native acceptance is pending.
 Historical builder descriptions above are superseded by the executable scan
 contract: builder Critical/High and final runtime Critical/High/Medium gates.
+
+## Personal-avatar local source review (2026-10-14)
+
+Owner-supplied ArtOfTesting/Drive footage is used with owner's local-review grant;
+no redistribution/provider-transfer license is inferred. Raw video/audio/frame
+copies stay outside Git and are deleted after assessment; originals remain in Drive.
+Existing FFmpeg/ffprobe performs local decoding/metadata; its existing project
+notice applies. Isolated faster-whisper1.2.1 (MIT, SYSTRAN;
+https://github.com/SYSTRAN/faster-whisper) and multilingual Whisper base weights
+(MIT, OpenAI; https://github.com/openai/whisper) provide local draft transcription.
+The temporary tool environment/model is not a product dependency or provider
+activation. Transitive package versions/licenses are retained privately in local
+tool custody. No source audio/video is transmitted for inference. Draft output
+is not exact transcript or audiovisual acceptance. HeyGen public docs/policies
+and Chrome account observations support planning only; no new media/provider
+operation, model-generated avatar sample or purchased license was created.
