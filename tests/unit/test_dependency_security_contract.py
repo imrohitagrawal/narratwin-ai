@@ -13,6 +13,7 @@ import importlib.metadata
 import json
 import shutil
 import subprocess
+import sys
 import tomllib
 from pathlib import Path
 from typing import Any, cast
@@ -1088,9 +1089,9 @@ def test_root_and_semgrep_tool_locks_are_separate_and_patched() -> None:
     assert Version(next(iter(root_packages["click"]))) >= Version("8.3.3")
     assert tool_project["project"]["dependencies"] == ["semgrep==1.175.0"]
     assert "override-dependencies" not in tool_project["tool"]["uv"]
-    assert tool_packages["semgrep"] == {"1.180.0"}
+    assert tool_packages["semgrep"] == {"1.183.0"}
     assert tool_packages["click"] == {"8.4.2"}
-    assert tool_packages["mcp"] == {"1.29.0"}
+    assert tool_packages["mcp"] == {"1.30.0"}
     assert tool_packages["cryptography"] == {"50.0.0"}
     assert tool_packages["pyjwt"] == {"2.15.0"}
 
@@ -1126,43 +1127,42 @@ def test_semgrep_1_175_generated_lock_has_no_override_and_is_isolated() -> None:
     assert normalized == base_lock
 
 
-def test_semgrep_tool_contract_rejects_vulnerable_cryptography_lock(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    root_project: dict[str, Any] = {"tool": {"uv": {}}}
-    tool_project: dict[str, Any] = {
-        "project": {"dependencies": ["semgrep==1.180.0"]},
-        "tool": {"uv": {}},
-    }
-    root_lock = {"click": {"8.3.3"}}
+def _tool_identity() -> dict[str, str]:
+    return cast(dict[str, str], semgrep_security.load_security_profile(ROOT)["toolIdentity"])
 
-    monkeypatch.setattr(
-        semgrep_security,
-        "_toml",
-        lambda path: tool_project if "tools/semgrep" in str(path) else root_project,
-    )
-    monkeypatch.setattr(semgrep_security, "_manifest_targets", lambda root: EXPECTED_TARGETS)
-    monkeypatch.setattr(
-        semgrep_security,
-        "_configured_rule_ids",
-        lambda path: semgrep_security.EXPECTED_RULE_IDS,
-    )
+
+def _install_tool_contract(
+    monkeypatch: pytest.MonkeyPatch,
+    tool_project: dict[str, Any],
+    tool_lock: dict[str, set[str]],
+    root_project: dict[str, Any] | None = None,
+    root_lock: dict[str, set[str]] | None = None,
+) -> None:
+    root_view = root_project if root_project is not None else {"tool": {"uv": {}}}
+    root_versions = root_lock if root_lock is not None else {"click": {"8.3.3"}}
+    monkeypatch.setattr(semgrep_security, "_toml", lambda path: tool_project if "tools/semgrep" in str(path) else root_view)
+    monkeypatch.setattr(semgrep_security, "_locked_versions", lambda path: tool_lock if "tools/semgrep" in str(path) else root_versions)
+    monkeypatch.setattr(semgrep_security, "_manifest_targets", lambda root: semgrep_security.EXPECTED_TARGETS)
+    monkeypatch.setattr(semgrep_security, "_configured_rule_ids", lambda path: semgrep_security.EXPECTED_RULE_IDS)
     monkeypatch.setattr(semgrep_security, "validate_reviewed_inputs", lambda root: None)
     monkeypatch.setattr(semgrep_security, "validate_audit_wrappers", lambda root: None)
 
+
+def _allowed_tool_project() -> dict[str, Any]:
+    return {
+        "project": {"dependencies": ["semgrep==" + semgrep_security.TOOL_OVERRIDE_SEMGREP]},
+        "tool": {"uv": {"override-dependencies": list(semgrep_security.ALLOWED_TOOL_OVERRIDES)}},
+        "manifest": semgrep_security._allowed_tool_manifest(),
+    }
+
+
+def test_semgrep_tool_contract_rejects_vulnerable_cryptography_lock(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     for version, accepted in (("49.0.0", False), ("50.0.0", True)):
-        tool_lock = {
-            "semgrep": {"1.180.0"},
-            "click": {"8.4.2"},
-            "mcp": {"1.29.0"},
-            "cryptography": {version},
-            "pyjwt": {"2.15.0"}, "urllib3": {"2.8.0"},
-        }
-        monkeypatch.setattr(
-            semgrep_security,
-            "_locked_versions",
-            lambda path, lock=tool_lock: lock if "tools/semgrep" in str(path) else root_lock,
-        )
+        tool_lock = {name: {value} for name, value in _tool_identity().items()}
+        tool_lock["cryptography"] = {version}
+        _install_tool_contract(monkeypatch, _allowed_tool_project(), tool_lock)
         if accepted:
             validate_project_contract(ROOT, today=dt.date(2026, 8, 4))
         else:
@@ -1170,55 +1170,108 @@ def test_semgrep_tool_contract_rejects_vulnerable_cryptography_lock(
                 validate_project_contract(ROOT, today=dt.date(2026, 8, 4))
 
 
-def test_semgrep_tool_contract_rejects_any_override_and_dependency_drift(monkeypatch: pytest.MonkeyPatch) -> None:
-    root_project: dict[str, Any] = {"tool": {"uv": {}}}
-    root_lock: dict[str, set[str]] = {"click": {"8.3.3"}}
-    base_tool: dict[str, Any] = {"project": {"dependencies": ["semgrep==1.180.0"]}, "tool": {"uv": {}}}
-    base_lock: dict[str, set[str]] = {"semgrep": {"1.180.0"}, "click": {"8.4.2"}, "mcp": {"1.29.0"}, "cryptography": {"50.0.0"}, "pyjwt": {"2.15.0"}, "urllib3": {"2.8.0"}}
+@pytest.mark.parametrize(
+    "overrides",
+    [
+        ["click==8.4.2"],
+        ["other==1"],
+        [],
+        ["mcp==1.29.0", *semgrep_security.ALLOWED_TOOL_OVERRIDES[1:]],
+        list(semgrep_security.ALLOWED_TOOL_OVERRIDES[:-1]),
+        [*semgrep_security.ALLOWED_TOOL_OVERRIDES, "click==8.4.2"],
+        ["mcp>=1.30.0", *semgrep_security.ALLOWED_TOOL_OVERRIDES[1:]],
+    ],
+)
+def test_semgrep_tool_contract_rejects_every_other_override_list(
+    monkeypatch: pytest.MonkeyPatch, overrides: list[str]
+) -> None:
+    """RED: dropping the exact-list comparison lets any other override through."""
+    tool_lock = {name: {value} for name, value in _tool_identity().items()}
+    candidate = _allowed_tool_project()
+    candidate["tool"]["uv"]["override-dependencies"] = overrides
+    _install_tool_contract(monkeypatch, candidate, tool_lock)
+    with pytest.raises(ContractError, match="overrides"):
+        validate_project_contract(ROOT, today=dt.date(2026, 8, 29))
 
-    def install(tool_project: dict[str, Any], tool_lock: dict[str, set[str]]) -> None:
-        monkeypatch.setattr(semgrep_security, "_toml", lambda path: tool_project if "tools/semgrep" in str(path) else root_project)
-        monkeypatch.setattr(semgrep_security, "_locked_versions", lambda path: tool_lock if "tools/semgrep" in str(path) else root_lock)
-        monkeypatch.setattr(semgrep_security, "_manifest_targets", lambda root: semgrep_security.EXPECTED_TARGETS)
-        monkeypatch.setattr(semgrep_security, "_configured_rule_ids", lambda path: semgrep_security.EXPECTED_RULE_IDS)
-        monkeypatch.setattr(semgrep_security, "validate_reviewed_inputs", lambda root: None)
-        monkeypatch.setattr(semgrep_security, "validate_audit_wrappers", lambda root: None)
 
-    for overrides in (["mcp==1.29.0"], ["click==8.4.2"], ["other==1"]):
-        candidate = copy.deepcopy(base_tool)
-        candidate["tool"]["uv"]["override-dependencies"] = overrides
-        install(candidate, copy.deepcopy(base_lock))
-        with pytest.raises(ContractError, match="overrides"):
-            validate_project_contract(ROOT, today=dt.date(2026, 8, 29))
-    install({**copy.deepcopy(base_tool), "project": {"dependencies": ["semgrep==1.174.0"]}}, base_lock)
+def test_semgrep_tool_contract_rejects_override_hidden_in_lock_only(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """RED: reading only pyproject.toml misses an override that uv sync --frozen would honour."""
+    tool_lock = {name: {value} for name, value in _tool_identity().items()}
+    candidate = _allowed_tool_project()
+    candidate["manifest"]["overrides"].append({"name": "click", "specifier": "==8.4.2"})
+    _install_tool_contract(monkeypatch, candidate, tool_lock)
+    with pytest.raises(ContractError, match="overrides"):
+        validate_project_contract(ROOT, today=dt.date(2026, 8, 29))
+
+
+@pytest.mark.parametrize(
+    "root_project",
+    [
+        {"tool": {"uv": {"override-dependencies": ["mcp==1.30.0"]}}},
+        {"tool": {"uv": {}}, "manifest": {"overrides": [{"name": "mcp", "specifier": "==1.30.0"}]}},
+    ],
+)
+def test_root_project_still_refuses_the_tool_exception(
+    monkeypatch: pytest.MonkeyPatch, root_project: dict[str, Any]
+) -> None:
+    """RED: extending the exception to the root project, by manifest or by lock."""
+    tool_lock = {name: {value} for name, value in _tool_identity().items()}
+    _install_tool_contract(monkeypatch, _allowed_tool_project(), tool_lock, root_project)
+    with pytest.raises(ContractError, match="root dependency overrides"):
+        validate_project_contract(ROOT, today=dt.date(2026, 8, 29))
+
+
+def test_semgrep_bump_forces_the_override_review(monkeypatch: pytest.MonkeyPatch) -> None:
+    """RED: removing the release tie lets the exception outlive the Semgrep pins that need it."""
+    tool_lock = {name: {value} for name, value in _tool_identity().items()}
+    project = _allowed_tool_project()
+    monkeypatch.setattr(semgrep_security, "TOOL_OVERRIDE_SEMGREP", "9.9.9")
+    _install_tool_contract(monkeypatch, project, tool_lock)
+    with pytest.raises(ContractError, match="re-check"):
+        validate_project_contract(ROOT, today=dt.date(2026, 8, 29))
+
+
+def test_semgrep_tool_contract_rejects_dependency_drift(monkeypatch: pytest.MonkeyPatch) -> None:
+    base_tool = _allowed_tool_project()
+    base_lock = {name: {value} for name, value in _tool_identity().items()}
+    _install_tool_contract(monkeypatch, {**base_tool, "project": {"dependencies": ["semgrep==1.174.0"]}}, base_lock)
     with pytest.raises(ContractError, match="Semgrep tool pin"):
         validate_project_contract(ROOT, today=dt.date(2026, 8, 29))
-    install(copy.deepcopy(base_tool), {**base_lock, "mcp": {"1.28.1"}})
+    _install_tool_contract(monkeypatch, base_tool, {**base_lock, "mcp": {"1.28.1"}})
     with pytest.raises(ContractError, match="MCP lock"):
         validate_project_contract(ROOT, today=dt.date(2026, 8, 29))
-    install(copy.deepcopy(base_tool), {**base_lock, "pyjwt": {"0.0.0"}})
+    _install_tool_contract(monkeypatch, base_tool, {**base_lock, "pyjwt": {"0.0.0"}})
     with pytest.raises(ContractError, match="PyJWT lock"):
         validate_project_contract(ROOT, today=dt.date(2026, 8, 29))
-    root_lock["mcp"] = {"1.29.0"}
-    install(copy.deepcopy(base_tool), copy.deepcopy(base_lock))
+    _install_tool_contract(monkeypatch, base_tool, base_lock, root_lock={"click": {"8.3.3"}, "mcp": {"1.30.0"}})
     with pytest.raises(ContractError, match="root lock"):
         validate_project_contract(ROOT, today=dt.date(2026, 8, 29))
 
 
-def test_installed_semgrep_tool_identity_requires_locked_mcp(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
-    def dist(name: str, version: str) -> object:
-        return type("Dist", (), {"metadata": {"Name": name}, "version": version})()
+def _dist(name: str, version: str) -> object:
+    return type("Dist", (), {"metadata": {"Name": name}, "version": version})()
 
+
+def _install_tool_env(monkeypatch: pytest.MonkeyPatch, tmp_path: Path, installed: list[object]) -> Path:
     site_packages = tmp_path / "semgrep-tool" / "lib"
     site_packages.mkdir(parents=True)
     monkeypatch.setattr(semgrep_security, "TOOL_ENV", tmp_path)
     monkeypatch.setattr(semgrep_security, "verify_installed_pyjwt", lambda: None)
-    lock = {"semgrep": {"1.180.0"}, "click": {"8.4.2"}, "mcp": {"1.29.0"}, "cryptography": {"50.0.0"}, "pyjwt": {"2.15.0"}, "urllib3": {"2.8.0"}}
-    installed = [dist("semgrep", "1.180.0"), dist("click", "8.4.2"), dist("mcp", "1.29.0"), dist("cryptography", "50.0.0"), dist("PyJWT", "2.15.0"), dist("urllib3", "2.8.0")]
-    monkeypatch.setattr(semgrep_security, "_locked_versions", lambda path: lock)
+    monkeypatch.setattr(semgrep_security, "verify_override_exception", lambda site: None)
+    locked = {name: {value} for name, value in _tool_identity().items()}
+    monkeypatch.setattr(semgrep_security, "_locked_versions", lambda path: locked)
     monkeypatch.setattr(importlib.metadata, "distributions", lambda path: installed)
+    return site_packages
+
+
+def test_installed_semgrep_tool_identity_requires_locked_mcp(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    installed = {name: _dist(name, value) for name, value in _tool_identity().items()}
+    site_packages = _install_tool_env(monkeypatch, tmp_path, list(installed.values()))
     validate_installed_tool(site_packages)
-    installed[2] = dist("mcp", "1.23.3")
+    installed["mcp"] = _dist("mcp", "1.23.3")
+    monkeypatch.setattr(importlib.metadata, "distributions", lambda path: list(installed.values()))
     with pytest.raises(ContractError, match="MCP identity"):
         validate_installed_tool(site_packages)
 
@@ -1226,30 +1279,21 @@ def test_installed_semgrep_tool_identity_requires_locked_mcp(monkeypatch: pytest
 def test_installed_semgrep_tool_identity_rejects_vulnerable_cryptography(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    def dist(name: str, version: str) -> object:
-        return type("Dist", (), {"metadata": {"Name": name}, "version": version})()
-
-    site_packages = tmp_path / "semgrep-tool" / "lib"
-    site_packages.mkdir(parents=True)
-    monkeypatch.setattr(semgrep_security, "TOOL_ENV", tmp_path)
-    monkeypatch.setattr(semgrep_security, "verify_installed_pyjwt", lambda: None)
-    locked = {
-        "semgrep": {"1.180.0"},
-        "click": {"8.4.2"},
-        "mcp": {"1.29.0"},
-        "cryptography": {"50.0.0"},
-        "pyjwt": {"2.15.0"}, "urllib3": {"2.8.0"},
-    }
-    monkeypatch.setattr(semgrep_security, "_locked_versions", lambda path: locked)
-    installed = [
-        dist("semgrep", "1.180.0"),
-        dist("click", "8.4.2"),
-        dist("mcp", "1.29.0"),
-        dist("cryptography", "49.0.0"),
-        dist("PyJWT", "2.15.0"),
-    ]
-    monkeypatch.setattr(importlib.metadata, "distributions", lambda path: installed)
+    installed = {name: _dist(name, value) for name, value in _tool_identity().items()}
+    installed["cryptography"] = _dist("cryptography", "49.0.0")
+    site_packages = _install_tool_env(monkeypatch, tmp_path, list(installed.values()))
     with pytest.raises(ContractError, match="cryptography"):
+        validate_installed_tool(site_packages)
+
+
+def test_installed_semgrep_tool_identity_rejects_mixed_opentelemetry(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """RED: the audit passes with only the API overridden, but Semgrep then fails to start."""
+    installed = {name: _dist(name, value) for name, value in _tool_identity().items()}
+    installed["opentelemetry-sdk"] = _dist("opentelemetry-sdk", "1.37.0")
+    site_packages = _install_tool_env(monkeypatch, tmp_path, list(installed.values()))
+    with pytest.raises(ContractError, match="opentelemetry-sdk"):
         validate_installed_tool(site_packages)
 
 
@@ -1257,17 +1301,12 @@ def test_installed_semgrep_tool_identity_rejects_vulnerable_cryptography(
 def test_installed_semgrep_tool_identity_requires_exact_pyjwt(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path, version: str | None
 ) -> None:
-    def dist(name: str, value: str) -> object:
-        return type("Dist", (), {"metadata": {"Name": name}, "version": value})()
-
-    site_packages = tmp_path / "semgrep-tool" / "lib"
-    site_packages.mkdir(parents=True)
-    monkeypatch.setattr(semgrep_security, "TOOL_ENV", tmp_path)
-    monkeypatch.setattr(semgrep_security, "verify_installed_pyjwt", lambda: None)
-    installed = [dist("semgrep", "1.180.0"), dist("click", "8.4.2"), dist("mcp", "1.29.0"), dist("cryptography", "50.0.0")]
-    if version is not None:
-        installed.append(dist("PyJWT", version))
-    monkeypatch.setattr(importlib.metadata, "distributions", lambda path: installed)
+    installed = {name: _dist(name, value) for name, value in _tool_identity().items()}
+    if version is None:
+        del installed["pyjwt"]
+    else:
+        installed["pyjwt"] = _dist("PyJWT", version)
+    site_packages = _install_tool_env(monkeypatch, tmp_path, list(installed.values()))
     with pytest.raises(ContractError, match="PyJWT identity"):
         validate_installed_tool(site_packages)
 
@@ -1448,3 +1487,97 @@ def test_backend_build_requires_explicit_click_and_semgrep_inventory() -> None:
     assert 'importlib.metadata.version("click")' in inventory
     assert "click_version < (8, 3, 3)" in inventory
     assert 'importlib.metadata.version("semgrep")' in inventory
+
+
+@pytest.mark.parametrize(
+    "extra",
+    [
+        {"constraints": [{"name": "click", "specifier": "==8.1.0"}]},
+        {"dependency-metadata": [{"name": "semgrep", "version": "1.183.0", "requires-dist": []}]},
+    ],
+)
+def test_semgrep_tool_contract_refuses_other_lock_manifest_keys(
+    monkeypatch: pytest.MonkeyPatch, extra: dict[str, Any]
+) -> None:
+    """RED: reading only the overrides key misses these rows, which uv also honours."""
+    tool_lock = {name: {value} for name, value in _tool_identity().items()}
+    candidate = _allowed_tool_project()
+    candidate["manifest"].update(extra)
+    _install_tool_contract(monkeypatch, candidate, tool_lock)
+    with pytest.raises(ContractError, match="overrides"):
+        validate_project_contract(ROOT, today=dt.date(2026, 8, 29))
+
+
+def _override_probe(tmp_path: Path, requires: list[str]) -> subprocess.CompletedProcess[str]:
+    info = tmp_path / "semgrep-1.183.0.dist-info"
+    info.mkdir()
+    lines = ["Metadata-Version: 2.1", "Name: semgrep", "Version: 1.183.0"]
+    lines += [f"Requires-Dist: {row}" for row in requires]
+    (info / "METADATA").write_text("\n".join(lines) + "\n", encoding="utf-8")
+    return subprocess.run(
+        [
+            sys.executable,
+            "-I",
+            "-c",
+            semgrep_security.OVERRIDE_PROBE,
+            str(tmp_path),
+            json.dumps(semgrep_security.ALLOWED_TOOL_OVERRIDES),
+        ],
+        text=True,
+        capture_output=True,
+        timeout=30,
+        check=False,
+    )
+
+
+SEMGREP_PINS = [
+    "mcp==1.29.0",
+    "opentelemetry-api~=1.37.0",
+    "opentelemetry-sdk~=1.37.0",
+    "opentelemetry-exporter-otlp-proto-http~=1.37.0",
+    'pywin32==311; sys_platform == "win32"',
+]
+
+
+def test_override_probe_passes_while_every_row_is_outside_semgrep_pins(tmp_path: Path) -> None:
+    """RED: a probe that always fails blocks the audit job on today's real pins."""
+    result = _override_probe(tmp_path, SEMGREP_PINS)
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+@pytest.mark.parametrize(
+    "changed",
+    [
+        ("mcp==1.29.0", "mcp>=1.29.0"),
+        ("mcp==1.29.0", "mcp==1.30.0"),
+        ("opentelemetry-api~=1.37.0", "opentelemetry-api>=1.37.0,<2"),
+        ("opentelemetry-sdk~=1.37.0", "opentelemetry-sdk"),
+        ("opentelemetry-exporter-otlp-proto-http~=1.37.0", ""),
+    ],
+)
+def test_override_probe_fails_once_semgrep_allows_or_drops_a_row(
+    tmp_path: Path, changed: tuple[str, str]
+) -> None:
+    """RED: removing the probe's comparison lets an unneeded override stay forever."""
+    old, new = changed
+    pins = [new if row == old else row for row in SEMGREP_PINS if new or row != old]
+    result = _override_probe(tmp_path, pins)
+    assert result.returncode == 1
+    assert old.split("=")[0].split("~")[0] in result.stdout
+
+
+def test_installed_tool_runs_the_override_probe_in_the_isolated_interpreter(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """RED: skipping the probe in installed-tool mode leaves the exception without a trigger."""
+    calls: list[list[str]] = []
+
+    def fake(args: list[str], **kwargs: Any) -> subprocess.CompletedProcess[str]:
+        calls.append(args)
+        return subprocess.CompletedProcess(args, 1, '["mcp==1.30.0"]', "")
+
+    monkeypatch.setattr(semgrep_security, "TOOL_ENV", tmp_path)
+    monkeypatch.setattr(subprocess, "run", fake)
+    with pytest.raises(ContractError, match="remove the recorded override"):
+        semgrep_security.verify_override_exception(tmp_path)
+    assert calls[0][:3] == [str(tmp_path / "bin/python"), "-I", "-c"]
