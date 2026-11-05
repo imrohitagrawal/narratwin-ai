@@ -38,14 +38,14 @@ def test_builder_archives_exclude_reported_high_severity_versions() -> None:
         "undici",
         "http-cache-semantics",
     }
-    assert archives["undici"]["version"] == "6.28.1"
+    assert archives["undici"]["version"] == "6.29.1"
     assert archives["http-cache-semantics"]["version"] == "4.3.0"
 
 
 def test_current_frontend_security_floor_and_scoped_truthful_alias() -> None:
     package = json.loads((ROOT / "frontend/package.json").read_text())
-    assert package["dependencies"]["next"] == "16.3.8"
-    assert package["devDependencies"]["eslint-config-next"] == "16.3.8"
+    assert package["dependencies"]["next"] == "16.4.5"
+    assert package["devDependencies"]["eslint-config-next"] == "16.4.5"
     assert package["overrides"]["brace-expansion"] == "5.0.12"
     assert package["overrides"]["sharp"] == "^0.35.5"
     assert package["overrides"]["source-map-js"] == "1.2.2"
@@ -219,5 +219,105 @@ await assert.rejects(verifyActualConfigurations(root,eslint,p),/rootDir/);
         text=True,
         capture_output=True,
         timeout=profile["verificationTimeoutSeconds"],
+    )
+    assert result.returncode == 0, result.stderr
+
+
+def _rehash(module: Any, profile: dict[str, Any], lock: dict[str, Any], *names: str) -> None:
+    profile["lockHash"] = module.digest(lock)
+    for name in names:
+        profile["recordHashes"][name] = module.digest(lock["packages"][name])
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        "puppeteer-core-evil",
+        "puppeteer-core/node_modules/evil",
+        "lightningcss-evil",
+        "lighthouse/node_modules/evil",
+        "ajv-formats/node_modules/evil",
+        "@puppeteer/browsers-evil",
+        "@puppeteer/browsers/node_modules/evil",
+        "@rolldown/binding-evil",
+        "@vitest/evil",
+        "vite-evil",
+        "evil",
+    ],
+)
+def test_look_alike_foreign_package_gains_no_family_scope(monkeypatch: Any, name: str) -> None:
+    """RED: an unanchored or subtree family pattern admits this rehashed look-alike."""
+    from scripts.ci import frontend_security_profile as module
+
+    package, text = current_pair()
+    lock = json.loads(text)
+    profile = copy.deepcopy(module.load_profile(ROOT))
+    path = "node_modules/" + name
+    lock["packages"][path] = {
+        "version": "1.0.0",
+        "resolved": "https://example.invalid/forged.tgz",
+        "integrity": "sha512-forged",
+    }
+    _rehash(module, profile, lock, path)
+    monkeypatch.setattr(module, "load_profile", lambda root: profile)
+    with pytest.raises(module.ProfileError, match="Unqualified frontend dependency family"):
+        module.validate_pair(package, json.dumps(lock), root=ROOT)
+
+
+@pytest.mark.parametrize(
+    ("name", "version"),
+    [
+        ("vite", "8.1.0"),
+        ("zod", "4.4.3"),
+        ("puppeteer-core", "25.3.0"),
+        ("chromium-bidi", "16.0.1"),
+        ("lighthouse", "13.4.1"),
+        ("vitest", "4.1.11"),
+        ("next", "16.3.8"),
+        ("eslint-config-next", "16.3.8"),
+    ],
+)
+def test_coherent_rehash_cannot_move_a_bound_package_back(
+    monkeypatch: Any, name: str, version: str
+) -> None:
+    """RED: unbound versions let a rehashed profile restore this vulnerable record."""
+    from scripts.ci import frontend_security_profile as module
+
+    package, text = current_pair()
+    lock = json.loads(text)
+    profile = copy.deepcopy(module.load_profile(ROOT))
+    path = "node_modules/" + name
+    lock["packages"][path]["version"] = version
+    lock["packages"][path]["resolved"] = "https://example.invalid/forged.tgz"
+    _rehash(module, profile, lock, path)
+    monkeypatch.setattr(module, "load_profile", lambda root: profile)
+    with pytest.raises(module.ProfileError, match="Frontend package version"):
+        module.validate_pair(package, json.dumps(lock), root=ROOT)
+
+
+def test_config_digest_strips_only_the_actual_frontend_root(tmp_path: Path) -> None:
+    """RED: stripping any prefix lets a resolver outside the checkout keep the qualified digest."""
+    import subprocess
+
+    module = (ROOT / "frontend/scripts/frontend-security-profile.mjs").as_uri()
+    root = str((ROOT / "frontend").resolve())
+    code = """import assert from 'node:assert/strict';
+import {digest,validateEffectiveConfiguration} from MODULE;
+const root=process.argv[1], tail='node_modules/resolver/index.js';
+const parser={meta:{name:'test',version:'1'}}, rules={test:[2]};
+const hash=digest({rules,settings:{'import/resolver':{[tail]:{a:1}}},parser:parser.meta});
+const p={effectiveConfigHashes:{ts:hash}};
+const config=(key,value={a:1})=>({rules,settings:{'import/resolver':{[key]:value}},languageOptions:{parser}});
+validateEffectiveConfiguration(config(root+'/'+tail),'ts',p);
+for (const key of ['/tmp/attacker-controlled/'+tail,root+'-evil/'+tail,tail,'typescript'])
+  assert.throws(()=>validateEffectiveConfiguration(config(key),'ts',p),/outside the frontend root/);
+assert.throws(()=>validateEffectiveConfiguration(config(root+'/'+tail,{a:2}),'ts',p),/drifted/);
+""".replace("MODULE", json.dumps(module))
+    result = subprocess.run(
+        ["node", "--input-type=module", "--eval", code, "--", root],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        timeout=30,
     )
     assert result.returncode == 0, result.stderr

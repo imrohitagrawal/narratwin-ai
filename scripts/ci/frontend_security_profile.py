@@ -27,6 +27,51 @@ def require(condition: bool, message: str) -> None:
         raise ProfileError(message)
 
 
+BOUND_PACKAGES = (
+    "next",
+    "eslint-config-next",
+    "lighthouse",
+    "vitest",
+    "vite",
+    "zod",
+    "puppeteer-core",
+    "chromium-bidi",
+)
+PACKAGE_NAMES = {*BOUND_PACKAGES, "brace-expansion", "sharp", "source-map-js", "tinyglobby"}
+# Exact records only: a family name must not admit a look-alike or a nested foreign package.
+QUALIFIED_RECORDS = {""} | {
+    "node_modules/" + name
+    for name in """
+    @emnapi/runtime @next/env @next/eslint-plugin-next @oxc-project/types
+    @puppeteer/browsers @puppeteer/browsers/node_modules/ansi-regex
+    @puppeteer/browsers/node_modules/cliui/node_modules/string-width
+    @puppeteer/browsers/node_modules/string-width
+    @puppeteer/browsers/node_modules/wrap-ansi/node_modules/string-width
+    @puppeteer/browsers/node_modules/yargs
+    @rolldown/binding-android-arm-eabi @rolldown/binding-android-arm64
+    @rolldown/binding-darwin-arm64 @rolldown/binding-darwin-x64 @rolldown/binding-freebsd-x64
+    @rolldown/binding-linux-arm-gnueabihf @rolldown/binding-linux-arm64-gnu
+    @rolldown/binding-linux-arm64-musl @rolldown/binding-linux-ppc64-gnu
+    @rolldown/binding-linux-s390x-gnu @rolldown/binding-linux-x64-gnu
+    @rolldown/binding-linux-x64-musl @rolldown/binding-openharmony-arm64
+    @rolldown/binding-win32-arm64-msvc @rolldown/binding-win32-x64-msvc
+    @vitest/expect @vitest/mocker @vitest/pretty-format @vitest/runner @vitest/snapshot
+    @vitest/spy @vitest/utils
+    ajv-formats ajv-formats/node_modules/ajv ajv-formats/node_modules/json-schema-traverse
+    axe-core brace-expansion chai chromium-bidi devtools-protocol eslint-config-next fast-glob
+    fast-uri fdir get-east-asian-width lighthouse lighthouse/node_modules/ajv
+    lighthouse/node_modules/json-schema-traverse lightningcss lightningcss-android-arm64
+    lightningcss-darwin-arm64 lightningcss-darwin-x64 lightningcss-freebsd-x64
+    lightningcss-linux-arm-gnueabihf lightningcss-linux-arm64-gnu lightningcss-linux-arm64-musl
+    lightningcss-linux-x64-gnu lightningcss-linux-x64-musl lightningcss-win32-arm64-msvc
+    lightningcss-win32-x64-msvc modern-tar next picomatch puppeteer-core
+    puppeteer-core/node_modules/devtools-protocol puppeteer-core/node_modules/ws
+    require-from-string rolldown sharp source-map-js third-party-web tinyrainbow tldts-core
+    tldts-icann typed-query-selector vite vitest web-features webdriver-bidi-protocol zod
+    """.split()
+}
+
+
 def unique(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
     result: dict[str, Any] = {}
     for key, value in pairs:
@@ -72,9 +117,11 @@ def load_profile(root: Path = ROOT) -> dict[str, Any]:
     versions = profile["packageVersions"]
     require(
         type(versions) is dict
-        and set(versions)
-        == {"next", "eslint-config-next", "brace-expansion", "sharp", "source-map-js", "tinyglobby"}
-        and all(matches(value, r"\d+\.\d+\.\d+") for value in versions.values())
+        and set(versions) == PACKAGE_NAMES
+        and all(
+            matches(value, r"\d+\.\d+\.\d+-\d+" if name == "chromium-bidi" else r"\d+\.\d+\.\d+")
+            for name, value in versions.items()
+        )
         and versions["sharp"] == profile["sharpVersion"],
         "Frontend package policy invalid.",
     )
@@ -169,6 +216,8 @@ def validate_pair(manifest_text: str, lock_text: str, *, root: Path = ROOT) -> N
     expected["dependencies"]["next"] = p["packageVersions"]["next"]
     expected["devDependencies"]["eslint-config-next"] = p["packageVersions"]["eslint-config-next"]
     versions = p["packageVersions"]
+    expected["devDependencies"]["lighthouse"] = versions["lighthouse"]
+    expected["devDependencies"]["vitest"] = "^" + versions["vitest"]
     expected["overrides"].update(
         {
             "brace-expansion": versions["brace-expansion"],
@@ -193,35 +242,31 @@ def validate_pair(manifest_text: str, lock_text: str, *, root: Path = ROOT) -> N
         "Frontend graph delta invalid.",
     )
     # Supported package families are the authority boundary, not a profile-owned list.
-    exact = {
-        "",
-        "node_modules/@emnapi/runtime",
-        "node_modules/@next/env",
-        "node_modules/@next/eslint-plugin-next",
-        "node_modules/brace-expansion",
-        "node_modules/eslint-config-next",
-        "node_modules/next",
-        "node_modules/sharp",
-        "node_modules/source-map-js",
-        "node_modules/@next/eslint-plugin-next/node_modules/fast-glob",
-        "node_modules/@next/eslint-plugin-next/node_modules/fdir",
-        "node_modules/@next/eslint-plugin-next/node_modules/picomatch",
-    }
     require(
         all(
-            name in exact
+            name in QUALIFIED_RECORDS
             or name.startswith(("node_modules/@img/sharp-", "node_modules/@next/swc-"))
             for name in changed
         ),
         "Unqualified frontend dependency family cannot be approved by rehashing.",
     )
+    for name in BOUND_PACKAGES:
+        require(
+            records.get("node_modules/" + name, {}).get("version") == versions[name],
+            "Frontend package version binding drifted.",
+        )
     # Only the qualified obsolete fast-glob closure may disappear from this base.
     qualified_removals = {
         "node_modules/" + name
         for name in (
-            "@nodelib/fs.scandir @nodelib/fs.stat @nodelib/fs.walk braces fast-glob "
+            "@nodelib/fs.scandir @nodelib/fs.stat @nodelib/fs.walk braces "
             "fast-glob/node_modules/glob-parent fastq fill-range is-number merge2 "
-            "micromatch picomatch queue-microtask reusify run-parallel to-regex-range"
+            "micromatch queue-microtask reusify run-parallel to-regex-range "
+            "chromium-bidi/node_modules/zod tinyglobby/node_modules/fdir "
+            "tinyglobby/node_modules/picomatch vite/node_modules/picomatch "
+            "vitest/node_modules/picomatch @rolldown/binding-wasm32-wasi "
+            "@rolldown/binding-wasm32-wasi/node_modules/@emnapi/core "
+            "@rolldown/binding-wasm32-wasi/node_modules/@emnapi/wasi-threads"
         ).split()
     }
     require(
@@ -231,7 +276,7 @@ def validate_pair(manifest_text: str, lock_text: str, *, root: Path = ROOT) -> N
     for name, checksum in p["recordHashes"].items():
         require(digest(records[name]) == checksum, "Frontend record identity invalid.")
     require(
-        records["node_modules/@next/eslint-plugin-next/node_modules/fast-glob"]["name"]
+        records["node_modules/fast-glob"]["name"]
         == "tinyglobby",
         "Frontend alias identity concealed.",
     )

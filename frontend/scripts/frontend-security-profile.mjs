@@ -1,11 +1,12 @@
 import { createHash } from "node:crypto";
 import { readFileSync, readdirSync } from "node:fs";
-import { extname, join, relative, sep } from "node:path";
+import { dirname, extname, join, relative, sep } from "node:path";
+import { fileURLToPath } from "node:url";
 
 export const profileURL = new URL("../../docs/security/FRONTEND_DEPENDENCY_REFRESH.json", import.meta.url);
 const fields = "schemaVersion baseSha manifestHash lockHash recordHashes removedRecords effectiveConfigHashes baselineConfigsSha256 rootDiscoverySourceSha256 verificationTimeoutSeconds buildArchives sharpVersion libvipsVersion runtimePackages packageVersions".split(" ");
 const extensions = ["ts", "tsx", "js", "jsx", "mjs", "cjs"];
-const packages = ["next", "eslint-config-next", "brace-expansion", "sharp", "source-map-js", "tinyglobby"];
+const packages = ["next", "eslint-config-next", "brace-expansion", "sharp", "source-map-js", "tinyglobby", "lighthouse", "vitest", "vite", "zod", "puppeteer-core", "chromium-bidi"];
 const archives = ["npm", "brace-expansion", "ip-address", "tar", "undici", "http-cache-semantics"];
 const runtime = ["alpine-keys", "alpine-release", "ca-certificates-bundle", "libgcc", "libstdc++", "musl"];
 export function requireValue(condition, message) {
@@ -49,7 +50,7 @@ export function loadProfile(url = profileURL) {
   for (const key of ["manifestHash", "lockHash", "baselineConfigsSha256", "rootDiscoverySourceSha256"]) requireValue(hash(p[key]), "Frontend hash invalid.");
   requireValue(Number.isSafeInteger(p.verificationTimeoutSeconds) && p.verificationTimeoutSeconds > 0 && p.verificationTimeoutSeconds <= 2147483, "Frontend verification timeout invalid.");
   requireValue(version(p.sharpVersion) && version(p.libvipsVersion), "Frontend native version invalid.");
-  requireValue(keys(p.packageVersions, packages) && Object.values(p.packageVersions).every(version) && p.packageVersions.sharp === p.sharpVersion, "Frontend package policy invalid.");
+  requireValue(keys(p.packageVersions, packages) && Object.entries(p.packageVersions).every(([name, value]) => name === "chromium-bidi" ? /^[0-9]+\.[0-9]+\.[0-9]+-[0-9]+$/.test(value) : version(value)) && p.packageVersions.sharp === p.sharpVersion, "Frontend package policy invalid.");
   requireValue(keys(p.effectiveConfigHashes, extensions) && Object.values(p.effectiveConfigHashes).every(hash), "Frontend configuration hashes invalid.");
   requireValue(p.recordHashes && typeof p.recordHashes === "object" && !Array.isArray(p.recordHashes) && Object.keys(p.recordHashes).length > 0 && Object.entries(p.recordHashes).every(([key, value]) => (!key || key.startsWith("node_modules/")) && !key.split("/").includes("..") && hash(value)), "Frontend record policy invalid.");
   requireValue(Array.isArray(p.removedRecords) && p.removedRecords.length > 0 && p.removedRecords.every((key) => typeof key === "string" && key.startsWith("node_modules/")) && new Set(p.removedRecords).size === p.removedRecords.length && p.removedRecords.every((key) => !(key in p.recordHashes)), "Frontend removed records invalid.");
@@ -58,10 +59,18 @@ export function loadProfile(url = profileURL) {
   requireValue(keys(p.runtimePackages, runtime) && Object.values(p.runtimePackages).every((value) => typeof value === "string" && /^[0-9.]+-r[0-9]+$/.test(value)), "Frontend runtime packages invalid.");
   return p;
 }
+// Next 16.4 writes import/resolver keys as absolute paths; only this checkout's root is removed.
+const frontendRoot = dirname(dirname(fileURLToPath(import.meta.url))) + sep;
+function portableSettings(settings = {}) {
+  const resolver = settings["import/resolver"];
+  if (!resolver) return settings;
+  for (const key of Object.keys(resolver)) requireValue(key.startsWith(frontendRoot), "Import resolver is outside the frontend root.");
+  return { ...settings, "import/resolver": Object.fromEntries(Object.entries(resolver).map(([key, value]) => [key.slice(frontendRoot.length), value])) };
+}
 export function validateEffectiveConfiguration(config, extension, p) {
   requireValue(config && config.rules && config.languageOptions?.parser?.meta, "Effective ESLint configuration missing or ignored.");
   requireValue(config.settings?.next?.rootDir === undefined, "Custom next.rootDir is unqualified; current lint configuration only.");
-  const actual = { rules: config.rules, settings: config.settings ?? {}, parser: config.languageOptions.parser.meta };
+  const actual = { rules: config.rules, settings: portableSettings(config.settings), parser: config.languageOptions.parser.meta };
   requireValue(digest(actual) === p.effectiveConfigHashes[extension], "Effective ESLint rules, options, parser or settings drifted.");
   return actual;
 }
