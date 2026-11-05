@@ -1,7 +1,7 @@
-FROM node:26.7.0-alpine3.24@sha256:aadf416b2cdce311a8811ba3f0608a61b77dbf997500e2eafe781b51f6a0b019 AS node-source
+FROM node:26.13.0-alpine3.24@sha256:c6ad9e9c1d80f6eb607c26b4b0a132ff7a2344fad1c78ea3baa2a7d4c8de6d94 AS node-source
 
 USER root
-RUN ["/usr/local/bin/node", "-e", "if(process.version!=='v26.7.0'||process.versions.openssl!=='3.5.7'||process.config.variables.node_shared_openssl!==false||process.config.variables.node_use_quic!==false)throw new Error('Node build identity or QUIC boundary invalid')"]
+RUN ["/usr/local/bin/node", "-e", "if(process.version!=='v26.13.0'||process.versions.openssl!=='3.5.9'||process.config.variables.node_shared_openssl!==false||process.config.variables.node_use_quic!==false)throw new Error('Node build identity or QUIC boundary invalid')"]
 RUN set -eux; \
     apk add --root /runtime --initdb --no-cache --no-scripts \
       --keys-dir /etc/apk/keys \
@@ -36,7 +36,7 @@ ADD --checksum=sha256:5dbb86c71d07a1957f2e90734092dd6a58bdcd9ebc2d8d41ca1c6e6a21
 ADD --checksum=sha256:ef8448ec78f20b692f04fa6d01f39b5ab34c66404bea3429f5a39c6c9e0be8b4 https://registry.npmjs.org/brace-expansion/-/brace-expansion-5.0.12.tgz /tmp/frontend-npm-archives/brace-expansion-5.0.12.tgz
 ADD --checksum=sha256:ad1790063beea11a312c801df30d58e147de762f4f77787552376eb7424623e5 https://registry.npmjs.org/ip-address/-/ip-address-10.3.1.tgz /tmp/frontend-npm-archives/ip-address-10.3.1.tgz
 ADD --checksum=sha256:bcedf25a21daecd1a18fb5e19ab855b7d79ec8ef1da175e8ba85cfc0ed0069d1 https://registry.npmjs.org/tar/-/tar-7.5.21.tgz /tmp/frontend-npm-archives/tar-7.5.21.tgz
-ADD --checksum=sha256:e18191aac9c0ff43dac7fe9b10b7041a22d07addb7b66a6e8ac14a52a5b69b74 https://registry.npmjs.org/undici/-/undici-6.28.1.tgz /tmp/frontend-npm-archives/undici-6.28.1.tgz
+ADD --checksum=sha256:29c4b8e0b2d86cb8795571c1959012ce057a14ecfd34858335f47c31e770a04f https://registry.npmjs.org/undici/-/undici-6.29.1.tgz /tmp/frontend-npm-archives/undici-6.29.1.tgz
 ADD --checksum=sha256:d75e1e6a11587954da5e2f0e2b5c4b397a16d28cc2f7bdf64e9027fc2fe593ee https://registry.npmjs.org/http-cache-semantics/-/http-cache-semantics-4.3.0.tgz /tmp/frontend-npm-archives/http-cache-semantics-4.3.0.tgz
 COPY frontend/scripts/frontend-security-profile.mjs /frontend/scripts/frontend-security-profile.mjs
 COPY docs/security/FRONTEND_DEPENDENCY_REFRESH.json /docs/security/FRONTEND_DEPENDENCY_REFRESH.json
@@ -50,7 +50,7 @@ RUN ["/usr/bin/node", "-e", "require('fs').rmSync('/tmp/npm-cache',{recursive:tr
 FROM scratch AS build
 
 ENV PATH=/usr/local/sbin:/usr/local/bin:/usr/bin:/usr/sbin:/sbin:/bin
-ENV NODE_VERSION=26.7.0
+ENV NODE_VERSION=26.13.0
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NARRATWIN_API_PROXY_TARGET=http://127.0.0.1:8000

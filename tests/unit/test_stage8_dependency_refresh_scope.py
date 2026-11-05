@@ -228,3 +228,11 @@ def test_invalid_historical_preflight_cannot_be_repaired_after_implementation(
     failures: list[str] = []
     stage8.check_refresh_scope(branch, failures)
     assert failures == ["Dependency refresh historical preflight invalid."]
+
+
+def test_refresh_envelope_admits_only_the_image_scan_wrapper_beyond_issue_561() -> None:
+    """RED: dropping the wrapper from the envelope blocks the Node identity it pins."""
+    from scripts.quality.stage8_refresh_scope import REFRESH_HARDENING_PATHS
+
+    assert "scripts/ci/docker-image-scan.sh" in REFRESH_HARDENING_PATHS
+    assert not {".github/workflows/security.yml", "Makefile", "AGENTS.md"} & REFRESH_HARDENING_PATHS
