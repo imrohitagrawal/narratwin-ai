@@ -40,6 +40,11 @@ parser and other settings stay in the digest.
 The image scans also need newer CPython (3.13.18) and Node (26.13.0) releases and a
 newer undici build archive (6.29.1). They move under the same exact-identity checks.
 
+This change also removes names that should not be public from files this change
+must edit; the frozen receipts of the closure check and its test are rebound for
+that edit only. The Issue #158 record keeps its meaning and now uses a neutral
+label for the approving account in all four documents that carry it.
+
 ## Alternatives
 
 - Wait for Semgrep to move its pins: leaves required CI red for an unknown time.

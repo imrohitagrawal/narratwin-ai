@@ -36,6 +36,11 @@ scripts/ci/check_semgrep_security.py scripts/quality/check_stage8_docs.py
 REFRESH_HARDENING_PATHS.update(
     {
         "scripts/ci/docker-image-scan.sh",
+        "docs/RISK_REGISTER.md",
+        "docs/reviews/ISSUE_138_CLICK_SECURITY_PREFLIGHT.md",
+        "scripts/quality/check_phase1_closure_docs.py",
+        "scripts/quality/phase1_closure/legacy.py",
+        "tests/unit/test_phase1_closure_docs.py",
         "scripts/guardrails_check.py",
         "tests/unit/test_dependency_refresh_pr_policy.py",
         "tests/unit/test_frontend_container_runtime.py",
