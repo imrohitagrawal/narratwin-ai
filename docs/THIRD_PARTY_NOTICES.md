@@ -618,3 +618,21 @@ tool custody. No source audio/video is transmitted for inference. Draft output
 is not exact transcript or audiovisual acceptance. HeyGen public docs/policies
 and Chrome account observations support planning only; no new media/provider
 operation, model-generated avatar sample or purchased license was created.
+
+### Issue #571 dependency and container refresh (2026-11-05)
+
+Qualified application versions are aiohttp 3.14.5, Brotli 1.2.1, certifi
+2026.10.23, filelock 4.2.9, fsspec 2026.6.0, LiteLLM 1.100.4, Mako 1.4.3, msgpack
+1.2.4, multidict 6.9.1, OpenTelemetry 1.45.2 and 0.66b2, Pillow 13.0.0, pyasn1
+0.6.5, pypdf 6.21.4, setuptools 84.2.1 and virtualenv 21.15.5. LiteLLM adds boto3,
+botocore, s3transfer, jmespath (Apache-2.0 or MIT) and pydantic-settings (MIT)
+under the optional providers extra; no paid provider is activated.
+
+The isolated scanner uses Semgrep 1.183.0, MCP 1.30.0 and OpenTelemetry 1.45.2 and
+0.66b2 with the one reviewed exception in ADR 0088, and no audit exclusions.
+Frontend inputs are Next and eslint-config-next 16.4.5, Lighthouse 13.5.0, Vitest
+4.1.12 and Vite 8.3.5. Alpine revisions are `alpine-release` 3.21.10-r0 and
+3.24.4-r0, `ca-certificates-bundle` 20261020-r0 and `musl` 1.2.6-r3, checked for
+x86_64 and aarch64 on the official package index on 2026-11-05. CPython is 3.13.18
+(PSF License v2), Node is 26.13.0 (MIT) and the npm builder uses undici 6.29.1 (MIT).
+Distribution hashes and source receipts are in the security profiles.

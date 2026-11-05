@@ -920,3 +920,13 @@ with all baseline rules/options/parser/settings preserved and real Next canaries
 custom rootDir is blocked because general alias compatibility did not qualify.
 Current graph and Sharp/SBOM checks are operational requirements; historical
 fixtures do not replace them. Hosted acceptance and media feasibility remain open.
+
+## Issue #571 dependency and container refresh
+
+Stage 8 dependency and container reliability maps to the two security profiles,
+`test_dependency_refresh.py`, `test_frontend_dependency_refresh.py`,
+`test_dependency_security_contract.py` and the strict audit, build and scan
+workflows. The narrow Semgrep tool exception is tested by the same contract: every
+other override, in the project or the lock, in the tool or the root, is refused, and
+the exception fails once Semgrep's own requirements allow a row.
+These prove repository prerequisites only.
