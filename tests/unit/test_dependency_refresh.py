@@ -400,3 +400,27 @@ def test_tool_lock_manifest_refuses_any_row_beyond_the_recorded_overrides(extra:
     assert candidate[path] != inputs[path]
     with pytest.raises(AssertionError):
         validate_current_inputs(candidate)
+
+
+@pytest.mark.parametrize(
+    ("field", "name", "bad"),
+    [
+        ("rootVersions", "pypdf", "0.66rc1"),
+        ("rootVersions", "pypdf", "1.2b"),
+        ("rootVersions", "pypdf", "1.2.3.dev1"),
+        ("rootRecordHashes", "pypdf", "0" * 64),
+        ("rootRecordHashes", "pypdf", "sha256:short"),
+        ("toolRecordHashes", "semgrep", "0" * 64),
+    ],
+)
+def test_profile_refuses_other_version_and_hash_forms(
+    tmp_path: Path, field: str, name: str, bad: str
+) -> None:
+    """RED: widening the beta suffix, or restoring bare hex, which a secret scan reads as a key."""
+    value = load_security_profile(ROOT)
+    value[field][name] = bad
+    path = tmp_path / "docs/security/DEPENDENCY_REFRESH.json"
+    path.parent.mkdir(parents=True)
+    path.write_text(json.dumps(value))
+    with pytest.raises(ContractError, match="mapping invalid"):
+        load_security_profile(tmp_path)
