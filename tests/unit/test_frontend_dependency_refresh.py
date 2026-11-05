@@ -18,8 +18,8 @@ def test_frontend_runtime_uses_qualified_available_apk_revisions() -> None:
     from scripts.ci.frontend_security_profile import load_profile
 
     packages = load_profile(ROOT)["runtimePackages"]
-    assert packages["alpine-release"] == "3.24.2-r0"
-    assert packages["ca-certificates-bundle"] == "20260909-r0"
+    assert packages["alpine-release"] == "3.24.4-r0"
+    assert packages["ca-certificates-bundle"] == "20261020-r0"
     docker = (ROOT / "frontend/Dockerfile").read_text()
     for name in ("alpine-release", "ca-certificates-bundle"):
         assert f"{name}={packages[name]}" in docker

@@ -55,7 +55,7 @@ RUN set -eux; \
       | awk 'system("[ -e /usr/local/lib/" $1 " ]") == 0 { next } { print "so:" $1 }')"; \
     apk add --root /runtime --initdb --no-cache --no-scripts \
       --keys-dir /etc/apk/keys --repositories-file /etc/apk/repositories \
-      alpine-keys=2.5-r0 alpine-release=3.21.8-r0 ca-certificates-bundle tzdata \
+      alpine-keys=2.5-r0 alpine-release=3.21.10-r0 ca-certificates-bundle tzdata \
       libcrypto3=3.3.7-r2 libssl3=3.3.7-r2 $runtime_deps; \
     mkdir -p /runtime/usr /runtime/etc /runtime/app /runtime/tmp; \
     cp -a /usr/local /runtime/usr/; \

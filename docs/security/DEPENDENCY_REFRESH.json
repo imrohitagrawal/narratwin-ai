@@ -1,6 +1,6 @@
 {
   "apk": {
-    "alpineRelease": "3.21.8-r0",
+    "alpineRelease": "3.21.10-r0",
     "opensslApkVersion": "3.3.7-r2",
     "opensslVersion": "3.3.7"
   },
