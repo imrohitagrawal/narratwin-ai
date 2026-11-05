@@ -199,6 +199,7 @@ def load_profile(root: Path = ROOT) -> dict[str, Any]:
             "alpine-keys",
             "alpine-release",
             "ca-certificates-bundle",
+            "libatomic",
             "libgcc",
             "libstdc++",
             "musl",

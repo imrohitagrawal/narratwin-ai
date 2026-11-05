@@ -17,7 +17,7 @@ NODE_SOURCE_INDEX = INDEX_DIGEST
 NODE_SOURCE_PLATFORM_DIGESTS = PLATFORM_DIGESTS
 RUNTIME_PACKAGES = {
     "alpine-keys": "2.6-r0", "alpine-release": "3.24.4-r0",
-    "ca-certificates-bundle": "20261020-r0", "libgcc": "15.2.0-r5",
+    "ca-certificates-bundle": "20261020-r0", "libatomic": "15.2.0-r5", "libgcc": "15.2.0-r5",
     "libstdc++": "15.2.0-r5", "musl": "1.2.6-r3",
 }
 
@@ -35,7 +35,23 @@ def test_runtime_pins_the_reviewed_node_source_and_minimal_final_stage() -> None
     assert f"FROM node:26.13.0-alpine3.24@{NODE_SOURCE_INDEX} AS node-source" in source
     assert source.count("FROM scratch AS") == 2
     assert "FROM scratch AS deps" in source and "FROM scratch AS build" in source
-    assert all(value not in source.lower() for value in ("glibc", "gcompat", "libatomic"))
+    assert all(value not in source.lower() for value in ("glibc", "gcompat"))
+    assert source.lower().count("libatomic") == 1 and "      libatomic=15.2.0-r5 \\\n" in source
+
+
+def test_runtime_package_list_covers_every_library_node_links() -> None:
+    """RED: dropping libatomic, or the ldd closure check, lets an amd64 image ship a Node it cannot start."""
+    from scripts.quality import stage8_node_security as security
+
+    source = DOCKERFILE.read_text(encoding="utf-8")
+    assert "ldd /usr/local/bin/node" in source and 'test -n "$node_libs"' in source
+    assert security.frontend_node_image_valid(source)
+    for mutation in (
+        source.replace("      libatomic=15.2.0-r5 \\\n", "", 1),
+        source.replace('    for lib in $node_libs; do test -e "/runtime$lib"; done; \\\n', "", 1),
+        source + "\nCOPY --from=node-source /usr/lib/libatomic.so.1 /usr/lib/\n",
+    ):
+        assert not security.frontend_node_image_valid(mutation)
 
 
 def test_runtime_contract_binds_platform_manifests_and_unaffected_openssl() -> None:

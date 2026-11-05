@@ -88,7 +88,7 @@ def test_issue389_fixed_runtime_pin_and_package_contract_fail_closed() -> None:
     assert security.FRONTEND_NODE_RUNTIME_IMAGE == expected_runtime and f"FROM {expected_runtime} AS node-source" in dockerfile
     assert 'process.version!=="v26.13.0"' in scan and "Sharp transform invalid" in scan
     assert security.FRONTEND_RUNTIME_NODE_VERSION == "26.13.0"
-    assert security.FRONTEND_RUNTIME_PACKAGES == {"alpine-keys":"2.6-r0","alpine-release":"3.24.4-r0","ca-certificates-bundle":"20261020-r0","libgcc":"15.2.0-r5","libstdc++":"15.2.0-r5","musl":"1.2.6-r3"}
+    assert security.FRONTEND_RUNTIME_PACKAGES == {"alpine-keys":"2.6-r0","alpine-release":"3.24.4-r0","ca-certificates-bundle":"20261020-r0","libatomic":"15.2.0-r5","libgcc":"15.2.0-r5","libstdc++":"15.2.0-r5","musl":"1.2.6-r3"}
     for mutation in (dockerfile.replace(expected_runtime, expected_runtime[:-1]+"1"), dockerfile.replace(expected_runtime, "node:26.13.0-alpine3.24:latest"), dockerfile.replace("FROM scratch AS build", f"FROM {security.ISSUE389_VULNERABLE_RUNTIME_IMAGE} AS build"), dockerfile.replace("/lib/apk/db/installed", "REMOVED")):
         assert not security.frontend_node_image_valid(mutation)
 
@@ -287,7 +287,7 @@ def test_issue376_shell_free_dependency_builder_contract_fails_closed() -> None:
         "--mount=from=deps,source=/app,target=/mnt/deps,readonly",
         "assembleFrontendRuntime",
     )
-    prohibited = ("glibc", "gcompat", "libatomic", "apt-get", "sha512sum", "npm ci --", "libcrypto3", "libssl3", "busybox", "narratwin-build-nonce")
+    prohibited = ("glibc", "gcompat", "apt-get", "sha512sum", "npm ci --", "libcrypto3", "libssl3", "busybox", "narratwin-build-nonce")
     assert all(marker in dockerfile for marker in required)
     assert all(marker not in dockerfile.lower() for marker in prohibited)
     mutations = [

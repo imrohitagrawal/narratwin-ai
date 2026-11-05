@@ -9,10 +9,14 @@ RUN set -eux; \
       alpine-keys=2.6-r0 \
       alpine-release=3.24.4-r0 \
       ca-certificates-bundle=20261020-r0 \
+      libatomic=15.2.0-r5 \
       libgcc=15.2.0-r5 \
       libstdc++=15.2.0-r5 \
       musl=1.2.6-r3; \
     rm -f /runtime/var/log/apk.log; \
+    node_libs="$(ldd /usr/local/bin/node | awk '/=> \//{print $3}')"; \
+    test -n "$node_libs"; \
+    for lib in $node_libs; do test -e "/runtime$lib"; done; \
     mkdir -p /runtime/usr/bin /runtime/app /runtime/tmp; \
     cp /usr/local/bin/node /runtime/usr/bin/node; \
     chmod 0755 /runtime/usr/bin/node; \

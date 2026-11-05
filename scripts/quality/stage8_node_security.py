@@ -119,8 +119,12 @@ def frontend_node_image_valid(dockerfile: str) -> bool:
             and f"/tmp/frontend-npm-archives/{filename}" in dockerfile
             for filename, digest in FRONTEND_BUILD_ARCHIVE_SHA256.items()
         )
+        # Node 26 on x86_64 musl links libatomic: only the exact Alpine runtime pin may name it.
+        and dockerfile.lower().count("libatomic") == 1
+        and f"libatomic={FRONTEND_RUNTIME_PACKAGES['libatomic']} \\\n" in dockerfile
+        and 'for lib in $node_libs; do test -e "/runtime$lib"; done; \\' in dockerfile
         and all(marker not in dockerfile.lower() for marker in (
-            "glibc", "gcompat", "libatomic", "apt-get", "sha512sum", "npm ci --", "libcrypto", "libssl", "busybox",
+            "glibc", "gcompat", "apt-get", "sha512sum", "npm ci --", "libcrypto", "libssl", "busybox",
             "narratwin-build-nonce", "from deps as build", " as runner",
         ))
     )

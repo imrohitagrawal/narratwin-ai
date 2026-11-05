@@ -632,7 +632,8 @@ The isolated scanner uses Semgrep 1.183.0, MCP 1.30.0 and OpenTelemetry 1.45.2 a
 0.66b2 with the one reviewed exception in ADR 0088, and no audit exclusions.
 Frontend inputs are Next and eslint-config-next 16.4.5, Lighthouse 13.5.0, Vitest
 4.1.12 and Vite 8.3.5. Alpine revisions are `alpine-release` 3.21.10-r0 and
-3.24.4-r0, `ca-certificates-bundle` 20261020-r0 and `musl` 1.2.6-r3, checked for
+3.24.4-r0, `ca-certificates-bundle` 20261020-r0, `musl` 1.2.6-r3 and `libatomic`
+15.2.0-r5 (GPL-2.0-or-later AND LGPL-2.1-or-later), checked for
 x86_64 and aarch64 on the official package index on 2026-11-05. CPython is 3.13.18
 (PSF License v2), Node is 26.13.0 (MIT) and the npm builder uses undici 6.29.1 (MIT).
 Distribution hashes and source receipts are in the security profiles.

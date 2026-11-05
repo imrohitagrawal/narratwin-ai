@@ -75,6 +75,7 @@ FRONTEND_SBOM_COMPONENTS = {
     for name, licenses in {
         "alpine-keys": ("MIT",), "alpine-release": ("MIT",),
         "ca-certificates-bundle": ("MIT", "MPL-2.0"),
+        "libatomic": ("GPL-2.0-or-later", "LGPL-2.1-or-later"),
         "libgcc": ("GPL-2.0-or-later", "LGPL-2.1-or-later"),
         "libstdc++": ("GPL-2.0-or-later", "LGPL-2.1-or-later"), "musl": ("MIT",),
     }.items()

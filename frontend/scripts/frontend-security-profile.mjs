@@ -8,7 +8,7 @@ const fields = "schemaVersion baseSha manifestHash lockHash recordHashes removed
 const extensions = ["ts", "tsx", "js", "jsx", "mjs", "cjs"];
 const packages = ["next", "eslint-config-next", "brace-expansion", "sharp", "source-map-js", "tinyglobby", "lighthouse", "vitest", "vite", "zod", "puppeteer-core", "chromium-bidi"];
 const archives = ["npm", "brace-expansion", "ip-address", "tar", "undici", "http-cache-semantics"];
-const runtime = ["alpine-keys", "alpine-release", "ca-certificates-bundle", "libgcc", "libstdc++", "musl"];
+const runtime = ["alpine-keys", "alpine-release", "ca-certificates-bundle", "libatomic", "libgcc", "libstdc++", "musl"];
 export function requireValue(condition, message) {
   if (!condition) throw new Error(message);
 }
