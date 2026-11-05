@@ -446,7 +446,7 @@ license review remains required before release.
 
 The cleanup record consults StackClimb `work-package-protocol` and read-only `machine-space-reclamation` guidance and redistributes the 10,863-byte
 `TaskResourceLedgerV1` JSON Schema from `shared/schemas/task-resource-ledger-v1.schema.json`. The exact source is
-`https://github.com/imrohitagrawal/stackclimb-skills.git`, VERSION 1.0.0,
+the project's skills library repository (not public), VERSION 1.0.0,
 commit `4c49e59e5e6bb41ccca229db106de2eda3164df6`, tree
 `267ce5b1d05734f972bbe997d070e35546077870`, with the schema unchanged at
 SHA-256 `0adc52cb8eb2ceaa2b7142754dde9dd249321226802ceb79385b78d9b57d3a6b`.
@@ -461,7 +461,7 @@ not plain MIT. Its LICENSE is SHA-256
 The complete copyright, permission, attribution, and warranty notice is
 preserved below; contextual license explanation is summarized after it:
 
-> stackclimb-skills License (MIT + Attribution)
+> The project's skills library License (MIT + Attribution)
 > Copyright (c) 2026 Rohit Agrawal
 > SPDX-License-Identifier: LicenseRef-stackclimb-source-v1
 >
@@ -502,7 +502,7 @@ preserved below; contextual license explanation is summarized after it:
 > prominent than other third-party notices. Source-tree-only attribution is
 > insufficient; it must reach the user-facing distribution:
 >
-> stackclimb-skills
+> The project's skills library
 > (c) 2026 Rohit Agrawal
 > StackClimb: https://stackclimb.com
 > GitHub: https://github.com/imrohitagrawal
