@@ -38,6 +38,23 @@ BOUND_PACKAGES = (
     "chromium-bidi",
 )
 PACKAGE_NAMES = {*BOUND_PACKAGES, "brace-expansion", "sharp", "source-map-js", "tinyglobby"}
+# The scoped tinyglobby alias is installed at the fast-glob path.
+PACKAGE_RECORDS = {"tinyglobby": "node_modules/fast-glob"}
+
+
+def version_key(value: str) -> tuple[tuple[int, ...], int, tuple[int, ...]]:
+    """Order release versions; a prerelease sorts before its release. Malformed fails closed."""
+    main, _, pre = value.partition("-")
+    require(
+        re.fullmatch(r"\d+(?:\.\d+)*", main) is not None
+        and re.fullmatch(r"(?:\d+(?:\.\d+)*)?", pre) is not None,
+        "Frontend record version invalid.",
+    )
+    return (
+        tuple(int(part) for part in main.split(".")),
+        0 if pre else 1,
+        tuple(int(part) for part in pre.split(".")) if pre else (),
+    )
 # Exact records only: a family name must not admit a look-alike or a nested foreign package.
 QUALIFIED_RECORDS = {""} | {
     "node_modules/" + name
@@ -250,11 +267,22 @@ def validate_pair(manifest_text: str, lock_text: str, *, root: Path = ROOT) -> N
         ),
         "Unqualified frontend dependency family cannot be approved by rehashing.",
     )
-    for name in BOUND_PACKAGES:
+    for name in PACKAGE_NAMES:
         require(
-            records.get("node_modules/" + name, {}).get("version") == versions[name],
+            records.get(PACKAGE_RECORDS.get(name, "node_modules/" + name), {}).get("version")
+            == versions[name],
             "Frontend package version binding drifted.",
         )
+    for name in changed - {""}:
+        old, new = originals.get(name, {}), records[name]
+        old_version = old.get("version")
+        # Compare like with like: the scoped tinyglobby alias replaced a different package here.
+        same_package = old.get("name", name) == new.get("name", name)
+        if isinstance(old_version, str) and same_package:
+            require(
+                version_key(str(records[name].get("version", ""))) >= version_key(old_version),
+                "Frontend record is older than its base.",
+            )
     # Only the qualified obsolete fast-glob closure may disappear from this base.
     qualified_removals = {
         "node_modules/" + name

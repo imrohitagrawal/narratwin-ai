@@ -321,3 +321,33 @@ assert.throws(()=>validateEffectiveConfiguration(config(root+'/'+tail,{a:2}),'ts
         timeout=30,
     )
     assert result.returncode == 0, result.stderr
+
+
+@pytest.mark.parametrize(
+    ("path", "version"),
+    [
+        ("node_modules/picomatch", "2.0.0"),
+        ("node_modules/brace-expansion", "1.1.11"),
+        ("node_modules/source-map-js", "1.0.0"),
+        ("node_modules/puppeteer-core/node_modules/ws", "8.0.0"),
+        ("node_modules/sharp", "0.33.0"),
+        ("node_modules/fast-glob", "0.2.0"),
+    ],
+)
+def test_coherent_rehash_cannot_rewind_a_record_below_its_base_or_profile_version(
+    monkeypatch: Any, path: str, version: str
+) -> None:
+    """RED: binding only some packageVersions entries, or no base floor, admits this rewind."""
+    from scripts.ci import frontend_security_profile as module
+
+    package, text = current_pair()
+    lock = json.loads(text)
+    profile = copy.deepcopy(module.load_profile(ROOT))
+    record = lock["packages"][path]
+    name = record.get("name", path.rsplit("node_modules/", 1)[-1])
+    record["version"] = version
+    record["resolved"] = f"https://registry.npmjs.org/{name}/-/{name.split('/')[-1]}-{version}.tgz"
+    _rehash(module, profile, lock, path)
+    monkeypatch.setattr(module, "load_profile", lambda root: profile)
+    with pytest.raises(module.ProfileError, match="version binding drifted|older than its base"):
+        module.validate_pair(package, json.dumps(lock), root=ROOT)
