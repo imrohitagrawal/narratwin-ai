@@ -1581,3 +1581,24 @@ def test_installed_tool_runs_the_override_probe_in_the_isolated_interpreter(
     with pytest.raises(ContractError, match="remove the recorded override"):
         semgrep_security.verify_override_exception(tmp_path)
     assert calls[0][:3] == [str(tmp_path / "bin/python"), "-I", "-c"]
+
+
+def test_validate_installed_tool_runs_the_unstubbed_override_trigger(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """RED: deleting the trigger call from validate_installed_tool keeps a stale exception green."""
+    real_trigger = semgrep_security.verify_override_exception
+    installed = [_dist(name, value) for name, value in _tool_identity().items()]
+    site_packages = _install_tool_env(monkeypatch, tmp_path, installed)
+    monkeypatch.setattr(semgrep_security, "verify_override_exception", real_trigger)
+    calls: list[list[str]] = []
+
+    def fake(args: list[str], **kwargs: Any) -> subprocess.CompletedProcess[str]:
+        calls.append(args)
+        return subprocess.CompletedProcess(args, 1, '["mcp==1.30.0"]', "")
+
+    monkeypatch.setattr(subprocess, "run", fake)
+    with pytest.raises(ContractError, match="remove the recorded override"):
+        validate_installed_tool(site_packages)
+    assert calls and calls[0][3] == semgrep_security.OVERRIDE_PROBE
+    assert calls[0][4] == str(site_packages.resolve())
