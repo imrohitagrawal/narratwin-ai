@@ -2432,3 +2432,12 @@ Despina/formalCut1 change, G1 certification, V2 activation, release or productio
 readiness. Fresh provider consent capture, exact approved audio/transcript,
 operation qualification, reusablevoice/fullvideo/revision and actual application
 integration remain incomplete. Earlier pending559 observations are historical.
+
+## Current dependency and container refresh — issue #571
+
+Branch `stage8-571-dependency-container-refresh` refreshes the root, frontend and
+isolated Semgrep tool graphs and the Alpine revisions in both images, under the
+existing refresh contract. Strict audits stay unchanged. The owner's one tool
+exception is recorded in ADR 0088. Review and hosted check results for the exact
+head live on the pull request. This adds no product, media, provider or deployment
+behaviour.

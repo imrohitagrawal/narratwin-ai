@@ -6,6 +6,7 @@ RED: vulnerable, forged, duplicate or unrelated supplied inputs must not normali
 from __future__ import annotations
 
 import copy
+import functools
 import hashlib
 import json
 import subprocess
@@ -15,27 +16,88 @@ from typing import Any
 
 import pytest
 
-from scripts.ci.check_semgrep_security import ContractError, load_security_profile
+from scripts.ci.check_semgrep_security import (
+    ALLOWED_TOOL_OVERRIDES,
+    ContractError,
+    load_security_profile,
+)
 
 ROOT = Path(__file__).resolve().parents[2]
 BASE = "2fc1bbd7904421d4a5a2c85995c28dbd9cdf0fce"
+# Closed name sets: admitting any other record must fail, whatever its hash.
 ROOT_VERSIONS = {
+    "aiohttp": "3.14.5",
     "anyio": "4.14.2",
-    "pypdf": "6.20.1",
+    "boto3": "1.43.124",
+    "botocore": "1.43.124",
+    "brotli": "1.2.1",
+    "certifi": "2026.10.23",
+    "filelock": "4.2.9",
+    "fsspec": "2026.6.0",
+    "jmespath": "1.1.0",
+    "litellm": "1.100.4",
+    "mako": "1.4.3",
+    "msgpack": "1.2.4",
+    "multidict": "6.9.1",
+    "opentelemetry-api": "1.45.2",
+    "opentelemetry-exporter-http-transport": "0.66b2",
+    "opentelemetry-exporter-otlp-common": "0.66b2",
+    "opentelemetry-exporter-otlp-proto-common": "1.45.2",
+    "opentelemetry-exporter-otlp-proto-http": "1.45.2",
+    "opentelemetry-instrumentation": "0.66b2",
+    "opentelemetry-instrumentation-asgi": "0.66b2",
+    "opentelemetry-instrumentation-fastapi": "0.66b2",
+    "opentelemetry-proto": "1.45.2",
+    "opentelemetry-sdk": "1.45.2",
+    "opentelemetry-semantic-conventions": "0.66b2",
+    "opentelemetry-util-http": "0.66b2",
+    "pillow": "13.0.0",
+    "pyasn1": "0.6.5",
+    "pydantic-settings": "2.16.2",
+    "pypdf": "6.21.4",
+    "s3transfer": "0.19.3",
+    "setuptools": "84.2.1",
     "soupsieve": "2.9",
     "urllib3": "2.8.0",
-    "virtualenv": "21.14.7",
+    "virtualenv": "21.15.5",
     "werkzeug": "3.1.9",
+    "yarl": "1.25.1",
 }
-TOOL_VERSIONS = {"semgrep": "1.180.0", "pyjwt": "2.15.0", "urllib3": "2.8.0"}
+TOOL_VERSIONS = {
+    "certifi": "2026.10.23",
+    "mcp": "1.30.0",
+    "opentelemetry-api": "1.45.2",
+    "opentelemetry-exporter-http-transport": "0.66b2",
+    "opentelemetry-exporter-otlp-common": "0.66b2",
+    "opentelemetry-exporter-otlp-proto-common": "1.45.2",
+    "opentelemetry-exporter-otlp-proto-http": "1.45.2",
+    "opentelemetry-instrumentation": "0.66b2",
+    "opentelemetry-instrumentation-requests": "0.66b2",
+    "opentelemetry-instrumentation-threading": "0.66b2",
+    "opentelemetry-proto": "1.45.2",
+    "opentelemetry-sdk": "1.45.2",
+    "opentelemetry-semantic-conventions": "0.66b2",
+    "opentelemetry-util-http": "0.66b2",
+    "pyjwt": "2.15.0",
+    "semgrep": "1.183.0",
+    "urllib3": "2.8.0",
+}
+ROOT_FLOORS = {
+    "opentelemetry-api>=1.37.0": "opentelemetry-api>=1.45.1",
+    "opentelemetry-sdk>=1.37.0": "opentelemetry-sdk>=1.45.1",
+    "pypdf>=6.16.2": "pypdf>=6.21.4",
+}
+ROOT_DEV_FLOORS = {"pillow>=12.3.0": "pillow>=13.0.0"}
+ROOT_EXTRA_FLOORS = {"litellm>=1.90.1": "litellm>=1.100.4"}
+TOOL_REMOVED = {"importlib-metadata", "zipp"}
 
 
 def test_backend_cpython_release_and_checksum_are_qualified() -> None:
     """RED: the known vulnerable image release must not satisfy current qualification."""
     profile = load_security_profile(ROOT)
     assert profile["cpython"] == {
-        "version": "3.13.16",
-        "sha256": "f4b1bfb3c79b5bb11b8d228a12504163b4c0dab4d679828d8f5f26b6cb6ab35d",
+        "version": "3.13.18",
+        "sha256": "abb0102e6d4ae027509bcb82327d9dd85515b44a3ba8ad538cfc5e9847029f68",
     }
 
 
@@ -45,7 +107,7 @@ def test_backend_cpython_release_and_checksum_are_qualified() -> None:
         {},
         {"version": True, "sha256": "0" * 64},
         {"version": "3.14.1", "sha256": "0" * 64},
-        {"version": "3.13.16", "sha256": "bad"},
+        {"version": "3.13.18", "sha256": "bad"},
     ],
 )
 def test_cpython_configuration_fails_closed(tmp_path: Path, bad: Any) -> None:
@@ -65,6 +127,7 @@ def digest(value: Any) -> str:
     ).hexdigest()
 
 
+@functools.lru_cache(maxsize=None)
 def historical_text(path: str) -> str:
     return subprocess.run(
         ["git", "show", f"{BASE}:{path}"],
@@ -107,13 +170,17 @@ def validate_current_inputs(inputs: dict[str, str]) -> None:
                 explicit_package_bases=True, mypy_path="tests/unit"
             )
             expected_project["project"]["dependencies"] = [
-                f"pypdf>={policy['rootVersions']['pypdf']}" if row == "pypdf>=6.16.2" else row
-                for row in expected_project["project"]["dependencies"]
+                ROOT_FLOORS.get(row, row) for row in expected_project["project"]["dependencies"]
             ]
+            extras = expected_project["project"]["optional-dependencies"]
+            extras["providers"] = [ROOT_EXTRA_FLOORS.get(row, row) for row in extras["providers"]]
+            groups = expected_project["dependency-groups"]
+            groups["dev"] = [ROOT_DEV_FLOORS.get(row, row) for row in groups["dev"]]
         else:
             expected_project["project"]["dependencies"] = [
                 f"semgrep=={policy['toolIdentity']['semgrep']}"
             ]
+            expected_project["tool"]["uv"]["override-dependencies"] = list(ALLOWED_TOOL_OVERRIDES)
         assert parsed_project == expected_project
         current = tomllib.loads(inputs[lock])
         baseline = tomllib.loads(historical_text(lock))
@@ -122,17 +189,30 @@ def validate_current_inputs(inputs: dict[str, str]) -> None:
         expected_hashes = policy[name + "RecordHashes"]
         for package, expected_hash in expected_hashes.items():
             rows = [row for row in records if row["name"] == package]
-            assert len(rows) == 1 and digest(rows[0]) == expected_hash
+            assert len(rows) == 1 and "sha256:" + digest(rows[0]) == expected_hash
         for package, version in policy[name + "Versions"].items():
             row = next(row for row in records if row["name"] == package)
             assert row["version"] == version
             assert row["source"] == {"registry": "https://pypi.org/simple"}
         original_records = {row["name"]: row for row in baseline["package"]}
         normalized = copy.deepcopy(current)
-        normalized["package"] = [
+        removed = TOOL_REMOVED if name == "tool" else set()
+        assert not removed & {row["name"] for row in records}
+        kept = [
             original_records[row["name"]] if row["name"] in expected_hashes else row
             for row in records
+            if row["name"] in original_records or row["name"] not in expected_hashes
         ]
+        normalized["package"] = sorted(
+            kept + [original_records[item] for item in removed], key=lambda row: row["name"]
+        )
+        if name == "tool":
+            assert normalized.pop("manifest") == {
+                "overrides": [
+                    {"name": row.split("==")[0], "specifier": "==" + row.split("==")[1]}
+                    for row in sorted(ALLOWED_TOOL_OVERRIDES)
+                ]
+            }
         assert normalized == baseline
 
 
@@ -266,3 +346,81 @@ def test_tool_regression_uses_isolated_interpreter_and_effective_timeout(monkeyp
     monkeypatch.setattr(subprocess, "run", lambda args, **kw: subprocess.CompletedProcess(args, 1))
     with pytest.raises(ContractError):
         security.verify_installed_pyjwt()
+
+
+def _lock_block(text: str, name: str) -> tuple[int, int]:
+    start = text.index('[[package]]\nname = "' + name + '"\n')
+    end = text.find("\n[[package]]", start + 1)
+    return start, len(text) if end == -1 else end
+
+
+@pytest.mark.parametrize(
+    ("field", "path"), [("root", "uv.lock"), ("tool", "tools/semgrep/uv.lock")]
+)
+def test_current_graph_refuses_a_coherent_downgrade_outside_the_closed_set(
+    monkeypatch: pytest.MonkeyPatch, field: str, path: str
+) -> None:
+    """RED: relaxing the closed name sets to a subset test admits this rehashed downgrade."""
+    inputs = current_inputs()
+    start, end = _lock_block(inputs[path], "idna")
+    block = inputs[path][start:end]
+    version = next(
+        row["version"] for row in tomllib.loads(inputs[path])["package"] if row["name"] == "idna"
+    )
+    candidate = dict(inputs)
+    candidate[path] = (
+        inputs[path][:start]
+        + block.replace(f'version = "{version}"', 'version = "3.1"', 1)
+        + inputs[path][end:]
+    )
+    record = next(
+        row for row in tomllib.loads(candidate[path])["package"] if row["name"] == "idna"
+    )
+    profile = copy.deepcopy(load_security_profile(ROOT))
+    profile[field + "Versions"]["idna"] = "3.1"
+    profile[field + "RecordHashes"]["idna"] = "sha256:" + digest(record)
+    monkeypatch.setitem(validate_current_inputs.__globals__, "load_security_profile", lambda _: profile)
+    with pytest.raises(AssertionError):
+        validate_current_inputs(candidate)
+
+
+@pytest.mark.parametrize(
+    "extra",
+    [
+        'constraints = [{ name = "click", specifier = "==8.1.0" }]\n',
+        'dependency-metadata = [{ name = "semgrep", version = "1.183.0", requires-dist = [] }]\n',
+    ],
+)
+def test_tool_lock_manifest_refuses_any_row_beyond_the_recorded_overrides(extra: str) -> None:
+    """RED: dropping the manifest without comparing it hides these rows from the delta check."""
+    inputs = current_inputs()
+    path = "tools/semgrep/uv.lock"
+    candidate = dict(inputs)
+    candidate[path] = inputs[path].replace("[manifest]\n", "[manifest]\n" + extra, 1)
+    assert candidate[path] != inputs[path]
+    with pytest.raises(AssertionError):
+        validate_current_inputs(candidate)
+
+
+@pytest.mark.parametrize(
+    ("field", "name", "bad"),
+    [
+        ("rootVersions", "pypdf", "0.66rc1"),
+        ("rootVersions", "pypdf", "1.2b"),
+        ("rootVersions", "pypdf", "1.2.3.dev1"),
+        ("rootRecordHashes", "pypdf", "0" * 64),
+        ("rootRecordHashes", "pypdf", "sha256:short"),
+        ("toolRecordHashes", "semgrep", "0" * 64),
+    ],
+)
+def test_profile_refuses_other_version_and_hash_forms(
+    tmp_path: Path, field: str, name: str, bad: str
+) -> None:
+    """RED: widening the beta suffix, or restoring bare hex, which a secret scan reads as a key."""
+    value = load_security_profile(ROOT)
+    value[field][name] = bad
+    path = tmp_path / "docs/security/DEPENDENCY_REFRESH.json"
+    path.parent.mkdir(parents=True)
+    path.write_text(json.dumps(value))
+    with pytest.raises(ContractError, match="mapping invalid"):
+        load_security_profile(tmp_path)

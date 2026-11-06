@@ -357,7 +357,7 @@ def check_dependencies_and_scripts(failures: list[str]) -> None:
         "NARRATWIN_LOCUST_HEALTH_P95_MS",
         "lighthouse",
         "trivy image",
-        "aquasec/trivy@sha256", "verify_frontend_runtime", 'process.version!=="v26.7.0"',
+        "aquasec/trivy@sha256", "verify_frontend_runtime", 'process.version!=="v26.13.0"',
         '"65532:65532"', "extras.length", "require_frontend_inventory", "actual_inventory", "open(3)",
         'encoding:"buffer"', "readlinkSync", "s.uid", "s.gid", "CapEff", "--connect-timeout", "--max-time",
         "cleanup_frontend_runtime", "FRONTEND_BUILD_IMAGE", "--target deps", "NODE_OPTIONS", "config != expected",

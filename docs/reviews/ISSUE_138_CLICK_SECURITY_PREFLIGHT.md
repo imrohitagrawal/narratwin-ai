@@ -127,7 +127,7 @@ security exception. Do not convert any such result into an ignored finding.
 {
   "schema_version": "issue-158-security-history-v2", "record_verified_on": "2026-08-01", "evidence_scope": "public GitHub and merged repository evidence",
   "pr_152": {"number": 152, "head_commit": "1308e88255724918bbde3a4775a0c973abaca8f4",
-    "ready_for_review_at": "2026-07-14T10:51:12Z", "approved_by": "rohitagrawal4u", "approved_at": "2026-07-14T10:50:43Z", "latest_required_checks_at_merge": "passed", "earlier_failed_reruns_observed": true,
+    "ready_for_review_at": "2026-07-14T10:51:12Z", "approved_by": "owner-second-account", "approved_at": "2026-07-14T10:50:43Z", "latest_required_checks_at_merge": "passed", "earlier_failed_reruns_observed": true,
     "merge_commit": "648c81c066127056334c5c2babae28585fd58d4d", "merged_at": "2026-07-14T10:52:59Z"
   },
   "state_at_pr_152_merge": {"issue_138": "open", "issue_150": "open", "issue_151": "open", "process_contract_deviation": true,

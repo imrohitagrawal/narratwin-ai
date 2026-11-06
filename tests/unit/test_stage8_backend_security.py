@@ -16,9 +16,9 @@ def test_issue436_backend_image_contract_is_exact_and_fail_closed() -> None:
         "docker.io/library/alpine:3.21@sha256:"
         "48b0309ca019d89d40f670aa1bc06e426dc0931948452e8491e3d65087abc07d"
     )
-    assert security.CPYTHON_VERSION == "3.13.16"
+    assert security.CPYTHON_VERSION == "3.13.18"
     assert security.CPYTHON_SHA256 == (
-        "f4b1bfb3c79b5bb11b8d228a12504163b4c0dab4d679828d8f5f26b6cb6ab35d"
+        "abb0102e6d4ae027509bcb82327d9dd85515b44a3ba8ad538cfc5e9847029f68"
     )
     assert security.ISSUE436_BRANCH == "stage8-436-backend-tls-capability-isolation-r4"
     assert security.ISSUE436_CHARGE_LIMIT == 1400

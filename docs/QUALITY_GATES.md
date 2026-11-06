@@ -2065,3 +2065,13 @@ contract still run. Review and live protection/status contexts remain mandatory;
 no provider, biometric, spending, media, deployment or release authority follows.
 See [preflight](work/working-records/proposals/work-record-scope/PREFLIGHT.md)
 and [review](work/working-records/proposals/work-record-scope/REVIEW.md).
+
+## Issue #571 refresh and the Semgrep tool exception
+
+Issue #571 reuses the dependency and container refresh profile. ADR 0088 narrows
+the Issue #460 rule that every tool override fails closed: the Semgrep tool project
+may carry exactly the four recorded overrides, tied to Semgrep 1.183.0, in both its
+project file and its lock. Every other override, constraint or dependency metadata
+row still fails closed, including any in the root project. The `installed-tool` check
+fails once Semgrep's own requirements allow a row; remove the row then. Strict audits,
+canaries, full tests and native image builds and scans remain mandatory.

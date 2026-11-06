@@ -3670,7 +3670,7 @@ EXPECTED_ISSUE158_RECORD = {
     "schema_version": "issue-158-security-history-v2", "record_verified_on": "2026-08-01", "evidence_scope": "public GitHub and merged repository evidence",
     "pr_152": {
         "number": 152, "head_commit": "1308e88255724918bbde3a4775a0c973abaca8f4",
-        "ready_for_review_at": "2026-07-14T10:51:12Z", "approved_by": "rohitagrawal4u",
+        "ready_for_review_at": "2026-07-14T10:51:12Z", "approved_by": "owner-second-account",
         "approved_at": "2026-07-14T10:50:43Z", "latest_required_checks_at_merge": "passed",
         "earlier_failed_reruns_observed": True, "merge_commit": "648c81c066127056334c5c2babae28585fd58d4d",
         "merged_at": "2026-07-14T10:52:59Z",

@@ -100,3 +100,4 @@ Missing or ambiguous status needs review. Absence of a supersession link proves 
 | [0085-documentation-navigation](0085-documentation-navigation.md) | Proposed in Issue537 / draft PR536. No product or acceptance-policy effect. | Not declared; effective lifecycle unproved |
 | [0086-work-record-manifest-scope](0086-work-record-manifest-scope.md) | proposed in Issue559; effective only after reviewed merge. | Not declared; effective lifecycle unproved |
 | [0087-ci-dependency-container-recovery](0087-ci-dependency-container-recovery.md) | proposed in issue #561; acceptance requires exact-head review and CI. | Not declared; effective lifecycle unproved |
+| [0088-dependency-container-refresh-tool-override](0088-dependency-container-refresh-tool-override.md) | proposed in issue #571; acceptance requires exact-head review and CI. | Not declared; effective lifecycle unproved |
