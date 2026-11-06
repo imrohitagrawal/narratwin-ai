@@ -378,3 +378,31 @@ def test_coherent_rehash_cannot_move_a_record_off_the_registry(
     monkeypatch.setattr(module, "load_profile", lambda root: profile)
     with pytest.raises(module.ProfileError, match="record source invalid"):
         module.validate_pair(package, json.dumps(lock), root=ROOT)
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        "node_modules/@next/swc-evil",
+        "node_modules/@next/swc-linux-x64-musl/node_modules/evil",
+        "node_modules/@img/sharp-evil",
+        "node_modules/@img/sharp-linux-x64/node_modules/evil",
+    ],
+)
+def test_platform_binary_families_admit_only_their_exact_records(monkeypatch: Any, path: str) -> None:
+    """RED: a name prefix admits look-alikes and nested foreign packages under a binary family."""
+    from scripts.ci import frontend_security_profile as module
+
+    package, text = current_pair()
+    lock = json.loads(text)
+    profile = copy.deepcopy(module.load_profile(ROOT))
+    name = path.rsplit("node_modules/", 1)[-1]
+    lock["packages"][path] = {
+        "version": "1.0.0",
+        "resolved": f"https://registry.npmjs.org/{name}/-/{name.split('/')[-1]}-1.0.0.tgz",
+        "integrity": "sha512-" + "A" * 86 + "==",
+    }
+    _rehash(module, profile, lock, path)
+    monkeypatch.setattr(module, "load_profile", lambda root: profile)
+    with pytest.raises(module.ProfileError, match="Unqualified frontend dependency family"):
+        module.validate_pair(package, json.dumps(lock), root=ROOT)

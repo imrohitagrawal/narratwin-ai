@@ -60,6 +60,16 @@ QUALIFIED_RECORDS = {""} | {
     "node_modules/" + name
     for name in """
     @emnapi/runtime @next/env @next/eslint-plugin-next @oxc-project/types
+    @img/sharp-darwin-arm64 @img/sharp-darwin-x64 @img/sharp-freebsd-wasm32
+    @img/sharp-libvips-darwin-arm64 @img/sharp-libvips-darwin-x64 @img/sharp-libvips-linux-arm
+    @img/sharp-libvips-linux-arm64 @img/sharp-libvips-linux-ppc64 @img/sharp-libvips-linux-riscv64
+    @img/sharp-libvips-linux-s390x @img/sharp-libvips-linux-x64 @img/sharp-libvips-linuxmusl-arm64
+    @img/sharp-libvips-linuxmusl-x64 @img/sharp-linux-arm @img/sharp-linux-arm64
+    @img/sharp-linux-ppc64 @img/sharp-linux-riscv64 @img/sharp-linux-s390x @img/sharp-linux-x64
+    @img/sharp-linuxmusl-arm64 @img/sharp-linuxmusl-x64 @img/sharp-wasm32
+    @img/sharp-webcontainers-wasm32 @img/sharp-win32-arm64 @img/sharp-win32-ia32 @img/sharp-win32-x64
+    @next/swc-darwin-arm64 @next/swc-darwin-x64 @next/swc-linux-arm64-gnu @next/swc-linux-arm64-musl
+    @next/swc-linux-x64-gnu @next/swc-linux-x64-musl @next/swc-win32-arm64-msvc @next/swc-win32-x64-msvc
     @puppeteer/browsers @puppeteer/browsers/node_modules/ansi-regex
     @puppeteer/browsers/node_modules/cliui/node_modules/string-width
     @puppeteer/browsers/node_modules/string-width
@@ -260,11 +270,7 @@ def validate_pair(manifest_text: str, lock_text: str, *, root: Path = ROOT) -> N
     )
     # Supported package families are the authority boundary, not a profile-owned list.
     require(
-        all(
-            name in QUALIFIED_RECORDS
-            or name.startswith(("node_modules/@img/sharp-", "node_modules/@next/swc-"))
-            for name in changed
-        ),
+        all(name in QUALIFIED_RECORDS for name in changed),
         "Unqualified frontend dependency family cannot be approved by rehashing.",
     )
     for name in PACKAGE_NAMES:
