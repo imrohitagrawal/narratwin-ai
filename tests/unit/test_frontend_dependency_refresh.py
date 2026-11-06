@@ -351,3 +351,30 @@ def test_coherent_rehash_cannot_rewind_a_record_below_its_base_or_profile_versio
     monkeypatch.setattr(module, "load_profile", lambda root: profile)
     with pytest.raises(module.ProfileError, match="version binding drifted|older than its base"):
         module.validate_pair(package, json.dumps(lock), root=ROOT)
+
+
+@pytest.mark.parametrize(
+    ("path", "field", "value"),
+    [
+        ("node_modules/axe-core", "resolved", "https://example.invalid/forged.tgz"),
+        ("node_modules/next", "resolved", "https://example.invalid/forged.tgz"),
+        ("node_modules/vite", "resolved", "https://example.invalid/forged.tgz"),
+        ("node_modules/vite", "resolved", "https://registry.npmjs.org/vite/-/evil-8.3.5.tgz"),
+        ("node_modules/axe-core", "integrity", "sha512-forged"),
+        ("node_modules/next", "integrity", "sha1-" + "A" * 27 + "="),
+    ],
+)
+def test_coherent_rehash_cannot_move_a_record_off_the_registry(
+    monkeypatch: Any, path: str, field: str, value: str
+) -> None:
+    """RED: without a registry and sha512 check, a rehashed record can name any tarball."""
+    from scripts.ci import frontend_security_profile as module
+
+    package, text = current_pair()
+    lock = json.loads(text)
+    profile = copy.deepcopy(module.load_profile(ROOT))
+    lock["packages"][path][field] = value
+    _rehash(module, profile, lock, path)
+    monkeypatch.setattr(module, "load_profile", lambda root: profile)
+    with pytest.raises(module.ProfileError, match="record source invalid"):
+        module.validate_pair(package, json.dumps(lock), root=ROOT)

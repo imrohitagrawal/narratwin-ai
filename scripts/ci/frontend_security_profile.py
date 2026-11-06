@@ -275,6 +275,13 @@ def validate_pair(manifest_text: str, lock_text: str, *, root: Path = ROOT) -> N
         )
     for name in changed - {""}:
         old, new = originals.get(name, {}), records[name]
+        package_name = str(new.get("name", name.rsplit("node_modules/", 1)[-1]))
+        tarball = f"{package_name.rsplit('/', 1)[-1]}-{new.get('version')}.tgz"
+        require(
+            new.get("resolved") == f"https://registry.npmjs.org/{package_name}/-/{tarball}"
+            and matches(new.get("integrity"), r"sha512-[A-Za-z0-9+/]{86}=="),
+            "Frontend record source invalid.",
+        )
         old_version = old.get("version")
         # Compare like with like: the scoped tinyglobby alias replaced a different package here.
         same_package = old.get("name", name) == new.get("name", name)
