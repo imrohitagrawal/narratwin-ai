@@ -383,3 +383,31 @@ def test_coherent_rehash_cannot_move_a_record_off_the_registry(
     with pytest.raises(module.ProfileError, match="record source invalid"):
         module.validate_pair(package, json.dumps(lock), root=ROOT)
 
+
+
+@pytest.mark.parametrize(
+    ("path", "alias", "version", "refusal"),
+    [
+        ("node_modules/picomatch", "picomatch", "2.0.0", "older than its base"),
+        ("node_modules/puppeteer-core/node_modules/ws", "ws", "8.0.0", "older than its base"),
+        ("node_modules/axe-core", "left-pad", "1.3.0", "names another package"),
+        ("node_modules/next", "attacker-next", None, "names another package"),
+    ],
+)
+def test_a_name_field_cannot_swap_a_records_package_or_skip_its_floor(
+    monkeypatch: Any, path: str, alias: str, version: str | None, refusal: str
+) -> None:
+    """RED: reading identity from the record's own name field lets a rehash rewind or swap this record."""
+    from scripts.ci import frontend_security_profile as module
+
+    package, text = current_pair()
+    lock = json.loads(text)
+    profile = copy.deepcopy(module.load_profile(ROOT))
+    record = lock["packages"][path]
+    version = version or record["version"]
+    record.update(name=alias, version=version)
+    record["resolved"] = f"https://registry.npmjs.org/{alias}/-/{alias}-{version}.tgz"
+    _rehash(module, profile, lock, path)
+    monkeypatch.setattr(module, "load_profile", lambda root: profile)
+    with pytest.raises(module.ProfileError, match=refusal):
+        module.validate_pair(package, json.dumps(lock), root=ROOT)

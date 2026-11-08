@@ -40,6 +40,7 @@ BOUND_PACKAGES = (
 PACKAGE_NAMES = {*BOUND_PACKAGES, "brace-expansion", "sharp", "source-map-js", "tinyglobby"}
 # The scoped tinyglobby alias is installed at the fast-glob path.
 PACKAGE_RECORDS = {"tinyglobby": "node_modules/fast-glob"}
+ALIASED_RECORDS = {path: name for name, path in PACKAGE_RECORDS.items()}
 
 
 def version_key(value: str) -> tuple[tuple[int, ...], int, tuple[int, ...]]:
@@ -282,7 +283,10 @@ def validate_pair(manifest_text: str, lock_text: str, *, root: Path = ROOT) -> N
         )
     for name in changed - {""}:
         old, new = originals.get(name, {}), records[name]
-        package_name = str(new.get("name", name.rsplit("node_modules/", 1)[-1]))
+        # A record's package is its path's last segment; only the reviewed alias path names another.
+        tail = name.rsplit("node_modules/", 1)[-1]
+        package_name = ALIASED_RECORDS.get(name, tail)
+        require(new.get("name", package_name) == package_name, "Frontend record names another package.")
         tarball = f"{package_name.rsplit('/', 1)[-1]}-{new.get('version')}.tgz"
         require(
             new.get("resolved") == f"https://registry.npmjs.org/{package_name}/-/{tarball}"
@@ -291,7 +295,7 @@ def validate_pair(manifest_text: str, lock_text: str, *, root: Path = ROOT) -> N
         )
         old_version = old.get("version")
         # Compare like with like: the scoped tinyglobby alias replaced a different package here.
-        same_package = old.get("name", name) == new.get("name", name)
+        same_package = old.get("name", tail) == package_name
         if isinstance(old_version, str) and same_package:
             require(
                 version_key(str(records[name].get("version", ""))) >= version_key(old_version),
