@@ -43,7 +43,7 @@
       "tests/unit/test_dependency_refresh.py": 290,
       "tests/unit/test_dependency_security_contract.py": 516,
       "tests/unit/test_frontend_container_runtime.py": 89,
-      "tests/unit/test_frontend_dependency_refresh.py": 185,
+      "tests/unit/test_frontend_dependency_refresh.py": 215,
       "tests/unit/test_frontend_npm_preparation.py": 30,
       "tests/unit/test_phase1_closure_docs.py": 30,
       "tests/unit/test_stage8_backend_security.py": 30,
