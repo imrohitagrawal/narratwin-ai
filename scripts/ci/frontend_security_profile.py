@@ -293,8 +293,9 @@ def validate_pair(manifest_text: str, lock_text: str, *, root: Path = ROOT) -> N
             and matches(new.get("integrity"), r"sha512-[A-Za-z0-9+/]{86}=="),
             "Frontend record source invalid.",
         )
+        if name in ALIASED_RECORDS:  # The alias took another package's path: floor it at its own base record.
+            old, tail = originals.get("node_modules/" + package_name, {}), package_name
         old_version = old.get("version")
-        # Compare like with like: the scoped tinyglobby alias replaced a different package here.
         same_package = old.get("name", tail) == package_name
         if isinstance(old_version, str) and same_package:
             require(
@@ -322,7 +323,7 @@ def validate_pair(manifest_text: str, lock_text: str, *, root: Path = ROOT) -> N
     for name, checksum in p["recordHashes"].items():
         require(digest(records[name]) == checksum, "Frontend record identity invalid.")
     require(
-        records["node_modules/fast-glob"]["name"]
+        records["node_modules/fast-glob"].get("name")
         == "tinyglobby",
         "Frontend alias identity concealed.",
     )

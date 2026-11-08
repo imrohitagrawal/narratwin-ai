@@ -411,3 +411,18 @@ def test_a_name_field_cannot_swap_a_records_package_or_skip_its_floor(
     monkeypatch.setattr(module, "load_profile", lambda root: profile)
     with pytest.raises(module.ProfileError, match=refusal):
         module.validate_pair(package, json.dumps(lock), root=ROOT)
+
+
+def test_coherent_rehash_cannot_rewind_the_alias_below_its_base(monkeypatch: Any) -> None:
+    """RED: the tinyglobby alias path has no base floor, so a rehashed profile can rewind it."""
+    from scripts.ci import frontend_security_profile as module
+
+    manifest, lock = (json.loads(text) for text in current_pair())
+    profile, path = copy.deepcopy(module.load_profile(ROOT)), "node_modules/fast-glob"
+    lock["packages"][path].update(version="0.0.1", resolved="https://registry.npmjs.org/tinyglobby/-/tinyglobby-0.0.1.tgz")
+    manifest["overrides"]["@next/eslint-plugin-next"]["fast-glob"] = "npm:tinyglobby@0.0.1"
+    profile["packageVersions"]["tinyglobby"], profile["manifestHash"] = "0.0.1", module.digest(manifest)
+    _rehash(module, profile, lock, path)
+    monkeypatch.setattr(module, "load_profile", lambda root: profile)
+    with pytest.raises(module.ProfileError, match="older than its base"):
+        module.validate_pair(json.dumps(manifest), json.dumps(lock), root=ROOT)
