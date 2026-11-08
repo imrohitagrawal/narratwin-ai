@@ -8,7 +8,7 @@ The dependency and container refresh profile needs current exact versions in the
 root, frontend and isolated Semgrep tool graphs, and current Alpine package
 revisions in both images. Semgrep 1.183.0 pins its own MCP and OpenTelemetry
 versions, so the tool audit cannot pass on Semgrep's resolved graph alone.
-ADR 0069 forbids every tool override. This ADR narrows that one sentence.
+ADR 0069 (`0069-semgrep-1-175-override-removal.md`) forbids every tool override. This ADR narrows that one sentence.
 
 ## Decision
 

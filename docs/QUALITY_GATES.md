@@ -2073,5 +2073,6 @@ the Issue #460 rule that every tool override fails closed: the Semgrep tool proj
 may carry exactly the four recorded overrides, tied to Semgrep 1.183.0, in both its
 project file and its lock. Every other override, constraint or dependency metadata
 row still fails closed, including any in the root project. The `installed-tool` check
-fails once Semgrep's own requirements allow a row; remove the row then. Strict audits,
+fails once Semgrep's own requirements allow any row; then the whole exception (rows,
+allow-list and release tie) is removed in one change. Strict audits,
 canaries, full tests and native image builds and scans remain mandatory.
