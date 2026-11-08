@@ -57,6 +57,40 @@ REVIEWED_INPUTS = (
     "tools/semgrep/uv.lock",
     "docs/security/DEPENDENCY_REFRESH.json",
 )
+# Owner exception, issue #571 and ADR 0088: exact, tool project only, tied to this Semgrep release.
+TOOL_OVERRIDE_SEMGREP = "1.183.0"
+ALLOWED_TOOL_OVERRIDES = (
+    "mcp==1.30.0",
+    "opentelemetry-api==1.45.2",
+    "opentelemetry-sdk==1.45.2",
+    "opentelemetry-exporter-otlp-proto-http==1.45.2",
+)
+# Run by the isolated tool interpreter, which has `packaging`; the CI interpreter may not.
+OVERRIDE_PROBE = """
+import json, re, sys
+from importlib.metadata import Distribution
+from packaging.requirements import Requirement
+site, rows = sys.argv[1], json.loads(sys.argv[2])
+canonical = lambda value: re.sub(r"[-_.]+", "-", value).lower()
+semgrep = next(iter(Distribution.discover(name="semgrep", path=[site])))
+pins = {canonical(r.name): r.specifier for r in map(Requirement, semgrep.requires or [])}
+stale = []
+for row in rows:
+    name, version = row.split("==")
+    pin = pins.get(canonical(name))
+    if pin is None or pin.contains(version, prereleases=True):
+        stale.append(row)
+print(json.dumps(stale))
+sys.exit(1 if stale else 0)
+"""
+TOOL_IDENTITY_NAMES = frozenset(
+    """semgrep click mcp cryptography pyjwt urllib3 certifi opentelemetry-api opentelemetry-sdk
+    opentelemetry-exporter-http-transport opentelemetry-exporter-otlp-common
+    opentelemetry-exporter-otlp-proto-common opentelemetry-exporter-otlp-proto-http
+    opentelemetry-instrumentation opentelemetry-instrumentation-requests
+    opentelemetry-instrumentation-threading opentelemetry-proto
+    opentelemetry-semantic-conventions opentelemetry-util-http""".split()
+)
 FORBIDDEN_AUDIT_BYPASSES = (
     "--ignore-vuln",
     "pysec-2026-2132",
@@ -86,6 +120,11 @@ def _locked_versions(path: Path) -> dict[str, set[str]]:
 
 def _canonical_name(value: str) -> str:
     return re.sub(r"[-_.]+", "-", value).lower()
+
+
+def _allowed_tool_manifest() -> dict[str, Any]:
+    rows = (row.split("==") for row in sorted(ALLOWED_TOOL_OVERRIDES))
+    return {"overrides": [{"name": name, "specifier": "==" + version} for name, version in rows]}
 
 
 def _manifest_targets(root: Path) -> tuple[str, ...]:
@@ -167,7 +206,7 @@ def load_security_profile(root: Path = ROOT) -> dict[str, Any]:
         "toolRecordHashes",
     ):
         values = profile[key]
-        pattern = r"[0-9a-f]{64}" if key.endswith("Hashes") else r"\d+(?:\.\d+){1,2}"
+        pattern = r"sha256:[0-9a-f]{64}" if key.endswith("Hashes") else r"\d+(?:\.\d+){1,2}(?:b\d+)?"
         _require(
             type(values) is dict
             and bool(values)
@@ -184,8 +223,7 @@ def load_security_profile(root: Path = ROOT) -> dict[str, Any]:
         "security profile record cardinality drifted",
     )
     _require(
-        set(profile["toolIdentity"])
-        == {"semgrep", "click", "mcp", "cryptography", "pyjwt", "urllib3"}
+        set(profile["toolIdentity"]) == TOOL_IDENTITY_NAMES
         and all(
             profile["toolIdentity"].get(name) == version
             for name, version in profile["toolVersions"].items()
@@ -253,6 +291,32 @@ def verify_installed_pyjwt() -> None:
     _require(result.returncode == 0, "installed PyJWT options regression failed")
 
 
+def verify_override_exception(site_packages: Path) -> None:
+    """Fail once Semgrep's own requirements admit a row: the exception ends with its reason."""
+    timeout = load_security_profile()["toolVerificationTimeoutSeconds"]
+    try:
+        result = subprocess.run(
+            [
+                str(TOOL_ENV / "bin/python"),
+                "-I",
+                "-c",
+                OVERRIDE_PROBE,
+                str(site_packages),
+                json.dumps(ALLOWED_TOOL_OVERRIDES),
+            ],
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+            check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired) as error:
+        raise ContractError("installed Semgrep requirement probe unavailable") from error
+    _require(
+        result.returncode == 0,
+        f"Semgrep's pins now allow it, remove the recorded override: {result.stdout.strip()}",
+    )
+
+
 def validate_reviewed_inputs(root: Path = ROOT) -> None:
     manifest_path = root / "tools/semgrep/reviewed-inputs.sha256"
     recorded: dict[str, str] = {}
@@ -296,6 +360,7 @@ def validate_project_contract(root: Path = ROOT, *, today: object | None = None)
 
     root_uv = root_project.get("tool", {}).get("uv", {})
     _require("override-dependencies" not in root_uv, "root dependency overrides are forbidden")
+    _require("manifest" not in _toml(root / "uv.lock"), "root dependency overrides are forbidden")
     _require("semgrep" not in root_lock, "Semgrep must not be present in the root lock")
     _require("mcp" not in root_lock, "MCP must not be present in the root lock")
     root_click = root_lock.get("click", set())
@@ -308,8 +373,13 @@ def validate_project_contract(root: Path = ROOT, *, today: object | None = None)
         "Semgrep tool pin must remain exact",
     )
     _require(
-        "override-dependencies" not in tool_project["tool"]["uv"],
-        "Semgrep tool dependency overrides are forbidden",
+        tool_project["tool"]["uv"].get("override-dependencies") == list(ALLOWED_TOOL_OVERRIDES)
+        and _toml(root / "tools/semgrep/uv.lock").get("manifest") == _allowed_tool_manifest(),
+        "Semgrep tool dependency overrides are forbidden outside the recorded exception",
+    )
+    _require(
+        identity["semgrep"] == TOOL_OVERRIDE_SEMGREP,
+        "Semgrep changed: re-check whether the recorded tool overrides are still needed",
     )
     for name, version in identity.items():
         label = {"mcp": "MCP", "pyjwt": "PyJWT"}.get(name, name)
@@ -340,6 +410,7 @@ def validate_installed_tool(site_packages: Path) -> None:
     }
     _require(not unexpected, f"installed tool packages absent from lock: {sorted(unexpected)}")
     verify_installed_pyjwt()
+    verify_override_exception(resolved)
 
 
 def validate_scan_result(payload: dict[str, Any]) -> None:

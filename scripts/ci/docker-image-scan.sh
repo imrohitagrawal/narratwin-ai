@@ -80,7 +80,7 @@ expected = {
   "User": "65532:65532", "ExposedPorts": {"3000/tcp": {}},
   "Env": [
     "PATH=/usr/local/sbin:/usr/local/bin:/usr/bin:/usr/sbin:/sbin:/bin",
-    "NODE_VERSION=26.7.0",
+    "NODE_VERSION=26.13.0",
     "NODE_ENV=production", "NEXT_TELEMETRY_DISABLED=1",
     "NARRATWIN_API_PROXY_TARGET=http://127.0.0.1:8000", "HOSTNAME=0.0.0.0", "PORT=3000",
     "SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt",
@@ -115,7 +115,7 @@ function secureTree(d) { const s=fs.lstatSync(d); if(s.uid!==0||s.gid!==0||(s.mo
   if(s.isDirectory()) for(const n of fs.readdirSync(d)) secureTree(d+"/"+n); }
 secureTree("/app");
 const arch=process.arch==="arm64"?"aarch64":"x86_64",loader=`/lib/ld-musl-${arch}.so.1`;
-if (process.version!=="v26.7.0"||process.getuid()!==65532||process.getgid()!==65532||
+if (process.version!=="v26.13.0"||process.getuid()!==65532||process.getgid()!==65532||
     extras.length||forbidden.some(fs.existsSync)||!/^CapEff:\s+0+$/m.test(status)||
     !fs.existsSync(loader)||["/bin/sh","/sbin/apk","/lib64/ld-linux-x86-64.so.2","/lib/ld-linux-aarch64.so.1"].some(fs.existsSync)||
     unsafe.length||trusted.some(p=>{const s=fs.statSync(p);return s.uid!==0||s.gid!==0||(s.mode&0o022)!==0}))
@@ -128,7 +128,7 @@ from scripts.ci.check_container_scan_consensus import (
     frontend_openssl_is_acceptable,
 )
 identity = json.load(open(3))
-if identity != {"node": "v26.7.0", "openssl": FRONTEND_RUNTIME_OPENSSL_VERSION,
+if identity != {"node": "v26.13.0", "openssl": FRONTEND_RUNTIME_OPENSSL_VERSION,
                  "packages": FRONTEND_RUNTIME_PACKAGES}:
     raise SystemExit("Frontend runtime package identity does not match the reviewed contract.")
 if not frontend_openssl_is_acceptable(identity["openssl"]):
@@ -146,11 +146,11 @@ console.log(`${info.width}x${info.height}:${info.format}`);});')"
 const crypto=require("crypto"),fs=require("fs"),records=[],details=[],B=Buffer.from,slash=B("/"),empty=Buffer.alloc(0);
 const skip=new Set(["/.dockerenv","/etc/hosts","/etc/hostname","/etc/resolv.conf"].map(x=>B(x).toString("hex")));
 const virtual=new Set(["/dev","/proc","/sys"].map(x=>B(x).toString("hex")));
-const prerender=B("/app/.next/prerender-manifest.json"),serverJson=B("/app/.next/server/server-reference-manifest.json"),serverJs=B("/app/.next/server/server-reference-manifest.js");
+const previewProps=B("/app/.next/server/preview-props.json"),prerender=B("/app/.next/prerender-manifest.json"),serverJson=B("/app/.next/server/server-reference-manifest.json"),serverJs=B("/app/.next/server/server-reference-manifest.js");
 function u32(n) { const x=Buffer.alloc(4); x.writeUInt32BE(n); return x; }
 function normalize(p,raw) {
   const same=x=>p.equals(x),text=raw.toString("utf8"),replace=(value)=>{const next=text.split(value); if(next.length!==2)throw new Error("volatile field occurrence"); return B(next.join("0".repeat(value.length)));};
-  if(same(prerender)){const preview=JSON.parse(text).preview,keys=Object.keys(preview||{}).sort().join(",");
+  if(same(prerender)||same(previewProps)){const preview=same(prerender)?JSON.parse(text).preview:JSON.parse(text),keys=Object.keys(preview||{}).sort().join(",");
     if(keys!=="previewModeEncryptionKey,previewModeId,previewModeSigningKey"||!/^[0-9a-f]{32}$/.test(preview.previewModeId)||!/^[0-9a-f]{64}$/.test(preview.previewModeSigningKey)||!/^[0-9a-f]{64}$/.test(preview.previewModeEncryptionKey))throw new Error("invalid preview secrets");
     let normalized=text; for(const value of Object.values(preview)){const next=normalized.split(value);if(next.length!==2)throw new Error("preview secret occurrence");normalized=next.join("0".repeat(value.length));} return B(normalized);}
   if(same(serverJson)||same(serverJs)){const parse=(value,isJs)=>{const prefix="self.__RSC_SERVER_MANIFEST=",json=isJs?JSON.parse(value.slice(prefix.length)):value,manifest=JSON.parse(json);if(isJs&&!value.startsWith(prefix)||Object.keys(manifest).sort().join(",")!=="edge,encryptionKey,node"||!/^[A-Za-z0-9+/]{43}=$/.test(manifest.encryptionKey)||Buffer.from(manifest.encryptionKey,"base64").length!==32)throw new Error("invalid server action key");return manifest;};

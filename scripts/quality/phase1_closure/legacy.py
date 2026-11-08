@@ -22,12 +22,12 @@ ROOT = Path(__file__).resolve().parents[3]
 FROZEN_LEGACY_FILES = (
     (
         "scripts/quality/check_phase1_closure_docs.py",
-        "95ac28c955fcef4710e63b6dcab4129164d07d07d4b50ea10352f98bc3614958",
+        "0705f1f8081213089e4ac287378037c22ab4912df359e7419c542f6f4501b962",
         7387,
     ),
     (
         "tests/unit/test_phase1_closure_docs.py",
-        "8c36edf1f7f68c082243007b1e1327c71e3a4e3d93490c0b2ab4b9b1da9ee90a",
+        "2ba903c1e1fa799ac835d8a2b894b0b1f9c3a4d3145d34ce9871df3ef330700a",
         9970,
     ),
 )

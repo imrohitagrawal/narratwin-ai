@@ -18,8 +18,8 @@ def test_frontend_runtime_uses_qualified_available_apk_revisions() -> None:
     from scripts.ci.frontend_security_profile import load_profile
 
     packages = load_profile(ROOT)["runtimePackages"]
-    assert packages["alpine-release"] == "3.24.2-r0"
-    assert packages["ca-certificates-bundle"] == "20260909-r0"
+    assert packages["alpine-release"] == "3.24.4-r0"
+    assert packages["ca-certificates-bundle"] == "20261020-r0"
     docker = (ROOT / "frontend/Dockerfile").read_text()
     for name in ("alpine-release", "ca-certificates-bundle"):
         assert f"{name}={packages[name]}" in docker
@@ -38,14 +38,14 @@ def test_builder_archives_exclude_reported_high_severity_versions() -> None:
         "undici",
         "http-cache-semantics",
     }
-    assert archives["undici"]["version"] == "6.28.1"
+    assert archives["undici"]["version"] == "6.29.1"
     assert archives["http-cache-semantics"]["version"] == "4.3.0"
 
 
 def test_current_frontend_security_floor_and_scoped_truthful_alias() -> None:
     package = json.loads((ROOT / "frontend/package.json").read_text())
-    assert package["dependencies"]["next"] == "16.3.8"
-    assert package["devDependencies"]["eslint-config-next"] == "16.3.8"
+    assert package["dependencies"]["next"] == "16.4.5"
+    assert package["devDependencies"]["eslint-config-next"] == "16.4.5"
     assert package["overrides"]["brace-expansion"] == "5.0.12"
     assert package["overrides"]["sharp"] == "^0.35.5"
     assert package["overrides"]["source-map-js"] == "1.2.2"
@@ -221,3 +221,208 @@ await assert.rejects(verifyActualConfigurations(root,eslint,p),/rootDir/);
         timeout=profile["verificationTimeoutSeconds"],
     )
     assert result.returncode == 0, result.stderr
+
+
+def _rehash(module: Any, profile: dict[str, Any], lock: dict[str, Any], *names: str) -> None:
+    profile["lockHash"] = module.digest(lock)
+    for name in names:
+        profile["recordHashes"][name] = module.digest(lock["packages"][name])
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        "puppeteer-core-evil",
+        "puppeteer-core/node_modules/evil",
+        "lightningcss-evil",
+        "lighthouse/node_modules/evil",
+        "ajv-formats/node_modules/evil",
+        "@puppeteer/browsers-evil",
+        "@puppeteer/browsers/node_modules/evil",
+        "@rolldown/binding-evil",
+        "@vitest/evil",
+        "vite-evil",
+        "evil",
+        "@next/swc-evil",
+        "@next/swc-linux-x64-musl/node_modules/evil",
+        "@img/sharp-evil",
+        "@img/sharp-linux-x64/node_modules/evil",
+    ],
+)
+def test_look_alike_foreign_package_gains_no_family_scope(monkeypatch: Any, name: str) -> None:
+    """RED: an unanchored or subtree family pattern admits this rehashed look-alike."""
+    from scripts.ci import frontend_security_profile as module
+
+    package, text = current_pair()
+    lock = json.loads(text)
+    profile = copy.deepcopy(module.load_profile(ROOT))
+    path = "node_modules/" + name
+    lock["packages"][path] = {
+        "version": "1.0.0",
+        "resolved": "https://example.invalid/forged.tgz",
+        "integrity": "sha512-forged",
+    }
+    _rehash(module, profile, lock, path)
+    monkeypatch.setattr(module, "load_profile", lambda root: profile)
+    with pytest.raises(module.ProfileError, match="Unqualified frontend dependency family"):
+        module.validate_pair(package, json.dumps(lock), root=ROOT)
+
+
+@pytest.mark.parametrize(
+    ("name", "version"),
+    [
+        ("vite", "8.1.0"),
+        ("zod", "4.4.3"),
+        ("puppeteer-core", "25.3.0"),
+        ("chromium-bidi", "16.0.1"),
+        ("lighthouse", "13.4.1"),
+        ("vitest", "4.1.11"),
+        ("next", "16.3.8"),
+        ("eslint-config-next", "16.3.8"),
+    ],
+)
+def test_coherent_rehash_cannot_move_a_bound_package_back(
+    monkeypatch: Any, name: str, version: str
+) -> None:
+    """RED: unbound versions let a rehashed profile restore this vulnerable record."""
+    from scripts.ci import frontend_security_profile as module
+
+    package, text = current_pair()
+    lock = json.loads(text)
+    profile = copy.deepcopy(module.load_profile(ROOT))
+    path = "node_modules/" + name
+    lock["packages"][path]["version"] = version
+    lock["packages"][path]["resolved"] = "https://example.invalid/forged.tgz"
+    _rehash(module, profile, lock, path)
+    monkeypatch.setattr(module, "load_profile", lambda root: profile)
+    with pytest.raises(module.ProfileError, match="Frontend package version"):
+        module.validate_pair(package, json.dumps(lock), root=ROOT)
+
+
+def test_config_digest_strips_only_the_actual_frontend_root(tmp_path: Path) -> None:
+    """RED: stripping any prefix lets a resolver outside the checkout keep the qualified digest."""
+    import subprocess
+
+    module = (ROOT / "frontend/scripts/frontend-security-profile.mjs").as_uri()
+    root = str((ROOT / "frontend").resolve())
+    code = """import assert from 'node:assert/strict';
+import {digest,validateEffectiveConfiguration} from MODULE;
+const root=process.argv[1], tail='node_modules/resolver/index.js';
+const parser={meta:{name:'test',version:'1'}}, rules={test:[2]};
+const hash=digest({rules,settings:{'import/resolver':{[tail]:{a:1}}},parser:parser.meta});
+const p={effectiveConfigHashes:{ts:hash}};
+const config=(key,value={a:1})=>({rules,settings:{'import/resolver':{[key]:value}},languageOptions:{parser}});
+validateEffectiveConfiguration(config(root+'/'+tail),'ts',p);
+for (const key of ['/tmp/attacker-controlled/'+tail,root+'-evil/'+tail,tail,'typescript'])
+  assert.throws(()=>validateEffectiveConfiguration(config(key),'ts',p),/outside the frontend root/);
+assert.throws(()=>validateEffectiveConfiguration(config(root+'/'+tail,{a:2}),'ts',p),/drifted/);
+""".replace("MODULE", json.dumps(module))
+    result = subprocess.run(
+        ["node", "--input-type=module", "--eval", code, "--", root],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        timeout=30,
+    )
+    assert result.returncode == 0, result.stderr
+
+
+@pytest.mark.parametrize(
+    ("path", "version"),
+    [
+        ("node_modules/picomatch", "2.0.0"),
+        ("node_modules/brace-expansion", "1.1.11"),
+        ("node_modules/source-map-js", "1.0.0"),
+        ("node_modules/puppeteer-core/node_modules/ws", "8.0.0"),
+        ("node_modules/sharp", "0.33.0"),
+        ("node_modules/fast-glob", "0.2.0"),
+    ],
+)
+def test_coherent_rehash_cannot_rewind_a_record_below_its_base_or_profile_version(
+    monkeypatch: Any, path: str, version: str
+) -> None:
+    """RED: binding only some packageVersions entries, or no base floor, admits this rewind."""
+    from scripts.ci import frontend_security_profile as module
+
+    package, text = current_pair()
+    lock = json.loads(text)
+    profile = copy.deepcopy(module.load_profile(ROOT))
+    record = lock["packages"][path]
+    name = record.get("name", path.rsplit("node_modules/", 1)[-1])
+    record["version"] = version
+    record["resolved"] = f"https://registry.npmjs.org/{name}/-/{name.split('/')[-1]}-{version}.tgz"
+    _rehash(module, profile, lock, path)
+    monkeypatch.setattr(module, "load_profile", lambda root: profile)
+    with pytest.raises(module.ProfileError, match="version binding drifted|older than its base"):
+        module.validate_pair(package, json.dumps(lock), root=ROOT)
+
+
+@pytest.mark.parametrize(
+    ("path", "field", "value"),
+    [
+        ("node_modules/axe-core", "resolved", "https://example.invalid/forged.tgz"),
+        ("node_modules/next", "resolved", "https://example.invalid/forged.tgz"),
+        ("node_modules/vite", "resolved", "https://example.invalid/forged.tgz"),
+        ("node_modules/vite", "resolved", "https://registry.npmjs.org/vite/-/evil-8.3.5.tgz"),
+        ("node_modules/axe-core", "integrity", "sha512-forged"),
+        ("node_modules/next", "integrity", "sha1-" + "A" * 27 + "="),
+    ],
+)
+def test_coherent_rehash_cannot_move_a_record_off_the_registry(
+    monkeypatch: Any, path: str, field: str, value: str
+) -> None:
+    """RED: without a registry and sha512 check, a rehashed record can name any tarball."""
+    from scripts.ci import frontend_security_profile as module
+
+    package, text = current_pair()
+    lock = json.loads(text)
+    profile = copy.deepcopy(module.load_profile(ROOT))
+    lock["packages"][path][field] = value
+    _rehash(module, profile, lock, path)
+    monkeypatch.setattr(module, "load_profile", lambda root: profile)
+    with pytest.raises(module.ProfileError, match="record source invalid"):
+        module.validate_pair(package, json.dumps(lock), root=ROOT)
+
+
+
+@pytest.mark.parametrize(
+    ("path", "alias", "version", "refusal"),
+    [
+        ("node_modules/picomatch", "picomatch", "2.0.0", "older than its base"),
+        ("node_modules/puppeteer-core/node_modules/ws", "ws", "8.0.0", "older than its base"),
+        ("node_modules/axe-core", "left-pad", "1.3.0", "names another package"),
+        ("node_modules/next", "attacker-next", None, "names another package"),
+    ],
+)
+def test_a_name_field_cannot_swap_a_records_package_or_skip_its_floor(
+    monkeypatch: Any, path: str, alias: str, version: str | None, refusal: str
+) -> None:
+    """RED: reading identity from the record's own name field lets a rehash rewind or swap this record."""
+    from scripts.ci import frontend_security_profile as module
+
+    package, text = current_pair()
+    lock = json.loads(text)
+    profile = copy.deepcopy(module.load_profile(ROOT))
+    record = lock["packages"][path]
+    version = version or record["version"]
+    record.update(name=alias, version=version)
+    record["resolved"] = f"https://registry.npmjs.org/{alias}/-/{alias}-{version}.tgz"
+    _rehash(module, profile, lock, path)
+    monkeypatch.setattr(module, "load_profile", lambda root: profile)
+    with pytest.raises(module.ProfileError, match=refusal):
+        module.validate_pair(package, json.dumps(lock), root=ROOT)
+
+
+def test_coherent_rehash_cannot_rewind_the_alias_below_its_base(monkeypatch: Any) -> None:
+    """RED: the tinyglobby alias path has no base floor, so a rehashed profile can rewind it."""
+    from scripts.ci import frontend_security_profile as module
+
+    manifest, lock = (json.loads(text) for text in current_pair())
+    profile, path = copy.deepcopy(module.load_profile(ROOT)), "node_modules/fast-glob"
+    lock["packages"][path].update(version="0.0.1", resolved="https://registry.npmjs.org/tinyglobby/-/tinyglobby-0.0.1.tgz")
+    manifest["overrides"]["@next/eslint-plugin-next"]["fast-glob"] = "npm:tinyglobby@0.0.1"
+    profile["packageVersions"]["tinyglobby"], profile["manifestHash"] = "0.0.1", module.digest(manifest)
+    _rehash(module, profile, lock, path)
+    monkeypatch.setattr(module, "load_profile", lambda root: profile)
+    with pytest.raises(module.ProfileError, match="older than its base"):
+        module.validate_pair(json.dumps(manifest), json.dumps(lock), root=ROOT)

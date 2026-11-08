@@ -57,17 +57,17 @@ FRONTEND_ENGINE_CONFIG_DEFAULTS = {
 FRONTEND_INVENTORY_RECORD_BOUNDS = {"amd64": (1630, 1670), "arm64": (1630, 1670)}
 FRONTEND_INVENTORY_PATTERN = re.compile(r"^(?P<records>[1-9]\d{0,4}):(?P<digest>[0-9a-f]{64})\Z")
 FRONTEND_INVENTORY_DIAGNOSTIC_LIMIT, FRONTEND_INVENTORY_DIAGNOSTIC_SCHEMA = 20, "FrontendRuntimeInventoryDiagnosticV1"
-FRONTEND_RUNTIME_INDEX = "sha256:aadf416b2cdce311a8811ba3f0608a61b77dbf997500e2eafe781b51f6a0b019"
+FRONTEND_RUNTIME_INDEX = "sha256:c6ad9e9c1d80f6eb607c26b4b0a132ff7a2344fad1c78ea3baa2a7d4c8de6d94"
 FRONTEND_RUNTIME_PLATFORM_DIGESTS = {
-    "amd64": "sha256:b4fea132199070b0c8ea9ac66f363fe2cd6d1e4f994e61d8c87976c2157a1b8a",
-    "arm64": "sha256:d778881fd638833a2a0ed0fbb30577718729ab08112776dea4555eb5551826da",
+    "amd64": "sha256:d431b1d60cd8de74dc66d271c236f66227998c308e011e60faa9c60dc4d37382",
+    "arm64": "sha256:81aab771be4f445efddcecc1f9efbace81be8d184bd9ec7a8e77b67890334c67",
 }
 FRONTEND_NODE_SOURCE_INDEX = FRONTEND_RUNTIME_INDEX
 FRONTEND_NODE_SOURCE_PLATFORM_DIGESTS = {
-    "amd64": "sha256:b4fea132199070b0c8ea9ac66f363fe2cd6d1e4f994e61d8c87976c2157a1b8a",
-    "arm64": "sha256:d778881fd638833a2a0ed0fbb30577718729ab08112776dea4555eb5551826da",
+    "amd64": "sha256:d431b1d60cd8de74dc66d271c236f66227998c308e011e60faa9c60dc4d37382",
+    "arm64": "sha256:81aab771be4f445efddcecc1f9efbace81be8d184bd9ec7a8e77b67890334c67",
 }
-FRONTEND_RUNTIME_OPENSSL_VERSION = "3.5.7"
+FRONTEND_RUNTIME_OPENSSL_VERSION = "3.5.9"
 _NATIVE_PROFILE = load_profile()
 FRONTEND_RUNTIME_PACKAGES = _NATIVE_PROFILE["runtimePackages"]
 FRONTEND_SBOM_COMPONENTS = {
@@ -75,6 +75,7 @@ FRONTEND_SBOM_COMPONENTS = {
     for name, licenses in {
         "alpine-keys": ("MIT",), "alpine-release": ("MIT",),
         "ca-certificates-bundle": ("MIT", "MPL-2.0"),
+        "libatomic": ("GPL-2.0-or-later", "LGPL-2.1-or-later"),
         "libgcc": ("GPL-2.0-or-later", "LGPL-2.1-or-later"),
         "libstdc++": ("GPL-2.0-or-later", "LGPL-2.1-or-later"), "musl": ("MIT",),
     }.items()

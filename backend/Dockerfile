@@ -1,8 +1,8 @@
 FROM docker.io/library/alpine:3.21@sha256:48b0309ca019d89d40f670aa1bc06e426dc0931948452e8491e3d65087abc07d AS cpython-build
 
 ENV PATH=/usr/local/bin:$PATH
-ENV PYTHON_VERSION=3.13.16
-ENV PYTHON_SHA256=f4b1bfb3c79b5bb11b8d228a12504163b4c0dab4d679828d8f5f26b6cb6ab35d
+ENV PYTHON_VERSION=3.13.18
+ENV PYTHON_SHA256=abb0102e6d4ae027509bcb82327d9dd85515b44a3ba8ad538cfc5e9847029f68
 RUN set -eux; \
     apk add --no-cache \
       bluez-dev build-base bzip2-dev expat-dev gdbm-dev gnupg \
@@ -55,7 +55,7 @@ RUN set -eux; \
       | awk 'system("[ -e /usr/local/lib/" $1 " ]") == 0 { next } { print "so:" $1 }')"; \
     apk add --root /runtime --initdb --no-cache --no-scripts \
       --keys-dir /etc/apk/keys --repositories-file /etc/apk/repositories \
-      alpine-keys=2.5-r0 alpine-release=3.21.8-r0 ca-certificates-bundle tzdata \
+      alpine-keys=2.5-r0 alpine-release=3.21.10-r0 ca-certificates-bundle tzdata \
       libcrypto3=3.3.7-r2 libssl3=3.3.7-r2 $runtime_deps; \
     mkdir -p /runtime/usr /runtime/etc /runtime/app /runtime/tmp; \
     cp -a /usr/local /runtime/usr/; \

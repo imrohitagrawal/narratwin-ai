@@ -138,8 +138,8 @@ def test_runtime_regression_cli_is_bounded_and_probe_entrypoint_fails_closed() -
 
 def test_dockerfile_builds_verified_fixed_cpython_release_for_final_runtime() -> None:
     dockerfile = (ROOT / "backend/Dockerfile").read_text(encoding="utf-8")
-    assert "ENV PYTHON_VERSION=3.13.16" in dockerfile
-    assert "ENV PYTHON_SHA256=f4b1bfb3c79b5bb11b8d228a12504163b4c0dab4d679828d8f5f26b6cb6ab35d" in dockerfile
+    assert "ENV PYTHON_VERSION=3.13.18" in dockerfile
+    assert "ENV PYTHON_SHA256=abb0102e6d4ae027509bcb82327d9dd85515b44a3ba8ad538cfc5e9847029f68" in dockerfile
     assert '"https://www.python.org/ftp/python/${PYTHON_VERSION}/Python-${PYTHON_VERSION}.tar.xz"' in dockerfile
     assert 'echo "$PYTHON_SHA256 *python.tar.xz" | sha256sum -c -' in dockerfile
     assert "gpg --batch --verify python.tar.xz.asc python.tar.xz" in dockerfile

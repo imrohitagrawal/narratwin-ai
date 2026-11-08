@@ -55,19 +55,19 @@ ISSUE376_SECURITY_FILES = {
 }
 I376_ROUTES = {ISSUE376_SECURITY_BRANCH: ISSUE376_SECURITY_FILES}
 FRONTEND_NODE_RUNTIME_IMAGE = (
-    "node:26.7.0-alpine3.24@sha256:"
-    "aadf416b2cdce311a8811ba3f0608a61b77dbf997500e2eafe781b51f6a0b019"
+    "node:26.13.0-alpine3.24@sha256:"
+    "c6ad9e9c1d80f6eb607c26b4b0a132ff7a2344fad1c78ea3baa2a7d4c8de6d94"
 )
 FRONTEND_NODE_BUILD_IMAGE = "scratch"
 FRONTEND_NODE_SOURCE_IMAGE = (
-    "node:26.7.0-alpine3.24@sha256:"
-    "aadf416b2cdce311a8811ba3f0608a61b77dbf997500e2eafe781b51f6a0b019"
+    "node:26.13.0-alpine3.24@sha256:"
+    "c6ad9e9c1d80f6eb607c26b4b0a132ff7a2344fad1c78ea3baa2a7d4c8de6d94"
 )
 ISSUE389_VULNERABLE_RUNTIME_IMAGE = (
     "cgr.dev/chainguard/node:latest@sha256:"
     "cf7ae5ead5aed79a61404d7b1bbb9b89ea461991b21cb8fcb07d4b6ad4d8b734"
 )
-FRONTEND_RUNTIME_NODE_VERSION = "26.7.0"
+FRONTEND_RUNTIME_NODE_VERSION = "26.13.0"
 _PROFILE = load_profile()
 FRONTEND_RUNTIME_PACKAGES = _PROFILE["runtimePackages"]
 FRONTEND_BUILD_ARCHIVE_SHA512 = {
@@ -119,8 +119,12 @@ def frontend_node_image_valid(dockerfile: str) -> bool:
             and f"/tmp/frontend-npm-archives/{filename}" in dockerfile
             for filename, digest in FRONTEND_BUILD_ARCHIVE_SHA256.items()
         )
+        # Node 26 on x86_64 musl links libatomic: only the exact Alpine runtime pin may name it.
+        and dockerfile.lower().count("libatomic") == 1
+        and f"libatomic={FRONTEND_RUNTIME_PACKAGES['libatomic']} \\\n" in dockerfile
+        and 'for lib in $node_libs; do test -e "/runtime$lib"; done; \\' in dockerfile
         and all(marker not in dockerfile.lower() for marker in (
-            "glibc", "gcompat", "libatomic", "apt-get", "sha512sum", "npm ci --", "libcrypto", "libssl", "busybox",
+            "glibc", "gcompat", "apt-get", "sha512sum", "npm ci --", "libcrypto", "libssl", "busybox",
             "narratwin-build-nonce", "from deps as build", " as runner",
         ))
     )

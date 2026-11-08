@@ -228,3 +228,30 @@ def test_invalid_historical_preflight_cannot_be_repaired_after_implementation(
     failures: list[str] = []
     stage8.check_refresh_scope(branch, failures)
     assert failures == ["Dependency refresh historical preflight invalid."]
+
+
+def test_refresh_envelope_admits_only_the_issue_571_paths_beyond_issue_561(tmp_path: Path) -> None:
+    """RED: any other path added to the envelope, or one of these dropped, fails."""
+    import importlib.util
+
+    from scripts.quality.stage8_refresh_scope import REFRESH_HARDENING_PATHS
+
+    root = Path(__file__).resolve().parents[2]
+    old = tmp_path / "issue561_refresh_scope.py"
+    old.write_text(
+        git(root, "show", "5303ade4ec2a43b8ee81b4ee7ad33218573eb69e:scripts/quality/stage8_refresh_scope.py")
+    )
+    spec = importlib.util.spec_from_file_location("issue561_refresh_scope", old)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    assert REFRESH_HARDENING_PATHS - module.REFRESH_HARDENING_PATHS == {
+        "scripts/ci/docker-image-scan.sh",
+        "docs/RISK_REGISTER.md",
+        "docs/reviews/ISSUE_138_CLICK_SECURITY_PREFLIGHT.md",
+        "scripts/quality/check_phase1_closure_docs.py",
+        "scripts/quality/phase1_closure/legacy.py",
+        "tests/unit/test_phase1_closure_docs.py",
+    }
+    assert module.REFRESH_HARDENING_PATHS <= REFRESH_HARDENING_PATHS
+    assert not {".github/workflows/security.yml", "Makefile", "AGENTS.md"} & REFRESH_HARDENING_PATHS
