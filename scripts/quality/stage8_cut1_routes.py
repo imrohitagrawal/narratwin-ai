@@ -38,6 +38,7 @@ ISSUE524_BRANCH = "stage8-524-frontend-dependency-security-refresh"
 ISSUE525_BRANCH = "stage8-525-schema-oracle-runtime-policy"
 ISSUE527_BRANCH = "stage8-527-backend-ci-timeout"
 ISSUE529_BRANCH = "stage8-529-native-arm64-security"
+ISSUE575_BRANCH = "stage8-575-backend-ci-timeout-45"
 ISSUE502_BRANCH = "stage8-502-frontend-musl-runtime-security"
 ISSUE507_BRANCH = "stage8-507-google-api-core-grpc-status"
 ISSUE509_BRANCH = "stage8-509-configurable-audio-duration"
@@ -368,6 +369,11 @@ ISSUE529_DOCS_AMENDMENT_SHA256 = "c74cdb7e62e702a3ffa8406976bb1e53a9b98c3dfe128f
 ISSUE529_HOSTED_CORRECTION_COMMENT = "5613239963"
 ISSUE529_HOSTED_CORRECTION_SHA256 = "a444fdf9f283cc631e1e0729bef9b10d227f3778fffc270ed3c76473cb4ca82f"
 ISSUE529_BUDGET_RED = "89f87b3d239b21f0a8064994e328b07760af2cb8"
+ISSUE575_BASE = "0ad6ce3cb7ab910d1683f62af3b30c438346f088"
+ISSUE575_TREE = "fdd0b7f0ec6b7f7a628f9ba30c590ed7248aa9ee"
+ISSUE575_BODY_SHA256 = "500c5ad6cc161c8f7bcc27a30f59ae30bea1dac7e85878c2267e93b09dbfbd9f"
+ISSUE575_DECISION_COMMENT = "6749295899"
+ISSUE575_DECISION_SHA256 = "636238ca9685d7cc6a33da86e541f3491a22fc48e8ae7839d30b325ad29053f5"
 ISSUE495_TREE = "13f79eb5db44249f635a619e1b283279f25ba9f0"
 ISSUE495_ROUTE_COMMENT = "5498387945"
 ISSUE495_CORRECTION_COMMENT = "5498411811"
@@ -628,6 +634,18 @@ ROUTES = {
         "docs/QUALITY_GATES.md",
         "docs/STATUS.md",
         "docs/TRACEABILITY.md",
+    },
+    ISSUE575_BRANCH: {
+        ".github/workflows/ci.yml",
+        "tests/unit/test_ci_workflow_timeout_policy.py",
+        "docs/governance/preflights/issue-575.json",
+        "scripts/quality/stage8_cut1_routes.py",
+        "tests/unit/test_stage8_cut1_routes.py",
+        "docs/QUALITY_GATES.md",
+        "docs/STATUS.md",
+        "docs/TRACEABILITY.md",
+        "docs/work/registry.json",
+        "docs/work/governance-backlog/HANDOFF.md",
     },
     ISSUE529_BRANCH: {
         ".github/workflows/security.yml",
@@ -1277,6 +1295,7 @@ TOTAL_LIMITS[ISSUE525_BRANCH] = 2100
 ROUTE_ISSUES[ISSUE527_BRANCH] = 527
 TOTAL_LIMITS[ISSUE527_BRANCH] = 420
 ROUTE_ISSUES[ISSUE529_BRANCH] = 529
+ROUTE_ISSUES[ISSUE575_BRANCH] = 575
 ROUTE_ISSUES[ISSUE502_BRANCH] = 502
 TOTAL_LIMITS[ISSUE502_BRANCH] = 4660
 ROUTE_ISSUES[ISSUE507_BRANCH] = 507
@@ -2758,6 +2777,7 @@ def route_base(run: Callable[[list[str]], Any], branch: str) -> str:
         ISSUE524_BRANCH: (524, ISSUE524_BASE),
         ISSUE525_BRANCH: (525, ISSUE525_BASE),
         ISSUE529_BRANCH: (529, ISSUE529_BASE),
+        ISSUE575_BRANCH: (575, ISSUE575_BASE),
         ISSUE495_BRANCH: (495, ISSUE495_BASE),
         ISSUE482_BRANCH: (482, ISSUE482_BASE),
         ISSUE478_BRANCH: (478, ISSUE478_BASE),
@@ -3476,6 +3496,27 @@ def check_exact_route(
                 failures.append("Issue #527 CI timeout authority drifted.")
         except (OSError, ValueError, TypeError) as error:
             failures.append(f"Issue #527 governance preflight failed closed: {error}")
+    if branch == ISSUE575_BRANCH:
+        try:
+            preflight = load_json_without_duplicate_members(
+                root / "docs/governance/preflights/issue-575.json"
+            )
+            findings = validate_governance_preflight(
+                preflight,
+                context={"issue_number": 575, "branch": branch, "changed_files": sorted(files)},
+            )
+            failures.extend(
+                f"Issue #575 governance preflight failed: {item.code}" for item in findings
+            )
+            objective = preflight.get("objective") if isinstance(preflight, dict) else None
+            issue575_authority = (ISSUE575_BASE, ISSUE575_TREE, ISSUE575_BODY_SHA256,
+                                  ISSUE575_DECISION_COMMENT, ISSUE575_DECISION_SHA256)
+            if not isinstance(objective, str) or any(
+                item not in objective for item in issue575_authority
+            ):
+                failures.append("Issue #575 backend time-limit authority drifted.")
+        except (OSError, ValueError, TypeError) as error:
+            failures.append(f"Issue #575 governance preflight failed closed: {error}")
     if branch == ISSUE529_BRANCH:
         try:
             preflight = load_json_without_duplicate_members(

@@ -1228,6 +1228,19 @@ EXPECTED["stage8-523-httpx2-2-12-security-refresh"] = ISSUE523_EXPECTED
 EXPECTED["stage8-525-schema-oracle-runtime-policy"] = ISSUE525_EXPECTED
 EXPECTED["stage8-527-backend-ci-timeout"] = ISSUE527_EXPECTED
 EXPECTED["stage8-529-native-arm64-security"] = ISSUE529_EXPECTED
+ISSUE575_LIMITS = {
+    ".github/workflows/ci.yml": 2,
+    "tests/unit/test_ci_workflow_timeout_policy.py": 60,
+    "docs/governance/preflights/issue-575.json": 120,
+    "scripts/quality/stage8_cut1_routes.py": 80,
+    "tests/unit/test_stage8_cut1_routes.py": 120,
+    "docs/QUALITY_GATES.md": 40,
+    "docs/STATUS.md": 40,
+    "docs/TRACEABILITY.md": 40,
+    "docs/work/registry.json": 10,
+    "docs/work/governance-backlog/HANDOFF.md": 10,
+}
+EXPECTED["stage8-575-backend-ci-timeout-45"] = set(ISSUE575_LIMITS)
 
 
 def completed(args: list[str], code: int = 0, out: str = "", err: str = "") -> subprocess.CompletedProcess[str]:
@@ -5978,3 +5991,51 @@ def test_issue495_lock_refresh_changes_only_six_transitive_records() -> None:
     for name, identity in expected.items():
         record = after[f"node_modules/{name}"]
         assert (record["version"], record["integrity"]) == identity
+
+
+def test_issue575_route_freezes_the_backend_limit_scope_and_authority() -> None:
+    """RED: an unregistered route, a changed budget or a drifted authority value fails here."""
+    branch = "stage8-575-backend-ci-timeout-45"
+    assert routes.ISSUE575_BRANCH == branch
+    assert routes.ISSUE575_BASE == "0ad6ce3cb7ab910d1683f62af3b30c438346f088"
+    assert routes.ISSUE575_TREE == "fdd0b7f0ec6b7f7a628f9ba30c590ed7248aa9ee"
+    assert routes.ISSUE575_BODY_SHA256 == (
+        "500c5ad6cc161c8f7bcc27a30f59ae30bea1dac7e85878c2267e93b09dbfbd9f"
+    )
+    assert routes.ISSUE575_DECISION_COMMENT == "6749295899"
+    assert routes.ISSUE575_DECISION_SHA256 == (
+        "636238ca9685d7cc6a33da86e541f3491a22fc48e8ae7839d30b325ad29053f5"
+    )
+    assert routes.ROUTES[branch] == set(ISSUE575_LIMITS)
+    assert routes.ROUTE_ISSUES[branch] == 575
+    assert branch not in routes.TOTAL_LIMITS and branch not in routes.TEXT_LIMITS
+    preflight = json.loads(
+        (REPO / "docs/governance/preflights/issue-575.json").read_text(encoding="utf-8")
+    )
+    assert preflight["change_budget"] == {
+        "exact_paths": 10,
+        "maximum_additions_plus_deletions": 420,
+        "deletions_grant_credit": False,
+        "per_file_charged_lines": ISSUE575_LIMITS,
+    }
+    assert routes.route_change_budget(REPO, branch, 575, set(ISSUE575_LIMITS)) == (
+        420, ISSUE575_LIMITS
+    )
+    assert preflight["scope"]["required"] == preflight["scope"]["allowed_prefixes"]
+    assert set(preflight["scope"]["required"]) == set(ISSUE575_LIMITS)
+    authority = (routes.ISSUE575_BASE, routes.ISSUE575_TREE, routes.ISSUE575_BODY_SHA256,
+                 routes.ISSUE575_DECISION_COMMENT, routes.ISSUE575_DECISION_SHA256)
+    assert all(value in preflight["objective"] for value in authority)
+    assert branch in stage8.EFFECTIVE_STAGE8_ROUTES
+
+
+def test_issue575_route_rejects_suffix_branches(monkeypatch: Any) -> None:
+    branch = routes.ISSUE575_BRANCH + "-retry"
+    assert branch not in stage8.EFFECTIVE_STAGE8_ROUTES
+    monkeypatch.setattr(stage8, "current_branch", lambda: branch)
+    monkeypatch.setattr(stage8, "changed_files_for_stage_scope", lambda: [])
+    failures: list[str] = []
+    stage8.check_stage_scope(failures)
+    assert failures == [
+        f"Stage 8 branch collides with exact reviewed route {routes.ISSUE575_BRANCH}: {branch}."
+    ]

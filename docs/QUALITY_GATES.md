@@ -1999,7 +1999,7 @@ normalization.
 ## Issue #527 backend CI timeout gate
 
 The backend `lint / typecheck / unit / api` job must declare exactly one finite
-30-minute job-level timeout. The frontend, Docker, and Stage 8 performance jobs
+45-minute job-level timeout (raised from 30 by Issue #575). The frontend, Docker, and Stage 8 performance jobs
 remain fixed at 20, 20, and 35 minutes. Missing, duplicate, non-numeric, lower,
 higher, or misplaced timeout values fail the focused regression:
 
