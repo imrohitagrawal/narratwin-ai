@@ -9,7 +9,7 @@ import pytest
 REPO = Path(__file__).parents[2]
 WORKFLOW = REPO / ".github/workflows/ci.yml"
 STATUS, TRACEABILITY = REPO / "docs/STATUS.md", REPO / "docs/TRACEABILITY.md"
-EXPECTED_TIMEOUTS = {"backend": 30, "frontend": 20, "docker": 20, "stage8-budgets": 35}
+EXPECTED_TIMEOUTS = {"backend": 45, "frontend": 20, "docker": 20, "stage8-budgets": 35}
 
 TIMEOUT_EVIDENCE = (
     ("34282990946", "102251927718", "15m18"),
@@ -94,16 +94,19 @@ def test_issue_527_docs_bind_timeout_claim_to_elapsed_ceiling_jobs() -> None:
     ("replacement", "count"),
     [
         ("", 1),
-        ("    timeout-minutes: 30\n    timeout-minutes: 30", 1),
+        ("    timeout-minutes: 45\n    timeout-minutes: 45", 1),
         ("    timeout-minutes: thirty", 1),
-        ("    timeout-minutes: 29", 1),
-        ("    timeout-minutes: 31", 1),
-        ("      timeout-minutes: 30", 1),
+        ("    timeout-minutes: 44", 1),
+        ("    timeout-minutes: 46", 1),
+        ("      timeout-minutes: 45", 1),
     ],
     ids=["missing", "duplicate", "non-numeric", "lower", "higher", "misplaced"],
 )
 def test_backend_timeout_policy_rejects_ambiguous_or_drifted_values(replacement: str, count: int) -> None:
-    accepted = WORKFLOW.read_text(encoding="utf-8").replace("    timeout-minutes: 15", "    timeout-minutes: 30", 1)
-    mutated = accepted.replace("    timeout-minutes: 30", replacement, count)
+    accepted = WORKFLOW.read_text(encoding="utf-8")
+    _assert_timeout_policy(accepted)
+    assert "    timeout-minutes: 45" in accepted  # partner: a no-op mutation cannot pass
+    mutated = accepted.replace("    timeout-minutes: 45", replacement, count)
+    assert mutated != accepted
     with pytest.raises(AssertionError):
         _assert_timeout_policy(mutated)

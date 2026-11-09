@@ -2441,3 +2441,16 @@ existing refresh contract. Strict audits stay unchanged. The owner's one tool
 exception is recorded in ADR 0088. Review and hosted check results for the exact
 head live on the pull request. This adds no product, media, provider or deployment
 behaviour.
+
+## Issue #575 backend CI time limit (2026-11-09)
+
+- On main `0ad6ce3`, run `42459932554` cancelled the backend job at the 30-minute
+  limit twice (30m14 and 30m13). Hosted passes of the same job took 19m30 to 27m52
+  on recent heads, so the limit no longer leaves room for runner speed.
+- Issue #575 raises only that job's limit from 30 to 45 minutes: 1.5 times the old
+  limit and about 1.6 times the slowest measured pass. The true length of the
+  cancelled runs is unknown. Test commands, selection, retries, dependencies and
+  every other job limit are unchanged.
+- Issue #575 stays open to make the suite faster and bring the job back under 30
+  minutes; then the limit can come down again. No product, provider or deployment
+  behaviour changes.

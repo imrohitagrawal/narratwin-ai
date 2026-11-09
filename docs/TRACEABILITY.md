@@ -930,3 +930,11 @@ workflows. The narrow Semgrep tool exception is tested by the same contract: eve
 other override, in the project or the lock, in the tool or the root, is refused, and
 the exception fails once Semgrep's own requirements allow a row.
 These prove repository prerequisites only.
+
+## Issue #575 backend CI time limit traceability
+
+| Requirement | Executable evidence | Preserved boundary |
+|---|---|---|
+| Let the complete backend suite reach a verdict | Run `42459932554` on main `0ad6ce3` cancelled at 30m14 and 30m13; exact job-level 45-minute regression in `test_ci_workflow_timeout_policy.py` | A finite ceiling remains; no command, selection, retry, dependency or concurrency change |
+| Reject ambiguous or weakened timeout policy | Missing, duplicate, non-numeric, 44, 46 and misplaced mutations, each proven to change the workflow text | Frontend, Docker and Stage 8 ceilings remain 20, 20 and 35 minutes |
+| Preserve delivery authority | Issue #575 preflight, exact route and budget tests, and exact-head hosted checks | Supersedes the Issue #527 value (30); that section stays as dated history |
