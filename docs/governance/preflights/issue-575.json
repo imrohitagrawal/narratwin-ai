@@ -1,0 +1,81 @@
+{
+  "schema_version": "GovernancePreflightV1",
+  "issue_number": 575,
+  "branch": "stage8-575-backend-ci-timeout-45",
+  "objective": "From accepted main 0ad6ce3cb7ab910d1683f62af3b30c438346f088/tree fdd0b7f0ec6b7f7a628f9ba30c590ed7248aa9ee, raise only the backend CI job's single finite timeout from 30 to 45 minutes under Issue #575 body 500c5ad6cc161c8f7bcc27a30f59ae30bea1dac7e85878c2267e93b09dbfbd9f and decision comment 6749295899/636238ca9685d7cc6a33da86e541f3491a22fc48e8ae7839d30b325ad29053f5, because the required job is cancelled at 30 minutes on main. Preserve every sibling timeout, workflow command, trigger, permission, concurrency rule, action pin, test selection and retry. Move the exact timeout policy regression to 45 with discriminating mutations, register this exact route, and bind STATUS, TRACEABILITY, QUALITY_GATES and the work-record status hashes. Issue #575 stays open for making the suite faster. Keep product, provider, media, dependency, credential, egress, spend, deployment, release and production behavior or claims out of scope. Stop on base, tree, route, scope, budget, hosted or authority drift.",
+  "status_decision": "update-minimally",
+  "change_budget": {
+    "exact_paths": 10,
+    "maximum_additions_plus_deletions": 420,
+    "deletions_grant_credit": false,
+    "per_file_charged_lines": {
+      ".github/workflows/ci.yml": 2,
+      "tests/unit/test_ci_workflow_timeout_policy.py": 60,
+      "docs/governance/preflights/issue-575.json": 120,
+      "scripts/quality/stage8_cut1_routes.py": 80,
+      "tests/unit/test_stage8_cut1_routes.py": 120,
+      "docs/QUALITY_GATES.md": 40,
+      "docs/STATUS.md": 40,
+      "docs/TRACEABILITY.md": 40,
+      "docs/work/registry.json": 10,
+      "docs/work/governance-backlog/HANDOFF.md": 10
+    }
+  },
+  "scope": {
+    "required": [
+      ".github/workflows/ci.yml",
+      "tests/unit/test_ci_workflow_timeout_policy.py",
+      "docs/governance/preflights/issue-575.json",
+      "scripts/quality/stage8_cut1_routes.py",
+      "tests/unit/test_stage8_cut1_routes.py",
+      "docs/QUALITY_GATES.md",
+      "docs/STATUS.md",
+      "docs/TRACEABILITY.md",
+      "docs/work/registry.json",
+      "docs/work/governance-backlog/HANDOFF.md"
+    ],
+    "allowed_prefixes": [
+      ".github/workflows/ci.yml",
+      "tests/unit/test_ci_workflow_timeout_policy.py",
+      "docs/governance/preflights/issue-575.json",
+      "scripts/quality/stage8_cut1_routes.py",
+      "tests/unit/test_stage8_cut1_routes.py",
+      "docs/QUALITY_GATES.md",
+      "docs/STATUS.md",
+      "docs/TRACEABILITY.md",
+      "docs/work/registry.json",
+      "docs/work/governance-backlog/HANDOFF.md"
+    ],
+    "forbidden": [
+      "AGENTS.md",
+      ".env",
+      ".stage/current",
+      "Makefile",
+      ".github/workflows/eval-smoke.yml",
+      ".github/workflows/pr-body-consistency.yml",
+      ".github/workflows/quality-gates.yml",
+      ".github/workflows/quality.yml",
+      ".github/workflows/security.yml",
+      ".github/CODEOWNERS",
+      ".github/pull_request_template.md",
+      "backend/",
+      "frontend/",
+      "docs/ADR/",
+      "docs/THIRD_PARTY_NOTICES.md",
+      "evals/",
+      "infra/",
+      "perf/",
+      "portfolio/",
+      "pyproject.toml",
+      "scripts/ci/",
+      "scripts/guardrails_check.py",
+      "scripts/governance_preflight_v1.py",
+      "scripts/governance_preflight_repository.py",
+      "scripts/governance_preflight_github.py",
+      "tests/acceptance/",
+      "tests/api/",
+      "tools/",
+      "uv.lock"
+    ]
+  }
+}
