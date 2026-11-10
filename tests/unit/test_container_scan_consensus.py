@@ -998,7 +998,7 @@ def test_scan_keeps_copies_and_still_fails_on_a_real_mismatch(tmp_path: Path) ->
 def test_scan_checks_copies_against_both_builds_secrets(tmp_path: Path, image: str, key_char: str) -> None:
     # Turns red: main() stops passing either build's secrets to the capture.
     value = key_char * 64
-    stub = f'case "$*" in *" {image} -e "*) printf %s "$(printf \'{value}\' | base64)" ;; *) printf %s "$(printf clean | base64)" ;; esac'
+    stub = f'case "$*" in *" {image} -e "*) printf %s "$(printf \'{value}\' | base64 | tr -d \'\\n\')" ;; *) printf %s "$(printf clean | base64)" ;; esac'
     harness, env, kept = _reproducibility_harness(tmp_path, stub)
     assert _run_reproducibility_harness(harness, env).returncode != 0
     entry = json.loads((kept / "manifest.json").read_text())["files"][0]
