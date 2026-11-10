@@ -810,7 +810,7 @@ def test_dockerized_scanner_fallback_writes_to_mounted_report_path(tmp_path: Pat
 
 # Issue #576: keep both copies of a differing file, behind the build-secret check.
 _KEEP_KEY = base64.b64encode(b"\xfb\xef\xff" * 10 + b"\xfb\xef").decode()
-_KEEP_SECRETS = ("1" * 32, "2" * 64, "3" * 64, _KEEP_KEY, "5" * 32, "6" * 64, "7" * 64, "8" * 64)
+_KEEP_SECRETS = ("1" * 32, "fb" * 32, "3" * 64, _KEEP_KEY, "5" * 32, "6" * 64, "7" * 64, "8" * 64)
 _KEEP_LEFT = {"kind": "F", "mode": 0o644, "uid": 0, "gid": 0, "sha256": "a" * 64}
 _KEEP_RIGHT = {**_KEEP_LEFT, "sha256": "b" * 64}
 
@@ -876,7 +876,7 @@ def test_keep_differences_withholds_hex_of_a_base64_key(tmp_path: Path) -> None:
 
 def test_keep_differences_withholds_encodings_of_hex_values(tmp_path: Path) -> None:
     # Turns red: base64, base64url or uppercase hex of a hex value's bytes leaves the check.
-    raw = bytes.fromhex("2" * 64)
+    raw = bytes.fromhex("fb" * 32)
     for body in (base64.b64encode(raw), base64.urlsafe_b64encode(raw).rstrip(b"="), raw.hex().upper().encode()):
         manifest = _keep(tmp_path, _keep_delta(_keep_page()), lambda _image, _path: ("kept", body))
         assert manifest["files"][0]["primary"] == {"outcome": "withheld_secret"}
