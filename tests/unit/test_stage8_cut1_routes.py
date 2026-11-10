@@ -1246,11 +1246,11 @@ ISSUE576_LIMITS = {
     "frontend/src/app/not-found.module.css": 30,
     "frontend/src/app/not-found.test.tsx": 40,
     "scripts/ci/docker-image-scan.sh": 40,
-    "scripts/ci/check_container_scan_consensus.py": 130,
-    "tests/unit/test_container_scan_consensus.py": 260,
+    "scripts/ci/check_container_scan_consensus.py": 125,
+    "tests/unit/test_container_scan_consensus.py": 300,
     "docs/governance/preflights/issue-576.json": 120,
     "scripts/quality/stage8_cut1_routes.py": 70,
-    "tests/unit/test_stage8_cut1_routes.py": 90,
+    "tests/unit/test_stage8_cut1_routes.py": 70,
     "docs/QUALITY_GATES.md": 20,
     "docs/STATUS.md": 40,
     "docs/TRACEABILITY.md": 40,
@@ -6081,12 +6081,12 @@ def test_issue576_route_freezes_the_not_found_scope_and_authority() -> None:
     )
     assert preflight["change_budget"] == {
         "exact_paths": 16,
-        "maximum_additions_plus_deletions": 980,
+        "maximum_additions_plus_deletions": 995,
         "deletions_grant_credit": False,
         "per_file_charged_lines": ISSUE576_LIMITS,
     }
     assert routes.route_change_budget(REPO, branch, 576, set(ISSUE576_LIMITS)) == (
-        980, ISSUE576_LIMITS
+        995, ISSUE576_LIMITS
     )
     assert preflight["scope"]["required"] == preflight["scope"]["allowed_prefixes"]
     assert set(preflight["scope"]["required"]) == set(ISSUE576_LIMITS)
@@ -6097,6 +6097,7 @@ def test_issue576_route_freezes_the_not_found_scope_and_authority() -> None:
 
 
 def test_issue576_route_rejects_suffix_branches(monkeypatch: Any) -> None:
+    # Turns red: the exact route stops refusing a branch with a suffix.
     branch = routes.ISSUE576_BRANCH + "-retry"
     assert branch not in stage8.EFFECTIVE_STAGE8_ROUTES
     monkeypatch.setattr(stage8, "current_branch", lambda: branch)

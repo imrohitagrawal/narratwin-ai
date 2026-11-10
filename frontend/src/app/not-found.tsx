@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 import styles from "./not-found.module.css";
 
-// The title is set only here: a second <title> element races the metadata in <head> (issue #576).
+// The title is set only here: a second <title> element makes the order in <head> vary between builds (issue #576).
 export const metadata: Metadata = {
   title: "404: This page could not be found.",
 };

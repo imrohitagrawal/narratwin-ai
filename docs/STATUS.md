@@ -2466,5 +2466,6 @@ behaviour.
   and its normalization is unchanged.
 - On a mismatch the scan now keeps both copies of each differing file in its
   report, after a build-secret check. The scan also requires a 404 status and
-  exactly one title on a missing path. No product, provider or deployment
-  behaviour changes.
+  exactly one title on a missing path. Beyond the text and layout of the 404
+  page, no product, provider or deployment behaviour changes.
+- Issue #576 stays open until five hosted scans match on each architecture.

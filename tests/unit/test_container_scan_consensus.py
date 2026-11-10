@@ -849,7 +849,9 @@ def test_keep_differences_writes_both_copies_under_generated_names(tmp_path: Pat
 @pytest.mark.parametrize("build_value", [_KEEP_KEY, "5" * 32])
 @pytest.mark.parametrize("encode", [
     lambda value: value,
+    lambda value: value.rstrip("="),
     lambda value: value.replace("/", "\\/"),
+    lambda value: quote(value.rstrip("="), safe=""),
     lambda value: quote(value, safe=""),
     lambda value: value.replace("+", "-").replace("/", "_"),
     lambda value: value.replace("+", "-").replace("/", "_").rstrip("="),
@@ -870,6 +872,24 @@ def test_keep_differences_withholds_hex_of_a_base64_key(tmp_path: Path) -> None:
     body = base64.b64decode(_KEEP_KEY).hex().encode()
     manifest = _keep(tmp_path, _keep_delta(_keep_page()), lambda _image, _path: ("kept", body))
     assert manifest["files"][0]["primary"] == {"outcome": "withheld_secret"}
+
+
+def test_keep_differences_withholds_encodings_of_hex_values(tmp_path: Path) -> None:
+    # Turns red: base64, base64url or uppercase hex of a hex value's bytes leaves the check.
+    raw = bytes.fromhex("2" * 64)
+    for body in (base64.b64encode(raw), base64.urlsafe_b64encode(raw).rstrip(b"="), raw.hex().upper().encode()):
+        manifest = _keep(tmp_path, _keep_delta(_keep_page()), lambda _image, _path: ("kept", body))
+        assert manifest["files"][0]["primary"] == {"outcome": "withheld_secret"}
+
+
+def test_keep_differences_writes_its_manifest_when_a_later_file_fails(tmp_path: Path) -> None:
+    # Turns red: the manifest is written only after every file succeeds.
+    (tmp_path / "kept").mkdir()
+    (tmp_path / "kept/1.primary").mkdir()
+    with pytest.raises(OSError):
+        _keep(tmp_path, _keep_delta(_keep_page("/app/a"), _keep_page("/app/b")), lambda _image, _path: ("kept", b"page"))
+    manifest = json.loads((tmp_path / "kept/manifest.json").read_text())
+    assert manifest["status"] == "listed" and [item["path"] for item in manifest["files"]] == ["/app/a"]
 
 
 def test_keep_differences_does_not_read_outside_app_or_non_files(tmp_path: Path) -> None:
@@ -915,7 +935,7 @@ def test_read_frontend_image_file_is_offline_capped_and_error_free() -> None:
     assert {"NODE_PATH=", "LD_PRELOAD="} <= set(argv) and "image:tag" in argv and argv[-2:] == ["/app/page", str(module.FRONTEND_DIFFERENCE_COPY_MAX_BYTES)]
     for code, outcome in ((3, "not_a_file"), (4, "too_large"), (1, "unreadable")):
         assert module.read_frontend_image_file("i", "/app/p", run=lambda a, **k: subprocess.CompletedProcess(a, code, "", "boom")) == (outcome, None)
-    for error in (subprocess.TimeoutExpired("docker", 1), OSError("secret detail")):
+    for error in (subprocess.TimeoutExpired("docker", 1), OSError("secret detail"), UnicodeDecodeError("utf-8", b"\xff", 0, 1, "bad")):
         def fail(_argv: list[str], **_kwargs: Any) -> subprocess.CompletedProcess[str]:
             raise error
         assert module.read_frontend_image_file("i", "/app/p", run=fail) == ("unreadable", None)
@@ -974,6 +994,18 @@ def test_scan_keeps_copies_and_still_fails_on_a_real_mismatch(tmp_path: Path) ->
     assert (kept / "0.primary").read_bytes() == b"page"
 
 
+@pytest.mark.parametrize(("image", "key_char"), [("primary", "2"), ("reproduction", "1")])
+def test_scan_checks_copies_against_both_builds_secrets(tmp_path: Path, image: str, key_char: str) -> None:
+    # Turns red: main() stops passing either build's secrets to the capture.
+    value = key_char * 64
+    stub = f'case "$*" in *" {image} -e "*) printf %s "$(printf \'{value}\' | base64)" ;; *) printf %s "$(printf clean | base64)" ;; esac'
+    harness, env, kept = _reproducibility_harness(tmp_path, stub)
+    assert _run_reproducibility_harness(harness, env).returncode != 0
+    entry = json.loads((kept / "manifest.json").read_text())["files"][0]
+    assert entry[image] == {"outcome": "withheld_secret"}
+    assert entry["reproduction" if image == "primary" else "primary"]["outcome"] == "kept"
+
+
 def test_scan_stays_failed_when_the_capture_cannot_read(tmp_path: Path) -> None:
     # Turns red: a capture error is allowed to change the failed verdict.
     harness, env, kept = _reproducibility_harness(tmp_path, "exit 125")
@@ -1006,6 +1038,14 @@ def test_scan_passes_without_a_folder_when_the_builds_match(tmp_path: Path) -> N
     completed = _run_reproducibility_harness(harness, env)
     assert completed.returncode == 0, completed.stderr
     assert json.loads(completed.stdout) == {"status": "pass", "findings": []} and not kept.exists()
+
+
+def test_scan_runs_the_not_found_gate_inside_the_runtime_check() -> None:
+    # Turns red: the call to the 404 and one-title gate is removed from verify_frontend_runtime.
+    source = (ROOT / "scripts/ci/docker-image-scan.sh").read_text(encoding="utf-8")
+    runtime = source[source.index("verify_frontend_runtime() {") : source.index("frontend_build_identity() {")]
+    assert 'if ! verify_frontend_not_found_page "${port}"; then' in runtime
+    assert runtime.index("verify_frontend_not_found_page") < runtime.index('docker stop "${container}"')
 
 
 def test_scan_removes_a_stale_capture_folder_before_building() -> None:

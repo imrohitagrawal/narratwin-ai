@@ -173,15 +173,17 @@ def frontend_inventory_delta(primary: Any, reproduction: Any, *, expected_primar
 
 
 def _frontend_secret_forms(values: tuple[str, ...]) -> tuple[bytes, ...]:
-    """Every encoding of a build secret that a text file could plausibly carry."""
+    """The encoded forms of a build secret that a text file is likely to carry: raw, escaped and re-encoded."""
     forms: set[str] = set()
     for value in filter(None, values):
-        url_safe = value.replace("+", "-").replace("/", "_").rstrip("=")
-        forms |= {value, value.rstrip("="), value.replace("/", "\\/"), quote(value, safe=""), url_safe}
+        for text in (value, value.rstrip("=")):
+            forms |= {text, text.replace("/", "\\/"), quote(text, safe=""), text.replace("+", "-").replace("/", "_")}
         try:
-            forms.add(base64.b64decode(value, validate=True).hex())
+            decoded = bytes.fromhex(value) if re.fullmatch(r"(?:[0-9a-fA-F]{2})+", value) else base64.b64decode(value, validate=True)
         except ValueError:
-            pass
+            continue
+        encoded = base64.b64encode(decoded).decode()
+        forms |= {decoded.hex(), decoded.hex().upper(), encoded, encoded.rstrip("="), encoded.replace("+", "-").replace("/", "_").rstrip("=")}
     return tuple(form.encode() for form in forms if form)
 
 
@@ -192,7 +194,7 @@ def read_frontend_image_file(image: str, path: str, *, run: Any = subprocess.run
             path, str(FRONTEND_DIFFERENCE_COPY_MAX_BYTES)]
     try:
         completed = run(argv, capture_output=True, text=True, timeout=FRONTEND_DIFFERENCE_COPY_TIMEOUT_SECONDS, check=False)
-    except (OSError, subprocess.SubprocessError):
+    except (OSError, subprocess.SubprocessError, ValueError):
         return "unreadable", None
     if completed.returncode != 0:
         return {3: "not_a_file", 4: "too_large"}.get(completed.returncode, "unreadable"), None
@@ -225,15 +227,17 @@ def keep_frontend_differences(delta: Any, out_dir: Path, primary_image: str, rep
     """Keep both copies of each listed difference. File names are generated; the image's path only reaches the manifest."""
     out_dir.mkdir(parents=True, exist_ok=True)
     manifest: dict[str, Any] = {"schema_version": FRONTEND_DIFFERENCES_SCHEMA, "status": "unavailable", "omitted_count": 0, "files": []}
-    if isinstance(delta, dict) and isinstance(delta.get("differences"), list):
-        manifest["status"], manifest["omitted_count"] = "listed", delta["omitted_count"]
-        secret_forms = _frontend_secret_forms(forbidden_values)
-        for index, difference in enumerate(delta["differences"]):
-            path = difference["path"]
-            sides = {side: _keep_frontend_difference_side(difference[side], path, image, out_dir / f"{index}.{side}", secret_forms, read_file)
-                     for side, image in (("primary", primary_image), ("reproduction", reproduction_image))}
-            manifest["files"].append({"index": index, "path": path, "one_sided": None in (difference["primary"], difference["reproduction"]), **sides})
-    (out_dir / "manifest.json").write_text(json.dumps(manifest, sort_keys=True, indent=1) + "\n", encoding="utf-8")
+    try:
+        if isinstance(delta, dict) and isinstance(delta.get("differences"), list):
+            manifest["status"], manifest["omitted_count"] = "listed", delta["omitted_count"]
+            secret_forms = _frontend_secret_forms(forbidden_values)
+            for index, difference in enumerate(delta["differences"]):
+                path = difference["path"]
+                sides = {side: _keep_frontend_difference_side(difference[side], path, image, out_dir / f"{index}.{side}", secret_forms, read_file)
+                         for side, image in (("primary", primary_image), ("reproduction", reproduction_image))}
+                manifest["files"].append({"index": index, "path": path, "one_sided": None in (difference["primary"], difference["reproduction"]), **sides})
+    finally:  # A partial capture still says what it holds.
+        (out_dir / "manifest.json").write_text(json.dumps(manifest, sort_keys=True, indent=1) + "\n", encoding="utf-8")
     return manifest
 
 

@@ -944,5 +944,5 @@ These prove repository prerequisites only.
 | Requirement | Executable evidence | Preserved boundary |
 |---|---|---|
 | The not-found and 404 pages build one way | `frontend/src/app/not-found.test.tsx`; the scan's check of a 404 status and exactly one title on a missing path | No file exempted from the comparison; normalization unchanged |
-| A mismatch keeps both copies for diagnosis | `tests/unit/test_container_scan_consensus.py` covers kept, one-sided, withheld, oversized, unreadable and unavailable outcomes | A build secret in any checked form is never written; the verdict is unchanged whatever the capture does |
+| A mismatch keeps both copies for diagnosis | `tests/unit/test_container_scan_consensus.py` covers `kept`, `absent` (one-sided file), `withheld_secret`, `too_large`, `not_a_file`, `outside_app`, `unreadable`, `unavailable` and `capture_failed` | A build secret in any checked form is never written; the verdict is unchanged whatever the capture does; supersedes the earlier no-file-bytes limit for this report folder only |
 | Preserve delivery authority | Issue #576 preflight, exact route and budget tests, and exact-head hosted checks | Dockerfile, workflows, dependencies and inventory bounds unchanged |

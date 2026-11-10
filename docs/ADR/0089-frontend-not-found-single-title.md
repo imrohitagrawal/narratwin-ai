@@ -5,15 +5,17 @@ Status: proposed in issue #576; acceptance requires exact-head review and CI.
 ## Problem and decision
 
 The default not-found page adds its own `<title>` beside the root layout's
-metadata title. The two are placed in `<head>` in whichever order they finish,
-so the prerendered not-found and 404 pages build two ways, and the image scan's
+metadata title. The order of the two in `<head>` varies between builds, so the
+prerendered not-found and 404 pages build two ways, and the image scan's
 build-twice comparison fails intermittently on both architectures. The browser
 shows the first title, so the tab name also changes between builds.
 
 Add `frontend/src/app/not-found.tsx`, which sets its title only through the
 metadata export, so one title exists. The scan requires a 404 status and exactly
-one title on a missing path. On a mismatch it keeps both copies of each differing
-file in its report, after a build-secret check.
+one title on a missing path. On a mismatch it keeps both copies of each listed
+differing file in its report, after a build-secret check. This supersedes, for
+that report folder only, the earlier limit that a reproducibility diagnostic
+holds no file bytes.
 
 ## Rejected
 

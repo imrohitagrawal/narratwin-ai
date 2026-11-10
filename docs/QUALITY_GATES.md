@@ -2079,7 +2079,11 @@ canaries, full tests and native image builds and scans remain mandatory.
 
 ## Issue #576 frontend reproducibility diagnostics
 
-On a frontend reproducibility mismatch the scan keeps both copies of each
-differing file in `frontend-reproduction-differences/` with a manifest; a copy
-holding a build secret is withheld and listed. The scan also requires a 404
-status and exactly one title on a missing path.
+On a frontend reproducibility mismatch the scan keeps both copies of each listed
+differing file (at most twenty files, 2 MiB each; others are counted) in
+`reports/security/<arch>/frontend-reproduction-differences/` with a manifest, in
+the 7-day `docker-image-scan-reports-<arch>` artifact. A copy holding a build
+secret is withheld and listed. This supersedes the earlier "raw bytes prohibited"
+limit for this folder only; every other diagnostic keeps it. The files are one
+long line, so compare them with `git diff --no-index --word-diff`. The scan also
+requires a 404 status and exactly one title on a missing path.
