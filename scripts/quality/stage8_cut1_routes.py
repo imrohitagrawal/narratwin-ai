@@ -668,6 +668,8 @@ ROUTES = {
         "docs/TRACEABILITY.md",
         "docs/work/registry.json",
         "docs/work/governance-backlog/HANDOFF.md",
+        "docs/ADR/0089-frontend-not-found-single-title.md",
+        "docs/ADR/INDEX.md",
     },
     ISSUE529_BRANCH: {
         ".github/workflows/security.yml",

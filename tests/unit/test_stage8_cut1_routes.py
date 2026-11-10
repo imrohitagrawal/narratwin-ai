@@ -1256,6 +1256,8 @@ ISSUE576_LIMITS = {
     "docs/TRACEABILITY.md": 40,
     "docs/work/registry.json": 10,
     "docs/work/governance-backlog/HANDOFF.md": 10,
+    "docs/ADR/0089-frontend-not-found-single-title.md": 40,
+    "docs/ADR/INDEX.md": 10,
 }
 EXPECTED["stage8-576-frontend-not-found-reproducible"] = set(ISSUE576_LIMITS)
 
@@ -6078,13 +6080,13 @@ def test_issue576_route_freezes_the_not_found_scope_and_authority() -> None:
         (REPO / "docs/governance/preflights/issue-576.json").read_text(encoding="utf-8")
     )
     assert preflight["change_budget"] == {
-        "exact_paths": 14,
-        "maximum_additions_plus_deletions": 930,
+        "exact_paths": 16,
+        "maximum_additions_plus_deletions": 980,
         "deletions_grant_credit": False,
         "per_file_charged_lines": ISSUE576_LIMITS,
     }
     assert routes.route_change_budget(REPO, branch, 576, set(ISSUE576_LIMITS)) == (
-        930, ISSUE576_LIMITS
+        980, ISSUE576_LIMITS
     )
     assert preflight["scope"]["required"] == preflight["scope"]["allowed_prefixes"]
     assert set(preflight["scope"]["required"]) == set(ISSUE576_LIMITS)

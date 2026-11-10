@@ -2,11 +2,11 @@
   "schema_version": "GovernancePreflightV1",
   "issue_number": 576,
   "branch": "stage8-576-frontend-not-found-reproducible",
-  "objective": "From accepted main c5170c0b1b225aaaab70de61dfcab3a1c22713d5/tree f625ea4655232b7744e16afcbabaf61b4cd41d13, make the frontend not-found and 404 pages build one way under Issue #576 body 5d5f95a23ba5c2eb9a94724d01e5433cf6e57488f48e378474ec79be21f15764 and decision comment 6764156530/f9d24ef55d006e6a8f6a0fec5b5d082975f1b61264db18b092b07af8f6223840, because the required image scan's build-twice comparison fails intermittently on both architectures. Add the not-found page, keep both copies of a differing file in the scan report behind the build-secret check, and require a 404 status with exactly one title on a missing path. Exempt no file from the comparison and preserve its normalization, every workflow, the Dockerfile, every dependency and the inventory bounds. Register this exact route and bind STATUS, TRACEABILITY, QUALITY_GATES and the work-record status hashes. Keep product, provider, media, credential, egress, spend, deployment, release and production behavior or claims out of scope. Stop on base, tree, route, scope, budget, hosted or authority drift.",
+  "objective": "From accepted main c5170c0b1b225aaaab70de61dfcab3a1c22713d5/tree f625ea4655232b7744e16afcbabaf61b4cd41d13, make the frontend not-found and 404 pages build one way under Issue #576 body 5d5f95a23ba5c2eb9a94724d01e5433cf6e57488f48e378474ec79be21f15764 and decision comment 6764156530/f9d24ef55d006e6a8f6a0fec5b5d082975f1b61264db18b092b07af8f6223840, because the required image scan's build-twice comparison fails intermittently on both architectures. Add the not-found page, keep both copies of a differing file in the scan report behind the build-secret check, and require a 404 status with exactly one title on a missing path. Record the decision in ADR 0089. Exempt no file from the comparison and preserve its normalization, every workflow, the Dockerfile, every dependency and the inventory bounds. Register this exact route and bind STATUS, TRACEABILITY, QUALITY_GATES and the work-record status hashes. Keep product, provider, media, credential, egress, spend, deployment, release and production behavior or claims out of scope. Stop on base, tree, route, scope, budget, hosted or authority drift.",
   "status_decision": "update-minimally",
   "change_budget": {
-    "exact_paths": 14,
-    "maximum_additions_plus_deletions": 930,
+    "exact_paths": 16,
+    "maximum_additions_plus_deletions": 980,
     "deletions_grant_credit": false,
     "per_file_charged_lines": {
       "frontend/src/app/not-found.tsx": 30,
@@ -22,7 +22,9 @@
       "docs/STATUS.md": 40,
       "docs/TRACEABILITY.md": 40,
       "docs/work/registry.json": 10,
-      "docs/work/governance-backlog/HANDOFF.md": 10
+      "docs/work/governance-backlog/HANDOFF.md": 10,
+      "docs/ADR/0089-frontend-not-found-single-title.md": 40,
+      "docs/ADR/INDEX.md": 10
     }
   },
   "scope": {
@@ -40,7 +42,9 @@
       "docs/STATUS.md",
       "docs/TRACEABILITY.md",
       "docs/work/registry.json",
-      "docs/work/governance-backlog/HANDOFF.md"
+      "docs/work/governance-backlog/HANDOFF.md",
+      "docs/ADR/0089-frontend-not-found-single-title.md",
+      "docs/ADR/INDEX.md"
     ],
     "allowed_prefixes": [
       "frontend/src/app/not-found.tsx",
@@ -56,7 +60,9 @@
       "docs/STATUS.md",
       "docs/TRACEABILITY.md",
       "docs/work/registry.json",
-      "docs/work/governance-backlog/HANDOFF.md"
+      "docs/work/governance-backlog/HANDOFF.md",
+      "docs/ADR/0089-frontend-not-found-single-title.md",
+      "docs/ADR/INDEX.md"
     ],
     "forbidden": [
       "AGENTS.md",
@@ -77,7 +83,6 @@
       "frontend/package-lock.json",
       "frontend/next.config.ts",
       "frontend/src/app/layout.tsx",
-      "docs/ADR/",
       "docs/THIRD_PARTY_NOTICES.md",
       "evals/",
       "infra/",
