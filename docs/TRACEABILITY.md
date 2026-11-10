@@ -938,3 +938,11 @@ These prove repository prerequisites only.
 | Let the complete backend suite reach a verdict | Run `42459932554` on main `0ad6ce3` cancelled at 30m14 and 30m13; exact job-level 45-minute regression in `test_ci_workflow_timeout_policy.py` | A finite ceiling remains; no command, selection, retry, dependency or concurrency change |
 | Reject ambiguous or weakened timeout policy | Missing, duplicate, non-numeric, 44, 46 and misplaced mutations, each proven to change the workflow text | Frontend, Docker and Stage 8 ceilings remain 20, 20 and 35 minutes |
 | Preserve delivery authority | Issue #575 preflight, exact route and budget tests, and exact-head hosted checks | Supersedes the Issue #527 value (30); that section stays as dated history |
+
+## Issue #576 frontend not-found page reproducibility traceability
+
+| Requirement | Executable evidence | Preserved boundary |
+|---|---|---|
+| The not-found and 404 pages build one way | `frontend/src/app/not-found.test.tsx`; the scan's check of a 404 status and exactly one title on a missing path | No file exempted from the comparison; normalization unchanged |
+| A mismatch keeps both copies for diagnosis | `tests/unit/test_container_scan_consensus.py` covers kept, one-sided, withheld, oversized, unreadable and unavailable outcomes | A build secret in any checked form is never written; the verdict is unchanged whatever the capture does |
+| Preserve delivery authority | Issue #576 preflight, exact route and budget tests, and exact-head hosted checks | Dockerfile, workflows, dependencies and inventory bounds unchanged |

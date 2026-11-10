@@ -2076,3 +2076,10 @@ row still fails closed, including any in the root project. The `installed-tool` 
 fails once Semgrep's own requirements allow any row; then the whole exception (rows,
 allow-list and release tie) is removed in one change. Strict audits,
 canaries, full tests and native image builds and scans remain mandatory.
+
+## Issue #576 frontend reproducibility diagnostics
+
+On a frontend reproducibility mismatch the scan keeps both copies of each
+differing file in `frontend-reproduction-differences/` with a manifest; a copy
+holding a build secret is withheld and listed. The scan also requires a 404
+status and exactly one title on a missing path.

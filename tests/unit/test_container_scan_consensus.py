@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 import copy
 import hashlib
 import importlib.util
@@ -805,3 +806,226 @@ def test_dockerized_scanner_fallback_writes_to_mounted_report_path(tmp_path: Pat
     assert "/reports/backend-trivy.raw.sarif.json" in calls
     assert "sarif=/reports/backend-grype.raw.sarif.json" in calls
     assert all((reports / f"{name}.raw.sarif.json").is_file() for name in ARTIFACTS[:4])
+
+
+# Issue #576: keep both copies of a differing file, behind the build-secret check.
+_KEEP_KEY = base64.b64encode(b"\xfb\xef\xff" * 10 + b"\xfb\xef").decode()
+_KEEP_SECRETS = ("1" * 32, "2" * 64, "3" * 64, _KEEP_KEY, "5" * 32, "6" * 64, "7" * 64, "8" * 64)
+_KEEP_LEFT = {"kind": "F", "mode": 0o644, "uid": 0, "gid": 0, "sha256": "a" * 64}
+_KEEP_RIGHT = {**_KEEP_LEFT, "sha256": "b" * 64}
+
+
+def _keep_delta(*differences: dict[str, Any], omitted: int = 0) -> dict[str, Any]:
+    return {"schema_version": "FrontendRuntimeInventoryDeltaV1", "omitted_count": omitted, "differences": list(differences)}
+
+
+def _keep_page(path: str = "/app/.next/server/app/_not-found.html") -> dict[str, Any]:
+    return {"path": path, "primary": dict(_KEEP_LEFT), "reproduction": dict(_KEEP_RIGHT)}
+
+
+def _keep(tmp_path: Path, delta: Any, reader: Callable[[str, str], tuple[str, bytes | None]]) -> dict[str, Any]:
+    return _load().keep_frontend_differences(delta, tmp_path / "kept", "primary:tag", "repro:tag", _KEEP_SECRETS, read_file=reader)
+
+
+def test_keep_differences_writes_both_copies_under_generated_names(tmp_path: Path) -> None:
+    # Turns red: the copies are no longer written, or a name comes from the image's path.
+    seen: list[tuple[str, str]] = []
+    def reader(image: str, path: str) -> tuple[str, bytes | None]:
+        seen.append((image, path))
+        return "kept", image.encode() + b" page"
+    manifest = _keep(tmp_path, _keep_delta(_keep_page()), reader)
+    assert seen == [("primary:tag", "/app/.next/server/app/_not-found.html"), ("repro:tag", "/app/.next/server/app/_not-found.html")]
+    assert sorted(item.name for item in (tmp_path / "kept").iterdir()) == ["0.primary", "0.reproduction", "manifest.json"]
+    assert (tmp_path / "kept/0.primary").read_bytes() == b"primary:tag page"
+    assert (tmp_path / "kept/0.reproduction").read_bytes() == b"repro:tag page"
+    assert json.loads((tmp_path / "kept/manifest.json").read_text()) == manifest
+    assert manifest["status"] == "listed" and manifest["omitted_count"] == 0
+    entry = manifest["files"][0]
+    assert entry["path"] == "/app/.next/server/app/_not-found.html" and entry["one_sided"] is False
+    assert entry["primary"] == {"outcome": "kept", "file": "0.primary", "sha256": hashlib.sha256(b"primary:tag page").hexdigest()}
+    assert entry["reproduction"]["outcome"] == "kept"
+
+
+@pytest.mark.parametrize("secret", [_KEEP_KEY, "5" * 32])
+@pytest.mark.parametrize("encode", [
+    lambda value: value,
+    lambda value: value.replace("/", "\\/"),
+    lambda value: quote(value, safe=""),
+    lambda value: value.replace("+", "-").replace("/", "_"),
+    lambda value: value.replace("+", "-").replace("/", "_").rstrip("="),
+])
+def test_keep_differences_withholds_every_form_of_either_builds_secret(tmp_path: Path, secret: str, encode: Callable[[str], str]) -> None:
+    # Turns red: a form is dropped from the check, or only one build's values are checked. Partner: the clean copy is kept.
+    body = b"<html>" + encode(secret).encode() + b"</html>"
+    manifest = _keep(tmp_path, _keep_delta(_keep_page()), lambda image, _path: ("kept", body if image == "primary:tag" else b"clean page"))
+    entry = manifest["files"][0]
+    assert entry["primary"] == {"outcome": "withheld_secret"}
+    assert entry["reproduction"]["outcome"] == "kept"
+    assert sorted(item.name for item in (tmp_path / "kept").iterdir()) == ["0.reproduction", "manifest.json"]
+    assert body not in (tmp_path / "kept/manifest.json").read_bytes()
+
+
+def test_keep_differences_withholds_hex_of_a_base64_key(tmp_path: Path) -> None:
+    # Turns red: the decoded-bytes hex form leaves the check.
+    body = base64.b64decode(_KEEP_KEY).hex().encode()
+    manifest = _keep(tmp_path, _keep_delta(_keep_page()), lambda _image, _path: ("kept", body))
+    assert manifest["files"][0]["primary"] == {"outcome": "withheld_secret"}
+
+
+def test_keep_differences_does_not_read_outside_app_or_non_files(tmp_path: Path) -> None:
+    # Turns red: the path or kind check is removed; the reader would then be called and raise.
+    def reader(_image: str, _path: str) -> tuple[str, bytes | None]:
+        raise AssertionError("must not read")
+    link = {**_keep_page("/app/link"), "primary": {**_KEEP_LEFT, "kind": "L"}, "reproduction": {**_KEEP_RIGHT, "kind": "L"}}
+    manifest = _keep(tmp_path, _keep_delta(_keep_page("/etc/passwd"), link), reader)
+    assert [(item["primary"]["outcome"], item["reproduction"]["outcome"]) for item in manifest["files"]] == [("outside_app", "outside_app"), ("not_a_file", "not_a_file")]
+
+
+def test_keep_differences_records_one_sided_and_reader_outcomes(tmp_path: Path) -> None:
+    # Turns red: a one-sided file or a reader outcome is lost from the manifest.
+    missing = {"path": "/app/only-left", "primary": dict(_KEEP_LEFT), "reproduction": None}
+    outcomes = iter([("kept", b"left"), ("too_large", None), ("unreadable", None), ("not_a_file", None), ("kept", b"x")])
+    manifest = _keep(tmp_path, _keep_delta(missing, _keep_page("/app/a"), _keep_page("/app/b"), omitted=3), lambda _i, _p: next(outcomes))
+    assert manifest["omitted_count"] == 3
+    first, second, third = manifest["files"]
+    assert first["one_sided"] is True and first["reproduction"] == {"outcome": "absent"} and first["primary"]["outcome"] == "kept"
+    assert (second["primary"], second["reproduction"]) == ({"outcome": "too_large"}, {"outcome": "unreadable"})
+    assert third["primary"] == {"outcome": "not_a_file"}
+
+
+@pytest.mark.parametrize("delta", [None, {"schema_version": "FrontendRuntimeInventoryDeltaV1", "status": "unavailable"}])
+def test_keep_differences_writes_a_manifest_when_the_delta_is_unavailable(tmp_path: Path, delta: Any) -> None:
+    # Turns red: an unavailable delta raises or writes no manifest.
+    manifest = _keep(tmp_path, delta, lambda _i, _p: ("kept", b"x"))
+    assert manifest == {"schema_version": "FrontendReproductionDifferencesV1", "status": "unavailable", "omitted_count": 0, "files": []}
+    assert json.loads((tmp_path / "kept/manifest.json").read_text()) == manifest
+
+
+def test_read_frontend_image_file_is_offline_capped_and_error_free() -> None:
+    # Turns red: the network is opened, the environment blanking or the cap is dropped, or exception text is kept.
+    module = _load()
+    calls: list[list[str]] = []
+    def run(argv: list[str], **kwargs: Any) -> subprocess.CompletedProcess[str]:
+        calls.append(argv)
+        assert kwargs["timeout"] == module.FRONTEND_DIFFERENCE_COPY_TIMEOUT_SECONDS and kwargs["check"] is False
+        return subprocess.CompletedProcess(argv, 0, base64.b64encode(b"page").decode(), "")
+    assert module.read_frontend_image_file("image:tag", "/app/page", run=run) == ("kept", b"page")
+    argv = calls[0]
+    assert argv[:9] == ["docker", "run", "--rm", "--network", "none", "--user", "0:0", "--env", "NODE_OPTIONS="]
+    assert {"NODE_PATH=", "LD_PRELOAD="} <= set(argv) and "image:tag" in argv and argv[-2:] == ["/app/page", str(module.FRONTEND_DIFFERENCE_COPY_MAX_BYTES)]
+    for code, outcome in ((3, "not_a_file"), (4, "too_large"), (1, "unreadable")):
+        assert module.read_frontend_image_file("i", "/app/p", run=lambda a, **k: subprocess.CompletedProcess(a, code, "", "boom")) == (outcome, None)
+    for error in (subprocess.TimeoutExpired("docker", 1), OSError("secret detail")):
+        def fail(_argv: list[str], **_kwargs: Any) -> subprocess.CompletedProcess[str]:
+            raise error
+        assert module.read_frontend_image_file("i", "/app/p", run=fail) == ("unreadable", None)
+    assert module.read_frontend_image_file("i", "/app/p", run=lambda a, **k: subprocess.CompletedProcess(a, 0, "not base64!!", "")) == ("unreadable", None)
+    oversized = base64.b64encode(b"x" * (module.FRONTEND_DIFFERENCE_COPY_MAX_BYTES + 1)).decode()
+    assert module.read_frontend_image_file("i", "/app/p", run=lambda a, **k: subprocess.CompletedProcess(a, 0, oversized, "")) == ("too_large", None)
+
+
+def _reproducibility_harness(tmp_path: Path, stub_body: str, reproduction_digest: str = "b") -> tuple[str, dict[str, str], Path]:
+    source = (ROOT / "scripts/ci/docker-image-scan.sh").read_text(encoding="utf-8")
+    start = source.index("verify_frontend_reproducibility() {")
+    function = source[start : source.index("\n}\n", start) + 3]
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    docker = bin_dir / "docker"
+    docker.write_text("#!/bin/bash\n" + stub_body + "\n", encoding="utf-8")
+    docker.chmod(0o755)
+    record = lambda digest: _inventory_manifest([_inventory_detail(f"/app/runtime-{index:04d}", digest * 64) for index in range(1650)], digest * 64)
+    identity = lambda name, digest, secret: json.dumps({"buildId": "stable", "architecture": "arm64", "inventory": f"1650:{digest * 64}",
+                                                       "previewModeId": secret * 32, "previewModeSigningKey": secret * 64,
+                                                       "previewModeEncryptionKey": secret * 64, "serverActionKey": secret * 43 + "="})
+    harness = f'''set -euo pipefail
+REPORT_DIR="{tmp_path}/reports"
+FRONTEND_ARCH=arm64
+frontend_build_identity() {{ case "$1" in primary) cat "{tmp_path}/primary.json" ;; *) cat "{tmp_path}/reproduction.json" ;; esac; }}
+{function}
+verify_frontend_reproducibility primary reproduction "$(cat "{tmp_path}/pi")" "$(cat "{tmp_path}/ri")" "$(cat "{tmp_path}/pd")" "$(cat "{tmp_path}/rd")"
+'''
+    (tmp_path / "primary.json").write_text(identity("primary", "a", "1"), encoding="utf-8")
+    (tmp_path / "reproduction.json").write_text(identity("repro", reproduction_digest, "2"), encoding="utf-8")
+    (tmp_path / "pi").write_text("1650:" + "a" * 64, encoding="utf-8")
+    (tmp_path / "ri").write_text(f"1650:{reproduction_digest * 64}", encoding="utf-8")
+    (tmp_path / "pd").write_text(json.dumps(record("a")), encoding="utf-8")
+    (tmp_path / "rd").write_text(json.dumps(record(reproduction_digest)), encoding="utf-8")
+    (tmp_path / "reports").mkdir()
+    return harness, {**os.environ, "PATH": f"{bin_dir}:{os.environ['PATH']}", "PYTHONPATH": str(ROOT)}, tmp_path / "reports/frontend-reproduction-differences"
+
+
+def _run_reproducibility_harness(harness: str, env: dict[str, str]) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(["bash"], input=harness, env=env, text=True, capture_output=True, check=False, cwd=ROOT)
+
+
+def test_scan_keeps_copies_and_still_fails_on_a_real_mismatch(tmp_path: Path) -> None:
+    # Turns red: the mismatch stops failing, or the scan stops passing the capture arguments.
+    harness, env, kept = _reproducibility_harness(tmp_path, 'printf %s "$(printf page | base64)"')
+    completed = _run_reproducibility_harness(harness, env)
+    assert completed.returncode != 0
+    result = json.loads(completed.stdout)
+    assert result["findings"] == ["FRONTEND_RUNTIME_INVENTORY_CHANGED"] and result["kept_differences"]["status"] == "listed"
+    manifest = json.loads((kept / "manifest.json").read_text())
+    assert manifest["omitted_count"] == 1630 and len(manifest["files"]) == 20
+    assert (kept / "0.primary").read_bytes() == b"page"
+
+
+def test_scan_stays_failed_when_the_capture_cannot_read(tmp_path: Path) -> None:
+    # Turns red: a capture error is allowed to change the failed verdict.
+    harness, env, kept = _reproducibility_harness(tmp_path, "exit 125")
+    completed = _run_reproducibility_harness(harness, env)
+    assert completed.returncode != 0
+    assert json.loads((kept / "manifest.json").read_text())["files"][0]["primary"] == {"outcome": "unreadable"}
+
+
+def test_scan_stays_failed_when_the_capture_cannot_write(tmp_path: Path) -> None:
+    # Turns red: an exception in the capture escapes as a different result, or is swallowed into a pass.
+    harness, env, _kept = _reproducibility_harness(tmp_path, 'printf %s "$(printf page | base64)"')
+    (tmp_path / "reports/frontend-reproduction-differences").write_text("in the way", encoding="utf-8")
+    completed = _run_reproducibility_harness(harness, env)
+    assert completed.returncode != 0
+    result = json.loads(completed.stdout)
+    assert result["findings"] == ["FRONTEND_RUNTIME_INVENTORY_CHANGED"]
+    assert result["kept_differences"] == {"status": "capture_failed"}
+
+
+def test_scan_stays_failed_when_the_checker_crashes(tmp_path: Path) -> None:
+    # Turns red: the checker's exit status stops deciding the scan's result.
+    harness, env, _kept = _reproducibility_harness(tmp_path, "exit 0")
+    (tmp_path / "primary.json").write_text("", encoding="utf-8")
+    assert _run_reproducibility_harness(harness, env).returncode != 0
+
+
+def test_scan_passes_without_a_folder_when_the_builds_match(tmp_path: Path) -> None:
+    # Turns red: the capture runs on a matching build. Partner of the mismatch test above.
+    harness, env, kept = _reproducibility_harness(tmp_path, "exit 125", reproduction_digest="a")
+    completed = _run_reproducibility_harness(harness, env)
+    assert completed.returncode == 0, completed.stderr
+    assert json.loads(completed.stdout) == {"status": "pass", "findings": []} and not kept.exists()
+
+
+def test_scan_removes_a_stale_capture_folder_before_building() -> None:
+    # Turns red: the folder from an earlier run survives into a new scan.
+    source = (ROOT / "scripts/ci/docker-image-scan.sh").read_text(encoding="utf-8")
+    assert source.index('rm -rf "${REPORT_DIR}/frontend-reproduction-differences"') < source.index("  prepare_frontend_images\n")
+
+
+@pytest.mark.parametrize(("status", "body", "ok"), [
+    ("404", "<html><head><title>x</title></head></html>", True),
+    ("200", "<html><head><title>x</title></head></html>", False),
+    ("404", "<html><head><title>a</title><title>b</title></head></html>", False),
+    ("404", "<html></html>", False),
+])
+def test_scan_requires_404_and_one_title_on_a_missing_path(tmp_path: Path, status: str, body: str, ok: bool) -> None:
+    # Turns red: the status check or the exact count of titles is removed from the gate.
+    source = (ROOT / "scripts/ci/docker-image-scan.sh").read_text(encoding="utf-8")
+    start = source.index("verify_frontend_not_found_page() {")
+    function = source[start : source.index("\n}\n", start) + 3]
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    curl = bin_dir / "curl"
+    curl.write_text(f'#!/bin/bash\nprintf "%s\\n%s" {json.dumps(body)} {status}\n', encoding="utf-8")
+    curl.chmod(0o755)
+    env = {**os.environ, "PATH": f"{bin_dir}:{os.environ['PATH']}"}
+    completed = subprocess.run(["bash"], input=f"set -euo pipefail\n{function}\nverify_frontend_not_found_page 3000\n", env=env, text=True, capture_output=True, check=False)
+    assert (completed.returncode == 0) is ok, completed.stderr
