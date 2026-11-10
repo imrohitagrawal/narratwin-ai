@@ -824,7 +824,7 @@ def _keep_page(path: str = "/app/.next/server/app/_not-found.html") -> dict[str,
 
 
 def _keep(tmp_path: Path, delta: Any, reader: Callable[[str, str], tuple[str, bytes | None]]) -> dict[str, Any]:
-    return _load().keep_frontend_differences(delta, tmp_path / "kept", "primary:tag", "repro:tag", _KEEP_SECRETS, read_file=reader)
+    return cast(dict[str, Any], _load().keep_frontend_differences(delta, tmp_path / "kept", "primary:tag", "repro:tag", _KEEP_SECRETS, read_file=reader))
 
 
 def test_keep_differences_writes_both_copies_under_generated_names(tmp_path: Path) -> None:
@@ -846,7 +846,7 @@ def test_keep_differences_writes_both_copies_under_generated_names(tmp_path: Pat
     assert entry["reproduction"]["outcome"] == "kept"
 
 
-@pytest.mark.parametrize("secret", [_KEEP_KEY, "5" * 32])
+@pytest.mark.parametrize("build_value", [_KEEP_KEY, "5" * 32])
 @pytest.mark.parametrize("encode", [
     lambda value: value,
     lambda value: value.replace("/", "\\/"),
@@ -854,9 +854,9 @@ def test_keep_differences_writes_both_copies_under_generated_names(tmp_path: Pat
     lambda value: value.replace("+", "-").replace("/", "_"),
     lambda value: value.replace("+", "-").replace("/", "_").rstrip("="),
 ])
-def test_keep_differences_withholds_every_form_of_either_builds_secret(tmp_path: Path, secret: str, encode: Callable[[str], str]) -> None:
+def test_keep_differences_withholds_every_form_of_either_builds_secret(tmp_path: Path, build_value: str, encode: Callable[[str], str]) -> None:
     # Turns red: a form is dropped from the check, or only one build's values are checked. Partner: the clean copy is kept.
-    body = b"<html>" + encode(secret).encode() + b"</html>"
+    body = b"<html>" + encode(build_value).encode() + b"</html>"
     manifest = _keep(tmp_path, _keep_delta(_keep_page()), lambda image, _path: ("kept", body if image == "primary:tag" else b"clean page"))
     entry = manifest["files"][0]
     assert entry["primary"] == {"outcome": "withheld_secret"}
@@ -933,10 +933,14 @@ def _reproducibility_harness(tmp_path: Path, stub_body: str, reproduction_digest
     docker = bin_dir / "docker"
     docker.write_text("#!/bin/bash\n" + stub_body + "\n", encoding="utf-8")
     docker.chmod(0o755)
-    record = lambda digest: _inventory_manifest([_inventory_detail(f"/app/runtime-{index:04d}", digest * 64) for index in range(1650)], digest * 64)
-    identity = lambda name, digest, secret: json.dumps({"buildId": "stable", "architecture": "arm64", "inventory": f"1650:{digest * 64}",
-                                                       "previewModeId": secret * 32, "previewModeSigningKey": secret * 64,
-                                                       "previewModeEncryptionKey": secret * 64, "serverActionKey": secret * 43 + "="})
+    def record(digest: str) -> dict[str, Any]:
+        return _inventory_manifest([_inventory_detail(f"/app/runtime-{index:04d}", digest * 64) for index in range(1650)], digest * 64)
+
+    def identity(digest: str, key_char: str) -> str:
+        return json.dumps({"buildId": "stable", "architecture": "arm64", "inventory": f"1650:{digest * 64}",
+                           "previewModeId": key_char * 32, "previewModeSigningKey": key_char * 64,
+                           "previewModeEncryptionKey": key_char * 64, "serverActionKey": key_char * 43 + "="})
+
     harness = f'''set -euo pipefail
 REPORT_DIR="{tmp_path}/reports"
 FRONTEND_ARCH=arm64
@@ -944,8 +948,8 @@ frontend_build_identity() {{ case "$1" in primary) cat "{tmp_path}/primary.json"
 {function}
 verify_frontend_reproducibility primary reproduction "$(cat "{tmp_path}/pi")" "$(cat "{tmp_path}/ri")" "$(cat "{tmp_path}/pd")" "$(cat "{tmp_path}/rd")"
 '''
-    (tmp_path / "primary.json").write_text(identity("primary", "a", "1"), encoding="utf-8")
-    (tmp_path / "reproduction.json").write_text(identity("repro", reproduction_digest, "2"), encoding="utf-8")
+    (tmp_path / "primary.json").write_text(identity("a", "1"), encoding="utf-8")
+    (tmp_path / "reproduction.json").write_text(identity(reproduction_digest, "2"), encoding="utf-8")
     (tmp_path / "pi").write_text("1650:" + "a" * 64, encoding="utf-8")
     (tmp_path / "ri").write_text(f"1650:{reproduction_digest * 64}", encoding="utf-8")
     (tmp_path / "pd").write_text(json.dumps(record("a")), encoding="utf-8")
