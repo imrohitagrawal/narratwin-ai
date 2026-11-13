@@ -1,0 +1,58 @@
+{
+  "schema_version": "GovernancePreflightV1",
+  "issue_number": 580,
+  "branch": "stage8-580-dependency-container-refresh",
+  "objective": "Move only the locked transitive soupsieve record from 2.9 to 4.0.1 from main 44e6313, clearing GHSA-mmhr-3c5m-f64f (high, fixed in 4.0) and GHSA-4j63-6c4x-wfg4 (moderate, fixed in 2.10) so the strict Python audit and the backend image scans pass. The exact version, record hash and PyPI receipt stay in the closed security profile, its reviewed sha256 line is rebound, and the contract test pins 4.0.1 exactly. beautifulsoup4 stays 4.15.0. No other package, requirement, override, ignored advisory, lowered threshold, workflow, container, branch-protection, product, provider, spend, media or deployment change.",
+  "status_decision": "update-minimally",
+  "change_budget": {
+    "exact_paths": 8,
+    "maximum_additions_plus_deletions": 200,
+    "deletions_grant_credit": false,
+    "per_file_charged_lines": {
+      "docs/governance/preflights/issue-580.json": 100,
+      "docs/STATUS.md": 40,
+      "docs/security/DEPENDENCY_REFRESH.json": 20,
+      "docs/work/governance-backlog/HANDOFF.md": 10,
+      "docs/work/registry.json": 10,
+      "tests/unit/test_dependency_refresh.py": 10,
+      "tools/semgrep/reviewed-inputs.sha256": 10,
+      "uv.lock": 10
+    }
+  },
+  "scope": {
+    "required": [
+      "docs/governance/preflights/issue-580.json",
+      "docs/STATUS.md",
+      "docs/security/DEPENDENCY_REFRESH.json",
+      "docs/work/governance-backlog/HANDOFF.md",
+      "docs/work/registry.json",
+      "tests/unit/test_dependency_refresh.py",
+      "tools/semgrep/reviewed-inputs.sha256",
+      "uv.lock"
+    ],
+    "allowed_prefixes": [
+      "docs/governance/preflights/issue-580.json",
+      "docs/STATUS.md",
+      "docs/security/DEPENDENCY_REFRESH.json",
+      "docs/work/governance-backlog/HANDOFF.md",
+      "docs/work/registry.json",
+      "tests/unit/test_dependency_refresh.py",
+      "tools/semgrep/reviewed-inputs.sha256",
+      "uv.lock"
+    ],
+    "forbidden": [
+      ".github/",
+      ".codex/",
+      "AGENTS.md",
+      "Makefile",
+      "backend/",
+      "docs/work-archive/",
+      "evals/",
+      "frontend/",
+      "pyproject.toml",
+      "scripts/",
+      "tools/semgrep/pyproject.toml",
+      "tools/semgrep/uv.lock"
+    ]
+  }
+}
