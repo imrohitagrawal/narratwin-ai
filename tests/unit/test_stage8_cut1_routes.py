@@ -1241,6 +1241,25 @@ ISSUE575_LIMITS = {
     "docs/work/governance-backlog/HANDOFF.md": 10,
 }
 EXPECTED["stage8-575-backend-ci-timeout-45"] = set(ISSUE575_LIMITS)
+ISSUE576_LIMITS = {
+    "frontend/src/app/not-found.tsx": 30,
+    "frontend/src/app/not-found.module.css": 30,
+    "frontend/src/app/not-found.test.tsx": 40,
+    "scripts/ci/docker-image-scan.sh": 40,
+    "scripts/ci/check_container_scan_consensus.py": 125,
+    "tests/unit/test_container_scan_consensus.py": 300,
+    "docs/governance/preflights/issue-576.json": 120,
+    "scripts/quality/stage8_cut1_routes.py": 70,
+    "tests/unit/test_stage8_cut1_routes.py": 70,
+    "docs/QUALITY_GATES.md": 20,
+    "docs/STATUS.md": 40,
+    "docs/TRACEABILITY.md": 40,
+    "docs/work/registry.json": 10,
+    "docs/work/governance-backlog/HANDOFF.md": 10,
+    "docs/ADR/0089-frontend-not-found-single-title.md": 40,
+    "docs/ADR/INDEX.md": 10,
+}
+EXPECTED["stage8-576-frontend-not-found-reproducible"] = set(ISSUE576_LIMITS)
 
 
 def completed(args: list[str], code: int = 0, out: str = "", err: str = "") -> subprocess.CompletedProcess[str]:
@@ -6038,4 +6057,53 @@ def test_issue575_route_rejects_suffix_branches(monkeypatch: Any) -> None:
     stage8.check_stage_scope(failures)
     assert failures == [
         f"Stage 8 branch collides with exact reviewed route {routes.ISSUE575_BRANCH}: {branch}."
+    ]
+
+
+def test_issue576_route_freezes_the_not_found_scope_and_authority() -> None:
+    """RED: an unregistered route, a changed budget or a drifted authority value fails here."""
+    branch = "stage8-576-frontend-not-found-reproducible"
+    assert routes.ISSUE576_BRANCH == branch
+    assert routes.ISSUE576_BASE == "c5170c0b1b225aaaab70de61dfcab3a1c22713d5"
+    assert routes.ISSUE576_TREE == "f625ea4655232b7744e16afcbabaf61b4cd41d13"
+    assert routes.ISSUE576_BODY_SHA256 == (
+        "5d5f95a23ba5c2eb9a94724d01e5433cf6e57488f48e378474ec79be21f15764"
+    )
+    assert routes.ISSUE576_DECISION_COMMENT == "6764156530"
+    assert routes.ISSUE576_DECISION_SHA256 == (
+        "f9d24ef55d006e6a8f6a0fec5b5d082975f1b61264db18b092b07af8f6223840"
+    )
+    assert routes.ROUTES[branch] == set(ISSUE576_LIMITS)
+    assert routes.ROUTE_ISSUES[branch] == 576
+    assert branch not in routes.TOTAL_LIMITS and branch not in routes.TEXT_LIMITS
+    preflight = json.loads(
+        (REPO / "docs/governance/preflights/issue-576.json").read_text(encoding="utf-8")
+    )
+    assert preflight["change_budget"] == {
+        "exact_paths": 16,
+        "maximum_additions_plus_deletions": 995,
+        "deletions_grant_credit": False,
+        "per_file_charged_lines": ISSUE576_LIMITS,
+    }
+    assert routes.route_change_budget(REPO, branch, 576, set(ISSUE576_LIMITS)) == (
+        995, ISSUE576_LIMITS
+    )
+    assert preflight["scope"]["required"] == preflight["scope"]["allowed_prefixes"]
+    assert set(preflight["scope"]["required"]) == set(ISSUE576_LIMITS)
+    authority = (routes.ISSUE576_BASE, routes.ISSUE576_TREE, routes.ISSUE576_BODY_SHA256,
+                 routes.ISSUE576_DECISION_COMMENT, routes.ISSUE576_DECISION_SHA256)
+    assert all(value in preflight["objective"] for value in authority)
+    assert branch in stage8.EFFECTIVE_STAGE8_ROUTES
+
+
+def test_issue576_route_rejects_suffix_branches(monkeypatch: Any) -> None:
+    # Turns red: the exact route stops refusing a branch with a suffix.
+    branch = routes.ISSUE576_BRANCH + "-retry"
+    assert branch not in stage8.EFFECTIVE_STAGE8_ROUTES
+    monkeypatch.setattr(stage8, "current_branch", lambda: branch)
+    monkeypatch.setattr(stage8, "changed_files_for_stage_scope", lambda: [])
+    failures: list[str] = []
+    stage8.check_stage_scope(failures)
+    assert failures == [
+        f"Stage 8 branch collides with exact reviewed route {routes.ISSUE576_BRANCH}: {branch}."
     ]

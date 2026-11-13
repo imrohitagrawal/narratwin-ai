@@ -208,11 +208,28 @@ PY
     docker logs "${container}" >&2 || true
     return 1
   fi
+  if ! verify_frontend_not_found_page "${port}"; then
+    docker logs "${container}" >&2 || true
+    return 1
+  fi
   docker stop "${container}" >/dev/null
   trap - EXIT RETURN INT TERM
   [ -n "${output_variable}" ] && [ -n "${diagnostic_variable}" ] || return 1
   printf -v "${output_variable}" '%s' "${actual_inventory}"
   printf -v "${diagnostic_variable}" '%s' "${actual_inventory_diagnostic}"
+}
+
+verify_frontend_not_found_page() {
+  local port="$1" response http_code body title_count
+  response="$(curl --connect-timeout 1 --max-time 5 -sS -w '\n%{http_code}' \
+    "http://127.0.0.1:${port}/narratwin-reproducibility-missing-path" || true)"
+  http_code="${response##*$'\n'}"
+  body="${response%$'\n'*}"
+  title_count="$(grep -o '<title' <<<"${body}" | wc -l | tr -d ' ' || true)"
+  if [ "${http_code}" != 404 ] || [ "${title_count}" != 1 ]; then
+    echo "Frontend not-found page must return 404 with exactly one title (got ${http_code}, ${title_count})." >&2
+    return 1
+  fi
 }
 
 frontend_build_identity() {
@@ -231,7 +248,8 @@ verify_frontend_reproducibility() {
   reproduction_identity="$(frontend_build_identity "${reproduction}" "${reproduction_inventory}" "${FRONTEND_ARCH}")"
   printf '%s\n%s\n%s\n%s\n' "${primary_identity}" "${reproduction_identity}" \
     "${primary_diagnostic}" "${reproduction_diagnostic}" | \
-    python3 scripts/ci/check_container_scan_consensus.py --verify-frontend-reproduction
+    python3 scripts/ci/check_container_scan_consensus.py --verify-frontend-reproduction \
+      --keep-differences "${REPORT_DIR}/frontend-reproduction-differences" "${primary}" "${reproduction}"
 }
 
 prepare_frontend_images() {
@@ -282,6 +300,7 @@ FRONTEND_CONFIG="$(image_config "${FRONTEND_IMAGE}")"
 BACKEND_ARCH="${BACKEND_ARCH:-$(docker image inspect "${BACKEND_IMAGE}" --format '{{.Architecture}}')}"
 FRONTEND_ARCH="${FRONTEND_ARCH:-$(docker image inspect "${FRONTEND_IMAGE}" --format '{{.Architecture}}')}"
 rm -f "${REPORT_DIR}"/*.raw.json "${REPORT_DIR}"/*.raw.sarif.json "${REPORT_DIR}"/*.envelope.json "${REPORT_DIR}/container-scan-case.json"
+rm -rf "${REPORT_DIR}/frontend-reproduction-differences"
 if [ "${SKIP_POLICY_EVALUATION:-0}" != "1" ]; then
   primary_inventory=""
   reproduction_inventory=""

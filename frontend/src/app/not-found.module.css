@@ -1,0 +1,12 @@
+.page {
+  display: flex;
+  min-height: 100svh;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+
+.code {
+  font-size: 24px;
+  font-weight: 500;
+}

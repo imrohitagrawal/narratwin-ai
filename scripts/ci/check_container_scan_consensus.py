@@ -2,10 +2,12 @@
 from __future__ import annotations
 
 import argparse
+import base64
 import hashlib
 import json
 import math
 import re
+import subprocess
 import sys
 import time
 from pathlib import Path, PurePosixPath
@@ -57,6 +59,14 @@ FRONTEND_ENGINE_CONFIG_DEFAULTS = {
 FRONTEND_INVENTORY_RECORD_BOUNDS = {"amd64": (1630, 1670), "arm64": (1630, 1670)}
 FRONTEND_INVENTORY_PATTERN = re.compile(r"^(?P<records>[1-9]\d{0,4}):(?P<digest>[0-9a-f]{64})\Z")
 FRONTEND_INVENTORY_DIAGNOSTIC_LIMIT, FRONTEND_INVENTORY_DIAGNOSTIC_SCHEMA = 20, "FrontendRuntimeInventoryDiagnosticV1"
+# Safety ceilings for the copies kept on a reproducibility mismatch (Issue #576): the report is an uploaded artifact.
+FRONTEND_DIFFERENCE_COPY_MAX_BYTES, FRONTEND_DIFFERENCE_COPY_TIMEOUT_SECONDS = 2 * 1024 * 1024, 60
+FRONTEND_DIFFERENCES_SCHEMA = "FrontendReproductionDifferencesV1"
+# The runtime image has no shell, so its own node reads the file: it stats first, and exits 3 for a non-file, 4 over the cap.
+FRONTEND_DIFFERENCE_READER = (
+    'const fs=require("fs"),s=fs.lstatSync(process.argv[1]);if(!s.isFile())process.exit(3);'
+    'if(s.size>Number(process.argv[2]))process.exit(4);process.stdout.write(fs.readFileSync(process.argv[1]).toString("base64"));'
+)
 FRONTEND_RUNTIME_INDEX = "sha256:c6ad9e9c1d80f6eb607c26b4b0a132ff7a2344fad1c78ea3baa2a7d4c8de6d94"
 FRONTEND_RUNTIME_PLATFORM_DIGESTS = {
     "amd64": "sha256:d431b1d60cd8de74dc66d271c236f66227998c308e011e60faa9c60dc4d37382",
@@ -160,6 +170,75 @@ def frontend_inventory_delta(primary: Any, reproduction: Any, *, expected_primar
     return {"schema_version": "FrontendRuntimeInventoryDeltaV1",
             "omitted_count": max(0, len(changed) - FRONTEND_INVENTORY_DIAGNOSTIC_LIMIT),
             "differences": changed[:FRONTEND_INVENTORY_DIAGNOSTIC_LIMIT]} if changed else None
+
+
+def _frontend_secret_forms(values: tuple[str, ...]) -> tuple[bytes, ...]:
+    """The encoded forms of a build secret that a text file is likely to carry: raw, escaped and re-encoded."""
+    forms: set[str] = set()
+    for value in filter(None, values):
+        for text in (value, value.rstrip("=")):
+            forms |= {text, text.replace("/", "\\/"), quote(text, safe=""), text.replace("+", "-").replace("/", "_")}
+        try:
+            decoded = bytes.fromhex(value) if re.fullmatch(r"(?:[0-9a-fA-F]{2})+", value) else base64.b64decode(value, validate=True)
+        except ValueError:
+            continue
+        encoded = base64.b64encode(decoded).decode()
+        forms |= {decoded.hex(), decoded.hex().upper(), encoded, encoded.rstrip("="), encoded.replace("+", "-").replace("/", "_").rstrip("=")}
+    return tuple(form.encode() for form in forms if form)
+
+
+def read_frontend_image_file(image: str, path: str, *, run: Any = subprocess.run) -> tuple[str, bytes | None]:
+    """Read one file out of an image, offline. Outcomes are fixed codes: no error text reaches the report."""
+    argv = ["docker", "run", "--rm", "--network", "none", "--user", "0:0", "--env", "NODE_OPTIONS=", "--env", "NODE_PATH=",
+            "--env", "LD_PRELOAD=", "--entrypoint", "/usr/bin/node", image, "-e", FRONTEND_DIFFERENCE_READER,
+            path, str(FRONTEND_DIFFERENCE_COPY_MAX_BYTES)]
+    try:
+        completed = run(argv, capture_output=True, text=True, timeout=FRONTEND_DIFFERENCE_COPY_TIMEOUT_SECONDS, check=False)
+    except (OSError, subprocess.SubprocessError, ValueError):
+        return "unreadable", None
+    if completed.returncode != 0:
+        return {3: "not_a_file", 4: "too_large"}.get(completed.returncode, "unreadable"), None
+    try:
+        content = base64.b64decode(completed.stdout, validate=True)
+    except ValueError:
+        return "unreadable", None
+    return ("too_large", None) if len(content) > FRONTEND_DIFFERENCE_COPY_MAX_BYTES else ("kept", content)
+
+
+def _keep_frontend_difference_side(record: Any, path: str, image: str, target: Path, secret_forms: tuple[bytes, ...],
+                                   read_file: Any) -> dict[str, Any]:
+    if record is None:
+        return {"outcome": "absent"}
+    if not path.startswith("/app/"):
+        return {"outcome": "outside_app"}
+    if record.get("kind") != "F":
+        return {"outcome": "not_a_file"}
+    outcome, content = read_file(image, path)
+    if outcome != "kept" or content is None:
+        return {"outcome": outcome if outcome != "kept" else "unreadable"}
+    if any(form in content for form in secret_forms):
+        return {"outcome": "withheld_secret"}
+    target.write_bytes(content)
+    return {"outcome": "kept", "file": target.name, "sha256": hashlib.sha256(content).hexdigest()}
+
+
+def keep_frontend_differences(delta: Any, out_dir: Path, primary_image: str, reproduction_image: str,
+                              forbidden_values: tuple[str, ...], *, read_file: Any = read_frontend_image_file) -> dict[str, Any]:
+    """Keep both copies of each listed difference. File names are generated; the image's path only reaches the manifest."""
+    out_dir.mkdir(parents=True, exist_ok=True)
+    manifest: dict[str, Any] = {"schema_version": FRONTEND_DIFFERENCES_SCHEMA, "status": "unavailable", "omitted_count": 0, "files": []}
+    try:
+        if isinstance(delta, dict) and isinstance(delta.get("differences"), list):
+            manifest["status"], manifest["omitted_count"] = "listed", delta["omitted_count"]
+            secret_forms = _frontend_secret_forms(forbidden_values)
+            for index, difference in enumerate(delta["differences"]):
+                path = difference["path"]
+                sides = {side: _keep_frontend_difference_side(difference[side], path, image, out_dir / f"{index}.{side}", secret_forms, read_file)
+                         for side, image in (("primary", primary_image), ("reproduction", reproduction_image))}
+                manifest["files"].append({"index": index, "path": path, "one_sided": None in (difference["primary"], difference["reproduction"]), **sides})
+    finally:  # A partial capture still says what it holds.
+        (out_dir / "manifest.json").write_text(json.dumps(manifest, sort_keys=True, indent=1) + "\n", encoding="utf-8")
+    return manifest
 
 
 def canonical_frontend_config(config: dict[str, Any]) -> dict[str, Any] | None:
@@ -514,6 +593,7 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--case", type=Path)
     parser.add_argument("--verify-frontend-reproduction", action="store_true")
+    parser.add_argument("--keep-differences", nargs=3, metavar=("DIR", "PRIMARY_IMAGE", "REPRODUCTION_IMAGE"))
     args = parser.parse_args()
     if args.verify_frontend_reproduction:
         raw_lines = tuple(sys.stdin.readline(1_000_001) for _ in range(4))
@@ -521,10 +601,10 @@ def main() -> int:
         findings = frontend_reproduction_findings(primary, reproduction)
         result: dict[str, Any] = {"status": "fail" if findings else "pass", "findings": findings}
         if "FRONTEND_RUNTIME_INVENTORY_CHANGED" in findings:
+            secrets = tuple(str(primary.get(field) or "") for field in FRONTEND_SECRET_FIELDS)
+            secrets += tuple(str(reproduction.get(field) or "") for field in FRONTEND_SECRET_FIELDS)
             try:
                 primary_details, reproduction_details = (json.loads(line) for line in raw_lines[2:])
-                secrets = tuple(str(primary.get(field) or "") for field in FRONTEND_SECRET_FIELDS)
-                secrets += tuple(str(reproduction.get(field) or "") for field in FRONTEND_SECRET_FIELDS)
                 result["diagnostic"] = frontend_inventory_delta(
                     primary_details, reproduction_details,
                     expected_primary=primary.get("inventory"),
@@ -532,6 +612,13 @@ def main() -> int:
                 ) or {"schema_version": "FrontendRuntimeInventoryDeltaV1", "status": "unavailable"}
             except (json.JSONDecodeError, TypeError, ValueError):
                 result["diagnostic"] = {"schema_version": "FrontendRuntimeInventoryDeltaV1", "status": "unavailable"}
+            if args.keep_differences:
+                out_dir, primary_image, reproduction_image = args.keep_differences
+                try:
+                    manifest = keep_frontend_differences(result["diagnostic"], Path(out_dir), primary_image, reproduction_image, secrets)
+                    result["kept_differences"] = {"status": manifest["status"], "files": len(manifest["files"]), "omitted_count": manifest["omitted_count"]}
+                except Exception:  # The verdict is already decided: the capture may never change it, and its error text stays out of the report.
+                    result["kept_differences"] = {"status": "capture_failed"}
         print(json.dumps(result, sort_keys=True, separators=(",", ":")))
         return 1 if findings else 0
     if args.case is None:

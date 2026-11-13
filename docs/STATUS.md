@@ -2454,3 +2454,18 @@ behaviour.
 - Issue #575 stays open to make the suite faster and bring the job back under 30
   minutes; then the limit can come down again. No product, provider or deployment
   behaviour changes.
+
+## Issue #576 frontend not-found page reproducibility (2026-11-10)
+
+- The image scan's build-twice comparison failed intermittently on both
+  architectures. Only the prerendered `_not-found.html` and `404.html` differed.
+  The default not-found page adds its own `<title>` beside the layout's metadata
+  title, and the two take their place in `<head>` in whichever order they finish.
+- Issue #576 adds `frontend/src/app/not-found.tsx`, which sets its title only
+  through metadata, so one title exists. No file is exempted from the comparison
+  and its normalization is unchanged.
+- On a mismatch the scan now keeps both copies of each differing file in its
+  report, after a build-secret check. The scan also requires a 404 status and
+  exactly one title on a missing path. Beyond the text and layout of the 404
+  page, no product, provider or deployment behaviour changes.
+- Issue #576 stays open until five hosted scans match on each architecture.
