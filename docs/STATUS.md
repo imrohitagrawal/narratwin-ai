@@ -2488,5 +2488,5 @@ behaviour.
   2026-10-13 refresh; 4.0.1 is current from this section on.
 - Issue #549 (2.8.4 to 2.9) is already met on main; this issue carries the 4.0.1
   move. Closing #549 is a separate decision.
-- Open follow-ups: #574 (container pins and the backend base image), #575 (backend
-  suite speed), #576 (five matching hosted scans per architecture).
+- Issue #580 stays open until the security workflow passes on main after merge
+  and both Dependabot alerts close. Dependabot PR #579 (to 4.0) is superseded.
