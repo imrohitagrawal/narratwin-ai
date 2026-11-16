@@ -2469,3 +2469,24 @@ behaviour.
   exactly one title on a missing path. Beyond the text and layout of the 404
   page, no product, provider or deployment behaviour changes.
 - Issue #576 stays open until five hosted scans match on each architecture.
+
+## Issue #580 Soup Sieve security refresh (2026-11-13)
+
+- On main `44e6313`, security run `43445074322` failed: the strict Python audit
+  (both advisories below) and the backend image scan on amd64 and ARM64 (the high
+  one). The locked transitive `soupsieve` 2.9 is covered by GHSA-mmhr-3c5m-f64f
+  (high, first fixed in 4.0) and GHSA-4j63-6c4x-wfg4 (moderate, first fixed in 2.10).
+- Issue #580 moves only that lock record to 4.0.1. It binds the exact version,
+  record hash and PyPI receipt in `docs/security/DEPENDENCY_REFRESH.json` (the
+  security profile) and updates that file's sha256 line in
+  `tools/semgrep/reviewed-inputs.sha256`. `beautifulsoup4` stays 4.15.0; no direct
+  requirement, workflow or container change.
+- `beautifulsoup4` is a declared requirement that no code imports yet, and no other
+  locked package depends on it, so the 3.0 and 4.0 selector changes reach no
+  product path. No product, provider or deployment behaviour changes.
+- The Soup Sieve 2.9 line in `docs/THIRD_PARTY_NOTICES.md` records the dated
+  2026-10-13 refresh; 4.0.1 is current from this section on.
+- Issue #549 (2.8.4 to 2.9) is already met on main; this issue carries the 4.0.1
+  move. Closing #549 is a separate decision.
+- Issue #580 stays open until the security workflow passes on main after merge
+  and both Dependabot alerts close. Dependabot PR #579 (to 4.0) is superseded.

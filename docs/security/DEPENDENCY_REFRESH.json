@@ -45,7 +45,7 @@
     "python-discovery": "sha256:c7d62e9820c483a38e9204d6450c885abaa8595ef6e36e3354435133ee00320f",
     "s3transfer": "sha256:f72a7716a47f3dc6292c795656cc4700100ef3bd1a075f7d8d7fdade412b5bce",
     "setuptools": "sha256:ada019cea5fe7f5003fe119d6572654d53d134f4873c8c66e0fa58dce7711340",
-    "soupsieve": "sha256:2ae9e13fe3078deb4ce2b6345e3a317c2c393050c484abe771f4fa81f72d2160",
+    "soupsieve": "sha256:33d67788956e6ec08c8684e5dda498718817b93d996dc77e1d9cfc1706241b28",
     "urllib3": "sha256:24136ea09b15a94ad45cce6ceb957ea89c71295241811ee9c8a8bf7ab58ecff1",
     "virtualenv": "sha256:3b29e4c60c416ae14dd79a08b254bfcd266244b210b5120caa1c6d791ef1678c",
     "werkzeug": "sha256:0131026b28eb8747c7d9059318ef367ef03c40cd2704cb87dc63ad6bb09b802a",
@@ -85,7 +85,7 @@
     "python-discovery": "1.6.2",
     "s3transfer": "0.19.3",
     "setuptools": "84.2.1",
-    "soupsieve": "2.9",
+    "soupsieve": "4.0.1",
     "urllib3": "2.8.0",
     "virtualenv": "21.15.5",
     "werkzeug": "3.1.9",
@@ -322,10 +322,10 @@
       "version": "84.2.1"
     },
     "soupsieve": {
-      "bytes": 6733,
-      "sha256": "ce531a08b111f5ae5e83be0804599938480c74c1d2bafd6e67cb0ce890fcd240",
-      "url": "https://pypi.org/pypi/soupsieve/2.9/json",
-      "version": "2.9"
+      "bytes": 6548,
+      "sha256": "b8cd446460fc100d827ed0ee054110ad4cfcfef0a1f2154f3cfe57bcdd06d55a",
+      "url": "https://pypi.org/pypi/soupsieve/4.0.1/json",
+      "version": "4.0.1"
     },
     "urllib3": {
       "bytes": 9510,

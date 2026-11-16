@@ -57,7 +57,7 @@ ROOT_VERSIONS = {
     "pypdf": "6.21.4",
     "s3transfer": "0.19.3",
     "setuptools": "84.2.1",
-    "soupsieve": "2.9",
+    "soupsieve": "4.0.1",
     "urllib3": "2.8.0",
     "virtualenv": "21.15.5",
     "werkzeug": "3.1.9",
